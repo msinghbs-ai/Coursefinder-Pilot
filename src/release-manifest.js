@@ -1,23 +1,21 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.363'
-export const PACKAGE_VERSION='0.1.290'
+export const UI_VERSION='2.15.364'
+export const PACKAGE_VERSION='0.1.291'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'29 Oct 2026',
-  title:'Entry requirements workspace: filter, inspect, correct, add, withdraw, re-read and resolve',
+  title:'Entry requirements: course-level reading in batches, the rendered no-table note, and Read again fetching a page again as HTML',
   changes:[
-    'Catalogue › Entry requirements, a new menu page beside Scholarships with four views: Provider entry matrix, Course entry requirements, Sources, reads and holds, and Resolution inspection. A summary above each view counts active, waiting in Layer 4, quarantined, withdrawn, held sources and courses with requirements.',
-    'Filters on the server, combined, with chips and Clear filters; sorting headers; 50 rows a page; a Columns menu (show or hide, remembered in this browser); the shared catalogue table and drawer.',
-    'Drawer: the full quote, the source and its stored copy, the reading run and model, the Layer 4 item, created and updated, and the history of every change by a person with before, after, who, when and why.',
-    'Edit in list (Curator and above): qualification, level and mapped level, band, minimum, value and scale, edition, intake year, as-at; course score with its printed basis. A reason is asked once per editing session and kept with each change; a row changed by someone else since it was opened is refused; a band, minimum or value not printed in the quote is refused. Conditions are edited as parts (best of N, subject minimums, alternative routes).',
-    'Add requirement from the provider\'s own source and its stored copy; Withdraw, Quarantine and Restore with a reason. No delete, no bulk action. Waiting AI rows are never edited or activated here: they link to Layer 4.',
-    'Sources, reads and holds: each source\'s stored copy, latest read, tries, cost, rows not kept and why, Layer 4 item, last read and next refresh; Read again for one source (Platform Admin, with a reason; never past a held-as-unreadable source).',
-    'Resolution inspection: for a course and a country, which of the five rules applied, the rows it returns with their quotes, why earlier rules did not apply, and what is not used (waiting or quarantined rows).',
-    'The Provider drawer and Course detail sections stay read only and open the workspace.',
-    'Consumer API unchanged (Decision 266): only active rows reach the course and provider payloads, as before.'
+    'Catalogue › Entry requirements › Course entry requirements: a new Course-level reading panel. For each provider in the plan it shows the courses that can be read (stored official page and strong identity), read, reading, waiting in Layer 4, admitted, with no row kept, and remaining, with the estimated cost left.',
+    'The cost a course (measured once 20 reads are measured, an estimate until then), the OpenRouter balance against its floor and the batch size are shown above the table.',
+    'Platform Admin: Preview next batch shows how many courses the next batch would read (next by priority, or one provider) and its estimated cost; Read next batch asks for it with a reason. A batch is at most the set number of courses, never a course already read, and is refused while an earlier course read waits, when AI is stopped, or when it would take the balance below its floor. Every course read goes to Layer 4.',
+    'Sources, reads and holds: a page read rendered that shows no requirements table now waits in Layer 4 as a note (Rendered, no table: in Layer 4); once approved it shows as No matrix published (confirmed). Approving the note admits and replaces nothing.',
+    'Read again on a web page stored as markdown fetches the page again as HTML (the markdown copy stays as evidence); its waiting rows and Layer 4 item are superseded first, with the reason.',
+    'Entry matrices: slices of a long page are read six at a time, 8,000 characters a slice (Settings › Pipeline settings, Entry requirements).',
+    'Consumer API unchanged (Decision 266).'
   ],
   bugFixes:[]
 }

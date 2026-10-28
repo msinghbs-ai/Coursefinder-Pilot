@@ -1,6 +1,6 @@
 # StudySearch – Operator SOP
 
-**Version:** 1.53 (reviewed for platform release v2.15.363)  
+**Version:** 1.53 (reviewed for platform release v2.15.364)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -210,3 +210,4 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | 2.02 | 28 Oct 2026 | v2.15.361 | Reviewed: the Provider drawer and the Course detail blade show academic entry requirements (read only); course entry reads wait in Layer 4 as Course entry first read for the Platform Admin. |
 | 2.03 | 29 Oct 2026 | v2.15.362 | Reviewed: the Provider drawer lists each academic entry requirements source with its latest read (read only). |
 | 2.04 | 29 Oct 2026 | v2.15.363 | Catalogue › Entry requirements: correct an active entry requirement in the list, add one from the provider's own source, or withdraw, quarantine and restore one, each with a reason (Curator and above). |
+| 2.05 | 29 Oct 2026 | v2.15.364 | Reviewed: Catalogue › Entry requirements shows the course-level reading programme by provider and marks a rendered page with no requirements table (read only for operators). |

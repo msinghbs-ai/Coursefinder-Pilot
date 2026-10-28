@@ -1,4 +1,4 @@
-// CF-247 v2.15.363 AER operations workspace (Platform Admin mandate 29 Oct 2026 08:06; admin docs/platform/AER-OPERATIONS-WORKSPACE-DECISION-2026-10-29.md).
+// CF-247 v2.15.363 AER operations workspace (v2.15.364: Course-level reading and the rendered no-table note) (Platform Admin mandate 29 Oct 2026 08:06; admin docs/platform/AER-OPERATIONS-WORKSPACE-DECISION-2026-10-29.md).
 // Catalogue › Entry requirements: four views over the academic entry requirement data, in the catalogue's own patterns (W16):
 //   Provider entry matrix · Course entry requirements · Sources, reads and holds · Resolution inspection.
 // A summary of the current scope sits above every view. Lists are filtered, sorted and paged on the server (at most 100 rows a page);
@@ -26,6 +26,9 @@ const PAGE=50
 export const ROW_PILL={active:['success','Active'],proposed:['info','Waiting in Layer 4'],unverified:['danger','Quarantined'],inactive:['neutral','Withdrawn'],superseded:['neutral','Superseded']}
 export const HOLD_PILL={read:['success','Read'],reading:['info','Reading'],held:['warning','Held'],fetch_failed:['danger','Fetch failed'],none:['neutral','Not read']}
 export function RowPill({status,title}){const[t,l]=ROW_PILL[status]||['neutral',String(status||'—')];return <span data-aer-pill={status}><StatusChip tone={t} label={l} title={title}/></span>}
+// Step C (v2.15.364): a rendered page read with no requirements table waits in Layer 4 as a note; once approved it is a confirmed
+// "no matrix published here" (the website says "contact the provider"), distinct from a read that simply kept no rows
+export function NoTablePill({status}){const ok=status==='approved';return <span data-aer-hold={ok?'no_matrix_confirmed':'no_table_note'}><StatusChip tone={ok?'neutral':'info'} label={ok?'No matrix published (confirmed)':'Rendered, no table: in Layer 4'}/></span>}
 function HoldPill({state,title}){const[t,l]=HOLD_PILL[state]||['neutral',String(state||'—')];return <span data-aer-hold={state}><StatusChip tone={t} label={l} title={title}/></span>}
 const SCALE_LABEL={percentage:'Percentage',points:'Points',aggregate:'Aggregate',gpa:'GPA',letter:'Letter grade',rank:'Rank',none:'No scale'}
 const KIND_LABEL={provider_minimum:'Provider minimum',band_ladder:'Band table',course_minimum:'Course minimum',rank_band:'Rank band',prior_qualification:'Prior qualification',minimum_grade:'Minimum grade',subject_prerequisite:'Subject prerequisite',portfolio_interview:'Portfolio or interview',work_experience:'Work experience',other:'Other',override:'Course rule (override)',general_note:'General note'}
@@ -240,6 +243,7 @@ export function CourseView({rank,onError,routeParams}){
         :<DataTable rows={rows} columns={cols} loading={busy} sort={f.sort} direction={f.direction} onSort={sortBy} onRow={r=>setOpen(r)} selected={open?.id} tableId="aer-course"/>}
       <Pager offset={offset} limit={PAGE} total={Number(d?.total||0)} onOffset={setOffset}/>
     </section>
+    <CourseProgramme onError={onError} onAsked={()=>setRefresh(n=>n+1)}/>
     {open&&<RowDrawer kind="course" id={open.id} rank={rank} onError={onError} onClose={()=>setOpen(null)} onChanged={row=>{onSaved(row);setRefresh(n=>n+1)}}/>}
     {adding&&<AddRequirement kind="course" options={o} defaults={{provider_id:f.provider_id}} onError={onError} onClose={()=>setAdding(false)} onAdded={row=>{setAdding(false);setRefresh(n=>n+1);setOpen(row)}}/>}
   </div>
@@ -431,13 +435,13 @@ export function SourcesView({rank,onError,routeParams}){
   const args=useMemo(()=>({...f,offset,page_size:PAGE}),[JSON.stringify(f),offset])
   const[d,busy,err]=useList('sources_list',args,onError,refresh)
   const rows=d?.rows||[]
-  const reread=async(s,reason)=>{try{await aer('reread',{source_id:s.id,reason});setMsg(m=>({...m,[s.id]:'Asked. The read waits for the next run of the entry reader; its rows go to Layer 4.'}));setRefresh(n=>n+1)}catch(e){setMsg(m=>({...m,[s.id]:plainError(e)}));throw e}}
+  const reread=async(s,reason)=>{try{const x=await aer('reread',{source_id:s.id,reason});setMsg(m=>({...m,[s.id]:x?.refetch?'Asked. The page is fetched again as HTML (the markdown copy stays as evidence); its read follows and its rows go to Layer 4.':'Asked. The read waits for the next run of the entry reader; its rows go to Layer 4.'}));setRefresh(n=>n+1)}catch(e){setMsg(m=>({...m,[s.id]:plainError(e)}));throw e}}
   const all=[
     {key:'provider_name',label:'Provider',width:200,sortKey:'provider',render:s=><span className="m-cell-title"><strong>{s.provider_name}</strong>{!s.in_scope&&<small>outside reading scope</small>}</span>},
     {key:'url',label:'Source',width:260,render:s=><span className="m-cell-title"><a className="cf-link aer-wrap" href={s.url} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()}>{short(s.url.replace(/^https?:\/\/(www\.)?/,''),70)}</a><small>{s.type}{s.title?` · ${short(s.title,40)}`:''}</small></span>},
     {key:'status',label:'Fetch',width:150,sortKey:'status',render:s=><span><StatusChip value={s.status} label={s.status}/>{s.read_via&&<small> · {s.read_via}</small>}</span>},
     {key:'stored',label:'Stored copy',width:170,render:s=>s.evidence_id?<span><a className="cf-link" href={evHref(s.evidence_id)} onClick={e=>e.stopPropagation()}>{fmtDate(s.captured_at)}</a><small> · {s.content_hash||''}</small></span>:'—'},
-    {key:'read',label:'Latest read',width:160,sortKey:'read',render:s=><span><HoldPill state={s.hold_state} title={s.run?.error||s.error||undefined}/>{s.run?.attempts!=null&&<small> · {s.run.attempts} tries</small>}</span>},
+    {key:'read',label:'Latest read',width:180,sortKey:'read',render:s=><span>{s.run?.outcome==='no_requirements_table'?<NoTablePill status={s.run.review_status}/>:<HoldPill state={s.hold_state} title={s.run?.error||s.error||undefined}/>}{s.run?.attempts!=null&&<small> · {s.run.attempts} tries</small>}</span>},
     {key:'rows',label:'Rows · not kept',width:130,render:s=>s.run?`${fmtNumber(Number(s.run.rows||0))} · ${fmtNumber(Number(s.run.not_kept||0))}`:'—'},
     {key:'why',label:'Hold, error or rows not kept',width:300,render:s=><small className="aer-wrap">{s.run?.error||s.error||(s.run?.dropped&&Object.keys(s.run.dropped).length?Object.entries(s.run.dropped).map(([k,n])=>`${n} ${k.replaceAll('_',' ')}`).join(' · '):'—')}</small>},
     {key:'cost',label:'Cost',width:90,sortKey:'cost',render:s=>s.run?.cost_usd!=null?`US$${Number(s.run.cost_usd).toFixed(4)}`:'—'},
@@ -466,6 +470,48 @@ export function SourcesView({rank,onError,routeParams}){
       <Pager offset={offset} limit={PAGE} total={Number(d?.total||0)} onOffset={setOffset}/>
     </section>
   </div>
+}
+
+// ----------------------------------------------------------------------------------------------- Course-level reading (W17, v2.15.364)
+// The course-level programme by provider: how many courses can be read (stored official page, strong identity), how many were read,
+// wait in Layer 4, were admitted, kept no row, and remain, with the cost a course and the OpenRouter balance against its floor.
+// A Platform Admin previews the next bounded batch (count and estimated cost) and asks for it with a reason; each course read goes to Layer 4.
+const usd=(n,d=2)=>n==null?'—':`US$${Number(n).toFixed(d)}`
+export function CourseProgramme({onError,onAsked}){
+  const[d,setD]=useState(null),[err,setErr]=useState(''),[refresh,setRefresh]=useState(0),[pid,setPid]=useState(''),[pidLabel,setPidLabel]=useState(''),[pv,setPv]=useState(null),[msg,setMsg]=useState('')
+  useEffect(()=>{let on=true;setErr('');aer('course_programme').then(x=>on&&setD(x)).catch(e=>on&&setErr(plainError(e)));return()=>{on=false}},[refresh])
+  useEffect(()=>{setPv(null)},[pid])
+  const rows=(d?.providers||[]).map(p=>({...p,id:p.provider_id}))
+  const tot=k=>rows.reduce((a,r)=>a+Number(r[k]||0),0)
+  const preview=async()=>{setMsg('');try{setPv(await aer('course_batch_preview',pid?{provider_id:pid}:{}))}catch(e){setMsg(plainError(e))}}
+  const ask=async reason=>{try{const x=await aer('course_batch',{...(pid?{provider_id:pid}:{}),reason});setMsg(`Asked: ${fmtNumber(x.courses)} courses (estimated ${usd(x.estimate_usd,3)}). Each course read goes to Layer 4.`);setPv(null);setRefresh(n=>n+1);onAsked?.()}catch(e){setMsg(plainError(e));throw e}}
+  const n=v=>fmtNumber(Number(v||0))
+  const cols=[
+    {key:'provider_name',label:'Provider',width:230,render:r=><span className="m-cell-title"><strong>{r.provider_name}</strong><small>{r.country||''}</small></span>},
+    {key:'eligible',label:'Eligible',width:90,render:r=>n(r.eligible)},
+    {key:'read',label:'Read',width:80,render:r=>n(r.read)},
+    {key:'waiting',label:'Reading',width:90,render:r=>n(r.waiting)},
+    {key:'in_layer4',label:'Waiting in Layer 4',width:130,render:r=>r.in_layer4?<a className="cf-link" href={hrefFor('layer4','inbox',{provider:r.provider_id})}>{n(r.in_layer4)} · {n(r.proposed_rows)} rows</a>:'0'},
+    {key:'admitted',label:'Admitted',width:110,render:r=>`${n(r.admitted)} · ${n(r.active_rows)} rows`},
+    {key:'no_rows',label:'No row kept',width:100,render:r=>n(r.no_rows)},
+    {key:'remaining',label:'Remaining',width:100,render:r=>n(r.remaining)},
+    {key:'estimate',label:'Estimated cost left',width:130,render:r=>usd(r.estimate_remaining_usd)},
+  ]
+  return <section className="m-panel m-catalogue-panel" data-aer-programme>
+    <div className="m-workspace-head"><div><h2>Course-level reading</h2>
+      <p>Courses whose stored official page and strong identity allow an entry-requirements read{d?.countries?` (${d.countries.join(', ')})`:''}. Every course read goes to Layer 4; nothing reaches the website until a person approves it.</p></div>
+      <div className="m-result-count">{d?<><strong>{fmtNumber(tot('remaining'))}</strong><span>of {fmtNumber(tot('eligible'))} left</span></>:<><span className="m-spinner"/>Loading…</>}</div></div>
+    {d&&<p className="sd-desc" data-aer-programme-cost>Cost a course {usd(d.cost_per_course_usd,4)} ({d.cost_basis==='measured'?'measured':'estimate until 20 reads are measured'}) · OpenRouter balance {usd(d.balance_usd)} (floor {usd(d.floor_usd)}) · {n(d.batch_size)} courses a batch · {n(d.waiting)} course reads waiting{d.ai_allowed?'':' · AI reading is stopped (AI limits)'}</p>}
+    {err&&<p className="fr-error" role="alert">{err}</p>}
+    {d?.can_batch&&<div className="m-filter-bar aer-batch" data-aer-batch>
+      <FilterSelect label="Provider" value={pid} emptyLabel="Next by priority" onChange={(v,l)=>{setPid(v);setPidLabel(l)}} options={rows.filter(r=>Number(r.remaining)>0).map(r=>opt(r.provider_id,r.provider_name,`${n(r.remaining)} left`))}/>
+      <Button compact onClick={preview} data-aer-batch-preview>Preview next batch</Button>
+      {pv&&<span className="aer-preview" data-aer-batch-result role="status"><strong>{fmtNumber(pv.courses)} courses</strong> · estimated {usd(pv.estimate_usd,3)}{pv.refusal?<> · <em>{pv.refusal}</em></>:''}</span>}
+      {pv&&!pv.refusal&&<ReasonAction label="Read next batch" confirm="Ask" testid="aer-batch" onDo={ask}/>}
+      {msg&&<small role="status">{msg}</small>}
+    </div>}
+    <DataTable rows={rows} columns={cols} loading={!d&&!err} tableId="aer-course-programme" onSort={()=>{}}/>
+  </section>
 }
 
 // ----------------------------------------------------------------------------------------------- Resolution inspection (W13)
