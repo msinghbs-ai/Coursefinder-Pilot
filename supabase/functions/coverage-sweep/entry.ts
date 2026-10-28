@@ -33,8 +33,10 @@ export const ENTRY_SCHEMA = {
   },
 };
 
-export function entryMatrixRequest(model: string, p: { provider: string; url: string; text: string; slice?: string; cells?: string }) {
-  return { model, temperature: 0, max_tokens: 8000, provider: { require_parameters: true },
+// v0.49.2 (29 Oct 2026, AER programme Wave H: two large pages cut off mid-answer): the answer's length limit comes from the setting
+// entry.matrix_max_tokens (8000 when not given)
+export function entryMatrixRequest(model: string, p: { provider: string; url: string; text: string; slice?: string; cells?: string }, maxTokens = 8000) {
+  return { model, temperature: 0, max_tokens: maxTokens, provider: { require_parameters: true },
     response_format: { type: "json_schema", json_schema: { name: "entry_matrix", strict: true, schema: ENTRY_SCHEMA } },
     messages: [{ role: "system", content: ENTRY_PROMPT },
       { role: "user", content: `Provider: ${p.provider}\nPage address: ${p.url}${p.slice ? `\nPart of the page: ${p.slice}` : ""}\n\nPage text:\n${p.text}${p.cells ? `\n\nPublished cells of the band table(s), in printed order (one row for each):\n${p.cells}` : ""}` }] };
