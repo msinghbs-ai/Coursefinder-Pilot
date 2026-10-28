@@ -9,9 +9,10 @@ import { mockAdmin } from './support/admin-mock.mjs'
 const read = p => fs.readFileSync(p, 'utf8')
 const to = (t, q = {}) => { const r = resolveTarget(t, new URLSearchParams(q)); return [r.page, r.tab, Object.fromEntries(r.params)] }
 
-test('menu: 19 pages (was 23); Sources, API usage, Data model and Storage & retention left the menu', () => {
+test('menu: 20 pages (was 23; v2.15.363 added Catalogue › Entry requirements); Sources, API usage, Data model and Storage & retention left the menu', () => {
   const inMenu = SECTIONS.flatMap(s => s.pages)
-  expect(inMenu.length).toBe(19)
+  expect(inMenu.length).toBe(20)  // v2.15.363: Entry requirements (AER operations workspace, Platform Admin 29 Oct 2026 08:06)
+  expect(SECTIONS.find(s => s.label === 'Catalogue').pages).toEqual(['courses', 'providers', 'contacts', 'scholarships', 'entry', 'rankings', 'reference'])
   for (const gone of ['sources', 'apiUsage', 'dataModel', 'retention']) { expect(PAGES[gone]).toBeUndefined(); expect(inMenu).not.toContain(gone) }
   expect(SECTIONS.find(s => s.label === 'Data pipeline').pages).toEqual(['coverage', 'layer1', 'layer2', 'layer4'])
   expect(PAGES.scholarships.tabs.map(t => t.key)).toEqual(['list', 'coverage'])

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.290 — 29 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.363** (AER operations workspace; Platform Admin mandate 29 Oct 2026 08:06; admin `docs/platform/AER-OPERATIONS-WORKSPACE-DECISION-2026-10-29.md`). Migration `20261029010000_cf247_aer_workspace.sql`: `public.admin_aer(action, args)` (bounded lists with server filters, sorting and pages; summary; options; row with history; governed update / add / lifecycle with reason, `updated_at` concurrency and `pipeline.manual_edit_log` before and after; bounded source re-read; resolution inspection over `security.entry_resolve_v1`), helpers `security.aer_row_v1`, `aer_numbers_in_quote_v1`, `aer_band_in_quote_v1`, `aer_conditions_v1`. Catalogue › Entry requirements (`src/AerWorkspace.jsx`); the shared `DataTable` and `FilterSelect` moved unchanged to `src/DataTable.jsx`; drawer sections link into the workspace. Specs s152, s153, s154. Consumer API unchanged.
+
 ## 0.1.289 — 29 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.362** (AER programme, Platform Admin consolidated mandate 28 Oct 2026 23:22; admin `docs/platform/ENTRY-REQUIREMENTS-PROGRAMME-DECISION-2026-10-28.md`). Migration `20261029005000_cf247_aer_admin_sources_and_reads.sql`: `public.admin_entry_requirements('provider_matrix')` also returns the provider's entry sources (at most 50) with each one's latest read (md5-guarded edit, read only). Provider drawer › Academic entry requirements › Sources and reads. Spec s147. Consumer API unchanged.

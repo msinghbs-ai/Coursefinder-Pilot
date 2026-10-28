@@ -1,6 +1,6 @@
 # StudySearch – Operator SOP
 
-**Version:** 1.53 (reviewed for platform release v2.15.362)  
+**Version:** 1.53 (reviewed for platform release v2.15.363)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -83,6 +83,7 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | Layer 4 Review item | Decide from the stored evidence, with a reason; correct the value if the page shows another. | Layer 4 › Inbox (Course link) |
 | Held scholarship in the Inbox | Publish or refuse it with a reason, using the AI re-check; never admit a scholarship that does not say it is open to international students. | Layer 4 › Inbox (Held scholarship) |
 | Website to find | Search the official site, confirm the university's name on its home page, enter and save it. | Layer 4 › Inbox (Website needed) |
+| An entry requirement that is wrong, missing or no longer published (v2.15.363) | Catalogue › Entry requirements: filter to the row and open it to read its quote and stored copy. Correct an active row with Edit in list (give the reason first); add a missing one with Add requirement from the provider's own source and its stored copy; Withdraw a row no longer published, or Quarantine one whose evidence is in doubt, with a reason. A waiting row is decided in Layer 4, not here. | Catalogue › Entry requirements |
 | Automation failing three runs in a row | Pause it with a note and raise it with the Platform Admin (Pipeline Operator and above). | Scheduled jobs › Automations |
 | A value on a record is wrong | Correct it on the record: it is kept as entered by hand and automation will not overwrite it until released. | Courses or Providers record |
 | An admitted value that looks wrong on a course (Admitted automatically) | Correct it on the course record (kept as entered by hand) and tell the Platform Admin the university, field and course, so the adapter can be fixed or its Admit switched off. | Courses record; Layer 2/3 › Universities |
@@ -208,3 +209,4 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | 2.01 | 27 Oct 2026 | v2.15.360 | Governed actions (Decision 268): routine operations are approved on Layer 2/3 › Operations › Governed actions instead of run as SQL; SQL is break-glass only. First action: close the AER PR A recovery. |
 | 2.02 | 28 Oct 2026 | v2.15.361 | Reviewed: the Provider drawer and the Course detail blade show academic entry requirements (read only); course entry reads wait in Layer 4 as Course entry first read for the Platform Admin. |
 | 2.03 | 29 Oct 2026 | v2.15.362 | Reviewed: the Provider drawer lists each academic entry requirements source with its latest read (read only). |
+| 2.04 | 29 Oct 2026 | v2.15.363 | Catalogue › Entry requirements: correct an active entry requirement in the list, add one from the provider's own source, or withdraw, quarantine and restore one, each with a reason (Curator and above). |
