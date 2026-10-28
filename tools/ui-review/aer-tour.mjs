@@ -4,7 +4,7 @@
 import path from 'node:path'
 
 const pick = async (page, bar, button, text, exact) => {
-  await bar(page).getByRole('button', { name: button }).first().click()
+  await bar.getByRole('button', { name: button }).first().click()
   await page.locator('.m-filter-popover input').fill(text)
   await page.locator('.m-filter-popover').getByRole('button', { name: exact }).first().click()
 }
@@ -39,7 +39,8 @@ export async function aerTour({ page, browser, out, settle, fitHeight, masks, lo
   const watch = (p) => p.on('request', (r) => { if (r.url().includes('/rest/v1/rpc/admin_aer')) { try { const b = r.postDataJSON() || {}; aerCalls.push({ action: b.p_action, page_size: b.p_args?.page_size ?? null }) } catch { /* not JSON */ } } })
   watch(page)
   // a step that cannot finish is recorded with its reason and the tour goes on (the manifest says what was and was not exercised)
-  const step = async (name, fn) => { try { await fn() } catch (e) { manifest.push({ route: 'aer-tour', action: name, error: String(e?.message || e).slice(0, 300) }) } }
+  const t0 = Date.now()
+  const step = async (name, fn) => { const t = Date.now(); try { await fn(); manifest.push({ route: 'aer-tour', action: name, ok: true, seconds: Math.round((Date.now() - t) / 1000), at: Math.round((t - t0) / 1000) }) } catch (e) { manifest.push({ route: 'aer-tour', action: name, error: String(e?.message || e).slice(0, 300), seconds: Math.round((Date.now() - t) / 1000) }) } }
 
   // 1. Provider entry matrix: summary, then RMIT and India (status Active is the default)
   await step('matrix', async () => {

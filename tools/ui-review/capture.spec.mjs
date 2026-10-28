@@ -51,6 +51,7 @@ function masks(page) {
 }
 
 test('capture screens for UI review', async ({ page, browser }) => {
+  if (SCREENS.includes('aer-tour')) test.setTimeout(40 * 60_000)  // CF-247: the AER tour takes 14 screenshots at two widths
   fs.mkdirSync(OUT, { recursive: true })
   track(page)
   const consoleErrors = []
