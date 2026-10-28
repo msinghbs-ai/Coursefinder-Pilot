@@ -8,7 +8,7 @@
 // When a release changes a screen, an automation or where a person decides: change the steps here, raise the SOP's version, add a line
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 
-export const SOP_REVIEWED_FOR = '2.15.361'
+export const SOP_REVIEWED_FOR = '2.15.362'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -44,7 +44,7 @@ const step = (o) => o
 
 export const SOPS = [
   {
-    id: 'admin-sop', title: 'Platform Admin SOP', version: '1.55', audience: 'Platform Admin (role rank 6)',
+    id: 'admin-sop', title: 'Platform Admin SOP', version: '1.56', audience: 'Platform Admin (role rank 6)',
     purpose: 'How the Platform Admin runs StudySearch day to day: the approvals only you can give, the budgets and models you own, and the checks that keep automatic admission trustworthy.',
     owns: ['Admitting university adapters (Layer 2/3 › Universities)', 'Approving central pages: fee schedules, English policies, academic calendars', 'AI models, their order, AI admission and the AI allowances', 'Firecrawl and OpenRouter budgets and service keys', 'Onboarding settings, Retry and Stop', 'Users and roles; new countries; go-live'],
     schedule: [
@@ -207,7 +207,8 @@ export const SOPS = [
       { version: '1.99', date: '26 Oct 2026', release: '2.15.358', change: 'Register: CRICOS course and provider registrations no longer on the register carry an end date; a provider with no course on the register is marked ended (daily job Register end dates).' },
       { version: '2.00', date: '26 Oct 2026', release: '2.15.359', change: 'Fees: every international fee write passes the country tuition identity check at the table; a failing fee is kept for review.' },
       { version: '2.01', date: '27 Oct 2026', release: '2.15.360', change: 'Governed actions (Decision 268): routine operations are approved on Layer 2/3 › Operations › Governed actions instead of run as SQL; SQL is break-glass only. First action: close the AER PR A recovery.' },
-      { version: '2.02', date: '28 Oct 2026', release: '2.15.361', change: 'Academic entry requirements (Track C Step B): the Provider drawer and the Course detail blade show the published entry rows and what applies to a student from a chosen country; Platform Admin reads one course from its stored page and admits the rows in Layer 4 (Course entry first read).' }],
+      { version: '2.02', date: '28 Oct 2026', release: '2.15.361', change: 'Academic entry requirements (Track C Step B): the Provider drawer and the Course detail blade show the published entry rows and what applies to a student from a chosen country; Platform Admin reads one course from its stored page and admits the rows in Layer 4 (Course entry first read).' },
+      { version: '2.03', date: '29 Oct 2026', release: '2.15.362', change: 'Academic entry requirements (AER programme): the Provider drawer lists each source with its latest read, so a held PDF, a refused page or a page with no row is visible with its reason; first reads of new providers wait in Layer 4 as Entry matrix (first run).' }],
   },
   {
     id: 'operator-sop', title: 'Operator SOP', version: '1.53', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
@@ -360,7 +361,8 @@ export const SOPS = [
       { version: '1.99', date: '26 Oct 2026', release: '2.15.358', change: 'Register: CRICOS course and provider registrations no longer on the register carry an end date; a provider with no course on the register is marked ended (daily job Register end dates).' },
       { version: '2.00', date: '26 Oct 2026', release: '2.15.359', change: 'Fees: every international fee write passes the country tuition identity check at the table; a failing fee is kept for review.' },
       { version: '2.01', date: '27 Oct 2026', release: '2.15.360', change: 'Governed actions (Decision 268): routine operations are approved on Layer 2/3 › Operations › Governed actions instead of run as SQL; SQL is break-glass only. First action: close the AER PR A recovery.' },
-      { version: '2.02', date: '28 Oct 2026', release: '2.15.361', change: 'Reviewed: the Provider drawer and the Course detail blade show academic entry requirements (read only); course entry reads wait in Layer 4 as Course entry first read for the Platform Admin.' }],
+      { version: '2.02', date: '28 Oct 2026', release: '2.15.361', change: 'Reviewed: the Provider drawer and the Course detail blade show academic entry requirements (read only); course entry reads wait in Layer 4 as Course entry first read for the Platform Admin.' },
+      { version: '2.03', date: '29 Oct 2026', release: '2.15.362', change: 'Reviewed: the Provider drawer lists each academic entry requirements source with its latest read (read only).' }],
   },
 ]
 
