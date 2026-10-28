@@ -20,7 +20,8 @@ test('the existing lane, a new field outside the registry, stored page only, str
 })
 
 test('worker: own call with the pinned entry model; every row quoted on the page; no band from a score; no English tests', () => {
-  expect(w).toContain('const WORKER = "coverage-sweep-worker-v0.49.0";')
+  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.49\.[1-9]\d*";/)
+  expect(entry).toContain('htmlToText(raw.replace(/<(nav|header|footer)\\b[\\s\\S]*?<\\/\\1>/gi, " "))')  // v0.49.1: the whole page, not only <main>
   expect(entry).toContain('const em = String(w?.entry?.model || ""), chars = Number(w?.entry?.page_chars || 0);')
   expect(entry).toContain('if (!on(text, q)) { dropped.push({ reason: "quote_not_on_page"')
   expect(entry).toContain('never derive a band from an ATAR, rank or score')
@@ -60,4 +61,13 @@ test('edited functions are md5-guarded; one bounded, count-guarded slice read', 
   for (const k of ['entry.course_read_countries', 'entry.max_rows_per_course', 'entry.min_confidence', 'entry.course_page_chars']) expect(m).toContain(`('pipeline', '${k}',`)
   expect(m).toContain('-- Replaces:'); expect(m).toContain('-- Retires: nothing')
   expect(code).not.toMatch(/^\s*(drop|delete|truncate)\b/im)
+})
+
+test('v0.49.1 follow-up: a read releases the field\'s earlier no-value hold and is refused loudly by the item gate otherwise', () => {
+  const f = fs.readFileSync('supabase/migrations/20261028003000_cf247_entry_step_b_course_read_full_page.sql', 'utf8')
+  expect(f).toContain("if md5(pg_get_functiondef('security.course_entry_read_enqueue_v1(uuid,uuid,text)'::regprocedure)) <> '77053f34121c28c633f10d2318cc9f4b' then")
+  expect(f).toContain("and f.reason_code = 'enrich_no_value' and f.state in ('raised', 'counting') and f.field = 'entry_requirements';")
+  expect(f).toContain("raise exception 'the entry requirements item was refused by the item gate'")
+  expect(f).not.toMatch(/^\s*perform security\.course_entry_read_enqueue_v1/m)  // no read enqueued here: it waits for the v0.49.1 worker
+  expect(f).not.toMatch(/^\s*(drop|delete|truncate)\b/im)
 })
