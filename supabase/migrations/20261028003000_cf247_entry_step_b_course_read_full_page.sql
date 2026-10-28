@@ -1,8 +1,10 @@
 -- CF-247 Track C Step B, B1 follow-up (28 Oct 2026; decision record admin docs/platform/ENTRY-REQUIREMENTS-STEP-B-DECISION-2026-10-28.md).
--- The decided slice read of RMIT BH126 ran at 21:39 (item 227056, US$0.0024) and returned "the page does not state it": the worker gave the
--- model only the page's <main> element, and RMIT prints its entry requirements outside it (the stored copy holds them: the adapter read
--- "You must have successfully completed the Victorian Certificate of Education (VCE) ... Prerequisites ..."). Worker v0.49.1 reads the
--- whole page text (navigation, header and footer left out).
+-- The decided slice read of RMIT BH126 was enqueued by migration 20261028001000 and taken at 21:39:10 (item 227056, US$0.0024) by the
+-- PREVIOUS worker, v0.48.8 (mode ledger): deploy-on-merge applies migrations before it deploys functions, and v0.49.0 answered only from
+-- 21:40:06. v0.48.8 asked the field as a generic one and recorded "the page does not state it". No entry reader has read the page yet.
+-- Worker v0.49.1 also reads the whole page text (navigation, header and footer left out) rather than only <main>: the stored copy holds
+-- the entry text (the adapter read "You must have successfully completed the Victorian Certificate of Education (VCE) ...") and its
+-- place in the markup is not known, so the entry read does not depend on it.
 -- 1. security.course_entry_read_enqueue_v1: a person's or a decided read releases the course's earlier "no value" hold on this field first
 --    (as Read with AI does), so the item is not refused by the item gate.
 -- 2. The slice read once more follows in its own migration (20261028004000), merged only after worker v0.49.1 is verified live, so the
