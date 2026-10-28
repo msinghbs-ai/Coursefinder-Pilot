@@ -77,10 +77,18 @@ export function entryPageText(html: string, toText: (h: string) => string): stri
 export type EntryBandLine = { line: string; band: string | null };
 export const ENTRY_BAND_HEADER = /\baustralian standard\b/i;
 export const NA_BAND = /^(not applicable|n\/a|na|-|–|—)$/i;  // the page's own words for "no band" in a band column
-export function entryTables(html: string, toText: (h: string) => string): { text: string; lines: EntryBandLine[]; grids: string[][][]; covered: boolean[][] } {
+// v0.50.1 (29 Oct 2026, AER programme Wave H: ANU and UWA rows dropped as quote_too_short / quote_not_on_page): a table whose data cells
+// are all bare numbers (a rank-to-score or score-to-ATAR conversion) gives each data cell named by its column header ("Program Required
+// Entrance Rank: 80 | Indicative score required: 14.0"), so a row's own line says what its numbers are and can be quoted whole. Tables
+// with any worded cell are unchanged. Structure-driven: no provider or country is named. Off for a provider under the completeness guard
+// (its manifest compares quotes with the plain table lines) and wherever the caller does not ask for it.
+const BARE_NUMBER = /^[<>≥≤~]?\s*\d+(?:[.,]\d+)?\s*%?(?:\s*[-–]\s*\d+(?:[.,]\d+)?\s*%?)?$/;
+export const NAMED_NOTE = "Some tables of numbers give each cell as its column header, a colon and the value (\"Header: value\"); quote the whole line, which names what each number is.";
+export function entryTables(html: string, toText: (h: string) => string, nameNumbers = false): { text: string; lines: EntryBandLine[]; grids: string[][][]; covered: boolean[][]; named: number } {
   // covered (v0.48.6, D5): per table and row, whether a merged cell from an earlier row still spans a column past the end of this row
   // (the carry stops at the first gap), so a short row there is not simply a row whose trailing cells were left out
   const all: EntryBandLine[] = [], grids: string[][][] = [], covered: boolean[][] = [];
+  let named = 0;
   const cellText = (h: string) => toText(h).replace(/\s*\n\s*/g, " ").replace(/\s+/g, " ").trim();
   const tables: string[] = [];
   const marked = String(html || "").replace(/<table\b[\s\S]*?<\/table>/gi, (table) => {
@@ -102,11 +110,15 @@ export function entryTables(html: string, toText: (h: string) => string): { text
     if (!grid.length) return table;
     let label = "", bandCol = -1;
     const carried: string[][] = [];
+    const head = grid[0], body = grid.slice(1);
+    const numeric = nameNumbers && head.filter((c) => c).length >= 2 && head.every((c) => !c || !BARE_NUMBER.test(c)) && body.length >= 2
+      && body.every((r) => r.length <= head.length && r.every((c) => !c || BARE_NUMBER.test(c)) && r.some((c) => c));
+    if (numeric) named++;
     const lines = grid.map((r, i) => {
       const cells = Array.from({ length: r.length }, (_, j) => r[j] ?? "");
       if (cells[0]) label = cells[0]; else if (i > 0 && label && cells.slice(1).some((x) => x)) cells[0] = label;
       carried.push(cells);
-      const line = cells.join(" | ");
+      const line = numeric && i > 0 ? cells.map((c, j) => c ? `${head[j] || `Column ${j + 1}`}: ${c}` : "").filter(Boolean).join(" | ") : cells.join(" | ");
       const h = cells.findIndex((c) => ENTRY_BAND_HEADER.test(c));
       if (bandCol < 0 && h > 0) { bandCol = h; all.push({ line, band: null }); return line }  // the header row names the band column
       const b = bandCol > 0 ? String(cells[bandCol] || "").trim() : "";
@@ -116,7 +128,7 @@ export function entryTables(html: string, toText: (h: string) => string): { text
     tables.push(lines.join("\n")); grids.push(carried); covered.push(cov);
     return `<p>ZZENTRYTABLE${tables.length - 1}ZZ</p>`;  // a placeholder the page text keeps; the rows replace it after
   });
-  return { text: toText(marked).replace(/ZZENTRYTABLE(\d+)ZZ/g, (_, n) => `\n${tables[Number(n)]}\n`), lines: all, grids, covered };
+  return { text: toText(marked).replace(/ZZENTRYTABLE(\d+)ZZ/g, (_, n) => `\n${tables[Number(n)]}\n`), lines: all, grids, covered, named };
 }
 
 // letters and digits compared, case and spacing ignored, so words split by markup ("S enior", NMIT 25 Oct byte-check) still match
