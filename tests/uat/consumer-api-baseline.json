@@ -1,7 +1,7 @@
 {
-  "note": "CF-247 Decision 266 (18 Oct 2026): consumer API edge functions frozen. Live matched these files byte for byte on 18 Oct 2026 (edge drift check). A change needs the Platform Admin's approval, recorded as a line '-- Consumer API change approved: <who, when, why>' in the migration or CHANGELOG entry that changes it, and this file updated in the same change.",
+  "note": "CF-247 Decision 266 (18 Oct 2026): consumer API edge functions frozen. Live matched these files byte for byte on 18 Oct 2026 (edge drift check). A change needs the Platform Admin's approval, recorded as a line '-- Consumer API change approved: <who, when, why>' in the migration or CHANGELOG entry that changes it, and this file updated in the same change. Updated 28 Oct 2026 (Track C Step B, B3): website-api-v2 passes edu_country to the course and provider payloads; approved Platform Admin 25 Oct 2026 14:36/14:50, applied through the paste-reviewed consumer change (migration 20261028002000).",
   "edge_files": {
-    "supabase/functions/website-api-v2/index.ts": "f2df4b39b738dd2c0d81c930f138e97fef483884fe9285bf54ba5459647b2d0c",
+    "supabase/functions/website-api-v2/index.ts": "a833301f19b8fffd155a7c637f14f7df3c2761b1089da7f2c0b2e0dc3e3a4660",
     "supabase/functions/wix-course-api/index.ts": "c7e1182b344b16de302c74a50cf5966e406276eec247bef270709c30d071a0ee",
     "supabase/functions/website-course-api/index.ts": "463457cb5f67eb2ad468f907a226554e5fbd0b04e189cc4556b98b8f599ba413",
     "supabase/functions/zoho-api-v2/index.ts": "187f5e706f7545dd79ec288eb25c844921dcfae4e19731f84714e2145fbde264",
