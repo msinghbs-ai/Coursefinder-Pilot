@@ -1,0 +1,83 @@
+{
+  "captured_at": "2026-10-28T23:36:39.872Z",
+  "base_url": "https://coursefinder-pilot.techm.workers.dev",
+  "screens": [
+    {
+      "file": "aer-01-matrix-all.png",
+      "route": "aer-tour",
+      "action": "01-matrix-all",
+      "url": "https://coursefinder-pilot.techm.workers.dev/#entry-requirements",
+      "layout": {
+        "viewport": 1440,
+        "page_scroll_width": 1440,
+        "horizontal_page_scroll": false,
+        "clipped_elements": 0
+      },
+      "console_errors": []
+    },
+    {
+      "route": "aer-tour",
+      "action": "matrix",
+      "error": "bar is not a function"
+    },
+    {
+      "file": "aer-03-matrix-columns-menu.png",
+      "route": "aer-tour",
+      "action": "03-matrix-columns-menu",
+      "url": "https://coursefinder-pilot.techm.workers.dev/#entry-requirements",
+      "layout": {
+        "viewport": 1440,
+        "page_scroll_width": 1440,
+        "horizontal_page_scroll": false,
+        "clipped_elements": 0
+      },
+      "console_errors": []
+    },
+    {
+      "file": "aer-04-matrix-drawer.png",
+      "route": "aer-tour",
+      "action": "04-matrix-drawer",
+      "url": "https://coursefinder-pilot.techm.workers.dev/#entry-requirements",
+      "layout": {
+        "viewport": 1440,
+        "page_scroll_width": 1440,
+        "horizontal_page_scroll": false,
+        "clipped_elements": 0
+      },
+      "console_errors": []
+    },
+    {
+      "route": "aer-tour",
+      "action": "waiting",
+      "error": "bar is not a function"
+    },
+    {
+      "route": "aer-tour",
+      "action": "course",
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "aer-tour",
+      "action": "sources",
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "aer-tour",
+      "action": "resolve",
+      "error": "page.goto: Target page, context or browser has been closed"
+    },
+    {
+      "route": "aer-tour",
+      "action": "phone",
+      "error": "browser.newContext: Protocol error (Browser.setDownloadBehavior): Failed to find browser context for id EE813BACC3AC9CFC747D28B8EEBC63BD"
+    },
+    {
+      "route": "aer-tour",
+      "action": "reads",
+      "admin_aer_calls": 4,
+      "list_reads": 1,
+      "largest_page_size": 50,
+      "writes": 0
+    }
+  ]
+}
