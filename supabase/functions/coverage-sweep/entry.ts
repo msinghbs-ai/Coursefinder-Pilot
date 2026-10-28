@@ -37,6 +37,19 @@ export const ENTRY_SCHEMA = {
 // entry.matrix_max_tokens (8000 when not given)
 // v0.50.0 (Step B): a PDF table's lines name each cell by its column header; told so with the page (the prompt itself is unchanged)
 export const PDF_NOTE = "This page is a PDF table rebuilt from its drawn cells. Each table row is one line; each cell is given as its column header, a colon and the cell (\"Header: cell\"); a line beginning with § is a heading (a country or group) for the lines below it, and a row that begins with that heading belongs to it. Read the study level or qualification from the column header the cell is named by, never from its position. Quote the whole line or the part of it that holds the cell with its header.";
+// v0.50.2 (29 Oct 2026): why a model call answered with no text, as OpenRouter returns it (an upstream error can come with HTTP 200)
+export function entryNoAnswerWhy(d: any, slice: number, slices: number): string {
+  const ch = d?.choices?.[0] || {}, bits: string[] = [];
+  const err = ch?.error?.message || ch?.error?.code || d?.error?.message || d?.error?.code;
+  if (err) bits.push(`error: ${String(err).slice(0, 160)}`);
+  if (ch?.finish_reason) bits.push(`finish: ${ch.finish_reason}`);
+  if (ch?.native_finish_reason && ch.native_finish_reason !== ch.finish_reason) bits.push(`native: ${ch.native_finish_reason}`);
+  if (d?.provider) bits.push(`provider: ${d.provider}`);
+  if (!d?.choices) bits.push("no choices");
+  if (slices > 1) bits.push(`slice ${slice} of ${slices}`);
+  return bits.length ? ` (${bits.join("; ")})` : "";
+}
+
 export function entryMatrixRequest(model: string, p: { provider: string; url: string; text: string; slice?: string; cells?: string; note?: string }, maxTokens = 8000) {
   return { model, temperature: 0, max_tokens: maxTokens, provider: { require_parameters: true },
     response_format: { type: "json_schema", json_schema: { name: "entry_matrix", strict: true, schema: ENTRY_SCHEMA } },
