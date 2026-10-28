@@ -13,6 +13,8 @@
 // No scale is added, no grade is moved between cells, and a partial table is never given. Pure functions, tested against the stored
 // PDFs' positioned items and rules.
 export const PDF_METHOD = "ruled-cells-v1";
+// v0.51.0: from this many columns a table row is given cell by cell with its first cell (structure rule of the reader, not an operational value)
+export const WIDE_COLUMNS = 5;
 
 export type PdfItem = { x: number; y: number; w: number; h: number; s: string };
 export type PdfRule = { o: "h" | "v"; y?: number; x?: number; a: number; b: number; box?: number };
@@ -223,6 +225,10 @@ export function pdfTables(pages: PdfPage[]): PdfResult {
           if (!cells[0] && carry) cells[0] = carry; else if (cells[0]) carry = cells[0];
           const named = cells.map((c, i) => c ? `${header[i] || `Column ${i + 1}`}: ${c}` : "").filter(Boolean);
           if (!named.length) continue;
+          // v0.51.0: a wide table (WIDE_COLUMNS or more columns, a requirement per column, e.g. one column per study level) gives each data
+          // cell on its own line with its row's first cell, so a requirement can be quoted whole (Western Sydney: 65 of 78 rows were dropped
+          // as quote_not_on_page when the model quoted the row label with one level's cell); the cells are the same proven cells
+          if (header.length >= WIDE_COLUMNS && cells[0] && named.length > 2) { for (const c of named.slice(1)) lines.push("| " + (section ? `${section} | ` : "") + named[0] + " | " + c + " |"); n++; continue }
           lines.push("| " + (section ? `${section} | ` : "") + named.join(" | ") + " |"); n++;
         }
         parts.push({ y: g.top + 0.25 - c0 * 1e-3, text: lines });

@@ -44,9 +44,9 @@ test('WSU: two tables on one page, seven columns each, every level column named'
   const r = pdfTables(fx('wsu'))
   expect(r.status).toBe('ok')
   expect(r.tables.every((t) => t.columns === 7)).toBe(true)
-  const b = lines(r).find((l) => l.startsWith('| Qualification: Bangladesh |'))
-  expect(b).toContain('| 3 Semester Diploma: Successful completion of HSC with a GPA of 3.0 or Edexcel GCE A Level examination with a score of 4 in 2 Advanced Level core subjects')
-  expect(lines(r).find((l) => l.startsWith('| Qualification: Indian School Certificate (ISC) |'))).toContain('| 3 Semester Diploma: Successful completion of ISCE with an overall GPA of 50% in best 4 subjects |')
+  // v0.51.0: a wide table gives each cell on its own line with the row's first cell (s151)
+  expect(lines(r).filter((l) => l.startsWith('| Qualification: Bangladesh |')).some((l) => l.includes('| 3 Semester Diploma: Successful completion of HSC with a GPA of 3.0 or Edexcel GCE A Level examination with a score of 4 in 2 Advanced Level core subjects'))).toBe(true)
+  expect(lines(r)).toContain('| Qualification: Indian School Certificate (ISC) | 3 Semester Diploma: Successful completion of ISCE with an overall GPA of 50% in best 4 subjects |')
 })
 
 test('Adelaide and Curtin: three columns; Curtin\'s centred cells pair each criterion with its own country', () => {

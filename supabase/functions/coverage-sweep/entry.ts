@@ -42,10 +42,11 @@ export function entryNoAnswerWhy(d: any, slice: number, slices: number): string 
   const ch = d?.choices?.[0] || {}, bits: string[] = [];
   const err = ch?.error?.message || ch?.error?.code || d?.error?.message || d?.error?.code;
   if (err) bits.push(`error: ${String(err).slice(0, 160)}`);
+  if (d?.unreadable) bits.push(`reply unreadable: ${String(d.unreadable).slice(0, 120)}`);  // v0.51.0
   if (ch?.finish_reason) bits.push(`finish: ${ch.finish_reason}`);
   if (ch?.native_finish_reason && ch.native_finish_reason !== ch.finish_reason) bits.push(`native: ${ch.native_finish_reason}`);
   if (d?.provider) bits.push(`provider: ${d.provider}`);
-  if (!d?.choices) bits.push("no choices");
+  if (!d?.choices && !d?.unreadable) bits.push("no choices");
   if (slices > 1) bits.push(`slice ${slice} of ${slices}`);
   return bits.length ? ` (${bits.join("; ")})` : "";
 }
