@@ -99,7 +99,7 @@ test('the worker holds anything not proven before any AI read, for every PDF (no
   const ai = w.slice(w.indexOf('if (mode === "entry_ai") {'), w.indexOf('if (mode === "fee_ai") {'))
   expect(w).toContain('import { getDocumentProxy, getResolvedPDFJS } from "npm:unpdf@0.12.1";')
   expect(w).toContain('const t = pdfTables(await pdfPages(doc, OPS, pdfMaxPages));')
-  expect(ai).toContain('const stored = await storedText(it.storage_path, it.mime, Number(it.pdf_max_pages) || 40), page = stored.text;')
+  expect(ai).toContain('const stored = await storedText(it.storage_path, it.mime, Number(it.pdf_max_pages) || 40, it.completeness_required !== true), page = stored.text;')
   expect(ai).toContain('if (stored.pdf && stored.pdf.status !== "ok") {')
   expect(ai).toContain('await rec({ p_error: `held_unparsed: PDF ${stored.pdf.reason}`.slice(0, 400)')
   expect(ai).toContain('if (!stored.pdf && /\\.pdf($|[?#])/i.test(String(it.url || ""))) {')

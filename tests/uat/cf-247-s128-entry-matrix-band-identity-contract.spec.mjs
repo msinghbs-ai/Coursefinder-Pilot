@@ -72,7 +72,7 @@ test('database: level label is a condition key of the existing identity; approva
 })
 
 test('worker and prompt: band lines reach the check; the reader is told where the band is', () => {
-  expect(w).toContain('const stored = await storedText(it.storage_path, it.mime, Number(it.pdf_max_pages) || 40), page = stored.text;')  // v0.50.0: with the PDF page limit
+  expect(w).toContain('const stored = await storedText(it.storage_path, it.mime, Number(it.pdf_max_pages) || 40, it.completeness_required !== true), page = stored.text;')  // v0.50.0: with the PDF page limit
   expect(w).toContain('entryMatrixParsed(JSON.parse(content), page, stored.lines)')
   expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(48\.[2-9]|49\.\d+|5\d\.\d+)"/)
   expect(ENTRY_PROMPT_VERSION).toMatch(/^entry-matrix-v0\.1\.[2-9]$/)
