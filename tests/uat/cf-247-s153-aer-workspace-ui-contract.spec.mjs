@@ -24,6 +24,15 @@ test('one menu destination with four views, beside Scholarships; one editing imp
   expect(ui).toContain("export const HOLD_PILL={read:['success','Read'],reading:['info','Reading'],held:['warning','Held'],fetch_failed:['danger','Fetch failed'],none:['neutral','Not read']}")
 })
 
+test('the deployed acceptance runs on deploy: targeted for workspace changes and in the acceptance tier; live edits held by the live-acting switch', () => {
+  const wf = fs.readFileSync('.github/workflows/deployed-uat.yml', 'utf8')
+  expect(wf).toContain("grep -Eq '(^src/(AerWorkspace\\.jsx|aer-workspace\\.css|DataTable\\.jsx)$|^supabase/migrations/.*_cf247_aer_workspace|^tests/uat/cf-247-s154-aer-workspace-deployed\\.spec\\.mjs$)'; then\n            targeted=(tests/uat/cf-247-s154-aer-workspace-deployed.spec.mjs)")
+  expect(wf).toContain('            tests/uat/cf-247-s154-aer-workspace-deployed.spec.mjs\n          )\n          case')
+  const dep = fs.readFileSync('tests/uat/cf-247-s154-aer-workspace-deployed.spec.mjs', 'utf8')
+  expect(dep).toContain("test.describe('CF-247 AER operations workspace @deployed'")
+  expect(dep).toContain("test('a governed edit of a live active row, its history and version, then put back @live-acting'")
+})
+
 const row = (o = {}) => ({ kind: 'matrix', id: 'm1', provider_id: 'p-rmit', provider_name: 'RMIT University (RMIT)', country: 'IN', country_name: 'India', level_label: 'Bachelor degrees', level_code: 'BA',
   level_name: 'Bachelor', matrix_kind: 'band_ladder', qualification: 'CBSE Year 12', band: '65%', min_grade: '75%', min_value: null, scale: 'percentage', conditions: { best_n: 4, subject_minimums: [], alternatives: [] },
   audience: 'international', edition: '2027', intake_year: null, as_at: '2026-10-26', status: 'active', status_reason: null, quote: 'CBSE Year 12 | 65% | 75%', source_url: 'https://www.rmit.edu.au/india',
