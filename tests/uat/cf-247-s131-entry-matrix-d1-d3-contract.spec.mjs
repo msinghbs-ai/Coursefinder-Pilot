@@ -82,7 +82,7 @@ test('D2: IB, GAC and Foundation equivalencies are not country tables; RMIT\'s c
 test('D2: held before any AI read, as "held_unparsed", which the database makes terminal (no retry)', () => {
   const i = w.indexOf('const nonCountry = it.completeness_required === true && stored.manifest.status === "ok" ? entryNonCountryShape(stored.manifest, await countryRefs()) : null;')
   expect(i).toBeGreaterThan(0)
-  expect(i).toBeLessThan(w.indexOf('const slices = entrySlices(page, Number(it.max_rows) || 400);'))  // before the AI read
+  expect(i).toBeLessThan(w.indexOf('const slices = entrySlices(page, Number(it.max_rows) || 400'))  // before the AI read
   // v0.48.8 (s135, R2) adds the bare-number hold to the same line; D2's own wording is unchanged
   expect(w).toContain('const why = nonCountry ? `not a country table: ${nonCountry}` : unscaled.length ? `no printed scale: bare numbers in ${unscaled.join("; ")}` : (stored.manifest.reason || stored.manifest.status);')
   expect(w).toContain('await rec({ p_error: `held_unparsed: ${why}`.slice(0, 400)')

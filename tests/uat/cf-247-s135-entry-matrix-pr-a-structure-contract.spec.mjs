@@ -81,7 +81,7 @@ test('R2: Norway, China Gao Kao and Germany Abitur print bare numbers with no sc
 test('R2: the worker holds such a page before any AI read, as "held_unparsed" (terminal), naming the columns', () => {
   const i = w.indexOf('const unscaled = it.completeness_required === true && stored.manifest.status === "ok" && !nonCountry ? entryUnscaledColumns(stored.manifest) : [];')
   expect(i).toBeGreaterThan(0)
-  expect(i).toBeLessThan(w.indexOf('const slices = entrySlices(page, Number(it.max_rows) || 400);'))
+  expect(i).toBeLessThan(w.indexOf('const slices = entrySlices(page, Number(it.max_rows) || 400'))
   expect(w).toContain('if (it.completeness_required === true && (stored.manifest.status !== "ok" || nonCountry || unscaled.length)) {')
   expect(w).toContain('`no printed scale: bare numbers in ${unscaled.join("; ")}`')
   expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(48\.([8-9]|[1-9][0-9])|49\.\d+)"/)
