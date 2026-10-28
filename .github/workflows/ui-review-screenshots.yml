@@ -39,6 +39,8 @@ jobs:
       - name: Capture screens
         run: npx playwright test -c tools/ui-review/playwright.config.mjs
       - name: Commit to ui-review-snapshots branch
+        # CF-247 (29 Oct 2026): what was captured is kept even when a screen fails, with the failure in manifest.json
+        if: always()
         run: |
           set -e
           DEST="snapshots/$(date -u +%Y%m%d-%H%M)-run${{ github.run_number }}"

@@ -62,7 +62,12 @@ test('capture screens for UI review', async ({ page, browser }) => {
   let n = 0
   for (const spec of SCREENS) {
     // CF-247 (29 Oct 2026): "aer-tour" is the AER workspace's scripted read-only acceptance tour (aer-tour.mjs)
-    if (spec === 'aer-tour') { await aerTour({ page, browser, out: OUT, settle, fitHeight, masks, login: loginAsUatUser, manifest, consoleErrors, baseURL: process.env.UAT_BASE_URL }); continue }
+    if (spec === 'aer-tour') {
+      try { await aerTour({ page, browser, out: OUT, settle, fitHeight, masks, login: loginAsUatUser, manifest, consoleErrors, baseURL: process.env.UAT_BASE_URL }) }
+      catch (e) { manifest.push({ route: 'aer-tour', error: String(e?.message || e).slice(0, 400) }) }
+      fs.writeFileSync(path.join(OUT, 'manifest.json'), JSON.stringify({ captured_at: new Date().toISOString(), base_url: process.env.UAT_BASE_URL, screens: manifest }, null, 2))
+      continue
+    }
     const [route, ...clicks] = spec.split('>')
     const shots = [...(captured.has(route) ? [] : [{ label: 'main', click: null }]), ...clicks.map(c => ({ label: c, click: c }))]
     captured.add(route)

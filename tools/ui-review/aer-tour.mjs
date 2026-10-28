@@ -24,8 +24,11 @@ async function layoutFacts(page) {
 const bar = (page) => page.locator('[data-aer-filters="matrix"]')
 
 export async function aerTour({ page, browser, out, settle, fitHeight, masks, login, manifest, consoleErrors, baseURL }) {
+  // a lighter wait than the review's settle (that one waits up to 45 s for a quiet network, which a polling shell never gives)
+  const calm = async (p) => { await p.waitForLoadState('networkidle', { timeout: 8_000 }).catch(() => {}); await p.waitForTimeout(1200)
+    await p.locator('main .cf-skeleton-line, main [aria-busy="true"], .m-row-skeleton').first().waitFor({ state: 'detached', timeout: 10_000 }).catch(() => {}) }
   const shot = async (p, name, extra = {}) => {
-    await settle(p)
+    await calm(p)
     if (p.viewportSize().width > 800) await fitHeight(p)
     const file = `aer-${name}.png`
     await p.screenshot({ path: path.join(out, file), fullPage: true, mask: masks(p), maskColor: '#9ca3af' })
