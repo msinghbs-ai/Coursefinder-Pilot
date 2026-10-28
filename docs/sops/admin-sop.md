@@ -1,6 +1,6 @@
 # StudySearch – Platform Admin SOP
 
-**Version:** 1.55 (reviewed for platform release v2.15.361)  
+**Version:** 1.56 (reviewed for platform release v2.15.362)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -222,3 +222,4 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 | 2.00 | 26 Oct 2026 | v2.15.359 | Fees: every international fee write passes the country tuition identity check at the table; a failing fee is kept for review. |
 | 2.01 | 27 Oct 2026 | v2.15.360 | Governed actions (Decision 268): routine operations are approved on Layer 2/3 › Operations › Governed actions instead of run as SQL; SQL is break-glass only. First action: close the AER PR A recovery. |
 | 2.02 | 28 Oct 2026 | v2.15.361 | Academic entry requirements (Track C Step B): the Provider drawer and the Course detail blade show the published entry rows and what applies to a student from a chosen country; Platform Admin reads one course from its stored page and admits the rows in Layer 4 (Course entry first read). |
+| 2.03 | 29 Oct 2026 | v2.15.362 | Academic entry requirements (AER programme): the Provider drawer lists each source with its latest read, so a held PDF, a refused page or a page with no row is visible with its reason; first reads of new providers wait in Layer 4 as Entry matrix (first run). |

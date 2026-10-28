@@ -4,6 +4,8 @@
 // evidence, as at, status, the reading run and its Layer 4 item), the course's own requirement rows, and the five-rule resolution for a
 // country of prior education. A Platform Admin may ask for one course's requirements to be read from its stored page; the rows then wait
 // in Layer 4. Nothing here edits a row or admits anything: admission stays in Layer 4.
+// AER programme (29 Oct 2026): the provider section also lists its sources and each one's latest read (rows, rows not kept, a hold and its
+// reason, cost, Layer 4 item), so a source held or refused is visible, not only one that gave rows.
 // Server: public.admin_entry_requirements(action, args).
 import React,{useEffect,useState}from'react'
 import{GraduationCap,RefreshCw}from'lucide-react'
@@ -27,9 +29,20 @@ export function ProviderEntryMatrix({providerId}){
   if(!d)return null
   const total=Object.values(d.counts||{}).reduce((a,b)=>a+Number(b||0),0)
   const set=(k,v)=>{setOffset(0);setF(x=>({...x,[k]:v}))}
+  const sources=d.sources||[]
   return <section className="rl-provider" data-entry-matrix>
     <h4><GraduationCap size={14}/>Academic entry requirements</h4>
-    {!total?<small>No entry requirements read for this provider.</small>:<>
+    {sources.length>0&&<details data-entry-sources open={!total}><summary>Sources and reads ({fmtNumber(d.sources_total||sources.length)})</summary>
+      <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Source</th><th>Fetch</th><th>Latest read</th><th>Rows</th><th>Not kept</th><th>Hold or error</th><th>Layer 4</th></tr></thead>
+        <tbody>{sources.map(x=><tr key={x.id} data-entry-source={x.status}>
+          <td><Src url={x.url}/> <small>{x.title||''}</small></td>
+          <td><StatusChip value={x.status} label={x.status}/>{x.read_via&&<small> · {x.read_via}</small>}{x.read_at&&<small> · {fmtDate(x.read_at)}</small>}</td>
+          <td>{x.run?<small>{x.run.state}{x.run.basis?` · ${x.run.basis}`:''}{x.run.cost_usd!=null?` · US$${Number(x.run.cost_usd).toFixed(4)}`:''}</small>:'—'}</td>
+          <td>{x.run?.rows??'—'}</td><td>{x.run?.not_kept??'—'}</td>
+          <td><small>{String(x.run?.error||x.error||'').slice(0,140)||'—'}</small></td>
+          <td>{x.run?.review_status||'—'}</td></tr>)}</tbody></table></div>
+    </details>}
+    {!total?<small>{sources.length?'No row read for this provider yet.':'No entry requirements read for this provider.'}</small>:<>
       <small data-entry-counts>{Object.entries(d.counts||{}).map(([s,n])=>`${fmtNumber(n)} ${s}`).join(' · ')}</small>
       <div className="sd-actions">
         <label>Status <select value={f.status} onChange={e=>set('status',e.target.value)} aria-label="Entry rows status"><option value="">All</option>{['active','proposed','inactive','superseded'].map(s=><option key={s} value={s}>{s}</option>)}</select></label>

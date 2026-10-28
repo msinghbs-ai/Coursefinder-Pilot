@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.289 — 29 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.362** (AER programme, Platform Admin consolidated mandate 28 Oct 2026 23:22; admin `docs/platform/ENTRY-REQUIREMENTS-PROGRAMME-DECISION-2026-10-28.md`). Migration `20261029005000_cf247_aer_admin_sources_and_reads.sql`: `public.admin_entry_requirements('provider_matrix')` also returns the provider's entry sources (at most 50) with each one's latest read (md5-guarded edit, read only). Provider drawer › Academic entry requirements › Sources and reads. Spec s147. Consumer API unchanged.
+
 ## 0.1.288 — 28 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.361** (Track C Step B, bounded RMIT slice; Platform Admin mandate 28 Oct 2026 20:36; admin `docs/platform/ENTRY-REQUIREMENTS-STEP-B-DECISION-2026-10-28.md`). Migration `20261028001000_cf247_entry_step_b_course_read_resolver.sql`: field `entry_requirements` on the Enrich fields lane (not in the field registry; AU stored page only; strong AU identity proofs), `security.enrich_entry_record_v1` (B1 rules; rows proposed), Layer 4 `course_entry_first_read` (`security.course_entry_review_apply_v1`), resolver `security.entry_resolve_v1` (five rules over active rows), `public.admin_entry_requirements` (bounded admin reads, one-course read request), settings `entry.course_read_countries`, `entry.max_rows_per_course`, `entry.min_confidence`, `entry.course_page_chars`, `entry.level_equivalents`; one count-guarded slice read for RMIT BH126. Worker v0.49.0. `EntryRequirements.jsx` in the Provider drawer and Course detail blade. Tests s114, s139, s140. Consumer API unchanged.

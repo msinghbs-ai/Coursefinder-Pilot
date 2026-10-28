@@ -1,17 +1,15 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.361'
-export const PACKAGE_VERSION='0.1.288'
+export const UI_VERSION='2.15.362'
+export const PACKAGE_VERSION='0.1.289'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'28 Oct 2026',
-  title:'Academic entry requirements: course reading, resolution and admin views',
+  date:'29 Oct 2026',
+  title:'Academic entry requirements: sources and reads in the Provider drawer',
   changes:[
-    'Provider drawer › Academic entry requirements: the provider\'s published entry rows by country, level and status (50 a page), each with its quote, source, stored copy, as-at date and the read that produced it.',
-    'Course detail › Academic entry requirements: the course\'s own requirement rows (minimum score with its printed basis, prerequisites, selection tasks), and the requirement that applies to a student from a chosen country, worked out in a fixed order: course rule, course row for the country, course band, provider minimum, otherwise contact the provider. Case by case stays case by case.',
-    'Platform Admin: read one course\'s entry requirements from its stored page. The rows wait in Layer 4 (Course entry first read) until a person admits them.',
+    'Provider drawer › Academic entry requirements › Sources and reads: each official source of the provider\'s entry requirements (web page, PDF or page read rendered) with its latest read: state, rows proposed, rows not kept, a hold and its reason (for example a PDF table whose columns could not be proven), cost and its Layer 4 item. Shown even when no row was kept. Read only.',
     'Consumer API unchanged (Decision 266).'
   ],
   bugFixes:[]
