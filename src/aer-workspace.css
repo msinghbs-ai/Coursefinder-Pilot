@@ -70,3 +70,7 @@
 .aer-page .m-catalogue-panel>.fr-error{margin:6px 16px}
 .aer-dl dd{font-size:14px}
 .aer-life{margin:10px 0 4px}
+/* v2.15.364: Course-level reading */
+.aer-batch{align-items:center;gap:8px 12px;flex-wrap:wrap}
+.aer-preview{font-size:13px;overflow-wrap:anywhere}
+[data-aer-programme] .sd-desc{padding:0 16px;color:var(--cf-muted);font-size:13px}
