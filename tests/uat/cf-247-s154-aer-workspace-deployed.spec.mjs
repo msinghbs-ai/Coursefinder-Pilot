@@ -1,4 +1,5 @@
 // Guards: CF-247 AER operations workspace deployed acceptance (Platform Admin mandate 29 Oct 2026 08:06, item 10; admin docs/platform/AER-OPERATIONS-WORKSPACE-DECISION-2026-10-29.md): the live workspace opens, its summary, combined filters, Columns menu, list, drawer, pills, sources and resolution inspection work against live data with every list read bounded and no console or server errors; a governed edit of a live row and its history is exercised only under the live-acting switch
+// Runs on deploy: deployed-uat.yml targets this spec when the workspace, its migration or this spec changes; it is in the acceptance tier and the weekly deployed run.
 import { test, expect } from '@playwright/test'
 import { loginAsUatUser, observeRuntime, attachRuntimeEvidence, assertNoServerErrors, DETERMINISTIC_UI_TIMEOUT, writeRunEnvironment } from './support/runtime-evidence.mjs'
 

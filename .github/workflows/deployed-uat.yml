@@ -283,6 +283,11 @@ jobs:
           if printf '%s\n' "$changed" | grep -Eq '(^src/(ProviderLogo\.jsx|mature-main\.jsx|CourseDetailPolish\.jsx|ComparisonWorkspace\.jsx|mature\.css|lib/supabase\.js)$|^supabase/functions/(provider-asset-access|layer2-hotcourses-directory-parse)/|^supabase/migrations/.*cf_102_|^tests/uat/cf-102-provider-logo-surfaces-deployed\.spec\.mjs$|^\.github/cf-102-provider-logo-surfaces-candidate$|^\.github/workflows/deployed-uat\.yml$)'; then
             targeted=(tests/uat/cf-102-provider-logo-surfaces-deployed.spec.mjs)
           fi
+          # v2.15.363 (AER operations workspace, Platform Admin 29 Oct 2026 08:06): a change to the Entry requirements workspace runs its
+          # deployed acceptance (live edits only under the live-acting switch)
+          if printf '%s\n' "$changed" | grep -Eq '(^src/(AerWorkspace\.jsx|aer-workspace\.css|DataTable\.jsx)$|^supabase/migrations/.*_cf247_aer_workspace|^tests/uat/cf-247-s154-aer-workspace-deployed\.spec\.mjs$)'; then
+            targeted=(tests/uat/cf-247-s154-aer-workspace-deployed.spec.mjs)
+          fi
           integration=(
             tests/uat/layer2-provider-deployed.spec.mjs
             tests/uat/layer1-operations-deployed.spec.mjs
@@ -351,6 +356,7 @@ jobs:
             tests/uat/cf-061-qilt-prisms-comparison-contract.spec.mjs
             tests/uat/cf-061-qilt-prisms-comparison-deployed.spec.mjs
             tests/uat/cf-073-administration-acquisition-route-deployed.spec.mjs
+            tests/uat/cf-247-s154-aer-workspace-deployed.spec.mjs
           )
           case "$UAT_TIER" in
             targeted) specs=("${targeted[@]}") ;;
