@@ -125,6 +125,8 @@ Deno.serve(async (req: Request) => {
   const pageSize = body.page_size === undefined ? 20 : Number(body.page_size);
   const sort = cleanText(body.sort) || null;
 
+  // CF-247 Track C Step B (B3): edu_country is optional; absent or empty gives the payload without a country, anything but two letters is refused
+  const eduCountry = (v: unknown): string | null | false => { if (v === undefined || v === null || v === "") return null; const t = typeof v === "string" ? v.trim() : ""; return /^[A-Za-z]{2}$/.test(t) ? t.toUpperCase() : false };
   // the same functions and arguments as the website-search-v2 contract path on wix-course-api
   let fn = ""; let args: Json = {};
   switch (action) {
@@ -136,12 +138,15 @@ Deno.serve(async (req: Request) => {
     case "course": {
       const c = cleanText(body.course_id) || cleanText(body.course_code);
       if (!c || c.length > 200) return fail(400, "INVALID_INPUT", {}, "course_id or course_code required");
-      fn = "website_v2_course"; args = { p_identifier: c }; break;
+      // CF-247 Track C Step B (B3, 28 Oct 2026): edu_country (ISO alpha-2) adds the entry resolution for that country of prior education
+      const ec = eduCountry(body.edu_country); if (ec === false) return fail(400, "INVALID_INPUT", {}, "edu_country must be a two-letter country code");
+      fn = "website_v2_course"; args = ec ? { p_identifier: c, p_edu_country: ec } : { p_identifier: c }; break;
     }
     case "provider": {
       const p = cleanText(body.provider_id);
       if (!p || p.length > 200) return fail(400, "INVALID_INPUT", {}, "provider_id required");
-      fn = "website_v2_provider"; args = { p_provider_id: p }; break;
+      const ec = eduCountry(body.edu_country); if (ec === false) return fail(400, "INVALID_INPUT", {}, "edu_country must be a two-letter country code");
+      fn = "website_v2_provider"; args = ec ? { p_provider_id: p, p_edu_country: ec } : { p_provider_id: p }; break;
     }
     case "scholarship": {
       const s = cleanText(body.scholarship_id);
