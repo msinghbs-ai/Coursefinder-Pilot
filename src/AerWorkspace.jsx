@@ -33,12 +33,15 @@ export function RowPill({status,title}){const ex=status==='inactive'&&/^excluded
 // "no matrix published here" (the website says "contact the provider"), distinct from a read that simply kept no rows
 export function NoTablePill({status}){const ok=status==='approved';return <span data-aer-hold={ok?'no_matrix_confirmed':'no_table_note'}><StatusChip tone={ok?'neutral':'info'} label={ok?'No matrix published (confirmed)':'Rendered, no table: in Layer 4'}/></span>}
 function HoldPill({state,title}){const[t,l]=HOLD_PILL[state]||['neutral',String(state||'—')];return <span data-aer-hold={state}><StatusChip tone={t} label={l} title={title}/></span>}
-const SCALE_LABEL={percentage:'Percentage',points:'Points',aggregate:'Aggregate',gpa:'GPA',letter:'Letter grade',rank:'Rank',none:'No scale'}
+const SCALE_LABEL={percentage:'Percentage',points:'Points',aggregate:'Aggregate',gpa:'GPA',letter:'Letter grade',rank:'Rank',none:'No scale',not_stated:'Not stated on the page'}
 const KIND_LABEL={provider_minimum:'Provider minimum',band_ladder:'Band table',course_minimum:'Course minimum',rank_band:'Rank band',prior_qualification:'Prior qualification',minimum_grade:'Minimum grade',subject_prerequisite:'Subject prerequisite',portfolio_interview:'Portfolio or interview',work_experience:'Work experience',other:'Other',override:'Course rule (override)',general_note:'General note'}
 const READ_LABEL={done:'Read',failed:'Held or failed',queued:'Waiting to read',leased:'Reading',manual:'Added by hand'}
 const opt=(value,label,meta)=>({value,label,meta})
 const short=(s,n=80)=>{s=String(s||'');return s.length>n?s.slice(0,n-1)+'…':s}
 const minText=r=>r.min_grade||(r.min_value!=null?String(Number(r.min_value)):'')
+// CF-247 D5 (decision A4): a matrix row with a printed grade and no scale is "Not stated on the page" (the website shows scale_stated false)
+const matrixScale=r=>r.scale==null&&r.min_grade?'not_stated':r.scale
+const withNotStated=s=>[...(s&&s.length?s:['none']),'not_stated']
 const l4Href=r=>hrefFor('layer4','inbox',{provider:r.provider_id})
 const evHref=id=>hrefFor('evidence','',{evidence_id:id})
 const Src=({url})=>url?<a className="cf-link" href={url} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()}>source <ExternalLink size={11}/></a>:'—'
@@ -140,7 +143,7 @@ export function MatrixView({rank,onError,navigate,routeParams}){
     {key:'qualification',label:'Qualification',width:280,sortKey:'qualification',render:r=><span className="aer-wrap">{r.qualification}</span>},
     {key:'band',label:'Band',width:100,sortKey:'band',render:r=>r.band||'—'},
     {key:'min',label:'Minimum',width:150,sortKey:'min',render:r=>minText(r)?<span className="aer-wrap">{minText(r)}</span>:<em>case by case</em>},
-    {key:'scale',label:'Scale',width:110,render:r=>SCALE_LABEL[r.scale]||r.scale||'—'},
+    {key:'scale',label:'Scale',width:110,render:r=>SCALE_LABEL[matrixScale(r)]||r.scale||'—'},
     {key:'matrix_kind',label:'Kind',width:130,render:r=>KIND_LABEL[r.matrix_kind]||r.matrix_kind},
     {key:'edition',label:'Edition',width:110,sortKey:'edition',render:r=>[r.edition,r.intake_year].filter(Boolean).join(' · ')||'—'},
     {key:'as_at',label:'As at',width:110,sortKey:'as_at',render:r=>fmtDate(r.as_at)},
@@ -176,7 +179,7 @@ export function MatrixView({rank,onError,navigate,routeParams}){
       </div>
       <Chips filters={f} labels={{...labels,status:labels.status||ROW_PILL[f.status]?.[1]}} names={MATRIX_NAMES} set={set} clear={clear}/>
       {err&&<p className="fr-error" role="alert" data-aer-error>{err}</p>}
-      {edit&&can?<EditList kind="matrix" rows={rows} busy={busy} fields={MATRIX_FIELDS} levels={o.levels||[]} scales={o.scales||[]} label={r=>`${r.provider_name} · ${r.country} · ${short(r.qualification,40)}`} onSaved={onSaved} onOpen={r=>setOpen(r)}/>
+      {edit&&can?<EditList kind="matrix" rows={rows} busy={busy} fields={MATRIX_FIELDS} levels={o.levels||[]} scales={withNotStated(o.scales)} label={r=>`${r.provider_name} · ${r.country} · ${short(r.qualification,40)}`} onSaved={onSaved} onOpen={r=>setOpen(r)}/>
         :<DataTable rows={rows} columns={cols} loading={busy} sort={f.sort} direction={f.direction} onSort={sortBy} onRow={r=>setOpen(r)} selected={open?.id} tableId="aer-matrix"/>}
       <Pager offset={offset} limit={PAGE} total={Number(d?.total||0)} onOffset={setOffset}/>
     </section>
@@ -263,9 +266,10 @@ function EditList({kind,rows,busy,fields,levels=[],scales=[],label,onSaved,onOpe
   if(busy&&!rows.length)return <Loading label="Loading editable rows…"/>
   if(!rows.length)return <EmptyInline text="No records match the current filters."/>
   const ok=reason.trim().length>=5
+  const cellValue=(r,f)=>{const x=kind==='matrix'&&f.kind==='scale'?matrixScale(r):r[f.key];return x==null?'':String(f.kind==='number'&&x!==''?Number(x):x)}
   const save=async(id,field,value)=>{
     const cur=vals[id]||{},k=`${id}:${field.key}`
-    const before=cur[field.key]==null?'':String(field.kind==='number'&&cur[field.key]!==''?Number(cur[field.key]):cur[field.key])
+    const before=cellValue(cur,field)
     if(String(value??'')===before)return true
     if(!ok){setRowErr(x=>({...x,[id]:'Give a reason for these changes first (kept in the history).'}));return false}
     setSaving(k);setRowErr(x=>({...x,[id]:''}))
@@ -282,7 +286,7 @@ function EditList({kind,rows,busy,fields,levels=[],scales=[],label,onSaved,onOpe
           <td><button type="button" className="aer-row-link" onClick={()=>onOpen(r)}><span className="m-cell-title"><strong>{short(label(r),60)}</strong><small>“{short(r.quote,70)}”</small></span></button></td>
           <td><RowPill status={r.status}/>{r.status==='proposed'&&<a className="cf-link" href={l4Href(r)}> Layer 4</a>}</td>
           {fields.map(f=>{const k=`${r.id}:${f.key}`
-            return <td key={f.key} className="le-cell"><Cell field={f} levels={levels} scales={scales} value={r[f.key]==null?'':String(f.kind==='number'?Number(r[f.key]):r[f.key])} can={editable} busy={saving===k} ok={saved===k} label={`${f.label} for ${short(label(r),40)}`} onSave={x=>save(r.id,f,x)}/></td>})}
+            return <td key={f.key} className="le-cell"><Cell field={f} levels={levels} scales={scales} value={cellValue(r,f)} can={editable} busy={saving===k} ok={saved===k} label={`${f.label} for ${short(label(r),40)}`} onSave={x=>save(r.id,f,x)}/></td>})}
         </tr>{rowErr[r.id]&&<tr className="le-err-row"><td colSpan={fields.length+2}><p className="fr-error" role="alert" data-aer-row-error>{rowErr[r.id]}</p></td></tr>}</React.Fragment>})}</tbody></table>
     <p className="l3v-note">Quotes, sources and stored copies are never edited. Waiting rows are decided in Layer 4.</p></div>
 }
@@ -324,7 +328,7 @@ export function RowDrawer({kind,id,rank,onError,onClose,onChanged}){
             {d.course_code&&<><dt>Course</dt><dd>{d.course_title} · {d.course_code}</dd></>}
             <dt>Qualification</dt><dd>{d.qualification}</dd><dt>Kind</dt><dd>{KIND_LABEL[d.matrix_kind]||d.matrix_kind}</dd>
             <dt>Band</dt><dd>{d.band||'—'}</dd><dt>Minimum</dt><dd>{minText(d)||<em>case by case</em>}{d.min_value!=null&&d.min_grade&&<small> · value {Number(d.min_value)}</small>}</dd>
-            <dt>Scale</dt><dd>{SCALE_LABEL[d.scale]||d.scale}</dd><dt>For</dt><dd>{d.audience}</dd>
+            <dt>Scale</dt><dd>{SCALE_LABEL[matrixScale(d)]||d.scale}</dd><dt>For</dt><dd>{d.audience}</dd>
             <dt>Edition · intake year</dt><dd>{[d.edition,d.intake_year].filter(Boolean).join(' · ')||'—'}</dd>
           </>:<>
             <dt>Course</dt><dd>{d.course_title}{d.course_code&&<small> · {d.course_code}</small>}<br/><small>{d.provider_name}</small></dd>
@@ -418,7 +422,7 @@ function AddRequirement({kind,options:o,defaults={},onError,onClose,onAdded}){
         {field('band','Band',{placeholder:'Only if printed'})}
       </>}
       {field('min_value','Numeric value',{inputMode:'decimal',placeholder:'Only with a scale'})}
-      <label className="aer-field"><span>Scale</span><select className="fv-input" value={v.scale} onChange={e=>set('scale',e.target.value)} aria-label="Scale">{(o.scales||['none']).map(s=><option key={s} value={s}>{SCALE_LABEL[s]||s}</option>)}</select></label>
+      <label className="aer-field"><span>Scale</span><select className="fv-input" value={v.scale} onChange={e=>set('scale',e.target.value)} aria-label="Scale">{(kind==='matrix'?withNotStated(o.scales):(o.scales||['none'])).map(s=><option key={s} value={s}>{SCALE_LABEL[s]||s}</option>)}</select></label>
       <label className="aer-field aer-wide"><span>Exact quote</span><textarea className="fv-input" value={v.quote||''} onChange={e=>set('quote',e.target.value)} maxLength={300} required aria-label="Exact quote"/></label>
       {field('source_url','Official source address',{type:'url',required:true,placeholder:'https://'})}
       <label className="aer-field aer-wide"><span>Stored copy of that address</span><select className="fv-input" value={v.evidence_id||''} onChange={e=>set('evidence_id',e.target.value)} required aria-label="Stored copy"><option value="">{ev.length?'Choose…':'No stored copy found for this provider or address'}</option>{ev.map(e=><option key={e.id} value={e.id}>{short(e.source_url,70)} · {fmtDate(e.captured_at)}</option>)}</select></label>
@@ -550,7 +554,7 @@ export function ResolveView({onError,routeParams}){
             <td>{s.step===5?'—':fmtNumber(Number(s.active_rows||0))}{s.step===3&&s.band_table_rows!=null&&<small> · {fmtNumber(Number(s.band_table_rows))} rows in the band table</small>}</td>
             <td>{s.step<step?<small>Did not apply: {s.step===3&&!s.band?'the course prints no band':'no active row'}</small>:s.step===step?<strong>Used</strong>:<small>Not reached</small>}</td></tr>)}</tbody></table></div>
         {(r?.rows||[]).length>0&&<div className="cf-table-wrap"><table className="cf-table" data-aer-resolved-rows><thead><tr><th>Qualification or rule</th><th>Level</th><th>Minimum</th><th>Scale or basis</th><th>Band</th><th>Quote</th><th>As at</th></tr></thead>
-          <tbody>{r.rows.map((x,i)=><tr key={i}><td>{x.qualification||x.text}</td><td>{x.study_level||'—'}</td><td>{x.min_grade||x.min_score||<em>case by case</em>}</td><td>{SCALE_LABEL[x.scale]||x.scale||x.min_score_basis||'—'}</td><td>{x.band||'—'}</td><td><small>“{x.quote}”</small></td><td>{fmtDate(x.as_at)}</td></tr>)}</tbody></table></div>}
+          <tbody>{r.rows.map((x,i)=><tr key={i}><td>{x.qualification||x.text}</td><td>{x.study_level||'—'}</td><td>{x.min_grade||x.min_score||<em>case by case</em>}</td><td>{x.scale_stated===false?SCALE_LABEL.not_stated:(SCALE_LABEL[x.scale]||x.scale||x.min_score_basis||'—')}</td><td>{x.band||'—'}</td><td><small>“{x.quote}”</small></td><td>{fmtDate(x.as_at)}</td></tr>)}</tbody></table></div>}
         <p className="aer-not-used" data-aer-not-used><small>Not used by the website: {fmtNumber(Number(res.not_used?.proposed_matrix||0))} provider rows for this country waiting in Layer 4 · {fmtNumber(Number(res.not_used?.unverified_matrix||0))} quarantined · {fmtNumber(Number(res.not_used?.proposed_course||0))} course rows waiting. Levels matched: {(res.not_used?.levels||[]).join(', ')||'none'}.</small></p>
       </div>}
       {!res&&!busy&&!err&&<EmptyInline text="Choose a course and a country."/>}
