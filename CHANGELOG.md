@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.293 — 29 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.366** (Platform Admin mandate 29 Oct 2026 12:23, A1–A5 and B4; admin decisions W19–W23, W26). Migrations `20261029060000_cf247_aer_label_levels.sql` (resolver and Resolution inspection match levels named in a printed label), `20261029070000_cf247_scholarship_relationship_fix.sql` (course_detail carries course_scholarships again; postgraduate_research levels; no field-only link for unrecognised levels), `20261029080000_cf247_aer_nz_course_identity.sql` (NZ course reading on approved strong proofs; NCEA/UE domestic). UI: `src/Overlay.jsx` shared dialog, course evidence overlay (`src/CourseAudit.jsx`, `src/mature-main.jsx`), `src/aer-countries.js`, phone drawer and notice fixes. Specs s158, s160–s164. Consumer API unchanged.
+
 ## 0.1.292 — 29 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.365** (AER live visual acceptance, Platform Admin decision 29 Oct 2026 09:57 item 5). The Sources view's Latest read pill wraps in its cell (`src/aer-workspace.css`, column 210); `tools/ui-review/aer-tour.mjs`: a read-only live tour of Catalogue › Entry requirements at desktop and phone width for the UI review screenshots workflow (`SCREENS=aer-tour`), which now keeps its captures when a screen fails. Spec s156 extended. Consumer API unchanged.
