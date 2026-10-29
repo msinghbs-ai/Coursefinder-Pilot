@@ -50,8 +50,8 @@ export async function aerTour({ page, browser, out, settle, fitHeight, masks, lo
     await shot(page, '01-matrix-all')
     await pick(page, bar(page), /Provider/, 'RMIT', /RMIT/)
     await pick(page, bar(page), /Country/, 'India', /^India/)
-    await page.locator('table[data-table="aer-matrix"] tbody tr').first().waitFor({ timeout: 60_000 })
-    await shot(page, '02-matrix-rmit-india', { rows_shown: await page.locator('table[data-table="aer-matrix"] tbody tr').count() })
+    await page.locator('table[data-table="aer-matrix"] tbody tr[data-row]').first().waitFor({ timeout: 60_000 })
+    await shot(page, '02-matrix-rmit-india', { rows_shown: await page.locator('table[data-table="aer-matrix"] tbody tr[data-row]').count() })
   })
   // 2. Columns menu open (show / hide), then closed again
   await step('columns', async () => {
@@ -61,7 +61,7 @@ export async function aerTour({ page, browser, out, settle, fitHeight, masks, lo
   })
   // 3. Row drawer: quote, stored copy, reading, history
   await step('drawer', async () => {
-    await page.locator('table[data-table="aer-matrix"] tbody tr').first().click()
+    await page.locator('table[data-table="aer-matrix"] tbody tr[data-row]').first().click()
     await page.locator('[data-aer-drawer="matrix"] [data-aer-quote]').waitFor({ timeout: 60_000 })
     await shot(page, '04-matrix-drawer')
     await page.locator('[data-aer-drawer="matrix"]').getByRole('button', { name: 'Close detail' }).click()
@@ -117,9 +117,10 @@ export async function aerTour({ page, browser, out, settle, fitHeight, masks, lo
       await shot(phone, name)
     }
     await phone.goto('/#entry-requirements')
-    await phone.locator('table[data-table="aer-matrix"] tbody tr').first().waitFor({ timeout: 60_000 })
-    const firstRow = phone.locator('table[data-table="aer-matrix"] tbody tr').first()
-    await firstRow.scrollIntoViewIfNeeded(); await firstRow.locator('td').nth(2).click()  // a cell beside the sticky first column
+    // a person taps a record once the list has loaded: loading rows (data-skeleton) are not records and open nothing (A5, 29 Oct 2026)
+    const firstRow = phone.locator('table[data-table="aer-matrix"] tbody tr[data-row]').first()
+    await firstRow.waitFor({ timeout: 60_000 })
+    await firstRow.scrollIntoViewIfNeeded(); await firstRow.locator('td').nth(2).tap()  // a cell beside the sticky first column
     await phone.locator('[data-aer-drawer="matrix"] [data-aer-quote]').waitFor({ timeout: 60_000 })
     await shot(phone, '14-phone-drawer')
     await ctx.close()

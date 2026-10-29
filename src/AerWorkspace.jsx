@@ -16,6 +16,7 @@ import{Button,StatusChip,FilterChip,Pager,Loading,EmptyInline,fmtDate,fmtDateTim
 import{DataTable,FilterSelect}from'./DataTable'
 import{ReasonAction}from'./ProviderOnboarding'
 import{hrefFor}from'./nav-map'
+import{Overlay}from'./Overlay'
 import{plainError}from'./lib/errors'
 import'./aer-workspace.css'
 
@@ -79,7 +80,8 @@ function useOptions(onError){
   return o||{}
 }
 function useList(action,args,onError,refreshKey){
-  const[d,setD]=useState(null),[busy,setBusy]=useState(false),[err,setErr]=useState('')
+  // loading from the first paint: before the first read the table shows its loading rows, never "No records match" (A5)
+  const[d,setD]=useState(null),[busy,setBusy]=useState(true),[err,setErr]=useState('')
   const key=JSON.stringify(args)
   useEffect(()=>{let on=true;setBusy(true);setErr('');aer(action,args).then(x=>on&&setD(x)).catch(e=>{if(on){setErr(plainError(e));setD({rows:[],total:0})}}).finally(()=>on&&setBusy(false));return()=>{on=false}},[action,key,refreshKey])
   return[d,busy,err,setD]
@@ -302,13 +304,12 @@ export function RowDrawer({kind,id,rank,onError,onClose,onChanged}){
   const[d,setD]=useState(null),[err,setErr]=useState(''),[msg,setMsg]=useState('')
   const load=()=>aer('row',{kind,id}).then(setD).catch(e=>setErr(plainError(e)))
   useEffect(()=>{setD(null);load()},[kind,id])
-  useEffect(()=>{const k=e=>e.key==='Escape'&&onClose();addEventListener('keydown',k);return()=>removeEventListener('keydown',k)},[onClose])
   const life=async(action,reason)=>{try{const r=await aer('lifecycle',{kind,id,lifecycle:action,reason,expected_updated_at:d.updated_at});setMsg(action==='withdraw'?'Withdrawn. It no longer reaches the website.':action==='quarantine'?'Quarantined. It no longer reaches the website.':'Restored. It reaches the website again.');onChanged?.(r.row);await load()}catch(e){setErr(plainError(e));throw e}}
   const saveConditions=async(conditions,reason)=>{try{const r=await aer('update',{kind,id,reason,expected_updated_at:d.updated_at,changes:{conditions}});setMsg('Conditions saved.');onChanged?.(r.row);await load()}catch(e){setErr(plainError(e));throw e}}
   const title=d?(kind==='matrix'?`${d.provider_name} · ${d.country}`:d.course_title):'Loading…'
-  return <><button className="m-drawer-backdrop" onClick={onClose} aria-label="Close"/><aside className="m-drawer aer-drawer" aria-label="Entry requirement detail" data-aer-drawer={kind}>
-    <div className="m-drawer-head"><div><small>{kind==='matrix'?'Provider entry matrix row':'Course entry requirement'}</small><h2>{title}</h2></div><button onClick={onClose} aria-label="Close detail"><X size={18}/></button></div>
-    <div className="m-drawer-body aer-drawer-body">
+  // the shared accessible overlay (A5): a labelled dialog, focus in and back, Escape, the page behind held still, its own scrolling
+  return <Overlay onClose={onClose} title={title} eyebrow={kind==='matrix'?'Provider entry matrix row':'Course entry requirement'} closeLabel="Close detail"
+    className="aer-drawer" bodyClassName="aer-drawer-body" data-aer-drawer={kind}>
       {err&&<p className="fr-error" role="alert">{err}</p>}{msg&&<p className="aer-msg" role="status">{msg}</p>}
       {!d?<Loading label="Loading the row…"/>:<>
         <div className="aer-drawer-pills"><RowPill status={d.status}/>{d.manual&&<StatusChip tone="violet" label="Added by hand"/>}{d.version&&<StatusChip tone="neutral" label={`Version ${d.version}`}/>}</div>
@@ -355,7 +356,7 @@ export function RowDrawer({kind,id,rank,onError,onClose,onChanged}){
           <div className="cf-table-wrap"><table className="cf-table" data-aer-history><thead><tr><th>When</th><th>Who</th><th>What</th><th>Before</th><th>After</th><th>Reason</th></tr></thead>
             <tbody>{d.history.map((h,i)=><tr key={i}><td>{fmtDateTime(h.at)}</td><td>{h.actor}</td><td>{h.action==='edit'?`Edited ${h.field}`:h.action}</td><td><small>{histText(h.before)}</small></td><td><small>{histText(h.after)}</small></td><td><small>{h.reason}</small></td></tr>)}</tbody></table></div>}
       </>}
-    </div></aside></>
+  </Overlay>
 }
 const histText=v=>v==null?'—':typeof v==='object'?short(JSON.stringify(v),80):short(String(v),80)
 

@@ -561,6 +561,8 @@
 .cf-credit-link{flex:0 0 auto;color:inherit;font-weight:700;text-decoration:underline}
 .cf-credit-close{flex:0 0 auto;border:0;background:transparent;color:inherit;cursor:pointer;display:grid;place-items:center;padding:2px;border-radius:var(--cf-radius-sm)}
 @media (prefers-reduced-motion:reduce){.cf-credit-banner .cf-credit-items{animation:none;white-space:normal;display:flex;flex-wrap:wrap;row-gap:2px}.cf-credit-copy{display:none}}
+/* CF-247 A5 (29 Oct 2026): at phone width the notices wrap below one another beside the icon, never scroll under it or get cut */
+@media (max-width:680px){.cf-credit-banner{align-items:flex-start}.cf-credit-banner>svg{margin-top:2px}.cf-credit-banner .cf-credit-items{animation:none;transform:none;white-space:normal;display:flex;flex-direction:column;row-gap:2px}.cf-credit-banner .cf-credit-copy{display:none}.cf-credit-notice{padding-right:0;overflow-wrap:anywhere}.cf-credit-link{align-self:center}}
 
 /* v2.15.253: Providers › Onboarding (ProviderOnboarding.jsx) */
 .po .po-lead{margin:0}
@@ -785,3 +787,21 @@
 .ca-read{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px;border:1px solid var(--cf-border);border-radius:var(--cf-radius-sm);background:var(--cf-surface)}
 .ca-read input{flex:1;min-width:200px}.ca-read small{flex-basis:100%;color:var(--cf-muted);font-size:var(--cf-fs-xs)}
 .ca-list li{word-break:break-word}
+/* CF-247 A1 (29 Oct 2026): Read with AI in the blade; the evidence and history overlay with one timeline (CourseAudit.jsx, Overlay.jsx) */
+.ca-read-title{display:inline-flex;align-items:center;gap:6px;flex-basis:100%;font-size:var(--cf-fs-sm)}
+.ca-overlay-body{display:flex;flex-direction:column;gap:10px;min-width:0}
+.ca-now h3{display:flex;align-items:center;gap:6px;margin:0 0 2px;font-size:var(--cf-fs-md)}
+.ca-now h4{margin:10px 0 2px;font-size:var(--cf-fs-sm);color:var(--cf-text)}
+.ca-tl-tools{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding-top:8px;border-top:1px solid var(--cf-border)}
+.ca-tl-areas{display:flex;flex-wrap:wrap;gap:6px;min-width:0}
+.ca-tl-areas button small{color:var(--cf-muted);font-weight:400}
+.ca-timeline{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.ca-event{display:grid;grid-template-columns:150px minmax(0,1fr);gap:4px 12px;padding:8px 0;border-bottom:1px solid var(--cf-border);min-width:0}
+.ca-event time{color:var(--cf-muted);font-size:var(--cf-fs-xs);font-variant-numeric:tabular-nums}
+.ca-event-main{display:flex;flex-direction:column;gap:3px;min-width:0}
+.ca-event-head{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:var(--cf-fs-sm)}
+.ca-event-head .cf-chip{white-space:normal;max-width:100%}
+.ca-event-detail{color:var(--cf-muted);font-size:var(--cf-fs-xs);overflow-wrap:anywhere}
+.ca-event-links{display:flex;flex-wrap:wrap;gap:10px;font-size:var(--cf-fs-xs)}
+.ca-overlay .ca-row{word-break:normal;overflow-wrap:anywhere}
+@media (max-width:680px){.ca-event{grid-template-columns:1fr}.ca-tl-tools{align-items:flex-start}}

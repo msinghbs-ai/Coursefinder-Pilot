@@ -59,19 +59,23 @@ test.describe('mocked browser', () => {
     await expect(panel).toContainText('Changes made by hand (1)')
   })
 
+  // CF-247 A1 (Platform Admin mandate 29 Oct 2026 12:23): what happened to this course is in the evidence overlay (the drawer's evidence
+  // button); Read with AI stays in the blade
   test('v2.15.322 What happened to this course: the page, reads, AI tries, field fills, values held; Read with AI with a reason', async ({ page }) => {
     await mockAdmin(page)
     await page.goto('/#courses?id=0b1fb6d4-c02f-47c7-98d0-9f0d57240fd5')
-    const a = page.locator('[data-course-audit]')
+    const r = page.locator('[data-course-read-ai]')
+    await r.getByRole('button', { name: 'Read with AI' }).click()
+    await expect(r).toContainText('Write a reason first')
+    await r.getByLabel('Reason for Read with AI').fill('page changed; fee missing')
+    await r.getByRole('button', { name: 'Read with AI' }).click()
+    await expect(r).toContainText('AI fills campus, duration, delivery.')
+    await page.getByRole('button', { name: 'Evidence and history' }).click()
+    const a = page.getByRole('dialog', { name: 'Associate Degree in Business' }).locator('[data-course-audit]')
     await expect(a).toContainText('What happened to this course')
     await expect(a).toContainText('Found by Firecrawl search')
-    await expect(a).toContainText('the page names no campus')
     await expect(a).toContainText('International fee none')
-    await a.getByRole('button', { name: 'Read with AI' }).click()
-    await expect(a).toContainText('Write a reason first')
-    await a.getByLabel('Reason for Read with AI').fill('page changed; fee missing')
-    await a.getByRole('button', { name: 'Read with AI' }).click()
-    await expect(a).toContainText('AI fills campus, duration, delivery.')
+    await expect(page.locator('[data-course-timeline]')).toContainText('the page names no campus')
     await page.screenshot({ path: 'test-results/course-audit.png', fullPage: true })
   })
 
