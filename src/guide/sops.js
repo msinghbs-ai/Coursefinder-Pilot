@@ -8,7 +8,7 @@
 // When a release changes a screen, an automation or where a person decides: change the steps here, raise the SOP's version, add a line
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 
-export const SOP_REVIEWED_FOR = '2.15.368'
+export const SOP_REVIEWED_FOR = '2.15.369'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -211,6 +211,7 @@ export const SOPS = [
       { version: '2.00', date: '26 Oct 2026', release: '2.15.359', change: 'Fees: every international fee write passes the country tuition identity check at the table; a failing fee is kept for review.' },
       { version: '2.01', date: '27 Oct 2026', release: '2.15.360', change: 'Governed actions (Decision 268): routine operations are approved on Layer 2/3 › Operations › Governed actions instead of run as SQL; SQL is break-glass only. First action: close the AER PR A recovery.' },
       { version: '2.02', date: '28 Oct 2026', release: '2.15.361', change: 'Academic entry requirements (Track C Step B): the Provider drawer and the Course detail blade show the published entry rows and what applies to a student from a chosen country; Platform Admin reads one course from its stored page and admits the rows in Layer 4 (Course entry first read).' },
+      { version: '2.10', date: '29 Oct 2026', release: '2.15.369', change: 'Read again reads only the newest stored copy of a page (an older copy\'s pending item is closed as superseded); a long course page is read in slices and a cut read is held, not proposed in part. Role guides: admin docs/platform/AER-ROLE-GUIDES.md.' },
       { version: '2.09', date: '29 Oct 2026', release: '2.15.368', change: 'Reviewed: Course detail evidence values read in words and the country selector fits a phone. No operator steps changed.' },
       { version: '2.08', date: '29 Oct 2026', release: '2.15.367', change: 'Reviewed: the entry requirement reader accepts a quote that carries the table structure naming its cell; Layer 4 review is unchanged.' },
       { version: '2.07', date: '29 Oct 2026', release: '2.15.366', change: 'Course detail: the evidence button opens the course evidence timeline (the blade no longer embeds it); the course\'s scholarships show again; countries are ordered India, Nepal, Singapore, then A to Z; New Zealand courses with an approved strong identity proof can be read at course level.' },
