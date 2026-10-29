@@ -1,21 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.366'
-export const PACKAGE_VERSION='0.1.293'
+export const UI_VERSION='2.15.367'
+export const PACKAGE_VERSION='0.1.294'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'29 Oct 2026',
-  title:'Course evidence overlay, course scholarships back, DP020 entry levels, priority countries, phone drawer and banner, NZ course reading',
+  title:'Entry requirement reader: quotes read with the table structure that names them',
   changes:[
-    'Course detail: the evidence button opens one evidence timeline in an overlay (full screen on a phone): page discovery and reads, page changes, AI matches and fills, admissions and refusals, fee reader, cross-checks, edits by a person, academic entry requirement reads and scholarship links, each with its date, outcome, source and evidence. The blade no longer embeds "What happened to this course". Escape, the close button and focus return work as in every dialog.',
-    'Course detail: the course\'s published scholarships show again (the course read had stopped returning them); an empty list now says why and offers Check scholarships for this course.',
-    'Academic entry requirements: a published level label that names several levels counts for each, so a Diploma course finds a provider\'s "Diploma/Associate degrees" rows; the explanation shown is the true one (for RMIT DP020 and India: a band table exists, the course page prints no band).',
-    'Countries are offered India, Nepal, Singapore first, then A to Z, in Course detail and every Entry requirements country selector; Course detail remembers the chosen country. Changing country only re-reads the resolution, never starts an AI read.',
-    'Phone: tapping an Entry requirements row opens its drawer (a loading row is no longer tappable), the drawer scrolls inside, and the low-credit notice wraps beside its icon instead of sliding under it.',
-    'Scholarship links: a scholarship page whose stated levels the reader does not know no longer links every course by field alone; postgraduate research pages map to research levels.',
-    'Course-level entry requirements can be read for New Zealand courses whose page carries an already-approved strong identity proof (NZQA code, adapter code, or a person\'s binding); a title-only match is never read.',
+    'Academic entry requirements reader (worker v0.52.0): a printed cell quoted together with the structure that names it counts as on the page (a table\'s header line with one of its rows; a PDF row\'s first cell with one other cell of that row).',
+    'A band written with its column header\'s words (for example "ATAR 70") is taken as the printed cell only when the whole row is quoted; a table with no header row carries the label printed just above it; a quote never crosses into the next labelled row (another country\'s table).',
+    'Every admission gate is unchanged: quote on the page, scale, identity, completeness and whole-run admission. Federation, Wollongong, Otago Polytechnic and UWA are read once again; their earlier incomplete items stay unapproved.',
     'Consumer API unchanged (Decision 266).'
   ],
   bugFixes:[]
