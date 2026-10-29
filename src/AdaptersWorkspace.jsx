@@ -13,7 +13,7 @@
 // Rules kept: Qualify only measures. Admit is its own deliberate step (Platform Admin, with a reason) and admits only the
 // fields an adapter passed in its latest Qualify. Values entered or locked by hand are never changed. Thresholds and the
 // read-cycle bounds come from the database, not from this file.
-import React,{useEffect,useMemo,useState}from'react'
+import React,{useEffect,useMemo,useRef,useState}from'react'
 import{RefreshCw,ChevronRight,CheckCircle2,XCircle,Power,CalendarClock}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import JobButton from'./JobButton'
@@ -21,7 +21,7 @@ import Card,{useCardOpen,rememberOpen}from'./Card'
 import{Button,Empty,Loading,SectionTitle,fmtDate,fmtDateTime,fmtNumber}from'./ui-kit'
 import{Pill,Coverage,PolicyCell,AttachPage,CourseTable,FeeRangeCell,FeeRangeSettings,HostedPanel,AwardLinkSettings,RereadPanel,FeeRangePanel,ADAPTER,FIELD,SourcePill}from'./UniversitiesCoverage'
 import{AdapterEditor,AdapterEvaluation,FirecrawlRuns,FirecrawlTargets}from'./FirecrawlWork'
-import{STEP,STOP,Journey,ReasonAction,IN_PROGRESS}from'./ProviderOnboarding'
+import{STEP,STOP,Journey,ReasonAction}from'./ProviderOnboarding'
 import{StatusChip}from'./ui-kit'
 import{hrefFor}from'./nav-map'
 import'./layer23.css'
@@ -40,7 +40,6 @@ function StageCell({row}){const o=row.onboarding,st=stepOf(o)
 const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const ask=t=>{const r=window.prompt(`${t}\n\nReason (kept in the log):`);return r&&r.trim().length>=4?r.trim():null}
 const QFIELDS=['intakes','english','fee','delivery']
-const PAGE=50
 const KIND_LABEL={qualify_adapters:'Qualify',admit_qualified:'Admit',reread_pages:'Read pages again',firecrawl_run:'Firecrawl run',adapter_apply:'Apply the adapter',central_page_read:'Central page'}
 const STATE_TONE={queued:'neutral',running:'info',paused:'warning',done:'success',failed:'danger',cancelled:'neutral'}
 const ACTION_LABEL={uni_adapter_admit:'Admission changed',uni_adapter_exclude:'Course excluded',uni_adapter_request:'Improvement asked',uni_adapter_request_answer:'Request answered',uni_adapter_switch:'Switched',uni_adapter_read_cycle:'Read cycle set',
@@ -275,43 +274,55 @@ function FeeRulesReport({onError}){
 
 const FILTERS={country:'',state:'',kind:'university',adapter:'',qualify:'',target:'',q:'',stage:''}
 const STAGE_FILTERS=[['','Any'],['working','In onboarding now'],['person','Needs a person'],['stopped','Stopped (other reasons)'],['inbox','Has Inbox items'],['done','Finished'],['none','Not in onboarding']]
-function stageOk(r,k){const o=r.onboarding;if(!k)return true;if(k==='none')return!o;if(k==='inbox')return Number(r.inbox)>0;if(!o)return false
-  if(k==='working')return o.status==='queued'||IN_PROGRESS.includes(o.status)||o.status==='waiting_admit'||o.status==='waiting_courses';if(k==='person')return needsPerson(o);if(k==='stopped')return o.status==='stopped'&&!needsPerson(o);if(k==='done')return o.status==='done';return true}
 function readFilters(){try{return{...FILTERS,...JSON.parse(window.sessionStorage.getItem('cf.adapters.filters')||'{}')}}catch{return FILTERS}}
+// CF-247 decision W33 (30 Oct 2026): the list is read a page at a time from public.admin_layer23('universities_page'). The filters, the name search
+// and the order (by name) are applied on the server, which also answers the counts (matched of total, the adapter tally) and the country and state
+// choices. The page size and the most rows ticked at once are settings (Settings › Toolsets & limits › Pipeline, Onboarding), not numbers in this file.
+const readPage=args=>supabase.rpc('admin_layer23',{p_action:'universities_page',p_args:args}).then(({data,error})=>{if(error)throw error;return data})
 
 export default function AdaptersWorkspace({onError,merged=false,rank=6,routeParams}){
-  const[data,setData]=useState(null),[busy,setBusy]=useState(false),[err,setErr]=useState(''),[f,setF]=useState(readFilters),[picked,setPicked]=useState([]),[open,setOpen]=useState(null),[shown,setShown]=useState(PAGE),[fr,setFr]=useState(null)
+  const[data,setData]=useState(null),[list,setList]=useState([]),[busy,setBusy]=useState(false),[err,setErr]=useState(''),[f,setF]=useState(readFilters),[picked,setPicked]=useState([]),[open,setOpen]=useState(null),[fr,setFr]=useState(null)
+  const[known,setKnown]=useState({}),[ticked,setTicked]=useState(null),[capped,setCapped]=useState(false),[ticking,setTicking]=useState(false)
+  const seq=useRef(0)
   const fail=e=>{setErr(e);onError?.(e)}
-  const load=()=>{setBusy(true);(merged?supabase.rpc('admin_layer23',{p_action:'universities',p_args:{}}):supabase.rpc('admin_adapters',{p_action:'list',p_args:{}})).then(({data,error})=>{if(error)throw error;setData(data);setErr('')}).catch(e=>fail(errText(e))).finally(()=>setBusy(false))
-    supabase.rpc('admin_provider_fee_range',{p_action:'read',p_args:{}}).then(({data,error})=>{if(error)throw error;setFr(data)}).catch(()=>{})}
-  useEffect(()=>{load()},[])
-  useEffect(()=>{try{window.sessionStorage.setItem('cf.adapters.filters',JSON.stringify(f))}catch{}setShown(PAGE)},[f])
+  const remember=rs=>setKnown(k=>{const n={...k};for(const r of rs||[])n[r.provider_id]={...n[r.provider_id],...r};return n})
+  // Reads the first page (or, after an action, as many rows as are shown now, page by page); a reply to an older read is ignored.
+  const load=(more=false,keep=0)=>{const my=++seq.current;setBusy(true)
+    const from=more?list.length:0
+    const pages=async()=>{let out=[],head=null,off=from
+      do{const d=await readPage({...f,offset:off});head=d;out=out.concat(d.adapters||[]);off+=Number(d.page_size)||((d.adapters||[]).length||1)}
+      while(keep>out.length&&out.length+from<Number(head.matched)&&(head.adapters||[]).length>0)
+      return{head,out}}
+    pages().then(({head,out})=>{if(my!==seq.current)return;setData(head);setList(more?l=>l.concat(out):out);remember(out);setErr('')}).catch(e=>{if(my===seq.current)fail(errText(e))}).finally(()=>{if(my===seq.current)setBusy(false)})}
+  const refresh=()=>{load(false,list.length);supabase.rpc('admin_provider_fee_range',{p_action:'read',p_args:{}}).then(({data,error})=>{if(error)throw error;setFr(data)}).catch(()=>{})}
+  useEffect(()=>{supabase.rpc('admin_provider_fee_range',{p_action:'read',p_args:{}}).then(({data,error})=>{if(error)throw error;setFr(data)}).catch(()=>{})},[])
+  useEffect(()=>{try{window.sessionStorage.setItem('cf.adapters.filters',JSON.stringify(f))}catch{}setTicked(null);setCapped(false);load()},[f])
   const set=(k,v)=>setF(x=>({...x,[k]:v,...(k==='country'?{state:''}:{})}))
-  const all=data?.adapters||[]
+  const rows=list
   const settings=data?.settings||{}
   const can=Boolean(data?.can_manage),canQualify=Boolean(data?.can_qualify),canOnboard=Boolean(merged&&data?.can_onboard)
   const rangeOf=useMemo(()=>Object.fromEntries((fr?.ranges||[]).map(r=>[r.provider_id,r])),[fr])
-  const countries=useMemo(()=>[...new Set(all.map(r=>r.country).filter(Boolean))].sort(),[all])
-  const states=useMemo(()=>[...new Set(all.filter(r=>!f.country||r.country===f.country).map(r=>r.state).filter(Boolean))].sort(),[all,f.country])
-  const rows=useMemo(()=>{const q=f.q.trim().toLowerCase();return all.filter(r=>(!f.country||r.country===f.country)&&(!f.state||r.state===f.state)&&(f.kind!=='university'||r.university)
-    &&(!f.adapter||(f.adapter==='none'?!r.adapter:r.adapter?.state===f.adapter))
-    &&(!f.qualify||(f.qualify==='never'?!r.qualify:f.qualify==='passing'?(r.qualify?.passing||[]).length>0:f.qualify==='waiting'?r.adapter&&r.adapter.state!=='off'&&(r.qualify?.passing||[]).some(x=>!(r.adapter.fields||[]).includes(x)):r.qualify&&(r.qualify.passing||[]).length===0))
-    &&(!f.target||(f.target==='in'?r.target?.included:!r.target?.included))&&(!q||r.name.toLowerCase().includes(q))&&stageOk(r,f.stage))},[all,f])
+  const countries=data?.countries||[],states=data?.states||[]
+  const matched=Number(data?.matched||0),total=Number(data?.total||0)
+  const tally={admitting:0,testing:0,off:0,none:0,...(data?.tally||{})}
+  // One university by its id (a link with ?provider=, the Firecrawl targets): its name is read from the server, then the list is filtered to it.
+  const focus=async(id,block)=>{try{const r=known[id]||(await readPage({kind:'any',provider_id:id})).adapters?.[0];if(r){if(block)rememberOpen(`adapters.block.${block}`);setF({...FILTERS,kind:'any',q:r.name});setOpen(id)}}catch(e){fail(errText(e))}}
   // v2.15.300: a link with ?provider= (the Inbox, Operations) opens that university's row
   const want=routeParams?.get?.('provider')||''
-  useEffect(()=>{if(!want||!all.length)return;const r=all.find(x=>x.provider_id===want);if(r){setF({...FILTERS,kind:'any',q:r.name});setOpen(want)}},[want,all.length])
-  const tally=useMemo(()=>{const t={admitting:0,testing:0,off:0,none:0};for(const r of rows)t[r.adapter?.state||'none']++;return t},[rows])
+  useEffect(()=>{if(want)focus(want)},[want])
   const pick=id=>setPicked(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id])
-  const allTicked=rows.length>0&&rows.every(r=>picked.includes(r.provider_id))
-  const tickAll=()=>setPicked(allTicked?picked.filter(id=>!rows.some(r=>r.provider_id===id)):[...new Set([...picked,...rows.map(r=>r.provider_id)])])
-  const pickedRows=useMemo(()=>all.filter(r=>picked.includes(r.provider_id)),[all,picked])
+  // Tick every row shown: every row the filters match (not only the rows read so far), read in short form from the server.
+  const allTicked=Boolean(ticked&&ticked.length>0&&ticked.every(id=>picked.includes(id)))
+  const tickAll=async()=>{if(allTicked){setPicked(picked.filter(id=>!ticked.includes(id)));return}
+    setTicking(true);try{const d=await readPage({...f,mode:'ticks'});const rs=d?.ticks?.rows||[];remember(rs);const ids=rs.map(r=>r.provider_id);setTicked(ids);setCapped(Boolean(d?.ticks?.capped));setPicked(p=>[...new Set([...p,...ids])])}catch(e){fail(errText(e))}finally{setTicking(false)}}
+  const pickedRows=useMemo(()=>picked.map(id=>known[id]).filter(Boolean),[known,picked])
   // From a link elsewhere on this screen (the Firecrawl targets, what each university needs next): show that one row, open, with its builder.
-  const openRow=(id,block='build')=>{const r=all.find(x=>x.provider_id===id);if(r){if(block)rememberOpen(`adapters.block.${block}`);setF({...FILTERS,kind:'any',q:r.name});setOpen(id)}}
+  const openRow=(id,block='build')=>focus(id,block)
 
   return <div className="m-page-stack" data-adapters-workspace>
     <section className="m-panel" data-adapters-list>
       <SectionTitle title={merged?'Universities':'Adapters'} subtitle={merged?'One row per university with an adapter, in the Firecrawl targets or in onboarding: where it is in its journey, its adapter and what waits in the Inbox. Open a row for everything about it; tick rows to act on many.':'One row per university with an adapter or in the Firecrawl targets. Open a row for everything about that university. Tick rows to act on many.'}
-        action={<Button compact className="cf-icon-btn" title="Refresh" aria-label="Refresh" onClick={load} disabled={busy}><RefreshCw size={14}/></Button>}/>
+        action={<Button compact className="cf-icon-btn" title="Refresh" aria-label="Refresh" onClick={refresh} disabled={busy}><RefreshCw size={14}/></Button>}/>
       {err&&<div className="dq-alert"><span>{err}</span></div>}
       <div className="adp-filters" role="group" aria-label="Filter adapters">
         <label><span>Country</span><select aria-label="Adapters country" value={f.country} onChange={e=>set('country',e.target.value)}><option value="">All</option>{countries.map(c=><option key={c} value={c}>{COUNTRY[c]||c}</option>)}</select></label>
@@ -325,14 +336,15 @@ export default function AdaptersWorkspace({onError,merged=false,rank=6,routePara
         <Button compact onClick={()=>setF(FILTERS)}>Reset</Button>
       </div>
       {!data?<Loading label="Loading adapters…"/>:<>
-        <p className="adp-note" data-adapters-tally>{fmtNumber(rows.length)} shown of {fmtNumber(all.length)} · admitting {fmtNumber(tally.admitting)} · testing {fmtNumber(tally.testing)} · switched off {fmtNumber(tally.off)} · no adapter {fmtNumber(tally.none)}</p>
-        <label className="tn-check"><input type="checkbox" checked={allTicked} onChange={tickAll} aria-label="Tick every row shown"/> Tick every row shown ({fmtNumber(rows.length)})</label>
-        {picked.length>0&&<Bulk ids={picked} rows={pickedRows} settings={settings} can={can} canQualify={canQualify} canOnboard={canOnboard} onClear={()=>setPicked([])} onChanged={load} onError={fail}/>}
-        <div className="adp-list">
-          {rows.slice(0,shown).map(r=><Row key={r.provider_id} row={r} settings={settings} can={can} canQualify={canQualify} picked={picked.includes(r.provider_id)} onPick={pick} open={open===r.provider_id} onOpen={setOpen} onChanged={load} onError={fail} rangeOf={rangeOf} merged={merged} canOnboard={canOnboard} lite={merged&&rank<4}/>)}
-          {rows.length===0&&<Empty text="No university matches these filters."/>}
+        <p className="adp-note" data-adapters-tally>{fmtNumber(matched)} shown of {fmtNumber(total)} · admitting {fmtNumber(tally.admitting)} · testing {fmtNumber(tally.testing)} · switched off {fmtNumber(tally.off)} · no adapter {fmtNumber(tally.none)}</p>
+        <label className="tn-check"><input type="checkbox" checked={allTicked||ticking} disabled={ticking} onChange={tickAll} aria-label="Tick every row shown"/> Tick every row shown ({fmtNumber(matched)})</label>
+        {capped&&<small className="sl-sub" data-adapters-tick-capped>Only the first {fmtNumber((ticked||[]).length)} by name were ticked (the most at once, a setting).</small>}
+        {picked.length>0&&<Bulk ids={picked} rows={pickedRows} settings={settings} can={can} canQualify={canQualify} canOnboard={canOnboard} onClear={()=>{setPicked([]);setTicked(null);setCapped(false)}} onChanged={refresh} onError={fail}/>}
+        <div className="adp-list" data-adapters-page-size={data.page_size}>
+          {rows.map(r=><Row key={r.provider_id} row={r} settings={settings} can={can} canQualify={canQualify} picked={picked.includes(r.provider_id)} onPick={pick} open={open===r.provider_id} onOpen={setOpen} onChanged={refresh} onError={fail} rangeOf={rangeOf} merged={merged} canOnboard={canOnboard} lite={merged&&rank<4}/>)}
+          {rows.length===0&&!busy&&<Empty text="No university matches these filters."/>}
         </div>
-        {rows.length>shown&&<div className="adp-more"><Button compact onClick={()=>setShown(shown+PAGE*2)}>Show {fmtNumber(Math.min(PAGE*2,rows.length-shown))} more ({fmtNumber(rows.length-shown)} left)</Button></div>}
+        {matched>rows.length&&<div className="adp-more"><Button compact disabled={busy} onClick={()=>load(true)} data-adapters-more>Show {fmtNumber(Math.min(Number(data.page_size)||matched-rows.length,matched-rows.length))} more ({fmtNumber(matched-rows.length)} left)</Button></div>}
         {data.as_at&&<small className="sl-sub">As at {fmtDateTime(data.as_at)}.</small>}
       </>}
     </section>

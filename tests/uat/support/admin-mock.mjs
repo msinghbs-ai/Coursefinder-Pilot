@@ -2,7 +2,41 @@
 // Only for the local dev server (VITE_SUPABASE_URL=https://example.supabase.co); nothing reaches a real backend.
 import * as F from './admin-fixtures.mjs'
 
-export async function mockAdmin(page, { rank = 6, healthMissing = false, courseDiffers = false, creditNotices = [], onboardingAuto = false } = {}) {
+// CF-247 decision W33 (30 Oct 2026): public.admin_layer23('universities_page') as the server answers it: the filters, the name search and the
+// order (by name) applied to every row, one page answered with the counts and the country and state choices; mode 'ticks' answers every
+// matching row in short form. The rules are the server's (20261030XXXXXX_cf247_universities_paging.sql).
+const IN_ONBOARDING = ['queued', 'website', 'course_pages', 'capturing', 'proposing', 'applying', 'qualifying', 'scholarships', 'waiting_admit', 'waiting_courses']
+export function universitiesPage(all, a = {}, { rank = 6, pageSize = 100, tickMax = 2000, settings = null } = {}) {
+  const v = k => (a[k] == null ? '' : String(a[k]).trim())
+  const person = o => o?.status === 'stopped' && ['nothing_ready', 'approve_central'].includes(o?.stop_reason || '')
+  const kind = v('kind') || 'any', q = v('q').toLowerCase()
+  const ok = r => {
+    const st = r.adapter?.state || null, pass = r.qualify?.passing || [], o = r.onboarding
+    if (v('provider_id') && r.provider_id !== v('provider_id')) return false
+    if (v('country') && r.country !== v('country')) return false
+    if (v('state') && r.state !== v('state')) return false
+    if (kind === 'university' && !r.university) return false
+    if (v('adapter') && !(v('adapter') === 'none' ? !st : st === v('adapter'))) return false
+    const qf = v('qualify')
+    if (qf && !(qf === 'never' ? !r.qualify : qf === 'passing' ? pass.length > 0 : qf === 'waiting' ? Boolean(st && st !== 'off' && pass.some(x => !(r.adapter.fields || []).includes(x))) : Boolean(r.qualify) && pass.length === 0)) return false
+    if (v('target') && !(v('target') === 'in' ? Boolean(r.target?.included) : !r.target?.included)) return false
+    if (q && !r.name.toLowerCase().includes(q)) return false
+    const sg = v('stage')
+    if (sg && !(sg === 'none' ? !o : sg === 'inbox' ? Number(r.inbox) > 0 : Boolean(o) && (sg === 'working' ? IN_ONBOARDING.includes(o.status) : sg === 'person' ? person(o) : sg === 'stopped' ? o.status === 'stopped' && !person(o) : sg === 'done' ? o.status === 'done' : true))) return false
+    return true
+  }
+  const byName = (x, y) => (x.name < y.name ? -1 : x.name > y.name ? 1 : x.provider_id < y.provider_id ? -1 : 1)
+  const f = all.filter(ok).sort(byName), off = Math.max(Number(a.offset) || 0, 0), ticks = a.mode === 'ticks'
+  const uniq = xs => [...new Set(xs.filter(Boolean))].sort()
+  const tally = { admitting: 0, testing: 0, off: 0, none: 0 }
+  for (const r of f) tally[r.adapter?.state || 'none']++
+  return { as_at: '2026-10-30T01:00:00Z', can_manage: rank >= 6, can_qualify: rank >= 5, can_onboard: rank >= 6, settings: rank >= 4 ? settings : null, paged: true, page_size: pageSize, offset: off,
+    total: all.length, matched: f.length, tally, countries: uniq(all.map(r => r.country)), states: uniq(all.filter(r => !v('country') || r.country === v('country')).map(r => r.state)),
+    adapters: ticks ? [] : f.slice(off, off + pageSize),
+    ticks: ticks ? { capped: f.length > tickMax, rows: f.slice(0, tickMax).map(r => ({ provider_id: r.provider_id, name: r.name, adapter: r.adapter ? { state: r.adapter.state, fields: r.adapter.fields || [] } : null, qualify: r.qualify ? { passing: r.qualify.passing || [] } : null, onboarding: r.onboarding ? { id: r.onboarding.id, status: r.onboarding.status } : null })) } : null }
+}
+
+export async function mockAdmin(page, { rank = 6, healthMissing = false, courseDiffers = false, creditNotices = [], onboardingAuto = false, universities = null, universitiesPageSize = 100, universitiesTickMax = 2000 } = {}) {
   const context = { ...F.context, role_rank: rank, role: rank >= 6 ? 'platform_admin' : 'viewer' }
   const session = { access_token: 'mock-token', refresh_token: 'mock-refresh', token_type: 'bearer', expires_in: 360000, expires_at: Math.floor(Date.now() / 1000) + 360000, user: { id: context.user_id, email: 'admin@example.test', aud: 'authenticated', role: 'authenticated', app_metadata: {}, user_metadata: {} } }
   const adminRead = {
@@ -92,7 +126,9 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     admin_fee_rules_report: b => { calls.push({ feeRules: true }); return { as_at: '2026-10-06T00:00:00Z', tolerance: 0.05, year: 2026, compared: 6825, agree: 4241, differ: 2584, would_change: 2349, suspected_half: 20, suspected_half_sample: [{ course_id: 'c2', title: 'Diploma of Business', provider: 'Beta College', page_fee: 10400, cricos_per_year: 20000 }], protected_by_hand: 1, kept_no_evidence: 59, kept_other_site: 175, page_higher: 1138, page_lower: 1211, gap_over_20: 962, by_country: [], by_provider: [{ provider_id: 'u1', provider: 'Alpha University', country: 'AU', compared: 10, would_change: 4 }], sample: [{ course_id: 'c1', title: 'Master of Test', provider: 'Alpha University', page_fee: 30000, page_year: 2027, cricos_per_year: 20000, gap: 0.5 }] } },
     admin_adapters: b => { calls.push({ adapters: b.p_action, args: b.p_args }); const gate = o => ({ ...o, can_manage: rank >= 6, can_qualify: rank >= 5 }); return b.p_action === 'list' ? gate(F.adaptersList) : b.p_action === 'detail' ? gate(F.adapterDetail(b.p_args?.provider_id)) : { ok: true, changed: (b.p_args?.provider_ids || []).length } },
     // v2.15.300: Layer 2/3 › Operations and Universities (the Adapters rows plus onboarding), screen use
-    admin_layer23: b => { calls.push({ layer23: b.p_action }); if (b.p_action === 'universities') { const l = F.adaptersList; return { ...l, can_manage: rank >= 6, can_qualify: rank >= 5, can_onboard: rank >= 6, adapters: (l.adapters || []).map((x, i) => i === 0 ? { ...x, onboarding: { id: 'ob-1', status: 'stopped', stage: 'admit', stop_reason: 'nothing_ready', note: 'Nothing passed after 2 AI attempts', updated_at: '2026-10-20T00:00:00Z' }, inbox: 2, inbox_kinds: { nothing_ready: 1, course_link: 1 } } : { ...x, onboarding: null, inbox: 0 }) } }
+    admin_layer23: b => { calls.push({ layer23: b.p_action, args: b.p_args }); const l = F.adaptersList; const uniRows = () => universities || (l.adapters || []).map((x, i) => i === 0 ? { ...x, onboarding: { id: 'ob-1', status: 'stopped', stage: 'admit', stop_reason: 'nothing_ready', note: 'Nothing passed after 2 AI attempts', updated_at: '2026-10-20T00:00:00Z' }, inbox: 2, inbox_kinds: { nothing_ready: 1, course_link: 1 } } : { ...x, onboarding: null, inbox: 0 })
+      if (b.p_action === 'universities') return { ...l, can_manage: rank >= 6, can_qualify: rank >= 5, can_onboard: rank >= 6, adapters: uniRows() }
+      if (b.p_action === 'universities_page') return universitiesPage(uniRows(), b.p_args || {}, { rank, pageSize: universitiesPageSize, tickMax: universitiesTickMax, settings: l.settings })
       return { as_at: '2026-10-20T01:00:00Z', can_manage: rank >= 6, done: 129, enrich_review: 634, settings: { enabled: true, auto_admit: onboardingAuto, max_active: 100 },
         stages: [{ key: 'website', label: 'Find the website', order: 1, what: 'The official website is found and checked.', running: 0, waiting: 0, stopped: 40, stopped_by_kind: { website_needed: 40 }, jobs: ['provider-website-check'] },
                  { key: 'pages', label: 'Find course pages', order: 2, what: 'Pages found and read.', running: 1, waiting: 43, stopped: 520, stopped_by_kind: { too_few_pages: 466, pages_not_found: 54 }, jobs: ['coverage-discover'] },
