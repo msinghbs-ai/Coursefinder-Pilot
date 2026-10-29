@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.299 — 30 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.372** (Platform Admin mandate 30 Oct 2026 06:53; decisions A1, A2, A3, A5). Migrations `20261030070000_cf247_aer_review_path` (md5-guarded edits of the Layer 4 decide, apply, bulk, batch and Inbox functions; new `aer_review_kinds_v1`, `aer_review_lineage_v1`, `aer_approve_except_v1`, `aer_review_read_v1`, `layer4_aer_review_read`) and `20261030080000_cf247_aer_bulk_reread_newest_copy` (`admin_entry_matrix_reread` newest copy only and role check corrected; governed snapshot Option A). `src/Layer4Inbox.jsx`, `src/AerWorkspace.jsx`. Specs s176, s177. Consumer API unchanged.
+
 ## 0.1.298 — 30 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.371** (Platform Admin mandate 30 Oct 2026 00:01, Workstreams 3 and 4; decisions W31 and W33). Migrations `20261030030000_cf247_coverage_bind_code_proof` (md5-guarded edit of `security.coverage_bind_v2`: code-proved pages kept, release step limited to binder-owned rows) and `20261030040000_cf247_universities_paging` (`admin_layer23('universities_page')`, settings `layer23.universities_page_size` and `layer23.universities_tick_max`). Worker `coverage-sweep-worker-v0.54.1` (`extract.ts`: labelled NZQA number rule NZ only). `src/AdaptersWorkspace.jsx` reads pages. Specs s174, s175. Consumer API unchanged.

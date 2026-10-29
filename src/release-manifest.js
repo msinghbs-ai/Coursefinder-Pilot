@@ -1,20 +1,20 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.371'
-export const PACKAGE_VERSION='0.1.298'
+export const UI_VERSION='2.15.372'
+export const PACKAGE_VERSION='0.1.299'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'30 Oct 2026',
-  title:'Site re-maps keep proven course pages; Universities list reads one page at a time',
+  title:'Entry requirements review path: Approve except, Platform Admin decisions, bulk Read again on the newest copy',
   changes:[
-    'Course pages: a routine re-map of a university\'s site no longer re-scores, demotes or replaces a course page the reader has proved with the course\'s code (CRICOS, NZQA, adapter) or a manual proof; only pages the site-map binder bound itself are released when they drop out of the map.',
-    'Page identity (worker v0.54.1): a labelled programme number proves a page only for New Zealand courses (NZQA); other countries fall to the title rules.',
-    'Layer 2/3 › Universities reads one page at a time with the filters, search and order applied on the server; Show more reads the next page; Tick every row shown still ticks every matching row (page size and tick limit are settings).',
+    'Layer 4 › Inbox shows entry-requirement (AER) items as their own kind with every row, its quote, the source and the stored copy. The Platform Admin can Approve all rows, Approve except (tick the rows to leave out, with one reason) or Reject the read. Excluded rows stay visible as "excluded by approve except", with the item and reviewer named; they are never admitted, superseded or re-read automatically.',
+    'Entry-requirement items are decided one at a time: generic bulk and batch decisions skip them and say how many were skipped. Only the Platform Admin admits or rejects them; Curators can read them and keep their editing in Catalogue › Entry requirements.',
+    'Bulk Read again (entry requirement sources) reads only the newest stored copy of each source; older copies keep their history and their waiting items are closed as superseded. It now refuses any signed-in user who is not the Platform Admin.',
     'Consumer API unchanged (Decision 266).'
   ],
-  bugFixes:[]
+  bugFixes:['The bulk Read again role check never applied inside its function, so any signed-in user could call it; it now requires the Platform Admin.']
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.
