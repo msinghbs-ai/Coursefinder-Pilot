@@ -40,6 +40,8 @@ test('reader identity(): the labelled number proves an NZ page only; a Canadian 
   const text = 'Business Administration Program code 4521. Two years.'
   expect(identity(html, text, 'Business Administration', '4521', false, 'NZ')).toBe('nzqa_code')
   expect(identity(html, text, 'Business Administration', '4521', false, 'CA')).not.toBe('nzqa_code')
+  expect(identity(html, text, 'Business Administration', '4521', false, 'AU')).not.toBe('nzqa_code')
+  expect(identity(html, text, 'Business Administration', '4521', false, '')).toBe('nzqa_code') // no country given: unchanged
   // an Australian page still needs its CRICOS code, unchanged
   expect(identity(html, 'Business Administration CRICOS 012345K', 'Business Administration', '012345K', false, 'AU')).toBe('cricos_code')
 })

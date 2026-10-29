@@ -53,8 +53,9 @@ export function identity(html: string, text: string, courseTitle: string, course
   // Canadian page, and any other country's, is proved by the title rules only: a code on the page proves nothing by itself there.
   const codeOnPage = code.length >= 4 && new RegExp(`\\b${code}\\b`).test(text.toUpperCase())
   if (cc === "AU" && code.length >= 6 && codeOnPage) return "cricos_code"
-  // W31 (30 Oct 2026): the labelled-number rule is New Zealand's register only; a Canadian page printing "program code 1234" was read as nzqa_code
-  if (cc === "NZ" && /^[0-9]{3,5}$/.test(code) && new RegExp(`(nzqa|qualification|programme|program)\\s*(number|code|id|ref(erence)?|no\\.?)?\\s*[:#]?\\s*${code}\\b`, "i").test(text)) return "nzqa_code" // the label itself names the NZ register
+  // W31 (30 Oct 2026): the labelled-number rule is New Zealand's register only; a Canadian page printing "program code 1234" was read as
+  // nzqa_code. A page of another known country never takes it; a caller that gives no country keeps the rule as before.
+  if ((cc === "NZ" || cc === "") && /^[0-9]{3,5}$/.test(code) && new RegExp(`(nzqa|qualification|programme|program)\\s*(number|code|id|ref(erence)?|no\\.?)?\\s*[:#]?\\s*${code}\\b`, "i").test(text)) return "nzqa_code" // the label itself names the NZ register
   if (cc === "NZ" && /^[A-Z]{2,4}[0-9]{3,5}$/.test(code) && codeOnPage) return "nzqa_code" // an NZQA programme code (LI4245, AK3709), never a CRICOS-shaped one
   // CA: a catalogue code on the page is not a proof on its own until Canada has its own register proof (8a); the title rules decide
   if (codeOnly) return null
