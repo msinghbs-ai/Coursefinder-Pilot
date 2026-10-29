@@ -5,6 +5,14 @@ const ui = { timeout: DETERMINISTIC_UI_TIMEOUT }
 // Workspaces drawn from a data read (Universities: admin_layer23 'universities', about 0.6 MB; Fetchers: the provider registry) appear
 // only when the read returns, so they get the data-load timeout rather than the 6-second UI timeout.
 const data = { timeout: 30_000 }
+// When a read-driven workspace does not appear, say where the page was (address, selected tab, title, any alert) so a deployed run's
+// annotation shows the cause without the trace.
+async function visibleOrExplain(locator, page, what) {
+  try { await expect(locator).toBeVisible(data) } catch (e) {
+    const where = await page.evaluate(() => ({ hash: location.hash, tab: [...document.querySelectorAll('.cf-page-tabs [role="tab"][aria-selected="true"]')].map(x => x.textContent.trim()).join('|'), h1: document.querySelector('.m-topbar h1')?.textContent, alert: [...document.querySelectorAll('[role="alert"],.m-alert,.fr-error')].map(x => x.textContent.trim().slice(0, 160)).join(' | '), loading: document.querySelectorAll('.m-loader,.m-spinner,.m-drawer-loading').length, main: (document.querySelector('.m-main')?.innerText || '').replace(/\s+/g, ' ').slice(0, 400) })).catch(() => ({}))
+    throw new Error(`${what} did not appear: ${JSON.stringify(where)}\n${e.message}`)
+  }
+}
 
 export async function openLayer1(page) {
   await clickPrimaryNav(page, 'Layer 1 — Operations')
@@ -32,7 +40,7 @@ export async function openLayer2Tab(page, tab) {
 export async function openLayer2(page) {
   await clickPrimaryNav(page, 'Layer 2 — Enrichment')
   const workspace = page.locator('[data-adapters-workspace]')
-  await expect(workspace).toBeVisible(data)
+  await visibleOrExplain(workspace, page, 'Layer 2/3 › Universities')
   // Decision 133: the screen title is the page title (Layer panels no longer repeat it).
   await expect(page.getByRole('heading', { name: 'Layer 2/3 Build & enrich' }).first()).toBeVisible(ui)
   return workspace
@@ -44,7 +52,7 @@ export async function openLayer2(page) {
 async function openFetchersCard(page,heading){
   await clickPrimaryNav(page,'Scrapers & fetchers')
   const headingLocator=page.getByRole('heading',{name:heading,exact:true}).first()
-  await expect(headingLocator).toBeVisible(data)
+  await visibleOrExplain(headingLocator, page, `Fetchers › ${heading}`)
   return headingLocator.locator('xpath=ancestor-or-self::*[@role="region"][1] | ancestor::section[1]').first()
 }
 

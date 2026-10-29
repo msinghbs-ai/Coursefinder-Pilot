@@ -29,12 +29,14 @@ test.describe('CF-061 QILT PRISMS comparison experience @deployed',()=>{
   await compareSearch.fill('Curtin University')
   const add=page.locator('.cf-compare-results button').filter({hasText:'Curtin University'}).first()
   await expect(add).toBeVisible()
-  const response=page.waitForResponse(r=>{if(!r.url().includes('/rest/v1/rpc/admin_read'))return false;try{return r.request().postDataJSON()?.p_operation==='contextual_compare'}catch{return false}})
+  // The one-provider compare read can still be in flight when the second provider is added, so the check uses the latest compare read
+  // (the one for both providers), not whichever response arrives first.
+  let payload=null
+  page.on('response',async r=>{try{if(r.url().includes('/rest/v1/rpc/admin_read')&&r.request().postDataJSON()?.p_operation==='contextual_compare'){const j=await r.json();if(Number(j?.total)>=Number(payload?.total||0))payload=j}}catch{}})
   await add.click()
   await expect(page.getByText('2 / 6 selected',{exact:true})).toBeVisible()
   await expect.poll(()=>page.evaluate(()=>location.hash)).toContain('ids=')
-  const payload=await(await response).json()
-  expect(Number(payload.total)).toBe(2)
+  await expect.poll(()=>Number(payload?.total||0),{timeout:30_000}).toBe(2)
   expect(Number(payload.max_items)).toBe(6)
   expect(payload.items.map(x=>x.name)).toEqual(['Charles Darwin University','Curtin University'])
   expect(payload.items.every(x=>x.contextual_insights?.student_outcomes?.granularity==='provider')).toBeTruthy()
