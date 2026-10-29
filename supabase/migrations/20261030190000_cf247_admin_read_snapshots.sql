@@ -1,6 +1,6 @@
 -- CF-247 decision W34 (30 Oct 2026, Workstream 3 release health, lane M): cached snapshots and paging fixes for the four slow admin reads.
 -- Approved: Platform Admin 30 Oct 2026 06:53 ("Cached snapshots for the four slow admin reads: APPROVED FOR DESIGN AND IMPLEMENTATION").
--- Numbered 20261030140000 at integration (v2.15.373).
+-- Numbered 20261030190000 at integration (v2.15.373).
 -- Why: the weekly deployed run of 30 Oct (01:00 to 01:15 AEDT) had four red tests, all database response time under load:
 --   admin_read('providers_page') 3,552 / 3,043 ms and admin_read('courses_page') 3,020 / 3,018 ms against the 3,000 ms budget;
 --   admin_read('pipeline_jobs_page') and admin_read('course_coverage') HTTP 500 (statement time-out, signed-in limit 8 s).
@@ -460,10 +460,10 @@ on conflict (jobname) do nothing;
 select cron.schedule('course-coverage-snapshot', '2-59/5 * * * *', 'select security.course_coverage_snapshot_refresh_v1()');
 
 insert into pipeline.component_register(kind, name, layer, purpose, status, replaces, introduced_in) values
- ('job', 'course-coverage-snapshot', 'Platform', 'W34: rebuilds the coverage totals snapshot after an hourly source build changes', 'active', '{}', '20261030140000'),
- ('table', 'pipeline.course_coverage_snapshot', 'Platform', 'W34: when the coverage totals snapshot was built and last checked', 'active', '{}', '20261030140000'),
- ('table', 'pipeline.course_coverage_totals', 'Platform', 'W34: derived coverage totals that admin_read(course_coverage) answers from', 'active', '{}', '20261030140000'),
- ('function', 'security.course_coverage_snapshot_refresh_v1', 'Platform', 'W34: single-flight rebuild of the coverage totals snapshot (job course-coverage-snapshot)', 'active', '{}', '20261030140000')
+ ('job', 'course-coverage-snapshot', 'Platform', 'W34: rebuilds the coverage totals snapshot after an hourly source build changes', 'active', '{}', '20261030190000'),
+ ('table', 'pipeline.course_coverage_snapshot', 'Platform', 'W34: when the coverage totals snapshot was built and last checked', 'active', '{}', '20261030190000'),
+ ('table', 'pipeline.course_coverage_totals', 'Platform', 'W34: derived coverage totals that admin_read(course_coverage) answers from', 'active', '{}', '20261030190000'),
+ ('function', 'security.course_coverage_snapshot_refresh_v1', 'Platform', 'W34: single-flight rebuild of the coverage totals snapshot (job course-coverage-snapshot)', 'active', '{}', '20261030190000')
 on conflict do nothing;
 
 -- the first snapshot now (the job keeps it current); if a source build holds its table, the read uses the live total until the next run

@@ -2,7 +2,7 @@
 
 ## 0.1.300 — 30 Oct 2026
 
-- Prepared visible PIM Admin release candidate **v2.15.373** (Platform Admin mandate 30 Oct 2026 06:53; decisions W34 and W35, cached snapshots for the slow admin reads and the gap-causes run time). Migrations `20261030140000_cf247_admin_read_snapshots` (coverage totals snapshot, job `course-coverage-snapshot`; page-first `admin_course_page_fast_base`, `admin_pipeline_ops_read`, `admin_providers_page_v2`) and `20261030150000_cf247_notices_publishability_snapshots` (`pipeline.admin_read_snapshots`, `pipeline.gap_cause_runs`, job `admin-read-snapshots`, job `gap-causes` runs `gap_causes_run_v1`). `src/SnapshotStamp.jsx` and the screens that show it. Specs s178, s179. Consumer API unchanged.
+- Prepared visible PIM Admin release candidate **v2.15.373** (Platform Admin mandate 30 Oct 2026 06:53; decisions W34 and W35, cached snapshots for the slow admin reads and the gap-causes run time). Migrations `20261030190000_cf247_admin_read_snapshots` (coverage totals snapshot, job `course-coverage-snapshot`; page-first `admin_course_page_fast_base`, `admin_pipeline_ops_read`, `admin_providers_page_v2`) and `20261030200000_cf247_notices_publishability_snapshots` (`pipeline.admin_read_snapshots`, `pipeline.gap_cause_runs`, job `admin-read-snapshots`, job `gap-causes` runs `gap_causes_run_v1`). `src/SnapshotStamp.jsx` and the screens that show it. Specs s178, s179. Consumer API unchanged.
 
 ## 0.1.299 — 30 Oct 2026
 
