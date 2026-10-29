@@ -8,12 +8,7 @@
 
 | Viewport | Tests | Passed | Failed | Skipped |
 |---|---|---|---|---|
-| Desktop | 79 | 78 | 1 | 0 |
-| Phone | 80 | 77 | 3 | 0 |
+| Desktop | 79 | 79 | 0 | 0 |
+| Phone | 80 | 80 | 0 | 0 |
 
-## Failures
-
-- desktop: performance-deployed.spec.mjs › M1 performance and responsiveness @deployed › core workspaces stay within governed RPC and payload budgets
-- phone: cf-209-scheduler-jobs-operations-deployed.spec.mjs › CF-209 deployed Scheduler and Jobs operations acceptance @deployed › keeps Jobs as the server-paged execution and telemetry workspace
-- phone: cf-247-field-coverage-deployed.spec.mjs › CF-247 per-field coverage panel @deployed › Coverage > Attributes opens with the 80% target panel for intakes, English and fees
-- phone: performance-deployed.spec.mjs › M1 performance and responsiveness @deployed › core workspaces stay within governed RPC and payload budgets
+No failures.

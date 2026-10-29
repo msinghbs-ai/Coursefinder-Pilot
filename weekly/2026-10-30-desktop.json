@@ -24,24 +24,24 @@
     "maxFailures": 0,
     "metadata": {
       "ci": {
-        "commitHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/commit/cd97b53d6c5fb7cd817936c7894d9eb0735ed06b",
-        "commitHash": "cd97b53d6c5fb7cd817936c7894d9eb0735ed06b",
-        "buildHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/40886434507"
+        "commitHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/commit/b74abefbfe893dd4a3ca9a953260bbeedb79476b",
+        "commitHash": "b74abefbfe893dd4a3ca9a953260bbeedb79476b",
+        "buildHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/40956651633"
       },
       "gitCommit": {
-        "shortHash": "cd97b53",
-        "hash": "cd97b53d6c5fb7cd817936c7894d9eb0735ed06b",
-        "subject": "CF-247 v2.15.371: W31 site re-maps keep code-proved pages + W33 Universities list paging (worker v0.54.1) (#748)",
-        "body": "CF-247 v2.15.371: W31 site re-maps keep code-proved pages + W33 Universities list paging (worker v0.54.1) (#748)\n\n* CF-247 W31: site-map binder keeps code-proved pages; NZQA labelled-number rule NZ only (worker v0.54.1)\n\nMigration 20261030030000 (md5-guarded edit of security.coverage_bind_v2, live md5 bc1872ed). Spec s174.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 W31: spec numbered s175 (s174 is Universities paging)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 W33: Layer 2/3 › Universities reads one page at a time (server-side paging)\n\npublic.admin_layer23('universities') answered all 2,421 rows in one reply\n(1,967,164 bytes, ~3.2 s; budgets 700 KB / 3 s unchanged). A new action\n'universities_page' (md5-guarded edit, live aaf0e7d8438ffb863375c9617e619fea)\napplies the screen's filters, name search and name order on the server and\nanswers one page with matched/total, the adapter tally and the country and\nstate choices; mode 'ticks' answers every matching row in short form for\n\"Tick every row shown\". Page size and tick cap are settings\n(layer23.universities_page_size 100, layer23.universities_tick_max 2000).\nMeasured read-only: first page ~69 KB in 0.65-1.0 s.\n\nThe old 'universities' action is kept until the screen release is live.\nScreen: AdaptersWorkspace reads pages, Show more reads the next page,\nlinks with ?provider= look the university up by id. Mock serves the paged\naction; new contract spec s174; performance-deployed predicate accepts\neither action (budget assertions unchanged).\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 W33: number migration 20261030040000\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.371: W31 + W33 release ceremony (worker v0.54.1)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 W31: labelled NZQA rule kept for callers that give no country (nz-coverage contract unchanged)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n---------\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+        "shortHash": "b74abef",
+        "hash": "b74abefbfe893dd4a3ca9a953260bbeedb79476b",
+        "subject": "CF-247 v2.15.373: W34 + W35 cached snapshots for the slow admin reads; Why values are missing run time (#757)",
+        "body": "CF-247 v2.15.373: W34 + W35 cached snapshots for the slow admin reads; Why values are missing run time (#757)\n\n* CF-247 W34: cached coverage snapshot and page-first admin reads (lane M)\n\nPlatform Admin 30 Oct 2026 06:53 approved cached snapshots for the four slow\nadmin reads behind the red weekly deployed run (providers_page, courses_page,\npipeline_jobs_page, course_coverage). Migration numbered 20261030050000\nprovisionally; the integrator renumbers.\n\n- course_coverage answers from pipeline.course_coverage_totals, a derived\n  snapshot rebuilt by job course-coverage-snapshot only after an hourly\n  source build changes (min interval and stale time are settings), one\n  run at a time (advisory try-lock); readers never rebuild. The live\n  re-total stays only as the fallback when no snapshot exists. The answer\n  carries 'snapshot' (built, checked, stale); drill-downs stay live.\n- providers_page, courses_page and pipeline_jobs_page choose the page on\n  ids and sort keys first, then read the page rows in full. Same fields,\n  order and total (checked read-only against the live functions).\n- Coverage screen shows when the snapshot was built and checked, and a\n  stale marker. Spec s178 guards the design; no budget or time-out changed.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 W34: renumber the migration to 20261030070000 (main now holds 20261030050000 and 060000)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 W35: cached snapshots for notices, publishability and field coverage; Why values are missing shows its actual run time\n\nDecision W35 (Platform Admin 30 Oct 2026 06:53), lane M2. Integrator numbers the migration\n(placeholder 20261030900000) and runs the live dry run.\n\n- pipeline.admin_read_snapshots: derived snapshots of security.platform_notices_v1 (+ sample\n  notices), security.scholarship_publishability_v1 and the field-coverage overview figures;\n  job admin-read-snapshots (each minute, catalogued) rebuilds on settings snapshots.*_every_minutes\n  or within a minute of a person's fix; single flight by advisory try-lock; a failed build keeps\n  the last snapshot with its error.\n- md5-guarded edits: admin_platform_notices_read, admin_progress_read (overview),\n  security.admin_live_activity_v1, admin_waiting_read, admin_field_coverage (overview, every\n  country; one university stays live), admin_gap_causes. Shapes kept; fields added only\n  (snapshot / notices_snapshot / publishability_snapshot / run).\n- Exact drill-downs: acknowledgements, publication status and lifecycle joined live; items\n  resumed or given a website since the snapshot leave the notice at once; \"now\" notices stay \"now\".\n- gap-causes runs security.gap_causes_run_v1 (same snapshot, records start and finish in\n  pipeline.gap_cause_runs); stale after gaps.causes_stale_after_minutes (75).\n- UI: SnapshotStamp (time, age, Stale marker) on the layer notices strip, Toolsets and limits,\n  Progress, Dashboard (Scholarships ready to publish), Coverage › Attributes; GapCauses shows the\n  last run's finish time and age.\n- Spec s179 (Guards: CF-247 decisions W35 ...). Consumer API untouched; admin_read not edited;\n  scholarship_publishability_v1 not changed.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.373: W34 + W35 cached snapshots for the slow admin reads; gap-causes run time (migrations renumbered 140000/150000)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.373: migrations renumbered 190000/200000 (after the B4 batches)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n---------\n\nCo-authored-by: Claude <noreply@anthropic.com>",
         "author": {
           "name": "msinghbs-ai",
           "email": "msingh.bs@gmail.com",
-          "time": 1793282015000
+          "time": 1793308650000
         },
         "committer": {
           "name": "GitHub",
           "email": "noreply@github.com",
-          "time": 1793282015000
+          "time": 1793308650000
         },
         "branch": "main"
       },
@@ -55,24 +55,24 @@
         "retries": 1,
         "metadata": {
           "ci": {
-            "commitHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/commit/cd97b53d6c5fb7cd817936c7894d9eb0735ed06b",
-            "commitHash": "cd97b53d6c5fb7cd817936c7894d9eb0735ed06b",
-            "buildHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/40886434507"
+            "commitHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/commit/b74abefbfe893dd4a3ca9a953260bbeedb79476b",
+            "commitHash": "b74abefbfe893dd4a3ca9a953260bbeedb79476b",
+            "buildHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/40956651633"
           },
           "gitCommit": {
-            "shortHash": "cd97b53",
-            "hash": "cd97b53d6c5fb7cd817936c7894d9eb0735ed06b",
-            "subject": "CF-247 v2.15.371: W31 site re-maps keep code-proved pages + W33 Universities list paging (worker v0.54.1) (#748)",
-            "body": "CF-247 v2.15.371: W31 site re-maps keep code-proved pages + W33 Universities list paging (worker v0.54.1) (#748)\n\n* CF-247 W31: site-map binder keeps code-proved pages; NZQA labelled-number rule NZ only (worker v0.54.1)\n\nMigration 20261030030000 (md5-guarded edit of security.coverage_bind_v2, live md5 bc1872ed). Spec s174.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 W31: spec numbered s175 (s174 is Universities paging)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 W33: Layer 2/3 › Universities reads one page at a time (server-side paging)\n\npublic.admin_layer23('universities') answered all 2,421 rows in one reply\n(1,967,164 bytes, ~3.2 s; budgets 700 KB / 3 s unchanged). A new action\n'universities_page' (md5-guarded edit, live aaf0e7d8438ffb863375c9617e619fea)\napplies the screen's filters, name search and name order on the server and\nanswers one page with matched/total, the adapter tally and the country and\nstate choices; mode 'ticks' answers every matching row in short form for\n\"Tick every row shown\". Page size and tick cap are settings\n(layer23.universities_page_size 100, layer23.universities_tick_max 2000).\nMeasured read-only: first page ~69 KB in 0.65-1.0 s.\n\nThe old 'universities' action is kept until the screen release is live.\nScreen: AdaptersWorkspace reads pages, Show more reads the next page,\nlinks with ?provider= look the university up by id. Mock serves the paged\naction; new contract spec s174; performance-deployed predicate accepts\neither action (budget assertions unchanged).\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 W33: number migration 20261030040000\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.371: W31 + W33 release ceremony (worker v0.54.1)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 W31: labelled NZQA rule kept for callers that give no country (nz-coverage contract unchanged)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n---------\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+            "shortHash": "b74abef",
+            "hash": "b74abefbfe893dd4a3ca9a953260bbeedb79476b",
+            "subject": "CF-247 v2.15.373: W34 + W35 cached snapshots for the slow admin reads; Why values are missing run time (#757)",
+            "body": "CF-247 v2.15.373: W34 + W35 cached snapshots for the slow admin reads; Why values are missing run time (#757)\n\n* CF-247 W34: cached coverage snapshot and page-first admin reads (lane M)\n\nPlatform Admin 30 Oct 2026 06:53 approved cached snapshots for the four slow\nadmin reads behind the red weekly deployed run (providers_page, courses_page,\npipeline_jobs_page, course_coverage). Migration numbered 20261030050000\nprovisionally; the integrator renumbers.\n\n- course_coverage answers from pipeline.course_coverage_totals, a derived\n  snapshot rebuilt by job course-coverage-snapshot only after an hourly\n  source build changes (min interval and stale time are settings), one\n  run at a time (advisory try-lock); readers never rebuild. The live\n  re-total stays only as the fallback when no snapshot exists. The answer\n  carries 'snapshot' (built, checked, stale); drill-downs stay live.\n- providers_page, courses_page and pipeline_jobs_page choose the page on\n  ids and sort keys first, then read the page rows in full. Same fields,\n  order and total (checked read-only against the live functions).\n- Coverage screen shows when the snapshot was built and checked, and a\n  stale marker. Spec s178 guards the design; no budget or time-out changed.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 W34: renumber the migration to 20261030070000 (main now holds 20261030050000 and 060000)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 W35: cached snapshots for notices, publishability and field coverage; Why values are missing shows its actual run time\n\nDecision W35 (Platform Admin 30 Oct 2026 06:53), lane M2. Integrator numbers the migration\n(placeholder 20261030900000) and runs the live dry run.\n\n- pipeline.admin_read_snapshots: derived snapshots of security.platform_notices_v1 (+ sample\n  notices), security.scholarship_publishability_v1 and the field-coverage overview figures;\n  job admin-read-snapshots (each minute, catalogued) rebuilds on settings snapshots.*_every_minutes\n  or within a minute of a person's fix; single flight by advisory try-lock; a failed build keeps\n  the last snapshot with its error.\n- md5-guarded edits: admin_platform_notices_read, admin_progress_read (overview),\n  security.admin_live_activity_v1, admin_waiting_read, admin_field_coverage (overview, every\n  country; one university stays live), admin_gap_causes. Shapes kept; fields added only\n  (snapshot / notices_snapshot / publishability_snapshot / run).\n- Exact drill-downs: acknowledgements, publication status and lifecycle joined live; items\n  resumed or given a website since the snapshot leave the notice at once; \"now\" notices stay \"now\".\n- gap-causes runs security.gap_causes_run_v1 (same snapshot, records start and finish in\n  pipeline.gap_cause_runs); stale after gaps.causes_stale_after_minutes (75).\n- UI: SnapshotStamp (time, age, Stale marker) on the layer notices strip, Toolsets and limits,\n  Progress, Dashboard (Scholarships ready to publish), Coverage › Attributes; GapCauses shows the\n  last run's finish time and age.\n- Spec s179 (Guards: CF-247 decisions W35 ...). Consumer API untouched; admin_read not edited;\n  scholarship_publishability_v1 not changed.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.373: W34 + W35 cached snapshots for the slow admin reads; gap-causes run time (migrations renumbered 140000/150000)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.373: migrations renumbered 190000/200000 (after the B4 batches)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n---------\n\nCo-authored-by: Claude <noreply@anthropic.com>",
             "author": {
               "name": "msinghbs-ai",
               "email": "msingh.bs@gmail.com",
-              "time": 1793282015000
+              "time": 1793308650000
             },
             "committer": {
               "name": "GitHub",
               "email": "noreply@github.com",
-              "time": 1793282015000
+              "time": 1793308650000
             },
             "branch": "main"
           },
@@ -93,24 +93,24 @@
         "retries": 1,
         "metadata": {
           "ci": {
-            "commitHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/commit/cd97b53d6c5fb7cd817936c7894d9eb0735ed06b",
-            "commitHash": "cd97b53d6c5fb7cd817936c7894d9eb0735ed06b",
-            "buildHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/40886434507"
+            "commitHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/commit/b74abefbfe893dd4a3ca9a953260bbeedb79476b",
+            "commitHash": "b74abefbfe893dd4a3ca9a953260bbeedb79476b",
+            "buildHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/40956651633"
           },
           "gitCommit": {
-            "shortHash": "cd97b53",
-            "hash": "cd97b53d6c5fb7cd817936c7894d9eb0735ed06b",
-            "subject": "CF-247 v2.15.371: W31 site re-maps keep code-proved pages + W33 Universities list paging (worker v0.54.1) (#748)",
-            "body": "CF-247 v2.15.371: W31 site re-maps keep code-proved pages + W33 Universities list paging (worker v0.54.1) (#748)\n\n* CF-247 W31: site-map binder keeps code-proved pages; NZQA labelled-number rule NZ only (worker v0.54.1)\n\nMigration 20261030030000 (md5-guarded edit of security.coverage_bind_v2, live md5 bc1872ed). Spec s174.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 W31: spec numbered s175 (s174 is Universities paging)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 W33: Layer 2/3 › Universities reads one page at a time (server-side paging)\n\npublic.admin_layer23('universities') answered all 2,421 rows in one reply\n(1,967,164 bytes, ~3.2 s; budgets 700 KB / 3 s unchanged). A new action\n'universities_page' (md5-guarded edit, live aaf0e7d8438ffb863375c9617e619fea)\napplies the screen's filters, name search and name order on the server and\nanswers one page with matched/total, the adapter tally and the country and\nstate choices; mode 'ticks' answers every matching row in short form for\n\"Tick every row shown\". Page size and tick cap are settings\n(layer23.universities_page_size 100, layer23.universities_tick_max 2000).\nMeasured read-only: first page ~69 KB in 0.65-1.0 s.\n\nThe old 'universities' action is kept until the screen release is live.\nScreen: AdaptersWorkspace reads pages, Show more reads the next page,\nlinks with ?provider= look the university up by id. Mock serves the paged\naction; new contract spec s174; performance-deployed predicate accepts\neither action (budget assertions unchanged).\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 W33: number migration 20261030040000\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.371: W31 + W33 release ceremony (worker v0.54.1)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 W31: labelled NZQA rule kept for callers that give no country (nz-coverage contract unchanged)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n---------\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+            "shortHash": "b74abef",
+            "hash": "b74abefbfe893dd4a3ca9a953260bbeedb79476b",
+            "subject": "CF-247 v2.15.373: W34 + W35 cached snapshots for the slow admin reads; Why values are missing run time (#757)",
+            "body": "CF-247 v2.15.373: W34 + W35 cached snapshots for the slow admin reads; Why values are missing run time (#757)\n\n* CF-247 W34: cached coverage snapshot and page-first admin reads (lane M)\n\nPlatform Admin 30 Oct 2026 06:53 approved cached snapshots for the four slow\nadmin reads behind the red weekly deployed run (providers_page, courses_page,\npipeline_jobs_page, course_coverage). Migration numbered 20261030050000\nprovisionally; the integrator renumbers.\n\n- course_coverage answers from pipeline.course_coverage_totals, a derived\n  snapshot rebuilt by job course-coverage-snapshot only after an hourly\n  source build changes (min interval and stale time are settings), one\n  run at a time (advisory try-lock); readers never rebuild. The live\n  re-total stays only as the fallback when no snapshot exists. The answer\n  carries 'snapshot' (built, checked, stale); drill-downs stay live.\n- providers_page, courses_page and pipeline_jobs_page choose the page on\n  ids and sort keys first, then read the page rows in full. Same fields,\n  order and total (checked read-only against the live functions).\n- Coverage screen shows when the snapshot was built and checked, and a\n  stale marker. Spec s178 guards the design; no budget or time-out changed.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 W34: renumber the migration to 20261030070000 (main now holds 20261030050000 and 060000)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 W35: cached snapshots for notices, publishability and field coverage; Why values are missing shows its actual run time\n\nDecision W35 (Platform Admin 30 Oct 2026 06:53), lane M2. Integrator numbers the migration\n(placeholder 20261030900000) and runs the live dry run.\n\n- pipeline.admin_read_snapshots: derived snapshots of security.platform_notices_v1 (+ sample\n  notices), security.scholarship_publishability_v1 and the field-coverage overview figures;\n  job admin-read-snapshots (each minute, catalogued) rebuilds on settings snapshots.*_every_minutes\n  or within a minute of a person's fix; single flight by advisory try-lock; a failed build keeps\n  the last snapshot with its error.\n- md5-guarded edits: admin_platform_notices_read, admin_progress_read (overview),\n  security.admin_live_activity_v1, admin_waiting_read, admin_field_coverage (overview, every\n  country; one university stays live), admin_gap_causes. Shapes kept; fields added only\n  (snapshot / notices_snapshot / publishability_snapshot / run).\n- Exact drill-downs: acknowledgements, publication status and lifecycle joined live; items\n  resumed or given a website since the snapshot leave the notice at once; \"now\" notices stay \"now\".\n- gap-causes runs security.gap_causes_run_v1 (same snapshot, records start and finish in\n  pipeline.gap_cause_runs); stale after gaps.causes_stale_after_minutes (75).\n- UI: SnapshotStamp (time, age, Stale marker) on the layer notices strip, Toolsets and limits,\n  Progress, Dashboard (Scholarships ready to publish), Coverage › Attributes; GapCauses shows the\n  last run's finish time and age.\n- Spec s179 (Guards: CF-247 decisions W35 ...). Consumer API untouched; admin_read not edited;\n  scholarship_publishability_v1 not changed.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.373: W34 + W35 cached snapshots for the slow admin reads; gap-causes run time (migrations renumbered 140000/150000)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.373: migrations renumbered 190000/200000 (after the B4 batches)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n---------\n\nCo-authored-by: Claude <noreply@anthropic.com>",
             "author": {
               "name": "msinghbs-ai",
               "email": "msingh.bs@gmail.com",
-              "time": 1793282015000
+              "time": 1793308650000
             },
             "committer": {
               "name": "GitHub",
               "email": "noreply@github.com",
-              "time": 1793282015000
+              "time": 1793308650000
             },
             "branch": "main"
           },
@@ -135,24 +135,24 @@
         "retries": 1,
         "metadata": {
           "ci": {
-            "commitHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/commit/cd97b53d6c5fb7cd817936c7894d9eb0735ed06b",
-            "commitHash": "cd97b53d6c5fb7cd817936c7894d9eb0735ed06b",
-            "buildHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/40886434507"
+            "commitHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/commit/b74abefbfe893dd4a3ca9a953260bbeedb79476b",
+            "commitHash": "b74abefbfe893dd4a3ca9a953260bbeedb79476b",
+            "buildHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/40956651633"
           },
           "gitCommit": {
-            "shortHash": "cd97b53",
-            "hash": "cd97b53d6c5fb7cd817936c7894d9eb0735ed06b",
-            "subject": "CF-247 v2.15.371: W31 site re-maps keep code-proved pages + W33 Universities list paging (worker v0.54.1) (#748)",
-            "body": "CF-247 v2.15.371: W31 site re-maps keep code-proved pages + W33 Universities list paging (worker v0.54.1) (#748)\n\n* CF-247 W31: site-map binder keeps code-proved pages; NZQA labelled-number rule NZ only (worker v0.54.1)\n\nMigration 20261030030000 (md5-guarded edit of security.coverage_bind_v2, live md5 bc1872ed). Spec s174.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 W31: spec numbered s175 (s174 is Universities paging)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 W33: Layer 2/3 › Universities reads one page at a time (server-side paging)\n\npublic.admin_layer23('universities') answered all 2,421 rows in one reply\n(1,967,164 bytes, ~3.2 s; budgets 700 KB / 3 s unchanged). A new action\n'universities_page' (md5-guarded edit, live aaf0e7d8438ffb863375c9617e619fea)\napplies the screen's filters, name search and name order on the server and\nanswers one page with matched/total, the adapter tally and the country and\nstate choices; mode 'ticks' answers every matching row in short form for\n\"Tick every row shown\". Page size and tick cap are settings\n(layer23.universities_page_size 100, layer23.universities_tick_max 2000).\nMeasured read-only: first page ~69 KB in 0.65-1.0 s.\n\nThe old 'universities' action is kept until the screen release is live.\nScreen: AdaptersWorkspace reads pages, Show more reads the next page,\nlinks with ?provider= look the university up by id. Mock serves the paged\naction; new contract spec s174; performance-deployed predicate accepts\neither action (budget assertions unchanged).\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 W33: number migration 20261030040000\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.371: W31 + W33 release ceremony (worker v0.54.1)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 W31: labelled NZQA rule kept for callers that give no country (nz-coverage contract unchanged)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n---------\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+            "shortHash": "b74abef",
+            "hash": "b74abefbfe893dd4a3ca9a953260bbeedb79476b",
+            "subject": "CF-247 v2.15.373: W34 + W35 cached snapshots for the slow admin reads; Why values are missing run time (#757)",
+            "body": "CF-247 v2.15.373: W34 + W35 cached snapshots for the slow admin reads; Why values are missing run time (#757)\n\n* CF-247 W34: cached coverage snapshot and page-first admin reads (lane M)\n\nPlatform Admin 30 Oct 2026 06:53 approved cached snapshots for the four slow\nadmin reads behind the red weekly deployed run (providers_page, courses_page,\npipeline_jobs_page, course_coverage). Migration numbered 20261030050000\nprovisionally; the integrator renumbers.\n\n- course_coverage answers from pipeline.course_coverage_totals, a derived\n  snapshot rebuilt by job course-coverage-snapshot only after an hourly\n  source build changes (min interval and stale time are settings), one\n  run at a time (advisory try-lock); readers never rebuild. The live\n  re-total stays only as the fallback when no snapshot exists. The answer\n  carries 'snapshot' (built, checked, stale); drill-downs stay live.\n- providers_page, courses_page and pipeline_jobs_page choose the page on\n  ids and sort keys first, then read the page rows in full. Same fields,\n  order and total (checked read-only against the live functions).\n- Coverage screen shows when the snapshot was built and checked, and a\n  stale marker. Spec s178 guards the design; no budget or time-out changed.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 W34: renumber the migration to 20261030070000 (main now holds 20261030050000 and 060000)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 W35: cached snapshots for notices, publishability and field coverage; Why values are missing shows its actual run time\n\nDecision W35 (Platform Admin 30 Oct 2026 06:53), lane M2. Integrator numbers the migration\n(placeholder 20261030900000) and runs the live dry run.\n\n- pipeline.admin_read_snapshots: derived snapshots of security.platform_notices_v1 (+ sample\n  notices), security.scholarship_publishability_v1 and the field-coverage overview figures;\n  job admin-read-snapshots (each minute, catalogued) rebuilds on settings snapshots.*_every_minutes\n  or within a minute of a person's fix; single flight by advisory try-lock; a failed build keeps\n  the last snapshot with its error.\n- md5-guarded edits: admin_platform_notices_read, admin_progress_read (overview),\n  security.admin_live_activity_v1, admin_waiting_read, admin_field_coverage (overview, every\n  country; one university stays live), admin_gap_causes. Shapes kept; fields added only\n  (snapshot / notices_snapshot / publishability_snapshot / run).\n- Exact drill-downs: acknowledgements, publication status and lifecycle joined live; items\n  resumed or given a website since the snapshot leave the notice at once; \"now\" notices stay \"now\".\n- gap-causes runs security.gap_causes_run_v1 (same snapshot, records start and finish in\n  pipeline.gap_cause_runs); stale after gaps.causes_stale_after_minutes (75).\n- UI: SnapshotStamp (time, age, Stale marker) on the layer notices strip, Toolsets and limits,\n  Progress, Dashboard (Scholarships ready to publish), Coverage › Attributes; GapCauses shows the\n  last run's finish time and age.\n- Spec s179 (Guards: CF-247 decisions W35 ...). Consumer API untouched; admin_read not edited;\n  scholarship_publishability_v1 not changed.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.373: W34 + W35 cached snapshots for the slow admin reads; gap-causes run time (migrations renumbered 140000/150000)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.373: migrations renumbered 190000/200000 (after the B4 batches)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n---------\n\nCo-authored-by: Claude <noreply@anthropic.com>",
             "author": {
               "name": "msinghbs-ai",
               "email": "msingh.bs@gmail.com",
-              "time": 1793282015000
+              "time": 1793308650000
             },
             "committer": {
               "name": "GitHub",
               "email": "noreply@github.com",
-              "time": 1793282015000
+              "time": 1793308650000
             },
             "branch": "main"
           },
@@ -243,12 +243,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5050,
+                      "duration": 6505,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:55:59.784Z",
+                      "startTime": "2026-10-29T21:19:04.620Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -290,12 +290,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4380,
+                      "duration": 3220,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:56:05.293Z",
+                      "startTime": "2026-10-29T21:19:11.382Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -337,12 +337,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 7569,
+                      "duration": 3635,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:56:09.683Z",
+                      "startTime": "2026-10-29T21:19:14.616Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -384,12 +384,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1946,
+                      "duration": 2182,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:56:17.261Z",
+                      "startTime": "2026-10-29T21:19:18.266Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -437,12 +437,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6147,
+                      "duration": 5738,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:56:19.223Z",
+                      "startTime": "2026-10-29T21:19:20.474Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -484,12 +484,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6752,
+                      "duration": 6528,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:56:25.387Z",
+                      "startTime": "2026-10-29T21:19:26.241Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -531,12 +531,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5,
+                      "duration": 7,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:56:32.149Z",
+                      "startTime": "2026-10-29T21:19:32.781Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -584,12 +584,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1791,
+                      "duration": 2727,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:56:32.168Z",
+                      "startTime": "2026-10-29T21:19:32.807Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -648,12 +648,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3036,
+                      "duration": 4440,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:56:33.980Z",
+                      "startTime": "2026-10-29T21:19:35.566Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -700,12 +700,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 10,
+                      "duration": 12,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:56:37.036Z",
+                      "startTime": "2026-10-29T21:19:40.027Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -753,12 +753,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2387,
+                      "duration": 2536,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:56:37.058Z",
+                      "startTime": "2026-10-29T21:19:40.056Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -800,12 +800,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 7341,
+                      "duration": 9037,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:56:39.460Z",
+                      "startTime": "2026-10-29T21:19:42.613Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -847,12 +847,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3749,
+                      "duration": 3500,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:56:46.812Z",
+                      "startTime": "2026-10-29T21:19:51.662Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -894,12 +894,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3172,
+                      "duration": 3347,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:56:50.577Z",
+                      "startTime": "2026-10-29T21:19:55.173Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -953,12 +953,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5523,
+                      "duration": 10063,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:56:53.766Z",
+                      "startTime": "2026-10-29T21:19:58.550Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1005,12 +1005,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4084,
+                      "duration": 8293,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:56:59.304Z",
+                      "startTime": "2026-10-29T21:20:08.633Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1051,29 +1051,92 @@
                     {
                       "workerIndex": 0,
                       "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 10754,
-                      "errors": [],
+                      "status": "failed",
+                      "duration": 10454,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('.m-table tbody tr').filter({ hasText: 'Advanced Diploma of Accounting' }).filter({ hasText: 'RMIT' }).first()\nExpected: visible\nTimeout: 6000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" locator('.m-table tbody tr').filter({ hasText: 'Advanced Diploma of Accounting' }).filter({ hasText: 'RMIT' }).first() with timeout 6000ms\u001b[22m\n\u001b[2m  - waiting for locator('.m-table tbody tr').filter({ hasText: 'Advanced Diploma of Accounting' }).filter({ hasText: 'RMIT' }).first()\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('.m-table tbody tr').filter({ hasText: 'Advanced Diploma of Accounting' }).filter({ hasText: 'RMIT' }).first()\nExpected: visible\nTimeout: 6000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" locator('.m-table tbody tr').filter({ hasText: 'Advanced Diploma of Accounting' }).filter({ hasText: 'RMIT' }).first() with timeout 6000ms\u001b[22m\n\u001b[2m  - waiting for locator('.m-table tbody tr').filter({ hasText: 'Advanced Diploma of Accounting' }).filter({ hasText: 'RMIT' }).first()\u001b[22m\n\n    at /home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/cf-061-qilt-prisms-comparison-deployed.spec.mjs:92:21",
+                        "location": {
+                          "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/cf-061-qilt-prisms-comparison-deployed.spec.mjs",
+                          "column": 21,
+                          "line": 92
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 90 |\u001b[39m   \u001b[36mawait\u001b[39m search\u001b[33m.\u001b[39mfill(\u001b[32m'Advanced Diploma of Accounting'\u001b[39m)\n \u001b[90m 91 |\u001b[39m   \u001b[36mconst\u001b[39m row\u001b[33m=\u001b[39mpage\u001b[33m.\u001b[39mlocator(\u001b[32m'.m-table tbody tr'\u001b[39m)\u001b[33m.\u001b[39mfilter({hasText\u001b[33m:\u001b[39m\u001b[32m'Advanced Diploma of Accounting'\u001b[39m})\u001b[33m.\u001b[39mfilter({hasText\u001b[33m:\u001b[39m\u001b[32m'RMIT'\u001b[39m})\u001b[33m.\u001b[39mfirst()\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 92 |\u001b[39m   \u001b[36mawait\u001b[39m expect(row)\u001b[33m.\u001b[39mtoBeVisible({timeout\u001b[33m:\u001b[39m\u001b[33mDETERMINISTIC_UI_TIMEOUT\u001b[39m})\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 93 |\u001b[39m   \u001b[36mawait\u001b[39m row\u001b[33m.\u001b[39mclick()\n \u001b[90m 94 |\u001b[39m   \u001b[90m// v2.15.226 (9 Oct 2026, slim course read): insights load from admin_read 'course_insights' when \"More about this course\" is opened.\u001b[39m\n \u001b[90m 95 |\u001b[39m   \u001b[36mconst\u001b[39m more\u001b[33m=\u001b[39mpage\u001b[33m.\u001b[39mlocator(\u001b[32m'.m-drawer-course [data-course-more]'\u001b[39m)\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/cf-061-qilt-prisms-comparison-deployed.spec.mjs",
+                            "column": 21,
+                            "line": 92
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('.m-table tbody tr').filter({ hasText: 'Advanced Diploma of Accounting' }).filter({ hasText: 'RMIT' }).first()\nExpected: visible\nTimeout: 6000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" locator('.m-table tbody tr').filter({ hasText: 'Advanced Diploma of Accounting' }).filter({ hasText: 'RMIT' }).first() with timeout 6000ms\u001b[22m\n\u001b[2m  - waiting for locator('.m-table tbody tr').filter({ hasText: 'Advanced Diploma of Accounting' }).filter({ hasText: 'RMIT' }).first()\u001b[22m\n\n\n  90 |   await search.fill('Advanced Diploma of Accounting')\n  91 |   const row=page.locator('.m-table tbody tr').filter({hasText:'Advanced Diploma of Accounting'}).filter({hasText:'RMIT'}).first()\n> 92 |   await expect(row).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})\n     |                     ^\n  93 |   await row.click()\n  94 |   // v2.15.226 (9 Oct 2026, slim course read): insights load from admin_read 'course_insights' when \"More about this course\" is opened.\n  95 |   const more=page.locator('.m-drawer-course [data-course-more]')\n    at /home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/cf-061-qilt-prisms-comparison-deployed.spec.mjs:92:21"
+                        }
+                      ],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:57:03.396Z",
+                      "startTime": "2026-10-29T21:20:16.938Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-061-qilt-prisms-compari-0ad59-and-opens-Course-comparison-chromium-desktop/attachments/runtime-evidence-0a8c266c384801946b229d735abfbe86aebd0b80.json"
+                        },
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-061-qilt-prisms-compari-0ad59-and-opens-Course-comparison-chromium-desktop/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-061-qilt-prisms-compari-0ad59-and-opens-Course-comparison-chromium-desktop/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-061-qilt-prisms-compari-0ad59-and-opens-Course-comparison-chromium-desktop/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-061-qilt-prisms-compari-0ad59-and-opens-Course-comparison-chromium-desktop/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/cf-061-qilt-prisms-comparison-deployed.spec.mjs",
+                        "column": 21,
+                        "line": 92
+                      }
+                    },
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 10613,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-10-29T21:20:28.229Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "cf-061-course-comparison",
                           "contentType": "image/png",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-061-qilt-prisms-compari-0ad59-and-opens-Course-comparison-chromium-desktop/attachments/cf-061-course-comparison-444349d9960f6305609919932e595c28ff93b870.png"
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-061-qilt-prisms-compari-0ad59-and-opens-Course-comparison-chromium-desktop-retry1/attachments/cf-061-course-comparison-444349d9960f6305609919932e595c28ff93b870.png"
                         },
                         {
                           "name": "runtime-evidence",
                           "contentType": "application/json",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-061-qilt-prisms-compari-0ad59-and-opens-Course-comparison-chromium-desktop/attachments/runtime-evidence-0a8c266c384801946b229d735abfbe86aebd0b80.json"
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-061-qilt-prisms-compari-0ad59-and-opens-Course-comparison-chromium-desktop-retry1/attachments/runtime-evidence-0a8c266c384801946b229d735abfbe86aebd0b80.json"
                         }
                       ]
                     }
                   ],
-                  "status": "expected"
+                  "status": "flaky"
                 }
               ],
               "id": "742d1de593576af0080c-3dd2a65366cc5659ce9e",
@@ -1113,15 +1176,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2379,
+                      "duration": 3095,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:57:14.164Z",
+                      "startTime": "2026-10-29T21:20:38.976Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1177,15 +1240,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2437,
+                      "duration": 2812,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:57:16.562Z",
+                      "startTime": "2026-10-29T21:20:42.111Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1219,15 +1282,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3,
+                      "duration": 9,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:57:19.021Z",
+                      "startTime": "2026-10-29T21:20:44.950Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1272,15 +1335,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2070,
+                      "duration": 2815,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:57:19.035Z",
+                      "startTime": "2026-10-29T21:20:44.979Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1314,7 +1377,7 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
                       "duration": 7,
@@ -1322,7 +1385,7 @@
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:57:21.119Z",
+                      "startTime": "2026-10-29T21:20:47.821Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1350,15 +1413,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1616,
+                      "duration": 2062,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:57:21.135Z",
+                      "startTime": "2026-10-29T21:20:47.838Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1409,15 +1472,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3098,
+                      "duration": 5535,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:57:22.764Z",
+                      "startTime": "2026-10-29T21:20:49.918Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1451,15 +1514,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3231,
+                      "duration": 4155,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:57:25.876Z",
+                      "startTime": "2026-10-29T21:20:55.476Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1493,15 +1556,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4054,
+                      "duration": 5993,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:57:29.116Z",
+                      "startTime": "2026-10-29T21:20:59.643Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1552,15 +1615,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1826,
+                      "duration": 2453,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:57:33.182Z",
+                      "startTime": "2026-10-29T21:21:05.655Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1611,15 +1674,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3376,
+                      "duration": 7275,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:57:35.029Z",
+                      "startTime": "2026-10-29T21:21:08.133Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1653,15 +1716,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1525,
+                      "duration": 2856,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:57:38.421Z",
+                      "startTime": "2026-10-29T21:21:15.431Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1712,15 +1775,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3707,
+                      "duration": 5536,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:57:39.958Z",
+                      "startTime": "2026-10-29T21:21:18.305Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1776,15 +1839,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1924,
+                      "duration": 2628,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:57:43.687Z",
+                      "startTime": "2026-10-29T21:21:23.866Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1823,15 +1886,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4227,
+                      "duration": 4154,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:57:45.629Z",
+                      "startTime": "2026-10-29T21:21:26.515Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1887,15 +1950,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 7749,
+                      "duration": 4778,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:57:49.871Z",
+                      "startTime": "2026-10-29T21:21:30.685Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1951,15 +2014,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 8152,
+                      "duration": 9668,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:57:57.643Z",
+                      "startTime": "2026-10-29T21:21:35.490Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2010,89 +2073,26 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 1,
                       "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 8821,
-                      "error": {
-                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('aside.m-drawer-course').getByLabel('Country of prior education')\nExpected: visible\nTimeout: 6000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" locator('aside.m-drawer-course').getByLabel('Country of prior education') with timeout 6000ms\u001b[22m\n\u001b[2m  - waiting for locator('aside.m-drawer-course').getByLabel('Country of prior education')\u001b[22m\n",
-                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('aside.m-drawer-course').getByLabel('Country of prior education')\nExpected: visible\nTimeout: 6000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" locator('aside.m-drawer-course').getByLabel('Country of prior education') with timeout 6000ms\u001b[22m\n\u001b[2m  - waiting for locator('aside.m-drawer-course').getByLabel('Country of prior education')\u001b[22m\n\n    at dp020 (/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/cf-247-s167-aer-course-phone-deployed.spec.mjs:25:26)\n    at /home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/cf-247-s167-aer-course-phone-deployed.spec.mjs:75:7",
-                        "location": {
-                          "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/cf-247-s167-aer-course-phone-deployed.spec.mjs",
-                          "column": 26,
-                          "line": 25
-                        },
-                        "snippet": "\u001b[0m \u001b[90m 23 |\u001b[39m     \u001b[36mconst\u001b[39m blade \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'aside.m-drawer-course'\u001b[39m)\n \u001b[90m 24 |\u001b[39m     \u001b[36mconst\u001b[39m select \u001b[33m=\u001b[39m blade\u001b[33m.\u001b[39mgetByLabel(\u001b[32m'Country of prior education'\u001b[39m)\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 25 |\u001b[39m     \u001b[36mawait\u001b[39m expect(select)\u001b[33m.\u001b[39mtoBeVisible({ timeout\u001b[33m:\u001b[39m \u001b[33mDETERMINISTIC_UI_TIMEOUT\u001b[39m })\n \u001b[90m    |\u001b[39m                          \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 26 |\u001b[39m     \u001b[36mconst\u001b[39m names \u001b[33m=\u001b[39m (\u001b[36mawait\u001b[39m select\u001b[33m.\u001b[39mlocator(\u001b[32m'option'\u001b[39m)\u001b[33m.\u001b[39mallTextContents())\u001b[33m.\u001b[39mmap((t) \u001b[33m=>\u001b[39m t\u001b[33m.\u001b[39mtrim())\u001b[33m.\u001b[39mfilter((t) \u001b[33m=>\u001b[39m t \u001b[33m&&\u001b[39m t \u001b[33m!==\u001b[39m \u001b[32m'Choose…'\u001b[39m)\n \u001b[90m 27 |\u001b[39m     expect(names\u001b[33m.\u001b[39mlength)\u001b[33m.\u001b[39mtoBeGreaterThan(\u001b[35m3\u001b[39m)\n \u001b[90m 28 |\u001b[39m     \u001b[36mconst\u001b[39m head \u001b[33m=\u001b[39m names\u001b[33m.\u001b[39mfilter((n) \u001b[33m=>\u001b[39m \u001b[33mPRIORITY\u001b[39m\u001b[33m.\u001b[39msome((p) \u001b[33m=>\u001b[39m n\u001b[33m.\u001b[39mstartsWith(p)))\u001b[0m"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/cf-247-s167-aer-course-phone-deployed.spec.mjs",
-                            "column": 26,
-                            "line": 25
-                          },
-                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('aside.m-drawer-course').getByLabel('Country of prior education')\nExpected: visible\nTimeout: 6000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" locator('aside.m-drawer-course').getByLabel('Country of prior education') with timeout 6000ms\u001b[22m\n\u001b[2m  - waiting for locator('aside.m-drawer-course').getByLabel('Country of prior education')\u001b[22m\n\n\n  23 |     const blade = page.locator('aside.m-drawer-course')\n  24 |     const select = blade.getByLabel('Country of prior education')\n> 25 |     await expect(select).toBeVisible({ timeout: DETERMINISTIC_UI_TIMEOUT })\n     |                          ^\n  26 |     const names = (await select.locator('option').allTextContents()).map((t) => t.trim()).filter((t) => t && t !== 'Choose…')\n  27 |     expect(names.length).toBeGreaterThan(3)\n  28 |     const head = names.filter((n) => PRIORITY.some((p) => n.startsWith(p)))\n    at dp020 (/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/cf-247-s167-aer-course-phone-deployed.spec.mjs:25:26)\n    at /home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/cf-247-s167-aer-course-phone-deployed.spec.mjs:75:7"
-                        }
-                      ],
+                      "status": "passed",
+                      "duration": 7536,
+                      "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:58:05.815Z",
+                      "startTime": "2026-10-29T21:21:45.184Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "runtime-evidence",
                           "contentType": "application/json",
                           "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-247-s167-aer-course-pho-60d74-ps-and-the-evidence-overlay-chromium-desktop/attachments/runtime-evidence-7f22bc624c024b3daa0525fd3a1a09ed9f26c259.json"
-                        },
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-247-s167-aer-course-pho-60d74-ps-and-the-evidence-overlay-chromium-desktop/test-failed-1.png"
-                        },
-                        {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-247-s167-aer-course-pho-60d74-ps-and-the-evidence-overlay-chromium-desktop/video.webm"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-247-s167-aer-course-pho-60d74-ps-and-the-evidence-overlay-chromium-desktop/error-context.md"
-                        },
-                        {
-                          "name": "trace",
-                          "contentType": "application/zip",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-247-s167-aer-course-pho-60d74-ps-and-the-evidence-overlay-chromium-desktop/trace.zip"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/cf-247-s167-aer-course-phone-deployed.spec.mjs",
-                        "column": 26,
-                        "line": 25
-                      }
-                    },
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 7576,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 1,
-                      "startTime": "2026-10-29T13:58:15.291Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "runtime-evidence",
-                          "contentType": "application/json",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-247-s167-aer-course-pho-60d74-ps-and-the-evidence-overlay-chromium-desktop-retry1/attachments/runtime-evidence-7f22bc624c024b3daa0525fd3a1a09ed9f26c259.json"
                         }
                       ]
                     }
                   ],
-                  "status": "flaky"
+                  "status": "expected"
                 }
               ],
               "id": "78f71a7504eb15f77897-af4099b65237b9ddb8f5",
@@ -2135,12 +2135,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 9031,
+                      "duration": 10288,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:58:22.972Z",
+                      "startTime": "2026-10-29T21:21:52.750Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2192,12 +2192,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6204,
+                      "duration": 10747,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:58:32.027Z",
+                      "startTime": "2026-10-29T21:22:03.062Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2239,12 +2239,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6568,
+                      "duration": 7420,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:58:38.240Z",
+                      "startTime": "2026-10-29T21:22:13.827Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2303,12 +2303,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 7427,
+                      "duration": 7326,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:58:44.824Z",
+                      "startTime": "2026-10-29T21:22:21.280Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2350,12 +2350,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3570,
+                      "duration": 3576,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:58:52.268Z",
+                      "startTime": "2026-10-29T21:22:28.631Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2397,12 +2397,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 123,
+                      "duration": 106,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:58:55.846Z",
+                      "startTime": "2026-10-29T21:22:32.221Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -2450,12 +2450,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2228,
+                      "duration": 3720,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:58:55.978Z",
+                      "startTime": "2026-10-29T21:22:32.340Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2497,12 +2497,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2294,
+                      "duration": 3482,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:58:58.222Z",
+                      "startTime": "2026-10-29T21:22:36.084Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2561,12 +2561,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2338,
+                      "duration": 2437,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:59:00.530Z",
+                      "startTime": "2026-10-29T21:22:39.581Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2608,12 +2608,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6507,
+                      "duration": 3319,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:59:02.883Z",
+                      "startTime": "2026-10-29T21:22:42.040Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2655,12 +2655,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6170,
+                      "duration": 2563,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:59:09.398Z",
+                      "startTime": "2026-10-29T21:22:45.370Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2702,12 +2702,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2437,
+                      "duration": 2595,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:59:15.577Z",
+                      "startTime": "2026-10-29T21:22:47.944Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2766,12 +2766,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 7,
+                      "duration": 8,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:59:18.029Z",
+                      "startTime": "2026-10-29T21:22:50.557Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -2802,12 +2802,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3378,
+                      "duration": 3853,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:59:18.048Z",
+                      "startTime": "2026-10-29T21:22:50.582Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2849,12 +2849,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3590,
+                      "duration": 4372,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:59:21.434Z",
+                      "startTime": "2026-10-29T21:22:54.444Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2896,12 +2896,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3766,
+                      "duration": 5046,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:59:25.032Z",
+                      "startTime": "2026-10-29T21:22:58.827Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2960,12 +2960,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1562,
+                      "duration": 3445,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:59:28.812Z",
+                      "startTime": "2026-10-29T21:23:03.925Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3007,12 +3007,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6815,
+                      "duration": 8107,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:59:30.394Z",
+                      "startTime": "2026-10-29T21:23:07.389Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3054,12 +3054,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1936,
+                      "duration": 2751,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:59:37.219Z",
+                      "startTime": "2026-10-29T21:23:15.507Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3101,12 +3101,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3092,
+                      "duration": 3736,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:59:39.163Z",
+                      "startTime": "2026-10-29T21:23:18.269Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3148,12 +3148,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3782,
+                      "duration": 3456,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:59:42.265Z",
+                      "startTime": "2026-10-29T21:23:22.018Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3212,12 +3212,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2599,
+                      "duration": 2931,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:59:46.059Z",
+                      "startTime": "2026-10-29T21:23:25.489Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3259,12 +3259,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3876,
+                      "duration": 3939,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:59:48.673Z",
+                      "startTime": "2026-10-29T21:23:28.443Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3323,12 +3323,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1792,
+                      "duration": 2286,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:59:52.559Z",
+                      "startTime": "2026-10-29T21:23:32.406Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3370,12 +3370,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2743,
+                      "duration": 2629,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:59:54.370Z",
+                      "startTime": "2026-10-29T21:23:34.720Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3422,7 +3422,7 @@
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:59:57.121Z",
+                      "startTime": "2026-10-29T21:23:37.360Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -3470,12 +3470,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 7749,
+                      "duration": 7516,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T13:59:57.135Z",
+                      "startTime": "2026-10-29T21:23:37.376Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3534,12 +3534,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4243,
+                      "duration": 3075,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T14:00:04.906Z",
+                      "startTime": "2026-10-29T21:23:44.918Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3581,12 +3581,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3385,
+                      "duration": 2217,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T14:00:09.165Z",
+                      "startTime": "2026-10-29T21:23:48.014Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3628,12 +3628,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4980,
+                      "duration": 2887,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T14:00:12.559Z",
+                      "startTime": "2026-10-29T21:23:50.242Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3692,12 +3692,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6200,
+                      "duration": 2754,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T14:00:17.569Z",
+                      "startTime": "2026-10-29T21:23:53.145Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3734,12 +3734,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3074,
+                      "duration": 1988,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T14:00:23.786Z",
+                      "startTime": "2026-10-29T21:23:55.923Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3781,7 +3781,7 @@
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T14:00:26.871Z",
+                      "startTime": "2026-10-29T21:23:57.925Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -3812,12 +3812,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3786,
+                      "duration": 1737,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T14:00:26.881Z",
+                      "startTime": "2026-10-29T21:23:57.934Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3871,12 +3871,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5,
+                      "duration": 7,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T14:00:30.679Z",
+                      "startTime": "2026-10-29T21:23:59.685Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -3924,12 +3924,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 17202,
+                      "duration": 18726,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T14:00:30.692Z",
+                      "startTime": "2026-10-29T21:23:59.703Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3988,12 +3988,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 9418,
+                      "duration": 3643,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T14:00:47.912Z",
+                      "startTime": "2026-10-29T21:24:18.453Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -4052,12 +4052,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2524,
+                      "duration": 2483,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T14:00:57.349Z",
+                      "startTime": "2026-10-29T21:24:22.127Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -4116,12 +4116,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 9,
+                      "duration": 12,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T14:00:59.893Z",
+                      "startTime": "2026-10-29T21:24:24.634Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -4153,7 +4153,7 @@
           "specs": [
             {
               "title": "core workspaces stay within governed RPC and payload budgets",
-              "ok": false,
+              "ok": true,
               "tags": [
                 "deployed"
               ],
@@ -4168,131 +4168,29 @@
                     {
                       "workerIndex": 1,
                       "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 22485,
-                      "error": {
-                        "message": "Error: providers_page latency\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: <= \u001b[32m3000\u001b[39m\nReceived:    \u001b[31m3552\u001b[39m",
-                        "stack": "Error: providers_page latency\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: <= \u001b[32m3000\u001b[39m\nReceived:    \u001b[31m3552\u001b[39m\n    at /home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/performance-deployed.spec.mjs:26:1540",
-                        "location": {
-                          "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/performance-deployed.spec.mjs",
-                          "column": 1540,
-                          "line": 26
-                        },
-                        "snippet": "\u001b[0m \u001b[90m 24 |\u001b[39m test\u001b[33m.\u001b[39mdescribe(\u001b[32m'M1 performance and responsiveness @deployed'\u001b[39m\u001b[33m,\u001b[39m () \u001b[33m=>\u001b[39m {\n \u001b[90m 25 |\u001b[39m   test\u001b[33m.\u001b[39mbeforeEach(\u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m loginAsUatUser(page) })\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 26 |\u001b[39m   test(\u001b[32m'core workspaces stay within governed RPC and payload budgets'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }\u001b[33m,\u001b[39m testInfo) \u001b[33m=>\u001b[39m {\u001b[36mconst\u001b[39m runtime \u001b[33m=\u001b[39m observeRuntime(page)\u001b[33m,\u001b[39mmeasures \u001b[33m=\u001b[39m []\u001b[33m;\u001b[39m\u001b[36mtry\u001b[39m {measures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'providers_page'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m route(page\u001b[33m,\u001b[39m \u001b[32m'providers'\u001b[39m) }))\u001b[33m;\u001b[39mmeasures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'dashboard'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m route(page\u001b[33m,\u001b[39m \u001b[32m'dashboard'\u001b[39m) }))\u001b[33m;\u001b[39mmeasures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'dashboard'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mreload() }))\u001b[33m;\u001b[39mmeasures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'courses_page'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m route(page\u001b[33m,\u001b[39m \u001b[32m'courses'\u001b[39m) }))\u001b[33m;\u001b[39m\u001b[36mconst\u001b[39m providerFilter\u001b[33m=\u001b[39mpage\u001b[33m.\u001b[39mlocator(\u001b[32m'.m-filter-select'\u001b[39m)\u001b[33m.\u001b[39mfilter({hasText\u001b[33m:\u001b[39m\u001b[32m'Provider'\u001b[39m})\u001b[33m.\u001b[39mfirst()\u001b[33m;\u001b[39m\u001b[36mconst\u001b[39m filterMeasure\u001b[33m=\u001b[39m\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m\u001b[32m'catalogue_filter_page'\u001b[39m\u001b[33m,\u001b[39m\u001b[36masync\u001b[39m()\u001b[33m=>\u001b[39m{\u001b[36mawait\u001b[39m providerFilter\u001b[33m.\u001b[39mlocator(\u001b[32m'button.m-filter-button'\u001b[39m)\u001b[33m.\u001b[39mclick()})\u001b[33m;\u001b[39mmeasures\u001b[33m.\u001b[39mpush(filterMeasure)\u001b[33m;\u001b[39m\u001b[36mconst\u001b[39m filterButtons\u001b[33m=\u001b[39mproviderFilter\u001b[33m.\u001b[39mlocator(\u001b[32m'.m-filter-popover > button'\u001b[39m)\u001b[33m;\u001b[39mexpect(\u001b[36mawait\u001b[39m filterButtons\u001b[33m.\u001b[39mcount())\u001b[33m.\u001b[39mtoBeLessThanOrEqual(\u001b[35m11\u001b[39m)\u001b[33m;\u001b[39mmeasures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'campuses_page'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m route(page\u001b[33m,\u001b[39m \u001b[32m'campuses'\u001b[39m) }))\u001b[33m;\u001b[39mmeasures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'scholarships_page'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m route(page\u001b[33m,\u001b[39m \u001b[32m'scholarships'\u001b[39m) }))\u001b[33m;\u001b[39mmeasures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'evidence_page'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m route(page\u001b[33m,\u001b[39m \u001b[32m'evidence'\u001b[39m) }))\u001b[33m;\u001b[39mmeasures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'data_quality_overview'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m openDataQuality(page) }))\u001b[33m;\u001b[39m\u001b[36mfor\u001b[39m (\u001b[36mconst\u001b[39m m \u001b[36mof\u001b[39m measures\u001b[33m.\u001b[39mfilter(x \u001b[33m=>\u001b[39m x\u001b[33m.\u001b[39melapsed_ms \u001b[33m!=\u001b[39m \u001b[36mnull\u001b[39m)) {expect(m\u001b[33m.\u001b[39mstatus\u001b[33m,\u001b[39m \u001b[32m`${m.operation} HTTP status`\u001b[39m)\u001b[33m.\u001b[39mtoBe(\u001b[35m200\u001b[39m)\u001b[33m;\u001b[39mexpect(m\u001b[33m.\u001b[39melapsed_ms\u001b[33m,\u001b[39m \u001b[32m`${m.operation} latency`\u001b[39m)\u001b[33m.\u001b[39mtoBeLessThanOrEqual(\u001b[33mRPC_BUDGET_MS\u001b[39m)}\u001b[36mfor\u001b[39m (\u001b[36mconst\u001b[39m m \u001b[36mof\u001b[39m measures\u001b[33m.\u001b[39mfilter(x \u001b[33m=>\u001b[39m x\u001b[33m.\u001b[39moperation\u001b[33m.\u001b[39mendsWith(\u001b[32m'_page'\u001b[39m))) expect(m\u001b[33m.\u001b[39mpayload_bytes\u001b[33m,\u001b[39m \u001b[32m`${m.operation} payload`\u001b[39m)\u001b[33m.\u001b[39mtoBeLessThanOrEqual(\u001b[33mPAGE_PAYLOAD_BUDGET\u001b[39m)\u001b[33m;\u001b[39m\u001b[36mconst\u001b[39m filters \u001b[33m=\u001b[39m measures\u001b[33m.\u001b[39mfind(x \u001b[33m=>\u001b[39m x\u001b[33m.\u001b[39moperation \u001b[33m===\u001b[39m \u001b[32m'catalogue_filter_page'\u001b[39m)\u001b[33m;\u001b[39mexpect(filters\u001b[33m.\u001b[39mstatus)\u001b[33m.\u001b[39mtoBe(\u001b[35m200\u001b[39m)\u001b[33m;\u001b[39mexpect(filters\u001b[33m.\u001b[39mpayload_bytes\u001b[33m,\u001b[39m \u001b[32m'catalogue_filter_page payload'\u001b[39m)\u001b[33m.\u001b[39mtoBeLessThanOrEqual(\u001b[33mFILTER_OPTION_PAYLOAD_BUDGET\u001b[39m)\u001b[33m;\u001b[39m\u001b[36mawait\u001b[39m save(testInfo\u001b[33m,\u001b[39m \u001b[32m'workspace-performance'\u001b[39m\u001b[33m,\u001b[39m { budgets\u001b[33m:\u001b[39m { \u001b[33mRPC_BUDGET_MS\u001b[39m\u001b[33m,\u001b[39m \u001b[33mFILTER_OPTION_PAYLOAD_BUDGET\u001b[39m\u001b[33m,\u001b[39m \u001b[33mPAGE_PAYLOAD_BUDGET\u001b[39m }\u001b[33m,\u001b[39m measures })} \u001b[36mfinally\u001b[39m {\u001b[36mawait\u001b[39m attachRuntimeEvidence(testInfo\u001b[33m,\u001b[39m runtime)\u001b[33m;\u001b[39massertNoServerErrors(runtime)}})\n \u001b[90m    |\u001b[39m                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 27 |\u001b[39m   test(\u001b[32m'exact CRICOS lookup, detail, paging and browser back stay interactive'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }\u001b[33m,\u001b[39m testInfo) \u001b[33m=>\u001b[39m {\u001b[36mconst\u001b[39m runtime \u001b[33m=\u001b[39m observeRuntime(page)\u001b[33m,\u001b[39mmeasures \u001b[33m=\u001b[39m []\u001b[33m;\u001b[39m\u001b[36mtry\u001b[39m {measures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'courses_page'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m route(page\u001b[33m,\u001b[39m \u001b[32m'courses'\u001b[39m) }))\u001b[33m;\u001b[39m\u001b[36mconst\u001b[39m search \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByPlaceholder(\u001b[32m'Search Course, Provider, CRICOS/course code or stable key'\u001b[39m)\u001b[33m;\u001b[39mmeasures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'courses_page'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m search\u001b[33m.\u001b[39mfill(\u001b[32m'121174E'\u001b[39m) }))\u001b[33m;\u001b[39m\u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mgetByText(\u001b[32m'121174E'\u001b[39m\u001b[33m,\u001b[39m { exact\u001b[33m:\u001b[39m \u001b[36mtrue\u001b[39m })\u001b[33m.\u001b[39mfirst())\u001b[33m.\u001b[39mtoBeVisible({ timeout\u001b[33m:\u001b[39m \u001b[35m12\u001b[39m_000 })\u001b[33m;\u001b[39mmeasures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'course_detail'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'.m-table tbody tr'\u001b[39m)\u001b[33m.\u001b[39mfirst()\u001b[33m.\u001b[39mclick() }))\u001b[33m;\u001b[39m\u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mlocator(\u001b[32m'.m-drawer'\u001b[39m))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mkeyboard\u001b[33m.\u001b[39mpress(\u001b[32m'Escape'\u001b[39m)\u001b[33m;\u001b[39m\u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mlocator(\u001b[32m'.m-drawer'\u001b[39m))\u001b[33m.\u001b[39mtoBeHidden()\u001b[33m;\u001b[39mmeasures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'courses_page'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m search\u001b[33m.\u001b[39mfill(\u001b[32m''\u001b[39m) }))\u001b[33m;\u001b[39m\u001b[36mconst\u001b[39m next \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByRole(\u001b[32m'button'\u001b[39m\u001b[33m,\u001b[39m { name\u001b[33m:\u001b[39m \u001b[35m/Next/i\u001b[39m })\u001b[33m.\u001b[39mfirst()\u001b[33m;\u001b[39m\u001b[36mawait\u001b[39m expect(next)\u001b[33m.\u001b[39mtoBeEnabled()\u001b[33m;\u001b[39mmeasures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'courses_page'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m next\u001b[33m.\u001b[39mclick() }))\u001b[33m;\u001b[39m\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'providers_page'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m route(page\u001b[33m,\u001b[39m \u001b[32m'providers'\u001b[39m) })\u001b[33m;\u001b[39mmeasures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'courses_page'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoBack() }))\u001b[33m;\u001b[39m\u001b[36mawait\u001b[39m expect(page)\u001b[33m.\u001b[39mtoHaveURL(\u001b[35m/#courses/\u001b[39m)\u001b[33m;\u001b[39m\u001b[36mfor\u001b[39m (\u001b[36mconst\u001b[39m m \u001b[36mof\u001b[39m measures) {expect(m\u001b[33m.\u001b[39mstatus)\u001b[33m.\u001b[39mtoBe(\u001b[35m200\u001b[39m)\u001b[33m;\u001b[39mexpect(m\u001b[33m.\u001b[39melapsed_ms\u001b[33m,\u001b[39m \u001b[32m`${m.operation} interaction latency`\u001b[39m)\u001b[33m.\u001b[39mtoBeLessThanOrEqual(m\u001b[33m.\u001b[39moperation \u001b[33m===\u001b[39m \u001b[32m'course_detail'\u001b[39m \u001b[33m?\u001b[39m \u001b[33mDETAIL_BUDGET_MS\u001b[39m \u001b[33m:\u001b[39m \u001b[33mRPC_BUDGET_MS\u001b[39m)\u001b[33m;\u001b[39mexpect(m\u001b[33m.\u001b[39mpayload_bytes)\u001b[33m.\u001b[39mtoBeLessThanOrEqual(\u001b[33mPAGE_PAYLOAD_BUDGET\u001b[39m)}\u001b[36mawait\u001b[39m save(testInfo\u001b[33m,\u001b[39m \u001b[32m'course-interactions'\u001b[39m\u001b[33m,\u001b[39m { budgets\u001b[33m:\u001b[39m { \u001b[33mRPC_BUDGET_MS\u001b[39m\u001b[33m,\u001b[39m \u001b[33mDETAIL_BUDGET_MS\u001b[39m\u001b[33m,\u001b[39m \u001b[33mPAGE_PAYLOAD_BUDGET\u001b[39m }\u001b[33m,\u001b[39m measures })} \u001b[36mfinally\u001b[39m {\u001b[36mawait\u001b[39m attachRuntimeEvidence(testInfo\u001b[33m,\u001b[39m runtime)\u001b[33m;\u001b[39massertNoServerErrors(runtime)}})\n \u001b[90m 28 |\u001b[39m   \u001b[90m// v2.15.200: Layer 2 is Adapters only (Source profiles retired). v2.15.300: Adapters is Layer 2/3 › Universities, which reads\u001b[39m\n \u001b[90m 29 |\u001b[39m   \u001b[90m// public.admin_layer23('universities') (the admin_adapters 'list' rows plus the onboarding stage), not admin_read.\u001b[39m\u001b[0m"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/performance-deployed.spec.mjs",
-                            "column": 1540,
-                            "line": 26
-                          },
-                          "message": "Error: providers_page latency\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: <= \u001b[32m3000\u001b[39m\nReceived:    \u001b[31m3552\u001b[39m\n\n  24 | test.describe('M1 performance and responsiveness @deployed', () => {\n  25 |   test.beforeEach(async ({ page }) => { await loginAsUatUser(page) })\n> 26 |   test('core workspaces stay within governed RPC and payload budgets', async ({ page }, testInfo) => {const runtime = observeRuntime(page),measures = [];try {measures.push(await measuredRpc(page, 'providers_page', async () => { await route(page, 'providers') }));measures.push(await measuredRpc(page, 'dashboard', async () => { await route(page, 'dashboard') }));measures.push(await measuredRpc(page, 'dashboard', async () => { await page.reload() }));measures.push(await measuredRpc(page, 'courses_page', async () => { await route(page, 'courses') }));const providerFilter=page.locator('.m-filter-select').filter({hasText:'Provider'}).first();const filterMeasure=await measuredRpc(page,'catalogue_filter_page',async()=>{await providerFilter.locator('button.m-filter-button').click()});measures.push(filterMeasure);const filterButtons=providerFilter.locator('.m-filter-popover > button');expect(await filterButtons.count()).toBeLessThanOrEqual(11);measures.push(await measuredRpc(page, 'campuses_page', async () => { await route(page, 'campuses') }));measures.push(await measuredRpc(page, 'scholarships_page', async () => { await route(page, 'scholarships') }));measures.push(await measuredRpc(page, 'evidence_page', async () => { await route(page, 'evidence') }));measures.push(await measuredRpc(page, 'data_quality_overview', async () => { await openDataQuality(page) }));for (const m of measures.filter(x => x.elapsed_ms != null)) {expect(m.status, `${m.operation} HTTP status`).toBe(200);expect(m.elapsed_ms, `${m.operation} latency`).toBeLessThanOrEqual(RPC_BUDGET_MS)}for (const m of measures.filter(x => x.operation.endsWith('_page'))) expect(m.payload_bytes, `${m.operation} payload`).toBeLessThanOrEqual(PAGE_PAYLOAD_BUDGET);const filters = measures.find(x => x.operation === 'catalogue_filter_page');expect(filters.status).toBe(200);expect(filters.payload_bytes, 'catalogue_filter_page payload').toBeLessThanOrEqual(FILTER_OPTION_PAYLOAD_BUDGET);await save(testInfo, 'workspace-performance', { budgets: { RPC_BUDGET_MS, FILTER_OPTION_PAYLOAD_BUDGET, PAGE_PAYLOAD_BUDGET }, measures })} finally {await attachRuntimeEvidence(testInfo, runtime);assertNoServerErrors(runtime)}})\n     |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ^\n  27 |   test('exact CRICOS lookup, detail, paging and browser back stay interactive', async ({ page }, testInfo) => {const runtime = observeRuntime(page),measures = [];try {measures.push(await measuredRpc(page, 'courses_page', async () => { await route(page, 'courses') }));const search = page.getByPlaceholder('Search Course, Provider, CRICOS/course code or stable key');measures.push(await measuredRpc(page, 'courses_page', async () => { await search.fill('121174E') }));await expect(page.getByText('121174E', { exact: true }).first()).toBeVisible({ timeout: 12_000 });measures.push(await measuredRpc(page, 'course_detail', async () => { await page.locator('.m-table tbody tr').first().click() }));await expect(page.locator('.m-drawer')).toBeVisible();await page.keyboard.press('Escape');await expect(page.locator('.m-drawer')).toBeHidden();measures.push(await measuredRpc(page, 'courses_page', async () => { await search.fill('') }));const next = page.getByRole('button', { name: /Next/i }).first();await expect(next).toBeEnabled();measures.push(await measuredRpc(page, 'courses_page', async () => { await next.click() }));await measuredRpc(page, 'providers_page', async () => { await route(page, 'providers') });measures.push(await measuredRpc(page, 'courses_page', async () => { await page.goBack() }));await expect(page).toHaveURL(/#courses/);for (const m of measures) {expect(m.status).toBe(200);expect(m.elapsed_ms, `${m.operation} interaction latency`).toBeLessThanOrEqual(m.operation === 'course_detail' ? DETAIL_BUDGET_MS : RPC_BUDGET_MS);expect(m.payload_bytes).toBeLessThanOrEqual(PAGE_PAYLOAD_BUDGET)}await save(testInfo, 'course-interactions', { budgets: { RPC_BUDGET_MS, DETAIL_BUDGET_MS, PAGE_PAYLOAD_BUDGET }, measures })} finally {await attachRuntimeEvidence(testInfo, runtime);assertNoServerErrors(runtime)}})\n  28 |   // v2.15.200: Layer 2 is Adapters only (Source profiles retired). v2.15.300: Adapters is Layer 2/3 › Universities, which reads\n  29 |   // public.admin_layer23('universities') (the admin_adapters 'list' rows plus the onboarding stage), not admin_read.\n    at /home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/performance-deployed.spec.mjs:26:1540"
-                        }
-                      ],
+                      "status": "passed",
+                      "duration": 8020,
+                      "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T14:00:59.912Z",
+                      "startTime": "2026-10-29T21:24:24.661Z",
                       "annotations": [],
                       "attachments": [
+                        {
+                          "name": "workspace-performance",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/performance-deployed-M1-pe-324ac-ned-RPC-and-payload-budgets-chromium-desktop/attachments/workspace-performance-6a9fc62103bb6ff8157ac6557ecb33c64ea61f0f.json"
+                        },
                         {
                           "name": "runtime-evidence",
                           "contentType": "application/json",
                           "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/performance-deployed-M1-pe-324ac-ned-RPC-and-payload-budgets-chromium-desktop/attachments/runtime-evidence-b76d22d8f30f2d0d8f44ba1720bf27511670e5a7.json"
-                        },
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/performance-deployed-M1-pe-324ac-ned-RPC-and-payload-budgets-chromium-desktop/test-failed-1.png"
-                        },
-                        {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/performance-deployed-M1-pe-324ac-ned-RPC-and-payload-budgets-chromium-desktop/video.webm"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/performance-deployed-M1-pe-324ac-ned-RPC-and-payload-budgets-chromium-desktop/error-context.md"
-                        },
-                        {
-                          "name": "trace",
-                          "contentType": "application/zip",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/performance-deployed-M1-pe-324ac-ned-RPC-and-payload-budgets-chromium-desktop/trace.zip"
                         }
-                      ],
-                      "errorLocation": {
-                        "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/performance-deployed.spec.mjs",
-                        "column": 1540,
-                        "line": 26
-                      }
-                    },
-                    {
-                      "workerIndex": 2,
-                      "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 14428,
-                      "error": {
-                        "message": "Error: courses_page latency\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: <= \u001b[32m3000\u001b[39m\nReceived:    \u001b[31m3020\u001b[39m",
-                        "stack": "Error: courses_page latency\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: <= \u001b[32m3000\u001b[39m\nReceived:    \u001b[31m3020\u001b[39m\n    at /home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/performance-deployed.spec.mjs:26:1540",
-                        "location": {
-                          "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/performance-deployed.spec.mjs",
-                          "column": 1540,
-                          "line": 26
-                        },
-                        "snippet": "\u001b[0m \u001b[90m 24 |\u001b[39m test\u001b[33m.\u001b[39mdescribe(\u001b[32m'M1 performance and responsiveness @deployed'\u001b[39m\u001b[33m,\u001b[39m () \u001b[33m=>\u001b[39m {\n \u001b[90m 25 |\u001b[39m   test\u001b[33m.\u001b[39mbeforeEach(\u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m loginAsUatUser(page) })\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 26 |\u001b[39m   test(\u001b[32m'core workspaces stay within governed RPC and payload budgets'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }\u001b[33m,\u001b[39m testInfo) \u001b[33m=>\u001b[39m {\u001b[36mconst\u001b[39m runtime \u001b[33m=\u001b[39m observeRuntime(page)\u001b[33m,\u001b[39mmeasures \u001b[33m=\u001b[39m []\u001b[33m;\u001b[39m\u001b[36mtry\u001b[39m {measures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'providers_page'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m route(page\u001b[33m,\u001b[39m \u001b[32m'providers'\u001b[39m) }))\u001b[33m;\u001b[39mmeasures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'dashboard'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m route(page\u001b[33m,\u001b[39m \u001b[32m'dashboard'\u001b[39m) }))\u001b[33m;\u001b[39mmeasures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'dashboard'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mreload() }))\u001b[33m;\u001b[39mmeasures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'courses_page'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m route(page\u001b[33m,\u001b[39m \u001b[32m'courses'\u001b[39m) }))\u001b[33m;\u001b[39m\u001b[36mconst\u001b[39m providerFilter\u001b[33m=\u001b[39mpage\u001b[33m.\u001b[39mlocator(\u001b[32m'.m-filter-select'\u001b[39m)\u001b[33m.\u001b[39mfilter({hasText\u001b[33m:\u001b[39m\u001b[32m'Provider'\u001b[39m})\u001b[33m.\u001b[39mfirst()\u001b[33m;\u001b[39m\u001b[36mconst\u001b[39m filterMeasure\u001b[33m=\u001b[39m\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m\u001b[32m'catalogue_filter_page'\u001b[39m\u001b[33m,\u001b[39m\u001b[36masync\u001b[39m()\u001b[33m=>\u001b[39m{\u001b[36mawait\u001b[39m providerFilter\u001b[33m.\u001b[39mlocator(\u001b[32m'button.m-filter-button'\u001b[39m)\u001b[33m.\u001b[39mclick()})\u001b[33m;\u001b[39mmeasures\u001b[33m.\u001b[39mpush(filterMeasure)\u001b[33m;\u001b[39m\u001b[36mconst\u001b[39m filterButtons\u001b[33m=\u001b[39mproviderFilter\u001b[33m.\u001b[39mlocator(\u001b[32m'.m-filter-popover > button'\u001b[39m)\u001b[33m;\u001b[39mexpect(\u001b[36mawait\u001b[39m filterButtons\u001b[33m.\u001b[39mcount())\u001b[33m.\u001b[39mtoBeLessThanOrEqual(\u001b[35m11\u001b[39m)\u001b[33m;\u001b[39mmeasures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'campuses_page'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m route(page\u001b[33m,\u001b[39m \u001b[32m'campuses'\u001b[39m) }))\u001b[33m;\u001b[39mmeasures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'scholarships_page'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m route(page\u001b[33m,\u001b[39m \u001b[32m'scholarships'\u001b[39m) }))\u001b[33m;\u001b[39mmeasures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'evidence_page'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m route(page\u001b[33m,\u001b[39m \u001b[32m'evidence'\u001b[39m) }))\u001b[33m;\u001b[39mmeasures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'data_quality_overview'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m openDataQuality(page) }))\u001b[33m;\u001b[39m\u001b[36mfor\u001b[39m (\u001b[36mconst\u001b[39m m \u001b[36mof\u001b[39m measures\u001b[33m.\u001b[39mfilter(x \u001b[33m=>\u001b[39m x\u001b[33m.\u001b[39melapsed_ms \u001b[33m!=\u001b[39m \u001b[36mnull\u001b[39m)) {expect(m\u001b[33m.\u001b[39mstatus\u001b[33m,\u001b[39m \u001b[32m`${m.operation} HTTP status`\u001b[39m)\u001b[33m.\u001b[39mtoBe(\u001b[35m200\u001b[39m)\u001b[33m;\u001b[39mexpect(m\u001b[33m.\u001b[39melapsed_ms\u001b[33m,\u001b[39m \u001b[32m`${m.operation} latency`\u001b[39m)\u001b[33m.\u001b[39mtoBeLessThanOrEqual(\u001b[33mRPC_BUDGET_MS\u001b[39m)}\u001b[36mfor\u001b[39m (\u001b[36mconst\u001b[39m m \u001b[36mof\u001b[39m measures\u001b[33m.\u001b[39mfilter(x \u001b[33m=>\u001b[39m x\u001b[33m.\u001b[39moperation\u001b[33m.\u001b[39mendsWith(\u001b[32m'_page'\u001b[39m))) expect(m\u001b[33m.\u001b[39mpayload_bytes\u001b[33m,\u001b[39m \u001b[32m`${m.operation} payload`\u001b[39m)\u001b[33m.\u001b[39mtoBeLessThanOrEqual(\u001b[33mPAGE_PAYLOAD_BUDGET\u001b[39m)\u001b[33m;\u001b[39m\u001b[36mconst\u001b[39m filters \u001b[33m=\u001b[39m measures\u001b[33m.\u001b[39mfind(x \u001b[33m=>\u001b[39m x\u001b[33m.\u001b[39moperation \u001b[33m===\u001b[39m \u001b[32m'catalogue_filter_page'\u001b[39m)\u001b[33m;\u001b[39mexpect(filters\u001b[33m.\u001b[39mstatus)\u001b[33m.\u001b[39mtoBe(\u001b[35m200\u001b[39m)\u001b[33m;\u001b[39mexpect(filters\u001b[33m.\u001b[39mpayload_bytes\u001b[33m,\u001b[39m \u001b[32m'catalogue_filter_page payload'\u001b[39m)\u001b[33m.\u001b[39mtoBeLessThanOrEqual(\u001b[33mFILTER_OPTION_PAYLOAD_BUDGET\u001b[39m)\u001b[33m;\u001b[39m\u001b[36mawait\u001b[39m save(testInfo\u001b[33m,\u001b[39m \u001b[32m'workspace-performance'\u001b[39m\u001b[33m,\u001b[39m { budgets\u001b[33m:\u001b[39m { \u001b[33mRPC_BUDGET_MS\u001b[39m\u001b[33m,\u001b[39m \u001b[33mFILTER_OPTION_PAYLOAD_BUDGET\u001b[39m\u001b[33m,\u001b[39m \u001b[33mPAGE_PAYLOAD_BUDGET\u001b[39m }\u001b[33m,\u001b[39m measures })} \u001b[36mfinally\u001b[39m {\u001b[36mawait\u001b[39m attachRuntimeEvidence(testInfo\u001b[33m,\u001b[39m runtime)\u001b[33m;\u001b[39massertNoServerErrors(runtime)}})\n \u001b[90m    |\u001b[39m                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 27 |\u001b[39m   test(\u001b[32m'exact CRICOS lookup, detail, paging and browser back stay interactive'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }\u001b[33m,\u001b[39m testInfo) \u001b[33m=>\u001b[39m {\u001b[36mconst\u001b[39m runtime \u001b[33m=\u001b[39m observeRuntime(page)\u001b[33m,\u001b[39mmeasures \u001b[33m=\u001b[39m []\u001b[33m;\u001b[39m\u001b[36mtry\u001b[39m {measures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'courses_page'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m route(page\u001b[33m,\u001b[39m \u001b[32m'courses'\u001b[39m) }))\u001b[33m;\u001b[39m\u001b[36mconst\u001b[39m search \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByPlaceholder(\u001b[32m'Search Course, Provider, CRICOS/course code or stable key'\u001b[39m)\u001b[33m;\u001b[39mmeasures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'courses_page'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m search\u001b[33m.\u001b[39mfill(\u001b[32m'121174E'\u001b[39m) }))\u001b[33m;\u001b[39m\u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mgetByText(\u001b[32m'121174E'\u001b[39m\u001b[33m,\u001b[39m { exact\u001b[33m:\u001b[39m \u001b[36mtrue\u001b[39m })\u001b[33m.\u001b[39mfirst())\u001b[33m.\u001b[39mtoBeVisible({ timeout\u001b[33m:\u001b[39m \u001b[35m12\u001b[39m_000 })\u001b[33m;\u001b[39mmeasures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'course_detail'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'.m-table tbody tr'\u001b[39m)\u001b[33m.\u001b[39mfirst()\u001b[33m.\u001b[39mclick() }))\u001b[33m;\u001b[39m\u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mlocator(\u001b[32m'.m-drawer'\u001b[39m))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mkeyboard\u001b[33m.\u001b[39mpress(\u001b[32m'Escape'\u001b[39m)\u001b[33m;\u001b[39m\u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mlocator(\u001b[32m'.m-drawer'\u001b[39m))\u001b[33m.\u001b[39mtoBeHidden()\u001b[33m;\u001b[39mmeasures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'courses_page'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m search\u001b[33m.\u001b[39mfill(\u001b[32m''\u001b[39m) }))\u001b[33m;\u001b[39m\u001b[36mconst\u001b[39m next \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByRole(\u001b[32m'button'\u001b[39m\u001b[33m,\u001b[39m { name\u001b[33m:\u001b[39m \u001b[35m/Next/i\u001b[39m })\u001b[33m.\u001b[39mfirst()\u001b[33m;\u001b[39m\u001b[36mawait\u001b[39m expect(next)\u001b[33m.\u001b[39mtoBeEnabled()\u001b[33m;\u001b[39mmeasures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'courses_page'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m next\u001b[33m.\u001b[39mclick() }))\u001b[33m;\u001b[39m\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'providers_page'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m route(page\u001b[33m,\u001b[39m \u001b[32m'providers'\u001b[39m) })\u001b[33m;\u001b[39mmeasures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'courses_page'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoBack() }))\u001b[33m;\u001b[39m\u001b[36mawait\u001b[39m expect(page)\u001b[33m.\u001b[39mtoHaveURL(\u001b[35m/#courses/\u001b[39m)\u001b[33m;\u001b[39m\u001b[36mfor\u001b[39m (\u001b[36mconst\u001b[39m m \u001b[36mof\u001b[39m measures) {expect(m\u001b[33m.\u001b[39mstatus)\u001b[33m.\u001b[39mtoBe(\u001b[35m200\u001b[39m)\u001b[33m;\u001b[39mexpect(m\u001b[33m.\u001b[39melapsed_ms\u001b[33m,\u001b[39m \u001b[32m`${m.operation} interaction latency`\u001b[39m)\u001b[33m.\u001b[39mtoBeLessThanOrEqual(m\u001b[33m.\u001b[39moperation \u001b[33m===\u001b[39m \u001b[32m'course_detail'\u001b[39m \u001b[33m?\u001b[39m \u001b[33mDETAIL_BUDGET_MS\u001b[39m \u001b[33m:\u001b[39m \u001b[33mRPC_BUDGET_MS\u001b[39m)\u001b[33m;\u001b[39mexpect(m\u001b[33m.\u001b[39mpayload_bytes)\u001b[33m.\u001b[39mtoBeLessThanOrEqual(\u001b[33mPAGE_PAYLOAD_BUDGET\u001b[39m)}\u001b[36mawait\u001b[39m save(testInfo\u001b[33m,\u001b[39m \u001b[32m'course-interactions'\u001b[39m\u001b[33m,\u001b[39m { budgets\u001b[33m:\u001b[39m { \u001b[33mRPC_BUDGET_MS\u001b[39m\u001b[33m,\u001b[39m \u001b[33mDETAIL_BUDGET_MS\u001b[39m\u001b[33m,\u001b[39m \u001b[33mPAGE_PAYLOAD_BUDGET\u001b[39m }\u001b[33m,\u001b[39m measures })} \u001b[36mfinally\u001b[39m {\u001b[36mawait\u001b[39m attachRuntimeEvidence(testInfo\u001b[33m,\u001b[39m runtime)\u001b[33m;\u001b[39massertNoServerErrors(runtime)}})\n \u001b[90m 28 |\u001b[39m   \u001b[90m// v2.15.200: Layer 2 is Adapters only (Source profiles retired). v2.15.300: Adapters is Layer 2/3 › Universities, which reads\u001b[39m\n \u001b[90m 29 |\u001b[39m   \u001b[90m// public.admin_layer23('universities') (the admin_adapters 'list' rows plus the onboarding stage), not admin_read.\u001b[39m\u001b[0m"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/performance-deployed.spec.mjs",
-                            "column": 1540,
-                            "line": 26
-                          },
-                          "message": "Error: courses_page latency\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: <= \u001b[32m3000\u001b[39m\nReceived:    \u001b[31m3020\u001b[39m\n\n  24 | test.describe('M1 performance and responsiveness @deployed', () => {\n  25 |   test.beforeEach(async ({ page }) => { await loginAsUatUser(page) })\n> 26 |   test('core workspaces stay within governed RPC and payload budgets', async ({ page }, testInfo) => {const runtime = observeRuntime(page),measures = [];try {measures.push(await measuredRpc(page, 'providers_page', async () => { await route(page, 'providers') }));measures.push(await measuredRpc(page, 'dashboard', async () => { await route(page, 'dashboard') }));measures.push(await measuredRpc(page, 'dashboard', async () => { await page.reload() }));measures.push(await measuredRpc(page, 'courses_page', async () => { await route(page, 'courses') }));const providerFilter=page.locator('.m-filter-select').filter({hasText:'Provider'}).first();const filterMeasure=await measuredRpc(page,'catalogue_filter_page',async()=>{await providerFilter.locator('button.m-filter-button').click()});measures.push(filterMeasure);const filterButtons=providerFilter.locator('.m-filter-popover > button');expect(await filterButtons.count()).toBeLessThanOrEqual(11);measures.push(await measuredRpc(page, 'campuses_page', async () => { await route(page, 'campuses') }));measures.push(await measuredRpc(page, 'scholarships_page', async () => { await route(page, 'scholarships') }));measures.push(await measuredRpc(page, 'evidence_page', async () => { await route(page, 'evidence') }));measures.push(await measuredRpc(page, 'data_quality_overview', async () => { await openDataQuality(page) }));for (const m of measures.filter(x => x.elapsed_ms != null)) {expect(m.status, `${m.operation} HTTP status`).toBe(200);expect(m.elapsed_ms, `${m.operation} latency`).toBeLessThanOrEqual(RPC_BUDGET_MS)}for (const m of measures.filter(x => x.operation.endsWith('_page'))) expect(m.payload_bytes, `${m.operation} payload`).toBeLessThanOrEqual(PAGE_PAYLOAD_BUDGET);const filters = measures.find(x => x.operation === 'catalogue_filter_page');expect(filters.status).toBe(200);expect(filters.payload_bytes, 'catalogue_filter_page payload').toBeLessThanOrEqual(FILTER_OPTION_PAYLOAD_BUDGET);await save(testInfo, 'workspace-performance', { budgets: { RPC_BUDGET_MS, FILTER_OPTION_PAYLOAD_BUDGET, PAGE_PAYLOAD_BUDGET }, measures })} finally {await attachRuntimeEvidence(testInfo, runtime);assertNoServerErrors(runtime)}})\n     |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ^\n  27 |   test('exact CRICOS lookup, detail, paging and browser back stay interactive', async ({ page }, testInfo) => {const runtime = observeRuntime(page),measures = [];try {measures.push(await measuredRpc(page, 'courses_page', async () => { await route(page, 'courses') }));const search = page.getByPlaceholder('Search Course, Provider, CRICOS/course code or stable key');measures.push(await measuredRpc(page, 'courses_page', async () => { await search.fill('121174E') }));await expect(page.getByText('121174E', { exact: true }).first()).toBeVisible({ timeout: 12_000 });measures.push(await measuredRpc(page, 'course_detail', async () => { await page.locator('.m-table tbody tr').first().click() }));await expect(page.locator('.m-drawer')).toBeVisible();await page.keyboard.press('Escape');await expect(page.locator('.m-drawer')).toBeHidden();measures.push(await measuredRpc(page, 'courses_page', async () => { await search.fill('') }));const next = page.getByRole('button', { name: /Next/i }).first();await expect(next).toBeEnabled();measures.push(await measuredRpc(page, 'courses_page', async () => { await next.click() }));await measuredRpc(page, 'providers_page', async () => { await route(page, 'providers') });measures.push(await measuredRpc(page, 'courses_page', async () => { await page.goBack() }));await expect(page).toHaveURL(/#courses/);for (const m of measures) {expect(m.status).toBe(200);expect(m.elapsed_ms, `${m.operation} interaction latency`).toBeLessThanOrEqual(m.operation === 'course_detail' ? DETAIL_BUDGET_MS : RPC_BUDGET_MS);expect(m.payload_bytes).toBeLessThanOrEqual(PAGE_PAYLOAD_BUDGET)}await save(testInfo, 'course-interactions', { budgets: { RPC_BUDGET_MS, DETAIL_BUDGET_MS, PAGE_PAYLOAD_BUDGET }, measures })} finally {await attachRuntimeEvidence(testInfo, runtime);assertNoServerErrors(runtime)}})\n  28 |   // v2.15.200: Layer 2 is Adapters only (Source profiles retired). v2.15.300: Adapters is Layer 2/3 › Universities, which reads\n  29 |   // public.admin_layer23('universities') (the admin_adapters 'list' rows plus the onboarding stage), not admin_read.\n    at /home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/performance-deployed.spec.mjs:26:1540"
-                        }
-                      ],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 1,
-                      "startTime": "2026-10-29T14:01:23.823Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "runtime-evidence",
-                          "contentType": "application/json",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/performance-deployed-M1-pe-324ac-ned-RPC-and-payload-budgets-chromium-desktop-retry1/attachments/runtime-evidence-b76d22d8f30f2d0d8f44ba1720bf27511670e5a7.json"
-                        },
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/performance-deployed-M1-pe-324ac-ned-RPC-and-payload-budgets-chromium-desktop-retry1/test-failed-1.png"
-                        },
-                        {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/performance-deployed-M1-pe-324ac-ned-RPC-and-payload-budgets-chromium-desktop-retry1/video.webm"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/performance-deployed-M1-pe-324ac-ned-RPC-and-payload-budgets-chromium-desktop-retry1/error-context.md"
-                        },
-                        {
-                          "name": "trace",
-                          "contentType": "application/zip",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/performance-deployed-M1-pe-324ac-ned-RPC-and-payload-budgets-chromium-desktop-retry1/trace.zip"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/performance-deployed.spec.mjs",
-                        "column": 1540,
-                        "line": 26
-                      }
+                      ]
                     }
                   ],
-                  "status": "unexpected"
+                  "status": "expected"
                 }
               ],
               "id": "3c329fcd3b018e1b506c-b058b19252e022a35f9c",
@@ -4315,15 +4213,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 3,
+                      "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 14756,
+                      "duration": 8923,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T14:01:39.365Z",
+                      "startTime": "2026-10-29T21:24:32.691Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -4362,15 +4260,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 3,
+                      "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4318,
+                      "duration": 2842,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T14:01:54.215Z",
+                      "startTime": "2026-10-29T21:24:41.634Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -4409,15 +4307,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 3,
+                      "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 21276,
+                      "duration": 8604,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T14:01:58.543Z",
+                      "startTime": "2026-10-29T21:24:44.488Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -4453,7 +4351,7 @@
       "specs": [],
       "suites": [
         {
-          "title": "CourseFinder PIM Admin v2.15.371 release notes @deployed",
+          "title": "CourseFinder PIM Admin v2.15.373 release notes @deployed",
           "file": "release-notes-deployed.spec.mjs",
           "line": 6,
           "column": 6,
@@ -4473,26 +4371,26 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 3,
+                      "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2526,
+                      "duration": 2605,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T14:02:19.833Z",
+                      "startTime": "2026-10-29T21:24:53.129Z",
                       "annotations": [],
                       "attachments": [
                         {
-                          "name": "pim-v2-15-371-release-notes",
+                          "name": "pim-v2-15-373-release-notes",
                           "contentType": "image/png",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/release-notes-deployed-Cou-0b25f-story-and-closes-accessibly-chromium-desktop/attachments/pim-v2-15-371-release-notes-0aca8a4193101afb027e0b7c42cc193508576d75.png"
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/release-notes-deployed-Cou-29655-story-and-closes-accessibly-chromium-desktop/attachments/pim-v2-15-373-release-notes-63a6db05dd5b8df90dba235c636272d36ef2ab5d.png"
                         },
                         {
                           "name": "runtime-evidence",
                           "contentType": "application/json",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/release-notes-deployed-Cou-0b25f-story-and-closes-accessibly-chromium-desktop/attachments/runtime-evidence-dcc5ce941a587acffbf6ea799fdf6bc5681452a3.json"
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/release-notes-deployed-Cou-29655-story-and-closes-accessibly-chromium-desktop/attachments/runtime-evidence-dcc5ce941a587acffbf6ea799fdf6bc5681452a3.json"
                         }
                       ]
                     }
@@ -4500,7 +4398,7 @@
                   "status": "expected"
                 }
               ],
-              "id": "bfbf2d5b3274ba39f362-a502fada4573562996df",
+              "id": "bfbf2d5b3274ba39f362-f870e33ab3dfcadfadb1",
               "file": "release-notes-deployed.spec.mjs",
               "line": 8,
               "column": 2
@@ -4512,11 +4410,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-10-29T13:55:56.627Z",
-    "duration": 385811.28099999996,
-    "expected": 77,
+    "startTime": "2026-10-29T21:19:00.222Z",
+    "duration": 355783.83,
+    "expected": 78,
     "skipped": 0,
-    "unexpected": 1,
+    "unexpected": 0,
     "flaky": 1
   }
 }
