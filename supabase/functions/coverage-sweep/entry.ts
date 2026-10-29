@@ -108,7 +108,10 @@ export const NAMED_NOTE = "Some tables of numbers give each cell as its column h
 //   heads: each data line of a table with a structural header row, with every cell and the header of its column, so a band given with
 //          words of its column header ("ATAR 70" for the cell 70 under "ATAR equivalent") is resolved to the printed cell, and only then.
 export type EntryHeadRow = { line: string; cells: { h: string; c: string }[] };
-export type EntryLineSet = EntryBandLine[] & { forms?: string[]; heads?: EntryHeadRow[] };
+//   segments: the lines of the tables that carry a lead label, each exactly as it stands in the page text. A quote may not run across the
+//          start or end of such a line: a labelled row is quoted within itself, never joined to another row or to the next table's label
+//          (the country printed after it), so a row cannot be tied to a country it is not printed under.
+export type EntryLineSet = EntryBandLine[] & { forms?: string[]; heads?: EntryHeadRow[]; segments?: string[] };
 // a table's lead label: the last piece of text the markup prints before a table with no header row (the country named on the button or
 // heading above its table), when it is a label and not a sentence, carried onto each of the table's lines as the PDF reader carries a
 // section ("Argentina | NCEA Level 2 Certificate/Diploma Level | Titulo de Bachiller")
@@ -176,7 +179,7 @@ export function entryTables(html: string, toText: (h: string) => string, nameNum
     return `<p>ZZENTRYTABLE${tables.length - 1}ZZ</p>`;  // a placeholder the page text keeps; the rows replace it after
   });
   const plain = toText(marked);
-  const forms: string[] = [], heads: EntryHeadRow[] = [];
+  const forms: string[] = [], heads: EntryHeadRow[] = [], segments: string[] = [];
   if (!nameNumbers) return { text: plain.replace(/ZZENTRYTABLE(\d+)ZZ/g, (_, n) => `\n${tables[Number(n)]}\n`), lines: all, grids, covered, named, forms, heads, labelled };
   // v0.52.0: a table with no header row carries its lead label on each of its lines; a table with a header row gives its structure forms.
   // The text is otherwise the same as before.
@@ -184,11 +187,12 @@ export function entryTables(html: string, toText: (h: string) => string, nameNum
     const b = built[Number(n)];
     if (b.lead) labelled++;
     const lines = b.lead ? b.lines.map((x) => `${b.lead} | ${x}`) : b.lines;
+    if (b.lead) segments.push(...lines);
     if (b.head) { for (const x of lines.slice(1)) forms.push(`${lines[0]}\n${x}`); heads.push(...b.heads) }
     return `\n${lines.join("\n")}\n`;
   });
   // the band lines carry the structure to the gate (entryMatrixParsed reads lines.forms and lines.heads)
-  return { text, lines: Object.assign(all, { forms, heads }), grids, covered, named, forms, heads, labelled };
+  return { text, lines: Object.assign(all, { forms, heads, segments }), grids, covered, named, forms, heads, labelled };
 }
 const head0 = (c: string | undefined) => String(c || "").trim();
 
@@ -206,8 +210,8 @@ export type EntryDrop = { reason: string; country?: string; quote?: string };
 // names it, so a value must still be printed in the quote. A band given with words of its column header is the printed cell only when the
 // whole row is quoted, the cell is in that column and the other words are that column's header words (headerBand).
 export function entryMatrixParsed(a: any, page: string, bandLines: EntryLineSet = []) {
-  const F = (bandLines.forms || []).map(flat);
-  const P = flat(page), on = (q: string) => flat(q).length >= 6 && (P.includes(flat(q)) || F.some((f) => f.includes(flat(q))));
+  const F = (bandLines.forms || []).map(flat), within = segmentCheck(page, bandLines.segments || []);
+  const P = flat(page), on = (q: string) => flat(q).length >= 6 && ((P.includes(flat(q)) && within(flat(q))) || F.some((f) => f.includes(flat(q))));
   const numIn = (n: number, q: string) => [String(n), String(n).replace(/\.0$/, ""), n.toFixed(1), n.toFixed(2)].some((d) => String(q || "").includes(d));
   const rows: any[] = [], dropped: EntryDrop[] = [];
   for (const x of (Array.isArray(a?.rows) ? a.rows : []) as any[]) {
@@ -240,6 +244,29 @@ export function entryMatrixParsed(a: any, page: string, bandLines: EntryLineSet 
       conditions: x?.conditions ?? {}, confidence: Number(x?.confidence ?? 0), quote: quote.slice(0, 300) });
   }
   return { rows, dropped, edition: a?.edition ?? null, intake_year: Number.isInteger(a?.intake_year) ? a.intake_year : null };
+}
+// v0.52.0 (integrator review): with labelled lines on the page, a quote found in the page text must have one place where it does not run
+// across the start or end of a labelled line (closed: a quote that can only be read across such a boundary is not on the page). The page
+// is compared letter by letter as flat() compares it, with each labelled line's ends marked; without labelled lines nothing changes.
+function segmentCheck(page: string, segments: string[]): (fq: string) => boolean {
+  if (!segments.length) return () => true;
+  const text = String(page || ""), cum: number[] = [0];
+  let P2 = "";
+  for (const ch of text) { P2 += flat(ch); cum.push(P2.length) }  // flat length before each character (code point)
+  const at: number[] = [], chars = [...text], idx: number[] = [];
+  { let u = 0; for (let k = 0; k < chars.length; k++) { idx.push(u); u += chars[k].length } idx.push(u) }  // UTF-16 offset of each code point
+  const cpAt = (off: number) => { let lo = 0, hi = idx.length - 1; while (lo < hi) { const m = (lo + hi) >> 1; if (idx[m] < off) lo = m + 1; else hi = m } return lo };
+  let cursor = 0;
+  for (const s of segments) {
+    const i = text.indexOf(s, cursor); if (i < 0) continue;
+    at.push(cum[cpAt(i)], cum[cpAt(i + s.length)]); cursor = i + s.length;
+  }
+  const bounds = [...new Set(at)].sort((a, b) => a - b);
+  return (fq: string) => {
+    if (!fq) return false;
+    for (let i = P2.indexOf(fq); i >= 0; i = P2.indexOf(fq, i + 1)) if (!bounds.some((b) => b > i && b < i + fq.length)) return true;
+    return false;
+  };
 }
 // v0.52.0: "ATAR 70" quoted with the row "French Baccalaureat Points: 10 | ATAR equivalent: 70" is the printed cell "70" of the column
 // "ATAR equivalent": one word of the band is exactly the cell, every other word is a word of that column's header, the whole row line is in

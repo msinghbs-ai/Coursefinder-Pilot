@@ -114,6 +114,38 @@ test('Otago Polytechnic: a table with no header row carries the label printed ju
   expect(why(gate(page, lines, { quote: 'Australia | Degree Level | Year 12 completed with an ATAR of 65' }))).toBe('quote_not_on_page')
 })
 
+test('Otago Polytechnic: a quote never runs from a labelled row into another row or the next table\'s label (country identity closed)', () => {
+  const { page, lines, t } = htmlRead(html('otago-country-tables'))
+  expect(t.lines.segments.length).toBe(8)
+  // (1) the live kept AR row of v0.51.0: Algeria's Level 3 row followed by the next table's label, read as Argentina
+  const alg3 = "NCEA Level 3 Degree Level | Baccalaureat de l'enseignement secondaire with grade Assez bien , Bien , Tres Bien or Excellent"
+  expect(page).toContain(`Algeria | ${alg3}\n Argentina `)
+  expect(why(gate(page, [], { country_code: 'AR', quote: `${alg3} Argentina`, min_grade: 'Assez bien , Bien , Tres Bien or Excellent', grade_scale: 'letter' }))).toBe('kept')  // v0.51.0 basis: no labels, the join was on the page
+  expect(why(gate(page, lines, { country_code: 'AR', quote: `${alg3} Argentina`, min_grade: 'Assez bien , Bien , Tres Bien or Excellent', grade_scale: 'letter' }))).toBe('quote_not_on_page')
+  // (2) a Level 2 row followed by the label that begins the next line
+  expect(why(gate(page, lines, { country_code: 'AR', quote: 'NCEA Level 2 Certificate/Diploma Level | Titulo de Bachiller OR Titulo de Técnico-Auxiliar Argentina' }))).toBe('quote_not_on_page')
+  expect(why(gate(page, lines, { country_code: 'AR', quote: 'Argentina | NCEA Level 2 Certificate/Diploma Level | Titulo de Bachiller OR Titulo de Técnico-Auxiliar Argentina | NCEA Level 3 Degree Level' }))).toBe('quote_not_on_page')
+  // (3) a genuine labelled line, whole or in part, is on the page
+  const ar2 = 'Argentina | NCEA Level 2 Certificate/Diploma Level | Titulo de Bachiller OR Titulo de Técnico-Auxiliar'
+  expect(why(gate(page, lines, { country_code: 'AR', quote: ar2, study_level: 'NCEA Level 2 Certificate/Diploma Level' }))).toBe('kept')
+  expect(why(gate(page, lines, { country_code: 'AR', quote: 'NCEA Level 2 Certificate/Diploma Level | Titulo de Bachiller OR Titulo de Técnico-Auxiliar' }))).toBe('kept')
+  // a table with no label keeps its lines as before (no segments, the gate unchanged)
+  expect(htmlRead(html('uow-country-matrix')).lines.segments.length).toBe(0)
+})
+
+test('Federation: a first-cell-with-one-cell form never pairs cells of different rows', () => {
+  const { page, lines, t } = pdfRead(pdf('federation'))
+  const rows = page.split('\n').filter((l) => l.startsWith('| COUNTRY: ') && l.split(' | ').length >= 3)
+  // every form is the first cell and one other cell of one printed row
+  for (const f of t.forms) {
+    const [first, other] = f.slice(2, -2).split(' | ')
+    expect(rows.some((r) => r.startsWith(`| ${first} | `) && r.includes(` | ${other}`))).toBe(true)
+  }
+  // Italy's country with Albania's cell, and Albania's country with Italy's cell, are refused
+  expect(why(gate(page, lines, { country_code: 'IT', quote: 'COUNTRY: Italy | Undergraduate Entry: Case-by-case basis' }))).toBe('quote_not_on_page')
+  expect(why(gate(page, lines, { country_code: 'AL', quote: 'COUNTRY: Albania | Undergraduate Entry: Completion of Esame di Stato with overall average of 60%.', min_grade: '60%', min_value: 60, grade_scale: 'percentage' }))).toBe('quote_not_on_page')
+})
+
 test('off under the completeness guard and wherever the caller does not ask: the text and the gate are as before', () => {
   for (const n of ['otago-country-tables', 'uow-country-matrix', 'uwa-score-tables']) {
     const off = entryTables(html(n), htmlToText)
