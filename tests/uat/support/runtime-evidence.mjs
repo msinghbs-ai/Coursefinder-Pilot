@@ -136,13 +136,16 @@ async function inViewport(locator,page){
 }
 
 // v2.15.107: old menu labels used by the deployed suites → new menu item and page tab (src/nav-map.js).
+// v2.15.300 (Platform Admin, 20 Oct 2026): Layer 2 is 'Layer 2/3 Build & enrich' (Adapters is its Universities tab) and Scrapers & fetchers
+// is Models & services › Fetchers, where the old Administration address lands. v2.15.301: Key dates and Reference sources are one
+// Reference data list with a type filter (no tabs).
 const TABBED_NAV={
   'Jobs':['Scheduled jobs','Jobs'],'Scheduled Tasks':['Scheduled jobs',''],'Jobs & Schedules':['Scheduled jobs',''],
-  'Layer 1 — Operations':['Layer 1 Register','Sources'],'Layer 2 — Enrichment':['Layer 2 Discovery & reading','Adapters'],
-  'Layer 3 — AI Interpretation':['Layer 2 Discovery & reading','Adapters'],'Layer 4 — Human Resolution':['Layer 4 Review',''],
+  'Layer 1 — Operations':['Layer 1 Register','Sources'],'Layer 2 — Enrichment':['Layer 2/3 Build & enrich','Universities'],
+  'Layer 3 — AI Interpretation':['Layer 2/3 Build & enrich','Universities'],'Layer 4 — Human Resolution':['Layer 4 Review',''],
   'Completeness':['Coverage & completeness',''],'Statistics & Rankings':['Rankings & statistics',''],'Compare':['Rankings & statistics','Compare'],
-  'Campuses':['Providers','Campuses'],'Provider Contacts':['Provider contacts',''],'Important Dates':['Layer 1 Register','Key dates'],
-  'Important Links':['Reference data','Reference sources'],'Administration':['Scrapers & fetchers',''],
+  'Campuses':['Providers','Campuses'],'Provider Contacts':['Provider contacts',''],'Important Dates':['Reference data',''],
+  'Important Links':['Reference data',''],'Administration':['Models & services','Fetchers'],'Scrapers & fetchers':['Models & services','Fetchers'],
 }
 export async function clickPrimaryNav(page,label){
   if(TABBED_NAV[label]){const[menu,tab]=TABBED_NAV[label];await clickPrimaryNav(page,menu);if(tab){
@@ -150,8 +153,13 @@ export async function clickPrimaryNav(page,label){
     // e.g. Layer 1 Register for a rank-4 operator since Sources moved to Operations; the page already shows it.
     const bar=page.locator('.cf-page-tabs')
     await expect(page.locator('h1').filter({hasText:menu}).first()).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+    // The tab bar is drawn a moment after the title (the page body is loaded on demand), so wait briefly for it before deciding the page
+    // has no tabs; a page with one visible tab has no bar at all.
+    await bar.first().waitFor({state:'visible',timeout:5_000}).catch(()=>{})
     if(await bar.count()===0)return
-    await bar.locator('[role="tab"]').filter({hasText:tab}).first().click({timeout:DETERMINISTIC_UI_TIMEOUT})}
+    const t=bar.locator('[role="tab"]').filter({hasText:tab}).first()
+    await t.click({timeout:DETERMINISTIC_UI_TIMEOUT})
+    await expect(t).toHaveAttribute('aria-selected','true',{timeout:DETERMINISTIC_UI_TIMEOUT})}
   return}
   const item=page.locator('button.m-nav-item').filter({hasText:label}).first()
   await expect(item,`Missing accepted primary navigation item: ${label}`).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
@@ -185,16 +193,22 @@ export async function signOutUatUser(page){
 export async function openDataQuality(page) {
   await clickPrimaryNav(page,'Completeness')
   await expect(page.locator('h1').filter({ hasText: 'Coverage & completeness' }).first()).toBeVisible({ timeout: DETERMINISTIC_UI_TIMEOUT })
-  const bar = page.locator('.cf-page-tabs')
-  if (await bar.count() > 0) await bar.locator('[role="tab"]').filter({ hasText: 'Attributes' }).first().click({ timeout: DETERMINISTIC_UI_TIMEOUT })
+  // The tab bar is drawn with the page; wait for the Attributes tab rather than skipping it when the bar is not there yet.
+  const attributes = page.locator('.cf-page-tabs [role="tab"]').filter({ hasText: 'Attributes' }).first()
+  await expect(attributes).toBeVisible({ timeout: 20_000 })
+  await attributes.click({ timeout: DETERMINISTIC_UI_TIMEOUT })
+  await expect(attributes).toHaveAttribute('aria-selected', 'true', { timeout: DETERMINISTIC_UI_TIMEOUT })
+  // The Attributes tab now loads field coverage, the gap queue and cross-checks before the By area section (v2.15.3xx), so it is
+  // given the data-load timeout rather than the 6-second UI timeout.
   const area = page.locator('details.cov-by-area')
-  await expect(area).toBeVisible({ timeout: DETERMINISTIC_UI_TIMEOUT })
+  await expect(area).toBeVisible({ timeout: 45_000 })
   if (!(await area.evaluate(el => el.open))) await area.locator('summary').click({ timeout: DETERMINISTIC_UI_TIMEOUT })
-  await expect(page.getByText('Each area counted separately. Select a count to list those records.')).toBeVisible({ timeout: DETERMINISTIC_UI_TIMEOUT })
+  await expect(area.getByText('Each area counted separately. Select a count to list those records.')).toBeVisible({ timeout: 20_000 })
+  await expect(area.locator('section.dq-domain-card').first()).toBeVisible({ timeout: 20_000 })
 }
 
 export async function openRegulatoryFeeSourceNull(page) {
-  const card = page.locator('section.dq-domain-card').filter({ has: page.getByRole('heading', { name: 'Regulatory fee', exact: true }) })
+  const card = page.locator('details.cov-by-area section.dq-domain-card').filter({ has: page.getByRole('heading', { name: 'Regulatory fee', exact: true }) })
   await expect(card).toBeVisible()
   const sourceNull = card.locator('[title^="Source-null: "]').first()
   await expect(sourceNull).toBeVisible()

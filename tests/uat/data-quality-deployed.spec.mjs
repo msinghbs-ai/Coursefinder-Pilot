@@ -68,7 +68,11 @@ test.describe('CourseFinder deployed Data Quality acceptance @deployed', () => {
       await expect(firstEntity).toBeVisible()
       await firstEntity.click()
       await expect(page).toHaveURL(/#courses\?id=/)
-      await expect(page.getByRole('heading', { name: /^(Course description|Registered CRICOS course cost|Regulatory facts)$/ }).first()).toBeVisible({ timeout: 45_000 })
+      // v2.15.225 (Platform Admin, 9 Oct 2026): the course blade opens on pills and fact cards (the regulatory cost is a card, not a heading)
+      const blade = page.locator('aside.m-drawer-course')
+      await expect(blade).toBeVisible({ timeout: 45_000 })
+      await expect(blade.locator('[data-course-summary]')).toBeVisible({ timeout: 45_000 })
+      await expect(blade.locator('[data-course-summary]')).toContainText(/Registered course cost \(CRICOS\)/i)
       await milestoneScreenshot(page, testInfo, 'canonical-course-detail')
     } finally {
       await finish(testInfo, runtime)

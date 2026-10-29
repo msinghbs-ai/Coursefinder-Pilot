@@ -10,21 +10,29 @@ test.describe('CF-076 compact ranking import UX @deployed',()=>{
 
  test('nested Administration route shows breadcrumbs and compact file-first import',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page)
+  // v2.15.301 (Platform Admin, 20 Oct 2026): Ranking imports moved to Rankings & statistics › Datasets; the old Administration address
+  // (section=sources-imports) still lands there (LEGACY_ADMIN_SECTIONS in src/nav-map.js). The import is file-only, so the form is the
+  // ranking system and edition year, filled from the file's content.
   await page.goto(new URL('/#administration?section=sources-imports',process.env.UAT_BASE_URL).toString())
-  await expect(page.getByRole('navigation',{name:'Breadcrumb'})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
-  const crumb=page.getByRole('navigation',{name:'Breadcrumb'})
-  await expect(crumb).toContainText('Home')
-  await expect(crumb).toContainText('Administration')
-  await expect(crumb).toContainText('Sources & Imports')
-  await expect(page.getByRole('heading',{name:'Register ranking publisher file'})).toBeVisible()
+  await expect(page).toHaveURL(/#statistics-rankings\?tab=datasets/,{timeout:DETERMINISTIC_UI_TIMEOUT})
+  // CF-076 (2 Sep 2026, mature.css): breadcrumbs show from 681 px up and are hidden at phone width, where the page title carries it.
+  const crumb=page.locator('nav.m-breadcrumbs')
+  if((page.viewportSize()?.width||1440)>680){
+   await expect(crumb).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+   await expect(crumb).toContainText('Home')
+   await expect(crumb).toContainText('Rankings & statistics')
+   await expect(crumb).toContainText('Datasets')
+  }else await expect(crumb).toBeHidden()
+  await expect(page.getByRole('heading',{name:'Register ranking publisher file'})).toBeVisible({timeout:20_000})
   await expect(page.getByRole('button',{name:'Advanced metadata'})).toBeVisible()
   await expect(page.locator('.m-ranking-advanced')).toHaveCount(0)
-  const fileInput=page.locator('.m-ranking-drop input[type="file"]')
+  const fileInput=page.locator('.m-ranking-import-form input[type="file"]')
   await fileInput.setInputFiles({name:'THE_year2016.txt',mimeType:'text/plain',buffer:Buffer.from('Year 2016\n'+JSON.stringify({status:'success',data:{data:[{name:'Example University',rank:'1',location:'Australia',scores_overall:'90'}]}}))})
   await expect(page.locator('.m-ranking-detected')).toContainText('Times Higher Education · 2016')
-  await expect(page.locator('.m-ranking-essentials select')).toHaveValue('the_wur')
-  await expect(page.locator('.m-ranking-essentials input[type="number"]')).toHaveValue('2016')
-  await expect(page.locator('.m-alert')).not.toContainText('txt_native_json_is_the_only')
+  const selects=page.locator('.m-ranking-essentials select')
+  await expect(selects.nth(0)).toHaveValue('the_wur')
+  await expect(selects.nth(1)).toHaveValue('2016')
+  await expect(page.getByText(/txt_native_json_is_the_only/)).toHaveCount(0) // no alert is drawn when the file is accepted
   const box=await page.locator('.m-ranking-import-compact').boundingBox();expect(box?.height||9999).toBeLessThan(520)
  }finally{await finish(testInfo,runtime)}})
 
@@ -56,14 +64,20 @@ test.describe('CF-076 compact ranking import UX @deployed',()=>{
  }finally{await finish(testInfo,runtime)}})
 
  test('service source derives THE native JSON system/year from file content',async()=>{
+  // CF-098 (3 Sep 2026) replaced the THE-only detector with detectRankingJson (QS, THE and ARWU shapes); the selected system and
+  // year must match what the file content says, or the upload is refused.
   const src=await fs.readFile('supabase/functions/ranking-publisher-import/index.ts','utf8')
-  expect(src).toContain('detectedNativeThe')
-  expect(src).toContain('systemCode="the_wur"')
-  expect(src).toContain('editionYear=detectedYear')
-  expect(src).toContain('Times Higher Education')
+  expect(src).toContain('function detectRankingJson')
+  expect(src).toContain('system="the_wur"')
+  expect(src).toContain('ranking_system_mismatch')
+  expect(src).toContain('edition_year_mismatch')
+  expect(src).toContain('const detectedYear=headerYear||detected.year')
   const ctl=await fs.readFile('supabase/functions/ranking-publisher-control/index.ts','utf8')
-  expect(ctl).toContain('ranking_import_validate')
-  expect(ctl).toContain('ranking_import_apply')
-  expect(ctl).toContain('schema("pipeline")')
+  // CF-224 / v2.15.100: validate and apply run as governed ranking jobs through service RPCs (svc_ranking_job_*), not direct table writes
+  expect(ctl).toContain('action==="validate"')
+  expect(ctl).toContain('action==="apply"')
+  expect(ctl).toContain('svc_ranking_job_start')
+  expect(ctl).toContain('svc_ranking_job_finish')
+  expect(ctl).toContain('svc_ranking_manual_import_mark_applied')
  })
 })

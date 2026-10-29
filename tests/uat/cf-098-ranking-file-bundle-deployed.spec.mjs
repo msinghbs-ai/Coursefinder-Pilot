@@ -12,8 +12,11 @@ test.describe('CF-098 file-first ranking bundle @deployed',()=>{
   await loginAsUatUser(page)
   await page.goto(new URL('/#administration?section=sources-imports',process.env.UAT_BASE_URL).toString())
   await expect(page.locator('.m-release-pill')).toContainText(`v${UI_VERSION}`,{timeout:DETERMINISTIC_UI_TIMEOUT})
+  // v2.15.301: the old Administration address lands on Rankings & statistics › Datasets. File upload is the only route now: the form has
+  // the ranking system and edition year only (no acquisition-mode selector).
+  await expect(page).toHaveURL(/#statistics-rankings\?tab=datasets/,{timeout:DETERMINISTIC_UI_TIMEOUT})
   const selects=page.locator('.m-ranking-essentials select')
-  await expect(selects.nth(2)).toHaveValue('file')
+  await expect(selects).toHaveCount(2,{timeout:20_000})
   const input=page.locator('input[type=file][multiple]')
   await expect(input).toBeVisible()
   const makePayload=(country,count)=>JSON.stringify({status:'success',data:{ranking_title:'QS World University Rankings 2027',edition_year:'2027',total_universities:count,page:0,items_per_page:100,total_pages:1,has_more:false,universities:Array.from({length:count},(_,i)=>({rank:String(i+1),university_id:country.slice(0,2)+i,name:country+' University '+(i+1),country,city:'Test',overall_score:'50',indicators:[]}))}})

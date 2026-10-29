@@ -2,6 +2,17 @@ import { expect } from '@playwright/test'
 import { clickPrimaryNav, DETERMINISTIC_UI_TIMEOUT } from './runtime-evidence.mjs'
 
 const ui = { timeout: DETERMINISTIC_UI_TIMEOUT }
+// Workspaces drawn from a data read (Universities: admin_layer23 'universities', about 0.6 MB; Fetchers: the provider registry) appear
+// only when the read returns, so they get the data-load timeout rather than the 6-second UI timeout.
+const data = { timeout: 30_000 }
+// When a read-driven workspace does not appear, say where the page was (address, selected tab, title, any alert) so a deployed run's
+// annotation shows the cause without the trace.
+async function visibleOrExplain(locator, page, what) {
+  try { await expect(locator).toBeVisible(data) } catch (e) {
+    const where = await page.evaluate(() => ({ hash: location.hash, tab: [...document.querySelectorAll('.cf-page-tabs [role="tab"][aria-selected="true"]')].map(x => x.textContent.trim()).join('|'), h1: document.querySelector('.m-topbar h1')?.textContent, alert: [...document.querySelectorAll('[role="alert"],.m-alert,.fr-error')].map(x => x.textContent.trim().slice(0, 160)).join(' | '), loading: document.querySelectorAll('.m-loader,.m-spinner,.m-drawer-loading').length, main: (document.querySelector('.m-main')?.innerText || '').replace(/\s+/g, ' ').slice(0, 400) })).catch(() => ({}))
+    throw new Error(`${what} did not appear: ${JSON.stringify(where)}\n${e.message}`)
+  }
+}
 
 export async function openLayer1(page) {
   await clickPrimaryNav(page, 'Layer 1 — Operations')
@@ -14,58 +25,54 @@ export async function openLayer1(page) {
   return workspace
 }
 
-// v2.15.200 (Decision 254): Layer 2 opens on Adapters; Overview, Fetch an area, History and Source profiles are retired.
-// The tabs now are Adapters and Scholarships. Source profiles moved to Scrapers & fetchers (a card, closed until opened).
+// v2.15.300 (Platform Admin, 20 Oct 2026, "Operations first"): Layer 2 is Layer 2/3 Build & enrich. It opens on Operations; the old
+// Adapters and Onboarding tabs are one Universities tab (data-adapters-workspace), and every old Adapters address opens it (src/nav-map.js).
+// 'Adapters' is accepted as the old name of Universities so the specs keep reading as they were written.
 export async function openLayer2Tab(page, tab) {
-  await openLayer2(page)
-  if (tab && tab !== 'Adapters') await page.locator('.cf-page-tabs [role="tab"]').filter({ hasText: tab }).first().click(ui)
-  const workspace = tab && tab !== 'Adapters' ? page.locator('main') : page.locator('[data-adapters-workspace]')
-  await expect(workspace.first()).toBeVisible(ui)
-  return workspace.first()
+  if (!tab || tab === 'Adapters' || tab === 'Universities') return openLayer2(page)
+  await clickPrimaryNav(page, 'Layer 2/3 Build & enrich')
+  await page.locator('.cf-page-tabs [role="tab"]').filter({ hasText: tab }).first().click(ui)
+  const workspace = page.locator('main').first()
+  await expect(workspace).toBeVisible(ui)
+  return workspace
 }
 
 export async function openLayer2(page) {
   await clickPrimaryNav(page, 'Layer 2 — Enrichment')
   const workspace = page.locator('[data-adapters-workspace]')
-  await expect(workspace).toBeVisible(ui)
+  await visibleOrExplain(workspace, page, 'Layer 2/3 › Universities')
   // Decision 133: the screen title is the page title (Layer panels no longer repeat it).
-  await expect(page.getByRole('heading', { name: 'Layer 2 Discovery & reading' }).first()).toBeVisible(ui)
+  await expect(page.getByRole('heading', { name: 'Layer 2/3 Build & enrich' }).first()).toBeVisible(ui)
   return workspace
 }
 
 // v2.15.107: former Administration tools now live on their own pages (src/nav-map.js).
-const ADMIN_TOOL_ROUTES={'Extraction Profiles':['Scrapers & fetchers',''],'Scraper Config':['Scrapers & fetchers','']}
-async function openAdministrationTool(page,tabName,heading){
-  const [menu,tab]=ADMIN_TOOL_ROUTES[tabName]||[tabName,'']
-  await clickPrimaryNav(page,menu)
-  if(tab)await page.locator('.cf-page-tabs [role="tab"]').filter({hasText:tab}).first().click({timeout:DETERMINISTIC_UI_TIMEOUT})
+// v2.15.300 (Platform Admin, 20 Oct 2026): Scrapers & fetchers is Models & services › Fetchers (old addresses redirect).
+// Clean-up batch 2 (9 Oct 2026): Source profiles were retired; the acquisition provider registry stays on Fetchers.
+async function openFetchersCard(page,heading){
+  await clickPrimaryNav(page,'Scrapers & fetchers')
   const headingLocator=page.getByRole('heading',{name:heading,exact:true}).first()
-  await expect(headingLocator).toBeVisible(ui)
-  // v2.15.200: every card is closed until opened.
-  const toggle=headingLocator.locator('xpath=ancestor::*[contains(@class,"cf-card-head")]//button[contains(@class,"cf-card-toggle")]').first()
-  if(await toggle.count()&&(await toggle.getAttribute('aria-expanded'))==='false')await toggle.click(ui)
+  await visibleOrExplain(headingLocator, page, `Fetchers › ${heading}`)
   return headingLocator.locator('xpath=ancestor-or-self::*[@role="region"][1] | ancestor::section[1]').first()
-}
-
-export async function openLayer2Advanced(page) {
-  return openAdministrationTool(page,'Extraction Profiles','Source profiles')
 }
 
 export async function openLayer2Providers(page) {
   // Heading renamed in the provider screen: 'Layer 2 Acquisition Providers' -> 'Acquisition providers'.
-  return openAdministrationTool(page,'Scraper Config','Acquisition providers')
+  return openFetchersCard(page,'Acquisition providers')
 }
 
 export async function openLayer2Trials(page) {
   throw new Error('Layer 2 acquisition trials are not a canonical A23 operator route; use background enrichment and governed Evidence instead.')
 }
 
-// v2.15.252 (Platform Admin, 12 Oct 2026): Layer 3 AI validation retired. Its old address opens Layer 2 › Adapters;
+// v2.15.252 (Platform Admin, 12 Oct 2026): Layer 3 AI validation retired. Its old address opens Layer 2 › Adapters, which is
+// Layer 2/3 › Universities since v2.15.300 (resolveTarget: legacyL3 → layer2, tab universities);
 // this helper opens the old address and checks where it lands (the Layer 3 menu item no longer exists).
 export async function openRetiredLayer3(page, address = '/#layer-3-ai') {
   await page.goto(address)
-  await expect(page).toHaveURL(/#layer-2-discovery$/, ui)
-  await expect(page.locator('.m-topbar h1')).toHaveText('Layer 2 Discovery & reading', ui)
+  await expect(page).toHaveURL(/#layer-2-discovery\?tab=universities$/, ui)
+  await expect(page.locator('.m-topbar h1')).toHaveText('Layer 2/3 Build & enrich', ui)
+  await expect(page.locator('[data-adapters-workspace]')).toBeVisible(data)
   await expect(page.locator('.m-nav').getByRole('button', { name: 'Layer 3 AI validation', exact: true })).toHaveCount(0)
   return page.locator('main').first()
 }
@@ -74,20 +81,19 @@ export async function openLayer3() {
   throw new Error('Layer 3 AI validation was retired in v2.15.252; use openRetiredLayer3 to check that its old address opens Layer 2 › Adapters.')
 }
 
+// v2.15.298 / v2.15.300 (Platform Admin, 20 Oct 2026): Layer 4 Review is one Inbox (data-l4-inbox); the old Layer 4 status panel and
+// tabs are retired into Inbox kinds.
 export async function openLayer4(page) {
   await clickPrimaryNav(page, 'Layer 4 — Human Resolution')
-  const workspace = page.locator('.m23-stack').first()
-  await expect(workspace.getByRole('heading', { name: 'Layer 4 status' })).toBeVisible(ui)
+  await expect(page.locator('.m-topbar h1')).toHaveText('Layer 4 Review', ui)
+  const workspace = page.locator('[data-l4-inbox]').first()
+  await expect(workspace).toBeVisible({ timeout: 20_000 })
   return workspace
 }
 
 export async function openEvidence(page) {
   await clickPrimaryNav(page, 'Evidence')
   await expect(page.locator('.m-title-wrap h1')).toContainText(/Evidence/i, ui)
-}
-
-export async function openOnboarding(page) {
-  return openAdministrationTool(page,'Onboarding','Country / Provider / Course Onboarding')
 }
 
 export async function openGuides(page) {

@@ -27,10 +27,11 @@ test.describe('CF-100 multi-country same-edition ranking scope @deployed',()=>{
   await loginAsUatUser(page)
   await page.goto(new URL('/#administration?section=sources-imports',process.env.UAT_BASE_URL).toString())
   await expect(page.locator('.m-release-pill')).toContainText(`v${UI_VERSION}`,{timeout:DETERMINISTIC_UI_TIMEOUT})
-  // Ranking editions are now validated and applied automatically by the Layer 1 Ranking ETL.
-  await expect(page.locator('.m-ranking-history-head')).toContainText('Acquire Evidence →')
-  await expect(page.locator('.m-ranking-history-head')).toContainText('validates and applies automatically')
-  await expect(page.locator('.m-ranking-history-head')).toContainText('mapping exceptions remain traceable separately')
+  // Ranking editions are now validated and applied automatically by the Layer 1 Ranking ETL. v2.15.132 (older screens in the compact style):
+  // the history head says so in words; names that cannot be matched wait for review.
+  await expect(page.locator('.m-ranking-history-head')).toContainText('Imported files',{timeout:20_000})
+  await expect(page.locator('.m-ranking-history-head')).toContainText('checked and applied automatically')
+  await expect(page.locator('.m-ranking-history-head')).toContainText('cannot be matched wait for review')
   await expect(page.locator('.m-ranking-import-page')).toContainText(/country|Country/)
  }finally{await finish(testInfo,runtime)}})
 })
