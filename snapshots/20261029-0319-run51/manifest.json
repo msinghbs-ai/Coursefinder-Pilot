@@ -1,0 +1,369 @@
+{
+  "captured_at": "2026-10-29T03:19:14.491Z",
+  "base_url": "https://coursefinder-pilot.techm.workers.dev",
+  "screens": [
+    {
+      "file": "aer-01-matrix-all.png",
+      "route": "aer-tour",
+      "action": "01-matrix-all",
+      "url": "https://coursefinder-pilot.techm.workers.dev/#entry-requirements",
+      "layout": {
+        "viewport": 1440,
+        "page_scroll_width": 1440,
+        "horizontal_page_scroll": false,
+        "clipped_elements": 0
+      },
+      "console_errors": []
+    },
+    {
+      "file": "aer-02-matrix-rmit-india.png",
+      "route": "aer-tour",
+      "action": "02-matrix-rmit-india",
+      "url": "https://coursefinder-pilot.techm.workers.dev/#entry-requirements",
+      "layout": {
+        "viewport": 1440,
+        "page_scroll_width": 1440,
+        "horizontal_page_scroll": false,
+        "clipped_elements": 0
+      },
+      "console_errors": [],
+      "rows_shown": 50
+    },
+    {
+      "route": "aer-tour",
+      "action": "matrix",
+      "ok": true,
+      "seconds": 7,
+      "at": 0
+    },
+    {
+      "file": "aer-03-matrix-columns-menu.png",
+      "route": "aer-tour",
+      "action": "03-matrix-columns-menu",
+      "url": "https://coursefinder-pilot.techm.workers.dev/#entry-requirements",
+      "layout": {
+        "viewport": 1440,
+        "page_scroll_width": 1440,
+        "horizontal_page_scroll": false,
+        "clipped_elements": 0
+      },
+      "console_errors": []
+    },
+    {
+      "route": "aer-tour",
+      "action": "columns",
+      "ok": true,
+      "seconds": 2,
+      "at": 7
+    },
+    {
+      "file": "aer-04-matrix-drawer.png",
+      "route": "aer-tour",
+      "action": "04-matrix-drawer",
+      "url": "https://coursefinder-pilot.techm.workers.dev/#entry-requirements",
+      "layout": {
+        "viewport": 1440,
+        "page_scroll_width": 1440,
+        "horizontal_page_scroll": false,
+        "clipped_elements": 0
+      },
+      "console_errors": []
+    },
+    {
+      "route": "aer-tour",
+      "action": "drawer",
+      "ok": true,
+      "seconds": 3,
+      "at": 9
+    },
+    {
+      "file": "aer-05-matrix-waiting-in-layer-4.png",
+      "route": "aer-tour",
+      "action": "05-matrix-waiting-in-layer-4",
+      "url": "https://coursefinder-pilot.techm.workers.dev/#entry-requirements",
+      "layout": {
+        "viewport": 1440,
+        "page_scroll_width": 1440,
+        "horizontal_page_scroll": false,
+        "clipped_elements": 0
+      },
+      "console_errors": []
+    },
+    {
+      "route": "aer-tour",
+      "action": "waiting",
+      "ok": true,
+      "seconds": 62,
+      "at": 12
+    },
+    {
+      "file": "aer-06-course-requirements.png",
+      "route": "aer-tour",
+      "action": "06-course-requirements",
+      "url": "https://coursefinder-pilot.techm.workers.dev/#entry-requirements?tab=course",
+      "layout": {
+        "viewport": 1440,
+        "page_scroll_width": 1440,
+        "horizontal_page_scroll": false,
+        "clipped_elements": 0
+      },
+      "console_errors": []
+    },
+    {
+      "file": "aer-07-course-drawer.png",
+      "route": "aer-tour",
+      "action": "07-course-drawer",
+      "url": "https://coursefinder-pilot.techm.workers.dev/#entry-requirements?tab=course",
+      "layout": {
+        "viewport": 1440,
+        "page_scroll_width": 1440,
+        "horizontal_page_scroll": false,
+        "clipped_elements": 0
+      },
+      "console_errors": []
+    },
+    {
+      "route": "aer-tour",
+      "action": "course",
+      "ok": true,
+      "seconds": 8,
+      "at": 74
+    },
+    {
+      "file": "aer-08-sources-reads-holds.png",
+      "route": "aer-tour",
+      "action": "08-sources-reads-holds",
+      "url": "https://coursefinder-pilot.techm.workers.dev/#entry-requirements?tab=sources",
+      "layout": {
+        "viewport": 1440,
+        "page_scroll_width": 1440,
+        "horizontal_page_scroll": false,
+        "clipped_elements": 0
+      },
+      "console_errors": []
+    },
+    {
+      "route": "aer-tour",
+      "action": "sources",
+      "ok": true,
+      "seconds": 2,
+      "at": 82
+    },
+    {
+      "file": "aer-09-resolution-0100714-india.png",
+      "route": "aer-tour",
+      "action": "09-resolution-0100714-india",
+      "url": "https://coursefinder-pilot.techm.workers.dev/#entry-requirements?tab=resolve",
+      "layout": {
+        "viewport": 1440,
+        "page_scroll_width": 1440,
+        "horizontal_page_scroll": false,
+        "clipped_elements": 0
+      },
+      "console_errors": []
+    },
+    {
+      "route": "aer-tour",
+      "action": "resolve",
+      "ok": true,
+      "seconds": 4,
+      "at": 84
+    },
+    {
+      "file": "aer-15-dp020-india.png",
+      "route": "aer-tour",
+      "action": "15-dp020-india",
+      "url": "https://coursefinder-pilot.techm.workers.dev/#courses?id=b365fde8-d003-4ef6-80c3-4136fbd5587a",
+      "layout": {
+        "viewport": 1440,
+        "page_scroll_width": 1440,
+        "horizontal_page_scroll": false,
+        "clipped_elements": 0
+      },
+      "console_errors": [],
+      "country_order": [
+        "India",
+        "Nepal",
+        "Singapore",
+        "Afghanistan",
+        "Åland Islands",
+        "Albania"
+      ],
+      "india_outcome": "contact_provider",
+      "india_text": "Requirements for this qualification aren’t published — contact the provider (5 · Contact the provider) The provider publishes a band table for this country, but the course page prints no band to enter it with.",
+      "scholarships": "Scholarships Student nationality Any nationality China United States 6 scholarships Dylan Alcott Foundation Scholarship International and domestic Any nationality Up to A$15,000 (A$2,500, A$5,000, A$10,000, A$15,000 stated) No closing date stated More Provider page Evidence Fast Track University Pat"
+    },
+    {
+      "file": "aer-15-dp020-evidence.png",
+      "route": "aer-tour",
+      "action": "15-dp020-evidence",
+      "url": "https://coursefinder-pilot.techm.workers.dev/#courses?id=b365fde8-d003-4ef6-80c3-4136fbd5587a",
+      "layout": {
+        "viewport": 1440,
+        "page_scroll_width": 1440,
+        "horizontal_page_scroll": false,
+        "clipped_elements": 0
+      },
+      "console_errors": [],
+      "timeline_entries": 24,
+      "timeline_kinds": [
+        "ai",
+        "scholarship",
+        "read",
+        "change",
+        "aer",
+        "discovery",
+        "admission"
+      ],
+      "timeline_in_blade_before_open": 0
+    },
+    {
+      "route": "aer-tour",
+      "action": "course-dp020",
+      "ok": true,
+      "seconds": 8,
+      "at": 87
+    },
+    {
+      "file": "aer-10-phone-matrix.png",
+      "route": "aer-tour",
+      "action": "10-phone-matrix",
+      "url": "https://coursefinder-pilot.techm.workers.dev/#entry-requirements",
+      "layout": {
+        "viewport": 390,
+        "page_scroll_width": 390,
+        "horizontal_page_scroll": false,
+        "clipped_elements": 0
+      },
+      "console_errors": []
+    },
+    {
+      "file": "aer-11-phone-course.png",
+      "route": "aer-tour",
+      "action": "11-phone-course",
+      "url": "https://coursefinder-pilot.techm.workers.dev/#entry-requirements?tab=course",
+      "layout": {
+        "viewport": 390,
+        "page_scroll_width": 390,
+        "horizontal_page_scroll": false,
+        "clipped_elements": 0
+      },
+      "console_errors": []
+    },
+    {
+      "file": "aer-12-phone-sources.png",
+      "route": "aer-tour",
+      "action": "12-phone-sources",
+      "url": "https://coursefinder-pilot.techm.workers.dev/#entry-requirements?tab=sources",
+      "layout": {
+        "viewport": 390,
+        "page_scroll_width": 390,
+        "horizontal_page_scroll": false,
+        "clipped_elements": 0
+      },
+      "console_errors": []
+    },
+    {
+      "file": "aer-13-phone-resolve.png",
+      "route": "aer-tour",
+      "action": "13-phone-resolve",
+      "url": "https://coursefinder-pilot.techm.workers.dev/#entry-requirements?tab=resolve",
+      "layout": {
+        "viewport": 390,
+        "page_scroll_width": 390,
+        "horizontal_page_scroll": false,
+        "clipped_elements": 0
+      },
+      "console_errors": []
+    },
+    {
+      "file": "aer-14-phone-drawer.png",
+      "route": "aer-tour",
+      "action": "14-phone-drawer",
+      "url": "https://coursefinder-pilot.techm.workers.dev/#entry-requirements",
+      "layout": {
+        "viewport": 390,
+        "page_scroll_width": 390,
+        "horizontal_page_scroll": false,
+        "clipped_elements": 0
+      },
+      "console_errors": [],
+      "banner": {
+        "shown": true,
+        "left": 12,
+        "text_left": 45,
+        "text_starts_inside": true,
+        "horizontal_scroll": false,
+        "text": "OpenRouter: OpenRouter credit is low: US$5.87 left on the key.\nModels & services"
+      }
+    },
+    {
+      "route": "aer-tour",
+      "action": "phone-drawer-closed",
+      "ok": true
+    },
+    {
+      "file": "aer-16-phone-dp020-india.png",
+      "route": "aer-tour",
+      "action": "16-phone-dp020-india",
+      "url": "https://coursefinder-pilot.techm.workers.dev/#courses?id=b365fde8-d003-4ef6-80c3-4136fbd5587a",
+      "layout": {
+        "viewport": 390,
+        "page_scroll_width": 390,
+        "horizontal_page_scroll": false,
+        "clipped_elements": 0
+      },
+      "console_errors": [],
+      "country_order": [
+        "India",
+        "Nepal",
+        "Singapore",
+        "Afghanistan",
+        "Åland Islands",
+        "Albania"
+      ],
+      "india_outcome": "contact_provider",
+      "india_text": "Requirements for this qualification aren’t published — contact the provider (5 · Contact the provider) The provider publishes a band table for this country, but the course page prints no band to enter it with.",
+      "scholarships": "Scholarships Student nationality Any nationality China United States 6 scholarships Dylan Alcott Foundation Scholarship International and domestic Any nationality Up to A$15,000 (A$2,500, A$5,000, A$10,000, A$15,000 stated) No closing date stated More Provider page Evidence Fast Track University Pat"
+    },
+    {
+      "file": "aer-16-phone-dp020-evidence.png",
+      "route": "aer-tour",
+      "action": "16-phone-dp020-evidence",
+      "url": "https://coursefinder-pilot.techm.workers.dev/#courses?id=b365fde8-d003-4ef6-80c3-4136fbd5587a",
+      "layout": {
+        "viewport": 390,
+        "page_scroll_width": 390,
+        "horizontal_page_scroll": false,
+        "clipped_elements": 0
+      },
+      "console_errors": [],
+      "timeline_entries": 24,
+      "timeline_kinds": [
+        "ai",
+        "scholarship",
+        "read",
+        "change",
+        "aer",
+        "discovery",
+        "admission"
+      ],
+      "timeline_in_blade_before_open": 0
+    },
+    {
+      "route": "aer-tour",
+      "action": "phone",
+      "ok": true,
+      "seconds": 25,
+      "at": 96
+    },
+    {
+      "route": "aer-tour",
+      "action": "reads",
+      "admin_aer_calls": 36,
+      "list_reads": 12,
+      "largest_page_size": 100,
+      "writes": 0
+    }
+  ]
+}
