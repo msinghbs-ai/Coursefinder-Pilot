@@ -103,6 +103,17 @@ export function fmtRelative(value, fallback = EMPTY, now = Date.now()) {
   return fmtDate(d)
 }
 
+/** Age from the server's seconds (CF-247 W35, cached admin figures): 45 → "just now", 600 → "10 min ago", 4,500 → "1 h 15 min ago". */
+export function fmtAge(seconds) {
+  if (seconds === null || seconds === undefined || seconds === '') return ''
+  const s = Number(seconds)
+  if (!Number.isFinite(s) || s < 0) return ''
+  if (s < 60) return 'just now'
+  if (s < 3600) return `${Math.floor(s / 60)} min ago`
+  if (s < 86400) { const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60); return m ? `${h} h ${m} min ago` : `${h} h ago` }
+  const d = Math.floor(s / 86400); return `${d} day${d === 1 ? '' : 's'} ago`
+}
+
 function finite(value) {
   if (value === null || value === undefined || value === '' || typeof value === 'boolean') return null
   const n = Number(value)

@@ -4,6 +4,7 @@
 // key later), with sample runs across every country before scheduled use; and every
 // variable is a setting the Platform Admin changes here — nothing fixed in code.
 // Reads: admin_toolsets_read(), admin_platform_notices_read(layer), admin_toolset_samples_read(run).
+// CF-247 W35 (Platform Admin 30 Oct 2026 06:53): notices come from a cached snapshot; its time, age and Stale marker are shown (SnapshotStamp).
 // Writes: admin_toolsets_write(action,args), admin_toolset_sample_write(action,args) — Platform Admin with a reason;
 // sample runs are done by the toolset-runner edge function (migrations 20261004000600 to 20261004000900).
 // v2.15.180 (Decision 253): Firecrawl settings by section (Target universities, Read pages, Find pages, Runs) and the
@@ -20,6 +21,7 @@ import Card,{rememberOpen}from'./Card'
 import{hrefFor}from'./nav-map'
 import{plainError}from'./lib/errors'
 import{useIsPlatformAdmin,balanceWords}from'./lib/viewer'
+import SnapshotStamp from'./SnapshotStamp'
 
 const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const ask=t=>{const r=window.prompt(`${t}\n\nReason (kept in the log):`);return r&&r.trim().length>=4?r.trim():null}
@@ -106,6 +108,7 @@ export function LayerNotices({layer}){
     {seen.length>0&&<details className="tn-seen" open={open} onToggle={e=>setOpen(e.currentTarget.open)}><summary>{seen.length} acknowledged</summary>{seen.map(n=><Notice key={n.key} n={n} onDone={load}/>)}</details>}
     {infos>0&&<p className="tn-infos" data-layer-notice-infos><button type="button" className="cf-linkbtn" onClick={()=>goToCard(go('Toolsets and limits',LIMITS.page,LIMITS.tab,'services.toolsets','services.toolsets'))}>
       {infos} information-only notice{infos===1?'':'s'} (nothing to do) on Toolsets and limits</button></p>}
+    <SnapshotStamp meta={d.snapshot} label="Notices checked" what="layer-notices"/>
   </section>
 }
 export function Notice({n,can,onAck,onDone}){
@@ -158,6 +161,7 @@ export default function Toolsets({onError}){
     <Card id="services.toolsets" title="Toolsets and limits" subtitle="The outside services and platform limits each layer depends on. A notice appears on the layer’s page when one of them hits a limit or times out."
       meta={<span className={`cf-chip tone-${notices.length?'warning':'success'}`}>{notices.length?`${fmtNumber(notices.length)} notice${notices.length===1?'':'s'}`:'No notices'}</span>}>
       {!d.can_manage&&<p className="l3v-note">You can view this. Only a Platform Admin can change it.</p>}
+      <SnapshotStamp meta={n?.snapshot} label="Notices checked" what="toolset-notices"/>
       <div className="tn-all" data-toolset-notices>{notices.length?notices.map(x=><Notice key={x.key} n={x} onDone={load}/>):<p className="sl-sub">No notices on any layer.</p>}</div>
     </Card>
     {(d.toolsets||[]).map(t=><React.Fragment key={t.key}><Toolset t={t} d={d} can={can} write={write}/>{t.key==='firecrawl'&&<><FirecrawlCredits onError={onError}/><FirecrawlWork onError={onError}/></>}</React.Fragment>)}

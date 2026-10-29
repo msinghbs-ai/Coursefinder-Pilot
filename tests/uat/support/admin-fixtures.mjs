@@ -488,6 +488,8 @@ export const scholarshipLayer = layer => ({ layer, can_manage: true, jobs: slJob
   ...(layer === 2 ? { countries: [{ code: 'NZ', pages_found: 1829, discovery: { mapped: 8 }, page_reads: { read: 38, waiting: 1761 }, outcomes: { admitted: 7, rejected: 30 }, refusals: [{ reason: 'international_not_stated', pages: 20 }], rereads: { read: 7 } }], worker: [{ mode: 'scholarship_discover', sent: 37, answered: 36, ok: 36, failed: 0, last_failure: null }], firecrawl: { used: 2696, cap: 3000, reserve: 800, by_purpose: { sch_scrape: { all: 1781, last_7_days: 1781 } } } } : {}),
   ...(layer === 3 ? { ai: [{ country: 'AU', enabled: false, state: 'benchmark_required', profile: null, task: 'scholarship_page_classification', budget_usd: 1, max_records: 25, runs: 0 }], profiles: [{ code: 'openrouter-scholarship-gemini-flash-lite-v1', model: 'google/gemini-2.5-flash-lite', enabled: true, paused: true, benchmark_pass: false }] } : {}) })
 
+// CF-247 W35 (Platform Admin 30 Oct 2026 06:53): the meta every cached admin read adds (security.admin_read_snapshot_meta_v1), live-shaped
+export const snapshotMeta = (o = {}) => ({ source: 'snapshot', generated_at: '2026-10-30T06:50:00Z', age_seconds: 180, stale: false, stale_after_minutes: 30, refresh_every_minutes: 5, took_ms: 3150, last_error: null, last_error_at: null, ...o })
 // Decision 252 (v2.15.177, amended v2.15.178): toolsets and limits, notices per layer, keys with plan limits, sample runs
 const notice = (o) => ({ count: 1, first_at: '2026-10-04T02:00:00Z', last_at: '2026-10-04T02:45:00Z', acknowledged: false, ...o })
 export const platformNotices = layer => {
@@ -503,7 +505,8 @@ export const platformNotices = layer => {
       items: [{ provider_id: 'p-ach', name: 'Achievers Global Pty Ltd' }, { provider_id: 'p-bri', name: 'Bright Futures College' }] }),
     notice({ key: 'scheduled_jobs:2:failed:coverage-bind', layer: 2, toolset: 'scheduled_jobs', kind: 'failed', severity: 'warning', title: 'Job "coverage-bind" failed 1 times', acknowledged: true, acknowledged_at: '2026-10-04T03:00:00Z' }),
   ]
-  return { can_manage: true, notices: layer == null ? all : all.filter(n => n.layer === layer) }
+  // CF-247 W35: the notices come from a cached snapshot; its time, age and stale flag (security.admin_read_snapshot_meta_v1)
+  return { can_manage: true, notices: layer == null ? all : all.filter(n => n.layer === layer), snapshot: snapshotMeta() }
 }
 export const toolsets = {
   can_manage: true,
@@ -850,6 +853,7 @@ export const progressOverview = { group: 'all', at: '2026-10-13T01:10:00Z', fact
     { group: 'other', label: 'Other', share: 1000, used: 1000, refused: 0 }] },
   ai_today: [{ use: 'scholarship_ai', label: 'Scholarship pages', spent: 1.2, guard: 20 }], openrouter_usd: 27.1,
   notices: [{ key: 'firecrawl:2:daily:scholarships:2026-10-13', toolset: 'firecrawl', severity: 'high', title: 'Firecrawl daily budget, Scholarships: 3500 of 3500 credits used', detail: 'Used up: this work waits until midnight, Melbourne time.', hint: 'Budget settings are on Toolsets › Firecrawl.' }],
+  notices_snapshot: snapshotMeta(), // CF-247 W35
   trend: [{ at: '2026-10-13T00:09:00Z', done: 54, found: 1890, published: 1395, pages_correct: 30, billed_today: 6500 }, { at: '2026-10-13T01:09:00Z', done: 54, found: 1900, published: 1400, pages_correct: 23, billed_today: 7668 }] }
 export const progressTop = { ...progressOverview, group: 'top', universities: 50, needs_person: 2, stopped: 0, stop_reasons: { approve_central: 2 },
   stages: { provider_in: 0, prepare: 0, create_adapter: 0, admit: 2, enrich: 0, scholarship_adapter: 0, admit_scholarships: 41, done: 7 },

@@ -19,6 +19,7 @@ import Card from'./Card'
 import{Button,Empty,Loading,StatusChip}from'./ui-kit'
 import{fmtNumber,fmtDateTime}from'./lib/format.js'
 import{plainError}from'./lib/errors'
+import SnapshotStamp from'./SnapshotStamp' // CF-247 W35: every country's figures come from a cached snapshot; one university's are read live
 
 const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const call=async(action,args)=>{const{data,error}=await supabase.rpc('admin_field_coverage',{p_action:action,p_args:args||{}});if(error)throw error;return data}
@@ -54,7 +55,8 @@ function FieldMatrix({data,rank,busy,onReload,onSaved,onError}){
   return <Card id="coverage.fields" title="Every field by country" icon={CheckCircle2}
     subtitle="Every course and provider field the platform holds, with the same target in every country. Australia gets most course fields from its register (CRICOS); New Zealand and Canada get them from each provider's website, so the same fields are filled there by adapters, the coverage pipeline and the standing Fill the gaps queue."
     meta={<Button compact className="cf-icon-btn" title="Refresh" aria-label="Refresh every field" onClick={onReload} disabled={busy}><RefreshCw size={14}/></Button>}>
-    <p className="sd-desc">Course figures are recounted every hour{data.computed_at?` (last ${fmtDateTime(data.computed_at)})`:''}; provider figures are counted when this opens. Below target is marked. Select a field in the attribute table further down to list its courses.</p>
+    <p className="sd-desc">Course figures are recounted every hour{data.computed_at?` (last ${fmtDateTime(data.computed_at)})`:''}; provider figures are {data.snapshot?.source==='snapshot'?`counted every ${data.snapshot.refresh_every_minutes} minutes`:'counted when this opens'}. Below target is marked. Select a field in the attribute table further down to list its courses.</p>
+    <SnapshotStamp meta={data.snapshot} label="Provider figures counted" what="field-coverage"/>
     {groups.map(([level,title])=><div className="dq-table-wrap" key={level}><table className="dq-table cc-table fc-matrix" data-field-matrix={level}>
       <thead><tr><th>{title}</th><th>Filled by</th>{countries.map(c=><th key={c} className="num">{COUNTRY[c]||c}</th>)}<th className="num">All</th><th className="num">Target</th></tr></thead>
       <tbody>{reg.filter(f=>f.level===level).map(f=>{const a=all(f.field),ap=pct(a.n,a.t);return <tr key={f.field} data-field={f.field}>
@@ -87,7 +89,7 @@ function GapQueue({data,rank,onSaved,onReload,onError}){
       <span><strong>{total?`${fmtNumber(done)} of ${fmtNumber(total)}`:'—'}</strong><small>Items settled</small></span>
       <span><strong>{fmtNumber(q.filled_7d||0)}</strong><small>Values filled in 7 days</small></span>
       <span><strong>{fmtNumber(q.reads_today||0)} of {fmtNumber(q.reads_per_day)}</strong><small>New page reads today</small></span>
-      <span><strong>US${Number(q.ai_spent_today_usd||0).toFixed(2)}{q.ai_guard_usd!=null?` of ${Number(q.ai_guard_usd).toFixed(0)}`:''}</strong><small>Enrich fields AI today (guard)</small></span>
+      <span><strong>US${Number(q.ai_spent_today_usd||0).toFixed(2)}{q.ai_guard_usd!=null?` of ${Number(q.ai_guard_usd).toFixed(0)}`:''}</strong><small>Enrich fields AI today (guard)</small><SnapshotStamp meta={data.snapshot} label="Counted" what="field-coverage-spend"/></span>
     </div>
     {j?.by_field&&<div className="dq-table-wrap"><table className="dq-table cc-table"><thead><tr><th>Field (latest run)</th>{['queued','ai','filled','review','skipped','failed'].map(s=><th key={s} className="num">{STATE_LABEL[s]}</th>)}</tr></thead>
       <tbody>{Object.entries(j.by_field).map(([f,s])=><tr key={f}><td><strong>{label(f)}</strong></td>{['queued','ai','filled','review','skipped','failed'].map(k=>{const n=Number(s?.[k]||0)+(k==='queued'?Number(s?.waiting||0):0)+(k==='ai'?Number(s?.leased||0):0);return <td key={k} className="num">{n?fmtNumber(n):<span className="cc-zero">–</span>}</td>})}</tr>)}</tbody></table></div>}
