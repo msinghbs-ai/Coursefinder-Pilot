@@ -3,11 +3,15 @@
 // sufficient"). Job gap-causes takes an hourly snapshot: for every active course and attribute, why the value is missing (the first
 // cause that applies) and what the platform does about it. "Needs a change" means nothing automatic covers that cause.
 // Server: public.admin_gap_causes(country).
+// CF-247 W35 (Platform Admin 30 Oct 2026 06:53): the time shown is when the last run actually finished (run.finished_at, recorded by
+// security.gap_causes_run_v1), with its age and a Stale marker past gaps.causes_stale_after_minutes (75, as in the hourly report). 'at' is
+// only the hour the snapshot belongs to (the run at :55 stamps the start of its hour).
 import React,{useEffect,useMemo,useState}from'react'
 import{SearchX,RefreshCw}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{Button,Empty,Loading,SectionTitle,StatusChip,fmtDateTime,fmtNumber}from'./ui-kit'
 import{plainError}from'./lib/errors'
+import SnapshotStamp from'./SnapshotStamp'
 
 export const GAP_ATTRS=[['official_page','Official page'],['fee','Fee'],['english','English'],['intakes','Intakes'],['campus','Campus'],['campus_region','Campus region'],['duration','Duration'],['delivery','Delivery'],['level','Level'],['field_of_study','Field of study'],['international','Open to international']]
 const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
@@ -22,8 +26,12 @@ export default function GapCauses({onError}){
   if(!d)return <section className="m-panel"><Loading label="Reading why values are missing…"/></section>
   if(!d.at)return <section className="m-panel"><Empty text="No snapshot yet (job gap-causes, every hour at :55)."/></section>
   const label=a=>GAP_ATTRS.find(x=>x[0]===a)?.[1]||a
+  const run=d.run
   return <section className="m-panel" data-gap-causes>
-    <SectionTitle icon={SearchX} title="Why values are missing" subtitle={`Snapshot ${fmtDateTime(d.at)} · every hour. For each attribute: how many courses miss it, why, and what the platform does about it. "Needs a change" means nothing automatic covers that cause.`} action={<Button compact onClick={load}><RefreshCw size={14}/>Refresh</Button>}/>
+    <SectionTitle icon={SearchX} title="Why values are missing" subtitle={`Runs every hour at :55. For each attribute: how many courses miss it, why, and what the platform does about it. "Needs a change" means nothing automatic covers that cause.`} action={<Button compact onClick={load}><RefreshCw size={14}/>Refresh</Button>}/>
+    <p className="sd-desc" data-gap-run={run?.recorded?'recorded':'not-recorded'}>{run?.recorded
+      ?<SnapshotStamp meta={{generated_at:run.finished_at,age_seconds:run.age_seconds,stale:run.stale,stale_after_minutes:run.stale_after_minutes}} label="Last run finished" what="gap-causes"/>
+      :<small className="sd-desc cf-snapshot" data-snapshot-stamp="gap-causes" data-stale={run?.stale?'yes':'no'}>Snapshot for the hour from {fmtDateTime(d.at)}; its run time was not recorded{run?.stale?<> <span className="cf-chip tone-warning" data-stale-marker>Stale: older than {Number(run.stale_after_minutes)} min</span></>:null}</small>}</p>
     <div className="ef-row">
       <select className="fv-filter" aria-label="Country" value={cc} onChange={e=>setCc(e.target.value)}>{(d.countries||[]).map(c=><option key={c} value={c}>{c}</option>)}</select>
       <select className="fv-filter" aria-label="Attribute" value={attr} onChange={e=>setAttr(e.target.value)}><option value="">All attributes</option>{GAP_ATTRS.map(([k,l])=><option key={k} value={k}>{l}</option>)}</select>
