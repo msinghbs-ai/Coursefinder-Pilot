@@ -41,12 +41,13 @@ async function courseDp020(p, prefix, shot) {
   const scholarshipText = (await scholarships.count()) ? (await scholarships.first().innerText()).replace(/\s+/g, ' ').slice(0, 300) : null
   await shot(p, `${prefix}-dp020-india`, { country_order: order, india_outcome: await outcome.getAttribute('data-entry-resolution'),
     india_text: (await outcome.innerText()).replace(/\s+/g, ' ').slice(0, 300), scholarships: scholarshipText })
+  const embedded = await p.locator('[data-course-audit]').count()  // the timeline section exists only inside the overlay
   await blade.locator('[data-course-evidence-open]').click()
   const dialog = p.getByRole('dialog')
   await dialog.waitFor({ timeout: 60_000 })
   await p.locator('[data-ca-kind]').first().waitFor({ timeout: 60_000 })
   const kinds = await p.locator('[data-ca-kind]').evaluateAll((els) => els.map((e) => e.getAttribute('data-ca-kind')))
-  await shot(p, `${prefix}-dp020-evidence`, { timeline_entries: kinds.length, timeline_kinds: [...new Set(kinds)], embedded_history_in_blade: await blade.getByText('What happened to this course').count() })
+  await shot(p, `${prefix}-dp020-evidence`, { timeline_entries: kinds.length, timeline_kinds: [...new Set(kinds)], timeline_in_blade_before_open: embedded })
   await p.keyboard.press('Escape')
   await dialog.waitFor({ state: 'detached', timeout: 10_000 })
 }

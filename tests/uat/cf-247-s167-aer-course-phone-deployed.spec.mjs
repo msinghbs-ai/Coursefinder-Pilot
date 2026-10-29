@@ -42,7 +42,7 @@ async function dp020(page, calls, act) {
     // 5. the scholarships result shows (cards, or the explained empty state)
     await expect(blade.locator('[data-course-scholarships]')).toBeVisible()
     // 6. the evidence overlay: the blade embeds no history; the overlay shows the timeline, fits the screen and closes with Escape
-    await expect(blade.getByText('What happened to this course')).toHaveCount(0)
+    await expect(page.locator('[data-course-audit]')).toHaveCount(0)  // the timeline section exists only inside the overlay
     await blade.locator('[data-course-evidence-open]')[act]()
     const dialog = page.getByRole('dialog')
     await expect(dialog).toBeVisible({ timeout: DETERMINISTIC_UI_TIMEOUT })
