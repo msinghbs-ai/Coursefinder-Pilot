@@ -1,0 +1,118 @@
+{
+  "captured_at": "2026-10-29T00:18:03.579Z",
+  "base_url": "https://coursefinder-pilot.techm.workers.dev",
+  "screens": [
+    {
+      "file": "aer-01-matrix-all.png",
+      "route": "aer-tour",
+      "action": "01-matrix-all",
+      "url": "https://coursefinder-pilot.techm.workers.dev/#entry-requirements",
+      "layout": {
+        "viewport": 1440,
+        "page_scroll_width": 1440,
+        "horizontal_page_scroll": false,
+        "clipped_elements": 0
+      },
+      "console_errors": []
+    },
+    {
+      "file": "aer-02-matrix-rmit-india.png",
+      "route": "aer-tour",
+      "action": "02-matrix-rmit-india",
+      "url": "https://coursefinder-pilot.techm.workers.dev/#entry-requirements",
+      "layout": {
+        "viewport": 1440,
+        "page_scroll_width": 1440,
+        "horizontal_page_scroll": false,
+        "clipped_elements": 0
+      },
+      "console_errors": [],
+      "rows_shown": 50
+    },
+    {
+      "route": "aer-tour",
+      "action": "matrix",
+      "ok": true,
+      "seconds": 10,
+      "at": 0
+    },
+    {
+      "file": "aer-03-matrix-columns-menu.png",
+      "route": "aer-tour",
+      "action": "03-matrix-columns-menu",
+      "url": "https://coursefinder-pilot.techm.workers.dev/#entry-requirements",
+      "layout": {
+        "viewport": 1440,
+        "page_scroll_width": 1440,
+        "horizontal_page_scroll": false,
+        "clipped_elements": 0
+      },
+      "console_errors": []
+    },
+    {
+      "route": "aer-tour",
+      "action": "columns",
+      "ok": true,
+      "seconds": 2,
+      "at": 10
+    },
+    {
+      "file": "aer-04-matrix-drawer.png",
+      "route": "aer-tour",
+      "action": "04-matrix-drawer",
+      "url": "https://coursefinder-pilot.techm.workers.dev/#entry-requirements",
+      "layout": {
+        "viewport": 1440,
+        "page_scroll_width": 1440,
+        "horizontal_page_scroll": false,
+        "clipped_elements": 0
+      },
+      "console_errors": []
+    },
+    {
+      "route": "aer-tour",
+      "action": "drawer",
+      "ok": true,
+      "seconds": 3,
+      "at": 12
+    },
+    {
+      "route": "aer-tour",
+      "action": "waiting",
+      "error": "locator.click: Target page, context or browser has been closed",
+      "seconds": 2382
+    },
+    {
+      "route": "aer-tour",
+      "action": "course",
+      "error": "page.goto: Target page, context or browser has been closed",
+      "seconds": 0
+    },
+    {
+      "route": "aer-tour",
+      "action": "sources",
+      "error": "page.goto: Target page, context or browser has been closed",
+      "seconds": 0
+    },
+    {
+      "route": "aer-tour",
+      "action": "resolve",
+      "error": "page.goto: Target page, context or browser has been closed",
+      "seconds": 0
+    },
+    {
+      "route": "aer-tour",
+      "action": "phone",
+      "error": "browserContext.newPage: Target page, context or browser has been closed",
+      "seconds": 0
+    },
+    {
+      "route": "aer-tour",
+      "action": "reads",
+      "admin_aer_calls": 7,
+      "list_reads": 3,
+      "largest_page_size": 50,
+      "writes": 0
+    }
+  ]
+}
