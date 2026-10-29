@@ -16,6 +16,7 @@ import{Button,StatusChip,Pager,fmtDate,fmtNumber}from'./ui-kit'
 import{ReasonAction}from'./ProviderOnboarding'
 import{plainError}from'./lib/errors'
 import{hrefFor}from'./nav-map'
+import{orderAerCountries,readAerCountry,saveAerCountry}from'./aer-countries'
 
 const call=async(action,args)=>{const{data,error}=await supabase.rpc('admin_entry_requirements',{p_action:action,p_args:args});if(error)throw error;return data}
 const OUTCOME={minimum_published:'A minimum is published',case_by_case:'This qualification is considered case by case',contact_provider:'Requirements for this qualification aren’t published — contact the provider'}
@@ -49,7 +50,7 @@ export function ProviderEntryMatrix({providerId}){
       <small data-entry-counts>{Object.entries(d.counts||{}).map(([s,n])=>`${fmtNumber(n)} ${s}`).join(' · ')}</small>
       <div className="sd-actions">
         <label>Status <select value={f.status} onChange={e=>set('status',e.target.value)} aria-label="Entry rows status"><option value="">All</option>{['active','proposed','inactive','superseded'].map(s=><option key={s} value={s}>{s}</option>)}</select></label>
-        <label>Country <select value={f.country} onChange={e=>set('country',e.target.value)} aria-label="Entry rows country"><option value="">All</option>{(d.countries||[]).map(c=><option key={c.code} value={c.code}>{c.code} ({fmtNumber(c.n)})</option>)}</select></label>
+        <label>Country <select value={f.country} onChange={e=>set('country',e.target.value)} aria-label="Entry rows country"><option value="">All</option>{orderAerCountries(d.countries).map(c=><option key={c.code} value={c.code}>{c.code} ({fmtNumber(c.n)})</option>)}</select></label>
         <label>Level <select value={f.level} onChange={e=>set('level',e.target.value)} aria-label="Entry rows level"><option value="">All</option>{(d.levels||[]).map(l=><option key={l} value={l}>{l}</option>)}</select></label>
       </div>
       <div className="cf-table-wrap"><table className="cf-table" data-entry-rows><thead><tr><th>Country</th><th>Level</th><th>Qualification</th><th>Band</th><th>Minimum</th><th>Scale</th><th>Quote</th><th>Source</th><th>As at</th><th>Status</th><th>Read</th></tr></thead>
@@ -69,7 +70,9 @@ export function CourseEntryRequirements({courseId,onError}){
   const[d,setD]=useState(null),[cc,setCc]=useState(''),[res,setRes]=useState(null),[busy,setBusy]=useState(false),[msg,setMsg]=useState('')
   const load=async()=>{try{setD(await call('course',{course_id:courseId}))}catch(e){onError?.(plainError(e))}}
   useEffect(()=>{if(courseId)load()},[courseId])
-  const resolve=async c=>{setCc(c);setRes(null);if(!c)return;try{setRes(await call('resolve',{course_id:courseId,country:c}))}catch(e){onError?.(plainError(e))}}
+  // A4 (29 Oct 2026): changing the country only asks the bounded resolver; the choice is kept for this viewer across reloads
+  const resolve=async(c,keep=true)=>{setCc(c);setRes(null);if(keep)saveAerCountry(c);if(!c)return;try{setRes(await call('resolve',{course_id:courseId,country:c}))}catch(e){onError?.(plainError(e))}}
+  useEffect(()=>{if(!d||cc)return;const k=readAerCountry();if(k&&(d.countries||[]).some(c=>c.code===k))resolve(k,false)},[d])
   const read=async reason=>{setBusy(true);try{await call('read',{course_id:courseId,reason});setMsg('Asked. The rows wait in Layer 4 for a person before any is used.');await load()}catch(e){onError?.(plainError(e));throw e}finally{setBusy(false)}}
   if(!d)return null
   return <section className="rl-provider" data-course-entry>
@@ -82,7 +85,7 @@ export function CourseEntryRequirements({courseId,onError}){
         <td><StatusChip value={r.status} label={r.status}/>{r.status==='proposed'&&<small> · waiting in Layer 4</small>}</td></tr>)}</tbody></table></div>}
     {(d.reads||[]).length>0&&<small data-course-entry-reads>Last read: {d.reads[0].state}{d.reads[0].reason?` · ${d.reads[0].reason}`:''}{d.reads[0].cost_usd!=null?` · US$${Number(d.reads[0].cost_usd).toFixed(4)}`:''}{(d.reads[0].dropped||[]).length?` · ${d.reads[0].dropped.length} not kept (${[...new Set(d.reads[0].dropped.map(x=>x.reason))].join(', ')})`:''}</small>}
     <div className="sd-actions" data-course-entry-resolve>
-      <label>Country of prior education <select value={cc} onChange={e=>resolve(e.target.value)} aria-label="Country of prior education"><option value="">Choose…</option>{(d.countries||[]).map(c=><option key={c.code} value={c.code}>{c.name}</option>)}</select></label>
+      <label>Country of prior education <select value={cc} onChange={e=>resolve(e.target.value)} aria-label="Country of prior education"><option value="">Choose…</option>{orderAerCountries(d.countries).map(c=><option key={c.code} value={c.code}>{c.name}</option>)}</select></label>
     </div>
     {res&&<div role="status" data-entry-resolution={res.outcome}>
       <p className="sd-desc"><strong>{OUTCOME[res.outcome]||res.outcome}</strong> <small>({RULE[res.rule]||res.rule}{res.band?` · band ${res.band}`:''})</small></p>
