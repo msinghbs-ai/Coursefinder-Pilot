@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const FILE = fs.readdirSync('supabase/migrations').find((f) => /^20261029(\d{6}|XXXXXX)_cf247_aer_reread_newest_copy\.sql$/.test(f))
+const FILE = fs.readdirSync('supabase/migrations').find((f) => /^20261029120000_cf247_aer_reread_newest_copy\.sql$/.test(f))
 const m = fs.readFileSync(`supabase/migrations/${FILE}`, 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 // the replacement texts ($n$ ... $n$) are the new function body; the originals ($o$ ... $o$) are what live must contain
