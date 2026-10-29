@@ -24,24 +24,24 @@
     "maxFailures": 0,
     "metadata": {
       "ci": {
-        "commitHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/commit/b74abefbfe893dd4a3ca9a953260bbeedb79476b",
-        "commitHash": "b74abefbfe893dd4a3ca9a953260bbeedb79476b",
-        "buildHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/40956651633"
+        "commitHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/commit/a50aeb8dc8c18590e7def76dbb258a08128b4a6d",
+        "commitHash": "a50aeb8dc8c18590e7def76dbb258a08128b4a6d",
+        "buildHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/40971522020"
       },
       "gitCommit": {
-        "shortHash": "b74abef",
-        "hash": "b74abefbfe893dd4a3ca9a953260bbeedb79476b",
-        "subject": "CF-247 v2.15.373: W34 + W35 cached snapshots for the slow admin reads; Why values are missing run time (#757)",
-        "body": "CF-247 v2.15.373: W34 + W35 cached snapshots for the slow admin reads; Why values are missing run time (#757)\n\n* CF-247 W34: cached coverage snapshot and page-first admin reads (lane M)\n\nPlatform Admin 30 Oct 2026 06:53 approved cached snapshots for the four slow\nadmin reads behind the red weekly deployed run (providers_page, courses_page,\npipeline_jobs_page, course_coverage). Migration numbered 20261030050000\nprovisionally; the integrator renumbers.\n\n- course_coverage answers from pipeline.course_coverage_totals, a derived\n  snapshot rebuilt by job course-coverage-snapshot only after an hourly\n  source build changes (min interval and stale time are settings), one\n  run at a time (advisory try-lock); readers never rebuild. The live\n  re-total stays only as the fallback when no snapshot exists. The answer\n  carries 'snapshot' (built, checked, stale); drill-downs stay live.\n- providers_page, courses_page and pipeline_jobs_page choose the page on\n  ids and sort keys first, then read the page rows in full. Same fields,\n  order and total (checked read-only against the live functions).\n- Coverage screen shows when the snapshot was built and checked, and a\n  stale marker. Spec s178 guards the design; no budget or time-out changed.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 W34: renumber the migration to 20261030070000 (main now holds 20261030050000 and 060000)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 W35: cached snapshots for notices, publishability and field coverage; Why values are missing shows its actual run time\n\nDecision W35 (Platform Admin 30 Oct 2026 06:53), lane M2. Integrator numbers the migration\n(placeholder 20261030900000) and runs the live dry run.\n\n- pipeline.admin_read_snapshots: derived snapshots of security.platform_notices_v1 (+ sample\n  notices), security.scholarship_publishability_v1 and the field-coverage overview figures;\n  job admin-read-snapshots (each minute, catalogued) rebuilds on settings snapshots.*_every_minutes\n  or within a minute of a person's fix; single flight by advisory try-lock; a failed build keeps\n  the last snapshot with its error.\n- md5-guarded edits: admin_platform_notices_read, admin_progress_read (overview),\n  security.admin_live_activity_v1, admin_waiting_read, admin_field_coverage (overview, every\n  country; one university stays live), admin_gap_causes. Shapes kept; fields added only\n  (snapshot / notices_snapshot / publishability_snapshot / run).\n- Exact drill-downs: acknowledgements, publication status and lifecycle joined live; items\n  resumed or given a website since the snapshot leave the notice at once; \"now\" notices stay \"now\".\n- gap-causes runs security.gap_causes_run_v1 (same snapshot, records start and finish in\n  pipeline.gap_cause_runs); stale after gaps.causes_stale_after_minutes (75).\n- UI: SnapshotStamp (time, age, Stale marker) on the layer notices strip, Toolsets and limits,\n  Progress, Dashboard (Scholarships ready to publish), Coverage › Attributes; GapCauses shows the\n  last run's finish time and age.\n- Spec s179 (Guards: CF-247 decisions W35 ...). Consumer API untouched; admin_read not edited;\n  scholarship_publishability_v1 not changed.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.373: W34 + W35 cached snapshots for the slow admin reads; gap-causes run time (migrations renumbered 140000/150000)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.373: migrations renumbered 190000/200000 (after the B4 batches)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n---------\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+        "shortHash": "a50aeb8",
+        "hash": "a50aeb8dc8c18590e7def76dbb258a08128b4a6d",
+        "subject": "CF-247 v2.15.374: D4 supersede rule under Approve except; D6 adapter measures role check (#763)",
+        "body": "CF-247 v2.15.374: D4 supersede rule under Approve except; D6 adapter measures role check (#763)\n\n* CF-247 D4: Approve except supersedes only rows with an approved replacement\n\nDecision D4 (Platform Admin 30 Oct 2026 08:45; implementation decision admin\n§11.1, aef0490f). Under Approve except an earlier active row of the source is\nsuperseded only when an approved waiting row has its identity (row_hash); an\nactive row whose replacement was excluded, or that the new read does not carry,\nstays active and untouched. Conflicting approved replacements (C1 same identity,\nC2 identity active elsewhere) hold the whole decision with nothing changed.\nCourse pages: Approve except is held when the course has active rows. Audit:\naer_exclusion.retains_active_row_id/hash, aer_supersede, supersede_map in the\nevent result. Approve all rows keeps W15 byte for byte.\n\nMigration (unnumbered, integrator numbers): md5-guarded edits of\nsecurity.entry_matrix_review_apply_v1 (7c718987), security.course_entry_review_apply_v1\n(25899209), security.layer4_inbox_kinds_v1 (08e7999c). Nothing dropped; consumer API untouched.\nSpec: cf-247-s180-aer-supersede-rule-contract (Guards: CF-247 decision D4 ...).\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.374 integration: D4 migration numbered 20261030260000\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 D6: admin_adapter_measures role check enforced (rank 5, claims-based)\n\nDecision D6 (Platform Admin 30 Oct 2026 08:45; admin decision paper §11.3).\nThe 5 Oct check `current_user <> 'postgres' and ...` never fired inside the\nsecurity definer function, so any signed-in user and service_role could read\nthe adapter measures over the API. Replaced with the A5 idiom, rank 5 and the\nmessage kept: API callers (JWT claims present) must be signed in with rank 5\nor above; a direct owner session without claims still runs it.\n\n- Migration 20261030XXXXXX_cf247_d6_adapter_measures_role_check.sql (number\n  to be assigned by the integrator): md5-guarded single edit (b1417eaf... ->\n  8ad49afc...), query body untouched, grants restated unchanged, post-check.\n  Replaces: public.admin_adapter_measures (role check only). Retires: nothing.\n- s181 contract: guard, exact check, caller truth table, grants.\n- s183 @deployed (read only): anon refused 42501, Platform Admin allowed,\n  targeted in deployed-uat.yml and in the integration tier.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.374: D4 supersede rule + D6 adapter measures role check; release ceremony\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n---------\n\nCo-authored-by: Claude <noreply@anthropic.com>",
         "author": {
           "name": "msinghbs-ai",
           "email": "msingh.bs@gmail.com",
-          "time": 1793308650000
+          "time": 1793315503000
         },
         "committer": {
           "name": "GitHub",
           "email": "noreply@github.com",
-          "time": 1793308650000
+          "time": 1793315503000
         },
         "branch": "main"
       },
@@ -55,24 +55,24 @@
         "retries": 1,
         "metadata": {
           "ci": {
-            "commitHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/commit/b74abefbfe893dd4a3ca9a953260bbeedb79476b",
-            "commitHash": "b74abefbfe893dd4a3ca9a953260bbeedb79476b",
-            "buildHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/40956651633"
+            "commitHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/commit/a50aeb8dc8c18590e7def76dbb258a08128b4a6d",
+            "commitHash": "a50aeb8dc8c18590e7def76dbb258a08128b4a6d",
+            "buildHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/40971522020"
           },
           "gitCommit": {
-            "shortHash": "b74abef",
-            "hash": "b74abefbfe893dd4a3ca9a953260bbeedb79476b",
-            "subject": "CF-247 v2.15.373: W34 + W35 cached snapshots for the slow admin reads; Why values are missing run time (#757)",
-            "body": "CF-247 v2.15.373: W34 + W35 cached snapshots for the slow admin reads; Why values are missing run time (#757)\n\n* CF-247 W34: cached coverage snapshot and page-first admin reads (lane M)\n\nPlatform Admin 30 Oct 2026 06:53 approved cached snapshots for the four slow\nadmin reads behind the red weekly deployed run (providers_page, courses_page,\npipeline_jobs_page, course_coverage). Migration numbered 20261030050000\nprovisionally; the integrator renumbers.\n\n- course_coverage answers from pipeline.course_coverage_totals, a derived\n  snapshot rebuilt by job course-coverage-snapshot only after an hourly\n  source build changes (min interval and stale time are settings), one\n  run at a time (advisory try-lock); readers never rebuild. The live\n  re-total stays only as the fallback when no snapshot exists. The answer\n  carries 'snapshot' (built, checked, stale); drill-downs stay live.\n- providers_page, courses_page and pipeline_jobs_page choose the page on\n  ids and sort keys first, then read the page rows in full. Same fields,\n  order and total (checked read-only against the live functions).\n- Coverage screen shows when the snapshot was built and checked, and a\n  stale marker. Spec s178 guards the design; no budget or time-out changed.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 W34: renumber the migration to 20261030070000 (main now holds 20261030050000 and 060000)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 W35: cached snapshots for notices, publishability and field coverage; Why values are missing shows its actual run time\n\nDecision W35 (Platform Admin 30 Oct 2026 06:53), lane M2. Integrator numbers the migration\n(placeholder 20261030900000) and runs the live dry run.\n\n- pipeline.admin_read_snapshots: derived snapshots of security.platform_notices_v1 (+ sample\n  notices), security.scholarship_publishability_v1 and the field-coverage overview figures;\n  job admin-read-snapshots (each minute, catalogued) rebuilds on settings snapshots.*_every_minutes\n  or within a minute of a person's fix; single flight by advisory try-lock; a failed build keeps\n  the last snapshot with its error.\n- md5-guarded edits: admin_platform_notices_read, admin_progress_read (overview),\n  security.admin_live_activity_v1, admin_waiting_read, admin_field_coverage (overview, every\n  country; one university stays live), admin_gap_causes. Shapes kept; fields added only\n  (snapshot / notices_snapshot / publishability_snapshot / run).\n- Exact drill-downs: acknowledgements, publication status and lifecycle joined live; items\n  resumed or given a website since the snapshot leave the notice at once; \"now\" notices stay \"now\".\n- gap-causes runs security.gap_causes_run_v1 (same snapshot, records start and finish in\n  pipeline.gap_cause_runs); stale after gaps.causes_stale_after_minutes (75).\n- UI: SnapshotStamp (time, age, Stale marker) on the layer notices strip, Toolsets and limits,\n  Progress, Dashboard (Scholarships ready to publish), Coverage › Attributes; GapCauses shows the\n  last run's finish time and age.\n- Spec s179 (Guards: CF-247 decisions W35 ...). Consumer API untouched; admin_read not edited;\n  scholarship_publishability_v1 not changed.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.373: W34 + W35 cached snapshots for the slow admin reads; gap-causes run time (migrations renumbered 140000/150000)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.373: migrations renumbered 190000/200000 (after the B4 batches)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n---------\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+            "shortHash": "a50aeb8",
+            "hash": "a50aeb8dc8c18590e7def76dbb258a08128b4a6d",
+            "subject": "CF-247 v2.15.374: D4 supersede rule under Approve except; D6 adapter measures role check (#763)",
+            "body": "CF-247 v2.15.374: D4 supersede rule under Approve except; D6 adapter measures role check (#763)\n\n* CF-247 D4: Approve except supersedes only rows with an approved replacement\n\nDecision D4 (Platform Admin 30 Oct 2026 08:45; implementation decision admin\n§11.1, aef0490f). Under Approve except an earlier active row of the source is\nsuperseded only when an approved waiting row has its identity (row_hash); an\nactive row whose replacement was excluded, or that the new read does not carry,\nstays active and untouched. Conflicting approved replacements (C1 same identity,\nC2 identity active elsewhere) hold the whole decision with nothing changed.\nCourse pages: Approve except is held when the course has active rows. Audit:\naer_exclusion.retains_active_row_id/hash, aer_supersede, supersede_map in the\nevent result. Approve all rows keeps W15 byte for byte.\n\nMigration (unnumbered, integrator numbers): md5-guarded edits of\nsecurity.entry_matrix_review_apply_v1 (7c718987), security.course_entry_review_apply_v1\n(25899209), security.layer4_inbox_kinds_v1 (08e7999c). Nothing dropped; consumer API untouched.\nSpec: cf-247-s180-aer-supersede-rule-contract (Guards: CF-247 decision D4 ...).\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.374 integration: D4 migration numbered 20261030260000\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 D6: admin_adapter_measures role check enforced (rank 5, claims-based)\n\nDecision D6 (Platform Admin 30 Oct 2026 08:45; admin decision paper §11.3).\nThe 5 Oct check `current_user <> 'postgres' and ...` never fired inside the\nsecurity definer function, so any signed-in user and service_role could read\nthe adapter measures over the API. Replaced with the A5 idiom, rank 5 and the\nmessage kept: API callers (JWT claims present) must be signed in with rank 5\nor above; a direct owner session without claims still runs it.\n\n- Migration 20261030XXXXXX_cf247_d6_adapter_measures_role_check.sql (number\n  to be assigned by the integrator): md5-guarded single edit (b1417eaf... ->\n  8ad49afc...), query body untouched, grants restated unchanged, post-check.\n  Replaces: public.admin_adapter_measures (role check only). Retires: nothing.\n- s181 contract: guard, exact check, caller truth table, grants.\n- s183 @deployed (read only): anon refused 42501, Platform Admin allowed,\n  targeted in deployed-uat.yml and in the integration tier.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.374: D4 supersede rule + D6 adapter measures role check; release ceremony\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n---------\n\nCo-authored-by: Claude <noreply@anthropic.com>",
             "author": {
               "name": "msinghbs-ai",
               "email": "msingh.bs@gmail.com",
-              "time": 1793308650000
+              "time": 1793315503000
             },
             "committer": {
               "name": "GitHub",
               "email": "noreply@github.com",
-              "time": 1793308650000
+              "time": 1793315503000
             },
             "branch": "main"
           },
@@ -93,24 +93,24 @@
         "retries": 1,
         "metadata": {
           "ci": {
-            "commitHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/commit/b74abefbfe893dd4a3ca9a953260bbeedb79476b",
-            "commitHash": "b74abefbfe893dd4a3ca9a953260bbeedb79476b",
-            "buildHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/40956651633"
+            "commitHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/commit/a50aeb8dc8c18590e7def76dbb258a08128b4a6d",
+            "commitHash": "a50aeb8dc8c18590e7def76dbb258a08128b4a6d",
+            "buildHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/40971522020"
           },
           "gitCommit": {
-            "shortHash": "b74abef",
-            "hash": "b74abefbfe893dd4a3ca9a953260bbeedb79476b",
-            "subject": "CF-247 v2.15.373: W34 + W35 cached snapshots for the slow admin reads; Why values are missing run time (#757)",
-            "body": "CF-247 v2.15.373: W34 + W35 cached snapshots for the slow admin reads; Why values are missing run time (#757)\n\n* CF-247 W34: cached coverage snapshot and page-first admin reads (lane M)\n\nPlatform Admin 30 Oct 2026 06:53 approved cached snapshots for the four slow\nadmin reads behind the red weekly deployed run (providers_page, courses_page,\npipeline_jobs_page, course_coverage). Migration numbered 20261030050000\nprovisionally; the integrator renumbers.\n\n- course_coverage answers from pipeline.course_coverage_totals, a derived\n  snapshot rebuilt by job course-coverage-snapshot only after an hourly\n  source build changes (min interval and stale time are settings), one\n  run at a time (advisory try-lock); readers never rebuild. The live\n  re-total stays only as the fallback when no snapshot exists. The answer\n  carries 'snapshot' (built, checked, stale); drill-downs stay live.\n- providers_page, courses_page and pipeline_jobs_page choose the page on\n  ids and sort keys first, then read the page rows in full. Same fields,\n  order and total (checked read-only against the live functions).\n- Coverage screen shows when the snapshot was built and checked, and a\n  stale marker. Spec s178 guards the design; no budget or time-out changed.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 W34: renumber the migration to 20261030070000 (main now holds 20261030050000 and 060000)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 W35: cached snapshots for notices, publishability and field coverage; Why values are missing shows its actual run time\n\nDecision W35 (Platform Admin 30 Oct 2026 06:53), lane M2. Integrator numbers the migration\n(placeholder 20261030900000) and runs the live dry run.\n\n- pipeline.admin_read_snapshots: derived snapshots of security.platform_notices_v1 (+ sample\n  notices), security.scholarship_publishability_v1 and the field-coverage overview figures;\n  job admin-read-snapshots (each minute, catalogued) rebuilds on settings snapshots.*_every_minutes\n  or within a minute of a person's fix; single flight by advisory try-lock; a failed build keeps\n  the last snapshot with its error.\n- md5-guarded edits: admin_platform_notices_read, admin_progress_read (overview),\n  security.admin_live_activity_v1, admin_waiting_read, admin_field_coverage (overview, every\n  country; one university stays live), admin_gap_causes. Shapes kept; fields added only\n  (snapshot / notices_snapshot / publishability_snapshot / run).\n- Exact drill-downs: acknowledgements, publication status and lifecycle joined live; items\n  resumed or given a website since the snapshot leave the notice at once; \"now\" notices stay \"now\".\n- gap-causes runs security.gap_causes_run_v1 (same snapshot, records start and finish in\n  pipeline.gap_cause_runs); stale after gaps.causes_stale_after_minutes (75).\n- UI: SnapshotStamp (time, age, Stale marker) on the layer notices strip, Toolsets and limits,\n  Progress, Dashboard (Scholarships ready to publish), Coverage › Attributes; GapCauses shows the\n  last run's finish time and age.\n- Spec s179 (Guards: CF-247 decisions W35 ...). Consumer API untouched; admin_read not edited;\n  scholarship_publishability_v1 not changed.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.373: W34 + W35 cached snapshots for the slow admin reads; gap-causes run time (migrations renumbered 140000/150000)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.373: migrations renumbered 190000/200000 (after the B4 batches)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n---------\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+            "shortHash": "a50aeb8",
+            "hash": "a50aeb8dc8c18590e7def76dbb258a08128b4a6d",
+            "subject": "CF-247 v2.15.374: D4 supersede rule under Approve except; D6 adapter measures role check (#763)",
+            "body": "CF-247 v2.15.374: D4 supersede rule under Approve except; D6 adapter measures role check (#763)\n\n* CF-247 D4: Approve except supersedes only rows with an approved replacement\n\nDecision D4 (Platform Admin 30 Oct 2026 08:45; implementation decision admin\n§11.1, aef0490f). Under Approve except an earlier active row of the source is\nsuperseded only when an approved waiting row has its identity (row_hash); an\nactive row whose replacement was excluded, or that the new read does not carry,\nstays active and untouched. Conflicting approved replacements (C1 same identity,\nC2 identity active elsewhere) hold the whole decision with nothing changed.\nCourse pages: Approve except is held when the course has active rows. Audit:\naer_exclusion.retains_active_row_id/hash, aer_supersede, supersede_map in the\nevent result. Approve all rows keeps W15 byte for byte.\n\nMigration (unnumbered, integrator numbers): md5-guarded edits of\nsecurity.entry_matrix_review_apply_v1 (7c718987), security.course_entry_review_apply_v1\n(25899209), security.layer4_inbox_kinds_v1 (08e7999c). Nothing dropped; consumer API untouched.\nSpec: cf-247-s180-aer-supersede-rule-contract (Guards: CF-247 decision D4 ...).\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.374 integration: D4 migration numbered 20261030260000\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 D6: admin_adapter_measures role check enforced (rank 5, claims-based)\n\nDecision D6 (Platform Admin 30 Oct 2026 08:45; admin decision paper §11.3).\nThe 5 Oct check `current_user <> 'postgres' and ...` never fired inside the\nsecurity definer function, so any signed-in user and service_role could read\nthe adapter measures over the API. Replaced with the A5 idiom, rank 5 and the\nmessage kept: API callers (JWT claims present) must be signed in with rank 5\nor above; a direct owner session without claims still runs it.\n\n- Migration 20261030XXXXXX_cf247_d6_adapter_measures_role_check.sql (number\n  to be assigned by the integrator): md5-guarded single edit (b1417eaf... ->\n  8ad49afc...), query body untouched, grants restated unchanged, post-check.\n  Replaces: public.admin_adapter_measures (role check only). Retires: nothing.\n- s181 contract: guard, exact check, caller truth table, grants.\n- s183 @deployed (read only): anon refused 42501, Platform Admin allowed,\n  targeted in deployed-uat.yml and in the integration tier.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.374: D4 supersede rule + D6 adapter measures role check; release ceremony\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n---------\n\nCo-authored-by: Claude <noreply@anthropic.com>",
             "author": {
               "name": "msinghbs-ai",
               "email": "msingh.bs@gmail.com",
-              "time": 1793308650000
+              "time": 1793315503000
             },
             "committer": {
               "name": "GitHub",
               "email": "noreply@github.com",
-              "time": 1793308650000
+              "time": 1793315503000
             },
             "branch": "main"
           },
@@ -135,24 +135,24 @@
         "retries": 1,
         "metadata": {
           "ci": {
-            "commitHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/commit/b74abefbfe893dd4a3ca9a953260bbeedb79476b",
-            "commitHash": "b74abefbfe893dd4a3ca9a953260bbeedb79476b",
-            "buildHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/40956651633"
+            "commitHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/commit/a50aeb8dc8c18590e7def76dbb258a08128b4a6d",
+            "commitHash": "a50aeb8dc8c18590e7def76dbb258a08128b4a6d",
+            "buildHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/40971522020"
           },
           "gitCommit": {
-            "shortHash": "b74abef",
-            "hash": "b74abefbfe893dd4a3ca9a953260bbeedb79476b",
-            "subject": "CF-247 v2.15.373: W34 + W35 cached snapshots for the slow admin reads; Why values are missing run time (#757)",
-            "body": "CF-247 v2.15.373: W34 + W35 cached snapshots for the slow admin reads; Why values are missing run time (#757)\n\n* CF-247 W34: cached coverage snapshot and page-first admin reads (lane M)\n\nPlatform Admin 30 Oct 2026 06:53 approved cached snapshots for the four slow\nadmin reads behind the red weekly deployed run (providers_page, courses_page,\npipeline_jobs_page, course_coverage). Migration numbered 20261030050000\nprovisionally; the integrator renumbers.\n\n- course_coverage answers from pipeline.course_coverage_totals, a derived\n  snapshot rebuilt by job course-coverage-snapshot only after an hourly\n  source build changes (min interval and stale time are settings), one\n  run at a time (advisory try-lock); readers never rebuild. The live\n  re-total stays only as the fallback when no snapshot exists. The answer\n  carries 'snapshot' (built, checked, stale); drill-downs stay live.\n- providers_page, courses_page and pipeline_jobs_page choose the page on\n  ids and sort keys first, then read the page rows in full. Same fields,\n  order and total (checked read-only against the live functions).\n- Coverage screen shows when the snapshot was built and checked, and a\n  stale marker. Spec s178 guards the design; no budget or time-out changed.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 W34: renumber the migration to 20261030070000 (main now holds 20261030050000 and 060000)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 W35: cached snapshots for notices, publishability and field coverage; Why values are missing shows its actual run time\n\nDecision W35 (Platform Admin 30 Oct 2026 06:53), lane M2. Integrator numbers the migration\n(placeholder 20261030900000) and runs the live dry run.\n\n- pipeline.admin_read_snapshots: derived snapshots of security.platform_notices_v1 (+ sample\n  notices), security.scholarship_publishability_v1 and the field-coverage overview figures;\n  job admin-read-snapshots (each minute, catalogued) rebuilds on settings snapshots.*_every_minutes\n  or within a minute of a person's fix; single flight by advisory try-lock; a failed build keeps\n  the last snapshot with its error.\n- md5-guarded edits: admin_platform_notices_read, admin_progress_read (overview),\n  security.admin_live_activity_v1, admin_waiting_read, admin_field_coverage (overview, every\n  country; one university stays live), admin_gap_causes. Shapes kept; fields added only\n  (snapshot / notices_snapshot / publishability_snapshot / run).\n- Exact drill-downs: acknowledgements, publication status and lifecycle joined live; items\n  resumed or given a website since the snapshot leave the notice at once; \"now\" notices stay \"now\".\n- gap-causes runs security.gap_causes_run_v1 (same snapshot, records start and finish in\n  pipeline.gap_cause_runs); stale after gaps.causes_stale_after_minutes (75).\n- UI: SnapshotStamp (time, age, Stale marker) on the layer notices strip, Toolsets and limits,\n  Progress, Dashboard (Scholarships ready to publish), Coverage › Attributes; GapCauses shows the\n  last run's finish time and age.\n- Spec s179 (Guards: CF-247 decisions W35 ...). Consumer API untouched; admin_read not edited;\n  scholarship_publishability_v1 not changed.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.373: W34 + W35 cached snapshots for the slow admin reads; gap-causes run time (migrations renumbered 140000/150000)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.373: migrations renumbered 190000/200000 (after the B4 batches)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n---------\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+            "shortHash": "a50aeb8",
+            "hash": "a50aeb8dc8c18590e7def76dbb258a08128b4a6d",
+            "subject": "CF-247 v2.15.374: D4 supersede rule under Approve except; D6 adapter measures role check (#763)",
+            "body": "CF-247 v2.15.374: D4 supersede rule under Approve except; D6 adapter measures role check (#763)\n\n* CF-247 D4: Approve except supersedes only rows with an approved replacement\n\nDecision D4 (Platform Admin 30 Oct 2026 08:45; implementation decision admin\n§11.1, aef0490f). Under Approve except an earlier active row of the source is\nsuperseded only when an approved waiting row has its identity (row_hash); an\nactive row whose replacement was excluded, or that the new read does not carry,\nstays active and untouched. Conflicting approved replacements (C1 same identity,\nC2 identity active elsewhere) hold the whole decision with nothing changed.\nCourse pages: Approve except is held when the course has active rows. Audit:\naer_exclusion.retains_active_row_id/hash, aer_supersede, supersede_map in the\nevent result. Approve all rows keeps W15 byte for byte.\n\nMigration (unnumbered, integrator numbers): md5-guarded edits of\nsecurity.entry_matrix_review_apply_v1 (7c718987), security.course_entry_review_apply_v1\n(25899209), security.layer4_inbox_kinds_v1 (08e7999c). Nothing dropped; consumer API untouched.\nSpec: cf-247-s180-aer-supersede-rule-contract (Guards: CF-247 decision D4 ...).\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.374 integration: D4 migration numbered 20261030260000\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 D6: admin_adapter_measures role check enforced (rank 5, claims-based)\n\nDecision D6 (Platform Admin 30 Oct 2026 08:45; admin decision paper §11.3).\nThe 5 Oct check `current_user <> 'postgres' and ...` never fired inside the\nsecurity definer function, so any signed-in user and service_role could read\nthe adapter measures over the API. Replaced with the A5 idiom, rank 5 and the\nmessage kept: API callers (JWT claims present) must be signed in with rank 5\nor above; a direct owner session without claims still runs it.\n\n- Migration 20261030XXXXXX_cf247_d6_adapter_measures_role_check.sql (number\n  to be assigned by the integrator): md5-guarded single edit (b1417eaf... ->\n  8ad49afc...), query body untouched, grants restated unchanged, post-check.\n  Replaces: public.admin_adapter_measures (role check only). Retires: nothing.\n- s181 contract: guard, exact check, caller truth table, grants.\n- s183 @deployed (read only): anon refused 42501, Platform Admin allowed,\n  targeted in deployed-uat.yml and in the integration tier.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.374: D4 supersede rule + D6 adapter measures role check; release ceremony\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n---------\n\nCo-authored-by: Claude <noreply@anthropic.com>",
             "author": {
               "name": "msinghbs-ai",
               "email": "msingh.bs@gmail.com",
-              "time": 1793308650000
+              "time": 1793315503000
             },
             "committer": {
               "name": "GitHub",
               "email": "noreply@github.com",
-              "time": 1793308650000
+              "time": 1793315503000
             },
             "branch": "main"
           },
@@ -243,12 +243,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6505,
+                      "duration": 5007,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:19:04.620Z",
+                      "startTime": "2026-10-29T23:13:08.520Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -290,12 +290,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3220,
+                      "duration": 4529,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:19:11.382Z",
+                      "startTime": "2026-10-29T23:13:14.601Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -337,12 +337,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3635,
+                      "duration": 4070,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:19:14.616Z",
+                      "startTime": "2026-10-29T23:13:19.143Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -384,12 +384,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2182,
+                      "duration": 2221,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:19:18.266Z",
+                      "startTime": "2026-10-29T23:13:23.224Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -437,12 +437,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5738,
+                      "duration": 6118,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:19:20.474Z",
+                      "startTime": "2026-10-29T23:13:25.468Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -484,12 +484,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6528,
+                      "duration": 6627,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:19:26.241Z",
+                      "startTime": "2026-10-29T23:13:31.605Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -531,12 +531,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 7,
+                      "duration": 10,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:19:32.781Z",
+                      "startTime": "2026-10-29T23:13:38.245Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -584,12 +584,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2727,
+                      "duration": 2659,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:19:32.807Z",
+                      "startTime": "2026-10-29T23:13:38.272Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -648,12 +648,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4440,
+                      "duration": 3818,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:19:35.566Z",
+                      "startTime": "2026-10-29T23:13:40.959Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -700,12 +700,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 12,
+                      "duration": 13,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:19:40.027Z",
+                      "startTime": "2026-10-29T23:13:44.999Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -753,12 +753,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2536,
+                      "duration": 1737,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:19:40.056Z",
+                      "startTime": "2026-10-29T23:13:45.025Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -800,12 +800,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 9037,
+                      "duration": 8315,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:19:42.613Z",
+                      "startTime": "2026-10-29T23:13:46.782Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -847,12 +847,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3500,
+                      "duration": 3862,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:19:51.662Z",
+                      "startTime": "2026-10-29T23:13:55.108Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -894,12 +894,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3347,
+                      "duration": 3865,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:19:55.173Z",
+                      "startTime": "2026-10-29T23:13:58.981Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -953,12 +953,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 10063,
+                      "duration": 9518,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:19:58.550Z",
+                      "startTime": "2026-10-29T23:14:02.870Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1005,12 +1005,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 8293,
+                      "duration": 4907,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:20:08.633Z",
+                      "startTime": "2026-10-29T23:14:12.407Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1051,92 +1051,29 @@
                     {
                       "workerIndex": 0,
                       "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 10454,
-                      "error": {
-                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('.m-table tbody tr').filter({ hasText: 'Advanced Diploma of Accounting' }).filter({ hasText: 'RMIT' }).first()\nExpected: visible\nTimeout: 6000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" locator('.m-table tbody tr').filter({ hasText: 'Advanced Diploma of Accounting' }).filter({ hasText: 'RMIT' }).first() with timeout 6000ms\u001b[22m\n\u001b[2m  - waiting for locator('.m-table tbody tr').filter({ hasText: 'Advanced Diploma of Accounting' }).filter({ hasText: 'RMIT' }).first()\u001b[22m\n",
-                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('.m-table tbody tr').filter({ hasText: 'Advanced Diploma of Accounting' }).filter({ hasText: 'RMIT' }).first()\nExpected: visible\nTimeout: 6000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" locator('.m-table tbody tr').filter({ hasText: 'Advanced Diploma of Accounting' }).filter({ hasText: 'RMIT' }).first() with timeout 6000ms\u001b[22m\n\u001b[2m  - waiting for locator('.m-table tbody tr').filter({ hasText: 'Advanced Diploma of Accounting' }).filter({ hasText: 'RMIT' }).first()\u001b[22m\n\n    at /home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/cf-061-qilt-prisms-comparison-deployed.spec.mjs:92:21",
-                        "location": {
-                          "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/cf-061-qilt-prisms-comparison-deployed.spec.mjs",
-                          "column": 21,
-                          "line": 92
-                        },
-                        "snippet": "\u001b[0m \u001b[90m 90 |\u001b[39m   \u001b[36mawait\u001b[39m search\u001b[33m.\u001b[39mfill(\u001b[32m'Advanced Diploma of Accounting'\u001b[39m)\n \u001b[90m 91 |\u001b[39m   \u001b[36mconst\u001b[39m row\u001b[33m=\u001b[39mpage\u001b[33m.\u001b[39mlocator(\u001b[32m'.m-table tbody tr'\u001b[39m)\u001b[33m.\u001b[39mfilter({hasText\u001b[33m:\u001b[39m\u001b[32m'Advanced Diploma of Accounting'\u001b[39m})\u001b[33m.\u001b[39mfilter({hasText\u001b[33m:\u001b[39m\u001b[32m'RMIT'\u001b[39m})\u001b[33m.\u001b[39mfirst()\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 92 |\u001b[39m   \u001b[36mawait\u001b[39m expect(row)\u001b[33m.\u001b[39mtoBeVisible({timeout\u001b[33m:\u001b[39m\u001b[33mDETERMINISTIC_UI_TIMEOUT\u001b[39m})\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 93 |\u001b[39m   \u001b[36mawait\u001b[39m row\u001b[33m.\u001b[39mclick()\n \u001b[90m 94 |\u001b[39m   \u001b[90m// v2.15.226 (9 Oct 2026, slim course read): insights load from admin_read 'course_insights' when \"More about this course\" is opened.\u001b[39m\n \u001b[90m 95 |\u001b[39m   \u001b[36mconst\u001b[39m more\u001b[33m=\u001b[39mpage\u001b[33m.\u001b[39mlocator(\u001b[32m'.m-drawer-course [data-course-more]'\u001b[39m)\u001b[0m"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/cf-061-qilt-prisms-comparison-deployed.spec.mjs",
-                            "column": 21,
-                            "line": 92
-                          },
-                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('.m-table tbody tr').filter({ hasText: 'Advanced Diploma of Accounting' }).filter({ hasText: 'RMIT' }).first()\nExpected: visible\nTimeout: 6000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" locator('.m-table tbody tr').filter({ hasText: 'Advanced Diploma of Accounting' }).filter({ hasText: 'RMIT' }).first() with timeout 6000ms\u001b[22m\n\u001b[2m  - waiting for locator('.m-table tbody tr').filter({ hasText: 'Advanced Diploma of Accounting' }).filter({ hasText: 'RMIT' }).first()\u001b[22m\n\n\n  90 |   await search.fill('Advanced Diploma of Accounting')\n  91 |   const row=page.locator('.m-table tbody tr').filter({hasText:'Advanced Diploma of Accounting'}).filter({hasText:'RMIT'}).first()\n> 92 |   await expect(row).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})\n     |                     ^\n  93 |   await row.click()\n  94 |   // v2.15.226 (9 Oct 2026, slim course read): insights load from admin_read 'course_insights' when \"More about this course\" is opened.\n  95 |   const more=page.locator('.m-drawer-course [data-course-more]')\n    at /home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/cf-061-qilt-prisms-comparison-deployed.spec.mjs:92:21"
-                        }
-                      ],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-10-29T21:20:16.938Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "runtime-evidence",
-                          "contentType": "application/json",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-061-qilt-prisms-compari-0ad59-and-opens-Course-comparison-chromium-desktop/attachments/runtime-evidence-0a8c266c384801946b229d735abfbe86aebd0b80.json"
-                        },
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-061-qilt-prisms-compari-0ad59-and-opens-Course-comparison-chromium-desktop/test-failed-1.png"
-                        },
-                        {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-061-qilt-prisms-compari-0ad59-and-opens-Course-comparison-chromium-desktop/video.webm"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-061-qilt-prisms-compari-0ad59-and-opens-Course-comparison-chromium-desktop/error-context.md"
-                        },
-                        {
-                          "name": "trace",
-                          "contentType": "application/zip",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-061-qilt-prisms-compari-0ad59-and-opens-Course-comparison-chromium-desktop/trace.zip"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/cf-061-qilt-prisms-comparison-deployed.spec.mjs",
-                        "column": 21,
-                        "line": 92
-                      }
-                    },
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 10613,
+                      "duration": 8207,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
-                      "retry": 1,
-                      "startTime": "2026-10-29T21:20:28.229Z",
+                      "retry": 0,
+                      "startTime": "2026-10-29T23:14:17.325Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "cf-061-course-comparison",
                           "contentType": "image/png",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-061-qilt-prisms-compari-0ad59-and-opens-Course-comparison-chromium-desktop-retry1/attachments/cf-061-course-comparison-444349d9960f6305609919932e595c28ff93b870.png"
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-061-qilt-prisms-compari-0ad59-and-opens-Course-comparison-chromium-desktop/attachments/cf-061-course-comparison-444349d9960f6305609919932e595c28ff93b870.png"
                         },
                         {
                           "name": "runtime-evidence",
                           "contentType": "application/json",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-061-qilt-prisms-compari-0ad59-and-opens-Course-comparison-chromium-desktop-retry1/attachments/runtime-evidence-0a8c266c384801946b229d735abfbe86aebd0b80.json"
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-061-qilt-prisms-compari-0ad59-and-opens-Course-comparison-chromium-desktop/attachments/runtime-evidence-0a8c266c384801946b229d735abfbe86aebd0b80.json"
                         }
                       ]
                     }
                   ],
-                  "status": "flaky"
+                  "status": "expected"
                 }
               ],
               "id": "742d1de593576af0080c-3dd2a65366cc5659ce9e",
@@ -1176,15 +1113,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3095,
+                      "duration": 2217,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:20:38.976Z",
+                      "startTime": "2026-10-29T23:14:25.550Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1240,15 +1177,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2812,
+                      "duration": 2157,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:20:42.111Z",
+                      "startTime": "2026-10-29T23:14:27.795Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1282,15 +1219,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 9,
+                      "duration": 5,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:20:44.950Z",
+                      "startTime": "2026-10-29T23:14:29.973Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1335,15 +1272,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2815,
+                      "duration": 3168,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:20:44.979Z",
+                      "startTime": "2026-10-29T23:14:29.993Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1377,15 +1314,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 7,
+                      "duration": 8,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:20:47.821Z",
+                      "startTime": "2026-10-29T23:14:33.179Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1413,15 +1350,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2062,
+                      "duration": 2409,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:20:47.838Z",
+                      "startTime": "2026-10-29T23:14:33.195Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1472,15 +1409,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5535,
+                      "duration": 4267,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:20:49.918Z",
+                      "startTime": "2026-10-29T23:14:35.619Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1514,15 +1451,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4155,
+                      "duration": 4149,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:20:55.476Z",
+                      "startTime": "2026-10-29T23:14:39.904Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1556,15 +1493,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5993,
+                      "duration": 4866,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:20:59.643Z",
+                      "startTime": "2026-10-29T23:14:44.066Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1615,15 +1552,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2453,
+                      "duration": 1785,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:21:05.655Z",
+                      "startTime": "2026-10-29T23:14:48.950Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1674,15 +1611,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 7275,
+                      "duration": 3613,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:21:08.133Z",
+                      "startTime": "2026-10-29T23:14:50.764Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1716,15 +1653,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2856,
+                      "duration": 1999,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:21:15.431Z",
+                      "startTime": "2026-10-29T23:14:54.403Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1775,15 +1712,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5536,
+                      "duration": 3397,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:21:18.305Z",
+                      "startTime": "2026-10-29T23:14:56.422Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1839,15 +1776,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2628,
+                      "duration": 2610,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:21:23.866Z",
+                      "startTime": "2026-10-29T23:14:59.854Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1886,15 +1823,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4154,
+                      "duration": 3861,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:21:26.515Z",
+                      "startTime": "2026-10-29T23:15:02.488Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1950,15 +1887,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4778,
+                      "duration": 4115,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:21:30.685Z",
+                      "startTime": "2026-10-29T23:15:06.365Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2014,15 +1951,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 9668,
+                      "duration": 7865,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:21:35.490Z",
+                      "startTime": "2026-10-29T23:15:10.506Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2073,15 +2010,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 7536,
+                      "duration": 5052,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:21:45.184Z",
+                      "startTime": "2026-10-29T23:15:18.400Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2098,6 +2035,162 @@
               "id": "78f71a7504eb15f77897-af4099b65237b9ddb8f5",
               "file": "cf-247-s167-aer-course-phone-deployed.spec.mjs",
               "line": 71,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "cf-247-s183-adapter-measures-role-check-deployed.spec.mjs",
+      "file": "cf-247-s183-adapter-measures-role-check-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "CF-247 D6 adapter measures role check @deployed",
+          "file": "cf-247-s183-adapter-measures-role-check-deployed.spec.mjs",
+          "line": 6,
+          "column": 6,
+          "specs": [
+            {
+              "title": "direct API calls: anonymous refused, Platform Admin allowed",
+              "ok": false,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 2989,
+                      "error": {
+                        "message": "Error: {\"status\":403,\"body\":{\"code\":\"42501\",\"details\":null,\"hint\":null,\"message\":\"Platform Admin or Operator required\"}}\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m200\u001b[39m\nReceived: \u001b[31m403\u001b[39m",
+                        "stack": "Error: {\"status\":403,\"body\":{\"code\":\"42501\",\"details\":null,\"hint\":null,\"message\":\"Platform Admin or Operator required\"}}\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m200\u001b[39m\nReceived: \u001b[31m403\u001b[39m\n    at /home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/cf-247-s183-adapter-measures-role-check-deployed.spec.mjs:32:49",
+                        "location": {
+                          "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/cf-247-s183-adapter-measures-role-check-deployed.spec.mjs",
+                          "column": 49,
+                          "line": 32
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 30 |\u001b[39m     \u001b[90m// the signed-in Platform Admin (the UAT user)\u001b[39m\n \u001b[90m 31 |\u001b[39m     \u001b[36mconst\u001b[39m admin \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m call({ apikey\u001b[33m:\u001b[39m seen\u001b[33m.\u001b[39mapikey\u001b[33m,\u001b[39m authorization\u001b[33m:\u001b[39m seen\u001b[33m.\u001b[39mauthorization })\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 32 |\u001b[39m     expect(admin\u001b[33m.\u001b[39mstatus\u001b[33m,\u001b[39m \u001b[33mJSON\u001b[39m\u001b[33m.\u001b[39mstringify(admin))\u001b[33m.\u001b[39mtoBe(\u001b[35m200\u001b[39m)\n \u001b[90m    |\u001b[39m                                                 \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 33 |\u001b[39m     expect(admin\u001b[33m.\u001b[39mbody)\u001b[33m.\u001b[39mtoEqual([])\n \u001b[90m 34 |\u001b[39m   })\n \u001b[90m 35 |\u001b[39m })\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/cf-247-s183-adapter-measures-role-check-deployed.spec.mjs",
+                            "column": 49,
+                            "line": 32
+                          },
+                          "message": "Error: {\"status\":403,\"body\":{\"code\":\"42501\",\"details\":null,\"hint\":null,\"message\":\"Platform Admin or Operator required\"}}\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m200\u001b[39m\nReceived: \u001b[31m403\u001b[39m\n\n  30 |     // the signed-in Platform Admin (the UAT user)\n  31 |     const admin = await call({ apikey: seen.apikey, authorization: seen.authorization })\n> 32 |     expect(admin.status, JSON.stringify(admin)).toBe(200)\n     |                                                 ^\n  33 |     expect(admin.body).toEqual([])\n  34 |   })\n  35 | })\n    at /home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/cf-247-s183-adapter-measures-role-check-deployed.spec.mjs:32:49"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-29T23:15:23.480Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-247-s183-adapter-measur-8e92f-used-Platform-Admin-allowed-chromium-desktop/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-247-s183-adapter-measur-8e92f-used-Platform-Admin-allowed-chromium-desktop/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-247-s183-adapter-measur-8e92f-used-Platform-Admin-allowed-chromium-desktop/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-247-s183-adapter-measur-8e92f-used-Platform-Admin-allowed-chromium-desktop/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/cf-247-s183-adapter-measures-role-check-deployed.spec.mjs",
+                        "column": 49,
+                        "line": 32
+                      }
+                    },
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 2715,
+                      "error": {
+                        "message": "Error: {\"status\":403,\"body\":{\"code\":\"42501\",\"details\":null,\"hint\":null,\"message\":\"Platform Admin or Operator required\"}}\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m200\u001b[39m\nReceived: \u001b[31m403\u001b[39m",
+                        "stack": "Error: {\"status\":403,\"body\":{\"code\":\"42501\",\"details\":null,\"hint\":null,\"message\":\"Platform Admin or Operator required\"}}\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m200\u001b[39m\nReceived: \u001b[31m403\u001b[39m\n    at /home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/cf-247-s183-adapter-measures-role-check-deployed.spec.mjs:32:49",
+                        "location": {
+                          "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/cf-247-s183-adapter-measures-role-check-deployed.spec.mjs",
+                          "column": 49,
+                          "line": 32
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 30 |\u001b[39m     \u001b[90m// the signed-in Platform Admin (the UAT user)\u001b[39m\n \u001b[90m 31 |\u001b[39m     \u001b[36mconst\u001b[39m admin \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m call({ apikey\u001b[33m:\u001b[39m seen\u001b[33m.\u001b[39mapikey\u001b[33m,\u001b[39m authorization\u001b[33m:\u001b[39m seen\u001b[33m.\u001b[39mauthorization })\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 32 |\u001b[39m     expect(admin\u001b[33m.\u001b[39mstatus\u001b[33m,\u001b[39m \u001b[33mJSON\u001b[39m\u001b[33m.\u001b[39mstringify(admin))\u001b[33m.\u001b[39mtoBe(\u001b[35m200\u001b[39m)\n \u001b[90m    |\u001b[39m                                                 \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 33 |\u001b[39m     expect(admin\u001b[33m.\u001b[39mbody)\u001b[33m.\u001b[39mtoEqual([])\n \u001b[90m 34 |\u001b[39m   })\n \u001b[90m 35 |\u001b[39m })\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/cf-247-s183-adapter-measures-role-check-deployed.spec.mjs",
+                            "column": 49,
+                            "line": 32
+                          },
+                          "message": "Error: {\"status\":403,\"body\":{\"code\":\"42501\",\"details\":null,\"hint\":null,\"message\":\"Platform Admin or Operator required\"}}\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m200\u001b[39m\nReceived: \u001b[31m403\u001b[39m\n\n  30 |     // the signed-in Platform Admin (the UAT user)\n  31 |     const admin = await call({ apikey: seen.apikey, authorization: seen.authorization })\n> 32 |     expect(admin.status, JSON.stringify(admin)).toBe(200)\n     |                                                 ^\n  33 |     expect(admin.body).toEqual([])\n  34 |   })\n  35 | })\n    at /home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/cf-247-s183-adapter-measures-role-check-deployed.spec.mjs:32:49"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-10-29T23:15:27.204Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-247-s183-adapter-measur-8e92f-used-Platform-Admin-allowed-chromium-desktop-retry1/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-247-s183-adapter-measur-8e92f-used-Platform-Admin-allowed-chromium-desktop-retry1/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-247-s183-adapter-measur-8e92f-used-Platform-Admin-allowed-chromium-desktop-retry1/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-247-s183-adapter-measur-8e92f-used-Platform-Admin-allowed-chromium-desktop-retry1/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/cf-247-s183-adapter-measures-role-check-deployed.spec.mjs",
+                        "column": 49,
+                        "line": 32
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "1f6325ae2f3512431f59-488ae0754e204bdb227a",
+              "file": "cf-247-s183-adapter-measures-role-check-deployed.spec.mjs",
+              "line": 9,
               "column": 3
             }
           ]
@@ -2132,15 +2225,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 10288,
+                      "duration": 7897,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:21:52.750Z",
+                      "startTime": "2026-10-29T23:15:30.662Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2189,15 +2282,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 10747,
+                      "duration": 7323,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:22:03.062Z",
+                      "startTime": "2026-10-29T23:15:38.708Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2236,15 +2329,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 7420,
+                      "duration": 6267,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:22:13.827Z",
+                      "startTime": "2026-10-29T23:15:46.046Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2300,15 +2393,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 7326,
+                      "duration": 7912,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:22:21.280Z",
+                      "startTime": "2026-10-29T23:15:52.341Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2347,15 +2440,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3576,
+                      "duration": 5163,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:22:28.631Z",
+                      "startTime": "2026-10-29T23:16:00.285Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2394,15 +2487,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 106,
+                      "duration": 141,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:22:32.221Z",
+                      "startTime": "2026-10-29T23:16:05.459Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -2447,15 +2540,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3720,
+                      "duration": 3530,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:22:32.340Z",
+                      "startTime": "2026-10-29T23:16:05.616Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2494,15 +2587,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3482,
+                      "duration": 3075,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:22:36.084Z",
+                      "startTime": "2026-10-29T23:16:09.168Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2558,15 +2651,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2437,
+                      "duration": 2472,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:22:39.581Z",
+                      "startTime": "2026-10-29T23:16:12.264Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2605,15 +2698,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3319,
+                      "duration": 7575,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:22:42.040Z",
+                      "startTime": "2026-10-29T23:16:14.757Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2652,15 +2745,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2563,
+                      "duration": 4857,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:22:45.370Z",
+                      "startTime": "2026-10-29T23:16:22.348Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2699,15 +2792,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2595,
+                      "duration": 3104,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:22:47.944Z",
+                      "startTime": "2026-10-29T23:16:27.217Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2763,15 +2856,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 8,
+                      "duration": 10,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:22:50.557Z",
+                      "startTime": "2026-10-29T23:16:30.338Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -2799,15 +2892,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3853,
+                      "duration": 3039,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:22:50.582Z",
+                      "startTime": "2026-10-29T23:16:30.369Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2846,15 +2939,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4372,
+                      "duration": 3405,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:22:54.444Z",
+                      "startTime": "2026-10-29T23:16:33.421Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2893,15 +2986,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5046,
+                      "duration": 4213,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:22:58.827Z",
+                      "startTime": "2026-10-29T23:16:36.840Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2957,15 +3050,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3445,
+                      "duration": 1514,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:23:03.925Z",
+                      "startTime": "2026-10-29T23:16:41.070Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3004,15 +3097,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 8107,
+                      "duration": 7489,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:23:07.389Z",
+                      "startTime": "2026-10-29T23:16:42.611Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3051,15 +3144,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2751,
+                      "duration": 3080,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:23:15.507Z",
+                      "startTime": "2026-10-29T23:16:50.115Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3098,15 +3191,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3736,
+                      "duration": 3162,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:23:18.269Z",
+                      "startTime": "2026-10-29T23:16:53.212Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3145,15 +3238,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3456,
+                      "duration": 3099,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:23:22.018Z",
+                      "startTime": "2026-10-29T23:16:56.388Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3209,15 +3302,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2931,
+                      "duration": 3461,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:23:25.489Z",
+                      "startTime": "2026-10-29T23:16:59.505Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3256,15 +3349,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3939,
+                      "duration": 6935,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:23:28.443Z",
+                      "startTime": "2026-10-29T23:17:02.992Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3320,15 +3413,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2286,
+                      "duration": 2433,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:23:32.406Z",
+                      "startTime": "2026-10-29T23:17:09.945Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3367,15 +3460,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2629,
+                      "duration": 2847,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:23:34.720Z",
+                      "startTime": "2026-10-29T23:17:12.402Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3414,15 +3507,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4,
+                      "duration": 6,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:23:37.360Z",
+                      "startTime": "2026-10-29T23:17:15.261Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -3467,15 +3560,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 7516,
+                      "duration": 7913,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:23:37.376Z",
+                      "startTime": "2026-10-29T23:17:15.283Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3531,15 +3624,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3075,
+                      "duration": 2949,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:23:44.918Z",
+                      "startTime": "2026-10-29T23:17:23.225Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3578,15 +3671,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2217,
+                      "duration": 3503,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:23:48.014Z",
+                      "startTime": "2026-10-29T23:17:26.197Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3625,15 +3718,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2887,
+                      "duration": 2699,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:23:50.242Z",
+                      "startTime": "2026-10-29T23:17:29.714Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3689,15 +3782,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2754,
+                      "duration": 2053,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:23:53.145Z",
+                      "startTime": "2026-10-29T23:17:32.433Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3731,15 +3824,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1988,
+                      "duration": 2717,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:23:55.923Z",
+                      "startTime": "2026-10-29T23:17:34.509Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3773,15 +3866,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1,
+                      "duration": 3,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:23:57.925Z",
+                      "startTime": "2026-10-29T23:17:37.239Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -3809,15 +3902,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1737,
+                      "duration": 1552,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:23:57.934Z",
+                      "startTime": "2026-10-29T23:17:37.253Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3868,15 +3961,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 7,
+                      "duration": 10,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:23:59.685Z",
+                      "startTime": "2026-10-29T23:17:38.819Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -3921,15 +4014,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 18726,
+                      "duration": 17584,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:23:59.703Z",
+                      "startTime": "2026-10-29T23:17:38.841Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3985,15 +4078,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3643,
+                      "duration": 2877,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:24:18.453Z",
+                      "startTime": "2026-10-29T23:17:56.447Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -4049,15 +4142,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2483,
+                      "duration": 2830,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:24:22.127Z",
+                      "startTime": "2026-10-29T23:17:59.346Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -4113,7 +4206,7 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
                       "duration": 12,
@@ -4121,7 +4214,7 @@
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:24:24.634Z",
+                      "startTime": "2026-10-29T23:18:02.206Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -4166,15 +4259,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 8020,
+                      "duration": 14520,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:24:24.661Z",
+                      "startTime": "2026-10-29T23:18:02.233Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -4213,15 +4306,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 8923,
+                      "duration": 12372,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:24:32.691Z",
+                      "startTime": "2026-10-29T23:18:16.764Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -4260,15 +4353,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2842,
+                      "duration": 4235,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:24:41.634Z",
+                      "startTime": "2026-10-29T23:18:29.149Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -4307,15 +4400,15 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 8604,
+                      "duration": 8773,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:24:44.488Z",
+                      "startTime": "2026-10-29T23:18:33.396Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -4351,7 +4444,7 @@
       "specs": [],
       "suites": [
         {
-          "title": "CourseFinder PIM Admin v2.15.373 release notes @deployed",
+          "title": "CourseFinder PIM Admin v2.15.374 release notes @deployed",
           "file": "release-notes-deployed.spec.mjs",
           "line": 6,
           "column": 6,
@@ -4371,26 +4464,26 @@
                   "projectName": "chromium-desktop",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2605,
+                      "duration": 2802,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T21:24:53.129Z",
+                      "startTime": "2026-10-29T23:18:42.186Z",
                       "annotations": [],
                       "attachments": [
                         {
-                          "name": "pim-v2-15-373-release-notes",
+                          "name": "pim-v2-15-374-release-notes",
                           "contentType": "image/png",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/release-notes-deployed-Cou-29655-story-and-closes-accessibly-chromium-desktop/attachments/pim-v2-15-373-release-notes-63a6db05dd5b8df90dba235c636272d36ef2ab5d.png"
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/release-notes-deployed-Cou-149e1-story-and-closes-accessibly-chromium-desktop/attachments/pim-v2-15-374-release-notes-ebc5b7607861f1c4ece80ca1b0fa6b43396f7eb3.png"
                         },
                         {
                           "name": "runtime-evidence",
                           "contentType": "application/json",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/release-notes-deployed-Cou-29655-story-and-closes-accessibly-chromium-desktop/attachments/runtime-evidence-dcc5ce941a587acffbf6ea799fdf6bc5681452a3.json"
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/release-notes-deployed-Cou-149e1-story-and-closes-accessibly-chromium-desktop/attachments/runtime-evidence-dcc5ce941a587acffbf6ea799fdf6bc5681452a3.json"
                         }
                       ]
                     }
@@ -4398,7 +4491,7 @@
                   "status": "expected"
                 }
               ],
-              "id": "bfbf2d5b3274ba39f362-f870e33ab3dfcadfadb1",
+              "id": "bfbf2d5b3274ba39f362-83ed70595f63f9342861",
               "file": "release-notes-deployed.spec.mjs",
               "line": 8,
               "column": 2
@@ -4410,11 +4503,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-10-29T21:19:00.222Z",
-    "duration": 355783.83,
-    "expected": 78,
+    "startTime": "2026-10-29T23:13:04.474Z",
+    "duration": 340731.99100000004,
+    "expected": 79,
     "skipped": 0,
-    "unexpected": 0,
-    "flaky": 1
+    "unexpected": 1,
+    "flaky": 0
   }
 }
