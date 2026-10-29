@@ -1,0 +1,17 @@
+/* Shared accessible overlay (Overlay.jsx; Platform Admin mandate 29 Oct 2026 12:23, A1 and A5). Colours come from the shared tokens.
+   The drawer variant keeps the m-drawer look (mature.css); the panel variant is the wide evidence overlay. Both scroll inside their
+   body, never sideways, and fill the screen at phone width. */
+.cf-overlay-backdrop{position:fixed;inset:0;z-index:70;background:color-mix(in srgb,var(--cf-slate-900) 20%,transparent);backdrop-filter:blur(1px)}
+.cf-overlay-backdrop.is-panel{z-index:120;background:color-mix(in srgb,var(--cf-slate-900) 35%,transparent)}
+.cf-overlay{outline:none}
+.cf-overlay>.cf-overlay-body{min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.cf-overlay-head{min-width:0}
+.cf-overlay-title{min-width:0}
+.cf-overlay-title h2{overflow-wrap:anywhere}
+.cf-overlay-actions{display:flex;gap:6px;flex:0 0 auto}
+.cf-overlay-panel{position:fixed;z-index:130;top:24px;bottom:24px;left:50%;transform:translateX(-50%);width:min(980px,calc(100vw - 48px));display:grid;grid-template-rows:auto minmax(0,1fr);overflow:hidden;background:var(--cf-white);border:1px solid var(--cf-border);border-radius:var(--cf-radius-xl);box-shadow:var(--cf-shadow-lg)}
+@media (max-width:680px){
+  .cf-overlay-drawer,.cf-overlay-panel{top:0;bottom:0;left:0;right:0;transform:none;width:100vw;max-width:100vw;height:100dvh;border-radius:0;border:0}
+  .cf-overlay-head{padding:12px 12px 10px;gap:10px}
+  .cf-overlay>.cf-overlay-body{padding:12px}
+}
