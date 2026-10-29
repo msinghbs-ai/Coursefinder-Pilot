@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = 'supabase/migrations/20261030XXXXXX_cf247_enrich_reliability.sql'
+const MIG = 'supabase/migrations/20261030010000_cf247_enrich_reliability.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const worker = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
