@@ -27,7 +27,8 @@ const PAGE=50
 // pills: the shared statusTone system, with plain words (never colour alone)
 export const ROW_PILL={active:['success','Active'],proposed:['info','Waiting in Layer 4'],unverified:['danger','Quarantined'],inactive:['neutral','Withdrawn'],superseded:['neutral','Superseded']}
 export const HOLD_PILL={read:['success','Read'],reading:['info','Reading'],held:['warning','Held'],fetch_failed:['danger','Fetch failed'],none:['neutral','Not read']}
-export function RowPill({status,title}){const[t,l]=ROW_PILL[status]||['neutral',String(status||'—')];return <span data-aer-pill={status}><StatusChip tone={t} label={l} title={title}/></span>}
+// CF-247 A1 (30 Oct 2026): a row left out by "Approve except" in Layer 4 is inactive with a reason naming the item and reviewer; it shows as such
+export function RowPill({status,title}){const ex=status==='inactive'&&/^excluded by /.test(title||'');const[t,l]=ex?['neutral','Excluded in Layer 4']:ROW_PILL[status]||['neutral',String(status||'—')];return <span data-aer-pill={ex?'excluded':status}><StatusChip tone={t} label={l} title={title}/></span>}
 // Step C (v2.15.364): a rendered page read with no requirements table waits in Layer 4 as a note; once approved it is a confirmed
 // "no matrix published here" (the website says "contact the provider"), distinct from a read that simply kept no rows
 export function NoTablePill({status}){const ok=status==='approved';return <span data-aer-hold={ok?'no_matrix_confirmed':'no_table_note'}><StatusChip tone={ok?'neutral':'info'} label={ok?'No matrix published (confirmed)':'Rendered, no table: in Layer 4'}/></span>}
@@ -313,7 +314,7 @@ export function RowDrawer({kind,id,rank,onError,onClose,onChanged}){
     className="aer-drawer" bodyClassName="aer-drawer-body" data-aer-drawer={kind}>
       {err&&<p className="fr-error" role="alert">{err}</p>}{msg&&<p className="aer-msg" role="status">{msg}</p>}
       {!d?<Loading label="Loading the row…"/>:<>
-        <div className="aer-drawer-pills"><RowPill status={d.status}/>{d.manual&&<StatusChip tone="violet" label="Added by hand"/>}{d.version&&<StatusChip tone="neutral" label={`Version ${d.version}`}/>}</div>
+        <div className="aer-drawer-pills"><RowPill status={d.status} title={d.status_reason||undefined}/>{d.manual&&<StatusChip tone="violet" label="Added by hand"/>}{d.version&&<StatusChip tone="neutral" label={`Version ${d.version}`}/>}</div>
         {d.status_reason&&<p className="sd-desc"><small>{d.status_reason}</small></p>}
         <h3>Requirement</h3>
         <dl className="aer-dl">
