@@ -38,6 +38,7 @@ export async function aerTour({ page, browser, out, settle, fitHeight, masks, lo
   const aerCalls = []
   const watch = (p) => p.on('request', (r) => { if (r.url().includes('/rest/v1/rpc/admin_aer')) { try { const b = r.postDataJSON() || {}; aerCalls.push({ action: b.p_action, page_size: b.p_args?.page_size ?? null }) } catch { /* not JSON */ } } })
   watch(page)
+  page.setDefaultTimeout(30_000)  // a control that never appears fails its step instead of holding the tour
   // a step that cannot finish is recorded with its reason and the tour goes on (the manifest says what was and was not exercised)
   const t0 = Date.now()
   const step = async (name, fn) => { const t = Date.now(); try { await fn(); manifest.push({ route: 'aer-tour', action: name, ok: true, seconds: Math.round((Date.now() - t) / 1000), at: Math.round((t - t0) / 1000) }) } catch (e) { manifest.push({ route: 'aer-tour', action: name, error: String(e?.message || e).slice(0, 300), seconds: Math.round((Date.now() - t) / 1000) }) } }
@@ -104,6 +105,7 @@ export async function aerTour({ page, browser, out, settle, fitHeight, masks, lo
   await step('phone', async () => {
     const ctx = await browser.newContext({ baseURL, viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
     const phone = await ctx.newPage()
+    phone.setDefaultTimeout(30_000)
     phone.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text().slice(0, 400)) })
     phone.on('pageerror', (e) => consoleErrors.push('pageerror: ' + String(e.message).slice(0, 400)))
     watch(phone)
