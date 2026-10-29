@@ -52,10 +52,13 @@ async function dp020(page, calls, act) {
     await expect(dialog).toHaveCount(0)
 }
 
-test('the deployed acceptance runs on deploy: targeted for Course detail, overlay, country order and notice changes, and in the acceptance tier', () => {
+test('the deployed acceptance runs on deploy: targeted (desktop and phone) for Course detail, overlay, country order and notice changes, and in the acceptance tier', () => {
   const wf = fs.readFileSync('.github/workflows/deployed-uat.yml', 'utf8')
   expect(wf).toContain("grep -Eq '(^src/(CourseAudit\\.jsx|Overlay\\.jsx|overlay\\.css|EntryRequirements\\.jsx|aer-countries\\.js|CreditBanner\\.jsx)$|^tests/uat/cf-247-s167-aer-course-phone-deployed\\.spec\\.mjs$)'; then\n            targeted=(tests/uat/cf-247-s167-aer-course-phone-deployed.spec.mjs)")
   expect(wf).toContain('            tests/uat/cf-247-s167-aer-course-phone-deployed.spec.mjs\n            tests/uat/cf-247-s154-aer-workspace-deployed.spec.mjs\n          )\n          case')
+  // a targeted run whose spec holds phone checks also runs the phone project (otherwise the phone gate runs only in the wider tiers)
+  expect(wf).toContain(`if [ "$UAT_TIER" = "targeted" ] && grep -l '@responsive' "\${specs[@]}" >/dev/null 2>&1; then echo "mobile=true" >> "$GITHUB_OUTPUT"`)
+  expect(wf).toContain("if: steps.tier.outputs.tier != 'targeted' || steps.suites.outputs.mobile == 'true'")
 })
 
 test.describe('CF-247 AER Course detail and phone acceptance @deployed', () => {

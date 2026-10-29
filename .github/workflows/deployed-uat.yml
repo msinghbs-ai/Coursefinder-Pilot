@@ -371,6 +371,8 @@ jobs:
           esac
           printf '%s\n' "${specs[@]}" > /tmp/uat-specs.txt
           printf 'Resolved %s tier with %s permanent suite(s)\n' "$UAT_TIER" "${#specs[@]}"
+          # v2.15.368 (mandate 29 Oct 2026 12:23 section C): a targeted run whose spec holds phone checks (@responsive) also runs the phone project
+          if [ "$UAT_TIER" = "targeted" ] && grep -l '@responsive' "${specs[@]}" >/dev/null 2>&1; then echo "mobile=true" >> "$GITHUB_OUTPUT"; else echo "mobile=false" >> "$GITHUB_OUTPUT"; fi
 
       - name: Run deployed governed validation — desktop
         id: desktop_uat
@@ -381,7 +383,7 @@ jobs:
 
       - name: Run deployed governed validation — mobile gate
         id: mobile_uat
-        if: steps.tier.outputs.tier != 'targeted'
+        if: steps.tier.outputs.tier != 'targeted' || steps.suites.outputs.mobile == 'true'
         shell: bash
         run: |
           mapfile -t specs < /tmp/uat-specs.txt
