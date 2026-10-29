@@ -22,40 +22,43 @@ test.describe('A15 Provider international contact intelligence @deployed',()=>{
     await writeRunEnvironment({suite:'a15-provider-contact-intelligence',change_control:'CF-CHG-20260829-046'})
   })
 
+  // v2.15.225 (Platform Admin, 9 Oct 2026: panels had too much text): the Provider blade no longer lists each contact. It shows an
+  // "International contacts" fact card with the count and View contacts (Provider contacts, filtered to the provider). The governed
+  // first-party assignments, their source page and Evidence still come in the provider read (international_contacts), checked here.
   test('UQ Provider blade shows governed first-party regional manager assignments with Evidence',async({page},testInfo)=>{
     const runtime=observeRuntime(page)
     try{
       await loginAsUatUser(page)
+      const detail=page.waitForResponse(r=>{if(!r.url().includes('/rest/v1/rpc/admin_read'))return false;try{return r.request().postDataJSON()?.p_operation==='provider_detail'}catch{return false}},{timeout:45_000})
       await page.goto(`${process.env.UAT_BASE_URL}/#providers?id=${UQ_ID}`)
+      const payload=await(await detail).json()
+      const block=payload.international_contacts||{}
+      const items=Array.isArray(block.items)?block.items:[]
+      const regional=items.filter(x=>x.source_class==='first_party'&&x.source_url===UQ_REGIONAL_URL)
+      expect(regional.length,'first-party regional manager assignments').toBeGreaterThan(0)
+      expect(regional.every(x=>x.evidence_id),'each first-party assignment keeps its Evidence').toBeTruthy()
+      const ashwin=regional.find(x=>x.full_name==='Ashwin Sreekumar')
+      expect(ashwin,'UQ India regional manager').toBeTruthy()
+      expect(`${ashwin?.territory_text||''} ${(ashwin?.territory_codes||[]).join(' ')}`).toMatch(/India|\bIN\b/)
+      expect(Number(block.summary?.first_party_contacts||0)).toBeGreaterThan(0)
+
       const drawer=page.locator('aside.m-drawer-provider')
       await expect(drawer).toBeVisible({timeout:45_000})
-      const contacts=drawer.locator('.cf-contact-intel')
-      await expect(contacts.getByRole('heading',{name:'International contacts',exact:true})).toBeVisible()
-      await expect(contacts).toContainText('First-party university contacts are preferred')
-      await expect(contacts).toContainText(/\d+ first-party/)
-      await expect(contacts).toContainText('Ashwin Sreekumar')
-      await expect(contacts).toContainText('India')
-      await expect(contacts).toContainText('india@uq.edu.au')
-      await expect(contacts).toContainText('Jinny Yun')
-      await expect(contacts).toContainText(/Cambodia, Indonesia, Laos, Malaysia/i)
-      await expect(contacts).toContainText('Michelle Liu')
-      await expect(contacts).toContainText(/China, Hong Kong \(SAR\), Japan/i)
-      await expect(contacts.getByText('First-party university').first()).toBeVisible()
-      const source=contacts.getByRole('link',{name:/University source/i}).first()
-      await expect(source).toHaveAttribute('href',UQ_REGIONAL_URL)
-      await expect(contacts.getByRole('button',{name:/Evidence/i}).first()).toBeVisible()
+      const card=drawer.locator('[data-ds-card="contacts"]')
+      await expect(card).toContainText('International contacts')
+      await expect.poll(async()=>Number(((await card.locator('strong').first().innerText())||'').replace(/[^0-9]/g,''))).toBeGreaterThan(0)
+      const view=card.getByRole('button',{name:/View contacts/i})
+      await expect(view).toBeVisible()
       await milestoneScreenshot(page,testInfo,'a15-uq-international-contacts-desktop')
-
-      await page.setViewportSize({width:768,height:1024})
-      await expect(contacts).toBeVisible()
-      await expect(contacts.locator('.cf-contact-grid')).toBeVisible()
-      await expect(contacts).toContainText('First-party university')
-      await milestoneScreenshot(page,testInfo,'a15-uq-international-contacts-tablet')
+      await view.click()
+      await expect(page).toHaveURL(new RegExp(`#provider-contacts\\?provider_id=${UQ_ID}`))
+      await expect(page.locator('.m-title-wrap h1')).toContainText('Provider contacts',{timeout:20_000})
 
       await page.setViewportSize({width:390,height:844})
-      await expect(contacts).toBeVisible()
-      await expect(contacts).toContainText('Ashwin Sreekumar')
-      await expect(contacts).toContainText('India')
+      await page.goto(`${process.env.UAT_BASE_URL}/#providers?id=${UQ_ID}`)
+      await expect(drawer.locator('[data-ds-card="contacts"]')).toBeVisible({timeout:45_000})
+      const box=await drawer.boundingBox()
+      expect(Math.abs((box?.width||0)-390)).toBeLessThanOrEqual(2)
       await milestoneScreenshot(page,testInfo,'a15-uq-international-contacts-mobile')
     }finally{await finish(testInfo,runtime)}
   })

@@ -5,6 +5,10 @@ import{attachRuntimeEvidence,assertNoServerErrors,loginAsUatUser,milestoneScreen
 
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
 async function openCatalogue(page,hash,heading){await page.evaluate(h=>{location.hash=h},hash);await expect(page.getByRole('heading',{name:heading,exact:true})).toBeVisible()}
+// v2.15.226 (9 Oct 2026, slim provider and course reads): contextual insights are no longer part of provider_detail / course_detail.
+// They load from admin_read 'provider_insights' / 'course_insights' when "More about this provider/course" is opened on the blade.
+function insightsResponse(page,operation){return page.waitForResponse(r=>{if(!r.url().includes('/rest/v1/rpc/admin_read'))return false;try{return r.request().postDataJSON()?.p_operation===operation}catch{return false}},{timeout:45_000})}
+async function openMore(page,more,operation){const response=insightsResponse(page,operation);await expect(more).toBeVisible({timeout:45_000});await more.locator('summary').first().click();const payload=await(await response).json();return payload.contextual_insights}
 
 test.describe('A12 contextual insights on catalogue detail blades @deployed',()=>{
  test.beforeAll(async()=>{await writeRunEnvironment({suite:'a12-contextual-insights-v1.5',change_control:'CF-CHG-20260827-044'})})
@@ -13,8 +17,7 @@ test.describe('A12 contextual insights on catalogue detail blades @deployed',()=
   await loginAsUatUser(page);await openCatalogue(page,'#providers','Providers')
   const search=page.locator('.m-searchbox input').first();await search.fill('RMIT University')
   const row=page.locator('.m-table tbody tr').filter({hasText:'RMIT University (RMIT)'}).first();await expect(row).toBeVisible()
-  const response=page.waitForResponse(r=>{if(!r.url().includes('/rest/v1/rpc/admin_read'))return false;try{const b=r.request().postDataJSON();return b?.p_operation==='provider_detail'}catch{return false}})
-  await row.click();const payload=await(await response).json();const ci=payload.contextual_insights
+  await row.click();const ci=await openMore(page,page.locator('aside.m-drawer-provider [data-provider-more]'),'provider_insights')
   expect(Number(ci?.student_outcomes?.total||0)).toBeGreaterThan(0)
   expect(ci?.student_outcomes?.source_label).toBe('QILT')
   expect(ci?.student_outcomes?.granularity).toBe('provider')
@@ -34,8 +37,7 @@ test.describe('A12 contextual insights on catalogue detail blades @deployed',()=
   await loginAsUatUser(page);await openCatalogue(page,'#courses','Courses')
   const search=page.locator('.m-searchbox input').first();await search.fill('Advanced Diploma of Accounting')
   const row=page.locator('.m-table tbody tr').filter({hasText:'Advanced Diploma of Accounting'}).filter({hasText:'RMIT University (RMIT)'}).first();await expect(row).toBeVisible()
-  const response=page.waitForResponse(r=>{if(!r.url().includes('/rest/v1/rpc/admin_read'))return false;try{const b=r.request().postDataJSON();return b?.p_operation==='course_detail'}catch{return false}})
-  await row.click();const payload=await(await response).json();const ci=payload.contextual_insights
+  await row.click();const ci=await openMore(page,page.locator('.m-drawer-course [data-course-more]'),'course_insights')
   expect(ci?.student_outcomes?.granularity).toBe('provider_context')
   expect(Number(ci?.student_outcomes?.total||0)).toBeGreaterThan(0)
   expect(['not_mapped','regional_context','regional_field_context','direct_course']).toContain(ci?.student_flow?.relationship_state)

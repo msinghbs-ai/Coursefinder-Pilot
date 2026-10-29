@@ -19,7 +19,8 @@ test.describe('M2.5 Jobs workspace deployed @deployed',()=>{
    // v2.15.200: Jobs is a tab of the Scheduled jobs page.
    await clickPrimaryNav(page,'Scheduled Tasks')
    await page.locator('.cf-page-tabs [role="tab"]').filter({hasText:/^Jobs$/}).first().click()
-   await expect(page.locator('.ops-workspace-head h2')).toHaveText('Jobs')
+   // v2.15.229 (same look on every page, stage 2): the workspace header is a slim bar named by aria-label; the tab is the title
+   await expect(page.locator('section.ops-workspace-head[aria-label="Jobs"]')).toBeVisible({timeout:20_000})
    const total=page.locator('.ops-result-count strong')
    await expect(total).not.toHaveText('0')
    await expect(page.locator('.ops-table tbody tr').first()).toBeVisible()

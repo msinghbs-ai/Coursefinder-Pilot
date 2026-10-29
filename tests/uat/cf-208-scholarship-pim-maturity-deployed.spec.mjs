@@ -11,15 +11,16 @@ test.describe('CF-208 deployed Scholarship PIM maturity @deployed',()=>{
   await loginAsUatUser(page)
   await clickPrimaryNav(page,'Scholarships')
   await expect(page.locator('.m-title-wrap h1')).toContainText(/Scholarships/i,ui)
+  // v2.15.174 (tidy Scholarships list): the list has no separate "Scholarship catalogue" heading; its count reads "<n> published"
+  // (data-sch-count). Filters are Country, Provider and Audience (Lifecycle and Publication left the list with the rebuild that retired
+  // the local CF-208 contracts, test register 26 Oct 2026); operators edit values in the list (Edit in list).
   const catalogue=page.locator('.m-catalogue-panel').first()
-  await expect(catalogue.getByRole('heading',{name:'Scholarship catalogue',exact:true})).toBeVisible(ui)
-  const count=catalogue.locator('.m-result-count strong')
-  await expect(count).toBeVisible(ui)
-  await expect.poll(async()=>Number((await count.innerText()).replace(/[^0-9]/g,'')),ui).toBeGreaterThan(0)
-  await expect(catalogue.getByText('Country',{exact:true}).first()).toBeVisible(ui)
-  await expect(catalogue.getByText('Lifecycle',{exact:true}).first()).toBeVisible(ui)
-  await expect(catalogue.getByText('Publication',{exact:true}).first()).toBeVisible(ui)
+  const count=catalogue.locator('[data-sch-count] strong')
+  await expect(count).toBeVisible({timeout:20_000})
+  await expect.poll(async()=>Number((await count.innerText()).replace(/[^0-9]/g,'')),{timeout:20_000}).toBeGreaterThan(0)
+  for(const filter of ['Country','Provider','Audience'])await expect(catalogue.locator('.m-filter-button').filter({hasText:new RegExp(filter,'i')}).first()).toBeVisible(ui)
   await expect(catalogue.locator('tbody tr').first()).toBeVisible(ui)
+  await expect(catalogue.getByRole('button',{name:/Edit in list/})).toBeVisible(ui)
   await milestoneScreenshot(page,testInfo,'cf-208-scholarship-pim-catalogue')
  }finally{await finish(testInfo,runtime)}})
 })

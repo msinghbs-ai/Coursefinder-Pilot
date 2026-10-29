@@ -88,11 +88,15 @@ test.describe('CF-061 QILT PRISMS comparison experience @deployed',()=>{
   await search.fill('Advanced Diploma of Accounting')
   const row=page.locator('.m-table tbody tr').filter({hasText:'Advanced Diploma of Accounting'}).filter({hasText:'RMIT'}).first()
   await expect(row).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
-  const detailResponse=page.waitForResponse(r=>{if(!r.url().includes('/rest/v1/rpc/admin_read'))return false;try{return r.request().postDataJSON()?.p_operation==='course_detail'}catch{return false}})
   await row.click()
-  const detail=await(await detailResponse).json()
-  expect(detail.contextual_insights?.student_outcomes?.granularity).toBe('provider_context')
-  expect(Number(detail.contextual_insights?.student_outcomes?.total||0)).toBeGreaterThan(0)
+  // v2.15.226 (9 Oct 2026, slim course read): insights load from admin_read 'course_insights' when "More about this course" is opened.
+  const more=page.locator('.m-drawer-course [data-course-more]')
+  await expect(more).toBeVisible({timeout:45_000})
+  const insightsResponse=page.waitForResponse(r=>{if(!r.url().includes('/rest/v1/rpc/admin_read'))return false;try{return r.request().postDataJSON()?.p_operation==='course_insights'}catch{return false}},{timeout:45_000})
+  await more.locator('summary').first().click()
+  const insights=(await(await insightsResponse).json()).contextual_insights
+  expect(insights?.student_outcomes?.granularity).toBe('provider_context')
+  expect(Number(insights?.student_outcomes?.total||0)).toBeGreaterThan(0)
   await expect(page.locator('.ci-outcome-card').first()).toBeVisible()
   await expect(page.locator('.ci-benchmark-copy').first()).toBeVisible() // a national benchmark is shown only where the source holds one; otherwise the collection years
 

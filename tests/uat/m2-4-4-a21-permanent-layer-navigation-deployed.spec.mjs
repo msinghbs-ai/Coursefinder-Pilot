@@ -41,7 +41,7 @@ test.describe('A21 permanent Layer navigation @deployed',()=>{
     await clickPrimaryNav(page,'Layer 2 — Enrichment')
     const workspace=page.locator('[data-adapters-workspace]')
     await expect(page.getByRole('heading',{name:'Layer 2/3 Build & enrich',exact:true}).first()).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
-    await expect(workspace).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT}) // v2.15.200: the opening tab is Adapters
+    await expect(workspace).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT}) // v2.15.300: Adapters is the Universities tab of Layer 2/3
     await expect(page.locator('.m-sidebar')).toBeVisible()
     await expect(page.getByLabel('Layer 2 Wave 1 Courses')).toHaveCount(0)
     await expect(page.getByLabel('Layer 2 acquisition route')).toHaveCount(0)
@@ -56,11 +56,11 @@ test.describe('A21 permanent Layer navigation @deployed',()=>{
   test('old Layer 3 address opens Layer 2; Layer 4 is a separate permanent route',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
     await page.goto('/#layer-3-ai')
-    await expect(page).toHaveURL(/#layer-2-discovery$/,{timeout:DETERMINISTIC_UI_TIMEOUT})
+    await expect(page).toHaveURL(/#layer-2-discovery\?tab=universities$/,{timeout:DETERMINISTIC_UI_TIMEOUT}) // v2.15.300: Adapters is Layer 2/3 › Universities
     await expect(page.getByRole('heading',{name:'Layer 2/3 Build & enrich',exact:true}).first()).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
     await expect(page.getByRole('heading',{name:'Work by task'})).toHaveCount(0)
     await clickPrimaryNav(page,'Layer 4 — Human Resolution')
-    await expect(page.getByRole('heading',{name:'Layer 4 status'})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+    await expect(page.locator('[data-l4-inbox]')).toBeVisible({timeout:20_000}) // v2.15.300: Layer 4 Review is one Inbox (the status panel is retired)
     await expect(page.locator('.m23-shell[role="dialog"]')).toHaveCount(0)
     await milestoneScreenshot(page,testInfo,'a21-layer3-retired-layer4-route')
   }finally{await finish(testInfo,runtime)}})

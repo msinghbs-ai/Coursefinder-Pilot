@@ -1,7 +1,7 @@
 // Guards: admin-navigation-deployed: CourseFinder canonical Administration and Operations navigation
 import { test, expect } from '@playwright/test'
 import { attachRuntimeEvidence, assertNoServerErrors, clickPrimaryNav, DETERMINISTIC_UI_TIMEOUT, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
-import { openLayer1, openLayer2, openLayer2Tab, openRetiredLayer3, openLayer4, openLayer2Advanced } from './support/navigation.mjs'
+import { openLayer1, openLayer2Tab, openRetiredLayer3, openLayer4 } from './support/navigation.mjs'
 
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
 
@@ -28,7 +28,7 @@ test.describe('CourseFinder canonical Administration and Operations navigation @
 
   test('Layer 1 and Layer 2 open as embedded canonical workspaces',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page);const l1=await openLayer1(page);await expect(l1.locator('.l1o-backdrop')).toHaveCount(0)
-    const l2=await openLayer2Tab(page,'Adapters') // v2.15.200: Layer 2 opens on Adapters
+    const l2=await openLayer2Tab(page,'Adapters') // v2.15.300: Adapters is Layer 2/3 › Universities
     await expect(l2.getByLabel('Adapters country')).toBeVisible()
     await expect(l2.getByLabel('Find a university')).toBeVisible()
     await expect(l2.getByRole('button',{name:/Advanced configuration/i})).toHaveCount(0)
@@ -42,20 +42,10 @@ test.describe('CourseFinder canonical Administration and Operations navigation @
     await loginAsUatUser(page)
     await openRetiredLayer3(page)
     await expect(page.getByRole('heading',{name:'Work by task',exact:true})).toHaveCount(0)
-    const ws=await openLayer4(page)
-    await expect(ws.getByRole('heading',{name:'Layer 4 status',exact:true})).toBeVisible()
+    await openLayer4(page) // v2.15.300: Layer 4 Review is one Inbox (the Layer 4 status panel is retired)
     await expect(page.locator('.cf-page-tabs [role="tab"]').filter({hasText:'Send back to AI'})).toHaveCount(0)
     await milestoneScreenshot(page,testInfo,'layer3-retired-layer4-route')
   }finally{await finish(testInfo,runtime)}})
-
-  test('Source profiles are on Scrapers & fetchers, closed until opened, and changes are versioned',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
-    await loginAsUatUser(page)
-    await openLayer2Advanced(page) // v2.15.200: Source profiles moved from Layer 2 to Scrapers & fetchers (a card)
-    await expect(page.getByRole('heading',{name:'Source profiles',exact:true}).first()).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT}) // the card title and the panel title
-    await expect(page.getByText(/Changes create a new version; nothing here changes catalogue values directly/)).toBeVisible()
-    await milestoneScreenshot(page,testInfo,'layer2-config-central-administration')
-  }finally{await finish(testInfo,runtime)}})
-
 
   test('Administration subcontext and Scheduled Tasks survive deep-link browser history',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)

@@ -13,20 +13,22 @@ test.describe('M2.4.4 A26-A28 operator UX @deployed',()=>{
     await loginAsUatUser(page)
     await clickPrimaryNav(page,'Administration')
     // v2.15.200: Administration opens Scrapers & fetchers; the Acquisition and Scheduling sub-tabs are retired
-    // (scheduling is on Scheduled jobs).
-    await expect(page.locator('.m-title-wrap h1')).toContainText('Scrapers & fetchers',{timeout:DETERMINISTIC_UI_TIMEOUT})
+    // (scheduling is on Scheduled jobs). v2.15.300: Scrapers & fetchers is Models & services › Fetchers.
+    await expect(page.locator('.m-title-wrap h1')).toContainText('Models & services',{timeout:DETERMINISTIC_UI_TIMEOUT})
+    await expect(page.locator('.cf-page-tabs [role="tab"][aria-selected="true"]')).toHaveText('Fetchers')
+    await expect(page.locator('.l2p-provider-list')).toBeVisible({timeout:20_000})
     await expect(page.getByRole('tab',{name:'Scheduling',exact:true})).toHaveCount(0)
     await expect(page.locator('main, .m-main').first()).not.toBeEmpty()
   }finally{await finish(testInfo,runtime)}})
 
   test('Layer 2 uses production wording, canonical Jobs/Evidence links and actionable blockers only',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
-    // v2.15.200: Layer 2 has the Adapters and Scholarships tabs. Overview, Fetch an area and History are retired
-    // (finished tasks are on Scheduled jobs > Jobs, running ones on the Task manager).
+    // v2.15.200: Overview, Fetch an area and History are retired (finished tasks are on Scheduled jobs > Jobs, running ones on the
+    // Task manager). v2.15.300: Adapters (with Onboarding) is the Universities tab of Layer 2/3 Build & enrich.
     const ws=await openLayer2Tab(page,'Adapters')
     await expect(ws.locator('[data-adapters-list]')).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
     const tabs=await page.locator('.cf-page-tabs [role="tab"]').allTextContents()
-    expect(tabs.map(x=>x.trim())).toEqual(expect.arrayContaining(['Adapters']))
+    expect(tabs.map(x=>x.trim())).toEqual(expect.arrayContaining(['Operations','Universities']))
     for(const retired of ['Overview','Fetch an area','History','Source profiles'])expect(tabs.join('|')).not.toContain(retired)
     await expect(ws.getByText(/no manual per-Provider action is required/i)).toHaveCount(0)
     await expect(ws.getByText(/Meeting-ready Firecrawl example/i)).toHaveCount(0)

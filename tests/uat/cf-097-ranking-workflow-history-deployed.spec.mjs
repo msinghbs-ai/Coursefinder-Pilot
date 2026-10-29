@@ -11,18 +11,18 @@ test.describe('CF-097/226 ranking workflow, history and datasets @deployed',()=>
  test('full THE history remains visible and applied editions no longer require manual review',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page)
   await page.goto(new URL('/#administration?section=sources-imports',process.env.UAT_BASE_URL).toString())
-  await expect(page.getByRole('heading',{name:'Imported files'})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+  await expect(page.getByRole('heading',{name:'Imported files'})).toBeVisible({timeout:20_000})
   const filter=page.locator('.m-compact-filter select')
   await filter.selectOption('the_wur')
-  for(const year of ['2026','2025','2024','2023','2022','2021','2020','2019','2018','2017','2016','2015']){
-    await expect(page.locator('.m-ranking-import-row').filter({hasText:'THE_WUR '+year}).first()).toBeVisible()
+  // CF-224 (Layer 1 Ranking ETL applies editions automatically): every THE edition held is listed and applied, with its module, and none
+  // waits on a manual Apply. The THE 2015 file was rejected at validation (live data, 29 Oct 2026), so the history runs 2016–2026.
+  for(const year of ['2026','2025','2024','2023','2022','2021','2020','2019','2018','2017','2016']){
+    const row=page.locator('.m-ranking-import-row').filter({hasText:'THE_WUR '+year}).first()
+    await expect(row).toBeVisible()
+    await expect(row).toContainText(/Applied/i)
+    await expect(row.getByRole('button',{name:'View module'})).toBeVisible()
   }
-  const y2024=page.locator('.m-ranking-import-row').filter({hasText:'THE_WUR 2024'}).first()
-  await expect(y2024).toContainText('Validated')
-  await expect(y2024.getByRole('button',{name:'Apply edition'})).toBeVisible()
-  const y2025=page.locator('.m-ranking-import-row').filter({hasText:'THE_WUR 2025'}).first()
-  await expect(y2025).toContainText(/Applied/i)
-  await expect(y2025.getByRole('button',{name:'View module'})).toBeVisible()
+  await expect(page.locator('.m-ranking-import-row').getByRole('button',{name:'Apply edition'})).toHaveCount(0)
  }finally{await finish(testInfo,runtime)}})
 
  test('ranking rows expose Layer 1 Ranking ETL jobs',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
