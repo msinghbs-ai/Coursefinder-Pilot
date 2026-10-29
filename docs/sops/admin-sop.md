@@ -1,6 +1,6 @@
 # StudySearch – Platform Admin SOP
 
-**Version:** 1.56 (reviewed for platform release v2.15.370)  
+**Version:** 1.56 (reviewed for platform release v2.15.371)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -225,6 +225,7 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 | 2.00 | 26 Oct 2026 | v2.15.359 | Fees: every international fee write passes the country tuition identity check at the table; a failing fee is kept for review. |
 | 2.01 | 27 Oct 2026 | v2.15.360 | Governed actions (Decision 268): routine operations are approved on Layer 2/3 › Operations › Governed actions instead of run as SQL; SQL is break-glass only. First action: close the AER PR A recovery. |
 | 2.02 | 28 Oct 2026 | v2.15.361 | Academic entry requirements (Track C Step B): the Provider drawer and the Course detail blade show the published entry rows and what applies to a student from a chosen country; Platform Admin reads one course from its stored page and admits the rows in Layer 4 (Course entry first read). |
+| 2.12 | 30 Oct 2026 | v2.15.371 | Layer 2/3 › Universities reads one page at a time (Show more for the next page; filters and search work on the whole list). A site re-map keeps course pages proved by a code. No other operator steps changed. |
 | 2.11 | 30 Oct 2026 | v2.15.370 | Reviewed: AI answer lengths are settings (Settings › Pipeline settings › AI answer limits); a cut answer holds the read. The source finder, course page reads and adapter capture are counted correctly in the health report. No operator steps changed. |
 | 2.10 | 29 Oct 2026 | v2.15.369 | Read again reads only the newest stored copy of a page (an older copy's pending item is closed as superseded); a long course page is read in slices and a cut read is held, not proposed in part. Role guides: admin docs/platform/AER-ROLE-GUIDES.md. |
 | 2.09 | 29 Oct 2026 | v2.15.368 | Reviewed: Course detail evidence values read in words and the country selector fits a phone. No operator steps changed. |
