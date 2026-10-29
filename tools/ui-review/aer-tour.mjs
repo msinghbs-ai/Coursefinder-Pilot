@@ -118,7 +118,8 @@ export async function aerTour({ page, browser, out, settle, fitHeight, masks, lo
     }
     await phone.goto('/#entry-requirements')
     await phone.locator('table[data-table="aer-matrix"] tbody tr').first().waitFor({ timeout: 60_000 })
-    await phone.locator('table[data-table="aer-matrix"] tbody tr').first().click()
+    const firstRow = phone.locator('table[data-table="aer-matrix"] tbody tr').first()
+    await firstRow.scrollIntoViewIfNeeded(); await firstRow.locator('td').nth(2).click()  // a cell beside the sticky first column
     await phone.locator('[data-aer-drawer="matrix"] [data-aer-quote]').waitFor({ timeout: 60_000 })
     await shot(phone, '14-phone-drawer')
     await ctx.close()

@@ -60,6 +60,13 @@ test('Step C: a rendered page with no requirements table opens a Layer 4 note in
   expect(m).toMatch(/^-- Retires: nothing/m)
 })
 
+test('the read-state pill is shown whole: it wraps in its cell rather than being cut at the column edge (live visual acceptance, 29 Oct 2026)', () => {
+  const css = fs.readFileSync('src/aer-workspace.css', 'utf8')
+  expect(css).toContain('.aer-page [data-aer-hold] .cf-chip{white-space:normal;text-overflow:clip;overflow:visible}')
+  expect(ui).toContain("{key:'read',label:'Latest read',width:210,sortKey:'read'")
+  expect(ui).toContain("{key:'cost',label:'Cost',width:110,sortKey:'cost'")  // "US$0.0207" was cut to "US$0…"
+})
+
 async function mockProgramme(page, { rank = 6 } = {}) {
   const { mockAdmin } = await import('./support/admin-mock.mjs')
   await mockAdmin(page, { rank })
