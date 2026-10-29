@@ -154,7 +154,10 @@ export async function clickPrimaryNav(page,label){
     const bar=page.locator('.cf-page-tabs')
     await expect(page.locator('h1').filter({hasText:menu}).first()).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
     if(await bar.count()===0)return
-    await bar.locator('[role="tab"]').filter({hasText:tab}).first().click({timeout:DETERMINISTIC_UI_TIMEOUT})}
+    // The page restores its last tab (per-user screen state) as it settles, which can undo a tab click made straight after the menu
+    // click; click until the asked-for tab is the selected one.
+    const t=bar.locator('[role="tab"]').filter({hasText:tab}).first()
+    await expect(async()=>{await t.click({timeout:DETERMINISTIC_UI_TIMEOUT});await expect(t).toHaveAttribute('aria-selected','true',{timeout:2_000})}).toPass({timeout:30_000})}
   return}
   const item=page.locator('button.m-nav-item').filter({hasText:label}).first()
   await expect(item,`Missing accepted primary navigation item: ${label}`).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})

@@ -29,9 +29,13 @@ test.describe('A13 stable Course filters and Layer 2 acquisition Evidence trace 
   await page.mouse.click(20,20)
   await expect(pop).toBeHidden()
   await trigger.click();await expect(pop).toBeVisible()
-  const pb2=await pop.boundingBox()
-  expect(Math.abs(pb2.x-pb.x)).toBeLessThanOrEqual(3)
-  expect(Math.abs(pb2.y-pb.y)).toBeLessThanOrEqual(3)
+  // The popover must reopen in the same place relative to its trigger. The page itself may move between the two opens: the shell's
+  // credit and limit banner (v2.15.253, data-credit-banner) is inserted above the page when admin_credit_notices returns a notice, which
+  // moves every control down by the banner's height. That is not the popover jumping, so the check is made against the trigger.
+  const tb2=await trigger.boundingBox(),pb2=await pop.boundingBox()
+  const where=JSON.stringify({tb,pb,tb2,pb2,banner:await page.locator('[data-credit-banner]').count()})
+  expect(Math.abs((pb2.x-tb2.x)-(pb.x-tb.x)),where).toBeLessThanOrEqual(3)
+  expect(Math.abs((pb2.y-tb2.y)-(pb.y-tb.y)),where).toBeLessThanOrEqual(3)
   await milestoneScreenshot(page,testInfo,'a13-tablet-filter-anchored')
  }finally{await finish(testInfo,runtime)}})
 
