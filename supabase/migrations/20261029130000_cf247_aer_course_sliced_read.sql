@@ -1,5 +1,5 @@
 -- CF-247 AER decision W29 (29 Oct 2026, AER programme Workstream 2, lane D): course-level reading of long pages in bounded slices.
--- DRAFT: the integrator numbers this file (XXXXXX) and applies it with worker coverage-sweep-worker-v0.53.0.
+-- Numbered 20261029130000 by the integrator; it ships with worker coverage-sweep-worker-v0.53.0 (release v2.15.369).
 -- Why: three Monash course reads (field_enrich_items 228658, 228627, 228642; courses e58e7771, 512b56fe, 9cf18451) failed three times with
 -- "Unterminated string in JSON at position 8,061 to 8,598". The course entry read (worker enrich_ai, field entry_requirements) asked for
 -- the whole page in one call with its answer fixed at 2,000 tokens; pages that publish a long per-country minimum list answered past it,
