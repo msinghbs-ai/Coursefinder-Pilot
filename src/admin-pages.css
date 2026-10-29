@@ -298,6 +298,8 @@
 .cf-collapse{border:1px solid var(--cf-border);border-radius:var(--cf-radius-md);background:var(--cf-surface);margin:8px 0}.cf-collapse>summary{cursor:pointer;padding:9px 12px;font-weight:600;font-size:var(--cf-fs-sm)}.cf-collapse[open]>summary{border-bottom:1px solid var(--cf-border)}
 .sl-tools .m-filter-select span{font-size:var(--cf-fs-xs);color:var(--cf-text-2);margin-right:6px}.sl-tools .m-filter-bar{margin:6px 0 10px}
 .cc-scope{margin:0 0 10px;font-size:var(--cf-fs-sm);color:var(--cf-text-2)}
+/* CF-247 W34: when the coverage totals snapshot was built and checked; amber when stale */
+.cc-snapshot{margin:-6px 0 10px;font-size:var(--cf-fs-xs);color:var(--cf-text-2)}.cc-snapshot.is-stale strong{color:var(--cf-amber-700)}
 /* Rankings › Datasets (v2.15.131). */
 .sd-actions{display:flex;gap:6px}.sd-desc{display:block;color:var(--cf-text-2);font-size:var(--cf-fs-xs);max-width:560px}
 .sd-add{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0 0 12px;padding:10px;border:1px solid var(--cf-border);border-radius:var(--cf-radius-md)}

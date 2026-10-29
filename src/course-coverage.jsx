@@ -56,6 +56,17 @@ export const COVERAGE_TARGET=80
 export const TARGET_FIELDS=[['intakes','Intakes / start dates'],['english','English requirements'],['fee','Provider tuition (fee year)']]
 export const FIELD_SOURCES=[['adapter','Adapter','var(--cf-blue-700)'],['central','Central page','var(--cf-green-700)'],['reader','Page reader','var(--cf-violet-400)'],['hand','Entered by hand','var(--cf-amber-500)'],['other','Other source','var(--cf-slate-400)']]
 
+// CF-247 W34 (Platform Admin 30 Oct 2026 06:53): the totals come from a snapshot rebuilt after each hourly build (job
+// course-coverage-snapshot). Say when it was built and last checked, and mark it stale; course lists opened from here stay live.
+export function SnapshotNote({snapshot}){
+  if(!snapshot)return null
+  const live=snapshot.source==='live'
+  return <p className={`cc-snapshot${snapshot.stale?' is-stale':''}`} data-coverage-snapshot={live?'live':'snapshot'} data-stale={snapshot.stale?'true':'false'}>
+    {live?'Totals counted just now (no snapshot yet).':`Totals from the snapshot built ${fmtDateTime(snapshot.generated_at)}, last checked against the hourly build ${fmtDateTime(snapshot.checked_at)}.`} Course lists opened from these totals are always live.
+    {snapshot.stale&&<strong data-snapshot-stale> Stale: not checked for more than {fmtNumber(snapshot.stale_after_minutes)} minutes, so these numbers may be behind.</strong>}
+  </p>
+}
+
 // v2.15.112: view 'courses' (course completeness) or 'attributes' (attribute completeness and pipeline stage); both
 // kept by default for older callers. Platform Admin 30 Sep 2026: separate course and attribute completion in tabs.
 export function CoverageView({view='all',onScope,belowFilters}={}){
@@ -91,6 +102,7 @@ export function CoverageView({view='all',onScope,belowFilters}={}){
   return <div className="cc-wrap">
     {/* v2.15.131 (cc-counts-consistency): say what is counted here, as other screens count different sets. */}
     <p className="cc-scope" data-count-scope>Counts here cover <strong>{fmtNumber(data?.courses||0)} active courses</strong> {provider?`at ${provider.name}`:country?`in ${COUNTRY_NAME[country]||country}`:'in every country'}, recounted every hour. Layer 1 values come from each country's register (CRICOS in Australia, NZQA in New Zealand).</p>
+    <SnapshotNote snapshot={data?.snapshot}/>
     <section className="cf-filterbar cc-where" aria-label="Country and university">
       <label><span>Country</span><select className="fv-filter" value={country} onChange={e=>{setCountry(e.target.value);setProvider(null);setPq('')}} aria-label="Coverage country">
         <option value="">All countries</option>{(data?.countries||[]).map(c=><option key={c.code} value={c.code}>{COUNTRY_NAME[c.code]||c.code} ({fmtNumber(c.courses)})</option>)}</select></label>
