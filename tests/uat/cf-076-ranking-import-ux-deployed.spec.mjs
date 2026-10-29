@@ -29,7 +29,7 @@ test.describe('CF-076 compact ranking import UX @deployed',()=>{
   const selects=page.locator('.m-ranking-essentials select')
   await expect(selects.nth(0)).toHaveValue('the_wur')
   await expect(selects.nth(1)).toHaveValue('2016')
-  await expect(page.locator('.m-alert')).not.toContainText('txt_native_json_is_the_only')
+  await expect(page.getByText(/txt_native_json_is_the_only/)).toHaveCount(0) // no alert is drawn when the file is accepted
   const box=await page.locator('.m-ranking-import-compact').boundingBox();expect(box?.height||9999).toBeLessThan(520)
  }finally{await finish(testInfo,runtime)}})
 
