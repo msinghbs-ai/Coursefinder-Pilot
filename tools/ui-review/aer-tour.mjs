@@ -23,6 +23,45 @@ async function layoutFacts(page) {
 
 const bar = (page) => page.locator('[data-aer-filters="matrix"]')
 
+const DP020 = 'b365fde8-d003-4ef6-80c3-4136fbd5587a'  // RMIT Diploma of Commerce (CRICOS 111278B), mandate 29 Oct 2026 12:23 section C
+// Course detail for DP020, read-only: the country selector's order, India's resolution, the scholarships result and the evidence overlay
+// (opened, its timeline counted, closed with Escape). Selecting a country only asks the resolver; nothing here edits or reads again.
+async function courseDp020(p, prefix, shot) {
+  await p.goto(`/#courses?id=${DP020}`)
+  const blade = p.locator('aside.m-drawer-course')
+  await blade.waitFor({ timeout: 60_000 })
+  const select = blade.getByLabel('Country of prior education')
+  await select.waitFor({ timeout: 60_000 })
+  const order = (await select.locator('option').allTextContents()).filter((t) => t && t !== 'Choose…').slice(0, 6)
+  await select.selectOption({ label: (await select.locator('option').allTextContents()).find((t) => /^India/.test(t)) })
+  const outcome = blade.locator('[data-entry-resolution]')
+  await outcome.waitFor({ timeout: 60_000 })
+  await outcome.scrollIntoViewIfNeeded()
+  const scholarships = blade.locator('[data-course-scholarships]')
+  const scholarshipText = (await scholarships.count()) ? (await scholarships.first().innerText()).replace(/\s+/g, ' ').slice(0, 300) : null
+  await shot(p, `${prefix}-dp020-india`, { country_order: order, india_outcome: await outcome.getAttribute('data-entry-resolution'),
+    india_text: (await outcome.innerText()).replace(/\s+/g, ' ').slice(0, 300), scholarships: scholarshipText })
+  await blade.locator('[data-course-evidence-open]').click()
+  const dialog = p.getByRole('dialog')
+  await dialog.waitFor({ timeout: 60_000 })
+  await p.locator('[data-ca-kind]').first().waitFor({ timeout: 60_000 })
+  const kinds = await p.locator('[data-ca-kind]').evaluateAll((els) => els.map((e) => e.getAttribute('data-ca-kind')))
+  await shot(p, `${prefix}-dp020-evidence`, { timeline_entries: kinds.length, timeline_kinds: [...new Set(kinds)], embedded_history_in_blade: await blade.getByText('What happened to this course').count() })
+  await p.keyboard.press('Escape')
+  await dialog.waitFor({ state: 'detached', timeout: 10_000 })
+}
+
+// the shell's low-credit notice (when shown): its icon and first letter sit inside the viewport, nothing is cut at the left
+async function bannerFacts(p) {
+  return p.evaluate(() => {
+    const b = document.querySelector('[data-credit-banner]')
+    if (!b) return { shown: false }
+    const r = b.getBoundingClientRect(); const range = document.createRange(); const t = [...b.querySelectorAll('*')].find((e) => /OpenRouter/.test(e.textContent || '') && !e.children.length) || b
+    range.selectNodeContents(t); const tr = range.getBoundingClientRect()
+    return { shown: true, left: Math.round(r.left), text_left: Math.round(tr.left), text_starts_inside: tr.left >= r.left && tr.left >= 0, horizontal_scroll: b.scrollWidth > b.clientWidth + 1, text: (b.innerText || '').slice(0, 120) }
+  })
+}
+
 export async function aerTour({ page, browser, out, settle, fitHeight, masks, login, manifest, consoleErrors, baseURL }) {
   // a lighter wait than the review's settle (that one waits up to 45 s for a quiet network, which a polling shell never gives)
   const calm = async (p) => { await p.waitForLoadState('networkidle', { timeout: 8_000 }).catch(() => {}); await p.waitForTimeout(1200)
@@ -101,6 +140,9 @@ export async function aerTour({ page, browser, out, settle, fitHeight, masks, lo
     await shot(page, '09-resolution-0100714-india')
   })
 
+  // 7b. Course detail DP020 at desktop width (mandate 29 Oct 2026 12:23 section C)
+  await step('course-dp020', async () => { await courseDp020(page, '15', shot) })
+
   // 8. Phone width: the same screens at 390 px (the page must not scroll sideways)
   await step('phone', async () => {
     const ctx = await browser.newContext({ baseURL, viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
@@ -122,7 +164,11 @@ export async function aerTour({ page, browser, out, settle, fitHeight, masks, lo
     await firstRow.waitFor({ timeout: 60_000 })
     await firstRow.scrollIntoViewIfNeeded(); await firstRow.locator('td').nth(2).tap()  // a cell beside the sticky first column
     await phone.locator('[data-aer-drawer="matrix"] [data-aer-quote]').waitFor({ timeout: 60_000 })
-    await shot(phone, '14-phone-drawer')
+    await shot(phone, '14-phone-drawer', { banner: await bannerFacts(phone) })
+    await phone.locator('[data-aer-drawer="matrix"]').getByRole('button', { name: 'Close detail' }).tap()
+    await phone.locator('[data-aer-drawer="matrix"]').waitFor({ state: 'detached', timeout: 10_000 })
+    manifest.push({ route: 'aer-tour', action: 'phone-drawer-closed', ok: true })
+    await courseDp020(phone, '16-phone', shot)
     await ctx.close()
   })
   const lists = aerCalls.filter((c) => /_list$/.test(c.action || ''))
