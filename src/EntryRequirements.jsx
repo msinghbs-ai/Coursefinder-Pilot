@@ -85,7 +85,7 @@ export function CourseEntryRequirements({courseId,onError}){
         <td><StatusChip value={r.status} label={r.status}/>{r.status==='proposed'&&<small> · waiting in Layer 4</small>}</td></tr>)}</tbody></table></div>}
     {(d.reads||[]).length>0&&<small data-course-entry-reads>Last read: {d.reads[0].state}{d.reads[0].reason?` · ${d.reads[0].reason}`:''}{d.reads[0].cost_usd!=null?` · US$${Number(d.reads[0].cost_usd).toFixed(4)}`:''}{(d.reads[0].dropped||[]).length?` · ${d.reads[0].dropped.length} not kept (${[...new Set(d.reads[0].dropped.map(x=>x.reason))].join(', ')})`:''}</small>}
     <div className="sd-actions" data-course-entry-resolve>
-      <label>Country of prior education <select value={cc} onChange={e=>resolve(e.target.value)} aria-label="Country of prior education"><option value="">Choose…</option>{orderAerCountries(d.countries).map(c=><option key={c.code} value={c.code}>{c.name}</option>)}</select></label>
+      <label style={{display:'flex',flexWrap:'wrap',alignItems:'center',gap:6,minWidth:0,maxWidth:'100%'}}>Country of prior education <select value={cc} onChange={e=>resolve(e.target.value)} aria-label="Country of prior education" style={{minWidth:0,maxWidth:'100%'}}><option value="">Choose…</option>{orderAerCountries(d.countries).map(c=><option key={c.code} value={c.code}>{c.name}</option>)}</select></label>
     </div>
     {res&&<div role="status" data-entry-resolution={res.outcome}>
       <p className="sd-desc"><strong>{OUTCOME[res.outcome]||res.outcome}</strong> <small>({RULE[res.rule]||res.rule}{res.band?` · band ${res.band}`:''})</small></p>

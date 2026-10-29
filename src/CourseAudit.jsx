@@ -23,6 +23,11 @@ const FOUND={cricos_search:'CRICOS code search',cricos_code:'CRICOS code',title_
 const FILL={filled:['Filled','success'],skipped:['Skipped','neutral'],failed:['Failed','danger'],queued:['Waiting','info'],leased:['Running','info'],waiting:['Waiting','info']}
 const AER_STATUS={active:['Active','success'],proposed:['Waiting in Layer 4','info'],unverified:['Quarantined','danger'],inactive:['Withdrawn','neutral'],superseded:['Superseded','neutral']}
 const words=s=>String(s??'').replaceAll('_',' ')
+// a field fill's value in words: text as it is; a read summary (entry requirements) as its counts; another record as its plain parts (never "[object Object]")
+const plural=(n,w)=>`${n} ${w}${n===1?'':'s'}`
+export const fillValue=v=>v==null||v===''?'':typeof v!=='object'?String(v):Array.isArray(v)?plural(v.length,'item')
+  :Number.isFinite(Number(v.rows))&&v.rows!==null&&typeof v.rows!=='object'?[plural(Number(v.rows),'row')+' for review',Array.isArray(v.dropped)&&v.dropped.length?`${v.dropped.length} not kept`:'',Array.isArray(v.notes)&&v.notes.length?plural(v.notes.length,'note'):''].filter(Boolean).join(', ')
+  :Object.entries(v).filter(([,x])=>x!=null&&typeof x!=='object').slice(0,4).map(([k,x])=>`${words(k)} ${x}`).join(', ')
 const audit=async courseId=>{const{data,error}=await supabase.rpc('admin_course_audit',{p_course_id:courseId});if(error)throw error;return data||{}}
 
 // the blade keeps the action: Read with AI with a reason (the history itself is in the evidence overlay)
@@ -54,10 +59,10 @@ function timeline(d,aerRows,scholarships){
   for(const r of d.reads||[])add('read','Page read',r.at,r.identity?`Proved by ${words(r.identity)}`:'Not proved',r.identity?'success':'warning',`Read via ${r.via||'—'}`,r.url,r.evidence_id)
   for(const r of d.relinks||[])add('change','Page changed',r.at,'Page changed','info',`${r.old_url||'—'} → ${r.new_url||'—'}${r.reason?` · ${r.reason}`:''}`,r.new_url)
   for(const r of d.ai_match||[])add('ai','AI page match',r.decided_at||r.created_at,r.state==='chosen'?'Chose a page':r.state==='none'?'No page fitted':words(r.state),r.state==='chosen'?'success':r.error||r.refused?'danger':'neutral',`Try ${r.attempt||'—'} · ${fmtNumber(r.candidates||0)} pages offered${r.reason?` · ${r.reason}`:''}${r.refused?` · refused: ${r.refused}`:''}${r.error?` · error: ${r.error}`:''}`,r.chosen_url)
-  for(const r of d.field_fills||[]){const f=FILL[r.state]||[words(r.state),'neutral'];add('ai',`AI field fill: ${words(r.field)}`,r.updated_at,f[0],f[1],`${r.value?`Value: ${r.value} · `:''}${r.reason||''}${r.quote?` · “${r.quote}”`:''}`)}
+  for(const r of d.field_fills||[]){const f=FILL[r.state]||[words(r.state),'neutral'];add('ai',`AI field fill: ${words(r.field)}`,r.updated_at,f[0],f[1],`${fillValue(r.value)?`Value: ${fillValue(r.value)} · `:''}${r.reason||''}${r.quote?` · “${r.quote}”`:''}`)}
   for(const r of d.admissions||[])add('admission',`Admission: ${words(r.field_key)}`,r.decided_at,words(r.status),/admit|accept|approved/i.test(r.status)?'success':/refus|reject/i.test(r.status)?'danger':'neutral',words(r.reason_code))
   for(const r of d.fee_rows||[])add('fee','Fee reader',r.created_at,words(r.outcome),/match|admit|kept|used/i.test(r.outcome)?'success':'neutral',`${fmtMoney(r.amount_min,r.currency_code)}${r.amount_max&&r.amount_max!==r.amount_min?` – ${fmtMoney(r.amount_max,r.currency_code)}`:''} · ${r.audience||''}${r.fee_year?` · ${r.fee_year}`:''}${r.note?` · ${r.note}`:''}${r.quote?` · “${r.quote}”`:''}`)
-  for(const r of d.crosschecks||[])add('check',`Cross-check: ${words(r.field)}`,r.found_at,words(r.state),/agree|match|ok/i.test(r.state)?'success':'warning',`held ${r.held_value??'—'} · page ${r.page_value??'—'}${r.quote?` · “${r.quote}”`:''}`)
+  for(const r of d.crosschecks||[])add('check',`Cross-check: ${words(r.field)}`,r.found_at,words(r.state),/agree|match|ok/i.test(r.state)?'success':'warning',`held ${fillValue(r.held_value)||'—'} · page ${fillValue(r.page_value)||'—'}${r.quote?` · “${r.quote}”`:''}`)
   for(const r of d.scope||[])add('change','Scope changed',r.at,`${words(r.from_status)} → ${words(r.to_status)}`,'info',[words(r.rule),r.scope_tag].filter(Boolean).join(' · '))
   if(d.credential)add('read','Credential read',d.credential.read_at,words(d.credential.outcome),'neutral',[d.credential.study_level_code,words(d.credential.basis)].filter(Boolean).join(' · '))
   for(const r of d.locks||[])add('manual',`Set by hand: ${words(r.field)}`,r.at,words(r.mode),'violet','A person set this value; automation does not change it.')

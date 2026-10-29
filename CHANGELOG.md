@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.295 — 29 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.368** (Platform Admin mandate 29 Oct 2026 12:23 section C, defects found by the deployed live tour). `src/CourseAudit.jsx`: `fillValue` tells a structured field-fill or cross-check value in words (no "[object Object]"); `src/EntryRequirements.jsx`: the Course detail country selector wraps and stays inside its card at phone width. `tools/ui-review/aer-tour.mjs`: DP020 Course detail at desktop and phone width and the phone drawer close. Spec s167 (read-only deployed acceptance, targeted on deploy and in the acceptance tier); s161 and s163 extended. Consumer API unchanged.
+
 ## 0.1.294 — 29 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.367** (Platform Admin mandate 29 Oct 2026 12:23, B1; admin decision W24). Worker `coverage-sweep-worker-v0.52.0` (`supabase/functions/coverage-sweep/entry.ts`, `pdf.ts`, `index.ts`): structure-carried quotes (header line with one row; PDF first cell with one other cell), column-header bands only with the whole row, the label printed above a header-less table, and no quote across a labelled row boundary. Every gate unchanged; no migration. Spec s159 with stored-page fixtures (`tests/fixtures/entry-matrix/quote-corrections/`). Consumer API unchanged.
