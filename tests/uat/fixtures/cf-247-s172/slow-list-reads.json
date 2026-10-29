@@ -1,0 +1,12 @@
+{
+  "what": "Course list reads (job course-list-read, worker mode course_list_read), 29 Oct 2026 AEDT",
+  "from": "pipeline.mode_outcome_ledger and net._http_response, read-only",
+  "worker_budget_ms": 110000,
+  "pg_net_timeout_ms": 120000,
+  "calls": [
+    { "sent": "23:03:00", "ms": 115241, "lists": 5, "read": 5, "links": 1272, "pg_net": { "status": 200, "timed_out": false } },
+    { "sent": "23:23:00", "ms": 108678, "lists": 3, "read": 3, "links": 342, "pg_net": { "status": 200, "timed_out": false } },
+    { "sent": "23:33:00", "ms": 124840, "lists": 5, "read": 5, "links": 1025, "pg_net": { "status": null, "timed_out": true } },
+    { "sent": "23:53:00", "ms": 117383, "lists": 2, "read": 2, "links": 737, "pg_net": { "status": 200, "timed_out": false } }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "what": "Adapter capture (worker mode adapter_capture, started by onboarding through public.admin_adapter_builder('start')), 29 Oct 2026",
+  "from": "net._http_response, pipeline.mode_outcome_ledger, pipeline.uni_adapter_drafts, read-only",
+  "not_started": { "aedt": "2026-10-29 23:10:00", "status": 503, "body": { "code": "BOOT_ERROR", "message": "Function failed to start (please check logs)" },
+                   "draft": { "status": "capturing", "captures": 0, "credits": 0 }, "ledger_row": false },
+  "worked_but_read_as_nothing": [
+    { "aedt": "2026-10-29 23:40:00", "status": 200, "body_v0_53_0": { "ok": true, "mode": "adapter_capture", "captured": 3, "worker": "coverage-sweep-worker-v0.53.0" },
+      "ledger_v0_53_0": { "items": 0, "ok": 0, "failed": 0 }, "draft": { "status": "captured", "captures": 3, "capture_errors": 0, "credits": 3 } }
+  ],
+  "partly_failed_v0_53_1": { "status": 200, "body": { "ok": true, "mode": "adapter_capture", "items": 3, "failed": 1, "captured": 2, "worker": "coverage-sweep-worker-v0.53.1" } }
+}

@@ -49,7 +49,8 @@ test('Fix 3 and Features 2-4: websites adopted, every provider searched, central
 
 test('Fix 4: a cut-off proposal is asked again once with a larger limit, and every attempt is recorded', () => {
   const w = read('supabase/functions/coverage-sweep/index.ts')
-  expect(w).toContain('for (const maxTokens of [4000, 8000])')
+  // W32 (worker v0.54.0): the two limits are settings (4,000 then 8,000 by default; answer.ts); the ladder itself is unchanged
+  expect(w).toContain('for (const maxTokens of retryTokens > firstTokens ? [firstTokens, retryTokens] : [firstTokens])')
   expect(w).toContain('p_data: { error: err || "no answer", attempts, worker: WORKER }')
   expect(read('src/AdapterBuilderTab.jsx')).toContain('data-proposal-attempts')
 })

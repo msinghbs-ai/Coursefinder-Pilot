@@ -1,17 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.369'
-export const PACKAGE_VERSION='0.1.296'
+export const UI_VERSION='2.15.370'
+export const PACKAGE_VERSION='0.1.297'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'29 Oct 2026',
-  title:'Search-document writer lock, Read again on the newest copy, long course pages read in slices',
+  date:'30 Oct 2026',
+  title:'Enrichment reliability: source finder within its time limit, one read per page, AI answer limits as settings',
   changes:[
-    'Search documents: every writer takes one writer lock, so a large change (such as a scholarship re-apply) and the scheduled search refresh no longer deadlock; the scheduled refresh waits for its next run when another writer is busy.',
-    'Catalogue › Entry requirements › Read again reads only the newest stored copy of a page; the read on an older copy keeps its history and its still-pending Layer 4 item is closed as superseded.',
-    'Academic entry requirements on a course page (worker v0.53.0): a long page is read in slices that together cover the whole page (sizes are settings); a slice that is cut or unreadable holds the whole read instead of proposing part of it; every row keeps its quote on the page and a row read twice is kept once.',
+    'Course source finder: choosing the next universities is worked out once per set and finishes well inside the database time limit (it was timing out under load); the same universities are chosen in the same order.',
+    'Course page reads: a page is claimed by exactly one read call, so the two reading jobs no longer fetch (and pay for) the same page twice.',
+    'University onboarding: each onboarding step follows its own university\'s job.',
+    'Adapter builder: a sample capture and a proposal are counted in the worker ledger with their failures, so a working capture no longer reads as "0 of 0" in the health report.',
+    'AI reads (worker v0.54.0): every reader\'s answer length is a setting (Settings › Pipeline settings › AI answer limits; defaults are the values used before); an answer cut at its limit holds the whole read instead of failing as broken data, and the cost of every call is recorded, also when a read fails.',
     'Consumer API unchanged (Decision 266).'
   ],
   bugFixes:[]
