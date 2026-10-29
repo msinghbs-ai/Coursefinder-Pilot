@@ -1,4 +1,4 @@
-// Guards: CF-247 AER v1.1 completeness guard at admission (Platform Admin 26 Oct 2026 23:16): under the guard a complete read is admitted whole or not at all; excluding rows, or rows missing since the verdict, refuses the approval
+// Guards: CF-247 AER v1.1 completeness guard at admission (Platform Admin 26 Oct 2026 23:16): under the guard a complete read is admitted whole or not at all; excluding rows, or rows missing since the verdict, refuses the approval (exclusions superseded by A1 Approve except, Platform Admin 30 Oct 2026 06:53: every row of a complete read is admitted or explicitly excluded; guarded by s176)
 // Record: admin docs/platform/aer-v1.1-build-log.md. A live rolled-back probe (26 Oct 23:5x) admitted 13 of China's 22 rows with Gao Kao excluded.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'

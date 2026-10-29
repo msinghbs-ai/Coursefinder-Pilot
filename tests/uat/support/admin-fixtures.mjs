@@ -344,6 +344,14 @@ export const l4Desk = { summary: { waiting: 1803, oldest_days: 11, by_task: { In
   { id: 'q2', status: 'pending', task: 'Tuition', age_days: 3, entity: { title: 'Master of Data Science', code: '098765B', provider: 'Monash University' }, suggestion: { action: 'approve', text: 'Page shows a yearly fee' }, claim_active: true, claimed_by_me: false },
 ] }
 export const l4Batches = { can_apply: true, groups: [{ key: 'g1', task: 'Intakes', action: 'reject', text: 'No intake dates on the page', count: 120, oldest_days: 11, can_approve: false, item_ids: ['q1'], samples: [{ id: 'q1', title: 'Bachelor of Nursing' }] }] }
+// CF-247 A1 (30 Oct 2026): an AER provider-table item as public.layer4_aer_review_read returns it (Monash age-rule rows among the requirements)
+export const l4AerReview = { kind: 'entry_matrix_first_run', status: 'pending', evidence_id: 'ev-monash-1', decision: null,
+  lineage: { run_id: '7f0c2a1e-0000-4000-8000-000000000001', source_url: 'https://www.monash.edu/admissions/entry-requirements/international', content_hash: '3a9e1c27b54d0f11', rows_dropped: 2,
+    completeness: { status: 'complete', matched: 3, required: true }, proposed_row_ids: ['row-in', 'row-cn', 'row-age'] },
+  rows: [
+    { id: 'row-cn', status: 'proposed', country: 'CN', level: 'Bachelor', qualification: 'Gao Kao', min_grade: '75%', scale: 'percentage', quote: 'China | Gao Kao | 75%' },
+    { id: 'row-in', status: 'proposed', country: 'IN', level: 'Bachelor', qualification: 'CBSE Year 12', min_grade: '75%', scale: 'percentage', quote: 'India | CBSE Year 12 | 75%' },
+    { id: 'row-age', status: 'proposed', country: 'IN', level: 'Bachelor', qualification: 'Minimum age 17', scale: 'none', quote: 'Applicants must be 17 by the start of the course' }] }
 export const l4MassSummary = { role_rank: 6, mass_mutation_allowed: true, open_findings: 0, scholarship_scope_pending: 37200, generic_review_pending: 1803 }
 export const l4Departures = [{ id: 'dp1', provider_name: 'Example Institute', country_code: 'AU', status: 'pending', detected_at: '2026-09-20T00:00:00Z' }]
 export const l4History = [{ id: 'h1', target_kind: 'course_tuition', action: 'fee_wording_rule_run', reason: 'Fee wording rule #1: UNSW Sydney', created_at: '2026-09-30T23:48:26Z', before_count: 214, affected_count: 214 }]
