@@ -36,14 +36,14 @@ export function universitiesPage(all, a = {}, { rank = 6, pageSize = 100, tickMa
     ticks: ticks ? { capped: f.length > tickMax, rows: f.slice(0, tickMax).map(r => ({ provider_id: r.provider_id, name: r.name, adapter: r.adapter ? { state: r.adapter.state, fields: r.adapter.fields || [] } : null, qualify: r.qualify ? { passing: r.qualify.passing || [] } : null, onboarding: r.onboarding ? { id: r.onboarding.id, status: r.onboarding.status } : null })) } : null }
 }
 
-export async function mockAdmin(page, { rank = 6, healthMissing = false, courseDiffers = false, creditNotices = [], onboardingAuto = false, universities = null, universitiesPageSize = 100, universitiesTickMax = 2000 } = {}) {
+export async function mockAdmin(page, { rank = 6, healthMissing = false, courseDiffers = false, creditNotices = [], onboardingAuto = false, universities = null, universitiesPageSize = 100, universitiesTickMax = 2000, coverageStale = false } = {}) {
   const context = { ...F.context, role_rank: rank, role: rank >= 6 ? 'platform_admin' : 'viewer' }
   const session = { access_token: 'mock-token', refresh_token: 'mock-refresh', token_type: 'bearer', expires_in: 360000, expires_at: Math.floor(Date.now() / 1000) + 360000, user: { id: context.user_id, email: 'admin@example.test', aud: 'authenticated', role: 'authenticated', app_metadata: {}, user_metadata: {} } }
   const adminRead = {
     ranking_filters: F.rankingFilters, ranking_filter_options: F.rankingFilterOptions, ranking_observations: F.rankingObservations,
     ranking_link_candidates: F.rankingLinkCandidates, ranking_provider_search: { items: [] }, provider_ranking_history: F.providerRankingHistory,
     context, dashboard: F.dashboard, layer_status_summary: F.layerStatus, platform_health: F.platformHealth,
-    live_activity: F.liveActivity, course_coverage: F.courseCoverage, course_coverage_providers: [{ id: 'prov-monash', name: 'Monash University', country: 'AU', courses: 640 }], data_quality_overview: F.dataQualityOverview,
+    live_activity: F.liveActivity, course_coverage: coverageStale ? { ...F.courseCoverage, snapshot: { ...F.courseCoverage.snapshot, checked_at: '2026-09-29T11:52:00+00:00', stale: true } } : F.courseCoverage, course_coverage_providers: [{ id: 'prov-monash', name: 'Monash University', country: 'AU', courses: 640 }], data_quality_overview: F.dataQualityOverview,
     courses_page: F.coursesPage, course_detail: F.courseDetail, scholarships_page: F.scholarshipsPage, scholarship_detail: F.scholarshipDetail,
     // Decision 254 (job system A2): a finished admin task in the Jobs history, opened to its result
     pipeline_filters: { layers: ['L2'], statuses: ['completed', 'failed'], modes: [], countries: [], job_types: ['layer2_task'], failure_classes: [], completion_classes: [] },
