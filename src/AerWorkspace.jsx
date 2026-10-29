@@ -16,6 +16,7 @@ import{Button,StatusChip,FilterChip,Pager,Loading,EmptyInline,fmtDate,fmtDateTim
 import{DataTable,FilterSelect}from'./DataTable'
 import{ReasonAction}from'./ProviderOnboarding'
 import{hrefFor}from'./nav-map'
+import{orderAerCountries}from'./aer-countries'
 import{plainError}from'./lib/errors'
 import'./aer-workspace.css'
 
@@ -161,7 +162,7 @@ export function MatrixView({rank,onError,navigate,routeParams}){
       </div>
       <div className="m-filter-bar" data-aer-filters="matrix">
         <FilterSelect label="Provider" value={f.provider_id} onChange={(v,l)=>set('provider_id',v,l)} options={(o.providers||[]).map(p=>opt(p.id,p.name))}/>
-        <FilterSelect label="Country" value={f.country} onChange={(v,l)=>set('country',v,l)} options={(o.countries||[]).map(c=>opt(c.code,c.name,c.code))}/>
+        <FilterSelect label="Country" value={f.country} onChange={(v,l)=>set('country',v,l)} options={orderAerCountries(o.countries).map(c=>opt(c.code,c.name,c.code))}/>
         <FilterSelect label="Study level" value={f.level} onChange={(v,l)=>set('level',v,l)} options={[...(o.levels||[]).map(l=>opt(l.code,l.name,l.code)),...(o.level_labels||[]).map(l=>opt(l,l,'as published'))]}/>
         <FilterSelect label="Status" value={f.status} emptyLabel="Any status" onChange={(v,l)=>set('status',v,l)} options={(o.statuses||[]).map(s=>opt(s,ROW_PILL[s]?.[1]||s))}/>
         <FilterSelect label="Kind" value={f.matrix_kind} onChange={(v,l)=>set('matrix_kind',v,l)} options={(o.matrix_kinds||[]).map(k=>opt(k,KIND_LABEL[k]||k))}/>
@@ -397,7 +398,7 @@ function AddRequirement({kind,options:o,defaults={},onError,onClose,onAdded}){
       {needCourse&&<div className="aer-field"><span>Course</span><input className="fv-input" value={courseQ} onChange={e=>setCourseQ(e.target.value)} placeholder="Course title or code" aria-label="Find the course"/>
         {courses.length>0&&<div className="aer-suggest">{courses.map(c=><button type="button" key={c.id} className={v.course_id===c.id?'selected':''} onClick={()=>{set('course_id',c.id);if(kind==='course')set('provider_id',c.provider_id);setCourseQ(`${c.title}${c.code?' · '+c.code:''}`);setCourses([])}}>{c.title}<small> · {c.provider}{c.code?' · '+c.code:''}</small></button>)}</div>}</div>}
       {kind==='matrix'?<>
-        <label className="aer-field"><span>Country of prior education</span><select className="fv-input" value={v.country} onChange={e=>set('country',e.target.value)} required aria-label="Country"><option value="">Choose…</option>{(o.all_countries||[]).map(c=><option key={c.code} value={c.code}>{c.name}</option>)}</select></label>
+        <label className="aer-field"><span>Country of prior education</span><select className="fv-input" value={v.country} onChange={e=>set('country',e.target.value)} required aria-label="Country"><option value="">Choose…</option>{orderAerCountries(o.all_countries).map(c=><option key={c.code} value={c.code}>{c.name}</option>)}</select></label>
         <label className="aer-field"><span>Kind</span><select className="fv-input" value={v.matrix_kind} onChange={e=>set('matrix_kind',e.target.value)} aria-label="Kind">{(o.matrix_kinds||[]).map(k=><option key={k} value={k}>{KIND_LABEL[k]||k}</option>)}</select></label>
         {field('level_label','Level (as published)',{placeholder:'e.g. Bachelor degrees'})}
         <label className="aer-field"><span>Mapped level</span><select className="fv-input" value={v.level_code||''} onChange={e=>set('level_code',e.target.value)} aria-label="Mapped level"><option value="">Not mapped</option>{(o.levels||[]).map(l=><option key={l.code} value={l.code}>{l.name} ({l.code})</option>)}</select></label>
@@ -408,7 +409,7 @@ function AddRequirement({kind,options:o,defaults={},onError,onClose,onAdded}){
       </>:<>
         <label className="aer-field"><span>Kind</span><select className="fv-input" value={v.requirement_kind} onChange={e=>set('requirement_kind',e.target.value)} aria-label="Requirement kind">{(o.requirement_kinds||[]).map(k=><option key={k} value={k}>{KIND_LABEL[k]||k}</option>)}</select></label>
         <label className="aer-field"><span>For</span><select className="fv-input" value={v.audience} onChange={e=>set('audience',e.target.value)} aria-label="Audience">{(o.audiences||[]).map(k=><option key={k} value={k}>{k}</option>)}</select></label>
-        <label className="aer-field"><span>Country (optional)</span><select className="fv-input" value={v.country||''} onChange={e=>set('country',e.target.value)} aria-label="Country"><option value="">Any country</option>{(o.all_countries||[]).map(c=><option key={c.code} value={c.code}>{c.name}</option>)}</select></label>
+        <label className="aer-field"><span>Country (optional)</span><select className="fv-input" value={v.country||''} onChange={e=>set('country',e.target.value)} aria-label="Country"><option value="">Any country</option>{orderAerCountries(o.all_countries).map(c=><option key={c.code} value={c.code}>{c.name}</option>)}</select></label>
         {field('description','Requirement',{required:true,placeholder:'As published'})}
         {field('min_grade','Minimum',{placeholder:'As printed'})}
         {field('min_entry_score','Course score',{inputMode:'decimal'})}{field('min_entry_score_basis','Printed basis of the score',{placeholder:'e.g. 2027 Guaranteed ATAR'})}
@@ -532,7 +533,7 @@ export function ResolveView({onError,routeParams}){
         <div className="aer-field"><span>Course</span>{course?<span className="aer-picked"><strong>{res?.course?.title||course.title}</strong>{(res?.course?.code||course.code)&&<small> · {res?.course?.code||course.code}</small>}{(res?.course?.provider||course.provider)&&<small> · {res?.course?.provider||course.provider}</small>}<button type="button" aria-label="Choose another course" onClick={()=>{setCourse(null);setRes(null);setQ('')}}><X size={13}/></button></span>
           :<><input className="fv-input" value={q} onChange={e=>setQ(e.target.value)} placeholder="Course title or code, e.g. 0100714" aria-label="Find a course" data-aer-resolve-course/>
             {list.length>0&&<div className="aer-suggest">{list.map(c=><button type="button" key={c.id} onClick={()=>{setCourse(c);setList([])}}>{c.title}<small> · {c.provider}{c.code?' · '+c.code:''}</small></button>)}</div>}</>}</div>
-        <FilterSelect label="Country of prior education" value={cc} emptyLabel="Choose…" onChange={v=>setCc(v)} options={(o.all_countries||[]).map(c=>opt(c.code,c.name,c.code))}/>
+        <FilterSelect label="Country of prior education" value={cc} emptyLabel="Choose…" onChange={v=>setCc(v)} options={orderAerCountries(o.all_countries).map(c=>opt(c.code,c.name,c.code))}/>
         <button type="button" className="m-secondary compact" onClick={run} disabled={!course||!cc||busy}><RefreshCw size={14}/>Inspect again</button>
       </div>
       {err&&<p className="fr-error" role="alert">{err}</p>}
