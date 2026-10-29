@@ -2,7 +2,7 @@ import { expect } from '@playwright/test'
 import { clickPrimaryNav, DETERMINISTIC_UI_TIMEOUT } from './runtime-evidence.mjs'
 
 const ui = { timeout: DETERMINISTIC_UI_TIMEOUT }
-// Workspaces drawn from a data read (Universities: admin_layer23 'universities', about 0.6 MB; Fetchers: the provider registry) appear
+// Workspaces drawn from a data read (Universities: admin_layer23 'universities_page', one page since W33; Fetchers: the provider registry) appear
 // only when the read returns, so they get the data-load timeout rather than the 6-second UI timeout.
 const data = { timeout: 30_000 }
 // When a read-driven workspace does not appear, say where the page was (address, selected tab, title, any alert) so a deployed run's
