@@ -20,7 +20,7 @@ export type PdfItem = { x: number; y: number; w: number; h: number; s: string };
 export type PdfRule = { o: "h" | "v"; y?: number; x?: number; a: number; b: number; box?: number };
 export type PdfPage = { p: number; width: number; height: number; items: PdfItem[]; rules: PdfRule[] };
 export type PdfTable = { page: number; header: string[]; rows: number; columns: number };
-export type PdfResult = { status: "ok" | "unparsed" | "no_table"; reason: string; text: string; tables: PdfTable[]; method: string };
+export type PdfResult = { status: "ok" | "unparsed" | "no_table"; reason: string; text: string; tables: PdfTable[]; method: string; forms: string[] };
 
 const median = (a: number[]) => { const s = [...a].sort((x, y) => x - y); return s.length ? s[s.length >> 1] : 0 };
 const clean = (s: string) => String(s || "").replace(/\s+/g, " ").trim();
@@ -170,8 +170,8 @@ function gridRows(pg: PdfPage, g: Grid, items: PdfItem[], H: number): Row[] {
 }
 
 export function pdfTables(pages: PdfPage[]): PdfResult {
-  const res = (status: PdfResult["status"], reason: string, text = "", tables: PdfTable[] = []): PdfResult => ({ status, reason, text, tables, method: PDF_METHOD });
-  const out: string[] = []; const tables: PdfTable[] = [];
+  const out: string[] = []; const tables: PdfTable[] = [], forms: string[] = [];
+  const res = (status: PdfResult["status"], reason: string, text = "", tables: PdfTable[] = []): PdfResult => ({ status, reason, text, tables, method: PDF_METHOD, forms: status === "ok" ? forms : [] });
   let header: string[] = [], section = "";
   try {
     for (const pg of pages) {
@@ -230,6 +230,9 @@ export function pdfTables(pages: PdfPage[]): PdfResult {
           // as quote_not_on_page when the model quoted the row label with one level's cell); the cells are the same proven cells
           if (header.length >= WIDE_COLUMNS && cells[0] && named.length > 2) { for (const c of named.slice(1)) lines.push("| " + (section ? `${section} | ` : "") + named[0] + " | " + c + " |"); n++; continue }
           lines.push("| " + (section ? `${section} | ` : "") + named.join(" | ") + " |"); n++;
+          // v0.52.0 (AER reader corrections, Federation): the row's first cell with each other named cell of the same row is a quotable form
+          // (kept beside the text, not added to it), so "COUNTRY: Albania | Undergraduate Entry: Case-by-case basis" is the printed row
+          if (cells[0] && named.length > 2) for (const c of named.slice(2)) forms.push("| " + (section ? `${section} | ` : "") + named[0] + " | " + c + " |");
         }
         parts.push({ y: g.top + 0.25 - c0 * 1e-3, text: lines });
         tables.push({ page: pg.p, header, rows: n, columns: header.length });
