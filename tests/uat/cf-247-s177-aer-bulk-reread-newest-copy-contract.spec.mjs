@@ -77,8 +77,10 @@ test('skips: unknown, never read and already waiting are reported, not raised; h
   expect(bulk).toContain("if v_run.state in ('queued', 'leased') then")
   expect(bulk).toContain("if v_run.state in ('done', 'failed') then")
   expect(bulk).not.toMatch(/held_unparsed%|entry_matrix_enabled_v1|ai_use_allowed_v1|text\/markdown/)  // no new guard; no markdown re-fetch
-  // unchanged checks: role, reason, non-empty array
-  expect(bulk).toContain("if current_user <> 'postgres' and (auth.uid() is null or security.current_role_rank() < 6) then raise exception 'Platform Admin required' using errcode = '42501'; end if;")
+  // role check (A3/A5, 30 Oct 2026): the old current_user test never fired inside a security definer function (any signed-in user could call it);
+  // an API request (JWT claims present) must now be a Platform Admin, a direct owner session (a migration) has no claims. Reason and non-empty array unchanged.
+  expect(bulk).not.toContain("if current_user <> 'postgres'")
+  expect(bulk).toContain("if (auth.uid() is not null or coalesce(auth.role(), '') <> '') and (auth.uid() is null or security.current_role_rank() < 6) then raise exception 'Platform Admin required' using errcode = '42501'; end if;")
   expect(bulk).toContain("if length(trim(coalesce(p_reason, ''))) < 5 then raise exception 'reason required'; end if;")
   expect(bulk).toContain("if coalesce(array_length(p_source_ids, 1), 0) = 0 then raise exception 'no sources given'; end if;")
 })
@@ -128,7 +130,7 @@ test('governed snapshot, Option A: the recorded md5s stay; the drift check is re
   expect(NEW[2]).toContain("'; functions changed since by later change control') end);")
   expect(NEW.join('\n')).not.toMatch(/\b(insert|update|delete)\b/i)  // still read only
   // post-check: new md5s, the W28 ordering, the record kept, grants, the check reported completed
-  expect(code).toContain("if md5(v_bulk) <> '71eadb0c9ea9ca4a93c1dda93743894b' then")
+  expect(code).toContain("if md5(v_bulk) <> 'e2566cb6c2153d2414adb77dcfefb8c8' then")
   expect(code).toContain("if md5(v_snap) <> 'af76dcb7304db1cd6efbaf41f3f89b3a' then")
   expect(code).toContain(`if position('${NEWEST_ORDER}' in v_bulk) = 0 then`)
   expect(code).toContain(`if position('"public.admin_entry_matrix_reread(uuid[],text)":"ca394b60216ef06dfc2ce9db265e8efe"' in v_snap) = 0 then`)

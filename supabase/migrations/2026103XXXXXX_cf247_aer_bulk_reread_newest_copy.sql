@@ -16,7 +16,10 @@
 --     * the newest run only, when done or failed, is read again with today's steps: its proposed rows, then its pending item superseded; the
 --       earlier result appended to previous_results with the same keys (D3: state, error, attempts_used, earlier_index); re-queued. Failed runs,
 --       held_unparsed included, stay re-readable here on purpose (the bulk function is the route after a reader change; aer_reread_v1 refuses them).
---   Unchanged: the Platform Admin check (or the database owner), the reason of 5 characters or more, the non-empty array check; no scope or AI
+--   Role check corrected (A3, tightening only): the earlier test `current_user <> 'postgres'` never fired inside this security definer function
+--   (current_user is always the owner there), so any signed-in user could call it over the API. Now a request carrying JWT claims must be a
+--   Platform Admin (rank 6); a direct owner session (a migration) has no claims and is allowed as before.
+--   Unchanged: the reason of 5 characters or more, the non-empty array check; no scope or AI
 --   limit check is added; no markdown re-fetch (that stays a single-source action). One event (entry_matrix, reread) as today; its existing keys
 --   keep their meaning ('runs' stays the count, as in every earlier reread event and in aer_reread_v1's), and it adds 'run_ids' (the runs
 --   re-queued), 'older_rows_superseded', 'older_items_superseded' and 'skipped' ([{source, why}]). The return value is additive: ok, runs,
@@ -50,7 +53,8 @@ declare v_src pipeline.entry_matrix_sources%rowtype; v_run pipeline.entry_matrix
         v_reason text := trim(coalesce(p_reason, '')); v_runs int := 0; v_rows int := 0; v_items int := 0; v_n int;
         v_older_rows int := 0; v_older_items int := 0; v_ids jsonb := '[]'; v_skipped jsonb := '[]';
 begin
-  if current_user <> 'postgres' and (auth.uid() is null or security.current_role_rank() < 6) then raise exception 'Platform Admin required' using errcode = '42501'; end if;
+  -- a request through the API (JWT claims present) must be a Platform Admin; a direct database session (the owner, a migration) has no claims. (current_user is always the owner inside a security definer function, so it cannot tell them apart)
+  if (auth.uid() is not null or coalesce(auth.role(), '') <> '') and (auth.uid() is null or security.current_role_rank() < 6) then raise exception 'Platform Admin required' using errcode = '42501'; end if;
   if length(trim(coalesce(p_reason, ''))) < 5 then raise exception 'reason required'; end if;
   if coalesce(array_length(p_source_ids, 1), 0) = 0 then raise exception 'no sources given'; end if;
   -- A5 (30 Oct 2026): one source at a time, in ascending id order, so locks are always taken in the same order
@@ -145,7 +149,7 @@ do $$
 declare v_bulk text := pg_get_functiondef('public.admin_entry_matrix_reread(uuid[],text)'::regprocedure);
         v_snap text := pg_get_functiondef('security.governed_aer_close_snapshot_v1()'::regprocedure); v_chk jsonb;
 begin
-  if md5(v_bulk) <> '71eadb0c9ea9ca4a93c1dda93743894b' then raise exception 'A5 post-check: admin_entry_matrix_reread md5 is % (expected 71eadb0c9ea9ca4a93c1dda93743894b)', md5(v_bulk); end if;
+  if md5(v_bulk) <> 'e2566cb6c2153d2414adb77dcfefb8c8' then raise exception 'A5 post-check: admin_entry_matrix_reread md5 is % (expected e2566cb6c2153d2414adb77dcfefb8c8)', md5(v_bulk); end if;
   if md5(v_snap) <> 'af76dcb7304db1cd6efbaf41f3f89b3a' then raise exception 'A5 post-check: governed_aer_close_snapshot_v1 md5 is % (expected af76dcb7304db1cd6efbaf41f3f89b3a)', md5(v_snap); end if;
   if position('order by (content_hash is not distinct from v_src.content_hash) desc, created_at desc, id desc limit 1' in v_bulk) = 0 then
     raise exception 'A5 post-check: the bulk function does not select the newest stored copy with the W28 ordering'; end if;
