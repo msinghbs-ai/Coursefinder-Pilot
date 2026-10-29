@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.298 — 30 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.371** (Platform Admin mandate 30 Oct 2026 00:01, Workstreams 3 and 4; decisions W31 and W33). Migrations `20261030030000_cf247_coverage_bind_code_proof` (md5-guarded edit of `security.coverage_bind_v2`: code-proved pages kept, release step limited to binder-owned rows) and `20261030040000_cf247_universities_paging` (`admin_layer23('universities_page')`, settings `layer23.universities_page_size` and `layer23.universities_tick_max`). Worker `coverage-sweep-worker-v0.54.1` (`extract.ts`: labelled NZQA number rule NZ only). `src/AdaptersWorkspace.jsx` reads pages. Specs s174, s175. Consumer API unchanged.
+
 ## 0.1.297 — 30 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.370** (Platform Admin mandate 30 Oct 2026 00:01, Workstreams 2 and 5; decisions W30 and W32). Migrations `20261030010000_cf247_enrich_reliability` (md5-guarded edits of `public.svc_source_find_next`, `public.svc_coverage_read_next`, `security.provider_onboarding_job_v1`) and `20261030020000_cf247_reader_answer_limits` (12 `reading.answer_tokens.*` settings). Worker `coverage-sweep-worker-v0.54.0` (`answer.ts`, `fees.ts`, `index.ts`): answer limits from settings, cut answers held, cost recorded on failed reads, capture and proposal ledger counts. Specs s172 and s173. Consumer API unchanged.

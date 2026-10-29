@@ -1,19 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.370'
-export const PACKAGE_VERSION='0.1.297'
+export const UI_VERSION='2.15.371'
+export const PACKAGE_VERSION='0.1.298'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'30 Oct 2026',
-  title:'Enrichment reliability: source finder within its time limit, one read per page, AI answer limits as settings',
+  title:'Site re-maps keep proven course pages; Universities list reads one page at a time',
   changes:[
-    'Course source finder: choosing the next universities is worked out once per set and finishes well inside the database time limit (it was timing out under load); the same universities are chosen in the same order.',
-    'Course page reads: a page is claimed by exactly one read call, so the two reading jobs no longer fetch (and pay for) the same page twice.',
-    'University onboarding: each onboarding step follows its own university\'s job.',
-    'Adapter builder: a sample capture and a proposal are counted in the worker ledger with their failures, so a working capture no longer reads as "0 of 0" in the health report.',
-    'AI reads (worker v0.54.0): every reader\'s answer length is a setting (Settings › Pipeline settings › AI answer limits; defaults are the values used before); an answer cut at its limit holds the whole read instead of failing as broken data, and the cost of every call is recorded, also when a read fails.',
+    'Course pages: a routine re-map of a university\'s site no longer re-scores, demotes or replaces a course page the reader has proved with the course\'s code (CRICOS, NZQA, adapter) or a manual proof; only pages the site-map binder bound itself are released when they drop out of the map.',
+    'Page identity (worker v0.54.1): a labelled programme number proves a page only for New Zealand courses (NZQA); other countries fall to the title rules.',
+    'Layer 2/3 › Universities reads one page at a time with the filters, search and order applied on the server; Show more reads the next page; Tick every row shown still ticks every matching row (page size and tick limit are settings).',
     'Consumer API unchanged (Decision 266).'
   ],
   bugFixes:[]
