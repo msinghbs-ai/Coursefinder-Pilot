@@ -73,7 +73,7 @@ test('adapter capture failure: a boot failure is named, a working capture is no 
   const old = f.worked_but_read_as_nothing[0]
   expect(ledger(old.status, old.body_v0_53_0)).toEqual(old.ledger_v0_53_0)
   // v0.53.1 response shapes, taken from the worker source
-  expect(worker).toContain('const WORKER = "coverage-sweep-worker-v0.53.1";')
+  expect(worker).toMatch(/(const WORKER = "coverage-sweep-worker-v0\.53\.1"; |\/\/ was v0\.53\.1 )\/\/ v0\.53\.1 \(30 Oct 2026, CF-247 decision W30/) // v0.54.0 (W30 with W32) keeps the v0.53.1 note
   expect(worker).toContain('const capFailed = caps.filter((x) => x.error).length;')
   expect(worker).toContain('return j({ ok: true, mode, items: caps.length, failed: capFailed, captured: caps.length - capFailed, worker: WORKER });')
   expect(worker).toContain('return j({ ok: true, mode, items: 1, cost, dropped: dropped.length, worker: WORKER });')

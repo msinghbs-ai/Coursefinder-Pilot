@@ -43,7 +43,9 @@ const fees_schema = {
   },
 };
 
-export function feeAiRequest(model: string, it: FeeItem, text: string) {
+// v0.54.0 (29 Oct 2026, CF-247 decision W32): the answer limit is a setting (reading.answer_tokens.fee_page), passed by the worker; without it
+// no limit is sent (as before, when the model's own limit applied)
+export function feeAiRequest(model: string, it: FeeItem, text: string, maxTokens?: number) {
   const p = it.profile || {};
   const country = `Country ${it.country}: currency ${p.currency_code || "?"}; fees are usually published ${String(p.usual_unit || "per_year").replace("_", " ")}`
     + (p.full_time_units_a_year ? `; a full-time year is ${p.full_time_units_a_year} ${p.unit_name || "units"}` : "") + (p.notes ? `. ${p.notes}` : "");
@@ -59,7 +61,7 @@ export function feeAiRequest(model: string, it: FeeItem, text: string) {
     `Page text:\n${text}`,
   ].filter(Boolean).join("\n\n");
   return {
-    model, temperature: 0, provider: { require_parameters: true },
+    model, temperature: 0, ...(maxTokens && maxTokens > 0 ? { max_tokens: Math.floor(maxTokens) } : {}), provider: { require_parameters: true },
     messages: [{ role: "system", content: FEE_AI_PROMPT }, { role: "user", content: user }],
     response_format: { type: "json_schema", json_schema: { name: "fee_rows", strict: true, schema: fees_schema } },
   };

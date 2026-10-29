@@ -138,7 +138,7 @@ test('quote gate per slice: a quote not printed on the slice it was read from is
 
 test('worker and settings: the course read uses the plan, the merge and the five slice settings, and records the cost of a held read', () => {
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.53\.0"; \/\/ v0\.53\.0 \(29 Oct 2026, CF-247 AER decision W29/)
+  expect(w).toMatch(/(const WORKER = "coverage-sweep-worker-v0\.53\.0"; |\/\/ was v0\.53\.0 )\/\/ v0\.53\.0 \(29 Oct 2026, CF-247 AER decision W29/)  // W32 (v0.54.0) keeps the W29 line as "was v0.53.0"
   const read = w.slice(w.indexOf('const entryRead = async'), w.indexOf('const fail = (ids: number[], e: unknown)'))
   for (const k of ['enrich.course_entry_slice_chars', 'enrich.course_entry_max_slices', 'enrich.course_entry_slice_overlap_chars', 'enrich.course_entry_max_tokens', 'enrich.course_entry_slice_concurrency']) expect(read).toContain(k)
   expect(read).toContain('courseEntryPlan(text,')
