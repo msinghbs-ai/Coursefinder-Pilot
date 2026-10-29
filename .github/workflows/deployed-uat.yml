@@ -292,6 +292,11 @@ jobs:
           if printf '%s\n' "$changed" | grep -Eq '(^src/(CourseAudit\.jsx|Overlay\.jsx|overlay\.css|EntryRequirements\.jsx|aer-countries\.js|CreditBanner\.jsx)$|^tests/uat/cf-247-s167-aer-course-phone-deployed\.spec\.mjs$)'; then
             targeted=(tests/uat/cf-247-s167-aer-course-phone-deployed.spec.mjs)
           fi
+          # D6 (Platform Admin 30 Oct 2026 08:45, admin decision §11.3): a change to the admin_adapter_measures role check runs its read-only
+          # direct API acceptance (anonymous refused, Platform Admin allowed)
+          if printf '%s\n' "$changed" | grep -Eq '(^supabase/migrations/.*_cf247_d6_adapter_measures_role_check\.sql$|^tests/uat/cf-247-s183-adapter-measures-role-check-deployed\.spec\.mjs$)'; then
+            targeted=(tests/uat/cf-247-s183-adapter-measures-role-check-deployed.spec.mjs)
+          fi
           integration=(
             tests/uat/layer2-provider-deployed.spec.mjs
             tests/uat/layer1-operations-deployed.spec.mjs
@@ -357,6 +362,7 @@ jobs:
             tests/uat/cf-061-qilt-prisms-comparison-contract.spec.mjs
             tests/uat/cf-061-qilt-prisms-comparison-deployed.spec.mjs
             tests/uat/cf-073-administration-acquisition-route-deployed.spec.mjs
+            tests/uat/cf-247-s183-adapter-measures-role-check-deployed.spec.mjs
             tests/uat/cf-247-s167-aer-course-phone-deployed.spec.mjs
             tests/uat/cf-247-s154-aer-workspace-deployed.spec.mjs
           )
