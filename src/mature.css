@@ -600,3 +600,6 @@ header.cf-layer-header[data-layer-header] button{background:var(--cf-white);colo
 .tm-blocked{display:flex;align-items:center;gap:4px;margin-top:4px;padding:3px 6px;border-radius:var(--cf-radius-md);background:var(--cf-amber-50);color:var(--cf-amber-800);font-size:var(--cf-fs-sm)}
 .m-fee-basis{color:var(--cf-slate-450);font-size:var(--cf-fs-3xs)}
 .m-unnamed{color:var(--cf-slate-500);font-style:italic}
+
+/* CF-247 A5 (29 Oct 2026): loading rows and the empty row of the shared table are not record rows: no tap cursor, no hover */
+.m-table tbody tr.m-skeleton-row,.m-table tbody tr.m-empty-row{cursor:default}.m-table tbody tr.m-skeleton-row:hover td,.m-table tbody tr.m-empty-row:hover td{background:var(--cf-white)}

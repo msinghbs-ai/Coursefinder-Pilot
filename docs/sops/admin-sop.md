@@ -1,6 +1,6 @@
 # StudySearch – Platform Admin SOP
 
-**Version:** 1.56 (reviewed for platform release v2.15.365)  
+**Version:** 1.56 (reviewed for platform release v2.15.366)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -225,6 +225,7 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 | 2.00 | 26 Oct 2026 | v2.15.359 | Fees: every international fee write passes the country tuition identity check at the table; a failing fee is kept for review. |
 | 2.01 | 27 Oct 2026 | v2.15.360 | Governed actions (Decision 268): routine operations are approved on Layer 2/3 › Operations › Governed actions instead of run as SQL; SQL is break-glass only. First action: close the AER PR A recovery. |
 | 2.02 | 28 Oct 2026 | v2.15.361 | Academic entry requirements (Track C Step B): the Provider drawer and the Course detail blade show the published entry rows and what applies to a student from a chosen country; Platform Admin reads one course from its stored page and admits the rows in Layer 4 (Course entry first read). |
+| 2.07 | 29 Oct 2026 | v2.15.366 | Course detail: the evidence button opens the course evidence timeline (the blade no longer embeds it); the course's scholarships show again; countries are ordered India, Nepal, Singapore, then A to Z; New Zealand courses with an approved strong identity proof can be read at course level. |
 | 2.06 | 29 Oct 2026 | v2.15.365 | Reviewed: the Sources view shows read-state pills whole; screenshots of the Entry requirements workspace can be taken read-only with the UI review screenshots workflow (screens: aer-tour). |
 | 2.05 | 29 Oct 2026 | v2.15.364 | Catalogue › Entry requirements: course-level reading in bounded batches (preview the count and cost, then ask with a reason; every course read goes to Layer 4); a rendered page with no requirements table waits in Layer 4 as a note; Read again fetches a markdown-stored page again as HTML. |
 | 2.04 | 29 Oct 2026 | v2.15.363 | Catalogue › Entry requirements: a workspace to filter, inspect, correct, add, withdraw, re-read and resolve academic entry requirements, with a reason and history for every change; Layer 4 stays the only approval of AI rows. |

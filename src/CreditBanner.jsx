@@ -9,21 +9,26 @@ import{supabase}from'./lib/supabase'
 
 let dismissedThisSession=false
 const reducedMotion=()=>{try{return window.matchMedia('(prefers-reduced-motion: reduce)').matches}catch{return false}}
+// CF-247 A5 (29 Oct 2026): at phone width the notices wrap instead of scrolling, so the first letters never slide under the icon or out of
+// view ("penRouter…" at 390 px). The width matches the shell's phone layout (mature.css max-width:680px) and admin-pages.css.
+const PHONE='(max-width: 680px)'
+const phoneWidth=()=>{try{return window.matchMedia(PHONE).matches}catch{return false}}
 
 export default function CreditBanner({rank=0,canOpenServices=false}){
-  const[notes,setNotes]=useState([]),[hidden,setHidden]=useState(dismissedThisSession),[scroll,setScroll]=useState(false)
+  const[notes,setNotes]=useState([]),[hidden,setHidden]=useState(dismissedThisSession),[scroll,setScroll]=useState(false),[phone,setPhone]=useState(phoneWidth)
   const track=useRef(null),items=useRef(null)
   useEffect(()=>{if(rank<3){setNotes([]);return}let live=true
     const read=()=>supabase.rpc('admin_credit_notices').then(({data,error})=>{if(live&&!error)setNotes(Array.isArray(data)?data.filter(n=>n&&n.text):[])}).catch(()=>{})
     read();const t=setInterval(read,300000);return()=>{live=false;clearInterval(t)}},[rank])
   const key=notes.map(n=>`${n.level}|${n.tool}|${n.text}`).join('\n')
   // scroll only when the notices do not fit on one line, and never for reduced motion
-  useLayoutEffect(()=>{setScroll(false)},[key])
-  useLayoutEffect(()=>{if(scroll||!track.current||!items.current||reducedMotion())return;if(items.current.scrollWidth>track.current.clientWidth+2)setScroll(true)},[key,scroll])
+  useEffect(()=>{let m;try{m=window.matchMedia(PHONE)}catch{return}const on=()=>setPhone(m.matches);m.addEventListener?.('change',on);return()=>m.removeEventListener?.('change',on)},[])
+  useLayoutEffect(()=>{setScroll(false)},[key,phone])
+  useLayoutEffect(()=>{if(scroll||phone||!track.current||!items.current||reducedMotion())return;if(items.current.scrollWidth>track.current.clientWidth+2)setScroll(true)},[key,scroll,phone])
   if(hidden||!notes.length)return null
   const level=notes.some(n=>n.level==='critical')?'critical':'warning'
   const list=copy=>notes.map((n,i)=><span key={`${copy}-${i}`} className={`cf-credit-notice is-${n.level==='critical'?'critical':'warning'}`} data-credit-notice={copy?undefined:(n.level||'warning')}><strong>{n.tool||'Limit'}:</strong> {n.text}</span>)
-  return <div className={`cf-credit-banner tone-${level==='critical'?'danger':'warning'}${scroll?' is-scrolling':''}`} role="status" data-credit-banner={level}>
+  return <div className={`cf-credit-banner tone-${level==='critical'?'danger':'warning'}${scroll?' is-scrolling':''}${phone?' is-wrapped':''}`} role="status" data-credit-banner={level}>
     <AlertTriangle size={14} aria-hidden="true"/>
     <div className="cf-credit-track" ref={track}><div className="cf-credit-items" ref={items} style={scroll?{'--cf-credit-seconds':`${Math.max(20,Math.round(key.length/6))}s`}:undefined}>{list('')}{scroll&&<span className="cf-credit-copy" aria-hidden="true">{list('copy')}</span>}</div></div>
     {canOpenServices&&<a className="cf-credit-link" href="#models-services?tab=limits">Models &amp; services</a>}

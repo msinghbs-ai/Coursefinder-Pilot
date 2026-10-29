@@ -156,7 +156,7 @@ export function CourseEditor({courseId,onChanged,onError,inline=false}){
         {c.lifecycle_status==='active'?<Button compact variant="danger" onClick={()=>act('archive',{},'Archive this course? It stops being searched for and processed. You can restore it later.')} disabled={busy}><Archive size={13}/>Archive course</Button>
           :<Button compact onClick={()=>act('restore')} disabled={busy}><RotateCcw size={13}/>Restore course</Button>}</div>}
       <HistoryList rows={data.history}/>
-      {/* v2.15.322: what happened to this course, and Read with AI */}
+      {/* v2.15.322: Read with AI. CF-247 A1 (29 Oct 2026): what happened to this course moved to the evidence overlay (drawer header) */}
       <CourseAudit courseId={courseId} onChanged={onChanged} onError={onError}/>
       {/* v2.15.361 Track C Step B (B5): the course's academic entry requirements and their resolution for a country */}
       <CourseEntryRequirements courseId={courseId} onError={onError}/>
