@@ -15,11 +15,14 @@ test.describe('CF-076 compact ranking import UX @deployed',()=>{
   // ranking system and edition year, filled from the file's content.
   await page.goto(new URL('/#administration?section=sources-imports',process.env.UAT_BASE_URL).toString())
   await expect(page).toHaveURL(/#statistics-rankings\?tab=datasets/,{timeout:DETERMINISTIC_UI_TIMEOUT})
-  await expect(page.getByRole('navigation',{name:'Breadcrumb'})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
-  const crumb=page.getByRole('navigation',{name:'Breadcrumb'})
-  await expect(crumb).toContainText('Home')
-  await expect(crumb).toContainText('Rankings & statistics')
-  await expect(crumb).toContainText('Datasets')
+  // CF-076 (2 Sep 2026, mature.css): breadcrumbs show from 681 px up and are hidden at phone width, where the page title carries it.
+  const crumb=page.locator('nav.m-breadcrumbs')
+  if((page.viewportSize()?.width||1440)>680){
+   await expect(crumb).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+   await expect(crumb).toContainText('Home')
+   await expect(crumb).toContainText('Rankings & statistics')
+   await expect(crumb).toContainText('Datasets')
+  }else await expect(crumb).toBeHidden()
   await expect(page.getByRole('heading',{name:'Register ranking publisher file'})).toBeVisible({timeout:20_000})
   await expect(page.getByRole('button',{name:'Advanced metadata'})).toBeVisible()
   await expect(page.locator('.m-ranking-advanced')).toHaveCount(0)
