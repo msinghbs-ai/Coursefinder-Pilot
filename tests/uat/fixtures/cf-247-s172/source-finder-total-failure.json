@@ -1,0 +1,12 @@
+{
+  "what": "Course source finder (job source-find, worker mode source_find), hour 18:16-19:11 AEDT 29 Oct 2026: every call failed in the database before any site was looked at",
+  "from": "pipeline.mode_outcome_ledger and net._http_response, read-only, 29 Oct 2026",
+  "statement_timeout_ms": 8000,
+  "calls": [
+    { "aedt": "2026-10-29 18:16:15", "status": 500, "ms": 11665, "body": { "ok": false, "error": "svc_source_find_next: canceling statement due to statement timeout" } },
+    { "aedt": "2026-10-29 18:36:22", "status": 500, "ms": 12950, "body": { "ok": false, "error": "svc_source_find_next: canceling statement due to statement timeout" } },
+    { "aedt": "2026-10-29 18:56:16", "status": 500, "ms": 10784, "body": { "ok": false, "error": "svc_source_find_next: canceling statement due to statement timeout" } }
+  ],
+  "scan_before": { "ms_idle": 2761, "buffers": 1201788, "candidates": 748 },
+  "scan_after": { "ms_idle": 300, "buffers": 45238, "candidates": 748, "same_order": true }
+}
