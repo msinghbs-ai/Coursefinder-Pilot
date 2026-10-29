@@ -1,17 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.367'
-export const PACKAGE_VERSION='0.1.294'
+export const UI_VERSION='2.15.368'
+export const PACKAGE_VERSION='0.1.295'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'29 Oct 2026',
-  title:'Entry requirement reader: quotes read with the table structure that names them',
+  title:'Course evidence values in words; Course detail country selector fits a phone',
   changes:[
-    'Academic entry requirements reader (worker v0.52.0): a printed cell quoted together with the structure that names it counts as on the page (a table\'s header line with one of its rows; a PDF row\'s first cell with one other cell of that row).',
-    'A band written with its column header\'s words (for example "ATAR 70") is taken as the printed cell only when the whole row is quoted; a table with no header row carries the label printed just above it; a quote never crosses into the next labelled row (another country\'s table).',
-    'Every admission gate is unchanged: quote on the page, scale, identity, completeness and whole-run admission. Federation, Wollongong, Otago Polytechnic and UWA are read once again; their earlier incomplete items stay unapproved.',
+    'Course detail › Evidence and history: a field fill whose value is a record (an entry requirement read) is told in words, for example "4 rows for review, 2 not kept"; it no longer shows "[object Object]". Cross-check values are shown the same way.',
+    'Course detail on a phone: the Country of prior education selector stays inside its card (a long country name no longer pushes it past the edge).',
+    'Operator tools: the read-only Entry requirements tour also checks DP020 Course detail (country order, India result, scholarships, evidence overlay) at desktop and phone width, and closes the phone row drawer; a read-only deployed acceptance check runs the same on deploy.',
     'Consumer API unchanged (Decision 266).'
   ],
   bugFixes:[]

@@ -12,7 +12,8 @@ const auditData = (n = 3) => ({
   reads: reads(n), searches: [{ stage: 'title', state: 'done', query: 'RMIT associate degree in business', results: 8, bound_url: 'https://www.rmit.edu.au/study/ad029', done_at: '2026-10-01T08:59:00Z' }],
   relinks: [{ old_url: 'https://www.rmit.edu.au/old/ad029', new_url: 'https://www.rmit.edu.au/study/ad029', reason: 'old page retired', at: '2026-10-02T10:00:00Z' }],
   ai_match: [{ attempt: 1, state: 'chosen', chosen_url: 'https://www.rmit.edu.au/study/ad029', candidates: 12, decided_at: '2026-10-01T08:58:00Z' }],
-  field_fills: [{ field: 'campus', state: 'skipped', reason: 'the page names no campus', updated_at: '2026-10-14T04:20:00Z' }],
+  field_fills: [{ field: 'campus', state: 'skipped', reason: 'the page names no campus', updated_at: '2026-10-14T04:20:00Z' },
+    { field: 'entry_requirements', state: 'review', value: { rows: 4, notes: [], dropped: [{ reason: 'score_without_basis' }, { reason: 'score_without_basis' }], review_item_id: 'a7849f66' }, updated_at: '2026-10-14T04:21:00Z' }],
   admissions: [{ field_key: 'tuition', status: 'refused', reason_code: 'quote_not_on_page', decided_at: '2026-10-06T00:00:00Z' }],
   fee_rows: [{ amount_min: 37440, amount_max: 37440, currency_code: 'AUD', audience: 'international', fee_year: 2027, outcome: 'matched', note: 'annual fee', quote: 'A$37,440 per year', created_at: '2026-10-07T00:00:00Z' }],
   crosschecks: [{ field: 'duration', held_value: '104 weeks', page_value: '2 years', state: 'agree', found_at: '2026-10-08T00:00:00Z' }],
@@ -57,6 +58,9 @@ test('the evidence button opens one timeline from the existing reads; the blade 
   // one timeline: every kind of step, with date, outcome, source and evidence reference
   for (const k of ['discovery', 'read', 'change', 'ai', 'admission', 'fee', 'check', 'manual', 'aer', 'scholarship']) await expect(tl.locator(`[data-ca-kind="${k}"]`).first()).toBeVisible()
   await expect(tl).toContainText('the page names no campus')
+  // a structured value (an entry requirement read) is told in words, never as [object Object] (live tour 29 Oct 2026)
+  await expect(tl).toContainText('Value: 4 rows for review, 2 not kept')
+  await expect(tl).not.toContainText('[object Object]')
   await expect(tl).toContainText('Admission: tuition')
   await expect(tl).toContainText('Entry requirement: minimum grade')
   await expect(tl).toContainText('Waiting in Layer 4')

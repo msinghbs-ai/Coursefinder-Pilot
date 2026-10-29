@@ -77,6 +77,25 @@ test.describe('mocked browser', () => {
     expect(page.entryCalls.filter(c => c.fn !== 'admin_entry_requirements' && !(c.fn === 'admin_jobs' && c.action === 'read'))).toEqual([])
   })
 
+  test('phone width: the Course detail country selector stays inside its card (live tour 29 Oct 2026) @responsive', async ({ page }) => {
+    expect(page.viewportSize().width).toBeLessThan(500)
+    await watch(page)
+    // the longest live option name sets the selector's natural width (DP020 lists every country)
+    await page.route(`${RPC}admin_entry_requirements`, async route => {
+      const q = route.request().postDataJSON() || {}
+      if (q.p_action === 'course') return route.fulfill({ json: { rows: [], reads: [], can_read: true, countries: [...RAW, { code: 'GS', name: 'South Georgia and the South Sandwich Islands' }] } })
+      return route.fallback()
+    })
+    await page.goto(`/#courses?id=${F.courseDetail.id}`)
+    const sel = page.getByLabel('Country of prior education')
+    await expect(sel).toBeVisible()
+    await sel.selectOption('IN')
+    await expect(page.locator('[data-entry-resolution]')).toContainText('resolved for IN')
+    const box = await sel.evaluate((el) => { const r = el.getBoundingClientRect(); const c = el.closest('[data-course-entry-resolve]').parentElement.getBoundingClientRect(); return { right: r.right, cardRight: c.right, left: r.left, cardLeft: c.left } })
+    expect(box.right).toBeLessThanOrEqual(box.cardRight + 1)
+    expect(box.left).toBeGreaterThanOrEqual(box.cardLeft - 1)
+  })
+
   test('Entry requirements workspace: the matrix Country filter and the Resolution country picker use the shared order', async ({ page }) => {
     const { mockAdmin } = await import('./support/admin-mock.mjs')
     await mockAdmin(page)
