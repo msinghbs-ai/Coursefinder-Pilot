@@ -297,11 +297,11 @@ $n$]
 ], array[1]);
 
 insert into pipeline.component_register(kind, name, layer, purpose, status, replaces, introduced_in) values
- ('function', 'security.aer_review_kinds_v1', 'Layer 4', 'AER A1-A3: the Layer 4 kinds that take the AER review path only', 'active', '{}', '20261030XXXXXX'),
- ('function', 'security.aer_review_lineage_v1', 'Layer 4', 'AER A1: lineage of a waiting AER item (item, run, source, stored copy hash, rows), recorded with each AER decision', 'active', '{}', '20261030XXXXXX'),
- ('function', 'security.aer_approve_except_v1', 'Layer 4', 'AER A1: checks an Approve except and builds the decision''s final value', 'active', '{}', '20261030XXXXXX'),
- ('function', 'security.aer_review_read_v1', 'Layer 4', 'AER A1: one AER item for the reviewer (rows, quotes, lineage)', 'active', '{}', '20261030XXXXXX'),
- ('function', 'public.layer4_aer_review_read', 'Layer 4', 'AER A1: Layer 4 > Inbox reads one AER item', 'active', '{}', '20261030XXXXXX')
+ ('function', 'security.aer_review_kinds_v1', 'Layer 4', 'AER A1-A3: the Layer 4 kinds that take the AER review path only', 'active', '{}', '20261030070000'),
+ ('function', 'security.aer_review_lineage_v1', 'Layer 4', 'AER A1: lineage of a waiting AER item (item, run, source, stored copy hash, rows), recorded with each AER decision', 'active', '{}', '20261030070000'),
+ ('function', 'security.aer_approve_except_v1', 'Layer 4', 'AER A1: checks an Approve except and builds the decision''s final value', 'active', '{}', '20261030070000'),
+ ('function', 'security.aer_review_read_v1', 'Layer 4', 'AER A1: one AER item for the reviewer (rows, quotes, lineage)', 'active', '{}', '20261030070000'),
+ ('function', 'public.layer4_aer_review_read', 'Layer 4', 'AER A1: Layer 4 > Inbox reads one AER item', 'active', '{}', '20261030070000')
 on conflict do nothing;
 
 -- post-check: every edited definition carries its change, and the Inbox kinds are still valid with the AER kind for the Platform Admin only
