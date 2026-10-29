@@ -8,7 +8,7 @@
 // When a release changes a screen, an automation or where a person decides: change the steps here, raise the SOP's version, add a line
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 
-export const SOP_REVIEWED_FOR = '2.15.371'
+export const SOP_REVIEWED_FOR = '2.15.372'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -211,6 +211,7 @@ export const SOPS = [
       { version: '2.00', date: '26 Oct 2026', release: '2.15.359', change: 'Fees: every international fee write passes the country tuition identity check at the table; a failing fee is kept for review.' },
       { version: '2.01', date: '27 Oct 2026', release: '2.15.360', change: 'Governed actions (Decision 268): routine operations are approved on Layer 2/3 › Operations › Governed actions instead of run as SQL; SQL is break-glass only. First action: close the AER PR A recovery.' },
       { version: '2.02', date: '28 Oct 2026', release: '2.15.361', change: 'Academic entry requirements (Track C Step B): the Provider drawer and the Course detail blade show the published entry rows and what applies to a student from a chosen country; Platform Admin reads one course from its stored page and admits the rows in Layer 4 (Course entry first read).' },
+      { version: '2.13', date: '30 Oct 2026', release: '2.15.372', change: 'Entry-requirement (AER) items: decided one at a time by the Platform Admin in Layer 4 › Inbox (Approve all rows, Approve except with a reason, or Reject); bulk and batch decisions skip them. Curators read them and keep their editing in Catalogue › Entry requirements. Bulk Read again reads only the newest stored copy.' },
       { version: '2.12', date: '30 Oct 2026', release: '2.15.371', change: 'Layer 2/3 › Universities reads one page at a time (Show more for the next page; filters and search work on the whole list). A site re-map keeps course pages proved by a code. No other operator steps changed.' },
       { version: '2.11', date: '30 Oct 2026', release: '2.15.370', change: 'Reviewed: AI answer lengths are settings (Settings › Pipeline settings › AI answer limits); a cut answer holds the read. The source finder, course page reads and adapter capture are counted correctly in the health report. No operator steps changed.' },
       { version: '2.10', date: '29 Oct 2026', release: '2.15.369', change: 'Read again reads only the newest stored copy of a page (an older copy\'s pending item is closed as superseded); a long course page is read in slices and a cut read is held, not proposed in part. Role guides: admin docs/platform/AER-ROLE-GUIDES.md.' },
