@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.292 — 29 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.365** (AER live visual acceptance, Platform Admin decision 29 Oct 2026 09:57 item 5). The Sources view's Latest read pill wraps in its cell (`src/aer-workspace.css`, column 210); `tools/ui-review/aer-tour.mjs`: a read-only live tour of Catalogue › Entry requirements at desktop and phone width for the UI review screenshots workflow (`SCREENS=aer-tour`), which now keeps its captures when a screen fails. Spec s156 extended. Consumer API unchanged.
+
 ## 0.1.291 — 29 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.364** (AER programme, Platform Admin decision 29 Oct 2026 09:57 items 1, 3 and 4; admin `docs/platform/AER-OPERATIONS-WORKSPACE-DECISION-2026-10-29.md` W17–W18). Migration `20261029020000_cf247_aer_reader_settings_html_refetch.sql`: settings `entry.matrix_slice_concurrency` (6) and `entry.matrix_slice_chars` (8,000), `svc_entry_matrix_next` passes the concurrency, Read again moves into `security.aer_reread_v1` and fetches a markdown-stored web page again as HTML. Migration `20261029030000_cf247_aer_course_programme_rendered_note.sql`: course-level programme (`security.course_entry_eligible_v1`, `course_entry_cost_v1`, `course_entry_programme_v1`, `course_entry_batch_v1`; settings `entry.course_read_providers`, `entry.course_batch_size`, `entry.course_read_cost_usd`; `admin_aer` actions `course_programme`, `course_batch_preview`, `course_batch`), and the Step C rendered no-table Layer 4 note (`security.entry_rendered_note_v1`; `svc_entry_matrix_record` and `entry_matrix_review_apply_v1` md5-guarded). Course-level reading panel and the no-table pill in `src/AerWorkspace.jsx`. Specs s155, s156. Consumer API unchanged.

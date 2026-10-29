@@ -5,6 +5,7 @@ import { test } from '@playwright/test'
 import fs from 'node:fs'
 import path from 'node:path'
 import { loginAsUatUser } from '../../tests/uat/support/runtime-evidence.mjs'
+import { aerTour } from './aer-tour.mjs'
 
 const OUT = process.env.OUT_DIR || 'ui-review-out'
 const SCREENS = (process.env.SCREENS || '').split(',').map(s => s.trim()).filter(Boolean)
@@ -49,7 +50,8 @@ function masks(page) {
   return [page.getByText(EMAIL), page.locator('.m-user, .m-user-menu, .m-account, [data-private]')]
 }
 
-test('capture screens for UI review', async ({ page }) => {
+test('capture screens for UI review', async ({ page, browser }) => {
+  if (SCREENS.includes('aer-tour')) test.setTimeout(40 * 60_000)  // CF-247: the AER tour takes 14 screenshots at two widths
   fs.mkdirSync(OUT, { recursive: true })
   track(page)
   const consoleErrors = []
@@ -60,6 +62,13 @@ test('capture screens for UI review', async ({ page }) => {
   const manifest = []
   let n = 0
   for (const spec of SCREENS) {
+    // CF-247 (29 Oct 2026): "aer-tour" is the AER workspace's scripted read-only acceptance tour (aer-tour.mjs)
+    if (spec === 'aer-tour') {
+      try { await aerTour({ page, browser, out: OUT, settle, fitHeight, masks, login: loginAsUatUser, manifest, consoleErrors, baseURL: process.env.UAT_BASE_URL }) }
+      catch (e) { manifest.push({ route: 'aer-tour', error: String(e?.message || e).slice(0, 400) }) }
+      fs.writeFileSync(path.join(OUT, 'manifest.json'), JSON.stringify({ captured_at: new Date().toISOString(), base_url: process.env.UAT_BASE_URL, screens: manifest }, null, 2))
+      continue
+    }
     const [route, ...clicks] = spec.split('>')
     const shots = [...(captured.has(route) ? [] : [{ label: 'main', click: null }]), ...clicks.map(c => ({ label: c, click: c }))]
     captured.add(route)

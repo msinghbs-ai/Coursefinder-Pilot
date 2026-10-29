@@ -74,3 +74,5 @@
 .aer-batch{align-items:center;gap:8px 12px;flex-wrap:wrap}
 .aer-preview{font-size:13px;overflow-wrap:anywhere}
 [data-aer-programme] .sd-desc{padding:0 16px;color:var(--cf-muted);font-size:13px}
+/* v2.15.365: a read-state pill wraps inside its cell rather than being cut ("Rendered, no table: in Layer 4") */
+.aer-page [data-aer-hold] .cf-chip{white-space:normal;text-overflow:clip;overflow:visible}
