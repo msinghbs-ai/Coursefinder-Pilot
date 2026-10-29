@@ -1,5 +1,5 @@
 -- CF-247 decision W35 (Platform Admin 30 Oct 2026 06:53, lane M2): cached snapshots for three slow admin reads, and the actual run time of
--- "Why values are missing". Number placeholder 20261030900000: the integrator numbers it.
+-- "Why values are missing". Numbered 20261030150000 at integration (v2.15.373).
 -- Approved: "Cached snapshots for the four slow admin reads: APPROVED FOR DESIGN AND IMPLEMENTATION. ... Keep them read-only and derived; no
 -- consumer/API or admission behaviour change. Show snapshot generation time and staleness. Define bounded refresh/invalidation and prevent
 -- expensive concurrent rebuild stampedes. Preserve permission checks and exact live-detail drilldowns." and "'Why values are missing' run time:
@@ -356,17 +356,17 @@ update pipeline.automation_catalogue set description = description || ' Each run
  where jobname = 'gap-causes' and description not like '%CF-247 W35%';
 
 insert into pipeline.component_register(kind, name, layer, area, purpose, status, replaces, introduced_in) values
- ('job', 'admin-read-snapshots', 'Platform', 'Reports', 'W35: rebuilds the cached snapshots of the slow admin reads (notices, publishability, field coverage)', 'active', '{}', '20261030900000'),
- ('table', 'pipeline.admin_read_snapshots', 'Platform', 'Reports', 'W35: derived snapshots answered by the admin reads, with generation time and stale flag', 'active', '{}', '20261030900000'),
- ('table', 'pipeline.gap_cause_runs', 'Platform', 'Course pages', 'W35: each gap-causes run with its actual start and finish', 'active', '{}', '20261030900000'),
- ('function', 'security.admin_read_snapshots_refresh_v1', 'Platform', 'Reports', 'W35: job admin-read-snapshots (due check, single-flight build)', 'active', '{}', '20261030900000'),
- ('function', 'security.admin_read_snapshot_build_v1', 'Platform', 'Reports', 'W35: builds one snapshot from the live source', 'active', '{}', '20261030900000'),
- ('function', 'security.admin_read_snapshot_meta_v1', 'Platform', 'Reports', 'W35: generation time, age and stale flag the reads add', 'active', '{}', '20261030900000'),
- ('function', 'security.admin_read_snapshot_every_v1', 'Platform', 'Reports', 'W35: rebuild interval of a snapshot (settings)', 'active', '{}', '20261030900000'),
- ('function', 'security.platform_notices_cached_v1', 'Platform', 'Reports', 'W35: notices from the snapshot, items acted on since left out', 'active', '{}', '20261030900000'),
- ('function', 'security.scholarship_publishability_cached_v1', 'Platform', 'Reports', 'W35: publishability rows from the snapshot (admin reads only)', 'active', '{}', '20261030900000'),
- ('function', 'security.gap_causes_run_v1', 'Platform', 'Course pages', 'W35: job gap-causes (snapshot and its run time)', 'active', '{}', '20261030900000'),
- ('function', 'security.gap_causes_run_meta_v1', 'Platform', 'Course pages', 'W35: the run time, age and stale flag of Why values are missing', 'active', '{}', '20261030900000')
+ ('job', 'admin-read-snapshots', 'Platform', 'Reports', 'W35: rebuilds the cached snapshots of the slow admin reads (notices, publishability, field coverage)', 'active', '{}', '20261030150000'),
+ ('table', 'pipeline.admin_read_snapshots', 'Platform', 'Reports', 'W35: derived snapshots answered by the admin reads, with generation time and stale flag', 'active', '{}', '20261030150000'),
+ ('table', 'pipeline.gap_cause_runs', 'Platform', 'Course pages', 'W35: each gap-causes run with its actual start and finish', 'active', '{}', '20261030150000'),
+ ('function', 'security.admin_read_snapshots_refresh_v1', 'Platform', 'Reports', 'W35: job admin-read-snapshots (due check, single-flight build)', 'active', '{}', '20261030150000'),
+ ('function', 'security.admin_read_snapshot_build_v1', 'Platform', 'Reports', 'W35: builds one snapshot from the live source', 'active', '{}', '20261030150000'),
+ ('function', 'security.admin_read_snapshot_meta_v1', 'Platform', 'Reports', 'W35: generation time, age and stale flag the reads add', 'active', '{}', '20261030150000'),
+ ('function', 'security.admin_read_snapshot_every_v1', 'Platform', 'Reports', 'W35: rebuild interval of a snapshot (settings)', 'active', '{}', '20261030150000'),
+ ('function', 'security.platform_notices_cached_v1', 'Platform', 'Reports', 'W35: notices from the snapshot, items acted on since left out', 'active', '{}', '20261030150000'),
+ ('function', 'security.scholarship_publishability_cached_v1', 'Platform', 'Reports', 'W35: publishability rows from the snapshot (admin reads only)', 'active', '{}', '20261030150000'),
+ ('function', 'security.gap_causes_run_v1', 'Platform', 'Course pages', 'W35: job gap-causes (snapshot and its run time)', 'active', '{}', '20261030150000'),
+ ('function', 'security.gap_causes_run_meta_v1', 'Platform', 'Course pages', 'W35: the run time, age and stale flag of Why values are missing', 'active', '{}', '20261030150000')
 on conflict do nothing;
 
 -- 7. first build now (the job repeats it); the last successful gap-causes run is taken from the cron history once, so the screen has a run time at once

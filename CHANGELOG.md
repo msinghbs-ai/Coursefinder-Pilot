@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.300 — 30 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.373** (Platform Admin mandate 30 Oct 2026 06:53; decisions W34 and W35, cached snapshots for the slow admin reads and the gap-causes run time). Migrations `20261030140000_cf247_admin_read_snapshots` (coverage totals snapshot, job `course-coverage-snapshot`; page-first `admin_course_page_fast_base`, `admin_pipeline_ops_read`, `admin_providers_page_v2`) and `20261030150000_cf247_notices_publishability_snapshots` (`pipeline.admin_read_snapshots`, `pipeline.gap_cause_runs`, job `admin-read-snapshots`, job `gap-causes` runs `gap_causes_run_v1`). `src/SnapshotStamp.jsx` and the screens that show it. Specs s178, s179. Consumer API unchanged.
+
 ## 0.1.299 — 30 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.372** (Platform Admin mandate 30 Oct 2026 06:53; decisions A1, A2, A3, A5). Migrations `20261030070000_cf247_aer_review_path` (md5-guarded edits of the Layer 4 decide, apply, bulk, batch and Inbox functions; new `aer_review_kinds_v1`, `aer_review_lineage_v1`, `aer_approve_except_v1`, `aer_review_read_v1`, `layer4_aer_review_read`) and `20261030080000_cf247_aer_bulk_reread_newest_copy` (`admin_entry_matrix_reread` newest copy only and role check corrected; governed snapshot Option A). `src/Layer4Inbox.jsx`, `src/AerWorkspace.jsx`. Specs s176, s177. Consumer API unchanged.
