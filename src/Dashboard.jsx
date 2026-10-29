@@ -12,6 +12,7 @@ import{ArrowRight,Award,Building2,CalendarClock,CheckCircle2,ClipboardCheck,Glob
 import{adminRead,supabase}from'./lib/supabase'
 import{Button,Loading,Metric,SectionTitle,fmtDate,fmtNumber}from'./ui-kit'
 import{plainError}from'./lib/errors'
+import SnapshotStamp from'./SnapshotStamp' // CF-247 W35: Scholarships ready to publish is counted from a cached snapshot
 
 // v2.15.284 (Platform Admin, 16 Oct 2026: "Dashboard should display Icons"): an icon for each queue in Waiting for you
 const INBOX_ONLY=new Set(['review','onboarding_admit','onboarding_stopped'])
@@ -46,7 +47,7 @@ export default function Dashboard({onError}){
       {open.length>0&&<><h4 className="db-also">Also</h4><ul className="db-waiting" data-waiting-also>{open.map(r=>{const Icon=QUEUE_ICON[r.key]||Inbox;return <li key={r.key} data-queue={r.key}>
         <span className="db-queue-icon" aria-hidden="true"><Icon size={16}/></span>
         <strong className="db-count">{fmtNumber(Number(r.count))}</strong>
-        <span className="db-label">{r.label}{r.oldest&&<small>{r.key==='dates'?`next on ${fmtDate(r.oldest)}`:`oldest waiting ${ago(r.oldest)}`}</small>}</span>
+        <span className="db-label">{r.label}{r.oldest&&<small>{r.key==='dates'?`next on ${fmtDate(r.oldest)}`:`oldest waiting ${ago(r.oldest)}`}</small>}<SnapshotStamp meta={r.snapshot} label="Counted" what={r.key}/></span>
         <Button compact onClick={()=>go(r.href)} aria-label={`Open ${r.label}`}>Open<ArrowRight size={13}/></Button></li>})}</ul></>}
       {clear.length>0&&<p className="db-allclear">Clear: {clear.map(r=>r.label.toLowerCase()).join(' · ')}</p>}
     </section>

@@ -19,6 +19,7 @@ import JobButton from'./JobButton'
 import{errorReading,errorSteps}from'./lib/workerErrors.js'
 import{fmtBytes}from'./lib/format.js'
 import{plainError}from'./lib/errors'
+import SnapshotStamp from'./SnapshotStamp' // CF-247 W35: when the cached notices were checked
 
 const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 // v2.15.301 (Platform Admin, 20 Oct 2026, "Retire Running now and Levers"): two views. Running stays exported for Scheduled jobs › Task
@@ -69,6 +70,7 @@ function Overview({group,setGroup,onError}){
     </section>
     <section className="m-panel" aria-label="Needs attention" data-progress-needs>
       <h3 className="sl-h4">Needs attention</h3>
+      <SnapshotStamp meta={d.notices_snapshot} label="Notices checked" what="progress-notices"/>
       {needs.length===0?<Empty text="Nothing needs attention."/>:<ul className="pg-needs">{needs.map(n=><li key={n.key} className={`tone-${n.tone}`} data-progress-need={n.key}><AlertTriangle size={14} aria-hidden/><div><strong>{n.href?<a className="cf-link" href={n.href}>{n.title}</a>:n.title}</strong>{n.hint&&<small>{n.hint}</small>}</div></li>)}</ul>}
     </section>
     <section className="m-panel" aria-label="Journey stages" data-progress-stages>

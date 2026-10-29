@@ -36,14 +36,14 @@ export function universitiesPage(all, a = {}, { rank = 6, pageSize = 100, tickMa
     ticks: ticks ? { capped: f.length > tickMax, rows: f.slice(0, tickMax).map(r => ({ provider_id: r.provider_id, name: r.name, adapter: r.adapter ? { state: r.adapter.state, fields: r.adapter.fields || [] } : null, qualify: r.qualify ? { passing: r.qualify.passing || [] } : null, onboarding: r.onboarding ? { id: r.onboarding.id, status: r.onboarding.status } : null })) } : null }
 }
 
-export async function mockAdmin(page, { rank = 6, healthMissing = false, courseDiffers = false, creditNotices = [], onboardingAuto = false, universities = null, universitiesPageSize = 100, universitiesTickMax = 2000 } = {}) {
+export async function mockAdmin(page, { rank = 6, healthMissing = false, courseDiffers = false, creditNotices = [], onboardingAuto = false, universities = null, universitiesPageSize = 100, universitiesTickMax = 2000, coverageStale = false } = {}) {
   const context = { ...F.context, role_rank: rank, role: rank >= 6 ? 'platform_admin' : 'viewer' }
   const session = { access_token: 'mock-token', refresh_token: 'mock-refresh', token_type: 'bearer', expires_in: 360000, expires_at: Math.floor(Date.now() / 1000) + 360000, user: { id: context.user_id, email: 'admin@example.test', aud: 'authenticated', role: 'authenticated', app_metadata: {}, user_metadata: {} } }
   const adminRead = {
     ranking_filters: F.rankingFilters, ranking_filter_options: F.rankingFilterOptions, ranking_observations: F.rankingObservations,
     ranking_link_candidates: F.rankingLinkCandidates, ranking_provider_search: { items: [] }, provider_ranking_history: F.providerRankingHistory,
     context, dashboard: F.dashboard, layer_status_summary: F.layerStatus, platform_health: F.platformHealth,
-    live_activity: F.liveActivity, course_coverage: F.courseCoverage, course_coverage_providers: [{ id: 'prov-monash', name: 'Monash University', country: 'AU', courses: 640 }], data_quality_overview: F.dataQualityOverview,
+    live_activity: F.liveActivity, course_coverage: coverageStale ? { ...F.courseCoverage, snapshot: { ...F.courseCoverage.snapshot, checked_at: '2026-09-29T11:52:00+00:00', stale: true } } : F.courseCoverage, course_coverage_providers: [{ id: 'prov-monash', name: 'Monash University', country: 'AU', courses: 640 }], data_quality_overview: F.dataQualityOverview,
     courses_page: F.coursesPage, course_detail: F.courseDetail, scholarships_page: F.scholarshipsPage, scholarship_detail: F.scholarshipDetail,
     // Decision 254 (job system A2): a finished admin task in the Jobs history, opened to its result
     pipeline_filters: { layers: ['L2'], statuses: ['completed', 'failed'], modes: [], countries: [], job_types: ['layer2_task'], failure_classes: [], completion_classes: [] },
@@ -68,7 +68,9 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
       finished_15m: 10, last_finished: '2026-10-23T05:47:00Z', ai_waiting: 3, ai_done_15m: 15,
       openrouter: { worker_calls: 12, worker_open: 2, worker_failed: 0, calls: 340, ok: 338, http429: 0, http5xx: 1, timeout: 1, other: 0, ms_p50: 4200, ms_p95: 11800 },
       jobs: { 'job-run': { place: 1, items: { total: 0, queued: 0, with_ai: 0, done: 0, filled: 0 } } } },
-    admin_gap_causes: { at: '2026-10-23T00:00:00Z', previous: '2026-10-22T23:00:00Z', countries: ['NZ'], rows: [
+    // CF-247 W35: 'run' is when the gap-causes run actually started and finished (pipeline.gap_cause_runs); 'at' is the snapshot's hour
+    admin_gap_causes: { at: '2026-10-23T00:00:00Z', previous: '2026-10-22T23:00:00Z', countries: ['NZ'],
+      run: { recorded: true, started_at: '2026-10-23T00:55:00Z', finished_at: '2026-10-23T00:55:26Z', rows: 412, age_seconds: 720, stale: false, stale_after_minutes: 75 }, rows: [
       { country: 'NZ', attribute: 'english', cause: 'not tried yet', action: 'AI reader (Fill the gaps, job field-gap-queue)', automatic: true, courses: 1049, change: -12 },
       { country: 'NZ', attribute: 'fee', cause: 'page proof (adapter_title) not admitted for this field', action: 'none: Settings › Identify the page decides which proofs admit this field', automatic: false, courses: 228, change: 0 }] },
     admin_stats_15m: { latest: { at: '2026-10-22T11:02:00Z', countries: { NZ: { now: { courses: 6474, official_page: 3019, fee: 1147, english: 1936, intakes: 2103, campus: 3215, delivery: 3618, duration: 3259, level: 6238, field_of_study: 6143 }, change_15m: { fee: 2 }, change_24h: null } }, firecrawl: { total: 25000, used_today: 12787, groups: [{ group: 'course_search', label: 'Finding course pages', used: 10716, share: 13000, refused: 0 }], last_15m: { course_search: 16 } }, ai: [{ use: 'fee_ai', label: 'Fee reader with AI', spent_usd: 0.35, guard_usd: 5, calls: 20 }], worker_calls_15m: { read: { calls: 30, failed: 1, avg_s: 2.8, max_s: 10.3 } }, tasks: { running: 36, queued: 0, not_moving: 0 }, gaps: [{ kind: 'worker', note: 'Worker read: 1 of 30 calls failed, slowest 10.3 s' }] }, trend: [] },
