@@ -1,21 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.373'
-export const PACKAGE_VERSION='0.1.300'
+export const UI_VERSION='2.15.374'
+export const PACKAGE_VERSION='0.1.301'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'30 Oct 2026',
-  title:'Cached snapshots for the slow admin screens; Why values are missing shows its real run time',
+  title:'Approve except keeps active rows whose replacement is left out; adapter measures role check',
   changes:[
-    'Completeness › Courses and Attributes read coverage totals from a snapshot rebuilt by job course-coverage-snapshot after each hourly build; the screen shows when it was built and marks it stale after a setting. Drill-downs stay live.',
-    'Pipeline jobs, Courses and Providers lists choose the page first and work out the per-row figures for that page only; same rows, same order, same fields.',
-    'Toolset notices, scholarship publishability and field coverage by country are read from snapshots rebuilt by job admin-read-snapshots (intervals are settings), with their time and age shown and a Stale mark; a person\'s fix (Search again, a website entered, a publication batch) rebuilds within a minute.',
-    'Platform health › Why values are missing shows when its last run actually started and finished, marked stale after a setting (75 minutes).',
+    'Layer 4 › Inbox, entry requirements (decision D4): under Approve except an active row is replaced only when you approve a new row with the same identity; an active row whose new reading you leave out stays active and unchanged, and a row the new read does not carry stays active. The excluded row records the active row it would have replaced, and the decision event lists what was replaced and what was kept.',
+    'Two approved rows with one identity, or an approved row already active elsewhere for the provider, hold the whole decision ("Held (decision D4): … nothing was changed"); the item stays waiting. On a course page that already has active rows, Approve except is held; use Approve all rows or Reject.',
     'Consumer API unchanged (Decision 266).'
   ],
-  bugFixes:[]
+  bugFixes:['Adapter measures (Layer 2/3) checked its role in a way that never applied, so any signed-in user could read it; it now requires the PIM Admin or Platform Admin (rank 5 or above), as originally intended (decision D6).']
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

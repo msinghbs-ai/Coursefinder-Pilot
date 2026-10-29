@@ -1,6 +1,6 @@
 # StudySearch – Platform Admin SOP
 
-**Version:** 1.56 (reviewed for platform release v2.15.373)  
+**Version:** 1.56 (reviewed for platform release v2.15.374)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -225,6 +225,7 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 | 2.00 | 26 Oct 2026 | v2.15.359 | Fees: every international fee write passes the country tuition identity check at the table; a failing fee is kept for review. |
 | 2.01 | 27 Oct 2026 | v2.15.360 | Governed actions (Decision 268): routine operations are approved on Layer 2/3 › Operations › Governed actions instead of run as SQL; SQL is break-glass only. First action: close the AER PR A recovery. |
 | 2.02 | 28 Oct 2026 | v2.15.361 | Academic entry requirements (Track C Step B): the Provider drawer and the Course detail blade show the published entry rows and what applies to a student from a chosen country; Platform Admin reads one course from its stored page and admits the rows in Layer 4 (Course entry first read). |
+| 2.15 | 30 Oct 2026 | v2.15.374 | Entry-requirement items (D4): Approve except replaces an active row only when you approve its new reading; an active row whose replacement you leave out stays active. A clash between approved rows holds the decision with nothing changed. Adapter measures need rank 5 or above (D6). |
 | 2.14 | 30 Oct 2026 | v2.15.373 | Cached admin figures: Completeness, Toolset notices, scholarship publishability and field coverage show when their snapshot was built and a Stale mark; Why values are missing shows its actual run time. Rebuild intervals are Pipeline settings › Platform upkeep. No operator steps changed. |
 | 2.13 | 30 Oct 2026 | v2.15.372 | Entry-requirement (AER) items: decided one at a time by the Platform Admin in Layer 4 › Inbox (Approve all rows, Approve except with a reason, or Reject); bulk and batch decisions skip them. Curators read them and keep their editing in Catalogue › Entry requirements. Bulk Read again reads only the newest stored copy. |
 | 2.12 | 30 Oct 2026 | v2.15.371 | Layer 2/3 › Universities reads one page at a time (Show more for the next page; filters and search work on the whole list). A site re-map keeps course pages proved by a code. No other operator steps changed. |
