@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.297 — 30 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.370** (Platform Admin mandate 30 Oct 2026 00:01, Workstreams 2 and 5; decisions W30 and W32). Migrations `20261030010000_cf247_enrich_reliability` (md5-guarded edits of `public.svc_source_find_next`, `public.svc_coverage_read_next`, `security.provider_onboarding_job_v1`) and `20261030020000_cf247_reader_answer_limits` (12 `reading.answer_tokens.*` settings). Worker `coverage-sweep-worker-v0.54.0` (`answer.ts`, `fees.ts`, `index.ts`): answer limits from settings, cut answers held, cost recorded on failed reads, capture and proposal ledger counts. Specs s172 and s173. Consumer API unchanged.
+
 ## 0.1.296 — 29 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.369** (Platform Admin mandate 29 Oct 2026 16:59; decisions W27, W28, W29). W27 (`20261029110000`, PR #743) and W28 (`20261029120000`, PR #744) are already live; this release adds W29: worker `coverage-sweep-worker-v0.53.0` (`course-entry.ts`, `index.ts`) reads a long course page for entry requirements in bounded slices with recorded coverage, holds a cut or partial read (`held_partial`), dedupes rows across overlaps and records cost on failed reads; migration `20261029130000_cf247_aer_course_sliced_read.sql` adds five `enrich.course_entry_*` settings and keeps the read coverage on the item (`security.enrich_entry_record_v1`, md5-guarded). Spec s170 with long-page fixtures; s139 updated. Consumer API unchanged.
