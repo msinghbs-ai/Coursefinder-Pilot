@@ -7,7 +7,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
-const MIG = fs.readdirSync('supabase/migrations').find((f) => /^2026103\d{7}_cf247_universities_paging\.sql$/.test(f) || f === '20261030XXXXXX_cf247_universities_paging.sql')
+const MIG = fs.readdirSync('supabase/migrations').find((f) => /^2026103\d{7}_cf247_universities_paging\.sql$/.test(f) || f === '20261030040000_cf247_universities_paging.sql')
 const sql = fs.readFileSync(`supabase/migrations/${MIG}`, 'utf8')
 const screen = fs.readFileSync('src/AdaptersWorkspace.jsx', 'utf8')
 

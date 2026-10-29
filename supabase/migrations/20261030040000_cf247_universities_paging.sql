@@ -1,5 +1,5 @@
 -- CF-247 decision W33 (30 Oct 2026, Workstream 3 release health, lane J): Layer 2/3 › Universities reads one page at a time.
--- Numbered 20261030XXXXXX by the integrator.
+-- Numbered 20261030040000 by the integrator (release v2.15.371, with W31).
 -- Why: public.admin_layer23('universities') answered every university in one reply: 2,421 rows, 1,967,164 bytes and about 3.2 s measured
 -- by the deployed performance test (budgets 700,000 bytes and 3 s, unchanged). Most of the bytes are the onboarding object (611 KB), the
 -- Firecrawl target (238 KB), the adapter (234 KB) and the latest Qualify (157 KB); the onboarding stage was worked out for all 1,757

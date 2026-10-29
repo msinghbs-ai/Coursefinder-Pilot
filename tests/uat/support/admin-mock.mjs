@@ -4,7 +4,7 @@ import * as F from './admin-fixtures.mjs'
 
 // CF-247 decision W33 (30 Oct 2026): public.admin_layer23('universities_page') as the server answers it: the filters, the name search and the
 // order (by name) applied to every row, one page answered with the counts and the country and state choices; mode 'ticks' answers every
-// matching row in short form. The rules are the server's (20261030XXXXXX_cf247_universities_paging.sql).
+// matching row in short form. The rules are the server's (20261030040000_cf247_universities_paging.sql).
 const IN_ONBOARDING = ['queued', 'website', 'course_pages', 'capturing', 'proposing', 'applying', 'qualifying', 'scholarships', 'waiting_admit', 'waiting_courses']
 export function universitiesPage(all, a = {}, { rank = 6, pageSize = 100, tickMax = 2000, settings = null } = {}) {
   const v = k => (a[k] == null ? '' : String(a[k]).trim())
