@@ -1,0 +1,19 @@
+{
+ "id": "gen-fixture-scholarship-cut-empty",
+ "model": "qwen/qwen3-30b-a3b-instruct-2507",
+ "choices": [
+  {
+   "finish_reason": "length",
+   "message": {
+    "role": "assistant",
+    "content": ""
+   }
+  }
+ ],
+ "usage": {
+  "prompt_tokens": 4210,
+  "completion_tokens": 3000,
+  "total_tokens": 7210,
+  "cost": 0.000611
+ }
+}
