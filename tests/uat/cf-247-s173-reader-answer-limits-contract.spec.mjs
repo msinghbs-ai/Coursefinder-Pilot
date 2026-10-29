@@ -64,7 +64,7 @@ test('limits are settings per read type; the defaults are the values formerly fi
 })
 
 test('worker v0.54.0: every reader takes its limit from its setting, reads its answer with readAnswer, and records the cost of a failed read', () => {
-  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.54\.0"; \/\/ v0\.54\.0 \(29 Oct 2026, CF-247 decision W32, reader answer limits\)/)
+  expect(worker).toMatch(/(const WORKER = "coverage-sweep-worker-v0\.54\.0"; |\/\/ was v0\.54\.0 )\/\/ v0\.54\.0 \(30 Oct 2026, CF-247 decisions W30 and W32; W32, reader answer limits\)/) // shipped with W30 in v2.15.370; later versions keep the note
   expect(worker).toContain('import { answerLimit, errorCost, readAnswer, readError, type ReadType } from "./answer.ts";')
   // enrich_ai: one ask for five read types, each with its own setting; a failed read records its cost over its items
   const ask = block('const ASK_READ: Record<string, ReadType>', 'const ENTRY_PROMPT')
