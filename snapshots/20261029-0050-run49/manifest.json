@@ -1,0 +1,239 @@
+{
+  "captured_at": "2026-10-29T00:50:28.706Z",
+  "base_url": "https://coursefinder-pilot.techm.workers.dev",
+  "screens": [
+    {
+      "file": "aer-01-matrix-all.png",
+      "route": "aer-tour",
+      "action": "01-matrix-all",
+      "url": "https://coursefinder-pilot.techm.workers.dev/#entry-requirements",
+      "layout": {
+        "viewport": 1440,
+        "page_scroll_width": 1440,
+        "horizontal_page_scroll": false,
+        "clipped_elements": 0
+      },
+      "console_errors": []
+    },
+    {
+      "file": "aer-02-matrix-rmit-india.png",
+      "route": "aer-tour",
+      "action": "02-matrix-rmit-india",
+      "url": "https://coursefinder-pilot.techm.workers.dev/#entry-requirements",
+      "layout": {
+        "viewport": 1440,
+        "page_scroll_width": 1440,
+        "horizontal_page_scroll": false,
+        "clipped_elements": 0
+      },
+      "console_errors": [],
+      "rows_shown": 50
+    },
+    {
+      "route": "aer-tour",
+      "action": "matrix",
+      "ok": true,
+      "seconds": 6,
+      "at": 0
+    },
+    {
+      "file": "aer-03-matrix-columns-menu.png",
+      "route": "aer-tour",
+      "action": "03-matrix-columns-menu",
+      "url": "https://coursefinder-pilot.techm.workers.dev/#entry-requirements",
+      "layout": {
+        "viewport": 1440,
+        "page_scroll_width": 1440,
+        "horizontal_page_scroll": false,
+        "clipped_elements": 0
+      },
+      "console_errors": []
+    },
+    {
+      "route": "aer-tour",
+      "action": "columns",
+      "ok": true,
+      "seconds": 2,
+      "at": 6
+    },
+    {
+      "file": "aer-04-matrix-drawer.png",
+      "route": "aer-tour",
+      "action": "04-matrix-drawer",
+      "url": "https://coursefinder-pilot.techm.workers.dev/#entry-requirements",
+      "layout": {
+        "viewport": 1440,
+        "page_scroll_width": 1440,
+        "horizontal_page_scroll": false,
+        "clipped_elements": 0
+      },
+      "console_errors": []
+    },
+    {
+      "route": "aer-tour",
+      "action": "drawer",
+      "ok": true,
+      "seconds": 3,
+      "at": 8
+    },
+    {
+      "file": "aer-05-matrix-waiting-in-layer-4.png",
+      "route": "aer-tour",
+      "action": "05-matrix-waiting-in-layer-4",
+      "url": "https://coursefinder-pilot.techm.workers.dev/#entry-requirements",
+      "layout": {
+        "viewport": 1440,
+        "page_scroll_width": 1440,
+        "horizontal_page_scroll": false,
+        "clipped_elements": 0
+      },
+      "console_errors": []
+    },
+    {
+      "route": "aer-tour",
+      "action": "waiting",
+      "ok": true,
+      "seconds": 62,
+      "at": 11
+    },
+    {
+      "file": "aer-06-course-requirements.png",
+      "route": "aer-tour",
+      "action": "06-course-requirements",
+      "url": "https://coursefinder-pilot.techm.workers.dev/#entry-requirements?tab=course",
+      "layout": {
+        "viewport": 1440,
+        "page_scroll_width": 1440,
+        "horizontal_page_scroll": false,
+        "clipped_elements": 0
+      },
+      "console_errors": []
+    },
+    {
+      "file": "aer-07-course-drawer.png",
+      "route": "aer-tour",
+      "action": "07-course-drawer",
+      "url": "https://coursefinder-pilot.techm.workers.dev/#entry-requirements?tab=course",
+      "layout": {
+        "viewport": 1440,
+        "page_scroll_width": 1440,
+        "horizontal_page_scroll": false,
+        "clipped_elements": 0
+      },
+      "console_errors": []
+    },
+    {
+      "route": "aer-tour",
+      "action": "course",
+      "ok": true,
+      "seconds": 9,
+      "at": 73
+    },
+    {
+      "file": "aer-08-sources-reads-holds.png",
+      "route": "aer-tour",
+      "action": "08-sources-reads-holds",
+      "url": "https://coursefinder-pilot.techm.workers.dev/#entry-requirements?tab=sources",
+      "layout": {
+        "viewport": 1440,
+        "page_scroll_width": 1440,
+        "horizontal_page_scroll": false,
+        "clipped_elements": 0
+      },
+      "console_errors": []
+    },
+    {
+      "route": "aer-tour",
+      "action": "sources",
+      "ok": true,
+      "seconds": 2,
+      "at": 82
+    },
+    {
+      "file": "aer-09-resolution-0100714-india.png",
+      "route": "aer-tour",
+      "action": "09-resolution-0100714-india",
+      "url": "https://coursefinder-pilot.techm.workers.dev/#entry-requirements?tab=resolve",
+      "layout": {
+        "viewport": 1440,
+        "page_scroll_width": 1440,
+        "horizontal_page_scroll": false,
+        "clipped_elements": 0
+      },
+      "console_errors": []
+    },
+    {
+      "route": "aer-tour",
+      "action": "resolve",
+      "ok": true,
+      "seconds": 4,
+      "at": 83
+    },
+    {
+      "file": "aer-10-phone-matrix.png",
+      "route": "aer-tour",
+      "action": "10-phone-matrix",
+      "url": "https://coursefinder-pilot.techm.workers.dev/#entry-requirements",
+      "layout": {
+        "viewport": 390,
+        "page_scroll_width": 390,
+        "horizontal_page_scroll": false,
+        "clipped_elements": 0
+      },
+      "console_errors": []
+    },
+    {
+      "file": "aer-11-phone-course.png",
+      "route": "aer-tour",
+      "action": "11-phone-course",
+      "url": "https://coursefinder-pilot.techm.workers.dev/#entry-requirements?tab=course",
+      "layout": {
+        "viewport": 390,
+        "page_scroll_width": 390,
+        "horizontal_page_scroll": false,
+        "clipped_elements": 0
+      },
+      "console_errors": []
+    },
+    {
+      "file": "aer-12-phone-sources.png",
+      "route": "aer-tour",
+      "action": "12-phone-sources",
+      "url": "https://coursefinder-pilot.techm.workers.dev/#entry-requirements?tab=sources",
+      "layout": {
+        "viewport": 390,
+        "page_scroll_width": 390,
+        "horizontal_page_scroll": false,
+        "clipped_elements": 0
+      },
+      "console_errors": []
+    },
+    {
+      "file": "aer-13-phone-resolve.png",
+      "route": "aer-tour",
+      "action": "13-phone-resolve",
+      "url": "https://coursefinder-pilot.techm.workers.dev/#entry-requirements?tab=resolve",
+      "layout": {
+        "viewport": 390,
+        "page_scroll_width": 390,
+        "horizontal_page_scroll": false,
+        "clipped_elements": 0
+      },
+      "console_errors": []
+    },
+    {
+      "route": "aer-tour",
+      "action": "phone",
+      "error": "locator.waitFor: Timeout 60000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-aer-drawer=\"matrix\"] [data-aer-quote]') to be visible\u001b[22m\n",
+      "seconds": 68
+    },
+    {
+      "route": "aer-tour",
+      "action": "reads",
+      "admin_aer_calls": 33,
+      "list_reads": 10,
+      "largest_page_size": 50,
+      "writes": 0
+    }
+  ]
+}
