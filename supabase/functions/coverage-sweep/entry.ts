@@ -98,19 +98,46 @@ export const NA_BAND = /^(not applicable|n\/a|na|-|–|—)$/i;  // the page's o
 // (its manifest compares quotes with the plain table lines) and wherever the caller does not ask for it.
 const BARE_NUMBER = /^[<>≥≤~]?\s*\d+(?:[.,]\d+)?\s*%?(?:\s*[-–]\s*\d+(?:[.,]\d+)?\s*%?)?$/;
 export const NAMED_NOTE = "Some tables of numbers give each cell as its column header, a colon and the value (\"Header: value\"); quote the whole line, which names what each number is.";
-export function entryTables(html: string, toText: (h: string) => string, nameNumbers = false): { text: string; lines: EntryBandLine[]; grids: string[][][]; covered: boolean[][]; named: number } {
+// v0.52.0 (29 Oct 2026, AER reader corrections, Platform Admin mandate 28 Oct 23:22 and decision 29 Oct 09:57): the structure a table line
+// carries, kept beside the page text so the quote gate can recognise printed cells quoted with the structure that names them. Nothing here
+// is added to what the model reads except a table's lead label (below); every value still has to be printed in the quote.
+//   forms: quotable structural line forms. (a) A table with a structural header row (a <thead>, a first row of header cells, a table of
+//          named numbers, or a matrix whose top-left cell is empty): the header line followed by one of its data lines (the model quotes the
+//          header with the row: "NCUK | ATAR equivalent NCUK: 8 | ATAR equivalent: 75.00"). (b) A PDF row named cell by cell: the row's first
+//          cell with one other named cell of the same row ("COUNTRY: Albania | Undergraduate Entry: Case-by-case basis").
+//   heads: each data line of a table with a structural header row, with every cell and the header of its column, so a band given with
+//          words of its column header ("ATAR 70" for the cell 70 under "ATAR equivalent") is resolved to the printed cell, and only then.
+export type EntryHeadRow = { line: string; cells: { h: string; c: string }[] };
+//   segments: the lines of the tables that carry a lead label, each exactly as it stands in the page text. A quote may not run across the
+//          start or end of such a line: a labelled row is quoted within itself, never joined to another row or to the next table's label
+//          (the country printed after it), so a row cannot be tied to a country it is not printed under.
+export type EntryLineSet = EntryBandLine[] & { forms?: string[]; heads?: EntryHeadRow[]; segments?: string[] };
+// a table's lead label: the last piece of text the markup prints before a table with no header row (the country named on the button or
+// heading above its table), when it is a label and not a sentence, carried onto each of the table's lines as the PDF reader carries a
+// section ("Argentina | NCEA Level 2 Certificate/Diploma Level | Titulo de Bachiller")
+const LEAD_WORDS = 6, LEAD_CHARS = 60;  // fixed: structure rule of the reader (a label, not a sentence), as pdf.ts treats a section heading
+const leadLabel = (s: string) => { const t = String(s || "").replace(/\s+/g, " ").trim(); return t && t.length <= LEAD_CHARS && t.split(" ").length <= LEAD_WORDS && !/[.;:,]$/.test(t) && /[A-Za-z]/.test(t) ? t : "" };
+const lastText = (html: string, toText: (h: string) => string) => {
+  const parts = String(html || "").replace(/<(script|style|noscript|svg|template)\b[\s\S]*?<\/\1>/gi, " ").replace(/<!--[\s\S]*?-->/g, " ").split(/<[^>]*>/);
+  for (let i = parts.length - 1; i > 0; i--) { const t = toText(parts[i]).replace(/\s+/g, " ").trim(); if (t) return t }  // parts[0] may begin inside a tag
+  return "";
+};
+export function entryTables(html: string, toText: (h: string) => string, nameNumbers = false): { text: string; lines: EntryLineSet; grids: string[][][]; covered: boolean[][]; named: number; forms: string[]; heads: EntryHeadRow[]; labelled: number } {
   // covered (v0.48.6, D5): per table and row, whether a merged cell from an earlier row still spans a column past the end of this row
   // (the carry stops at the first gap), so a short row there is not simply a row whose trailing cells were left out
   const all: EntryBandLine[] = [], grids: string[][][] = [], covered: boolean[][] = [];
-  let named = 0;
+  let named = 0, labelled = 0;
   const cellText = (h: string) => toText(h).replace(/\s*\n\s*/g, " ").replace(/\s+/g, " ").trim();
-  const tables: string[] = [];
-  const marked = String(html || "").replace(/<table\b[\s\S]*?<\/table>/gi, (table) => {
-    const grid: string[][] = [], carry: { left: number; text: string }[] = [], cov: boolean[] = [];
+  const tables: string[] = [], built: { lines: string[]; head: boolean; heads: EntryHeadRow[]; lead: string }[] = [];
+  let end = 0;  // where the previous table ended in the markup
+  const marked = String(html || "").replace(/<table\b[\s\S]*?<\/table>/gi, (table, at: number, whole: string) => {
+    const from = end; end = at + table.length;
+    const grid: string[][] = [], carry: { left: number; text: string }[] = [], cov: boolean[] = [], ths: boolean[] = [];
     for (const tr of table.match(/<tr\b[\s\S]*?(?=<tr\b|<\/table>)/gi) || []) {
-      const row: string[] = []; let col = 0;
+      const row: string[] = []; let col = 0, th = 0, td = 0;
       const take = () => { while (carry[col]?.left > 0) { row[col] = carry[col].text; carry[col].left--; col++ } };
       for (const m of tr.matchAll(/<(td|th)\b([^>]*)>([\s\S]*?)(?=<\/?(?:td|th|tr)\b|<\/table>|$)/gi)) {
+        if (/^th$/i.test(m[1])) th++; else td++;
         take();
         const span = Math.max(1, Math.min(Number((m[2].match(/\browspan\s*=\s*["']?(\d+)/i) || [])[1] || 1), 200));  // fixed: guard against a malformed rowspan
         const cs = Math.max(1, Math.min(Number((m[2].match(/\bcolspan\s*=\s*["']?(\d+)/i) || [])[1] || 1), 50));  // fixed: guard against a malformed colspan
@@ -119,7 +146,7 @@ export function entryTables(html: string, toText: (h: string) => string, nameNum
       }
       take();
       const beyond = carry.some((x, j) => j >= row.length && x?.left > 0);
-      if (row.some((x) => x)) { grid.push(row); cov.push(beyond) }
+      if (row.some((x) => x)) { grid.push(row); cov.push(beyond); ths.push(th > 0 && td === 0) }
     }
     if (!grid.length) return table;
     let label = "", bandCol = -1;
@@ -139,11 +166,35 @@ export function entryTables(html: string, toText: (h: string) => string, nameNum
       all.push({ line, band: b && !/^(not applicable|n\/a|-|–)$/i.test(b) ? b : null });
       return line;
     });
-    tables.push(lines.join("\n")); grids.push(carried); covered.push(cov);
+    // v0.52.0: a structural header row (only where the caller asks for structure forms): a <thead>, a first row of header cells only, a
+    // table of named numbers, a matrix whose top-left cell is empty above worded column headings, or a row of worded headings (no figure in
+    // any of them) above rows that each print a figure ("GCE A-LEVEL GRADES | GCE A-LEVEL POINTS | ATAR EQUIVALENT" above "CDD | 7 | 70")
+    const worded = (r: string[]) => r.filter(Boolean).length >= 2 && r.every((c) => !c || !/\d/.test(c));
+    const hasHead = nameNumbers && grid.length > 1 && (numeric || /<thead\b/i.test(table) || ths[0]
+      || (!head0(grid[0][0]) && grid[0].slice(1).filter(Boolean).length >= 2 && grid[0].slice(1).every((c) => c && !BARE_NUMBER.test(c)))
+      || (worded(grid[0]) && body.every((r) => r.some((c) => BARE_NUMBER.test(c) || /^\d+(?:[.,]\d+)?\s*%?\s+to\s+\d/.test(c)))));
+    const heads: EntryHeadRow[] = hasHead ? carried.slice(1).map((cells, k) => ({ line: lines[k + 1], cells: cells.map((c, j) => ({ h: String(grid[0][j] || ""), c: String(c || "") })).filter((x) => x.c && x.h) })) : [];
+    const lead = nameNumbers && !hasHead ? leadLabel(lastText(whole.slice(from, at), toText)) : "";
+    tables.push(lines.join("\n")); grids.push(carried); covered.push(cov); built.push({ lines, head: hasHead, heads, lead });
     return `<p>ZZENTRYTABLE${tables.length - 1}ZZ</p>`;  // a placeholder the page text keeps; the rows replace it after
   });
-  return { text: toText(marked).replace(/ZZENTRYTABLE(\d+)ZZ/g, (_, n) => `\n${tables[Number(n)]}\n`), lines: all, grids, covered, named };
+  const plain = toText(marked);
+  const forms: string[] = [], heads: EntryHeadRow[] = [], segments: string[] = [];
+  if (!nameNumbers) return { text: plain.replace(/ZZENTRYTABLE(\d+)ZZ/g, (_, n) => `\n${tables[Number(n)]}\n`), lines: all, grids, covered, named, forms, heads, labelled };
+  // v0.52.0: a table with no header row carries its lead label on each of its lines; a table with a header row gives its structure forms.
+  // The text is otherwise the same as before.
+  const text = plain.replace(/ZZENTRYTABLE(\d+)ZZ/g, (_, n) => {
+    const b = built[Number(n)];
+    if (b.lead) labelled++;
+    const lines = b.lead ? b.lines.map((x) => `${b.lead} | ${x}`) : b.lines;
+    if (b.lead) segments.push(...lines);
+    if (b.head) { for (const x of lines.slice(1)) forms.push(`${lines[0]}\n${x}`); heads.push(...b.heads) }
+    return `\n${lines.join("\n")}\n`;
+  });
+  // the band lines carry the structure to the gate (entryMatrixParsed reads lines.forms and lines.heads)
+  return { text, lines: Object.assign(all, { forms, heads, segments }), grids, covered, named, forms, heads, labelled };
 }
+const head0 = (c: string | undefined) => String(c || "").trim();
 
 // letters and digits compared, case and spacing ignored, so words split by markup ("S enior", NMIT 25 Oct byte-check) still match
 const flat = (s: string) => String(s || "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "");
@@ -154,8 +205,13 @@ export type EntryDrop = { reason: string; country?: string; quote?: string };
 // its band must give that band (band_missing otherwise); a band given must be in the quote (band_not_in_quote) and be the one the line
 // publishes (band_mismatch); lines that match the quote with different bands leave it unproven (band_ambiguous). The band kept is the one
 // printed on the page, never inferred.
-export function entryMatrixParsed(a: any, page: string, bandLines: EntryBandLine[] = []) {
-  const P = flat(page), on = (q: string) => flat(q).length >= 6 && P.includes(flat(q));
+// v0.52.0: bandLines may carry the page's structure (EntryLineSet: forms and heads from entryTables, forms from pdfTables). A quote is on
+// the page when it is in the page text or in one structural form; each form is printed text of one table row with the structure that
+// names it, so a value must still be printed in the quote. A band given with words of its column header is the printed cell only when the
+// whole row is quoted, the cell is in that column and the other words are that column's header words (headerBand).
+export function entryMatrixParsed(a: any, page: string, bandLines: EntryLineSet = []) {
+  const F = (bandLines.forms || []).map(flat), within = segmentCheck(page, bandLines.segments || []);
+  const P = flat(page), on = (q: string) => flat(q).length >= 6 && ((P.includes(flat(q)) && within(flat(q))) || F.some((f) => f.includes(flat(q))));
   const numIn = (n: number, q: string) => [String(n), String(n).replace(/\.0$/, ""), n.toFixed(1), n.toFixed(2)].some((d) => String(q || "").includes(d));
   const rows: any[] = [], dropped: EntryDrop[] = [];
   for (const x of (Array.isArray(a?.rows) ? a.rows : []) as any[]) {
@@ -171,7 +227,8 @@ export function entryMatrixParsed(a: any, page: string, bandLines: EntryBandLine
     if (value != null && !numIn(value, quote)) { d("value_not_in_quote"); continue }
     const grade = x?.min_grade == null ? null : String(x.min_grade).trim() || null;
     if (grade && !flat(quote).includes(flat(grade))) { d("grade_not_in_quote"); continue }
-    const Q = flat(quote), given = x?.benchmark_band == null ? null : String(x.benchmark_band).trim() || null;
+    const Q = flat(quote), given0 = x?.benchmark_band == null ? null : String(x.benchmark_band).trim() || null;
+    const given = given0 && !Q.includes(flat(given0)) && !NA_BAND.test(given0) ? (headerBand(given0, Q, bandLines.heads || []) ?? given0) : given0;
     const published = [...new Set(bandLines.filter((l) => l.band && flat(l.band) && Q.includes(flat(l.band)) && (flat(l.line).includes(Q) || Q.includes(flat(l.line))))
       .map((l) => String(l.band)))];
     if (published.length > 1) { d("band_ambiguous"); continue }
@@ -187,6 +244,47 @@ export function entryMatrixParsed(a: any, page: string, bandLines: EntryBandLine
       conditions: x?.conditions ?? {}, confidence: Number(x?.confidence ?? 0), quote: quote.slice(0, 300) });
   }
   return { rows, dropped, edition: a?.edition ?? null, intake_year: Number.isInteger(a?.intake_year) ? a.intake_year : null };
+}
+// v0.52.0 (integrator review): with labelled lines on the page, a quote found in the page text must have one place where it does not run
+// across the start or end of a labelled line (closed: a quote that can only be read across such a boundary is not on the page). The page
+// is compared letter by letter as flat() compares it, with each labelled line's ends marked; without labelled lines nothing changes.
+function segmentCheck(page: string, segments: string[]): (fq: string) => boolean {
+  if (!segments.length) return () => true;
+  const text = String(page || ""), cum: number[] = [0];
+  let P2 = "";
+  for (const ch of text) { P2 += flat(ch); cum.push(P2.length) }  // flat length before each character (code point)
+  const at: number[] = [], chars = [...text], idx: number[] = [];
+  { let u = 0; for (let k = 0; k < chars.length; k++) { idx.push(u); u += chars[k].length } idx.push(u) }  // UTF-16 offset of each code point
+  const cpAt = (off: number) => { let lo = 0, hi = idx.length - 1; while (lo < hi) { const m = (lo + hi) >> 1; if (idx[m] < off) lo = m + 1; else hi = m } return lo };
+  let cursor = 0;
+  for (const s of segments) {
+    const i = text.indexOf(s, cursor); if (i < 0) continue;
+    at.push(cum[cpAt(i)], cum[cpAt(i + s.length)]); cursor = i + s.length;
+  }
+  const bounds = [...new Set(at)].sort((a, b) => a - b);
+  return (fq: string) => {
+    if (!fq) return false;
+    for (let i = P2.indexOf(fq); i >= 0; i = P2.indexOf(fq, i + 1)) if (!bounds.some((b) => b > i && b < i + fq.length)) return true;
+    return false;
+  };
+}
+// v0.52.0: "ATAR 70" quoted with the row "French Baccalaureat Points: 10 | ATAR equivalent: 70" is the printed cell "70" of the column
+// "ATAR equivalent": one word of the band is exactly the cell, every other word is a word of that column's header, the whole row line is in
+// the quote, and every row the quote holds gives the same cell. Anything else gives null (the band stays as given and the gate decides).
+export function headerBand(given: string, Q: string, heads: EntryHeadRow[]): string | null {
+  const toks = String(given || "").split(/\s+/).map(flat).filter(Boolean);
+  if (toks.length < 2) return null;
+  const found = new Set<string>();
+  for (const r of heads) {
+    if (!flat(r.line) || !Q.includes(flat(r.line))) continue;
+    for (const { h, c } of r.cells) {
+      const v = flat(c); if (!v) continue;
+      const k = toks.indexOf(v); if (k < 0) continue;
+      const hw = allWords(h), rest = toks.filter((_, i) => i !== k);
+      if (rest.length && rest.every((t) => hw.has(t))) found.add(c.trim());
+    }
+  }
+  return found.size === 1 ? [...found][0] : null;
 }
 
 // v0.48.3 (26 Oct 2026, Platform Admin 23:16 "source-anchored completeness guard"): a read of 13 of 22 China rows (the whole Gao Kao column
