@@ -2,6 +2,9 @@ import { expect } from '@playwright/test'
 import { clickPrimaryNav, DETERMINISTIC_UI_TIMEOUT } from './runtime-evidence.mjs'
 
 const ui = { timeout: DETERMINISTIC_UI_TIMEOUT }
+// Workspaces drawn from a data read (Universities: admin_layer23 'universities', about 0.6 MB; Fetchers: the provider registry) appear
+// only when the read returns, so they get the data-load timeout rather than the 6-second UI timeout.
+const data = { timeout: 30_000 }
 
 export async function openLayer1(page) {
   await clickPrimaryNav(page, 'Layer 1 — Operations')
@@ -29,7 +32,7 @@ export async function openLayer2Tab(page, tab) {
 export async function openLayer2(page) {
   await clickPrimaryNav(page, 'Layer 2 — Enrichment')
   const workspace = page.locator('[data-adapters-workspace]')
-  await expect(workspace).toBeVisible(ui)
+  await expect(workspace).toBeVisible(data)
   // Decision 133: the screen title is the page title (Layer panels no longer repeat it).
   await expect(page.getByRole('heading', { name: 'Layer 2/3 Build & enrich' }).first()).toBeVisible(ui)
   return workspace
@@ -41,7 +44,7 @@ export async function openLayer2(page) {
 async function openFetchersCard(page,heading){
   await clickPrimaryNav(page,'Scrapers & fetchers')
   const headingLocator=page.getByRole('heading',{name:heading,exact:true}).first()
-  await expect(headingLocator).toBeVisible(ui)
+  await expect(headingLocator).toBeVisible(data)
   return headingLocator.locator('xpath=ancestor-or-self::*[@role="region"][1] | ancestor::section[1]').first()
 }
 
@@ -61,7 +64,7 @@ export async function openRetiredLayer3(page, address = '/#layer-3-ai') {
   await page.goto(address)
   await expect(page).toHaveURL(/#layer-2-discovery\?tab=universities$/, ui)
   await expect(page.locator('.m-topbar h1')).toHaveText('Layer 2/3 Build & enrich', ui)
-  await expect(page.locator('[data-adapters-workspace]')).toBeVisible(ui)
+  await expect(page.locator('[data-adapters-workspace]')).toBeVisible(data)
   await expect(page.locator('.m-nav').getByRole('button', { name: 'Layer 3 AI validation', exact: true })).toHaveCount(0)
   return page.locator('main').first()
 }

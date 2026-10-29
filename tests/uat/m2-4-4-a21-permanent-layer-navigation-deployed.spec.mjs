@@ -41,7 +41,7 @@ test.describe('A21 permanent Layer navigation @deployed',()=>{
     await clickPrimaryNav(page,'Layer 2 — Enrichment')
     const workspace=page.locator('[data-adapters-workspace]')
     await expect(page.getByRole('heading',{name:'Layer 2/3 Build & enrich',exact:true}).first()).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
-    await expect(workspace).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT}) // v2.15.300: Adapters is the Universities tab of Layer 2/3
+    await expect(workspace).toBeVisible({timeout:30_000}) // v2.15.300: Adapters is the Universities tab of Layer 2/3
     await expect(page.locator('.m-sidebar')).toBeVisible()
     await expect(page.getByLabel('Layer 2 Wave 1 Courses')).toHaveCount(0)
     await expect(page.getByLabel('Layer 2 acquisition route')).toHaveCount(0)

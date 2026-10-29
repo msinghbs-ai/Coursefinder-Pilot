@@ -9,7 +9,7 @@ test.describe('A23 quota-aware Layer 2 background execution @deployed',()=>{
  // area first in the course-page sweep and shows no qualification knobs.
  test('operator Adapters screen has no qualification knobs',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page);await clickPrimaryNav(page,'Layer 2 — Enrichment')
-  const ws=page.locator('[data-adapters-workspace]');await expect(ws).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+  const ws=page.locator('[data-adapters-workspace]');await expect(ws).toBeVisible({timeout:30_000})
   await expect(ws.locator('[data-adapters-list]')).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
   await expect(ws.getByRole('button',{name:'Start production enrichment',exact:true})).toHaveCount(0)
   await expect(page.getByLabel('Layer 2 Wave 1 Courses')).toHaveCount(0);await expect(page.getByLabel('Layer 2 acquisition route')).toHaveCount(0)
@@ -21,10 +21,10 @@ test.describe('A23 quota-aware Layer 2 background execution @deployed',()=>{
  test('retired Layer 2 source address lands on Adapters; Scrapers & fetchers shows the provider registry',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page)
   await page.goto(new URL('/#administration?section=layer2-sources',process.env.UAT_BASE_URL).toString())
-  await expect(page.locator('[data-adapters-workspace]')).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+  await expect(page.locator('[data-adapters-workspace]')).toBeVisible({timeout:30_000})
   await page.goto(new URL('/#scrapers',process.env.UAT_BASE_URL).toString())
   // Clean-up batch 2 (9 Oct 2026): Source profiles were retired; the provider registry stays.
-  await expect(page.locator('.l2p-provider-list')).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+  await expect(page.locator('.l2p-provider-list')).toBeVisible({timeout:30_000})
   await expect(page.locator('[data-card="scrapers.source-profiles"]')).toHaveCount(0)
   await milestoneScreenshot(page,testInfo,'a23-scrapers-registry')
  }finally{await finish(testInfo,runtime)}})

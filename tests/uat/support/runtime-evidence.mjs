@@ -188,8 +188,11 @@ export async function signOutUatUser(page){
 export async function openDataQuality(page) {
   await clickPrimaryNav(page,'Completeness')
   await expect(page.locator('h1').filter({ hasText: 'Coverage & completeness' }).first()).toBeVisible({ timeout: DETERMINISTIC_UI_TIMEOUT })
-  const bar = page.locator('.cf-page-tabs')
-  if (await bar.count() > 0) await bar.locator('[role="tab"]').filter({ hasText: 'Attributes' }).first().click({ timeout: DETERMINISTIC_UI_TIMEOUT })
+  // The tab bar is drawn with the page; wait for the Attributes tab rather than skipping it when the bar is not there yet.
+  const attributes = page.locator('.cf-page-tabs [role="tab"]').filter({ hasText: 'Attributes' }).first()
+  await expect(attributes).toBeVisible({ timeout: 20_000 })
+  await attributes.click({ timeout: DETERMINISTIC_UI_TIMEOUT })
+  await expect(attributes).toHaveAttribute('aria-selected', 'true', { timeout: DETERMINISTIC_UI_TIMEOUT })
   // The Attributes tab now loads field coverage, the gap queue and cross-checks before the By area section (v2.15.3xx), so it is
   // given the data-load timeout rather than the 6-second UI timeout.
   const area = page.locator('details.cov-by-area')
