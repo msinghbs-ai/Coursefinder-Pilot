@@ -1,19 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.376'
-export const PACKAGE_VERSION='0.1.303'
+export const UI_VERSION='2.15.377'
+export const PACKAGE_VERSION='0.1.304'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'30 Oct 2026',
-  title:'Course outcome register for academic entry requirements',
-  changes:[
-    'Catalogue › Entry requirements › Resolution inspection (Pipeline Operator and above): the course outcome register gives every active course of the entry-read countries one outcome: admitted course requirement, admitted provider resolution, awaiting Layer 4 review, verified no requirement on the page, no official course URL, identity unresolved, source unreadable, or excluded with its reason. Counts by country; Download CSV gives every course with its reason, page and Layer 4 item.',
-    'The register is rebuilt by the job AER course outcome register (Settings › Pipeline settings › Platform upkeep: rebuilt every, rows per download page, marked stale after) and shows when it was built. It is read only: it admits, reads, queues and decides nothing.',
+  date:'31 Oct 2026',
+  title:'Waste guard and AI match preparation run inside their time limits again',
+  changes:['No screen or operator step changed.'],
+  bugFixes:[
+    'Waste guard (hourly) and AI match preparation (every 2 minutes) checked each university\'s settings once for every course or AI-match row, so as the tables grew they reached their 2-minute limit and failed (14 of 24 waste guard runs on 30 Oct). Each university is now checked once per run: the same flags and the same work, in about 15 s and 19 s instead of up to 2 minutes (StudySearch finding F1).',
     'Consumer API unchanged (Decision 266).'
-  ],
-  bugFixes:[]
+  ]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.
