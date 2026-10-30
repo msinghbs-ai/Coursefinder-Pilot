@@ -1,0 +1,4410 @@
+{
+  "config": {
+    "argv": [
+      "/opt/hostedtoolcache/node/22.23.4/x64/bin/node",
+      "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/node_modules/.bin/playwright",
+      "test",
+      "--grep",
+      "@deployed",
+      "--grep-invert",
+      "@live-acting",
+      "--project=chromium-desktop",
+      "--reporter=list,json"
+    ],
+    "configFile": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/playwright.config.mjs",
+    "rootDir": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat",
+    "failOnFlakyTests": false,
+    "forbidOnly": true,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "ci": {
+        "commitHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/commit/6f0066196de22971e5a46c6820fdce900a1b7554",
+        "commitHash": "6f0066196de22971e5a46c6820fdce900a1b7554",
+        "buildHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/41144480924"
+      },
+      "gitCommit": {
+        "shortHash": "6f00661",
+        "hash": "6f0066196de22971e5a46c6820fdce900a1b7554",
+        "subject": "CF-247 v2.15.375: D5 additive scale_stated marker; \"Not stated on the page\" in the AER workspace (#765)",
+        "body": "CF-247 v2.15.375: D5 additive scale_stated marker; \"Not stated on the page\" in the AER workspace (#765)\n\n* CF-247 D5: additive scale_stated marker on Website API v2 entry rows (decision A4) and the R1 \"Not stated on the page\" scale\n\n- Consumer part (Platform Admin paste before merge; approval Platform Admin 30 Oct 2026 08:45, admin decision §11.2):\n  md5-guarded, re-runnable, count-guarded edits of security.entry_matrix_payload_v1 and security.entry_resolve_v1;\n  scale_stated true/false/null; case_by_case null-safe; website_v2_* and edge functions untouched; baseline re-taken.\n- R1 (ordinary migration): public.admin_aer matrix scale choice not_stated (grade_scale null), refused until the marker\n  is live; needs the printed grade; no number without its scale; add defaults to none. Workspace UI shows and offers it.\n- Spec s182 (Guards: D5 / A4) with resolver fixtures; consumer-api-baseline.json note updated.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 D5: edit_once normalises CRLF line endings (first paste run rolled back on md5 99dfa649)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 D5: one-line edits (SQL editor auto-indent changed the after-md5); after-md5s 5f7eb755 / 69bbc05f; s182 asserts one-line edits\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.375 integration: D5 migrations numbered 20261030280000 / 20261030290000; release ceremony\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n---------\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+        "author": {
+          "name": "msinghbs-ai",
+          "email": "msingh.bs@gmail.com",
+          "time": 1793360673000
+        },
+        "committer": {
+          "name": "GitHub",
+          "email": "noreply@github.com",
+          "time": 1793360673000
+        },
+        "branch": "main"
+      },
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "ci": {
+            "commitHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/commit/6f0066196de22971e5a46c6820fdce900a1b7554",
+            "commitHash": "6f0066196de22971e5a46c6820fdce900a1b7554",
+            "buildHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/41144480924"
+          },
+          "gitCommit": {
+            "shortHash": "6f00661",
+            "hash": "6f0066196de22971e5a46c6820fdce900a1b7554",
+            "subject": "CF-247 v2.15.375: D5 additive scale_stated marker; \"Not stated on the page\" in the AER workspace (#765)",
+            "body": "CF-247 v2.15.375: D5 additive scale_stated marker; \"Not stated on the page\" in the AER workspace (#765)\n\n* CF-247 D5: additive scale_stated marker on Website API v2 entry rows (decision A4) and the R1 \"Not stated on the page\" scale\n\n- Consumer part (Platform Admin paste before merge; approval Platform Admin 30 Oct 2026 08:45, admin decision §11.2):\n  md5-guarded, re-runnable, count-guarded edits of security.entry_matrix_payload_v1 and security.entry_resolve_v1;\n  scale_stated true/false/null; case_by_case null-safe; website_v2_* and edge functions untouched; baseline re-taken.\n- R1 (ordinary migration): public.admin_aer matrix scale choice not_stated (grade_scale null), refused until the marker\n  is live; needs the printed grade; no number without its scale; add defaults to none. Workspace UI shows and offers it.\n- Spec s182 (Guards: D5 / A4) with resolver fixtures; consumer-api-baseline.json note updated.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 D5: edit_once normalises CRLF line endings (first paste run rolled back on md5 99dfa649)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 D5: one-line edits (SQL editor auto-indent changed the after-md5); after-md5s 5f7eb755 / 69bbc05f; s182 asserts one-line edits\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.375 integration: D5 migrations numbered 20261030280000 / 20261030290000; release ceremony\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n---------\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+            "author": {
+              "name": "msinghbs-ai",
+              "email": "msingh.bs@gmail.com",
+              "time": 1793360673000
+            },
+            "committer": {
+              "name": "GitHub",
+              "email": "noreply@github.com",
+              "time": 1793360673000
+            },
+            "branch": "main"
+          },
+          "actualWorkers": 1
+        },
+        "id": "chromium-desktop",
+        "name": "chromium-desktop",
+        "testDir": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "ci": {
+            "commitHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/commit/6f0066196de22971e5a46c6820fdce900a1b7554",
+            "commitHash": "6f0066196de22971e5a46c6820fdce900a1b7554",
+            "buildHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/41144480924"
+          },
+          "gitCommit": {
+            "shortHash": "6f00661",
+            "hash": "6f0066196de22971e5a46c6820fdce900a1b7554",
+            "subject": "CF-247 v2.15.375: D5 additive scale_stated marker; \"Not stated on the page\" in the AER workspace (#765)",
+            "body": "CF-247 v2.15.375: D5 additive scale_stated marker; \"Not stated on the page\" in the AER workspace (#765)\n\n* CF-247 D5: additive scale_stated marker on Website API v2 entry rows (decision A4) and the R1 \"Not stated on the page\" scale\n\n- Consumer part (Platform Admin paste before merge; approval Platform Admin 30 Oct 2026 08:45, admin decision §11.2):\n  md5-guarded, re-runnable, count-guarded edits of security.entry_matrix_payload_v1 and security.entry_resolve_v1;\n  scale_stated true/false/null; case_by_case null-safe; website_v2_* and edge functions untouched; baseline re-taken.\n- R1 (ordinary migration): public.admin_aer matrix scale choice not_stated (grade_scale null), refused until the marker\n  is live; needs the printed grade; no number without its scale; add defaults to none. Workspace UI shows and offers it.\n- Spec s182 (Guards: D5 / A4) with resolver fixtures; consumer-api-baseline.json note updated.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 D5: edit_once normalises CRLF line endings (first paste run rolled back on md5 99dfa649)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 D5: one-line edits (SQL editor auto-indent changed the after-md5); after-md5s 5f7eb755 / 69bbc05f; s182 asserts one-line edits\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.375 integration: D5 migrations numbered 20261030280000 / 20261030290000; release ceremony\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n---------\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+            "author": {
+              "name": "msinghbs-ai",
+              "email": "msingh.bs@gmail.com",
+              "time": 1793360673000
+            },
+            "committer": {
+              "name": "GitHub",
+              "email": "noreply@github.com",
+              "time": 1793360673000
+            },
+            "branch": "main"
+          },
+          "actualWorkers": 1
+        },
+        "id": "chromium-mobile",
+        "name": "chromium-mobile",
+        "testDir": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 120000
+      }
+    ],
+    "filteredProjects": [
+      {
+        "grep": {},
+        "grepInvert": {},
+        "outputDir": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "ci": {
+            "commitHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/commit/6f0066196de22971e5a46c6820fdce900a1b7554",
+            "commitHash": "6f0066196de22971e5a46c6820fdce900a1b7554",
+            "buildHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/41144480924"
+          },
+          "gitCommit": {
+            "shortHash": "6f00661",
+            "hash": "6f0066196de22971e5a46c6820fdce900a1b7554",
+            "subject": "CF-247 v2.15.375: D5 additive scale_stated marker; \"Not stated on the page\" in the AER workspace (#765)",
+            "body": "CF-247 v2.15.375: D5 additive scale_stated marker; \"Not stated on the page\" in the AER workspace (#765)\n\n* CF-247 D5: additive scale_stated marker on Website API v2 entry rows (decision A4) and the R1 \"Not stated on the page\" scale\n\n- Consumer part (Platform Admin paste before merge; approval Platform Admin 30 Oct 2026 08:45, admin decision §11.2):\n  md5-guarded, re-runnable, count-guarded edits of security.entry_matrix_payload_v1 and security.entry_resolve_v1;\n  scale_stated true/false/null; case_by_case null-safe; website_v2_* and edge functions untouched; baseline re-taken.\n- R1 (ordinary migration): public.admin_aer matrix scale choice not_stated (grade_scale null), refused until the marker\n  is live; needs the printed grade; no number without its scale; add defaults to none. Workspace UI shows and offers it.\n- Spec s182 (Guards: D5 / A4) with resolver fixtures; consumer-api-baseline.json note updated.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 D5: edit_once normalises CRLF line endings (first paste run rolled back on md5 99dfa649)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 D5: one-line edits (SQL editor auto-indent changed the after-md5); after-md5s 5f7eb755 / 69bbc05f; s182 asserts one-line edits\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.375 integration: D5 migrations numbered 20261030280000 / 20261030290000; release ceremony\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n---------\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+            "author": {
+              "name": "msinghbs-ai",
+              "email": "msingh.bs@gmail.com",
+              "time": 1793360673000
+            },
+            "committer": {
+              "name": "GitHub",
+              "email": "noreply@github.com",
+              "time": 1793360673000
+            },
+            "branch": "main"
+          },
+          "actualWorkers": 1
+        },
+        "name": "chromium-desktop",
+        "testDir": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat",
+        "snapshotDir": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat",
+        "testIgnore": [],
+        "testMatch": "**/*.@(spec|test).?(c|m)[jt]s?(x)",
+        "timeout": 120000,
+        "use": {
+          "baseURL": "https://coursefinder-pilot.techm.workers.dev",
+          "trace": "retain-on-failure",
+          "screenshot": "only-on-failure",
+          "video": "retain-on-failure",
+          "actionTimeout": 20000,
+          "navigationTimeout": 45000,
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36",
+          "viewport": {
+            "width": 1440,
+            "height": 1100
+          },
+          "screen": {
+            "width": 1920,
+            "height": 1080
+          },
+          "deviceScaleFactor": 1,
+          "isMobile": false,
+          "hasTouch": false,
+          "defaultBrowserType": "chromium"
+        },
+        "dependencies": [],
+        "ignoreSnapshots": false,
+        "__projectId": "chromium-desktop"
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list"
+      ],
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "default",
+    "updateSourceMethod": "patch",
+    "version": "1.64.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "a10-paged-filters-deployed.spec.mjs",
+      "file": "a10-paged-filters-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "A10 paged filters and tablet focus @deployed",
+          "file": "a10-paged-filters-deployed.spec.mjs",
+          "line": 21,
+          "column": 6,
+          "specs": [
+            {
+              "title": "QILT Provider and Metric use 10-item server paging without coarse-pointer autofocus",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 6057,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:27:03.832Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a10-qilt-paged-filters",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/a10-paged-filters-deployed-d1725-ut-coarse-pointer-autofocus-chromium-desktop/attachments/a10-qilt-paged-filters-dbdc0c11be13e0c412b69ce2c336f9a8cb049f39.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/a10-paged-filters-deployed-d1725-ut-coarse-pointer-autofocus-chromium-desktop/attachments/runtime-evidence-693a5f1ac478eb9d1bc62a0d3005805d25afc166.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "64ff864d7aad017ea84b-7caa5088654e1be7575d",
+              "file": "a10-paged-filters-deployed.spec.mjs",
+              "line": 28,
+              "column": 3
+            },
+            {
+              "title": "PRISMS Study area uses 10-item server paging without coarse-pointer autofocus",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3918,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:27:10.140Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a10-prisms-paged-filter",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/a10-paged-filters-deployed-7d9b3-ut-coarse-pointer-autofocus-chromium-desktop/attachments/a10-prisms-paged-filter-9e5bbf9ae64e60472b06cae9a3a4f0c0e5db27a4.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/a10-paged-filters-deployed-7d9b3-ut-coarse-pointer-autofocus-chromium-desktop/attachments/runtime-evidence-d0c9ca5ffe8320e4892eb831f058142666298ca9.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "64ff864d7aad017ea84b-e1e740440d3352e63f3e",
+              "file": "a10-paged-filters-deployed.spec.mjs",
+              "line": 46,
+              "column": 3
+            },
+            {
+              "title": "Evidence Source uses country-aware 10-item server paging and local filters do not autofocus",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4731,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:27:14.072Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a10-evidence-paged-filters",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/a10-paged-filters-deployed-dd72b-al-filters-do-not-autofocus-chromium-desktop/attachments/a10-evidence-paged-filters-2785ab2125cf38d76690aad965ef279fdf61818d.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/a10-paged-filters-deployed-dd72b-al-filters-do-not-autofocus-chromium-desktop/attachments/runtime-evidence-10b4ad33ce3634ea83cea7101ad26323c2421f67.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "64ff864d7aad017ea84b-ad40e54d0867b33dea22",
+              "file": "a10-paged-filters-deployed.spec.mjs",
+              "line": 56,
+              "column": 3
+            },
+            {
+              "title": "A10 server contracts are mirrored and large legacy bundles stay empty",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2109,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:27:18.817Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "64ff864d7aad017ea84b-3c33020dc7bf83c014ce",
+              "file": "a10-paged-filters-deployed.spec.mjs",
+              "line": 74,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "a12-contextual-insights-deployed.spec.mjs",
+      "file": "a12-contextual-insights-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "A12 contextual insights on catalogue detail blades @deployed",
+          "file": "a12-contextual-insights-deployed.spec.mjs",
+          "line": 13,
+          "column": 6,
+          "specs": [
+            {
+              "title": "RMIT Provider blade relates QILT PRISMS context and Scholarships without flattening granularity",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5162,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:27:20.946Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a12-provider-contextual-insights",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/a12-contextual-insights-de-5cd0b-hout-flattening-granularity-chromium-desktop/attachments/a12-provider-contextual-insights-e9aed9ef97ae075064396b958591baeb9f4dcdb4.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/a12-contextual-insights-de-5cd0b-hout-flattening-granularity-chromium-desktop/attachments/runtime-evidence-2e06697f7867817b815e16e40a4a29c561785bb6.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ea32d9d238a47d4e4322-c2e4607eb9ab87527ed0",
+              "file": "a12-contextual-insights-deployed.spec.mjs",
+              "line": 16,
+              "column": 2
+            },
+            {
+              "title": "Course blade labels Provider outcomes and Provider-scope Scholarships as context not Course truth",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 6188,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:27:26.130Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a12-course-contextual-insights",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/a12-contextual-insights-de-ff344-as-context-not-Course-truth-chromium-desktop/attachments/a12-course-contextual-insights-2074cb2bedbc53d49a184aae02f5fc7e31f3d3eb.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/a12-contextual-insights-de-ff344-as-context-not-Course-truth-chromium-desktop/attachments/runtime-evidence-1c64aee10a96137d900611b639bca526c87419bf.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ea32d9d238a47d4e4322-bd5016ca393a0a7f3c3f",
+              "file": "a12-contextual-insights-deployed.spec.mjs",
+              "line": 36,
+              "column": 2
+            },
+            {
+              "title": "A12 source contract remains bounded and role checked",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 8,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:27:32.329Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ea32d9d238a47d4e4322-43beba701314c76dbe71",
+              "file": "a12-contextual-insights-deployed.spec.mjs",
+              "line": 60,
+              "column": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "a13-filter-demo-trace-deployed.spec.mjs",
+      "file": "a13-filter-demo-trace-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "A13 stable Course filters and Layer 2 acquisition Evidence trace @deployed",
+          "file": "a13-filter-demo-trace-deployed.spec.mjs",
+          "line": 8,
+          "column": 6,
+          "specs": [
+            {
+              "title": "tablet Course Provider filter stays anchored and does not auto-focus",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2599,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:27:32.354Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a13-tablet-filter-anchored",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/a13-filter-demo-trace-depl-336bb-red-and-does-not-auto-focus-chromium-desktop/attachments/a13-tablet-filter-anchored-9d898fe2ef59c3dddad39a41ea5ce5d040da958b.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/a13-filter-demo-trace-depl-336bb-red-and-does-not-auto-focus-chromium-desktop/attachments/runtime-evidence-c16f002abeddd3b96ce6919b311d9149f12ffd6d.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "dc4b89bf9963c6a1e771-0c954f547b8c3a131da3",
+              "file": "a13-filter-demo-trace-deployed.spec.mjs",
+              "line": 11,
+              "column": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "a15-provider-contact-intelligence-deployed.spec.mjs",
+      "file": "a15-provider-contact-intelligence-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "A15 Provider international contact intelligence @deployed",
+          "file": "a15-provider-contact-intelligence-deployed.spec.mjs",
+          "line": 18,
+          "column": 6,
+          "specs": [
+            {
+              "title": "UQ Provider blade shows governed first-party regional manager assignments with Evidence",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3616,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:27:34.980Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a15-uq-international-contacts-desktop",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/a15-provider-contact-intel-a5e17-r-assignments-with-Evidence-chromium-desktop/attachments/a15-uq-international-contacts-desktop-1def4e2a432ef618531a1d8715c0f47eb22b4ead.png"
+                        },
+                        {
+                          "name": "a15-uq-international-contacts-mobile",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/a15-provider-contact-intel-a5e17-r-assignments-with-Evidence-chromium-desktop/attachments/a15-uq-international-contacts-mobile-4b569001b6fd68ceeb341169d83053831fbcd8f1.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/a15-provider-contact-intel-a5e17-r-assignments-with-Evidence-chromium-desktop/attachments/runtime-evidence-6debe3540866f63d07b716077e4eb94124574bf2.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "08ba2502454cef24a57b-8a16ce0d7760910b7cd6",
+              "file": "a15-provider-contact-intelligence-deployed.spec.mjs",
+              "line": 28,
+              "column": 3
+            },
+            {
+              "title": "A15 data boundary keeps contact tables private and licensed search non-revealing",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 14,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:27:38.619Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "08ba2502454cef24a57b-701b76d516a56de4a3f2",
+              "file": "a15-provider-contact-intelligence-deployed.spec.mjs",
+              "line": 66,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "admin-navigation-deployed.spec.mjs",
+      "file": "admin-navigation-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "CourseFinder canonical Administration and Operations navigation @deployed",
+          "file": "admin-navigation-deployed.spec.mjs",
+          "line": 8,
+          "column": 6,
+          "specs": [
+            {
+              "title": "primary sidebar exposes the governed non-floating information architecture",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3705,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:27:38.650Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "admin-canonical-navigation",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/admin-navigation-deployed--bffe2-ng-information-architecture-chromium-desktop/attachments/admin-canonical-navigation-7153c8d31200e3194941144887857dbe8bdfe009.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/admin-navigation-deployed--bffe2-ng-information-architecture-chromium-desktop/attachments/runtime-evidence-a4373063fec39c2f21c1d114a940d4c017e8abd9.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "552ec3b16ac4b68cd063-1bce8ede84137804e4c5",
+              "file": "admin-navigation-deployed.spec.mjs",
+              "line": 11,
+              "column": 3
+            },
+            {
+              "title": "Layer 1 and Layer 2 open as embedded canonical workspaces",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 8105,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:27:42.373Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "layers1-2-canonical",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/admin-navigation-deployed--cc5c5-bedded-canonical-workspaces-chromium-desktop/attachments/layers1-2-canonical-f165e39c49f4a8e72a767d44fbeee35f5af738af.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/admin-navigation-deployed--cc5c5-bedded-canonical-workspaces-chromium-desktop/attachments/runtime-evidence-df24d436e20d5a2d633c6bab2145e83b5544592f.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "552ec3b16ac4b68cd063-f81995b57627193670f8",
+              "file": "admin-navigation-deployed.spec.mjs",
+              "line": 29,
+              "column": 3
+            },
+            {
+              "title": "old Layer 3 address opens Layer 2 › Adapters; Layer 4 is its own route",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3966,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:27:50.490Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "layer3-retired-layer4-route",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/admin-navigation-deployed--0de6e-rs-Layer-4-is-its-own-route-chromium-desktop/attachments/layer3-retired-layer4-route-c066ce568971ef578c7e449349d80c350b68d7e7.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/admin-navigation-deployed--0de6e-rs-Layer-4-is-its-own-route-chromium-desktop/attachments/runtime-evidence-8c7011b09a40882648369cc213886571962da4a3.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "552ec3b16ac4b68cd063-6952a641136c635ed1e5",
+              "file": "admin-navigation-deployed.spec.mjs",
+              "line": 41,
+              "column": 3
+            },
+            {
+              "title": "Administration subcontext and Scheduled Tasks survive deep-link browser history",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3428,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:27:54.468Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/admin-navigation-deployed--5b9d9-e-deep-link-browser-history-chromium-desktop/attachments/runtime-evidence-a6b21062cac19fe1744c386d7cc44ddfe8c56f9e.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "552ec3b16ac4b68cd063-f5d379f8f980d698cf62",
+              "file": "admin-navigation-deployed.spec.mjs",
+              "line": 50,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "cf-061-qilt-prisms-comparison-deployed.spec.mjs",
+      "file": "cf-061-qilt-prisms-comparison-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "CF-061 QILT PRISMS comparison experience @deployed",
+          "file": "cf-061-qilt-prisms-comparison-deployed.spec.mjs",
+          "line": 9,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Provider comparison aligns QILT cards for two selected universities",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 8237,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:27:57.921Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "cf-061-provider-comparison",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-061-qilt-prisms-compari-72e0a-r-two-selected-universities-chromium-desktop/attachments/cf-061-provider-comparison-5dfdb9f5e276ffd9a7bf9033ccabf44528659790.png"
+                        },
+                        {
+                          "name": "cf-061-provider-comparison-mobile",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-061-qilt-prisms-compari-72e0a-r-two-selected-universities-chromium-desktop/attachments/cf-061-provider-comparison-mobile-3ce7117c8b3dcbc8b9ca5828e30d455ae99a0b1d.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-061-qilt-prisms-compari-72e0a-r-two-selected-universities-chromium-desktop/attachments/runtime-evidence-e4ab1b009a93219a92ab6f761a092eed798da6b4.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "742d1de593576af0080c-67dfac443f2f1f9e44c4",
+              "file": "cf-061-qilt-prisms-comparison-deployed.spec.mjs",
+              "line": 12,
+              "column": 2
+            },
+            {
+              "title": "Course comparison can select any university before choosing courses",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 6493,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:28:06.179Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "cf-079-course-compare-provider-first",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-061-qilt-prisms-compari-f5591-ity-before-choosing-courses-chromium-desktop/attachments/cf-079-course-compare-provider-first-873566ea9c043fe3ac9e74be649f6019690b613c.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-061-qilt-prisms-compari-f5591-ity-before-choosing-courses-chromium-desktop/attachments/runtime-evidence-e50869bf93bdada0bc339d1ba44b2edce00f732a.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "742d1de593576af0080c-d3173322518c32aacc5a",
+              "file": "cf-061-qilt-prisms-comparison-deployed.spec.mjs",
+              "line": 63,
+              "column": 2
+            },
+            {
+              "title": "Course detail keeps QILT as Provider context and opens Course comparison",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 10500,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:28:12.682Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "cf-061-course-comparison",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-061-qilt-prisms-compari-0ad59-and-opens-Course-comparison-chromium-desktop/attachments/cf-061-course-comparison-444349d9960f6305609919932e595c28ff93b870.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-061-qilt-prisms-compari-0ad59-and-opens-Course-comparison-chromium-desktop/attachments/runtime-evidence-0a8c266c384801946b229d735abfbe86aebd0b80.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "742d1de593576af0080c-3dd2a65366cc5659ce9e",
+              "file": "cf-061-qilt-prisms-comparison-deployed.spec.mjs",
+              "line": 86,
+              "column": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "cf-073-administration-acquisition-route-deployed.spec.mjs",
+      "file": "cf-073-administration-acquisition-route-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "CF-073 Administration Acquisition route regression @deployed",
+          "file": "cf-073-administration-acquisition-route-deployed.spec.mjs",
+          "line": 8,
+          "column": 6,
+          "specs": [
+            {
+              "title": "direct Acquisition route renders and browser Back recovers without blank Admin",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1651,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:28:23.198Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "cf-073-administration-acquisition-back-recovery",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-073-administration-acqu-88218-ecovers-without-blank-Admin-chromium-desktop/attachments/cf-073-administration-acquisition-back-recovery-5974910a71738587068439efe74ed92bc360949f.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-073-administration-acqu-88218-ecovers-without-blank-Admin-chromium-desktop/attachments/runtime-evidence-5665f92c52f486e7196f39fd0b003148d62415d3.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "4e83df3d190c40b95885-d4cfc31bf7bc4843791f",
+              "file": "cf-073-administration-acquisition-route-deployed.spec.mjs",
+              "line": 15,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "cf-076-ranking-import-ux-deployed.spec.mjs",
+      "file": "cf-076-ranking-import-ux-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "CF-076 compact ranking import UX @deployed",
+          "file": "cf-076-ranking-import-ux-deployed.spec.mjs",
+          "line": 8,
+          "column": 6,
+          "specs": [
+            {
+              "title": "nested Administration route shows breadcrumbs and compact file-first import",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2174,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:28:24.882Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-076-ranking-import-ux-d-8fe24-d-compact-file-first-import-chromium-desktop/attachments/runtime-evidence-f4b79bed2b82931be9f29c8f81f1ab5348d41dfa.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1718c7c1d8f2a9e257e1-64b951766c1d103fca20",
+              "file": "cf-076-ranking-import-ux-deployed.spec.mjs",
+              "line": 11,
+              "column": 2
+            },
+            {
+              "title": "service source derives THE native JSON system/year from file content",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:28:27.075Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1718c7c1d8f2a9e257e1-5bc128987e20275283a7",
+              "file": "cf-076-ranking-import-ux-deployed.spec.mjs",
+              "line": 66,
+              "column": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "cf-080-provider-contacts-deployed.spec.mjs",
+      "file": "cf-080-provider-contacts-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "CF-080 Provider Contacts managed Catalogue @deployed",
+          "file": "cf-080-provider-contacts-deployed.spec.mjs",
+          "line": 7,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Catalogue route loads managed contacts and honours the governed role boundary",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1859,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:28:27.092Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-080-provider-contacts-d-7028e--the-governed-role-boundary-chromium-desktop/attachments/runtime-evidence-d1716cc59ac93909d64cfbe0a7c7ab7ee211d0bd.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bf3fecbee269e369b9cb-99f0b30398f169bbc51c",
+              "file": "cf-080-provider-contacts-deployed.spec.mjs",
+              "line": 10,
+              "column": 3
+            },
+            {
+              "title": "Provider deep-link contract and governed client wiring are retained",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 9,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:28:28.970Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bf3fecbee269e369b9cb-cbe689614ea766e4ca26",
+              "file": "cf-080-provider-contacts-deployed.spec.mjs",
+              "line": 39,
+              "column": 3
+            },
+            {
+              "title": "Provider Contacts remains contained at tablet and mobile widths",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1546,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:28:28.990Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-080-provider-contacts-d-e7e0d-at-tablet-and-mobile-widths-chromium-desktop/attachments/runtime-evidence-1e0c08247f4d1372e6f99543cfe2dfaed9077bdf.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bf3fecbee269e369b9cb-a7b6d4bee74387984bc9",
+              "file": "cf-080-provider-contacts-deployed.spec.mjs",
+              "line": 66,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "cf-097-ranking-workflow-history-deployed.spec.mjs",
+      "file": "cf-097-ranking-workflow-history-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "CF-097/226 ranking workflow, history and datasets @deployed",
+          "file": "cf-097-ranking-workflow-history-deployed.spec.mjs",
+          "line": 8,
+          "column": 6,
+          "specs": [
+            {
+              "title": "full THE history remains visible and applied editions no longer require manual review",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3078,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:28:30.551Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-097-ranking-workflow-hi-5d880-onger-require-manual-review-chromium-desktop/attachments/runtime-evidence-01f399f52f8ddfdce3285a88851efbfe0b06af54.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ecc980cb01d4a481d4c2-bc14ad26880082af0397",
+              "file": "cf-097-ranking-workflow-history-deployed.spec.mjs",
+              "line": 11,
+              "column": 2
+            },
+            {
+              "title": "ranking rows expose Layer 1 Ranking ETL jobs",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2963,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:28:33.648Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-097-ranking-workflow-hi-6277c-se-Layer-1-Ranking-ETL-jobs-chromium-desktop/attachments/runtime-evidence-a5b33f8d952f41a2cfb24811bd3b51db335e6103.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ecc980cb01d4a481d4c2-da3bac5db218de26a2f2",
+              "file": "cf-097-ranking-workflow-history-deployed.spec.mjs",
+              "line": 28,
+              "column": 2
+            },
+            {
+              "title": "Statistics exposes accepted QS and THE editions and routes to imported observations",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3362,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:28:36.622Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-097-ranking-workflow-hi-5dec1-es-to-imported-observations-chromium-desktop/attachments/runtime-evidence-5a2075b3c979e9d32a7363096329869879e8738e.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ecc980cb01d4a481d4c2-a7a54de85a34d8bcb0ba",
+              "file": "cf-097-ranking-workflow-history-deployed.spec.mjs",
+              "line": 38,
+              "column": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "cf-098-ranking-file-bundle-deployed.spec.mjs",
+      "file": "cf-098-ranking-file-bundle-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "CF-098 file-first ranking bundle @deployed",
+          "file": "cf-098-ranking-file-bundle-deployed.spec.mjs",
+          "line": 8,
+          "column": 6,
+          "specs": [
+            {
+              "title": "ranking file upload is primary and country files combine before registration",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1706,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:28:39.999Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-098-ranking-file-bundle-33752-combine-before-registration-chromium-desktop/attachments/runtime-evidence-e8d122205c1889b06b056b3bed1bce4363f8f56c.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "50807adedf8ad356aed8-ecdf0791c6b8a6407f8a",
+              "file": "cf-098-ranking-file-bundle-deployed.spec.mjs",
+              "line": 11,
+              "column": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "cf-100-ranking-country-extension-deployed.spec.mjs",
+      "file": "cf-100-ranking-country-extension-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "CF-100 multi-country same-edition ranking scope @deployed",
+          "file": "cf-100-ranking-country-extension-deployed.spec.mjs",
+          "line": 8,
+          "column": 6,
+          "specs": [
+            {
+              "title": "existing edition recognises a new country as extension rather than replacement",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4564,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:28:41.732Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-100-ranking-country-ext-cdd0d-ion-rather-than-replacement-chromium-desktop/attachments/runtime-evidence-52d1aade0f5567b50042c81ce26e0be2b215d007.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "67bb8b2d7183c716b884-023d21230cd611203ea5",
+              "file": "cf-100-ranking-country-extension-deployed.spec.mjs",
+              "line": 11,
+              "column": 2
+            },
+            {
+              "title": "source contract shows the automatic validate-and-apply workflow and exposes country scope metadata",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1538,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:28:46.316Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-100-ranking-country-ext-90490-oses-country-scope-metadata-chromium-desktop/attachments/runtime-evidence-e6c6e71da49ddbe1a3db3597d4b7830120ec66ff.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "67bb8b2d7183c716b884-717890600e795c8b1080",
+              "file": "cf-100-ranking-country-extension-deployed.spec.mjs",
+              "line": 26,
+              "column": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "cf-208-scholarship-pim-maturity-deployed.spec.mjs",
+      "file": "cf-208-scholarship-pim-maturity-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "CF-208 deployed Scholarship PIM maturity @deployed",
+          "file": "cf-208-scholarship-pim-maturity-deployed.spec.mjs",
+          "line": 8,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Scholarship catalogue is populated and exposes governed operator controls",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2893,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:28:47.873Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "cf-208-scholarship-pim-catalogue",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-208-scholarship-pim-mat-53a42--governed-operator-controls-chromium-desktop/attachments/cf-208-scholarship-pim-catalogue-68c56a2a2774e4acc70a0eb072d27ac5960db4ab.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-208-scholarship-pim-mat-53a42--governed-operator-controls-chromium-desktop/attachments/runtime-evidence-52bee84c87a0fd628f120586d703cab68b11890c.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "d4b9b027a619ce145cff-34eceb50ad6bcc88b2af",
+              "file": "cf-208-scholarship-pim-maturity-deployed.spec.mjs",
+              "line": 10,
+              "column": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "cf-209-scheduler-jobs-operations-deployed.spec.mjs",
+      "file": "cf-209-scheduler-jobs-operations-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "CF-209 deployed Scheduler and Jobs operations acceptance @deployed",
+          "file": "cf-209-scheduler-jobs-operations-deployed.spec.mjs",
+          "line": 8,
+          "column": 6,
+          "specs": [
+            {
+              "title": "shows governed Scheduling intelligence without generic execution controls",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1897,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:28:50.790Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "cf-209-scheduling",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-209-scheduler-jobs-oper-a462b--generic-execution-controls-chromium-desktop/attachments/cf-209-scheduling-9ea26a12f0faab968043175f821db6d13a06d1a8.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-209-scheduler-jobs-oper-a462b--generic-execution-controls-chromium-desktop/attachments/runtime-evidence-5a68f82e2d7040f8c9ebafd56ec7b7fa8da07639.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "db537009e2d58ae3e590-81bcde4605309895e582",
+              "file": "cf-209-scheduler-jobs-operations-deployed.spec.mjs",
+              "line": 17,
+              "column": 2
+            },
+            {
+              "title": "keeps Jobs as the server-paged execution and telemetry workspace",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2776,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:28:52.709Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "cf-209-jobs",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-209-scheduler-jobs-oper-519f0-ion-and-telemetry-workspace-chromium-desktop/attachments/cf-209-jobs-e7dd15bd418e9333f6b49371f72ca658f1fcc34c.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-209-scheduler-jobs-oper-519f0-ion-and-telemetry-workspace-chromium-desktop/attachments/runtime-evidence-f809adbc628c4d1ca51514024bfa7ef91ffcb185.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "db537009e2d58ae3e590-b143bdbf2d6e052e60bf",
+              "file": "cf-209-scheduler-jobs-operations-deployed.spec.mjs",
+              "line": 37,
+              "column": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "cf-247-field-coverage-deployed.spec.mjs",
+      "file": "cf-247-field-coverage-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "CF-247 per-field coverage panel @deployed",
+          "file": "cf-247-field-coverage-deployed.spec.mjs",
+          "line": 7,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Coverage > Attributes opens with the 80% target panel for intakes, English and fees",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3356,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:28:55.504Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "cf247-field-coverage-panel",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-247-field-coverage-depl-5c182-or-intakes-English-and-fees-chromium-desktop/attachments/cf247-field-coverage-panel-6a8db45627ab9f0da54463c5cee8eb23bd3e1648.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-247-field-coverage-depl-5c182-or-intakes-English-and-fees-chromium-desktop/attachments/runtime-evidence-76c2c1cc38c9c882b2c40b40e2b0f327e7c3cb92.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "551f63bf44aeec470ad9-18e3e09d84b72576e434",
+              "file": "cf-247-field-coverage-deployed.spec.mjs",
+              "line": 10,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "cf-247-s154-aer-workspace-deployed.spec.mjs",
+      "file": "cf-247-s154-aer-workspace-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "CF-247 AER operations workspace @deployed",
+          "file": "cf-247-s154-aer-workspace-deployed.spec.mjs",
+          "line": 14,
+          "column": 6,
+          "specs": [
+            {
+              "title": "the workspace on live data: summary, combined filters, columns, drawer, sources and resolution, bounded",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 10166,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:28:58.893Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-247-s154-aer-workspace--d1754-rces-and-resolution-bounded-chromium-desktop/attachments/runtime-evidence-de6a18d0da95587cc90e7a9dd974b45795abe64d.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5cb40996134defd781d8-208d5c4aaf5f8aff95d5",
+              "file": "cf-247-s154-aer-workspace-deployed.spec.mjs",
+              "line": 17,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "cf-247-s167-aer-course-phone-deployed.spec.mjs",
+      "file": "cf-247-s167-aer-course-phone-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "CF-247 AER Course detail and phone acceptance @deployed",
+          "file": "cf-247-s167-aer-course-phone-deployed.spec.mjs",
+          "line": 68,
+          "column": 6,
+          "specs": [
+            {
+              "title": "at desktop width on live data: DP020 country order, India through the resolver only, scholarships and the evidence overlay",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 8660,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:29:09.086Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-247-s167-aer-course-pho-60d74-ps-and-the-evidence-overlay-chromium-desktop/attachments/runtime-evidence-7f22bc624c024b3daa0525fd3a1a09ed9f26c259.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78f71a7504eb15f77897-af4099b65237b9ddb8f5",
+              "file": "cf-247-s167-aer-course-phone-deployed.spec.mjs",
+              "line": 71,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "cf-247-s183-adapter-measures-role-check-deployed.spec.mjs",
+      "file": "cf-247-s183-adapter-measures-role-check-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "CF-247 D6 adapter measures role check @deployed",
+          "file": "cf-247-s183-adapter-measures-role-check-deployed.spec.mjs",
+          "line": 6,
+          "column": 6,
+          "specs": [
+            {
+              "title": "direct API calls: anonymous refused, signed-in user answered or refused by rank",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2357,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:29:17.770Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1f6325ae2f3512431f59-ffb6d8fdb95bbe1d7bea",
+              "file": "cf-247-s183-adapter-measures-role-check-deployed.spec.mjs",
+              "line": 9,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "data-quality-deployed.spec.mjs",
+      "file": "data-quality-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "CourseFinder deployed Data Quality acceptance @deployed",
+          "file": "data-quality-deployed.spec.mjs",
+          "line": 27,
+          "column": 6,
+          "specs": [
+            {
+              "title": "governed regulatory-fee states and every exception row page correctly",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 7331,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:29:20.165Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "data-quality-overview",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/data-quality-deployed-Cour-a2cb2-xception-row-page-correctly-chromium-desktop/attachments/data-quality-overview-6dec52413642c3acfc4f99e79f8aa68a9deade28.png"
+                        },
+                        {
+                          "name": "exceptions-page-1",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/data-quality-deployed-Cour-a2cb2-xception-row-page-correctly-chromium-desktop/attachments/exceptions-page-1-e6833596ad6f9e76283b6485fa108588dc992298.png"
+                        },
+                        {
+                          "name": "exceptions-page-4",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/data-quality-deployed-Cour-a2cb2-xception-row-page-correctly-chromium-desktop/attachments/exceptions-page-4-467eb782dddf6ba904067f72d365be08fd87c9a8.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/data-quality-deployed-Cour-a2cb2-xception-row-page-correctly-chromium-desktop/attachments/runtime-evidence-3d1e5aad29e39b582ac54fbdec8145cc4e8ee8d1.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9f69e61633a182ab16a8-ff69faf1927c15daf8ac",
+              "file": "data-quality-deployed.spec.mjs",
+              "line": 39,
+              "column": 3
+            },
+            {
+              "title": "exception opens a canonical Course detail",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5445,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:29:27.516Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "canonical-course-detail",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/data-quality-deployed-Cour-25aab-s-a-canonical-Course-detail-chromium-desktop/attachments/canonical-course-detail-416aedf2739fe4fe800ea18d4db0421c334e6261.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/data-quality-deployed-Cour-25aab-s-a-canonical-Course-detail-chromium-desktop/attachments/runtime-evidence-1763ca17d26b126dd9c6efe048d3cecc960a6e80.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9f69e61633a182ab16a8-8ca4dba1c66eace9c4eb",
+              "file": "data-quality-deployed.spec.mjs",
+              "line": 62,
+              "column": 3
+            },
+            {
+              "title": "exception opens a real private Evidence Regulatory Snapshot",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5842,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:29:32.974Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "evidence-regulatory-snapshot",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/data-quality-deployed-Cour-a5c67-vidence-Regulatory-Snapshot-chromium-desktop/attachments/evidence-regulatory-snapshot-309d0b056ec39078348b6ee46a0e91d27c665c35.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/data-quality-deployed-Cour-a5c67-vidence-Regulatory-Snapshot-chromium-desktop/attachments/runtime-evidence-7d38b00691435f049cc58112d5856ce63981ca61.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9f69e61633a182ab16a8-9eb6f9125ae39d286597",
+              "file": "data-quality-deployed.spec.mjs",
+              "line": 82,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "layer1-operations-deployed.spec.mjs",
+      "file": "layer1-operations-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "M2.4.1 Layer 1 regulatory operations @deployed",
+          "file": "layer1-operations-deployed.spec.mjs",
+          "line": 32,
+          "column": 6,
+          "specs": [
+            {
+              "title": "AU and NZ expose the production-shaped operator journey",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 6994,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:29:38.834Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "m2-4-1-layer1-operations",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/layer1-operations-deployed-f75e2-ion-shaped-operator-journey-chromium-desktop/attachments/m2-4-1-layer1-operations-d5752fbfe9ed9fb99d54da2daca120720fb4f359.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/layer1-operations-deployed-f75e2-ion-shaped-operator-journey-chromium-desktop/attachments/runtime-evidence-bbd77c581953da6455cec9f8738a0ee4f9b131da.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f572da738aa24524818b-ba208ed79b9341e72441",
+              "file": "layer1-operations-deployed.spec.mjs",
+              "line": 35,
+              "column": 3
+            },
+            {
+              "title": "Administration preserves the Platform Admin boundary for Layer 1 source configuration",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3008,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:29:45.853Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "cf-067-layer1-source-settings-role-boundary",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/layer1-operations-deployed-9d048-ayer-1-source-configuration-chromium-desktop/attachments/cf-067-layer1-source-settings-role-boundary-32f7f05b5b28070df797083f99db295e09e3b735.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/layer1-operations-deployed-9d048-ayer-1-source-configuration-chromium-desktop/attachments/runtime-evidence-4d4177430dd0285b69fc0ccc5e2c2d3ab8d431c9.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f572da738aa24524818b-1e5eaefea82c91d56f0f",
+              "file": "layer1-operations-deployed.spec.mjs",
+              "line": 46,
+              "column": 3
+            },
+            {
+              "title": "anonymous browser cannot execute Layer 1 read or command contracts",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 75,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:29:48.872Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f572da738aa24524818b-efbb708df612ec4ca244",
+              "file": "layer1-operations-deployed.spec.mjs",
+              "line": 84,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "layer2-provider-deployed.spec.mjs",
+      "file": "layer2-provider-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "CourseFinder deployed Layer 2 acquisition-provider acceptance @deployed",
+          "file": "layer2-provider-deployed.spec.mjs",
+          "line": 10,
+          "column": 6,
+          "specs": [
+            {
+              "title": "provider registry is visible without exposing credentials",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2227,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:29:48.960Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "layer2-provider-routing-v1-9",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/layer2-provider-deployed-C-fa6f5-ithout-exposing-credentials-chromium-desktop/attachments/layer2-provider-routing-v1-9-4104f9f26b741d855dc33d7f5de1fe5d86a8e374.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/layer2-provider-deployed-C-fa6f5-ithout-exposing-credentials-chromium-desktop/attachments/runtime-evidence-eeac5b1b86607737cc40eae05f1535abdd42c123.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5330d9abe30666ded993-c37da8be9ac19bce9367",
+              "file": "layer2-provider-deployed.spec.mjs",
+              "line": 12,
+              "column": 3
+            },
+            {
+              "title": "provider detail preserves the write-only credential boundary for the UAT operator",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2117,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:29:51.206Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "layer2-provider-credential-boundary-v1-9",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/layer2-provider-deployed-C-9bdcc-undary-for-the-UAT-operator-chromium-desktop/attachments/layer2-provider-credential-boundary-v1-9-6dadfb5efde0306e918c1682be6d85e2dbd67e31.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/layer2-provider-deployed-C-9bdcc-undary-for-the-UAT-operator-chromium-desktop/attachments/runtime-evidence-4fd38c62ac936b65289be9354913250157bd9634.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5330d9abe30666ded993-462df1f5134191a63447",
+              "file": "layer2-provider-deployed.spec.mjs",
+              "line": 13,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "m2-3-intelligence-deployed.spec.mjs",
+      "file": "m2-3-intelligence-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "CourseFinder deployed M2.3 intelligence acceptance on canonical routes @deployed",
+          "file": "m2-3-intelligence-deployed.spec.mjs",
+          "line": 8,
+          "column": 6,
+          "specs": [
+            {
+              "title": "old Layer 3 addresses open Layer 2 › Adapters without exposing credentials",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1767,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:29:53.340Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "m2-3-layer3-retired",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-3-intelligence-deployed-f2bbf-ithout-exposing-credentials-chromium-desktop/attachments/m2-3-layer3-retired-0c2b7c434d291c10754f7b636736610f841f01a7.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-3-intelligence-deployed-f2bbf-ithout-exposing-credentials-chromium-desktop/attachments/runtime-evidence-3b28ba540cd34920c365d77cf871d42f672a1eb6.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "773837ee89688faa4d59-73b1bfe52706700fda00",
+              "file": "m2-3-intelligence-deployed.spec.mjs",
+              "line": 15,
+              "column": 2
+            },
+            {
+              "title": "Layer 4 review and Scheduled jobs are separate workspaces",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3041,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:29:55.125Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "m2-3-layer4-refresh-separate",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-3-intelligence-deployed-019b8-obs-are-separate-workspaces-chromium-desktop/attachments/m2-3-layer4-refresh-separate-b365dae58f81857a3e5ec88a76a04fac622f4ce3.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-3-intelligence-deployed-019b8-obs-are-separate-workspaces-chromium-desktop/attachments/runtime-evidence-9de18955825b3f3f5d99a97d6c9d0b98acf653c0.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "773837ee89688faa4d59-29ac1d2493462a1d75ad",
+              "file": "m2-3-intelligence-deployed.spec.mjs",
+              "line": 20,
+              "column": 2
+            },
+            {
+              "title": "Key dates and Reference sources are separate Reference data types",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2615,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:29:58.180Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "m2-3-links-dates-parent-menu",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-3-intelligence-deployed-63f29-parate-Reference-data-types-chromium-desktop/attachments/m2-3-links-dates-parent-menu-733da14c2f2896e8731e90387b56e0f4f7413852.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-3-intelligence-deployed-63f29-parate-Reference-data-types-chromium-desktop/attachments/runtime-evidence-069fc03817ab07d4b7fbf2fdeafa25e2d4dfd280.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "773837ee89688faa4d59-5ddac8b6601055a3296b",
+              "file": "m2-3-intelligence-deployed.spec.mjs",
+              "line": 28,
+              "column": 2
+            },
+            {
+              "title": "Onboarding sits under Layer 2/3 Universities and its old Providers address follows it",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3633,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:30:00.810Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "m2-3-onboarding-administration",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-3-intelligence-deployed-1efd4-roviders-address-follows-it-chromium-desktop/attachments/m2-3-onboarding-administration-0aaabc468529170d47cd91d55b323f7b6ee1896c.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-3-intelligence-deployed-1efd4-roviders-address-follows-it-chromium-desktop/attachments/runtime-evidence-da128f1657fb709e8d53a5a383a43716486d6d7f.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "773837ee89688faa4d59-25ec491c4c98935a74f7",
+              "file": "m2-3-intelligence-deployed.spec.mjs",
+              "line": 41,
+              "column": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "m2-4-4-a16-cross-layer-deployed.spec.mjs",
+      "file": "m2-4-4-a16-cross-layer-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "M2.4.4 A16 cross-layer contact + Layer 4 intervention @deployed",
+          "file": "m2-4-4-a16-cross-layer-deployed.spec.mjs",
+          "line": 18,
+          "column": 6,
+          "specs": [
+            {
+              "title": "A16 database and worker contracts remain non-destructive, append-only and evidence-bound",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 8,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:30:04.459Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc0a0d916e669b5d820b-bff4ff6d5c8839931f3d",
+              "file": "m2-4-4-a16-cross-layer-deployed.spec.mjs",
+              "line": 25,
+              "column": 3
+            },
+            {
+              "title": "Provider blade shows explicit A16 disposition and Layer 4 intervention surface",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4331,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:30:04.483Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a16-provider-contact-l4",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a16-cross-layer-dep-abc86-ayer-4-intervention-surface-chromium-desktop/attachments/a16-provider-contact-l4-47f5c991316d30fbad5499320257b3d6824c41e9.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a16-cross-layer-dep-abc86-ayer-4-intervention-surface-chromium-desktop/attachments/runtime-evidence-a7e2ff8e18052519ed33a1a6498197e2249a3b0c.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc0a0d916e669b5d820b-144115052a397103f4b0",
+              "file": "m2-4-4-a16-cross-layer-deployed.spec.mjs",
+              "line": 67,
+              "column": 3
+            },
+            {
+              "title": "Scholarship blade exposes the same governed Layer 4 overlay",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 6052,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:30:08.825Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a16-scholarship-l4-overlay",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a16-cross-layer-dep-fb04b-me-governed-Layer-4-overlay-chromium-desktop/attachments/a16-scholarship-l4-overlay-501e9be4985d2c225a220848d5a8a722664cdd63.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a16-cross-layer-dep-fb04b-me-governed-Layer-4-overlay-chromium-desktop/attachments/runtime-evidence-6b1502ec6b628a03ea2c461a6f587175aa2179fb.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc0a0d916e669b5d820b-5c72a321f950cece184d",
+              "file": "m2-4-4-a16-cross-layer-deployed.spec.mjs",
+              "line": 84,
+              "column": 3
+            },
+            {
+              "title": "Course blade shows Layer 4 overlay separately from publication override",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 7342,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:30:14.888Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a16-course-l4-overlay",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a16-cross-layer-dep-a265b-y-from-publication-override-chromium-desktop/attachments/a16-course-l4-overlay-e72fcba4841e49d3cb77afbe13472cc771345778.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a16-cross-layer-dep-a265b-y-from-publication-override-chromium-desktop/attachments/runtime-evidence-8cef33435c114464baa737c37f813fb638edd4e4.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc0a0d916e669b5d820b-45b29034f260ced83db9",
+              "file": "m2-4-4-a16-cross-layer-deployed.spec.mjs",
+              "line": 98,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "m2-4-4-a21-permanent-layer-navigation-deployed.spec.mjs",
+      "file": "m2-4-4-a21-permanent-layer-navigation-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "A21 permanent Layer navigation @deployed",
+          "file": "m2-4-4-a21-permanent-layer-navigation-deployed.spec.mjs",
+          "line": 7,
+          "column": 6,
+          "specs": [
+            {
+              "title": "canonical Operations navigation owns the Layer workspaces",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2831,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:30:22.245Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a21-canonical-layer-navigation",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a21-permanent-layer-3ebb9-n-owns-the-Layer-workspaces-chromium-desktop/attachments/a21-canonical-layer-navigation-bd5b90e99d42d0e5342b444a1f34ba176892ea40.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a21-permanent-layer-3ebb9-n-owns-the-Layer-workspaces-chromium-desktop/attachments/runtime-evidence-5e4492e12cc57a99a03a62fbde5c137a7783b2bf.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "12440281e04eef702df1-76863c179c3f4eedcadc",
+              "file": "m2-4-4-a21-permanent-layer-navigation-deployed.spec.mjs",
+              "line": 11,
+              "column": 3
+            },
+            {
+              "title": "Layer 1 is embedded and actionable, not a floating dialog",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 8388,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:30:25.103Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a21-layer1-embedded",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a21-permanent-layer-0b430-nable-not-a-floating-dialog-chromium-desktop/attachments/a21-layer1-embedded-4a1d012ed6da7521138e84530b6996e1cff144bd.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a21-permanent-layer-0b430-nable-not-a-floating-dialog-chromium-desktop/attachments/runtime-evidence-d78faf99d6d9d27604e97b818ea745ed9f500780.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "12440281e04eef702df1-3b9f8f13c90a00902b1c",
+              "file": "m2-4-4-a21-permanent-layer-navigation-deployed.spec.mjs",
+              "line": 29,
+              "column": 3
+            },
+            {
+              "title": "Layer 2 opens on Adapters with no operator config knobs",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2722,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:30:33.504Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a21-layer2-embedded",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a21-permanent-layer-8d47c-th-no-operator-config-knobs-chromium-desktop/attachments/a21-layer2-embedded-bd49623b7927b4f16e39652978d65251364d3e40.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a21-permanent-layer-8d47c-th-no-operator-config-knobs-chromium-desktop/attachments/runtime-evidence-5c0c0fef54a6c0c91d28ba1d499615afb291976d.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "12440281e04eef702df1-85e7b1a5b2e2997b0ceb",
+              "file": "m2-4-4-a21-permanent-layer-navigation-deployed.spec.mjs",
+              "line": 39,
+              "column": 3
+            },
+            {
+              "title": "old Layer 3 address opens Layer 2; Layer 4 is a separate permanent route",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3169,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:30:36.238Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a21-layer3-retired-layer4-route",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a21-permanent-layer-4b107--a-separate-permanent-route-chromium-desktop/attachments/a21-layer3-retired-layer4-route-6653de5a89b8b23d14dfd18110dd26a49edcc8f1.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a21-permanent-layer-4b107--a-separate-permanent-route-chromium-desktop/attachments/runtime-evidence-d5a2015e9b6fd56fde31b0d266757d3a718e8044.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "12440281e04eef702df1-9a2d908d10e12873d7c8",
+              "file": "m2-4-4-a21-permanent-layer-navigation-deployed.spec.mjs",
+              "line": 56,
+              "column": 3
+            },
+            {
+              "title": "saved Course filters restore without opening or flashing popovers",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4996,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:30:39.419Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a21-filter-restore-no-popover",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a21-permanent-layer-54ccf-pening-or-flashing-popovers-chromium-desktop/attachments/a21-filter-restore-no-popover-4fb5e5abb14b179768f5f6f82bfbf2724fcddb81.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a21-permanent-layer-54ccf-pening-or-flashing-popovers-chromium-desktop/attachments/runtime-evidence-230a9c4dc0c146f687cf264b1bf9e0145bd1e225.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "12440281e04eef702df1-15b1603c7094d839f330",
+              "file": "m2-4-4-a21-permanent-layer-navigation-deployed.spec.mjs",
+              "line": 67,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "m2-4-4-a22-responsive-detail-blades-deployed.spec.mjs",
+      "file": "m2-4-4-a22-responsive-detail-blades-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "A22 responsive detail blades @deployed",
+          "file": "m2-4-4-a22-responsive-detail-blades-deployed.spec.mjs",
+          "line": 13,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Provider blade is wide, scroll-owned and does not clip contextual cards",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2784,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:30:44.431Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a22-provider-wide-drawer",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a22-responsive-deta-85c6e-s-not-clip-contextual-cards-chromium-desktop/attachments/a22-provider-wide-drawer-2ddcfdd39474b0dc43ee2724ae97387d46fee546.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a22-responsive-deta-85c6e-s-not-clip-contextual-cards-chromium-desktop/attachments/runtime-evidence-1c3a459a3e718be1a3a79e75c8e3a03cc726814c.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f4513db029222b39f22f-835605e2c5a69a81ff72",
+              "file": "m2-4-4-a22-responsive-detail-blades-deployed.spec.mjs",
+              "line": 16,
+              "column": 2
+            },
+            {
+              "title": "Course blade owns vertical scrolling and remains usable on tablet and mobile",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3806,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:30:47.241Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a22-course-mobile-drawer",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a22-responsive-deta-d5b04-usable-on-tablet-and-mobile-chromium-desktop/attachments/a22-course-mobile-drawer-d58ced3c9f800a4a2168b9f71bea2463f599d591.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a22-responsive-deta-d5b04-usable-on-tablet-and-mobile-chromium-desktop/attachments/runtime-evidence-d1b5f3902f3619bb8478417bab0802e41be4ffb1.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f4513db029222b39f22f-6fe29ed8fda48b6a75ad",
+              "file": "m2-4-4-a22-responsive-detail-blades-deployed.spec.mjs",
+              "line": 31,
+              "column": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "m2-4-4-a23-layer2-background-firecrawl-deployed.spec.mjs",
+      "file": "m2-4-4-a23-layer2-background-firecrawl-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "A23 quota-aware Layer 2 background execution @deployed",
+          "file": "m2-4-4-a23-layer2-background-firecrawl-deployed.spec.mjs",
+          "line": 6,
+          "column": 6,
+          "specs": [
+            {
+              "title": "operator Adapters screen has no qualification knobs",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1947,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:30:51.068Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a23-layer2-adapters",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a23-layer2-backgrou-6c666--has-no-qualification-knobs-chromium-desktop/attachments/a23-layer2-adapters-567c60694f0acf37adadd1c975028d583552f987.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a23-layer2-backgrou-6c666--has-no-qualification-knobs-chromium-desktop/attachments/runtime-evidence-644d25c7d11b6e803a19316d3251f07a6a27d6b9.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1abc1adb5e43a126df15-141caf8dc6f4d11c0c7f",
+              "file": "m2-4-4-a23-layer2-background-firecrawl-deployed.spec.mjs",
+              "line": 10,
+              "column": 2
+            },
+            {
+              "title": "retired Layer 2 source address lands on Adapters; Scrapers & fetchers shows the provider registry",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2683,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:30:53.041Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a23-scrapers-registry",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a23-layer2-backgrou-f0c5d-shows-the-provider-registry-chromium-desktop/attachments/a23-scrapers-registry-9e5dbf5165da082d9cf4c939076e183939350322.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a23-layer2-backgrou-f0c5d-shows-the-provider-registry-chromium-desktop/attachments/runtime-evidence-e45f256ac3256ab2ef144b3383479e4fd9d6c467.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1abc1adb5e43a126df15-6bc56b46dfde11f4f124",
+              "file": "m2-4-4-a23-layer2-background-firecrawl-deployed.spec.mjs",
+              "line": 21,
+              "column": 2
+            },
+            {
+              "title": "background finaliser completes deterministic controls and governed handoff without autonomous Layer 3 AI",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 6,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:30:55.736Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1abc1adb5e43a126df15-248c6a8bf377c9ed5bcd",
+              "file": "m2-4-4-a23-layer2-background-firecrawl-deployed.spec.mjs",
+              "line": 33,
+              "column": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "m2-4-4-a24-unified-layer-headers-deployed.spec.mjs",
+      "file": "m2-4-4-a24-unified-layer-headers-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Layer screens show one title @deployed",
+          "file": "m2-4-4-a24-unified-layer-headers-deployed.spec.mjs",
+          "line": 8,
+          "column": 6,
+          "specs": [
+            {
+              "title": "each Layer screen has one visible page title and a slim, light Layer header",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 7357,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:30:55.751Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a24-one-title-per-layer-screen",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a24-unified-layer-h-a546c-d-a-slim-light-Layer-header-chromium-desktop/attachments/a24-one-title-per-layer-screen-f6c7f3741f0789b994aad4c299f4ad5affa6bb5e.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a24-unified-layer-h-a546c-d-a-slim-light-Layer-header-chromium-desktop/attachments/runtime-evidence-859575d931e95d0ee04c600ea42bd100d310a3c0.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5602a685c7a907bf2ea5-051a647f4aee0eae33ae",
+              "file": "m2-4-4-a24-unified-layer-headers-deployed.spec.mjs",
+              "line": 11,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "m2-4-4-a25-evidence-type-aware-preview-deployed.spec.mjs",
+      "file": "m2-4-4-a25-evidence-type-aware-preview-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "A25 Evidence type-aware preview and screenshot lineage @deployed",
+          "file": "m2-4-4-a25-evidence-type-aware-preview-deployed.spec.mjs",
+          "line": 17,
+          "column": 6,
+          "specs": [
+            {
+              "title": "JSON Evidence shows its own JSON type and never inherits a website screenshot",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3784,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:31:03.132Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a25-json-evidence",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a25-evidence-type-a-9fdf9-herits-a-website-screenshot-chromium-desktop/attachments/a25-json-evidence-dd7c4bc0b4dc03d3ba91032b27cec1e0a7557114.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a25-evidence-type-a-9fdf9-herits-a-website-screenshot-chromium-desktop/attachments/runtime-evidence-7e546134d8699115a82ccdba04bc173224b831ca.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b3e49896e1e89ff1d3f3-1291e376443097e96d41",
+              "file": "m2-4-4-a25-evidence-type-aware-preview-deployed.spec.mjs",
+              "line": 30,
+              "column": 3
+            },
+            {
+              "title": "HTML Evidence shows its own HTML type",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5050,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:31:06.937Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a25-html-evidence",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a25-evidence-type-a-fe311-nce-shows-its-own-HTML-type-chromium-desktop/attachments/a25-html-evidence-e1966986cf266edb0493e84930e7106cbb38be34.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a25-evidence-type-a-fe311-nce-shows-its-own-HTML-type-chromium-desktop/attachments/runtime-evidence-98c51325383ec3c6eed039f13fcc3dc39a01cda4.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b3e49896e1e89ff1d3f3-8f7870400fc2df7cab70",
+              "file": "m2-4-4-a25-evidence-type-aware-preview-deployed.spec.mjs",
+              "line": 38,
+              "column": 3
+            },
+            {
+              "title": "Screenshot Evidence shows its own image type rather than a related thumbnail",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3497,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:31:11.999Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a25-screenshot-own-image",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a25-evidence-type-a-db4d5-er-than-a-related-thumbnail-chromium-desktop/attachments/a25-screenshot-own-image-963a028419a6f631386df8dbb76f148252cd1915.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a25-evidence-type-a-db4d5-er-than-a-related-thumbnail-chromium-desktop/attachments/runtime-evidence-df9b1ebe87eb45d1eabca023d048897592e6f063.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b3e49896e1e89ff1d3f3-0aa53bfc60aceb653645",
+              "file": "m2-4-4-a25-evidence-type-aware-preview-deployed.spec.mjs",
+              "line": 45,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "m2-4-4-a26-a28-operator-ux-deployed.spec.mjs",
+      "file": "m2-4-4-a26-a28-operator-ux-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "M2.4.4 A26-A28 operator UX @deployed",
+          "file": "m2-4-4-a26-a28-operator-ux-deployed.spec.mjs",
+          "line": 9,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Administration opens a non-empty default workspace and switches sub-contexts",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3183,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:31:15.513Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a26-a28-operator-ux-56fe8-e-and-switches-sub-contexts-chromium-desktop/attachments/runtime-evidence-420bec139ac905bae24773a0b5d43afb5f840f1f.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "edd7730b4868f9b37a4a-4882d02c1fb978283894",
+              "file": "m2-4-4-a26-a28-operator-ux-deployed.spec.mjs",
+              "line": 12,
+              "column": 3
+            },
+            {
+              "title": "Layer 2 uses production wording, canonical Jobs/Evidence links and actionable blockers only",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1951,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:31:18.721Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a26-a28-operator-ux-085d2-nd-actionable-blockers-only-chromium-desktop/attachments/runtime-evidence-1b296b11121d20b22cc2dd3267812159d3f62731.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "edd7730b4868f9b37a4a-7a7c52165e683aa9afa0",
+              "file": "m2-4-4-a26-a28-operator-ux-deployed.spec.mjs",
+              "line": 24,
+              "column": 3
+            },
+            {
+              "title": "A26 child progress refreshes the owning batch heartbeat",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:31:20.683Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "edd7730b4868f9b37a4a-ff924bc7a26eda01533e",
+              "file": "m2-4-4-a26-a28-operator-ux-deployed.spec.mjs",
+              "line": 38,
+              "column": 3
+            },
+            {
+              "title": "old Layer 3 address opens Layer 2 › Adapters; no Layer 3 work screen",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1828,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:31:20.698Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a26-a28-operator-ux-1861c-ters-no-Layer-3-work-screen-chromium-desktop/attachments/runtime-evidence-fdbf277246fedc4b81bf59c4f906eb5b15535681.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "edd7730b4868f9b37a4a-b9edddc9288c714fa032",
+              "file": "m2-4-4-a26-a28-operator-ux-deployed.spec.mjs",
+              "line": 45,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "m2-4-4-cross-layer-operations-deployed.spec.mjs",
+      "file": "m2-4-4-cross-layer-operations-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "M2.4.4 cross-layer operations and housekeeping @deployed",
+          "file": "m2-4-4-cross-layer-operations-deployed.spec.mjs",
+          "line": 5,
+          "column": 6,
+          "specs": [
+            {
+              "title": "checked-in recovery, retention, scheduler and Layer 3 alert contracts remain governed",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 9,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:31:22.539Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "2b157a895b73e03867b1-b3ad898b61bbfe020ba0",
+              "file": "m2-4-4-cross-layer-operations-deployed.spec.mjs",
+              "line": 6,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "m2-4-navigation-content-audit.spec.mjs",
+      "file": "m2-4-navigation-content-audit.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "M2.4 navigation/content audit @deployed",
+          "file": "m2-4-navigation-content-audit.spec.mjs",
+          "line": 65,
+          "column": 6,
+          "specs": [
+            {
+              "title": "capture visible menu, page content, navigation timing and screenshots",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 17402,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:31:22.559Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "navigation-content-audit",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-navigation-content-au-2608f-tion-timing-and-screenshots-chromium-desktop/attachments/navigation-content-audit-98677d6b0d833d5d2864be12beee9661af9d1a87.json"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-navigation-content-au-2608f-tion-timing-and-screenshots-chromium-desktop/attachments/runtime-evidence-8ffc393dadb55cc39ca33be410389597c4e0ffca.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "67272948dfa14b6e0504-a60b22c1ab3f57ca5ddc",
+              "file": "m2-4-navigation-content-audit.spec.mjs",
+              "line": 67,
+              "column": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "m2-5-jobs-workspace-deployed.spec.mjs",
+      "file": "m2-5-jobs-workspace-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "M2.5 Jobs workspace deployed @deployed",
+          "file": "m2-5-jobs-workspace-deployed.spec.mjs",
+          "line": 8,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Jobs route shows live governed Pipeline Jobs instead of a manufactured empty list",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2944,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:31:39.985Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "m2-5-jobs-workspace-live",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-5-jobs-workspace-deploy-4de65-f-a-manufactured-empty-list-chromium-desktop/attachments/m2-5-jobs-workspace-live-dc5ff315db478c6b9cb2e5e37d38dd90b43fb1eb.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-5-jobs-workspace-deploy-4de65-f-a-manufactured-empty-list-chromium-desktop/attachments/runtime-evidence-b8e5eca5c6c9f60ee9537c0472e8f0c695de8ef7.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b5959e35036d7717a961-d9ec6ab5b4937eac22f6",
+              "file": "m2-5-jobs-workspace-deployed.spec.mjs",
+              "line": 14,
+              "column": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "m2-5-pilot-deployment-currentness-deployed.spec.mjs",
+      "file": "m2-5-pilot-deployment-currentness-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "M2.5 Pilot deployment currentness @deployed",
+          "file": "m2-5-pilot-deployment-currentness-deployed.spec.mjs",
+          "line": 19,
+          "column": 6,
+          "specs": [
+            {
+              "title": "deployed Worker contains CF-053 and CF-054 operator surfaces without executing AI",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2103,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:31:42.956Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "m2-5-pilot-deployment-currentness",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-5-pilot-deployment-curr-dd1d8-rfaces-without-executing-AI-chromium-desktop/attachments/m2-5-pilot-deployment-currentness-c718f17cde47096e83e243070abca623f664b349.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-5-pilot-deployment-curr-dd1d8-rfaces-without-executing-AI-chromium-desktop/attachments/runtime-evidence-4574c080ac5557780bb81d34c4fa00065e277962.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "edc515d465586c12e504-89110ce1c9380835a85b",
+              "file": "m2-5-pilot-deployment-currentness-deployed.spec.mjs",
+              "line": 27,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "m2-5-platform-readiness-deployed.spec.mjs",
+      "file": "m2-5-platform-readiness-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "M2.5 platform readiness foundation @deployed",
+          "file": "m2-5-platform-readiness-deployed.spec.mjs",
+          "line": 5,
+          "column": 6,
+          "specs": [
+            {
+              "title": "environment separation, capacity, retention, workload and Layer 4 blocking contracts remain governed",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 17,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:31:45.105Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "81f4471ef1098631e266-c95a72094b900c5778d8",
+              "file": "m2-5-platform-readiness-deployed.spec.mjs",
+              "line": 6,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "performance-deployed.spec.mjs",
+      "file": "performance-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "M1 performance and responsiveness @deployed",
+          "file": "performance-deployed.spec.mjs",
+          "line": 24,
+          "column": 6,
+          "specs": [
+            {
+              "title": "core workspaces stay within governed RPC and payload budgets",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 7966,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:31:45.137Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "workspace-performance",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/performance-deployed-M1-pe-324ac-ned-RPC-and-payload-budgets-chromium-desktop/attachments/workspace-performance-6a9fc62103bb6ff8157ac6557ecb33c64ea61f0f.json"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/performance-deployed-M1-pe-324ac-ned-RPC-and-payload-budgets-chromium-desktop/attachments/runtime-evidence-b76d22d8f30f2d0d8f44ba1720bf27511670e5a7.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "3c329fcd3b018e1b506c-b058b19252e022a35f9c",
+              "file": "performance-deployed.spec.mjs",
+              "line": 26,
+              "column": 3
+            },
+            {
+              "title": "exact CRICOS lookup, detail, paging and browser back stay interactive",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 7648,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:31:53.114Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "course-interactions",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/performance-deployed-M1-pe-cbea5-owser-back-stay-interactive-chromium-desktop/attachments/course-interactions-d0c522334a7acbc4b7ce0716f165922844491c05.json"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/performance-deployed-M1-pe-cbea5-owser-back-stay-interactive-chromium-desktop/attachments/runtime-evidence-62c466c88e6cddc969e0d0145c6a95dcee401e81.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "3c329fcd3b018e1b506c-43add6ef6e974379e411",
+              "file": "performance-deployed.spec.mjs",
+              "line": 27,
+              "column": 3
+            },
+            {
+              "title": "Layer 2 Adapters stay within management-view budgets",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3799,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:32:00.772Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "layer2-operations-performance",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/performance-deployed-M1-pe-519c3-hin-management-view-budgets-chromium-desktop/attachments/layer2-operations-performance-23dccb971a14342177ff615791a61662919e3df4.json"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/performance-deployed-M1-pe-519c3-hin-management-view-budgets-chromium-desktop/attachments/runtime-evidence-f417691c48662c2bec8f6607acbe7660595e060b.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "3c329fcd3b018e1b506c-d0d0446c6eb9b2318f1b",
+              "file": "performance-deployed.spec.mjs",
+              "line": 31,
+              "column": 3
+            },
+            {
+              "title": "common laptop and desktop widths contain horizontal overflow inside grids",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 15128,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:32:04.583Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "responsive-widths",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/performance-deployed-M1-pe-1c2ce-ontal-overflow-inside-grids-chromium-desktop/attachments/responsive-widths-248f79607bbb6035014f8f3b6b59718e0b8e3d31.json"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/performance-deployed-M1-pe-1c2ce-ontal-overflow-inside-grids-chromium-desktop/attachments/runtime-evidence-d0e7e1b1a8cb079fb946d687a0a8af8cc0230c44.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "3c329fcd3b018e1b506c-c23a8352c605f34ea3db",
+              "file": "performance-deployed.spec.mjs",
+              "line": 32,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "release-notes-deployed.spec.mjs",
+      "file": "release-notes-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "CourseFinder PIM Admin v2.15.375 release notes @deployed",
+          "file": "release-notes-deployed.spec.mjs",
+          "line": 6,
+          "column": 6,
+          "specs": [
+            {
+              "title": "top-right version opens maintained release history and closes accessibly",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2538,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:32:19.726Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "pim-v2-15-375-release-notes",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/release-notes-deployed-Cou-7588b-story-and-closes-accessibly-chromium-desktop/attachments/pim-v2-15-375-release-notes-22de4c11833918018a3d694070a95ada3b1aeae4.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/release-notes-deployed-Cou-7588b-story-and-closes-accessibly-chromium-desktop/attachments/runtime-evidence-dcc5ce941a587acffbf6ea799fdf6bc5681452a3.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bfbf2d5b3274ba39f362-8058f61b7a5c9a5b7faf",
+              "file": "release-notes-deployed.spec.mjs",
+              "line": 8,
+              "column": 2
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-30T23:26:59.855Z",
+    "duration": 322703.707,
+    "expected": 80,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

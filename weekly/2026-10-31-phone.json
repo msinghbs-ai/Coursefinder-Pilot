@@ -1,0 +1,4453 @@
+{
+  "config": {
+    "argv": [
+      "/opt/hostedtoolcache/node/22.23.4/x64/bin/node",
+      "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/node_modules/.bin/playwright",
+      "test",
+      "--grep",
+      "@deployed",
+      "--grep-invert",
+      "@live-acting",
+      "--project=chromium-mobile",
+      "--reporter=list,json"
+    ],
+    "configFile": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/playwright.config.mjs",
+    "rootDir": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat",
+    "failOnFlakyTests": false,
+    "forbidOnly": true,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "ci": {
+        "commitHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/commit/6f0066196de22971e5a46c6820fdce900a1b7554",
+        "commitHash": "6f0066196de22971e5a46c6820fdce900a1b7554",
+        "buildHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/41144480924"
+      },
+      "gitCommit": {
+        "shortHash": "6f00661",
+        "hash": "6f0066196de22971e5a46c6820fdce900a1b7554",
+        "subject": "CF-247 v2.15.375: D5 additive scale_stated marker; \"Not stated on the page\" in the AER workspace (#765)",
+        "body": "CF-247 v2.15.375: D5 additive scale_stated marker; \"Not stated on the page\" in the AER workspace (#765)\n\n* CF-247 D5: additive scale_stated marker on Website API v2 entry rows (decision A4) and the R1 \"Not stated on the page\" scale\n\n- Consumer part (Platform Admin paste before merge; approval Platform Admin 30 Oct 2026 08:45, admin decision §11.2):\n  md5-guarded, re-runnable, count-guarded edits of security.entry_matrix_payload_v1 and security.entry_resolve_v1;\n  scale_stated true/false/null; case_by_case null-safe; website_v2_* and edge functions untouched; baseline re-taken.\n- R1 (ordinary migration): public.admin_aer matrix scale choice not_stated (grade_scale null), refused until the marker\n  is live; needs the printed grade; no number without its scale; add defaults to none. Workspace UI shows and offers it.\n- Spec s182 (Guards: D5 / A4) with resolver fixtures; consumer-api-baseline.json note updated.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 D5: edit_once normalises CRLF line endings (first paste run rolled back on md5 99dfa649)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 D5: one-line edits (SQL editor auto-indent changed the after-md5); after-md5s 5f7eb755 / 69bbc05f; s182 asserts one-line edits\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.375 integration: D5 migrations numbered 20261030280000 / 20261030290000; release ceremony\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n---------\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+        "author": {
+          "name": "msinghbs-ai",
+          "email": "msingh.bs@gmail.com",
+          "time": 1793360673000
+        },
+        "committer": {
+          "name": "GitHub",
+          "email": "noreply@github.com",
+          "time": 1793360673000
+        },
+        "branch": "main"
+      },
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "ci": {
+            "commitHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/commit/6f0066196de22971e5a46c6820fdce900a1b7554",
+            "commitHash": "6f0066196de22971e5a46c6820fdce900a1b7554",
+            "buildHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/41144480924"
+          },
+          "gitCommit": {
+            "shortHash": "6f00661",
+            "hash": "6f0066196de22971e5a46c6820fdce900a1b7554",
+            "subject": "CF-247 v2.15.375: D5 additive scale_stated marker; \"Not stated on the page\" in the AER workspace (#765)",
+            "body": "CF-247 v2.15.375: D5 additive scale_stated marker; \"Not stated on the page\" in the AER workspace (#765)\n\n* CF-247 D5: additive scale_stated marker on Website API v2 entry rows (decision A4) and the R1 \"Not stated on the page\" scale\n\n- Consumer part (Platform Admin paste before merge; approval Platform Admin 30 Oct 2026 08:45, admin decision §11.2):\n  md5-guarded, re-runnable, count-guarded edits of security.entry_matrix_payload_v1 and security.entry_resolve_v1;\n  scale_stated true/false/null; case_by_case null-safe; website_v2_* and edge functions untouched; baseline re-taken.\n- R1 (ordinary migration): public.admin_aer matrix scale choice not_stated (grade_scale null), refused until the marker\n  is live; needs the printed grade; no number without its scale; add defaults to none. Workspace UI shows and offers it.\n- Spec s182 (Guards: D5 / A4) with resolver fixtures; consumer-api-baseline.json note updated.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 D5: edit_once normalises CRLF line endings (first paste run rolled back on md5 99dfa649)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 D5: one-line edits (SQL editor auto-indent changed the after-md5); after-md5s 5f7eb755 / 69bbc05f; s182 asserts one-line edits\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.375 integration: D5 migrations numbered 20261030280000 / 20261030290000; release ceremony\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n---------\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+            "author": {
+              "name": "msinghbs-ai",
+              "email": "msingh.bs@gmail.com",
+              "time": 1793360673000
+            },
+            "committer": {
+              "name": "GitHub",
+              "email": "noreply@github.com",
+              "time": 1793360673000
+            },
+            "branch": "main"
+          },
+          "actualWorkers": 1
+        },
+        "id": "chromium-desktop",
+        "name": "chromium-desktop",
+        "testDir": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "ci": {
+            "commitHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/commit/6f0066196de22971e5a46c6820fdce900a1b7554",
+            "commitHash": "6f0066196de22971e5a46c6820fdce900a1b7554",
+            "buildHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/41144480924"
+          },
+          "gitCommit": {
+            "shortHash": "6f00661",
+            "hash": "6f0066196de22971e5a46c6820fdce900a1b7554",
+            "subject": "CF-247 v2.15.375: D5 additive scale_stated marker; \"Not stated on the page\" in the AER workspace (#765)",
+            "body": "CF-247 v2.15.375: D5 additive scale_stated marker; \"Not stated on the page\" in the AER workspace (#765)\n\n* CF-247 D5: additive scale_stated marker on Website API v2 entry rows (decision A4) and the R1 \"Not stated on the page\" scale\n\n- Consumer part (Platform Admin paste before merge; approval Platform Admin 30 Oct 2026 08:45, admin decision §11.2):\n  md5-guarded, re-runnable, count-guarded edits of security.entry_matrix_payload_v1 and security.entry_resolve_v1;\n  scale_stated true/false/null; case_by_case null-safe; website_v2_* and edge functions untouched; baseline re-taken.\n- R1 (ordinary migration): public.admin_aer matrix scale choice not_stated (grade_scale null), refused until the marker\n  is live; needs the printed grade; no number without its scale; add defaults to none. Workspace UI shows and offers it.\n- Spec s182 (Guards: D5 / A4) with resolver fixtures; consumer-api-baseline.json note updated.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 D5: edit_once normalises CRLF line endings (first paste run rolled back on md5 99dfa649)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 D5: one-line edits (SQL editor auto-indent changed the after-md5); after-md5s 5f7eb755 / 69bbc05f; s182 asserts one-line edits\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.375 integration: D5 migrations numbered 20261030280000 / 20261030290000; release ceremony\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n---------\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+            "author": {
+              "name": "msinghbs-ai",
+              "email": "msingh.bs@gmail.com",
+              "time": 1793360673000
+            },
+            "committer": {
+              "name": "GitHub",
+              "email": "noreply@github.com",
+              "time": 1793360673000
+            },
+            "branch": "main"
+          },
+          "actualWorkers": 1
+        },
+        "id": "chromium-mobile",
+        "name": "chromium-mobile",
+        "testDir": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 120000
+      }
+    ],
+    "filteredProjects": [
+      {
+        "grep": {},
+        "grepInvert": null,
+        "outputDir": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "ci": {
+            "commitHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/commit/6f0066196de22971e5a46c6820fdce900a1b7554",
+            "commitHash": "6f0066196de22971e5a46c6820fdce900a1b7554",
+            "buildHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/41144480924"
+          },
+          "gitCommit": {
+            "shortHash": "6f00661",
+            "hash": "6f0066196de22971e5a46c6820fdce900a1b7554",
+            "subject": "CF-247 v2.15.375: D5 additive scale_stated marker; \"Not stated on the page\" in the AER workspace (#765)",
+            "body": "CF-247 v2.15.375: D5 additive scale_stated marker; \"Not stated on the page\" in the AER workspace (#765)\n\n* CF-247 D5: additive scale_stated marker on Website API v2 entry rows (decision A4) and the R1 \"Not stated on the page\" scale\n\n- Consumer part (Platform Admin paste before merge; approval Platform Admin 30 Oct 2026 08:45, admin decision §11.2):\n  md5-guarded, re-runnable, count-guarded edits of security.entry_matrix_payload_v1 and security.entry_resolve_v1;\n  scale_stated true/false/null; case_by_case null-safe; website_v2_* and edge functions untouched; baseline re-taken.\n- R1 (ordinary migration): public.admin_aer matrix scale choice not_stated (grade_scale null), refused until the marker\n  is live; needs the printed grade; no number without its scale; add defaults to none. Workspace UI shows and offers it.\n- Spec s182 (Guards: D5 / A4) with resolver fixtures; consumer-api-baseline.json note updated.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 D5: edit_once normalises CRLF line endings (first paste run rolled back on md5 99dfa649)\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 D5: one-line edits (SQL editor auto-indent changed the after-md5); after-md5s 5f7eb755 / 69bbc05f; s182 asserts one-line edits\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.375 integration: D5 migrations numbered 20261030280000 / 20261030290000; release ceremony\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n---------\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+            "author": {
+              "name": "msinghbs-ai",
+              "email": "msingh.bs@gmail.com",
+              "time": 1793360673000
+            },
+            "committer": {
+              "name": "GitHub",
+              "email": "noreply@github.com",
+              "time": 1793360673000
+            },
+            "branch": "main"
+          },
+          "actualWorkers": 1
+        },
+        "name": "chromium-mobile",
+        "testDir": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat",
+        "snapshotDir": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat",
+        "testIgnore": [],
+        "testMatch": "**/*.@(spec|test).?(c|m)[jt]s?(x)",
+        "timeout": 120000,
+        "use": {
+          "baseURL": "https://coursefinder-pilot.techm.workers.dev",
+          "trace": "retain-on-failure",
+          "screenshot": "only-on-failure",
+          "video": "retain-on-failure",
+          "actionTimeout": 20000,
+          "navigationTimeout": 45000,
+          "userAgent": "Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Mobile Safari/537.36",
+          "viewport": {
+            "width": 412,
+            "height": 839
+          },
+          "screen": {
+            "width": 412,
+            "height": 915
+          },
+          "deviceScaleFactor": 2.625,
+          "isMobile": true,
+          "hasTouch": true,
+          "defaultBrowserType": "chromium"
+        },
+        "dependencies": [],
+        "ignoreSnapshots": false,
+        "__projectId": "chromium-mobile"
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list"
+      ],
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "default",
+    "updateSourceMethod": "patch",
+    "version": "1.64.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "a10-paged-filters-deployed.spec.mjs",
+      "file": "a10-paged-filters-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "A10 paged filters and tablet focus @deployed",
+          "file": "a10-paged-filters-deployed.spec.mjs",
+          "line": 21,
+          "column": 6,
+          "specs": [
+            {
+              "title": "QILT Provider and Metric use 10-item server paging without coarse-pointer autofocus",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3286,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:32:25.133Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a10-qilt-paged-filters",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/a10-paged-filters-deployed-d1725-ut-coarse-pointer-autofocus-chromium-mobile/attachments/a10-qilt-paged-filters-f803982d09e6de42bb252444386b3547aea9c1b9.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/a10-paged-filters-deployed-d1725-ut-coarse-pointer-autofocus-chromium-mobile/attachments/runtime-evidence-693a5f1ac478eb9d1bc62a0d3005805d25afc166.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "64ff864d7aad017ea84b-3637bbd9a5b58deea886",
+              "file": "a10-paged-filters-deployed.spec.mjs",
+              "line": 28,
+              "column": 3
+            },
+            {
+              "title": "PRISMS Study area uses 10-item server paging without coarse-pointer autofocus",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2852,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:32:28.543Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a10-prisms-paged-filter",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/a10-paged-filters-deployed-7d9b3-ut-coarse-pointer-autofocus-chromium-mobile/attachments/a10-prisms-paged-filter-fe8c30a3a93d1fb62195883415bc2948436a4036.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/a10-paged-filters-deployed-7d9b3-ut-coarse-pointer-autofocus-chromium-mobile/attachments/runtime-evidence-d0c9ca5ffe8320e4892eb831f058142666298ca9.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "64ff864d7aad017ea84b-9a2daec38093101d3fa8",
+              "file": "a10-paged-filters-deployed.spec.mjs",
+              "line": 46,
+              "column": 3
+            },
+            {
+              "title": "Evidence Source uses country-aware 10-item server paging and local filters do not autofocus",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3581,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:32:31.411Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a10-evidence-paged-filters",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/a10-paged-filters-deployed-dd72b-al-filters-do-not-autofocus-chromium-mobile/attachments/a10-evidence-paged-filters-3ec2a1fbadc8bd4d25883561c6ca4f3c3884a8ad.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/a10-paged-filters-deployed-dd72b-al-filters-do-not-autofocus-chromium-mobile/attachments/runtime-evidence-10b4ad33ce3634ea83cea7101ad26323c2421f67.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "64ff864d7aad017ea84b-78c2381379cf14545345",
+              "file": "a10-paged-filters-deployed.spec.mjs",
+              "line": 56,
+              "column": 3
+            },
+            {
+              "title": "A10 server contracts are mirrored and large legacy bundles stay empty",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1636,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:32:35.006Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "64ff864d7aad017ea84b-7dc9be53838c831b4008",
+              "file": "a10-paged-filters-deployed.spec.mjs",
+              "line": 74,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "a12-contextual-insights-deployed.spec.mjs",
+      "file": "a12-contextual-insights-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "A12 contextual insights on catalogue detail blades @deployed",
+          "file": "a12-contextual-insights-deployed.spec.mjs",
+          "line": 13,
+          "column": 6,
+          "specs": [
+            {
+              "title": "RMIT Provider blade relates QILT PRISMS context and Scholarships without flattening granularity",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4782,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:32:36.662Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a12-provider-contextual-insights",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/a12-contextual-insights-de-5cd0b-hout-flattening-granularity-chromium-mobile/attachments/a12-provider-contextual-insights-f3f63b04cde058120a9fceda42b2564ea430f75b.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/a12-contextual-insights-de-5cd0b-hout-flattening-granularity-chromium-mobile/attachments/runtime-evidence-2e06697f7867817b815e16e40a4a29c561785bb6.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ea32d9d238a47d4e4322-629caff76c095fd7e00d",
+              "file": "a12-contextual-insights-deployed.spec.mjs",
+              "line": 16,
+              "column": 2
+            },
+            {
+              "title": "Course blade labels Provider outcomes and Provider-scope Scholarships as context not Course truth",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 9381,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:32:41.469Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a12-course-contextual-insights",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/a12-contextual-insights-de-ff344-as-context-not-Course-truth-chromium-mobile/attachments/a12-course-contextual-insights-859b207fa7d25f5fbf422cd0842c8f24b4b718bb.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/a12-contextual-insights-de-ff344-as-context-not-Course-truth-chromium-mobile/attachments/runtime-evidence-1c64aee10a96137d900611b639bca526c87419bf.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ea32d9d238a47d4e4322-b1ebb621675eb30a274f",
+              "file": "a12-contextual-insights-deployed.spec.mjs",
+              "line": 36,
+              "column": 2
+            },
+            {
+              "title": "A12 source contract remains bounded and role checked",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 6,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:32:50.860Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ea32d9d238a47d4e4322-bbc83f0ca0630487bf89",
+              "file": "a12-contextual-insights-deployed.spec.mjs",
+              "line": 60,
+              "column": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "a13-filter-demo-trace-deployed.spec.mjs",
+      "file": "a13-filter-demo-trace-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "A13 stable Course filters and Layer 2 acquisition Evidence trace @deployed",
+          "file": "a13-filter-demo-trace-deployed.spec.mjs",
+          "line": 8,
+          "column": 6,
+          "specs": [
+            {
+              "title": "tablet Course Provider filter stays anchored and does not auto-focus",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2742,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:32:50.880Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a13-tablet-filter-anchored",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/a13-filter-demo-trace-depl-336bb-red-and-does-not-auto-focus-chromium-mobile/attachments/a13-tablet-filter-anchored-8a5c6a7f8bc2754100a4490b4f7f3ccc472e10b2.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/a13-filter-demo-trace-depl-336bb-red-and-does-not-auto-focus-chromium-mobile/attachments/runtime-evidence-c16f002abeddd3b96ce6919b311d9149f12ffd6d.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "dc4b89bf9963c6a1e771-e016c2f1a63d4cd8abdb",
+              "file": "a13-filter-demo-trace-deployed.spec.mjs",
+              "line": 11,
+              "column": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "a15-provider-contact-intelligence-deployed.spec.mjs",
+      "file": "a15-provider-contact-intelligence-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "A15 Provider international contact intelligence @deployed",
+          "file": "a15-provider-contact-intelligence-deployed.spec.mjs",
+          "line": 18,
+          "column": 6,
+          "specs": [
+            {
+              "title": "UQ Provider blade shows governed first-party regional manager assignments with Evidence",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5012,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:32:53.654Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a15-uq-international-contacts-desktop",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/a15-provider-contact-intel-a5e17-r-assignments-with-Evidence-chromium-mobile/attachments/a15-uq-international-contacts-desktop-50c5a115ca619369f0469089130ea8ae0bbe39a9.png"
+                        },
+                        {
+                          "name": "a15-uq-international-contacts-mobile",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/a15-provider-contact-intel-a5e17-r-assignments-with-Evidence-chromium-mobile/attachments/a15-uq-international-contacts-mobile-0d69292770cf9d062da6715752c7a8988d04cfe6.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/a15-provider-contact-intel-a5e17-r-assignments-with-Evidence-chromium-mobile/attachments/runtime-evidence-6debe3540866f63d07b716077e4eb94124574bf2.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "08ba2502454cef24a57b-c7b1b329561f4d31cd81",
+              "file": "a15-provider-contact-intelligence-deployed.spec.mjs",
+              "line": 28,
+              "column": 3
+            },
+            {
+              "title": "A15 data boundary keeps contact tables private and licensed search non-revealing",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 13,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:32:58.697Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "08ba2502454cef24a57b-ac440e3af867b3cbde28",
+              "file": "a15-provider-contact-intelligence-deployed.spec.mjs",
+              "line": 66,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "admin-navigation-deployed.spec.mjs",
+      "file": "admin-navigation-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "CourseFinder canonical Administration and Operations navigation @deployed",
+          "file": "admin-navigation-deployed.spec.mjs",
+          "line": 8,
+          "column": 6,
+          "specs": [
+            {
+              "title": "primary sidebar exposes the governed non-floating information architecture",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1794,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:32:58.727Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "admin-canonical-navigation",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/admin-navigation-deployed--bffe2-ng-information-architecture-chromium-mobile/attachments/admin-canonical-navigation-6a7432a2d44f79b1b543bcc1fdc398b3fd8d7045.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/admin-navigation-deployed--bffe2-ng-information-architecture-chromium-mobile/attachments/runtime-evidence-a4373063fec39c2f21c1d114a940d4c017e8abd9.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "552ec3b16ac4b68cd063-d9ce08041fac24592a2c",
+              "file": "admin-navigation-deployed.spec.mjs",
+              "line": 11,
+              "column": 3
+            },
+            {
+              "title": "Layer 1 and Layer 2 open as embedded canonical workspaces",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 8483,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:33:00.550Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "layers1-2-canonical",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/admin-navigation-deployed--cc5c5-bedded-canonical-workspaces-chromium-mobile/attachments/layers1-2-canonical-b90f23a3042075c5909604e931f93aeb833c9255.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/admin-navigation-deployed--cc5c5-bedded-canonical-workspaces-chromium-mobile/attachments/runtime-evidence-df24d436e20d5a2d633c6bab2145e83b5544592f.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "552ec3b16ac4b68cd063-ba78ab8de7c7a2a8c969",
+              "file": "admin-navigation-deployed.spec.mjs",
+              "line": 29,
+              "column": 3
+            },
+            {
+              "title": "old Layer 3 address opens Layer 2 › Adapters; Layer 4 is its own route",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4768,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:33:09.046Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "layer3-retired-layer4-route",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/admin-navigation-deployed--0de6e-rs-Layer-4-is-its-own-route-chromium-mobile/attachments/layer3-retired-layer4-route-895e1dd398f32cf075545ad75cc334a140417aaa.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/admin-navigation-deployed--0de6e-rs-Layer-4-is-its-own-route-chromium-mobile/attachments/runtime-evidence-8c7011b09a40882648369cc213886571962da4a3.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "552ec3b16ac4b68cd063-5e40a3d0892fa1625666",
+              "file": "admin-navigation-deployed.spec.mjs",
+              "line": 41,
+              "column": 3
+            },
+            {
+              "title": "Administration subcontext and Scheduled Tasks survive deep-link browser history",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3136,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:33:13.827Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/admin-navigation-deployed--5b9d9-e-deep-link-browser-history-chromium-mobile/attachments/runtime-evidence-a6b21062cac19fe1744c386d7cc44ddfe8c56f9e.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "552ec3b16ac4b68cd063-e686039344752f94f8c5",
+              "file": "admin-navigation-deployed.spec.mjs",
+              "line": 50,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "cf-061-qilt-prisms-comparison-deployed.spec.mjs",
+      "file": "cf-061-qilt-prisms-comparison-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "CF-061 QILT PRISMS comparison experience @deployed",
+          "file": "cf-061-qilt-prisms-comparison-deployed.spec.mjs",
+          "line": 9,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Provider comparison aligns QILT cards for two selected universities",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5198,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:33:16.981Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "cf-061-provider-comparison",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-061-qilt-prisms-compari-72e0a-r-two-selected-universities-chromium-mobile/attachments/cf-061-provider-comparison-9711ae517428b0961597f053c619172199d6a97e.png"
+                        },
+                        {
+                          "name": "cf-061-provider-comparison-mobile",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-061-qilt-prisms-compari-72e0a-r-two-selected-universities-chromium-mobile/attachments/cf-061-provider-comparison-mobile-0e3c0b8529912b64e933c61bd3f53a077ab5a175.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-061-qilt-prisms-compari-72e0a-r-two-selected-universities-chromium-mobile/attachments/runtime-evidence-e4ab1b009a93219a92ab6f761a092eed798da6b4.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "742d1de593576af0080c-11177966890ea607f488",
+              "file": "cf-061-qilt-prisms-comparison-deployed.spec.mjs",
+              "line": 12,
+              "column": 2
+            },
+            {
+              "title": "Course comparison can select any university before choosing courses",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3240,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:33:22.199Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "cf-079-course-compare-provider-first",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-061-qilt-prisms-compari-f5591-ity-before-choosing-courses-chromium-mobile/attachments/cf-079-course-compare-provider-first-85fae2ef6cccbd19c2e702eacefcb4a4f06a4ea7.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-061-qilt-prisms-compari-f5591-ity-before-choosing-courses-chromium-mobile/attachments/runtime-evidence-e50869bf93bdada0bc339d1ba44b2edce00f732a.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "742d1de593576af0080c-f6b016ea3ed9f2c89933",
+              "file": "cf-061-qilt-prisms-comparison-deployed.spec.mjs",
+              "line": 63,
+              "column": 2
+            },
+            {
+              "title": "Course detail keeps QILT as Provider context and opens Course comparison",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4730,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:33:25.450Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "cf-061-course-comparison",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-061-qilt-prisms-compari-0ad59-and-opens-Course-comparison-chromium-mobile/attachments/cf-061-course-comparison-13c264ef18dac7fc7105c4e51518e021eb867dd5.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-061-qilt-prisms-compari-0ad59-and-opens-Course-comparison-chromium-mobile/attachments/runtime-evidence-0a8c266c384801946b229d735abfbe86aebd0b80.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "742d1de593576af0080c-5bbe3d89fe2e350accf4",
+              "file": "cf-061-qilt-prisms-comparison-deployed.spec.mjs",
+              "line": 86,
+              "column": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "cf-073-administration-acquisition-route-deployed.spec.mjs",
+      "file": "cf-073-administration-acquisition-route-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "CF-073 Administration Acquisition route regression @deployed",
+          "file": "cf-073-administration-acquisition-route-deployed.spec.mjs",
+          "line": 8,
+          "column": 6,
+          "specs": [
+            {
+              "title": "direct Acquisition route renders and browser Back recovers without blank Admin",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1639,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:33:30.199Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "cf-073-administration-acquisition-back-recovery",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-073-administration-acqu-88218-ecovers-without-blank-Admin-chromium-mobile/attachments/cf-073-administration-acquisition-back-recovery-ad2012e8dff528e80215bc9f0a95f231aef2d6cd.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-073-administration-acqu-88218-ecovers-without-blank-Admin-chromium-mobile/attachments/runtime-evidence-5665f92c52f486e7196f39fd0b003148d62415d3.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "4e83df3d190c40b95885-018586c2fee52ef7cd4f",
+              "file": "cf-073-administration-acquisition-route-deployed.spec.mjs",
+              "line": 15,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "cf-076-ranking-import-ux-deployed.spec.mjs",
+      "file": "cf-076-ranking-import-ux-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "CF-076 compact ranking import UX @deployed",
+          "file": "cf-076-ranking-import-ux-deployed.spec.mjs",
+          "line": 8,
+          "column": 6,
+          "specs": [
+            {
+              "title": "nested Administration route shows breadcrumbs and compact file-first import",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1707,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:33:31.868Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-076-ranking-import-ux-d-8fe24-d-compact-file-first-import-chromium-mobile/attachments/runtime-evidence-f4b79bed2b82931be9f29c8f81f1ab5348d41dfa.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1718c7c1d8f2a9e257e1-a51d8a55e737f5ecb09b",
+              "file": "cf-076-ranking-import-ux-deployed.spec.mjs",
+              "line": 11,
+              "column": 2
+            },
+            {
+              "title": "service source derives THE native JSON system/year from file content",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:33:33.596Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1718c7c1d8f2a9e257e1-35957a12ccd61863f6cf",
+              "file": "cf-076-ranking-import-ux-deployed.spec.mjs",
+              "line": 66,
+              "column": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "cf-080-provider-contacts-deployed.spec.mjs",
+      "file": "cf-080-provider-contacts-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "CF-080 Provider Contacts managed Catalogue @deployed",
+          "file": "cf-080-provider-contacts-deployed.spec.mjs",
+          "line": 7,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Catalogue route loads managed contacts and honours the governed role boundary",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1805,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:33:33.613Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-080-provider-contacts-d-7028e--the-governed-role-boundary-chromium-mobile/attachments/runtime-evidence-d1716cc59ac93909d64cfbe0a7c7ab7ee211d0bd.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bf3fecbee269e369b9cb-9f3d705c19b171c9b503",
+              "file": "cf-080-provider-contacts-deployed.spec.mjs",
+              "line": 10,
+              "column": 3
+            },
+            {
+              "title": "Provider deep-link contract and governed client wiring are retained",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 9,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:33:35.437Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bf3fecbee269e369b9cb-7a55b5668651ffd350b7",
+              "file": "cf-080-provider-contacts-deployed.spec.mjs",
+              "line": 39,
+              "column": 3
+            },
+            {
+              "title": "Provider Contacts remains contained at tablet and mobile widths",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1585,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:33:35.458Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-080-provider-contacts-d-e7e0d-at-tablet-and-mobile-widths-chromium-mobile/attachments/runtime-evidence-1e0c08247f4d1372e6f99543cfe2dfaed9077bdf.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bf3fecbee269e369b9cb-64df75f74c904f556d50",
+              "file": "cf-080-provider-contacts-deployed.spec.mjs",
+              "line": 66,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "cf-097-ranking-workflow-history-deployed.spec.mjs",
+      "file": "cf-097-ranking-workflow-history-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "CF-097/226 ranking workflow, history and datasets @deployed",
+          "file": "cf-097-ranking-workflow-history-deployed.spec.mjs",
+          "line": 8,
+          "column": 6,
+          "specs": [
+            {
+              "title": "full THE history remains visible and applied editions no longer require manual review",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2618,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:33:37.060Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-097-ranking-workflow-hi-5d880-onger-require-manual-review-chromium-mobile/attachments/runtime-evidence-01f399f52f8ddfdce3285a88851efbfe0b06af54.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ecc980cb01d4a481d4c2-427e80927798e99dd9e3",
+              "file": "cf-097-ranking-workflow-history-deployed.spec.mjs",
+              "line": 11,
+              "column": 2
+            },
+            {
+              "title": "ranking rows expose Layer 1 Ranking ETL jobs",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2294,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:33:39.698Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-097-ranking-workflow-hi-6277c-se-Layer-1-Ranking-ETL-jobs-chromium-mobile/attachments/runtime-evidence-a5b33f8d952f41a2cfb24811bd3b51db335e6103.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ecc980cb01d4a481d4c2-5f5f3efe88f3f4c1017b",
+              "file": "cf-097-ranking-workflow-history-deployed.spec.mjs",
+              "line": 28,
+              "column": 2
+            },
+            {
+              "title": "Statistics exposes accepted QS and THE editions and routes to imported observations",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3758,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:33:42.008Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-097-ranking-workflow-hi-5dec1-es-to-imported-observations-chromium-mobile/attachments/runtime-evidence-5a2075b3c979e9d32a7363096329869879e8738e.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ecc980cb01d4a481d4c2-2c19c3a62ebaaab7a1af",
+              "file": "cf-097-ranking-workflow-history-deployed.spec.mjs",
+              "line": 38,
+              "column": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "cf-098-ranking-file-bundle-deployed.spec.mjs",
+      "file": "cf-098-ranking-file-bundle-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "CF-098 file-first ranking bundle @deployed",
+          "file": "cf-098-ranking-file-bundle-deployed.spec.mjs",
+          "line": 8,
+          "column": 6,
+          "specs": [
+            {
+              "title": "ranking file upload is primary and country files combine before registration",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1717,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:33:45.783Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-098-ranking-file-bundle-33752-combine-before-registration-chromium-mobile/attachments/runtime-evidence-e8d122205c1889b06b056b3bed1bce4363f8f56c.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "50807adedf8ad356aed8-ef4306c79c59d6318b81",
+              "file": "cf-098-ranking-file-bundle-deployed.spec.mjs",
+              "line": 11,
+              "column": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "cf-100-ranking-country-extension-deployed.spec.mjs",
+      "file": "cf-100-ranking-country-extension-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "CF-100 multi-country same-edition ranking scope @deployed",
+          "file": "cf-100-ranking-country-extension-deployed.spec.mjs",
+          "line": 8,
+          "column": 6,
+          "specs": [
+            {
+              "title": "existing edition recognises a new country as extension rather than replacement",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3113,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:33:47.529Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-100-ranking-country-ext-cdd0d-ion-rather-than-replacement-chromium-mobile/attachments/runtime-evidence-52d1aade0f5567b50042c81ce26e0be2b215d007.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "67bb8b2d7183c716b884-31e3b6888f48a762b3ed",
+              "file": "cf-100-ranking-country-extension-deployed.spec.mjs",
+              "line": 11,
+              "column": 2
+            },
+            {
+              "title": "source contract shows the automatic validate-and-apply workflow and exposes country scope metadata",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1635,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:33:50.663Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-100-ranking-country-ext-90490-oses-country-scope-metadata-chromium-mobile/attachments/runtime-evidence-e6c6e71da49ddbe1a3db3597d4b7830120ec66ff.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "67bb8b2d7183c716b884-51de57addce7285b726b",
+              "file": "cf-100-ranking-country-extension-deployed.spec.mjs",
+              "line": 26,
+              "column": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "cf-208-scholarship-pim-maturity-deployed.spec.mjs",
+      "file": "cf-208-scholarship-pim-maturity-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "CF-208 deployed Scholarship PIM maturity @deployed",
+          "file": "cf-208-scholarship-pim-maturity-deployed.spec.mjs",
+          "line": 8,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Scholarship catalogue is populated and exposes governed operator controls",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2940,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:33:52.312Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "cf-208-scholarship-pim-catalogue",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-208-scholarship-pim-mat-53a42--governed-operator-controls-chromium-mobile/attachments/cf-208-scholarship-pim-catalogue-1bc48d29d362ae27d6f581a272ffe0343cc7c7bc.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-208-scholarship-pim-mat-53a42--governed-operator-controls-chromium-mobile/attachments/runtime-evidence-52bee84c87a0fd628f120586d703cab68b11890c.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "d4b9b027a619ce145cff-9b3200fed9d116594bd9",
+              "file": "cf-208-scholarship-pim-maturity-deployed.spec.mjs",
+              "line": 10,
+              "column": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "cf-209-scheduler-jobs-operations-deployed.spec.mjs",
+      "file": "cf-209-scheduler-jobs-operations-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "CF-209 deployed Scheduler and Jobs operations acceptance @deployed",
+          "file": "cf-209-scheduler-jobs-operations-deployed.spec.mjs",
+          "line": 8,
+          "column": 6,
+          "specs": [
+            {
+              "title": "shows governed Scheduling intelligence without generic execution controls",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2161,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:33:55.277Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "cf-209-scheduling",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-209-scheduler-jobs-oper-a462b--generic-execution-controls-chromium-mobile/attachments/cf-209-scheduling-ea26f2a15d9bfbc5016ef78c098a38a83dd46336.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-209-scheduler-jobs-oper-a462b--generic-execution-controls-chromium-mobile/attachments/runtime-evidence-5a68f82e2d7040f8c9ebafd56ec7b7fa8da07639.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "db537009e2d58ae3e590-a4dbb1a57d783f49fe4b",
+              "file": "cf-209-scheduler-jobs-operations-deployed.spec.mjs",
+              "line": 17,
+              "column": 2
+            },
+            {
+              "title": "keeps Jobs as the server-paged execution and telemetry workspace",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3313,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:33:57.461Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "cf-209-jobs",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-209-scheduler-jobs-oper-519f0-ion-and-telemetry-workspace-chromium-mobile/attachments/cf-209-jobs-3628ecf80f41838cf68d6b1d7aef91a57fc094cc.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-209-scheduler-jobs-oper-519f0-ion-and-telemetry-workspace-chromium-mobile/attachments/runtime-evidence-f809adbc628c4d1ca51514024bfa7ef91ffcb185.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "db537009e2d58ae3e590-a51959e15b18e56cb0f1",
+              "file": "cf-209-scheduler-jobs-operations-deployed.spec.mjs",
+              "line": 37,
+              "column": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "cf-247-field-coverage-deployed.spec.mjs",
+      "file": "cf-247-field-coverage-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "CF-247 per-field coverage panel @deployed",
+          "file": "cf-247-field-coverage-deployed.spec.mjs",
+          "line": 7,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Coverage > Attributes opens with the 80% target panel for intakes, English and fees",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4773,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:34:00.790Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "cf247-field-coverage-panel",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-247-field-coverage-depl-5c182-or-intakes-English-and-fees-chromium-mobile/attachments/cf247-field-coverage-panel-61fae2776dde20e5308425e42fa1e4a8a79f5095.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-247-field-coverage-depl-5c182-or-intakes-English-and-fees-chromium-mobile/attachments/runtime-evidence-76c2c1cc38c9c882b2c40b40e2b0f327e7c3cb92.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "551f63bf44aeec470ad9-237455696e47eb2cfc79",
+              "file": "cf-247-field-coverage-deployed.spec.mjs",
+              "line": 10,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "cf-247-s154-aer-workspace-deployed.spec.mjs",
+      "file": "cf-247-s154-aer-workspace-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "CF-247 AER operations workspace @deployed",
+          "file": "cf-247-s154-aer-workspace-deployed.spec.mjs",
+          "line": 14,
+          "column": 6,
+          "specs": [
+            {
+              "title": "the workspace on live data: summary, combined filters, columns, drawer, sources and resolution, bounded",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 9085,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:34:05.594Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-247-s154-aer-workspace--d1754-rces-and-resolution-bounded-chromium-mobile/attachments/runtime-evidence-de6a18d0da95587cc90e7a9dd974b45795abe64d.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5cb40996134defd781d8-e12d79207aee641dad4c",
+              "file": "cf-247-s154-aer-workspace-deployed.spec.mjs",
+              "line": 17,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "cf-247-s167-aer-course-phone-deployed.spec.mjs",
+      "file": "cf-247-s167-aer-course-phone-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "CF-247 AER Course detail and phone acceptance @deployed",
+          "file": "cf-247-s167-aer-course-phone-deployed.spec.mjs",
+          "line": 68,
+          "column": 6,
+          "specs": [
+            {
+              "title": "at desktop width on live data: DP020 country order, India through the resolver only, scholarships and the evidence overlay",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 6584,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:34:14.707Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-247-s167-aer-course-pho-60d74-ps-and-the-evidence-overlay-chromium-mobile/attachments/runtime-evidence-7f22bc624c024b3daa0525fd3a1a09ed9f26c259.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78f71a7504eb15f77897-eef5c0562c381436d2e9",
+              "file": "cf-247-s167-aer-course-phone-deployed.spec.mjs",
+              "line": 71,
+              "column": 3
+            },
+            {
+              "title": "at phone width on live data: row drawer opens and closes, notice inside the screen, DP020 country order, India resolution, scholarships and evidence overlay @responsive",
+              "ok": true,
+              "tags": [
+                "deployed",
+                "responsive"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 6154,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:34:21.311Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-247-s167-aer-course-pho-37374-evidence-overlay-responsive-chromium-mobile/attachments/runtime-evidence-a3deb7f7c8699b728a6251abd11d25c8984ee953.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78f71a7504eb15f77897-4be9a7f06d2da24bf434",
+              "file": "cf-247-s167-aer-course-phone-deployed.spec.mjs",
+              "line": 81,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "cf-247-s183-adapter-measures-role-check-deployed.spec.mjs",
+      "file": "cf-247-s183-adapter-measures-role-check-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "CF-247 D6 adapter measures role check @deployed",
+          "file": "cf-247-s183-adapter-measures-role-check-deployed.spec.mjs",
+          "line": 6,
+          "column": 6,
+          "specs": [
+            {
+              "title": "direct API calls: anonymous refused, signed-in user answered or refused by rank",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2404,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:34:27.484Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1f6325ae2f3512431f59-d463946325f856c8cf3d",
+              "file": "cf-247-s183-adapter-measures-role-check-deployed.spec.mjs",
+              "line": 9,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "data-quality-deployed.spec.mjs",
+      "file": "data-quality-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "CourseFinder deployed Data Quality acceptance @deployed",
+          "file": "data-quality-deployed.spec.mjs",
+          "line": 27,
+          "column": 6,
+          "specs": [
+            {
+              "title": "governed regulatory-fee states and every exception row page correctly",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 7272,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:34:29.914Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "data-quality-overview",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/data-quality-deployed-Cour-a2cb2-xception-row-page-correctly-chromium-mobile/attachments/data-quality-overview-7845c4674affb2a7d4dd4f486725e511f9aec7f5.png"
+                        },
+                        {
+                          "name": "exceptions-page-1",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/data-quality-deployed-Cour-a2cb2-xception-row-page-correctly-chromium-mobile/attachments/exceptions-page-1-b915316f809b9fe2135c8610ac3a5d47ebfef152.png"
+                        },
+                        {
+                          "name": "exceptions-page-4",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/data-quality-deployed-Cour-a2cb2-xception-row-page-correctly-chromium-mobile/attachments/exceptions-page-4-19a7ebb908f2da840a6b3258eeedf8a1edbcb5fd.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/data-quality-deployed-Cour-a2cb2-xception-row-page-correctly-chromium-mobile/attachments/runtime-evidence-3d1e5aad29e39b582ac54fbdec8145cc4e8ee8d1.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9f69e61633a182ab16a8-70aa9b86d5d86e009f0b",
+              "file": "data-quality-deployed.spec.mjs",
+              "line": 39,
+              "column": 3
+            },
+            {
+              "title": "exception opens a canonical Course detail",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5944,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:34:37.208Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "canonical-course-detail",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/data-quality-deployed-Cour-25aab-s-a-canonical-Course-detail-chromium-mobile/attachments/canonical-course-detail-83aacc7e8092e2dce839ae7a81e8f21fdc0422ff.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/data-quality-deployed-Cour-25aab-s-a-canonical-Course-detail-chromium-mobile/attachments/runtime-evidence-1763ca17d26b126dd9c6efe048d3cecc960a6e80.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9f69e61633a182ab16a8-0c3dc996afe1c36eaebe",
+              "file": "data-quality-deployed.spec.mjs",
+              "line": 62,
+              "column": 3
+            },
+            {
+              "title": "exception opens a real private Evidence Regulatory Snapshot",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5348,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:34:43.162Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "evidence-regulatory-snapshot",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/data-quality-deployed-Cour-a5c67-vidence-Regulatory-Snapshot-chromium-mobile/attachments/evidence-regulatory-snapshot-999b80dfd0a9108600f8fd127338782f8d314553.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/data-quality-deployed-Cour-a5c67-vidence-Regulatory-Snapshot-chromium-mobile/attachments/runtime-evidence-7d38b00691435f049cc58112d5856ce63981ca61.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9f69e61633a182ab16a8-66e9950218b51c58ea88",
+              "file": "data-quality-deployed.spec.mjs",
+              "line": 82,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "layer1-operations-deployed.spec.mjs",
+      "file": "layer1-operations-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "M2.4.1 Layer 1 regulatory operations @deployed",
+          "file": "layer1-operations-deployed.spec.mjs",
+          "line": 32,
+          "column": 6,
+          "specs": [
+            {
+              "title": "AU and NZ expose the production-shaped operator journey",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 7419,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:34:48.528Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "m2-4-1-layer1-operations",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/layer1-operations-deployed-f75e2-ion-shaped-operator-journey-chromium-mobile/attachments/m2-4-1-layer1-operations-a45bb2d2c5a758bc3733ae6279ea71c59bb98b11.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/layer1-operations-deployed-f75e2-ion-shaped-operator-journey-chromium-mobile/attachments/runtime-evidence-bbd77c581953da6455cec9f8738a0ee4f9b131da.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f572da738aa24524818b-933c0cba7a0b70e45fc1",
+              "file": "layer1-operations-deployed.spec.mjs",
+              "line": 35,
+              "column": 3
+            },
+            {
+              "title": "Administration preserves the Platform Admin boundary for Layer 1 source configuration",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3052,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:34:55.967Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "cf-067-layer1-source-settings-role-boundary",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/layer1-operations-deployed-9d048-ayer-1-source-configuration-chromium-mobile/attachments/cf-067-layer1-source-settings-role-boundary-54aab7199e55fe747bc5b9e4900229ba7036de41.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/layer1-operations-deployed-9d048-ayer-1-source-configuration-chromium-mobile/attachments/runtime-evidence-4d4177430dd0285b69fc0ccc5e2c2d3ab8d431c9.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f572da738aa24524818b-a3702584d1e0673eabb3",
+              "file": "layer1-operations-deployed.spec.mjs",
+              "line": 46,
+              "column": 3
+            },
+            {
+              "title": "anonymous browser cannot execute Layer 1 read or command contracts",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 90,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:34:59.030Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f572da738aa24524818b-31177ca225456c986444",
+              "file": "layer1-operations-deployed.spec.mjs",
+              "line": 84,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "layer2-provider-deployed.spec.mjs",
+      "file": "layer2-provider-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "CourseFinder deployed Layer 2 acquisition-provider acceptance @deployed",
+          "file": "layer2-provider-deployed.spec.mjs",
+          "line": 10,
+          "column": 6,
+          "specs": [
+            {
+              "title": "provider registry is visible without exposing credentials",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3091,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:34:59.134Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "layer2-provider-routing-v1-9",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/layer2-provider-deployed-C-fa6f5-ithout-exposing-credentials-chromium-mobile/attachments/layer2-provider-routing-v1-9-9f31144dbf11157068a486d42db91323b10a5c3e.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/layer2-provider-deployed-C-fa6f5-ithout-exposing-credentials-chromium-mobile/attachments/runtime-evidence-eeac5b1b86607737cc40eae05f1535abdd42c123.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5330d9abe30666ded993-554b3b03136ede3c927d",
+              "file": "layer2-provider-deployed.spec.mjs",
+              "line": 12,
+              "column": 3
+            },
+            {
+              "title": "provider detail preserves the write-only credential boundary for the UAT operator",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4233,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:35:02.245Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "layer2-provider-credential-boundary-v1-9",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/layer2-provider-deployed-C-9bdcc-undary-for-the-UAT-operator-chromium-mobile/attachments/layer2-provider-credential-boundary-v1-9-d19e679f619795a179f5137f0e883df75398271e.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/layer2-provider-deployed-C-9bdcc-undary-for-the-UAT-operator-chromium-mobile/attachments/runtime-evidence-4fd38c62ac936b65289be9354913250157bd9634.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5330d9abe30666ded993-2264111247179ad8cf4d",
+              "file": "layer2-provider-deployed.spec.mjs",
+              "line": 13,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "m2-3-intelligence-deployed.spec.mjs",
+      "file": "m2-3-intelligence-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "CourseFinder deployed M2.3 intelligence acceptance on canonical routes @deployed",
+          "file": "m2-3-intelligence-deployed.spec.mjs",
+          "line": 8,
+          "column": 6,
+          "specs": [
+            {
+              "title": "old Layer 3 addresses open Layer 2 › Adapters without exposing credentials",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2568,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:35:06.496Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "m2-3-layer3-retired",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-3-intelligence-deployed-f2bbf-ithout-exposing-credentials-chromium-mobile/attachments/m2-3-layer3-retired-8376759b49f182d778d9cf33e2be151c005a41ef.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-3-intelligence-deployed-f2bbf-ithout-exposing-credentials-chromium-mobile/attachments/runtime-evidence-3b28ba540cd34920c365d77cf871d42f672a1eb6.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "773837ee89688faa4d59-33cb18de3ccfe17e9d69",
+              "file": "m2-3-intelligence-deployed.spec.mjs",
+              "line": 15,
+              "column": 2
+            },
+            {
+              "title": "Layer 4 review and Scheduled jobs are separate workspaces",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3554,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:35:09.087Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "m2-3-layer4-refresh-separate",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-3-intelligence-deployed-019b8-obs-are-separate-workspaces-chromium-mobile/attachments/m2-3-layer4-refresh-separate-4aaff957df213e518cf6735d84a9c84b8bd6a6f5.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-3-intelligence-deployed-019b8-obs-are-separate-workspaces-chromium-mobile/attachments/runtime-evidence-9de18955825b3f3f5d99a97d6c9d0b98acf653c0.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "773837ee89688faa4d59-14dffa568f1b211e1bf4",
+              "file": "m2-3-intelligence-deployed.spec.mjs",
+              "line": 20,
+              "column": 2
+            },
+            {
+              "title": "Key dates and Reference sources are separate Reference data types",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3362,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:35:12.652Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "m2-3-links-dates-parent-menu",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-3-intelligence-deployed-63f29-parate-Reference-data-types-chromium-mobile/attachments/m2-3-links-dates-parent-menu-91c69aafa5fe17d48d281a613b9c19c781e6af7a.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-3-intelligence-deployed-63f29-parate-Reference-data-types-chromium-mobile/attachments/runtime-evidence-069fc03817ab07d4b7fbf2fdeafa25e2d4dfd280.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "773837ee89688faa4d59-644d765a10b3f411cb23",
+              "file": "m2-3-intelligence-deployed.spec.mjs",
+              "line": 28,
+              "column": 2
+            },
+            {
+              "title": "Onboarding sits under Layer 2/3 Universities and its old Providers address follows it",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2267,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:35:16.024Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "m2-3-onboarding-administration",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-3-intelligence-deployed-1efd4-roviders-address-follows-it-chromium-mobile/attachments/m2-3-onboarding-administration-780e28a291acd794cd161f06f7b0cb8b93308be0.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-3-intelligence-deployed-1efd4-roviders-address-follows-it-chromium-mobile/attachments/runtime-evidence-da128f1657fb709e8d53a5a383a43716486d6d7f.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "773837ee89688faa4d59-da8655dd76fbc37c857e",
+              "file": "m2-3-intelligence-deployed.spec.mjs",
+              "line": 41,
+              "column": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "m2-4-4-a16-cross-layer-deployed.spec.mjs",
+      "file": "m2-4-4-a16-cross-layer-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "M2.4.4 A16 cross-layer contact + Layer 4 intervention @deployed",
+          "file": "m2-4-4-a16-cross-layer-deployed.spec.mjs",
+          "line": 18,
+          "column": 6,
+          "specs": [
+            {
+              "title": "A16 database and worker contracts remain non-destructive, append-only and evidence-bound",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 10,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:35:18.307Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc0a0d916e669b5d820b-230ab05f7fcfff54d73d",
+              "file": "m2-4-4-a16-cross-layer-deployed.spec.mjs",
+              "line": 25,
+              "column": 3
+            },
+            {
+              "title": "Provider blade shows explicit A16 disposition and Layer 4 intervention surface",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3225,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:35:18.334Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a16-provider-contact-l4",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a16-cross-layer-dep-abc86-ayer-4-intervention-surface-chromium-mobile/attachments/a16-provider-contact-l4-3c4bbc3b7c1de6d9c8485afae9fdf2b8407371a8.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a16-cross-layer-dep-abc86-ayer-4-intervention-surface-chromium-mobile/attachments/runtime-evidence-a7e2ff8e18052519ed33a1a6498197e2249a3b0c.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc0a0d916e669b5d820b-f56b237fc95eb1926e39",
+              "file": "m2-4-4-a16-cross-layer-deployed.spec.mjs",
+              "line": 67,
+              "column": 3
+            },
+            {
+              "title": "Scholarship blade exposes the same governed Layer 4 overlay",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3160,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:35:21.569Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a16-scholarship-l4-overlay",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a16-cross-layer-dep-fb04b-me-governed-Layer-4-overlay-chromium-mobile/attachments/a16-scholarship-l4-overlay-05bd3dbd32dc94af0b94c84346c953dea1aee697.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a16-cross-layer-dep-fb04b-me-governed-Layer-4-overlay-chromium-mobile/attachments/runtime-evidence-6b1502ec6b628a03ea2c461a6f587175aa2179fb.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc0a0d916e669b5d820b-1103ea6fa94abb37068d",
+              "file": "m2-4-4-a16-cross-layer-deployed.spec.mjs",
+              "line": 84,
+              "column": 3
+            },
+            {
+              "title": "Course blade shows Layer 4 overlay separately from publication override",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3469,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:35:24.741Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a16-course-l4-overlay",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a16-cross-layer-dep-a265b-y-from-publication-override-chromium-mobile/attachments/a16-course-l4-overlay-c476a74e48ec85d04729fcad9592a24ab96473fa.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a16-cross-layer-dep-a265b-y-from-publication-override-chromium-mobile/attachments/runtime-evidence-8cef33435c114464baa737c37f813fb638edd4e4.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc0a0d916e669b5d820b-949f2332532814a27bbf",
+              "file": "m2-4-4-a16-cross-layer-deployed.spec.mjs",
+              "line": 98,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "m2-4-4-a21-permanent-layer-navigation-deployed.spec.mjs",
+      "file": "m2-4-4-a21-permanent-layer-navigation-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "A21 permanent Layer navigation @deployed",
+          "file": "m2-4-4-a21-permanent-layer-navigation-deployed.spec.mjs",
+          "line": 7,
+          "column": 6,
+          "specs": [
+            {
+              "title": "canonical Operations navigation owns the Layer workspaces",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1589,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:35:28.227Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a21-canonical-layer-navigation",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a21-permanent-layer-3ebb9-n-owns-the-Layer-workspaces-chromium-mobile/attachments/a21-canonical-layer-navigation-77cb58b79bb6c72324d2718d0856c09c4d1d756c.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a21-permanent-layer-3ebb9-n-owns-the-Layer-workspaces-chromium-mobile/attachments/runtime-evidence-5e4492e12cc57a99a03a62fbde5c137a7783b2bf.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "12440281e04eef702df1-9750443ed3be9d4580d6",
+              "file": "m2-4-4-a21-permanent-layer-navigation-deployed.spec.mjs",
+              "line": 11,
+              "column": 3
+            },
+            {
+              "title": "Layer 1 is embedded and actionable, not a floating dialog",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 7068,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:35:29.846Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a21-layer1-embedded",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a21-permanent-layer-0b430-nable-not-a-floating-dialog-chromium-mobile/attachments/a21-layer1-embedded-6e39a4c2cbe959a1201e1dcdbc8d953d62c2754b.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a21-permanent-layer-0b430-nable-not-a-floating-dialog-chromium-mobile/attachments/runtime-evidence-d78faf99d6d9d27604e97b818ea745ed9f500780.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "12440281e04eef702df1-80f17cfc4702dce07ff7",
+              "file": "m2-4-4-a21-permanent-layer-navigation-deployed.spec.mjs",
+              "line": 29,
+              "column": 3
+            },
+            {
+              "title": "Layer 2 opens on Adapters with no operator config knobs",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2370,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:35:36.926Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a21-layer2-embedded",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a21-permanent-layer-8d47c-th-no-operator-config-knobs-chromium-mobile/attachments/a21-layer2-embedded-ef91ad71a39744e8276c2ed05eeafc19ad261489.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a21-permanent-layer-8d47c-th-no-operator-config-knobs-chromium-mobile/attachments/runtime-evidence-5c0c0fef54a6c0c91d28ba1d499615afb291976d.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "12440281e04eef702df1-9a7b3f98318c3a4bb5bf",
+              "file": "m2-4-4-a21-permanent-layer-navigation-deployed.spec.mjs",
+              "line": 39,
+              "column": 3
+            },
+            {
+              "title": "old Layer 3 address opens Layer 2; Layer 4 is a separate permanent route",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2881,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:35:39.306Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a21-layer3-retired-layer4-route",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a21-permanent-layer-4b107--a-separate-permanent-route-chromium-mobile/attachments/a21-layer3-retired-layer4-route-b4789c2120174413844f2507fe39fafc5b38ac7f.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a21-permanent-layer-4b107--a-separate-permanent-route-chromium-mobile/attachments/runtime-evidence-d5a2015e9b6fd56fde31b0d266757d3a718e8044.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "12440281e04eef702df1-1304546ed44701b3fad1",
+              "file": "m2-4-4-a21-permanent-layer-navigation-deployed.spec.mjs",
+              "line": 56,
+              "column": 3
+            },
+            {
+              "title": "saved Course filters restore without opening or flashing popovers",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3725,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:35:42.200Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a21-filter-restore-no-popover",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a21-permanent-layer-54ccf-pening-or-flashing-popovers-chromium-mobile/attachments/a21-filter-restore-no-popover-4ccf3b6ce356f04445e456cd6700ddf550e6ae45.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a21-permanent-layer-54ccf-pening-or-flashing-popovers-chromium-mobile/attachments/runtime-evidence-230a9c4dc0c146f687cf264b1bf9e0145bd1e225.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "12440281e04eef702df1-9d8f7b7545e958e4225f",
+              "file": "m2-4-4-a21-permanent-layer-navigation-deployed.spec.mjs",
+              "line": 67,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "m2-4-4-a22-responsive-detail-blades-deployed.spec.mjs",
+      "file": "m2-4-4-a22-responsive-detail-blades-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "A22 responsive detail blades @deployed",
+          "file": "m2-4-4-a22-responsive-detail-blades-deployed.spec.mjs",
+          "line": 13,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Provider blade is wide, scroll-owned and does not clip contextual cards",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 7592,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:35:45.939Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a22-provider-wide-drawer",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a22-responsive-deta-85c6e-s-not-clip-contextual-cards-chromium-mobile/attachments/a22-provider-wide-drawer-51be4908ab587518a82176a14fdb0c4752d67b2b.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a22-responsive-deta-85c6e-s-not-clip-contextual-cards-chromium-mobile/attachments/runtime-evidence-1c3a459a3e718be1a3a79e75c8e3a03cc726814c.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f4513db029222b39f22f-1ed2c45342eff6260411",
+              "file": "m2-4-4-a22-responsive-detail-blades-deployed.spec.mjs",
+              "line": 16,
+              "column": 2
+            },
+            {
+              "title": "Course blade owns vertical scrolling and remains usable on tablet and mobile",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4478,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:35:53.560Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a22-course-mobile-drawer",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a22-responsive-deta-d5b04-usable-on-tablet-and-mobile-chromium-mobile/attachments/a22-course-mobile-drawer-9a499a687c06ffb3d4c2c6b8a04e1d70b0012098.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a22-responsive-deta-d5b04-usable-on-tablet-and-mobile-chromium-mobile/attachments/runtime-evidence-d1b5f3902f3619bb8478417bab0802e41be4ffb1.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f4513db029222b39f22f-95f03f3bd030fd566b7d",
+              "file": "m2-4-4-a22-responsive-detail-blades-deployed.spec.mjs",
+              "line": 31,
+              "column": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "m2-4-4-a23-layer2-background-firecrawl-deployed.spec.mjs",
+      "file": "m2-4-4-a23-layer2-background-firecrawl-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "A23 quota-aware Layer 2 background execution @deployed",
+          "file": "m2-4-4-a23-layer2-background-firecrawl-deployed.spec.mjs",
+          "line": 6,
+          "column": 6,
+          "specs": [
+            {
+              "title": "operator Adapters screen has no qualification knobs",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2310,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:35:58.053Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a23-layer2-adapters",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a23-layer2-backgrou-6c666--has-no-qualification-knobs-chromium-mobile/attachments/a23-layer2-adapters-ece53c6e0ec8e3cf7f1e0c5c15d5927ff6d34d60.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a23-layer2-backgrou-6c666--has-no-qualification-knobs-chromium-mobile/attachments/runtime-evidence-644d25c7d11b6e803a19316d3251f07a6a27d6b9.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1abc1adb5e43a126df15-1c0351049f7092ffbe80",
+              "file": "m2-4-4-a23-layer2-background-firecrawl-deployed.spec.mjs",
+              "line": 10,
+              "column": 2
+            },
+            {
+              "title": "retired Layer 2 source address lands on Adapters; Scrapers & fetchers shows the provider registry",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3273,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:36:00.389Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a23-scrapers-registry",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a23-layer2-backgrou-f0c5d-shows-the-provider-registry-chromium-mobile/attachments/a23-scrapers-registry-6a7b6802f1e69d62af26d0d39acfc2119a168e57.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a23-layer2-backgrou-f0c5d-shows-the-provider-registry-chromium-mobile/attachments/runtime-evidence-e45f256ac3256ab2ef144b3383479e4fd9d6c467.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1abc1adb5e43a126df15-1d2b6ffc9eadafdc9b2a",
+              "file": "m2-4-4-a23-layer2-background-firecrawl-deployed.spec.mjs",
+              "line": 21,
+              "column": 2
+            },
+            {
+              "title": "background finaliser completes deterministic controls and governed handoff without autonomous Layer 3 AI",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:36:03.674Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1abc1adb5e43a126df15-4fe99868c03257de8d36",
+              "file": "m2-4-4-a23-layer2-background-firecrawl-deployed.spec.mjs",
+              "line": 33,
+              "column": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "m2-4-4-a24-unified-layer-headers-deployed.spec.mjs",
+      "file": "m2-4-4-a24-unified-layer-headers-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Layer screens show one title @deployed",
+          "file": "m2-4-4-a24-unified-layer-headers-deployed.spec.mjs",
+          "line": 8,
+          "column": 6,
+          "specs": [
+            {
+              "title": "each Layer screen has one visible page title and a slim, light Layer header",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 8783,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:36:03.693Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a24-one-title-per-layer-screen",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a24-unified-layer-h-a546c-d-a-slim-light-Layer-header-chromium-mobile/attachments/a24-one-title-per-layer-screen-72b756bf86d89a3c5bc7e1bf0efffebbd339d69f.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a24-unified-layer-h-a546c-d-a-slim-light-Layer-header-chromium-mobile/attachments/runtime-evidence-859575d931e95d0ee04c600ea42bd100d310a3c0.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5602a685c7a907bf2ea5-dbe4697e1e1f4df3dcbb",
+              "file": "m2-4-4-a24-unified-layer-headers-deployed.spec.mjs",
+              "line": 11,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "m2-4-4-a25-evidence-type-aware-preview-deployed.spec.mjs",
+      "file": "m2-4-4-a25-evidence-type-aware-preview-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "A25 Evidence type-aware preview and screenshot lineage @deployed",
+          "file": "m2-4-4-a25-evidence-type-aware-preview-deployed.spec.mjs",
+          "line": 17,
+          "column": 6,
+          "specs": [
+            {
+              "title": "JSON Evidence shows its own JSON type and never inherits a website screenshot",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3610,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:36:12.499Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a25-json-evidence",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a25-evidence-type-a-9fdf9-herits-a-website-screenshot-chromium-mobile/attachments/a25-json-evidence-af28b6a3ce994b637fee943ea067004927962c88.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a25-evidence-type-a-9fdf9-herits-a-website-screenshot-chromium-mobile/attachments/runtime-evidence-7e546134d8699115a82ccdba04bc173224b831ca.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b3e49896e1e89ff1d3f3-1ad5d9ebb17a0d13970a",
+              "file": "m2-4-4-a25-evidence-type-aware-preview-deployed.spec.mjs",
+              "line": 30,
+              "column": 3
+            },
+            {
+              "title": "HTML Evidence shows its own HTML type",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2607,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:36:16.132Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a25-html-evidence",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a25-evidence-type-a-fe311-nce-shows-its-own-HTML-type-chromium-mobile/attachments/a25-html-evidence-52adb5bef911d9fcbbf132660d15a6596f74839c.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a25-evidence-type-a-fe311-nce-shows-its-own-HTML-type-chromium-mobile/attachments/runtime-evidence-98c51325383ec3c6eed039f13fcc3dc39a01cda4.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b3e49896e1e89ff1d3f3-2b17b96ccf7ec3189133",
+              "file": "m2-4-4-a25-evidence-type-aware-preview-deployed.spec.mjs",
+              "line": 38,
+              "column": 3
+            },
+            {
+              "title": "Screenshot Evidence shows its own image type rather than a related thumbnail",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2958,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:36:18.748Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "a25-screenshot-own-image",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a25-evidence-type-a-db4d5-er-than-a-related-thumbnail-chromium-mobile/attachments/a25-screenshot-own-image-e36d11b442fcb2cc05c07504a57d18eb205b0d89.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a25-evidence-type-a-db4d5-er-than-a-related-thumbnail-chromium-mobile/attachments/runtime-evidence-df9b1ebe87eb45d1eabca023d048897592e6f063.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b3e49896e1e89ff1d3f3-9f5e330ffb7a02ecf901",
+              "file": "m2-4-4-a25-evidence-type-aware-preview-deployed.spec.mjs",
+              "line": 45,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "m2-4-4-a26-a28-operator-ux-deployed.spec.mjs",
+      "file": "m2-4-4-a26-a28-operator-ux-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "M2.4.4 A26-A28 operator UX @deployed",
+          "file": "m2-4-4-a26-a28-operator-ux-deployed.spec.mjs",
+          "line": 9,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Administration opens a non-empty default workspace and switches sub-contexts",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2284,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:36:21.722Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a26-a28-operator-ux-56fe8-e-and-switches-sub-contexts-chromium-mobile/attachments/runtime-evidence-420bec139ac905bae24773a0b5d43afb5f840f1f.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "edd7730b4868f9b37a4a-9a9dc44ec8e5cd929879",
+              "file": "m2-4-4-a26-a28-operator-ux-deployed.spec.mjs",
+              "line": 12,
+              "column": 3
+            },
+            {
+              "title": "Layer 2 uses production wording, canonical Jobs/Evidence links and actionable blockers only",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2080,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:36:24.030Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a26-a28-operator-ux-085d2-nd-actionable-blockers-only-chromium-mobile/attachments/runtime-evidence-1b296b11121d20b22cc2dd3267812159d3f62731.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "edd7730b4868f9b37a4a-54f0c61cc1187ff2b0e8",
+              "file": "m2-4-4-a26-a28-operator-ux-deployed.spec.mjs",
+              "line": 24,
+              "column": 3
+            },
+            {
+              "title": "A26 child progress refreshes the owning batch heartbeat",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:36:26.125Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "edd7730b4868f9b37a4a-c130cbf505562a89d361",
+              "file": "m2-4-4-a26-a28-operator-ux-deployed.spec.mjs",
+              "line": 38,
+              "column": 3
+            },
+            {
+              "title": "old Layer 3 address opens Layer 2 › Adapters; no Layer 3 work screen",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2016,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:36:26.136Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-4-a26-a28-operator-ux-1861c-ters-no-Layer-3-work-screen-chromium-mobile/attachments/runtime-evidence-fdbf277246fedc4b81bf59c4f906eb5b15535681.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "edd7730b4868f9b37a4a-38d132ca365f26066ed3",
+              "file": "m2-4-4-a26-a28-operator-ux-deployed.spec.mjs",
+              "line": 45,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "m2-4-4-cross-layer-operations-deployed.spec.mjs",
+      "file": "m2-4-4-cross-layer-operations-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "M2.4.4 cross-layer operations and housekeeping @deployed",
+          "file": "m2-4-4-cross-layer-operations-deployed.spec.mjs",
+          "line": 5,
+          "column": 6,
+          "specs": [
+            {
+              "title": "checked-in recovery, retention, scheduler and Layer 3 alert contracts remain governed",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 8,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:36:28.165Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "2b157a895b73e03867b1-6b5758c50042a1d5b638",
+              "file": "m2-4-4-cross-layer-operations-deployed.spec.mjs",
+              "line": 6,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "m2-4-navigation-content-audit.spec.mjs",
+      "file": "m2-4-navigation-content-audit.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "M2.4 navigation/content audit @deployed",
+          "file": "m2-4-navigation-content-audit.spec.mjs",
+          "line": 65,
+          "column": 6,
+          "specs": [
+            {
+              "title": "capture visible menu, page content, navigation timing and screenshots",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 23921,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:36:28.184Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "navigation-content-audit",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-navigation-content-au-2608f-tion-timing-and-screenshots-chromium-mobile/attachments/navigation-content-audit-9db885031ca6d73fa4a1fbcd1150140813d5186c.json"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-4-navigation-content-au-2608f-tion-timing-and-screenshots-chromium-mobile/attachments/runtime-evidence-8ffc393dadb55cc39ca33be410389597c4e0ffca.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "67272948dfa14b6e0504-b94a1a0c015267433258",
+              "file": "m2-4-navigation-content-audit.spec.mjs",
+              "line": 67,
+              "column": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "m2-5-jobs-workspace-deployed.spec.mjs",
+      "file": "m2-5-jobs-workspace-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "M2.5 Jobs workspace deployed @deployed",
+          "file": "m2-5-jobs-workspace-deployed.spec.mjs",
+          "line": 8,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Jobs route shows live governed Pipeline Jobs instead of a manufactured empty list",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3124,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:36:52.135Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "m2-5-jobs-workspace-live",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-5-jobs-workspace-deploy-4de65-f-a-manufactured-empty-list-chromium-mobile/attachments/m2-5-jobs-workspace-live-04a5bf89aa0d9bd7d29679597abbb55507c45ecd.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-5-jobs-workspace-deploy-4de65-f-a-manufactured-empty-list-chromium-mobile/attachments/runtime-evidence-b8e5eca5c6c9f60ee9537c0472e8f0c695de8ef7.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b5959e35036d7717a961-981f2ff196967a2003fb",
+              "file": "m2-5-jobs-workspace-deployed.spec.mjs",
+              "line": 14,
+              "column": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "m2-5-pilot-deployment-currentness-deployed.spec.mjs",
+      "file": "m2-5-pilot-deployment-currentness-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "M2.5 Pilot deployment currentness @deployed",
+          "file": "m2-5-pilot-deployment-currentness-deployed.spec.mjs",
+          "line": 19,
+          "column": 6,
+          "specs": [
+            {
+              "title": "deployed Worker contains CF-053 and CF-054 operator surfaces without executing AI",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2422,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:36:55.284Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "m2-5-pilot-deployment-currentness",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-5-pilot-deployment-curr-dd1d8-rfaces-without-executing-AI-chromium-mobile/attachments/m2-5-pilot-deployment-currentness-ae7136e947f51ad25f9ab2730213900af5cd0e57.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-5-pilot-deployment-curr-dd1d8-rfaces-without-executing-AI-chromium-mobile/attachments/runtime-evidence-4574c080ac5557780bb81d34c4fa00065e277962.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "edc515d465586c12e504-78c11bb78de8a0f30060",
+              "file": "m2-5-pilot-deployment-currentness-deployed.spec.mjs",
+              "line": 27,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "m2-5-platform-readiness-deployed.spec.mjs",
+      "file": "m2-5-platform-readiness-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "M2.5 platform readiness foundation @deployed",
+          "file": "m2-5-platform-readiness-deployed.spec.mjs",
+          "line": 5,
+          "column": 6,
+          "specs": [
+            {
+              "title": "environment separation, capacity, retention, workload and Layer 4 blocking contracts remain governed",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 20,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:36:57.735Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "81f4471ef1098631e266-1ed4e432425f19116987",
+              "file": "m2-5-platform-readiness-deployed.spec.mjs",
+              "line": 6,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "performance-deployed.spec.mjs",
+      "file": "performance-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "M1 performance and responsiveness @deployed",
+          "file": "performance-deployed.spec.mjs",
+          "line": 24,
+          "column": 6,
+          "specs": [
+            {
+              "title": "core workspaces stay within governed RPC and payload budgets",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 12724,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:36:57.766Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "workspace-performance",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/performance-deployed-M1-pe-324ac-ned-RPC-and-payload-budgets-chromium-mobile/attachments/workspace-performance-ca21ca7d92fb39f47f7c2b9de5fb551ccaeaf3f0.json"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/performance-deployed-M1-pe-324ac-ned-RPC-and-payload-budgets-chromium-mobile/attachments/runtime-evidence-b76d22d8f30f2d0d8f44ba1720bf27511670e5a7.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "3c329fcd3b018e1b506c-461d3d907b7860d7ff98",
+              "file": "performance-deployed.spec.mjs",
+              "line": 26,
+              "column": 3
+            },
+            {
+              "title": "exact CRICOS lookup, detail, paging and browser back stay interactive",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 13200,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:37:10.501Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "course-interactions",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/performance-deployed-M1-pe-cbea5-owser-back-stay-interactive-chromium-mobile/attachments/course-interactions-a488adb6c36ad2c998c0067c49ab4edcbddb9264.json"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/performance-deployed-M1-pe-cbea5-owser-back-stay-interactive-chromium-mobile/attachments/runtime-evidence-62c466c88e6cddc969e0d0145c6a95dcee401e81.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "3c329fcd3b018e1b506c-d786a1a50ef7dce09f57",
+              "file": "performance-deployed.spec.mjs",
+              "line": 27,
+              "column": 3
+            },
+            {
+              "title": "Layer 2 Adapters stay within management-view budgets",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3992,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:37:23.712Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "layer2-operations-performance",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/performance-deployed-M1-pe-519c3-hin-management-view-budgets-chromium-mobile/attachments/layer2-operations-performance-b3a229830acd099eb6821c848d80175d10c09035.json"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/performance-deployed-M1-pe-519c3-hin-management-view-budgets-chromium-mobile/attachments/runtime-evidence-f417691c48662c2bec8f6607acbe7660595e060b.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "3c329fcd3b018e1b506c-6c2632723341f50f588f",
+              "file": "performance-deployed.spec.mjs",
+              "line": 31,
+              "column": 3
+            },
+            {
+              "title": "common laptop and desktop widths contain horizontal overflow inside grids",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 11509,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:37:27.715Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "responsive-widths",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/performance-deployed-M1-pe-1c2ce-ontal-overflow-inside-grids-chromium-mobile/attachments/responsive-widths-f3c56b36a6172ea9bbb14f902d22d0abeb690652.json"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/performance-deployed-M1-pe-1c2ce-ontal-overflow-inside-grids-chromium-mobile/attachments/runtime-evidence-d0e7e1b1a8cb079fb946d687a0a8af8cc0230c44.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "3c329fcd3b018e1b506c-3d1677f100954ea82170",
+              "file": "performance-deployed.spec.mjs",
+              "line": 32,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "release-notes-deployed.spec.mjs",
+      "file": "release-notes-deployed.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "CourseFinder PIM Admin v2.15.375 release notes @deployed",
+          "file": "release-notes-deployed.spec.mjs",
+          "line": 6,
+          "column": 6,
+          "specs": [
+            {
+              "title": "top-right version opens maintained release history and closes accessibly",
+              "ok": true,
+              "tags": [
+                "deployed"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-mobile",
+                  "projectName": "chromium-mobile",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2202,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T23:37:39.238Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "pim-v2-15-375-release-notes",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/release-notes-deployed-Cou-7588b-story-and-closes-accessibly-chromium-mobile/attachments/pim-v2-15-375-release-notes-b4e55c941e5e06afe3b697c0b2dda4d3297928c5.png"
+                        },
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/release-notes-deployed-Cou-7588b-story-and-closes-accessibly-chromium-mobile/attachments/runtime-evidence-dcc5ce941a587acffbf6ea799fdf6bc5681452a3.json"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bfbf2d5b3274ba39f362-4ff03c6bc003cd79c3b8",
+              "file": "release-notes-deployed.spec.mjs",
+              "line": 8,
+              "column": 2
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-30T23:32:23.426Z",
+    "duration": 318364.66500000004,
+    "expected": 81,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}
