@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.302 — 30 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.375** (Platform Admin mandates 30 Oct 2026 08:45 decision D5, 16:45 and the AER production-closure mandate). Migrations `20261030280000_cf247_d5_scale_stated_marker` (md5-guarded additive `scale_stated` in `security.entry_matrix_payload_v1` and `security.entry_resolve_v1`; applied first by the Platform Admin as the governed paste, 30 Oct 2026 22:19 AEDT, so the merge finds it already applied) and `20261030290000_cf247_d5_aer_scale_not_stated` (`public.admin_aer`: matrix scale "Not stated on the page"). `src/AerWorkspace.jsx`. Spec s182. Consumer API change approved: Platform Admin 30 Oct 2026 08:45 (D5), additive key only; baseline re-taken.
+
 ## 0.1.301 — 30 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.374** (Platform Admin mandate 30 Oct 2026 08:45; decisions D4 and D6). Migrations `20261030260000_cf247_d4_supersede_rule` (md5-guarded edits of `entry_matrix_review_apply_v1`, `course_entry_review_apply_v1`, `layer4_inbox_kinds_v1`) and `20261030270000_cf247_d6_adapter_measures_role_check` (`admin_adapter_measures` role check, A5 pattern, rank 5). Specs s180, s181, s183 (deployed). Consumer API unchanged.

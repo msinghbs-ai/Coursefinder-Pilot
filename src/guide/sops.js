@@ -8,7 +8,7 @@
 // When a release changes a screen, an automation or where a person decides: change the steps here, raise the SOP's version, add a line
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 
-export const SOP_REVIEWED_FOR = '2.15.374'
+export const SOP_REVIEWED_FOR = '2.15.375'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -211,6 +211,7 @@ export const SOPS = [
       { version: '2.00', date: '26 Oct 2026', release: '2.15.359', change: 'Fees: every international fee write passes the country tuition identity check at the table; a failing fee is kept for review.' },
       { version: '2.01', date: '27 Oct 2026', release: '2.15.360', change: 'Governed actions (Decision 268): routine operations are approved on Layer 2/3 › Operations › Governed actions instead of run as SQL; SQL is break-glass only. First action: close the AER PR A recovery.' },
       { version: '2.02', date: '28 Oct 2026', release: '2.15.361', change: 'Academic entry requirements (Track C Step B): the Provider drawer and the Course detail blade show the published entry rows and what applies to a student from a chosen country; Platform Admin reads one course from its stored page and admits the rows in Layer 4 (Course entry first read).' },
+      { version: '2.16', date: '30 Oct 2026', release: '2.15.375', change: 'Entry requirements (D5): when a page prints a grade but no grading scale, keep the grade as printed and set the scale to Not stated on the page (no value); never choose a scale the page does not print. The website is told the scale is not stated.' },
       { version: '2.15', date: '30 Oct 2026', release: '2.15.374', change: 'Entry-requirement items (D4): Approve except replaces an active row only when you approve its new reading; an active row whose replacement you leave out stays active. A clash between approved rows holds the decision with nothing changed. Adapter measures need rank 5 or above (D6).' },
       { version: '2.14', date: '30 Oct 2026', release: '2.15.373', change: 'Cached admin figures: Completeness, Toolset notices, scholarship publishability and field coverage show when their snapshot was built and a Stale mark; Why values are missing shows its actual run time. Rebuild intervals are Pipeline settings › Platform upkeep. No operator steps changed.' },
       { version: '2.13', date: '30 Oct 2026', release: '2.15.372', change: 'Entry-requirement (AER) items: decided one at a time by the Platform Admin in Layer 4 › Inbox (Approve all rows, Approve except with a reason, or Reject); bulk and batch decisions skip them. Curators read them and keep their editing in Catalogue › Entry requirements. Bulk Read again reads only the newest stored copy.' },
