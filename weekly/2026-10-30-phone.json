@@ -24,24 +24,24 @@
     "maxFailures": 0,
     "metadata": {
       "ci": {
-        "commitHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/commit/a50aeb8dc8c18590e7def76dbb258a08128b4a6d",
-        "commitHash": "a50aeb8dc8c18590e7def76dbb258a08128b4a6d",
-        "buildHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/40971522020"
+        "commitHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/commit/a8e024619ba49d97e94e682c8bd6a9dad05e9023",
+        "commitHash": "a8e024619ba49d97e94e682c8bd6a9dad05e9023",
+        "buildHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/40978658818"
       },
       "gitCommit": {
-        "shortHash": "a50aeb8",
-        "hash": "a50aeb8dc8c18590e7def76dbb258a08128b4a6d",
-        "subject": "CF-247 v2.15.374: D4 supersede rule under Approve except; D6 adapter measures role check (#763)",
-        "body": "CF-247 v2.15.374: D4 supersede rule under Approve except; D6 adapter measures role check (#763)\n\n* CF-247 D4: Approve except supersedes only rows with an approved replacement\n\nDecision D4 (Platform Admin 30 Oct 2026 08:45; implementation decision admin\n§11.1, aef0490f). Under Approve except an earlier active row of the source is\nsuperseded only when an approved waiting row has its identity (row_hash); an\nactive row whose replacement was excluded, or that the new read does not carry,\nstays active and untouched. Conflicting approved replacements (C1 same identity,\nC2 identity active elsewhere) hold the whole decision with nothing changed.\nCourse pages: Approve except is held when the course has active rows. Audit:\naer_exclusion.retains_active_row_id/hash, aer_supersede, supersede_map in the\nevent result. Approve all rows keeps W15 byte for byte.\n\nMigration (unnumbered, integrator numbers): md5-guarded edits of\nsecurity.entry_matrix_review_apply_v1 (7c718987), security.course_entry_review_apply_v1\n(25899209), security.layer4_inbox_kinds_v1 (08e7999c). Nothing dropped; consumer API untouched.\nSpec: cf-247-s180-aer-supersede-rule-contract (Guards: CF-247 decision D4 ...).\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.374 integration: D4 migration numbered 20261030260000\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 D6: admin_adapter_measures role check enforced (rank 5, claims-based)\n\nDecision D6 (Platform Admin 30 Oct 2026 08:45; admin decision paper §11.3).\nThe 5 Oct check `current_user <> 'postgres' and ...` never fired inside the\nsecurity definer function, so any signed-in user and service_role could read\nthe adapter measures over the API. Replaced with the A5 idiom, rank 5 and the\nmessage kept: API callers (JWT claims present) must be signed in with rank 5\nor above; a direct owner session without claims still runs it.\n\n- Migration 20261030XXXXXX_cf247_d6_adapter_measures_role_check.sql (number\n  to be assigned by the integrator): md5-guarded single edit (b1417eaf... ->\n  8ad49afc...), query body untouched, grants restated unchanged, post-check.\n  Replaces: public.admin_adapter_measures (role check only). Retires: nothing.\n- s181 contract: guard, exact check, caller truth table, grants.\n- s183 @deployed (read only): anon refused 42501, Platform Admin allowed,\n  targeted in deployed-uat.yml and in the integration tier.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.374: D4 supersede rule + D6 adapter measures role check; release ceremony\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n---------\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+        "shortHash": "a8e0246",
+        "hash": "a8e024619ba49d97e94e682c8bd6a9dad05e9023",
+        "subject": "CF-247 D6 s183: the UAT login is rank 4; assert the server's answer for the session's own rank (refused below 5, answered at 5+) (#764)",
+        "body": "CF-247 D6 s183: the UAT login is rank 4; assert the server's answer for the session's own rank (refused below 5, answered at 5+) (#764)\n\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\nCo-authored-by: Claude <noreply@anthropic.com>",
         "author": {
           "name": "msinghbs-ai",
           "email": "msingh.bs@gmail.com",
-          "time": 1793315503000
+          "time": 1793317091000
         },
         "committer": {
           "name": "GitHub",
           "email": "noreply@github.com",
-          "time": 1793315503000
+          "time": 1793317091000
         },
         "branch": "main"
       },
@@ -55,24 +55,24 @@
         "retries": 1,
         "metadata": {
           "ci": {
-            "commitHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/commit/a50aeb8dc8c18590e7def76dbb258a08128b4a6d",
-            "commitHash": "a50aeb8dc8c18590e7def76dbb258a08128b4a6d",
-            "buildHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/40971522020"
+            "commitHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/commit/a8e024619ba49d97e94e682c8bd6a9dad05e9023",
+            "commitHash": "a8e024619ba49d97e94e682c8bd6a9dad05e9023",
+            "buildHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/40978658818"
           },
           "gitCommit": {
-            "shortHash": "a50aeb8",
-            "hash": "a50aeb8dc8c18590e7def76dbb258a08128b4a6d",
-            "subject": "CF-247 v2.15.374: D4 supersede rule under Approve except; D6 adapter measures role check (#763)",
-            "body": "CF-247 v2.15.374: D4 supersede rule under Approve except; D6 adapter measures role check (#763)\n\n* CF-247 D4: Approve except supersedes only rows with an approved replacement\n\nDecision D4 (Platform Admin 30 Oct 2026 08:45; implementation decision admin\n§11.1, aef0490f). Under Approve except an earlier active row of the source is\nsuperseded only when an approved waiting row has its identity (row_hash); an\nactive row whose replacement was excluded, or that the new read does not carry,\nstays active and untouched. Conflicting approved replacements (C1 same identity,\nC2 identity active elsewhere) hold the whole decision with nothing changed.\nCourse pages: Approve except is held when the course has active rows. Audit:\naer_exclusion.retains_active_row_id/hash, aer_supersede, supersede_map in the\nevent result. Approve all rows keeps W15 byte for byte.\n\nMigration (unnumbered, integrator numbers): md5-guarded edits of\nsecurity.entry_matrix_review_apply_v1 (7c718987), security.course_entry_review_apply_v1\n(25899209), security.layer4_inbox_kinds_v1 (08e7999c). Nothing dropped; consumer API untouched.\nSpec: cf-247-s180-aer-supersede-rule-contract (Guards: CF-247 decision D4 ...).\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.374 integration: D4 migration numbered 20261030260000\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 D6: admin_adapter_measures role check enforced (rank 5, claims-based)\n\nDecision D6 (Platform Admin 30 Oct 2026 08:45; admin decision paper §11.3).\nThe 5 Oct check `current_user <> 'postgres' and ...` never fired inside the\nsecurity definer function, so any signed-in user and service_role could read\nthe adapter measures over the API. Replaced with the A5 idiom, rank 5 and the\nmessage kept: API callers (JWT claims present) must be signed in with rank 5\nor above; a direct owner session without claims still runs it.\n\n- Migration 20261030XXXXXX_cf247_d6_adapter_measures_role_check.sql (number\n  to be assigned by the integrator): md5-guarded single edit (b1417eaf... ->\n  8ad49afc...), query body untouched, grants restated unchanged, post-check.\n  Replaces: public.admin_adapter_measures (role check only). Retires: nothing.\n- s181 contract: guard, exact check, caller truth table, grants.\n- s183 @deployed (read only): anon refused 42501, Platform Admin allowed,\n  targeted in deployed-uat.yml and in the integration tier.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.374: D4 supersede rule + D6 adapter measures role check; release ceremony\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n---------\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+            "shortHash": "a8e0246",
+            "hash": "a8e024619ba49d97e94e682c8bd6a9dad05e9023",
+            "subject": "CF-247 D6 s183: the UAT login is rank 4; assert the server's answer for the session's own rank (refused below 5, answered at 5+) (#764)",
+            "body": "CF-247 D6 s183: the UAT login is rank 4; assert the server's answer for the session's own rank (refused below 5, answered at 5+) (#764)\n\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\nCo-authored-by: Claude <noreply@anthropic.com>",
             "author": {
               "name": "msinghbs-ai",
               "email": "msingh.bs@gmail.com",
-              "time": 1793315503000
+              "time": 1793317091000
             },
             "committer": {
               "name": "GitHub",
               "email": "noreply@github.com",
-              "time": 1793315503000
+              "time": 1793317091000
             },
             "branch": "main"
           },
@@ -93,24 +93,24 @@
         "retries": 1,
         "metadata": {
           "ci": {
-            "commitHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/commit/a50aeb8dc8c18590e7def76dbb258a08128b4a6d",
-            "commitHash": "a50aeb8dc8c18590e7def76dbb258a08128b4a6d",
-            "buildHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/40971522020"
+            "commitHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/commit/a8e024619ba49d97e94e682c8bd6a9dad05e9023",
+            "commitHash": "a8e024619ba49d97e94e682c8bd6a9dad05e9023",
+            "buildHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/40978658818"
           },
           "gitCommit": {
-            "shortHash": "a50aeb8",
-            "hash": "a50aeb8dc8c18590e7def76dbb258a08128b4a6d",
-            "subject": "CF-247 v2.15.374: D4 supersede rule under Approve except; D6 adapter measures role check (#763)",
-            "body": "CF-247 v2.15.374: D4 supersede rule under Approve except; D6 adapter measures role check (#763)\n\n* CF-247 D4: Approve except supersedes only rows with an approved replacement\n\nDecision D4 (Platform Admin 30 Oct 2026 08:45; implementation decision admin\n§11.1, aef0490f). Under Approve except an earlier active row of the source is\nsuperseded only when an approved waiting row has its identity (row_hash); an\nactive row whose replacement was excluded, or that the new read does not carry,\nstays active and untouched. Conflicting approved replacements (C1 same identity,\nC2 identity active elsewhere) hold the whole decision with nothing changed.\nCourse pages: Approve except is held when the course has active rows. Audit:\naer_exclusion.retains_active_row_id/hash, aer_supersede, supersede_map in the\nevent result. Approve all rows keeps W15 byte for byte.\n\nMigration (unnumbered, integrator numbers): md5-guarded edits of\nsecurity.entry_matrix_review_apply_v1 (7c718987), security.course_entry_review_apply_v1\n(25899209), security.layer4_inbox_kinds_v1 (08e7999c). Nothing dropped; consumer API untouched.\nSpec: cf-247-s180-aer-supersede-rule-contract (Guards: CF-247 decision D4 ...).\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.374 integration: D4 migration numbered 20261030260000\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 D6: admin_adapter_measures role check enforced (rank 5, claims-based)\n\nDecision D6 (Platform Admin 30 Oct 2026 08:45; admin decision paper §11.3).\nThe 5 Oct check `current_user <> 'postgres' and ...` never fired inside the\nsecurity definer function, so any signed-in user and service_role could read\nthe adapter measures over the API. Replaced with the A5 idiom, rank 5 and the\nmessage kept: API callers (JWT claims present) must be signed in with rank 5\nor above; a direct owner session without claims still runs it.\n\n- Migration 20261030XXXXXX_cf247_d6_adapter_measures_role_check.sql (number\n  to be assigned by the integrator): md5-guarded single edit (b1417eaf... ->\n  8ad49afc...), query body untouched, grants restated unchanged, post-check.\n  Replaces: public.admin_adapter_measures (role check only). Retires: nothing.\n- s181 contract: guard, exact check, caller truth table, grants.\n- s183 @deployed (read only): anon refused 42501, Platform Admin allowed,\n  targeted in deployed-uat.yml and in the integration tier.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.374: D4 supersede rule + D6 adapter measures role check; release ceremony\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n---------\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+            "shortHash": "a8e0246",
+            "hash": "a8e024619ba49d97e94e682c8bd6a9dad05e9023",
+            "subject": "CF-247 D6 s183: the UAT login is rank 4; assert the server's answer for the session's own rank (refused below 5, answered at 5+) (#764)",
+            "body": "CF-247 D6 s183: the UAT login is rank 4; assert the server's answer for the session's own rank (refused below 5, answered at 5+) (#764)\n\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\nCo-authored-by: Claude <noreply@anthropic.com>",
             "author": {
               "name": "msinghbs-ai",
               "email": "msingh.bs@gmail.com",
-              "time": 1793315503000
+              "time": 1793317091000
             },
             "committer": {
               "name": "GitHub",
               "email": "noreply@github.com",
-              "time": 1793315503000
+              "time": 1793317091000
             },
             "branch": "main"
           },
@@ -135,24 +135,24 @@
         "retries": 1,
         "metadata": {
           "ci": {
-            "commitHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/commit/a50aeb8dc8c18590e7def76dbb258a08128b4a6d",
-            "commitHash": "a50aeb8dc8c18590e7def76dbb258a08128b4a6d",
-            "buildHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/40971522020"
+            "commitHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/commit/a8e024619ba49d97e94e682c8bd6a9dad05e9023",
+            "commitHash": "a8e024619ba49d97e94e682c8bd6a9dad05e9023",
+            "buildHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/40978658818"
           },
           "gitCommit": {
-            "shortHash": "a50aeb8",
-            "hash": "a50aeb8dc8c18590e7def76dbb258a08128b4a6d",
-            "subject": "CF-247 v2.15.374: D4 supersede rule under Approve except; D6 adapter measures role check (#763)",
-            "body": "CF-247 v2.15.374: D4 supersede rule under Approve except; D6 adapter measures role check (#763)\n\n* CF-247 D4: Approve except supersedes only rows with an approved replacement\n\nDecision D4 (Platform Admin 30 Oct 2026 08:45; implementation decision admin\n§11.1, aef0490f). Under Approve except an earlier active row of the source is\nsuperseded only when an approved waiting row has its identity (row_hash); an\nactive row whose replacement was excluded, or that the new read does not carry,\nstays active and untouched. Conflicting approved replacements (C1 same identity,\nC2 identity active elsewhere) hold the whole decision with nothing changed.\nCourse pages: Approve except is held when the course has active rows. Audit:\naer_exclusion.retains_active_row_id/hash, aer_supersede, supersede_map in the\nevent result. Approve all rows keeps W15 byte for byte.\n\nMigration (unnumbered, integrator numbers): md5-guarded edits of\nsecurity.entry_matrix_review_apply_v1 (7c718987), security.course_entry_review_apply_v1\n(25899209), security.layer4_inbox_kinds_v1 (08e7999c). Nothing dropped; consumer API untouched.\nSpec: cf-247-s180-aer-supersede-rule-contract (Guards: CF-247 decision D4 ...).\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.374 integration: D4 migration numbered 20261030260000\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 D6: admin_adapter_measures role check enforced (rank 5, claims-based)\n\nDecision D6 (Platform Admin 30 Oct 2026 08:45; admin decision paper §11.3).\nThe 5 Oct check `current_user <> 'postgres' and ...` never fired inside the\nsecurity definer function, so any signed-in user and service_role could read\nthe adapter measures over the API. Replaced with the A5 idiom, rank 5 and the\nmessage kept: API callers (JWT claims present) must be signed in with rank 5\nor above; a direct owner session without claims still runs it.\n\n- Migration 20261030XXXXXX_cf247_d6_adapter_measures_role_check.sql (number\n  to be assigned by the integrator): md5-guarded single edit (b1417eaf... ->\n  8ad49afc...), query body untouched, grants restated unchanged, post-check.\n  Replaces: public.admin_adapter_measures (role check only). Retires: nothing.\n- s181 contract: guard, exact check, caller truth table, grants.\n- s183 @deployed (read only): anon refused 42501, Platform Admin allowed,\n  targeted in deployed-uat.yml and in the integration tier.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n* CF-247 v2.15.374: D4 supersede rule + D6 adapter measures role check; release ceremony\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\n---------\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+            "shortHash": "a8e0246",
+            "hash": "a8e024619ba49d97e94e682c8bd6a9dad05e9023",
+            "subject": "CF-247 D6 s183: the UAT login is rank 4; assert the server's answer for the session's own rank (refused below 5, answered at 5+) (#764)",
+            "body": "CF-247 D6 s183: the UAT login is rank 4; assert the server's answer for the session's own rank (refused below 5, answered at 5+) (#764)\n\nClaude-Session: https://claude.ai/code/session_01RnriTf32Hcv4Xqnq2DF1qq\n\nCo-authored-by: Claude <noreply@anthropic.com>",
             "author": {
               "name": "msinghbs-ai",
               "email": "msingh.bs@gmail.com",
-              "time": 1793315503000
+              "time": 1793317091000
             },
             "committer": {
               "name": "GitHub",
               "email": "noreply@github.com",
-              "time": 1793315503000
+              "time": 1793317091000
             },
             "branch": "main"
           },
@@ -243,12 +243,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2691,
+                      "duration": 3007,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:18:47.830Z",
+                      "startTime": "2026-10-30T00:22:25.887Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -290,12 +290,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3540,
+                      "duration": 2439,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:18:50.669Z",
+                      "startTime": "2026-10-30T00:22:29.029Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -337,12 +337,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3232,
+                      "duration": 3033,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:18:54.225Z",
+                      "startTime": "2026-10-30T00:22:31.480Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -384,12 +384,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1473,
+                      "duration": 1600,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:18:57.470Z",
+                      "startTime": "2026-10-30T00:22:34.524Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -437,12 +437,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5506,
+                      "duration": 4966,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:18:58.964Z",
+                      "startTime": "2026-10-30T00:22:36.142Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -484,12 +484,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 11800,
+                      "duration": 9039,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:19:04.496Z",
+                      "startTime": "2026-10-30T00:22:41.130Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -531,12 +531,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6,
+                      "duration": 10,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:19:16.310Z",
+                      "startTime": "2026-10-30T00:22:50.184Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -584,12 +584,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2867,
+                      "duration": 2835,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:19:16.331Z",
+                      "startTime": "2026-10-30T00:22:50.215Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -648,12 +648,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4404,
+                      "duration": 3887,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:19:19.232Z",
+                      "startTime": "2026-10-30T00:22:53.079Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -700,12 +700,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 12,
+                      "duration": 15,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:19:23.667Z",
+                      "startTime": "2026-10-30T00:22:56.989Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -753,12 +753,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2544,
+                      "duration": 1890,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:19:23.695Z",
+                      "startTime": "2026-10-30T00:22:57.023Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -800,12 +800,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 7854,
+                      "duration": 7962,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:19:26.259Z",
+                      "startTime": "2026-10-30T00:22:58.938Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -847,12 +847,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3051,
+                      "duration": 5339,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:19:34.126Z",
+                      "startTime": "2026-10-30T00:23:06.911Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -894,12 +894,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2343,
+                      "duration": 3880,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:19:37.189Z",
+                      "startTime": "2026-10-30T00:23:12.264Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -953,12 +953,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4738,
+                      "duration": 6962,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:19:39.551Z",
+                      "startTime": "2026-10-30T00:23:16.163Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1005,12 +1005,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3269,
+                      "duration": 3605,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:19:44.312Z",
+                      "startTime": "2026-10-30T00:23:23.145Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1052,12 +1052,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4568,
+                      "duration": 7344,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:19:47.592Z",
+                      "startTime": "2026-10-30T00:23:26.761Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1116,12 +1116,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1675,
+                      "duration": 1880,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:19:52.177Z",
+                      "startTime": "2026-10-30T00:23:34.119Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1180,12 +1180,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2104,
+                      "duration": 1855,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:19:53.880Z",
+                      "startTime": "2026-10-30T00:23:36.028Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1227,7 +1227,7 @@
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:19:56.004Z",
+                      "startTime": "2026-10-30T00:23:37.899Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1275,12 +1275,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1727,
+                      "duration": 1866,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:19:56.023Z",
+                      "startTime": "2026-10-30T00:23:37.917Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1317,12 +1317,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 8,
+                      "duration": 7,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:19:57.768Z",
+                      "startTime": "2026-10-30T00:23:39.799Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1353,12 +1353,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1689,
+                      "duration": 1758,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:19:57.784Z",
+                      "startTime": "2026-10-30T00:23:39.814Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1412,12 +1412,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5720,
+                      "duration": 3331,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:19:59.490Z",
+                      "startTime": "2026-10-30T00:23:41.587Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1454,12 +1454,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4627,
+                      "duration": 3050,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:20:05.231Z",
+                      "startTime": "2026-10-30T00:23:44.936Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1496,12 +1496,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6622,
+                      "duration": 3922,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:20:09.870Z",
+                      "startTime": "2026-10-30T00:23:47.995Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1555,12 +1555,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2899,
+                      "duration": 1942,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:20:16.509Z",
+                      "startTime": "2026-10-30T00:23:51.931Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1614,12 +1614,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4596,
+                      "duration": 3685,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:20:19.433Z",
+                      "startTime": "2026-10-30T00:23:53.898Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1656,12 +1656,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1743,
+                      "duration": 1740,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:20:24.055Z",
+                      "startTime": "2026-10-30T00:23:57.600Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1715,12 +1715,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3091,
+                      "duration": 4852,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:20:25.814Z",
+                      "startTime": "2026-10-30T00:23:59.353Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1779,12 +1779,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2363,
+                      "duration": 2761,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:20:28.932Z",
+                      "startTime": "2026-10-30T00:24:04.229Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1826,12 +1826,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3127,
+                      "duration": 4010,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:20:31.323Z",
+                      "startTime": "2026-10-30T00:24:07.012Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1890,12 +1890,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3268,
+                      "duration": 4378,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:20:34.468Z",
+                      "startTime": "2026-10-30T00:24:11.036Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1954,12 +1954,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6256,
+                      "duration": 8611,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:20:37.768Z",
+                      "startTime": "2026-10-30T00:24:15.444Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2013,12 +2013,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5388,
+                      "duration": 6635,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:20:44.056Z",
+                      "startTime": "2026-10-30T00:24:24.083Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2056,12 +2056,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5878,
+                      "duration": 6379,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:20:49.471Z",
+                      "startTime": "2026-10-30T00:24:30.737Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2098,8 +2098,8 @@
           "column": 6,
           "specs": [
             {
-              "title": "direct API calls: anonymous refused, Platform Admin allowed",
-              "ok": false,
+              "title": "direct API calls: anonymous refused, signed-in user answered or refused by rank",
+              "ok": true,
               "tags": [
                 "deployed"
               ],
@@ -2114,124 +2114,21 @@
                     {
                       "workerIndex": 0,
                       "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 2478,
-                      "error": {
-                        "message": "Error: {\"status\":403,\"body\":{\"code\":\"42501\",\"details\":null,\"hint\":null,\"message\":\"Platform Admin or Operator required\"}}\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m200\u001b[39m\nReceived: \u001b[31m403\u001b[39m",
-                        "stack": "Error: {\"status\":403,\"body\":{\"code\":\"42501\",\"details\":null,\"hint\":null,\"message\":\"Platform Admin or Operator required\"}}\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m200\u001b[39m\nReceived: \u001b[31m403\u001b[39m\n    at /home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/cf-247-s183-adapter-measures-role-check-deployed.spec.mjs:32:49",
-                        "location": {
-                          "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/cf-247-s183-adapter-measures-role-check-deployed.spec.mjs",
-                          "column": 49,
-                          "line": 32
-                        },
-                        "snippet": "\u001b[0m \u001b[90m 30 |\u001b[39m     \u001b[90m// the signed-in Platform Admin (the UAT user)\u001b[39m\n \u001b[90m 31 |\u001b[39m     \u001b[36mconst\u001b[39m admin \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m call({ apikey\u001b[33m:\u001b[39m seen\u001b[33m.\u001b[39mapikey\u001b[33m,\u001b[39m authorization\u001b[33m:\u001b[39m seen\u001b[33m.\u001b[39mauthorization })\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 32 |\u001b[39m     expect(admin\u001b[33m.\u001b[39mstatus\u001b[33m,\u001b[39m \u001b[33mJSON\u001b[39m\u001b[33m.\u001b[39mstringify(admin))\u001b[33m.\u001b[39mtoBe(\u001b[35m200\u001b[39m)\n \u001b[90m    |\u001b[39m                                                 \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 33 |\u001b[39m     expect(admin\u001b[33m.\u001b[39mbody)\u001b[33m.\u001b[39mtoEqual([])\n \u001b[90m 34 |\u001b[39m   })\n \u001b[90m 35 |\u001b[39m })\u001b[0m"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/cf-247-s183-adapter-measures-role-check-deployed.spec.mjs",
-                            "column": 49,
-                            "line": 32
-                          },
-                          "message": "Error: {\"status\":403,\"body\":{\"code\":\"42501\",\"details\":null,\"hint\":null,\"message\":\"Platform Admin or Operator required\"}}\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m200\u001b[39m\nReceived: \u001b[31m403\u001b[39m\n\n  30 |     // the signed-in Platform Admin (the UAT user)\n  31 |     const admin = await call({ apikey: seen.apikey, authorization: seen.authorization })\n> 32 |     expect(admin.status, JSON.stringify(admin)).toBe(200)\n     |                                                 ^\n  33 |     expect(admin.body).toEqual([])\n  34 |   })\n  35 | })\n    at /home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/cf-247-s183-adapter-measures-role-check-deployed.spec.mjs:32:49"
-                        }
-                      ],
+                      "status": "passed",
+                      "duration": 2622,
+                      "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:20:55.365Z",
+                      "startTime": "2026-10-30T00:24:37.131Z",
                       "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-247-s183-adapter-measur-8e92f-used-Platform-Admin-allowed-chromium-mobile/test-failed-1.png"
-                        },
-                        {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-247-s183-adapter-measur-8e92f-used-Platform-Admin-allowed-chromium-mobile/video.webm"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-247-s183-adapter-measur-8e92f-used-Platform-Admin-allowed-chromium-mobile/error-context.md"
-                        },
-                        {
-                          "name": "trace",
-                          "contentType": "application/zip",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-247-s183-adapter-measur-8e92f-used-Platform-Admin-allowed-chromium-mobile/trace.zip"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/cf-247-s183-adapter-measures-role-check-deployed.spec.mjs",
-                        "column": 49,
-                        "line": 32
-                      }
-                    },
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 2777,
-                      "error": {
-                        "message": "Error: {\"status\":403,\"body\":{\"code\":\"42501\",\"details\":null,\"hint\":null,\"message\":\"Platform Admin or Operator required\"}}\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m200\u001b[39m\nReceived: \u001b[31m403\u001b[39m",
-                        "stack": "Error: {\"status\":403,\"body\":{\"code\":\"42501\",\"details\":null,\"hint\":null,\"message\":\"Platform Admin or Operator required\"}}\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m200\u001b[39m\nReceived: \u001b[31m403\u001b[39m\n    at /home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/cf-247-s183-adapter-measures-role-check-deployed.spec.mjs:32:49",
-                        "location": {
-                          "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/cf-247-s183-adapter-measures-role-check-deployed.spec.mjs",
-                          "column": 49,
-                          "line": 32
-                        },
-                        "snippet": "\u001b[0m \u001b[90m 30 |\u001b[39m     \u001b[90m// the signed-in Platform Admin (the UAT user)\u001b[39m\n \u001b[90m 31 |\u001b[39m     \u001b[36mconst\u001b[39m admin \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m call({ apikey\u001b[33m:\u001b[39m seen\u001b[33m.\u001b[39mapikey\u001b[33m,\u001b[39m authorization\u001b[33m:\u001b[39m seen\u001b[33m.\u001b[39mauthorization })\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 32 |\u001b[39m     expect(admin\u001b[33m.\u001b[39mstatus\u001b[33m,\u001b[39m \u001b[33mJSON\u001b[39m\u001b[33m.\u001b[39mstringify(admin))\u001b[33m.\u001b[39mtoBe(\u001b[35m200\u001b[39m)\n \u001b[90m    |\u001b[39m                                                 \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 33 |\u001b[39m     expect(admin\u001b[33m.\u001b[39mbody)\u001b[33m.\u001b[39mtoEqual([])\n \u001b[90m 34 |\u001b[39m   })\n \u001b[90m 35 |\u001b[39m })\u001b[0m"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/cf-247-s183-adapter-measures-role-check-deployed.spec.mjs",
-                            "column": 49,
-                            "line": 32
-                          },
-                          "message": "Error: {\"status\":403,\"body\":{\"code\":\"42501\",\"details\":null,\"hint\":null,\"message\":\"Platform Admin or Operator required\"}}\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m200\u001b[39m\nReceived: \u001b[31m403\u001b[39m\n\n  30 |     // the signed-in Platform Admin (the UAT user)\n  31 |     const admin = await call({ apikey: seen.apikey, authorization: seen.authorization })\n> 32 |     expect(admin.status, JSON.stringify(admin)).toBe(200)\n     |                                                 ^\n  33 |     expect(admin.body).toEqual([])\n  34 |   })\n  35 | })\n    at /home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/cf-247-s183-adapter-measures-role-check-deployed.spec.mjs:32:49"
-                        }
-                      ],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 1,
-                      "startTime": "2026-10-29T23:20:58.561Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-247-s183-adapter-measur-8e92f-used-Platform-Admin-allowed-chromium-mobile-retry1/test-failed-1.png"
-                        },
-                        {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-247-s183-adapter-measur-8e92f-used-Platform-Admin-allowed-chromium-mobile-retry1/video.webm"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-247-s183-adapter-measur-8e92f-used-Platform-Admin-allowed-chromium-mobile-retry1/error-context.md"
-                        },
-                        {
-                          "name": "trace",
-                          "contentType": "application/zip",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/cf-247-s183-adapter-measur-8e92f-used-Platform-Admin-allowed-chromium-mobile-retry1/trace.zip"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/cf-247-s183-adapter-measures-role-check-deployed.spec.mjs",
-                        "column": 49,
-                        "line": 32
-                      }
+                      "attachments": []
                     }
                   ],
-                  "status": "unexpected"
+                  "status": "expected"
                 }
               ],
-              "id": "1f6325ae2f3512431f59-d497b6eb7965cfbc64b0",
+              "id": "1f6325ae2f3512431f59-d463946325f856c8cf3d",
               "file": "cf-247-s183-adapter-measures-role-check-deployed.spec.mjs",
               "line": 9,
               "column": 3
@@ -2268,15 +2165,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 12823,
+                      "duration": 7650,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:21:02.043Z",
+                      "startTime": "2026-10-30T00:24:39.783Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2325,15 +2222,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6264,
+                      "duration": 7141,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:21:14.999Z",
+                      "startTime": "2026-10-30T00:24:47.450Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2372,15 +2269,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5824,
+                      "duration": 5688,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:21:21.273Z",
+                      "startTime": "2026-10-30T00:24:54.601Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2436,15 +2333,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 7495,
+                      "duration": 8189,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:21:27.118Z",
+                      "startTime": "2026-10-30T00:25:00.304Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2483,15 +2380,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3340,
+                      "duration": 4342,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:21:34.641Z",
+                      "startTime": "2026-10-30T00:25:08.511Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2530,15 +2427,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 107,
+                      "duration": 157,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:21:37.994Z",
+                      "startTime": "2026-10-30T00:25:12.862Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -2583,15 +2480,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2594,
+                      "duration": 3774,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:21:38.115Z",
+                      "startTime": "2026-10-30T00:25:13.032Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2630,15 +2527,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2537,
+                      "duration": 2608,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:21:40.734Z",
+                      "startTime": "2026-10-30T00:25:16.825Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2694,15 +2591,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1794,
+                      "duration": 1853,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:21:43.291Z",
+                      "startTime": "2026-10-30T00:25:19.448Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2741,15 +2638,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3363,
+                      "duration": 4131,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:21:45.112Z",
+                      "startTime": "2026-10-30T00:25:21.317Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2788,15 +2685,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2844,
+                      "duration": 3386,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:21:48.487Z",
+                      "startTime": "2026-10-30T00:25:25.459Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2835,15 +2732,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2296,
+                      "duration": 2401,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:21:51.343Z",
+                      "startTime": "2026-10-30T00:25:28.855Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2899,15 +2796,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 11,
+                      "duration": 9,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:21:53.656Z",
+                      "startTime": "2026-10-30T00:25:31.274Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -2935,15 +2832,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3323,
+                      "duration": 3541,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:21:53.684Z",
+                      "startTime": "2026-10-30T00:25:31.299Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2982,15 +2879,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3581,
+                      "duration": 3398,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:21:57.017Z",
+                      "startTime": "2026-10-30T00:25:34.847Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3029,15 +2926,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5840,
+                      "duration": 3657,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:22:00.608Z",
+                      "startTime": "2026-10-30T00:25:38.254Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3093,15 +2990,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3939,
+                      "duration": 1668,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:22:06.467Z",
+                      "startTime": "2026-10-30T00:25:41.925Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3140,15 +3037,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 8809,
+                      "duration": 7246,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:22:10.435Z",
+                      "startTime": "2026-10-30T00:25:43.612Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3187,15 +3084,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3159,
+                      "duration": 2487,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:22:19.257Z",
+                      "startTime": "2026-10-30T00:25:50.867Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3234,15 +3131,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4215,
+                      "duration": 3536,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:22:22.427Z",
+                      "startTime": "2026-10-30T00:25:53.365Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3281,15 +3178,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3693,
+                      "duration": 3682,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:22:26.654Z",
+                      "startTime": "2026-10-30T00:25:56.911Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3345,15 +3242,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6839,
+                      "duration": 7227,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:22:30.361Z",
+                      "startTime": "2026-10-30T00:26:00.608Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3392,15 +3289,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4558,
+                      "duration": 8062,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:22:37.230Z",
+                      "startTime": "2026-10-30T00:26:07.857Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3456,15 +3353,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2277,
+                      "duration": 3064,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:22:41.805Z",
+                      "startTime": "2026-10-30T00:26:15.936Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3503,15 +3400,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3328,
+                      "duration": 2740,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:22:44.103Z",
+                      "startTime": "2026-10-30T00:26:19.027Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3550,15 +3447,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 7,
+                      "duration": 3,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:22:47.446Z",
+                      "startTime": "2026-10-30T00:26:21.780Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -3603,15 +3500,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 8174,
+                      "duration": 8206,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:22:47.476Z",
+                      "startTime": "2026-10-30T00:26:21.795Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3667,15 +3564,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2877,
+                      "duration": 2886,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:22:55.699Z",
+                      "startTime": "2026-10-30T00:26:30.021Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3714,15 +3611,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2354,
+                      "duration": 2411,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:22:58.603Z",
+                      "startTime": "2026-10-30T00:26:32.927Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3761,15 +3658,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3320,
+                      "duration": 2488,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:23:00.968Z",
+                      "startTime": "2026-10-30T00:26:35.350Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3825,15 +3722,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2911,
+                      "duration": 2583,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:23:04.304Z",
+                      "startTime": "2026-10-30T00:26:37.855Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3867,15 +3764,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3507,
+                      "duration": 2243,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:23:07.239Z",
+                      "startTime": "2026-10-30T00:26:40.459Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3909,15 +3806,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2,
+                      "duration": 1,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:23:10.756Z",
+                      "startTime": "2026-10-30T00:26:42.712Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -3945,15 +3842,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3376,
+                      "duration": 1900,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:23:10.767Z",
+                      "startTime": "2026-10-30T00:26:42.721Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -4004,15 +3901,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 10,
+                      "duration": 6,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:23:14.157Z",
+                      "startTime": "2026-10-30T00:26:44.632Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -4057,15 +3954,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 24942,
+                      "duration": 24127,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:23:14.179Z",
+                      "startTime": "2026-10-30T00:26:44.651Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -4121,15 +4018,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3158,
+                      "duration": 4256,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:23:39.145Z",
+                      "startTime": "2026-10-30T00:27:08.798Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -4185,15 +4082,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2416,
+                      "duration": 2643,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:23:42.329Z",
+                      "startTime": "2026-10-30T00:27:13.083Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -4249,15 +4146,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 15,
+                      "duration": 14,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:23:44.772Z",
+                      "startTime": "2026-10-30T00:27:15.748Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -4302,15 +4199,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6281,
+                      "duration": 10260,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:23:44.803Z",
+                      "startTime": "2026-10-30T00:27:15.775Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -4349,15 +4246,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6992,
+                      "duration": 8527,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:23:51.097Z",
+                      "startTime": "2026-10-30T00:27:26.044Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -4396,15 +4293,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3961,
+                      "duration": 3722,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:23:58.102Z",
+                      "startTime": "2026-10-30T00:27:34.582Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -4443,15 +4340,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 14115,
+                      "duration": 10001,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:24:02.074Z",
+                      "startTime": "2026-10-30T00:27:38.316Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -4507,15 +4404,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2262,
+                      "duration": 2135,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-29T23:24:16.205Z",
+                      "startTime": "2026-10-30T00:27:48.340Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -4546,11 +4443,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-10-29T23:18:46.093Z",
-    "duration": 332611.69800000003,
-    "expected": 80,
+    "startTime": "2026-10-30T00:22:24.226Z",
+    "duration": 326751.258,
+    "expected": 81,
     "skipped": 0,
-    "unexpected": 1,
+    "unexpected": 0,
     "flaky": 0
   }
 }

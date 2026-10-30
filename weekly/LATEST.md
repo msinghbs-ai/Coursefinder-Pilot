@@ -8,10 +8,7 @@
 
 | Viewport | Tests | Passed | Failed | Skipped |
 |---|---|---|---|---|
-| Desktop | 80 | 79 | 1 | 0 |
-| Phone | 81 | 80 | 1 | 0 |
+| Desktop | 80 | 80 | 0 | 0 |
+| Phone | 81 | 81 | 0 | 0 |
 
-## Failures
-
-- desktop: cf-247-s183-adapter-measures-role-check-deployed.spec.mjs › CF-247 D6 adapter measures role check @deployed › direct API calls: anonymous refused, Platform Admin allowed
-- phone: cf-247-s183-adapter-measures-role-check-deployed.spec.mjs › CF-247 D6 adapter measures role check @deployed › direct API calls: anonymous refused, Platform Admin allowed
+No failures.
