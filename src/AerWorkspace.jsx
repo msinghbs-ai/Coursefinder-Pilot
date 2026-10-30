@@ -524,7 +524,47 @@ export function CourseProgramme({onError,onAsked}){
 // ----------------------------------------------------------------------------------------------- Resolution inspection (W13)
 const RULE_TEXT={course_override:'Course rule (override) for this country or any country',course_country_row:'A provider row for this course and this country',band_ladder:'The course band, entered in the provider\'s band table',provider_minimum:'The provider minimum for this country and the course level',contact_provider:'Nothing published applies: contact the provider'}
 const OUTCOME={minimum_published:['success','A minimum is published'],case_by_case:['warning','Considered case by case'],contact_provider:['neutral','Contact the provider']}
-export function ResolveView({onError,routeParams}){
+// ----------------------------------------------------------------------------------------------- course outcome register (closure C1)
+// CF-247 AER production closure C1 (Platform Admin mandate 30 Oct 2026 §4): one primary entry-requirement outcome for every active course of
+// the entry-read countries, built by job aer-outcome-register into pipeline.aer_course_outcomes and read through public.admin_aer_outcomes
+// (rank 4 and above). Counts here; Download CSV fetches every row in pages. Read only: it admits, reads, queues and decides nothing.
+export const OUTCOME_ROWS=[['admitted_course','success','Admitted course requirement'],['admitted_provider','success','Admitted provider resolution'],
+  ['awaiting_review','info','Awaiting Layer 4 review'],['no_requirement_published','neutral','Verified: no requirement on the page'],
+  ['no_course_url','warning','No official course URL'],['identity_unresolved','warning','Identity unresolved or mismatched'],
+  ['source_unreadable','danger','Source unreadable'],['excluded','neutral','Excluded (reason in the download)']]
+export const csvCell=v=>{if(v==null)return'';const s=String(v);return/[",\r\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s}
+const outcomes=async args=>{const{data,error}=await supabase.rpc('admin_aer_outcomes',{p_args:args});if(error)throw error;return data}
+export function OutcomeRegister(){
+  const[s,setS]=useState(null),[dl,setDl]=useState(''),[err,setErr]=useState('')
+  useEffect(()=>{let on=true;outcomes({part:'summary'}).then(x=>on&&setS(x)).catch(e=>on&&setErr(plainError(e)));return()=>{on=false}},[])
+  const download=async()=>{
+    setDl('Preparing…');setErr('')
+    try{
+      let off=0,cols=null,total=0;const lines=[]
+      for(;;){const d=await outcomes({part:'rows',offset:off});cols=cols||d.columns;total=Number(d.total||0)
+        for(const r of d.rows||[])lines.push(r.map(csvCell).join(','))
+        off+=(d.rows||[]).length;setDl(`${fmtNumber(off)} of ${fmtNumber(total)}…`)
+        if(!(d.rows||[]).length||off>=total)break}
+      const blob=new Blob(['﻿'+[(cols||[]).join(','),...lines].join('\r\n')],{type:'text/csv;charset=utf-8'})
+      const a=document.createElement('a');a.href=URL.createObjectURL(blob)
+      a.download=`aer-course-outcomes-${String(s?.build?.built_at||new Date().toISOString()).slice(0,16).replace(/[:T]/g,'-')}.csv`
+      document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);setDl('')
+    }catch(e){setDl('');setErr(plainError(e))}
+  }
+  const by={};for(const x of s?.by_outcome||[]){const o=by[x.outcome]||(by[x.outcome]={courses:0,published:0,cc:{}});o.courses+=Number(x.courses||0);o.published+=Number(x.published||0);o.cc[x.country]=(o.cc[x.country]||0)+Number(x.courses||0)}
+  const countries=[...new Set((s?.by_outcome||[]).map(x=>x.country))].sort()
+  const b=s?.build
+  return <section className="m-panel m-catalogue-panel" data-aer-outcome-register>
+    <div className="m-workspace-head"><div><h2>Course outcome register</h2><p>One entry-requirement outcome for every active course of the entry-read countries: admitted, waiting in Layer 4, verified as not published on the page, or why it cannot be answered yet. Download CSV gives every course with its reason, page and Layer 4 item.</p></div>
+      <div className="m-result-count" data-aer-outcomes-build>{b?.built?<><strong>{fmtNumber(Number(b.courses||0))}</strong><span>courses · built {fmtDateTime(b.built_at)}{b.stale?' · Stale':''}</span></>:s?<span>Not built yet</span>:err?null:<><span className="m-spinner"/>Loading…</>}</div></div>
+    {err&&<p className="fr-error" role="alert" data-aer-error>{err}</p>}
+    {s&&<div className="cf-table-wrap"><table className="cf-table" data-aer-outcomes><thead><tr><th>Outcome</th>{countries.map(c=><th key={c}>{c}</th>)}<th>Total</th><th>Of published providers</th></tr></thead>
+      <tbody>{OUTCOME_ROWS.filter(([k])=>by[k]).map(([k,tone,label])=><tr key={k} data-aer-outcome-row={k}><td><StatusChip tone={tone} label={label}/></td>{countries.map(c=><td key={c}>{fmtNumber(by[k].cc[c]||0)}</td>)}<td><strong>{fmtNumber(by[k].courses)}</strong></td><td>{fmtNumber(by[k].published)}</td></tr>)}</tbody></table></div>}
+    <div className="m-search-row"><button type="button" className="m-secondary compact" onClick={download} disabled={!b?.built||!!dl} data-aer-outcomes-download>{dl||'Download CSV'}</button></div>
+  </section>
+}
+
+export function ResolveView({onError,routeParams,rank}){
   const o=useOptions(onError)
   const[q,setQ]=useState(''),[list,setList]=useState([]),[course,setCourse]=useState(null),[cc,setCc]=useState(routeParams?.get?.('country')||''),[res,setRes]=useState(null),[busy,setBusy]=useState(false),[err,setErr]=useState('')
   useEffect(()=>{if(q.trim().length<2||course){setList([]);return}let on=true;const t=setTimeout(()=>aer('course_search',{q}).then(x=>on&&setList(x||[])).catch(()=>{}),250);return()=>{on=false;clearTimeout(t)}},[q,course])
@@ -559,12 +599,13 @@ export function ResolveView({onError,routeParams}){
       </div>}
       {!res&&!busy&&!err&&<EmptyInline text="Choose a course and a country."/>}
     </section>
+    {Number(rank||0)>=4&&<OutcomeRegister/>}
   </div>
 }
 
 export default function AerWorkspace({tab,rank,onError,navigate,routeParams}){
   if(tab==='course')return <CourseView rank={rank} onError={onError} routeParams={routeParams}/>
   if(tab==='sources')return <SourcesView rank={rank} onError={onError} routeParams={routeParams}/>
-  if(tab==='resolve')return <ResolveView onError={onError} routeParams={routeParams}/>
+  if(tab==='resolve')return <ResolveView onError={onError} routeParams={routeParams} rank={rank}/>
   return <MatrixView rank={rank} onError={onError} navigate={navigate} routeParams={routeParams}/>
 }

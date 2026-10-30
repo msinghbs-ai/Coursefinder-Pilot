@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.303 — 30 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.376** (AER production-closure mandate 30 Oct 2026 §4; decision C1 lodged in admin `2026-10-30-aer-production-closure-response.md`). Migration `20261030300000_cf247_aer_course_outcome_register` (settings `aer.outcome_register_*`, tables `pipeline.aer_course_outcomes` and `pipeline.aer_course_outcome_builds`, job `aer-outcome-register`, `public.admin_aer_outcomes`). `src/AerWorkspace.jsx` (Resolution inspection: Course outcome register, Download CSV). Specs s184, s185 (deployed, read only). Consumer API unchanged.
+
 ## 0.1.302 — 30 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.375** (Platform Admin mandates 30 Oct 2026 08:45 decision D5, 16:45 and the AER production-closure mandate). Migrations `20261030280000_cf247_d5_scale_stated_marker` (md5-guarded additive `scale_stated` in `security.entry_matrix_payload_v1` and `security.entry_resolve_v1`; applied first by the Platform Admin as the governed paste, 30 Oct 2026 22:19 AEDT, so the merge finds it already applied) and `20261030290000_cf247_d5_aer_scale_not_stated` (`public.admin_aer`: matrix scale "Not stated on the page"). `src/AerWorkspace.jsx`. Spec s182. Consumer API change approved: Platform Admin 30 Oct 2026 08:45 (D5), additive key only; baseline re-taken.

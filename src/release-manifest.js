@@ -1,17 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.375'
-export const PACKAGE_VERSION='0.1.302'
+export const UI_VERSION='2.15.376'
+export const PACKAGE_VERSION='0.1.303'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'30 Oct 2026',
-  title:'Entry requirements: a printed grade with no stated scale is kept as printed and marked',
+  title:'Course outcome register for academic entry requirements',
   changes:[
-    'Website API v2 (decision D5, additive): every provider entry_matrix item and every course entry.resolution row carries scale_stated: true when the page states the grading scale, false when it prints a grade with no scale, null when the requirement is case by case. No existing field changed; the grade is never given an inferred scale.',
-    'Catalogue › Entry requirements and the AER workspace: a matrix row can record its scale as "Not stated on the page": the grade stays exactly as printed, with no numeric value and no scale. Course-page rows do not offer it.',
-    'Consumer API: additive key only, applied by the Platform Admin through the governed paste (approved 30 Oct 2026 08:45); baseline re-taken.'
+    'Catalogue › Entry requirements › Resolution inspection (Pipeline Operator and above): the course outcome register gives every active course of the entry-read countries one outcome: admitted course requirement, admitted provider resolution, awaiting Layer 4 review, verified no requirement on the page, no official course URL, identity unresolved, source unreadable, or excluded with its reason. Counts by country; Download CSV gives every course with its reason, page and Layer 4 item.',
+    'The register is rebuilt by the job AER course outcome register (Settings › Pipeline settings › Platform upkeep: rebuilt every, rows per download page, marked stale after) and shows when it was built. It is read only: it admits, reads, queues and decides nothing.',
+    'Consumer API unchanged (Decision 266).'
   ],
   bugFixes:[]
 }
