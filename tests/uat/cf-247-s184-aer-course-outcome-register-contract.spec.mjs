@@ -85,3 +85,57 @@ test('CSV cells are quoted when they hold a comma, quote or line break', async (
   expect(csvCell('two\nlines')).toBe('"two\nlines"')
   expect(csvCell(false)).toBe('false')
 })
+
+async function mockOutcomes(page, { rank = 4 } = {}) {
+  const { mockAdmin } = await import('./support/admin-mock.mjs')
+  await mockAdmin(page, { rank })
+  const calls = []
+  await page.route('https://example.supabase.co/rest/v1/rpc/admin_aer', route => route.fulfill({ json: { providers: [], countries: [], all_countries: [{ code: 'IN', name: 'India' }], scales: ['percentage', 'none'] } }))
+  await page.route('https://example.supabase.co/rest/v1/rpc/admin_aer_outcomes', async route => {
+    const a = (route.request().postDataJSON() || {}).p_args || {}
+    calls.push(a)
+    const build = { built: true, built_at: '2026-10-30T12:00:00Z', courses: 3, age_seconds: 60, stale: false, took_ms: 13000 }
+    if (a.part === 'summary') return route.fulfill({ json: { build, by_outcome: [
+      { outcome: 'admitted_provider', country: 'AU', courses: 1, published: 1, providers: 1 },
+      { outcome: 'awaiting_review', country: 'AU', courses: 1, published: 1, providers: 1 },
+      { outcome: 'no_course_url', country: 'NZ', courses: 1, published: 0, providers: 1 }], by_detail: [] } })
+    const all = [
+      ['c1', '0100714', 'Bachelor of Engineering (Honours)', 'RMIT University', true, 'AU', 'admitted_provider', 'provider table active (343 rows): the resolver answers by country', 'https://www.rmit.edu.au/x', 'bound', 'exact_title', null, null, null, '2026-10-30T12:00:00Z'],
+      ['c2', null, 'Master of Business, Finance', 'Curtin University', true, 'AU', 'awaiting_review', 'the provider\'s table waits in Layer 4 (1 item(s))', null, null, null, null, null, 'li-1', '2026-10-30T12:00:00Z'],
+      ['c3', null, 'Diploma "Applied" Arts', 'Ara', false, 'NZ', 'no_course_url', 'no official course page found', null, null, null, null, null, null, '2026-10-30T12:00:00Z']]
+    const off = a.offset || 0
+    return route.fulfill({ json: { build, total: 3, offset: off, limit: 2, rows: all.slice(off, off + 2),
+      columns: ['course_id', 'course_code', 'course_title', 'provider', 'provider_published', 'country', 'outcome', 'detail', 'course_url', 'page_status', 'identity_basis', 'read_state', 'read_reason', 'review_item_id', 'built_at'] } })
+  })
+  return calls
+}
+
+test.describe('mocked browser', () => {
+  test('a Pipeline Operator sees the counts by outcome and country and downloads every row as CSV, page by page', async ({ page }) => {
+    const errors = []; page.on('console', m => { if (m.type() === 'error' && !/Failed to load resource|favicon/.test(m.text())) errors.push(m.text()) })
+    const calls = await mockOutcomes(page, { rank: 4 })
+    await page.goto('/#entry-requirements?tab=resolve')
+    const reg = page.locator('[data-aer-outcome-register]')
+    await expect(reg.locator('h2')).toHaveText('Course outcome register')
+    await expect(page.locator('[data-aer-outcomes-build]')).toContainText('3')
+    await expect(page.locator('[data-aer-outcome-row="admitted_provider"]')).toContainText('Admitted provider resolution')
+    await expect(page.locator('[data-aer-outcome-row="no_course_url"]')).toContainText('No official course URL')
+    await expect(page.locator('[data-aer-outcome-row="identity_unresolved"]')).toHaveCount(0)   // no courses, no row
+    const [dl] = await Promise.all([page.waitForEvent('download'), page.locator('[data-aer-outcomes-download]').click()])
+    expect(dl.suggestedFilename()).toBe('aer-course-outcomes-2026-10-30-12-00.csv')
+    const csv = fs.readFileSync(await dl.path(), 'utf8').replace(/^﻿/, '').split('\r\n')
+    expect(csv[0]).toBe('course_id,course_code,course_title,provider,provider_published,country,outcome,detail,course_url,page_status,identity_basis,read_state,read_reason,review_item_id,built_at')
+    expect(csv.length).toBe(4)                                                                  // header and all three rows over two pages
+    expect(csv[3]).toContain('"Diploma ""Applied"" Arts"')
+    expect(calls.filter(c => c.part === 'rows').map(c => c.offset)).toEqual([0, 2])
+    expect(errors).toEqual([])
+  })
+
+  test('a Curator (rank 3) sees Resolution inspection without the register, and it is never asked for', async ({ page }) => {
+    const calls = await mockOutcomes(page, { rank: 3 })
+    await page.goto('/#entry-requirements?tab=resolve')
+    await expect(page.locator('[data-aer-view="resolve"] h2').first()).toHaveText('Resolution inspection')
+    await expect(page.locator('[data-aer-outcome-register]')).toHaveCount(0)
+    expect(calls).toEqual([])
+  })
+})
