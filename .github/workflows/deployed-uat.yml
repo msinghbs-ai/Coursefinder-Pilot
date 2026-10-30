@@ -297,6 +297,11 @@ jobs:
           if printf '%s\n' "$changed" | grep -Eq '(^supabase/migrations/.*_cf247_d6_adapter_measures_role_check\.sql$|^tests/uat/cf-247-s183-adapter-measures-role-check-deployed\.spec\.mjs$)'; then
             targeted=(tests/uat/cf-247-s183-adapter-measures-role-check-deployed.spec.mjs)
           fi
+          # AER production closure C1 (Platform Admin mandate 30 Oct 2026 §4): a change to the course outcome register runs its read-only
+          # direct API acceptance (anonymous refused; the signed-in user answered or refused by rank; counts add up)
+          if printf '%s\n' "$changed" | grep -Eq '(^supabase/migrations/.*_cf247_aer_course_outcome_register\.sql$|^tests/uat/cf-247-s185-aer-course-outcome-register-deployed\.spec\.mjs$)'; then
+            targeted=(tests/uat/cf-247-s185-aer-course-outcome-register-deployed.spec.mjs)
+          fi
           integration=(
             tests/uat/layer2-provider-deployed.spec.mjs
             tests/uat/layer1-operations-deployed.spec.mjs
@@ -363,6 +368,7 @@ jobs:
             tests/uat/cf-061-qilt-prisms-comparison-deployed.spec.mjs
             tests/uat/cf-073-administration-acquisition-route-deployed.spec.mjs
             tests/uat/cf-247-s183-adapter-measures-role-check-deployed.spec.mjs
+            tests/uat/cf-247-s185-aer-course-outcome-register-deployed.spec.mjs
             tests/uat/cf-247-s167-aer-course-phone-deployed.spec.mjs
             tests/uat/cf-247-s154-aer-workspace-deployed.spec.mjs
           )
