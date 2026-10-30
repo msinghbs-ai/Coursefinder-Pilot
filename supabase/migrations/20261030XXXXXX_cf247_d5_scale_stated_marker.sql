@@ -23,7 +23,7 @@ begin
   if md5(v_def) = p_after then return p_sig || ': already applied'; end if;
   if md5(v_def) <> p_before then raise exception 'live % differs from the definition this change edits (md5 %)', p_sig, md5(v_def); end if;
   for i in 1 .. array_length(p_edits, 1) loop
-    -- fixed: line endings are normalised, so a paste through an editor or clipboard that turns line breaks into CRLF applies the same text
+    -- fixed: line endings are normalised (each edit is also one line, so editor auto-indent cannot change it)
     v_old := replace(p_edits[i][1], chr(13), ''); v_new := replace(p_edits[i][2], chr(13), '');
     v_c := (length(v_def) - length(replace(v_def, v_old, ''))) / length(v_old);
     if v_c <> p_times[i] then raise exception '%: edit % must apply exactly % times (found %)', p_sig, i, p_times[i], v_c; end if;
@@ -47,22 +47,16 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------- 1: provider entry_matrix items
-select pg_temp.edit_once('security.entry_matrix_payload_v1(uuid,text)', 'be5478d0402620cbc4c701a1e590856e', 'c1f83b82ce5c0b4b934f620a9864710f', array[
+select pg_temp.edit_once('security.entry_matrix_payload_v1(uuid,text)', 'be5478d0402620cbc4c701a1e590856e', '5f7eb75596fd2758871b1df71b859109', array[
   array[$o$'band', m.benchmark_band, 'conditions', m.conditions, 'as_at', m.as_at)$o$,
-        $n$'band', m.benchmark_band, 'conditions', m.conditions, 'as_at', m.as_at,
-           -- CF-247 D5 (decision A4): additive; true stated scale, false printed grade with no stated scale, null case by case
-           'scale_stated', case when m.min_grade is null or m.grade_scale = 'none' then null else m.grade_scale is not null end)$n$]], array[1]);
+        $n$'band', m.benchmark_band, 'conditions', m.conditions, 'as_at', m.as_at, /* CF-247 D5 (decision A4): additive; true stated scale, false printed grade with no stated scale, null case by case */ 'scale_stated', case when m.min_grade is null or m.grade_scale = 'none' then null else m.grade_scale is not null end)$n$]], array[1]);
 
 -- ---------------------------------------------------------------- 2: course entry.resolution rows
-select pg_temp.edit_once('security.entry_resolve_v1(uuid,text)', '492ece033520ad81cd0046c5a851bedb', '74d48db0de885e69cd98db374547b22e', array[
+select pg_temp.edit_once('security.entry_resolve_v1(uuid,text)', '492ece033520ad81cd0046c5a851bedb', '69bbc05f650191954a22af09c0c85c74', array[
   array[$o$'quote', r.quote, 'as_at', r.as_at, 'case_by_case', r.min_grade is null and r.min_entry_score is null)$o$,
-        $n$'quote', r.quote, 'as_at', r.as_at, 'case_by_case', r.min_grade is null and r.min_entry_score is null,
-                                      -- CF-247 D5: course-page rows hold no scale
-                                      'scale_stated', null::boolean)$n$],
+        $n$'quote', r.quote, 'as_at', r.as_at, 'case_by_case', r.min_grade is null and r.min_entry_score is null, /* CF-247 D5: course-page rows hold no scale */ 'scale_stated', null::boolean)$n$],
   array[$o$'case_by_case', m.min_grade is null or m.grade_scale = 'none')$o$,
-        $n$'case_by_case', m.min_grade is null or m.grade_scale is not distinct from 'none',
-                                        -- CF-247 D5 (decision A4): additive; true stated scale, false printed grade with no stated scale, null case by case
-                                        'scale_stated', case when m.min_grade is null or m.grade_scale = 'none' then null else m.grade_scale is not null end)$n$]], array[1, 1]);
+        $n$'case_by_case', m.min_grade is null or m.grade_scale is not distinct from 'none', /* CF-247 D5 (decision A4): additive; true stated scale, false printed grade with no stated scale, null case by case */ 'scale_stated', case when m.min_grade is null or m.grade_scale = 'none' then null else m.grade_scale is not null end)$n$]], array[1, 1]);
 
 comment on function security.entry_matrix_payload_v1(uuid, text) is 'CF-247 Track C Step B (B2): the provider payload''s entry_matrix from active matrix rows, optionally one country. D5 (30 Oct 2026): each item carries scale_stated (true stated scale, false printed grade with no stated scale, null case by case).';
 comment on function security.entry_resolve_v1(uuid, text) is 'CF-247 Track C Step B: the five-rule entry resolution (course override → per-course country row → band ladder → provider minimum → contact the provider) over active rows; case by case kept; pure lookup. D5 (30 Oct 2026): each row carries scale_stated (null for course-page rows and case by case).';

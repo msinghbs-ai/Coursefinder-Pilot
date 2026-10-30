@@ -61,8 +61,8 @@ test('approved, self-contained consumer change: md5-guarded before → after, co
   expect(m).toMatch(/^-- Retires: nothing$/m)
   const c = code(m)
   expect(c).toContain("if md5(v_def) = p_after then return p_sig || ': already applied'; end if;")
-  expect(c).toContain("select pg_temp.edit_once('security.entry_matrix_payload_v1(uuid,text)', 'be5478d0402620cbc4c701a1e590856e', 'c1f83b82ce5c0b4b934f620a9864710f', array[")
-  expect(c).toContain("select pg_temp.edit_once('security.entry_resolve_v1(uuid,text)', '492ece033520ad81cd0046c5a851bedb', '74d48db0de885e69cd98db374547b22e', array[")
+  expect(c).toContain("select pg_temp.edit_once('security.entry_matrix_payload_v1(uuid,text)', 'be5478d0402620cbc4c701a1e590856e', '5f7eb75596fd2758871b1df71b859109', array[")
+  expect(c).toContain("select pg_temp.edit_once('security.entry_resolve_v1(uuid,text)', '492ece033520ad81cd0046c5a851bedb', '69bbc05f650191954a22af09c0c85c74', array[")
   expect(c).toContain("raise exception 'count guard: % matrix rows hold a null scale before the marker exists'")
   expect(c).toContain("raise exception 'count guard: % active matrix rows, % payload items, % with scale_stated'")
   expect(c).toMatch(/select security\.consumer_api_rebaseline_v1\('D5 \(30 Oct 2026\)/)
@@ -75,7 +75,9 @@ test('only the two payload parts change: one additive key; the website_v2 entry 
   expect(c).not.toMatch(/create\s+or\s+replace\s+function\s+(public\.)?(website_v2_|website_edge_|website_api_v2_|zoho_edge_)|function\s+api\./i)
   expect(c).not.toMatch(/edit_once\('(public\.website_v2_|security\.entry_course_payload_v1)/)
   // step 1 (course-page rows) carry null: the course reader stores no scale, so its null grade_scale is never read as "not stated"
-  expect(c).toContain("'case_by_case', r.min_grade is null and r.min_entry_score is null,\n                                      'scale_stated', null::boolean)$n$")
+  expect(c).toMatch(/'case_by_case', r\.min_grade is null and r\.min_entry_score is null,\s*(\/\*[^*]*\*\/\s*)?'scale_stated', null::boolean\)\$n\$/)
+  // each inserted edit is one line: the SQL editor auto-indents continuation lines, which changed the after-md5 (paste run 2, 30 Oct 2026)
+  for (const x of c.matchAll(/\$n\$([\s\S]*?)\$n\$/g)) expect(x[1], 'one-line edit').not.toContain('\n')
   // every existing key of the edited row objects is still built with its unchanged expression
   for (const k of ["'band', m.benchmark_band, 'conditions', m.conditions, 'as_at', m.as_at,"]) expect(c).toContain(k)
   // no inference: the new text parses nothing and converts nothing
