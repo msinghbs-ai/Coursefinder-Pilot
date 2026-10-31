@@ -5,7 +5,7 @@ import { openLayer1, openLayer2Tab, openRetiredLayer3, openLayer4 } from './supp
 
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
 
-test.describe('CourseFinder canonical Administration and Operations navigation @deployed',()=>{
+test.describe('StudySearch canonical Administration and Operations navigation @deployed',()=>{
   test.beforeAll(async()=>{await writeRunEnvironment({suite:'admin-canonical-navigation-a20-a28-cf092',change_control:'CF-CHG-20260830-048 / CF-CHG-20260910-092'})})
 
   test('primary sidebar exposes the governed non-floating information architecture',async({page},testInfo)=>{const runtime=observeRuntime(page);try{

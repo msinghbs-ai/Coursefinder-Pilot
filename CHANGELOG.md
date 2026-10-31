@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.310 — 31 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.383** (StudySearch SS-014 and SS-013, Platform Admin mandate 31 Oct 2026 14:27). Migration `20261031080000_cf247_ss014_health_alerts_cost_truth`: md5-guarded edit of `security.platform_health_check_v1` (`29315678` → `d245c535`): job failures persist and escalate at any schedule; AI spend from the OpenRouter credit balance across all routes; four settings (`health.job_failure_window_hours`, `health.job_failure_repeat_count`, `health.job_failure_critical_consecutive`, `budgets.ai_daily_ceiling_usd`). Test titles and workflow names renamed to StudySearch; identity guard s6 extended. Spec s193.
+
 ## 0.1.309 — 31 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.382** (StudySearch D3 and D4, Platform Admin 31 Oct 2026 13:30). Migration `20261031060000_cf247_d3_rule4_retired`: Rule 4 job and function marked `retiring` (replaced by Layer 4 review), catalogue says retired, EXECUTE revoked from app roles; nothing dropped. Migration `20261031070000_cf247_d4_entry_min_scores` (G3 approved, re-baselined): md5-guarded edit of `security.entry_course_payload_v1` (`80fdfabb` → `691bbba7`) adding `entry.min_scores[]`. Specs s191, s192.

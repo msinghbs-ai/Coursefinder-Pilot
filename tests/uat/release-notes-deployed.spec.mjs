@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test'
 import { UI_VERSION, RELEASE } from '../../src/release-manifest.js'
 import { attachRuntimeEvidence, assertNoServerErrors, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
-test.describe(`CourseFinder PIM Admin v${UI_VERSION} release notes @deployed`,()=>{
+test.describe(`StudySearch PIM Admin v${UI_VERSION} release notes @deployed`,()=>{
  test.beforeAll(async()=>{if(!process.env.UAT_BASE_URL)throw new Error('UAT_BASE_URL is required for deployed acceptance.');if(!process.env.UAT_EMAIL||!process.env.UAT_PASSWORD)throw new Error('UAT credentials are required for deployed acceptance.');await writeRunEnvironment({suite:`deployed-pim-v${UI_VERSION.replaceAll('.','-')}-release-notes`,change_control:'CF-CHG-20260910-093'})})
  test('top-right version opens maintained release history and closes accessibly',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page)
