@@ -1,6 +1,6 @@
 # StudySearch – Operator SOP
 
-**Version:** 1.53 (reviewed for platform release v2.15.388)  
+**Version:** 1.53 (reviewed for platform release v2.15.389)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
