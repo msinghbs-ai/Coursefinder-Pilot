@@ -3,12 +3,12 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
-const m = fs.readFileSync('supabase/migrations/20261031090000_cf247_ss014_operational_automation.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations/20261031091000_cf247_ss014_operational_automation.sql', 'utf8')
 const code = (s) => s.replace(/--[^\n]*/g, '')
 
 test('two md5-guarded edits of existing health functions; nothing dropped; consumer API untouched', () => {
   expect(m).toContain("select pg_temp.edit_v2('security.platform_health_stall_v1(text,text,text,text,timestamp with time zone,text,integer)', 'e1c74fa638bd1a52832102122cdfa50c', 'fe27fdb050f8a7385fd7885199da4bc4',")
-  expect(m).toContain("select pg_temp.edit_v2('security.platform_health_check_v1(boolean)', 'd245c53574b1de0251711b0cb41c47cf', '69a2d7b773c375656de3c493a784ac7a',")
+  expect(m).toContain("select pg_temp.edit_v2('security.platform_health_check_v1(boolean)', 'd245c53574b1de0251711b0cb41c47cf', 'b648e6494ccf39dbbe7eea6cec18f993',")
   expect(code(m).match(/select pg_temp\.edit_v2\(/g)).toHaveLength(2)
   expect(m).toMatch(/^-- Replaces: security\.platform_health_check_v1, security\.platform_health_stall_v1/m)
   expect(m).toMatch(/^-- Retires: nothing/m)
