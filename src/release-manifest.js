@@ -9,7 +9,7 @@ export const RELEASE={
   date:'31 Oct 2026',
   title:'Faster health checks, search refresh watch, alerts ready, weekly scorecard',
   changes:[
-    'Platform health runs about twice as fast: the scholarship check works out each provider\'s hold once instead of up to three times (median 11.9 s; about 1.4 to 2.3 s in trial runs; same results) (StudySearch SS-014A).',
+    'Platform health: the scholarship check works out each provider\'s hold once instead of up to three times, with the same results. Live, the check took 7.0 to 8.5 s in its first three runs, against 11.6 to 13.7 s before (StudySearch SS-014A).',
     'Platform health: a work queue whose job the flag unit paused after idle runs is shown for information while the flag unit switches it on again; it becomes critical only after two hours. It had been raised as critical 116 times in a week (SS-014).',
     'Platform health: new check for search refresh requests. A request waiting past 40 minutes is a warning that names the cause (the refresh gap or another writer); one waiting past 90 minutes, or with its job missing, paused or failing, is critical, with the next step (SS-014B).',
     'Platform health › Alerts: open critical issues become alerts with a quiet period, escalation, reminders and a recovery notice, and failed deliveries are retried. Delivery outside the platform is off until the Platform Admin approves a destination; alerts are recorded here meanwhile. A Platform Admin can acknowledge an issue with a reason and send a test alert (SS-014C).',
