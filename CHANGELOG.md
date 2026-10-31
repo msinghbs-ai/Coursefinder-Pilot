@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.306 — 31 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.379** (StudySearch SS-007, Platform Admin 31 Oct 2026 11:53 and 12:38). Migration `20261031030000_cf247_ss007_remediation_hold`: table `pipeline.course_remediation_holds` and check `security.course_held_v1`; md5-guarded edits of `security.coverage_page_refused_host_guard` (`efd59e2a` → `33351b50`), `security.search_stop_gate_v1` (`6e08df75` → `d7679a05`), `security.coverage_ai_match_prepare_v1` (`ab2dd5dc` → `23d433d2`) and `security.course_link_search_tick_v1` (`13b0771d` → `ffc9fb64`); Platform-Admin-only `security.binding_remediation_apply_v1` and `security.binding_remediation_lift_v1`; setting `remediation.max_batch_courses`. No hold is created. Spec s188. Consumer API unchanged.
+
 ## 0.1.305 — 31 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.378** (StudySearch decision F1c, Platform Admin 31 Oct 2026 11:24; finding F6). Migration `20261031020000_cf247_f1c_rule4_paused`: job `l4-rule-low-agreement` paused, its catalogue description corrected; anon EXECUTE on `admin_ui_error_report` removed. Spec s187. Consumer API unchanged.
