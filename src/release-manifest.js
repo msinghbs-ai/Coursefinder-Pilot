@@ -1,20 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.384'
-export const PACKAGE_VERSION='0.1.311'
+export const UI_VERSION='2.15.385'
+export const PACKAGE_VERSION='0.1.312'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'31 Oct 2026',
-  title:'Faster health checks, search refresh watch, alerts ready, weekly scorecard',
+  title:'Switching a job back on clears its idle pause',
   changes:[
-    'Platform health: the scholarship check works out each provider\'s hold once instead of up to three times, with the same results. Live, the check took 7.0 to 8.5 s in its first three runs, against 11.6 to 13.7 s before (StudySearch SS-014A).',
-    'Platform health: a work queue whose job the flag unit paused after idle runs is shown for information while the flag unit switches it on again; it becomes critical only after two hours. It had been raised as critical 116 times in a week (SS-014).',
-    'Platform health: new check for search refresh requests. A request waiting past 40 minutes is a warning that names the cause (the refresh gap or another writer); one waiting past 90 minutes, or with its job missing, paused or failing, is critical, with the next step (SS-014B).',
-    'Platform health › Alerts: open critical issues become alerts with a quiet period, escalation, reminders and a recovery notice, and failed deliveries are retried. Delivery outside the platform is off until the Platform Admin approves a destination; alerts are recorded here meanwhile. A Platform Admin can acknowledge an issue with a reason and send a test alert (SS-014C).',
-    'Platform health › Weekly operational scorecard: targets T1 to T8 measured every morning from existing data, each saying whether it was observed for the whole week or only in part (SS-014D).',
-    'Settings › Pipeline settings: new Alerts and Operating targets sections, and two search refresh thresholds under Platform upkeep.'
+    'Automations: switching a job back on (one job or a whole area) now also releases the automatic idle pause the flag unit had put on it, recorded as your release with the reason given. The flag unit can then pause the job again if it goes idle (StudySearch decision D14).',
+    'One job, AI page matching, had been switched on by hand on 19 Oct while its idle pause stayed raised; that pause is now released, citing the 19 Oct restart.',
+    'Platform alerts are checked every 10 minutes; one check an hour had been skipped.'
   ],
   bugFixes:[]
 }
