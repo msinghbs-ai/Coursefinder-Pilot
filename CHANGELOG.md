@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.316 — 1 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.389** (StudySearch SS-007 integrity repair). Migration `20261101030000_cf247_ss007_hold_admission`: `security.coverage_admission_plan_v1` skips courses under an open remediation hold (md5 `7390a600` → `f9dceaf2`); the 167 official links a coverage-admit run re-activated on held courses on 31 Oct 14:30 are set unverified again (count- and md5-guarded), with a search refresh. Spec s199.
+
 ## 0.1.315 — 1 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.388** (StudySearch SS-004 follow-up). Migration `20261101020000_cf247_ss004_health_runtime`: the health check and scorecard call `security.cron_run_outcome_v1` only for runs reported "job canceled" (v2.15.387 called it for every logged run: the section took 25 s instead of about 2 s). md5 `43f5ba0f` → `964db44f` (health check), `18dcf612` → `100bd148` (scorecard). Spec s198.
