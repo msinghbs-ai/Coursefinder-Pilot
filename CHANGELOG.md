@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.313 — 31 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.386** (StudySearch decisions D16 and D13, Platform Admin mandate 31 Oct 2026 21:54). Migration `20261031110000_cf247_ss014_d16_d13`: `security.fc_sch_held_v1`, `fc_sch_eligible_v1`, `fc_sch_cap_since_v1` as PL/pgSQL (md5-guarded, same logic and security); `pipeline.page_reread_pilot`, `security.page_reread_pilot_run_v1`, `security.page_reread_pilot_summary_v1`, job `reread-pilot` (daily 05:41); md5-guarded edit of `public.svc_coverage_read_next` (`748954a5` → `2ac1114d`, adds `direct_only`); worker `coverage-sweep` v0.55.0 honours `direct_only`. Spec s196.
+
 ## 0.1.312 — 31 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.385** (StudySearch decision D14, Platform Admin mandate 31 Oct 2026 21:54). Migration `20261031100000_cf247_ss014_d14_idle_flag_recovery`: `security.job_idle_flag_person_release_v1`; md5-guarded edit of `security.admin_automation_control_v1` (`8d5a6f10` → `d90af04c`); one-off release of the stale idle-pause flag on `coverage-ai-match` (person restart 19 Oct); `platform-alerts` every 10 minutes. Spec s195.
