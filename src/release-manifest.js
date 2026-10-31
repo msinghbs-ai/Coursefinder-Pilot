@@ -1,17 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.385'
-export const PACKAGE_VERSION='0.1.312'
+export const UI_VERSION='2.15.386'
+export const PACKAGE_VERSION='0.1.313'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'31 Oct 2026',
-  title:'Switching a job back on clears its idle pause',
+  title:'Faster scholarship hold check; re-read pilot for exhausted course pages',
   changes:[
-    'Automations: switching a job back on (one job or a whole area) now also releases the automatic idle pause the flag unit had put on it, recorded as your release with the reason given. The flag unit can then pause the job again if it goes idle (StudySearch decision D14).',
-    'One job, AI page matching, had been switched on by hand on 19 Oct while its idle pause stayed raised; that pause is now released, citing the 19 Oct restart.',
-    'Platform alerts are checked every 10 minutes; one check an hour had been skipped.'
+    'Platform health and the scholarship readers: the check of whether a university is held by the scholarship Firecrawl rules keeps its query plans for the session instead of planning them on every call. Same rules and results; in a trial it took 5.7 s instead of 20.1 s for every provider (StudySearch decision D16).',
+    'Course pages: a re-read pilot gives course pages that used all three read attempts one more direct read, at most 25 a day, only 30 days after the last attempt, each page once. No Firecrawl and no AI are used for them; held courses and restricted providers are skipped. The pilot records each outcome and switches itself off if a page is read through Firecrawl or produces Layer 4 review items (decision D13).',
+    'Settings › Pipeline settings › Re-read and retry: three settings for the pilot (on, pages a day up to the approved 25, days to wait of at least 30).'
   ],
   bugFixes:[]
 }
