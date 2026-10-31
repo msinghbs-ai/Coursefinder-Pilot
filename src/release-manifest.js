@@ -1,18 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.378'
-export const PACKAGE_VERSION='0.1.305'
+export const UI_VERSION='2.15.379'
+export const PACKAGE_VERSION='0.1.306'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'31 Oct 2026',
-  title:'Rule 4 (low agreement, page wins) paused on purpose',
+  title:'A hold that keeps a course out of automatic searching while its course page is corrected',
   changes:[
-    'Jobs: the daily Rule 4 check (low agreement, page wins) is paused by the Platform Admin until the rule is reviewed. It admits a field from the page when an adapter reads it often but agrees with held values less than 90% of the time; it had failed every day since 29 Oct. Its description now says what it does and that it is paused. No Rule 4 admission happens while paused.',
+    'Pipeline: a course whose wrong course page (a fee list, an enrolment form or a course list shared by several courses) is being corrected can now be held. While held, no automatic job searches for a new page, binds one, reads one or sends it to AI matching, so nothing is spent on it until a person decides (StudySearch SS-007).',
+    'The correction itself is run by the Platform Admin only, one university at a time, with an exact expected count, and can be undone course by course. No course is held and no page is changed by this release.',
     'Consumer API unchanged (Decision 266).'
   ],
-  bugFixes:['The error reporter (admin_ui_error_report) could be called without signing in, although it refused such calls; that permission is removed. No behaviour change.']
+  bugFixes:[]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.
