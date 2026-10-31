@@ -316,6 +316,7 @@
 .ar-roles-help td{padding:6px 12px;color:var(--cf-text-2)}.ar-roles-help tr+tr{border-top:1px solid var(--cf-border)}.ar-roles-help p{margin:6px 12px 10px;font-size:var(--cf-fs-xs);color:var(--cf-text-2)}
 .sp-fix{margin-left:10px;font-size:var(--cf-fs-xs)}
 .ph-fix{display:inline-block;margin:0 0 0 8px;font-size:var(--cf-fs-xs)}
+.ph-ack{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px;margin:6px 0 0}.ph-ack input{min-width:0;flex:1 1 220px;padding:4px 8px;border:1px solid var(--cf-slate-200);border-radius:6px;font:inherit}
 /* Package 7B (v2.15.132): older screens in the compact style. */
 /* Logos & assets and Rankings overview tiles (ast-big-tiles, rnk-style). */
 .m-panel .m-stats-grid{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))!important;gap:10px!important}

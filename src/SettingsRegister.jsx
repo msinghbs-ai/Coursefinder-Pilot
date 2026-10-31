@@ -16,7 +16,7 @@ import{plainError}from'./lib/errors'
 
 const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const slug=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')
-const SECTION_HELP={'Job sizes':'How much each scheduled job takes in a run. The job reads the value each time it runs.',
+const SECTION_HELP={'Alerts':'How platform health issues become alerts (StudySearch SS-014C). Delivery outside the platform stays off until the Platform Admin approves a destination.','Operating targets':'Targets T1 to T8 measured by the weekly operational scorecard on Platform health.','Job sizes':'How much each scheduled job takes in a run. The job reads the value each time it runs.',
   'Re-read and retry':'How often pages are read again, and when failed work is tried again.',
   'Onboarding':'The rules the onboarding journey follows for each university.',
   'Housekeeping':'The weekly hygiene check: when something counts as unused, and how long a retired component is kept before it is dropped (Decision 260). Storage & retention: how long job logs, adapter screenshots and hourly resource readings are kept, and how much each clean-up run removes.',

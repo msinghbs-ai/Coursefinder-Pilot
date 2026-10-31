@@ -28,6 +28,33 @@ export const platformHealth = {
   history: Array.from({ length: 14 }, (_, i) => ({ day: `2026-09-${String(16 + i).padStart(2, '0')}`, warning: i === 13 ? 1 : i === 9 ? 2 : 0, critical: i === 10 ? 1 : 0 })),
 }
 
+// StudySearch SS-014C/D (31 Oct 2026): Platform health alerts (delivery off, decision D7) and the weekly scorecard
+const scT = (status, basis, extra) => ({ status, basis, ...extra })
+export const platformAlerts = {
+  can_change: true,
+  settings: { delivery_enabled: false, webhook_enabled: false, webhook_address_stored: false, test_mode: false, min_severity: 3, confirm_minutes: 15, cooldown_minutes: 60, reminder_hours: 12 },
+  counts: { held: 2 },
+  recent: [
+    { id: 2, kind: 'recovered', severity: 'info', title: '[StudySearch] Recovered: Search refresh has stalled', status: 'held', created_at: now, attempts: 0 },
+    { id: 1, kind: 'raised', severity: 'critical', title: '[StudySearch] Critical: Search refresh has stalled: 3 request(s) waiting, the oldest for 95 minutes (job paused)', status: 'held', created_at: now, attempts: 0 },
+  ],
+  scorecards: [
+    { week_start: '2026-10-26', week_end: '2026-11-01', complete: false, met: 2, missed: 4, generated_at: now, targets: {
+      T1: scT('missed', 'incomplete: 4 of 6 days recorded (the scheduler keeps about three days of run history; the scorecard now records each day)', { runs: 106231, failed: 77, worst_day: 37, target: 'At most 0 failed run(s) a day' }),
+      T2: scT('on track so far', 'observed so far (week in progress)', { spend_usd: 21.79, worst_day_usd: 7.83, credit_usd: 98.43, target: 'At most US$14 a day; credit US$10 or more' }),
+      T3: scT('met', 'week credits observed; month position measured at report time', { credits_week: 18940, month_used: 246586, month_limit: 500000, target: 'Within the monthly limit, keeping the reserve' }),
+      T4: scT('missed', 'observed so far (week in progress)', { items: 12116, worst_day: 4722, target: 'Under 100 a day' }),
+      T5: scT('met', 'measured at report time (the backlog age is not stored by day)', { pending_now: 1175, oldest_pending_days: 9.9, target: 'Oldest pending item under 14 days' }),
+      T6: scT('missed', 'observed so far (week in progress)', { requests: 989, server_errors: 0, contract_drift_now: 0, search_p95_ms: 5203, search_requests_measured: 71, target: '0 server errors; no contract drift; search p95 under 3000 ms for pages of 20' }),
+      T7: scT('missed', 'observed so far (week in progress)', { refresh_requests: 1883, wait_p95_min: 31, wait_max_min: 40, over_target: 7, target: 'Refresh requests processed within 40 minutes; reference bundle under 2 hours old' }),
+      T8: scT('see the release record', 'migrations dated in the week; suite, workflow and checksum results are recorded in the Admin release record, not in the database', { migrations_dated_in_week: 31, target: 'Full suite and post-merge workflows green; live checksums verified; rollback on record' }),
+    } },
+    { week_start: '2026-10-19', week_end: '2026-10-25', complete: true, met: 2, missed: 3, generated_at: now, targets: {
+      T1: scT('not fully observed', 'incomplete: 0 of 7 days recorded (the scheduler keeps about three days of run history; the scorecard now records each day)', { runs: 0, failed: 0, worst_day: 0, target: 'At most 0 failed run(s) a day' }),
+    } },
+  ],
+}
+
 export const dashboard = { jobs: 11599, courses: 43639, campuses: 3949, evidence: 50638, providers: 3092, attributes: 4, operational: { evidence_24h: 16035, running_jobs: 6, latest_job_at: now, failed_jobs_24h: 0, search_row_count: 32453, search_rebuilt_at: now, completed_jobs_24h: 497 }, snapshot_at: now, open_reviews: 941, scholarships: 528, recent_activity: [{ id: 'a1', kind: 'evidence', title: 'Source Snapshot', detail: 'Evidence captured', status: 'captured', occurred_at: now }], search_documents: 32453 }
 export const layerStatus = { layer1: { failed_24h: 0, running_jobs: 0, active_sources: 32, latest_activity: now }, layer2: { evidence_24h: 13832, processed_24h: 1297, active_batches: 35, wave_pending_courses: 501 }, layer3: { calls_24h: 1131, tokens_24h: 6505643, recorded_cost_24h: 0.530431, qualified_profiles: 1, interpretations_24h: 1133, pending_evidence_candidates: 390 }, layer4: { pending_reviews: 941, active_overrides: 0, publication_decisions: 0 }, snapshot_at: now }
 

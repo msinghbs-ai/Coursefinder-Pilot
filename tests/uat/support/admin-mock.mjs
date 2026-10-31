@@ -233,6 +233,8 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     // CF-247 A1-A3 (30 Oct 2026): one AER Layer 4 item with its rows; deciding is the Platform Admin's
     layer4_aer_review_read: b => { calls.push({ aerRead: b }); return { ...F.l4AerReview, review_item_id: b.p_review_item_id, can_decide: rank >= 6 } },
     layer3_recent_interpretations: F.layer3Recent,
+    // StudySearch SS-014C/D (31 Oct 2026): Platform health alerts, acknowledgement, test alert, scorecard
+    admin_platform_alerts: b => { calls.push({ alerts: b }); return b.p_action === 'read' ? { ...F.platformAlerts, can_change: rank >= 6 } : { ok: true } },
     admin_source_comparison: b => b.p_entity_type === 'course' ? (courseDiffers ? F.courseComparisonDiffers : F.courseComparison) : F.scholarshipComparison,
   }
   await page.addInitScript(s => { try { localStorage.setItem('sb-example-auth-token', JSON.stringify(s)) } catch {} }, session)
