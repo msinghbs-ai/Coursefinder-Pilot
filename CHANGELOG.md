@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.315 — 1 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.388** (StudySearch SS-004 follow-up). Migration `20261101020000_cf247_ss004_health_runtime`: the health check and scorecard call `security.cron_run_outcome_v1` only for runs reported "job canceled" (v2.15.387 called it for every logged run: the section took 25 s instead of about 2 s). md5 `43f5ba0f` → `964db44f` (health check), `18dcf612` → `100bd148` (scorecard). Spec s198.
+
 ## 0.1.314 — 1 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.387** (StudySearch SS-004 reliability closure, Platform Admin mandate 1 Nov 2026 08:57). Migration `20261101010000_cf247_ss004_reliability`: `security.cron_run_outcome_v1` (pause-cancelled runs are paused, not failed); md5-guarded edits of `security.platform_health_check_v1` (`b648e649` → `43f5ba0f`; also coverage reading and discovery stall age from the later of last progress and the oldest waiting item's due time) and `security.ops_scorecard_v1` (`9e212299` → `18dcf612`); `adapter-overwrite` at :03 and `coverage-admit-intakes` at :08. Spec s197.

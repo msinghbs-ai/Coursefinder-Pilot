@@ -1,16 +1,15 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.387'
-export const PACKAGE_VERSION='0.1.314'
+export const UI_VERSION='2.15.388'
+export const PACKAGE_VERSION='0.1.315'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'1 Nov 2026',
-  title:'Fewer false job failures; admission jobs no longer start together',
+  title:'Platform health check back to its normal run time',
   changes:[
-    'Platform health and the weekly scorecard: a scheduled run that the scheduler cancelled because the flag unit was pausing that job for idleness, within seconds, now counts as paused, not failed. Every other failure, cancellation or time-out still counts (StudySearch SS-004).',
-    'Scheduled jobs: the three admission jobs no longer start in the same minute. Admit official page and English stays at minute 0, adapter overwrite moves to minute 3 and admit intakes to minute 8 of each 10. They write the same rows and had been timing each other out (7 times in 4 days). Commands, frequency, batch sizes and time limits are unchanged.'
+    'Platform health: the scheduled-job section runs in about 2 seconds again; the paused-run rule from v2.15.387 is unchanged (StudySearch SS-004).'
   ],
   bugFixes:[]
 }
