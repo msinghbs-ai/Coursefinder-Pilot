@@ -1,16 +1,15 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.379'
-export const PACKAGE_VERSION='0.1.306'
+export const UI_VERSION='2.15.380'
+export const PACKAGE_VERSION='0.1.307'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'31 Oct 2026',
-  title:'A hold that keeps a course out of automatic searching while its course page is corrected',
+  title:'Fill the gaps no longer retries courses whose page is the wrong one',
   changes:[
-    'Pipeline: a course whose wrong course page (a fee list, an enrolment form or a course list shared by several courses) is being corrected can now be held. While held, no automatic job searches for a new page, binds one, reads one or sends it to AI matching, so nothing is spent on it until a person decides (StudySearch SS-007).',
-    'The correction itself is run by the Platform Admin only, one university at a time, with an exact expected count, and can be undone course by course. No course is held and no page is changed by this release.',
+    'Fill the gaps: a course whose page is known to be another course\'s (a mismatch) is held out of the standing queue until a correct page is found. In the four days to 31 Oct, 11,332 such tries ended "no correct course page" and none filled anything (StudySearch D5a). When a page is found the course is queued again by itself.',
     'Consumer API unchanged (Decision 266).'
   ],
   bugFixes:[]
