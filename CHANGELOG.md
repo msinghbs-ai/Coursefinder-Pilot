@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.308 — 31 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.381** (StudySearch D6, Platform Admin 31 Oct 2026 13:30; G3 approval line in the migration). Migration `20261031050000_cf247_d6_course_item_speed`: md5-guarded edit of `api.website_v2_course_item` (`15129314` → `8f2a0ac9`): display code computed once, keyed published check; consumer baseline re-taken. 34 searches and 400 items byte-identical before and after (live, rolled back); 50 items median 536 → 280 ms. Spec s190.
+
 ## 0.1.307 — 31 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.380** (StudySearch D5a, Platform Admin 31 Oct 2026 13:30). Migration `20261031040000_cf247_ss010_enrich_mismatch_hold`: md5-guarded edit of `security.enrich_item_held_v1` (`66be0efc` → `688da7ae`); a course whose page binding is a mismatch is held out of enrichment queues. Spec s189. Consumer API unchanged.
