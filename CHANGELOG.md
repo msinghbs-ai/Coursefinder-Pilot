@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.314 — 1 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.387** (StudySearch SS-004 reliability closure, Platform Admin mandate 1 Nov 2026 08:57). Migration `20261101010000_cf247_ss004_reliability`: `security.cron_run_outcome_v1` (pause-cancelled runs are paused, not failed); md5-guarded edits of `security.platform_health_check_v1` (`b648e649` → `43f5ba0f`; also coverage reading and discovery stall age from the later of last progress and the oldest waiting item's due time) and `security.ops_scorecard_v1` (`9e212299` → `18dcf612`); `adapter-overwrite` at :03 and `coverage-admit-intakes` at :08. Spec s197.
+
 ## 0.1.313 — 31 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.386** (StudySearch decisions D16 and D13, Platform Admin mandate 31 Oct 2026 21:54). Migration `20261031110000_cf247_ss014_d16_d13`: `security.fc_sch_held_v1`, `fc_sch_eligible_v1`, `fc_sch_cap_since_v1` as PL/pgSQL (md5-guarded, same logic and security); `pipeline.page_reread_pilot`, `security.page_reread_pilot_run_v1`, `security.page_reread_pilot_summary_v1`, job `reread-pilot` (daily 05:41); md5-guarded edit of `public.svc_coverage_read_next` (`748954a5` → `2ac1114d`, adds `direct_only`); worker `coverage-sweep` v0.55.0 honours `direct_only`. Spec s196.

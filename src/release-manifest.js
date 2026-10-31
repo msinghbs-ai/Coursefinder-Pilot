@@ -1,17 +1,16 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.386'
-export const PACKAGE_VERSION='0.1.313'
+export const UI_VERSION='2.15.387'
+export const PACKAGE_VERSION='0.1.314'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'31 Oct 2026',
-  title:'Faster scholarship hold check; re-read pilot for exhausted course pages',
+  date:'1 Nov 2026',
+  title:'Fewer false job failures; admission jobs no longer start together',
   changes:[
-    'Platform health and the scholarship readers: the check of whether a university is held by the scholarship Firecrawl rules keeps its query plans for the session instead of planning them on every call. Same rules and results; in a trial it took 5.7 s instead of 20.1 s for every provider (StudySearch decision D16).',
-    'Course pages: a re-read pilot gives course pages that used all three read attempts one more direct read, at most 25 a day, only 30 days after the last attempt, each page once. No Firecrawl and no AI are used for them; held courses and restricted providers are skipped. The pilot records each outcome and switches itself off if a page is read through Firecrawl or produces Layer 4 review items (decision D13).',
-    'Settings › Pipeline settings › Re-read and retry: three settings for the pilot (on, pages a day up to the approved 25, days to wait of at least 30).'
+    'Platform health and the weekly scorecard: a scheduled run that the scheduler cancelled because the flag unit was pausing that job for idleness, within seconds, now counts as paused, not failed. Every other failure, cancellation or time-out still counts (StudySearch SS-004).',
+    'Scheduled jobs: the three admission jobs no longer start in the same minute. Admit official page and English stays at minute 0, adapter overwrite moves to minute 3 and admit intakes to minute 8 of each 10. They write the same rows and had been timing each other out (7 times in 4 days). Commands, frequency, batch sizes and time limits are unchanged.'
   ],
   bugFixes:[]
 }
