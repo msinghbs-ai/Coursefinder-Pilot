@@ -24,7 +24,7 @@ async function finish(testInfo, runtime) {
   assertNoServerErrors(runtime)
 }
 
-test.describe('CourseFinder deployed Data Quality acceptance @deployed', () => {
+test.describe('StudySearch deployed Data Quality acceptance @deployed', () => {
   test.beforeAll(async () => {
     if (!process.env.UAT_BASE_URL) throw new Error('UAT_BASE_URL is required for deployed acceptance.')
     if (!process.env.UAT_EMAIL || !process.env.UAT_PASSWORD) throw new Error('UAT_EMAIL and UAT_PASSWORD are required for deployed acceptance.')

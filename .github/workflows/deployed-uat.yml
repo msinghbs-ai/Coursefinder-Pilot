@@ -1,4 +1,4 @@
-name: CourseFinder Deployed UAT
+name: StudySearch Deployed UAT
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       base_url:
-        description: Deployed CourseFinder Admin URL
+        description: Deployed StudySearch Admin URL
         required: true
         default: https://coursefinder-pilot.techm.workers.dev
         type: string

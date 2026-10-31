@@ -1,16 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.382'
-export const PACKAGE_VERSION='0.1.309'
+export const UI_VERSION='2.15.383'
+export const PACKAGE_VERSION='0.1.310'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'31 Oct 2026',
-  title:'Rule 4 retired; course entry scores list every published route',
+  title:'Health alerts that stay until fixed, and AI spend measured across every route',
   changes:[
-    'Jobs: Rule 4 ("low agreement, page wins") is retired by the Platform Admin (StudySearch D3). It stays switched off, is marked for removal after the retirement period, and can no longer be run; low-agreement fields go to Layer 4 review. Its 22 past admissions and their evidence are kept.',
-    'Website API v2: the course detail entry object gains min_scores, every admitted entry score as the provider prints it (for example ATAR, IB, GCE A Level and pathway programmes), with its words, quote, source and date (StudySearch D4). min_score and min_score_basis are unchanged. Developer guide issue 7.'
+    'Platform health: a scheduled job that keeps failing stays on the health list until it has run cleanly, and becomes critical when its last three runs all failed, whatever its schedule. Before, each failure closed itself within the hour, so hourly and daily jobs never escalated (StudySearch SS-014).',
+    'Platform health: AI spend over 24 hours now counts every OpenRouter route (enrichment, AI match, entry reads and Layer 3), measured from the credit balance; the daily ceiling (US$14) is a setting. The health detail showed the remaining credit as the day\'s spend; it now names each figure.',
+    'Settings › Pipeline settings: four new settings for these thresholds (Platform upkeep).',
+    'StudySearch name: test and workflow names no longer use the former name; storage keys, identifiers and history are kept (SS-013).'
   ],
   bugFixes:[]
 }

@@ -5,7 +5,7 @@ import { openRetiredLayer3, openLayer4 } from './support/navigation.mjs'
 
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
 
-test.describe('CourseFinder deployed M2.3 intelligence acceptance on canonical routes @deployed',()=>{
+test.describe('StudySearch deployed M2.3 intelligence acceptance on canonical routes @deployed',()=>{
  test.beforeAll(async()=>{await writeRunEnvironment({suite:'deployed-m2-3-intelligence-canonical-routes',change_control:'CF-CHG-20260830-048'})})
 
 const NO_SECRETS=/sb_secret_|service_role|SUPABASE_SERVICE_ROLE_KEY/i

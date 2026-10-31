@@ -6,7 +6,7 @@ async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,run
 
 test.describe('CF-103 contextual insights theme alignment @targeted',()=>{
  test.beforeAll(async()=>{await writeRunEnvironment({suite:'cf-103-contextual-theme-v1',change_control:'CF-CHG-20260904-103'})})
- test('source uses shared CourseFinder contextual theme tokens',async()=>{
+ test('source uses shared StudySearch contextual theme tokens',async()=>{
   const css=fs.readFileSync('src/contextual-theme.css','utf8'),logo=fs.readFileSync('src/ProviderLogo.jsx','utf8')
   expect(logo).toContain("import'./contextual-theme.css'")
   // B2 (v2.15.106): the contextual theme tokens are aliases in the one token set (tokens.css).
