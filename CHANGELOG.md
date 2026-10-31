@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.304 — 31 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.377** (StudySearch transformation mandate 31 Oct 2026, finding F1; admin `2026-10-31-studysearch-transformation.md` §7–8). Migration `20261031010000_cf247_f1_provider_checks_once`: md5-guarded edits of `security.enrichment_flags_refresh_v1` (`ae577625` → `3bbec96c`) and `security.coverage_ai_match_prepare_v1` (`b7db293c` → `ab2dd5dc`); provider-level checks once per provider over materialised lists; identical row sets proven live (rolled back). Spec s186. Consumer API unchanged.
+
 ## 0.1.303 — 30 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.376** (AER production-closure mandate 30 Oct 2026 §4; decision C1 lodged in admin `2026-10-30-aer-production-closure-response.md`). Migration `20261030300000_cf247_aer_course_outcome_register` (settings `aer.outcome_register_*`, tables `pipeline.aer_course_outcomes` and `pipeline.aer_course_outcome_builds`, job `aer-outcome-register`, `public.admin_aer_outcomes`). `src/AerWorkspace.jsx` (Resolution inspection: Course outcome register, Download CSV). Specs s184, s185 (deployed, read only). Consumer API unchanged.
