@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.309 — 31 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.382** (StudySearch D3 and D4, Platform Admin 31 Oct 2026 13:30). Migration `20261031060000_cf247_d3_rule4_retired`: Rule 4 job and function marked `retiring` (replaced by Layer 4 review), catalogue says retired, EXECUTE revoked from app roles; nothing dropped. Migration `20261031070000_cf247_d4_entry_min_scores` (G3 approved, re-baselined): md5-guarded edit of `security.entry_course_payload_v1` (`80fdfabb` → `691bbba7`) adding `entry.min_scores[]`. Specs s191, s192.
+
 ## 0.1.308 — 31 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.381** (StudySearch D6, Platform Admin 31 Oct 2026 13:30; G3 approval line in the migration). Migration `20261031050000_cf247_d6_course_item_speed`: md5-guarded edit of `api.website_v2_course_item` (`15129314` → `8f2a0ac9`): display code computed once, keyed published check; consumer baseline re-taken. 34 searches and 400 items byte-identical before and after (live, rolled back); 50 items median 536 → 280 ms. Spec s190.

@@ -1,16 +1,16 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.381'
-export const PACKAGE_VERSION='0.1.308'
+export const UI_VERSION='2.15.382'
+export const PACKAGE_VERSION='0.1.309'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'31 Oct 2026',
-  title:'Website and Zoho course results are built about twice as fast',
+  title:'Rule 4 retired; course entry scores list every published route',
   changes:[
-    'Website API v2 and Zoho: each course in a result is built about twice as fast (median 536 ms to 280 ms for 50 courses in the database), with byte-identical responses: no key, value, order, filter or identifier changes (StudySearch D6, approved by the Platform Admin under the consumer API rule).',
-    'Consumer API contract unchanged; the internal baseline is re-taken for the one changed function.'
+    'Jobs: Rule 4 ("low agreement, page wins") is retired by the Platform Admin (StudySearch D3). It stays switched off, is marked for removal after the retirement period, and can no longer be run; low-agreement fields go to Layer 4 review. Its 22 past admissions and their evidence are kept.',
+    'Website API v2: the course detail entry object gains min_scores, every admitted entry score as the provider prints it (for example ATAR, IB, GCE A Level and pathway programmes), with its words, quote, source and date (StudySearch D4). min_score and min_score_basis are unchanged. Developer guide issue 7.'
   ],
   bugFixes:[]
 }
