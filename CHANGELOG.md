@@ -2,7 +2,7 @@
 
 ## 0.1.311 — 31 Oct 2026
 
-- Prepared visible PIM Admin release candidate **v2.15.384** (StudySearch SS-014A to SS-014D, Platform Admin mandate 31 Oct 2026 19:22, decisions D7 and D11). Migration `20261031090000_cf247_ss014_operational_automation`: md5-guarded edits of `security.platform_health_check_v1` (`d245c535` → `69a2d7b7`: scholarship hold once per provider; new checks `search_refresh` and `alerts`) and `security.platform_health_stall_v1` (`e1c74fa6` → `fe27fdb0`: a job paused by the flag unit is info until the critical age); new tables `pipeline.platform_alerts` and `pipeline.ops_scorecards`; jobs `platform-alerts` (every 10 minutes) and `ops-scorecard` (daily); 21 settings (Alerts, Operating targets, search refresh); `public.admin_platform_alerts`. External alert delivery off (D7). Consumer API untouched. Spec s194.
+- Prepared visible PIM Admin release candidate **v2.15.384** (StudySearch SS-014A to SS-014D, Platform Admin mandate 31 Oct 2026 19:22, decisions D7 and D11). Migration `20261031091000_cf247_ss014_operational_automation` (re-issue of `20261031090000`, which its md5 guard refused at deploy; nothing applied): md5-guarded edits of `security.platform_health_check_v1` (`d245c535` → `b648e649`: scholarship hold once per provider; new checks `search_refresh` and `alerts`) and `security.platform_health_stall_v1` (`e1c74fa6` → `fe27fdb0`: a job paused by the flag unit is info until the critical age); new tables `pipeline.platform_alerts` and `pipeline.ops_scorecards`; jobs `platform-alerts` (every 10 minutes) and `ops-scorecard` (daily); 21 settings (Alerts, Operating targets, search refresh); `public.admin_platform_alerts`. External alert delivery off (D7). Consumer API untouched. Spec s194.
 
 ## 0.1.310 — 31 Oct 2026
 
