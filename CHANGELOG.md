@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.311 — 31 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.384** (StudySearch SS-014A to SS-014D, Platform Admin mandate 31 Oct 2026 19:22, decisions D7 and D11). Migration `20261031090000_cf247_ss014_operational_automation`: md5-guarded edits of `security.platform_health_check_v1` (`d245c535` → `69a2d7b7`: scholarship hold once per provider; new checks `search_refresh` and `alerts`) and `security.platform_health_stall_v1` (`e1c74fa6` → `fe27fdb0`: a job paused by the flag unit is info until the critical age); new tables `pipeline.platform_alerts` and `pipeline.ops_scorecards`; jobs `platform-alerts` (every 10 minutes) and `ops-scorecard` (daily); 21 settings (Alerts, Operating targets, search refresh); `public.admin_platform_alerts`. External alert delivery off (D7). Consumer API untouched. Spec s194.
+
 ## 0.1.310 — 31 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.383** (StudySearch SS-014 and SS-013, Platform Admin mandate 31 Oct 2026 14:27). Migration `20261031080000_cf247_ss014_health_alerts_cost_truth`: md5-guarded edit of `security.platform_health_check_v1` (`29315678` → `d245c535`): job failures persist and escalate at any schedule; AI spend from the OpenRouter credit balance across all routes; four settings (`health.job_failure_window_hours`, `health.job_failure_repeat_count`, `health.job_failure_critical_consecutive`, `budgets.ai_daily_ceiling_usd`). Test titles and workflow names renamed to StudySearch; identity guard s6 extended. Spec s193.
