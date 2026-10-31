@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.305 — 31 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.378** (StudySearch decision F1c, Platform Admin 31 Oct 2026 11:24; finding F6). Migration `20261031020000_cf247_f1c_rule4_paused`: job `l4-rule-low-agreement` paused, its catalogue description corrected; anon EXECUTE on `admin_ui_error_report` removed. Spec s187. Consumer API unchanged.
+
 ## 0.1.304 — 31 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.377** (StudySearch transformation mandate 31 Oct 2026, finding F1; admin `2026-10-31-studysearch-transformation.md` §7–8). Migration `20261031010000_cf247_f1_provider_checks_once`: md5-guarded edits of `security.enrichment_flags_refresh_v1` (`ae577625` → `3bbec96c`) and `security.coverage_ai_match_prepare_v1` (`b7db293c` → `ab2dd5dc`); provider-level checks once per provider over materialised lists; identical row sets proven live (rolled back). Spec s186. Consumer API unchanged.

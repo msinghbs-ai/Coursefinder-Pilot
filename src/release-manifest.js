@@ -1,18 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.377'
-export const PACKAGE_VERSION='0.1.304'
+export const UI_VERSION='2.15.378'
+export const PACKAGE_VERSION='0.1.305'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'31 Oct 2026',
-  title:'Waste guard and AI match preparation run inside their time limits again',
-  changes:['No screen or operator step changed.'],
-  bugFixes:[
-    'Waste guard (hourly) and AI match preparation (every 2 minutes) checked each university\'s settings once for every course or AI-match row, so as the tables grew they reached their 2-minute limit and failed (14 of 24 waste guard runs on 30 Oct). Each university is now checked once per run: the same flags and the same work, in about 15 s and 19 s instead of up to 2 minutes (StudySearch finding F1).',
+  title:'Rule 4 (low agreement, page wins) paused on purpose',
+  changes:[
+    'Jobs: the daily Rule 4 check (low agreement, page wins) is paused by the Platform Admin until the rule is reviewed. It admits a field from the page when an adapter reads it often but agrees with held values less than 90% of the time; it had failed every day since 29 Oct. Its description now says what it does and that it is paused. No Rule 4 admission happens while paused.',
     'Consumer API unchanged (Decision 266).'
-  ]
+  ],
+  bugFixes:['The error reporter (admin_ui_error_report) could be called without signing in, although it refused such calls; that permission is removed. No behaviour change.']
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.
