@@ -9,9 +9,9 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import crypto from 'node:crypto'
 
-const FILE = 'supabase/migrations/20261101100000_cf247_e15_course_link_replacement.sql'
+const FILE = 'supabase/migrations/20261101120000_cf247_e15_course_link_replacement.sql'
 const m = fs.readFileSync(FILE, 'utf8')
-const before = fs.readFileSync('tests/uat/fixtures/cf-247-s207/layer4_course_link_apply_impl.before.sql', 'utf8')
+const before = fs.readFileSync('tests/uat/fixtures/cf-247-s212/layer4_course_link_apply_impl.before.sql', 'utf8')
 const BEFORE = 'e97b56cc87d02c4886df39918027eecc'
 const AFTER = '75a53dbbcd5e20e1018a05b61f6763aa'
 const md5 = (s) => crypto.createHash('md5').update(s, 'utf8').digest('hex')
