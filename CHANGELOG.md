@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.321 — 1 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.394** (SS-016 priorities 1 and 2). Migration `20261101080000_cf247_ur05_fee_check_card`: `public.admin_layer4_inbox` refuses an address on a fee-check item, which had admitted the proposed fee (`c6b83e21` → `417f181d`); `security.layer4_decision_outcome_v1` reads a fee decision back from `catalogue.course_fees` (`eae00e61` → `c40ee758`). Layer 4 card shows the proposed fee; deep links follow the kind. Spec s204.
+
 ## 0.1.320 — 1 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.393** (usability remediation UR-07, UR-13). Migration `20261101070000_cf247_ur07_retired_jobs`: `security.admin_automation_control_v1` refuses switching on, running or re-scheduling retiring/retired jobs and Resume area skips them (`d90af04c` → `30c319b8`); `security.admin_automations_read_v1` returns their retirement (`81d5e16a` → `f5120aed`). `scripts/ci/apply-migration.sh` compares the recorded md5 before skipping. Spec s203.

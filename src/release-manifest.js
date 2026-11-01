@@ -1,16 +1,16 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.393'
-export const PACKAGE_VERSION='0.1.320'
+export const UI_VERSION='2.15.394'
+export const PACKAGE_VERSION='0.1.321'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'1 Nov 2026',
-  title:'Retired jobs cannot be switched back on; changed migrations are refused',
+  title:'Fee checks show the proposed fee and are admitted or not',
   changes:[
-    'Scheduled jobs: a retiring or retired job shows as Retiring or Retired, with its replacement and removal date, and has no Resume, run or schedule controls; Resume area leaves it off (UR-07).',
-    'Deployment: a migration already applied is skipped only when it is unchanged; a changed one is refused before anything runs (UR-13).'
+    'Layer 4 Review: a fee-check card shows the proposed fee (amount, currency, basis, fee year) and offers Admit this fee or Do not admit this fee; an address is no longer accepted on a fee check, and an admitted fee is reported from the course\'s fees.',
+    'Layer 4 Review: an address that names another kind or university opens it on the same screen, without a reload (UR-09).'
   ],
   bugFixes:[]
 }
