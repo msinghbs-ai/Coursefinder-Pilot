@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.330 — 2 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.403** (Decision 4, Platform Admin 2 Nov 2026 10:56). Migration `20261102060000_cf247_admission_schedule_stagger`: coverage-admit `*/10`→`3-59/10`, coverage-admit-intakes `8-59/10`→`5-59/10`, adapter-overwrite `3-59/10`→`9-59/10`; guarded against an unexpected starting state, post-checked, catalogue notes; rollback is three cron.alter_job calls. No command, batch, time-out or consumer API change. Spec s218.
+
 ## 0.1.329 — 2 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.402** (E16-1/E16-2, Platform Admin 2 Nov 2026 07:21; SS-014 D14 and monitoring accuracy, 07:41). Migrations `20261102030000_cf247_e16_binding_validation` (binding guard `33351b50`→`f2e4102f`, `exit_awards_apply_v2` `8d4e5f7b`→`e7080925`, `enrich_fields_slice_v1` `37b85567`→`b677308f`, `refresh_course_enrichment_core_v1` `ce80f745`→`04fa25d8`, `refresh_course_enrichment_core_scoped_v1` `3f0b051f`→`5b45bbf1`; new `course_page_check_v1`, `binding_refusal_route_v1`; `binding.*` settings) and `20261102040000_cf247_ss014_d14_monitoring_accuracy` (`flag_jobs_v1` `a7a7427b`→`2421dd1c`, `queue_watch_run_v1` `59c67cf1`→`5735193b`, `platform_health_check_v1` `964db44f`→`25ff0434`; `flag.answer_wait_seconds`; `queue_watch.cap_sql`). All md5-guarded with self-checked after values. Existing links unchanged except the projection choice on 42 courses (list in Admin). No consumer API shape change. Specs s214, s215.
