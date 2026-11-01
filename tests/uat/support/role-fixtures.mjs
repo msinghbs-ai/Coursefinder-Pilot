@@ -1,6 +1,6 @@
 // SS-016 role simulation (Platform Admin mandate 1 Nov 2026 §3): isolated fixtures for the six roles. Each mocked server function refuses
 // exactly where its LIVE definition refuses, with the live words (read-only from project fxcwkweaxjtknorudmwp, 1 Nov 2026):
-//   security.admin_automation_control_v1 (md5 71951aa2): rank < 5 -> PIM_FLOOR; rank < control_rank -> HIGHER_ROLE; a retiring or retired job
+//   security.admin_automation_control_v1 (md5 431aff60 from v2.15.397; message names the role): rank < 5 -> PIM_FLOOR; rank < control_rank -> HIGHER_ROLE; a retiring or retired job
 //     cannot be switched on, run or changed (RETIRED); an area resume skips retiring and retired jobs.
 //   public.admin_layer4_inbox (md5 417f181d): rank < 3 -> 'Curator role or above required'; a choice without its own rank needs rank 4
 //     (coalesce((v_c->>'rank')::int, 4)) -> 'your role cannot make this choice'.
@@ -14,7 +14,7 @@ import { mockAdmin } from './admin-mock.mjs'
 export const ROLE = { 1: ['viewer', 'Viewer'], 2: ['counsellor', 'Counsellor'], 3: ['curator', 'Curator'], 4: ['pipeline_operator', 'Pipeline Operator'], 5: ['pim_admin', 'PIM Admin'], 6: ['platform_admin', 'Platform Admin'] }
 export const LIVE = {
   PIM_FLOOR: 'PIM Admin role or above required to change automations. A Pipeline Operator records the issue and raises it with the PIM Admin',
-  HIGHER_ROLE: 'this automation needs a higher role to change',
+  HIGHER_ROLE: 'this automation is changed by the Platform Admin',
   RETIRED: (by) => `this automation is retired (${by ? `replaced by ${by}` : 'no replacement recorded'}); it cannot be switched on, run or changed`,
   INBOX_FLOOR: 'Curator role or above required',
   CHOICE: 'your role cannot make this choice',

@@ -330,3 +330,14 @@ test.describe('mocked browser (SS-016 22:01)', () => {
     await expect(n.locator('[data-notice-gate="openrouter-refused"]')).toContainText('Gate: Refused by OpenRouter (outside StudySearch)')
   })
 })
+
+// SS-016 acceptance S1, G1–G3 (role walkthrough fixtures, overnight mandate 1 Nov 2026 22:01): refusals and links name the role that acts
+test('automation control: the per-automation refusal names its role; guide links above a role say which role opens them', () => {
+  const m = fs.readFileSync('supabase/migrations/20261101110000_cf247_automation_owner_refusal.sql', 'utf8')
+  expect(m).toContain("'71951aa2faf643f0dd86aae580e6c34d', '431aff603f21b8c8a030073b07a08259'")
+  expect(m).toContain("if v_rank<coalesce(c.control_rank,6) then raise exception 'this automation is changed by the %'")
+  expect(m).toMatch(/^-- Retires: nothing/m)
+  expect(G.SPECIALIST_TASKS.find((t) => t.task === 'Read an entry requirement source again').tab).toBe('sources')
+  const pg = fs.readFileSync('src/PlatformGuide.jsx', 'utf8')
+  expect(pg).toContain('data-opens-from={m}>Opens from {roleName(m)} (rank {m})')
+})

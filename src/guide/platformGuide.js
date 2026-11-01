@@ -8,7 +8,7 @@
 //     entry below in the same pull request.
 // Plain Australian English; no numbers that go stale (counts and amounts live on the screens themselves).
 
-export const GUIDE_REVIEWED_FOR = '2.15.396'
+export const GUIDE_REVIEWED_FOR = '2.15.397'
 
 export const ROLES = [
   { role: 'Viewer', rank: 1, who: 'Stakeholder, auditor', can: 'Read every screen they can open; change nothing.',
@@ -140,7 +140,7 @@ export const SPECIALIST_TASKS = [
     source: 'The source and its newest stored copy; every quote on that copy', evidence: 'The decision with its reason (Layer 4 › Inbox › Decided)', escalate: 'A held decision: reload, then adjust, Reject or escalate for a re-read',
     choices: 'Approve all rows; Approve except… (tick the rows to leave out, at least one must stay; not for a course that already has active entry rows: the D4 rule holds it, so use Approve all rows or Reject the read); Reject the read. One item at a time; no bulk decisions.',
     doc: 'docs/platform/AER-ROLE-GUIDES.md §5; docs/platform/skills/cf-layer4-kbe/references/action-playbook.md §6' },
-  { task: 'Read an entry requirement source again', role: 'Platform Admin', page: 'entry',
+  { task: 'Read an entry requirement source again', role: 'Platform Admin', page: 'entry', tab: 'sources',
     source: 'The newest stored copy of the official page', evidence: 'The reason; the new read waits in Layer 4', escalate: 'Platform engineer for a reader failure',
     doc: 'docs/platform/AER-ROLE-GUIDES.md §4.1' },
   { task: 'Check what reaches the website and Zoho', role: 'Integration owner (a responsibility; reading needs Viewer)', page: 'entry',

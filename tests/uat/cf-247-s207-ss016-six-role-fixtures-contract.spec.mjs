@@ -91,7 +91,7 @@ test.describe('mocked browser', () => {
     await link.locator('[data-l4-choice="keep"]').click()
     await link.getByLabel('Reason').fill('the held page is the course page')
     await link.locator('[data-l4-confirm]').click()
-    await expect(page.getByRole('status')).toContainText('Done. Applied')
+    await expect(page.getByRole('status').filter({ hasText: 'Done.' })).toContainText('Done. Applied')
     expect(calls.filter((c) => c.p_action === 'decide')).toHaveLength(1)
     await page.goto('/#layer-4-review?kind=website_needed')
     const site = page.locator('[data-l4-item="website_needed"]')
@@ -100,7 +100,7 @@ test.describe('mocked browser', () => {
 
     const auto = await mockAutomations(page, 4)
     await page.goto('/#scheduled-jobs')
-    await expect(page.getByText('You can view automations. A PIM Admin or Platform Admin can change them.')).toBeVisible()
+    await expect(page.getByText('You can view automations. Each one names the role that changes it (PIM Admin or Platform Admin)')).toBeVisible()
     await expect(page.locator('tr[data-job="coverage-read"]')).toBeVisible()
     await expect(page.getByRole('button', { name: /Pause|Resume/ })).toHaveCount(0)
     // a pause reaching the server anyway (an old tab, a script) is refused with the live words, and the banner keeps the owner
@@ -126,7 +126,7 @@ test.describe('mocked browser', () => {
     expect(auto.calls.map((c) => `${c.p_job}:${c.p_action}`)).toEqual(['coverage-read:pause', 'coverage-read:resume'])
     // the read was stale (control_rank 5 shown, 6 on the server): the server refuses and nothing changes
     await page.locator('tr[data-job="consumer-api-guard"]').getByRole('button', { name: 'Pause' }).click()
-    await expect(page.locator('[data-global-error]')).toContainText('this automation needs a higher role to change')
+    await expect(page.locator('[data-global-error]')).toContainText('this automation is changed by the Platform Admin')
     expect(auto.jobs.find((j) => j.job === 'consumer-api-guard').active).toBe(true)
     // the builder tab is the PIM Admin's; Settings › Settings and Users are the Platform Admin's
     await page.goto('/#layer-2-discovery?tab=builder')
@@ -155,7 +155,7 @@ test.describe('mocked browser', () => {
     await item.locator('[data-l4-choice="approve"]').click()
     await item.getByLabel('Reason').fill('every row is printed on the stored copy')
     await item.locator('[data-l4-confirm]').click()
-    await expect(page.getByRole('status')).toContainText('Done. Admitted · rows 2 active · decision dec00001 · audit #41001')
+    await expect(page.getByRole('status').filter({ hasText: 'Done.' })).toContainText('Done. Admitted · rows 2 active · decision dec00001 · audit #41001')
     expect(calls.filter((c) => c.p_action === 'decide')[0].p_args).toMatchObject({ kind: 'aer_review', choice: 'approve' })
     for (const addr of ['#platform-health', '#environment?tab=backup', '#environment', '#users-roles', '#environment-migration']) {
       await page.goto('/' + addr)

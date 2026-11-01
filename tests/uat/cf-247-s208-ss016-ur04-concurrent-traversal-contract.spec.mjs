@@ -60,7 +60,7 @@ test.describe('mocked browser', () => {
     await card.locator('[data-l4-choice]').first().click()
     await card.getByLabel('Reason').fill('checked on the stored copy')
     await card.locator('[data-l4-confirm]').click()
-    await expect(page.getByRole('status')).toContainText('Done.')
+    await expect(page.getByRole('status').filter({ hasText: 'Done.' })).toContainText('Done.')
     await expect(page.locator(`[data-l4-ref="${target}"]`)).toHaveCount(0)
     const p2after = await refsOnScreen()
     expect(p2after.filter((r) => !p2.includes(r))).toHaveLength(1)   // the next item after the page moves up by one
