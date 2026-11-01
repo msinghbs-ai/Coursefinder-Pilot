@@ -41,8 +41,9 @@ export default function Layer4Inbox({onError,routeParams}){
   // UR-09 (1 Nov 2026): an address that names another kind or university on this screen opens it, without a reload
   const asked=useRef({want,wantProvider})
   useEffect(()=>{const was=asked.current;asked.current={want,wantProvider};if(was.want===want&&was.wantProvider===wantProvider)return
-    if(want&&want!==kind){setView('kind');setKind(want);setNote('')}
-    else if(wantProvider&&wantProvider!==pick?.provider_id){setView('university');setPick({provider_id:wantProvider,name:'University'});setNote('')}},[want,wantProvider])
+    // SS-016 acceptance (1 Nov 2026 21:20): Back to an address of the same kind left the university list on screen; the view follows the address too
+    if(want&&(want!==kind||view!=='kind')){setView('kind');setKind(want);setNote('')}
+    else if(wantProvider&&(wantProvider!==pick?.provider_id||view!=='university')){setView('university');setPick({provider_id:wantProvider,name:'University'});setNote('')}},[want,wantProvider])
   useEffect(()=>{setOffset(0);setPick(null);loadUnis(0)},[kind,q])
   useEffect(()=>{let c=null,s=[];const r=restored.current
     if(r&&r.key===posKey){c=r.cur||null;s=r.stack||[]}else if(r&&!(view==='university'&&!pick))restored.current=null  // kept while the same list is shown

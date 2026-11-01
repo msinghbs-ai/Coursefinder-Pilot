@@ -2,7 +2,7 @@
 
 ## 0.1.322 — 1 Nov 2026
 
-- Prepared visible PIM Admin release candidate **v2.15.395** (SS-016 UR-01, UR-02, UR-03, UR-17; Platform Admin 1 Nov 2026 20:08). Guide and SOP text only (no migration): D12 alert delivery and rules from OPERATIONAL-LIMITS v1.3; role boundaries matched to the live `security.admin_automation_control_v1` (rank floor 5, per-job `control_rank`) and `public.admin_jobs`; AER Platform Admin only; `scripts/export-sops.mjs` provenance line and `--check-mirror`; Specialist tasks section. Migration `20261101090000_cf247_automation_denial_message`: `security.admin_automation_control_v1` refusal below rank 5 names the PIM Admin (`30c319b8` → `71951aa2`; message only, boundary unchanged). Spec s206; S22 equality check reads past the provenance line.
+- Prepared visible PIM Admin release candidate **v2.15.395** (SS-016 UR-01, UR-02, UR-03, UR-17; Platform Admin 1 Nov 2026 20:08). Guide and SOP text only (no migration): D12 alert delivery and rules from OPERATIONAL-LIMITS v1.3; role boundaries matched to the live `security.admin_automation_control_v1` (rank floor 5, per-job `control_rank`) and `public.admin_jobs`; AER Platform Admin only; `scripts/export-sops.mjs` provenance line and `--check-mirror`; Specialist tasks section. Migration `20261101090000_cf247_automation_denial_message`: `security.admin_automation_control_v1` refusal below rank 5 names the PIM Admin (`30c319b8` → `71951aa2`; message only, boundary unchanged). Layer 4: Back to an address of the same kind shows the kind again (UR-09 acceptance defect; s204 test). Spec s206; S22 equality check reads past the provenance line.
 
 ## 0.1.321 — 1 Nov 2026
 

@@ -15,7 +15,8 @@ export const RELEASE={
     'Platform guide, Specialist tasks: each role\'s top tasks link to the specialist guide section, with the lowest role, the source needed, what is saved and who to escalate to; counsellor wording for estimates, unstated scales and reporting a wrong value (UR-17).'
   ],
   bugFixes:[
-    'Automations: a role below PIM Admin was told "Platform Admin role required" when changing an automation; it now names the PIM Admin. Who may change what is unchanged.'
+    'Automations: a role below PIM Admin was told "Platform Admin role required" when changing an automation; it now names the PIM Admin. Who may change what is unchanged.',
+    'Layer 4 Review: going Back from a university to an address of the same kind showed the university\'s items; the kind is shown again (UR-09, found in the acceptance walkthrough).'
   ]
 }
 
