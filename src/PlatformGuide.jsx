@@ -3,7 +3,7 @@
 // has an entry). Each screen links straight to itself, so the guide never relies on screenshots that go stale.
 import React,{useState}from'react'
 import{Archive,ArrowRight,BellRing,BookOpen,CalendarCheck,Compass,Gauge,ListChecks,ShieldCheck,Siren,Sparkles,Users,Workflow}from'lucide-react'
-import{PAGES,SECTIONS,canOpen}from'./nav-map'
+import{PAGES,SECTIONS,canOpen,refusedTab,roleName}from'./nav-map'
 import{UI_VERSION,RELEASE}from'./release-manifest'
 import{GUIDE_REVIEWED_FOR,ROLES,RULES,DAILY_ROUTINE,SCREENS,SIGNALS,ADMIN_DUTIES,ALERTS,SPECIALIST_TASKS,ADMISSION_PATHS,ADMISSION_WORDS,BUDGET_GATES,RETIREMENT_CRITERIA}from'./guide/platformGuide'
 
@@ -30,7 +30,9 @@ function Flow(){
 export default function PlatformGuide({rank=1,navigate}){
   const[open,setOpen]=useState('')
   const go=(page,tab)=>navigate?.(page,tab?{tab}:{})
-  const OpenBtn=({page,tab,label})=>canOpen(page,rank)?<button type="button" className="m-secondary compact pg-open" onClick={()=>go(page,tab)}>{label||'Open'}<ArrowRight size={12}/></button>:null
+  // SS-016 UR-17 (1 Nov 2026, acceptance G2/G3): a link above this role names the role that opens it, instead of nothing or a refused tab
+  const opensFrom=(page,tab)=>{const p=PAGES[page];if(!p)return null;if(!canOpen(page,rank))return p.min;const r=tab&&refusedTab(page,tab,rank);return r?r.min:null}
+  const OpenBtn=({page,tab,label})=>{const m=opensFrom(page,tab);return m==null?<button type="button" className="m-secondary compact pg-open" onClick={()=>go(page,tab)}>{label||'Open'}<ArrowRight size={12}/></button>:<small className="pg-meta" data-opens-from={m}>Opens from {roleName(m)} (rank {m})</small>}
   return <div className="m-page-stack pg" data-platform-guide>
     <section className="m-panel">
       <p className="pg-lead">How operators and Platform Admins run StudySearch day to day: what each screen tells you, which numbers matter, and what to do when something turns amber or red. Step-by-step daily procedures are in the Platform Admin SOP and the Operator SOP (tabs above).</p>

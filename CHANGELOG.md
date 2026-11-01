@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.324 — 1 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.397** (SS-016 role acceptance, overnight mandate 1 Nov 2026 22:01). Six-role fixture journeys (s207) and UR-04/07/09/17 fixtures (s208–s211); handoffs name the next owner (`nav-map.js` ROLE_NAMES, `refusedTab`; `Layer4Inbox.jsx` choice ranks; `errors.js` keeps role refusals; `AerWorkspace.jsx`). Migration `20261101110000_cf247_automation_owner_refusal`: `security.admin_automation_control_v1` per-automation refusal names the role (`71951aa2` → `431aff60`; message only). Guide G1–G3.
+
 ## 0.1.323 — 1 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.396** (SS-016 UR-08, UR-10, UR-11, UR-12, UR-16; Platform Admin overnight mandate 1 Nov 2026 22:01). Migration `20261101100000_cf247_ss016_ur08_10_11_12_operating_words`: five automation catalogue descriptions and the academic_entry field register text corrected (guarded on the exact current text); `security.platform_notices_v1` (`81bf986b` → `88cffd39`), `security.admin_automations_read_v1` (`f5120aed` → `419aef5d`, retirement adds note and purpose), `security.platform_health_state_v1` (`3efe25a9` → `27dfaf03`, checks add cadence_minutes). New `src/guide/operatingWords.js`; s206 extended.

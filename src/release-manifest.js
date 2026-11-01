@@ -1,19 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.396'
-export const PACKAGE_VERSION='0.1.323'
+export const UI_VERSION='2.15.397'
+export const PACKAGE_VERSION='0.1.324'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'1 Nov 2026',
-  title:'One set of words for who changes and who admits; budget gates, freshness and retirement checks',
+  title:'Refusals and links name the role that acts; role journeys tested for all six roles',
   changes:[
-    'Scheduled jobs › Automations: each automation shows who may change it (PIM Admin or Platform Admin) and how its values get in; the guide\'s Who admits section and the SOPs say the same (UR-08).',
-    'Toolsets & limits and the guide: each budget gate says whether StudySearch or the provider refuses, its effective mode, where the live value is and who changes it; a notice in Observe mode says nothing has stopped (UR-10).',
-    'Platform health: each check says whether it is from this run, an earlier run or has no result yet, and no result is never shown as OK (UR-11).',
-    'Screen use and Automations: a retiring component shows the five retirement checks and its note; removal without a named replacement needs an approved decision (UR-12).',
-    'The test register\'s table and narrative are counted in one pass (UR-16).'
+    'Layer 4 Review: a choice above your role is shown disabled with the role that makes it, instead of being refused after you confirm.',
+    'A page or tab above your role says which role opens it (Viewer to Platform Admin), and an error from the server that names a role keeps its words.',
+    'Automations: a refusal on an automation names the role that changes it (PIM Admin or Platform Admin).',
+    'Platform guide: a link to a page or tab above your role says which role opens it; Read an entry requirement source again opens Sources, reads and holds.',
+    'Entry requirements: the row drawer and Read again column name the role that edits or re-reads.'
   ],
   bugFixes:[]
 }

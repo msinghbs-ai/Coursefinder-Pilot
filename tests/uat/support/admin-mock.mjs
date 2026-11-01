@@ -36,8 +36,9 @@ export function universitiesPage(all, a = {}, { rank = 6, pageSize = 100, tickMa
     ticks: ticks ? { capped: f.length > tickMax, rows: f.slice(0, tickMax).map(r => ({ provider_id: r.provider_id, name: r.name, adapter: r.adapter ? { state: r.adapter.state, fields: r.adapter.fields || [] } : null, qualify: r.qualify ? { passing: r.qualify.passing || [] } : null, onboarding: r.onboarding ? { id: r.onboarding.id, status: r.onboarding.status } : null })) } : null }
 }
 
-export async function mockAdmin(page, { rank = 6, healthMissing = false, courseDiffers = false, creditNotices = [], onboardingAuto = false, universities = null, universitiesPageSize = 100, universitiesTickMax = 2000, coverageStale = false } = {}) {
-  const context = { ...F.context, role_rank: rank, role: rank >= 6 ? 'platform_admin' : 'viewer' }
+export async function mockAdmin(page, { rank = 6, healthMissing = false, courseDiffers = false, creditNotices = [], onboardingAuto = false, universities = null, universitiesPageSize = 100, universitiesTickMax = 2000, coverageStale = false, role = null } = {}) {
+  // SS-016 role simulation: `role` names the signed-in role (role-fixtures.mjs); without it the earlier default stays
+  const context = { ...F.context, role_rank: rank, role: role || (rank >= 6 ? 'platform_admin' : 'viewer') }
   const session = { access_token: 'mock-token', refresh_token: 'mock-refresh', token_type: 'bearer', expires_in: 360000, expires_at: Math.floor(Date.now() / 1000) + 360000, user: { id: context.user_id, email: 'admin@example.test', aud: 'authenticated', role: 'authenticated', app_metadata: {}, user_metadata: {} } }
   const adminRead = {
     ranking_filters: F.rankingFilters, ranking_filter_options: F.rankingFilterOptions, ranking_observations: F.rankingObservations,

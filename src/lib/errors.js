@@ -35,9 +35,12 @@ export function rawFirstLine(raw){
   return m.replace(/\s+/g,' ').trim()
 }
 /** Plain reading of an error: a known sentence, or the first line with internals replaced, never longer than 160 characters. */
+// SS-016 role simulation (1 Nov 2026): a refusal that names the role it needs ("Platform Admin role required: AER items are ...") keeps those
+// words, so the person sees who to ask; only a refusal that names no role becomes the general sentence
+const NAMES_ROLE=/\b(Viewer|Counsellor|Curator|Pipeline Operator|Operator|PIM Admin|Platform Admin)\b/i
 export function plainError(raw){
   const m=String(raw?.message??raw??'')
-  const hit=KNOWN.find(([r])=>r.test(m))
+  const hit=KNOWN.find(([r,w])=>r.test(m)&&!(w==='Your role is not allowed to do this.'&&NAMES_ROLE.test(rawFirstLine(m))))
   if(hit)return hit[1]
   let t=rawFirstLine(m)
   for(const[r,w]of INTERNAL)t=t.replace(r,w)

@@ -11,11 +11,14 @@
 import React,{useEffect,useMemo,useRef,useState}from'react'
 import{AlertTriangle,ArrowRight,ExternalLink,Inbox,RefreshCw,Search}from'lucide-react'
 import{supabase}from'./lib/supabase'
-import{hrefFor}from'./nav-map'
+import{hrefFor,roleName}from'./nav-map'
 import{Button,Empty,Loading,Metric,StatusChip,fmtDate,fmtNumber}from'./ui-kit'
 import'./layer4-inbox.css'
 
 const rpc=async(action,args)=>{const{data,error}=await supabase.rpc('admin_layer4_inbox',{p_action:action,p_args:args||{}});if(error)throw new Error(error.message);return data||{}}
+// SS-016 role simulation (1 Nov 2026): the rank a choice needs, as public.admin_layer4_inbox decides it: its own rank, else rank 4
+// (coalesce((v_c->>'rank')::int, 4)); a choice that opens another screen decides nothing here. A Curator was offered choices the server refuses.
+const needs=c=>c.link?0:Number(c.rank||4)
 const days=t=>t?Math.max(0,Math.floor((Date.now()-new Date(t).getTime())/86400000)):0
 const linkFor=(link,it)=>link==='builder'?hrefFor('layer2','builder',{provider:it.provider_id}):link==='course'?hrefFor('courses','',{id:it.detail?.course_id||(it.detail?.entity==='course'?it.detail?.key:'')}):'#'
 const aerRead=id=>supabase.rpc('layer4_aer_review_read',{p_review_item_id:id}).then(({data,error})=>{if(error)throw new Error(error.message);return data||{}})
@@ -133,7 +136,9 @@ function Item({it,k,showProvider,rank,onDone,onError}){
     {aerItem&&<AerRows aer={aer} rank={rank} ticking={open?.input==='rows'} ticked={ticked} tick={tick}/>}
     {it.kind==='provider_departure'&&d.note&&<p className="l4i-why" data-l4-departure><small>{d.note}</small></p>}
     {it.kind==='held_scholarship'&&<dl className="l4i-dl">{d.url&&<><dt>Page</dt><dd><a href={d.url} target="_blank" rel="noreferrer">{d.url} <ExternalLink size={11}/></a></dd></>}{it.suggestion&&<><dt>AI re-check</dt><dd>{it.suggestion}</dd></>}{d.audience_quote&&<><dt>Who</dt><dd><q>{d.audience_quote}</q></dd></>}{d.value_quote&&<><dt>Value</dt><dd><q>{d.value_quote}</q></dd></>}</dl>}
-    <div className="l4i-choices">{choices.map(c=>{const low=c.rank&&rank<c.rank;return <button key={c.key} type="button" className={`${open?.key===c.key?'on':''}${c.link?' link':''}`} disabled={low} title={low?'Your role cannot make this choice':c.returns} onClick={()=>choose(c)} data-l4-choice={c.key}>{c.label}{c.link&&<ArrowRight size={12}/>}</button>})}</div>
+    <div className="l4i-choices">{choices.map(c=>{const low=rank<needs(c);return <button key={c.key} type="button" className={`${open?.key===c.key?'on':''}${c.link?' link':''}`} disabled={low} title={low?`Needs ${roleName(needs(c))} (rank ${needs(c)}) or above`:c.returns} onClick={()=>choose(c)} data-l4-choice={c.key}>{c.label}{c.link&&<ArrowRight size={12}/>}</button>})}</div>
+    {(()=>{const by={};for(const c of choices)if(rank<needs(c))(by[needs(c)]||=[]).push(c.label)
+      return Object.keys(by).length?<p className="l4i-why" data-l4-handoff><small>{Object.entries(by).map(([n,l])=>`${l.join(', ')}: ${roleName(n)} (rank ${n}) or above decides; ask a ${roleName(n)}.`).join(' ')}</small></p>:null})()}
     {open&&<div className="l4i-confirm">
       <p className="l4i-next"><strong>What happens next:</strong> {open.returns}</p>
       {open.input==='url'&&<input value={value} onChange={e=>setValue(e.target.value)} placeholder="https://…" aria-label="Web address"/>}

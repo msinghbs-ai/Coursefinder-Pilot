@@ -246,6 +246,15 @@ const MOVED_L1 = { imports: { page: 'rankings', tab: 'datasets' }, dates: { page
 const BY_SLUG = Object.fromEntries(Object.values(PAGES).map(p => [p.slug, p.key]))
 const BY_LABEL = Object.fromEntries(Object.values(PAGES).map(p => [slugify(p.label), p.key]))
 
+// SS-016 UR-09/UR-17 (1 Nov 2026): the role that opens a page or tab, named in the handoff shown when a lower role reaches it
+export const ROLE_NAMES = { 1: 'Viewer', 2: 'Counsellor', 3: 'Curator', 4: 'Pipeline Operator', 5: 'PIM Admin', 6: 'Platform Admin' }
+export const roleName = (rank) => ROLE_NAMES[Number(rank)] || (Number(rank) > 6 ? 'Platform Admin' : 'no assigned role')
+/** The tab asked for but not open to this rank (its page and tab, and the rank that opens it), or null. */
+export function refusedTab(pageKey, requested, rank) {
+  const p = PAGES[pageKey], t = (p?.tabs || []).find(x => x.key === requested)
+  return t && rank < t.min ? { page: p, tab: t, min: t.min } : null
+}
+
 export function allowedTabs(page, rank) { return (page?.tabs || []).filter(t => rank >= t.min) }
 // v2.15.300: a hidden tab (Layer 2/3 › Adapter builder) opens by its address (from a university row) and is drawn only while it is open
 export function shownTabs(page, rank, active = '') { return allowedTabs(page, rank).filter(t => !t.hidden || t.key === active) }

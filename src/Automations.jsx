@@ -91,6 +91,6 @@ function JobRow({j,rank,busy,act}){
       {j.batch!=null&&<form className="au-batch" onSubmit={e=>{e.preventDefault();act(j.job,'set_batch',{batch:Number(batch)})}}>
         <input className="fv-input" type="number" min="1" max="500" value={batch} onChange={e=>setBatch(e.target.value)} disabled={!can} aria-label={`Batch size for ${j.label}`}/>
         <Button compact type="submit" disabled={!can||!(Number(batch)>=1&&Number(batch)<=500)||Number(batch)===Number(j.batch)}><Save size={14}/>Save</Button></form>}
-    </div>:<span className="l3v-note" data-control-denied>{owner} only</span>}</td>}
+    </div>:<span className="l3v-note" data-control-denied data-job-owner>{owner} only</span>}</td>}
   </tr>
 }
