@@ -25,8 +25,8 @@ const BEFORE = { 'security.coverage_page_refused_host_guard()': '33351b506da5935
   'security.enrich_fields_slice_v1(uuid,integer)': '37b855677c98002ed2374f02cd1282f9', 'search.refresh_course_enrichment_core_v1(boolean)': 'ce80f74549625c23317aba5c737afda6',
   'search.refresh_course_enrichment_core_scoped_v1(uuid[],boolean)': '3f0b051fdc0e8c34f757f8c21ff5b7d3' }
 const AFTER = { 'security.coverage_page_refused_host_guard()': 'f2e4102f8788816c3f22f26945785f55', 'security.exit_awards_apply_v2(uuid)': 'e7080925ba79eef320f361bf236cb072',
-  'security.enrich_fields_slice_v1(uuid,integer)': 'b677308fffdc23e5fbd2ad54d1b97d30', 'search.refresh_course_enrichment_core_v1(boolean)': '6214bb43a019cf30a94cf12354579eb2',
-  'search.refresh_course_enrichment_core_scoped_v1(uuid[],boolean)': '82cc2006ba8447a5f23ca726b691c140' }
+  'security.enrich_fields_slice_v1(uuid,integer)': 'b677308fffdc23e5fbd2ad54d1b97d30', 'search.refresh_course_enrichment_core_v1(boolean)': '04fa25d82c373de08767d5573d4caabc',
+  'search.refresh_course_enrichment_core_scoped_v1(uuid[],boolean)': '5b45bbf1e39d9098d5f23de729418b2d' }
 
 test('five functions are edited only from their live md5 and checked after; the fixture run rebuilds them from the repository', () => {
   for (const [sig, b] of Object.entries(BEFORE)) {
@@ -44,10 +44,10 @@ test('one check covers every §3 point, with every list and limit a setting (G2)
   for (const r of ['provider', 'older_year', 'old_year', 'audience', 'shared_page', 'own_code', 'other_code', 'level', 'variant', 'sibling', 'name', 'campus',
     'award_on_parent_page', 'exception_shared_page', 'exception_nested_award', 'identity_proof', 'unproven']) expect(check, r).toContain(`'${r}'`)
   for (const k of ['binding.level_patterns', 'binding.variant_markers', 'binding.name_stop_words', 'binding.shared_page_patterns', 'binding.domestic_page_patterns',
-    'binding.international_page_patterns', 'binding.identity_exceptions', 'binding.award_page_evidence']) expect(check).toContain(`security.toolset_setting('pipeline', '${k}')`)
+    'binding.international_page_patterns', 'binding.identity_exceptions', 'binding.award_page_evidence', 'binding.provider_host_aliases']) expect(check).toContain(`security.toolset_setting('pipeline', '${k}')`)
   for (const k of ['binding.name_min_tokens', 'binding.name_stem_chars', 'binding.shared_page_min_other_courses', 'binding.handbook_max_age_years']) expect(check).toContain(`security.pipeline_num_v1('${k}', `)
   for (const k of ['identity_check', 'level_patterns', 'variant_markers', 'name_stop_words', 'name_min_tokens', 'name_stem_chars', 'shared_page_patterns',
-    'shared_page_min_other_courses', 'handbook_max_age_years', 'domestic_page_patterns', 'international_page_patterns', 'award_page_evidence', 'identity_exceptions'])
+    'shared_page_min_other_courses', 'handbook_max_age_years', 'domestic_page_patterns', 'international_page_patterns', 'award_page_evidence', 'provider_host_aliases', 'identity_exceptions'])
     expect(m).toMatch(new RegExp(`\\('pipeline', 'binding\\.${k}', 'Course page check: [^']+',\\n  '`))
   // the allowed cases need programme-specific evidence: an approved exception that names the course, or award evidence; never a title match
   expect(check).toContain("when ev.shared and ev.names_course and 'shared_page' = any (coalesce(ev.exceptions, '{}'))")
@@ -55,6 +55,11 @@ test('one check covers every §3 point, with every list and limit a setting (G2)
   expect(check).toContain("a.link_type = 'exit_award'")
   expect(check).toContain("a.set_by = 'hand' and a.evidence_id is not null")
   expect(check).toContain('-- fixed: words of one or two letters carry no programme name')
+  // merged institutions and second domains are the provider's own website; only an active provider is another provider
+  expect(check).toContain('from pipeline.provider_extra_domains d where d.provider_id = t.provider_id')
+  expect(check).toContain("o.lifecycle_status = 'active'")
+  for (const h of ['provider:cricos:00008c=monash.edu', 'provider:cricos:04249j=adelaide.edu.au', 'provider:cricos:01595d=unisc.edu.au',
+    'provider:nzqa:6014=whitireiaweltec.ac.nz weltec.ac.nz', 'provider:cricos:02571d=gca.edu.au']) expect(m).toContain(`"${h}"`)
 })
 
 test('every binding lane passes the existing guard; a refusal is recorded once and routed to the existing Layer 4 course link review', () => {
@@ -89,6 +94,9 @@ test('AI enrichment reads only a proved page; the projection shows course_url on
   const p = e.slice(e.indexOf('$n$'))  // the new text
   expect(p).toContain('select case when count(*) <= 1 or bool_or(l.is_primary)')
   expect(p).toContain("and security.course_page_check_v1(d.course_id,k.u)->>'verdict'='pass'")
+  // no new nulls: with no passing course_url, today's choice stays (integrator review of ae6f3d09)
+  expect(p).toContain('else coalesce((select k.u from unnest')
+  expect(p).toContain('(array_agg(l.url order by l.is_primary desc,l.last_verified_at desc nulls last,l.updated_at desc nulls last,l.id))[1]) end url')
   expect(p).not.toContain('limit 1\n  ) lk on true')
 })
 
@@ -105,9 +113,18 @@ test('the fixtures cover every documented failure class and the allowed exceptio
     'PASS school international page', 'PASS one page for many ELICOS levels', 'PASS EIT combined page', 'PASS genuine shared-page exception (allowed)',
     'PASS Lennox false positive (allowed)', 'PASS domain-only or similar-title match refused', 'PASS no duplicate Layer 4 item', 'PASS manual binding and the switch',
     'PASS award-link lane: title match refused, programme-specific evidence allowed, holds and blocks kept, no repeat',
-    'PASS AI enrichment skips unproven and refused pages', 'PASS projection tie-break', 'PASS privileges']) expect(fixtures).toContain(`raise notice '${p}';`)
+    'PASS AI enrichment skips unproven and refused pages', 'PASS projection tie-break', 'PASS provider hosts: merged institutions and second domains', 'PASS privileges']) expect(fixtures).toContain(`raise notice '${p}';`)
   expect(fixtures).toContain("'BSB80120'")
   expect(fixtures).toContain('bsb80120-graduate-certificate-in-management-learning')
   expect(fixtures).toContain("'blocked page never linked: '")
   expect(fixtures).toContain("'held course not linked again (SS-007 hold)'")
+  expect(fixtures).toContain("'several links, course_url refused: today''s choice kept, no new null'")
+})
+
+test('the admin screens name the new page results in plain words', () => {
+  const audit = fs.readFileSync('src/CourseAudit.jsx', 'utf8'), uni = fs.readFileSync('src/UniversitiesCoverage.jsx', 'utf8')
+  expect(audit).toContain("identity_refused:['Not this course’s page (refused by the page check)','danger']")
+  expect(audit).toContain("page_refused:['Refused before for this course','danger']")
+  expect(uni).toContain("identity_refused:'not this course’s page (refused by the page check)',page_refused:'refused before for this course'")
+  expect(uni).toContain('{READ_LABEL[c.read_status]||String(c.read_status).replace(/_/g,\' \')}')
 })

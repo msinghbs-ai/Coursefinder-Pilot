@@ -294,13 +294,22 @@ begin
 end $$;
 
 -- 14. projection tie-break (E16-2) --------------------------------------------------------------------------------------------------------
-insert into search.course_documents(course_id, country_code) select pg_temp.u(k), 'AU' from unnest(array['proj multi', 'proj sib', 'proj one', 'proj prim']) k;
+select pg_temp.course('proj spell', 'rmit', '0999005', 'Master of Design', 'masters_coursework');
+insert into search.course_documents(course_id, country_code) select pg_temp.u(k), 'AU' from unnest(array['proj multi', 'proj sib', 'proj one', 'proj prim', 'proj spell']) k;
 alter table pipeline.coverage_course_pages disable trigger coverage_page_refused_host;
 insert into pipeline.coverage_course_pages(course_id, provider_id, url, basis, status, read_status, identity_basis, evidence_id) values
   (pg_temp.u('proj multi'), pg_temp.u('rmit'), 'https://www.rmit.edu.au/study-with-us/levels-of-study/postgraduate-study/masters-by-coursework/master-of-media-mc188', 'cricos_search', 'bound', 'read', 'cricos_code', null);
 alter table pipeline.coverage_course_pages enable trigger coverage_page_refused_host;
 update catalogue.courses set course_url = 'https://www.rmit.edu.au/study-with-us/levels-of-study/postgraduate-study/masters-by-coursework/master-of-media-mc188' where id = pg_temp.u('proj multi');
 update catalogue.courses set course_url = 'https://www.rmit.edu.au/study-with-us/levels-of-study/postgraduate-study/masters-by-coursework/master-of-advertising-mc249' where id = pg_temp.u('proj sib');
+update catalogue.courses set course_url = 'http://rmit.edu.au/study-with-us/levels-of-study/postgraduate-study/masters-by-coursework/master-of-design-mc300/' where id = pg_temp.u('proj spell');
+alter table pipeline.coverage_course_pages disable trigger coverage_page_refused_host;
+insert into pipeline.coverage_course_pages(course_id, provider_id, url, basis, status, read_status, identity_basis, evidence_id) values
+  (pg_temp.u('proj spell'), pg_temp.u('rmit'), 'https://www.rmit.edu.au/study-with-us/levels-of-study/postgraduate-study/masters-by-coursework/master-of-design-mc300', 'cricos_search', 'bound', 'read', 'cricos_code', null);
+alter table pipeline.coverage_course_pages enable trigger coverage_page_refused_host;
+insert into catalogue.course_links(course_id, url, source_id, last_verified_at) values
+  (pg_temp.u('proj spell'), 'https://www.rmit.edu.au/study-with-us/levels-of-study/postgraduate-study/masters-by-coursework/master-of-design-mc300', pg_temp.u('sweep'), now() - interval '30 days'),
+  (pg_temp.u('proj spell'), 'https://www.rmit.edu.au/study-with-us/levels-of-study/postgraduate-study/graduate-diplomas/graduate-diploma-of-design-gd300', pg_temp.u('sweep'), now());
 insert into catalogue.course_links(course_id, url, source_id, last_verified_at, is_primary) values
   -- several links, none primary, course_url passes: course_url shown, not the more recent one
   (pg_temp.u('proj multi'), 'https://www.rmit.edu.au/study-with-us/levels-of-study/postgraduate-study/masters-by-coursework/master-of-media-mc188', pg_temp.u('sweep'), now() - interval '30 days', false),
@@ -316,15 +325,39 @@ insert into catalogue.course_links(course_id, url, source_id, last_verified_at, 
 do $$
 declare v jsonb;
 begin
-  v := search.refresh_course_enrichment_core_scoped_v1(array[pg_temp.u('proj multi'), pg_temp.u('proj sib'), pg_temp.u('proj one'), pg_temp.u('proj prim')], false);
+  v := search.refresh_course_enrichment_core_scoped_v1(array[pg_temp.u('proj multi'), pg_temp.u('proj sib'), pg_temp.u('proj one'), pg_temp.u('proj prim'), pg_temp.u('proj spell')], false);
   perform pg_temp.ok((select official_course_url from pg_temp.cf_search_enrichment_stage where course_id = pg_temp.u('proj multi')) like '%master-of-media-mc188', 'several links: course_url that passes');
-  perform pg_temp.ok((select official_course_url is null from pg_temp.cf_search_enrichment_stage where course_id = pg_temp.u('proj sib')), 'several links, course_url refused: none');
+  perform pg_temp.ok((select official_course_url from pg_temp.cf_search_enrichment_stage where course_id = pg_temp.u('proj sib')) like '%master-of-advertising-mc249', 'several links, course_url refused: today''s choice kept, no new null');
+  perform pg_temp.ok((select official_course_url from pg_temp.cf_search_enrichment_stage where course_id = pg_temp.u('proj spell')) like '%master-of-design-mc300', 'course_url spelled differently (http, no www, closing slash) still found');
   perform pg_temp.ok((select official_course_url from pg_temp.cf_search_enrichment_stage where course_id = pg_temp.u('proj one')) like '%master-of-advertising-mc249', 'one link: as before');
   perform pg_temp.ok((select official_course_url from pg_temp.cf_search_enrichment_stage where course_id = pg_temp.u('proj prim')) like '%graduate-diploma-in-media-gd180', 'primary: as before');
   v := search.refresh_course_enrichment_core_v1(false);
-  perform pg_temp.ok((select official_course_url is null from pg_temp.cf_search_enrichment_stage where course_id = pg_temp.u('proj sib'))
+  perform pg_temp.ok((select official_course_url from pg_temp.cf_search_enrichment_stage where course_id = pg_temp.u('proj sib')) like '%master-of-advertising-mc249'
                      and (select official_course_url from pg_temp.cf_search_enrichment_stage where course_id = pg_temp.u('proj multi')) like '%master-of-media-mc188', 'full refresh: the same rule');
   raise notice 'PASS projection tie-break';
+end $$;
+
+-- 15b. merged institutions and second domains: Adelaide University's pages on adelaide.edu.au are its own website ----------------------------
+insert into catalogue.providers(id, stable_key, canonical_name, website, lifecycle_status) values
+  (pg_temp.u('adelaideuni'), 'provider:cricos:04249j', 'Adelaide University', 'https://adelaideuni.edu.au', 'active'),
+  (pg_temp.u('uofa'), 'provider:cricos:00123m', 'The University of Adelaide (Adelaide)', 'http://www.adelaide.edu.au', 'archived'),
+  (pg_temp.u('usc senior'), 'provider:cricos:02375g', 'University Senior College at Adelaide University Inc', 'https://www.usc.adelaide.edu.au', 'active'),
+  (pg_temp.u('monash'), 'provider:cricos:00008c', 'Monash University', 'https://www.monash.edu.au', 'active'),
+  (pg_temp.u('monash college'), 'provider:cricos:01857j', 'Monash College', 'https://www.monash.edu', 'active');
+select pg_temp.course('adelaide md', 'adelaideuni', '115787D', 'Doctor of Medicine', 'non_aqf_award'),
+       pg_temp.course('monash bcom', 'monash', '000001A', 'Bachelor of Commerce', 'bachelor'),
+       pg_temp.course('usc senior y12', 'usc senior', '000002B', 'Year 12', 'senior_secondary_certificate');
+do $$
+begin
+  perform pg_temp.ok(security.course_page_check_v1(pg_temp.u('adelaide md'), 'https://adelaide.edu.au/study/degrees/doctor-of-medicine/int/')->>'rule' <> 'provider', 'Adelaide University on adelaide.edu.au is its own website');
+  perform pg_temp.ok(security.course_page_check_v1(pg_temp.u('monash bcom'), 'https://www.monash.edu/study/courses/find-a-course/bachelor-of-commerce-b2001')->>'rule' <> 'provider', 'Monash on monash.edu (alias) is its own website, though another provider uses that host');
+  update pipeline.platform_toolset_settings set value = '[]' where key = 'binding.provider_host_aliases';
+  perform pg_temp.ok(security.course_page_check_v1(pg_temp.u('monash bcom'), 'https://www.monash.edu/study/courses/find-a-course/bachelor-of-commerce-b2001')->>'rule' = 'provider', 'without the alias, another active provider''s host is refused');
+  perform pg_temp.ok(security.course_page_check_v1(pg_temp.u('adelaide md'), 'https://adelaide.edu.au/study/degrees/doctor-of-medicine/int/')->>'rule' <> 'provider', 'an archived provider''s old website is not another provider');
+  insert into pipeline.provider_extra_domains values (pg_temp.u('monash'), 'monash.edu', 'mapped');
+  perform pg_temp.ok(security.course_page_check_v1(pg_temp.u('monash bcom'), 'https://www.monash.edu/study/courses/find-a-course/bachelor-of-commerce-b2001')->>'rule' <> 'provider', 'an extra course domain a person added counts as the provider''s own');
+  perform pg_temp.ok(security.course_page_check_v1(pg_temp.u('usc senior y12'), 'https://adelaideuni.edu.au/study/year-12')->>'rule' = 'provider', 'a different active provider''s website is still refused');
+  raise notice 'PASS provider hosts: merged institutions and second domains';
 end $$;
 
 -- 15. nothing reaches the signed-in or anonymous roles ----------------------------------------------------------------------------------

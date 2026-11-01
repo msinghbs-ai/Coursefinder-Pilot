@@ -24,7 +24,8 @@ create table ref.study_levels(id uuid primary key default gen_random_uuid(), cod
 insert into ref.study_levels(code, name) values ('graduate_certificate', 'Graduate Certificate'), ('graduate_diploma', 'Graduate Diploma'), ('masters_coursework', 'Masters Degree (Coursework)'),
   ('bachelor', 'Bachelor'), ('bachelor_honours', 'Bachelor Honours Degree'), ('diploma', 'Diploma'), ('certificate_iv', 'Certificate IV'), ('senior_secondary_certificate', 'Senior Secondary'),
   ('non_aqf_award', 'Non AQF Award');
-create table catalogue.providers(id uuid primary key, canonical_name text, display_name text, website text, country_id uuid);
+create table catalogue.providers(id uuid primary key, stable_key text, canonical_name text, display_name text, website text, country_id uuid, lifecycle_status text default 'active');
+create table pipeline.provider_extra_domains(provider_id uuid, domain text, state text);
 create table catalogue.courses(id uuid primary key, provider_id uuid, canonical_title text, display_title text, course_code text, study_level_id uuid, course_url text,
   lifecycle_status text default 'active', open_to_international boolean default true, open_to_domestic boolean, delivery_mode text, updated_at timestamptz default now());
 create table catalogue.course_identifiers(id uuid primary key default gen_random_uuid(), course_id uuid, provider_id uuid, scheme text, identifier text);

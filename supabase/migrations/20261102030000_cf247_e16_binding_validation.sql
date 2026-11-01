@@ -26,7 +26,9 @@
 --     runs the check whenever a page is bound or re-bound, first reads, or its identity proof changes. A refused page becomes 'mismatch' /
 --     'identity_refused' with no identity, so it is not read, filled, AI-read or fee-read; one page_rejections row (source binding_check)
 --     stops every lane binding it again; the existing Layer 4 course-link review (field official_course_url, kind course_link) gets one item,
---     unless the course already has a pending one or a person already decided that page (Decision 263). The trigger now also fires when only
+--     unless the course already has a pending one or a person already decided that page (Decision 263). A provider's own hosts are its
+--     website, binding.provider_host_aliases (merged institutions, rebrands, second domains) and pipeline.provider_extra_domains; only an
+--     active provider counts as another provider. The trigger now also fires when only
 --     identity_basis changes (host pages confirm a page that way).
 --   * The award-link lane (security.exit_awards_apply_v2) passes through the same check instead of bypassing it. An exit or nested award
 --     on its parent course's page is a possible genuine shared page: it passes only with programme-specific evidence (setting
@@ -39,15 +41,16 @@
 --   * AI enrichment (security.enrich_fields_slice_v1, source ai_stored) reads only a page that is read, has an identity proof and is not
 --     refused by the check. The fee and tuition AI lanes already need an identity proof the refused page no longer has.
 --   * Projection (search.refresh_course_enrichment_core_v1 and _scoped_v1), E16-2: one link, or a primary link, is shown as before. With
---     several active links and none primary, the link equal to courses.course_url is shown only when it passes the check; otherwise none (null).
---     Values change on those courses only; the consumer API shape does not (G3). Search documents follow at the next refresh.
+--     several active links and none primary, the link equal to courses.course_url is shown when it passes the check; otherwise the link
+--     shown today (no new nulls: only links shown to be wrong are withdrawn, by their own governed step). Values change on those courses
+--     only; the consumer API shape does not (G3). Search documents follow at the next refresh.
 -- md5 (before = live on 2 Nov 2026, rebuilt from this repository's migrations by tests/fixtures/e16-binding-validation/run.sh; after =
 --   local replay on PostgreSQL 16):
 --   security.coverage_page_refused_host_guard()                     33351b506da59359656ee196218d7882 -> f2e4102f8788816c3f22f26945785f55
 --   security.exit_awards_apply_v2(uuid)                              8d4e5f7b2fedbe7c3e04ff8b039c40e7 -> e7080925ba79eef320f361bf236cb072
 --   security.enrich_fields_slice_v1(uuid,integer)                    37b855677c98002ed2374f02cd1282f9 -> b677308fffdc23e5fbd2ad54d1b97d30
---   search.refresh_course_enrichment_core_v1(boolean)               ce80f74549625c23317aba5c737afda6 -> 6214bb43a019cf30a94cf12354579eb2
---   search.refresh_course_enrichment_core_scoped_v1(uuid[],boolean) 3f0b051fdc0e8c34f757f8c21ff5b7d3 -> 82cc2006ba8447a5f23ca726b691c140
+--   search.refresh_course_enrichment_core_v1(boolean)               ce80f74549625c23317aba5c737afda6 -> 04fa25d82c373de08767d5573d4caabc
+--   search.refresh_course_enrichment_core_scoped_v1(uuid[],boolean) 3f0b051fdc0e8c34f757f8c21ff5b7d3 -> 5b45bbf1e39d9098d5f23de729418b2d
 -- No existing binding, link, fee, value or Layer 4 item is changed by this migration. Nothing is re-evaluated (that is §4). No job, schedule
 --   or status value is added. A passing test switches nothing on.
 -- Rollback: re-apply the before definitions (the same edits reversed) and set binding.identity_check to 0; rejections and Layer 4 items
@@ -120,6 +123,10 @@ insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, ki
  ('pipeline', 'binding.award_page_evidence', 'Course page check: evidence that lets an award use the parent course page',
   'A Graduate Certificate, Graduate Diploma or other exit or nested award may use the page of the longer course it sits within only with programme-specific evidence: page_names_award (the parent page, or the exit award read from it, names this award as available within the course) and recorded_by_hand (a person recorded the award link, with evidence). Remove a kind to stop accepting it. A title match alone is never enough.',
   'list', '["page_names_award", "recorded_by_hand"]'::jsonb, null, null, 'kinds', 331, 'Course pages', 'security.course_page_check_v1, security.exit_awards_apply_v2', 'CF-247 E16-1 (Platform Admin 2 Nov 2026 07:21; integrator 2 Nov: an exit or nested award on its parent page is a possible genuine shared page, allowed only with programme-specific evidence)'),
+ ('pipeline', 'binding.provider_host_aliases', 'Course page check: other websites of a provider',
+  'One line per provider, as provider stable key=host list (for example provider:cricos:00008c=monash.edu). A page on one of these hosts is the provider''s own website, for a merged institution, a rebrand or a second domain. The extra course domains a Platform Admin added (pipeline.provider_extra_domains) count too.',
+  'list', '["provider:cricos:00008c=monash.edu", "provider:cricos:04249j=adelaide.edu.au", "provider:cricos:01595d=unisc.edu.au", "provider:nzqa:6014=whitireiaweltec.ac.nz weltec.ac.nz", "provider:cricos:02571d=gca.edu.au"]'::jsonb,
+  null, null, 'providers', 332, 'Course pages', 'security.course_page_check_v1', 'CF-247 E16-1 (Platform Admin 2 Nov 2026 07:21; integrator 2 Nov: merged institutions and second domains are not another provider)'),
  ('pipeline', 'binding.identity_exceptions', 'Course page check: approved shared and nested-award pages',
   'Approved exceptions, one per line as provider id|kind|address pattern, kind shared_page or nested_award (for example 1719c3ba-…|shared_page|/programmes/master-of-applied-management). A matching page passes only when it also names this course''s own section or award (its title, code or section). Add a line only with a Platform Admin decision.',
   'list', '[]'::jsonb, null, null, 'exceptions', 330, 'Course pages', 'security.course_page_check_v1', 'CF-247 E16-1 (Platform Admin 2 Nov 2026 07:21): genuine shared-page and nested-award exceptions')
@@ -137,12 +144,13 @@ returns jsonb language sql stable security definer set search_path to '' as $fun
            coalesce(security.toolset_setting('pipeline', 'binding.international_page_patterns'), '[]'::jsonb) ip,
            coalesce(security.toolset_setting('pipeline', 'binding.identity_exceptions'), '[]'::jsonb) ex,
            coalesce(security.toolset_setting('pipeline', 'binding.award_page_evidence'), '[]'::jsonb) ae,
+           coalesce(security.toolset_setting('pipeline', 'binding.provider_host_aliases'), '[]'::jsonb) ha,
            security.pipeline_num_v1('binding.name_min_tokens', 2) min_tok,
            security.pipeline_num_v1('binding.name_stem_chars', 5)::int stem,
            security.pipeline_num_v1('binding.shared_page_min_other_courses', 2) min_other,
            security.pipeline_num_v1('binding.handbook_max_age_years', 2) max_age),
   c as (
-    select co.id, co.provider_id, co.canonical_title ctitle, security.course_title_key(co.canonical_title) tk,
+    select co.id, co.provider_id, pr.stable_key pkey, co.canonical_title ctitle, security.course_title_key(co.canonical_title) tk,
            lower(co.canonical_title) || ' ' || coalesce(replace(sl.code, '_', ' '), '') ltext, co.course_url,
            co.open_to_international, co.open_to_domestic,
            regexp_replace(lower(coalesce(substring(pr.website from '^https?://([^/?#:]+)'), '')), '^www\.', '') phost
@@ -215,9 +223,14 @@ returns jsonb language sql stable security definer set search_path to '' as $fun
              limit 1) other_campus),
   ev as (
     select
-      (t.host <> '' and t.phost <> '' and not (t.host = t.phost or t.host like '%.' || t.phost)
+      -- the provider's own hosts: its website, its approved other websites (binding.provider_host_aliases) and its extra course domains
+      (t.host <> '' and not exists (select 1 from unnest(array[t.phost]
+                                         || array(select regexp_split_to_table(lower(btrim(substr(e, strpos(e, '=') + 1))), '\s+') from s, jsonb_array_elements_text(s.ha) e
+                                                   where split_part(e, '=', 1) = t.pkey)
+                                         || array(select regexp_replace(lower(d.domain), '^(https?://)?(www\.)?', '') from pipeline.provider_extra_domains d where d.provider_id = t.provider_id)) h(b)
+                                     where h.b <> '' and (t.host = h.b or t.host like '%.' || h.b))
        and exists (select 1 from catalogue.providers o, lateral (select regexp_replace(lower(coalesce(substring(o.website from '^https?://([^/?#:]+)'), '')), '^www\.', '') b) ob
-                    where o.id <> t.provider_id and ob.b <> '' and (t.host = ob.b or t.host like '%.' || ob.b))) other_provider,
+                    where o.id <> t.provider_id and o.lifecycle_status = 'active' and ob.b <> '' and (t.host = ob.b or t.host like '%.' || ob.b))) other_provider,
       (t.open_to_international is true and t.open_to_domestic is not true and exists (select 1 from s, jsonb_array_elements_text(s.dp) e where t.url ~* e)) domestic_page,
       (t.open_to_domestic is true and t.open_to_international is false and exists (select 1 from s, jsonb_array_elements_text(s.ip) e where t.url ~* e)) international_page,
       (exists (select 1 from s, jsonb_array_elements_text(s.sp) e where t.path ~* e) or sh.n_other >= s.min_other) shared,
@@ -436,24 +449,26 @@ select pg_temp.edit_once(f.sig, f.before, f.after, array[
       and (l.valid_from is null or l.valid_from<=current_date) and (l.valid_to is null or l.valid_to>=current_date)
     order by l.is_primary desc,l.last_verified_at desc nulls last,l.updated_at desc nulls last,l.id limit 1
   ) lk on true$o$, $n$  left join lateral (
-    -- 2 Nov 2026 (E16-2, Platform Admin 07:21): one link, or the primary link, as before; with several and none primary, the link equal to
-    -- courses.course_url (the same page however it is spelled: case, http or https, www, a closing slash or a section) when it passes the
-    -- course page check (security.course_page_check_v1), otherwise none, never the most recent one
+    -- 2 Nov 2026 (E16-2, Platform Admin 07:21; integrator review): one link, or the primary link, as before; with several and none primary,
+    -- the link equal to courses.course_url (the same page however it is spelled: case, http or https, www, a closing slash or a section)
+    -- when it passes the course page check (security.course_page_check_v1); otherwise today's choice. No link is withdrawn here: only links
+    -- shown to be wrong are removed, by their own governed step
     select case when count(*) <= 1 or bool_or(l.is_primary)
                 then (array_agg(l.url order by l.is_primary desc,l.last_verified_at desc nulls last,l.updated_at desc nulls last,l.id))[1]
-                else (select k.u from unnest(array_agg(l.url order by l.last_verified_at desc nulls last,l.updated_at desc nulls last,l.id)) with ordinality k(u, o)
+                else coalesce((select k.u from unnest(array_agg(l.url order by l.last_verified_at desc nulls last,l.updated_at desc nulls last,l.id)) with ordinality k(u, o)
                         join catalogue.courses c on c.id=d.course_id
                        where regexp_replace(regexp_replace(regexp_replace(lower(k.u),'#.*$',''),'^https?://(www\.)?',''),'/+$','')
                              =regexp_replace(regexp_replace(regexp_replace(lower(c.course_url),'#.*$',''),'^https?://(www\.)?',''),'/+$','')
                          and security.course_page_check_v1(d.course_id,k.u)->>'verdict'='pass'
-                       order by (k.u=c.course_url) desc,k.o limit 1) end url
+                       order by (k.u=c.course_url) desc,k.o limit 1),
+                     (array_agg(l.url order by l.is_primary desc,l.last_verified_at desc nulls last,l.updated_at desc nulls last,l.id))[1]) end url
     from catalogue.course_links l
     join search.enrichment_source_gates sg on sg.projection_code='courses' and sg.domain_code='official_course_url' and sg.source_id=l.source_id and sg.gate_status='approved'
     where l.course_id=d.course_id and l.status='active'
       and (l.valid_from is null or l.valid_from<=current_date) and (l.valid_to is null or l.valid_to>=current_date)
   ) lk on true$n$]], array[1])
-  from (values ('search.refresh_course_enrichment_core_v1(boolean)', 'ce80f74549625c23317aba5c737afda6', '6214bb43a019cf30a94cf12354579eb2'),
-               ('search.refresh_course_enrichment_core_scoped_v1(uuid[],boolean)', '3f0b051fdc0e8c34f757f8c21ff5b7d3', '82cc2006ba8447a5f23ca726b691c140')) f(sig, before, after);
+  from (values ('search.refresh_course_enrichment_core_v1(boolean)', 'ce80f74549625c23317aba5c737afda6', '04fa25d82c373de08767d5573d4caabc'),
+               ('search.refresh_course_enrichment_core_scoped_v1(uuid[],boolean)', '3f0b051fdc0e8c34f757f8c21ff5b7d3', '5b45bbf1e39d9098d5f23de729418b2d')) f(sig, before, after);
 
 -- 8. Housekeeping register --------------------------------------------------------------------------------------------------------------
 insert into pipeline.component_register(kind, name, layer, area, purpose, status, replaces, introduced_in) values
@@ -467,9 +482,9 @@ begin
   if exists (select 1 from pipeline.page_rejections where source = 'binding_check') then
     raise exception 'E16 post-check: this change must not refuse any page by itself'; end if;
   if (select count(*) from pipeline.platform_toolset_settings where toolset_key = 'pipeline' and key like 'binding.%'
-        and key in ('binding.award_page_evidence', 'binding.identity_check', 'binding.level_patterns', 'binding.variant_markers', 'binding.name_stop_words', 'binding.name_min_tokens',
+        and key in ('binding.award_page_evidence', 'binding.provider_host_aliases', 'binding.identity_check', 'binding.level_patterns', 'binding.variant_markers', 'binding.name_stop_words', 'binding.name_min_tokens',
                     'binding.name_stem_chars', 'binding.shared_page_patterns', 'binding.shared_page_min_other_courses', 'binding.handbook_max_age_years',
-                    'binding.domestic_page_patterns', 'binding.international_page_patterns', 'binding.identity_exceptions')) <> 13 then
+                    'binding.domestic_page_patterns', 'binding.international_page_patterns', 'binding.identity_exceptions')) <> 14 then
     raise exception 'E16 post-check: a course page check setting is missing'; end if;
   if has_function_privilege('authenticated', 'security.course_page_check_v1(uuid,text,text,text)', 'execute')
      or has_function_privilege('anon', 'security.binding_refusal_route_v1(uuid,text,jsonb,text,uuid)', 'execute') then
