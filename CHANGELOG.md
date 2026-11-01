@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.329 — 2 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.402** (E16-1/E16-2, Platform Admin 2 Nov 2026 07:21; SS-014 D14 and monitoring accuracy, 07:41). Migrations `20261102030000_cf247_e16_binding_validation` (binding guard `33351b50`→`f2e4102f`, `exit_awards_apply_v2` `8d4e5f7b`→`e7080925`, `enrich_fields_slice_v1` `37b85567`→`b677308f`, `refresh_course_enrichment_core_v1` `ce80f745`→`04fa25d8`, `refresh_course_enrichment_core_scoped_v1` `3f0b051f`→`5b45bbf1`; new `course_page_check_v1`, `binding_refusal_route_v1`; `binding.*` settings) and `20261102040000_cf247_ss014_d14_monitoring_accuracy` (`flag_jobs_v1` `a7a7427b`→`2421dd1c`, `queue_watch_run_v1` `59c67cf1`→`5735193b`, `platform_health_check_v1` `964db44f`→`25ff0434`; `flag.answer_wait_seconds`; `queue_watch.cap_sql`). All md5-guarded with self-checked after values. Existing links unchanged except the projection choice on 42 courses (list in Admin). No consumer API shape change. Specs s214, s215.
+
 ## 0.1.328 — 2 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.401** (E13; Platform Admin 2 Nov 2026 05:18). Migration `20261102010000_cf247_e13_entry_completeness_gate`: reader `security.enrich_entry_record_v1` (`857102dc` → `9757abeb`, md5-guarded replace) holds a read whole when it exceeds the row limit; `security.course_entry_review_apply_v1` (`ce8d0bad` → `4be9267d`) refuses Approve/Approve except while `security.course_entry_gate_v1` finds the read incomplete (over_row_limit drops, other-programme rows, shared page); `security.aer_review_read_v1` (`62793b35` → `50c31fc4`) returns the gate result. New `security.course_entry_variant_v1`, `security.course_entry_gate_v1`; 7 settings. Measured: holds 215 of 499 pending course-entry items. No data rows changed; no re-read; no AI cost. Spec s213.
