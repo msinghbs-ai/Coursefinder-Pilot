@@ -1,16 +1,16 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.392'
-export const PACKAGE_VERSION='0.1.319'
+export const UI_VERSION='2.15.393'
+export const PACKAGE_VERSION='0.1.320'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'1 Nov 2026',
-  title:'Layer 4 cards show their evidence; decisions show what actually happened',
+  title:'Retired jobs cannot be switched back on; changed migrations are refused',
   changes:[
-    'Layer 4 Review: each card shows its reference, the stored copy it rests on (when captured, and whether a newer copy exists) and a link to the course record (UR-05).',
-    'Layer 4 Review: after a decision the screen says what actually happened at the destination (admitted, applied, closed without a value, queued, deferred, or saved but not yet visible), with the AER row counts and the decision and audit numbers (UR-06).'
+    'Scheduled jobs: a retiring or retired job shows as Retiring or Retired, with its replacement and removal date, and has no Resume, run or schedule controls; Resume area leaves it off (UR-07).',
+    'Deployment: a migration already applied is skipped only when it is unchanged; a changed one is refused before anything runs (UR-13).'
   ],
   bugFixes:[]
 }
