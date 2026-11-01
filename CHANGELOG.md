@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.320 — 1 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.393** (usability remediation UR-07, UR-13). Migration `20261101070000_cf247_ur07_retired_jobs`: `security.admin_automation_control_v1` refuses switching on, running or re-scheduling retiring/retired jobs and Resume area skips them (`d90af04c` → `30c319b8`); `security.admin_automations_read_v1` returns their retirement (`81d5e16a` → `f5120aed`). `scripts/ci/apply-migration.sh` compares the recorded md5 before skipping. Spec s203.
+
 ## 0.1.319 — 1 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.392** (usability remediation UR-05, UR-06). Migration `20261101060000_cf247_ur05_06_l4_evidence_outcome`: review items carry their stored copy (`security.layer4_inbox_items_v1` `3f2b49d5` → `c1a133c3`); new `security.layer4_decision_outcome_v1` reads the destination back; `public.admin_layer4_inbox` decide returns ref, audit event and outcome (`48a52717` → `c6b83e21`). Spec s202.

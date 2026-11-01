@@ -8,7 +8,7 @@
 import React,{useEffect,useMemo,useState}from'react'
 import{AlarmClock,Pause,Play,RefreshCw,Save,Zap}from'lucide-react'
 import{supabase}from'./lib/supabase'
-import{Badge,Button,Empty,Loading,Metric,SectionTitle,StatusChip,fmtDateTime,fmtNumber}from'./ui-kit'
+import{Badge,Button,Empty,Loading,Metric,SectionTitle,StatusChip,fmtDate,fmtDateTime,fmtNumber}from'./ui-kit'
 import{EVERY,describeSchedule}from'./automation-schedule'
 import{plainError}from'./lib/errors'
 
@@ -51,7 +51,7 @@ export default function Automations({onError}){
 }
 
 function AreaPanel({area,jobs,all,rank,busy,act}){
-  const off=all.filter(j=>!j.active).length,can=rank>=5&&!busy
+  const off=all.filter(j=>!j.active&&!j.retirement).length,can=rank>=5&&!busy // UR-07: retired jobs are not counted as resumable
   return <section className="m-panel au-area" data-area={area}>
     <SectionTitle title={area} subtitle={`${all.length} automation${all.length===1?'':'s'}${off?`, ${off} paused`:''}`} action={rank>=5&&<div className="l3c-actions">
       <Button compact onClick={()=>act(null,'pause_area',{area},`Pause every automation in ${area}?`)} disabled={!can||off===all.length}><Pause size={14}/>Pause area</Button>
@@ -73,8 +73,8 @@ function JobRow({j,rank,busy,act}){
     <td>{s.text}{j.batch!=null&&<span className="l3v-code">{fmtNumber(j.batch)} per run</span>}</td>
     <td>{last?<><StatusChip value={last.status} tone={st[0]} label={st[1]}/><span className="l3v-code">{fmtDateTime(last.at)}{last.seconds!=null&&` · ${last.seconds}s`}</span>{last.message&&<span className="au-error">{plainError(last.message)}</span>}</>:'Not run yet'}</td>
     <td className="num">{fmtNumber(j.runs_24h||0)} runs<span className={`l3v-code ${Number(j.failed_24h)>0?'l3v-bad':''}`}>{fmtNumber(j.failed_24h||0)} failed</span></td>
-    <td><StatusChip value={j.active?'on':'paused'} tone={j.active?'success':'warning'} label={j.active?'Running':'Paused'}/></td>
-    {rank>=5&&<td>{allowed?<div className="au-controls">
+    <td>{j.retirement?<StatusChip value={j.retirement.status} tone="neutral" label={j.retirement.status==='retired'?'Retired':'Retiring'}/>:<StatusChip value={j.active?'on':'paused'} tone={j.active?'success':'warning'} label={j.active?'Running':'Paused'}/>}</td>
+    {rank>=5&&<td>{j.retirement?<span className="l3v-note" data-retired-job={j.job}>{/* UR-07 (1 Nov 2026): no Resume, run or schedule controls for a retired job */}Retired{j.retirement.replaced_by?`: replaced by ${j.retirement.replaced_by}`:''}{j.retirement.retire_after?` · removal after ${fmtDate(j.retirement.retire_after)}`:''}. History stays visible.</span>:allowed?<div className="au-controls">
       <div className="l3c-row-actions">
         {j.active?<Button compact onClick={()=>act(j.job,'pause',{},`Pause "${j.label}"?`)} disabled={!can} aria-label="Pause" title="Pause"><Pause size={14}/></Button>
           :<Button compact variant="primary" onClick={()=>act(j.job,'resume')} disabled={!can}><Play size={14}/>Resume</Button>}
