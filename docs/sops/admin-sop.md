@@ -1,4 +1,4 @@
-<!-- sop-export: id=admin-sop; version=2.18; reviewed-release=2.15.395; source-commit=2dc9bdd20779; content-sha256=13d0cb9d8755f9eb811d997325a0fd489d73cc346a3a0a4db2d4ce9cb7d52295 -->
+<!-- sop-export: id=admin-sop; version=2.18; reviewed-release=2.15.395; source-commit=90b5c0881105; content-sha256=13d0cb9d8755f9eb811d997325a0fd489d73cc346a3a0a4db2d4ce9cb7d52295 -->
 # StudySearch – Platform Admin SOP
 
 **Version:** 2.18 (reviewed for platform release v2.15.395)  
