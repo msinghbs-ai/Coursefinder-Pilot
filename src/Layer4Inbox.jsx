@@ -38,6 +38,11 @@ export default function Layer4Inbox({onError,routeParams}){
   const loadItems=(c=cur)=>{if(view==='decided'){setItems(null);rpc('decided',{limit:100}).then(setItems).catch(e=>onError?.(e.message));return}if(view==='kind'&&!kind){setItems(null);return}if(view==='university'&&!pick){setItems(null);return}setItems(null)
     rpc('items',{...(view==='kind'?{kind}:{provider_id:pick.provider_id,...(kind?{kind}:{})}),limit:200,...(c||{})}).then(setItems).catch(e=>onError?.(e.message))}
   useEffect(()=>{loadSum()},[])
+  // UR-09 (1 Nov 2026): an address that names another kind or university on this screen opens it, without a reload
+  const asked=useRef({want,wantProvider})
+  useEffect(()=>{const was=asked.current;asked.current={want,wantProvider};if(was.want===want&&was.wantProvider===wantProvider)return
+    if(want&&want!==kind){setView('kind');setKind(want);setNote('')}
+    else if(wantProvider&&wantProvider!==pick?.provider_id){setView('university');setPick({provider_id:wantProvider,name:'University'});setNote('')}},[want,wantProvider])
   useEffect(()=>{setOffset(0);setPick(null);loadUnis(0)},[kind,q])
   useEffect(()=>{let c=null,s=[];const r=restored.current
     if(r&&r.key===posKey){c=r.cur||null;s=r.stack||[]}else if(r&&!(view==='university'&&!pick))restored.current=null  // kept while the same list is shown
@@ -96,10 +101,12 @@ function Item({it,k,showProvider,rank,onDone,onError}){
   // hotfix D1 (24 Oct 2026): a course-link row that holds a fee (identity re-verification quarantine, fee floor) has no new page to use;
   // "Enter another address" binds a person's page (https:// on the provider's own site), which is read again and re-admits the fee
   const fee=isFeeItem(it)
+  // SS-016 (1 Nov 2026): a fee check (provider_current_tuition_validation) shows the proposed fee and is admitted or not; an address is refused
+  const feeCheck=isFeeCheck(it)
   const aerItem=it.kind==='aer_review',[aer,setAer]=useState(null)
   useEffect(()=>{if(aerItem)aerRead(it.ref).then(setAer).catch(e=>setAer({error:e.message}))},[it.ref])
   const aerWaiting=(aer?.rows||[]).filter(r=>r.status==='proposed')
-  const choices=(k.choices||[]).filter(c=>!(fee&&c.key==='use'))
+  const choices=(k.choices||[]).filter(c=>!(fee&&c.key==='use')).filter(c=>!(feeCheck&&c.key==='enter')).map(c=>feeCheck&&FEE_CHECK[c.key]?{...c,...FEE_CHECK[c.key]}:c)
   const choose=c=>{setErr('');if(c.link){window.location.hash=linkFor(c.link,it).replace(/^#/,'');return}setOpen(c);setReason(c.reason||'');setValue(c.input==='url'&&it.kind==='course_link'&&!fee?urlOf(d.proposed):c.input==='url'&&it.kind==='conjoint_first_run'?(d.proposed?.parent_url||''):(c.input==='courses'||c.input==='rows')?'[]':'')}
   // hotfix 26 Oct 2026: a university's first run (no page published / conjoint rule) shows its sample; "has a page" ticks courses from it
   const firstRun=it.kind==='no_page_first_run'||it.kind==='conjoint_first_run'
@@ -113,7 +120,8 @@ function Item({it,k,showProvider,rank,onDone,onError}){
     {(d.evidence_id||d.course_id)&&!aerItem&&<p className="l4i-evid" data-l4-evidence><small>
       {d.evidence_id?<><a href={hrefFor('evidence','',{evidence_id:d.evidence_id})} data-l4-evidence-link>Stored copy</a>{d.captured_at?` captured ${fmtDate(d.captured_at)}`:''}{d.newer_copy?<em className="l4i-match warn" data-l4-newer> a newer copy of this page exists</em>:''}{d.source_url?<> · <a href={d.source_url} target="_blank" rel="noreferrer">source <ExternalLink size={11}/></a></>:null}</>:'No stored copy is linked to this item'}
       {d.course_id&&<> · <a href={hrefFor('courses','',{id:d.course_id})} data-l4-open-record>Open the course record</a></>}</small></p>}
-    {it.kind==='course_link'&&!fee&&(urlOf(d.before)||urlOf(d.proposed))&&<dl className="l4i-dl"><dt>Page we hold</dt><dd data-l4-held><PageLink u={urlOf(d.before)} title={it.subject}/></dd><dt>New page</dt><dd data-l4-new><PageLink u={urlOf(d.proposed)} title={it.subject}/></dd></dl>}
+    {(fee||feeCheck)&&<dl className="l4i-dl" data-l4-fee><dt>{fee?'Fee held back':'Proposed fee'}</dt><dd data-l4-fee-proposed>{feeText(d.proposed)}</dd>{feeText(d.before)!=='—'&&<><dt>Fee we hold</dt><dd data-l4-fee-held>{feeText(d.before)}</dd></>}</dl>}
+    {it.kind==='course_link'&&!fee&&!feeCheck&&(urlOf(d.before)||urlOf(d.proposed))&&<dl className="l4i-dl"><dt>Page we hold</dt><dd data-l4-held><PageLink u={urlOf(d.before)} title={it.subject}/></dd><dt>New page</dt><dd data-l4-new><PageLink u={urlOf(d.proposed)} title={it.subject}/></dd></dl>}
     {fee&&<p className="l4i-why" data-l4-fee-item><small>A held fee: enter the course's own page (https://, on the university's website) and it is read again, or keep the page we hold.</small></p>}
     {it.kind==='counsellor_report'&&<dl className="l4i-dl" data-l4-report>{d.issue&&<><dt>Issue</dt><dd>{String(d.issue).replace(/_/g,' ')}</dd></>}{d.field&&<><dt>Field</dt><dd>{d.field}</dd></>}{d.suggested_value&&<><dt>Suggested</dt><dd>{d.suggested_value}</dd></>}{d.source_url&&<><dt>Source</dt><dd><a href={d.source_url} target="_blank" rel="noreferrer">{d.source_url} <ExternalLink size={11}/></a></dd></>}{d.reporter&&<><dt>Reported by</dt><dd>{[d.reporter.name,d.reporter.email].filter(Boolean).join(' · ')}</dd></>}</dl>}
     {firstRun&&<div className="l4i-dl" data-l4-first-run>
@@ -167,10 +175,20 @@ export const outcomeText=r=>{const o=r?.outcome||{},rows=o.rows||{}
   const parts=[`Done. ${OUTCOME[o.class]||o.class}`]
   const rc=['active','excluded','superseded','proposed','inactive'].filter(k=>rows[k]).map(k=>`${rows[k]} ${k==='proposed'?'waiting':k}`)
   if(rc.length)parts.push(`rows ${rc.join(', ')}`)
+  if(o.fee)parts.push(`fee ${feeText(o.fee)}`)
   if(o.value)parts.push(o.verified?`now the course's link: ${o.value}`:`not yet the course's link: ${o.value}`)
   if(o.decision_id)parts.push(`decision ${String(o.decision_id).slice(0,8)}`)
   if(r?.event_id)parts.push(`audit #${r.event_id}`)
   return parts.join(' · ')}
+export const isFeeCheck=it=>it?.kind==='course_link'&&it?.detail?.field_code==='provider_current_tuition_validation'
+const FEE_CHECK={use:{label:'Admit this fee',returns:'The proposed fee becomes the course\'s international tuition fee (a person\'s decision, recorded with the stored copy)'},
+  keep:{label:'Do not admit this fee',returns:'Closed; the proposed fee is not admitted and the course keeps what it holds'}}
+const BASIS={annual:'a year',indicative_annual:'a year (indicative)',per_year_explicit:'a year'}
+// the fee as the reader proposed it: amount, currency, basis, fee year and audience; a missing year is said, never guessed
+export const feeText=v=>{if(!v||typeof v!=='object'||v.amount==null||v.amount==='')return'—'
+  const cur=v.currency_code||v.currency||'',amt=Number(v.amount)
+  return[`${cur} ${Number.isFinite(amt)?fmtNumber(amt,{decimals:Number.isInteger(amt)?0:2}):v.amount}`.trim(),BASIS[v.basis]||(v.basis?String(v.basis).replace(/_/g,' '):'basis not stated'),
+    v.fee_year?`fee year ${v.fee_year}`:'no fee year printed',v.audience||null].filter(Boolean).join(' · ')}
 export const isFeeItem=it=>it?.kind==='course_link'&&it?.detail?.field_code==='provider_current_tuition'
 export const urlOk=(v,httpsOnly)=>(httpsOnly?/^https:\/\/[^\s/]+\.\S+/:/^https?:\/\/\S+\.\S+/).test(String(v||'').trim())
 
