@@ -8,7 +8,7 @@
 // CF-247 A1-A3 (Platform Admin, 30 Oct 2026 06:53): an AER item (kind aer_review) shows its source, stored copy, completeness and rows with their
 // quotes (public.layer4_aer_review_read). The Platform Admin approves it, rejects it, or approves it except the ticked rows, with one reason;
 // one item at a time, never in bulk. Curators read it here and keep correcting active rows in Catalogue › Entry requirements.
-import React,{useEffect,useMemo,useState}from'react'
+import React,{useEffect,useMemo,useRef,useState}from'react'
 import{AlertTriangle,ArrowRight,ExternalLink,Inbox,RefreshCw,Search}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{hrefFor}from'./nav-map'
@@ -19,21 +19,36 @@ const rpc=async(action,args)=>{const{data,error}=await supabase.rpc('admin_layer
 const days=t=>t?Math.max(0,Math.floor((Date.now()-new Date(t).getTime())/86400000)):0
 const linkFor=(link,it)=>link==='builder'?hrefFor('layer2','builder',{provider:it.provider_id}):link==='course'?hrefFor('courses','',{id:it.detail?.course_id||(it.detail?.entity==='course'?it.detail?.key:'')}):'#'
 const aerRead=id=>supabase.rpc('layer4_aer_review_read',{p_review_item_id:id}).then(({data,error})=>{if(error)throw new Error(error.message);return data||{}})
+// UR-04 (1 Nov 2026): items are read page by page from a stable position (kind order, created, kind, ref), not by offset, so a decision or a
+// new arrival never hides or repeats an item; the position is kept for this browser tab so returning from a destination screen resumes it
+const POS='l4i-pos'
+const readPos=()=>{try{return JSON.parse(sessionStorage.getItem(POS)||'null')}catch{return null}}
+const keyOf=it=>it?{after_o:it.o,after_at:it.created_at,after_kind:it.kind,after_ref:it.ref}:null
 const urlOf=v=>typeof v==='string'?v:Array.isArray(v)?urlOf(v[0]):v&&typeof v==='object'?(v.url||v.course_url||''):''
 
 export default function Layer4Inbox({onError,routeParams}){
   const want=routeParams?.get?.('kind')||'',wantProvider=routeParams?.get?.('provider')||'',wantView=routeParams?.get?.('view')||'' // v2.15.343: the Dashboard opens the Inbox by kind (?view=kind)
   const[sum,setSum]=useState(null),[view,setView]=useState(want?'kind':wantView==='kind'?'kind':'university'),[kind,setKind]=useState(want),[q,setQ]=useState('')
   const[unis,setUnis]=useState(null),[offset,setOffset]=useState(0),[pick,setPick]=useState(null),[items,setItems]=useState(null),[note,setNote]=useState('')
+  const[cur,setCur]=useState(null),[stack,setStack]=useState([]),restored=useRef(readPos()),hold=useRef(true)
+  const posKey=`${view}|${kind}|${pick?.provider_id||''}`
   const kinds=sum?.kinds||{},order=useMemo(()=>Object.entries(kinds).sort((a,b)=>a[1].order-b[1].order).map(([k])=>k),[sum])
   const loadSum=()=>rpc('summary').then(setSum).catch(e=>onError?.(e.message))
   const loadUnis=(o=offset)=>{setUnis(null);rpc('universities',{kind,q,limit:50,offset:o}).then(d=>{setUnis(d);if(view==='university'&&!pick&&d.items?.[0])setPick(wantProvider?(d.items.find(u=>u.provider_id===wantProvider)||{provider_id:wantProvider,name:'University'}):d.items[0])}).catch(e=>onError?.(e.message))}
-  const loadItems=()=>{if(view==='decided'){setItems(null);rpc('decided',{limit:100}).then(setItems).catch(e=>onError?.(e.message));return}if(view==='kind'&&!kind){setItems(null);return}if(view==='university'&&!pick){setItems(null);return}setItems(null)
-    rpc('items',view==='kind'?{kind,limit:200}:{provider_id:pick.provider_id,...(kind?{kind}:{}),limit:200}).then(setItems).catch(e=>onError?.(e.message))}
+  const loadItems=(c=cur)=>{if(view==='decided'){setItems(null);rpc('decided',{limit:100}).then(setItems).catch(e=>onError?.(e.message));return}if(view==='kind'&&!kind){setItems(null);return}if(view==='university'&&!pick){setItems(null);return}setItems(null)
+    rpc('items',{...(view==='kind'?{kind}:{provider_id:pick.provider_id,...(kind?{kind}:{})}),limit:200,...(c||{})}).then(setItems).catch(e=>onError?.(e.message))}
   useEffect(()=>{loadSum()},[])
   useEffect(()=>{setOffset(0);setPick(null);loadUnis(0)},[kind,q])
-  useEffect(()=>{loadItems()},[pick?.provider_id,view,kind])
-  const decided=r=>{setNote(`Done. ${r?.returns||''}`);loadSum();loadItems();if(view==='university')rpc('universities',{kind,q,limit:50,offset}).then(setUnis).catch(()=>{})}
+  useEffect(()=>{let c=null,s=[];const r=restored.current
+    if(r&&r.key===posKey){c=r.cur||null;s=r.stack||[]}else if(r&&!(view==='university'&&!pick))restored.current=null  // kept while the same list is shown
+    hold.current=true
+    setCur(c);setStack(s);loadItems(c)},[pick?.provider_id,view,kind])
+  // the position is saved only from the render after it was set, never from the render that is still restoring it
+  useEffect(()=>{if(hold.current){hold.current=false;return}if(view==='university'&&!pick)return;try{sessionStorage.setItem(POS,JSON.stringify({key:posKey,cur,stack}))}catch{}},[posKey,cur,stack])
+  const page=c=>{setCur(c);loadItems(c)}
+  const next=()=>{restored.current=null;const l=items?.items||[];if(!l.length)return;setStack([...stack,cur]);page(keyOf(l[l.length-1]))}
+  const prev=()=>{restored.current=null;const s=[...stack];const c=s.length?s.pop():null;setStack(s);page(c)}
+  const decided=r=>{setNote(`Done. ${r?.returns||''}`);loadSum();loadItems(cur);if(view==='university')rpc('universities',{kind,q,limit:50,offset}).then(setUnis).catch(()=>{})}
   if(!sum)return <Loading label="Reading what needs a person…"/>
   const bk=sum.by_kind||{}
   return <div className="l4i" data-l4-inbox>
@@ -48,7 +63,7 @@ export default function Layer4Inbox({onError,routeParams}){
     <div className="l4i-bar">
       <div className="l4i-view">{[['university','By university'],['kind','By kind'],['decided','Decided']].map(([v,l])=><button key={v} type="button" className={view===v?'on':''} onClick={()=>{setView(v);setNote('')}}>{l}</button>)}</div>
       {view==='university'&&<label className="l4i-search"><Search size={14}/><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Find a university…" aria-label="Find a university"/></label>}
-      <Button compact onClick={()=>{loadSum();loadUnis(offset);loadItems()}}><RefreshCw size={14}/>Refresh</Button>
+      <Button compact onClick={()=>{loadSum();loadUnis(offset);loadItems(cur)}}><RefreshCw size={14}/>Refresh</Button>
     </div>
     {note&&<p className="l4i-note" role="status">{note}</p>}
     {view==='decided'?<Decided items={items} kinds={kinds}/>:view==='kind'&&!kind?<Empty text="Choose a kind above to see its items across every university."/>:
@@ -66,7 +81,10 @@ export default function Layer4Inbox({onError,routeParams}){
         {view==='university'&&pick&&<header className="l4i-items-head"><h3>{pick.name}</h3><small>{pick.country||''}{pick.courses!=null?` · ${fmtNumber(pick.courses)} active courses`:''}</small></header>}
         {!items?<Loading compact/>:(items.items||[]).length===0?<Empty text="Nothing left here."/>:
           items.items.map(it=><Item key={`${it.kind}:${it.ref}`} it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider={view==='kind'} rank={sum.rank} onDone={decided} onError={onError}/>)}
-        {items&&Number(items.total)>(items.items||[]).length&&<p className="l4i-more">Showing {fmtNumber(items.items.length)} of {fmtNumber(items.total)}.</p>}
+        {items&&view!=='decided'&&(cur||Number(items.total)>(items.items||[]).length)&&(()=>{const b=Number(items.before||0),n=(items.items||[]).length,t=Number(items.total||0)
+          return <div className="l4i-pager" data-l4-pager><Button compact disabled={!cur} onClick={prev} data-l4-prev>Previous</Button>
+            <small data-l4-range>{n?`${fmtNumber(b+1)}–${fmtNumber(b+n)}`:'0'} of {fmtNumber(t)}, oldest first</small>
+            <Button compact disabled={b+n>=t} onClick={next} data-l4-next>Next</Button></div>})()}
       </section>
     </div>}
   </div>

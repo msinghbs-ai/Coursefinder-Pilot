@@ -1,15 +1,16 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.390'
-export const PACKAGE_VERSION='0.1.317'
+export const UI_VERSION='2.15.391'
+export const PACKAGE_VERSION='0.1.318'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'1 Nov 2026',
-  title:'Evidence address search and fee schedule approvals load again',
+  title:'Layer 4 Review reaches every item, page by page',
   changes:[
-    'Evidence: searching by a page address (https://…) finds its stored copies through an index, in well under a second.'
+    'Layer 4 Review: items are shown 200 at a time, oldest first, with Previous and Next, so every item of a large kind can be reached (UR-04).',
+    'Layer 4 Review: a decision or a new item no longer moves the list, and the page you were on is kept when you come back from another screen.'
   ],
   bugFixes:[]
 }

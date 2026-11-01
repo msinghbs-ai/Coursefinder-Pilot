@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.318 — 1 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.391** (usability remediation UR-04). Migration `20261101050000_cf247_ur04_l4_review_cursor`: `public.admin_layer4_inbox` items ordered by (kind order, created, kind, ref) with a keyset position and the count before the page (md5 `ff6e116b` → `48a52717`); Layer 4 Review pages 200 at a time with Previous/Next and keeps the position for the browser tab. Spec s201.
+
 ## 0.1.317 — 1 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.390** (Layer 4 settlement recovery). Migration `20261101040000_cf247_l4_timeout_recovery`: Evidence search by page address uses an indexed prefix match (`security.admin_evidence_page` md5 `fc04124f` → `7ab91787`); the fee schedules list works out each document's proposal rows once (`public.admin_provider_fee_schedules_read` `8f21ca12` → `9ca85971`); indexes `evidence_artifacts_source_url_pattern_idx` and `courses_provider_code_trim_active_idx`. Spec s200.
