@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.322 — 1 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.395** (SS-016 UR-01, UR-02, UR-03, UR-17; Platform Admin 1 Nov 2026 20:08). Guide and SOP text only (no migration): D12 alert delivery and rules from OPERATIONAL-LIMITS v1.3; role boundaries matched to the live `security.admin_automation_control_v1` (rank floor 5, per-job `control_rank`) and `public.admin_jobs`; AER Platform Admin only; `scripts/export-sops.mjs` provenance line and `--check-mirror`; Specialist tasks section. Spec s206; S22 equality check reads past the provenance line.
+
 ## 0.1.321 — 1 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.394** (SS-016 priorities 1 and 2). Migration `20261101080000_cf247_ur05_fee_check_card`: `public.admin_layer4_inbox` refuses an address on a fee-check item, which had admitted the proposed fee (`c6b83e21` → `417f181d`); `security.layer4_decision_outcome_v1` reads a fee decision back from `catalogue.course_fees` (`eae00e61` → `c40ee758`). Layer 4 card shows the proposed fee; deep links follow the kind. Spec s204.
