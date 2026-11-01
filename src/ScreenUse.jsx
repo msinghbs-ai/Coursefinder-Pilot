@@ -1,12 +1,14 @@
 // CF-247 v2.15.300 (Platform Admin, 20 Oct 2026 10:35: "suggest not used navigation items ... Suggest tabs and nav items that can retire"):
 // Platform health › Screen use. Every page and tab of the menu with how often people opened it over the window (setting
-// usage.screen_window_days), from public.admin_screen_usage; those not opened at all are listed first, as candidates to retire.
+// usage.screen_window_days), from public.admin_screen_usage; those not opened at all are listed first. SS-016 UR-12 (Platform Admin 1 Nov 2026
+// 22:01): not opened is a question, not a reason to retire; the retirement checks are shown with the list.
 // Counting started with v2.15.300 (20 Oct 2026); before that only API logs were available.
 import React,{useEffect,useMemo,useState}from'react'
 import{Eye}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{PAGES,SECTIONS,shownTabs}from'./nav-map'
 import{Loading,SectionTitle,StatusChip,fmtDate,fmtDateTime,fmtNumber}from'./ui-kit'
+import{RETIREMENT_CRITERIA}from'./guide/operatingWords'
 
 export default function ScreenUse({onError}){
   const[d,setD]=useState(null)
@@ -19,7 +21,8 @@ export default function ScreenUse({onError}){
   if(!d)return <section className="m-panel"><Loading label="Reading screen use…"/></section>
   const none=rows.filter(r=>!r.u).length
   return <section className="m-panel" data-screen-use>
-    <SectionTitle icon={Eye} title="Screen use" subtitle={`Opens of each page and tab by signed-in people over the last ${fmtNumber(d.days)} days${d.since?`, counted since ${fmtDate(d.since)}`:''}. Not opened at all: ${fmtNumber(none)}, listed first; candidates to retire.`}/>
+    <SectionTitle icon={Eye} title="Screen use" subtitle={`Opens of each page and tab by signed-in people over the last ${fmtNumber(d.days)} days${d.since?`, counted since ${fmtDate(d.since)}`:''}. Not opened at all: ${fmtNumber(none)}, listed first. Few opens alone never retire a screen: recovery, audit and role screens are opened rarely by design.`}/>
+    <details className="sd-desc" data-retirement-criteria><summary>Checks before any screen is retired</summary><ul>{RETIREMENT_CRITERIA.map(c=><li key={c}>{c}</li>)}</ul></details>
     <div className="cf-table-wrap"><table className="cf-table" data-screen-use-table><thead><tr><th>Page and tab</th><th>Menu group</th><th className="num">Opens</th><th className="num">People</th><th className="num">Days used</th><th>Last opened</th></tr></thead><tbody>
       {rows.map(r=><tr key={`${r.page}|${r.tab}`} data-screen-use-row={`${r.page}|${r.tab}`}><td>{r.label}</td><td><small>{r.section||'—'}</small></td>
         <td className="num">{r.u?fmtNumber(r.u.opens):<StatusChip tone="warning" label="Not opened"/>}</td><td className="num">{r.u?fmtNumber(r.u.people):'—'}</td><td className="num">{r.u?fmtNumber(r.u.days_used):'—'}</td><td>{r.u?fmtDateTime(r.u.last_at):'—'}</td></tr>)}

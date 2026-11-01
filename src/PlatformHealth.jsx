@@ -13,6 +13,9 @@ import{Button,Empty,Loading,Metric,SectionTitle,StatusChip,StatusDot,fmtDate,fmt
 import{scrubInternals}from'./lib/errors'
 import{PAGES,resolveTarget}from'./nav-map'
 import{describeSchedule}from'./automation-schedule'
+import{FRESHNESS_WORDS,checkFreshness}from'./guide/operatingWords'
+// SS-016 UR-11 (Platform Admin 1 Nov 2026 22:01): each check says which run measured it (checkFreshness: This run, From an earlier run, No result yet)
+const describeEvery=m=>m%1440===0?`${m/1440} day${m===1440?'':'s'}`:m%60===0?`${m/60} hour${m===60?'':'s'}`:`${m} minutes`
 
 // UI audit Phase 1 (24 Oct 2026): an internal address ("#layer-2-discovery?tab=operations") is never printed as text — it becomes
 // a link named after the screen; a cron expression ("*/10 * * * *") reads as plain schedule words.
@@ -68,10 +71,11 @@ export default function PlatformHealth({onError}){
   if(state==='loading'&&!data)return <section className="m-panel"><Loading label="Running the health checks…"/></section>
   if(state==='missing')return <section className="m-panel ph-missing"><SectionTitle icon={Info} title="Health checks not available yet" subtitle="The automatic health checks have not been switched on for this environment. Everything else keeps working; this page will fill in once they are."/><Button compact onClick={load}><RefreshCw size={14}/>Try again</Button></section>
   const tone=healthTone(data.overall),counts=data.counts||{}
+  const fresh=checkFreshness(data.checks),earlier=(data.checks||[]).filter(c=>fresh(c)!=='current').length
   const checks=[...(data.checks||[])].sort((a,b)=>({critical:0,warning:1,ok:2,skipped:3}[a.status]??9)-({critical:0,warning:1,ok:2,skipped:3}[b.status]??9)||String(a.area).localeCompare(String(b.area)))
   return <>
     <section className={`m-panel ph-overall tone-${tone}`}>
-      <div className="ph-overall-head"><StatusDot tone={tone} label={HEALTH_WORDS[tone]}/><div><h2 data-health-heading>{PAGE_WORDS[tone]}</h2><p>Checked {fmtDateTime(data.generated_at)} · {fmtNumber(checks.length)} checks</p></div><Button compact onClick={load} disabled={state==='loading'}><RefreshCw size={14}/>Check again</Button></div>
+      <div className="ph-overall-head"><StatusDot tone={tone} label={HEALTH_WORDS[tone]}/><div><h2 data-health-heading>{PAGE_WORDS[tone]}</h2><p>Checked {fmtDateTime(data.generated_at)} · {fmtNumber(checks.length)} checks{earlier?<span data-health-earlier={earlier}> · {fmtNumber(earlier)} from an earlier run or with no result yet (see Checked)</span>:null}</p></div><Button compact onClick={load} disabled={state==='loading'}><RefreshCw size={14}/>Check again</Button></div>
       <div className="cf-metric-grid">
         <Metric label="Critical" value={Number(counts.critical||0)} icon={ShieldAlert} tone={counts.critical?'danger':'neutral'} detail="Broken now; fix first"/>
         <Metric label="Warning" value={Number(counts.warning||0)} icon={AlertTriangle} tone={counts.warning?'warning':'neutral'} detail="Needs attention soon"/>
@@ -85,9 +89,9 @@ export default function PlatformHealth({onError}){
       :<Empty icon={CheckCircle2} text="No open issues."/>}
     </section>
     <section className="m-panel">
-      <SectionTitle icon={CheckCircle2} title="Checks" subtitle="Every automatic check and its latest result. Skipped means the check could not run here, not that it failed."/>
+      <SectionTitle icon={CheckCircle2} title="Checks" subtitle="Every automatic check and its latest result, with the run that measured it. Skipped means the check could not run here, not that it failed; No result yet is not a pass."/>
       <div className="cf-table-wrap"><table className="cf-table ph-checks"><thead><tr><th>Check</th><th>Area</th><th>Result</th><th>Details</th><th>Checked</th></tr></thead><tbody>
-        {checks.map(c=><tr key={c.key}><td><strong>{c.label||human(c.key)}</strong></td><td>{human(c.area)}</td><td><StatusChip value={c.status} tone={CHECK_TONE[c.status]||'neutral'} label={c.status==='ok'?'OK':human(c.status)}/></td><td><DetailText value={c.detail}/>{c.status!=='ok'&&FIX_AT[c.key]&&<a className="ph-fix" href={FIX_AT[c.key][0]}>Go to {FIX_AT[c.key][1]}</a>}</td><td>{fmtDateTime(c.checked_at)}</td></tr>)}
+        {checks.map(c=><tr key={c.key}><td><strong>{c.label||human(c.key)}</strong></td><td>{human(c.area)}</td><td>{fresh(c)==='missing'?<StatusChip value="missing" tone="neutral" label={FRESHNESS_WORDS.missing}/>:<StatusChip value={c.status} tone={CHECK_TONE[c.status]||'neutral'} label={c.status==='ok'?'OK':human(c.status)}/>}</td><td><DetailText value={c.detail}/>{c.status!=='ok'&&FIX_AT[c.key]&&<a className="ph-fix" href={FIX_AT[c.key][0]}>Go to {FIX_AT[c.key][1]}</a>}</td><td data-check-freshness={fresh(c)}>{fresh(c)==='missing'?'—':fmtDateTime(c.checked_at)}<small className="ph-detail">{FRESHNESS_WORDS[fresh(c)]}{c.cadence_minutes?` · runs every ${describeEvery(c.cadence_minutes)}`:''}</small></td></tr>)}
       </tbody></table></div>
     </section>
     <AlertsPanel alerts={alerts} onChange={loadAlerts} onError={onError}/>
@@ -135,7 +139,7 @@ function tValue(k,t){
     case'T2':return `US$${t.spend_usd} spent; worst day US$${t.worst_day_usd}; credit US$${Number(t.credit_usd||0).toFixed(2)}`
     case'T3':return `${fmtNumber(Number(t.credits_week||0))} credits this week; month ${fmtNumber(Number(t.month_used||0))} of ${fmtNumber(Number(t.month_limit||0))}`
     case'T4':return `${fmtNumber(Number(t.items||0))} items; worst day ${fmtNumber(Number(t.worst_day||0))}`
-    case'T5':return `${fmtNumber(Number(t.pending_now||0))} pending; oldest ${t.oldest_pending_days??'—'} days`
+    case'T5':return `${fmtNumber(Number(t.pending_now||0))} pending when recorded (the live count is on Layer 4); oldest ${t.oldest_pending_days??'—'} days` // SS-016 UR-11: a report-time figure, not the live queue
     case'T6':return `${fmtNumber(Number(t.requests||0))} requests, ${fmtNumber(Number(t.server_errors||0))} server errors, drift ${fmtNumber(Number(t.contract_drift_now||0))}; search p95 ${t.search_p95_ms==null?'—':fmtNumber(Number(t.search_p95_ms))+' ms'} (${fmtNumber(Number(t.search_requests_measured||0))} measured)`
     case'T7':return `${fmtNumber(Number(t.refresh_requests||0))} refresh requests; wait p95 ${t.wait_p95_min??'—'} min, max ${t.wait_max_min??'—'} min; ${fmtNumber(Number(t.over_target||0))} over target`
     case'T8':return `${fmtNumber(Number(t.migrations_dated_in_week||0))} migrations in the week`
