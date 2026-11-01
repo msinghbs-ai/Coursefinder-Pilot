@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.327 — 2 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.400** (SS-016 UR-03 follow-up). `scripts/export-sops.mjs --write-mirror` refused v2.15.399's first Admin sync: Pilot merges by squash, so a mirror's branch source-commit is never an ancestor of main. The guard now decides by reviewed release (`cmpRelease`), passes identical content for the same release, and uses ancestry only between two different exports for the same release. No migration; no guide or SOP text change. Spec s206.
+
 ## 0.1.326 — 2 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.399** (SS-016 UR-03 guard, P1, P2; overnight mandate 1 Nov 2026 22:01). `scripts/export-sops.mjs --write-mirror` refuses a mirror whose source-commit is unknown or not HEAD/ancestor, writing nothing. Guide and SOP text: Layer 4 › Inbox decisions are the Pipeline Operator's (server needs rank 4 for every Inbox choice; no rank changed); Counsellor text no longer promises shortlists. Admin SOP 2.20, Operator SOP 2.08. No migration. Specs s206, s22.
