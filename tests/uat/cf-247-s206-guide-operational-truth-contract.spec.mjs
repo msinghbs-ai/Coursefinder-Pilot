@@ -10,7 +10,7 @@ import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { mockAdmin } from './support/admin-mock.mjs'
 import * as G from '../../src/guide/platformGuide.js'
-import { SOPS, AUTOMATION, RULES as SOP_RULES } from '../../src/guide/sops.js'
+import { SOPS, AUTOMATION, RULES as SOP_RULES, SOP_REVIEWED_FOR } from '../../src/guide/sops.js'
 
 // Active text: everything the guides tell people now. Version histories (`changes`) are history and keep their old words.
 const guideText = JSON.stringify([G.ROLES, G.RULES, G.DAILY_ROUTINE, G.SCREENS, G.SIGNALS, G.ADMIN_DUTIES, G.ALERTS, G.SPECIALIST_TASKS])
@@ -344,7 +344,7 @@ test('automation control: the per-automation refusal names its role; guide links
 
 // ---- SS-016 UR-03 ancestor guard (Agent A rehearsal, 1 Nov 2026): a stale writer who pulls first and then overwrites the mirror with an
 // export from an older source makes a fast-forward push git accepts; --write-mirror refuses it before writing anything.
-import { mirrorGuard, sopDocument } from '../../scripts/export-sops.mjs'
+import { mirrorGuard, sopDocument, cmpRelease } from '../../scripts/export-sops.mjs'
 import { execFileSync } from 'node:child_process'
 
 test('UR-03: a mirror is written only by the same or a newer source; an older source or an unknown commit is refused', () => {
@@ -356,7 +356,8 @@ test('UR-03: a mirror is written only by the same or a newer source; an older so
     git('init', '-q')
     git('commit', '-q', '--allow-empty', '-m', 'older'); const older = git('rev-parse', '--short=12', 'HEAD')
     git('commit', '-q', '--allow-empty', '-m', 'newer'); const newer = git('rev-parse', '--short=12', 'HEAD')
-    const put = (commit) => { for (const s of SOPS) fs.writeFileSync(path.join(mirror, `${s.id}.md`), sopDocument(s, commit)) }
+    // the mirror holds a different export for the same release (another content hash); the same content always passes (squash merges)
+    const put = (commit, same = false) => { for (const s of SOPS) { const d = sopDocument(s, commit); fs.writeFileSync(path.join(mirror, `${s.id}.md`), same ? d : d.replace(/content-sha256=[0-9a-f]+/, `content-sha256=${'f'.repeat(64)}`)) } }
     const guard = (head) => mirrorGuard(mirror, { repo, head })
 
     put(newer)                                      // the mirror holds the newer export; an older source tries to write over it
@@ -365,6 +366,8 @@ test('UR-03: a mirror is written only by the same or a newer source; an older so
     expect(guard(newer).every((r) => r.ok)).toBe(true)  // the same source may write again
     put(`${older}+local`)                           // a newer source over an older mirror (a "+local" export counts as its commit)
     expect(guard(newer).every((r) => r.ok)).toBe(true)
+    put('0123456789ab', true)                       // the same content from a squashed branch commit this clone never saw
+    expect(guard(older).every((r) => r.ok && /already holds this content/.test(r.detail))).toBe(true)
     put('0123456789ab')                             // a commit this clone does not know
     const unknown = guard(newer)
     expect(unknown.every((r) => !r.ok)).toBe(true)
@@ -376,11 +379,30 @@ test('UR-03: a mirror is written only by the same or a newer source; an older so
   } finally { fs.rmSync(tmp, { recursive: true, force: true }) }
 })
 
+test('UR-03: after a squash merge the reviewed release decides; a mirror from an earlier release is replaced, a later one refused', () => {
+  // v2.15.399's first Admin sync was refused: the v2.15.398 mirror named its branch commit, which a squash merge never makes an ancestor of main.
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'sop-squash-'))
+  try {
+    const at = (release) => { for (const s of SOPS) fs.writeFileSync(path.join(tmp, `${s.id}.md`), sopDocument(s, '0123456789ab').replace(`reviewed-release=${SOP_REVIEWED_FOR};`, `reviewed-release=${release};`)) }
+    const [maj, min, pat] = SOP_REVIEWED_FOR.split('.').map(Number)
+    at(`${maj}.${min}.${pat - 1}`)                  // an earlier release from a commit this clone has never seen (a squashed branch)
+    expect(mirrorGuard(tmp).every((r) => r.ok && /older than/.test(r.detail))).toBe(true)
+    at(`${maj}.${min}.${pat + 1}`)                  // a later release: this source is behind
+    const later = mirrorGuard(tmp)
+    expect(later.every((r) => !r.ok)).toBe(true)
+    expect(later[0].detail).toContain('newer than this source')
+    at('x.y')                                       // a release that cannot be read
+    expect(mirrorGuard(tmp).every((r) => !r.ok)).toBe(true)
+    expect(cmpRelease('2.15.99', '2.15.399')).toBe(-1)
+    expect(cmpRelease('2.15.399', '2.15.399')).toBe(0)
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }) }
+})
+
 test('UR-03: --write-mirror writes nothing when one mirror file is refused, and writes all files when none is', () => {
   const run = (dir) => spawnSync(process.execPath, ['scripts/export-sops.mjs', '--write-mirror', dir], { encoding: 'utf8' })
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'sop-write-'))
   try {
-    const stale = sopDocument(SOPS[1], '0123456789ab')
+    const stale = sopDocument(SOPS[1], '0123456789ab').replace(/content-sha256=[0-9a-f]+/, `content-sha256=${'f'.repeat(64)}`) // other content, unknown commit
     fs.writeFileSync(path.join(tmp, `${SOPS[1].id}.md`), stale)
     const refused = run(tmp)
     expect(refused.status, refused.stdout + refused.stderr).toBe(1)

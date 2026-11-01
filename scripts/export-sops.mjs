@@ -8,8 +8,8 @@
 // It regenerates the documents in memory and lists each mirror file as same, differs, missing or without provenance; it exits 1 on any drift.
 // Write the documents into a mirror folder (SS-016 UR-03 ancestor guard, 1 Nov 2026), refusing a stale writer:
 //   node scripts/export-sops.mjs --write-mirror <path to coursefinder-admin/docs/sops>
-// Before writing anything, each existing mirror file's source-commit must be known here and be this HEAD or one of its ancestors
-// (git merge-base --is-ancestor). An export from an older source over a newer mirror is refused (exit 1), even when the mirror's git push
+// Before writing anything, each existing mirror file's reviewed release must be this source's or older; for the same release its
+// source-commit must be known here and be this HEAD or one of its ancestors (git merge-base --is-ancestor). Pilot merges by squash. An export from an older source over a newer mirror is refused (exit 1), even when the mirror's git push
 // would fast-forward; a commit this clone does not know is refused with "fetch first". Nothing is written unless every file passes.
 // One generator only: this script. No poller.
 import fs from 'node:fs'
@@ -69,6 +69,15 @@ export function checkMirror(dir) {
   })
 }
 
+// Compares two release numbers such as 2.15.399; null when either cannot be read.
+export function cmpRelease(a, b) {
+  const p = (v) => (/^\d+(\.\d+)*$/.test(String(v || '')) ? String(v).split('.').map(Number) : null)
+  const x = p(a), y = p(b)
+  if (!x || !y) return null
+  for (let i = 0; i < Math.max(x.length, y.length); i++) { const d = (x[i] || 0) - (y[i] || 0); if (d) return Math.sign(d) }
+  return 0
+}
+
 // Checks every existing mirror file before a write. `repo` is the exporting repository, `head` the exporting commit.
 // Returns one result per SOP: ok (no file, an unmarked older copy, or an ancestor/equal commit) or refused with the reason.
 export function mirrorGuard(dir, { repo = root, head = 'HEAD' } = {}) {
@@ -78,6 +87,14 @@ export function mirrorGuard(dir, { repo = root, head = 'HEAD' } = {}) {
     if (!fs.existsSync(file)) return { id: s.id, file, ok: true, detail: 'new file' }
     const { meta } = parseSopDocument(fs.readFileSync(file, 'utf8'))
     if (!meta) return { id: s.id, file, ok: true, detail: 'copy without provenance (made before UR-03): replaced' }
+    // Pilot merges by squash, so the branch commit a mirror names is never an ancestor of main. The reviewed release decides first
+    // (fixed after v2.15.399's first sync was refused); for the same release, the same content passes and
+    // commit ancestry decides only between two different exports.
+    const rel = cmpRelease(meta['reviewed-release'], SOP_REVIEWED_FOR)
+    if (rel === null) return { id: s.id, file, ok: false, detail: `mirror reviewed-release "${meta['reviewed-release']}" cannot be compared; export from a clean checkout and compare by hand` }
+    if (rel < 0) return { id: s.id, file, ok: true, detail: `mirror is for v${meta['reviewed-release']}, older than v${SOP_REVIEWED_FOR}` }
+    if (rel > 0) return { id: s.id, file, ok: false, detail: `mirror is for v${meta['reviewed-release']}, newer than this source (v${SOP_REVIEWED_FOR}): pull and export from the newer source` }
+    if (meta['content-sha256'] === sha256(sopMarkdown(s, label))) return { id: s.id, file, ok: true, detail: `mirror for v${SOP_REVIEWED_FOR} already holds this content` }
     const commit = String(meta['source-commit'] || '').replace(/\+local$/, '')
     if (!/^[0-9a-f]{7,40}$/i.test(commit)) return { id: s.id, file, ok: false, detail: `mirror source-commit "${meta['source-commit']}" cannot be checked; export from a clean checkout and compare by hand` }
     if (!git(['cat-file', '-e', `${commit}^{commit}`])) return { id: s.id, file, ok: false, detail: `mirror was exported from ${commit}, which this clone does not know: git fetch first, then export again` }

@@ -1,17 +1,15 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.399'
-export const PACKAGE_VERSION='0.1.326'
+export const UI_VERSION='2.15.400'
+export const PACKAGE_VERSION='0.1.327'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'2 Nov 2026',
-  title:'Guides name the Pipeline Operator for Layer 4 decisions; the SOP mirror refuses an older source',
+  title:'SOP copy check works with squash merges',
   changes:[
-    'Platform guide and Operator SOP: Layer 4 › Inbox decisions (Course link, Held scholarship, Website needed) are the Pipeline Operator\'s, matching what the system allows. Curators read the items and correct the course or entry requirement record.',
-    'Counsellor guide: describes what a counsellor does today (search, read and quote what is held; report a wrong value from Zoho). Shortlists are no longer mentioned, as there are none.',
-    'SOP export: writing the Admin copy of the SOPs is refused when the copy already holds a newer or unknown source.'
+    'SOP export: writing the Admin copy of the SOPs compares the release each copy was made for. A copy from an earlier release is replaced, a later one is refused, and the same content is always accepted. Only two different copies for the same release are compared by commit.'
   ],
   bugFixes:[]
 }
