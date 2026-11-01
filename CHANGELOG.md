@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.317 — 1 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.390** (Layer 4 settlement recovery). Migration `20261101040000_cf247_l4_timeout_recovery`: Evidence search by page address uses an indexed prefix match (`security.admin_evidence_page` md5 `fc04124f` → `7ab91787`); the fee schedules list works out each document's proposal rows once (`public.admin_provider_fee_schedules_read` `8f21ca12` → `9ca85971`); indexes `evidence_artifacts_source_url_pattern_idx` and `courses_provider_code_trim_active_idx`. Spec s200.
+
 ## 0.1.316 — 1 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.389** (StudySearch SS-007 integrity repair). Migration `20261101030000_cf247_ss007_hold_admission`: `security.coverage_admission_plan_v1` skips courses under an open remediation hold (md5 `7390a600` → `f9dceaf2`); the 167 official links a coverage-admit run re-activated on held courses on 31 Oct 14:30 are set unverified again (count- and md5-guarded), with a search refresh. Spec s199.

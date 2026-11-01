@@ -1,15 +1,15 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.389'
-export const PACKAGE_VERSION='0.1.316'
+export const UI_VERSION='2.15.390'
+export const PACKAGE_VERSION='0.1.317'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'1 Nov 2026',
-  title:'Held courses stay held: wrong official links removed again',
+  title:'Evidence address search and fee schedule approvals load again',
   changes:[
-    'Admission: courses held for binding remediation (StudySearch SS-007) are no longer admitted from their page.'
+    'Evidence: searching by a page address (https://…) finds its stored copies through an index, in well under a second.'
   ],
   bugFixes:[]
 }
