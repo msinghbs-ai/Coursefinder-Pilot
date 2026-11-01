@@ -1,7 +1,7 @@
-<!-- sop-export: id=admin-sop; version=2.20; reviewed-release=2.15.398; source-commit=8f15da35cc87+local; content-sha256=69390fde8d4739a9f15d1d4f04e3059ecda34fa7a8a7c20bf65c1a4e4a552320 -->
+<!-- sop-export: id=admin-sop; version=2.20; reviewed-release=2.15.399; source-commit=0f40ed8828c5; content-sha256=4007f561e9f5db786e063ea41aecc0bf8805d690cb8265e0bf6ba36da43fc6a4 -->
 # StudySearch – Platform Admin SOP
 
-**Version:** 2.20 (reviewed for platform release v2.15.398)  
+**Version:** 2.20 (reviewed for platform release v2.15.399)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -229,7 +229,7 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 | 2.02 | 28 Oct 2026 | v2.15.361 | Academic entry requirements (Track C Step B): the Provider drawer and the Course detail blade show the published entry rows and what applies to a student from a chosen country; Platform Admin reads one course from its stored page and admits the rows in Layer 4 (Course entry first read). |
 | 2.18 | 1 Nov 2026 | v2.15.395 | Alerts are sent by push and e-mail by the hourly Work queue alerts task (D12): expect up to about 75 minutes; acknowledge on Platform health; Delivered means sent, not read. Entry-requirement items: the choices are Approve all rows, Approve except… and Reject the read (Platform Admin only; D4 for courses with active rows). Version raised to follow this history (it had stayed at 1.56). |
 | 2.19 | 1 Nov 2026 | v2.15.396 | Who admits (SS-016 UR-08): fee schedules always wait for you; English policies and calendars read by the AI are approved automatically by policy-auto-approve while its switches are on, and only flagged ones wait. Budgets (UR-10): the daily Firecrawl budget and the onboarding pace are read from their settings, not from figures in this SOP. A rising Layer 4 count is investigated for its cause before it is called a backlog (UR-11). |
-| 2.20 | 1 Nov 2026 | v2.15.399 | Layer 4 › Inbox decisions are the Pipeline Operator's (every Inbox choice needs rank 4; entry requirement items stay yours); Curators read the items and correct records (SS-016 P1). No rank changed. |
+| 2.20 | 2 Nov 2026 | v2.15.399 | Layer 4 › Inbox decisions are the Pipeline Operator's (every Inbox choice needs rank 4; entry requirement items stay yours); Curators read the items and correct records (SS-016 P1). No rank changed. |
 | 2.17 | 30 Oct 2026 | v2.15.376 | Entry requirements: Resolution inspection shows the course outcome register (one outcome per course, with its reason) and Download CSV. Use it to see which courses are answered, which wait in Layer 4 and why the rest cannot be answered yet. No operator step changed. |
 | 2.16 | 30 Oct 2026 | v2.15.375 | Entry requirements (D5): when a page prints a grade but no grading scale, keep the grade as printed and set the scale to Not stated on the page (no value); never choose a scale the page does not print. The website is told the scale is not stated. |
 | 2.15 | 30 Oct 2026 | v2.15.374 | Entry-requirement items (D4): Approve except replaces an active row only when you approve its new reading; an active row whose replacement you leave out stays active. A clash between approved rows holds the decision with nothing changed. Adapter measures need rank 5 or above (D6). |
