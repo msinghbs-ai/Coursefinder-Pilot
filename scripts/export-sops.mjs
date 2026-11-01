@@ -6,6 +6,11 @@
 // Check a copy, for example the admin mirror, without writing anything:
 //   node scripts/export-sops.mjs --check-mirror <path to coursefinder-admin/docs/sops>
 // It regenerates the documents in memory and lists each mirror file as same, differs, missing or without provenance; it exits 1 on any drift.
+// Write the documents into a mirror folder (SS-016 UR-03 ancestor guard, 1 Nov 2026), refusing a stale writer:
+//   node scripts/export-sops.mjs --write-mirror <path to coursefinder-admin/docs/sops>
+// Before writing anything, each existing mirror file's source-commit must be known here and be this HEAD or one of its ancestors
+// (git merge-base --is-ancestor). An export from an older source over a newer mirror is refused (exit 1), even when the mirror's git push
+// would fast-forward; a commit this clone does not know is refused with "fetch first". Nothing is written unless every file passes.
 // One generator only: this script. No poller.
 import fs from 'node:fs'
 import path from 'node:path'
@@ -64,7 +69,38 @@ export function checkMirror(dir) {
   })
 }
 
+// Checks every existing mirror file before a write. `repo` is the exporting repository, `head` the exporting commit.
+// Returns one result per SOP: ok (no file, an unmarked older copy, or an ancestor/equal commit) or refused with the reason.
+export function mirrorGuard(dir, { repo = root, head = 'HEAD' } = {}) {
+  const git = (args) => { try { execFileSync('git', args, { cwd: repo, stdio: 'ignore' }); return true } catch { return false } }
+  return SOPS.map((s) => {
+    const file = path.join(dir, `${s.id}.md`)
+    if (!fs.existsSync(file)) return { id: s.id, file, ok: true, detail: 'new file' }
+    const { meta } = parseSopDocument(fs.readFileSync(file, 'utf8'))
+    if (!meta) return { id: s.id, file, ok: true, detail: 'copy without provenance (made before UR-03): replaced' }
+    const commit = String(meta['source-commit'] || '').replace(/\+local$/, '')
+    if (!/^[0-9a-f]{7,40}$/i.test(commit)) return { id: s.id, file, ok: false, detail: `mirror source-commit "${meta['source-commit']}" cannot be checked; export from a clean checkout and compare by hand` }
+    if (!git(['cat-file', '-e', `${commit}^{commit}`])) return { id: s.id, file, ok: false, detail: `mirror was exported from ${commit}, which this clone does not know: git fetch first, then export again` }
+    if (!git(['merge-base', '--is-ancestor', commit, head])) return { id: s.id, file, ok: false, detail: `mirror was exported from ${commit}, which is not ${head} or one of its ancestors: this export is older or on another line; pull and export from the newer source` }
+    return { id: s.id, file, ok: true, detail: `mirror from ${commit} is ${head} or an ancestor` }
+  })
+}
+
 function main(argv) {
+  const w = argv.indexOf('--write-mirror')
+  if (w >= 0) {
+    const dir = argv[w + 1]
+    if (!dir) { console.error('usage: node scripts/export-sops.mjs --write-mirror <path to docs/sops>'); return 2 }
+    if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) { console.error(`not a folder: ${dir}`); return 2 }
+    const results = mirrorGuard(dir)
+    for (const r of results) console.log(`${(r.ok ? 'ok' : 'refused').padEnd(8)} ${r.file}: ${r.detail}`)
+    const refused = results.filter((r) => !r.ok).length
+    if (refused) { console.log(`Refused: ${refused} of ${results.length} mirror documents come from a newer or unknown source; nothing was written`); return 1 }
+    const commit = sourceCommit()
+    for (const s of SOPS) fs.writeFileSync(path.join(dir, `${s.id}.md`), sopDocument(s, commit))
+    console.log(`Wrote ${SOPS.length} SOP documents to ${dir} (from ${commit})`)
+    return 0
+  }
   const at = argv.indexOf('--check-mirror')
   if (at >= 0) {
     const dir = argv[at + 1]

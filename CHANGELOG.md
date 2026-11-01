@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.326 — 2 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.399** (SS-016 UR-03 guard, P1, P2; overnight mandate 1 Nov 2026 22:01). `scripts/export-sops.mjs --write-mirror` refuses a mirror whose source-commit is unknown or not HEAD/ancestor, writing nothing. Guide and SOP text: Layer 4 › Inbox decisions are the Pipeline Operator's (server needs rank 4 for every Inbox choice; no rank changed); Counsellor text no longer promises shortlists. Admin SOP 2.20, Operator SOP 2.08. No migration. Specs s206, s22.
+
 ## 0.1.325 — 1 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.398** (E15; overnight mandate 1 Nov 2026 22:01). Migration `20261101120000_cf247_e15_course_link_replacement`: `security.layer4_course_link_apply_impl` (`e97b56cc` → `75a53dbb`; md5-guarded): a hand lock refuses with the course-record route; other active official links become inactive; the approved link is active and primary; `courses.course_url` follows; a skipped write is refused rather than recorded. Existing data unchanged (repair is a separate paste file in the decision pack). Spec s212.

@@ -1,16 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.398'
-export const PACKAGE_VERSION='0.1.325'
+export const UI_VERSION='2.15.399'
+export const PACKAGE_VERSION='0.1.326'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'1 Nov 2026',
-  title:'Using a reviewer\'s course page replaces the old one',
+  date:'2 Nov 2026',
+  title:'Guides name the Pipeline Operator for Layer 4 decisions; the SOP mirror refuses an older source',
   changes:[
-    'Layer 4 Review, course links: Use the new page (or an address you enter) makes the approved page the course\'s one active, primary official page, retires the old one and sets the course page on the course record.',
-    'A course whose page was set by hand on the course record is not changed from Layer 4: the decision is refused and points to the course record instead of being recorded as approved without effect.'
+    'Platform guide and Operator SOP: Layer 4 › Inbox decisions (Course link, Held scholarship, Website needed) are the Pipeline Operator\'s, matching what the system allows. Curators read the items and correct the course or entry requirement record.',
+    'Counsellor guide: describes what a counsellor does today (search, read and quote what is held; report a wrong value from Zoho). Shortlists are no longer mentioned, as there are none.',
+    'SOP export: writing the Admin copy of the SOPs is refused when the copy already holds a newer or unknown source.'
   ],
   bugFixes:[]
 }

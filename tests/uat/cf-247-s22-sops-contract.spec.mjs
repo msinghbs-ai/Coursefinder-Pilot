@@ -63,7 +63,7 @@ test.describe('mocked browser', () => {
     await mockAdmin(page, { rank: 3 })
     await page.goto('/#platform-guide?tab=operator-sop')
     const s = page.locator('[data-sop="operator-sop"]')
-    await expect(s.locator('[data-sop-daily]')).toContainText('Curator: Layer 4 › Inbox') // v2.15.300
+    await expect(s.locator('[data-sop-daily]')).toContainText('Pipeline Operator: Layer 4 › Inbox (Course link)') // v2.15.300; SS-016 P1: Pipeline Operators decide the Inbox, Curators read and correct
     await expect(page.getByRole('tab', { name: 'Platform Admin SOP' })).toBeVisible()
   })
 

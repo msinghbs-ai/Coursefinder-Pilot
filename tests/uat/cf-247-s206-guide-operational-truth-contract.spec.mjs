@@ -1,4 +1,4 @@
-// Guards: SS-016 UR-01, UR-02, UR-03, UR-17 (Platform Admin 1 Nov 2026 20:08); SS-016 UR-08, UR-10, UR-11, UR-12, UR-16 (Platform Admin 1 Nov 2026 22:01)
+// Guards: SS-016 UR-01, UR-02, UR-03, UR-17 (Platform Admin 1 Nov 2026 20:08); SS-016 UR-08, UR-10, UR-11, UR-12, UR-16 (Platform Admin 1 Nov 2026 22:01); SS-016 UR-03 mirror ancestor guard and role truth P1 (Curator) / P2 (Counsellor) (acceptance walkthrough findings, 1 Nov 2026)
 // CF-247 S206. Source: admin docs/platform/nz-enrichment-brief/2026-11-01-role-guides-usability-operability-review.md (UR-01, UR-02, UR-03,
 // UR-17). The guides state operational truth: alerts by push and e-mail as OPERATIONAL-LIMITS v1.3 states them (D12); the Pipeline Operator
 // diagnoses, records and escalates while the PIM Admin (or higher) paces and pauses (live: security.admin_automation_control_v1 needs rank 5,
@@ -72,7 +72,7 @@ test('UR-02: the Operator SOP and guide do not tell the Pipeline Operator to pau
 
 test('UR-17: AER decisions are Platform Admin only, with the current three choices and D4; no "More evidence" choice in active text', () => {
   for (const text of [guideText, sopText]) expect(text).not.toMatch(/more evidence/i)
-  expect(G.ROLES.find((r) => r.role === 'Curator').can).toContain('Layer 4 decisions except entry requirement (AER) items, which only the Platform Admin decides')
+  expect(G.ROLES.find((r) => r.role === 'Curator').can).toContain('entry requirement (AER) items only the Platform Admin') // SS-016 P1 wording
   const aer = G.SPECIALIST_TASKS.find((t) => t.task === 'Decide an entry requirement (AER) item in Layer 4')
   expect(aer.role).toMatch(/^Platform Admin only/)
   for (const c of ['Approve all rows', 'Approve except…', 'Reject the read', 'D4']) expect(aer.choices).toContain(c)
@@ -340,4 +340,85 @@ test('automation control: the per-automation refusal names its role; guide links
   expect(G.SPECIALIST_TASKS.find((t) => t.task === 'Read an entry requirement source again').tab).toBe('sources')
   const pg = fs.readFileSync('src/PlatformGuide.jsx', 'utf8')
   expect(pg).toContain('data-opens-from={m}>Opens from {roleName(m)} (rank {m})')
+})
+
+// ---- SS-016 UR-03 ancestor guard (Agent A rehearsal, 1 Nov 2026): a stale writer who pulls first and then overwrites the mirror with an
+// export from an older source makes a fast-forward push git accepts; --write-mirror refuses it before writing anything.
+import { mirrorGuard, sopDocument } from '../../scripts/export-sops.mjs'
+import { execFileSync } from 'node:child_process'
+
+test('UR-03: a mirror is written only by the same or a newer source; an older source or an unknown commit is refused', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'sop-ancestor-'))
+  const repo = path.join(tmp, 'repo'), mirror = path.join(tmp, 'mirror')
+  fs.mkdirSync(repo); fs.mkdirSync(mirror)
+  const git = (...a) => execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@example.test', '-c', 'commit.gpgsign=false', ...a], { cwd: repo, encoding: 'utf8' }).trim()
+  try {
+    git('init', '-q')
+    git('commit', '-q', '--allow-empty', '-m', 'older'); const older = git('rev-parse', '--short=12', 'HEAD')
+    git('commit', '-q', '--allow-empty', '-m', 'newer'); const newer = git('rev-parse', '--short=12', 'HEAD')
+    const put = (commit) => { for (const s of SOPS) fs.writeFileSync(path.join(mirror, `${s.id}.md`), sopDocument(s, commit)) }
+    const guard = (head) => mirrorGuard(mirror, { repo, head })
+
+    put(newer)                                      // the mirror holds the newer export; an older source tries to write over it
+    expect(guard(older).every((r) => !r.ok)).toBe(true)
+    expect(guard(older)[0].detail).toContain('not ' + older + ' or one of its ancestors')
+    expect(guard(newer).every((r) => r.ok)).toBe(true)  // the same source may write again
+    put(`${older}+local`)                           // a newer source over an older mirror (a "+local" export counts as its commit)
+    expect(guard(newer).every((r) => r.ok)).toBe(true)
+    put('0123456789ab')                             // a commit this clone does not know
+    const unknown = guard(newer)
+    expect(unknown.every((r) => !r.ok)).toBe(true)
+    expect(unknown[0].detail).toContain('git fetch first')
+    put('unknown')                                  // an export that could not read its commit cannot be checked
+    expect(guard(newer).every((r) => !r.ok)).toBe(true)
+    fs.rmSync(mirror, { recursive: true }); fs.mkdirSync(mirror)
+    expect(guard(older).every((r) => r.ok && r.detail === 'new file')).toBe(true)
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }) }
+})
+
+test('UR-03: --write-mirror writes nothing when one mirror file is refused, and writes all files when none is', () => {
+  const run = (dir) => spawnSync(process.execPath, ['scripts/export-sops.mjs', '--write-mirror', dir], { encoding: 'utf8' })
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'sop-write-'))
+  try {
+    const stale = sopDocument(SOPS[1], '0123456789ab')
+    fs.writeFileSync(path.join(tmp, `${SOPS[1].id}.md`), stale)
+    const refused = run(tmp)
+    expect(refused.status, refused.stdout + refused.stderr).toBe(1)
+    expect(refused.stdout).toContain('nothing was written')
+    expect(fs.existsSync(path.join(tmp, `${SOPS[0].id}.md`))).toBe(false)
+    expect(fs.readFileSync(path.join(tmp, `${SOPS[1].id}.md`), 'utf8')).toBe(stale)
+    fs.rmSync(path.join(tmp, `${SOPS[1].id}.md`))
+    const ok = run(tmp)
+    expect(ok.status, ok.stdout + ok.stderr).toBe(0)
+    expect(ok.stdout).toContain(`Wrote ${SOPS.length} SOP documents`)
+    expect(run(tmp).status).toBe(0)                 // writing again from the same source is allowed
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }) }
+})
+
+// ---- SS-016 P1 and P2 (acceptance walkthrough findings, 1 Nov 2026): the guides say only what the server allows. Live (read only, 1 Nov 2026):
+// public.admin_layer4_inbox refuses a choice below coalesce(choice rank, 4) ("your role cannot make this choice"); AER items need rank 6;
+// there is no shortlist or notes function or table. No rank is changed by this; the words follow the server.
+test('P1: a Curator reads Layer 4 and corrects records; Inbox decisions are the Pipeline Operator\'s, AER the Platform Admin\'s', () => {
+  const cur = G.ROLES.find((r) => r.role === 'Curator')
+  const said = `${cur.can} ${cur.daily.join(' ')}`
+  for (const w of ['Reads Layer 4 items and their evidence', 'every Layer 4 › Inbox choice needs the Pipeline Operator (rank 4) or above', 'correct the value on the course or entry requirement record', 'hand the Inbox decision to the Pipeline Operator', 'entry requirement (AER) items to the Platform Admin']) expect(said).toContain(w)
+  expect(said).not.toMatch(/decide the items waiting|Layer 4 decisions except|give the missing provider websites/i)
+  // no SOP step or automation line gives an Inbox decision to a Curator
+  for (const st of operator.schedule.flatMap((b) => b.steps)) if (/Layer 4 › Inbox \((Course link|Held scholarship|Website needed)\)/.test(st.do)) expect(st.role, st.do).toBe('Pipeline Operator')
+  for (const a of AUTOMATION) expect(a.person, a.stage).not.toMatch(/Curators decide/)
+  expect(operator.owns.find((o) => o.startsWith('Pipeline Operator:'))).toContain('Layer 4 › Inbox decisions')
+  expect(operator.interventions.find((x) => x.trigger === 'Layer 4 Review item').action).toMatch(/^Pipeline Operator and above: decide/)
+  expect(G.SIGNALS.find((x) => x.see.startsWith('Layer 4 waiting count rises')).who).toMatch(/^Pipeline Operator/)
+})
+
+test('P2: no shortlist or notes claim for Counsellors; they search, read, quote and report from Zoho', () => {
+  for (const text of [guideText, sopText]) expect(text).not.toMatch(/shortlist|and notes/i)
+  const c = G.ROLES.find((r) => r.role === 'Counsellor')
+  for (const w of ['Search and read', 'quote what the record shows', 'report a wrong or missing value from Zoho', 'Changes nothing in StudySearch']) expect(c.can).toContain(w)
+})
+
+test('P1: the Layer 4 screen entry gives Inbox choices and website entry to the Pipeline Operator, not the Curator', () => {
+  const l4 = JSON.stringify(G.SCREENS.layer4)
+  expect(l4).not.toMatch(/(Save|website)[^"]{0,40}\(Curator and above\)/i)
+  expect(G.SCREENS.layer4.act.join(' ')).toContain('Approve, correct or reject, with a reason (Pipeline Operator and above')
 })
