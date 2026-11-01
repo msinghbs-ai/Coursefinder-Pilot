@@ -6,7 +6,7 @@ export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'2 Nov 2026',
+  date:'1 Nov 2026',
   title:'Using a reviewer\'s course page replaces the old one',
   changes:[
     'Layer 4 Review, course links: Use the new page (or an address you enter) makes the approved page the course\'s one active, primary official page, retires the old one and sets the course page on the course record.',

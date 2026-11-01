@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.325 — 2 Nov 2026
+## 0.1.325 — 1 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.398** (E15; overnight mandate 1 Nov 2026 22:01). Migration `20261101120000_cf247_e15_course_link_replacement`: `security.layer4_course_link_apply_impl` (`e97b56cc` → `75a53dbb`; md5-guarded): a hand lock refuses with the course-record route; other active official links become inactive; the approved link is active and primary; `courses.course_url` follows; a skipped write is refused rather than recorded. Existing data unchanged (repair is a separate paste file in the decision pack). Spec s212.
 
