@@ -1,15 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.400'
-export const PACKAGE_VERSION='0.1.327'
+export const UI_VERSION='2.15.401'
+export const PACKAGE_VERSION='0.1.328'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'2 Nov 2026',
-  title:'SOP copy check works with squash merges',
+  title:'An incomplete entry-requirement read cannot be approved (E13)',
   changes:[
-    'SOP export: writing the Admin copy of the SOPs compares the release each copy was made for. A copy from an earlier release is replaced, a later one is refused, and the same content is always accepted. Only two different copies for the same release are compared by commit.'
+    'Course entry requirements: a read with more requirements than the course\'s limit is held whole instead of proposing only the first rows; every row read is kept for a later step.',
+    'Layer 4 Review, course entry requirements: Approve is refused while a read is incomplete (rows cut by the limit, a row about another programme, or a page shared with a differently named programme). The screen shows why and which rows are about another programme; Reject works as before.',
+    'New settings in Settings › Pipeline settings, Entry requirements: limits per provider, the words that join conditions, and the programme checks (on by default).'
   ],
   bugFixes:[]
 }

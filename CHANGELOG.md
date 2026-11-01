@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.328 — 2 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.401** (E13; Platform Admin 2 Nov 2026 05:18). Migration `20261102010000_cf247_e13_entry_completeness_gate`: reader `security.enrich_entry_record_v1` (`857102dc` → `9757abeb`, md5-guarded replace) holds a read whole when it exceeds the row limit; `security.course_entry_review_apply_v1` (`ce8d0bad` → `4be9267d`) refuses Approve/Approve except while `security.course_entry_gate_v1` finds the read incomplete (over_row_limit drops, other-programme rows, shared page); `security.aer_review_read_v1` (`62793b35` → `50c31fc4`) returns the gate result. New `security.course_entry_variant_v1`, `security.course_entry_gate_v1`; 7 settings. Measured: holds 215 of 499 pending course-entry items. No data rows changed; no re-read; no AI cost. Spec s213.
+
 ## 0.1.327 — 2 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.400** (SS-016 UR-03 follow-up). `scripts/export-sops.mjs --write-mirror` refused v2.15.399's first Admin sync: Pilot merges by squash, so a mirror's branch source-commit is never an ancestor of main. The guard now decides by reviewed release (`cmpRelease`), passes identical content for the same release, and uses ancestry only between two different exports for the same release. No migration; no guide or SOP text change. Spec s206.
