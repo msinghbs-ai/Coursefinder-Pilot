@@ -26,7 +26,7 @@
       "ci": {
         "commitHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/commit/c9338a910c3f2c7d42b28fc5c388dce5f83ad360",
         "commitHash": "c9338a910c3f2c7d42b28fc5c388dce5f83ad360",
-        "buildHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/41343856629"
+        "buildHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/41355259644"
       },
       "gitCommit": {
         "shortHash": "c9338a9",
@@ -57,7 +57,7 @@
           "ci": {
             "commitHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/commit/c9338a910c3f2c7d42b28fc5c388dce5f83ad360",
             "commitHash": "c9338a910c3f2c7d42b28fc5c388dce5f83ad360",
-            "buildHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/41343856629"
+            "buildHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/41355259644"
           },
           "gitCommit": {
             "shortHash": "c9338a9",
@@ -95,7 +95,7 @@
           "ci": {
             "commitHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/commit/c9338a910c3f2c7d42b28fc5c388dce5f83ad360",
             "commitHash": "c9338a910c3f2c7d42b28fc5c388dce5f83ad360",
-            "buildHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/41343856629"
+            "buildHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/41355259644"
           },
           "gitCommit": {
             "shortHash": "c9338a9",
@@ -137,7 +137,7 @@
           "ci": {
             "commitHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/commit/c9338a910c3f2c7d42b28fc5c388dce5f83ad360",
             "commitHash": "c9338a910c3f2c7d42b28fc5c388dce5f83ad360",
-            "buildHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/41343856629"
+            "buildHref": "https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/41355259644"
           },
           "gitCommit": {
             "shortHash": "c9338a9",
@@ -243,12 +243,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3533,
+                      "duration": 2755,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:57:06.964Z",
+                      "startTime": "2026-11-01T22:09:57.749Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -290,12 +290,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2617,
+                      "duration": 3340,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:57:10.631Z",
+                      "startTime": "2026-11-01T22:10:00.616Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -337,12 +337,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2590,
+                      "duration": 4123,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:57:13.268Z",
+                      "startTime": "2026-11-01T22:10:03.968Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -384,12 +384,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2093,
+                      "duration": 4071,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:57:15.874Z",
+                      "startTime": "2026-11-01T22:10:08.101Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -437,12 +437,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4598,
+                      "duration": 6248,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:57:17.988Z",
+                      "startTime": "2026-11-01T22:10:12.187Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -484,12 +484,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 7751,
+                      "duration": 8422,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:57:22.605Z",
+                      "startTime": "2026-11-01T22:10:18.450Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -536,7 +536,7 @@
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:57:30.368Z",
+                      "startTime": "2026-11-01T22:10:26.880Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -584,12 +584,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3328,
+                      "duration": 2726,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:57:30.388Z",
+                      "startTime": "2026-11-01T22:10:26.898Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -648,12 +648,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4303,
+                      "duration": 3512,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:57:33.744Z",
+                      "startTime": "2026-11-01T22:10:29.651Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -700,12 +700,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 13,
+                      "duration": 10,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:57:38.070Z",
+                      "startTime": "2026-11-01T22:10:33.183Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -753,12 +753,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1613,
+                      "duration": 1946,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:57:38.100Z",
+                      "startTime": "2026-11-01T22:10:33.206Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -800,12 +800,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 7774,
+                      "duration": 7524,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:57:39.734Z",
+                      "startTime": "2026-11-01T22:10:35.172Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -847,12 +847,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3050,
+                      "duration": 2936,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:57:47.519Z",
+                      "startTime": "2026-11-01T22:10:42.704Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -894,12 +894,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3222,
+                      "duration": 2395,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:57:50.584Z",
+                      "startTime": "2026-11-01T22:10:45.649Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -953,12 +953,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5283,
+                      "duration": 6249,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:57:53.825Z",
+                      "startTime": "2026-11-01T22:10:48.060Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1005,12 +1005,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4109,
+                      "duration": 2620,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:57:59.135Z",
+                      "startTime": "2026-11-01T22:10:54.331Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1052,12 +1052,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 12389,
+                      "duration": 4475,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:58:03.256Z",
+                      "startTime": "2026-11-01T22:10:56.959Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1116,12 +1116,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2509,
+                      "duration": 2343,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:58:15.660Z",
+                      "startTime": "2026-11-01T22:11:01.446Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1180,12 +1180,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3418,
+                      "duration": 2197,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:58:18.195Z",
+                      "startTime": "2026-11-01T22:11:03.807Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1222,12 +1222,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 7,
+                      "duration": 4,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:58:21.637Z",
+                      "startTime": "2026-11-01T22:11:06.018Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1275,12 +1275,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4105,
+                      "duration": 2264,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:58:21.659Z",
+                      "startTime": "2026-11-01T22:11:06.031Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1317,12 +1317,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 8,
+                      "duration": 6,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:58:25.783Z",
+                      "startTime": "2026-11-01T22:11:08.309Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1353,12 +1353,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2114,
+                      "duration": 2160,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:58:25.800Z",
+                      "startTime": "2026-11-01T22:11:08.323Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1412,12 +1412,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4357,
+                      "duration": 2399,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:58:27.928Z",
+                      "startTime": "2026-11-01T22:11:10.495Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1454,12 +1454,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3984,
+                      "duration": 2155,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:58:32.310Z",
+                      "startTime": "2026-11-01T22:11:12.908Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1496,12 +1496,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3782,
+                      "duration": 3794,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:58:36.305Z",
+                      "startTime": "2026-11-01T22:11:15.071Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1555,12 +1555,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2113,
+                      "duration": 1839,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:58:40.105Z",
+                      "startTime": "2026-11-01T22:11:18.878Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1614,12 +1614,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4761,
+                      "duration": 2719,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:58:42.244Z",
+                      "startTime": "2026-11-01T22:11:20.739Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1656,12 +1656,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2249,
+                      "duration": 1386,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:58:47.024Z",
+                      "startTime": "2026-11-01T22:11:23.474Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1715,12 +1715,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4547,
+                      "duration": 2734,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:58:49.289Z",
+                      "startTime": "2026-11-01T22:11:24.873Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1779,12 +1779,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2131,
+                      "duration": 2001,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:58:53.860Z",
+                      "startTime": "2026-11-01T22:11:27.626Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1826,12 +1826,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4055,
+                      "duration": 2807,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:58:56.029Z",
+                      "startTime": "2026-11-01T22:11:29.648Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1890,12 +1890,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5011,
+                      "duration": 3193,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:59:00.100Z",
+                      "startTime": "2026-11-01T22:11:32.468Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1954,12 +1954,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 10162,
+                      "duration": 5352,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:59:05.145Z",
+                      "startTime": "2026-11-01T22:11:35.680Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2013,12 +2013,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6040,
+                      "duration": 3957,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:59:15.334Z",
+                      "startTime": "2026-11-01T22:11:41.053Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2056,12 +2056,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 8006,
+                      "duration": 5543,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:59:21.399Z",
+                      "startTime": "2026-11-01T22:11:45.028Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2115,12 +2115,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2422,
+                      "duration": 2524,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:59:29.421Z",
+                      "startTime": "2026-11-01T22:11:50.583Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -2168,12 +2168,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3904,
+                      "duration": 2640,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:59:31.869Z",
+                      "startTime": "2026-11-01T22:11:53.132Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -2221,12 +2221,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 9903,
+                      "duration": 7146,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:59:35.800Z",
+                      "startTime": "2026-11-01T22:11:55.792Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2278,12 +2278,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6479,
+                      "duration": 8192,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:59:45.724Z",
+                      "startTime": "2026-11-01T22:12:02.953Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2325,12 +2325,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5324,
+                      "duration": 6084,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:59:52.214Z",
+                      "startTime": "2026-11-01T22:12:11.154Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2389,12 +2389,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 7450,
+                      "duration": 7384,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T19:59:57.554Z",
+                      "startTime": "2026-11-01T22:12:17.250Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2436,12 +2436,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5683,
+                      "duration": 2819,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T20:00:05.026Z",
+                      "startTime": "2026-11-01T22:12:24.648Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2483,12 +2483,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 102,
+                      "duration": 54,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T20:00:10.719Z",
+                      "startTime": "2026-11-01T22:12:27.474Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -2536,12 +2536,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4309,
+                      "duration": 2231,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T20:00:10.832Z",
+                      "startTime": "2026-11-01T22:12:27.536Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2583,12 +2583,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5274,
+                      "duration": 2218,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T20:00:15.164Z",
+                      "startTime": "2026-11-01T22:12:29.784Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2647,12 +2647,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4905,
+                      "duration": 2446,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T20:00:20.458Z",
+                      "startTime": "2026-11-01T22:12:32.015Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2694,12 +2694,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5658,
+                      "duration": 3130,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T20:00:25.382Z",
+                      "startTime": "2026-11-01T22:12:34.481Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2741,12 +2741,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4599,
+                      "duration": 3648,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T20:00:31.052Z",
+                      "startTime": "2026-11-01T22:12:37.618Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2788,12 +2788,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3527,
+                      "duration": 1943,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T20:00:35.663Z",
+                      "startTime": "2026-11-01T22:12:41.273Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2852,12 +2852,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 9,
+                      "duration": 8,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T20:00:39.207Z",
+                      "startTime": "2026-11-01T22:12:43.228Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -2888,12 +2888,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4180,
+                      "duration": 3085,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T20:00:39.234Z",
+                      "startTime": "2026-11-01T22:12:43.249Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2935,12 +2935,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5943,
+                      "duration": 3036,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T20:00:43.423Z",
+                      "startTime": "2026-11-01T22:12:46.341Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2982,12 +2982,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6553,
+                      "duration": 3325,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T20:00:49.376Z",
+                      "startTime": "2026-11-01T22:12:49.386Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3046,12 +3046,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2393,
+                      "duration": 1413,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T20:00:55.946Z",
+                      "startTime": "2026-11-01T22:12:52.723Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3093,12 +3093,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 8374,
+                      "duration": 6864,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T20:00:58.362Z",
+                      "startTime": "2026-11-01T22:12:54.153Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3140,12 +3140,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4014,
+                      "duration": 2940,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T20:01:06.746Z",
+                      "startTime": "2026-11-01T22:13:01.026Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3187,12 +3187,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 7330,
+                      "duration": 6072,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T20:01:10.770Z",
+                      "startTime": "2026-11-01T22:13:03.972Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3234,12 +3234,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4849,
+                      "duration": 3600,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T20:01:18.111Z",
+                      "startTime": "2026-11-01T22:13:10.050Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3298,12 +3298,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 7555,
+                      "duration": 6189,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T20:01:22.976Z",
+                      "startTime": "2026-11-01T22:13:13.663Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3345,12 +3345,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6609,
+                      "duration": 4734,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T20:01:30.552Z",
+                      "startTime": "2026-11-01T22:13:19.866Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3409,12 +3409,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3082,
+                      "duration": 2169,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T20:01:37.183Z",
+                      "startTime": "2026-11-01T22:13:24.613Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3456,12 +3456,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4334,
+                      "duration": 2354,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T20:01:40.288Z",
+                      "startTime": "2026-11-01T22:13:26.797Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3503,12 +3503,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5,
+                      "duration": 4,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T20:01:44.633Z",
+                      "startTime": "2026-11-01T22:13:29.159Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -3556,12 +3556,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 8760,
+                      "duration": 7783,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T20:01:44.650Z",
+                      "startTime": "2026-11-01T22:13:29.172Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3620,12 +3620,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3939,
+                      "duration": 2446,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T20:01:53.432Z",
+                      "startTime": "2026-11-01T22:13:36.970Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3667,12 +3667,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3451,
+                      "duration": 2423,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T20:01:57.391Z",
+                      "startTime": "2026-11-01T22:13:39.430Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3714,12 +3714,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4554,
+                      "duration": 2060,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T20:02:00.854Z",
+                      "startTime": "2026-11-01T22:13:41.860Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3778,12 +3778,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4210,
+                      "duration": 2149,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T20:02:05.424Z",
+                      "startTime": "2026-11-01T22:13:43.933Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3820,12 +3820,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3488,
+                      "duration": 2991,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T20:02:09.660Z",
+                      "startTime": "2026-11-01T22:13:46.096Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3862,12 +3862,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2,
+                      "duration": 1,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T20:02:13.159Z",
+                      "startTime": "2026-11-01T22:13:49.094Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -3898,12 +3898,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5130,
+                      "duration": 1356,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T20:02:13.173Z",
+                      "startTime": "2026-11-01T22:13:49.100Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3962,7 +3962,7 @@
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T20:02:18.316Z",
+                      "startTime": "2026-11-01T22:13:50.468Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -4010,12 +4010,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 26228,
+                      "duration": 21957,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T20:02:18.339Z",
+                      "startTime": "2026-11-01T22:13:50.484Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -4058,7 +4058,7 @@
           "specs": [
             {
               "title": "Jobs route shows live governed Pipeline Jobs instead of a manufactured empty list",
-              "ok": true,
+              "ok": false,
               "tags": [
                 "deployed"
               ],
@@ -4073,29 +4073,131 @@
                     {
                       "workerIndex": 0,
                       "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 4861,
-                      "errors": [],
+                      "status": "failed",
+                      "duration": 22595,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('.m-release-pill')\nExpected substring: \u001b[32m\"v2.15.40\u001b[7m1\u001b[27m\"\u001b[39m\nReceived string:    \u001b[31m\"v2.15.40\u001b[7m2\u001b[27m\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" locator('.m-release-pill') with timeout 20000ms\u001b[22m\n\u001b[2m  - waiting for locator('.m-release-pill')\u001b[22m\n\u001b[2m    44 × locator resolved to <span tabindex=\"0\" role=\"button\" class=\"m-release-pill\" aria-haspopup=\"dialog\" title=\"View release notes\" aria-label=\"Open release notes for PIM Admin v2.15.402\">…</span>\u001b[22m\n\u001b[2m       - unexpected value \"v2.15.402\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('.m-release-pill')\nExpected substring: \u001b[32m\"v2.15.40\u001b[7m1\u001b[27m\"\u001b[39m\nReceived string:    \u001b[31m\"v2.15.40\u001b[7m2\u001b[27m\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" locator('.m-release-pill') with timeout 20000ms\u001b[22m\n\u001b[2m  - waiting for locator('.m-release-pill')\u001b[22m\n\u001b[2m    44 × locator resolved to <span tabindex=\"0\" role=\"button\" class=\"m-release-pill\" aria-haspopup=\"dialog\" title=\"View release notes\" aria-label=\"Open release notes for PIM Admin v2.15.402\">…</span>\u001b[22m\n\u001b[2m       - unexpected value \"v2.15.402\"\u001b[22m\n\n    at /home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/m2-5-jobs-workspace-deployed.spec.mjs:18:50",
+                        "location": {
+                          "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/m2-5-jobs-workspace-deployed.spec.mjs",
+                          "column": 50,
+                          "line": 18
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 16 |\u001b[39m   \u001b[36mtry\u001b[39m{\n \u001b[90m 17 |\u001b[39m    \u001b[36mawait\u001b[39m loginAsUatUser(page)\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 18 |\u001b[39m    \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mlocator(\u001b[32m'.m-release-pill'\u001b[39m))\u001b[33m.\u001b[39mtoContainText(\u001b[32m`v${UI_VERSION}`\u001b[39m)\n \u001b[90m    |\u001b[39m                                                  \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 19 |\u001b[39m    \u001b[90m// v2.15.200: Jobs is a tab of the Scheduled jobs page.\u001b[39m\n \u001b[90m 20 |\u001b[39m    \u001b[36mawait\u001b[39m clickPrimaryNav(page\u001b[33m,\u001b[39m\u001b[32m'Scheduled Tasks'\u001b[39m)\n \u001b[90m 21 |\u001b[39m    \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'.cf-page-tabs [role=\"tab\"]'\u001b[39m)\u001b[33m.\u001b[39mfilter({hasText\u001b[33m:\u001b[39m\u001b[35m/^Jobs$/\u001b[39m})\u001b[33m.\u001b[39mfirst()\u001b[33m.\u001b[39mclick()\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/m2-5-jobs-workspace-deployed.spec.mjs",
+                            "column": 50,
+                            "line": 18
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('.m-release-pill')\nExpected substring: \u001b[32m\"v2.15.40\u001b[7m1\u001b[27m\"\u001b[39m\nReceived string:    \u001b[31m\"v2.15.40\u001b[7m2\u001b[27m\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" locator('.m-release-pill') with timeout 20000ms\u001b[22m\n\u001b[2m  - waiting for locator('.m-release-pill')\u001b[22m\n\u001b[2m    44 × locator resolved to <span tabindex=\"0\" role=\"button\" class=\"m-release-pill\" aria-haspopup=\"dialog\" title=\"View release notes\" aria-label=\"Open release notes for PIM Admin v2.15.402\">…</span>\u001b[22m\n\u001b[2m       - unexpected value \"v2.15.402\"\u001b[22m\n\n\n  16 |   try{\n  17 |    await loginAsUatUser(page)\n> 18 |    await expect(page.locator('.m-release-pill')).toContainText(`v${UI_VERSION}`)\n     |                                                  ^\n  19 |    // v2.15.200: Jobs is a tab of the Scheduled jobs page.\n  20 |    await clickPrimaryNav(page,'Scheduled Tasks')\n  21 |    await page.locator('.cf-page-tabs [role=\"tab\"]').filter({hasText:/^Jobs$/}).first().click()\n    at /home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/m2-5-jobs-workspace-deployed.spec.mjs:18:50"
+                        }
+                      ],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T20:02:44.588Z",
+                      "startTime": "2026-11-01T22:14:12.459Z",
                       "annotations": [],
                       "attachments": [
-                        {
-                          "name": "m2-5-jobs-workspace-live",
-                          "contentType": "image/png",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-5-jobs-workspace-deploy-4de65-f-a-manufactured-empty-list-chromium-mobile/attachments/m2-5-jobs-workspace-live-04a5bf89aa0d9bd7d29679597abbb55507c45ecd.png"
-                        },
                         {
                           "name": "runtime-evidence",
                           "contentType": "application/json",
                           "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-5-jobs-workspace-deploy-4de65-f-a-manufactured-empty-list-chromium-mobile/attachments/runtime-evidence-b8e5eca5c6c9f60ee9537c0472e8f0c695de8ef7.json"
+                        },
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-5-jobs-workspace-deploy-4de65-f-a-manufactured-empty-list-chromium-mobile/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-5-jobs-workspace-deploy-4de65-f-a-manufactured-empty-list-chromium-mobile/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-5-jobs-workspace-deploy-4de65-f-a-manufactured-empty-list-chromium-mobile/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-5-jobs-workspace-deploy-4de65-f-a-manufactured-empty-list-chromium-mobile/trace.zip"
                         }
-                      ]
+                      ],
+                      "errorLocation": {
+                        "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/m2-5-jobs-workspace-deployed.spec.mjs",
+                        "column": 50,
+                        "line": 18
+                      }
+                    },
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 22430,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('.m-release-pill')\nExpected substring: \u001b[32m\"v2.15.40\u001b[7m1\u001b[27m\"\u001b[39m\nReceived string:    \u001b[31m\"v2.15.40\u001b[7m2\u001b[27m\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" locator('.m-release-pill') with timeout 20000ms\u001b[22m\n\u001b[2m  - waiting for locator('.m-release-pill')\u001b[22m\n\u001b[2m    44 × locator resolved to <span tabindex=\"0\" role=\"button\" class=\"m-release-pill\" aria-haspopup=\"dialog\" title=\"View release notes\" aria-label=\"Open release notes for PIM Admin v2.15.402\">…</span>\u001b[22m\n\u001b[2m       - unexpected value \"v2.15.402\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('.m-release-pill')\nExpected substring: \u001b[32m\"v2.15.40\u001b[7m1\u001b[27m\"\u001b[39m\nReceived string:    \u001b[31m\"v2.15.40\u001b[7m2\u001b[27m\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" locator('.m-release-pill') with timeout 20000ms\u001b[22m\n\u001b[2m  - waiting for locator('.m-release-pill')\u001b[22m\n\u001b[2m    44 × locator resolved to <span tabindex=\"0\" role=\"button\" class=\"m-release-pill\" aria-haspopup=\"dialog\" title=\"View release notes\" aria-label=\"Open release notes for PIM Admin v2.15.402\">…</span>\u001b[22m\n\u001b[2m       - unexpected value \"v2.15.402\"\u001b[22m\n\n    at /home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/m2-5-jobs-workspace-deployed.spec.mjs:18:50",
+                        "location": {
+                          "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/m2-5-jobs-workspace-deployed.spec.mjs",
+                          "column": 50,
+                          "line": 18
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 16 |\u001b[39m   \u001b[36mtry\u001b[39m{\n \u001b[90m 17 |\u001b[39m    \u001b[36mawait\u001b[39m loginAsUatUser(page)\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 18 |\u001b[39m    \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mlocator(\u001b[32m'.m-release-pill'\u001b[39m))\u001b[33m.\u001b[39mtoContainText(\u001b[32m`v${UI_VERSION}`\u001b[39m)\n \u001b[90m    |\u001b[39m                                                  \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 19 |\u001b[39m    \u001b[90m// v2.15.200: Jobs is a tab of the Scheduled jobs page.\u001b[39m\n \u001b[90m 20 |\u001b[39m    \u001b[36mawait\u001b[39m clickPrimaryNav(page\u001b[33m,\u001b[39m\u001b[32m'Scheduled Tasks'\u001b[39m)\n \u001b[90m 21 |\u001b[39m    \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'.cf-page-tabs [role=\"tab\"]'\u001b[39m)\u001b[33m.\u001b[39mfilter({hasText\u001b[33m:\u001b[39m\u001b[35m/^Jobs$/\u001b[39m})\u001b[33m.\u001b[39mfirst()\u001b[33m.\u001b[39mclick()\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/m2-5-jobs-workspace-deployed.spec.mjs",
+                            "column": 50,
+                            "line": 18
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('.m-release-pill')\nExpected substring: \u001b[32m\"v2.15.40\u001b[7m1\u001b[27m\"\u001b[39m\nReceived string:    \u001b[31m\"v2.15.40\u001b[7m2\u001b[27m\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" locator('.m-release-pill') with timeout 20000ms\u001b[22m\n\u001b[2m  - waiting for locator('.m-release-pill')\u001b[22m\n\u001b[2m    44 × locator resolved to <span tabindex=\"0\" role=\"button\" class=\"m-release-pill\" aria-haspopup=\"dialog\" title=\"View release notes\" aria-label=\"Open release notes for PIM Admin v2.15.402\">…</span>\u001b[22m\n\u001b[2m       - unexpected value \"v2.15.402\"\u001b[22m\n\n\n  16 |   try{\n  17 |    await loginAsUatUser(page)\n> 18 |    await expect(page.locator('.m-release-pill')).toContainText(`v${UI_VERSION}`)\n     |                                                  ^\n  19 |    // v2.15.200: Jobs is a tab of the Scheduled jobs page.\n  20 |    await clickPrimaryNav(page,'Scheduled Tasks')\n  21 |    await page.locator('.cf-page-tabs [role=\"tab\"]').filter({hasText:/^Jobs$/}).first().click()\n    at /home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/m2-5-jobs-workspace-deployed.spec.mjs:18:50"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-11-01T22:14:35.975Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-5-jobs-workspace-deploy-4de65-f-a-manufactured-empty-list-chromium-mobile-retry1/attachments/runtime-evidence-b8e5eca5c6c9f60ee9537c0472e8f0c695de8ef7.json"
+                        },
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-5-jobs-workspace-deploy-4de65-f-a-manufactured-empty-list-chromium-mobile-retry1/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-5-jobs-workspace-deploy-4de65-f-a-manufactured-empty-list-chromium-mobile-retry1/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-5-jobs-workspace-deploy-4de65-f-a-manufactured-empty-list-chromium-mobile-retry1/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/m2-5-jobs-workspace-deploy-4de65-f-a-manufactured-empty-list-chromium-mobile-retry1/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/m2-5-jobs-workspace-deployed.spec.mjs",
+                        "column": 50,
+                        "line": 18
+                      }
                     }
                   ],
-                  "status": "expected"
+                  "status": "unexpected"
                 }
               ],
               "id": "b5959e35036d7717a961-981f2ff196967a2003fb",
@@ -4135,15 +4237,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4529,
+                      "duration": 2898,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T20:02:49.470Z",
+                      "startTime": "2026-11-01T22:14:59.054Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -4199,15 +4301,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 15,
+                      "duration": 14,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T20:02:54.024Z",
+                      "startTime": "2026-11-01T22:15:02.064Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -4252,15 +4354,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 16709,
+                      "duration": 10957,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T20:02:54.052Z",
+                      "startTime": "2026-11-01T22:15:02.089Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -4299,94 +4401,31 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 20598,
-                      "error": {
-                        "message": "Error: courses_page interaction latency\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: <= \u001b[32m3000\u001b[39m\nReceived:    \u001b[31m4302\u001b[39m",
-                        "stack": "Error: courses_page interaction latency\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: <= \u001b[32m3000\u001b[39m\nReceived:    \u001b[31m4302\u001b[39m\n    at /home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/performance-deployed.spec.mjs:27:1457",
-                        "location": {
-                          "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/performance-deployed.spec.mjs",
-                          "column": 1457,
-                          "line": 27
-                        },
-                        "snippet": "\u001b[0m \u001b[90m 25 |\u001b[39m   test\u001b[33m.\u001b[39mbeforeEach(\u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m loginAsUatUser(page) })\n \u001b[90m 26 |\u001b[39m   test(\u001b[32m'core workspaces stay within governed RPC and payload budgets'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }\u001b[33m,\u001b[39m testInfo) \u001b[33m=>\u001b[39m {\u001b[36mconst\u001b[39m runtime \u001b[33m=\u001b[39m observeRuntime(page)\u001b[33m,\u001b[39mmeasures \u001b[33m=\u001b[39m []\u001b[33m;\u001b[39m\u001b[36mtry\u001b[39m {measures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'providers_page'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m route(page\u001b[33m,\u001b[39m \u001b[32m'providers'\u001b[39m) }))\u001b[33m;\u001b[39mmeasures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'dashboard'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m route(page\u001b[33m,\u001b[39m \u001b[32m'dashboard'\u001b[39m) }))\u001b[33m;\u001b[39mmeasures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'dashboard'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mreload() }))\u001b[33m;\u001b[39mmeasures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'courses_page'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m route(page\u001b[33m,\u001b[39m \u001b[32m'courses'\u001b[39m) }))\u001b[33m;\u001b[39m\u001b[36mconst\u001b[39m providerFilter\u001b[33m=\u001b[39mpage\u001b[33m.\u001b[39mlocator(\u001b[32m'.m-filter-select'\u001b[39m)\u001b[33m.\u001b[39mfilter({hasText\u001b[33m:\u001b[39m\u001b[32m'Provider'\u001b[39m})\u001b[33m.\u001b[39mfirst()\u001b[33m;\u001b[39m\u001b[36mconst\u001b[39m filterMeasure\u001b[33m=\u001b[39m\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m\u001b[32m'catalogue_filter_page'\u001b[39m\u001b[33m,\u001b[39m\u001b[36masync\u001b[39m()\u001b[33m=>\u001b[39m{\u001b[36mawait\u001b[39m providerFilter\u001b[33m.\u001b[39mlocator(\u001b[32m'button.m-filter-button'\u001b[39m)\u001b[33m.\u001b[39mclick()})\u001b[33m;\u001b[39mmeasures\u001b[33m.\u001b[39mpush(filterMeasure)\u001b[33m;\u001b[39m\u001b[36mconst\u001b[39m filterButtons\u001b[33m=\u001b[39mproviderFilter\u001b[33m.\u001b[39mlocator(\u001b[32m'.m-filter-popover > button'\u001b[39m)\u001b[33m;\u001b[39mexpect(\u001b[36mawait\u001b[39m filterButtons\u001b[33m.\u001b[39mcount())\u001b[33m.\u001b[39mtoBeLessThanOrEqual(\u001b[35m11\u001b[39m)\u001b[33m;\u001b[39mmeasures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'campuses_page'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m route(page\u001b[33m,\u001b[39m \u001b[32m'campuses'\u001b[39m) }))\u001b[33m;\u001b[39mmeasures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'scholarships_page'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m route(page\u001b[33m,\u001b[39m \u001b[32m'scholarships'\u001b[39m) }))\u001b[33m;\u001b[39mmeasures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'evidence_page'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m route(page\u001b[33m,\u001b[39m \u001b[32m'evidence'\u001b[39m) }))\u001b[33m;\u001b[39mmeasures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'data_quality_overview'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m openDataQuality(page) }))\u001b[33m;\u001b[39m\u001b[36mfor\u001b[39m (\u001b[36mconst\u001b[39m m \u001b[36mof\u001b[39m measures\u001b[33m.\u001b[39mfilter(x \u001b[33m=>\u001b[39m x\u001b[33m.\u001b[39melapsed_ms \u001b[33m!=\u001b[39m \u001b[36mnull\u001b[39m)) {expect(m\u001b[33m.\u001b[39mstatus\u001b[33m,\u001b[39m \u001b[32m`${m.operation} HTTP status`\u001b[39m)\u001b[33m.\u001b[39mtoBe(\u001b[35m200\u001b[39m)\u001b[33m;\u001b[39mexpect(m\u001b[33m.\u001b[39melapsed_ms\u001b[33m,\u001b[39m \u001b[32m`${m.operation} latency`\u001b[39m)\u001b[33m.\u001b[39mtoBeLessThanOrEqual(\u001b[33mRPC_BUDGET_MS\u001b[39m)}\u001b[36mfor\u001b[39m (\u001b[36mconst\u001b[39m m \u001b[36mof\u001b[39m measures\u001b[33m.\u001b[39mfilter(x \u001b[33m=>\u001b[39m x\u001b[33m.\u001b[39moperation\u001b[33m.\u001b[39mendsWith(\u001b[32m'_page'\u001b[39m))) expect(m\u001b[33m.\u001b[39mpayload_bytes\u001b[33m,\u001b[39m \u001b[32m`${m.operation} payload`\u001b[39m)\u001b[33m.\u001b[39mtoBeLessThanOrEqual(\u001b[33mPAGE_PAYLOAD_BUDGET\u001b[39m)\u001b[33m;\u001b[39m\u001b[36mconst\u001b[39m filters \u001b[33m=\u001b[39m measures\u001b[33m.\u001b[39mfind(x \u001b[33m=>\u001b[39m x\u001b[33m.\u001b[39moperation \u001b[33m===\u001b[39m \u001b[32m'catalogue_filter_page'\u001b[39m)\u001b[33m;\u001b[39mexpect(filters\u001b[33m.\u001b[39mstatus)\u001b[33m.\u001b[39mtoBe(\u001b[35m200\u001b[39m)\u001b[33m;\u001b[39mexpect(filters\u001b[33m.\u001b[39mpayload_bytes\u001b[33m,\u001b[39m \u001b[32m'catalogue_filter_page payload'\u001b[39m)\u001b[33m.\u001b[39mtoBeLessThanOrEqual(\u001b[33mFILTER_OPTION_PAYLOAD_BUDGET\u001b[39m)\u001b[33m;\u001b[39m\u001b[36mawait\u001b[39m save(testInfo\u001b[33m,\u001b[39m \u001b[32m'workspace-performance'\u001b[39m\u001b[33m,\u001b[39m { budgets\u001b[33m:\u001b[39m { \u001b[33mRPC_BUDGET_MS\u001b[39m\u001b[33m,\u001b[39m \u001b[33mFILTER_OPTION_PAYLOAD_BUDGET\u001b[39m\u001b[33m,\u001b[39m \u001b[33mPAGE_PAYLOAD_BUDGET\u001b[39m }\u001b[33m,\u001b[39m measures })} \u001b[36mfinally\u001b[39m {\u001b[36mawait\u001b[39m attachRuntimeEvidence(testInfo\u001b[33m,\u001b[39m runtime)\u001b[33m;\u001b[39massertNoServerErrors(runtime)}})\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 27 |\u001b[39m   test(\u001b[32m'exact CRICOS lookup, detail, paging and browser back stay interactive'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }\u001b[33m,\u001b[39m testInfo) \u001b[33m=>\u001b[39m {\u001b[36mconst\u001b[39m runtime \u001b[33m=\u001b[39m observeRuntime(page)\u001b[33m,\u001b[39mmeasures \u001b[33m=\u001b[39m []\u001b[33m;\u001b[39m\u001b[36mtry\u001b[39m {measures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'courses_page'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m route(page\u001b[33m,\u001b[39m \u001b[32m'courses'\u001b[39m) }))\u001b[33m;\u001b[39m\u001b[36mconst\u001b[39m search \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByPlaceholder(\u001b[32m'Search Course, Provider, CRICOS/course code or stable key'\u001b[39m)\u001b[33m;\u001b[39mmeasures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'courses_page'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m search\u001b[33m.\u001b[39mfill(\u001b[32m'121174E'\u001b[39m) }))\u001b[33m;\u001b[39m\u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mgetByText(\u001b[32m'121174E'\u001b[39m\u001b[33m,\u001b[39m { exact\u001b[33m:\u001b[39m \u001b[36mtrue\u001b[39m })\u001b[33m.\u001b[39mfirst())\u001b[33m.\u001b[39mtoBeVisible({ timeout\u001b[33m:\u001b[39m \u001b[35m12\u001b[39m_000 })\u001b[33m;\u001b[39mmeasures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'course_detail'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'.m-table tbody tr'\u001b[39m)\u001b[33m.\u001b[39mfirst()\u001b[33m.\u001b[39mclick() }))\u001b[33m;\u001b[39m\u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mlocator(\u001b[32m'.m-drawer'\u001b[39m))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mkeyboard\u001b[33m.\u001b[39mpress(\u001b[32m'Escape'\u001b[39m)\u001b[33m;\u001b[39m\u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mlocator(\u001b[32m'.m-drawer'\u001b[39m))\u001b[33m.\u001b[39mtoBeHidden()\u001b[33m;\u001b[39mmeasures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'courses_page'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m search\u001b[33m.\u001b[39mfill(\u001b[32m''\u001b[39m) }))\u001b[33m;\u001b[39m\u001b[36mconst\u001b[39m next \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByRole(\u001b[32m'button'\u001b[39m\u001b[33m,\u001b[39m { name\u001b[33m:\u001b[39m \u001b[35m/Next/i\u001b[39m })\u001b[33m.\u001b[39mfirst()\u001b[33m;\u001b[39m\u001b[36mawait\u001b[39m expect(next)\u001b[33m.\u001b[39mtoBeEnabled()\u001b[33m;\u001b[39mmeasures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'courses_page'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m next\u001b[33m.\u001b[39mclick() }))\u001b[33m;\u001b[39m\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'providers_page'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m route(page\u001b[33m,\u001b[39m \u001b[32m'providers'\u001b[39m) })\u001b[33m;\u001b[39mmeasures\u001b[33m.\u001b[39mpush(\u001b[36mawait\u001b[39m measuredRpc(page\u001b[33m,\u001b[39m \u001b[32m'courses_page'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m { \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoBack() }))\u001b[33m;\u001b[39m\u001b[36mawait\u001b[39m expect(page)\u001b[33m.\u001b[39mtoHaveURL(\u001b[35m/#courses/\u001b[39m)\u001b[33m;\u001b[39m\u001b[36mfor\u001b[39m (\u001b[36mconst\u001b[39m m \u001b[36mof\u001b[39m measures) {expect(m\u001b[33m.\u001b[39mstatus)\u001b[33m.\u001b[39mtoBe(\u001b[35m200\u001b[39m)\u001b[33m;\u001b[39mexpect(m\u001b[33m.\u001b[39melapsed_ms\u001b[33m,\u001b[39m \u001b[32m`${m.operation} interaction latency`\u001b[39m)\u001b[33m.\u001b[39mtoBeLessThanOrEqual(m\u001b[33m.\u001b[39moperation \u001b[33m===\u001b[39m \u001b[32m'course_detail'\u001b[39m \u001b[33m?\u001b[39m \u001b[33mDETAIL_BUDGET_MS\u001b[39m \u001b[33m:\u001b[39m \u001b[33mRPC_BUDGET_MS\u001b[39m)\u001b[33m;\u001b[39mexpect(m\u001b[33m.\u001b[39mpayload_bytes)\u001b[33m.\u001b[39mtoBeLessThanOrEqual(\u001b[33mPAGE_PAYLOAD_BUDGET\u001b[39m)}\u001b[36mawait\u001b[39m save(testInfo\u001b[33m,\u001b[39m \u001b[32m'course-interactions'\u001b[39m\u001b[33m,\u001b[39m { budgets\u001b[33m:\u001b[39m { \u001b[33mRPC_BUDGET_MS\u001b[39m\u001b[33m,\u001b[39m \u001b[33mDETAIL_BUDGET_MS\u001b[39m\u001b[33m,\u001b[39m \u001b[33mPAGE_PAYLOAD_BUDGET\u001b[39m }\u001b[33m,\u001b[39m measures })} \u001b[36mfinally\u001b[39m {\u001b[36mawait\u001b[39m attachRuntimeEvidence(testInfo\u001b[33m,\u001b[39m runtime)\u001b[33m;\u001b[39massertNoServerErrors(runtime)}})\n \u001b[90m    |\u001b[39m                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 28 |\u001b[39m   \u001b[90m// v2.15.200: Layer 2 is Adapters only (Source profiles retired). v2.15.300: Adapters is Layer 2/3 › Universities, which reads\u001b[39m\n \u001b[90m 29 |\u001b[39m   \u001b[90m// public.admin_layer23('universities') (the admin_adapters 'list' rows plus the onboarding stage), not admin_read.\u001b[39m\n \u001b[90m 30 |\u001b[39m   \u001b[90m// W33 (30 Oct 2026): one page of it, filtered and ordered on the server (public.admin_layer23('universities_page')).\u001b[39m\u001b[0m"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/performance-deployed.spec.mjs",
-                            "column": 1457,
-                            "line": 27
-                          },
-                          "message": "Error: courses_page interaction latency\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: <= \u001b[32m3000\u001b[39m\nReceived:    \u001b[31m4302\u001b[39m\n\n  25 |   test.beforeEach(async ({ page }) => { await loginAsUatUser(page) })\n  26 |   test('core workspaces stay within governed RPC and payload budgets', async ({ page }, testInfo) => {const runtime = observeRuntime(page),measures = [];try {measures.push(await measuredRpc(page, 'providers_page', async () => { await route(page, 'providers') }));measures.push(await measuredRpc(page, 'dashboard', async () => { await route(page, 'dashboard') }));measures.push(await measuredRpc(page, 'dashboard', async () => { await page.reload() }));measures.push(await measuredRpc(page, 'courses_page', async () => { await route(page, 'courses') }));const providerFilter=page.locator('.m-filter-select').filter({hasText:'Provider'}).first();const filterMeasure=await measuredRpc(page,'catalogue_filter_page',async()=>{await providerFilter.locator('button.m-filter-button').click()});measures.push(filterMeasure);const filterButtons=providerFilter.locator('.m-filter-popover > button');expect(await filterButtons.count()).toBeLessThanOrEqual(11);measures.push(await measuredRpc(page, 'campuses_page', async () => { await route(page, 'campuses') }));measures.push(await measuredRpc(page, 'scholarships_page', async () => { await route(page, 'scholarships') }));measures.push(await measuredRpc(page, 'evidence_page', async () => { await route(page, 'evidence') }));measures.push(await measuredRpc(page, 'data_quality_overview', async () => { await openDataQuality(page) }));for (const m of measures.filter(x => x.elapsed_ms != null)) {expect(m.status, `${m.operation} HTTP status`).toBe(200);expect(m.elapsed_ms, `${m.operation} latency`).toBeLessThanOrEqual(RPC_BUDGET_MS)}for (const m of measures.filter(x => x.operation.endsWith('_page'))) expect(m.payload_bytes, `${m.operation} payload`).toBeLessThanOrEqual(PAGE_PAYLOAD_BUDGET);const filters = measures.find(x => x.operation === 'catalogue_filter_page');expect(filters.status).toBe(200);expect(filters.payload_bytes, 'catalogue_filter_page payload').toBeLessThanOrEqual(FILTER_OPTION_PAYLOAD_BUDGET);await save(testInfo, 'workspace-performance', { budgets: { RPC_BUDGET_MS, FILTER_OPTION_PAYLOAD_BUDGET, PAGE_PAYLOAD_BUDGET }, measures })} finally {await attachRuntimeEvidence(testInfo, runtime);assertNoServerErrors(runtime)}})\n> 27 |   test('exact CRICOS lookup, detail, paging and browser back stay interactive', async ({ page }, testInfo) => {const runtime = observeRuntime(page),measures = [];try {measures.push(await measuredRpc(page, 'courses_page', async () => { await route(page, 'courses') }));const search = page.getByPlaceholder('Search Course, Provider, CRICOS/course code or stable key');measures.push(await measuredRpc(page, 'courses_page', async () => { await search.fill('121174E') }));await expect(page.getByText('121174E', { exact: true }).first()).toBeVisible({ timeout: 12_000 });measures.push(await measuredRpc(page, 'course_detail', async () => { await page.locator('.m-table tbody tr').first().click() }));await expect(page.locator('.m-drawer')).toBeVisible();await page.keyboard.press('Escape');await expect(page.locator('.m-drawer')).toBeHidden();measures.push(await measuredRpc(page, 'courses_page', async () => { await search.fill('') }));const next = page.getByRole('button', { name: /Next/i }).first();await expect(next).toBeEnabled();measures.push(await measuredRpc(page, 'courses_page', async () => { await next.click() }));await measuredRpc(page, 'providers_page', async () => { await route(page, 'providers') });measures.push(await measuredRpc(page, 'courses_page', async () => { await page.goBack() }));await expect(page).toHaveURL(/#courses/);for (const m of measures) {expect(m.status).toBe(200);expect(m.elapsed_ms, `${m.operation} interaction latency`).toBeLessThanOrEqual(m.operation === 'course_detail' ? DETAIL_BUDGET_MS : RPC_BUDGET_MS);expect(m.payload_bytes).toBeLessThanOrEqual(PAGE_PAYLOAD_BUDGET)}await save(testInfo, 'course-interactions', { budgets: { RPC_BUDGET_MS, DETAIL_BUDGET_MS, PAGE_PAYLOAD_BUDGET }, measures })} finally {await attachRuntimeEvidence(testInfo, runtime);assertNoServerErrors(runtime)}})\n     |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 ^\n  28 |   // v2.15.200: Layer 2 is Adapters only (Source profiles retired). v2.15.300: Adapters is Layer 2/3 › Universities, which reads\n  29 |   // public.admin_layer23('universities') (the admin_adapters 'list' rows plus the onboarding stage), not admin_read.\n  30 |   // W33 (30 Oct 2026): one page of it, filtered and ordered on the server (public.admin_layer23('universities_page')).\n    at /home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/performance-deployed.spec.mjs:27:1457"
-                        }
-                      ],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-11-01T20:03:10.772Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "runtime-evidence",
-                          "contentType": "application/json",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/performance-deployed-M1-pe-cbea5-owser-back-stay-interactive-chromium-mobile/attachments/runtime-evidence-62c466c88e6cddc969e0d0145c6a95dcee401e81.json"
-                        },
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/performance-deployed-M1-pe-cbea5-owser-back-stay-interactive-chromium-mobile/test-failed-1.png"
-                        },
-                        {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/performance-deployed-M1-pe-cbea5-owser-back-stay-interactive-chromium-mobile/video.webm"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/performance-deployed-M1-pe-cbea5-owser-back-stay-interactive-chromium-mobile/error-context.md"
-                        },
-                        {
-                          "name": "trace",
-                          "contentType": "application/zip",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/performance-deployed-M1-pe-cbea5-owser-back-stay-interactive-chromium-mobile/trace.zip"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/performance-deployed.spec.mjs",
-                        "column": 1457,
-                        "line": 27
-                      }
-                    },
-                    {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 14698,
+                      "duration": 6730,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
-                      "retry": 1,
-                      "startTime": "2026-11-01T20:03:32.632Z",
+                      "retry": 0,
+                      "startTime": "2026-11-01T22:15:13.053Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "course-interactions",
                           "contentType": "application/json",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/performance-deployed-M1-pe-cbea5-owser-back-stay-interactive-chromium-mobile-retry1/attachments/course-interactions-a488adb6c36ad2c998c0067c49ab4edcbddb9264.json"
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/performance-deployed-M1-pe-cbea5-owser-back-stay-interactive-chromium-mobile/attachments/course-interactions-a488adb6c36ad2c998c0067c49ab4edcbddb9264.json"
                         },
                         {
                           "name": "runtime-evidence",
                           "contentType": "application/json",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/performance-deployed-M1-pe-cbea5-owser-back-stay-interactive-chromium-mobile-retry1/attachments/runtime-evidence-62c466c88e6cddc969e0d0145c6a95dcee401e81.json"
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/performance-deployed-M1-pe-cbea5-owser-back-stay-interactive-chromium-mobile/attachments/runtime-evidence-62c466c88e6cddc969e0d0145c6a95dcee401e81.json"
                         }
                       ]
                     }
                   ],
-                  "status": "flaky"
+                  "status": "expected"
                 }
               ],
               "id": "3c329fcd3b018e1b506c-d786a1a50ef7dce09f57",
@@ -4409,15 +4448,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5254,
+                      "duration": 3182,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T20:03:47.445Z",
+                      "startTime": "2026-11-01T22:15:19.794Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -4456,15 +4495,15 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 21260,
+                      "duration": 7271,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T20:03:52.714Z",
+                      "startTime": "2026-11-01T22:15:22.985Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -4507,7 +4546,7 @@
           "specs": [
             {
               "title": "top-right version opens maintained release history and closes accessibly",
-              "ok": true,
+              "ok": false,
               "tags": [
                 "deployed"
               ],
@@ -4520,31 +4559,133 @@
                   "projectName": "chromium-mobile",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 5845,
-                      "errors": [],
+                      "status": "failed",
+                      "duration": 22321,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('.m-release-pill')\nExpected substring: \u001b[32m\"v2.15.40\u001b[7m1\u001b[27m\"\u001b[39m\nReceived string:    \u001b[31m\"v2.15.40\u001b[7m2\u001b[27m\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" locator('.m-release-pill') with timeout 20000ms\u001b[22m\n\u001b[2m  - waiting for locator('.m-release-pill')\u001b[22m\n\u001b[2m    44 × locator resolved to <span tabindex=\"0\" role=\"button\" class=\"m-release-pill\" aria-haspopup=\"dialog\" title=\"View release notes\" aria-label=\"Open release notes for PIM Admin v2.15.402\">…</span>\u001b[22m\n\u001b[2m       - unexpected value \"v2.15.402\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('.m-release-pill')\nExpected substring: \u001b[32m\"v2.15.40\u001b[7m1\u001b[27m\"\u001b[39m\nReceived string:    \u001b[31m\"v2.15.40\u001b[7m2\u001b[27m\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" locator('.m-release-pill') with timeout 20000ms\u001b[22m\n\u001b[2m  - waiting for locator('.m-release-pill')\u001b[22m\n\u001b[2m    44 × locator resolved to <span tabindex=\"0\" role=\"button\" class=\"m-release-pill\" aria-haspopup=\"dialog\" title=\"View release notes\" aria-label=\"Open release notes for PIM Admin v2.15.402\">…</span>\u001b[22m\n\u001b[2m       - unexpected value \"v2.15.402\"\u001b[22m\n\n    at /home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/release-notes-deployed.spec.mjs:12:25",
+                        "location": {
+                          "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/release-notes-deployed.spec.mjs",
+                          "column": 25,
+                          "line": 12
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 10 |\u001b[39m   \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mlocator(\u001b[32m'#governed-runtime-marker'\u001b[39m))\u001b[33m.\u001b[39mtoHaveCount(\u001b[35m0\u001b[39m)\n \u001b[90m 11 |\u001b[39m   \u001b[36mconst\u001b[39m version\u001b[33m=\u001b[39mpage\u001b[33m.\u001b[39mlocator(\u001b[32m'.m-release-pill'\u001b[39m)\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 12 |\u001b[39m   \u001b[36mawait\u001b[39m expect(version)\u001b[33m.\u001b[39mtoContainText(\u001b[32m`v${UI_VERSION}`\u001b[39m)\n \u001b[90m    |\u001b[39m                         \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 13 |\u001b[39m   \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mlocator(\u001b[32m'body'\u001b[39m))\u001b[33m.\u001b[39mnot\u001b[33m.\u001b[39mtoContainText(\u001b[35m/Pipeline Ops v1\\.0 · Evidence v1\\.0 · Data Quality v1\\.0 · Access Admin v1\\.0/\u001b[39m)\n \u001b[90m 14 |\u001b[39m   \u001b[36mawait\u001b[39m expect(version)\u001b[33m.\u001b[39mtoHaveAttribute(\u001b[32m'role'\u001b[39m\u001b[33m,\u001b[39m\u001b[32m'button'\u001b[39m)\n \u001b[90m 15 |\u001b[39m   \u001b[36mawait\u001b[39m expect(version)\u001b[33m.\u001b[39mtoHaveAttribute(\u001b[32m'aria-haspopup'\u001b[39m\u001b[33m,\u001b[39m\u001b[32m'dialog'\u001b[39m)\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/release-notes-deployed.spec.mjs",
+                            "column": 25,
+                            "line": 12
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('.m-release-pill')\nExpected substring: \u001b[32m\"v2.15.40\u001b[7m1\u001b[27m\"\u001b[39m\nReceived string:    \u001b[31m\"v2.15.40\u001b[7m2\u001b[27m\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" locator('.m-release-pill') with timeout 20000ms\u001b[22m\n\u001b[2m  - waiting for locator('.m-release-pill')\u001b[22m\n\u001b[2m    44 × locator resolved to <span tabindex=\"0\" role=\"button\" class=\"m-release-pill\" aria-haspopup=\"dialog\" title=\"View release notes\" aria-label=\"Open release notes for PIM Admin v2.15.402\">…</span>\u001b[22m\n\u001b[2m       - unexpected value \"v2.15.402\"\u001b[22m\n\n\n  10 |   await expect(page.locator('#governed-runtime-marker')).toHaveCount(0)\n  11 |   const version=page.locator('.m-release-pill')\n> 12 |   await expect(version).toContainText(`v${UI_VERSION}`)\n     |                         ^\n  13 |   await expect(page.locator('body')).not.toContainText(/Pipeline Ops v1\\.0 · Evidence v1\\.0 · Data Quality v1\\.0 · Access Admin v1\\.0/)\n  14 |   await expect(version).toHaveAttribute('role','button')\n  15 |   await expect(version).toHaveAttribute('aria-haspopup','dialog')\n    at /home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/release-notes-deployed.spec.mjs:12:25"
+                        }
+                      ],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-01T20:04:13.994Z",
+                      "startTime": "2026-11-01T22:15:30.272Z",
                       "annotations": [],
                       "attachments": [
-                        {
-                          "name": "pim-v2-15-401-release-notes",
-                          "contentType": "image/png",
-                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/release-notes-deployed-Stu-58d53-story-and-closes-accessibly-chromium-mobile/attachments/pim-v2-15-401-release-notes-8fb6401cc89531eea66b99f21208f7bd6b1ceaa9.png"
-                        },
                         {
                           "name": "runtime-evidence",
                           "contentType": "application/json",
                           "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/release-notes-deployed-Stu-58d53-story-and-closes-accessibly-chromium-mobile/attachments/runtime-evidence-dcc5ce941a587acffbf6ea799fdf6bc5681452a3.json"
+                        },
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/release-notes-deployed-Stu-58d53-story-and-closes-accessibly-chromium-mobile/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/release-notes-deployed-Stu-58d53-story-and-closes-accessibly-chromium-mobile/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/release-notes-deployed-Stu-58d53-story-and-closes-accessibly-chromium-mobile/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/release-notes-deployed-Stu-58d53-story-and-closes-accessibly-chromium-mobile/trace.zip"
                         }
-                      ]
+                      ],
+                      "errorLocation": {
+                        "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/release-notes-deployed.spec.mjs",
+                        "column": 25,
+                        "line": 12
+                      }
+                    },
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 21921,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('.m-release-pill')\nExpected substring: \u001b[32m\"v2.15.40\u001b[7m1\u001b[27m\"\u001b[39m\nReceived string:    \u001b[31m\"v2.15.40\u001b[7m2\u001b[27m\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" locator('.m-release-pill') with timeout 20000ms\u001b[22m\n\u001b[2m  - waiting for locator('.m-release-pill')\u001b[22m\n\u001b[2m    44 × locator resolved to <span tabindex=\"0\" role=\"button\" class=\"m-release-pill\" aria-haspopup=\"dialog\" title=\"View release notes\" aria-label=\"Open release notes for PIM Admin v2.15.402\">…</span>\u001b[22m\n\u001b[2m       - unexpected value \"v2.15.402\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('.m-release-pill')\nExpected substring: \u001b[32m\"v2.15.40\u001b[7m1\u001b[27m\"\u001b[39m\nReceived string:    \u001b[31m\"v2.15.40\u001b[7m2\u001b[27m\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" locator('.m-release-pill') with timeout 20000ms\u001b[22m\n\u001b[2m  - waiting for locator('.m-release-pill')\u001b[22m\n\u001b[2m    44 × locator resolved to <span tabindex=\"0\" role=\"button\" class=\"m-release-pill\" aria-haspopup=\"dialog\" title=\"View release notes\" aria-label=\"Open release notes for PIM Admin v2.15.402\">…</span>\u001b[22m\n\u001b[2m       - unexpected value \"v2.15.402\"\u001b[22m\n\n    at /home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/release-notes-deployed.spec.mjs:12:25",
+                        "location": {
+                          "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/release-notes-deployed.spec.mjs",
+                          "column": 25,
+                          "line": 12
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 10 |\u001b[39m   \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mlocator(\u001b[32m'#governed-runtime-marker'\u001b[39m))\u001b[33m.\u001b[39mtoHaveCount(\u001b[35m0\u001b[39m)\n \u001b[90m 11 |\u001b[39m   \u001b[36mconst\u001b[39m version\u001b[33m=\u001b[39mpage\u001b[33m.\u001b[39mlocator(\u001b[32m'.m-release-pill'\u001b[39m)\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 12 |\u001b[39m   \u001b[36mawait\u001b[39m expect(version)\u001b[33m.\u001b[39mtoContainText(\u001b[32m`v${UI_VERSION}`\u001b[39m)\n \u001b[90m    |\u001b[39m                         \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 13 |\u001b[39m   \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mlocator(\u001b[32m'body'\u001b[39m))\u001b[33m.\u001b[39mnot\u001b[33m.\u001b[39mtoContainText(\u001b[35m/Pipeline Ops v1\\.0 · Evidence v1\\.0 · Data Quality v1\\.0 · Access Admin v1\\.0/\u001b[39m)\n \u001b[90m 14 |\u001b[39m   \u001b[36mawait\u001b[39m expect(version)\u001b[33m.\u001b[39mtoHaveAttribute(\u001b[32m'role'\u001b[39m\u001b[33m,\u001b[39m\u001b[32m'button'\u001b[39m)\n \u001b[90m 15 |\u001b[39m   \u001b[36mawait\u001b[39m expect(version)\u001b[33m.\u001b[39mtoHaveAttribute(\u001b[32m'aria-haspopup'\u001b[39m\u001b[33m,\u001b[39m\u001b[32m'dialog'\u001b[39m)\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/release-notes-deployed.spec.mjs",
+                            "column": 25,
+                            "line": 12
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('.m-release-pill')\nExpected substring: \u001b[32m\"v2.15.40\u001b[7m1\u001b[27m\"\u001b[39m\nReceived string:    \u001b[31m\"v2.15.40\u001b[7m2\u001b[27m\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" locator('.m-release-pill') with timeout 20000ms\u001b[22m\n\u001b[2m  - waiting for locator('.m-release-pill')\u001b[22m\n\u001b[2m    44 × locator resolved to <span tabindex=\"0\" role=\"button\" class=\"m-release-pill\" aria-haspopup=\"dialog\" title=\"View release notes\" aria-label=\"Open release notes for PIM Admin v2.15.402\">…</span>\u001b[22m\n\u001b[2m       - unexpected value \"v2.15.402\"\u001b[22m\n\n\n  10 |   await expect(page.locator('#governed-runtime-marker')).toHaveCount(0)\n  11 |   const version=page.locator('.m-release-pill')\n> 12 |   await expect(version).toContainText(`v${UI_VERSION}`)\n     |                         ^\n  13 |   await expect(page.locator('body')).not.toContainText(/Pipeline Ops v1\\.0 · Evidence v1\\.0 · Data Quality v1\\.0 · Access Admin v1\\.0/)\n  14 |   await expect(version).toHaveAttribute('role','button')\n  15 |   await expect(version).toHaveAttribute('aria-haspopup','dialog')\n    at /home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/release-notes-deployed.spec.mjs:12:25"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-11-01T22:15:53.169Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "runtime-evidence",
+                          "contentType": "application/json",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/release-notes-deployed-Stu-58d53-story-and-closes-accessibly-chromium-mobile-retry1/attachments/runtime-evidence-dcc5ce941a587acffbf6ea799fdf6bc5681452a3.json"
+                        },
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/release-notes-deployed-Stu-58d53-story-and-closes-accessibly-chromium-mobile-retry1/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/release-notes-deployed-Stu-58d53-story-and-closes-accessibly-chromium-mobile-retry1/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/release-notes-deployed-Stu-58d53-story-and-closes-accessibly-chromium-mobile-retry1/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/test-results/release-notes-deployed-Stu-58d53-story-and-closes-accessibly-chromium-mobile-retry1/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/home/runner/work/Coursefinder-Pilot/Coursefinder-Pilot/tests/uat/release-notes-deployed.spec.mjs",
+                        "column": 25,
+                        "line": 12
+                      }
                     }
                   ],
-                  "status": "expected"
+                  "status": "unexpected"
                 }
               ],
               "id": "bfbf2d5b3274ba39f362-e31a4e74b02ea287fcbd",
@@ -4559,11 +4700,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-11-01T19:57:05.181Z",
-    "duration": 434749.559,
-    "expected": 81,
+    "startTime": "2026-11-01T22:09:56.264Z",
+    "duration": 379139.479,
+    "expected": 80,
     "skipped": 0,
-    "unexpected": 0,
-    "flaky": 1
+    "unexpected": 2,
+    "flaky": 0
   }
 }
