@@ -357,6 +357,8 @@ export function RowDrawer({kind,id,rank,onError,onClose,onChanged}){
           {d.can_restore&&<ReasonAction label="Restore" variant="primary" testid="aer-restore" onDo={r=>life('restore',r)} placeholder="Why it is restored (kept in the history)"/>}
           {d.status==='proposed'&&<small>A waiting row is decided in <a className="cf-link" href={l4Href(d)}>Layer 4</a>.</small>}
         </div>}
+        {/* SS-016 UR-17 (1 Nov 2026): below Curator the drawer says who corrects the row, instead of showing no actions at all */}
+        {Number(rank)<3&&<p className="sd-desc" data-aer-owner><small>A Curator (rank 3) or above corrects, withdraws or quarantines this row; a waiting row is decided by the Platform Admin in Layer 4.</small></p>}
         <h3>History</h3>
         {(d.history||[]).length===0?<small>No change by a person yet.</small>:
           <div className="cf-table-wrap"><table className="cf-table" data-aer-history><thead><tr><th>When</th><th>Who</th><th>What</th><th>Before</th><th>After</th><th>Reason</th></tr></thead>
@@ -456,7 +458,7 @@ export function SourcesView({rank,onError,routeParams}){
     {key:'last_success',label:'Last read · next refresh',width:180,sortKey:'read_at',render:s=><small>{s.last_success?fmtDate(s.last_success):'never'}{s.next_refresh?` · ${fmtDate(s.next_refresh)}`:''}</small>},
     {key:'action',label:'Read again',width:230,render:s=>d?.can_reread&&s.in_scope&&!['reading'].includes(s.hold_state)&&!(s.run?.error||'').startsWith('held_unparsed')&&s.run?
       <span onClick={e=>e.stopPropagation()}><ReasonAction label="Read again" testid="aer-reread" onDo={r=>reread(s,r)}/>{msg[s.id]&&<small role="status"> {msg[s.id]}</small>}</span>
-      :<small>{(s.run?.error||'').startsWith('held_unparsed')?'Held as unreadable':msg[s.id]||'—'}</small>},
+      :<small>{(s.run?.error||'').startsWith('held_unparsed')?'Held as unreadable':msg[s.id]||(d&&!d.can_reread&&s.in_scope?<span data-aer-reread-owner>The Platform Admin reads it again</span>:'—')}</small>},
   ]
   const[cols,hidden,setHidden]=useColumns('sources',all)
   return <div className="m-page-stack aer-page" data-aer-view="sources">

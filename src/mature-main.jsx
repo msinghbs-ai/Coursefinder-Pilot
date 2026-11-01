@@ -27,7 +27,7 @@ import ProviderLogo,{ProviderBrand,logoCapability}from'./ProviderLogo'
 import FlagsPanel from'./FlagsPanel'
 import ApiUsagePanel from'./ApiUsagePanel'
 import{SectionTitle,fmtNumber,PanelTitle,Pulse,SummaryCard,EmptyState,EmptyInline,Pager,useRememberedState,StatusChip,FilterChip,PageHeader,PageLayout,StatusDot,Metric}from'./ui-kit'
-import{PAGES,SECTIONS,SECTION_OF,resolveTarget,hrefFor,canOpen,shownTabs,effectiveTab}from'./nav-map'
+import{PAGES,SECTIONS,SECTION_OF,resolveTarget,hrefFor,canOpen,shownTabs,effectiveTab,refusedTab,roleName}from'./nav-map'
 import{ViewerContext}from'./lib/viewer'
 import PlatformHealth,{readPlatformHealth,healthTone,HEALTH_WORDS}from'./PlatformHealth'
 import QueueWatch from'./QueueWatch'
@@ -252,7 +252,7 @@ function App(){
       <DeployedVersionNotice/>
       {error&&<div className="m-alert" data-global-error><AlertTriangle size={16}/><span>{error}</span><button onClick={()=>setError('')} aria-label="Dismiss"><X size={15}/></button></div>}
       <WorkspaceErrorBoundary routeKey={`${pageKey}/${tab}?${route.params.toString()}`} onError={report} onRecover={()=>go('dashboard')}>
-        <React.Suspense fallback={<div className="m-page-loading" role="status"><span className="m-spinner"/>Loading…</div>}><Page pageKey={pageKey} tab={tab} routeParams={route.params} rank={rank} actorId={String(context?.user_id||'')} onError={report} navigate={go}/></React.Suspense>
+        <React.Suspense fallback={<div className="m-page-loading" role="status"><span className="m-spinner"/>Loading…</div>}><Page pageKey={pageKey} tab={tab} requestedTab={route.tab} routeParams={route.params} rank={rank} actorId={String(context?.user_id||'')} onError={report} navigate={go}/></React.Suspense>
       </WorkspaceErrorBoundary>
     </main>
   </div></ViewerContext.Provider>
@@ -270,13 +270,17 @@ function DeployedVersionNotice(){
 function Login({error,onError}){const[email,setEmail]=useState(''),[password,setPassword]=useState(''),[busy,setBusy]=useState(false);async function submit(e){e.preventDefault();setBusy(true);onError('');const{error:x}=await supabase.auth.signInWithPassword({email,password});if(x)onError(x.message);setBusy(false)}return <div className="m-login"><form className="m-login-card" onSubmit={submit}><div className="m-login-brand"><span className="m-brand-mark large">SS</span><div><strong>StudySearch Admin</strong><small>Governed operational workspace</small></div></div><div className="m-login-copy"><h1>Sign in</h1><p>Authorised staff access only. Canonical catalogue, provenance and pipeline operations.</p></div>{error&&<div className="m-alert compact"><AlertTriangle size={15}/><span>{error}</span></div>}<label>Email<input type="email" value={email} onChange={e=>setEmail(e.target.value)} required/></label><label>Password<input type="password" value={password} onChange={e=>setPassword(e.target.value)} required/></label><button className="m-primary" disabled={busy}>{busy?'Signing in…':'Sign in'}</button><small className="m-login-version">PIM Admin v{UI_VERSION}</small></form></div>}
 
 // Every page renders inside the shell through PageLayout: optional tabs, then content. No page draws its own shell.
-function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
+function Page({pageKey,tab,requestedTab='',routeParams,rank,actorId,onError,navigate}){
   const focusId=routeParams?.get?.('id')||''
   const err=e=>onError(e?.message||String(e))
-  if(!canOpen(pageKey,rank))return <EmptyState icon={AlertTriangle} title="Not authorised" text="Your role does not include this page. Ask a Platform Admin if you need access."/>
+  // SS-016 UR-09/UR-17 (1 Nov 2026): a page or tab above the signed-in role names the role that opens it and who to ask, never a bare refusal
+  // or a silent switch to another tab (an old bookmark or a guide link may lead here)
+  if(!canOpen(pageKey,rank))return <EmptyState icon={AlertTriangle} title="Not authorised" text={<span data-handoff>{handoffText(PAGES[pageKey]?.label||'This page',PAGES[pageKey]?.min,rank)}</span>}/>
   const page=PAGES[pageKey],tabs=shownTabs(page,rank,tab)
   const onTab=key=>navigate(pageKey,{tab:key})
+  const refused=refusedTab(pageKey,requestedTab,rank)
   const body=pageBody()
+  if(refused)return <PageLayout tabs={tabs} active={tab} onTab={onTab} label={`${page.label} sections`}><div className="m-alert compact" role="status" data-tab-handoff><AlertTriangle size={15}/><span>{handoffText(`${page.label} › ${refused.tab.label}`,refused.min,rank)} Shown instead: {page.tabs.find(t=>t.key===tab)?.label||page.label}.</span></div>{body}</PageLayout>
   // v2.15.177 (Decision 252): a notice on the layer's page when a toolset it depends on hits a limit or times out
   const layerNo=/^layer[1-4]$/.test(pageKey)?Number(pageKey.slice(5)):null
   return <PageLayout tabs={tabs} active={tab} onTab={onTab} label={`${page.label} sections`}>{layerNo&&<LayerNotices layer={layerNo}/>}{body}</PageLayout>
@@ -865,6 +869,7 @@ function genericCell(k,v){if(v==null||v==='')return'—';if(k.includes('status')
 function useDebounce(value,delay){const[v,setV]=useState(value);useEffect(()=>{const t=setTimeout(()=>setV(value),delay);return()=>clearTimeout(t)},[value,delay]);return v}
 function rowsOf(data){if(Array.isArray(data))return data;return data?.items??data?.rows??data?.data??[]}
 function normaliseOptions(list){if(!Array.isArray(list))return[];return list.map(x=>{if(x==null)return null;if(typeof x!=='object')return opt(String(x),humanise(x));const value=x.id??x.code??x.value??x.name??x.label;return opt(String(value),x.name??x.label??humanise(value),x.code&&x.code!==value?x.code:'')}).filter(Boolean)}
+function handoffText(what,min,rank){const need=roleName(min);return`${what} opens from ${need} (rank ${min}). You are signed in as ${roleName(rank)} (rank ${rank}). Ask a ${need} to do this for you, or a Platform Admin if you need access.`}
 function roleLabel(value){return value==='pim_admin'?'PIM Operator':humanise(value)}
 function humanise(v){if(v==null)return'—';return String(v).replace(/[_-]+/g,' ').replace(/\b\w/g,m=>m.toUpperCase())}
 function relativeTime(v){const d=new Date(v);if(Number.isNaN(+d))return'unknown';const s=Math.round((Date.now()-d.getTime())/1000),a=Math.abs(s);if(a<60)return'just now';if(a<3600)return`${Math.round(a/60)}m ago`;if(a<86400)return`${Math.round(a/3600)}h ago`;if(a<604800)return`${Math.round(a/86400)}d ago`;return fmtDate(v)}
