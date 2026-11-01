@@ -1,19 +1,16 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.397'
-export const PACKAGE_VERSION='0.1.324'
+export const UI_VERSION='2.15.398'
+export const PACKAGE_VERSION='0.1.325'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'1 Nov 2026',
-  title:'Refusals and links name the role that acts; role journeys tested for all six roles',
+  title:'Using a reviewer\'s course page replaces the old one',
   changes:[
-    'Layer 4 Review: a choice above your role is shown disabled with the role that makes it, instead of being refused after you confirm.',
-    'A page or tab above your role says which role opens it (Viewer to Platform Admin), and an error from the server that names a role keeps its words.',
-    'Automations: a refusal on an automation names the role that changes it (PIM Admin or Platform Admin).',
-    'Platform guide: a link to a page or tab above your role says which role opens it; Read an entry requirement source again opens Sources, reads and holds.',
-    'Entry requirements: the row drawer and Read again column name the role that edits or re-reads.'
+    'Layer 4 Review, course links: Use the new page (or an address you enter) makes the approved page the course\'s one active, primary official page, retires the old one and sets the course page on the course record.',
+    'A course whose page was set by hand on the course record is not changed from Layer 4: the decision is refused and points to the course record instead of being recorded as approved without effect.'
   ],
   bugFixes:[]
 }

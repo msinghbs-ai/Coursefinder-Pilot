@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.325 — 1 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.398** (E15; overnight mandate 1 Nov 2026 22:01). Migration `20261101120000_cf247_e15_course_link_replacement`: `security.layer4_course_link_apply_impl` (`e97b56cc` → `75a53dbb`; md5-guarded): a hand lock refuses with the course-record route; other active official links become inactive; the approved link is active and primary; `courses.course_url` follows; a skipped write is refused rather than recorded. Existing data unchanged (repair is a separate paste file in the decision pack). Spec s212.
+
 ## 0.1.324 — 1 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.397** (SS-016 role acceptance, overnight mandate 1 Nov 2026 22:01). Six-role fixture journeys (s207) and UR-04/07/09/17 fixtures (s208–s211); handoffs name the next owner (`nav-map.js` ROLE_NAMES, `refusedTab`; `Layer4Inbox.jsx` choice ranks; `errors.js` keeps role refusals; `AerWorkspace.jsx`). Migration `20261101110000_cf247_automation_owner_refusal`: `security.admin_automation_control_v1` per-automation refusal names the role (`71951aa2` → `431aff60`; message only). Guide G1–G3.
