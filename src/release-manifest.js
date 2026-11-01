@@ -1,16 +1,16 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.391'
-export const PACKAGE_VERSION='0.1.318'
+export const UI_VERSION='2.15.392'
+export const PACKAGE_VERSION='0.1.319'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'1 Nov 2026',
-  title:'Layer 4 Review reaches every item, page by page',
+  title:'Layer 4 cards show their evidence; decisions show what actually happened',
   changes:[
-    'Layer 4 Review: items are shown 200 at a time, oldest first, with Previous and Next, so every item of a large kind can be reached (UR-04).',
-    'Layer 4 Review: a decision or a new item no longer moves the list, and the page you were on is kept when you come back from another screen.'
+    'Layer 4 Review: each card shows its reference, the stored copy it rests on (when captured, and whether a newer copy exists) and a link to the course record (UR-05).',
+    'Layer 4 Review: after a decision the screen says what actually happened at the destination (admitted, applied, closed without a value, queued, deferred, or saved but not yet visible), with the AER row counts and the decision and audit numbers (UR-06).'
   ],
   bugFixes:[]
 }

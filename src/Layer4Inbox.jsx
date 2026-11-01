@@ -48,7 +48,7 @@ export default function Layer4Inbox({onError,routeParams}){
   const page=c=>{setCur(c);loadItems(c)}
   const next=()=>{restored.current=null;const l=items?.items||[];if(!l.length)return;setStack([...stack,cur]);page(keyOf(l[l.length-1]))}
   const prev=()=>{restored.current=null;const s=[...stack];const c=s.length?s.pop():null;setStack(s);page(c)}
-  const decided=r=>{setNote(`Done. ${r?.returns||''}`);loadSum();loadItems(cur);if(view==='university')rpc('universities',{kind,q,limit:50,offset}).then(setUnis).catch(()=>{})}
+  const decided=r=>{setNote(outcomeText(r));loadSum();loadItems(cur);if(view==='university')rpc('universities',{kind,q,limit:50,offset}).then(setUnis).catch(()=>{})}
   if(!sum)return <Loading label="Reading what needs a person…"/>
   const bk=sum.by_kind||{}
   return <div className="l4i" data-l4-inbox>
@@ -107,9 +107,12 @@ function Item({it,k,showProvider,rank,onDone,onError}){
   const ticked=(()=>{try{return JSON.parse(value||'[]')}catch{return[]}})()
   const tick=id=>setValue(JSON.stringify(ticked.includes(id)?ticked.filter(x=>x!==id):[...ticked,id]))
   const go=async()=>{setBusy(true);setErr('');try{const r=await rpc('decide',{kind:it.kind,ref:it.ref,choice:open.key,reason,value});setOpen(null);onDone?.(r)}catch(e){setErr(e.message)}finally{setBusy(false)}}
-  return <article className={`l4i-item${it.late?' late':''}`} data-l4-item={it.kind}>
-    <header><StatusChip value={it.kind} tone={it.late?'warning':'info'} label={k.label}/>{showProvider&&it.provider&&<strong className="l4i-prov">{it.provider}</strong>}{it.subject&&<span className="l4i-subj">{it.subject}</span>}{d.course_code&&<span className="l4i-code" title="CRICOS code" data-l4-code>CRICOS {d.course_code}</span>}<small>{fmtDate(it.created_at)} · {days(it.created_at)} d</small></header>
+  return <article className={`l4i-item${it.late?' late':''}`} data-l4-item={it.kind} data-l4-ref={it.ref}>
+    <header><StatusChip value={it.kind} tone={it.late?'warning':'info'} label={k.label}/>{showProvider&&it.provider&&<strong className="l4i-prov">{it.provider}</strong>}{it.subject&&<span className="l4i-subj">{it.subject}</span>}{d.course_code&&<span className="l4i-code" title="CRICOS code" data-l4-code>CRICOS {d.course_code}</span>}<small>{fmtDate(it.created_at)} · {days(it.created_at)} d · <span data-l4-refshow title={it.ref}>Ref {String(it.ref).slice(0,8)}</span></small></header>
     <p className="l4i-why">{it.why}</p>
+    {(d.evidence_id||d.course_id)&&!aerItem&&<p className="l4i-evid" data-l4-evidence><small>
+      {d.evidence_id?<><a href={hrefFor('evidence','',{evidence_id:d.evidence_id})} data-l4-evidence-link>Stored copy</a>{d.captured_at?` captured ${fmtDate(d.captured_at)}`:''}{d.newer_copy?<em className="l4i-match warn" data-l4-newer> a newer copy of this page exists</em>:''}{d.source_url?<> · <a href={d.source_url} target="_blank" rel="noreferrer">source <ExternalLink size={11}/></a></>:null}</>:'No stored copy is linked to this item'}
+      {d.course_id&&<> · <a href={hrefFor('courses','',{id:d.course_id})} data-l4-open-record>Open the course record</a></>}</small></p>}
     {it.kind==='course_link'&&!fee&&(urlOf(d.before)||urlOf(d.proposed))&&<dl className="l4i-dl"><dt>Page we hold</dt><dd data-l4-held><PageLink u={urlOf(d.before)} title={it.subject}/></dd><dt>New page</dt><dd data-l4-new><PageLink u={urlOf(d.proposed)} title={it.subject}/></dd></dl>}
     {fee&&<p className="l4i-why" data-l4-fee-item><small>A held fee: enter the course's own page (https://, on the university's website) and it is read again, or keep the page we hold.</small></p>}
     {it.kind==='counsellor_report'&&<dl className="l4i-dl" data-l4-report>{d.issue&&<><dt>Issue</dt><dd>{String(d.issue).replace(/_/g,' ')}</dd></>}{d.field&&<><dt>Field</dt><dd>{d.field}</dd></>}{d.suggested_value&&<><dt>Suggested</dt><dd>{d.suggested_value}</dd></>}{d.source_url&&<><dt>Source</dt><dd><a href={d.source_url} target="_blank" rel="noreferrer">{d.source_url} <ExternalLink size={11}/></a></dd></>}{d.reporter&&<><dt>Reported by</dt><dd>{[d.reporter.name,d.reporter.email].filter(Boolean).join(' · ')}</dd></>}</dl>}
@@ -157,6 +160,17 @@ function AerRows({aer,rank,ticking,ticked,tick}){
   </div>
 }
 
+// UR-06 (1 Nov 2026): the decision reply says what actually happened at the destination, with the audit event, not only the choice's text
+const OUTCOME={admitted:'Admitted',applied:'Applied',reconciled:'Closed without admitting a value',downstream:'Queued: the result follows later',deferred:'Deferred: asked again later',pending_check:'Saved, but the destination does not show it yet: check before going on'}
+export const outcomeText=r=>{const o=r?.outcome||{},rows=o.rows||{}
+  if(!o.class)return`Done. ${r?.returns||''}`
+  const parts=[`Done. ${OUTCOME[o.class]||o.class}`]
+  const rc=['active','excluded','superseded','proposed','inactive'].filter(k=>rows[k]).map(k=>`${rows[k]} ${k==='proposed'?'waiting':k}`)
+  if(rc.length)parts.push(`rows ${rc.join(', ')}`)
+  if(o.value)parts.push(o.verified?`now the course's link: ${o.value}`:`not yet the course's link: ${o.value}`)
+  if(o.decision_id)parts.push(`decision ${String(o.decision_id).slice(0,8)}`)
+  if(r?.event_id)parts.push(`audit #${r.event_id}`)
+  return parts.join(' · ')}
 export const isFeeItem=it=>it?.kind==='course_link'&&it?.detail?.field_code==='provider_current_tuition'
 export const urlOk=(v,httpsOnly)=>(httpsOnly?/^https:\/\/[^\s/]+\.\S+/:/^https?:\/\/\S+\.\S+/).test(String(v||'').trim())
 
