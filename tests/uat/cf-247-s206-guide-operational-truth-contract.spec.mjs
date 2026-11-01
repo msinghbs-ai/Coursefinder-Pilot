@@ -137,3 +137,14 @@ test.describe('mocked browser', () => {
     await expect(g).not.toContainText('Mailgun')
   })
 })
+
+// SS-016 §2 (Platform Admin 1 Nov 2026 21:02): the automation control's floor names the role it checks; the boundary is unchanged
+test('automation control: the rank-5 refusal names the PIM Admin, and the boundary is unchanged', () => {
+  const m = fs.readFileSync('supabase/migrations/20261101090000_cf247_automation_denial_message.sql', 'utf8')
+  expect(m).toContain("'30c319b8ed37dbc1df6700a0d3f5c46f', '71951aa2faf643f0dd86aae580e6c34d'")
+  expect(m).toContain("if auth.uid() is null or v_rank<5 then raise exception 'PIM Admin role or above required to change automations.")
+  expect(m).toContain("array[1]")
+  expect(m).not.toMatch(/v_rank<[0-46-9]/)
+  expect(m).toMatch(/^-- Replaces: /m)
+  expect(m).toMatch(/^-- Retires: nothing/m)
+})
