@@ -3,10 +3,12 @@
 // kept up to date with the UI and the data admission mechanism". One source (src/guide/sops.js) for the in-app guides and docs/sops/*.md.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
+import crypto from 'node:crypto'
 import { mockAdmin } from './support/admin-mock.mjs'
 import { PAGES, SECTIONS } from '../../src/nav-map.js'
 import { UI_VERSION } from '../../src/release-manifest.js'
 import { SOPS, SOP_REVIEWED_FOR, sopMarkdown, AUTOMATION } from '../../src/guide/sops.js'
+import { parseSopDocument } from '../../scripts/export-sops.mjs'
 
 const label = (page, tab) => { const p = PAGES[page]; const t = (p?.tabs || []).find((x) => x.key === tab); return [p?.label || page, t?.label].filter(Boolean).join(' › ') }
 
@@ -35,7 +37,13 @@ test('every SOP step opens a real screen and tab; each SOP has its sections and 
 })
 
 test('the versioned documents equal what src/guide/sops.js generates (run node scripts/export-sops.mjs)', () => {
-  for (const s of SOPS) expect(fs.readFileSync(`docs/sops/${s.id}.md`, 'utf8')).toBe(sopMarkdown(s, label))
+  // SS-016 UR-03 (1 Nov 2026): each document starts with its provenance line (version, reviewed release, source commit, content sha256);
+  // the content below it is exactly what src/guide/sops.js generates.
+  for (const s of SOPS) {
+    const { meta, body } = parseSopDocument(fs.readFileSync(`docs/sops/${s.id}.md`, 'utf8'))
+    expect(body).toBe(sopMarkdown(s, label))
+    expect(meta).toMatchObject({ id: s.id, version: s.version, 'reviewed-release': SOP_REVIEWED_FOR, 'content-sha256': crypto.createHash('sha256').update(body, 'utf8').digest('hex') })
+  }
 })
 
 test.describe('mocked browser', () => {

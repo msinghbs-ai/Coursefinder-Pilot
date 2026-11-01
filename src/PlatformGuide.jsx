@@ -2,12 +2,12 @@
 // src/guide/platformGuide.js, reviewed every release (contract test: reviewed version = UI version; every menu page
 // has an entry). Each screen links straight to itself, so the guide never relies on screenshots that go stale.
 import React,{useState}from'react'
-import{ArrowRight,BookOpen,CalendarCheck,Compass,Mail,ShieldCheck,Siren,Sparkles,Users}from'lucide-react'
+import{ArrowRight,BellRing,BookOpen,CalendarCheck,Compass,ListChecks,ShieldCheck,Siren,Sparkles,Users}from'lucide-react'
 import{PAGES,SECTIONS,canOpen}from'./nav-map'
 import{UI_VERSION,RELEASE}from'./release-manifest'
-import{GUIDE_REVIEWED_FOR,ROLES,RULES,DAILY_ROUTINE,SCREENS,SIGNALS,ADMIN_DUTIES,ALERTS}from'./guide/platformGuide'
+import{GUIDE_REVIEWED_FOR,ROLES,RULES,DAILY_ROUTINE,SCREENS,SIGNALS,ADMIN_DUTIES,ALERTS,SPECIALIST_TASKS}from'./guide/platformGuide'
 
-const PARTS=[['flow','How it works',Compass],['roles','Who does what',Users],['daily','Daily routine',CalendarCheck],['screens','The screens',BookOpen],['signals','Signal → action',Siren],['admin','Platform Admin duties',ShieldCheck],['alerts','Alert emails',Mail],['new','What changed',Sparkles]]
+const PARTS=[['flow','How it works',Compass],['roles','Who does what',Users],['daily','Daily routine',CalendarCheck],['screens','The screens',BookOpen],['signals','Signal → action',Siren],['tasks','Specialist tasks',ListChecks],['admin','Platform Admin duties',ShieldCheck],['alerts','Alerts',BellRing],['new','What changed',Sparkles]]
 
 function Flow(){
   const box=(x,y,w,name,l1,l2,main)=><g><rect x={x} y={y} width={w} height="72" rx="8" className={main?'pg-box main':'pg-box'}/><text x={x+14} y={y+24} className="pg-name">{name}</text><text x={x+14} y={y+44} className="pg-line">{l1}</text><text x={x+14} y={y+60} className="pg-line">{l2}</text></g>
@@ -64,12 +64,17 @@ export default function PlatformGuide({rank=1,navigate}){
       <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>What you see</th><th>Where</th><th>What it means</th><th>What to do</th><th>Who</th></tr></thead>
         <tbody>{SIGNALS.map(s=><tr key={s.see}><td>{s.see}</td><td>{s.where}</td><td>{s.means}</td><td>{s.act}</td><td>{s.who}</td></tr>)}</tbody></table></div></section>
 
+    {/* SS-016 UR-17 (Platform Admin 1 Nov 2026 20:08): task links to the specialist guides, with role, source, saved evidence and escalation */}
+    <section className="m-panel" id="pg-tasks" data-guide-tasks><h2>Specialist tasks</h2><p>Find your task: the lowest role that does it, the source it needs, what is saved and who takes it next. The full steps are in the document named (admin repository).</p>
+      <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Task</th><th>Lowest role</th><th>Source needed</th><th>Saved evidence</th><th>Escalate to</th><th>Guide</th></tr></thead>
+        <tbody>{SPECIALIST_TASKS.map(x=><tr key={x.task} data-guide-task><td><b>{x.task}</b>{x.choices&&<small className="pg-meta" data-guide-choices> Choices: {x.choices}</small>}<OpenBtn page={x.page} tab={x.tab}/></td><td>{x.role}</td><td>{x.source}</td><td>{x.evidence}</td><td>{x.escalate}</td><td className="pg-meta">{x.doc}</td></tr>)}</tbody></table></div></section>
+
     <section className="m-panel" id="pg-admin"><h2>Platform Admin duties</h2>
       <div className="pg-cards">{ADMIN_DUTIES.map(d=><div key={d.title}><h4>{d.title}</h4><ul>{d.items.map(x=><li key={x}>{x}</li>)}</ul></div>)}</div></section>
 
-    <section className="m-panel" id="pg-alerts"><h2>Alert emails</h2><p>{ALERTS.status}</p>
-      <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Alert</th><th>When</th><th>To</th></tr></thead>
-        <tbody>{ALERTS.rows.map(a=><tr key={a.alert}><td>{a.alert}</td><td>{a.when}</td><td>{a.to}</td></tr>)}</tbody></table></div></section>
+    <section className="m-panel" id="pg-alerts" data-guide-alerts><h2>Alerts (push and e-mail)</h2><p>{ALERTS.status}</p><p data-guide-alert-receipt><b>{ALERTS.receipt}</b></p>
+      <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Rule</th><th>What happens</th><th>Setting (Pipeline settings › Alerts)</th></tr></thead>
+        <tbody>{ALERTS.rows.map(a=><tr key={a.alert}><td>{a.alert}</td><td>{a.when}</td><td className="pg-meta">{a.setting}</td></tr>)}</tbody></table></div></section>
 
     <section className="m-panel" id="pg-new"><h2>What changed in v{RELEASE.version}</h2><p><b>{RELEASE.title}</b> · {RELEASE.date}</p>
       <ul>{RELEASE.changes.map(c=><li key={c}>{c}</li>)}{(RELEASE.bugFixes||[]).map(c=><li key={c}>Fixed: {c}</li>)}</ul>

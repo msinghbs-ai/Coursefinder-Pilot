@@ -1,6 +1,7 @@
+<!-- sop-export: id=operator-sop; version=2.06; reviewed-release=2.15.395; source-commit=90b5c0881105; content-sha256=a2de22aa96ca6b7912c522ebfa0c0d9a1713c81050cf9751894376d1c86556c7 -->
 # StudySearch – Operator SOP
 
-**Version:** 1.53 (reviewed for platform release v2.15.394)  
+**Version:** 2.06 (reviewed for platform release v2.15.395)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -14,8 +15,8 @@ How operators keep the data flowing and decide what automation cannot: the revie
 ## 2. What you own
 
 - Curator: Layer 4 › Inbox, key dates and reference links, course and provider details, ranking links
-- Pipeline Operator: Task manager › Background jobs, failed jobs and worker errors, onboarding follow-up, scholarship links, starting jobs again
-- PIM Admin: pacing and pausing automations, the priority queue, testing adapters in the Adapter builder
+- Pipeline Operator: Task manager › Background jobs, failed jobs and worker errors (diagnose, record, escalate), onboarding follow-up, scholarship links, counsellor reports
+- PIM Admin: pacing, pausing, resuming and running again the automations marked PIM Admin, the priority queue, testing adapters in the Adapter builder
 
 ## 3. How the platform automates, and where a person decides
 
@@ -47,7 +48,7 @@ How operators keep the data flowing and decide what automation cannot: the revie
 |---|---|---|---|---|
 | 1 | Pipeline Operator | Scheduled jobs › Task manager › Background jobs: note any job Failing or Paused and any Workers sending back errors; open a job to see the universities it is working on; mark errors you have dealt with as seen. _(Scheduled jobs › Task manager)_ | The fastest view of a stopped stage (Progress › Running now was retired in v2.15.301; this is the same board). | Nothing Failing without a note. |
 | 2 | Curator | Dashboard › Waiting for you: review items, scholarships to link, onboarding stopped or needing a person, reference sites not reachable, key dates coming up. _(Dashboard)_ | Today's queue for people. | You know what to work first. |
-| 3 | Pipeline Operator | Scheduled jobs › Automations: "Failed in the last 24 hours". Read each last error; act from Platform guide › Signal → action (for example lower "per run" by a third when a run hit the time limit). _(Scheduled jobs › Automations)_ | A failing job stops its stage. | Each failure fixed, or raised with the Platform Admin. |
+| 3 | Pipeline Operator | Scheduled jobs › Automations: "Failed in the last 24 hours". Read each last error (Platform guide › Signal → action), note the job, the error and when, and hand it on: the PIM Admin paces, pauses or runs it again (the Platform Admin for an automation marked Platform Admin). Do not change its pace or pause it yourself. _(Scheduled jobs › Automations)_ | A failing job stops its stage. | Each failure recorded and handed to the PIM Admin, or raised with the Platform Admin. |
 
 ### Morning: review queues
 
@@ -64,7 +65,7 @@ How operators keep the data flowing and decide what automation cannot: the revie
 |---|---|---|---|---|
 | 1 | Pipeline Operator | Layer 2/3 › Universities (Journey: Needs a person, Stopped): read each reason. Fix what you can (website, course pages) and tell the Platform Admin which rows need Retry, approvals or admitting. Rows at Enrich courses or Admit scholarships move on by themselves. _(Layer 2/3 Build & enrich › Universities)_ | Onboarding stops for a person; it never guesses. | Each stopped row has an owner. |
 | 2 | Pipeline Operator | Scholarships to link to courses (Dashboard › Scholarships to link opens the list): on each scholarship, decide the suggested course links from the evidence. _(Scholarships › Scholarships)_ | A scholarship shows on a course only when linked. | Links decided. |
-| 3 | PIM Admin | Layer 2/3 › Operations and Scheduled jobs › Automations: move stuck work; pace or pause what is behind or failing, with a reason. _(Layer 2/3 Build & enrich › Operations)_ | Pacing keeps work inside credits and time limits. | Nothing waits for hours without a reason. |
+| 3 | PIM Admin | Layer 2/3 › Operations and Scheduled jobs › Automations: move stuck work; pace or pause what is behind or failing, with a reason, including what the Pipeline Operator handed on. An automation marked Platform Admin goes to the Platform Admin. _(Layer 2/3 Build & enrich › Operations)_ | Pacing keeps work inside credits and time limits. | Nothing waits for hours without a reason. |
 | 4 | Curator | Reference data (one list; type filter All): dates coming up and sites not reachable. _(Reference data)_ | Key dates and sources feed the website. | Current. |
 
 ## 6. Weekly
@@ -80,11 +81,11 @@ How operators keep the data flowing and decide what automation cannot: the revie
 
 | When you see | Do | Where |
 |---|---|---|
-| Layer 4 Review item | Decide from the stored evidence, with a reason; correct the value if the page shows another. | Layer 4 › Inbox (Course link) |
+| Layer 4 Review item | Decide from the stored evidence, with a reason; correct the value if the page shows another. Entry requirement (AER) items are decided by the Platform Admin only: open and read them, and correct active rows in Catalogue › Entry requirements. | Layer 4 › Inbox (Course link) |
 | Held scholarship in the Inbox | Publish or refuse it with a reason, using the AI re-check; never admit a scholarship that does not say it is open to international students. | Layer 4 › Inbox (Held scholarship) |
 | Website to find | Search the official site, confirm the university's name on its home page, enter and save it. | Layer 4 › Inbox (Website needed) |
 | An entry requirement that is wrong, missing or no longer published (v2.15.363) | Catalogue › Entry requirements: filter to the row and open it to read its quote and stored copy. Correct an active row with Edit in list (give the reason first); add a missing one with Add requirement from the provider's own source and its stored copy; Withdraw a row no longer published, or Quarantine one whose evidence is in doubt, with a reason. A waiting row is decided in Layer 4, not here. | Catalogue › Entry requirements |
-| Automation failing three runs in a row | Pause it with a note and raise it with the Platform Admin (Pipeline Operator and above). | Scheduled jobs › Automations |
+| Automation failing three runs in a row | Pipeline Operator: note the job, the error and when, and raise it with the PIM Admin. PIM Admin (the Platform Admin for an automation marked Platform Admin): pause it with a reason and raise it with the Platform Admin. | Scheduled jobs › Automations |
 | A value on a record is wrong | Correct it on the record: it is kept as entered by hand and automation will not overwrite it until released. | Courses or Providers record |
 | An admitted value that looks wrong on a course (Admitted automatically) | Correct it on the course record (kept as entered by hand) and tell the Platform Admin the university, field and course, so the adapter can be fixed or its Admit switched off. | Courses record; Layer 2/3 › Universities |
 | Onboarding stopped: no website, too few course pages | Enter the website, or add course pages in the Adapter builder (2.1); onboarding carries on or the Platform Admin retries. | Layer 2/3 › Universities; Layer 2/3 › Universities › Builder |
@@ -100,6 +101,8 @@ How operators keep the data flowing and decide what automation cannot: the revie
 ## 9. Escalation
 
 - Tell the Platform Admin about anything needing approval, admitting, budgets, models, keys, users, or a fault that repeats after your fix. Write what you saw, where, and when.
+- Pace, pause, resume or run again: Pipeline Operator diagnoses, records and escalates; the PIM Admin (or a higher role) changes pace or pauses; automations marked Platform Admin go to the Platform Admin.
+- A StudySearch alert by push or e-mail: open Platform health and tell the Platform Admin you received it; the Platform Admin acknowledges it.
 
 ## 10. Version history
 
@@ -211,3 +214,4 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | 2.03 | 29 Oct 2026 | v2.15.362 | Reviewed: the Provider drawer lists each academic entry requirements source with its latest read (read only). |
 | 2.04 | 29 Oct 2026 | v2.15.363 | Catalogue › Entry requirements: correct an active entry requirement in the list, add one from the provider's own source, or withdraw, quarantine and restore one, each with a reason (Curator and above). |
 | 2.05 | 29 Oct 2026 | v2.15.364 | Reviewed: Catalogue › Entry requirements shows the course-level reading programme by provider and marks a rendered page with no requirements table (read only for operators). |
+| 2.06 | 1 Nov 2026 | v2.15.395 | Who controls automations: the Pipeline Operator diagnoses, records and escalates; the PIM Admin paces, pauses, resumes and runs again (the Platform Admin for automations marked Platform Admin). Entry requirement (AER) items are decided by the Platform Admin only. Alerts arrive by push and e-mail. Version raised to follow this history (it had stayed at 1.53). |

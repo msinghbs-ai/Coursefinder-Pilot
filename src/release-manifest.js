@@ -1,18 +1,23 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.394'
-export const PACKAGE_VERSION='0.1.321'
+export const UI_VERSION='2.15.395'
+export const PACKAGE_VERSION='0.1.322'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'1 Nov 2026',
-  title:'Fee checks show the proposed fee and are admitted or not',
+  title:'Guides state who acts, how alerts arrive and where the specialist tasks are',
   changes:[
-    'Layer 4 Review: a fee-check card shows the proposed fee (amount, currency, basis, fee year) and offers Admit this fee or Do not admit this fee; an address is no longer accepted on a fee check, and an admitted fee is reported from the course\'s fees.',
-    'Layer 4 Review: an address that names another kind or university opens it on the same screen, without a reload (UR-09).'
+    'Platform guide, Alerts: alerts arrive by push and e-mail from the hourly Work queue alerts task (D12), up to about 75 minutes after an issue; the rules (15-minute confirmation, cooldown, reminder, recovery, retries) and their settings are listed, and Delivered means sent, not read (UR-01).',
+    'Roles and SOPs: the Pipeline Operator diagnoses, records and escalates; the PIM Admin paces, pauses, resumes and runs again; automations marked Platform Admin need the Platform Admin; entry requirement (AER) items are decided by the Platform Admin only, with the three current choices (UR-02).',
+    'SOP documents carry their source commit, reviewed release and a content digest, and the export can check a copy for drift (UR-03).',
+    'Platform guide, Specialist tasks: each role\'s top tasks link to the specialist guide section, with the lowest role, the source needed, what is saved and who to escalate to; counsellor wording for estimates, unstated scales and reporting a wrong value (UR-17).'
   ],
-  bugFixes:[]
+  bugFixes:[
+    'Automations: a role below PIM Admin was told "Platform Admin role required" when changing an automation; it now names the PIM Admin. Who may change what is unchanged.',
+    'Layer 4 Review: going Back from a university to an address of the same kind showed the university\'s items; the kind is shown again (UR-09, found in the acceptance walkthrough).'
+  ]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

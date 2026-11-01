@@ -73,4 +73,19 @@ test.describe('mocked browser', () => {
     await expect(page.locator(`[data-l4-ref="${feeItem.ref}"]`)).toHaveCount(0)
     expect(calls.filter((c) => c.p_action === 'items').at(-1).p_args.kind).toBe('central_page')
   })
+
+  // SS-016 acceptance walkthrough (1 Nov 2026 21:20): Back from a university to an address of the same kind showed the university's items
+  test('Back from a university to the same kind shows the kind again, not the university (UR-09)', async ({ page }) => {
+    await mockAdmin(page, { rank: 6 })
+    const calls = []
+    await route(page, calls, {})
+    await page.goto('/#layer-4-review?kind=course_link')
+    await expect(page.locator(`[data-l4-ref="${feeItem.ref}"]`)).toBeVisible()
+    await page.evaluate(() => { window.location.hash = '#layer-4-review?provider=p2' })
+    await expect.poll(() => calls.filter((c) => c.p_action === 'items').at(-1)?.p_args?.provider_id).toBe('p2')
+    await page.goBack()
+    await expect.poll(() => calls.filter((c) => c.p_action === 'items').at(-1)?.p_args?.provider_id ?? 'none').toBe('none')
+    expect(calls.filter((c) => c.p_action === 'items').at(-1).p_args.kind).toBe('course_link')
+    await expect(page.locator(`[data-l4-ref="${feeItem.ref}"]`)).toBeVisible()
+  })
 })
