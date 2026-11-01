@@ -19,6 +19,8 @@ import JobButton from'./JobButton'
 import{fmtDate,fmtMoney,fmtShare}from'./lib/format'
 import{Button,Empty,Loading,Pager,fmtDateTime,fmtNumber}from'./ui-kit'
 import{plainError}from'./lib/errors'
+// E16 (2 Nov 2026): plain words for the page check's refusals; other read results keep their words
+const READ_LABEL={identity_refused:'not this course’s page (refused by the page check)',page_refused:'refused before for this course',identity_mismatch:'wrong page (refused)',not_course_page:'not a course page'}
 
 export const ADAPTER={admitting:['Admitting','success'],testing:['Testing','warning'],off:['Switched off','neutral']}
 export const FIELD={intakes:'Intakes',english:'English',fee:'Fees',delivery:'Delivery',exit_awards:'Exit awards',host_pages:'Host pages'}
@@ -81,7 +83,7 @@ export function CourseTable({u,onError}){
       {d.courses.map(c=><tr key={c.course_id}>
         <td><strong>{c.course}</strong><small className="sl-sub">{c.code||'—'}{c.level?` · ${String(c.level).replace(/_/g,' ')}`:''}</small>
           <span className="uc-links">{c.url&&<a className="cf-link" href={c.url} target="_blank" rel="noreferrer">course page</a>}{c.evidence_id&&<a className="cf-link" href={`#evidence?evidence_id=${encodeURIComponent(c.evidence_id)}`}>evidence</a>}
-            {c.read_status&&c.read_status!=='read'&&<Pill tone="warning">{String(c.read_status).replace(/_/g,' ')}</Pill>}
+            {c.read_status&&c.read_status!=='read'&&<Pill tone="warning">{READ_LABEL[c.read_status]||String(c.read_status).replace(/_/g,' ')}</Pill>}
             {c.host&&<Pill tone={c.host.register_check==='fail'?'danger':c.host.applied?'info':'neutral'} title={c.host.url||''}>{HOST_KIND[c.host.kind]||c.host.kind}{c.host.host?` ${c.host.host}`:''}{c.host.years?` · ${fmtNumber(c.host.years)} yr`:''}{c.host.register_check==='fail'?' · check failed':c.host.applied?'':' · proposed'}</Pill>}</span></td>
         <td><span className="uc-val">{c.location?.value||c.location?.read||'—'}</span>{c.location&&<SourcePill source={c.location.source}/>}{c.location?.value&&c.location?.read&&<small className="sl-sub" title="Read on the course page">page: {c.location.read}</small>}</td>
         <td><span className="uc-val">{c.delivery?.value?(DELIVERY[c.delivery.value]||String(c.delivery.value).replace(/_/g,' ')):'—'}</span>{c.delivery&&<SourcePill source={c.delivery.source}/>}{c.delivery?.excluded&&<Pill tone="warning">excluded</Pill>}

@@ -21,8 +21,10 @@ export const QUEUE_STATES={
   nothing_left:{label:'Nothing left to try',tone:'neutral',help:'Nothing is waiting; some items have had every tool tried and need a person or a new tool. In the daily report.'},
   done:{label:'Done',tone:'success',help:'Nothing is waiting and nothing is left over. In the daily report.'},
   paused:{label:'Paused',tone:'neutral',help:'Its jobs were switched off by a person.'},
+  // SS-014 P2 (2 Nov 2026): a configured cap (for example search.daily_picked_cap) holds it; not stuck, no alert
+  capped:{label:'Paused: daily cap',tone:'info',help:'Its configured cap for the day is used up; it carries on by itself when the cap resets. Not sent to phone or email.'},
 }
-const ORDER=['out_of_toolset','stuck','failing','waiting','moving','nothing_left','done','paused']
+const ORDER=['out_of_toolset','stuck','failing','waiting','moving','capped','nothing_left','done','paused']
 export const stateOf=s=>QUEUE_STATES[s]||{label:s||'Not checked yet',tone:'neutral',help:''}
 const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const hours=h=>h==null?'—':h<1?`${Math.max(1,Math.round(h*60))} min`:h<48?`${fmtNumber(Math.round(h*10)/10)} h`:`${fmtNumber(Math.round(h/24))} days`
