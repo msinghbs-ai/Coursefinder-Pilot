@@ -8,12 +8,15 @@
 // CF-247 A1-A3 (Platform Admin, 30 Oct 2026 06:53): an AER item (kind aer_review) shows its source, stored copy, completeness and rows with their
 // quotes (public.layer4_aer_review_read). The Platform Admin approves it, rejects it, or approves it except the ticked rows, with one reason;
 // one item at a time, never in bulk. Curators read it here and keep correcting active rows in Catalogue › Entry requirements.
+// UR-18 slice 1 (Platform Admin D-B1 to D-B3, 2 Nov 2026 05:18): the university view carries a Bulk review panel (Layer4BulkReview.jsx) for
+// country, state, campus and course delivery only; AER stays one item at a time.
 import React,{useEffect,useMemo,useRef,useState}from'react'
 import{AlertTriangle,ArrowRight,ExternalLink,Inbox,RefreshCw,Search}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{hrefFor,roleName}from'./nav-map'
 import{Button,Empty,Loading,Metric,StatusChip,fmtDate,fmtNumber}from'./ui-kit'
 import'./layer4-inbox.css'
+import Layer4BulkReview from'./Layer4BulkReview'
 
 const rpc=async(action,args)=>{const{data,error}=await supabase.rpc('admin_layer4_inbox',{p_action:action,p_args:args||{}});if(error)throw new Error(error.message);return data||{}}
 // SS-016 role simulation (1 Nov 2026): the rank a choice needs, as public.admin_layer4_inbox decides it: its own rank, else rank 4
@@ -88,6 +91,8 @@ export default function Layer4Inbox({onError,routeParams}){
       </aside>}
       <section className="l4i-items" aria-label="Items">
         {view==='university'&&pick&&<header className="l4i-items-head"><h3>{pick.name}</h3><small>{pick.country||''}{pick.courses!=null?` · ${fmtNumber(pick.courses)} active courses`:''}</small></header>}
+        {/* UR-18 slice 1 (Platform Admin D-B1 to D-B3, 2 Nov 2026): provider bulk review; preview for reviewers, apply for the Platform Admin while switched on */}
+        {view==='university'&&pick?.provider_id&&<Layer4BulkReview key={pick.provider_id} provider={pick} onError={onError}/>}
         {!items?<Loading compact/>:(items.items||[]).length===0?<Empty text="Nothing left here."/>:
           items.items.map(it=><Item key={`${it.kind}:${it.ref}`} it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider={view==='kind'} rank={sum.rank} onDone={decided} onError={onError}/>)}
         {items&&view!=='decided'&&(cur||Number(items.total)>(items.items||[]).length)&&(()=>{const b=Number(items.before||0),n=(items.items||[]).length,t=Number(items.total||0)

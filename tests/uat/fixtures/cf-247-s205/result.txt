@@ -1,0 +1,17 @@
+migration md5: b34cec66b03ffa8cc0d7bc40eb4d5133
+before md5 (decide_impl, inbox): 67966cebe3184b9acad1a3451fd0021b 417f181d12155f79f68c1e70c27a1892
+after md5 (decide_impl, inbox): 26efc646bd65c181da99b4c6b5945205 ce6e8c4c5bf89a319eb7bc5e9c05f07d
+postgres: 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)
+seed: 130 courses, 9 campuses
+PASS 1 deterministic preview, read only
+PASS 2 exact counts with course-level evidence
+PASS 3 eligible-field policy
+PASS 4 role boundary and switch
+PASS 5 stale fingerprint and per-row conflict
+PASS 6 idempotent, bounded, audited per course
+PASS 7 partial failure, retry, read-back
+PASS 8 reversal
+PASS 9 bounds and one controller
+PASS 10 apply path closed outside bulk
+PASS 11 switch stays off
+ALL CASES PASSED
