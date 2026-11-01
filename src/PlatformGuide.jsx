@@ -2,12 +2,12 @@
 // src/guide/platformGuide.js, reviewed every release (contract test: reviewed version = UI version; every menu page
 // has an entry). Each screen links straight to itself, so the guide never relies on screenshots that go stale.
 import React,{useState}from'react'
-import{ArrowRight,BellRing,BookOpen,CalendarCheck,Compass,ListChecks,ShieldCheck,Siren,Sparkles,Users}from'lucide-react'
+import{Archive,ArrowRight,BellRing,BookOpen,CalendarCheck,Compass,Gauge,ListChecks,ShieldCheck,Siren,Sparkles,Users,Workflow}from'lucide-react'
 import{PAGES,SECTIONS,canOpen}from'./nav-map'
 import{UI_VERSION,RELEASE}from'./release-manifest'
-import{GUIDE_REVIEWED_FOR,ROLES,RULES,DAILY_ROUTINE,SCREENS,SIGNALS,ADMIN_DUTIES,ALERTS,SPECIALIST_TASKS}from'./guide/platformGuide'
+import{GUIDE_REVIEWED_FOR,ROLES,RULES,DAILY_ROUTINE,SCREENS,SIGNALS,ADMIN_DUTIES,ALERTS,SPECIALIST_TASKS,ADMISSION_PATHS,ADMISSION_WORDS,BUDGET_GATES,RETIREMENT_CRITERIA}from'./guide/platformGuide'
 
-const PARTS=[['flow','How it works',Compass],['roles','Who does what',Users],['daily','Daily routine',CalendarCheck],['screens','The screens',BookOpen],['signals','Signal → action',Siren],['tasks','Specialist tasks',ListChecks],['admin','Platform Admin duties',ShieldCheck],['alerts','Alerts',BellRing],['new','What changed',Sparkles]]
+const PARTS=[['flow','How it works',Compass],['roles','Who does what',Users],['daily','Daily routine',CalendarCheck],['screens','The screens',BookOpen],['signals','Signal → action',Siren],['tasks','Specialist tasks',ListChecks],['admission','Who admits',Workflow],['gates','Budget gates',Gauge],['retire','Retiring a component',Archive],['admin','Platform Admin duties',ShieldCheck],['alerts','Alerts',BellRing],['new','What changed',Sparkles]]
 
 function Flow(){
   const box=(x,y,w,name,l1,l2,main)=><g><rect x={x} y={y} width={w} height="72" rx="8" className={main?'pg-box main':'pg-box'}/><text x={x+14} y={y+24} className="pg-name">{name}</text><text x={x+14} y={y+44} className="pg-line">{l1}</text><text x={x+14} y={y+60} className="pg-line">{l2}</text></g>
@@ -68,6 +68,20 @@ export default function PlatformGuide({rank=1,navigate}){
     <section className="m-panel" id="pg-tasks" data-guide-tasks><h2>Specialist tasks</h2><p>Find your task: the lowest role that does it, the source it needs, what is saved and who takes it next. The full steps are in the document named (admin repository).</p>
       <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Task</th><th>Lowest role</th><th>Source needed</th><th>Saved evidence</th><th>Escalate to</th><th>Guide</th></tr></thead>
         <tbody>{SPECIALIST_TASKS.map(x=><tr key={x.task} data-guide-task><td><b>{x.task}</b>{x.choices&&<small className="pg-meta" data-guide-choices> Choices: {x.choices}</small>}<OpenBtn page={x.page} tab={x.tab}/></td><td>{x.role}</td><td>{x.source}</td><td>{x.evidence}</td><td>{x.escalate}</td><td className="pg-meta">{x.doc}</td></tr>)}</tbody></table></div></section>
+
+    {/* SS-016 UR-08 (Platform Admin 1 Nov 2026 22:01): how values get in, with the same words as Scheduled jobs › Automations */}
+    <section className="m-panel" id="pg-admission" data-guide-admission><h2>Who admits</h2><p>Each automation that writes values says how they get in: {Object.values(ADMISSION_WORDS).join('; ')}. Scheduled jobs › Automations shows the same words on each row, with the role that changes it (Changed by PIM Admin or Platform Admin). Switches are changed by a Platform Admin with a reason; this guide never changes them.</p>
+      <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Automation</th><th>What it writes</th><th>How it gets in</th><th>Its switch</th><th>Where a person decides</th></tr></thead>
+        <tbody>{ADMISSION_PATHS.map(a=><tr key={a.job} data-guide-admission-path={a.job}><td className="pg-meta">{a.job}</td><td>{a.what}</td><td><b>{ADMISSION_WORDS[a.path]}</b></td><td>{a.switch}</td><td>{a.person}</td></tr>)}</tbody></table></div></section>
+
+    {/* SS-016 UR-10 (Platform Admin 1 Nov 2026 22:01): which gate stopped the work, its effective mode and who changes it */}
+    <section className="m-panel" id="pg-gates" data-guide-gates><h2>Budget gates</h2><p>When work stops, find the gate that stopped it. A StudySearch guard in Observe only stops nothing; a refusal from OpenRouter or Firecrawl comes from outside StudySearch. The live values are on the screen named, not in this guide.</p>
+      <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Gate</th><th>Mode and what stops</th><th>Live values</th><th>Who changes it</th></tr></thead>
+        <tbody>{BUDGET_GATES.map(g=><tr key={g.key} data-guide-gate={g.key}><td><b>{g.gate}</b></td><td>{g.mode}</td><td>{g.where}</td><td>{g.who}</td></tr>)}</tbody></table></div></section>
+
+    {/* SS-016 UR-12 (Platform Admin 1 Nov 2026 22:01): low use alone is not a retirement criterion */}
+    <section className="m-panel" id="pg-retire" data-guide-retire><h2>Retiring a component</h2><p>Few opens on Platform health › Screen use is a question, not a decision. Before a screen, job or table is retired, check each of these and record them in the component register (Decision 260); a retiring automation shows its replacement and removal date on Scheduled jobs.</p>
+      <ul>{RETIREMENT_CRITERIA.map(c=><li key={c}>{c}</li>)}</ul></section>
 
     <section className="m-panel" id="pg-admin"><h2>Platform Admin duties</h2>
       <div className="pg-cards">{ADMIN_DUTIES.map(d=><div key={d.title}><h4>{d.title}</h4><ul>{d.items.map(x=><li key={x}>{x}</li>)}</ul></div>)}</div></section>

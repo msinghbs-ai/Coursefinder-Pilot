@@ -11,6 +11,7 @@ import{supabase}from'./lib/supabase'
 import{Badge,Button,Empty,Loading,Metric,SectionTitle,StatusChip,fmtDate,fmtDateTime,fmtNumber}from'./ui-kit'
 import{EVERY,describeSchedule}from'./automation-schedule'
 import{plainError}from'./lib/errors'
+import{controlOwner,ADMISSION_PATHS,ADMISSION_WORDS,RETIREMENT_CRITERIA}from'./guide/operatingWords'
 
 
 const STATUS={succeeded:['success','Succeeded'],failed:['danger','Failed'],running:['info','Running'],starting:['info','Starting']}
@@ -40,7 +41,7 @@ export default function Automations({onError}){
         <select className="fv-filter" value={area} onChange={e=>setArea(e.target.value)} aria-label="Area"><option value="all">All areas</option>{areas.map(a=><option key={a} value={a}>{a}</option>)}</select>
         <select className="fv-filter" value={show} onChange={e=>setShow(e.target.value)} aria-label="Show"><option value="all">All</option><option value="paused">Paused ({paused})</option><option value="failed">Failed in 24h ({failing})</option></select>
         <Button compact onClick={load} disabled={busy}><RefreshCw size={14}/>{busy?'Updating…':'Refresh'}</Button></div>}/>
-      {rank<5&&<p className="l3v-note">You can view automations. A PIM Admin or Platform Admin can change them.</p>}
+      {rank<5&&<p className="l3v-note">You can view automations. Each one names the role that changes it (PIM Admin or Platform Admin): note the job, the error and when, and hand it to that role.</p>}
     </section>
     {areas.filter(a=>shown.some(j=>j.area===a)).map(a=><AreaPanel key={a} area={a} jobs={shown.filter(j=>j.area===a)} all={jobs.filter(j=>j.area===a)} rank={rank} busy={busy} act={act}/>)}
     {!shown.length&&<section className="m-panel"><Empty text="No automation matches."/></section>}
@@ -68,13 +69,18 @@ function JobRow({j,rank,busy,act}){
   const s=describeSchedule(j.schedule),[batch,setBatch]=useState(j.batch==null?'':String(j.batch))
   useEffect(()=>setBatch(j.batch==null?'':String(j.batch)),[j.batch])
   const allowed=rank>=Number(j.control_rank||6),can=allowed&&!busy,last=j.last,st=STATUS[last?.status]||['neutral',last?.status||'—']
+  // SS-016 UR-08 (Platform Admin 1 Nov 2026 22:01): the same words as the Platform guide: who changes it, and how its values get in
+  const owner=controlOwner(j.control_rank),adm=ADMISSION_PATHS.find(x=>x.job===j.job)
   return <tr className={j.active?'':'l3c-off'} data-job={j.job}>
-    <td title={j.job}><strong>{j.label||j.job}</strong><span className="au-desc" title={j.description||undefined}>{plainDescription(j.description)}</span>{j.catalogued===false&&<Badge tone="warning" data-uncatalogued-job>Not catalogued: no label or owner</Badge>}</td>
+    <td title={j.job}><strong>{j.label||j.job}</strong><span className="au-desc" title={j.description||undefined}>{plainDescription(j.description)}</span>{j.catalogued===false&&<Badge tone="warning" data-uncatalogued-job>Not catalogued: no label or owner</Badge>}
+      <span className="l3v-code" data-control-owner={owner}>Changed by {owner}</span>{adm&&<span className="l3v-code" data-admission-path={adm.path} title={adm.person}>{ADMISSION_WORDS[adm.path]}{adm.path==='auto'?`: ${adm.switch}`:''}</span>}</td>
     <td>{s.text}{j.batch!=null&&<span className="l3v-code">{fmtNumber(j.batch)} per run</span>}</td>
     <td>{last?<><StatusChip value={last.status} tone={st[0]} label={st[1]}/><span className="l3v-code">{fmtDateTime(last.at)}{last.seconds!=null&&` · ${last.seconds}s`}</span>{last.message&&<span className="au-error">{plainError(last.message)}</span>}</>:'Not run yet'}</td>
     <td className="num">{fmtNumber(j.runs_24h||0)} runs<span className={`l3v-code ${Number(j.failed_24h)>0?'l3v-bad':''}`}>{fmtNumber(j.failed_24h||0)} failed</span></td>
     <td>{j.retirement?<StatusChip value={j.retirement.status} tone="neutral" label={j.retirement.status==='retired'?'Retired':'Retiring'}/>:<StatusChip value={j.active?'on':'paused'} tone={j.active?'success':'warning'} label={j.active?'Running':'Paused'}/>}</td>
-    {rank>=5&&<td>{j.retirement?<span className="l3v-note" data-retired-job={j.job}>{/* UR-07 (1 Nov 2026): no Resume, run or schedule controls for a retired job */}Retired{j.retirement.replaced_by?`: replaced by ${j.retirement.replaced_by}`:''}{j.retirement.retire_after?` · removal after ${fmtDate(j.retirement.retire_after)}`:''}. History stays visible.</span>:allowed?<div className="au-controls">
+    {rank>=5&&<td>{j.retirement?<span className="l3v-note" data-retired-job={j.job}>{/* UR-07 (1 Nov 2026): no Resume, run or schedule controls for a retired job */}Retired{j.retirement.replaced_by?`: replaced by ${j.retirement.replaced_by}`:': no replacement named yet, so removal needs an approved decision'}{j.retirement.retire_after?` · removal after ${fmtDate(j.retirement.retire_after)}`:''}. History stays visible.{j.retirement.note&&<small data-retired-note> {j.retirement.note}</small>}
+        {/* SS-016 UR-12 (Platform Admin 1 Nov 2026 22:01): the checks before removal, beside the retiring job */}
+        <details data-retirement-criteria><summary>Checks before removal</summary><ul>{RETIREMENT_CRITERIA.map(c=><li key={c}>{c}</li>)}</ul></details></span>:allowed?<div className="au-controls">
       <div className="l3c-row-actions">
         {j.active?<Button compact onClick={()=>act(j.job,'pause',{},`Pause "${j.label}"?`)} disabled={!can} aria-label="Pause" title="Pause"><Pause size={14}/></Button>
           :<Button compact variant="primary" onClick={()=>act(j.job,'resume')} disabled={!can}><Play size={14}/>Resume</Button>}
@@ -85,6 +91,6 @@ function JobRow({j,rank,busy,act}){
       {j.batch!=null&&<form className="au-batch" onSubmit={e=>{e.preventDefault();act(j.job,'set_batch',{batch:Number(batch)})}}>
         <input className="fv-input" type="number" min="1" max="500" value={batch} onChange={e=>setBatch(e.target.value)} disabled={!can} aria-label={`Batch size for ${j.label}`}/>
         <Button compact type="submit" disabled={!can||!(Number(batch)>=1&&Number(batch)<=500)||Number(batch)===Number(j.batch)}><Save size={14}/>Save</Button></form>}
-    </div>:<span className="l3v-note">Top admin only</span>}</td>}
+    </div>:<span className="l3v-note" data-control-denied>{owner} only</span>}</td>}
   </tr>
 }

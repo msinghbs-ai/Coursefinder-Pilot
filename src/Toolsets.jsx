@@ -22,6 +22,7 @@ import{hrefFor}from'./nav-map'
 import{plainError}from'./lib/errors'
 import{useIsPlatformAdmin,balanceWords}from'./lib/viewer'
 import SnapshotStamp from'./SnapshotStamp'
+import{gateFor}from'./guide/operatingWords'
 
 const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const ask=t=>{const r=window.prompt(`${t}\n\nReason (kept in the log):`);return r&&r.trim().length>=4?r.trim():null}
@@ -68,7 +69,8 @@ export function noticePlan(n){
       :{need:'outside',say:/:key_limit$/.test(key)?'Raise or clear the key’s limit at OpenRouter.':/:credit$/.test(key)?'Top up the OpenRouter balance.':'Check the key on Settings.',go:or}
     case'openrouter:low_balance':return{need:'outside',say:'Top up the OpenRouter account.',go:or}
     case'openrouter:not_observed':return{need:'action',say:'Check the job “Read the OpenRouter balance”.',go:go('Task manager','jobs','tasks','','')}
-    case'openrouter:over_guard':return{need:'info',say:'Nothing to do: it carries on when the UTC day changes. Raise the guard if it should carry on today.',go:go('Daily guards',LIMITS.page,LIMITS.tab,'services.toolset.openrouter','openrouter:Daily guards')}
+    // SS-016 UR-10 (1 Nov 2026): security.platform_notices_v1 raises this at severity info in Observe only (nothing stopped), warning in Stop at limits
+    case'openrouter:over_guard':return{need:'info',say:n.severity==='info'?'Nothing to do: Observe only, so nothing has stopped; it is recorded for the top-up review.':'Nothing to do: it carries on when the UTC day changes. Raise the guard if it should carry on today.',go:go('Daily guards',LIMITS.page,LIMITS.tab,'services.toolset.openrouter','openrouter:Daily guards')}
     case'scheduled_jobs:timeout':return{need:'action',say:'Lower the job’s batch size so each run finishes inside the limit.',go:go('Jobs','jobs','jobs','','')}
     case'scheduled_jobs:failed':return{need:n.severity==='high'?'action':'info',say:n.severity==='high'?'It keeps failing: the job needs a fix.':'Nothing to do unless it repeats.',go:go('Jobs','jobs','jobs','','')}
     case'pipeline:hygiene':return{need:'action',say:'Retire what is unused, fix the security items, and run the drop paste file for what is ready (component register).',go:go('Jobs','jobs','jobs','','')}
@@ -112,13 +114,14 @@ export function LayerNotices({layer}){
   </section>
 }
 export function Notice({n,can,onAck,onDone}){
-  const plan=noticePlan(n),[label,tone]=NEED[plan.need]
+  const plan=noticePlan(n),[label,tone]=NEED[plan.need],gate=gateFor(n.toolset,n.kind) // SS-016 UR-10: which gate raised it
   const cls=plan.need==='info'?'info':n.severity||'info'
   return <div className={`tn-item tn-${cls}`} data-notice={n.key} data-notice-need={plan.need}>
     <BellRing size={15} aria-hidden/>
     <div className="tn-text"><strong>{n.title}</strong>{n.detail&&<span>{n.detail}</span>}
       <span className="tn-need"><span className={`cf-chip tone-${tone}`}>{label}</span>{plan.say||n.hint}</span>
       {plan.items&&(n.items||[]).length>0&&<NoticeItems n={n} mode={plan.items} onDone={onDone}/>}
+      {gate&&<small className="tn-gate" data-notice-gate={gate.key}>Gate: {gate.gate}. Changed by: {gate.who}.</small>}
       <small className="tn-meta">{LAYER[n.layer]} · {n.toolset?.replace(/_/g,' ')} · last {fmtDateTime(n.last_at)}{n.acknowledged?` · acknowledged ${fmtDateTime(n.acknowledged_at)}`:''}</small></div>
     <div className="tn-acts">
       {plan.go&&<Button compact onClick={()=>goToCard(plan.go)} data-notice-go={plan.go.at||plan.go.card||plan.go.page}>Go to {plan.go.label}<ArrowRight size={13}/></Button>}

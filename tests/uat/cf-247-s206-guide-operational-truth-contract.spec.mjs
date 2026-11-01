@@ -1,4 +1,4 @@
-// Guards: SS-016 UR-01, UR-02, UR-03, UR-17 (Platform Admin 1 Nov 2026 20:08)
+// Guards: SS-016 UR-01, UR-02, UR-03, UR-17 (Platform Admin 1 Nov 2026 20:08); SS-016 UR-08, UR-10, UR-11, UR-12, UR-16 (Platform Admin 1 Nov 2026 22:01)
 // CF-247 S206. Source: admin docs/platform/nz-enrichment-brief/2026-11-01-role-guides-usability-operability-review.md (UR-01, UR-02, UR-03,
 // UR-17). The guides state operational truth: alerts by push and e-mail as OPERATIONAL-LIMITS v1.3 states them (D12); the Pipeline Operator
 // diagnoses, records and escalates while the PIM Admin (or higher) paces and pauses (live: security.admin_automation_control_v1 needs rank 5,
@@ -147,4 +147,186 @@ test('automation control: the rank-5 refusal names the PIM Admin, and the bounda
   expect(m).not.toMatch(/v_rank<[0-46-9]/)
   expect(m).toMatch(/^-- Replaces: /m)
   expect(m).toMatch(/^-- Retires: nothing/m)
+})
+
+// ---- SS-016 UR-08, UR-10, UR-11, UR-12, UR-16 (Platform Admin 1 Nov 2026 22:01) -------------------------------------------------------------
+// Live facts read on 1 Nov 2026 (read only, project fxcwkweaxjtknorudmwp): provider_onboarding_settings.auto_admit on; Pipeline settings
+// central.auto_approve and central.auto_approve_english_all on (job policy-auto-approve, control_rank 6); platform_toolsets openrouter
+// enforcement 'observe' (security.ai_use_allowed_v1 lets every AI use run unless the mode is 'stop'); firecrawl daily_budget_on true;
+// security.admin_automation_control_v1 floor rank 5, then the job's control_rank (policy-add-tests has 4, so its effective owner is the PIM Admin).
+import { CONTROL_ROLE, controlOwner, ADMISSION_PATHS, ADMISSION_WORDS, BUDGET_GATES, gateFor, FRESHNESS_WORDS, checkFreshness, RETIREMENT_CRITERIA } from '../../src/guide/operatingWords.js'
+import { summarise, summaryLines } from '../../scripts/test-register.mjs'
+
+// Task text: what a person is told to do now (roles, daily routine, signals, duties, specialist tasks, SOP steps, owners and interventions).
+const taskText = [
+  ...G.ROLES.flatMap((r) => [r.can, ...r.daily]), ...G.DAILY_ROUTINE.map((d) => d.text), ...G.SIGNALS.flatMap((x) => [x.means, x.act]),
+  ...G.ADMIN_DUTIES.flatMap((d) => d.items), ...G.SPECIALIST_TASKS.flatMap((t) => [t.task, t.source, t.escalate]),
+  ...SOPS.flatMap((x) => [...x.owns, ...x.schedule.flatMap((b) => b.steps.map((st) => st.do)), ...x.weekly.map((st) => st.do), ...x.interventions.map((i) => i.action), ...x.watch, ...x.escalate]),
+  ...AUTOMATION.flatMap((a) => [a.runs, a.person]),
+]
+const sentences = (t) => String(t).split(/(?<=[.;])\s+/)
+// Screens retired from the menu (src/nav-map.js LEGACY and its retirement notes); task text may name one only to say it is gone.
+const RETIRED = ['Priority queue', 'Scrapers & fetchers', 'Review queue', 'AI could not decide', 'Websites to find', 'Live activity', 'Running now', 'Levers', 'Scholarship publishing', 'Manual batch runs']
+
+test('UR-16: no task line sends a person to a retired screen; a retired name appears only with the words that it is gone', () => {
+  for (const line of taskText) for (const sn of sentences(line)) for (const name of RETIRED) {
+    if (sn.includes(name)) expect(sn, `"${name}" named as a current destination`).toMatch(/retired|was |were |moved|replac|until|since|old address/i)
+  }
+})
+
+test('UR-08: the PIM Admin owns no retired queue; the guide and SOP name no priority queue as a current task', () => {
+  const pim = G.ROLES.find((r) => r.role === 'PIM Admin')
+  expect(`${pim.can} ${pim.daily.join(' ')}`).not.toMatch(/priority queue/i)
+  expect(operator.owns.find((o) => o.startsWith('PIM Admin:'))).not.toMatch(/priority queue/i)
+})
+
+test('UR-08 and UR-16: the effective role that changes an automation is the higher of rank 5 and its control rank, in every text', () => {
+  expect(CONTROL_ROLE).toEqual({ 5: 'PIM Admin', 6: 'Platform Admin' })
+  expect([controlOwner(4), controlOwner(5), controlOwner(6), controlOwner(undefined), controlOwner(null)]).toEqual(['PIM Admin', 'PIM Admin', 'Platform Admin', 'Platform Admin', 'Platform Admin'])
+  // no active text gives automation controls to a lower role
+  for (const line of [...taskText, ...Object.values(G.SCREENS).flatMap((x) => x.act)]) {
+    expect(line, line).not.toMatch(/(pause|resume|run now)[^.;]*\((Viewer|Counsellor|Curator|Pipeline Operator|Operator) and above\)/i)
+  }
+  expect(G.SCREENS.jobs.act.join(' ')).toContain('Changed by PIM Admin or Platform Admin')
+})
+
+test('UR-08: one set of admission words; every automatic path names its switch and where a person decides instead', () => {
+  expect(Object.keys(ADMISSION_WORDS)).toEqual(['proposed', 'auto', 'person', 'reads'])
+  for (const a of ADMISSION_PATHS) {
+    expect(ADMISSION_WORDS[a.path], a.job).toBeTruthy()
+    for (const k of ['job', 'what', 'switch', 'person']) expect(a[k], `${a.job}: ${k}`).toBeTruthy()
+    if (a.path === 'auto') expect(a.switch, a.job).not.toMatch(/^None/)
+  }
+  const jobs = ADMISSION_PATHS.map((a) => a.job)
+  for (const j of ['provider-onboarding', 'policy-auto-approve', 'central-ai', 'provider-facts', 'fee-reader', 'layer4-auto-admit', 'entry-matrix-read']) expect(jobs).toContain(j)
+  expect(ADMISSION_PATHS.find((a) => a.job === 'policy-auto-approve').path).toBe('auto')
+  expect(ADMISSION_PATHS.find((a) => a.job === 'provider-onboarding').switch).toContain('Admit automatically')
+  // the old person-only claims are gone while the automatic switches are on
+  const active = JSON.stringify([taskText, G.SCREENS.providers.read])
+  for (const old of ['Nothing is written before a person decides', 'admitting stays a person\'s step', 'Ready to admit waits for a person:', 'for a person to approve. Nothing is admitted']) expect(active).not.toContain(old)
+  const stage4 = AUTOMATION.find((a) => a.stage === '4. Admit')
+  expect(stage4.runs).toContain('policy-auto-approve')
+  expect(stage4.runs).toContain('Fee schedules always wait for a Platform Admin')
+})
+
+test('UR-10: each budget notice names its gate; observe mode never reads as stopped; no drifting figures in task text', () => {
+  for (const k of ['openrouter:over_guard', 'openrouter:low_balance', 'openrouter:refused', 'firecrawl:daily_budget', 'firecrawl:low_balance', 'firecrawl:cap_reached']) {
+    const [t, kind] = k.split(':')
+    expect(gateFor(t, kind), k).toBeTruthy()
+  }
+  expect(gateFor('openrouter', 'refused').gate).toContain('outside StudySearch')
+  for (const g of BUDGET_GATES) for (const f of ['gate', 'mode', 'where', 'who']) expect(g[f], `${g.key}: ${f}`).toBeTruthy()
+  expect(gateFor('openrouter', 'over_guard').mode).toContain('Observe only: notices only, nothing stops')
+  // the notice plan follows the server's severity: info in Observe only (nothing stopped), warning in Stop at limits
+  expect(fs.readFileSync('src/Toolsets.jsx', 'utf8')).toContain("case'openrouter:over_guard':return{need:'info',say:n.severity==='info'?'Nothing to do: Observe only, so nothing has stopped; it is recorded for the top-up review.'")
+  const floor = G.SIGNALS.find((x) => x.see === 'OpenRouter credit approaching the floor')
+  expect(floor.means).toContain('Observe only: nothing stops')
+  expect(JSON.stringify([taskText, G.SCREENS.layer2.read])).not.toMatch(/will stop at the floor/)
+  // live values are named, not copied: no credit totals or "(N now)" in what people are told to do
+  for (const line of [...taskText, ...G.SCREENS.layer2.read]) {
+    expect(line, line).not.toMatch(/\b\d{1,3}(,\d{3})+ credits\b/)
+    expect(line, line).not.toMatch(/\(\d+ now\)/)
+  }
+})
+
+test('UR-11: a check says which run measured it; no result is never OK; report-time figures say so', async () => {
+  const f = checkFreshness([{ checked_at: '2026-11-01T10:58:00Z' }, { checked_at: '2026-11-01T10:18:00Z' }, { checked_at: null }])
+  expect([f({ checked_at: '2026-11-01T10:58:00Z' }), f({ checked_at: '2026-11-01T10:18:00Z' }), f({ checked_at: null }), f({})]).toEqual(['current', 'earlier', 'missing', 'missing'])
+  expect(FRESHNESS_WORDS.missing).toBe('No result yet')
+  const src = fs.readFileSync('src/PlatformHealth.jsx', 'utf8')
+  expect(src).toContain("pending when recorded (the live count is on Layer 4)")
+  expect(src).toContain("fresh(c)==='missing'?<StatusChip value=\"missing\"")
+  // academic entry requirements have a reader (AER); the coverage label names the measure, not a missing reader
+  expect(fs.readFileSync('src/course-coverage.jsx', 'utf8')).toContain("academic_entry:{label:'Academic entry requirements',layer:'Not measured here yet: read and admitted on Catalogue › Entry requirements'}")
+  // a rising Layer 4 count names its possible causes, not only "reviewers are behind"
+  const l4 = G.SIGNALS.find((x) => x.see.startsWith('Layer 4 waiting count rises'))
+  for (const w of ['new arrivals', 'evidence that cannot be opened', 'the same defect repeating', 'another step', 'report time']) expect(l4.means).toContain(w)
+  expect(operator.watch.join(' ')).not.toMatch(/: reviewers are behind\./)
+})
+
+test('UR-12: retirement checks are shown with screen use and beside a retiring automation; low use alone retires nothing', () => {
+  expect(RETIREMENT_CRITERIA).toHaveLength(5)
+  for (const w of ['Purpose', 'Unique coverage', 'Dependencies and replacement', 'Consumers', 'Walk-through']) expect(RETIREMENT_CRITERIA.join(' ')).toContain(w)
+  const use = fs.readFileSync('src/ScreenUse.jsx', 'utf8')
+  expect(use).not.toContain('candidates to retire')
+  expect(use).toContain('RETIREMENT_CRITERIA.map')
+  expect(JSON.stringify(G.SCREENS.health.read)).not.toContain('candidates to retire')
+  expect(fs.readFileSync('src/Automations.jsx', 'utf8')).toContain("no replacement named yet, so removal needs an approved decision")
+})
+
+test('UR-16: the register counts come from one pass: the category table and the narrative agree, mixed specs included', () => {
+  const t = (title, deployed) => ({ title, deployed })
+  const specs = [
+    { kind: 'rule', tests: [t('a', false)] },
+    { kind: 'regression', tests: [t('b', false), t('c @deployed', true)] },  // a deployed test inside a regression spec (the 89 / 92 case)
+    { kind: 'deployed', tests: [t('d @deployed', true), t('e @deployed @live-acting', true)] },
+    { kind: 'regression', tests: [t('f @responsive', false)] },
+  ]
+  const sum = summarise(specs)
+  expect(sum.total).toEqual({ specs: 4, tests: 6, local: 3, deployed: 3 })
+  expect(sum.byKind.deployed).toEqual({ specs: 1, tests: 2, local: 0, deployed: 2 })
+  expect([sum.live, sum.phone, sum.safeDeployed]).toEqual([1, 1, 2])
+  const md = summaryLines(sum).join('\n')
+  expect(md).toContain('| **Total** | **4** | **6** | **3** | **3** |')
+  expect(md).toContain('Deployed track: 3 tests (2 in deployed specs, 1 tagged `@deployed` inside rule or regression specs)')
+  expect(md).toContain('so 2 safe tests run each week')
+  expect(md).toContain('Local suite (`--grep-invert @deployed`): 3 tests')
+})
+
+test.describe('mocked browser (SS-016 22:01)', () => {
+  test('Automations names who changes each job and how its values get in; a retired job shows the checks before removal', async ({ page }) => {
+    await mockAdmin(page, { rank: 5 })
+    await page.route('**/rest/v1/rpc/admin_automations_read', (route) => route.fulfill({ contentType: 'application/json', body: JSON.stringify({
+      generated_at: new Date().toISOString(), rank: 5, events: [],
+      jobs: [
+        { job: 'policy-auto-approve', area: 'Admission', sort: 1, label: 'Approve checked AI readings of central pages', description: 'Every 10 minutes.', schedule: '*/10 * * * *', active: true, control_rank: 6, batch: null, last: null, runs_24h: 0, failed_24h: 0 },
+        { job: 'policy-add-tests', area: 'Enrichment', sort: 1, label: 'English policies: add new tests', description: 'Hourly.', schedule: '5 * * * *', active: true, control_rank: 4, batch: null, last: null, runs_24h: 0, failed_24h: 0 },
+        { job: 'l4-rule-low-agreement', area: 'Admission', sort: 2, label: 'Review rule: sources disagree', description: 'RETIRED.', schedule: '0 3 * * *', active: false, control_rank: 5, batch: null, last: null, runs_24h: 0, failed_24h: 0,
+          retirement: { status: 'retiring', replaced_by: null, retire_after: '2026-11-14' } },
+      ] }) }))
+    await page.goto('/#scheduled-jobs?tab=automations')
+    const auto = page.locator('tr[data-job="policy-auto-approve"]')
+    await expect(auto.locator('[data-control-owner]')).toHaveText('Changed by Platform Admin')
+    await expect(auto.locator('[data-admission-path="auto"]')).toContainText('Automatic while its switch is on')
+    await expect(auto).toContainText('Platform Admin only')
+    await expect(page.locator('tr[data-job="policy-add-tests"] [data-control-owner]')).toHaveText('Changed by PIM Admin')
+    const retired = page.locator('tr[data-job="l4-rule-low-agreement"]')
+    await expect(retired).toContainText('no replacement named yet, so removal needs an approved decision')
+    await retired.locator('[data-retirement-criteria] summary').click()
+    await expect(retired.locator('[data-retirement-criteria]')).toContainText('Unique coverage')
+  })
+
+  test('the Platform guide shows who admits, the budget gates and the retirement checks; health checks say which run measured them', async ({ page }) => {
+    await mockAdmin(page)
+    await page.goto('/#platform-guide')
+    const g = page.locator('[data-platform-guide]')
+    await expect(g.locator('[data-guide-admission-path="policy-auto-approve"]')).toContainText('Automatic while its switch is on')
+    await expect(g.locator('[data-guide-gate="openrouter-refused"]')).toContainText('outside StudySearch')
+    await expect(g.locator('[data-guide-retire]')).toContainText('Few opens on Platform health › Screen use is a question, not a decision')
+
+    const old = '2026-11-01T07:18:00Z', cur = '2026-11-01T10:58:00Z'
+    await page.route('**/rest/v1/rpc/admin_read', async (route) => {
+      const body = route.request().postDataJSON() || {}
+      if ((body.p_operation || body.operation) !== 'platform_health') return route.fallback()
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ generated_at: cur, overall: 'ok', counts: {}, issues: [], history: [], checks: [
+        { key: 'cron', area: 'scheduled jobs', label: 'Scheduled jobs', status: 'ok', detail: {}, checked_at: cur },
+        { key: 'field_stalled', area: 'coverage', label: 'Fields not moving', status: 'ok', detail: {}, checked_at: old },
+        { key: 'edge_deployed', area: 'edge functions', label: 'Edge functions deployed', status: 'ok', detail: {}, checked_at: null } ] }) })
+    })
+    await page.goto('/#platform-health')
+    await expect(page.locator('[data-check-freshness="current"]')).toContainText('This run')
+    await expect(page.locator('[data-check-freshness="earlier"]')).toContainText('From an earlier run')
+    const missing = page.locator('tr', { has: page.locator('[data-check-freshness="missing"]') })
+    await expect(missing).toContainText('No result yet')
+    await expect(missing).not.toContainText('OK')
+    await expect(page.locator('[data-health-earlier="2"]')).toBeVisible()
+  })
+
+  test('a budget notice names its gate and who changes it', async ({ page }) => {
+    await mockAdmin(page)
+    await page.goto('/#models-services?tab=limits')
+    await page.locator('[data-card="services.toolsets"] .cf-card-toggle').click()
+    const n = page.locator('[data-toolset-notices] [data-notice="openrouter:3:refused:key_limit"]')
+    await expect(n.locator('[data-notice-gate="openrouter-refused"]')).toContainText('Gate: Refused by OpenRouter (outside StudySearch)')
+  })
 })

@@ -315,6 +315,7 @@ header.cf-layer-header[data-layer-header] button{background:var(--cf-white);colo
 .tn-text{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;font-size:var(--cf-fs-sm)}
 .tn-text small{font-size:var(--cf-fs-2xs)}
 .tn-meta{opacity:.85}
+.tn-gate{opacity:.85}
 .tn-seen summary{cursor:pointer;font-size:var(--cf-fs-xs);color:var(--cf-slate-600)}
 .tn-seen .tn-item{opacity:.75;margin-top:6px}
 .tn-all{display:flex;flex-direction:column;gap:8px}

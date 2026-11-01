@@ -41,13 +41,15 @@ const STATE_ORDER=['admitted','candidate','in_review','awaiting_l3','in_queue','
 const ATTR={official_url:{label:'Official course page',layer:'Layer 2'},provider_tuition:{label:'Provider tuition (fee year)',layer:'Layer 2'},
   english:{label:'English requirements',layer:'Layer 2'},intakes:{label:'Intakes / start dates',layer:'Layer 2'},
   registered_tuition:{label:'Registered tuition (register)',layer:'Layer 1'},
+  // SS-016 UR-11 (Platform Admin 1 Nov 2026 22:01): academic entry requirements have a reader (the AER programme); this coverage measure is not
+  // connected to it yet, so the label names the measure, not a missing reader.
   // v2.15.303 (Platform Admin 21 Oct 2026: "all data fields ... not the top 7"): every course field of the field register. Duration and
   // campus are register values in Australia only; elsewhere the Enrich fields queue fills them like the rest.
   duration:{label:'Duration',layer:'Register (AU) · Enrich fields'},campus:{label:'Campus linked',layer:'Register (AU) · Enrich fields'},
   level:{label:'Study level',layer:'Register · Enrich fields'},field_of_study:{label:'Field of study',layer:'Register (AU) · Enrich fields'},
   delivery:{label:'Delivery mode',layer:'Register · Enrich fields'},campus_city:{label:'Campus city',layer:'Enrich fields'},
   international:{label:'Open to international students',layer:'Register (AU) · Enrich fields'},deadline:{label:'Application deadline',layer:'No reader yet'},
-  academic_entry:{label:'Academic entry requirements',layer:'No reader yet'},description:{label:'Course description',layer:'No reader yet'}}
+  academic_entry:{label:'Academic entry requirements',layer:'Not measured here yet: read and admitted on Catalogue › Entry requirements'},description:{label:'Course description',layer:'No reader yet'}}
 const TIERS=[['','All providers'],['top_10','Top 10'],['top_11_40','11–40'],['top_41_100','41–100'],['rest','All others']]
 const COUNTRY_NAME={AU:'Australia',NZ:'New Zealand',CA:'Canada'}
 const PAGE=50

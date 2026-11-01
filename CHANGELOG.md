@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.323 — 1 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.396** (SS-016 UR-08, UR-10, UR-11, UR-12, UR-16; Platform Admin overnight mandate 1 Nov 2026 22:01). Migration `20261101100000_cf247_ss016_ur08_10_11_12_operating_words`: five automation catalogue descriptions and the academic_entry field register text corrected (guarded on the exact current text); `security.platform_notices_v1` (`81bf986b` → `88cffd39`), `security.admin_automations_read_v1` (`f5120aed` → `419aef5d`, retirement adds note and purpose), `security.platform_health_state_v1` (`3efe25a9` → `27dfaf03`, checks add cadence_minutes). New `src/guide/operatingWords.js`; s206 extended.
+
 ## 0.1.322 — 1 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.395** (SS-016 UR-01, UR-02, UR-03, UR-17; Platform Admin 1 Nov 2026 20:08). Guide and SOP text only (no migration): D12 alert delivery and rules from OPERATIONAL-LIMITS v1.3; role boundaries matched to the live `security.admin_automation_control_v1` (rank floor 5, per-job `control_rank`) and `public.admin_jobs`; AER Platform Admin only; `scripts/export-sops.mjs` provenance line and `--check-mirror`; Specialist tasks section. Migration `20261101090000_cf247_automation_denial_message`: `security.admin_automation_control_v1` refusal below rank 5 names the PIM Admin (`30c319b8` → `71951aa2`; message only, boundary unchanged). Layer 4: Back to an address of the same kind shows the kind again (UR-09 acceptance defect; s204 test). Spec s206; S22 equality check reads past the provenance line.
