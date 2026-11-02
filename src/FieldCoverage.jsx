@@ -7,6 +7,9 @@
 // field-gap-queue: one Fill the gaps task when due) and the cross-check differences (held value against a newer page reading).
 // Reads and writes: public.admin_field_coverage('overview' | 'findings' | 'finding_decide' | 'queue_set' | 'target_set' | 'run_now' |
 // 'stalled' | 'fill_now' | 'release_and_fill' | 'wording_list' | 'wording_set' | 'wording_off').
+// CF-247 P1 (Platform Admin, 2 Nov 2026 10:28): Provider descriptions shows the description reader's figures (public.admin_provider_descriptions
+// 'metrics': eligible, present, missing, proposed, held, admitted, dead letters, stored pages, pages read, AI reads, cost, rejections, Layer 4
+// queue, last run, backlog) and lets a PIM Admin send dead letters and held reads back to the queue with a reason ('retry').
 // v2.15.305 (Platform Admin, 21 Oct 2026 "Keep two, fix reader"): blended is a mix inside one course (hours or a share each way); on campus
 // and online is a choice of modes; a university's own wording is set in Delivery wording (PIM Admin and above, with a reason).
 // v2.15.304 (Platform Admin, 21 Oct 2026 08:42: "go ahead with next step for Field Stalled and action to resolve it"): Stalled fields lists
@@ -41,6 +44,7 @@ export default function FieldCoverage({rank=0,country='',provider=null,onError})
     <GapQueue data={data} rank={rank} onSaved={setData} onReload={load} onError={onError}/>
     <CrossCheck data={data} scope={scope} rank={rank} onDecided={load} onError={onError}/>
     <DeliveryWording onError={onError}/>
+    <ProviderDescriptions country={country} rank={rank} onError={onError}/>
   </div>
 }
 
@@ -180,5 +184,35 @@ function DeliveryWording({onError}){
       <Button compact disabled={busy||f.phrase.trim().length<3||f.reason.trim().length<4} onClick={()=>save('wording_set',{phrase:f.phrase,mode:f.mode,provider_id:f.provider?.value||null,reason:f.reason.trim()})}>Add phrase</Button>
     </div>}
     {note&&<p className="sd-desc" role="status">{note}</p>}</>}
+  </Card>
+}
+
+// CF-247 P1 provider descriptions (Platform Admin 2 Nov 2026 10:28, mandate §8)
+const PD_STATE={queued:'Waiting',reading:'Being read',proposed:'In Layer 4',held:'Held',dead_letter:'Dead letter',admitted:'Admitted',verified:'Verified',rejected:'Rejected',superseded:'Replaced'}
+function ProviderDescriptions({country,rank,onError}){
+  const[d,setD]=useState(null),[reason,setReason]=useState(''),[busy,setBusy]=useState(false)
+  const load=()=>supabase.rpc('admin_provider_descriptions',{p_action:'metrics',p_args:country?{country}:{}}).then(({data,error})=>{if(error)throw error;setD(data)}).catch(e=>onError?.(errText(e)))
+  useEffect(()=>{load()},[country])
+  const retry=async ids=>{setBusy(true);try{const{error}=await supabase.rpc('admin_provider_descriptions',{p_action:'retry',p_args:{provider_ids:ids,reason:reason.trim()}});if(error)throw error;setReason('');await load()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
+  const stuck=(d?.providers||[]).filter(p=>p.state==='dead_letter'||p.state==='held')
+  const n=k=>fmtNumber(d?.[k]??0)
+  return <Card id="coverage.provider-descriptions" title="Provider descriptions" icon={ListChecks}
+    subtitle="Descriptions read from each university's own About page, stored copy first. Every sentence quotes the page; a person approves each one in Layer 4 before the website shows it."
+    meta={<span className="cf-chip tone-neutral" data-pdesc-switch>{d?.enabled&&d?.job_active?'Reader on':'Reader off'}</span>} data-provider-descriptions>
+    {!d?<Loading compact/>:<>
+    <dl className="l4i-dl" data-pdesc-metrics>
+      <dt>Eligible</dt><dd>{n('eligible')}</dd><dt>Description present</dt><dd>{n('present')}</dd><dt>Missing</dt><dd>{n('missing')}</dd>
+      <dt>In Layer 4</dt><dd>{n('proposed')}</dd><dt>Held</dt><dd>{n('held')}</dd><dt>Admitted</dt><dd>{n('admitted')} ({n('published')} shown by the website)</dd>
+      <dt>Dead letters</dt><dd>{n('dead_letter')}</dd><dt>Stored About pages</dt><dd>{n('stored_pages_available')}</dd>
+      <dt>Pages read</dt><dd>{n('pages_acquired')} new, {n('pages_reused')} reused</dd><dt>AI reads</dt><dd>{n('ai_reads')} (US${d.cost_usd??0}; {d.cost_per_admitted_usd==null?'no admitted description yet':`US$${d.cost_per_admitted_usd} a description admitted`})</dd>
+      <dt>Remaining</dt><dd>{n('backlog')}</dd><dt>Last run</dt><dd>{d.last_run?fmtDateTime(d.last_run):'never'}</dd>
+    </dl>
+    {(d.rejections||[]).length>0&&<p className="sd-desc" data-pdesc-rejections>Held or rejected: {d.rejections.map(r=>`${String(r.rule||'other').replace(/_/g,' ')} ${r.n}`).join(' · ')}</p>}
+    {stuck.length>0&&<div className="dq-table-wrap"><table className="dq-table" data-pdesc-stuck><thead><tr><th>University</th><th>State</th><th>Why</th></tr></thead>
+      <tbody>{stuck.map(p=><tr key={p.provider_id}><td>{p.provider}</td><td>{PD_STATE[p.state]||p.state}</td><td><small>{String(p.rule||'').replace(/_/g,' ')}</small></td></tr>)}</tbody></table></div>}
+    {rank>=5&&stuck.length>0&&<div className="fc-actions" data-pdesc-retry>
+      <input value={reason} onChange={e=>setReason(e.target.value)} placeholder="Reason" aria-label="Reason"/>
+      <Button compact disabled={busy||reason.trim().length<5} onClick={()=>retry(stuck.map(p=>p.provider_id))}>Read these again</Button>
+    </div>}</>}
   </Card>
 }
