@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.345 — 3 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.418** (integration issue IQ-00055, a v2.15.410 regression). Migration `20261103100000_cf247_pdesc_picker_perf`: md5-guarded edits of provider_description_stored_v1 (6ddc2586 -> b4bef567: a cheap prefilter from the existing pdesc settings before the page rule, the page rule once per copy) and svc_provider_description_next (33d735da -> 5342ae3f: the stored-copy lookup once per claimed row). Same page chosen for 65 live providers and all fixture variants. No setting changed; nothing dropped; consumer API untouched. Spec s232.
+
 ## 0.1.344 — 3 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.417** (Platform Admin decision 3 Nov 2026 08:44 §4, D-M6/D-M7: phased extension with representative pilots). Migration `20261103090000_cf247_scholarship_nonuni_pilot`: settings scholarship.pilot_only (on), scholarship.pilot_provider_ids (empty), scholarship.external_award_patterns and the stop thresholds; md5-guarded edits of scholarship_admission_provider_ok_v1, fc_sch_eligible_v1, fc_provider_tier_v1, scholarship_discovery_refill_v1 and scholarship_admit_from_provider_page_v1; read-only security.scholarship_pilot_report_v1 and security.scholarship_pilot_stop_v1. P1 and P2 stay off until switched on with the pilot list. Nothing dropped; consumer API untouched. Spec s231.

@@ -1,17 +1,15 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.417'
-export const PACKAGE_VERSION='0.1.344'
+export const UI_VERSION='2.15.418'
+export const PACKAGE_VERSION='0.1.345'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Nov 2026',
-  title:'Scholarships: a pilot list for providers beyond universities, with stop reports',
+  title:'Provider descriptions: the reader picks up work again (no time-out)',
   changes:[
-    'Scholarships from providers that are not universities (TAFEs, polytechnics, private VET and higher-education institutes) and the evidence-based legitimacy checks that replace the 30-course minimum apply only to providers on a pilot list while pilot mode is on. The list starts empty; everyone else keeps today\'s rules.',
-    'A listed provider gets one fresh discovery, and its own scholarship pages read in the last 90 days that were refused only as "not a university" are admitted again from stored facts, with no new AI or Firecrawl. A non-university page that names another body\'s award (for example Australia Awards or a university\'s scholarship) is refused.',
-    'Read-only stop reports per pilot provider show wrong-provider admissions, missing eligibility evidence, Firecrawl and AI spend against their share, failed reads and stuck discovery. Every pilot scholarship still goes to Layer 4 before publication.'
+    'The provider description reader finds a provider\'s stored About page in milliseconds instead of seconds, so it picks up queued reads again instead of timing out. It chooses exactly the same page as before.'
   ],
   bugFixes:[]
 }
