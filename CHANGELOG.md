@@ -2,7 +2,7 @@
 
 ## 0.1.341 — 3 Nov 2026
 
-- Prepared visible PIM Admin release candidate **v2.15.414** (direction 2 Nov 2026 23:24 §1 Intake wording; mandate 3 Nov 00:03 Agent D). Migration `20261103060000_cf247_intake_semester_pairs`: plan security.intake_dates_plan_v2 (plan v1 retiring), md5-guarded edits of intake_dates_apply_v1 and enrich_parse_intakes_v1, provenance columns on pipeline.course_intake_dates, read-only security.intake_negated_months_v1, setting intake_dates.name_period_lists (0, off). Worker coverage-sweep v0.60.0 (extract.ts excluded months). Nothing withdrawn by the migration (94-row withdrawal is a paste file for approval). Consumer API untouched. Spec s229.
+- Prepared visible PIM Admin release candidate **v2.15.414** (direction 2 Nov 2026 23:24 §1 Intake wording; mandate 3 Nov 00:03 Agent D). Migration `20261103060000_cf247_intake_semester_pairs`: plan security.intake_dates_plan_v2 (plan v1 retiring), md5-guarded edits of intake_dates_apply_v1 and enrich_parse_intakes_v1, provenance columns on pipeline.course_intake_dates, read-only security.intake_negated_months_v1, setting intake_dates.name_period_lists (0, off). Worker coverage-sweep v0.59.1 (extract.ts excluded months). Nothing withdrawn by the migration (94-row withdrawal is a paste file for approval). Consumer API untouched. Spec s229.
 
 ## 0.1.340 — 3 Nov 2026
 
