@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.343 — 3 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.416** (Platform Admin decision 3 Nov 2026 08:44 §5, D-M9; integration issue IQ-00043, P1). Migration `20261103080000_cf247_link_reactivation_guard`: trigger reactivation_guard on catalogue.course_links (after manual_lock_guard; never raises), security.course_link_hold_basis_v1, security.course_link_norm_v1, security.course_link_reactivated_v1, table pipeline.course_link_rediscoveries, settings course_link.reactivation_guard (on) and course_link.reactivated_list_max; md5-guarded edits of coverage_apply_course_v1 and coverage_admission_apply_v1. Nothing dropped; consumer API untouched. Spec s230. The 13 La Trobe links are restored by a paste file after deploy.
+
 ## 0.1.342 — 3 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.415** (Platform Admin decision 3 Nov 2026 08:44, D-M1: D-R2/D-R3 enforced; direction 2 Nov 23:24). Migration `20261103070000_cf247_aer_dr2_dr3_supersede_and_matrix_gate`: md5-guarded edits of course_entry_gate_v1, entry_matrix_review_apply_v1, enrich_entry_record_v1 and aer_review_read_v1; corrected-read request table with immutable history; one waiting read per course; eleven entry-requirement settings. Layer 4 card shows the matrix gate and the diff. Nothing approved automatically; nothing dropped; consumer API untouched. Spec s227.
