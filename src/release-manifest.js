@@ -1,18 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.413'
-export const PACKAGE_VERSION='0.1.340'
+export const UI_VERSION='2.15.414'
+export const PACKAGE_VERSION='0.1.341'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Nov 2026',
-  title:'Scholarship coverage recovery: every source, every page, one candidate per award',
+  title:'Intake dates: excluded months are never intakes, and every date shows where it came from',
   changes:[
-    'Scholarship discovery no longer stalls behind a long queue, and a site map the site refuses is retried later instead of being marked empty. Every source recorded for a university is mapped, not only its website.',
-    'Scholarship listings and catalogues are read page by page; a catalogue counts as complete only when its pagination ends, otherwise it carries on from where it stopped. Each award on a listing or umbrella page becomes one candidate; the same award found on its own page is recognised as a duplicate.',
-    'A scholarship page that now redirects to the home page, a listing or a search page is recorded as moved, never withdrawn automatically. Closed rounds and ended scholarships are reported separately.',
-    'Scholarship Firecrawl use is limited by the daily scholarship share (the old all-time cap is retired); run sizes and waits are settings. Two proposals ship off for the Platform Admin: scholarships for non-university providers, and evidence-based legitimacy checks in place of the 30-course minimum. A worker outcome check ships paused.'
+    'A month the course page excludes ("excluding January & December", "Monthly intakes except June and December") is never read as an intake, by the page reader, the AI month reader or the intake date plan.',
+    'Every filled intake year or date now records the page wording that named the period, the calendar quote and the calendar document; values filled earlier are completed too. Rows an earlier rule skipped are looked at once more.',
+    'Reading "Semester 1 and 2" or "Trimester 1, 2 and 3" as naming each period ships off (Settings › Pipeline settings › Intake: read period lists) for the Platform Admin to decide. A semester label alone never gives a date.'
   ],
   bugFixes:[]
 }
