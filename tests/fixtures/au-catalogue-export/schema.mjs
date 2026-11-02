@@ -28,5 +28,16 @@ create view security.layer4_search_blocked_courses as select entity_id as course
 create view security.layer4_search_blocked_scholarships as select entity_id as scholarship_id from security.layer4_active_blocks where block_scope = 'search' and entity_type = 'scholarship';
 create function security.region_fallback_countries_v1() returns text[] language sql stable as $$ select array['CA'] $$;
 create table cron.job (jobid bigserial, jobname text, schedule text, active boolean default true);
-create table cron.job_run_details (runid bigserial, status text, return_message text, start_time timestamptz);`)
+create table cron.job_run_details (runid bigserial, status text, return_message text, start_time timestamptz);
+-- the live primary keys and course indexes the export's keyset pages and lookups use (the dump adds them separately)
+alter table catalogue.courses add primary key (id); alter table catalogue.providers add primary key (id); alter table catalogue.course_fees add primary key (id);
+alter table catalogue.course_intakes add primary key (id); alter table catalogue.course_english_requirements add primary key (id); alter table catalogue.course_links add primary key (id);
+alter table catalogue.course_campuses add primary key (course_id, campus_id, delivery_mode); alter table catalogue.course_identifiers add primary key (id);
+alter table search.course_documents add primary key (course_id); alter table pipeline.coverage_course_pages add primary key (course_id); alter table pipeline.layer4_review_items add primary key (id);
+alter table scholarship.scholarships add primary key (id); alter table scholarship.course_mappings add primary key (id); alter table pipeline.sources add primary key (id);
+alter table catalogue.provider_rankings add primary key (id); alter table catalogue.campuses add primary key (id);
+create index on catalogue.courses (provider_id); create index on catalogue.course_fees (course_id, status); create index on catalogue.course_intakes (course_id);
+create index on catalogue.course_english_requirements (course_id); create index on catalogue.course_links (course_id); create index on catalogue.course_identifiers (course_id);
+create index on scholarship.course_mappings (course_id); create unique index on scholarship.course_mappings (scholarship_id, course_id);
+create index on scholarship.course_financial_calculations (mapping_id);`)
 process.stdout.write(out.join(';\n\n').replace(/;;/g, ';') + ';\n')

@@ -92,6 +92,8 @@ jobs:
           EXTRA_BUSY: ${{ inputs.extra_busy_minutes }}
           GIT_SHA: ${{ github.sha }}
           PGAPPNAME: au-catalogue-export
+          # a ceiling, not a raise (the default is about 4 GB): the streamed export peaks near 0.3 GB at live scale (scale.sh, 2 Nov 2026)
+          NODE_OPTIONS: --max-old-space-size=2048
         run: node scripts/export/au-catalogue-export.mjs
       - name: Workbook
         if: ${{ !cancelled() && hashFiles('au-export/csv/courses.csv') != '' }}

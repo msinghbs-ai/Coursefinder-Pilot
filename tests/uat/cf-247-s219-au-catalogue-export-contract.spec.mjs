@@ -5,12 +5,14 @@
 // single read-only select with keyset pagination, transactions are REPEATABLE READ READ ONLY with a statement time-out and no wait inside
 // them, and the workflow confirms the project ref, keeps data and credentials out of logs and git, and keeps the artifact 14 days.
 // The behaviour is run on isolated fixtures by tests/fixtures/au-catalogue-export/run.sh (scratch PostgreSQL, live baseline table
-// definitions, a select-only role, both snapshot modes, every manifest check). G2, G3 and housekeeping are guarded centrally (s32, s57, s42).
+// definitions, a select-only role, both snapshot modes, every manifest check) and at live scale by scale.sh under a 512 MB heap (run
+// 41377240304, 2 Nov 2026, ran out of heap verifying: verification and the derived sheets now stream). G2, G3 and housekeeping are guarded
+// centrally (s32, s57, s42).
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { allSql, datasets, boundarySql, pageSql, sets } from '../../scripts/export/au-catalogue-queries.mjs'
 import { cronMinutes, rangeMinutes, tensMinutes, quietGaps, intervalQuiet, redact, toCsv } from '../../scripts/export/au-catalogue-export.mjs'
-import { parseCsv } from '../../scripts/export/csv.mjs'
+import { parseCsv, CsvParser } from '../../scripts/export/csv.mjs'
 import { compare, fieldStates, STATE_FIELDS, RECON_FIELDS } from '../../scripts/export/au-catalogue-derived.mjs'
 
 const driver = fs.readFileSync('scripts/export/au-catalogue-export.mjs', 'utf8')
@@ -181,4 +183,40 @@ test('the fixture run covers both snapshot modes as a select-only role and check
   expect(run).toContain('[ "$before" = "$after" ] || { echo "row counts changed"; exit 1; }')
   expect(run).toContain('row data printed in the log')
   expect(fs.readFileSync('tests/fixtures/au-catalogue-export/schema.mjs', 'utf8')).toContain("live-capture/baseline/schema.sql")
+})
+
+test('verification and the derived sheets stream: no dataset is held in memory (run 41377240304 ran out of heap)', () => {
+  // the files are joined as bytes and read back record by record; the derived sheets merge-join courses and projection rows in id order
+  expect(driver).not.toMatch(/parseCsv|readFileSync\([^)]*csv|const data = \{\}|data\[d\.name\]/)
+  expect(driver).toContain('await eachRecord(file, (rec, hdr) => {')
+  expect(driver).toContain("for await (const c of records(path.join(csvDir, 'courses.csv'))) {")
+  expect(driver).toContain("while (doc && doc.course_id < c.id)")
+  expect(driver).toContain("check('courses are in id order (the reconciliation merge-join needs it)', coursesSorted")
+  expect(driver).toContain('manifest.memory = { max_rss_mb: Math.round(process.resourceUsage().maxRSS / 1024)')
+  // a ceiling below the default, not a raise
+  expect(wf).toContain('NODE_OPTIONS: --max-old-space-size=2048')
+  const scale = fs.readFileSync('tests/fixtures/au-catalogue-export/scale.sh', 'utf8')
+  expect(scale).toContain('NODE_OPTIONS=--max-old-space-size=${SCALE_HEAP_MB:-512}')
+  expect(scale).toContain('${SCALE_RSS_MB:-2048}')
+  expect(fs.readFileSync('tests/fixtures/au-catalogue-export/scale.sql', 'utf8')).toMatch(/26,912 courses, 179,621 fees, 101,422 scholarship links/)
+})
+
+test('the CSV reader gives the same records whatever the chunk boundaries (quotes, new lines, multi-byte characters)', () => {
+  const text = 'id,a,b\n1,,""\n2,"x, ""y""\nz",0\n3,é漢,"q"\n'
+  const want = [['id', 'a', 'b'], ['1', null, ''], ['2', 'x, "y"\nz', '0'], ['3', 'é漢', 'q']]
+  const bytes = Buffer.from(text)
+  for (let k = 1; k < bytes.length; k++) {
+    const out = []; const p = new CsvParser((r) => out.push(r))
+    p.push(bytes.subarray(0, k)); p.push(bytes.subarray(k)); p.end()
+    expect(out, `split at ${k}`).toEqual(want)
+  }
+})
+
+test('each dataset records its snapshot times, and per-dataset snapshots are checked to have stayed inside quiet minutes', () => {
+  expect(driver).toContain("manifest.snapshots.push({ id: ++sid, scope: d.name, started_at: new Date(t0).toISOString(), quiet_room_s: room, budget_s: budget, ...snap })")
+  expect(driver).toContain('snapshot_detail: st.snapshots.map((id) =>')
+  expect(driver).toContain("check('per-dataset snapshots stayed inside quiet minutes', crossed.length === 0")
+  // a page group commits before its budget, which leaves a statement time-out of quiet room after the last page starts
+  expect(driver).toContain('const budget = Math.min(C.txnBudgetS, Math.max(5, room - C.statementTimeoutS))')
+  expect(driver).toContain('do { await pageOnce(d) } while (!state[d.name].done && (Date.now() - t0) / 1000 < budget)')
 })

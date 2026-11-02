@@ -25,8 +25,8 @@ import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import { datasets, boundarySql, pageSql, countSql, checkSqls, CATALOGUE_SQL } from './au-catalogue-queries.mjs'
-import { parseCsv } from './csv.mjs'
-import { buildDerived } from './au-catalogue-derived.mjs'
+import { CsvParser, eachRecord, records } from './csv.mjs'
+import { Agg, reconRows, stateRows, dictionaryRows, RECON_HEADER, RECON_META, STATE_HEADER, STATE_META, DICT_HEADER, DICT_META } from './au-catalogue-derived.mjs'
 
 const env = process.env
 const num = (k, d) => { const v = env[k]; if (v === undefined || v === '') return d; const n = Number(v); if (!Number.isFinite(n)) throw new Error(`${k} must be a number`); return n }
@@ -55,6 +55,9 @@ if (!(CONFIG.batch >= 100 && CONFIG.batch <= 5000)) throw new Error('BATCH must 
 if (!(CONFIG.statementTimeoutS >= 5 && CONFIG.statementTimeoutS <= 60)) throw new Error('STATEMENT_TIMEOUT_S must be 5-60')
 
 const started = Date.now()
+// peak memory (run 41377240304 ran out of heap): sampled while the export runs and written to the manifest
+let heapPeak = 0
+const sampleHeap = () => { const h = process.memoryUsage().heapUsed; if (h > heapPeak) heapPeak = h }
 const log = (...a) => console.log(`[${((Date.now() - started) / 1000).toFixed(1)}s]`, ...a)
 const md5 = (s) => crypto.createHash('md5').update(s).digest('hex')
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
@@ -298,7 +301,7 @@ async function main() {
       }
       const t0 = Date.now()
       const snap = await beginSnapshot(pg, C.statementTimeoutS)
-      manifest.snapshots.push({ id: 1, scope: 'all datasets', ...snap })
+      manifest.snapshots.push({ id: 1, scope: 'all datasets', started_at: new Date(t0).toISOString(), ...snap })
       let aborted = false
       try {
         for (const d of D) {
@@ -315,7 +318,7 @@ async function main() {
       } finally {
         await pg.exec(aborted ? 'rollback;' : 'commit;').catch(() => {})
       }
-      manifest.snapshots[0].seconds = Math.round((Date.now() - t0) / 100) / 10
+      manifest.snapshots[0].seconds = Math.round((Date.now() - t0) / 100) / 10; manifest.snapshots[0].ended_at = new Date().toISOString()
       if (aborted) {
         log(`single snapshot passed ${C.singleAbortS} s: rolled back, falling back to per_dataset`)
         manifest.production_impact.fallback = `single snapshot rolled back after ${manifest.snapshots[0].seconds} s (limit ${C.singleAbortS} s); per_dataset used`
@@ -331,118 +334,181 @@ async function main() {
           const room = C.pacing ? secondsLeftQuiet(new Date(), busy, C.tz, C.peak) : C.txnBudgetS
           const budget = Math.min(C.txnBudgetS, Math.max(5, room - C.statementTimeoutS))
           const snap = await beginSnapshot(pg, C.statementTimeoutS)
-          manifest.snapshots.push({ id: ++sid, scope: d.name, ...snap })
+          manifest.snapshots.push({ id: ++sid, scope: d.name, started_at: new Date(t0).toISOString(), quiet_room_s: room, budget_s: budget, ...snap })
           state[d.name].snapshots.push(sid)
           try {
             if (state[d.name].count_in_snapshot === null) state[d.name].count_in_snapshot = (await pg.json(countSql(d))).n
             do { await pageOnce(d) } while (!state[d.name].done && (Date.now() - t0) / 1000 < budget)
           } finally { await pg.exec('commit;').catch(() => {}) }
-          manifest.snapshots[manifest.snapshots.length - 1].seconds = Math.round((Date.now() - t0) / 100) / 10
+          Object.assign(manifest.snapshots[manifest.snapshots.length - 1], { seconds: Math.round((Date.now() - t0) / 100) / 10, ended_at: new Date().toISOString() })
         }
         log(`${d.name}: ${state[d.name].rows || '(reference)'} rows in ${state[d.name].parts} pages, ${state[d.name].snapshots.length} snapshot(s)`)
       }
       await wait(C.statementTimeoutS, 'final checks')
+      const tf = Date.now()
       const snap = await beginSnapshot(pg, C.statementTimeoutS)
-      manifest.snapshots.push({ id: ++sid, scope: 'final checks', ...snap })
+      manifest.snapshots.push({ id: ++sid, scope: 'final checks', started_at: new Date(tf).toISOString(), ...snap })
       try {
         const first = manifest.snapshots[0].now
         finalChecks = { courses: await pg.json(checks.courses), documents: await pg.json(checks.documents), documentsByCode: await pg.json(checks.documentsByCode),
           regionFallback: await pg.json(checks.regionFallback), changedSince: await pg.json(CATALOGUE_SQL.changedSince(C.country, first)), snapshot: sid }
       } finally { await pg.exec('commit;').catch(() => {}) }
+      Object.assign(manifest.snapshots[manifest.snapshots.length - 1], { seconds: Math.round((Date.now() - tf) / 100) / 10, ended_at: new Date().toISOString() })
     }
     manifest.production_impact.mode_used = mode
     manifest.production_impact.queries_run = pg.queries
     manifest.production_impact.export_seconds = Math.round((Date.now() - started) / 1000)
     await pg.close()
 
-    // --- 4 files, counts, distinct ids, md5s
-    const data = {}
+    // --- 4 files: each dataset's pages are joined into one CSV (byte copy, md5 while writing), then read back line by line for the row
+    //     count, distinct ids, column coverage, foreign-key values and the per-course summaries of the derived sheets. No dataset is
+    //     held in memory (run 41377240304, 2 Nov 2026, ran out of heap holding them all).
+    const heapTimer = setInterval(sampleHeap, 250); heapTimer.unref()
+    const snapshotDate = String(manifest.snapshots[0].now).slice(0, 10)
+    const agg = new Agg({ snapshotDate })
+    const AGG_FEEDS = new Set(['providers', 'layer4_course_review_items', 'course_fees', 'course_intakes', 'english_requirements', 'course_links', 'course_campuses', 'course_scholarships', 'course_entry_requirements'])
+    const fkValues = {} // dataset -> { column kind -> Map(value -> rows) }
+    const parentIds = { course: new Set(), scholarship: new Set(), provider: new Set() }
+    const stats = [], rowsOf = {}
+    let flagged = 0, coursesSorted = true, lastCourse = ''
+    const snapById = new Map(manifest.snapshots.map((x) => [x.id, x]))
     for (const d of D) {
       const parts = fs.readdirSync(partDir).filter((f) => f.startsWith(`${d.name}.`) && f.endsWith('.csv')).sort()
       const file = path.join(csvDir, `${d.name}.csv`)
-      let header = null, body = ''
+      const hash = crypto.createHash('md5'); let bytes = 0, header = null
+      const out = fs.openSync(file, 'w')
+      const put = (b) => { hash.update(b); bytes += b.length; fs.writeSync(out, b) }
+      const buf = Buffer.alloc(1 << 20)
       for (const p of parts) {
-        const txt = fs.readFileSync(path.join(partDir, p), 'utf8')
-        const nl = txt.indexOf('\n')
-        const h = nl < 0 ? txt : txt.slice(0, nl)
-        if (header === null) header = h
-        else if (h !== header) throw new Error(`${d.name}: page header differs`)
-        body += nl < 0 ? '' : txt.slice(nl + 1)
+        const fd = fs.openSync(path.join(partDir, p), 'r')
+        let n = fs.readSync(fd, buf, 0, buf.length, null), skip = 0
+        const nl = buf.subarray(0, n).indexOf(10)
+        const h = (nl < 0 ? buf.subarray(0, n) : buf.subarray(0, nl)).toString('utf8')
+        if (header === null) { header = h; put(Buffer.from(h + '\n')) } else if (h !== header) throw new Error(`${d.name}: page header differs`)
+        skip = nl < 0 ? n : nl + 1
+        while (n > 0) { if (n > skip) put(Buffer.from(buf.subarray(skip, n))); skip = 0; n = fs.readSync(fd, buf, 0, buf.length, null) }
+        fs.closeSync(fd)
       }
-      const content = (header ?? '') + '\n' + body
-      fs.writeFileSync(file, content)
-      const rows = parseCsv(content)
-      data[d.name] = rows
+      if (header === null) put(Buffer.from('\n'))
+      fs.closeSync(out)
+      const fileMd5 = hash.digest('hex')
       const idCols = d.idColumn ? d.idColumn.split('|') : null
-      const distinct = idCols ? new Set(rows.map((r) => idCols.map((c) => r[c]).join('|'))).size : null
+      const seen = idCols ? new Set() : null
+      let filled = null, idx = null
+      const fks = [['course', d.name === 'courses' ? null : d.courseColumn], ['scholarship', d.scholarshipColumn || (d.name === 'course_scholarships' ? 'scholarship_id' : null)],
+        ['provider', d.providerColumn || (d.name === 'courses' ? 'provider_id' : null)]].filter(([, c]) => c)
+      const fkMaps = (fkValues[d.name] = Object.fromEntries(fks.map(([k]) => [k, new Map()])))
+      const { rows } = await eachRecord(file, (rec, hdr) => {
+        if (!filled) {
+          filled = new Array(hdr.length).fill(0)
+          idx = { ids: idCols ? idCols.map((c) => hdr.indexOf(c)) : null, fk: fks.map(([k, c]) => [k, hdr.indexOf(c)]), id: hdr.indexOf('id'), api: hdr.indexOf('x_in_website_api_v2') }
+        }
+        for (let i = 0; i < rec.length; i++) if (rec[i] !== null && rec[i].trim() !== '') filled[i]++
+        if (seen) seen.add(idx.ids.length === 1 ? rec[idx.ids[0]] : idx.ids.map((i) => rec[i]).join('|'))
+        for (const [k, i] of idx.fk) { const m = fkMaps[k]; m.set(rec[i], (m.get(rec[i]) || 0) + 1) }
+        if (d.name === 'courses') {
+          const id = rec[idx.id]; parentIds.course.add(id); if (rec[idx.api] === 't') flagged++
+          if (!(id > lastCourse)) coursesSorted = false; lastCourse = id
+        } else if (d.name === 'scholarship_master') parentIds.scholarship.add(rec[idx.id])
+        else if (d.name === 'providers') parentIds.provider.add(rec[idx.id])
+        if (AGG_FEEDS.has(d.name)) { const o = {}; for (let i = 0; i < hdr.length; i++) o[hdr[i]] = rec[i]; agg.feed(d.name, o) }
+      }).then((r) => { if (!filled) { header = r.header; filled = new Array(r.header.length).fill(0) } return r })
+      rowsOf[d.name] = rows
+      const hdr = (await headerOf(file))
+      stats.push({ name: d.name, header: hdr, rows, filled: filled || new Array(hdr.length).fill(0), rule: d.visibleRule || '' })
       const st = state[d.name]
       manifest.datasets.push({
-        name: d.name, sheet: d.sheet, file: `csv/${d.name}.csv`, rows: rows.length, distinct_ids: distinct, id_column: d.idColumn || null,
+        name: d.name, sheet: d.sheet, file: `csv/${d.name}.csv`, rows, distinct_ids: seen ? seen.size : null, id_column: d.idColumn || null,
         count_measured: measure.counts[d.name], count_in_snapshot: st.count_in_snapshot, pages: st.parts, snapshots: st.snapshots,
-        md5: md5(content), bytes: Buffer.byteLength(content),
+        snapshot_detail: st.snapshots.map((id) => { const x = snapById.get(id) || {}; return { id, now: x.now, snapshot: x.snapshot, started_at: x.started_at, ended_at: x.ended_at, seconds: x.seconds } }),
+        md5: fileMd5, bytes,
         query_md5: { page: md5(pageSql(d, d.key ? d.key.map(() => '$last') : null, d.key ? d.key.map(() => '$upto') : null)), boundary: d.key ? md5(boundarySql(d, d.key.map(() => '$last'), C.batch)) : null, count: md5(countSql(d)) },
         query_template: pageSql(d, d.key ? d.key.map(() => '$last') : null, d.key ? d.key.map(() => '$upto') : null),
         consumer_rule: d.visibleRule || null, reference: Boolean(d.reference),
       })
-      log(`${d.name}: ${rows.length} rows${distinct !== null ? `, ${distinct} distinct ids` : ''}, md5 ${md5(content)}`)
+      log(`${d.name}: ${rows} rows${seen ? `, ${seen.size} distinct ids` : ''}, md5 ${fileMd5}`)
+      sampleHeap()
     }
     fs.rmSync(partDir, { recursive: true, force: true })
 
     // --- 5 checks
-    const ds = Object.fromEntries(manifest.datasets.map((x) => [x.name, x]))
     const check = (name, ok, detail) => { manifest.checks.push({ check: name, pass: Boolean(ok), detail }); log(`${ok ? 'PASS' : 'FAIL'} ${name}: ${JSON.stringify(detail)}`) }
     for (const x of manifest.datasets) {
       check(`${x.name}: rows equal the count in its snapshot`, x.rows === x.count_in_snapshot, { rows: x.rows, count_in_snapshot: x.count_in_snapshot })
       if (x.distinct_ids !== null) check(`${x.name}: ids are unique`, x.distinct_ids === x.rows, { rows: x.rows, distinct_ids: x.distinct_ids })
     }
-    const courseIds = new Set(data.courses.map((r) => r.id))
-    check('AU courses equal count(*) in the snapshot', data.courses.length === finalChecks.courses.n, { exported: data.courses.length, snapshot_count: finalChecks.courses.n, snapshot: finalChecks.snapshot })
-    const flagged = data.courses.filter((r) => r.x_in_website_api_v2 === 't').length
-    check('in_website_api_v2 subset equals the search.course_documents rows of AU courses', flagged === finalChecks.documents.n && data.search_course_documents.length === finalChecks.documents.n,
-      { flagged, projection_rows_exported: data.search_course_documents.length, course_documents_au_courses: finalChecks.documents.n })
+    check('AU courses equal count(*) in the snapshot', rowsOf.courses === finalChecks.courses.n, { exported: rowsOf.courses, snapshot_count: finalChecks.courses.n, snapshot: finalChecks.snapshot })
+    check('in_website_api_v2 subset equals the search.course_documents rows of AU courses', flagged === finalChecks.documents.n && rowsOf.search_course_documents === finalChecks.documents.n,
+      { flagged, projection_rows_exported: rowsOf.search_course_documents, course_documents_au_courses: finalChecks.documents.n })
     check('in_website_api_v2 subset equals search.course_documents with country_code AU', flagged === finalChecks.documentsByCode.n, { flagged, course_documents_country_code: finalChecks.documentsByCode.n })
+    const orphanCount = (name, kind) => { let n = 0; for (const [v, c] of fkValues[name]?.[kind] || []) if (!parentIds[kind].has(v)) n += c; return n }
     const orphans = {}
     for (const d of D) {
-      const col = d.courseColumn; if (!col || d.name === 'courses') continue
-      const bad = data[d.name].filter((r) => !courseIds.has(r[col]))
-      orphans[d.name] = bad.length
-      check(`${d.name}: every ${col} is in courses`, bad.length === 0, { rows: data[d.name].length, missing_course: bad.length })
+      if (d.courseColumn && d.name !== 'courses') { orphans[d.name] = orphanCount(d.name, 'course'); check(`${d.name}: every ${d.courseColumn} is in courses`, orphans[d.name] === 0, { rows: rowsOf[d.name], missing_course: orphans[d.name] }) }
+      if (d.scholarshipColumn) { const n = orphanCount(d.name, 'scholarship'); check(`${d.name}: every scholarship_id is in scholarship_master`, n === 0, { rows: rowsOf[d.name], missing_scholarship: n }) }
+      if (d.providerColumn) { const n = orphanCount(d.name, 'provider'); check(`${d.name}: every provider_id is in providers`, n === 0, { rows: rowsOf[d.name], missing_provider: n }) }
     }
-    const schIds = new Set(data.scholarship_master.map((r) => r.id))
-    for (const d of D.filter((x) => x.scholarshipColumn)) {
-      const bad = data[d.name].filter((r) => !schIds.has(r[d.scholarshipColumn])).length
-      check(`${d.name}: every scholarship_id is in scholarship_master`, bad === 0, { rows: data[d.name].length, missing_scholarship: bad })
+    { const n = orphanCount('course_scholarships', 'scholarship'); check('course_scholarships: every scholarship_id is in scholarship_master', n === 0, { missing_scholarship: n }) }
+    { const n = orphanCount('courses', 'provider'); check('courses: every provider_id is in providers', n === 0, { missing_provider: n }) }
+    check('courses are in id order (the reconciliation merge-join needs it)', coursesSorted, { sorted: coursesSorted })
+    // per-dataset snapshots run only inside quiet minutes: each began in a quiet window and committed before the next busy minute
+    if (C.pacing && mode === 'per_dataset') {
+      const crossed = manifest.snapshots.filter((x) => x.started_at && x.ended_at).filter((x) => {
+        for (let ms = Date.parse(x.started_at); ms <= Date.parse(x.ended_at); ms += 5000) if (busy.has(localParts(new Date(ms), C.tz).m)) return true
+        return busy.has(localParts(new Date(Date.parse(x.ended_at)), C.tz).m)
+      }).map((x) => ({ id: x.id, scope: x.scope, started_at: x.started_at, ended_at: x.ended_at }))
+      check('per-dataset snapshots stayed inside quiet minutes', crossed.length === 0, { snapshots: manifest.snapshots.length, crossed })
     }
-    const missSch = data.course_scholarships.filter((r) => !schIds.has(r.scholarship_id)).length
-    check('course_scholarships: every scholarship_id is in scholarship_master', missSch === 0, { missing_scholarship: missSch })
-    const provIds = new Set(data.providers.map((r) => r.id))
-    for (const d of D.filter((x) => x.providerColumn)) {
-      const bad = data[d.name].filter((r) => !provIds.has(r[d.providerColumn])).length
-      check(`${d.name}: every provider_id is in providers`, bad === 0, { rows: data[d.name].length, missing_provider: bad })
-    }
-    const badProv = data.courses.filter((r) => !provIds.has(r.provider_id)).length
-    check('courses: every provider_id is in providers', badProv === 0, { missing_provider: badProv })
     manifest.drift = mode === 'single' ? { method: 'single snapshot: no drift between datasets is possible', courses_changed_after_first_snapshot: 0 }
       : { method: 'per_dataset snapshots', first_snapshot_at: manifest.snapshots[0]?.now, courses_changed_after_first_snapshot: finalChecks.changedSince.n,
           course_ids_changed: finalChecks.changedSince.ids, child_rows_whose_course_is_missing: orphans }
 
-    // --- 6 derived sheets (from the exported files only: no further database reads)
-    const derived = buildDerived(data, { country: C.country, snapshotDate: String(manifest.snapshots[0].now).slice(0, 10), regionFallback: finalChecks.regionFallback?.countries || [], dictionary, manifestDatasets: manifest.datasets })
-    for (const [name, { header, rows, sheet, idColumns, note }] of Object.entries(derived)) {
-      const content = toCsv(header, rows)
-      fs.writeFileSync(path.join(csvDir, `${name}.csv`), content)
-      const distinct = idColumns ? new Set(rows.map((r) => idColumns.map((c) => r[header.indexOf(c)]).join('|'))).size : null
-      manifest.datasets.push({ name, sheet, file: `csv/${name}.csv`, rows: rows.length, distinct_ids: distinct, id_column: idColumns ? idColumns.join('|') : null, derived: true, note, md5: md5(content), bytes: Buffer.byteLength(content) })
-      log(`${name}: ${rows.length} rows (derived), md5 ${md5(content)}`)
-      if (idColumns) check(`${name}: one row per ${idColumns.join(' and ')}`, distinct === rows.length, { rows: rows.length, distinct })
+    // --- 6 derived sheets, streamed: courses and projection rows are merge-joined in id order; each course's rows are written at once
+    const ctx = { country: C.country, snapshotDate, regionFallback: finalChecks.regionFallback?.countries || [] }
+    const recon = new CsvOut(path.join(csvDir, 'website_api_v2_field_reconciliation.csv'), RECON_HEADER)
+    const states = new CsvOut(path.join(csvDir, 'field_state_reconciliation.csv'), STATE_HEADER)
+    const docs = records(path.join(csvDir, 'search_course_documents.csv'))
+    let doc = (await docs.next()).value, reconCourses = 0, stateCourses = 0, unmatchedDocs = 0
+    for await (const c of records(path.join(csvDir, 'courses.csv'))) {
+      while (doc && doc.course_id < c.id) { unmatchedDocs++; doc = (await docs.next()).value }
+      if (doc && doc.course_id === c.id) { for (const r of reconRows(c, doc, agg, ctx)) recon.row(r); reconCourses++; doc = (await docs.next()).value }
+      for (const r of stateRows(c, agg)) states.row(r)
+      stateCourses++
     }
-    if (data.provider_rankings.length === 0) manifest.limitations.push('provider_rankings: no ranking row is held for any AU provider in this snapshot (the dataset is exported, with its columns, and is empty).')
+    while (doc) { unmatchedDocs++; doc = (await docs.next()).value }
+    const derivedOut = [
+      ['website_api_v2_field_reconciliation', recon, RECON_META, reconCourses],
+      ['field_state_reconciliation', states, STATE_META, stateCourses],
+    ]
+    check('every projection row joined its course', unmatchedDocs === 0, { unmatched: unmatchedDocs })
+    for (const [name, w, meta, n] of derivedOut) {
+      w.close()
+      // one row per course and field: the courses are unique and in order (checked above) and each gets the fixed field list
+      const distinct = coursesSorted ? n * meta.perCourse : null
+      manifest.datasets.push({ name, sheet: meta.sheet, file: `csv/${name}.csv`, rows: w.rows, distinct_ids: distinct, id_column: meta.idColumns.join('|'), derived: true, note: meta.note, md5: w.md5, bytes: w.bytes })
+      stats.push({ name, header: w.header, rows: w.rows, filled: w.filled, rule: '', derived: true })
+      check(`${name}: one row per ${meta.idColumns.join(' and ')}`, distinct === w.rows, { rows: w.rows, courses: n, fields: meta.perCourse })
+      log(`${name}: ${w.rows} rows (derived), md5 ${w.md5}`)
+    }
+    const dict = new CsvOut(path.join(csvDir, 'data_dictionary_and_coverage.csv'), DICT_HEADER)
+    const dictRows = dictionaryRows(stats, dictionary)
+    const dictKeys = new Set(dictRows.map((r) => `${r[0]}|${r[1]}`))
+    for (const r of dictRows) dict.row(r)
+    dict.close()
+    manifest.datasets.push({ name: 'data_dictionary_and_coverage', sheet: DICT_META.sheet, file: 'csv/data_dictionary_and_coverage.csv', rows: dict.rows, distinct_ids: dictKeys.size, id_column: DICT_META.idColumns.join('|'), derived: true, note: DICT_META.note, md5: dict.md5, bytes: dict.bytes })
+    check('data_dictionary_and_coverage: one row per dataset and column', dictKeys.size === dict.rows, { rows: dict.rows, distinct: dictKeys.size })
+    log(`data_dictionary_and_coverage: ${dict.rows} rows (derived), md5 ${dict.md5}`)
+    clearInterval(heapTimer)
+    if (rowsOf.provider_rankings === 0) manifest.limitations.push('provider_rankings: no ranking row is held for any AU provider in this snapshot (the dataset is exported, with its columns, and is empty).')
     manifest.limitations.push(
       'layer4_course_field_resolutions is not exported: it holds no confirmed not-applicable decision usable as a field state; "not_applicable" is therefore never assigned (null is never read as not applicable).',
       'field_state_reconciliation "processing" means rows stored but not admitted (status proposed) with no pending Layer 4 item; course page reads in flight are not inferred.',
       'website_api_v2_field_reconciliation official_url: with several active candidate links and none primary, the projection choice calls security.course_page_check_v1 (E16-2), which this export does not re-run; such rows are marked chosen_among_candidates.',
     )
     manifest.finished_at = new Date().toISOString()
+    sampleHeap()
+    manifest.memory = { max_rss_mb: Math.round(process.resourceUsage().maxRSS / 1024), max_heap_mb: Math.round(heapPeak / 1048576), method: 'streamed: no dataset held in memory' }
+    log(`peak memory: resident ${manifest.memory.max_rss_mb} MB, heap ${manifest.memory.max_heap_mb} MB`)
     manifest.all_checks_pass = manifest.checks.every((c) => c.pass)
     fs.writeFileSync(path.join(out, 'manifest.json'), JSON.stringify(manifest, null, 2))
     log(`manifest written: ${manifest.checks.filter((c) => c.pass).length}/${manifest.checks.length} checks pass`)
@@ -455,6 +521,32 @@ async function main() {
     fs.writeFileSync(path.join(out, 'manifest.json'), JSON.stringify(manifest, null, 2))
     process.exitCode = 1
   }
+}
+
+// the header of a CSV file (its first line)
+async function headerOf(file) {
+  const fd = fs.openSync(file, 'r'), b = Buffer.alloc(1 << 16), n = fs.readSync(fd, b, 0, b.length, 0); fs.closeSync(fd)
+  const line = b.subarray(0, n).toString('utf8').split('\n')[0]
+  let h = null; const p = new CsvParser((r) => { if (!h) h = r }); p.push(line + '\n'); p.end()
+  return h && !(h.length === 1 && h[0] === null) ? h : []
+}
+
+const csvValue = (v) => (v === null || v === undefined ? '' : /[",\n\r]/.test(String(v)) || String(v) === '' ? `"${String(v).replace(/"/g, '""')}"` : String(v))
+
+// a CSV written row by row (buffered, synchronous), with its md5, byte and row counts and column coverage kept as it goes
+export class CsvOut {
+  constructor(file, header) {
+    this.fd = fs.openSync(file, 'w'); this.header = header; this.hash = crypto.createHash('md5'); this.bytes = 0; this.rows = 0
+    this.filled = new Array(header.length).fill(0); this.buf = ''
+    this.write(header.map(csvValue).join(',') + '\n')
+  }
+  write(s) { this.buf += s; if (this.buf.length > 1 << 20) this.flush() }
+  flush() { if (!this.buf) return; const b = Buffer.from(this.buf, 'utf8'); this.hash.update(b); this.bytes += b.length; fs.writeSync(this.fd, b); this.buf = '' }
+  row(r) {
+    for (let i = 0; i < r.length; i++) if (r[i] !== null && r[i] !== undefined && String(r[i]).trim() !== '') this.filled[i]++
+    this.rows++; this.write(r.map(csvValue).join(',') + '\n')
+  }
+  close() { this.flush(); fs.closeSync(this.fd); this.md5 = this.hash.digest('hex') }
 }
 
 export function toCsv(header, rows) {
