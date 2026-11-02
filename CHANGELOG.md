@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.340 — 3 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.413** (Scholarship Coverage Recovery mandate 2 Nov 2026 17:41; direction 23:24; mandate 3 Nov 00:03 Agent B). Migration `20261103050000_cf247_scholarship_recovery` (F1-F10): md5-guarded edits of the scholarship pickers, recorders and budget; new tables scholarship_listing_members, scholarship_source_moves, scholarship_round_states; job worker-outcome-check (paused); proposals P1 and P2 shipped off. Worker coverage-sweep v0.59.0 (catalogue.ts). No setting raises Firecrawl spend; nothing dropped; consumer API untouched. Spec s226.
+
 ## 0.1.339 — 3 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.412** (direction 2 Nov 2026 23:24 §3; mandate 3 Nov 00:03 Agent F). Migration `20261103040000_cf247_pipeline_yield_checks`: table pipeline.integration_yield_buckets, security.integration_yield_checks_v1 (hidden worker errors, persistent zero yield, incomplete pagination and whole reads, repeated failed attempts), security.pipeline_yield_v1 and public.admin_pipeline_yield; nine integration.* settings; job integration-validate also runs the yield checks (active state unchanged). No existing function edited; nothing dropped; consumer API untouched. Spec s228.
