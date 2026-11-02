@@ -10,7 +10,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
-const MIG = 'supabase/migrations/20261103010000_cf247_aer_dr2_dr3_supersede_and_matrix_gate.sql'
+const MIG = 'supabase/migrations/20261103070000_cf247_aer_dr2_dr3_supersede_and_matrix_gate.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const FX = 'tests/fixtures/aer-dr2-dr3'
 const fixtures = fs.readFileSync(`${FX}/fixtures.sql`, 'utf8')

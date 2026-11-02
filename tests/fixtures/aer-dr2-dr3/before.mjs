@@ -1,5 +1,5 @@
 // D-R2/D-R3 fixtures: prints the SQL that rebuilds, from this repository's own migrations, security.entry_matrix_review_apply_v1 as it is
-// live before 20261103010000 (its create statement, then the md5-guarded edits later migrations made to it, in order). The other edited
+// live before 20261103070000 (its create statement, then the md5-guarded edits later migrations made to it, in order). The other edited
 // functions are rebuilt by the E13 fixture builder (tests/fixtures/e13-completeness-gate/before.mjs) followed by the E13 migration itself.
 // run.sh checks every rebuilt md5 against the live one read on 2 Nov 2026.
 import fs from 'node:fs'

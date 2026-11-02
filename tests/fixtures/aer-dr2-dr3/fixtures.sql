@@ -1,5 +1,5 @@
 -- Guards: D-R2, D-R3 and the E13 extension (Platform Admin direction 2 Nov 2026 23:24) on isolated fixtures.
--- Runs after both stubs files, the rebuilt live definitions and the 20261103010000 migration (see run.sh). Every block raises on a failed
+-- Runs after both stubs files, the rebuilt live definitions and the 20261103070000 migration (see run.sh). Every block raises on a failed
 -- check; each passing block prints "PASS <name>". Each failure fixture is labelled with the real pending Layer 4 item whose shape it reproduces
 -- (readiness assessment 2 Nov 2026, ui-audit/aer-readiness-2026-11-02.csv). No live data is copied: quotes are shortened paraphrases of the
 -- shape (the reason, the kind, the cell layout), never the page.

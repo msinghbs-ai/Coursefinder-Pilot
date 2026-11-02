@@ -2,11 +2,11 @@
 # D-R2 / D-R3 / E13 extension on isolated fixtures (CF-247, Platform Admin direction 2 Nov 2026 23:24). Needs a scratch PostgreSQL (never a
 # Supabase project): PGHOST/PGPORT/PGUSER point at it. Builds a throwaway database, rebuilds the live definitions this change edits from this
 # repository's migrations (the E13 builder and E13 migration, then the matrix approval chain), checks every md5 against live (read 2 Nov 2026
-# 23:46 AEDT), applies 20261103010000 unchanged (its own md5 guards run), applies it again (no change), then runs fixtures.sql.
+# 23:46 AEDT), applies 20261103070000 unchanged (its own md5 guards run), applies it again (no change), then runs fixtures.sql.
 set -euo pipefail
 cd "$(dirname "$0")/../../.."
 DB=${DR_DB:-aer_dr2_dr3_fixtures}
-MIG=supabase/migrations/20261103010000_cf247_aer_dr2_dr3_supersede_and_matrix_gate.sql
+MIG=supabase/migrations/20261103070000_cf247_aer_dr2_dr3_supersede_and_matrix_gate.sql
 P="psql -v ON_ERROR_STOP=1 -q -X"
 $P -d postgres -c "drop database if exists $DB" -c "create database $DB" >/dev/null
 trap '$P -d postgres -c "drop database if exists $DB" >/dev/null' EXIT
