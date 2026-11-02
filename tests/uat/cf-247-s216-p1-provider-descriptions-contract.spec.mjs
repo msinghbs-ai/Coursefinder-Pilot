@@ -99,7 +99,7 @@ test('the job: catalogued, off by default, no number in its command, bounded and
   // acquisition off until the pilot cost is approved (decision pack 2 Nov 2026 10:56, Decision 7)
   for (const k of ['pdesc.acquire_direct', 'pdesc.acquire_firecrawl']) expect(m).toMatch(new RegExp(`\\('pipeline', '${k.replace('.', '\\.')}', [^\\n]*\\n[^\\n]*\\n  'number', '0'::jsonb, 0, 1, 'on/off'`))
   expect(fn('public.svc_provider_description_next')).toContain("and (security.pipeline_num_v1('pdesc.acquire_direct', 0) >= 1 or security.provider_description_stored_v1(r.provider_id) is not null)")
-  expect(m).toContain("perform cron.schedule('provider-description-read', '6,16,26,46,56 * * * *', $j$select security.provider_description_fire_v1()$j$);")
+  expect(m).toContain("perform cron.schedule('provider-description-read', '6,16,26,56 * * * *', $j$select security.provider_description_fire_v1()$j$);")
   expect(m).toContain("perform cron.alter_job((select jobid from cron.job where jobname = 'provider-description-read'), active := false);")
   expect(m).toContain(" ('provider-description-read', 'Course pages', 38, 'Provider descriptions: find, read and propose',")
   const f = fn('security.provider_description_fire_v1')

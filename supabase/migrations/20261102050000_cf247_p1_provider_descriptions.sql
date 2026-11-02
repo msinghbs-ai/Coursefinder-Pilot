@@ -108,7 +108,7 @@ insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, ki
   'Total Firecrawl page reads the description reader may make (home and About pages a site refused to a direct read). 0: none. The hard Firecrawl ceiling of a pilot approved by the Platform Admin; each read also passes the existing Firecrawl budget.',
   'number', '0'::jsonb, 0, 2000, 'reads', 956, 'Provider descriptions', 'public.svc_provider_description_next, worker provider_description', 'CF-247 P1 provider descriptions: cost-capped pilot (Platform Admin direction 2 Nov 2026 11:10)'),
  ('pipeline', 'pdesc.every_minutes', 'Provider descriptions: run every',
-  'The job wakes every 10 minutes and sends the worker only when this long has passed since its last call.', 'number', '60'::jsonb, 10, 1440, 'minutes', 961, 'Provider descriptions', 'security.provider_description_fire_v1', 'CF-247 P1 provider descriptions: frequency is a setting'),
+  'The job wakes at :06, :16, :26 and :56 and sends the worker only when this long has passed since its last call.', 'number', '60'::jsonb, 10, 1440, 'minutes', 961, 'Provider descriptions', 'security.provider_description_fire_v1', 'CF-247 P1 provider descriptions: frequency is a setting'),
  ('pipeline', 'batch.provider_description', 'Provider descriptions: providers a run',
   'Providers one worker call reads (each is one page and one AI call).', 'number', '3'::jsonb, 1, 10, 'providers', 962, 'Provider descriptions', 'job provider-description-read, public.svc_provider_description_next', 'CF-247 P1 provider descriptions: bounded batches'),
  ('pipeline', 'pdesc.queue_per_run', 'Provider descriptions: providers queued a run',
@@ -570,12 +570,12 @@ comment on function security.provider_description_fire_v1() is 'CF-247 P1 provid
 
 insert into pipeline.automation_catalogue(jobname, area, sort, label, description, control_rank, batch_editable, layer23_stage) values
  ('provider-description-read', 'Course pages', 38, 'Provider descriptions: find, read and propose',
-  'Every 10 minutes while Provider descriptions: reader on is 1 (off until the Platform Admin activates it), at most once every Provider descriptions: run every: queues providers in scope with no description (bounded), takes the stored copy of the provider''s own About page where one is held, otherwise has the worker find the About link on the provider''s home page and read it (direct first with robots.txt respected; Firecrawl only when the site refuses, within the Firecrawl budget), and sends it to the pinned Enrich fields model. Every sentence must quote the page; a description that passes every check goes to Layer 4, where a person approves or rejects it. Failed reads are retried, then listed as dead letters on Coverage.',
+  'At :06, :16, :26 and :56 (clear of the admission minutes :x3, :x5, :x9, the :35-:42 jobs and the :47 coverage build) while Provider descriptions: reader on is 1 (off until the Platform Admin activates it), at most once every Provider descriptions: run every: queues providers in scope with no description (bounded), takes the stored copy of the provider''s own About page where one is held, otherwise has the worker find the About link on the provider''s home page and read it (direct first with robots.txt respected; Firecrawl only when the site refuses, within the Firecrawl budget), and sends it to the pinned Enrich fields model. Every sentence must quote the page; a description that passes every check goes to Layer 4, where a person approves or rejects it. Failed reads are retried, then listed as dead letters on Coverage.',
   6, false, null)
 on conflict (jobname) do nothing;
 do $c$ begin
   if not exists (select 1 from cron.job where jobname = 'provider-description-read') then
-    perform cron.schedule('provider-description-read', '6,16,26,46,56 * * * *', $j$select security.provider_description_fire_v1()$j$);
+    perform cron.schedule('provider-description-read', '6,16,26,56 * * * *', $j$select security.provider_description_fire_v1()$j$);
   end if;
   perform cron.alter_job((select jobid from cron.job where jobname = 'provider-description-read'), active := false);
 end $c$;
