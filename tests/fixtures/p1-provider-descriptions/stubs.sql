@@ -15,7 +15,7 @@ create function auth.role() returns text language sql stable as $f$ select coale
 create function security.current_role_rank() returns int language sql stable as $f$ select coalesce(nullif(current_setting('fx.rank', true), '')::int, 0) $f$;
 
 create table pipeline.platform_toolset_settings(toolset_key text, key text, label text, help text, kind text, value jsonb, min_value numeric, max_value numeric,
-  unit text, sort int, section text, used_by text, reason text, updated_at timestamptz default now(), primary key (toolset_key, key));
+  unit text, sort int, section text, used_by text, reason text, updated_by uuid, updated_at timestamptz default now(), primary key (toolset_key, key));
 create function security.toolset_setting(p_toolset text, p_key text) returns jsonb language sql stable as
   $f$ select value from pipeline.platform_toolset_settings where toolset_key = p_toolset and key = p_key $f$;
 create function security.pipeline_num_v1(p_key text, p_default numeric) returns numeric language sql stable as
@@ -172,3 +172,9 @@ begin
   end if;
   return null;
 end $$;
+
+-- roles (the Platform Admin who owns a recorded setting change)
+create table security.roles(code text primary key, rank int, status text default 'active');
+create table security.user_roles(user_id uuid, role_code text, expires_at timestamptz);
+insert into security.roles values ('platform_admin', 6, 'active');
+insert into security.user_roles values ('90000000-0000-0000-0000-0000000000aa', 'platform_admin', null);

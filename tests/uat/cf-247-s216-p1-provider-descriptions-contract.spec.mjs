@@ -10,7 +10,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { centralCandidates, weakKinds } from '../../supabase/functions/coverage-sweep/central.ts'
-import { aboutLinks, descriptionAnswer, descriptionRequest, descriptionSentences, ownHost, DESCRIPTION_SYSTEM } from '../../supabase/functions/coverage-sweep/description.ts'
+import { lengthNote, aboutPageCheck, aboutLinks, descriptionAnswer, descriptionRequest, descriptionSentences, ownHost, DESCRIPTION_SYSTEM } from '../../supabase/functions/coverage-sweep/description.ts'
 
 const MIG = 'supabase/migrations/20261102090000_cf247_p1_provider_descriptions.sql'
 const m = fs.readFileSync(MIG, 'utf8')
@@ -125,7 +125,7 @@ test('the job: catalogued, off by default, no number in its command, bounded and
 })
 
 test('worker v0.57.0: stored copy first, own hosts only, direct before Firecrawl, pinned model, every quote checked; minimal change', () => {
-  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.57\.0"; \/\/ v0\.57\.0 \(2 Nov 2026, CF-247 missing-field enrichment P1/)
+  expect(worker).toMatch(/(const WORKER = "coverage-sweep-worker-v0\.57\.0"; |\/\/ was v0\.57\.0 )\/\/ v0\.57\.0 \(2 Nov 2026, CF-247 missing-field enrichment P1/)  // later versions keep the note
   const a = worker.indexOf('if (mode === "provider_description") {'), b = worker.indexOf('if (mode === "enrich_ai") {')
   expect(a).toBeGreaterThan(0); expect(b).toBeGreaterThan(a)
   const w = worker.slice(a, b)
@@ -154,6 +154,62 @@ test('the central page finder suggests About pages from the whole-site map only 
   expect(about).toEqual(['https://www.alpha.edu.au/about', 'https://www.alpha.edu.au/about-the-university/overview'])
   expect(weakKinds([])).not.toContain('about_page')
   expect(weakKinds([])).not.toContain('entry_requirements')
+})
+
+// Pilot finding (2 Nov 2026 16:16, v2.15.406): Monash read a stored Pharmacy news article, ACU a research page on a staff subdomain, CDU the
+// right page. One page rule decides every source (security.provider_description_page_v1; the worker's aboutPageCheck), with its lists as settings.
+const PILOT = 'supabase/migrations/20261102130000_cf247_pdesc_page_choice.sql'
+test('page rule (pilot 2 Nov 2026 16:16): only the provider\'s own About or Overview page; news, research and staff pages refused', () => {
+  const p = fs.readFileSync(PILOT, 'utf8')
+  const rule = { about_prefixes: ['about-', 'about_'], refused_path_words: ['news', 'events', 'media', 'research', 'staff', 'faculty', 'school', 'study'],
+    refused_host_labels: ['staff', 'intranet', 'news'], about_max_segments: 2 }
+  const hosts = ['monash.edu.au', 'monash.edu'], pats = ['about', 'about-us', 'our-university', 'who-we-are', 'overview']
+  expect(aboutPageCheck('https://www.monash.edu/pharm/about/news/2025/new-dean', hosts, pats, rule).rule).toBe('refused_word')
+  expect(aboutPageCheck('https://staff.acu.edu.au/our_university/research', ['acu.edu.au'], pats, rule).rule).toBe('refused_host')
+  expect(aboutPageCheck('https://www.acu.edu.au/our_university/research', ['acu.edu.au'], pats, rule).rule).toBe('refused_word')
+  expect(aboutPageCheck('https://www.cdu.edu.au/about-cdu', ['cdu.edu.au'], pats, rule)).toEqual({ ok: true, rule: 'about_page', main: true })
+  expect(aboutPageCheck('https://www.monash.edu/about', hosts, pats, rule)).toEqual({ ok: true, rule: 'about_page', main: true })
+  expect(aboutPageCheck('https://www.uq.edu.au/en/about/overview/history', ['uq.edu.au'], pats, rule).rule).toBe('not_about_page')
+  const html = '<a href="https://staff.acu.edu.au/our_university/research">Our university</a><a href="/news/about-our-new-library">x</a><a href="/about-acu">About ACU</a>'
+  expect(aboutLinks(html, 'https://www.acu.edu.au/', ['acu.edu.au'], pats, rule).map((l) => l.url)).toEqual(['https://www.acu.edu.au/about-acu'])
+  // the database rule: settings, used for stored copies, suggestions and the validation
+  const f = p.slice(p.indexOf('create or replace function security.provider_description_page_v1('), p.indexOf('$function$;', p.indexOf('create or replace function security.provider_description_page_v1(')))
+  for (const k of ['pdesc.refused_host_labels', 'pdesc.refused_path_words', 'pdesc.about_patterns', 'pdesc.about_prefixes']) expect(f).toContain(`security.toolset_setting('pipeline', '${k}')`)
+  expect(f).toContain("security.pipeline_num_v1('pdesc.about_max_segments', 2)")
+  for (const k of ['pdesc.about_prefixes', 'pdesc.refused_path_words', 'pdesc.refused_host_labels', 'pdesc.about_max_segments']) expect(p).toMatch(new RegExp(`\\('pipeline', '${k.replace('.', '\\.')}', '[^']+',\\s+'`))
+  expect(p).toContain("and (security.provider_description_page_v1(p_provider, a.source_url)->>'ok')::boolean")
+  expect(p).toContain("and (security.provider_description_page_v1(u.provider_id, e->>'url')->>'ok')::boolean) z")
+  expect(p).toContain("if not (security.provider_description_page_v1(p_provider, p_url)->>'ok')::boolean then")
+  for (const [b, a] of [['d9f9244ea3dd37c511b0ff75f04d5e30', '6ddc25869e9865c9aeebf11c819feee2'], ['d4fd17854056f1ad69c0d1dc0e0abf11', '33d735da514a7d37e2815bbb0073af03'],
+    ['9a3fbd7f15f5cf30d1a13359d6062280', '528d5a3d2e3780fcb58e2c19db31c199']]) { expect(p).toContain(`'${b}', '${a}'`); expect(run).toContain(b) }
+  expect(p).toMatch(/^-- Replaces: .+/m); expect(p).toMatch(/^-- Retires: .+/m)
+  expect(p).not.toMatch(/cron\.alter_job|cron\.schedule/)  // nothing switched on
+  // no existing setting value is changed: pdesc.max_chars 1,200 is a proposal held for the Platform Admin (direction 2 Nov 2026 23:24 §1 "prepare")
+  expect(p).not.toMatch(/update pipeline\.platform_toolset_settings set/)
+  expect(p).not.toMatch(/to_jsonb\(1200\)/)
+  // a fragment is held, never cut or completed
+  expect(p).toContain("'rule', 'incomplete_sentence'")
+  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.58\.0"; \/\/ v0\.58\.0 \(2 Nov 2026, CF-247 P1 pilot finding 16:16\)/)
+  expect(worker).toContain('const suggested: string[] = (it.candidates || []).map(String).filter((u: string) => aboutPageCheck(u, hosts, patterns, pageRule).ok);')
+  expect(worker).toContain('const links = aboutLinks(h.html, h.url || home, hosts, patterns, pageRule);')
+  expect(fixtures).toContain("raise notice 'PASS page rule: Monash news copy, ACU staff research page refused; CDU about page allowed; lists are settings';")
+  expect(fixtures).toContain("raise notice 'PASS length 1,200: CDU 916 characters pass whole to the projection; 1,250 held; cut sentence or condition held, never truncated';")
+  // the model is told the limits the validation applies (CDU was held at 916 characters against pdesc.max_chars 900, never stated to it)
+  expect(p).toContain("'max_chars', security.pipeline_num_v1('pdesc.max_chars', 900)::int)")
+  expect(lengthNote({ min_sentences: 2, max_sentences: 5, min_chars: 150, max_chars: 900 })).toBe('Length: 2 to 5 sentences, 150 to 900 characters in all (the sentences, not the quotes).\n')
+  expect(lengthNote(null)).toBe('')
+  expect(worker).toContain('descriptionRequest(model, String(it.provider || ""), String(rec.url || ""), page, maxTokens, w.length)')
+})
+
+test('nothing cuts a description (Platform Admin 2 Nov 2026 23:24): the worker keeps every sentence and quote whole', () => {
+  const long = 'Zeta University '.repeat(60).trim() + '.'  // about 960 characters in one sentence
+  const many = Array.from({ length: 14 }, (_, k) => ({ text: `Sentence ${k + 1} of the page.`, quote: `Sentence ${k + 1} of the page.` }))
+  const page = long + ' ' + many.map((x) => x.text).join(' ')
+  const r = descriptionSentences({ about_page: true, sentences: [{ text: long, quote: long }, ...many] }, page, 20)
+  expect(r.sentences[0].text).toBe(long); expect(r.sentences[0].quote).toBe(long)  // was cut at 600 characters
+  expect(r.sentences.length).toBe(15)  // was cut at 12: the database holds too many sentences (sentence_count), never a shortened list
+  const d = fs.readFileSync('supabase/functions/coverage-sweep/description.ts', 'utf8')
+  expect(d).not.toMatch(/\.slice\(0, (600|12)\)/)
 })
 
 test('pure functions: About link discovery on own hosts, quotes checked against the page, cut answers held', () => {

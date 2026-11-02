@@ -10,7 +10,7 @@
 import { htmlToText } from "./extract.ts";
 import { callCost } from "./answer.ts";
 
-export const DESCRIPTION_PROMPT_VERSION = "provider-description-v1";
+export const DESCRIPTION_PROMPT_VERSION = "provider-description-v2";  // v2 (v0.58.0): the length limits are stated to the model
 
 const flatText = (s: string) => String(s || "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "");
 const bare = (h: string) => String(h || "").toLowerCase().replace(/^www\./, "").replace(/\.$/, "");
@@ -21,25 +21,41 @@ export function ownHost(hostname: string, hosts: string[]): boolean {
   return (hosts || []).map(bare).filter(Boolean).some((x) => h === x || h.endsWith("." + x));
 }
 
-// About / Overview links on the provider's own hosts, best first. A link counts when its address path or its link text matches one of
-// the patterns the database gives (setting pdesc.about_patterns); a shorter path and a match in the path rank higher.
-export function aboutLinks(html: string, baseUrl: string, hosts: string[], patterns: string[]): { url: string; text: string; score: number }[] {
+// v0.58.0 (pilot 2 Nov 2026 16:16): the page rule, the same as security.provider_description_page_v1. The lists are settings sent by the lease
+// (page_rule: pdesc.about_prefixes, pdesc.refused_path_words, pdesc.refused_host_labels, pdesc.about_max_segments).
+export type PageRule = { about_prefixes?: string[]; refused_path_words?: string[]; refused_host_labels?: string[]; about_max_segments?: number };
+export function aboutPageCheck(url: string, hosts: string[], patterns: string[], rule: PageRule = {}): { ok: boolean; rule: string; main: boolean } {
+  let u: URL; try { u = new URL(url) } catch { return { ok: false, rule: "wrong_host", main: false } }
+  const host = bare(u.hostname);
+  if (!/^https?:$/.test(u.protocol) || !ownHost(host, hosts)) return { ok: false, rule: "wrong_host", main: false };
+  const main = (hosts || []).map(bare).includes(host);
+  const low = (xs?: string[]) => (xs || []).map((x) => String(x).toLowerCase()).filter(Boolean);
+  if (!main && low(rule.refused_host_labels).includes(host.split(".")[0])) return { ok: false, rule: "refused_host", main };
+  let segs = decodeURIComponent(u.pathname).toLowerCase().replace(/\/+$/, "").split("/").filter(Boolean);
+  if (segs.length && /^[a-z]{2}(-[a-z]{2})?$/.test(segs[0])) segs = segs.slice(1);  // a language part (/en/) is not a path part
+  const refused = low(rule.refused_path_words);
+  if (segs.some((s) => refused.includes(s) || s.split(/[-_.]+/).some((t) => refused.includes(t)))) return { ok: false, rule: "refused_word", main };
+  const first = segs[0] || "", max = Number(rule.about_max_segments) > 0 ? Number(rule.about_max_segments) : 2;
+  const named = low(patterns).includes(first) || low(rule.about_prefixes).some((x) => first.startsWith(x) && first.length > x.length);
+  if (!segs.length || segs.length > max || !named) return { ok: false, rule: "not_about_page", main };
+  return { ok: true, rule: "about_page", main };
+}
+
+// About / Overview links on the provider's own hosts that pass the page rule, best first: the main site host first, then a link whose text
+// names an About page, then the shorter address.
+export function aboutLinks(html: string, baseUrl: string, hosts: string[], patterns: string[], rule: PageRule = {}): { url: string; text: string; score: number }[] {
   const res = new Map<string, { url: string; text: string; score: number }>();
-  const pats = (patterns || []).map((p) => String(p).toLowerCase()).filter((p) => p.length >= 3);
+  const pats = (patterns || []).map((p) => String(p).toLowerCase().replace(/[-_]/g, " ")).filter((p) => p.length >= 3);
   const re = /<a\b[^>]*href\s*=\s*["']([^"'#]+)["'][^>]*>([\s\S]*?)<\/a>/gi;
   let m: RegExpExecArray | null;
   while ((m = re.exec(html || ""))) {
     let u: URL; try { u = new URL(m[1], baseUrl) } catch { continue }
-    if (!/^https?:$/.test(u.protocol) || !ownHost(u.hostname, hosts)) continue;
-    if (/\.(pdf|jpe?g|png|gif|svg|docx?|xlsx?|zip)$/i.test(u.pathname)) continue;
-    const path = u.pathname.toLowerCase().replace(/\/+$/, ""), text = htmlToText(m[2]).toLowerCase().slice(0, 80);
-    const segs = path.split("/").filter(Boolean);
-    const inPath = pats.some((p) => segs.some((s) => s === p || s.replace(/[-_]/g, " ") === p.replace(/[-_]/g, " ")));
-    const inText = pats.some((p) => text === p.replace(/[-_]/g, " ") || text.startsWith(p.replace(/[-_]/g, " ") + " "));
-    if (!inPath && !inText) continue;
-    const score = (inPath ? 10 : 0) + (inText ? 5 : 0) - segs.length;
-    const key = u.origin.toLowerCase() + path;
-    if (!res.has(key) || res.get(key)!.score < score) res.set(key, { url: key || u.origin, text, score });
+    const key = u.origin.toLowerCase() + u.pathname.toLowerCase().replace(/\/+$/, "");
+    const c = aboutPageCheck(key, hosts, patterns, rule);
+    if (!c.ok) continue;
+    const text = htmlToText(m[2]).toLowerCase().slice(0, 80);
+    const score = (c.main ? 20 : 0) + (pats.some((p) => text === p || text.startsWith(p + " ") || text.startsWith("about")) ? 5 : 0) - key.length / 100;
+    if (!res.has(key) || res.get(key)!.score < score) res.set(key, { url: key, text, score });
   }
   return [...res.values()].sort((a, b) => b.score - a.score || a.url.length - b.url.length);
 }
@@ -69,19 +85,31 @@ export const DESCRIPTION_SCHEMA = {
   },
 } as const;
 
-export function descriptionRequest(model: string, provider: string, url: string, page: string, maxTokens: number) {
+export type DescriptionLength = { min_sentences?: number; max_sentences?: number; min_chars?: number; max_chars?: number };
+// the limits the database validation applies (settings pdesc.min_sentences, max_sentences, min_chars, max_chars), stated to the model
+export function lengthNote(l: DescriptionLength | null | undefined): string {
+  const n = (x: unknown) => (Number.isFinite(Number(x)) && Number(x) > 0 ? Math.floor(Number(x)) : null);
+  const s1 = n(l?.min_sentences), s2 = n(l?.max_sentences), c1 = n(l?.min_chars), c2 = n(l?.max_chars);
+  if (!s2 && !c2) return "";
+  return `Length: ${s1 && s2 ? `${s1} to ${s2} sentences` : s2 ? `at most ${s2} sentences` : ""}${s2 && c2 ? ", " : ""}${c1 && c2 ? `${c1} to ${c2} characters in all (the sentences, not the quotes)` : c2 ? `at most ${c2} characters in all` : ""}.\n`;
+}
+export function descriptionRequest(model: string, provider: string, url: string, page: string, maxTokens: number, length?: DescriptionLength) {
   return {
     model, temperature: 0, max_tokens: maxTokens, provider: { require_parameters: true },  // pinned: one model, never a router
     response_format: { type: "json_schema", json_schema: { name: "provider_description", strict: true, schema: DESCRIPTION_SCHEMA } },
-    messages: [{ role: "system", content: DESCRIPTION_SYSTEM }, { role: "user", content: `Provider: ${provider}\nPage: ${url}\n\nPage text:\n${page}` }],
+    messages: [{ role: "system", content: DESCRIPTION_SYSTEM }, { role: "user", content: `Provider: ${provider}\nPage: ${url}\n${lengthNote(length)}\nPage text:\n${page}` }],
   };
 }
 
 // every sentence keeps its quote and whether the quote is on the page (at least minQuoteChars letters and digits, found in the page text)
 export function descriptionSentences(a: any, page: string, minQuoteChars = 20): { about_page: boolean; sentences: { text: string; quote: string; on_page: boolean }[] } {
   const fp = flatText(page);
-  const sentences = ((a?.sentences || []) as any[]).slice(0, 12).map((s) => {
-    const text = String(s?.text || "").replace(/\s+/g, " ").trim().slice(0, 600), quote = String(s?.quote || "").replace(/\s+/g, " ").trim().slice(0, 600);
+  // v0.58.0 (Platform Admin 2 Nov 2026 23:24, "avoid cutting essential conditions or publishing fragments"): nothing is cut here. Every
+  // sentence and quote is kept whole and every sentence the model gave is passed on; the database holds a description that is too long,
+  // has too many sentences or a sentence that is not complete (rules length, sentence_count, incomplete_sentence). It was cut at 600
+  // characters and 12 sentences.
+  const sentences = ((a?.sentences || []) as any[]).map((s) => {
+    const text = String(s?.text || "").replace(/\s+/g, " ").trim(), quote = String(s?.quote || "").replace(/\s+/g, " ").trim();
     const fq = flatText(quote);
     return { text, quote, on_page: fq.length >= minQuoteChars && fp.includes(fq) };
   }).filter((s) => s.text);

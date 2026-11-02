@@ -1,18 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.409'
-export const PACKAGE_VERSION='0.1.336'
+export const UI_VERSION='2.15.410'
+export const PACKAGE_VERSION='0.1.337'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'2 Nov 2026',
-  title:'Integration queue: every detected problem becomes one tracked issue',
+  date:'3 Nov 2026',
+  title:'Provider descriptions: the right About page, and nothing published as a fragment',
   changes:[
-    'Platform health › Integration queue lists every detected problem as one issue with a stable fingerprint, its affected entities, evidence, severity, owning workstream and status from Detected to Closed. A repeat updates the same issue; a problem that returns after closure reopens it as a regression; an issue closes only with production verification evidence.',
-    'An automatic check (off until switched on) runs twice an hour and turns failed job runs, stuck adapter drafts, duplicate or regenerated Layer 4 items, stale leases, search leaks, unexpected spend and course links written while a review is pending into issues. A critical issue raises one alert and one recovery notice.',
-    'A deployment check records the migration and function fingerprints after each release and opens an issue on any mismatch.',
-    'The current operating mode (Active Remediation or Steady-State Monitoring) is shown and recorded when it changes.'
+    'The provider description reader now reads only the provider\'s own About page on its main site: news articles, staff, research and faculty pages are refused, so a description can never come from an unrelated page.',
+    'Descriptions are never cut to fit: a description over the length limit, or a sentence that is cut off or ends in an ellipsis, is held for review instead of being trimmed or published.',
+    'The length limit stays at 900 characters; raising it to 1,200 is a proposal for the Platform Admin.'
   ],
   bugFixes:[]
 }

@@ -339,6 +339,93 @@ do $t$ declare v jsonb; begin
   raise notice 'PASS metrics (eligible published providers, present, missing, proposed, held, admitted, cost)';
 end $t$;
 
+-- 12b the page rule (pilot 2 Nov 2026 16:16): the three pages the first pilot run read, and the right one
+do $t$ declare v jsonb; c text[]; begin
+  -- Monash: a held Pharmacy news article with "about" in its path (alpha-old.edu.au is Alpha's approved other website, as monash.edu is Monash's)
+  if security.provider_description_page_v1('10000000-0000-0000-0000-000000000001', 'https://alpha-old.edu.au/pharm/about/news/2025/new-dean')->>'rule' <> 'refused_word' then raise exception 'news page'; end if;
+  -- ACU: the home page's "our university" link to research on a staff subdomain; and the same path on the main site
+  if security.provider_description_page_v1('10000000-0000-0000-0000-000000000001', 'https://staff.alpha.edu.au/our_university/research')->>'rule' <> 'refused_host' then raise exception 'staff subdomain'; end if;
+  if security.provider_description_page_v1('10000000-0000-0000-0000-000000000001', 'https://www.alpha.edu.au/our_university/research')->>'rule' <> 'refused_word' then raise exception 'research page'; end if;
+  -- CDU: /about-cdu on the main site is the About page
+  v := security.provider_description_page_v1('10000000-0000-0000-0000-000000000001', 'https://www.alpha.edu.au/about-cdu');
+  if not (v->>'ok')::boolean or not (v->>'main_host')::boolean then raise exception 'about-cdu: %', v; end if;
+  foreach c slice 1 in array array[array['https://www.alpha.edu.au/en/about', 'about_page'], array['https://alpha-old.edu.au/about-us/', 'about_page'],
+      array['https://www.alpha.edu.au/about/overview/history', 'not_about_page'], array['https://www.alpha.edu.au/study/about', 'refused_word'],
+      array['https://www.alpha.edu.au/discover-alpha', 'not_about_page'], array['https://news.alpha.edu.au/about', 'refused_host'],
+      array['https://www.alpha.edu.au/about/news', 'refused_word'], array['https://www.other.edu.au/about', 'wrong_host'], array['https://www.alpha.edu.au/', 'not_about_page']] loop
+    if security.provider_description_page_v1('10000000-0000-0000-0000-000000000001', c[1])->>'rule' <> c[2] then
+      raise exception '% gave %, expected %', c[1], security.provider_description_page_v1('10000000-0000-0000-0000-000000000001', c[1])->>'rule', c[2];
+    end if;
+  end loop;
+  -- a stored news copy is never used because it is held, even when it is the newest or the only copy
+  insert into pipeline.sources(id, source_type, provider_id) values ('20000000-0000-0000-0000-000000000006', 'provider_course_page_sweep', '10000000-0000-0000-0000-000000000006');
+  insert into pipeline.evidence_artifacts(id, source_id, source_url, storage_path, content_hash, mime_type, captured_at) values
+   ('30000000-0000-0000-0000-000000000006', '20000000-0000-0000-0000-000000000006', 'https://zeta.ac.nz/pharm/about/news/2025/new-dean', 'layer2/NZ/x/zeta-news.html.gz', 'h6', 'text/html', now()),
+   ('30000000-0000-0000-0000-000000000007', '20000000-0000-0000-0000-000000000001', 'https://alpha-old.edu.au/pharm/about/news/2025/new-dean', 'layer2/AU/x/alpha-news.html.gz', 'h7', 'text/html', now());
+  if security.provider_description_stored_v1('10000000-0000-0000-0000-000000000006') is not null then raise exception 'a held news copy was used'; end if;
+  if security.provider_description_stored_v1('10000000-0000-0000-0000-000000000001') <> '30000000-0000-0000-0000-000000000001' then raise exception 'the About copy was not chosen over a newer news copy'; end if;
+  -- the validation refuses a wrong page, so it is never proposed
+  v := security.provider_description_validate_v1('10000000-0000-0000-0000-000000000001', 'https://alpha-old.edu.au/pharm/about/news/2025/new-dean', now(), (select a from ans where k = 'good'));
+  if v->>'outcome' <> 'refused' or v->>'rule' <> 'refused_word' then raise exception 'validation: %', v; end if;
+  v := security.provider_description_validate_v1('10000000-0000-0000-0000-000000000001', 'https://staff.alpha.edu.au/our_university/research', now(), (select a from ans where k = 'good'));
+  if v->>'rule' <> 'refused_host' then raise exception 'validation staff: %', v; end if;
+  -- the lease gives the worker the lists
+  v := public.svc_provider_description_next(1);
+  if not (v->'page_rule'->'refused_path_words' ? 'news') or not (v->'page_rule'->'refused_host_labels' ? 'staff') or (v->'page_rule'->>'about_max_segments')::int <> 2
+     or not (v->'page_rule'->'about_prefixes' ? 'about-') then raise exception 'page rule lists: %', v->'page_rule'; end if;
+  raise notice 'PASS page rule: Monash news copy, ACU staff research page refused; CDU about page allowed; lists are settings';
+end $t$;
+
+-- 12c length 1,200 and no fragments (Platform Admin 2 Nov 2026 23:24): CDU's 916-character 4-sentence read passes and is kept whole from
+--     the read to the projection; a 1,250-character read is held; a sentence or condition cut mid-way is held, never cut or completed
+do $t$ declare cdu jsonb; long jsonb; frag jsonb; ell jsonb; v jsonb; v_id uuid; i uuid; v_text text; begin
+  -- the migration leaves the limit as it is (1,200 is a proposal for the Platform Admin); the fixture applies the proposed value itself
+  if security.pipeline_num_v1('pdesc.max_chars', 0) <> 900 then raise exception 'migration changed pdesc.max_chars to %', security.pipeline_num_v1('pdesc.max_chars', 0); end if;
+  update pipeline.platform_toolset_settings set value = to_jsonb(1200) where toolset_key = 'pipeline' and key = 'pdesc.max_chars';
+  -- sentences of the lengths CDU's read gave (210, 232, 231, 240), each quoting the page
+  select jsonb_build_object('about_page', true, 'sentences', jsonb_agg(jsonb_build_object('text', t, 'quote', t, 'on_page', true) order by o)) into cdu
+    from (select o, rpad(p, n - 1, ' and it serves people across the north') || '.' t
+            from (values (1, 'Zeta University is a public university in Wellington', 210), (2, 'It teaches higher education and vocational programmes', 232),
+                         (3, 'Its campuses sit in the city and in two regional towns', 231), (4, 'It was founded in 1989 as a polytechnic', 240)) x(o, p, n)) y;
+  if (select length(string_agg(x->>'text', ' ')) from jsonb_array_elements(cdu->'sentences') x) <> 916 then raise exception 'fixture length'; end if;
+  v := security.provider_description_validate_v1('10000000-0000-0000-0000-000000000006', 'https://zeta.ac.nz/about', now(), cdu);
+  if v->>'outcome' <> 'propose' or length(v->>'text') <> 916 then raise exception 'CDU-length read held: %', v; end if;
+  select jsonb_build_object('about_page', true, 'sentences', jsonb_agg(jsonb_build_object('text', t, 'quote', t, 'on_page', true) order by o)) into long
+    from (select o, rpad('Zeta University is a public university in Wellington', n - 1, ' and it serves people across the north') || '.' t
+            from (values (1, 250), (2, 250), (3, 250), (4, 250), (5, 246)) x(o, n)) y;
+  v := security.provider_description_validate_v1('10000000-0000-0000-0000-000000000006', 'https://zeta.ac.nz/about', now(), long);
+  if v->>'rule' <> 'length' or (v->'checks'->>'chars')::int <> 1250 then raise exception '1,250 characters not held: %', v; end if;
+  frag := jsonb_build_object('about_page', true, 'sentences', jsonb_build_array(
+            jsonb_build_object('text', 'Zeta University is a public university in Wellington, New Zealand.', 'quote', 'Zeta University is a public university in Wellington, New Zealand.', 'on_page', true),
+            jsonb_build_object('text', 'Applicants need an approved English test score unless', 'quote', 'Applicants need an approved English test score unless they completed school in New Zealand.', 'on_page', true)));
+  v := security.provider_description_validate_v1('10000000-0000-0000-0000-000000000006', 'https://zeta.ac.nz/about', now(), frag);
+  if v->>'rule' <> 'incomplete_sentence' then raise exception 'cut condition not held: %', v; end if;
+  ell := jsonb_set(frag, '{sentences,1,text}', '"Applicants need an approved English test score unless they..."');
+  v := security.provider_description_validate_v1('10000000-0000-0000-0000-000000000006', 'https://zeta.ac.nz/about', now(), ell);
+  if v->>'rule' <> 'incomplete_sentence' then raise exception 'ellipsis fragment not held: %', v; end if;
+  -- the whole 916 characters travel from the read to Layer 4, the provider record and the Website API v2 payload, uncut
+  insert into pipeline.evidence_artifacts(id, source_id, source_url, storage_path, content_hash, mime_type, captured_at) values
+   ('30000000-0000-0000-0000-000000000008', '20000000-0000-0000-0000-000000000006', 'https://zeta.ac.nz/about', 'layer2/NZ/x/zeta-about.html.gz', 'h8', 'text/html', now());
+  insert into pipeline.provider_description_reads(provider_id, state) values ('10000000-0000-0000-0000-000000000006', 'reading') returning id into v_id;
+  perform public.svc_provider_description_record(jsonb_build_array(jsonb_build_object('item_id', v_id, 'stored_evidence_id', '30000000-0000-0000-0000-000000000008',
+          'answer', cdu, 'model', 'fixture/pinned-model', 'cost', 0.001)));
+  select review_item_id into i from pipeline.provider_description_reads where id = v_id;
+  if i is null then raise exception 'not proposed: %', (select to_jsonb(r) from pipeline.provider_description_reads r where id = v_id); end if;
+  if length((select proposed_value->>'description' from pipeline.layer4_review_items where id = i)) <> 916
+     or (select proposed_value->'sentences' from pipeline.layer4_review_items where id = i) <> cdu->'sentences' then raise exception 'proposal cut'; end if;
+  perform set_config('fx.uid', '90000000-0000-0000-0000-000000000002', false); perform set_config('fx.rank', '4', false);
+  perform security.layer4_review_decide_impl(i, 'approve', 'the four sentences match the official About page');
+  perform set_config('fx.uid', '', false); perform set_config('fx.rank', '', false);
+  v_text := public.website_v2_provider('provider:nzqa:6')->'item'->>'description';
+  if length(v_text) <> 916 or v_text <> (select string_agg(x->>'text', ' ' order by o) from jsonb_array_elements(cdu->'sentences') with ordinality e(x, o)) then
+    raise exception 'projection cut or changed: %', length(v_text);
+  end if;
+  -- original source evidence is kept: the read and the decision name the stored page
+  if (select evidence_id from pipeline.provider_description_reads where id = v_id) <> '30000000-0000-0000-0000-000000000008'
+     or (select evidence_id from pipeline.layer4_decisions where review_item_id = i) <> '30000000-0000-0000-0000-000000000008' then raise exception 'evidence lost'; end if;
+  raise notice 'PASS length 1,200: CDU 916 characters pass whole to the projection; 1,250 held; cut sentence or condition held, never truncated';
+end $t$;
+
 -- 13 privileges: the worker functions are the service role's; the screen function is signed-in users' (rank checked inside)
 do $t$ begin
   if has_function_privilege('anon', 'public.svc_provider_description_next(integer)', 'execute') or has_function_privilege('authenticated', 'public.svc_provider_description_record(jsonb)', 'execute')
