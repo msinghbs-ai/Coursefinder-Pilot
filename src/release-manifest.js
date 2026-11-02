@@ -1,18 +1,16 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.409'
-export const PACKAGE_VERSION='0.1.336'
+export const UI_VERSION='2.15.410'
+export const PACKAGE_VERSION='0.1.337'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'2 Nov 2026',
-  title:'Integration queue: every detected problem becomes one tracked issue',
+  date:'3 Nov 2026',
+  title:'The course link fill waits for a pending Layer 4 course-link review',
   changes:[
-    'Platform health › Integration queue lists every detected problem as one issue with a stable fingerprint, its affected entities, evidence, severity, owning workstream and status from Detected to Closed. A repeat updates the same issue; a problem that returns after closure reopens it as a regression; an issue closes only with production verification evidence.',
-    'An automatic check (off until switched on) runs twice an hour and turns failed job runs, stuck adapter drafts, duplicate or regenerated Layer 4 items, stale leases, search leaks, unexpected spend and course links written while a review is pending into issues. A critical issue raises one alert and one recovery notice.',
-    'A deployment check records the migration and function fingerprints after each release and opens an issue on any mismatch.',
-    'The current operating mode (Active Remediation or Steady-State Monitoring) is shown and recorded when it changes.'
+    'The nightly course link fill no longer writes a course\'s link while a Layer 4 course-link review is pending on it, so the reviewer decides the page first. Each run counts the courses it left in its note, and records them once in the integration queue when the queue is available.',
+    'Two new settings under Settings › Pipeline settings › Official link: Official link: wait for Layer 4 (on) and Official link: fills before the pause check (50, the value the job used before).'
   ],
   bugFixes:[]
 }

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.337 — 3 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.410** (Platform Admin direction 2 Nov 2026 23:24, Workstream E; housekeeping finding H05). Migration `20261103030000_cf247_url_fill_respects_layer4`: md5-guarded edit to security.course_url_fill_v1 (9ae50ba4→270be3f5): a course with a pending official_course_url Layer 4 review is not filled; skips counted in the run event and return value, and recorded once by fingerprint `course-url-fill:skipped-pending-layer4` in the integration queue when security.integration_issue_upsert_v1 exists (a queue error never stops the fill). New settings course_url.fill_respects_layer4 (1) and course_url.retraction_min_fills (50, was written into the function). Catalogue note updated. Nothing dropped, deleted or switched off; consumer API untouched. Tests: new s224; fixtures tests/fixtures/url-fill-layer4 (rebuilt = live md5, migration twice, 7 cases).
+
 ## 0.1.336 — 2 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.409** (continuous validation and integration feedback mandate, 2 Nov 2026 16:58; Integration Controller and operating modes). Migration `20261102120000_cf247_integration_queue`: pipeline.integration_issues and integration_issue_events, upsert-by-fingerprint, reopen-as-regression, close-with-verification, operating mode record, V3 deployment check, V4 invariants; job integration-validate (:21, :51) catalogued and inactive; index on pipeline.layer4_review_items(entity_id, field_code, status). No existing function edited. Admin: Platform health › Integration queue. Spec s223.
