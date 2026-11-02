@@ -48,8 +48,8 @@ const ATTR={official_url:{label:'Official course page',layer:'Layer 2'},provider
   duration:{label:'Duration',layer:'Register (AU) · Enrich fields'},campus:{label:'Campus linked',layer:'Register (AU) · Enrich fields'},
   level:{label:'Study level',layer:'Register · Enrich fields'},field_of_study:{label:'Field of study',layer:'Register (AU) · Enrich fields'},
   delivery:{label:'Delivery mode',layer:'Register · Enrich fields'},campus_city:{label:'Campus city',layer:'Enrich fields'},
-  international:{label:'Open to international students',layer:'Register (AU) · Enrich fields'},deadline:{label:'Application deadline',layer:'No reader yet'},
-  academic_entry:{label:'Academic entry requirements',layer:'AER programme: measured by provider below (Academic entry requirements)'},description:{label:'Course description',layer:'No reader yet'}}
+  international:{label:'Open to international students',layer:'Register (AU) · Enrich fields'},deadline:{label:'Application deadline',layer:'Enrich fields (AI reads the stored course page)'},
+  academic_entry:{label:'Academic entry requirements',layer:'AER programme: measured by provider below (Academic entry requirements)'},description:{label:'Course description',layer:'Enrich fields (AI reads the stored course page; Layer 4 first)'}}
 const TIERS=[['','All providers'],['top_10','Top 10'],['top_11_40','11–40'],['top_41_100','41–100'],['rest','All others']]
 const COUNTRY_NAME={AU:'Australia',NZ:'New Zealand',CA:'Canada'}
 const PAGE=50

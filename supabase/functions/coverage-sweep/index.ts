@@ -26,6 +26,7 @@ import * as caRef from "../_shared/cf247-register-ca-ref.ts";
 import { admissionCheck, awardScope, baseHost, keepScholarshipUrl, onSite, mainText, matchScholarshipPage, nameOnPage, normUrl, pageHeadings, providerTokens, scholarshipCriteria, scholarshipFacts, scholarshipListing } from "./scholarship.ts";
 import { imageSize, logoCandidates, sniffMime, svgSafe } from "./logo.ts";
 import { awardSections, mapOutcome, nextPage, pagingState, redirectOutcome, sectionCode, sectionHtml, statedTotal } from "./catalogue.ts";
+import { COURSE_TEXT_FIELDS, courseTextAnswer, courseTextAnswerLimit, courseTextLength, courseTextPage, courseTextRequest, courseTextResults, courseTextUser } from "./course-text.ts";
 import { DESCRIPTION_ANSWER_KEY, DESCRIPTION_PROMPT_VERSION, aboutLinks, aboutPageCheck, descriptionAnswer, descriptionPageText, descriptionRequest, descriptionSentences, ownHost } from "./description.ts";
 const SCH_VERSION = "scholarship-sweep-v0.7.3"; // v0.7.3 (11 Oct 2026, Platform Admin bugs 11/10-6): a "while places last" condition is not an ended scholarship; an amount the student pays (deposit, bond, fee) is never the award and a "valued at" amount counts; courses listed after "one of the following courses" are read. v0.7.2 (11 Oct 2026): course titles end at bullets (•, ⦁) and at the next capitalised word or sentence. v0.7.1 (11 Oct 2026): courses named after "excluding" are exclusions; course titles keep their bracketed specialisation; numeric dates read in the provider country's day/month order; date proofs start at their label. v0.7.0 (11 Oct 2026): application open and close dates (with rounds), study start, courses the page names, and the sentence behind each level and field. v0.6.3 (11 Oct 2026): academic-result percentages (CWA, WAM, ATAR) are not award values; the value text is a whole sentence. v0.6.2: Firecrawl cap and reserve read from Layer 2 settings; v0.6.1: // v0.6.1: numeric character references in titles decoded; // v0.6.0 (Decision 250): amounts in the provider country's currency; NZ and Canadian domestic wording
 // v0.5.4 (2 Oct 2026, Decision 212 check): a listed value ("Residency Australian Citizen, New Zealand Citizen, International
@@ -71,7 +72,8 @@ const VERSION = "coverage-sweep-v0.5.6"; // extractor version (unchanged by v0.6
 // v0.38.1 (22 Oct 2026, NZ course list pages): a page the AI page match chose from the university's own site addresses (its course list or
 // site map) is listed on the university's own site, so it may be read through the scraper when the direct read is blocked (Otago, Lincoln, AUT).
 const FC_TRUSTED_BASIS = ["cricos_search", "cricos_code", "cricos_code_on_page", "nzqa_code", "adapter_code", "title_match", "cms_path_public", "manual", "firecrawl_upgrade", "ai_match", "programme_list"]; // v0.45.0: a page bound by its NZ or CA code is as trusted as one bound by a CRICOS code
-const WORKER = "coverage-sweep-worker-v0.59.3"; // v0.59.3 (3 Nov 2026, CF-247 Workstream F, hidden failures; Platform Admin direction 3 Nov 2026 09:32 §5): nz_cop reports what each call did (read: files read, failed: files that failed), so the run ledger counts its work; it was recorded as 0 items on every call and looked as if it had never succeeded; nothing else changes.
+const WORKER = "coverage-sweep-worker-v0.59.4"; // v0.59.4 (3 Nov 2026, CF-247 Workstream C, Platform Admin direction 3 Nov 2026 09:32, acceptance report item 1): enrich_ai reads course description and application deadline (Enrich fields fields description and deadline) from the course's stored page in one call per course (course-text.ts, prompt course-text-v1, the central model, answer limit reading.answer_tokens.course_text); every quote is checked against the page; nothing is fetched or cut here; the database admits, holds or sends to Layer 4 (security.enrich_course_text_record_v1); every other read is unchanged.
+// was v0.59.3 // v0.59.3 (3 Nov 2026, CF-247 Workstream F, hidden failures; Platform Admin direction 3 Nov 2026 09:32 §5): nz_cop reports what each call did (read: files read, failed: files that failed), so the run ledger counts its work; it was recorded as 0 items on every call and looked as if it had never succeeded; nothing else changes.
 // was v0.59.1 // v0.59.1 (3 Nov 2026, CF-247 Workstream D, intake wording): the page reader (extract.ts) never keeps a month the page excludes ("excluding January & December", "except June and December") as an intake; nothing else changes.
 // was v0.59.0 // v0.59.0 (3 Nov 2026, CF-247 Scholarship Coverage Recovery, mandate 17:41 and direction 23:24): scholarship discovery maps every source a provider has (F4), a refused map is deferred, not empty (F3); listing pages are read page by page until the pagination ends, complete or partial (F6), and their items, including the awards of an umbrella page, become candidates (F5); a page that now opens elsewhere is moved or redirected away (F7); the all-time scholarship cap is retired into the daily share (F8); scholarship run sizes and the render wait are settings (F10).
 // was v0.58.0 // v0.58.0 (2 Nov 2026, CF-247 P1 pilot finding 16:16): provider_description reads only the provider's own About or Overview page: the home page's links and the central page finder's suggestions pass the page rule (description.ts aboutPageCheck, the same as security.provider_description_page_v1; lists from the lease: refused news, events, research, staff, faculty and school pages and staff or intranet subdomains; the About name first in the path; the main site host first); the model is told the sentence and character limits the validation applies (prompt provider-description-v2). No other mode changes.
@@ -2470,6 +2472,19 @@ async function handle(req: Request): Promise<Response> {
       // is now read whole or held, every slice answered whole or the read held (held_partial, retried by the database within its tries),
       // and the cost of every call made is recorded, also when the read fails.
       const ENTRY_PROMPT = COURSE_ENTRY_PROMPT_VERSION;
+      // v0.59.4 (CF-247 Workstream C): a course's description and application deadline, one call for both, on the stored page only
+      const textRead = async (pg: any, raw: string, items: any[]) => {
+        const want = [...new Set(items.map((x: any) => String(x.field)))], page = courseTextPage(raw, PAGE_CHARS), maxTokens = courseTextAnswerLimit(ws);
+        const r = await ors.fetch("https://openrouter.ai/api/v1/chat/completions", { method: "POST", headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
+          body: JSON.stringify(courseTextRequest(model, courseTextUser(pg.provider, pg.title, want, page, courseTextLength(ws)), want, maxTokens)), signal: AbortSignal.timeout(60000) });  // fixed: API time-out of one call
+        const d = await r.json().catch((e) => ({ unreadable: e instanceof Error ? e.message : String(e) }));
+        const ans = courseTextAnswer(d, maxTokens); cost += ans.cost;
+        if (!r.ok) throw readError(`HTTP ${r.status}: ${JSON.stringify(d?.error || d).slice(0, 200)}`, ans.cost);
+        if (d?.model && !String(d.model).startsWith(model)) throw readError(`returned model ${d.model}, not ${model}`, ans.cost);  // pinned: no other model's answer is used
+        if (!ans.ok) throw readError(ans.error, ans.cost);
+        out.push(...courseTextResults(ans.a, page, items, { model, worker: WORKER.slice(0, 40), cost: ans.cost, minQuoteChars: wsNum("enrich.course_description_min_quote_chars", 20) }));
+        tally.course_text = (tally.course_text || 0) + items.length;
+      };
       const entryCall = async (user: string, mdl: string, maxTokens: number) => {
         const r = await ors.fetch("https://openrouter.ai/api/v1/chat/completions", { method: "POST", headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
           body: JSON.stringify(courseEntryRequest(mdl, user, maxTokens)), signal: AbortSignal.timeout(90000) });  // fixed: API time-out of one call
@@ -2540,6 +2555,13 @@ async function handle(req: Request): Promise<Response> {
           if (entryIt.length) {
             await entryRead(pg, raw, entryIt);
             pg.items = (pg.items || []).filter((x: any) => String(x.field) !== "entry_requirements");
+            if (!pg.items.length) { tally.pages = (tally.pages || 0) + 1; return }
+          }
+          // v0.59.4: description and deadline in their own call; a failed call fails only these items
+          const textIt = (pg.items || []).filter((x: any) => (COURSE_TEXT_FIELDS as readonly string[]).includes(String(x.field)));
+          if (textIt.length) {
+            try { await textRead(pg, raw, textIt) } catch (e) { fail(textIt.map((x: any) => Number(x.item_id)), e) }
+            pg.items = (pg.items || []).filter((x: any) => !(COURSE_TEXT_FIELDS as readonly string[]).includes(String(x.field)));
             if (!pg.items.length) { tally.pages = (tally.pages || 0) + 1; return }
           }
           const page = ((data ? `Page data fields:\n${data}\n\n` : "") + mainText(raw)).slice(0, PAGE_CHARS);
