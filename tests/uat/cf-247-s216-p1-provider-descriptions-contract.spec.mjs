@@ -125,7 +125,7 @@ test('the job: catalogued, off by default, no number in its command, bounded and
 })
 
 test('worker v0.57.0: stored copy first, own hosts only, direct before Firecrawl, pinned model, every quote checked; minimal change', () => {
-  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.57\.0"; \/\/ v0\.57\.0 \(2 Nov 2026, CF-247 missing-field enrichment P1/)
+  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(57|5[89]|[6-9]\d)\.\d+"; \/\/ [^\n]*v0\.57\.0 \(2 Nov 2026, CF-247 missing-field enrichment P1/)  // later worker versions keep the v0.57.0 note
   const a = worker.indexOf('if (mode === "provider_description") {'), b = worker.indexOf('if (mode === "enrich_ai") {')
   expect(a).toBeGreaterThan(0); expect(b).toBeGreaterThan(a)
   const w = worker.slice(a, b)

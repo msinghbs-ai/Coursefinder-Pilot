@@ -18,7 +18,7 @@ test('server: listing pages, matching, coverage RPCs, listing job, bulk restore;
 
 test('worker: listing pages read for the scholarships they name', () => {
   const s = fs.readFileSync('supabase/functions/coverage-sweep/scholarship.ts', 'utf8')
-  expect(s).toContain('export function scholarshipListing(html: string, baseUrl: string, hosts: string[] = [])')
+  expect(s).toContain('export function scholarshipListing(html: string, baseUrl: string, hosts: string[] = [], max: number = 80)')  // v0.58.0: the item limit is a setting
   const ix = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(ix).toContain('if (mode === "scholarship_listing") {')
   expect(ix).toMatch(/coverage-sweep-worker-v0\.(?:17\.(3[7-9]|[4-9][0-9])|1[8-9]\.\d+|[2-9]\d\.\d+)/)
