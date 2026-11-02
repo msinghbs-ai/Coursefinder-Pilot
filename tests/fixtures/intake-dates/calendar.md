@@ -17,3 +17,6 @@
 | Date | Event |
 |---|---|
 | 13 July {N} | Semester 1 supplementary exams start |
+
+## Trimester dates {N}
+- Trimester 2 begins Monday 5 July

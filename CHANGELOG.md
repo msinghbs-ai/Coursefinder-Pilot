@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.334 — 2 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.407** (Platform Admin decision 2 Nov ~14:50: intake fill rule "Named period only"). Migration `20261102100000_cf247_intake_named_period`: md5-guarded edits to security.intake_dates_plan_v1 (a528b06b→4e384758) and public.svc_coursefacts_apply_record (ec4a0997→cfd84c9f); index on pipeline.field_enrich_items(course_id, field); setting intake_dates.apply_enabled stays off and job intake-dates-apply stays paused. Measured under the rule: AU 1,493 rows would gain a year and 790 an exact date; NZ 0. Spec s221 (s220 md5 line updated).
+
 ## 0.1.333 — 2 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.406** (Missing-field enrichment P1 provider descriptions; Platform Admin 2 Nov 2026 10:28, 11:10; new Layer 4 kind `provider_description` and pilot ceiling approved 2 Nov ~14:50). Migration `20261102090000_cf247_p1_provider_descriptions`: new pipeline.provider_description_reads, validation, lease/record/apply/fire functions, public.admin_provider_descriptions; md5-guarded edits to layer4_review_decide_impl, ai_spend_today_v1, layer4_inbox_kinds_v1, layer4_inbox_items_v1, admin_layer4_inbox, l4_api.layer4_review_bulk_decide and layer4_batch_decide_v1_impl (bulk/batch skip descriptions); ledger capture trigger; pdesc.* settings, all off; job provider-description-read catalogued and inactive. Worker coverage-sweep v0.57.0 (mode provider_description, page type about_page). Website API v2 shape unchanged (fills the existing provider item.description). Spec s216.

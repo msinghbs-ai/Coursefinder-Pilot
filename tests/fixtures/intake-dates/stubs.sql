@@ -43,3 +43,12 @@ returns int language sql immutable set search_path to 'pg_catalog' as $$
   where strpos(lower(coalesce(p_label,'')), m.k) > 0
   order by strpos(lower(p_label), m.k) limit 1
 $$;
+
+-- the AU CRICOS admission write (public.svc_coursefacts_apply_record): the registers and source tables it reads and writes (live column names)
+create table catalogue.provider_registrations(provider_id uuid, registration_scheme text, registration_code text, status text, checked_at timestamptz);
+create table catalogue.course_registrations(course_id uuid, scheme text, registration_code text);
+create table pipeline.course_fact_source_qualifications(source_id uuid, provider_cricos text, qualification_status text);
+create table pipeline.course_fact_source_records(id uuid primary key default gen_random_uuid(), source_id uuid, source_record_id text, source_url text, provider_cricos text,
+  course_cricos text, content_hash text, evidence_id uuid, parsed_payload jsonb, status text, observed_at timestamptz, applied_at timestamptz, error_text text,
+  unique (source_id, source_record_id, content_hash));
+create table if not exists ref.currencies(code text primary key);

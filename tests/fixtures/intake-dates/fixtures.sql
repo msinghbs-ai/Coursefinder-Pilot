@@ -1,5 +1,6 @@
--- Intake dates fixtures (CF-247, Platform Admin 2 Nov 2026 11:10 §2 and 11:18): intake year, exact start date and application deadline from the
--- university's approved calendar, and the chain stored reading -> intake row -> search projection -> consumer API intake objects.
+-- Intake dates fixtures (CF-247, Platform Admin 2 Nov 2026 11:10 §2 and 11:18; "Named period only", ~14:50): intake year, exact start date and
+-- application deadline from the university's approved calendar, only for the study period the course's own page names in its stored reading
+-- (the page reader's intake quotes, or the AI reading's quote), and the chain stored reading -> intake row -> search projection -> consumer API.
 -- Each case raises a notice "PASS ..." or stops with an error. Years are relative to today (Y this year, N next year, L last year), so the
 -- fixtures never age. The calendar of provider "harbour" is the real parser's reading of calendar.md (passed in by run.sh as :cal); the
 -- calendar of provider "bay" was approved before calendar-dates-v1 (months and quotes only). No live data.
@@ -8,8 +9,9 @@ create function pg_temp.ok(p boolean, p_what text) returns void language plpgsql
 begin if p is not true then raise exception 'FAIL %', p_what; end if; end $f$;
 create function pg_temp.u(p text) returns uuid language sql immutable as $f$ select md5(p)::uuid $f$;
 create function pg_temp.y(p int) returns int language sql stable as $f$ select extract(year from (now() at time zone 'Australia/Melbourne'))::int + p $f$;
--- a course with its own proved page (bound, read, code in the address and the title) and an intake row read from that page
-create function pg_temp.course(p_key text, p_prov text, p_host text, p_code text, p_title text) returns void language plpgsql as $f$
+-- a course with its own proved page (bound, read, code in the address and the title), the page reader's stored intake wording for it (p_ctx),
+-- and an intake row read from that page
+create function pg_temp.course(p_key text, p_prov text, p_host text, p_code text, p_title text, p_ctx text default null) returns void language plpgsql as $f$
 declare v_url text := 'https://www.' || p_host || '/study/' || lower(replace(p_title, ' ', '-')) || '-' || lower(p_code);
 begin
   insert into catalogue.courses(id, provider_id, canonical_title, course_code, study_level_id)
@@ -19,7 +21,8 @@ begin
   alter table pipeline.coverage_course_pages disable trigger coverage_page_refused_host;
   insert into pipeline.coverage_course_pages(course_id, provider_id, url, basis, status, read_status, identity_basis, evidence_id, candidates)
   values (pg_temp.u(p_key), pg_temp.u(p_prov), v_url, 'cricos_search', 'bound', 'read', 'cricos_code', pg_temp.u('ev ' || p_key),
-          jsonb_build_object('page_title', p_title || ' (' || p_code || ') | ' || (select canonical_name from catalogue.providers where id = pg_temp.u(p_prov)), 'final_url', v_url));
+          jsonb_build_object('page_title', p_title || ' (' || p_code || ') | ' || (select canonical_name from catalogue.providers where id = pg_temp.u(p_prov)), 'final_url', v_url)
+          || case when p_ctx is null then '{}'::jsonb else jsonb_build_object('intake_context', jsonb_build_array(p_ctx)) end);
   alter table pipeline.coverage_course_pages enable trigger coverage_page_refused_host;
 end $f$;
 create function pg_temp.intake(p_key text, p_month text, p_year int default null, p_page text default null) returns uuid language sql as $f$
@@ -60,20 +63,35 @@ select pg_temp.u('cal bay'), pg_temp.u('bay'), 'intake_calendar', 'provider-poli
        'approved', now();
 
 -- courses: every one with its own proved page; the intake row is read from that page unless said otherwise ---------------------------------
-select pg_temp.course('exact', 'harbour', 'harbour.edu.au', 'MC271', 'Master of Data Science'),
-       pg_temp.course('monthonly', 'harbour', 'harbour.edu.au', 'MC272', 'Master of Public Health'),
-       pg_temp.course('rolling', 'harbour', 'harbour.edu.au', 'MC273', 'Master of Urban Planning'),
-       pg_temp.course('past', 'harbour', 'harbour.edu.au', 'MC274', 'Master of Marine Science'),
-       pg_temp.course('locked', 'harbour', 'harbour.edu.au', 'MC275', 'Master of Social Work'),
-       pg_temp.course('refused', 'harbour', 'harbour.edu.au', 'MC276', 'Master of Architecture'),
-       pg_temp.course('sibling', 'harbour', 'harbour.edu.au', 'GD277', 'Graduate Diploma of Teaching'),
-       pg_temp.course('heldby', 'harbour', 'harbour.edu.au', 'MC278', 'Master of Teaching'),
-       pg_temp.course('oldshape', 'bay', 'bay.edu.au', 'MC301', 'Master of Engineering'),
-       pg_temp.course('nocal', 'nocal', 'inland.edu.au', 'MC401', 'Master of Nursing');
-select pg_temp.intake('exact', 'March'), pg_temp.intake('exact', 'July'), pg_temp.intake('monthonly', 'November'),
+select pg_temp.course('exact', 'harbour', 'harbour.edu.au', 'MC271', 'Master of Data Science', 'Start in Semester 1 (March) or Semester 2 (July)'),
+       pg_temp.course('monthonly', 'harbour', 'harbour.edu.au', 'MC272', 'Master of Public Health', 'Trimester 3 intake: November'),
+       pg_temp.course('monthnamed', 'harbour', 'harbour.edu.au', 'MC279', 'Master of Statistics', 'Starts in March'),
+       pg_temp.course('rolling', 'harbour', 'harbour.edu.au', 'MC273', 'Master of Urban Planning', 'Semester Two intake (July)'),
+       pg_temp.course('past', 'harbour', 'harbour.edu.au', 'MC274', 'Master of Marine Science', 'Semester 1'),
+       pg_temp.course('locked', 'harbour', 'harbour.edu.au', 'MC275', 'Master of Social Work', 'Semester 1'),
+       pg_temp.course('refused', 'harbour', 'harbour.edu.au', 'MC276', 'Master of Architecture', 'Semester 1'),
+       pg_temp.course('sibling', 'harbour', 'harbour.edu.au', 'GD277', 'Graduate Diploma of Teaching', 'Semester 1'),
+       pg_temp.course('heldby', 'harbour', 'harbour.edu.au', 'MC278', 'Master of Teaching', 'Semester 1'),
+       pg_temp.course('aiquote', 'harbour', 'harbour.edu.au', 'MC280', 'Master of Economics'),
+       pg_temp.course('aiother', 'harbour', 'harbour.edu.au', 'MC281', 'Master of Finance'),
+       pg_temp.course('trinoyear', 'harbour', 'harbour.edu.au', 'MC282', 'Master of Journalism', 'Trimester 2 intake'),
+       pg_temp.course('triyear', 'harbour', 'harbour.edu.au', 'MC283', 'Master of Translation', format('Trimester 2, %s', pg_temp.y(1))),
+       pg_temp.course('oldshape', 'bay', 'bay.edu.au', 'MC301', 'Master of Engineering', 'Commencing Semester 1 or Term 1; Semester 2 entry'),
+       pg_temp.course('nocal', 'nocal', 'inland.edu.au', 'MC401', 'Master of Nursing', 'Semester 1');
+select pg_temp.intake('exact', 'March'), pg_temp.intake('exact', 'July'), pg_temp.intake('monthonly', 'November'), pg_temp.intake('monthnamed', 'March'),
+       pg_temp.intake('aiquote', 'March'), pg_temp.intake('aiother', 'March'), pg_temp.intake('trinoyear', 'July'), pg_temp.intake('triyear', 'July'),
        pg_temp.intake('rolling', 'July'), pg_temp.intake('past', 'March', pg_temp.y(-1)), pg_temp.intake('locked', 'March'),
        pg_temp.intake('refused', 'March'), pg_temp.intake('sibling', 'March', null, 'heldby'),
        pg_temp.intake('oldshape', 'March'), pg_temp.intake('oldshape', 'February'), pg_temp.intake('oldshape', 'July'), pg_temp.intake('oldshape', 'January'), pg_temp.intake('nocal', 'March');
+-- the AI readings: Economics' quote is from the page behind its intake; Finance's is from another page
+insert into pipeline.field_enrich_items(provider_id, course_id, field, state, value, quote, evidence_id) values
+  (pg_temp.u('harbour'), pg_temp.u('aiquote'), 'intakes', 'filled', '{"text": "Semester One"}', 'You can commence in Semester One.', pg_temp.u('ev aiquote')),
+  (pg_temp.u('harbour'), pg_temp.u('aiother'), 'intakes', 'filled', '{"text": "Semester 1"}', 'Semester 1', pg_temp.u('ev elsewhere'));
+-- the CRICOS registers for the AU admission write
+insert into catalogue.provider_registrations values (pg_temp.u('harbour'), 'CRICOS', 'H0001', 'active', now());
+insert into catalogue.course_registrations values (pg_temp.u('exact'), 'CRICOS', 'C0001');
+insert into pipeline.course_fact_source_qualifications values (pg_temp.u('sweep'), 'H0001', 'qualified');
+insert into ref.currencies values ('AUD') on conflict do nothing;
 -- a person locked Social Work's intakes; Architecture's page was refused for it; the Graduate Diploma's month came from the Master's page
 insert into pipeline.manual_locks values ('course', pg_temp.u('locked'), 'intakes');
 insert into pipeline.page_rejections(course_id, url, provider_id, source, reason, signals)
@@ -119,7 +137,7 @@ declare v jsonb; r pipeline.course_intake_dates;
 begin
   perform pg_temp.switch(true);
   v := security.intake_dates_apply_v1(null);
-  perform pg_temp.ok((v->>'filled')::int = 5 and (v->>'courses')::int = 3, 'filled 5 rows of 3 courses: ' || v::text);
+  perform pg_temp.ok((v->>'filled')::int = 7 and (v->>'courses')::int = 5, 'filled 7 rows of 5 courses: ' || v::text);
   -- exact date and year kept, with the deadline
   perform pg_temp.ok((pg_temp.row('exact', 'March')).intake_year = pg_temp.y(1) and (pg_temp.row('exact', 'March')).start_date = make_date(pg_temp.y(1), 3, 1)
                      and (pg_temp.row('exact', 'March')).application_deadline = make_date(pg_temp.y(0), 11, 30), 'exact date, year and deadline');
@@ -130,8 +148,20 @@ begin
   -- month-only stays month-only
   perform pg_temp.ok((pg_temp.row('monthonly', 'November')).intake_year is null and (pg_temp.row('monthonly', 'November')).start_date is null, 'month only stays month only');
   r := pg_temp.rec('monthonly', 'November');
-  perform pg_temp.ok(r.outcome = 'skipped' and r.start_precision = 'month' and r.reason = 'the calendar prints no year for this month (month only)', 'month only: ' || coalesce(r.reason, 'no record'));
+  perform pg_temp.ok(r.outcome = 'skipped' and r.start_precision = 'month' and r.reason = 'the year of the named period is not printed (month only)', 'month only: ' || coalesce(r.reason, 'no record'));
   raise notice 'PASS month-only stays month-only';
+  -- Named period only: a page that gives the month but names no period keeps its month, though the calendar's Semester 1 starts that month
+  perform pg_temp.ok((pg_temp.row('monthnamed', 'March')).intake_year is null and (pg_temp.row('monthnamed', 'March')).start_date is null
+                     and (pg_temp.rec('monthnamed', 'March')).reason = 'the course page names no study period of the calendar (month only)', 'no month-to-period inference: ' || coalesce((pg_temp.rec('monthnamed', 'March')).reason, 'no record'));
+  -- the period named in the AI reading's quote counts only when that reading is of the page behind the intake
+  perform pg_temp.ok((pg_temp.row('aiquote', 'March')).start_date = make_date(pg_temp.y(1), 3, 1) and (pg_temp.rec('aiquote', 'March')).periods = array['semester 1'], 'AI reading quote names the period');
+  perform pg_temp.ok((pg_temp.row('aiother', 'March')).intake_year is null and (pg_temp.rec('aiother', 'March')).reason = 'no stored reading of the page''s intake wording (month only)', 'a reading of another page is not used');
+  -- the year only when printed: in the period's calendar quote, or on the page
+  perform pg_temp.ok((pg_temp.row('trinoyear', 'July')).intake_year is null and (pg_temp.rec('trinoyear', 'July')).reason = 'the year of the named period is not printed (month only)', 'year only from a heading: not printed with the period');
+  perform pg_temp.ok((pg_temp.row('triyear', 'July')).intake_year = pg_temp.y(1) and (pg_temp.row('triyear', 'July')).start_date = make_date(pg_temp.y(1), 7, 5), 'the year printed on the page with the named period');
+  -- the period named is the one used: Semester 2 for July, not Trimester 2 (also in July)
+  perform pg_temp.ok((pg_temp.row('exact', 'July')).start_date = make_date(pg_temp.y(1), 7, 26) and (pg_temp.rec('exact', 'July')).periods = array['semester 2'], 'the named period, not another in the month');
+  raise notice 'PASS named period only: no month-to-period inference';
   -- rolling deadline marked, never a date
   perform pg_temp.ok((pg_temp.row('rolling', 'July')).intake_year = pg_temp.y(1) and (pg_temp.row('rolling', 'July')).start_date = make_date(pg_temp.y(1), 7, 26)
                      and (pg_temp.row('rolling', 'July')).application_deadline is null, 'rolling: start filled, no deadline date');
@@ -143,7 +173,7 @@ begin
   raise notice 'PASS an "applications close" row becomes a deadline';
   -- a past-year intake is not overwritten
   perform pg_temp.ok((pg_temp.row('past', 'March')).intake_year = pg_temp.y(-1) and (pg_temp.row('past', 'March')).start_date is null, 'past intake kept as history');
-  perform pg_temp.ok((pg_temp.rec('past', 'March')).reason = 'the calendar prints no start in the intake''s own year', 'past: reason');
+  perform pg_temp.ok((pg_temp.rec('past', 'March')).reason = 'the calendar prints no start of the named period in the intake''s own year', 'past: reason');
   raise notice 'PASS a past-year intake is not overwritten';
   -- manual lock respected
   perform pg_temp.ok((pg_temp.row('locked', 'March')).intake_year is null and (pg_temp.rec('locked', 'March')).reason = 'intakes locked by hand', 'lock respected');
@@ -158,7 +188,7 @@ begin
   perform pg_temp.ok((pg_temp.row('oldshape', 'February')).intake_year is null, 'stored quote without a year stays month only');
   perform pg_temp.ok((pg_temp.row('oldshape', 'January')).intake_year = pg_temp.y(1) and (pg_temp.row('oldshape', 'January')).start_date is null
                      and (pg_temp.rec('oldshape', 'January')).start_precision = 'year', 'a day range gives the year only');
-  perform pg_temp.ok((pg_temp.row('oldshape', 'July')).intake_year is null and (pg_temp.rec('oldshape', 'July')).reason = 'the calendar has no start in this month', 'exams row not used: ' || coalesce((pg_temp.rec('oldshape', 'July')).reason, 'no record'));
+  perform pg_temp.ok((pg_temp.row('oldshape', 'July')).intake_year is null and (pg_temp.rec('oldshape', 'July')).reason = 'the named period does not start in this month', 'exams row not used: ' || coalesce((pg_temp.rec('oldshape', 'July')).reason, 'no record'));
   -- no approved calendar: not looked at
   perform pg_temp.ok((pg_temp.rec('nocal', 'March')).intake_id is null and (pg_temp.row('nocal', 'March')).intake_year is null, 'no calendar, nothing');
   perform pg_temp.ok((select count(*) from public.fixture_refresh_calls) = 1, 'the search projection is refreshed once for the courses changed');
@@ -191,6 +221,24 @@ begin
   -- put it back for the chain below
   update catalogue.course_intakes set intake_year = pg_temp.y(1), start_date = make_date(pg_temp.y(1), 3, 1), application_deadline = make_date(pg_temp.y(0), 11, 30)
    where id = (pg_temp.row('exact', 'March')).id;
+  -- the AU CRICOS admission write (public.svc_coursefacts_apply_record) keeps them the same way
+  perform public.svc_coursefacts_apply_record(pg_temp.u('sweep'), pg_temp.u('ev exact'), 'H0001', 'C0001', 'rec-1', 'https://x', 'h1',
+    jsonb_build_object('intakes', jsonb_build_array(jsonb_build_object('intake_label', 'March', 'source_intake_key', 'exact:current:march'))), true);
+  perform pg_temp.ok((pg_temp.row('exact', 'March')).intake_year = pg_temp.y(1) and (pg_temp.row('exact', 'March')).start_date = make_date(pg_temp.y(1), 3, 1)
+                     and (pg_temp.row('exact', 'March')).application_deadline = make_date(pg_temp.y(0), 11, 30), 'CRICOS re-admission without a year keeps year, date and deadline');
+  perform public.svc_coursefacts_apply_record(pg_temp.u('sweep'), pg_temp.u('ev exact'), 'H0001', 'C0001', 'rec-1', 'https://x', 'h2',
+    jsonb_build_object('intakes', jsonb_build_array(jsonb_build_object('intake_label', 'March', 'intake_year', pg_temp.y(-1), 'start_date', make_date(pg_temp.y(-1), 3, 3),
+                       'application_deadline', make_date(pg_temp.y(-2), 12, 1), 'source_intake_key', 'exact:current:march'))), true);
+  perform pg_temp.ok((pg_temp.row('exact', 'March')).intake_year = pg_temp.y(1) and (pg_temp.row('exact', 'March')).start_date = make_date(pg_temp.y(1), 3, 1)
+                     and (pg_temp.row('exact', 'March')).application_deadline = make_date(pg_temp.y(0), 11, 30), 'CRICOS: an older year never replaces a later one');
+  perform public.svc_coursefacts_apply_record(pg_temp.u('sweep'), pg_temp.u('ev exact'), 'H0001', 'C0001', 'rec-1', 'https://x', 'h3',
+    jsonb_build_object('intakes', jsonb_build_array(jsonb_build_object('intake_label', 'March', 'intake_year', pg_temp.y(2), 'start_date', make_date(pg_temp.y(2), 3, 6),
+                       'application_deadline', make_date(pg_temp.y(1), 12, 2), 'source_intake_key', 'exact:current:march'))), true);
+  perform pg_temp.ok((pg_temp.row('exact', 'March')).intake_year = pg_temp.y(2) and (pg_temp.row('exact', 'March')).start_date = make_date(pg_temp.y(2), 3, 6)
+                     and (pg_temp.row('exact', 'March')).application_deadline = make_date(pg_temp.y(1), 12, 2), 'CRICOS: a later year replaces, with its own date and deadline');
+  update catalogue.course_intakes set intake_year = pg_temp.y(1), start_date = make_date(pg_temp.y(1), 3, 1), application_deadline = make_date(pg_temp.y(0), 11, 30)
+   where id = (pg_temp.row('exact', 'March')).id;
+  raise notice 'PASS the AU CRICOS admission write keeps held dates';
   -- a new approved calendar: rows are looked at again (once), and only empty columns are filled
   insert into pipeline.provider_policy_proposals(id, provider_id, kind, parser, url, proposal, status, decided_at)
   select pg_temp.u('cal harbour 2'), provider_id, kind, parser, url, proposal, 'approved', now() + interval '1 second' from pipeline.provider_policy_proposals where id = pg_temp.u('cal harbour');

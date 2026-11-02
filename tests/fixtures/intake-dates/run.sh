@@ -5,8 +5,10 @@
 #     projection (search.refresh_course_enrichment_core_v1 / _scoped_v1) are the live definitions; their md5s are checked against live;
 #   2 security.coverage_apply_course_v1 and the two guards on catalogue.course_intakes rebuilt from this repository's migrations, md5s checked
 #     against the live ones read on 2 Nov 2026;
-#   3 the intake-dates migration unchanged (its md5 guard and post-check run), then again (no change);
-#   4 fixtures.sql: the cases, and the chain stored reading -> intake row -> search projection -> consumer API intake objects.
+#   3 the intake-dates migration unchanged (its md5 guard and post-check run), then again (no change); its functions checked against live;
+#   4 the named-period migration (Platform Admin 2 Nov 2026 ~14:50) unchanged, then again (no change), with the AU CRICOS admission write
+#     rebuilt from the archive and checked against live first;
+#   5 fixtures.sql: the cases, and the chain stored reading -> intake row -> search projection -> consumer API intake objects.
 # Drops the throwaway database at the end.
 set -euo pipefail
 cd "$(dirname "$0")/../../.."
@@ -15,6 +17,7 @@ P="psql -v ON_ERROR_STOP=1 -q -X"
 E16=tests/fixtures/e16-binding-validation
 E16MIG=supabase/migrations/20261102030000_cf247_e16_binding_validation.sql
 MIG=supabase/migrations/20261102080000_cf247_intake_dates_persist.sql
+MIG2=supabase/migrations/20261102100000_cf247_intake_named_period.sql
 TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
 $P -d postgres -c "drop database if exists $DB" -c "create database $DB" >/dev/null
 [ -n "${INTAKE_KEEP:-}" ] || trap 'rm -rf "$TMP"; $P -d postgres -c "drop database if exists $DB" >/dev/null' EXIT
@@ -33,8 +36,8 @@ $P -d $DB -c "drop function security.coverage_apply_course_v1(uuid, uuid, uuid, 
 $P -d $DB -f tests/fixtures/intake-dates/stubs.sql
 node tests/fixtures/intake-dates/before.mjs > "$TMP/before.sql"
 PGOPTIONS='-c check_function_bodies=off' $P -d $DB -o /dev/null -f "$TMP/before.sql"
-SIGS="array['security.coverage_apply_course_v1(uuid,uuid,uuid,text,text,jsonb)', 'security.course_intake_same_month_guard()', 'security.manual_fact_guard()']"
-BEFORE=$(md5of "$SIGS"); [ "$BEFORE" = "8674165fa03b97ca15c3bc82923b1288 44e23d4abc1d36cdbb85407287a87e5f d0490f3707199988e87b5f37ca5e7342" ] || { echo "rebuilt definitions differ from live: $BEFORE"; exit 1; }
+SIGS="array['security.coverage_apply_course_v1(uuid,uuid,uuid,text,text,jsonb)', 'security.course_intake_same_month_guard()', 'security.manual_fact_guard()', 'public.svc_coursefacts_apply_record(uuid,uuid,text,text,text,text,text,jsonb,boolean)']"
+BEFORE=$(md5of "$SIGS"); [ "$BEFORE" = "8674165fa03b97ca15c3bc82923b1288 44e23d4abc1d36cdbb85407287a87e5f d0490f3707199988e87b5f37ca5e7342 ec4a0997cb1b97bc4b390b1d5beebaeb" ] || { echo "rebuilt definitions differ from live: $BEFORE"; exit 1; }
 echo "before (rebuilt = live): $BEFORE"
 # 3 the migration, twice
 $P -d $DB -1 -o /dev/null -f $MIG
@@ -43,7 +46,18 @@ $P -d $DB -1 -At -f $MIG | grep -c 'already applied' | grep -qx 1 || { echo "a s
 [ "$(md5of "$SIGS")" = "$AFTER" ] || { echo "a second run changed a definition"; exit 1; }
 [ "$($P -d $DB -Atc "select count(*) from cron.job where jobname = 'intake-dates-apply'")" = 1 ] || { echo "the job was scheduled twice"; exit 1; }
 echo "second run: already applied, unchanged"
+# the intake-dates functions as live after v2.15.405 (read 2 Nov 2026)
+LIVE="array['security.intake_dates_plan_v1(uuid[],integer)', 'security.intake_dates_apply_v1(integer)', 'security.calendar_dated_periods_v1(uuid)']"
+[ "$(md5of "$LIVE")" = "a528b06b5fb7cd3a1cb4ec923e789328 2ee1ce769cb5de8d300d9ad6e1bdbf7f ac4fa97ddf0c572750113404ae1804bb" ] || { echo "intake-dates functions differ from live: $(md5of "$LIVE")"; exit 1; }
+echo "intake-dates functions (rebuilt = live): $(md5of "$LIVE")"
+# 4 named period only
+NP="array['security.intake_dates_plan_v1(uuid[],integer)', 'public.svc_coursefacts_apply_record(uuid,uuid,text,text,text,text,text,jsonb,boolean)']"
+$P -d $DB -1 -o /dev/null -f $MIG2
+AFTER2=$(md5of "$NP"); echo "named period after: $AFTER2"
+$P -d $DB -1 -At -f $MIG2 | grep -c 'already applied' | grep -qx 2 || { echo "a second run of the named-period migration changed something"; exit 1; }
+[ "$(md5of "$NP")" = "$AFTER2" ] || { echo "a second run changed a definition"; exit 1; }
+echo "named period second run: already applied, unchanged"
 [ "$(md5of "array['api.website_v2_label_month(text)']")" = "4263b5ad2369e87c99674f9159d672f8" ] || { echo "the API month helper differs from live"; exit 1; }
-# 4 the cases
+# 5 the cases
 CAL=$(node tests/fixtures/intake-dates/parse.mjs)
 $P -d $DB -v cal="$CAL" -f tests/fixtures/intake-dates/fixtures.sql 2>&1 | sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'

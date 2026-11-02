@@ -1,18 +1,16 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.406'
-export const PACKAGE_VERSION='0.1.333'
+export const UI_VERSION='2.15.407'
+export const PACKAGE_VERSION='0.1.334'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'2 Nov 2026',
-  title:'University descriptions are read from the university\'s own About page and reviewed in Layer 4',
+  title:'Intake dates are filled only for a named teaching period',
   changes:[
-    'A new reader proposes a short description for each university from its own About page, with every sentence backed by a quote from the page. Proposals go to Layer 4 › Inbox for a person to approve; nothing is published automatically.',
-    'The page finder now suggests each university\'s About page from the site map it already holds, without new paid reads.',
-    'Coverage shows a Provider descriptions card: eligible, present, missing, proposed, held, admitted and published counts, cost and rejection reasons.',
-    'The reader is off. A five-university pilot runs only after its own settings are switched on, within a US$1 AI and 20-page ceiling.'
+    'The intake fill job (still off) now gives an exact start date only when the course\'s own page names the teaching period (for example \'Semester 1\') and the university\'s approved calendar dates that period. A page that gives only a month keeps the month. A year is filled only when it is printed.',
+    'The CRICOS course write now keeps an intake\'s held year, start date and deadline, and an older year never replaces a later one.'
   ],
   bugFixes:[]
 }
