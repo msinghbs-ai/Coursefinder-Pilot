@@ -493,6 +493,9 @@ export function CourseProgramme({onError,onAsked}){
   const rows=(d?.providers||[]).map(p=>({...p,id:p.provider_id}))
   const tot=k=>rows.reduce((a,r)=>a+Number(r[k]||0),0)
   const preview=async()=>{setMsg('');try{setPv(await aer('course_batch_preview',pid?{provider_id:pid}:{}))}catch(e){setMsg(plainError(e))}}
+  // CF-247 scheduled reading (Platform Admin direction 3 Nov 2026 09:32): what the next run of job aer-scheduled-read would ask, on request (rank 4 and above)
+  const[sch,setSch]=useState(null)
+  const schedule=async()=>{setMsg('');const{data,error}=await supabase.rpc('admin_aer_schedule',{p_args:{}});if(error)setMsg(plainError(error));else setSch(data)}
   const ask=async reason=>{try{const x=await aer('course_batch',{...(pid?{provider_id:pid}:{}),reason});setMsg(`Asked: ${fmtNumber(x.courses)} courses (estimated ${usd(x.estimate_usd,3)}). Each course read goes to Layer 4.`);setPv(null);setRefresh(n=>n+1);onAsked?.()}catch(e){setMsg(plainError(e));throw e}}
   const n=v=>fmtNumber(Number(v||0))
   const cols=[
@@ -512,9 +515,11 @@ export function CourseProgramme({onError,onAsked}){
       <div className="m-result-count">{d?<><strong>{fmtNumber(tot('remaining'))}</strong><span>of {fmtNumber(tot('eligible'))} left</span></>:<><span className="m-spinner"/>Loading…</>}</div></div>
     {d&&<p className="sd-desc" data-aer-programme-cost>Cost a course {usd(d.cost_per_course_usd,4)} ({d.cost_basis==='measured'?'measured':'estimate until 20 reads are measured'}) · OpenRouter balance {usd(d.balance_usd)} (floor {usd(d.floor_usd)}) · {n(d.batch_size)} courses a batch · {n(d.waiting)} course reads waiting{d.ai_allowed?'':' · AI reading is stopped (AI limits)'}</p>}
     {err&&<p className="fr-error" role="alert">{err}</p>}
+    {sch&&<p className="sd-desc" data-aer-schedule role="status">Scheduled reading ({sch.job?.active?'on':'paused'}): the next run would read {n(sch.next_run?.course_reads)} new courses and {n(sch.next_run?.corrections)} held reads again ({Object.entries(sch.next_run?.by_country||{}).map(([k,v])=>`${k} ${fmtNumber(v)}`).join(', ')||'none'}), {n(sch.next_run?.matrix_pages)} entry pages · estimated {usd(sch.next_run?.estimate_usd,3)}, {n(sch.next_run?.firecrawl_credits_estimate)} scraper credits{sch.next_run?.back_pressure?' · new reads wait: Layer 4 is full':''}{sch.next_run?.refusal?` · ${sch.next_run.refusal}`:''} · at most {n(sch.daily?.cap)} reads a day (about {usd(sch.daily?.ai_usd_at_most)}){(sch.countries||[]).filter(c=>!c.on).map(c=>` · ${c.country} off: ${c.reason}`).join('')}</p>}
     {d?.can_batch&&<div className="m-filter-bar aer-batch" data-aer-batch>
       <FilterSelect label="Provider" value={pid} emptyLabel="Next by priority" onChange={(v,l)=>{setPid(v);setPidLabel(l)}} options={rows.filter(r=>Number(r.remaining)>0).map(r=>opt(r.provider_id,r.provider_name,`${n(r.remaining)} left`))}/>
       <Button compact onClick={preview} data-aer-batch-preview>Preview next batch</Button>
+      <Button compact onClick={schedule} data-aer-schedule-preview>Preview scheduled reading</Button>
       {pv&&<span className="aer-preview" data-aer-batch-result role="status"><strong>{fmtNumber(pv.courses)} courses</strong> · estimated {usd(pv.estimate_usd,3)}{pv.refusal?<> · <em>{pv.refusal}</em></>:''}</span>}
       {pv&&!pv.refusal&&<ReasonAction label="Read next batch" confirm="Ask" testid="aer-batch" onDo={ask}/>}
       {msg&&<small role="status">{msg}</small>}
