@@ -158,7 +158,7 @@ test('the central page finder suggests About pages from the whole-site map only 
 
 // Pilot finding (2 Nov 2026 16:16, v2.15.406): Monash read a stored Pharmacy news article, ACU a research page on a staff subdomain, CDU the
 // right page. One page rule decides every source (security.provider_description_page_v1; the worker's aboutPageCheck), with its lists as settings.
-const PILOT = 'supabase/migrations/20261102100000_cf247_pdesc_page_choice.sql'
+const PILOT = 'supabase/migrations/20261102110000_cf247_pdesc_page_choice.sql'
 test('page rule (pilot 2 Nov 2026 16:16): only the provider\'s own About or Overview page; news, research and staff pages refused', () => {
   const p = fs.readFileSync(PILOT, 'utf8')
   const rule = { about_prefixes: ['about-', 'about_'], refused_path_words: ['news', 'events', 'media', 'research', 'staff', 'faculty', 'school', 'study'],

@@ -10,7 +10,7 @@ DB=${P1DESC_DB:-p1desc_fixtures}
 FX=tests/fixtures/p1-provider-descriptions
 P="psql -v ON_ERROR_STOP=1 -q -X"
 MIG=supabase/migrations/20261102090000_cf247_p1_provider_descriptions.sql
-MIG2=supabase/migrations/20261102100000_cf247_pdesc_page_choice.sql
+MIG2=supabase/migrations/20261102110000_cf247_pdesc_page_choice.sql
 SIGS2="array['security.provider_description_stored_v1(uuid)', 'public.svc_provider_description_next(integer)', 'security.provider_description_validate_v1(uuid,text,timestamptz,jsonb)']"
 SIGS="array['security.layer4_review_decide_impl(uuid,text,text,jsonb)', 'security.ai_spend_today_v1()', 'security.layer4_inbox_kinds_v1()', 'security.layer4_inbox_items_v1()', 'public.admin_layer4_inbox(text,jsonb)', 'l4_api.layer4_review_bulk_decide(text,text,text,text,text,text,integer)', 'security.layer4_batch_decide_v1_impl(uuid[],text,text,text,text)']"
 dropdb --if-exists "$DB" >/dev/null 2>&1 || true

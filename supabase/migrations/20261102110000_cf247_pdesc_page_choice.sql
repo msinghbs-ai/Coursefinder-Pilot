@@ -143,5 +143,5 @@ select pg_temp.edit_once('security.provider_description_validate_v1(uuid,text,ti
   if coalesce((p_result->>'about_page')::boolean, false) is false or v_n = 0 then$n$]], array[1]);
 
 insert into pipeline.component_register(kind, name, layer, purpose, status, replaces, introduced_in) values
- ('function', 'security.provider_description_page_v1', 'Layer 2', 'P1 provider descriptions: which page may be a description source (pilot 2 Nov 2026)', 'active', '{}', '20261102100000')
+ ('function', 'security.provider_description_page_v1', 'Layer 2', 'P1 provider descriptions: which page may be a description source (pilot 2 Nov 2026)', 'active', '{}', '20261102110000')
 on conflict do nothing;
