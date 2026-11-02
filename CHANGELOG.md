@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.344 — 3 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.417** (Platform Admin decision 3 Nov 2026 08:44 §4, D-M6/D-M7: phased extension with representative pilots). Migration `20261103090000_cf247_scholarship_nonuni_pilot`: settings scholarship.pilot_only (on), scholarship.pilot_provider_ids (empty), scholarship.external_award_patterns and the stop thresholds; md5-guarded edits of scholarship_admission_provider_ok_v1, fc_sch_eligible_v1, fc_provider_tier_v1, scholarship_discovery_refill_v1 and scholarship_admit_from_provider_page_v1; read-only security.scholarship_pilot_report_v1 and security.scholarship_pilot_stop_v1. P1 and P2 stay off until switched on with the pilot list. Nothing dropped; consumer API untouched. Spec s231.
+
 ## 0.1.343 — 3 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.416** (Platform Admin decision 3 Nov 2026 08:44 §5, D-M9; integration issue IQ-00043, P1). Migration `20261103080000_cf247_link_reactivation_guard`: trigger reactivation_guard on catalogue.course_links (after manual_lock_guard; never raises), security.course_link_hold_basis_v1, security.course_link_norm_v1, security.course_link_reactivated_v1, table pipeline.course_link_rediscoveries, settings course_link.reactivation_guard (on) and course_link.reactivated_list_max; md5-guarded edits of coverage_apply_course_v1 and coverage_admission_apply_v1. Nothing dropped; consumer API untouched. Spec s230. The 13 La Trobe links are restored by a paste file after deploy.

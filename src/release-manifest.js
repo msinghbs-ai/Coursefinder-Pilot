@@ -1,17 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.416'
-export const PACKAGE_VERSION='0.1.343'
+export const UI_VERSION='2.15.417'
+export const PACKAGE_VERSION='0.1.344'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Nov 2026',
-  title:'Course links: a replaced, rejected, held or retired link is never made active again by a background job',
+  title:'Scholarships: a pilot list for providers beyond universities, with stop reports',
   changes:[
-    'A course link that a person or a governed correction set aside, rejected, held for review or retired stays inactive when a background reader or admission finds it again. The rediscovery is recorded as evidence and tracked once in the integration queue instead of being published.',
-    'Address spellings that mean the same page (for example a #/overview fragment) are compared as the same page; addresses that differ only in their query (for example Auckland programme codes) stay distinct.',
-    'A Layer 4 course-link rule no longer makes a replaced link primary without a person. People editing a course, and Layer 4 reviewers, can still restore a link deliberately.'
+    'Scholarships from providers that are not universities (TAFEs, polytechnics, private VET and higher-education institutes) and the evidence-based legitimacy checks that replace the 30-course minimum apply only to providers on a pilot list while pilot mode is on. The list starts empty; everyone else keeps today\'s rules.',
+    'A listed provider gets one fresh discovery, and its own scholarship pages read in the last 90 days that were refused only as "not a university" are admitted again from stored facts, with no new AI or Firecrawl. A non-university page that names another body\'s award (for example Australia Awards or a university\'s scholarship) is refused.',
+    'Read-only stop reports per pilot provider show wrong-provider admissions, missing eligibility evidence, Firecrawl and AI spend against their share, failed reads and stuck discovery. Every pilot scholarship still goes to Layer 4 before publication.'
   ],
   bugFixes:[]
 }
