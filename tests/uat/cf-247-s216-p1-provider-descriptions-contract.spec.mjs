@@ -189,7 +189,7 @@ test('page rule (pilot 2 Nov 2026 16:16): only the provider\'s own About or Over
   expect(p).not.toMatch(/to_jsonb\(1200\)/)
   // a fragment is held, never cut or completed
   expect(p).toContain("'rule', 'incomplete_sentence'")
-  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.58\.0"; \/\/ v0\.58\.0 \(2 Nov 2026, CF-247 P1 pilot finding 16:16\)/)
+  expect(worker).toMatch(/(const WORKER = "coverage-sweep-worker-v0\.58\.0"; |\/\/ was v0\.58\.0 )\/\/ v0\.58\.0 \(2 Nov 2026, CF-247 P1 pilot finding 16:16\)/)  // later versions keep the note
   expect(worker).toContain('const suggested: string[] = (it.candidates || []).map(String).filter((u: string) => aboutPageCheck(u, hosts, patterns, pageRule).ok);')
   expect(worker).toContain('const links = aboutLinks(h.html, h.url || home, hosts, patterns, pageRule);')
   expect(fixtures).toContain("raise notice 'PASS page rule: Monash news copy, ACU staff research page refused; CDU about page allowed; lists are settings';")
