@@ -1,15 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.418'
-export const PACKAGE_VERSION='0.1.345'
+export const UI_VERSION='2.15.419'
+export const PACKAGE_VERSION='0.1.346'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Nov 2026',
-  title:'Provider descriptions: the reader picks up work again (no time-out)',
+  title:'Enrichment keeps going between cycles; retry, export and spend preview on the existing controls',
   changes:[
-    'The provider description reader finds a provider\'s stored About page in milliseconds instead of seconds, so it picks up queued reads again instead of timing out. It chooses exactly the same page as before.'
+    'A university can be planned again before its 14-day wait ends when its missing values have grown, at a set number of re-plans per hour (off until switched on). The standing gap queue\'s cross-check runs in about a quarter of the time, so its runs stop timing out.',
+    'Enrich fields and Enrichment plan gain Retry failed items and Export results (CSV); Preview shows the expected AI and scraper spend and how many items another task already holds. Start skips course fields another open task holds and unpublished providers, so a manual run and the standing queue never work the same item.',
+    'Cancelling an Enrichment plan now also cancels the tasks its running steps started. Find scholarships now shows a credit and AI estimate before it starts. Scheduled jobs › Run on demand is turned off for Layer 2 schedules, which no worker processes.'
   ],
   bugFixes:[]
 }
