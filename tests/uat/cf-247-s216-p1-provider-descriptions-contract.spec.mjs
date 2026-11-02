@@ -158,7 +158,7 @@ test('the central page finder suggests About pages from the whole-site map only 
 
 // Pilot finding (2 Nov 2026 16:16, v2.15.406): Monash read a stored Pharmacy news article, ACU a research page on a staff subdomain, CDU the
 // right page. One page rule decides every source (security.provider_description_page_v1; the worker's aboutPageCheck), with its lists as settings.
-const PILOT = 'supabase/migrations/20261102110000_cf247_pdesc_page_choice.sql'
+const PILOT = 'supabase/migrations/20261102130000_cf247_pdesc_page_choice.sql'
 test('page rule (pilot 2 Nov 2026 16:16): only the provider\'s own About or Overview page; news, research and staff pages refused', () => {
   const p = fs.readFileSync(PILOT, 'utf8')
   const rule = { about_prefixes: ['about-', 'about_'], refused_path_words: ['news', 'events', 'media', 'research', 'staff', 'faculty', 'school', 'study'],
@@ -181,18 +181,37 @@ test('page rule (pilot 2 Nov 2026 16:16): only the provider\'s own About or Over
   expect(p).toContain("and (security.provider_description_page_v1(u.provider_id, e->>'url')->>'ok')::boolean) z")
   expect(p).toContain("if not (security.provider_description_page_v1(p_provider, p_url)->>'ok')::boolean then")
   for (const [b, a] of [['d9f9244ea3dd37c511b0ff75f04d5e30', '6ddc25869e9865c9aeebf11c819feee2'], ['d4fd17854056f1ad69c0d1dc0e0abf11', '33d735da514a7d37e2815bbb0073af03'],
-    ['9a3fbd7f15f5cf30d1a13359d6062280', '6efb0237726f004fe85c1aa778a35052']]) { expect(p).toContain(`'${b}', '${a}'`); expect(run).toContain(b) }
+    ['9a3fbd7f15f5cf30d1a13359d6062280', '528d5a3d2e3780fcb58e2c19db31c199']]) { expect(p).toContain(`'${b}', '${a}'`); expect(run).toContain(b) }
   expect(p).toMatch(/^-- Replaces: .+/m); expect(p).toMatch(/^-- Retires: .+/m)
-  expect(p).not.toMatch(/update pipeline\.platform_toolset_settings|cron\.alter_job|cron\.schedule/)  // no setting value changed, nothing switched on
+  expect(p).not.toMatch(/cron\.alter_job|cron\.schedule/)  // nothing switched on
+  // the only setting value changed is pdesc.max_chars, 900 -> 1,200, with its authority (Platform Admin 2 Nov 2026 23:24)
+  expect([...p.matchAll(/update pipeline\.platform_toolset_settings set/g)].length).toBe(1)
+  expect(p).toContain("where toolset_key = 'pipeline' and key = 'pdesc.max_chars' and value = to_jsonb(900);")
+  expect(p).toContain("set value = to_jsonb(1200), updated_by = v_pa")
+  expect(p).toContain("reason = 'CF-247 Platform Admin 2 Nov 2026 23:24 (overnight direction §1 Descriptions)")
+  // a fragment is held, never cut or completed
+  expect(p).toContain("'rule', 'incomplete_sentence'")
   expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.58\.0"; \/\/ v0\.58\.0 \(2 Nov 2026, CF-247 P1 pilot finding 16:16\)/)
   expect(worker).toContain('const suggested: string[] = (it.candidates || []).map(String).filter((u: string) => aboutPageCheck(u, hosts, patterns, pageRule).ok);')
   expect(worker).toContain('const links = aboutLinks(h.html, h.url || home, hosts, patterns, pageRule);')
   expect(fixtures).toContain("raise notice 'PASS page rule: Monash news copy, ACU staff research page refused; CDU about page allowed; lists are settings';")
+  expect(fixtures).toContain("raise notice 'PASS length 1,200: CDU 916 characters pass whole to the projection; 1,250 held; cut sentence or condition held, never truncated';")
   // the model is told the limits the validation applies (CDU was held at 916 characters against pdesc.max_chars 900, never stated to it)
   expect(p).toContain("'max_chars', security.pipeline_num_v1('pdesc.max_chars', 900)::int)")
   expect(lengthNote({ min_sentences: 2, max_sentences: 5, min_chars: 150, max_chars: 900 })).toBe('Length: 2 to 5 sentences, 150 to 900 characters in all (the sentences, not the quotes).\n')
   expect(lengthNote(null)).toBe('')
   expect(worker).toContain('descriptionRequest(model, String(it.provider || ""), String(rec.url || ""), page, maxTokens, w.length)')
+})
+
+test('nothing cuts a description (Platform Admin 2 Nov 2026 23:24): the worker keeps every sentence and quote whole', () => {
+  const long = 'Zeta University '.repeat(60).trim() + '.'  // about 960 characters in one sentence
+  const many = Array.from({ length: 14 }, (_, k) => ({ text: `Sentence ${k + 1} of the page.`, quote: `Sentence ${k + 1} of the page.` }))
+  const page = long + ' ' + many.map((x) => x.text).join(' ')
+  const r = descriptionSentences({ about_page: true, sentences: [{ text: long, quote: long }, ...many] }, page, 20)
+  expect(r.sentences[0].text).toBe(long); expect(r.sentences[0].quote).toBe(long)  // was cut at 600 characters
+  expect(r.sentences.length).toBe(15)  // was cut at 12: the database holds too many sentences (sentence_count), never a shortened list
+  const d = fs.readFileSync('supabase/functions/coverage-sweep/description.ts', 'utf8')
+  expect(d).not.toMatch(/\.slice\(0, (600|12)\)/)
 })
 
 test('pure functions: About link discovery on own hosts, quotes checked against the page, cut answers held', () => {

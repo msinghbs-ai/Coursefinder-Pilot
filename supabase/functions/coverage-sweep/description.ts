@@ -104,8 +104,12 @@ export function descriptionRequest(model: string, provider: string, url: string,
 // every sentence keeps its quote and whether the quote is on the page (at least minQuoteChars letters and digits, found in the page text)
 export function descriptionSentences(a: any, page: string, minQuoteChars = 20): { about_page: boolean; sentences: { text: string; quote: string; on_page: boolean }[] } {
   const fp = flatText(page);
-  const sentences = ((a?.sentences || []) as any[]).slice(0, 12).map((s) => {
-    const text = String(s?.text || "").replace(/\s+/g, " ").trim().slice(0, 600), quote = String(s?.quote || "").replace(/\s+/g, " ").trim().slice(0, 600);
+  // v0.58.0 (Platform Admin 2 Nov 2026 23:24, "avoid cutting essential conditions or publishing fragments"): nothing is cut here. Every
+  // sentence and quote is kept whole and every sentence the model gave is passed on; the database holds a description that is too long,
+  // has too many sentences or a sentence that is not complete (rules length, sentence_count, incomplete_sentence). It was cut at 600
+  // characters and 12 sentences.
+  const sentences = ((a?.sentences || []) as any[]).map((s) => {
+    const text = String(s?.text || "").replace(/\s+/g, " ").trim(), quote = String(s?.quote || "").replace(/\s+/g, " ").trim();
     const fq = flatText(quote);
     return { text, quote, on_page: fq.length >= minQuoteChars && fp.includes(fq) };
   }).filter((s) => s.text);
