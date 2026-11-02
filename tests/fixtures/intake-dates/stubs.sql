@@ -52,3 +52,8 @@ create table pipeline.course_fact_source_records(id uuid primary key default gen
   course_cricos text, content_hash text, evidence_id uuid, parsed_payload jsonb, status text, observed_at timestamptz, applied_at timestamptz, error_text text,
   unique (source_id, source_record_id, content_hash));
 create table if not exists ref.currencies(code text primary key);
+
+-- the component register's retirement columns (live names; the E16 stub has only the first eight)
+alter table pipeline.component_register add column if not exists replaced_by text, add column if not exists retire_after date, add column if not exists updated_at timestamptz;
+insert into pipeline.component_register(kind, name, layer, area, purpose, status, replaces, introduced_in) values
+ ('function', 'security.intake_dates_plan_v1', 'Layer 2', 'Admission', 'as live', 'active', '{}', '20261102080000') on conflict do nothing;

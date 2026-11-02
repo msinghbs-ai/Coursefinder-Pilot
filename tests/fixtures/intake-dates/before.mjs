@@ -2,7 +2,7 @@
 // edits, as it is live before it: security.coverage_apply_course_v1 (the common admission write; created 1 Oct in the archive, edited
 // 23 Oct (fee floor) and 24 Oct (R1 identity check), md5-guarded), and the two live triggers on catalogue.course_intakes (the same-month
 // guard of 15 Oct and the manual lock guard of 30 Sep, edited 1 Oct), and the AU CRICOS admission write public.svc_coursefacts_apply_record
-// (whole definition of 1 Sep, archive). run.sh checks the rebuilt md5s against the live ones read on 2 Nov 2026.
+// (whole definition of 1 Sep, archive), and the AI reader's month parser security.enrich_parse_intakes_v1 (23 Oct). run.sh checks the rebuilt md5s against the live ones read on 2 Nov 2026.
 import fs from 'node:fs'
 const root = new URL('../../../supabase/', import.meta.url)
 const read = (f) => fs.readFileSync(new URL(f, root), 'utf8')
@@ -32,4 +32,7 @@ out.push('create trigger manual_lock_guard before insert or update or delete on 
 // the AU CRICOS admission write, as live (edited by the named-period migration)
 const C = read('migrations-archive/20260901211500_m2_5_universal_layer4_block_enforcement.sql')
 out.push(between(C, 'CREATE OR REPLACE FUNCTION public.svc_coursefacts_apply_record(', '\\nend \\$function\\$'))
+// the AI reader's month parser, as live (edited by the semester-pairs migration)
+const P = read('migrations/20261023012000_cf247_ai_reader_every_attribute_and_gap_causes.sql')
+out.push(between(P, 'create or replace function security.enrich_parse_intakes_v1(', '\\n\\$function\\$'))
 process.stdout.write(out.join(';\n\n') + ';\n')
