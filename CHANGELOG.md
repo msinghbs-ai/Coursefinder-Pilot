@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.346 — 3 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.419** (Platform Admin direction 3 Nov 2026 09:32: platform-led enrichment; acceptance report item 3). Migration `20261103120000_cf247_enrich_plan_continuity`: md5-guarded edits of enrich_plan_auto_v1, field_crosscheck_v1, admin_enrich_fields and admin_enrich_plan; security.enrich_item_in_flight_v1 and two helpers; seven plans.* settings (plans.replan_per_hour 0 = off). Layer 2 schedules marked retiring; stale Layer 2 refresh requests closed only by an approved paste file. Admin SOP 2.22. Nothing dropped; consumer API untouched. Spec s234.
+
 ## 0.1.345 — 3 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.418** (integration issue IQ-00055, a v2.15.410 regression). Migration `20261103100000_cf247_pdesc_picker_perf`: md5-guarded edits of provider_description_stored_v1 (6ddc2586 -> b4bef567: a cheap prefilter from the existing pdesc settings before the page rule, the page rule once per copy) and svc_provider_description_next (33d735da -> 5342ae3f: the stored-copy lookup once per claimed row). Same page chosen for 65 live providers and all fixture variants. No setting changed; nothing dropped; consumer API untouched. Spec s232.
