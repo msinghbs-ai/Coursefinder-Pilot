@@ -5,6 +5,8 @@
 // missing fields (Enrich fields); scholarships. Each step shows why, the fields it fills and its estimate in Firecrawl credits and AI US$
 // (from what the same step used in the last 30 days). Run now (Pipeline Operator) runs the ticked steps at once from the on-demand allowance;
 // automatic plans (most missing first) wait for room in each toolset share. Reads and writes: public.admin_enrich_plan.
+// 3 Nov 2026 (Platform Admin 09:32, platform-led enrichment): Cancel the run also cancels the tasks its steps started; a finished run's failed
+// steps can be retried as a Run now; runs export as CSV (one row per step); automatic plans can re-plan a university whose gaps grew.
 import React,{useEffect,useState}from'react'
 import{Gauge,ListChecks,Play,RefreshCw,Route,UserCheck}from'lucide-react'
 import{supabase}from'./lib/supabase'
@@ -48,11 +50,13 @@ function Overview({ov,onSaved,onReload,onError}){
       <span><strong>{usd(od.usd_left)} of {usd(od.usd)}</strong><small>On-demand AI left today</small></span>
       <span><strong>{fmtNumber(ov.open?.auto||0)} of {fmtNumber(ov.limits?.open_max)}</strong><small>Automatic plans open</small></span>
       <span><strong>{fmtNumber(ov.open?.manual||0)}</strong><small>Manual runs open</small></span>
+      <span data-plan-replan><strong>{Number(ov.limits?.replan_per_hour||0)>0?`${fmtNumber(ov.limits.replan_per_hour)} an hour`:'Off'}</strong><small>Re-plan when a university's gaps grew by {fmtNumber(ov.limits?.replan_min_new_gaps??0)} (not within {fmtNumber(ov.limits?.replan_min_days??0)} days; otherwise every {fmtNumber(ov.limits?.redo_days??0)} days)</small></span>
     </div>
     <div className="dq-table-wrap"><table className="dq-table"><thead><tr><th>Toolset share (automatic)</th><th className="num">Daily share</th><th className="num">Left today</th></tr></thead>
       <tbody>{Object.entries(ov.shares||{}).map(([g,s])=><tr key={g}><td>{GROUP[g]||g}</td><td className="num">{fmtNumber(s.share)}</td><td className="num">{Number(s.left)>=1e6?'no daily budget':fmtNumber(Math.round(s.left))}</td></tr>)}</tbody></table></div>
     <div className="fc-actions">
       <Button compact onClick={onReload} title="Refresh"><RefreshCw size={14}/>Refresh</Button>
+      <ExportRuns label="Export results (CSV)" onError={onError}/>
       {ov.can_manage&&<><input value={reason} onChange={e=>setReason(e.target.value)} placeholder={a.enabled?'Reason to switch automatic plans off':'Reason to switch automatic plans on'} aria-label="Reason"/>
         <Button compact onClick={toggle} disabled={busy||reason.trim().length<4}>{a.enabled?'Switch automatic off':'Switch automatic on'}</Button></>}
     </div>
@@ -101,7 +105,11 @@ function PlanPanel({pid,onClose,onRan,onError}){
   const estC=chosen.reduce((a,s)=>a+Number(s.est_credits||0),0),estU=chosen.reduce((a,s)=>a+Number(s.est_usd||0),0)
   const over=estC>Number(p.on_demand?.credits_left||0)||estU>Number(p.on_demand?.usd_left||0)
   const run=async()=>{setBusy(true);setNote('');try{const r=await call('run',{provider:pid,steps:pick,reason:reason.trim()});setNote(`Started. Estimate ${cr(r?.estimate?.credits)} and ${usd(r?.estimate?.usd)}; the steps run in order and this page updates.`);setReason('');load();onRan?.()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
-  const cancel=async id=>{setBusy(true);try{await call('cancel',{run_id:id,reason:'Cancelled on the plan'});load();onRan?.()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
+  const cancel=async id=>{setBusy(true);setNote('');try{const r=await call('cancel',{run_id:id,reason:'Cancelled on the plan'});const t=r?.tasks||[],bad=t.filter(x=>!x.cancelled).length
+    setNote(r?.cancelled?`Cancelled: ${fmtNumber(r?.steps_cancelled||0)} step(s) stopped and ${fmtNumber(t.length-bad)} task(s) cancelled${bad?`; ${fmtNumber(bad)} task(s) had already finished or could not be cancelled (see the step notes and Task manager)`:''}.`:'The run had already finished.');load();onRan?.()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
+  // 3 Nov 2026: a finished run's failed, timed-out or stopped steps run again as a Run now (same estimate and on-demand allowance)
+  const retry=async id=>{const reason=window.prompt('Run the failed steps of this run again now? Give a reason (kept with the run).')||'';if(reason.trim().length<4)return
+    setBusy(true);setNote('');try{const r=await call('retry',{run_id:id,reason:reason.trim()});setNote(`Started again: ${(r?.steps||[]).join(', ')}. Estimate ${cr(r?.estimate?.credits)} and ${usd(r?.estimate?.usd)}.`);load();onRan?.()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
   const open=p.open_run&&p.open_run!=='null'?p.open_run:null
   return <Card id="layer2.plan.university" title={`Plan: ${p.name}`} icon={Route} level={2}
     subtitle={`${COUNTRY[p.country]||p.country} · ${fmtNumber(p.courses)} courses · ${fmtNumber(p.missing)} missing values. Fill missing fields starts straight away on its own track; the other steps run in order. Each says why it is needed and what it is expected to use.`}
@@ -122,12 +130,14 @@ function PlanPanel({pid,onClose,onRan,onError}){
         {over&&<small className="sd-desc">More than the on-demand allowance left today: untick a step, or raise the allowance on Models &amp; services › Toolsets &amp; limits.</small>}</div>}
     {note&&<p className="sd-desc" role="status">{note}</p>}
     <h3 className="sd-subhead">Runs</h3>
+    <div className="fc-actions"><ExportRuns provider={pid} label="Export this university's runs (CSV)" onError={onError}/></div>
     {(p.runs||[]).length===0?<Empty text="No run yet."/>:(p.runs||[]).map(r=><div key={r.id} className="plan-run" data-plan-run={r.state}>
       <p><StatusChip value={r.state} tone={(STATUS[r.state]||[])[1]||'neutral'} label={`${r.mode==='auto'?'Automatic':'Manual'}: ${(STATUS[r.state]||[r.state])[0]}`}/> <small>{fmtDateTime(r.created_at)} · {r.reason}</small></p>
       <div className="dq-table-wrap"><table className="dq-table"><thead><tr><th>Step</th><th>Status</th><th className="num">Estimate</th><th>Note</th></tr></thead>
         <tbody>{(r.steps||[]).map(s=><tr key={s.step}><td>{s.label}</td><td><StatusChip value={s.status} tone={(STATUS[s.status]||[])[1]||'neutral'} label={(STATUS[s.status]||[s.status])[0]}/></td>
           <td className="num">{cr(s.est_credits)} · {usd(s.est_usd)}</td><td><small>{s.note||(s.started_at?`started ${fmtDateTime(s.started_at)}`:'')}</small></td></tr>)}</tbody></table></div>
       {r.needs_person&&<p className="sd-desc" data-run-needs-person><strong>Needs a person:</strong> {r.needs_person}</p>}
+      {p.can_run&&!open&&['done','failed','cancelled'].includes(r.state)&&(r.steps||[]).some(s=>['failed','timed_out','stopped'].includes(s.status))&&<div className="fc-actions"><Button compact onClick={()=>retry(r.id)} disabled={busy} data-plan-retry>Retry failed steps</Button></div>}
       {r.state==='done'&&<p className="sd-desc">Used {cr(r.actual?.credits)} ({cr(r.actual?.credits_on_demand)} on demand) and {usd(r.actual?.usd)}; estimate {cr(r.estimate?.credits)} and {usd(r.estimate?.usd)}. {gained(r)}</p>}
     </div>)}
   </Card>
@@ -135,3 +145,18 @@ function PlanPanel({pid,onClose,onRan,onError}){
 
 function gained(r){const b=r.fields_before||{},a=r.fields_after||{};const g=Object.keys(a).map(k=>[k,Number(a[k]?.filled||0)-Number(b[k]?.filled||0)]).filter(([,n])=>n>0)
   return g.length?`Fields gained: ${g.map(([k,n])=>`${k.replace(/_/g,' ')} +${n}`).join(', ')} (hourly count).`:'No field gained yet in the hourly count.'}
+
+// 3 Nov 2026 (Platform Admin 09:32 §3): runs and their steps as CSV, read in pages (admin_enrich_plan('export'))
+const csvCell=v=>{if(v==null)return'';const s=String(v);return/[",\r\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s}
+const RUN_COLS=['run','university','mode','state','created_at','finished_at','reason','needs_person','step_no','step','label','status','note','task_kind','task_id','step_started_at','step_finished_at','est_credits','est_usd','actual_credits','actual_usd','provider_id']
+function ExportRuns({provider,label,onError}){
+  const[busy,setBusy]=useState(false)
+  const run=async()=>{setBusy(true);try{const lines=[];let offset=0
+    for(;;){const d=await call('export',{provider:provider||'',offset});const rows=d?.rows||[]
+      for(const r of rows)lines.push(RUN_COLS.map(c=>csvCell(r[c])).join(','))
+      const runs=Number(d?.runs||0);if(runs<Number(d?.page_runs||1))break;offset+=runs}
+    const blob=new Blob(['\ufeff'+[RUN_COLS.join(','),...lines].join('\r\n')],{type:'text/csv;charset=utf-8'})
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`enrichment-plan-runs${provider?'-'+String(provider).slice(0,8):''}.csv`
+    document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
+  return <Button compact onClick={run} disabled={busy} data-plan-export>{busy?'Exporting…':label}</Button>
+}

@@ -3,7 +3,10 @@
 // Choose countries or universities and fields, see what is missing and what stored pages can fill, then start a task. The task fills
 // only missing values, never a value entered or locked by hand; each value keeps its source and quote. Field sources (which sources fill
 // each field, per country, and in what order) are changed here by a Platform Admin, with a reason.
-// Reads and writes: public.admin_enrich_fields('fields' | 'preview' | 'start' | 'jobs' | 'items' | 'rule_set').
+// Reads and writes: public.admin_enrich_fields('fields' | 'preview' | 'start' | 'jobs' | 'items' | 'rule_set' | 'retry' | 'export').
+// 3 Nov 2026 (Platform Admin 09:32, platform-led enrichment): Preview estimates the spend and says what another task already holds; Start
+// leaves those items and unpublished providers out (the standing queue's rules); a finished task's failed items can be retried; any task's
+// results export as CSV.
 import React,{useEffect,useState}from'react'
 import{Activity,ListChecks,Play,RefreshCw,Search,X}from'lucide-react'
 import{api,supabase}from'./lib/supabase'
@@ -32,7 +35,7 @@ export default function EnrichFields({rank=0,onError}){
     <StartCard meta={meta} label={label} onStarted={()=>load()} onError={onError}/>
     <Card id="layer2.enrich.tasks" title="Enrich fields tasks" subtitle="The last 20 tasks. Each value keeps its source and the words it was read from." icon={ListChecks}
       meta={<span className="cf-chip tone-neutral">{fmtNumber(jobs.length)} task{jobs.length===1?'':'s'}</span>}>
-      {jobs.length===0?<Empty text="No Enrich fields task yet."/>:<div className="ef-jobs">{jobs.map(j=><JobRow key={j.id} j={j} label={label} open={open===j.id} onOpen={()=>setOpen(o=>o===j.id?'':j.id)}/>)}</div>}
+      {jobs.length===0?<Empty text="No Enrich fields task yet."/>:<div className="ef-jobs">{jobs.map(j=><JobRow key={j.id} j={j} label={label} open={open===j.id} onOpen={()=>setOpen(o=>o===j.id?'':j.id)} canRetry={!!meta.can_start} onRetried={()=>load()} onError={onError}/>)}</div>}
     </Card>
     <FieldSources meta={meta} label={label} onSaved={m=>setMeta(m)} onError={onError}/>
   </div>
@@ -53,7 +56,7 @@ function StartCard({meta,label,onStarted,onError}){
   const[preview,setPreview]=useState(null),[busy,setBusy]=useState(''),[err,setErr]=useState(''),[done,setDone]=useState('')
   const args=()=>({countries:unis.length?[]:cc,provider_ids:unis.map(u=>u.value),fields,ai,scraper})
   const flip=(arr,set,v)=>set(arr.includes(v)?arr.filter(x=>x!==v):[...arr,v])
-  useEffect(()=>{setPreview(null)},[cc,unis,fields])
+  useEffect(()=>{setPreview(null)},[cc,unis,fields,ai,scraper])
   const runPreview=async()=>{setBusy('preview');setErr('');try{setPreview(await call('preview',args()))}catch(e){setErr(errText(e))}finally{setBusy('')}}
   const start=async()=>{setBusy('start');setErr('');setDone('');try{const r=await call('start',{...args(),reason:reason.trim()});setDone(`Task started: ${fmtNumber(r?.items||0)} item(s) to settle. Progress is below and in Task manager.`);setReason('');onStarted?.()}catch(e){setErr(errText(e))}finally{setBusy('')}}
   const scope=unis.length>0||cc.length>0,ok=scope&&fields.length>0
@@ -69,7 +72,8 @@ function StartCard({meta,label,onStarted,onError}){
       <div className="ef-actions"><Button compact disabled={!ok||busy!==''} onClick={runPreview}><RefreshCw size={13}/>Preview</Button></div>
       {preview&&<div className="cf-table-wrap" data-enrich-preview><table className="cf-table"><thead><tr><th>Field</th><th className="num">Missing</th><th className="num">Stored page</th><th className="num">Adapter already read</th></tr></thead><tbody>
         {(preview.fields||[]).map(r=><tr key={r.field} data-preview-field={r.field}><td>{label(r.field)}</td><td className="num">{fmtNumber(r.missing||0)}</td><td className="num">{fmtNumber(r.stored_page||0)}</td><td className="num">{r.adapter_value==null?'—':fmtNumber(r.adapter_value)}</td></tr>)}
-      </tbody></table><small className="sl-sub">{fmtNumber(preview.courses||0)} active course(s) at {fmtNumber(preview.universities||0)} universit{preview.universities===1?'y':'ies'}. Values entered or locked by hand are never changed.</small></div>}
+      </tbody></table><small className="sl-sub">{fmtNumber(preview.courses||0)} active course(s) at {fmtNumber(preview.universities||0)} universit{preview.universities===1?'y':'ies'}. Values entered or locked by hand are never changed.</small>
+        {preview.estimate&&<p className="sl-sub" data-enrich-estimate>Start would queue {fmtNumber(preview.estimate.items||0)} course item(s){Number(preview.estimate.in_task||0)>0?`; ${fmtNumber(preview.estimate.in_task)} already in another open task are left to it`:''}{Number(preview.estimate.unpublished||0)>0?`; ${fmtNumber(preview.estimate.unpublished)} at unpublished providers wait`:''}. Estimated spend: AI about US${Number(preview.estimate.usd||0).toFixed(2)} (US${Number(preview.estimate.usd_per_item||0).toFixed(4)} an item, the last 30 days){scraper?`, scraper at most ${fmtNumber(preview.estimate.credits_max||0)} credits (one read for each course without a stored page)`:', no scraper credits'}.</p>}</div>}
       {meta.can_start?<div className="ef-actions"><label className="sr-reason"><span className="sr-hide">Reason</span><input className="fv-input" placeholder="Reason (kept with the task)" value={reason} onChange={e=>setReason(e.target.value)}/></label>
         <Button compact variant="primary" disabled={!ok||busy!==''||reason.trim().length<4} onClick={start}><Play size={13}/>Start task</Button></div>
         :<p className="l3v-note">Only a Pipeline Operator or above can start a task.</p>}
@@ -79,13 +83,23 @@ function StartCard({meta,label,onStarted,onError}){
   </Card>
 }
 
-function JobRow({j,label,open,onOpen}){
+function JobRow({j,label,open,onOpen,canRetry,onRetried,onError}){
   const p=j.progress||{},by=j.result?.by_field||{},pct=p.total?Math.round(100*Number(p.done||0)/Number(p.total)):0
+  const[busy,setBusy]=useState(''),[note,setNote]=useState('')
+  const failed=Object.values(by).reduce((a,s)=>a+Number(s?.failed||0),0),finished=['done','failed','cancelled'].includes(j.state)
+  // 3 Nov 2026: the failed items of a finished task go into a new task of the same engine, with a reason
+  const retry=async()=>{const reason=window.prompt(`Retry the ${fmtNumber(failed)} failed item(s) of this task in a new task? Give a reason (kept with the task).`)||'';if(reason.trim().length<4)return
+    setBusy('retry');setNote('');try{const r=await call('retry',{job_id:j.id,reason:reason.trim()});setNote(`New task: ${fmtNumber(r?.items||0)} item(s) to settle again.`);onRetried?.()}catch(e){onError?.(errText(e))}finally{setBusy('')}}
+  const exportCsv=async()=>{setBusy('export');try{await exportTask(j)}catch(e){onError?.(errText(e))}finally{setBusy('')}}
   return <div className="ef-job" data-enrich-job={j.id}>
     <button type="button" className="ef-job-head" onClick={onOpen} aria-expanded={open}>
       <strong>{j.title}</strong><StatusChip value={j.state} label={j.state==='running'?`${p.phase||'Running'} · ${pct}%`:j.state}/>
       <small>{fmtDateTime(j.created_at)} · {fmtNumber(p.done||0)} of {fmtNumber(p.total||0)}{j.result?.cost_usd?` · AI US$${Number(j.result.cost_usd).toFixed(2)}`:''}</small></button>
     <div className="ef-byfield">{Object.entries(by).map(([f,s])=><span key={f} className="ef-field"><b>{label(f)}</b>{Object.entries(s).map(([k,n])=><StatusChip key={k} tone={TONE[k]||'info'} label={`${STATE_LABEL[k]||k} ${fmtNumber(n)}`}/>)}</span>)}</div>
+    <div className="ef-actions" data-enrich-job-actions>
+      {canRetry&&finished&&failed>0&&<Button compact disabled={busy!==''} onClick={retry} data-enrich-retry>Retry failed items</Button>}
+      <Button compact disabled={busy!==''} onClick={exportCsv} data-enrich-export>{busy==='export'?'Exporting…':'Export results (CSV)'}</Button>
+      {note&&<small className="sl-sub" role="status">{note}</small>}</div>
     {open&&<JobItems jobId={j.id} fields={Object.keys(by)} label={label}/>}
   </div>
 }
@@ -101,6 +115,18 @@ function JobItems({jobId,fields,label}){
         <td>{valueText(i)}</td><td>{SOURCE_LABEL[i.source]||i.source||'—'}</td><td className="ef-quote">{i.quote||i.reason||'—'}</td></tr>)}
     </tbody></table></div>}
   </div>
+}
+// 3 Nov 2026: every item of a task with its source, quote and evidence, read in pages (admin_enrich_fields('export'))
+const csvCell=v=>{if(v==null)return'';const s=String(v);return/[",\r\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s}
+const EXPORT_COLS=['id','university','course','course_code','field','state','source','value','quote','reason','evidence_id','attempts','cost_usd','updated_at','course_id','provider_id']
+async function exportTask(j){
+  const lines=[];let after=0
+  for(;;){const d=await call('export',{job_id:j.id,after});const rows=d?.rows||[]
+    for(const r of rows)lines.push(EXPORT_COLS.map(c=>csvCell(c==='value'&&r[c]!=null?JSON.stringify(r[c]):r[c])).join(','))
+    if(rows.length<Number(d?.page_rows||1))break;after=rows[rows.length-1].id}
+  const blob=new Blob(['\ufeff'+[EXPORT_COLS.join(','),...lines].join('\r\n')],{type:'text/csv;charset=utf-8'})
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`enrich-fields-${String(j.id).slice(0,8)}.csv`
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000)
 }
 function valueText(i){const v=i.value||{};if(i.field==='duration')return v.value!=null?`${v.value} ${v.unit||''}`:'—';if(i.field==='delivery')return v.mode||'—';if(i.field==='international')return v.open==null?'—':v.open?'Yes':'No'
   if(i.field==='campus')return (v.campuses||[]).map(c=>c.name).join(', ')||'—';if(i.field==='campus_list')return (v.admitted||v.campuses||[]).map(c=>c.name).join(', ')||'—'
