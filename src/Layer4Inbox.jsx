@@ -5,6 +5,8 @@
 // v2.15.300 (Platform Admin, 20 Oct 2026, "Old Layer 4 tabs now", "Counsellor reports tab"): the Review queue, AI could not decide, Websites to
 // find and Coverage › Counsellor reports retired; their addresses open this Inbox on their kind (?kind=), a university opens with ?provider=,
 // counsellor reports are closed here (Fixed, Not changed), and Decided lists the decisions taken here (who, when, choice, reason).
+// CF-247 P1 (Platform Admin, 2 Nov 2026 10:28): a provider description item (kind provider_description) shows the proposed description, every
+// sentence with its quote from the official page and the page itself; it is approved as read or rejected (never edited).
 // CF-247 A1-A3 (Platform Admin, 30 Oct 2026 06:53): an AER item (kind aer_review) shows its source, stored copy, completeness and rows with their
 // quotes (public.layer4_aer_review_read). The Platform Admin approves it, rejects it, or approves it except the ticked rows, with one reason;
 // one item at a time, never in bulk. Curators read it here and keep correcting active rows in Catalogue › Entry requirements.
@@ -139,6 +141,12 @@ function Item({it,k,showProvider,rank,onDone,onError}){
       {sample.length>0&&<ul className="l4i-sample" data-l4-sample>{sample.map(x=><li key={x.course_id}>{open?.input==='courses'?<label><input type="checkbox" checked={ticked.includes(x.course_id)} onChange={()=>tick(x.course_id)} data-l4-sample-tick={x.course_code||x.code||x.course_id}/> {x.title}{x.code?` (${x.code})`:''} has its own page</label>:<>{x.title}{x.code?` (${x.code})`:''}</>}</li>)}</ul>}
     </div>}
     {aerItem&&<AerRows aer={aer} rank={rank} ticking={open?.input==='rows'} ticked={ticked} tick={tick}/>}
+    {it.kind==='provider_description'&&<div className="l4i-dl" data-l4-description>{/* CF-247 P1 (Platform Admin 2 Nov 2026 10:28): the proposed description, each sentence with the page's own words; approved as read or rejected */}
+      {d.before?.description&&<p><small>Description held: {d.before.description}</small></p>}
+      <p data-l4-description-text><strong>{d.proposed?.description}</strong></p>
+      <ol className="l4i-sample">{(Array.isArray(d.proposed?.sentences)?d.proposed.sentences:[]).map((x,i)=><li key={i}>{x.text}<br/><small>Page: <q>{x.quote}</q></small></li>)}</ol>
+      {d.proposed?.source_url&&<p><small>Official page: <a href={d.proposed.source_url} target="_blank" rel="noreferrer">{d.proposed.source_url} <ExternalLink size={11}/></a></small></p>}
+    </div>}
     {it.kind==='provider_departure'&&d.note&&<p className="l4i-why" data-l4-departure><small>{d.note}</small></p>}
     {it.kind==='held_scholarship'&&<dl className="l4i-dl">{d.url&&<><dt>Page</dt><dd><a href={d.url} target="_blank" rel="noreferrer">{d.url} <ExternalLink size={11}/></a></dd></>}{it.suggestion&&<><dt>AI re-check</dt><dd>{it.suggestion}</dd></>}{d.audience_quote&&<><dt>Who</dt><dd><q>{d.audience_quote}</q></dd></>}{d.value_quote&&<><dt>Value</dt><dd><q>{d.value_quote}</q></dd></>}</dl>}
     <div className="l4i-choices">{choices.map(c=>{const low=rank<needs(c),stop=gated(c);return <button key={c.key} type="button" className={`${open?.key===c.key?'on':''}${c.link?' link':''}`} disabled={low||stop} title={low?`Needs ${roleName(needs(c))} (rank ${needs(c)}) or above`:stop?'Held: this read is incomplete (see above)':c.returns} onClick={()=>choose(c)} data-l4-choice={c.key}>{c.label}{c.link&&<ArrowRight size={12}/>}</button>})}</div>
