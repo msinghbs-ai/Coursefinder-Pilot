@@ -1,17 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.414'
-export const PACKAGE_VERSION='0.1.341'
+export const UI_VERSION='2.15.415'
+export const PACKAGE_VERSION='0.1.342'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Nov 2026',
-  title:'Intake dates: excluded months are never intakes, and every date shows where it came from',
+  title:'Entry requirements: only complete reads can be approved; a corrected read safely replaces a pending one',
   changes:[
-    'A month the course page excludes ("excluding January & December", "Monthly intakes except June and December") is never read as an intake, by the page reader, the AI month reader or the intake date plan.',
-    'Every filled intake year or date now records the page wording that named the period, the calendar quote and the calendar document; values filled earlier are completed too. Rows an earlier rule skipped are looked at once more.',
-    'Reading "Semester 1 and 2" or "Trimester 1, 2 and 3" as naming each period ships off (Settings › Pipeline settings › Intake dates: pairs and lists name each period) for the Platform Admin to decide. A semester label alone never gives a date.'
+    'A provider entry table (matrix run) can be approved only when it was read from the current stored copy, every published row is accounted for and no row is mis-mapped; otherwise approval is refused with nothing changed and the card says why.',
+    'A course read is also held when it drops a minimum no kept row covers, keeps rows that are not requirements, or stores a domestic route for everyone. Leaving rows out with Approve except can release the last two; uncovered drops need a new read.',
+    'A corrected read of the same course and page replaces the pending one in a single step: the earlier item is marked superseded with its evidence kept, the new item shows rows added, removed and unchanged, and nothing is approved automatically. Decided items, items a reviewer is working on and locked courses are protected.'
   ],
   bugFixes:[]
 }

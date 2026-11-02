@@ -115,8 +115,14 @@ function Item({it,k,showProvider,rank,onDone,onError}){
   // E13 (Platform Admin 2 Nov 2026 05:18): a course entry read the completeness gate holds cannot be approved; when the only problem is rows
   // about another programme, Approve except is allowed once every one of them is ticked (the server checks the same)
   const gate=aer?.kind==='course_entry_first_read'?aer.completeness_gate:null,held=gate?.complete===false
-  const otherIds=(gate?.other_programme||[]).map(o=>o.id),exceptOnly=held&&!(Number(gate.rows_cut)>0)&&!(gate.shared_page||[]).length
-  const gated=c=>held&&(c.key==='approve'||(c.key==='approve_except'&&!exceptOnly))
+  // D-R3 (Platform Admin 2 Nov 2026 23:24): a matrix run the whole-read gate holds cannot be approved; Approve except opens only when every problem
+  // is a waiting row that can be left out (except_fixable). The course gate also holds dropped minimums no row covers (never released by leaving rows out)
+  // and rows that are not requirements or are domestic routes stored for everyone (released by leaving them out). The server checks the same.
+  const mgate=aer&&aer.kind!=='course_entry_first_read'&&aer.status==='pending'?aer.completeness_gate:null,mheld=mgate?.complete===false
+  const otherIds=(gate?.other_programme||[]).map(o=>o.id),exceptOnly=held&&!(Number(gate.rows_cut)>0)&&!(gate.shared_page||[]).length&&!(gate.drops_uncovered||[]).length
+  const flagIds=[...(gate?.not_requirement||[]),...(gate?.audience||[]),...(mgate?.flagged||[])].map(o=>o.id).filter(Boolean)
+  const exceptOpen=exceptOnly||(mheld&&mgate.except_fixable===true)
+  const gated=c=>(held||mheld)&&(c.key==='approve'||(c.key==='approve_except'&&!exceptOpen))
   const choices=(k.choices||[]).filter(c=>!(fee&&c.key==='use')).filter(c=>!(feeCheck&&c.key==='enter')).map(c=>feeCheck&&FEE_CHECK[c.key]?{...c,...FEE_CHECK[c.key]}:c)
   const choose=c=>{setErr('');if(c.link){window.location.hash=linkFor(c.link,it).replace(/^#/,'');return}setOpen(c);setReason(c.reason||'');setValue(c.input==='url'&&it.kind==='course_link'&&!fee?urlOf(d.proposed):c.input==='url'&&it.kind==='conjoint_first_run'?(d.proposed?.parent_url||''):(c.input==='courses'||c.input==='rows')?'[]':'')}
   // hotfix 26 Oct 2026: a university's first run (no page published / conjoint rule) shows its sample; "has a page" ticks courses from it
@@ -156,10 +162,11 @@ function Item({it,k,showProvider,rank,onDone,onError}){
       <p className="l4i-next"><strong>What happens next:</strong> {open.returns}</p>
       {open.input==='url'&&<input value={value} onChange={e=>setValue(e.target.value)} placeholder="https://…" aria-label="Web address"/>}
       {open.input==='provider'&&<input value={value} onChange={e=>setValue(e.target.value)} placeholder="Successor: its exact name, or its CRICOS or NZQA code" aria-label="Successor provider"/>}
-      {open.input==='rows'&&exceptOnly&&<p className="l4i-next" data-l4-aer-other-needed>{otherIds.every(id=>ticked.includes(id))?'Every row about another programme is ticked.':`Tick the ${otherIds.length===1?'row':`${otherIds.length} rows`} about another programme to leave ${otherIds.length===1?'it':'them'} out.`}</p>}
+      {open.input==='rows'&&exceptOpen&&flagIds.length>0&&<p className="l4i-next" data-l4-aer-flag-needed>{flagIds.every(id=>ticked.includes(id))?'Every row that cannot be admitted as read is ticked.':`Tick the ${flagIds.length===1?'row':`${flagIds.length} rows`} marked "cannot be admitted as read" to leave ${flagIds.length===1?'it':'them'} out.`}</p>}
+      {open.input==='rows'&&exceptOnly&&otherIds.length>0&&<p className="l4i-next" data-l4-aer-other-needed>{otherIds.every(id=>ticked.includes(id))?'Every row about another programme is ticked.':`Tick the ${otherIds.length===1?'row':`${otherIds.length} rows`} about another programme to leave ${otherIds.length===1?'it':'them'} out.`}</p>}
       {open.input==='rows'&&<p className="l4i-next" data-l4-aer-except-count>{ticked.length===0?'Tick the rows to leave out.':ticked.length>=aerWaiting.length?'Every row is ticked: use Reject the read instead.':`Leaving out ${ticked.length} of ${aerWaiting.length} rows; the other ${aerWaiting.length-ticked.length} become active once the checks pass.`}</p>}
       <input value={reason} onChange={e=>setReason(e.target.value)} placeholder="Why (kept with the decision)" aria-label="Reason"/>
-      <Button compact variant="primary" disabled={busy||reason.trim().length<(aerItem?5:4)||(open.input==='rows'&&(ticked.length===0||ticked.length>=aerWaiting.length||(exceptOnly&&!otherIds.every(id=>ticked.includes(id)))))||(open.input==='url'&&!urlOk(value,fee))||(open.input==='provider'&&value.trim().length<3)||(open.input==='courses'&&ticked.length===0)} onClick={go} data-l4-confirm>{busy?'Saving…':open.label}</Button>
+      <Button compact variant="primary" disabled={busy||reason.trim().length<(aerItem?5:4)||(open.input==='rows'&&(ticked.length===0||ticked.length>=aerWaiting.length||(exceptOnly&&!otherIds.every(id=>ticked.includes(id)))||(exceptOpen&&!flagIds.every(id=>ticked.includes(id)))))||(open.input==='url'&&!urlOk(value,fee))||(open.input==='provider'&&value.trim().length<3)||(open.input==='courses'&&ticked.length===0)} onClick={go} data-l4-confirm>{busy?'Saving…':open.label}</Button>
       <Button compact onClick={()=>setOpen(null)}>Cancel</Button>
       {err&&<p className="l4i-err" role="alert">{err}</p>}
     </div>}
@@ -173,20 +180,27 @@ function AerRows({aer,rank,ticking,ticked,tick}){
   if(!aer)return <Loading compact/>
   if(aer.error)return <p className="l4i-err" role="alert">{aer.error}</p>
   const L=aer.lineage||{},c=L.completeness||{},rows=aer.rows||[],course=aer.kind==='course_entry_first_read'
-  const gate=course&&aer.status==='pending'?aer.completeness_gate:null,other=Object.fromEntries((gate?.other_programme||[]).map(o=>[o.id,o.names]))
+  const gate=aer.status==='pending'?aer.completeness_gate:null,other=Object.fromEntries((gate?.other_programme||[]).map(o=>[o.id,o.names]))
+  const flag=Object.fromEntries([...(gate?.not_requirement||[]).map(o=>[o.id,'not an entry requirement']),...(gate?.audience||[]).map(o=>[o.id,`a domestic route stored for ${o.audience}`]),...(gate?.flagged||[]).map(o=>[o.id,o.why])])
+  const sup=aer.supersedes,rule=course?'E13':'D-R3'
   return <div className="l4i-aer" data-l4-aer>
     <dl className="l4i-dl" data-l4-aer-lineage>
       <dt>Source</dt><dd>{L.source_url?<a href={L.source_url} target="_blank" rel="noreferrer">{L.source_url} <ExternalLink size={11}/></a>:'—'}</dd>
       <dt>Stored copy</dt><dd>{aer.evidence_id?<a href={hrefFor('evidence','',{evidence_id:aer.evidence_id})} data-l4-aer-evidence>Open the stored copy</a>:'—'}{(L.content_hash||(L.row_content_hashes||[])[0])&&<small> · {String(L.content_hash||L.row_content_hashes[0]).slice(0,12)}</small>}</dd>
       {!course&&<><dt>Read</dt><dd data-l4-aer-read>{L.run_id?String(L.run_id).slice(0,8):'—'}{c.status?` · completeness ${c.status}${c.matched!=null?` (${c.matched} matched)`:''}`:''}{L.rows_dropped!=null?` · ${L.rows_dropped} not kept`:''}</dd></>}
     </dl>
-    {gate&&(gate.complete===false?<div className="l4i-why" role="note" data-l4-aer-gate="held"><strong>Held: this read is incomplete, so it cannot be approved (E13)</strong>
+    {gate&&(gate.complete===false?<div className="l4i-why" role="note" data-l4-aer-gate="held"><strong>Held: this read is incomplete, so it cannot be approved ({rule})</strong>
       <ul>{(gate.reasons||[]).map((w,n)=><li key={n}>{w.charAt(0).toUpperCase()+w.slice(1)}.</li>)}</ul></div>
-      :<p className="l4i-why" data-l4-aer-gate="complete"><small>Read whole: no requirement was cut and no row is about another programme.</small></p>)}
+      :<p className="l4i-why" data-l4-aer-gate="complete"><small>{course?'Read whole: no requirement was cut and no row is about another programme.':gate.no_table?'Read whole: no row was read and none was dropped. Open the stored copy to confirm the page publishes no table.':'Read whole: every published row is accounted for.'}</small></p>)}
+    {sup&&<div className="l4i-why" role="note" data-l4-aer-supersedes={sup.review_item_id}><strong>Replaces an earlier read (D-R2), Ref {String(sup.review_item_id).slice(0,8)}</strong>
+      <small> · {(sup.added||[]).length} added · {(sup.removed||[]).length} removed · {sup.unchanged??0} unchanged{sup.reason?` · ${sup.reason}`:''}</small>
+      <ul>{(sup.added||[]).map((r,n)=><li key={`a${n}`} data-l4-aer-diff="added">Added: {r.kind&&String(r.kind).replace(/_/g,' ')}{r.score!=null?` · ${r.score} (${r.basis||'no basis'})`:''} <q>{r.quote}</q></li>)}
+        {(sup.removed||[]).map((r,n)=><li key={`r${n}`} data-l4-aer-diff="removed">Removed: {r.kind&&String(r.kind).replace(/_/g,' ')}{r.score!=null?` · ${r.score} (${r.basis||'no basis'})`:''} <q>{r.quote}</q></li>)}</ul></div>}
+    {aer.superseded_by&&<p className="l4i-why" data-l4-aer-superseded-by><small>Replaced by a corrected read (D-R2), Ref {String(aer.superseded_by.review_item_id).slice(0,8)}.</small></p>}
     {rank<6&&<p className="l4i-why" data-l4-aer-pa-only><small>AER items are admitted or rejected by the Platform Admin (decision A3). Curators correct active rows in Catalogue › Entry requirements.</small></p>}
     <ul className="l4i-sample l4i-aer-rows" data-l4-aer-rows>{rows.map(r=>{const label=course?[r.kind&&String(r.kind).replace(/_/g,' '),r.description].filter(Boolean).join(': '):[r.country,r.level,r.qualification].filter(Boolean).join(' · ')
       const min=[r.min_grade,r.scale&&r.scale!=='none'?r.scale:null,r.score!=null?`${r.score} (${r.basis||'no basis'})`:null,r.band?`band ${r.band}`:null].filter(Boolean).join(' · ')
-      const body=<><strong>{label||'—'}</strong>{min&&<small> · {min}</small>}<span className="l4i-aer-status" data-l4-aer-status={isExcluded(r)?'excluded':r.status}>{isExcluded(r)?'Excluded in Layer 4':ROW_STATUS[r.status]||r.status}</span>{other[r.id]&&<span className="l4i-aer-status" data-l4-aer-other={r.id}>About another programme: {other[r.id]}</span>}{r.quote&&<q>{r.quote}</q>}</>
+      const body=<><strong>{label||'—'}</strong>{min&&<small> · {min}</small>}<span className="l4i-aer-status" data-l4-aer-status={isExcluded(r)?'excluded':r.status}>{isExcluded(r)?'Excluded in Layer 4':ROW_STATUS[r.status]||r.status}</span>{other[r.id]&&<span className="l4i-aer-status" data-l4-aer-other={r.id}>About another programme: {other[r.id]}</span>}{flag[r.id]&&<span className="l4i-aer-status" data-l4-aer-flag={r.id}>Cannot be admitted as read: {flag[r.id]}</span>}{r.quote&&<q>{r.quote}</q>}</>
       return <li key={r.id} data-l4-aer-row={r.id} title={r.status_reason||undefined}>{ticking&&r.status==='proposed'?<label><input type="checkbox" checked={ticked.includes(r.id)} onChange={()=>tick(r.id)} data-l4-aer-tick={r.id} aria-label={`Leave out ${label}`}/> {body}</label>:body}</li>})}</ul>
     {aer.decision&&<p className="l4i-why" data-l4-aer-decision><small>Decided: {aer.decision.action==='edit_and_approve'?'approved except':aer.decision.action} · {aer.decision.reason}{Array.isArray(aer.decision.exclude_row_ids)?` · ${aer.decision.exclude_row_ids.length} row(s) left out`:''}</small></p>}
   </div>

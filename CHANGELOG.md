@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.342 — 3 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.415** (Platform Admin decision 3 Nov 2026 08:44, D-M1: D-R2/D-R3 enforced; direction 2 Nov 23:24). Migration `20261103070000_cf247_aer_dr2_dr3_supersede_and_matrix_gate`: md5-guarded edits of course_entry_gate_v1, entry_matrix_review_apply_v1, enrich_entry_record_v1 and aer_review_read_v1; corrected-read request table with immutable history; one waiting read per course; eleven entry-requirement settings. Layer 4 card shows the matrix gate and the diff. Nothing approved automatically; nothing dropped; consumer API untouched. Spec s227.
+
 ## 0.1.341 — 3 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.414** (direction 2 Nov 2026 23:24 §1 Intake wording; mandate 3 Nov 00:03 Agent D). Migration `20261103060000_cf247_intake_semester_pairs`: plan security.intake_dates_plan_v2 (plan v1 retiring), md5-guarded edits of intake_dates_apply_v1 and enrich_parse_intakes_v1, provenance columns on pipeline.course_intake_dates, read-only security.intake_negated_months_v1, setting intake_dates.name_period_lists (0, off). Worker coverage-sweep v0.59.1 (extract.ts excluded months). Nothing withdrawn by the migration (94-row withdrawal is a paste file for approval). Consumer API untouched. Spec s229.
