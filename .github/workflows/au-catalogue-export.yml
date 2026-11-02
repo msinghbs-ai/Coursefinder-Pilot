@@ -1,0 +1,119 @@
+# AU catalogue export (read-only). Platform Admin 2 Nov 2026 11:10 (§1, §3, §4: a complete export of every Australian course held in the
+# catalogue, with its child datasets, the Website API v2 reconciliation, field states, data dictionary and manifest) and 11:18 (snapshot
+# method: measure first; one continuous REPEATABLE READ READ ONLY snapshot only when the measured total is well under 5 minutes, otherwise
+# one short snapshot per dataset; no transaction left idle across admission windows; production impact recorded before execution).
+# Connects through the Supabase pooler in session mode (port 5432; the direct database host is IPv6-only and not reachable from GitHub
+# runners) as the existing database credential, with every transaction opened READ ONLY. Runs scripts/export/au-catalogue-export.mjs
+# (psql) and scripts/export/au-catalogue-workbook.py, and uploads the CSVs, workbook and manifest as a private workflow artifact kept
+# 14 days. No data is committed to git; the log and the step summary carry counts, timings and md5s only, never row data or credentials.
+# Safety: the typed project ref must equal the repository variable SUPABASE_PROJECT_REF (never the demo project).
+name: AU catalogue export
+on:
+  workflow_dispatch:
+    inputs:
+      project_ref:
+        description: "Type the target project ref to confirm"
+        required: true
+      mode:
+        description: "Snapshot method: auto (measure, then one snapshot if the estimate is within single_budget_s), single or per_dataset"
+        required: true
+        default: auto
+        type: choice
+        options: [auto, single, per_dataset]
+      batch:
+        description: "Rows per keyset page (100-5000)"
+        required: true
+        default: "2000"
+      statement_timeout_s:
+        description: "statement_timeout per query, seconds (5-60)"
+        required: true
+        default: "30"
+      single_budget_s:
+        description: "auto: largest estimated total (seconds) for one continuous snapshot"
+        required: true
+        default: "180"
+      busy_jobs:
+        description: "Admission jobs whose start minutes (read from cron.job) are avoided"
+        required: true
+        default: "coverage-admit,coverage-admit-intakes,adapter-overwrite,exit-awards-apply"
+      extra_busy_minutes:
+        description: "Further busy minutes of each hour (load policy windows)"
+        required: true
+        default: "0-5,35-42,47-48"
+concurrency:
+  group: au-catalogue-export
+  cancel-in-progress: false
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      PROJECT_REF: ${{ inputs.project_ref }}
+      OUT_DIR: au-export
+    steps:
+      - uses: actions/checkout@v4
+      - name: Confirm target project
+        run: |
+          if [ -z "${{ vars.SUPABASE_PROJECT_REF }}" ]; then echo "Repository variable SUPABASE_PROJECT_REF is not set"; exit 1; fi
+          if [ "$PROJECT_REF" != "${{ vars.SUPABASE_PROJECT_REF }}" ]; then echo "Typed project ref does not match SUPABASE_PROJECT_REF"; exit 1; fi
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then echo "Secret SUPABASE_ACCESS_TOKEN is not set"; exit 1; fi
+          if [ -z "$PGPASSWORD" ]; then echo "Secret SUPABASE_DB_PASSWORD is not set"; exit 1; fi
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Tools
+        run: |
+          command -v psql >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client >/dev/null; }
+          psql --version
+          python3 -m pip install --quiet openpyxl==3.1.5
+      - name: Resolve the session pooler (port 5432)
+        run: |
+          # the pooler host and user come from the Management API (the same source "supabase link" uses); nothing is printed
+          cfg=$(curl -sS --fail -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" "https://api.supabase.com/v1/projects/$PROJECT_REF/config/database/pooler")
+          host=$(jq -r '[.[] | select((.database_type // "PRIMARY") == "PRIMARY")][0].db_host // empty' <<<"$cfg")
+          user=$(jq -r '[.[] | select((.database_type // "PRIMARY") == "PRIMARY")][0].db_user // empty' <<<"$cfg")
+          name=$(jq -r '[.[] | select((.database_type // "PRIMARY") == "PRIMARY")][0].db_name // "postgres"' <<<"$cfg")
+          if [ -z "$host" ] || [ -z "$user" ]; then echo "::error::the pooler configuration did not give a host and user"; exit 1; fi
+          case "$user" in *".$PROJECT_REF") ;; *) echo "::error::the pooler user is not for the confirmed project"; exit 1;; esac
+          { echo "PGHOST=$host"; echo "PGPORT=5432"; echo "PGUSER=$user"; echo "PGDATABASE=$name"; echo "PGSSLMODE=require"; } >> "$GITHUB_ENV"
+          echo "pooler resolved (session mode, port 5432)"
+      - name: Export (read-only)
+        env:
+          COUNTRY: AU
+          MODE: ${{ inputs.mode }}
+          BATCH: ${{ inputs.batch }}
+          STATEMENT_TIMEOUT_S: ${{ inputs.statement_timeout_s }}
+          SINGLE_BUDGET_S: ${{ inputs.single_budget_s }}
+          BUSY_JOBS: ${{ inputs.busy_jobs }}
+          EXTRA_BUSY: ${{ inputs.extra_busy_minutes }}
+          GIT_SHA: ${{ github.sha }}
+          PGAPPNAME: au-catalogue-export
+        run: node scripts/export/au-catalogue-export.mjs
+      - name: Workbook
+        if: ${{ !cancelled() && hashFiles('au-export/csv/courses.csv') != '' }}
+        run: python3 scripts/export/au-catalogue-workbook.py "$OUT_DIR"
+      - name: Summary (counts and md5s only)
+        if: ${{ !cancelled() && hashFiles('au-export/manifest.json') != '' }}
+        run: |
+          node -e '
+            const m = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"))
+            const p = m.production_impact || {}
+            const L = ["## AU catalogue export", "", `Source commit ${m.source_commit}; mode ${p.mode_used || p.mode_chosen}; snapshots ${m.snapshots.length}; first snapshot ${m.snapshots[0] ? m.snapshots[0].now : "none"}`,
+              `Estimate before execution: ${p.estimate ? `${p.estimate.rows} rows, ${p.estimate.pages} pages, ${p.estimate.queries} queries, ${p.estimate.seconds} s` : "none"}; statement_timeout ${p.statement_timeout_s} s; batch ${p.batch_rows}; queries run ${p.queries_run}`,
+              `Checks: ${m.checks.filter((c) => c.pass).length}/${m.checks.length} pass${m.error ? `; error: ${m.error}` : ""}`, "",
+              "| dataset | rows | distinct ids | count in snapshot | md5 |", "|---|---:|---:|---:|---|",
+              ...m.datasets.map((d) => `| ${d.name} | ${d.rows} | ${d.distinct_ids ?? ""} | ${d.count_in_snapshot ?? ""} | ${d.md5} |`)]
+            for (const c of m.checks.filter((c) => !c.pass)) L.push(`- FAIL: ${c.check}`)
+            console.log(L.join("\n"))
+          ' "$OUT_DIR/manifest.json" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() && hashFiles('au-export/manifest.json') != '' }}
+        with:
+          name: au-catalogue-export-${{ github.run_id }}
+          path: au-export/
+          retention-days: 14
+          if-no-files-found: error
