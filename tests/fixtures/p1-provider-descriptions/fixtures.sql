@@ -288,6 +288,22 @@ do $t$ declare v jsonb; begin
   raise notice 'PASS AI daily guard (guard_provider_description)';
 end $t$;
 
+-- 11b the pilot's hard ceilings: total AI spend (pdesc.ai_usd_max) and total Firecrawl reads (pdesc.firecrawl_reads_max)
+do $t$ declare v jsonb; v_id uuid; begin
+  update pipeline.platform_toolset_settings set value = '0.005' where key = 'pdesc.ai_usd_max';
+  v := public.svc_provider_description_next(5); if v->>'reason' <> 'ai_ceiling' then raise exception 'AI ceiling not applied: %', v; end if;
+  v := security.provider_description_fire_v1(); if v->>'ai' <> 'ceiling' then raise exception 'fire past the AI ceiling: %', v; end if;
+  update pipeline.platform_toolset_settings set value = '1' where key = 'pdesc.ai_usd_max';
+  v := public.svc_provider_description_next(5); if (v->>'firecrawl_left')::int <> 0 then raise exception 'Firecrawl allowed by default: %', v; end if;
+  update pipeline.platform_toolset_settings set value = '3' where key = 'pdesc.firecrawl_reads_max';
+  insert into pipeline.provider_description_reads(provider_id, state) values ('10000000-0000-0000-0000-000000000006', 'reading') returning id into v_id;
+  perform public.svc_provider_description_record(jsonb_build_array(jsonb_build_object('item_id', v_id, 'error', 'about page not read', 'fc_reads', 2)));
+  v := public.svc_provider_description_next(5); if (v->>'firecrawl_left')::int <> 1 then raise exception 'Firecrawl reads not counted: %', v; end if;
+  update pipeline.provider_description_reads set state = 'held' where id = v_id;
+  update pipeline.platform_toolset_settings set value = '0' where key = 'pdesc.firecrawl_reads_max';
+  raise notice 'PASS pilot ceilings (AI spend, Firecrawl reads)';
+end $t$;
+
 -- 12 metrics for Coverage (curator and above)
 do $t$ declare v jsonb; begin
   begin perform public.admin_provider_descriptions('metrics', '{}'); raise exception 'anonymous metrics'; exception when insufficient_privilege then null; end;

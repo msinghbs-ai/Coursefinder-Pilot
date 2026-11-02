@@ -2308,12 +2308,16 @@ async function handle(req: Request): Promise<Response> {
       };
       // a page on the provider's own hosts: direct first (robots.txt respected); Firecrawl only when the site refuses or the page is too thin
       const acquireDirect = w.acquire_direct === true, acquireFc = w.acquire_firecrawl === true;  // off until the pilot cost is approved (Decision 7)
+      // the pilot's hard Firecrawl ceiling (pdesc.firecrawl_reads_max, less the reads already made): never more reads than the database allows
+      let fcLeft = Math.max(0, Math.floor(Number(w.firecrawl_left) || 0)); const fcBy = new Map<string, number>();
       const readPage = async (url: string, it: any) => {
         const d1 = await readDirect(url);
         if (d1.status === "read") return { ok: true, html: d1.html, via: "direct", http: d1.http, url: d1.finalUrl };
         if (d1.status === "robots_disallowed") return { ok: false, why: "robots_disallowed", http: d1.http };
         if (d1.status !== "blocked" && d1.status !== "too_thin") return { ok: false, why: d1.status, http: d1.http };
         if (!acquireFc) return { ok: false, why: `${d1.status}; Firecrawl off`, http: d1.http };
+        if (fcLeft <= 0) return { ok: false, why: `${d1.status}; Firecrawl ceiling reached`, http: d1.http };
+        fcLeft -= 1; fcBy.set(String(it.item_id), (fcBy.get(String(it.item_id)) || 0) + 1);
         const g = await useFcWhy("provider_description", it.provider_id, url, true);
         if (!g.ok) return { ok: false, why: String(g.why), http: d1.http, retry: true };
         const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify(scrapeBody(url, { read_formats: ["rawHtml"], read_proxy: FC_PROXY }, String(it.country || ""))), signal: AbortSignal.timeout(90000) });  // fixed: API time-out
@@ -2375,6 +2379,7 @@ async function handle(req: Request): Promise<Response> {
           tally.read = (tally.read || 0) + 1;
         } catch (e) { out.push({ ...base, ...rec, error: (e instanceof Error ? e.message : String(e)).slice(0, 300), cost: errorCost(e) }); tally.error = (tally.error || 0) + 1 }
       });
+      for (const o of out) o.fc_reads = fcBy.get(String(o.item_id)) || 0;  // each Firecrawl read is counted against the ceiling
       const recorded = out.length ? await rpc("svc_provider_description_record", { p_results: noNul(out) }) : {};
       return j({ ok: true, mode, model, items: items.length, tally, recorded, cost_usd: cost, openrouter: ors.summary(), ms: Date.now() - t0, worker: WORKER });
     }

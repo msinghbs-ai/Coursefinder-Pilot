@@ -204,7 +204,8 @@ function ProviderDescriptions({country,rank,onError}){
       <dt>Eligible</dt><dd>{n('eligible')}</dd><dt>Description present</dt><dd>{n('present')}</dd><dt>Missing</dt><dd>{n('missing')}</dd>
       <dt>In Layer 4</dt><dd>{n('proposed')}</dd><dt>Held</dt><dd>{n('held')}</dd><dt>Admitted</dt><dd>{n('admitted')} ({n('published')} shown by the website)</dd>
       <dt>Dead letters</dt><dd>{n('dead_letter')}</dd><dt>Stored About pages</dt><dd>{n('stored_pages_available')}</dd>
-      <dt>Pages read</dt><dd>{n('pages_acquired')} new, {n('pages_reused')} reused</dd><dt>AI reads</dt><dd>{n('ai_reads')} (US${d.cost_usd??0}; {d.cost_per_admitted_usd==null?'no admitted description yet':`US$${d.cost_per_admitted_usd} a description admitted`})</dd>
+      <dt>Pages read</dt><dd>{n('pages_acquired')} new, {n('pages_reused')} reused</dd><dt>AI reads</dt><dd>{n('ai_reads')} (US${d.cost_usd??0} of a US${d.ai_usd_max??0} ceiling; {d.cost_per_admitted_usd==null?'no admitted description yet':`US$${d.cost_per_admitted_usd} a description admitted`})</dd>
+      <dt>Firecrawl reads</dt><dd>{n('firecrawl_reads')} of {n('firecrawl_reads_max')} allowed</dd>
       <dt>Remaining</dt><dd>{n('backlog')}</dd><dt>Last run</dt><dd>{d.last_run?fmtDateTime(d.last_run):'never'}</dd>
     </dl>
     {(d.rejections||[]).length>0&&<p className="sd-desc" data-pdesc-rejections>Held or rejected: {d.rejections.map(r=>`${String(r.rule||'other').replace(/_/g,' ')} ${r.n}`).join(' · ')}</p>}

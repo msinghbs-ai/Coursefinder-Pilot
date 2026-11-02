@@ -10,9 +10,25 @@
 --     daily guard (security.ai_spend_today_v1 / ai_use_allowed_v1), the fire guard and pipeline.svc_pilot_submit_nonce.
 --   * The AI path: worker coverage-sweep with the pinned Enrich fields model (pipeline.central_ai_settings, the qualified model the Enrich
 --     fields reader already uses; never a router), its answer limits (reading.answer_tokens.*) and cost recording.
---   * Layer 4: pipeline.layer4_review_items with a new field code provider_description (entity provider). No existing kind fits (the course
---     scalar path refuses provider entities; entry matrices are row sets). The closest governed pattern, the entry matrix first run, is
---     followed: a provider-entity item, its own Inbox kind and apply function, and a status trigger for the outcomes that do not admit.
+--   * Layer 4: pipeline.layer4_review_items with a new field code provider_description (entity provider). Checked against the Platform
+--     Admin direction of 2 Nov 2026 11:10 ("Do not introduce a new Layer 4 review type if an existing kind safely supports the same evidence
+--     and decision rules"); no existing kind does:
+--       - the default course scalar path (layer4_course_scalar_resolve_impl) refuses any entity but a course;
+--       - official_course_url / Inbox kind course_link, course_english, provider_current_tuition(_validation): course entities, writing
+--         course links, English rows or fees; their choices (keep / use / enter an address) would let an unquoted value be entered;
+--       - no_page_first_run / conjoint_rule_first_run: provider entities, but approval records course samples as having no page and they are
+--         under the SP-2a auto-admission job (layer4-auto-admit), which descriptions must never be;
+--       - entry_matrix_first_run / entry_matrix_change: provider entities with quoted evidence, but approval admits rows into
+--         catalogue.provider_entry_matrix, the AER rules apply (Platform Admin only, Approve-except shape, skipped by bulk decide), and a
+--         changed matrix may be admitted without a person (entry.matrix_first_run_review 0);
+--       - Layer 4 › Attributes (pipeline.provider_policy_proposals, central pages): not a Layer 4 item; its kinds are english_policy and
+--         intake_calendar only (table check), it needs a provider-facts source (kinds fee, English, calendar only) and approval applies rules to
+--         courses; using it means changing two table checks and the policy apply functions;
+--       - scope_resolution, held scholarships, provider departures and counsellor reports: other entities or decisions.
+--     The new kind is isolated (its own apply function and Inbox entry; sections 6, 9a and 9c) and needs the Platform Admin's approval
+--     before release. The closest governed pattern, the entry matrix first run, is followed: a provider-entity item, its own apply function,
+--     and a status trigger for the outcomes that do not admit. A correction is made in the provider record (a person's value, locked by hand,
+--     which this reader never overwrites); the Inbox offers approve as read and reject.
 --     Auto-admission: no approved policy covers descriptions (the only auto-admit policy, SP-2a, covers no-page and conjoint first runs);
 --     every description waits for a person.
 -- Lifecycle (mandate §7): Discover (worker: stored About / Overview copy, else the home page's About link on the provider's own hosts) ->
@@ -55,6 +71,7 @@ create table if not exists pipeline.provider_description_reads (
   prompt_version text,
   worker text,
   cost_usd numeric not null default 0,
+  firecrawl_reads int not null default 0,
   proposal jsonb,
   checks jsonb,
   rule text,
@@ -84,6 +101,12 @@ insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, ki
  ('pipeline', 'pdesc.acquire_firecrawl', 'Provider descriptions: Firecrawl when a site refuses',
   '1: a page the site refuses to a direct read may be read through Firecrawl, within the existing Firecrawl budget (svc_fc_spend). 0: never. Off until the Platform Admin approves the pilot cost.',
   'number', '0'::jsonb, 0, 1, 'on/off', 958, 'Provider descriptions', 'public.svc_provider_description_next, worker provider_description', 'CF-247 P1 provider descriptions; decision pack 2 Nov 2026 10:56 Decision 7: no paid Firecrawl without the pilot''s cost approval'),
+ ('pipeline', 'pdesc.ai_usd_max', 'Provider descriptions: AI spend ceiling (all reads)',
+  'Total AI spend of every description read so far (pipeline.provider_description_reads.cost_usd). At or above it no read starts: the hard ceiling of a pilot approved by the Platform Admin. Raise it with a reason to continue.',
+  'number', '1'::jsonb, 0, 100, 'US$', 957, 'Provider descriptions', 'public.svc_provider_description_next, security.provider_description_fire_v1', 'CF-247 P1 provider descriptions: cost-capped pilot (Platform Admin direction 2 Nov 2026 11:10)'),
+ ('pipeline', 'pdesc.firecrawl_reads_max', 'Provider descriptions: Firecrawl reads ceiling (all reads)',
+  'Total Firecrawl page reads the description reader may make (home and About pages a site refused to a direct read). 0: none. The hard Firecrawl ceiling of a pilot approved by the Platform Admin; each read also passes the existing Firecrawl budget.',
+  'number', '0'::jsonb, 0, 2000, 'reads', 956, 'Provider descriptions', 'public.svc_provider_description_next, worker provider_description', 'CF-247 P1 provider descriptions: cost-capped pilot (Platform Admin direction 2 Nov 2026 11:10)'),
  ('pipeline', 'pdesc.every_minutes', 'Provider descriptions: run every',
   'The job wakes every 10 minutes and sends the worker only when this long has passed since its last call.', 'number', '60'::jsonb, 10, 1440, 'minutes', 961, 'Provider descriptions', 'security.provider_description_fire_v1', 'CF-247 P1 provider descriptions: frequency is a setting'),
  ('pipeline', 'batch.provider_description', 'Provider descriptions: providers a run',
@@ -327,7 +350,7 @@ comment on function security.provider_description_enqueue_v1() is 'CF-247 P1 pro
 
 create or replace function public.svc_provider_description_next(p_limit integer) returns jsonb
 language plpgsql security definer set search_path to '' as $function$
-declare v jsonb; v_model text; v_pending int;
+declare v jsonb; v_model text; v_pending int; v_spent numeric; v_fc_used int;
 begin
   if current_user <> 'postgres' and coalesce(auth.role(), '') <> 'service_role' then raise exception 'service_role required'; end if;
   if security.pipeline_num_v1('pdesc.enabled', 0) < 1 then return jsonb_build_object('idle', true, 'reason', 'off', 'items', '[]'::jsonb); end if;
@@ -335,6 +358,9 @@ begin
   if v_pending >= security.pipeline_num_v1('pdesc.pending_max', 10) then return jsonb_build_object('idle', true, 'reason', 'review_full', 'items', '[]'::jsonb); end if;
   select c.model_identifier into v_model from pipeline.central_ai_settings c where c.id = 1;
   if nullif(btrim(v_model), '') is null then return jsonb_build_object('idle', true, 'reason', 'no_model', 'items', '[]'::jsonb); end if;
+  -- the pilot's hard ceilings: total AI spend and total Firecrawl reads of this reader
+  select coalesce(sum(r.cost_usd), 0), coalesce(sum(r.firecrawl_reads), 0) into v_spent, v_fc_used from pipeline.provider_description_reads r;
+  if v_spent >= security.pipeline_num_v1('pdesc.ai_usd_max', 1) then return jsonb_build_object('idle', true, 'reason', 'ai_ceiling', 'spent_usd', v_spent, 'items', '[]'::jsonb); end if;
   with pick as (select r.id from pipeline.provider_description_reads r
                  where ((r.state = 'queued' and r.next_try_at <= now()) or (r.state = 'reading' and r.leased_until < now()))
                    and r.tries < security.pipeline_num_v1('pdesc.tries', 3)
@@ -363,6 +389,7 @@ begin
     from upd u join catalogue.providers p on p.id = u.provider_id join ref.countries k on k.id = p.country_id;
   return jsonb_build_object('model', v_model,
     'acquire_direct', security.pipeline_num_v1('pdesc.acquire_direct', 0) >= 1, 'acquire_firecrawl', security.pipeline_num_v1('pdesc.acquire_firecrawl', 0) >= 1,
+    'firecrawl_left', greatest(0, security.pipeline_num_v1('pdesc.firecrawl_reads_max', 0)::int - v_fc_used),
     'page_chars', security.pipeline_num_v1('pdesc.page_chars', 16000)::int,
     'min_quote_chars', security.pipeline_num_v1('pdesc.min_quote_chars', 20)::int,
     'about_patterns', coalesce(security.toolset_setting('pipeline', 'pdesc.about_patterns'), '[]'::jsonb), 'items', v);
@@ -383,6 +410,7 @@ begin
     select * into r from pipeline.provider_description_reads where id = (x->>'item_id')::uuid for update;
     if r.id is null or r.state <> 'reading' then v_tally := v_tally || jsonb_build_object('stale', coalesce((v_tally->>'stale')::int, 0) + 1); continue; end if;
     update pipeline.provider_description_reads set cost_usd = cost_usd + greatest(coalesce((x->>'cost')::numeric, 0), 0),
+           firecrawl_reads = firecrawl_reads + greatest(coalesce((x->>'fc_reads')::int, 0), 0),
            model = coalesce(nullif(x->>'model', ''), model), prompt_version = coalesce(nullif(x->>'prompt_version', ''), prompt_version),
            worker = coalesce(left(nullif(x->>'worker', ''), 60), worker), updated_at = now()
      where id = r.id;
@@ -521,6 +549,9 @@ begin
   v_q := security.provider_description_enqueue_v1();
   select count(*) into v_dead from pipeline.provider_description_reads r where r.state = 'dead_letter';
   if not security.ai_use_allowed_v1('provider_description') then return jsonb_build_object('queued', v_q, 'ai', 'stopped', 'dead_letter', v_dead); end if;
+  if (select coalesce(sum(r.cost_usd), 0) from pipeline.provider_description_reads r) >= security.pipeline_num_v1('pdesc.ai_usd_max', 1) then
+    return jsonb_build_object('queued', v_q, 'ai', 'ceiling', 'dead_letter', v_dead);
+  end if;
   select count(*) into v_pending from pipeline.layer4_review_items i where i.field_code = 'provider_description' and i.status = 'pending';
   if v_pending >= security.pipeline_num_v1('pdesc.pending_max', 10) then return jsonb_build_object('queued', v_q, 'review', 'full', 'pending', v_pending); end if;
   select count(*) into v_due from pipeline.provider_description_reads r
@@ -583,6 +614,8 @@ begin
         'ai_reads', (select count(*) from rd where rd.model is not null),
         'retried', (select count(*) from rd where rd.tries > 1),
         'cost_usd', (select round(coalesce(sum(rd.cost_usd), 0), 4) from rd),
+        'firecrawl_reads', (select coalesce(sum(rd.firecrawl_reads), 0) from rd),
+        'ai_usd_max', security.pipeline_num_v1('pdesc.ai_usd_max', 1), 'firecrawl_reads_max', security.pipeline_num_v1('pdesc.firecrawl_reads_max', 0),
         'cost_per_admitted_usd', (select case when count(*) filter (where rd.state = 'admitted') = 0 then null
                                               else round(sum(rd.cost_usd) / count(*) filter (where rd.state = 'admitted'), 4) end from rd),
         'reads_last_7_days', (select count(*) from rd where rd.updated_at > now() - make_interval(days => 7) and rd.model is not null),

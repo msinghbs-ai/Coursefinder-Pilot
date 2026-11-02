@@ -123,6 +123,9 @@ test('worker v0.56.0: stored copy first, own hosts only, direct before Firecrawl
   expect(w.indexOf('if (it.stored?.storage_path)')).toBeLessThan(w.indexOf('const h = await readPage(home, it);'))
   expect(w).toContain('const g = await useFcWhy("provider_description", it.provider_id, url, true);')  // the existing Firecrawl budget
   expect(w.indexOf('if (!acquireFc) return')).toBeLessThan(w.indexOf('const g = await useFcWhy("provider_description"'))
+  expect(w.indexOf('if (fcLeft <= 0) return')).toBeLessThan(w.indexOf('const g = await useFcWhy("provider_description"'))
+  expect(w).toContain('for (const o of out) o.fc_reads = fcBy.get(String(o.item_id)) || 0;')
+  expect(fn('public.svc_provider_description_next')).toContain("if v_spent >= security.pipeline_num_v1('pdesc.ai_usd_max', 1) then")
   expect(w.indexOf('if (!acquireDirect) {')).toBeLessThan(w.indexOf('const h = await readPage(home, it);'))
   expect(w.indexOf('let target = suggested[0] || "";')).toBeLessThan(w.indexOf('const h = await readPage(home, it);'))
   expect(w).toContain('if (d?.model && !String(d.model).startsWith(model))')  // pinned: no other model's answer
@@ -177,7 +180,7 @@ test('the fixtures cover stored copy reuse, unsupported claims, wrong host, dupl
     'PASS unsupported claim, marketing word, unsupported sentence and missing quote held', 'PASS wrong-host page refused', 'PASS duplicate and outdated detection',
     'PASS batch and retry bounds (lease cap, Layer 4 cap, retry wait, tries, dead letter, recovery)', 'PASS fire: once a run interval, batch from its setting',
     'PASS admission by a person only; projection shows only admitted values', 'PASS rejected proposal never published; acquired page registered as evidence',
-    'PASS AI daily guard (guard_provider_description)', 'PASS Layer 4 Inbox: its own kind and choices',
+    'PASS AI daily guard (guard_provider_description)', 'PASS pilot ceilings (AI spend, Firecrawl reads)', 'PASS Layer 4 Inbox: its own kind and choices',
     'PASS metrics (eligible published providers, present, missing, proposed, held, admitted, cost)', 'PASS privileges'])
     expect(fixtures).toContain(`raise notice '${p}';`)
   expect(run).toContain('createdb "$DB"'); expect(run).not.toMatch(/supabase\.co|fxcwkweaxjtknorudmwp/)
