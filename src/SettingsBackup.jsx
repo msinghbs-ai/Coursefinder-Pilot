@@ -23,9 +23,11 @@ export default function SettingsBackup({onError}){
   const take=async()=>{setBusy(true);try{const r=await call('take',{});setNote(`Backup ${r.backup_id} taken.`);await load();setId(String(r.backup_id))}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
   if(!list)return <section className="m-panel"><Loading label="Loading backups…"/></section>
   const bs=list.backups||[]
-  return <Card id="settings.backup" title="Backup & restore" icon={DatabaseBackup}
+  return <Card id="settings.backup" title="Backup & restore" icon={DatabaseBackup} meta={<span data-backup-scope-chip>Settings only: no catalogue data, evidence or Storage</span>}
     subtitle={`Every morning at about 6:50 a copy is kept of each provider's Published switch and every setting value (kept ${fmtNumber(list.keep_days)} days). Pick a backup to see what has changed since, download it as a SQL file, or put it back. Only the Platform Admin can see and restore backups; a backup is taken before every restore.`}
     data-settings-backup>
+    {/* Decision 5 E-6 U1 (Platform Admin 2 Nov 2026 10:56): say plainly what this backup covers and what it does not */}
+    <p className="sd-desc" data-backup-scope><strong>Settings only.</strong> This backup covers each provider's Published switch and every setting value. It does not include catalogue data (courses, fees, scholarships and the rest), stored evidence or Storage files. It is kept inside the database, so it is lost with the database. The catalogue is covered by the daily database backup (7 days); Storage files have no backup.</p>
     <div className="fc-actions"><Button compact onClick={load}><RefreshCw size={14}/>Refresh</Button><Button compact onClick={take} disabled={busy}><DatabaseBackup size={14}/>Back up now</Button>{note&&<small className="sd-desc" role="status">{note}</small>}</div>
     {bs.length===0?<Empty text="No backup yet."/>:<div className="dq-table-wrap"><table className="dq-table" data-backup-list><thead><tr><th>Backup</th><th>Taken</th><th>Kind</th><th className="num">Published</th><th className="num">Unpublished</th><th className="num">Settings</th><th/></tr></thead>
       <tbody>{bs.slice(0,30).map(b=><tr key={b.id} className={String(b.id)===id?'is-selected':''}>
