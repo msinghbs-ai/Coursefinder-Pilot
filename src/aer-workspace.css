@@ -76,3 +76,11 @@
 [data-aer-programme] .sd-desc{padding:0 16px;color:var(--cf-muted);font-size:13px}
 /* v2.15.365: a read-state pill wraps inside its cell rather than being cut ("Rendered, no table: in Layer 4") */
 .aer-page [data-aer-hold] .cf-chip{white-space:normal;text-overflow:clip;overflow:visible}
+
+/* CF-247 AER Phase B: the Academic entry requirements panel on Coverage & completeness (AerCoverage.jsx) */
+.aer-cov-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.aer-sev{display:flex;align-items:center;gap:6px;padding:10px 12px;border:1px solid var(--cf-border);border-radius:8px;background:transparent;cursor:pointer;font:inherit;color:inherit}
+.aer-sev.is-on{outline:2px solid var(--cf-blue-500)}
+.aer-cov-provider ul{margin:6px 0;padding-left:18px}
+.aer-cov-provider li{margin:4px 0;overflow-wrap:anywhere}
+[data-aer-coverage] h3{margin:16px 0 6px;font-size:14px}
