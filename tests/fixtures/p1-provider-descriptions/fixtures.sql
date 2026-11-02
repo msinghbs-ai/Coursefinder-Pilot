@@ -379,9 +379,9 @@ end $t$;
 -- 12c length 1,200 and no fragments (Platform Admin 2 Nov 2026 23:24): CDU's 916-character 4-sentence read passes and is kept whole from
 --     the read to the projection; a 1,250-character read is held; a sentence or condition cut mid-way is held, never cut or completed
 do $t$ declare cdu jsonb; long jsonb; frag jsonb; ell jsonb; v jsonb; v_id uuid; i uuid; v_text text; begin
-  if security.pipeline_num_v1('pdesc.max_chars', 0) <> 1200 then raise exception 'pdesc.max_chars is %', security.pipeline_num_v1('pdesc.max_chars', 0); end if;
-  if (select reason from pipeline.platform_toolset_settings where key = 'pdesc.max_chars') !~ 'Platform Admin 2 Nov 2026 23:24' then raise exception 'authority not recorded'; end if;
-  if not exists (select 1 from pipeline.admin_control_events where target = 'pipeline.pdesc.max_chars' and detail->>'after' = '1200') then raise exception 'change not logged'; end if;
+  -- the migration leaves the limit as it is (1,200 is a proposal for the Platform Admin); the fixture applies the proposed value itself
+  if security.pipeline_num_v1('pdesc.max_chars', 0) <> 900 then raise exception 'migration changed pdesc.max_chars to %', security.pipeline_num_v1('pdesc.max_chars', 0); end if;
+  update pipeline.platform_toolset_settings set value = to_jsonb(1200) where toolset_key = 'pipeline' and key = 'pdesc.max_chars';
   -- sentences of the lengths CDU's read gave (210, 232, 231, 240), each quoting the page
   select jsonb_build_object('about_page', true, 'sentences', jsonb_agg(jsonb_build_object('text', t, 'quote', t, 'on_page', true) order by o)) into cdu
     from (select o, rpad(p, n - 1, ' and it serves people across the north') || '.' t

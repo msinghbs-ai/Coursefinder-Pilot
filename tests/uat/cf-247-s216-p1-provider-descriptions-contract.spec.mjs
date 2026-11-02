@@ -184,11 +184,9 @@ test('page rule (pilot 2 Nov 2026 16:16): only the provider\'s own About or Over
     ['9a3fbd7f15f5cf30d1a13359d6062280', '528d5a3d2e3780fcb58e2c19db31c199']]) { expect(p).toContain(`'${b}', '${a}'`); expect(run).toContain(b) }
   expect(p).toMatch(/^-- Replaces: .+/m); expect(p).toMatch(/^-- Retires: .+/m)
   expect(p).not.toMatch(/cron\.alter_job|cron\.schedule/)  // nothing switched on
-  // the only setting value changed is pdesc.max_chars, 900 -> 1,200, with its authority (Platform Admin 2 Nov 2026 23:24)
-  expect([...p.matchAll(/update pipeline\.platform_toolset_settings set/g)].length).toBe(1)
-  expect(p).toContain("where toolset_key = 'pipeline' and key = 'pdesc.max_chars' and value = to_jsonb(900);")
-  expect(p).toContain("set value = to_jsonb(1200), updated_by = v_pa")
-  expect(p).toContain("reason = 'CF-247 Platform Admin 2 Nov 2026 23:24 (overnight direction §1 Descriptions)")
+  // no existing setting value is changed: pdesc.max_chars 1,200 is a proposal held for the Platform Admin (direction 2 Nov 2026 23:24 §1 "prepare")
+  expect(p).not.toMatch(/update pipeline\.platform_toolset_settings set/)
+  expect(p).not.toMatch(/to_jsonb\(1200\)/)
   // a fragment is held, never cut or completed
   expect(p).toContain("'rule', 'incomplete_sentence'")
   expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.58\.0"; \/\/ v0\.58\.0 \(2 Nov 2026, CF-247 P1 pilot finding 16:16\)/)

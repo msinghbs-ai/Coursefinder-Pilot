@@ -25,12 +25,12 @@
 --   security.provider_description_validate_v1(uuid,text,timestamptz,jsonb)       9a3fbd7f15f5cf30d1a13359d6062280 -> 528d5a3d2e3780fcb58e2c19db31c199
 -- Worker coverage-sweep v0.58.0: the home page's About links pass the same rule (description.ts aboutLinks), with the lists from the lease;
 --   the model is told the sentence and character limits the validation applies (lease 'length'; prompt provider-description-v2). The limits
---   themselves are the settings; pdesc.max_chars becomes 1,200 (section 4). Nothing in the path cuts a description: the worker keeps every
+--   themselves are the settings; pdesc.max_chars stays 900 here (1,200 is proposed to the Platform Admin, not applied). Nothing in the path cuts a description: the worker keeps every
 --   sentence and quote whole (it cut them at 600 characters and 12 sentences), and the validation holds a fragment (incomplete_sentence).
 -- Replaces: security.provider_description_stored_v1, public.svc_provider_description_next, security.provider_description_validate_v1 (same names; md5-guarded edits)
 -- Retires: nothing (the old rule "About name anywhere in the path" is switched off by these edits)
--- Nothing dropped, deleted or renamed. One setting value is changed, with its authority (section 4: pdesc.max_chars 900 -> 1,200); nothing is
---   switched on. Consumer API untouched (G3): catalogue.providers.description is text with no length limit and is projected whole.
+-- Nothing dropped, deleted or renamed. No existing setting value is changed (pdesc.max_chars 900 -> 1,200 is a proposal held for the
+--   Platform Admin's approval, direction 2 Nov 2026 23:24 §1 "prepare"); nothing is switched on. Consumer API untouched (G3): catalogue.providers.description is text with no length limit and is projected whole.
 
 -- ---------------------------------------------------------------- 1 settings (G2): the allowed and refused words
 insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, section, used_by, reason) values
@@ -152,33 +152,6 @@ select pg_temp.edit_once('security.provider_description_validate_v1(uuid,text,ti
         'reason', 'a sentence is not complete (it would be published as a fragment): ' || left(t, 120));
     end if;
     v_sup := security.pdesc_support_v1(t, s->>'quote');$n$]], array[1, 1]);
-
--- ---------------------------------------------------------------- 4 description length: 900 -> 1,200 characters
--- Authority: Platform Admin 2 Nov 2026 23:24 (admin docs/platform/nz-enrichment-brief/2026-11-02-overnight-continuous-delivery-direction-2324.md
--- §1 Descriptions: "Prepare the 1,200-character setting adjustment with regression testing. Preserve original source evidence. Avoid cutting
--- essential conditions or publishing fragments as complete descriptions."). Pilot evidence: Charles Darwin University's read of its About
--- page (2 Nov 2026 16:16) gave four well-quoted sentences of 210, 232, 231 and 240 characters, 916 in all, and was held at 900. 1,200 allows
--- five such sentences. Nothing is cut to fit: a longer description is held (rule length), a fragment is held (rule incomplete_sentence).
--- Only a value of 900 (the v2.15.406 default) is changed; any other value set by a person is left as it is.
-do $len$
-declare v_pa uuid; v_n int; v_now jsonb;
-begin
-  select value into v_now from pipeline.platform_toolset_settings where toolset_key = 'pipeline' and key = 'pdesc.max_chars';
-  if v_now = to_jsonb(1200) then raise notice 'pdesc.max_chars already 1,200'; return; end if;
-  select ur.user_id into v_pa from security.user_roles ur join security.roles r on r.code = ur.role_code
-   where r.rank = 6 and r.status = 'active' and (ur.expires_at is null or ur.expires_at > now()) order by ur.user_id limit 1;
-  update pipeline.platform_toolset_settings set value = to_jsonb(1200), updated_by = v_pa, updated_at = now(),
-         reason = 'CF-247 Platform Admin 2 Nov 2026 23:24 (overnight direction §1 Descriptions): 1,200 characters (pilot: CDU 916 characters in 4 well-quoted sentences held at 900); nothing is cut to fit'
-   where toolset_key = 'pipeline' and key = 'pdesc.max_chars' and value = to_jsonb(900);
-  get diagnostics v_n = row_count;
-  if v_n = 1 then
-    insert into pipeline.admin_control_events(area, action, target, detail, actor)
-    values ('toolsets', 'setting', 'pipeline.pdesc.max_chars', jsonb_build_object('before', 900, 'after', 1200,
-            'reason', 'Platform Admin 2 Nov 2026 23:24, overnight direction §1 Descriptions'), v_pa);
-  else
-    raise notice 'pdesc.max_chars is % (set by a person), left as it is', v_now;
-  end if;
-end $len$;
 
 insert into pipeline.component_register(kind, name, layer, purpose, status, replaces, introduced_in) values
  ('function', 'security.provider_description_page_v1', 'Layer 2', 'P1 provider descriptions: which page may be a description source (pilot 2 Nov 2026)', 'active', '{}', '20261102130000')
