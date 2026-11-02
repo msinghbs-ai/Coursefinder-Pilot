@@ -64,7 +64,8 @@ test('the admission write is edited only from its live md5 and checked after; th
   expect(m).toContain("select pg_temp.edit_once('security.coverage_apply_course_v1(uuid,uuid,uuid,text,text,jsonb)', '8674165fa03b97ca15c3bc82923b1288', 'c2cbc9ab616a77487d447991f33daaeb'")
   expect(code).toContain("if md5(v_def) <> p_before then raise exception 'live % differs from the definition this change edits (md5 %)', p_sig, md5(v_def); end if;")
   expect(code).toContain("raise exception '% after the edit has md5 %, expected %'")
-  expect(run).toContain('"8674165fa03b97ca15c3bc82923b1288 44e23d4abc1d36cdbb85407287a87e5f d0490f3707199988e87b5f37ca5e7342"')
+  // the admission write and the two intake guards (then the AU CRICOS write, edited by the named-period follow-up, s221)
+  expect(run).toContain('"8674165fa03b97ca15c3bc82923b1288 44e23d4abc1d36cdbb85407287a87e5f d0490f3707199988e87b5f37ca5e7342 ec4a0997cb1b97bc4b390b1d5beebaeb"')
   expect(run).toContain('"04fa25d82c373de08767d5573d4caabc 5b45bbf1e39d9098d5f23de729418b2d"')  // the live search projection (after E16)
   expect(run).toContain('"4263b5ad2369e87c99674f9159d672f8"')  // the live API month helper
   expect(run).toContain("grep -c 'already applied' | grep -qx 1")
