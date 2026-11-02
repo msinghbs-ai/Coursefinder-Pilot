@@ -1,15 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.403'
-export const PACKAGE_VERSION='0.1.330'
+export const UI_VERSION='2.15.404'
+export const PACKAGE_VERSION='0.1.331'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'2 Nov 2026',
-  title:'Admission jobs start on their own minutes',
+  title:'AI and Firecrawl spending limits are enforced on every path; external alert watchdog',
   changes:[
-    'The three admission jobs now start apart from each other and from the busiest 10-minute jobs: course values at minute 3, intakes at minute 5 and adapter values at minute 9 of every 10 minutes. Commands, batch sizes and time limits are unchanged.'
+    'AI spending: every paid AI lane, including course matching and the Adapter builder, now checks one shared rule before claiming work: the credit floor, the US$14 daily total across all lanes, and its own lane limit. The rule only refuses while OpenRouter is in Stop mode, which stays off until the Platform Admin switches it.',
+    'AI spend is now counted once per cost in a ledger, so re-saved or re-decided rows are no longer counted twice and scholarship re-checks are counted.',
+    'Firecrawl: the monthly credit limit is checked first on every reading path, including on-demand runs and adapter page captures. The daily allowance is unchanged.',
+    'An hourly GitHub watchdog checks that the health and alert jobs are running and that no alert is waiting undelivered.',
+    'Settings › Backup now says plainly that the backup holds settings only, not catalogue data, evidence or Storage.'
   ],
   bugFixes:[]
 }

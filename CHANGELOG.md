@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.331 — 2 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.404** (Decision 5 E-6 U1, E-7, E-8 F2, E-9 W1; Platform Admin 2 Nov 2026 10:56). Migration `20261102070000_cf247_budget_enforcement_and_watchdog`: md5-guarded edits to security.ai_use_allowed_v1, security.ai_spend_today_v1, public.svc_coverage_ai_match_next, public.admin_adapter_builder, security.fc_budget_left_v1, public.svc_fc_spend; new pipeline.ai_spend_ledger with capture triggers on eight cost tables; security.platform_watchdog_v1; settings alerts.watchdog_stale_minutes and alerts.watchdog_scan_runs. No setting value changed (openrouter stays observe; credit floor stays US$5). Workflow `platform-watchdog.yml` hourly at :24. Spec s217.
+
 ## 0.1.330 — 2 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.403** (Decision 4, Platform Admin 2 Nov 2026 10:56). Migration `20261102060000_cf247_admission_schedule_stagger`: coverage-admit `*/10`→`3-59/10`, coverage-admit-intakes `8-59/10`→`5-59/10`, adapter-overwrite `3-59/10`→`9-59/10`; guarded against an unexpected starting state, post-checked, catalogue notes; rollback is three cron.alter_job calls. No command, batch, time-out or consumer API change. Spec s218.
