@@ -1,17 +1,7 @@
-CREATE OR REPLACE FUNCTION security.ai_use_allowed_v1(p_use text)
- RETURNS boolean
- LANGUAGE plpgsql
- STABLE SECURITY DEFINER
- SET search_path TO ''
-AS $function$
-declare v_mode text; v_bal numeric; v_floor numeric; g record;
+-- live since v2.15.404 (migration 20261102070000): live md5 07b6387d6a30be8a0f86b90b602b6d08
+create or replace function security.ai_use_allowed_v1(p_use text) returns boolean
+language plpgsql stable security definer set search_path to '' as $function$
 begin
-  select t.enforcement into v_mode from pipeline.platform_toolsets t where t.key = 'openrouter';
-  if coalesce(v_mode, 'observe') <> 'stop' then return true; end if;
-  select o.remaining_usd into v_bal from pipeline.layer3_openrouter_observations o where o.kind = 'credits' order by o.observed_at desc limit 1;
-  v_floor := coalesce((security.toolset_setting('openrouter', 'credit_floor_usd'))::text::numeric, 0);
-  if v_bal is not null and v_bal < v_floor then return false; end if;
-  select * into g from security.ai_spend_today_v1() x where x.use = p_use;
-  return not (coalesce(g.guard, 0) > 0 and coalesce(g.spent, 0) >= g.guard);
-end $function$
-;
+  -- Decision 5 E-7 (2 Nov 2026): one rule for every lane (credit floor, daily ceiling, lane guard), in security.ai_use_refusal_v1
+  return security.ai_use_refusal_v1(p_use) is null;
+end $function$;

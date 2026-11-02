@@ -12,7 +12,7 @@ import fs from 'node:fs'
 import { centralCandidates, weakKinds } from '../../supabase/functions/coverage-sweep/central.ts'
 import { aboutLinks, descriptionAnswer, descriptionRequest, descriptionSentences, ownHost, DESCRIPTION_SYSTEM } from '../../supabase/functions/coverage-sweep/description.ts'
 
-const MIG = 'supabase/migrations/20261102050000_cf247_p1_provider_descriptions.sql'
+const MIG = 'supabase/migrations/20261102090000_cf247_p1_provider_descriptions.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const FX = 'tests/fixtures/p1-provider-descriptions'
@@ -24,7 +24,9 @@ const edit = (sig) => { const a = m.indexOf(`select pg_temp.edit_once('${sig}'`)
 
 const MD5 = {
   'security.layer4_review_decide_impl(uuid,text,text,jsonb)': ['67966cebe3184b9acad1a3451fd0021b', '073889b7c5319019b25212ce08705a37'],
-  'security.ai_spend_today_v1()': ['f18af72fe3d406341931a5daaa93f987', 'cb68e7677710b14c3c219048de34c406'],
+  'security.ai_spend_today_v1()': ['0b79a7f732669ee4c59a260e26188d5a', '0a8e30c2d38c37071474fdd23fa31cfc'],
+  'l4_api.layer4_review_bulk_decide(text,text,text,text,text,text,integer)': ['512226a0d25891c137195bde221d40b4', 'dbee9ff4d7a1b29b6c45770c0c669428'],
+  'security.layer4_batch_decide_v1_impl(uuid[],text,text,text,text)': ['d3135163affa549deca5d2454133b188', '4501ca1a69a9cd17bb805e403940e5f0'],
   'security.layer4_inbox_kinds_v1()': ['629fcbda204cd79fdba97a096a6dc26b', 'f5fc812e0971a415b664926ec5dbdf8c'],
   'security.layer4_inbox_items_v1()': ['c1a133c3260c3c160397151bd0664957', 'c31b009df674a4a6ff531f00b99a9a45'],
   'public.admin_layer4_inbox(text,jsonb)': ['417f181d12155f79f68c1e70c27a1892', 'f1f0d760b682d6d132af0e8b55151292'],
@@ -40,8 +42,8 @@ test('live functions are edited only from their live md5 and checked after; the 
   }
   expect(code).toContain("if md5(v_def) <> p_before then raise exception 'live % differs from the definition this change edits (md5 %)', p_sig, md5(v_def); end if;")
   expect(code).toContain("raise exception '% after the edit has md5 %, expected %'")
-  expect(run).toContain("grep -c 'already applied' | grep -qx 5")
-  expect(m).toMatch(/^-- Replaces: security\.layer4_review_decide_impl, security\.layer4_inbox_kinds_v1, security\.layer4_inbox_items_v1, public\.admin_layer4_inbox, security\.ai_spend_today_v1/m)
+  expect(run).toContain("grep -c 'already applied' | grep -qx 7")
+  expect(m).toMatch(/^-- Replaces: security\.layer4_review_decide_impl, security\.layer4_inbox_kinds_v1, security\.layer4_inbox_items_v1, public\.admin_layer4_inbox, security\.ai_spend_today_v1, l4_api\.layer4_review_bulk_decide, security\.layer4_batch_decide_v1_impl/m)
   expect(m).toMatch(/^-- Retires: nothing$/m)
 })
 
@@ -113,10 +115,17 @@ test('the job: catalogued, off by default, no number in its command, bounded and
   expect(n).toContain('-- fixed: claim timer')
   expect(n).toContain("select c.model_identifier into v_model from pipeline.central_ai_settings c where c.id = 1;")  // the pinned Enrich fields model
   expect(edit('security.ai_spend_today_v1()')).toContain("('provider_description', 'Provider descriptions with AI', 8)")
+  // the shared AI rule and ledger of v2.15.404: one rule, no separate count
+  expect(m).toContain("create or replace trigger ai_spend_capture after insert or update of cost_usd on pipeline.provider_description_reads\n  for each row execute function security.ai_spend_capture_v1('provider_description', 'delta', '{cost_usd}');")
+  expect(n).toContain("if not security.ai_use_allowed_v1('provider_description') then return jsonb_build_object('idle', true, 'reason', 'ai_refused'")
+  expect(n).toContain("from pipeline.ai_spend_ledger l where l.lane = 'provider_description' and l.source <> 'opening'")
+  // generic bulk and batch decide skip descriptions (Platform Admin 2 Nov 2026 14:50)
+  expect(edit('l4_api.layer4_review_bulk_decide(text,text,text,text,text,text,integer)')).toContain("if p_field_code = 'provider_description' then")
+  expect(edit('security.layer4_batch_decide_v1_impl(uuid[],text,text,text,text)')).toContain("if v_field = 'provider_description' then")
 })
 
-test('worker v0.56.0: stored copy first, own hosts only, direct before Firecrawl, pinned model, every quote checked; minimal change', () => {
-  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.56\.0"; \/\/ v0\.56\.0 \(2 Nov 2026, CF-247 missing-field enrichment P1/)
+test('worker v0.57.0: stored copy first, own hosts only, direct before Firecrawl, pinned model, every quote checked; minimal change', () => {
+  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.57\.0"; \/\/ v0\.57\.0 \(2 Nov 2026, CF-247 missing-field enrichment P1/)
   const a = worker.indexOf('if (mode === "provider_description") {'), b = worker.indexOf('if (mode === "enrich_ai") {')
   expect(a).toBeGreaterThan(0); expect(b).toBeGreaterThan(a)
   const w = worker.slice(a, b)
@@ -180,7 +189,7 @@ test('the fixtures cover stored copy reuse, unsupported claims, wrong host, dupl
     'PASS unsupported claim, marketing word, unsupported sentence and missing quote held', 'PASS wrong-host page refused', 'PASS duplicate and outdated detection',
     'PASS batch and retry bounds (lease cap, Layer 4 cap, retry wait, tries, dead letter, recovery)', 'PASS fire: once a run interval, batch from its setting',
     'PASS admission by a person only; projection shows only admitted values', 'PASS rejected proposal never published; acquired page registered as evidence',
-    'PASS AI daily guard (guard_provider_description)', 'PASS pilot ceilings (AI spend, Firecrawl reads)', 'PASS Layer 4 Inbox: its own kind and choices',
+    'PASS AI daily guard (guard_provider_description)', 'PASS pilot ceilings (AI spend, Firecrawl reads)', 'PASS shared AI ledger counts the reader; bulk and batch decide skip descriptions', 'PASS Layer 4 Inbox: its own kind and choices',
     'PASS metrics (eligible published providers, present, missing, proposed, held, admitted, cost)', 'PASS privileges'])
     expect(fixtures).toContain(`raise notice '${p}';`)
   expect(run).toContain('createdb "$DB"'); expect(run).not.toMatch(/supabase\.co|fxcwkweaxjtknorudmwp/)

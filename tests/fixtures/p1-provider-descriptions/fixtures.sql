@@ -304,6 +304,28 @@ do $t$ declare v jsonb; v_id uuid; begin
   raise notice 'PASS pilot ceilings (AI spend, Firecrawl reads)';
 end $t$;
 
+-- 11c the shared AI ledger (v2.15.404) counts the reader's cost; generic bulk and batch decide skip descriptions
+do $t$ declare v jsonb; i1 uuid; i2 uuid; begin
+  if (select round(sum(cost_usd), 4) from pipeline.ai_spend_ledger where lane = 'provider_description') <> (select round(sum(cost_usd), 4) from pipeline.provider_description_reads) then
+    raise exception 'ledger % vs reads %', (select sum(cost_usd) from pipeline.ai_spend_ledger where lane = 'provider_description'), (select sum(cost_usd) from pipeline.provider_description_reads);
+  end if;
+  insert into pipeline.layer4_review_items(entity_type, entity_id, field_code, proposed_value, before_value) values
+    ('provider', '10000000-0000-0000-0000-000000000006', 'provider_description', '{"description": "x"}', '{"description": null}') returning id into i1;
+  insert into pipeline.layer4_review_items(entity_type, entity_id, field_code, proposed_value, before_value) values
+    ('provider', '10000000-0000-0000-0000-000000000006', 'provider_description', '{"description": "y"}', '{"description": null}') returning id into i2;
+  perform set_config('fx.uid', '90000000-0000-0000-0000-000000000002', false); perform set_config('fx.rank', '6', false);
+  v := l4_api.layer4_review_bulk_decide('provider', 'provider_description', null, 'reject', 'clearing the queue in bulk', 'REJECT 2', 500);
+  if v->>'reason' <> 'one_at_a_time' or (v->>'skipped_description')::int <> 2 then raise exception 'bulk: %', v; end if;
+  v := security.layer4_batch_decide_v1_impl(array[i1, i2], 'approve', 'approve these two together', 'APPROVE 2');
+  if v->>'reason' <> 'one_at_a_time' or (v->>'skipped_description')::int <> 2 then raise exception 'batch: %', v; end if;
+  if exists (select 1 from pipeline.layer4_review_items where id in (i1, i2) and status <> 'pending') or exists (select 1 from pipeline.layer4_decisions where review_item_id in (i1, i2)) then
+    raise exception 'decided in bulk or batch';
+  end if;
+  update pipeline.layer4_review_items set status = 'superseded' where id in (i1, i2);
+  perform set_config('fx.uid', '', false); perform set_config('fx.rank', '', false);
+  raise notice 'PASS shared AI ledger counts the reader; bulk and batch decide skip descriptions';
+end $t$;
+
 -- 12 metrics for Coverage (curator and above)
 do $t$ declare v jsonb; begin
   begin perform public.admin_provider_descriptions('metrics', '{}'); raise exception 'anonymous metrics'; exception when insufficient_privilege then null; end;

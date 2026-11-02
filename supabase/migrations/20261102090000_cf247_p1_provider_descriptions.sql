@@ -43,14 +43,15 @@
 --   are read until the Platform Admin approves the pilot cost. The integrator's reconciliation (2 Nov 2026) found no stored About page for any
 --   provider, so the page type about_page is added to the existing central page finder (worker central.ts, whole-site map only, no extra
 --   credits); its suggestions are this reader's first candidates, then the About link of the home page.
--- Layer 4 kind provider_description is a NEW kind (sections 6 and 9a/9c, isolated): it needs the Platform Admin's approval before release.
+-- Layer 4 kind provider_description is a NEW kind (sections 6 and 9a/9c/9d, isolated), approved by the Platform Admin 2 Nov 2026 14:50 with the
+--   5-university pilot ceiling (US$1 AI, 20 page reads); the pilot settings are a separate step. Admission rank 4; never in bulk or batch.
 -- Job provider-description-read (catalogued; cron INACTIVE and pdesc.enabled 0): frequency, batch, countries, provider types, provider list,
 --   tries, retry wait, dead letter, pause and resume are settings (G2). Activation is a separate, deliberate step; a passing test switches
 --   nothing on.
 -- Metrics (§8): public.admin_provider_descriptions('metrics') for Coverage › Every field (eligible, present, missing, proposed, held,
 --   admitted, dead letter, stored pages, pages acquired, AI reads, cost, cost per admitted description, rejections by reason, Layer 4 queue,
 --   last run, remaining backlog), by country and provider.
--- Replaces: security.layer4_review_decide_impl, security.layer4_inbox_kinds_v1, security.layer4_inbox_items_v1, public.admin_layer4_inbox, security.ai_spend_today_v1 (same names; md5-guarded edits)
+-- Replaces: security.layer4_review_decide_impl, security.layer4_inbox_kinds_v1, security.layer4_inbox_items_v1, public.admin_layer4_inbox, security.ai_spend_today_v1, l4_api.layer4_review_bulk_decide, security.layer4_batch_decide_v1_impl (same names; md5-guarded edits)
 -- Retires: nothing
 -- Nothing dropped, deleted or renamed. No consumer API function, table or column is altered (G3). Nothing is switched on.
 
@@ -90,6 +91,10 @@ create index if not exists provider_description_reads_review_idx on pipeline.pro
 create index if not exists provider_description_reads_evidence_idx on pipeline.provider_description_reads (evidence_id);
 alter table pipeline.provider_description_reads enable row level security;
 
+-- 1b the reader's AI cost reaches the shared ledger (v2.15.404, Decision 5 E-7) like every other lane: the increase of cost_usd, lane provider_description
+create or replace trigger ai_spend_capture after insert or update of cost_usd on pipeline.provider_description_reads
+  for each row execute function security.ai_spend_capture_v1('provider_description', 'delta', '{cost_usd}');
+
 -- ---------------------------------------------------------------- 2 settings (G2: every tunable; the reader is off)
 insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, section, used_by, reason) values
  ('pipeline', 'pdesc.enabled', 'Provider descriptions: reader on',
@@ -102,7 +107,7 @@ insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, ki
   '1: a page the site refuses to a direct read may be read through Firecrawl, within the existing Firecrawl budget (svc_fc_spend). 0: never. Off until the Platform Admin approves the pilot cost.',
   'number', '0'::jsonb, 0, 1, 'on/off', 958, 'Provider descriptions', 'public.svc_provider_description_next, worker provider_description', 'CF-247 P1 provider descriptions; decision pack 2 Nov 2026 10:56 Decision 7: no paid Firecrawl without the pilot''s cost approval'),
  ('pipeline', 'pdesc.ai_usd_max', 'Provider descriptions: AI spend ceiling (all reads)',
-  'Total AI spend of every description read so far (pipeline.provider_description_reads.cost_usd). At or above it no read starts: the hard ceiling of a pilot approved by the Platform Admin. Raise it with a reason to continue.',
+  'Total AI spend of the description lane so far (pipeline.ai_spend_ledger, lane provider_description). At or above it no read starts: the hard ceiling of a pilot approved by the Platform Admin. Raise it with a reason to continue.',
   'number', '1'::jsonb, 0, 100, 'US$', 957, 'Provider descriptions', 'public.svc_provider_description_next, security.provider_description_fire_v1', 'CF-247 P1 provider descriptions: cost-capped pilot (Platform Admin direction 2 Nov 2026 11:10)'),
  ('pipeline', 'pdesc.firecrawl_reads_max', 'Provider descriptions: Firecrawl reads ceiling (all reads)',
   'Total Firecrawl page reads the description reader may make (home and About pages a site refused to a direct read). 0: none. The hard Firecrawl ceiling of a pilot approved by the Platform Admin; each read also passes the existing Firecrawl budget.',
@@ -358,8 +363,11 @@ begin
   if v_pending >= security.pipeline_num_v1('pdesc.pending_max', 10) then return jsonb_build_object('idle', true, 'reason', 'review_full', 'items', '[]'::jsonb); end if;
   select c.model_identifier into v_model from pipeline.central_ai_settings c where c.id = 1;
   if nullif(btrim(v_model), '') is null then return jsonb_build_object('idle', true, 'reason', 'no_model', 'items', '[]'::jsonb); end if;
-  -- the pilot's hard ceilings: total AI spend and total Firecrawl reads of this reader
-  select coalesce(sum(r.cost_usd), 0), coalesce(sum(r.firecrawl_reads), 0) into v_spent, v_fc_used from pipeline.provider_description_reads r;
+  -- the shared AI rule (credit floor, daily ceiling, lane guard; v2.15.404): nothing new is claimed while AI use is refused
+  if not security.ai_use_allowed_v1('provider_description') then return jsonb_build_object('idle', true, 'reason', 'ai_refused', 'items', '[]'::jsonb); end if;
+  -- the pilot's hard ceilings: total AI spend of this lane in the shared ledger, and total Firecrawl reads of this reader
+  select coalesce(sum(l.cost_usd), 0) into v_spent from pipeline.ai_spend_ledger l where l.lane = 'provider_description' and l.source <> 'opening';
+  select coalesce(sum(r.firecrawl_reads), 0) into v_fc_used from pipeline.provider_description_reads r;
   if v_spent >= security.pipeline_num_v1('pdesc.ai_usd_max', 1) then return jsonb_build_object('idle', true, 'reason', 'ai_ceiling', 'spent_usd', v_spent, 'items', '[]'::jsonb); end if;
   with pick as (select r.id from pipeline.provider_description_reads r
                  where ((r.state = 'queued' and r.next_try_at <= now()) or (r.state = 'reading' and r.leased_until < now()))
@@ -549,7 +557,7 @@ begin
   v_q := security.provider_description_enqueue_v1();
   select count(*) into v_dead from pipeline.provider_description_reads r where r.state = 'dead_letter';
   if not security.ai_use_allowed_v1('provider_description') then return jsonb_build_object('queued', v_q, 'ai', 'stopped', 'dead_letter', v_dead); end if;
-  if (select coalesce(sum(r.cost_usd), 0) from pipeline.provider_description_reads r) >= security.pipeline_num_v1('pdesc.ai_usd_max', 1) then
+  if (select coalesce(sum(l.cost_usd), 0) from pipeline.ai_spend_ledger l where l.lane = 'provider_description' and l.source <> 'opening') >= security.pipeline_num_v1('pdesc.ai_usd_max', 1) then
     return jsonb_build_object('queued', v_q, 'ai', 'ceiling', 'dead_letter', v_dead);
   end if;
   select count(*) into v_pending from pipeline.layer4_review_items i where i.field_code = 'provider_description' and i.status = 'pending';
@@ -657,12 +665,14 @@ revoke all on function security.provider_description_fire_v1() from public, anon
 revoke all on function security.provider_description_review_trg_v1() from public, anon, authenticated;
 
 -- ---------------------------------------------------------------- 9 md5-guarded edits of live functions
--- md5 (before = live, read 2 Nov 2026 10:45 AEDT; after = local replay on PostgreSQL 16, tests/fixtures/p1-provider-descriptions/run.sh):
+-- md5 (before = live, read 2 Nov 2026 10:45-10:57 AEDT and again 14:56-14:57 AEDT after v2.15.404/405; after = local replay on PostgreSQL 16, tests/fixtures/p1-provider-descriptions/run.sh):
 --   security.layer4_review_decide_impl(uuid,text,text,jsonb)  67966cebe3184b9acad1a3451fd0021b -> 073889b7c5319019b25212ce08705a37
---   security.ai_spend_today_v1()                               f18af72fe3d406341931a5daaa93f987 -> cb68e7677710b14c3c219048de34c406
+--   security.ai_spend_today_v1()                               0b79a7f732669ee4c59a260e26188d5a -> 0a8e30c2d38c37071474fdd23fa31cfc
 --   security.layer4_inbox_kinds_v1()                           629fcbda204cd79fdba97a096a6dc26b -> f5fc812e0971a415b664926ec5dbdf8c
 --   security.layer4_inbox_items_v1()                           c1a133c3260c3c160397151bd0664957 -> c31b009df674a4a6ff531f00b99a9a45
 --   public.admin_layer4_inbox(text,jsonb)                      417f181d12155f79f68c1e70c27a1892 -> f1f0d760b682d6d132af0e8b55151292
+--   l4_api.layer4_review_bulk_decide(text,text,text,text,text,text,integer) 512226a0d25891c137195bde221d40b4 -> dbee9ff4d7a1b29b6c45770c0c669428
+--   security.layer4_batch_decide_v1_impl(uuid[],text,text,text,text)       d3135163affa549deca5d2454133b188 -> 4501ca1a69a9cd17bb805e403940e5f0
 create or replace function pg_temp.edit_once(p_sig text, p_before text, p_after text, p_edits text[][], p_times int[]) returns text language plpgsql as $f$
 declare v_def text := pg_get_functiondef(p_sig::regprocedure); i int; v_c int; v_old text; v_new text;
 begin
@@ -691,12 +701,35 @@ select pg_temp.edit_once('security.layer4_review_decide_impl(uuid,text,text,json
       v_scalar_id:=null;
     elsif v_item.entity_type='scholarship' and v_item.field_code='scope_resolution' then$n$]], array[1]);
 
--- 9b AI spend: the description reader has its own line and daily guard (guard_provider_description), inside the AI stop
-select pg_temp.edit_once('security.ai_spend_today_v1()', 'f18af72fe3d406341931a5daaa93f987', 'cb68e7677710b14c3c219048de34c406', array[
-  array[$o$from pipeline.entry_matrix_runs x, d where x.updated_at >= d.t and coalesce(x.cost_usd, 0) > 0)$o$,
-        $n$from pipeline.entry_matrix_runs x, d where x.updated_at >= d.t and coalesce(x.cost_usd, 0) > 0
-    union all select 'provider_description', coalesce(sum(x.cost_usd), 0), count(*) from pipeline.provider_description_reads x, d where x.updated_at >= d.t and coalesce(x.cost_usd, 0) > 0)$n$],
-  array[$o$('entry_matrix', 'Entry matrices with AI', 7))$o$, $n$('entry_matrix', 'Entry matrices with AI', 7), ('provider_description', 'Provider descriptions with AI', 8))$n$]], array[1, 1]);
+-- 9b AI spend (v2.15.404 ledger): the description reader is a lane of its own (guard_provider_description); its cost reaches
+--    pipeline.ai_spend_ledger through the shared capture trigger (section 1b), and security.ai_use_allowed_v1 applies the one rule
+select pg_temp.edit_once('security.ai_spend_today_v1()', '0b79a7f732669ee4c59a260e26188d5a', '0a8e30c2d38c37071474fdd23fa31cfc', array[
+  array[$o$('fee_ai', 'Fee reader with AI', 6), ('entry_matrix', 'Entry matrices with AI', 7)) l(u, label, sort)$o$,
+        $n$('fee_ai', 'Fee reader with AI', 6), ('entry_matrix', 'Entry matrices with AI', 7), ('provider_description', 'Provider descriptions with AI', 8)) l(u, label, sort)$n$]], array[1]);
+
+-- 9d generic bulk and batch decide skip university descriptions, as they skip entry items: they are decided one at a time in the Inbox
+select pg_temp.edit_once('l4_api.layer4_review_bulk_decide(text,text,text,text,text,text,integer)', '512226a0d25891c137195bde221d40b4', 'dbee9ff4d7a1b29b6c45770c0c669428', array[
+  array[$o$ if p_field_code = any (security.aer_review_kinds_v1()) then
+$o$,
+        $n$ -- CF-247 P1 (Platform Admin 2 Nov 2026 14:50): university descriptions are decided one at a time in the Inbox; the group is skipped and counted
+ if p_field_code = 'provider_description' then
+  select count(*) into v_count from pipeline.layer4_review_items where status='pending' and entity_type=p_entity_type and field_code=p_field_code and coalesce(escalation_reason,'')=coalesce(p_escalation_reason,'');
+  return jsonb_build_object('ok',false,'action',p_action,'processed',0,'failed',0,'skipped_aer',0,'skipped_description',v_count,'remaining_in_group',v_count,'reason','one_at_a_time',
+   'message',v_count||' university description(s) skipped: each is approved or rejected on its own in the Inbox','publication_changed',false);
+ end if;
+ if p_field_code = any (security.aer_review_kinds_v1()) then
+$n$]], array[1]);
+
+select pg_temp.edit_once('security.layer4_batch_decide_v1_impl(uuid[],text,text,text,text)', 'd3135163affa549deca5d2454133b188', '4501ca1a69a9cd17bb805e403940e5f0', array[
+  array[$o$  if v_field = any (security.aer_review_kinds_v1()) then
+$o$,
+        $n$  -- CF-247 P1 (Platform Admin 2 Nov 2026 14:50): university descriptions are decided one at a time in the Inbox; the batch is skipped and counted
+  if v_field = 'provider_description' then
+    return jsonb_build_object('ok',false,'decided',0,'skipped_aer',0,'skipped_description',v_n,'action',p_action,'reason','one_at_a_time',
+      'message',v_n||' university description(s) skipped: each is approved or rejected on its own in the Inbox');
+  end if;
+  if v_field = any (security.aer_review_kinds_v1()) then
+$n$]], array[1]);
 
 -- 9c Layer 4 › Inbox: university descriptions are their own kind (they would otherwise show as course links), approved as read or rejected
 select pg_temp.edit_once('security.layer4_inbox_kinds_v1()', '629fcbda204cd79fdba97a096a6dc26b', 'f5fc812e0971a415b664926ec5dbdf8c', array[
@@ -727,11 +760,11 @@ select pg_temp.edit_once('public.admin_layer4_inbox(text,jsonb)', '417f181d12155
 
 -- ---------------------------------------------------------------- 10 register
 insert into pipeline.component_register(kind, name, layer, purpose, status, replaces, introduced_in) values
- ('table', 'pipeline.provider_description_reads', 'Layer 2', 'P1 provider descriptions: the reader''s read list with provenance, checks and Layer 4 item', 'active', '{}', '20261102050000'),
- ('function', 'security.provider_description_validate_v1', 'Layer 3', 'P1 provider descriptions: evidence-grounded validation', 'active', '{}', '20261102050000'),
- ('function', 'public.svc_provider_description_next', 'Layer 2', 'P1 provider descriptions: worker lease', 'active', '{}', '20261102050000'),
- ('function', 'public.svc_provider_description_record', 'Layer 3', 'P1 provider descriptions: worker record, validation and Layer 4 proposal', 'active', '{}', '20261102050000'),
- ('function', 'security.layer4_provider_description_apply_impl', 'Layer 4', 'P1 provider descriptions: admission by a person and publication check', 'active', '{}', '20261102050000'),
- ('function', 'security.provider_description_fire_v1', 'Layer 2', 'P1 provider descriptions: job provider-description-read', 'active', '{}', '20261102050000'),
- ('function', 'public.admin_provider_descriptions', 'Operations', 'P1 provider descriptions: metrics and dead-letter retry', 'active', '{}', '20261102050000')
+ ('table', 'pipeline.provider_description_reads', 'Layer 2', 'P1 provider descriptions: the reader''s read list with provenance, checks and Layer 4 item', 'active', '{}', '20261102090000'),
+ ('function', 'security.provider_description_validate_v1', 'Layer 3', 'P1 provider descriptions: evidence-grounded validation', 'active', '{}', '20261102090000'),
+ ('function', 'public.svc_provider_description_next', 'Layer 2', 'P1 provider descriptions: worker lease', 'active', '{}', '20261102090000'),
+ ('function', 'public.svc_provider_description_record', 'Layer 3', 'P1 provider descriptions: worker record, validation and Layer 4 proposal', 'active', '{}', '20261102090000'),
+ ('function', 'security.layer4_provider_description_apply_impl', 'Layer 4', 'P1 provider descriptions: admission by a person and publication check', 'active', '{}', '20261102090000'),
+ ('function', 'security.provider_description_fire_v1', 'Layer 2', 'P1 provider descriptions: job provider-description-read', 'active', '{}', '20261102090000'),
+ ('function', 'public.admin_provider_descriptions', 'Operations', 'P1 provider descriptions: metrics and dead-letter retry', 'active', '{}', '20261102090000')
 on conflict do nothing;
