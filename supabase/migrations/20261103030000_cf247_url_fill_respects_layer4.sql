@@ -13,7 +13,7 @@
 --   2 security.course_url_fill_v1 (md5-guarded edit, same name): with the switch on, a course with a pending official_course_url item is not
 --     filled (first fill or re-fill). The run counts those courses (skipped_pending_layer4) in its return value and in its course_url_filled
 --     event, which is now written when anything was skipped too. When the integration queue exists (security.integration_issue_upsert_v1,
---     branch cf247-integration-queue / migration 20261102120000), a run with skips records one queue issue by the deterministic fingerprint
+--     v2.15.409, migration 20261102120000), a run with skips records one queue issue by the deterministic fingerprint
 --     'course-url-fill:skipped-pending-layer4' (P2, workstream A4, root cause human_decision): an unchanged problem updates that row; it never
 --     makes a duplicate. A queue error never stops the fill (the error is in the return value).
 --      Retractions (guard 3) are unchanged: a fill whose binding changes is still taken back. Nothing already filled is emptied by this change.

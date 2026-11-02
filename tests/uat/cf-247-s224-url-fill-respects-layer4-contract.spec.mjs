@@ -51,6 +51,12 @@ test('the integration queue gets one issue by a deterministic fingerprint, only 
   expect(edit).toContain("using jsonb_build_object('fingerprint', 'course-url-fill:skipped-pending-layer4',")
   expect(edit).toContain("'workstream', 'A4', 'severity', 'P2', 'root_cause_class', 'human_decision'")
   expect(edit).toContain("exception when others then\n      v_iq := jsonb_build_object('error', left(sqlerrm, 300));")
+  // the payload fits the queue's own contract (v2.15.409): the function signature and the allowed workstream, root cause and validation layer
+  const q = fs.readFileSync('supabase/migrations/20261102120000_cf247_integration_queue.sql', 'utf8')
+  expect(q).toContain("create or replace function security.integration_issue_upsert_v1(p jsonb, p_actor text default 'integration-validate') returns jsonb")
+  expect(q).toContain("workstream in ('A1', 'A2', 'A3', 'A4'")
+  expect(q).toContain("'human_decision'")
+  expect(q).toContain("validation_layer in ('V1', 'V2', 'V3', 'V4', 'manual')")
 })
 
 test('the switch and the old pause threshold are settings with label, range, unit and used_by (G2)', () => {
