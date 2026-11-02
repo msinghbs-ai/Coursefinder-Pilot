@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.332 — 2 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.405** (Platform Admin 2 Nov 2026 11:10 and 11:18, Wix enrichment: intake persistence). Migration `20261102080000_cf247_intake_dates_persist`: md5-guarded edit of security.coverage_apply_course_v1 (8674165f→c2cbc9ab) to keep held year, start date and deadline; new security.calendar_dated_periods_v1, security.intake_dates_plan_v1, security.intake_dates_apply_v1 and pipeline.course_intake_dates; setting intake_dates.apply_enabled false; job intake-dates-apply catalogued and paused. Worker coverage-sweep v0.56.0 parser keeps printed start dates and deadlines. No consumer API shape change (values only). Spec s220.
+
 ## 0.1.331 — 2 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.404** (Decision 5 E-6 U1, E-7, E-8 F2, E-9 W1; Platform Admin 2 Nov 2026 10:56). Migration `20261102070000_cf247_budget_enforcement_and_watchdog`: md5-guarded edits to security.ai_use_allowed_v1, security.ai_spend_today_v1, public.svc_coverage_ai_match_next, public.admin_adapter_builder, security.fc_budget_left_v1, public.svc_fc_spend; new pipeline.ai_spend_ledger with capture triggers on eight cost tables; security.platform_watchdog_v1; settings alerts.watchdog_stale_minutes and alerts.watchdog_scan_runs. No setting value changed (openrouter stays observe; credit floor stays US$5). Workflow `platform-watchdog.yml` hourly at :24. Spec s217.
