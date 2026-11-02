@@ -1,0 +1,11 @@
+{
+  "_note": "Live md5(pg_get_functiondef) on fxcwkweaxjtknorudmwp, read-only, 3 Nov 2026 08:47 AEDT (v2.15.413 deployed). run.sh rebuilds these definitions from the scholarship-recovery fixtures (live text before v2.15.413, then the 20261103050000 migration) and checks each equals the live md5 before applying 20261103090000.",
+  "security.scholarship_admission_provider_ok_v1(uuid)": "804be95b3e78fb9efe3ea0d967cbe666",
+  "security.fc_sch_eligible_v1(uuid)": "8064816107a9b44bb2aeccbfa4a2d867",
+  "security.fc_provider_tier_v1(uuid)": "3d0aa9dc690e23df4fd0c7248aaa7300",
+  "security.scholarship_discovery_refill_v1(integer)": "46a66f131b574375db6e9edbc2ad3f36",
+  "security.scholarship_admit_from_provider_page_v1(bigint)": "5b3557c1ea4488f3e9b751ad9e7371e9",
+  "security.scholarship_legitimacy_v1(uuid)": "90bdbf40913bdd120810bd6b7ff3e3bd",
+  "security.scholarship_flag_v1(text,boolean)": "0beb3b60ecf485cffcd3e20bf1948df0",
+  "security.scholarship_university(uuid)": "00ca2485d894ae4542b643a112c2b764"
+}
