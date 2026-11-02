@@ -90,7 +90,7 @@ insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, ki
   'CF-247 scholarships beyond universities: phased activation (decision 3 Nov 2026 08:44 §4)'),
  ('pipeline', 'batch.scholarship_pilot_readmit', 'Scholarship pilot: stored pages admitted again an hour',
   'Pages of a pilot provider already read (within the candidate re-read time) and refused only because the provider was not a university, admitted again from their stored facts by the hourly refill. No new read, no AI, no Firecrawl.',
-  'number', to_jsonb(50), 1, 500, 'pages', 1030, 'Job sizes', 'security.scholarship_pilot_start_v1 (job scholarship-discovery-refill)',
+  'number', to_jsonb(50), 1, 500, 'pages', 1030, 'Job sizes', 'security.scholarship_pilot_start_v1 (job scholarship-discover-refill, hourly)',
   'CF-247 scholarships beyond universities: pilot start'),
  ('pipeline', 'scholarship.pilot_stop_wrong_provider_max', 'Scholarship pilot stop: wrong-provider admissions at most',
   'Stop the expansion when more pilot admissions than this belong to another provider (page not on the provider''s own sites, a directory site, or a Layer 4 decision naming the provider).',
