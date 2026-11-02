@@ -16,7 +16,7 @@ test('Decision 4: coverage-admit :x3, coverage-admit-intakes :x5, adapter-overwr
 })
 
 test('Decision 4: the change is guarded against an unexpected starting state and checked afterwards', () => {
-  expect(sql).toMatch(/admission schedules differ from the reconciled state[^;]*nothing changed/)
+  expect(sql).toMatch(/admission schedules differ from the reconciled state \([^)]*\); nothing changed/)
   expect(sql).toContain("Decision 4 post-check: admission schedules")
   expect(sql).toMatch(/-- Rollback: cron\.alter_job back/)
   expect(sql).toMatch(/-- Replaces: /)
