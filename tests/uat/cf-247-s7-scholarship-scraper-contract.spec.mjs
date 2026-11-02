@@ -8,9 +8,10 @@ import fs from 'node:fs'
 test('worker reads scholarship and listing pages through the scraper (rendered page, any provider, within the cap)', () => {
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(w).toContain('await useFc("sch_scrape", providerId, url, true)')
-  expect(w).toContain('formats: ["rawHtml"], onlyMainContent: false, waitFor: 1500')
-  expect(w).toContain('const pg = await readSch(r.url, r.provider_id);')
-  expect(w).toContain('const pg = await readSch(it.url, it.provider_id);')
+  // v0.58.0 (CF-247 scholarship recovery F10): the render wait is a setting; listing pages are read page by page (F6), still through the scraper
+  expect(w).toContain('formats: ["rawHtml"], onlyMainContent: false, waitFor: waitMs')
+  expect(w).toContain('const pg = await readSch(url, r.provider_id, wsNum("scholarship.catalogue_render_wait_ms", 5000));')
+  expect(w).toContain('const pg = await readSchPage(it.url, it.provider_id);')
 })
 
 test('setting, budget and immediate re-read; md5-guarded; nothing dropped', () => {
