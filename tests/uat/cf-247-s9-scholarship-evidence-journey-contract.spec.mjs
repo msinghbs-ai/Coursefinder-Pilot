@@ -16,9 +16,9 @@ test('scraper only: no direct read, no fallback, robots.txt not consulted for sc
   expect(fn).toContain('if (!(await useFc("sch_scrape", providerId, url, true))) return none("waiting_scraper");')
   expect(fn).not.toContain('readDirect(')
   expect(fn).not.toContain('robotsAllows(')
-  expect(worker).toContain('const pg = await readSch(it.url, it.provider_id);') // scholarship pages and candidates
-  expect(worker).toContain('const pg = await readSch(r.url, r.provider_id);') // listing pages
-  expect(worker).toContain('const gm = await useFcWhy("sch_map", p.provider_id, site.origin, true);') // site maps through the scraper
+  expect(worker).toContain('const pg = await readSchPage(it.url, it.provider_id);') // scholarship pages and candidates (v0.58.0: through readSch, with award sections and redirects)
+  expect(worker).toContain('const pg = await readSch(url, r.provider_id, wsNum("scholarship.catalogue_render_wait_ms", 5000));') // listing pages, page by page (v0.58.0)
+  expect(worker).toContain('const gm = await useFcWhy("sch_map", p.provider_id, origin, true);') // site maps through the scraper (v0.58.0: each source of the provider)
   expect(worker).not.toContain('svc_scholarship_search_next') // register search phase retired
   expect(m84).toContain("when p_read_status='waiting_scraper' then now()+interval '1 hour'")
 })
