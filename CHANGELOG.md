@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.336 — 2 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.409** (continuous validation and integration feedback mandate, 2 Nov 2026 16:58; Integration Controller and operating modes). Migration `20261102120000_cf247_integration_queue`: pipeline.integration_issues and integration_issue_events, upsert-by-fingerprint, reopen-as-regression, close-with-verification, operating mode record, V3 deployment check, V4 invariants; job integration-validate (:21, :51) catalogued and inactive; index on pipeline.layer4_review_items(entity_id, field_code, status). No existing function edited. Admin: Platform health › Integration queue. Spec s223.
+
 ## 0.1.335 — 2 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.408** (SS-017, AER mandates 2 Nov 14:45, 15:43, 16:33 §9; D-A1, D-A7). Migration `20261102110000_cf247_aer_phase_b_assurance`: aer_source_manifests, aer_gap_findings, aer_gap_root_causes, aer_gap_events, aer_coverage_daily, aer_reconcile_runs; reconcile and verify functions (security.aer_coverage_verify_v1); readiness loader; md5-guarded edits to public.admin_aer (5e58f5d6→0593747b; coverage, coverage_provider) and security.ops_scorecard_record_v1 (e0031afa→a4b9b21d; weekly AER section); job aer-reconcile catalogued and paused; aer.weekly_email_enabled false; workflow aer-weekly-report.yml gated by AER_WEEKLY_REPORT_ENABLED. Spec s222; s206 label updated.
