@@ -316,38 +316,83 @@ export function englishPolicy(md: string) {
 
 // Academic calendar: the month each Semester/Trimester/Term N starts (first date in the row or sentence that names it
 // with "start"/"commence"/"begin" or as the first teaching week). Only months with a stated year are kept.
-const MONTH = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+// calendar-dates-v1 (2 Nov 2026, Platform Admin 11:10 §2, "persistence of intake year, actual start date and application deadline"):
+// the parser also keeps what it already matched and used to drop. `months`, `years` and `quotes` are unchanged (the approved shape).
+//  * starts[]: each start it found, with the day and the year only when printed (in the row, or the year in the heading above it).
+//    A day with no printed year keeps year null and date null: a year is never assumed.
+//  * deadlines[]: "applications close" / "application deadline" rows of the period, read the same way. Rolling or "check with the
+//    provider" wording is kept as text with rolling true and never becomes a date.
+export const CALENDAR_DATES = "calendar-dates-v1";
+const MONTH =["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
 const MON_RE = "(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)";
 const monthNo = (s: string) => MONTH.findIndex((m) => m.startsWith(s.toLowerCase().slice(0, 3))) + 1;
 export function calendarStarts(md: string) {
-  const found: Record<string, { months: Set<number>; quotes: string[]; years: Set<number> }> = {};
-  const add = (period: string, month: number, year: number | null, quote: string) => {
-    const f = found[period] ||= { months: new Set(), quotes: [], years: new Set() };
+  type Dated = { year: number | null; month: number; day: number | null; date: string | null; quote: string };
+  const found: Record<string, { months: Set<number>; quotes: string[]; years: Set<number>; starts: Dated[]; deadlines: (Dated & { rolling: false })[]; rolling: string[] }> = {};
+  const slot = (period: string) => found[period] ||= { months: new Set(), quotes: [], years: new Set(), starts: [], deadlines: [], rolling: [] };
+  // a date only when the day, the month and the year are all printed and form a real day
+  const iso = (y: number | null, m: number, d: number | null) => {
+    if (!y || !d) return null;
+    const t = new Date(Date.UTC(y, m - 1, d));
+    return t.getUTCFullYear() === y && t.getUTCMonth() === m - 1 && t.getUTCDate() === d ? t.toISOString().slice(0, 10) : null;
+  };
+  const dated = (d: RegExpMatchArray, yr: number | null, quote: string): Dated | null => {
+    const month = monthNo(d[2] || d[3]); if (month < 1) return null;
+    const day = Number(d[1] || d[4]) || null;
+    return { year: yr, month, day, date: iso(yr, month, day), quote: quoteOf(quote) };
+  };
+  const pushOnce = <T extends Dated>(a: T[], x: T) => { if (a.length < 6 && !a.some((y) => y.date === x.date && y.month === x.month && y.year === x.year && y.day === x.day)) a.push(x) };
+  const add = (period: string, month: number, year: number | null, quote: string, d: Dated | null) => {
+    const f = slot(period);
     f.months.add(month); if (year) f.years.add(year); if (f.quotes.length < 3) f.quotes.push(quoteOf(quote));
+    if (d) pushOnce(f.starts, d);
   };
   const PERIOD = /\b(semester|trimester|term|study period|teaching period|session)\s*([1-6]|one|two|three|four|I{1,3})\b/i;
   const words: Record<string, string> = { one: "1", two: "2", three: "3", four: "4", i: "1", ii: "2", iii: "3" };
   const keyOf = (p: RegExpMatchArray) => `${p[1].toLowerCase().replace(/ period$/, "_period")} ${words[p[2].toLowerCase()] || p[2]}`;
   const DATE = new RegExp(`(?:\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+${MON_RE}|${MON_RE}\\s+(\\d{1,2})(?:st|nd|rd|th)?)(?:,?\\s+(20\\d\\d))?`, "i");
   const startWords = /\b(start|starts|begin|begins|commence|commences|commencement|first day|week 1|teaching begins|classes begin|lectures begin)\b/i;
+  // calendar-dates-v1: the closing date for applications to a period (never census, enrolment, withdrawal or fee dates)
+  const DEADLINE = /\b(applications?\s+(?:close|closes|closing|due|deadline)|application\s+(?:closing\s+date|deadline|due\s+date)|closing\s+date\s+for\s+applications?|last\s+day\s+to\s+apply|apply\s+by)\b/i;
+  const DAY_RANGE = /\b\d{1,2}(?:st|nd|rd|th)?\s*[–—-]\s*\d{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]/;
+  const NOT_START = /\b(exams?|examinations?|supplementary|census|results|holidays?|break|recess|graduation|enrolment|withdraw\w*)\b/i;
+  const ROLLING = /\b(rolling|year[- ]round|all year|ongoing|until (?:places|positions|the (?:course|program|programme)) (?:are |is )?(?:filled|full)|no (?:fixed )?(?:closing date|deadline)|check with|contact (?:the )?(?:faculty|school|university|institute|college|admissions))\b/i;
   for (const b of blocks(md)) {
     const rows = b.kind === "table" ? b.rows.map((r) => r.join(" | ")) : [b.text];
     // v0.2.2 (3 Oct 2026): a period named on its own — a table section row ("| Semester 1 |") or the block's heading —
     // applies to the "Start date | Monday 16 February" rows that follow it until the next period is named (Curtin's layout).
     const hp = b.heading.match(PERIOD); let section: string | null = hp ? keyOf(hp) : null;
+    const headYear = Number((b.heading.match(/\b(20\d\d)\b/) || [])[1] || 0) || null;
     for (const row of rows) {
       const p = row.match(PERIOD);
       const d = row.match(DATE);
       if (p && !d && clean(row.replace(/\|/g, " ")).length <= 40) { section = keyOf(p); continue }
       const period = p ? keyOf(p) : section; if (!period) continue;
+      // calendar-dates-v1: an "applications close" row of the period is its deadline (a date only when printed in full; rolling wording kept as text)
+      const dl = row.match(DEADLINE);
+      if (dl) {
+        const after = row.slice((dl.index || 0) + dl[0].length);
+        const dd = after.match(DATE) || row.match(DATE);
+        if (dd) {
+          const yr = Number(dd[5] || (row.match(/\b(20\d\d)\b/) || [])[1] || headYear || 0) || null;
+          const x = dated(dd, yr, row); if (x) pushOnce(slot(period).deadlines, { ...x, rolling: false as const });
+        } else if (ROLLING.test(row)) { const f = slot(period); if (f.rolling.length < 3) f.rolling.push(quoteOf(row)) }
+      }
       if (!startWords.test(row) && !(b.kind === "table" && p && /start|commence|begin/i.test(b.rows[0]?.join(" ") || ""))) continue;
       if (/\b(census|exams?|examinations?|results|holidays?|break|recess|ends?|finish(?:es)?|last day|deadline|closing|closes?|orientation)\b/i.test(row) && !startWords.test(row)) continue;
       if (!d) continue;
       const mon = monthNo(d[2] || d[3]); if (mon < 1) continue;
       const yr = Number(d[5] || (row.match(/\b(20\d\d)\b/) || [])[1] || (b.heading.match(/\b(20\d\d)\b/) || [])[1] || 0) || null;
-      add(period, mon, yr, row);
+      // calendar-dates-v1: a row about exams, census, results or a break gives its month as before, but never a start date
+      // a day range ("18 – 20 January 2027"): the year counts, the day does not
+      const dx = NOT_START.test(row) ? null : dated(d, yr, row);
+      add(period, mon, yr, row, dx && DAY_RANGE.test(row) ? { ...dx, day: null, date: null } : dx);
     }
   }
-  const periods = Object.entries(found).map(([period, f]) => ({ period, months: [...f.months].sort((a, b) => a - b), years: [...f.years].sort(), quotes: f.quotes }));
-  return { parser: POLICY_PARSER, periods };
+  // a period with only deadline rows is not a start: it adds no month (months, years and quotes are exactly as before)
+  const periods = Object.entries(found).filter(([, f]) => f.months.size > 0).map(([period, f]) => ({
+    period, months: [...f.months].sort((a, b) => a - b), years: [...f.years].sort(), quotes: f.quotes,
+    starts: f.starts, deadlines: f.deadlines.map(({ year, month, day, date, quote }) => ({ year, month, day, date, quote, rolling: false })),
+    ...(f.rolling.length ? { deadline_rolling: f.rolling } : {}) }));
+  return { parser: POLICY_PARSER, dates: CALENDAR_DATES, periods };
 }
