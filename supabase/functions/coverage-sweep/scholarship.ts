@@ -674,7 +674,7 @@ const ITEM_WORDS = /\b(scholarships?|bursar(?:y|ies)|awards?|grants?|fellowships
 const NOT_ITEM = /^(?:(?:international|domestic|research|postgraduate|undergraduate|current|future|all|other|more|our|find|search|browse|view|explore|see)\s+)*(?:scholarships?|awards?|grants?)(?:\s+(?:and|&)\s+(?:awards?|prizes?|grants?|bursaries))?$|\b(how to|apply(?:ing)? for|terms|conditions|faq|frequently|contact|alert|subscribe|newsletter|more about|eligibility criteria|application process|search|find a|browse|sponsor|donat|give to|policy|policies|guidelines|news|events?)\b/i;
 // v0.6.5 (first listing reads, 11 Oct 2026): questions, calls to action and page furniture are not scholarships
 const NOT_ITEM2 = /[?]|^(?:are you|looking|download|discover|meet|guide|explore|learn|read|view|check|see|why|what|who|how|get|start|our|your|scholarships? (?:for|in|at|and|guide)\b|international scholarships? (?:for|in|at)\b)|\b(brochure|guide|recipients?|stories|testimonials?|more scholarships|other scholarships|related scholarships|all scholarships|scholarship (?:search|finder|portal|calendar|dates|recipients))\b/i;
-export function scholarshipListing(html: string, baseUrl: string, hosts: string[] = []) {
+export function scholarshipListing(html: string, baseUrl: string, hosts: string[] = [], max: number = 80) {  // v0.58.0: the item limit is the worker setting scholarship.listing_items_max (F10)
   let h = html;
   const m = h.match(/<main[\s\S]*?<\/main>/i);
   if (m && m[0].length > 1500) h = m[0];
@@ -709,5 +709,5 @@ export function scholarshipListing(html: string, baseUrl: string, hosts: string[
     }
     add(t[1], url);
   }
-  return [...items.values()].slice(0, 80);
+  return [...items.values()].slice(0, max);
 }

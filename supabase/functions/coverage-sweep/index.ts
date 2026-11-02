@@ -25,6 +25,7 @@ import { itemsAdapterRecords, itemsText } from "../_shared/cf247-register-items.
 import * as caRef from "../_shared/cf247-register-ca-ref.ts";
 import { admissionCheck, awardScope, baseHost, keepScholarshipUrl, onSite, mainText, matchScholarshipPage, nameOnPage, normUrl, pageHeadings, providerTokens, scholarshipCriteria, scholarshipFacts, scholarshipListing } from "./scholarship.ts";
 import { imageSize, logoCandidates, sniffMime, svgSafe } from "./logo.ts";
+import { awardSections, mapOutcome, nextPage, pagingState, redirectOutcome, sectionCode, sectionHtml, statedTotal } from "./catalogue.ts";
 import { DESCRIPTION_ANSWER_KEY, DESCRIPTION_PROMPT_VERSION, aboutLinks, descriptionAnswer, descriptionPageText, descriptionRequest, descriptionSentences, ownHost } from "./description.ts";
 const SCH_VERSION = "scholarship-sweep-v0.7.3"; // v0.7.3 (11 Oct 2026, Platform Admin bugs 11/10-6): a "while places last" condition is not an ended scholarship; an amount the student pays (deposit, bond, fee) is never the award and a "valued at" amount counts; courses listed after "one of the following courses" are read. v0.7.2 (11 Oct 2026): course titles end at bullets (•, ⦁) and at the next capitalised word or sentence. v0.7.1 (11 Oct 2026): courses named after "excluding" are exclusions; course titles keep their bracketed specialisation; numeric dates read in the provider country's day/month order; date proofs start at their label. v0.7.0 (11 Oct 2026): application open and close dates (with rounds), study start, courses the page names, and the sentence behind each level and field. v0.6.3 (11 Oct 2026): academic-result percentages (CWA, WAM, ATAR) are not award values; the value text is a whole sentence. v0.6.2: Firecrawl cap and reserve read from Layer 2 settings; v0.6.1: // v0.6.1: numeric character references in titles decoded; // v0.6.0 (Decision 250): amounts in the provider country's currency; NZ and Canadian domestic wording
 // v0.5.4 (2 Oct 2026, Decision 212 check): a listed value ("Residency Australian Citizen, New Zealand Citizen, International
@@ -70,7 +71,7 @@ const VERSION = "coverage-sweep-v0.5.6"; // extractor version (unchanged by v0.6
 // v0.38.1 (22 Oct 2026, NZ course list pages): a page the AI page match chose from the university's own site addresses (its course list or
 // site map) is listed on the university's own site, so it may be read through the scraper when the direct read is blocked (Otago, Lincoln, AUT).
 const FC_TRUSTED_BASIS = ["cricos_search", "cricos_code", "cricos_code_on_page", "nzqa_code", "adapter_code", "title_match", "cms_path_public", "manual", "firecrawl_upgrade", "ai_match", "programme_list"]; // v0.45.0: a page bound by its NZ or CA code is as trusted as one bound by a CRICOS code
-const WORKER = "coverage-sweep-worker-v0.57.0"; // v0.57.0 (2 Nov 2026, CF-247 missing-field enrichment P1, Platform Admin 2 Nov 2026 10:28; approved 14:50): new mode provider_description (description.ts): a provider's stored About / Overview copy first, otherwise the About link of its home page on its own hosts, read directly (robots.txt respected; Firecrawl only when the site refuses, within the Firecrawl budget); the pinned Enrich fields model writes 2 to 5 sentences, each with the page's exact words, every quote checked against the page; svc_provider_description_record validates and proposes to Layer 4. No other mode changes.
+const WORKER = "coverage-sweep-worker-v0.58.0"; // v0.58.0 (2 Nov 2026, CF-247 Scholarship Coverage Recovery, mandate 17:41 and direction 23:24): scholarship discovery maps every source a provider has (F4), a refused map is deferred, not empty (F3); listing pages are read page by page until the pagination ends, complete or partial (F6), and their items, including the awards of an umbrella page, become candidates (F5); a page that now opens elsewhere is moved or redirected away (F7); the all-time scholarship cap is retired into the daily share (F8); scholarship run sizes and the render wait are settings (F10). v0.57.0 v0.57.0 (2 Nov 2026, CF-247 missing-field enrichment P1, Platform Admin 2 Nov 2026 10:28; approved 14:50): new mode provider_description (description.ts): a provider's stored About / Overview copy first, otherwise the About link of its home page on its own hosts, read directly (robots.txt respected; Firecrawl only when the site refuses, within the Firecrawl budget); the pinned Enrich fields model writes 2 to 5 sentences, each with the page's exact words, every quote checked against the page; svc_provider_description_record validates and proposes to Layer 4. No other mode changes.
 // was v0.56.0 // v0.56.0 (2 Nov 2026, Platform Admin 11:10 §2, intake dates): the calendar parser (policy.ts calendarStarts, calendar-dates-v1) also keeps each start's printed day and year and the period's "applications close" date or rolling wording; months, years and quotes are unchanged. v0.55.0 (31 Oct 2026, StudySearch decision D13): read mode honours direct_only from svc_coverage_read_next (re-read pilot pages are read directly only, never through Firecrawl). v0.54.1: // v0.54.1 (30 Oct 2026, CF-247 decision W31, course-page identity): the labelled NZQA number rule in extract.ts identity() applies to New Zealand pages (and callers that give no country) only, never another known country (College of the North Atlantic, Canada, had 53 pages proved as nzqa_code); nothing else changes.
 // was v0.54.0 // v0.54.0 (30 Oct 2026, CF-247 decisions W30 and W32; W32, reader answer limits): every AI read's answer limit is a setting (reading.answer_tokens.<read>, answer.ts; defaults are the values fixed in the code before, and the fee reader, which sent none, gets 32,000); an answer that reached its limit (finish_reason length, or not JSON at the limit) is held_partial: output_truncated on the existing failure path and never parsed or proposed; the cost of every call is recorded also when the read fails (Enrich fields, scholarship pages, central pages, fee pages); an empty answer to a scholarship re-check or a course page match fails named instead of being read as "{}".
 // was v0.53.1 // v0.53.1 (30 Oct 2026, CF-247 decision W30, enrichment reliability): adapter_capture reports items (sample pages) and failed (pages with no capture) and adapter_propose reports its one proposal, so the per-call ledger and the hourly health report no longer read a working capture as 0 of 0; nothing else changes.
@@ -501,6 +502,8 @@ async function handle(req: Request): Promise<Response> {
     // re-reading held scholarships' pages are Layer 2 settings read each run. If they cannot be read, nothing is spent.
     const schBudget = mode.startsWith("scholarship") ? await rpc("svc_scholarship_fc_budget", {}).catch(() => null) : null;
     let schLeft = schBudget && Number.isFinite(Number(schBudget.cap)) ? Math.max(0, Number(schBudget.cap) - Number(schBudget.used ?? schBudget.cap)) : 0;
+    // v0.58.0 (F8): with the all-time scholarship cap off (pipeline scholarship.lifetime_cap_on, default off) the database returns used + the
+    // daily scholarship share as the ceiling, so the daily share in svc_fc_spend is the only scholarship limit; nothing is unlimited.
     const schReserve = schBudget && Number.isFinite(Number(schBudget.reserve)) ? Number(schBudget.reserve) : Number.POSITIVE_INFINITY;
     // v0.14.0 (Decision 253): when the setting is on, Firecrawl is used only for target universities.
     const targets = await rpc("svc_fc_targets", {}).catch(() => null);
@@ -556,11 +559,11 @@ async function handle(req: Request): Promise<Response> {
     // v0.18.0 (Platform Admin, 11 Oct 2026): every scholarship page is read through the scraper only. University sites are treated
     // as gatekept: no direct read, no fallback, and robots.txt is not consulted for scholarship pages (Platform Admin decision).
     // When the scraper cannot be used (credit cap, Firecrawl unavailable) the page waits and is tried again later.
-    const readSch = async (url: string, providerId: string | null) => {
+    const readSch = async (url: string, providerId: string | null, waitMs: number = wsNum("scholarship.render_wait_ms", 1500)) => {
       const none = (status: string, http: number | null = null) => ({ status, http, html: "", finalUrl: url, via: null as string | null });
       try { new URL(url) } catch { return none("fetch_failed") }
       if (!(await useFc("sch_scrape", providerId, url, true))) return none("waiting_scraper");
-      const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: FC_PROXY, url, formats: ["rawHtml"], onlyMainContent: false, waitFor: 1500, timeout: 30000 }), signal: AbortSignal.timeout(45000) }).catch(() => null);
+      const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: FC_PROXY, url, formats: ["rawHtml"], onlyMainContent: false, waitFor: waitMs, timeout: 30000 }), signal: AbortSignal.timeout(45000) }).catch(() => null);
       const d = r ? await r.json().catch(() => ({})) : {};
       const code = Number(d?.data?.metadata?.statusCode ?? (r?.ok ? 200 : r?.status ?? 0)) || null;
       const html = r?.ok && code !== null && code < 400 ? pageHtml(d) : "";
@@ -569,6 +572,21 @@ async function handle(req: Request): Promise<Response> {
       if (code === 404 || code === 410) return { ...none("gone", code), finalUrl };
       if (code && [401, 403, 406, 429].includes(code)) return { ...none("blocked", code), finalUrl };
       return none("scrape_failed", code);
+    };
+    // v0.58.0 (F5, F7): a scholarship page as the reader keeps it. An address ending "#award-<code>" is one award of an umbrella page: the copy
+    // kept is that award's section (the other awards removed, the shared text kept), or "section_missing" when the page no longer lists it.
+    // A page that now opens elsewhere is "redirected_away" (the site or catalogue home, a listing or a search page: no longer this
+    // scholarship's page); one moved to another detail page is read as usual and the move is recorded by the database from its final address.
+    const readSchPage = async (url: string, providerId: string | null) => {
+      const pg = await readSch(url, providerId);
+      if (pg.status !== "read" && pg.status !== "too_thin") return pg;
+      const code = sectionCode(url);
+      if (code) {
+        const sec = sectionHtml(pg.html, code);
+        return sec ? { ...pg, html: sec, finalUrl: url } : { ...pg, status: "section_missing", html: "" };
+      }
+      if (redirectOutcome(url, pg.finalUrl) === "redirected_away") return { ...pg, status: "redirected_away" };
+      return pg;
     };
 
     if (mode === "discover") {
@@ -1122,7 +1140,7 @@ async function handle(req: Request): Promise<Response> {
     // v0.7.0: scholarship sweep. Each active scholarship's own provider page is read (robots.txt respected; Firecrawl
     // only when a direct read is refused or script-only), kept as gzipped evidence, and deterministic facts are recorded.
     if (mode === "scholarship_read") {
-      const items: { scholarship_id: string; url: string; name: string; provider_id: string; currency?: string; url_source?: string; names?: string[] }[] = await rpc("svc_scholarship_read_next", { p_limit: Math.min(Number(body.limit || 20), 40) });
+      const items: { scholarship_id: string; url: string; name: string; provider_id: string; currency?: string; url_source?: string; names?: string[] }[] = await rpc("svc_scholarship_read_next", { p_limit: Math.min(Number(body.limit || 20), wsNum("scholarship.read_max", 40)) });
       const tally: Record<string, number> = {}; const applied: unknown[] = [];
       // v0.17.42: pages are read six at a time but recorded at most two at a time (each record rebuilds course links and takes
       // 1-2 seconds; six at once pushed some past the database's 8-second limit)
@@ -1132,7 +1150,7 @@ async function handle(req: Request): Promise<Response> {
       await pool(items, 6, async (it) => {
         // v0.17.40: an item not started in time stays leased and is picked again after the lease (10 minutes)
         if (Date.now() - t0 > BUDGET_MS - 30000) { tally.deferred = (tally.deferred || 0) + 1; return }
-        const pg = await readSch(it.url, it.provider_id);
+        const pg = await readSchPage(it.url, it.provider_id);  // v0.58.0: award sections and redirected-away pages (F5, F7)
         let status = pg.status, http: number | null = pg.http, via: string | null = pg.via, finalUrl = pg.finalUrl || it.url;
         const html = pg.status === "read" ? pg.html : "";
         let path: string | null = null, sha: string | null = null, facts: unknown = null;
@@ -1780,7 +1798,8 @@ async function handle(req: Request): Promise<Response> {
       const phase = String(body.phase || "all"), deadline = t0 + 105_000;
       const out: Record<string, unknown> = {};
       if (phase === "all" || phase === "discover") {
-        const provs: { provider_id: string; website: string; reason: string; hosts?: string[]; names: string[]; held: { scholarship_id: string; name: string }[] }[] = await rpc("svc_scholarship_discover_next", { p_limit: Math.min(Number(body.limit || 3), 6) });
+        // v0.58.0 (F4): each provider comes with its sources (website plus the scholarship catalogues recorded for it), all mapped in this run
+        const provs: { provider_id: string; website: string; reason: string; hosts?: string[]; names: string[]; held: { scholarship_id: string; name: string }[]; sources?: string[] }[] = await rpc("svc_scholarship_discover_next", { p_limit: Math.min(Number(body.limit || 3), wsNum("scholarship.discover_providers_max", 6)) });
         const done: unknown[] = [];
         await pool(provs, 3, async (p) => {
           let site: URL;
@@ -1789,23 +1808,29 @@ async function handle(req: Request): Promise<Response> {
             // v0.18.0: the site is mapped through the scraper only (its site maps included); no direct fetch of the site or its sitemaps
             const found = new Map<string, { url: string; title?: string; source: string }>();
             const methods: string[] = []; let total = 0;
-            {
-              const gm = await useFcWhy("sch_map", p.provider_id, site.origin, true);
+            // v0.58.0 (F4): one map per distinct source origin and path (website first), each through the daily budget; a refused or failed map
+            // is recorded by its reason and makes the result "deferred" (F3), never a final "empty"
+            const srcs = [...new Set([site.origin, ...((p.sources || []).filter((u) => /^https?:\/\//i.test(u)))])].slice(0, wsNum("scholarship.sources_per_provider_max", 5));
+            for (const src of srcs) {
+              let origin = site.origin, hostname = site.hostname;
+              try { const su = new URL(src); origin = su.pathname.length > 1 ? su.origin + su.pathname : su.origin; hostname = su.hostname } catch { continue }
+              const gm = await useFcWhy("sch_map", p.provider_id, origin, true);
               if (gm.ok) {
-                const r = await fetch("https://api.firecrawl.dev/v2/map", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: site.origin, search: "scholarship", limit: wsNum("map_limit_scholarships", 5000), sitemap: "include", includeSubdomains: true }), signal: AbortSignal.timeout(60000) });
-                const d = await r.json().catch(() => ({}));
-                if (!r.ok || d?.success === false) methods.push(`map:${r.status}`);
+                const r = await fetch("https://api.firecrawl.dev/v2/map", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: origin, search: "scholarship", limit: wsNum("map_limit_scholarships", 5000), sitemap: "include", includeSubdomains: true }), signal: AbortSignal.timeout(60000) }).catch(() => null);
+                const d = r ? await r.json().catch(() => ({})) : {};
+                if (!r || !r.ok || d?.success === false) methods.push(`map:${r ? r.status : "timeout"}`);
                 else {
                   const links = (d.links || d.data?.links || []).map((x: any) => typeof x === "string" ? { url: x } : { url: x.url, title: x.title });
                   methods.push(`map_search(${links.length})`); total += links.length;
-                  for (const u of links) if (u.url && keepScholarshipUrl(u.url, [site.hostname, ...(p.hosts || [])])) found.set(normUrl(u.url), { url: u.url, title: u.title, source: "map" });
+                  for (const u of links) if (u.url && keepScholarshipUrl(u.url, [site.hostname, hostname, ...(p.hosts || [])])) found.set(normUrl(u.url), { url: u.url, title: u.title, source: "map" });
                 }
               } else methods.push(`map:${gm.why}`);
             }
-            const cands = [...found.values()].slice(0, 6000);
+            const cands = [...found.values()].slice(0, wsNum("scholarship.map_candidates_max", 6000));
             const pm: unknown[] = []; // v0.18.0: no matching of register (Study Australia) records; scholarships come from provider pages only
-            const rec = await rpc("svc_scholarship_discover_record", { p_provider_id: p.provider_id, p_status: cands.length ? "mapped" : "empty", p_site_origin: site.origin, p_method: methods.join("+") || "none", p_url_count: total, p_candidates: cands, p_matches: pm, p_error: null });
-            done.push({ provider_id: p.provider_id, methods, total, kept: rec?.kept, held: (p.held || []).length, matched: rec?.matched });
+            const outcome = mapOutcome(methods, cands.length);  // v0.58.0 (F3)
+            const rec = await rpc("svc_scholarship_discover_record", { p_provider_id: p.provider_id, p_status: outcome, p_site_origin: site.origin, p_method: methods.join("+") || "none", p_url_count: total, p_candidates: cands, p_matches: pm, p_error: outcome === "deferred" ? methods.filter((m) => m.startsWith("map:")).join(", ") : null });
+            done.push({ provider_id: p.provider_id, status: outcome, sources: srcs.length, methods, total, kept: rec?.kept, held: (p.held || []).length, matched: rec?.matched });
           } catch (e) {
             await rpc("svc_scholarship_discover_record", { p_provider_id: p.provider_id, p_status: "failed", p_site_origin: site.origin, p_method: "discover", p_url_count: 0, p_candidates: [], p_matches: [], p_error: e instanceof Error ? e.message : String(e) });
             done.push({ provider_id: p.provider_id, status: "failed", error: e instanceof Error ? e.message : String(e) });
@@ -1815,12 +1840,12 @@ async function handle(req: Request): Promise<Response> {
       }
       // v0.18.0: the web search for register (Study Australia) records without a provider page is retired
       if ((phase === "all" || phase === "candidates") && Date.now() < deadline - 30000) {
-        const items: { candidate_id: number; url: string; provider_id: string; site: string; currency?: string; hosts?: string[] }[] = await rpc("svc_scholarship_candidate_next", { p_limit: Math.min(Number(body.read_limit || 30), 60) });
+        const items: { candidate_id: number; url: string; provider_id: string; site: string; currency?: string; hosts?: string[] }[] = await rpc("svc_scholarship_candidate_next", { p_limit: Math.min(Number(body.read_limit || 30), wsNum("scholarship.candidates_max", 60)) });
         const tally: Record<string, number> = {}; const admitted: unknown[] = [];
         await pool(items, 6, async (it) => {
           if (Date.now() > deadline) { await rpc("svc_scholarship_candidate_record", { p_candidate_id: it.candidate_id, p_read_status: "deferred", p_http_status: null, p_fetched_via: null, p_final_url: null, p_storage_path: null, p_sha256: null, p_facts: null }); return }
           // v0.18.0: candidates are read through the scraper only (Platform Admin, 11 Oct 2026)
-          const pg = await readSch(it.url, it.provider_id);
+          const pg = await readSchPage(it.url, it.provider_id);  // v0.58.0: award sections and redirected-away pages (F5, F7)
           const via = pg.via;
           // no scraper credit or service right now: back to the queue unchanged, tried again next run
           if (pg.status === "waiting_scraper") { await rpc("svc_scholarship_candidate_record", { p_candidate_id: it.candidate_id, p_read_status: "deferred", p_http_status: null, p_fetched_via: null, p_final_url: null, p_storage_path: null, p_sha256: null, p_facts: null }); tally.waiting_scraper = (tally.waiting_scraper || 0) + 1; return }
@@ -1852,13 +1877,36 @@ async function handle(req: Request): Promise<Response> {
     // two new facts are added; the page's other facts and course links stay as they are.
     // v0.17.37 (CF-247 v2.15.240): a provider's scholarship listing page, read for the coverage check (Scholarships > Coverage)
     if (mode === "scholarship_listing") {
-      const rows: { id: number; provider_id: string; url: string; hosts: string[] }[] = await rpc("svc_scholarship_listing_next", { p_limit: Math.min(Number(body.limit || 6), 20) });
+      // v0.58.0 (F5, F6): a listing source is read page by page (rendered, with the catalogue wait), following its pagination (rel="next", a Next
+      // link, page=N, startRank/numRanks in the query or the fragment) until it ends, the stated total is reached, a page adds nothing, or the
+      // page limit for one run is hit. Complete only when the pagination ended by itself; otherwise partial with the address to continue from.
+      // Every item (a linked scholarship, or an award of an umbrella page keyed by its code) goes to svc_scholarship_listing_record_v2, which
+      // keeps listing membership and turns new items into candidates without duplicating a held page or record.
+      const rows: { id: number; provider_id: string; url: string; hosts: string[]; next_url?: string | null }[] = await rpc("svc_scholarship_listing_next", { p_limit: Math.min(Number(body.limit || 6), wsNum("scholarship.listing_max", 20)) });
       const out: unknown[] = [];
+      const maxPages = wsNum("scholarship.listing_pages_max", 10), maxItems = wsNum("scholarship.listing_items_max", 80);
       await pool(rows, 3, async (r) => {
-        const pg = await readSch(r.url, r.provider_id);
-        const items = pg.status === "read" ? scholarshipListing(pg.html, pg.finalUrl || r.url, r.hosts || []) : [];
-        await rpc("svc_scholarship_listing_record", { p_id: r.id, p_status: pg.status === "read" ? "read" : "failed", p_http_status: pg.http, p_items: items, p_error: pg.status === "read" ? null : pg.status });
-        out.push({ id: r.id, status: pg.status, items: items.length });
+        const items = new Map<string, Record<string, unknown>>();
+        let url: string | null = r.next_url || r.url, pages = 0, total: number | null = null, failed = false, lastNew = 0, http: number | null = null, err: string | null = null;
+        const seenUrls = new Set<string>();
+        while (url && pages < maxPages && !seenUrls.has(url) && Date.now() - t0 < BUDGET_MS - 30000) {
+          seenUrls.add(url);
+          const pg = await readSch(url, r.provider_id, wsNum("scholarship.catalogue_render_wait_ms", 5000));
+          http = pg.http;
+          if (pg.status !== "read") { failed = true; err = pg.status; break }
+          pages++;
+          const base = pg.finalUrl || url;
+          if (total === null) total = statedTotal(mainText(pg.html));
+          const before = items.size;
+          for (const it of scholarshipListing(pg.html, base, r.hosts || [], maxItems)) items.set(`url:${it.url || it.name}`, { ...it, kind: "link" });
+          for (const a of awardSections(pg.html, base)) items.set(a.url ? `url:${a.url}` : `award:${a.key}`, { name: a.name, url: a.url, code: a.key, codes: a.codes, value_text: a.value_text, kind: a.url ? "link" : "award_section" });
+          lastNew = items.size - before;
+          const nx = nextPage(url, pg.html);
+          url = nx && !seenUrls.has(nx) ? nx : null;
+        }
+        const paging = pagingState({ pages_read: pages, items: items.size, total_stated: total, next_url: url, last_page_new: lastNew, failed, page_limit_hit: !!url && pages >= maxPages });
+        await rpc("svc_scholarship_listing_record_v2", { p_id: r.id, p_status: pages > 0 ? "read" : "failed", p_http_status: http, p_items: [...items.values()], p_error: err, p_paging: paging });
+        out.push({ id: r.id, items: items.size, ...paging });
       });
       return j({ ok: true, mode, pages: out, readVia: "scraper", scholarshipFirecrawlLeft: schLeft, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER, scholarshipExtractor: SCH_VERSION });
     }
