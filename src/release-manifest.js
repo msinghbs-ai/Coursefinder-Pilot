@@ -1,17 +1,16 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.410'
-export const PACKAGE_VERSION='0.1.337'
+export const UI_VERSION='2.15.411'
+export const PACKAGE_VERSION='0.1.338'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Nov 2026',
-  title:'Provider descriptions: the right About page, and nothing published as a fragment',
+  title:'Official link fill waits for a pending Layer 4 review',
   changes:[
-    'The provider description reader now reads only the provider\'s own About page on its main site: news articles, staff, research and faculty pages are refused, so a description can never come from an unrelated page.',
-    'Descriptions are never cut to fit: a description over the length limit, or a sentence that is cut off or ends in an ellipsis, is held for review instead of being trimmed or published.',
-    'The length limit stays at 900 characters; raising it to 1,200 is a proposal for the Platform Admin.'
+    'The nightly official link fill leaves a course alone while a Layer 4 course-link review is pending on it, so the reviewer decides the page first. Each run counts the courses it left alone, and they appear once in the integration queue.',
+    'The switch is Settings › Pipeline settings › Official link: wait for Layer 4 (on). The pause rule\'s minimum number of fills is now a setting too.'
   ],
   bugFixes:[]
 }
