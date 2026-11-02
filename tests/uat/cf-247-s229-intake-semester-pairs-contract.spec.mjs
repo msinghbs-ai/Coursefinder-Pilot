@@ -1,6 +1,7 @@
 // Guards: Intake wording, explicit period pairs and excluded months (Platform Admin direction 2 Nov 2026 23:24 §1)
 // "Treat the explicit phrase 'Semester 1 and 2' as evidence that both teaching periods are named. Do not derive exact calendar dates from semester
-// labels alone." With it (Workstream D): pairs and lists name each period; a month the page only excludes ("throughout the year excluding January &
+// labels alone." With it (Workstream D): pairs and lists name each period, behind the pipeline setting intake_dates.name_period_lists, off (0) by
+// default because decision items are recorded as proposed until approved (at 0 a single named period only, as the live rule); a month the page only excludes ("throughout the year excluding January &
 // December", UWA) is not an intake and its rows are withdrawn only by an approved paste file; every filled value keeps the page wording that named
 // the period and the approved calendar's quote and document.
 // The behaviour runs on isolated fixtures by tests/fixtures/intake-dates/run.sh (scratch PostgreSQL; the three intake migrations applied twice to
@@ -11,7 +12,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { execFileSync } from 'node:child_process'
 
-const MIG = 'supabase/migrations/20261103050000_cf247_intake_semester_pairs.sql'
+const MIG = 'supabase/migrations/20261103060000_cf247_intake_semester_pairs.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const FX = 'tests/fixtures/intake-dates'
@@ -27,15 +28,34 @@ test('edits only from the live md5s, checked after; plan v2 is built from the li
   expect(m).toContain("if md5(pg_get_functiondef('security.intake_dates_plan_v1(uuid[],integer)'::regprocedure)) <> '4e3847587271c68e70018de23d0b74b6' then")
   expect(code).toContain("raise exception '% after the edit has md5 %, expected %'")
   expect(run).toContain('"4e3847587271c68e70018de23d0b74b6 2ee1ce769cb5de8d300d9ad6e1bdbf7f 28beada5c58b585bd9e655381231f20f"')
-  expect(run).toContain('MIG3=supabase/migrations/20261103050000_cf247_intake_semester_pairs.sql')
+  expect(run).toContain('MIG3=supabase/migrations/20261103060000_cf247_intake_semester_pairs.sql')
+})
+
+test('the pair and list reading ships off behind intake_dates.name_period_lists (default 0) and the plan reads it', () => {
+  const row = m.slice(m.indexOf("('pipeline', 'intake_dates.name_period_lists',"), m.indexOf('on conflict (toolset_key, key) do nothing;'))
+  expect(row).toContain("'number', '0'::jsonb, '0', '1', 'on/off',")
+  expect(row).toContain("'job intake-dates-apply; security.intake_dates_plan_v2'")
+  expect(m).toMatch(/^-- The pair reading ships OFF behind the new pipeline setting intake_dates\.name_period_lists \(0 by default\)/m)
+  const p = fn('security.intake_dates_plan_v2')
+  expect(p).toContain("v_lists boolean := security.pipeline_num_v1('intake_dates.name_period_lists', 0) = 1;")
+  expect(p).toContain('v_pq := security.intake_period_text_v1(v_raw, v_lists);')
+  // the rule is recorded by mode, so switching the setting on looks once more at rows skipped while it was off
+  expect(p).toContain("v_rule constant text := case when v_lists then 'named-period-pairs-v2' else 'named-period-v2' end;")
+  // pairs and lists are written out only when asked; the page reader does no pair reading, so the setting is the single switch
+  expect(fn('security.intake_period_text_v1')).toContain("select t.t || case when p_lists then coalesce(' | ' || (")
+  expect(fs.readFileSync('supabase/functions/coverage-sweep/extract.ts', 'utf8')).not.toMatch(/name_period_lists|semesters?\s*\d\s*(and|&)/i)
+  // nothing switches it on
+  expect(code).not.toMatch(/name_period_lists'[^\n]*(=|set value)[^\n]*'1'/)
+  expect(fixtures).toContain("'pair and list reading off by default (intake_dates.name_period_lists = 0)'")
+  expect(fixtures).toContain('perform pg_temp.lists(1);')
 })
 
 test('explicit pairs and lists name each period; a year is not a period; a label alone gives no date', () => {
   const t = fn('security.intake_period_text_v1')
   expect(t).toContain("'\\m(semester|trimester|term|study period|teaching period|session|block|quarter)s?\\s*([0-9](?:\\s*(?:,|&|\\mand\\M|\\mor\\M|/)\\s*[0-9])+)\\M'")
-  expect(m).toContain("if security.intake_period_text_v1('Semester 1 and 2') !~ '\\msemester 2\\M' or security.intake_period_text_v1('Term 1, 2027') ~ '\\mterm 2\\M' then")
+  expect(m).toContain("if security.intake_period_text_v1('Semester 1 and 2', true) !~ '\\msemester 2\\M' or security.intake_period_text_v1('Term 1, 2027', true) ~ '\\mterm 2\\M'")
+  expect(m).toContain("or security.intake_period_text_v1('Semester 1 and 2', false) ~ '\\msemester 2\\M' then")
   const p = fn('security.intake_dates_plan_v2')
-  expect(p).toContain('v_pq := security.intake_period_text_v1(v_raw);')
   // a date still needs the approved calendar's dated start of the named period (unchanged from v1)
   expect(p).toContain("where s.kind = 'start' and s.period = any (v_named) and s.month = v_m and s.year is not null\n       and (s.quote ~ ('\\m' || s.year || '\\M') or v_pq ~ ('\\m' || s.year || '\\M'))")
   expect(p).toContain('v_start := case when cardinality(v_starts) = 1 then v_starts[1] end;')
@@ -55,7 +75,7 @@ test('a month the page only excludes is not an intake; its rows are withdrawn on
   expect(m).toContain('and not security.intake_month_negated_v1(p_quote, m.n)')
   expect(fn('security.intake_negated_months_v1')).toContain("where i.status = 'active'")
   // the page reader skips such windows too
-  const out = path.join(os.tmpdir(), `extract-s224-${process.pid}.mjs`)
+  const out = path.join(os.tmpdir(), `extract-s229-${process.pid}.mjs`)
   execFileSync('npx', ['esbuild', 'supabase/functions/coverage-sweep/extract.ts', '--format=esm', `--outfile=${out}`, '--log-level=error'])
   const { intakes, intakeEvidence } = await import(out)
   expect(intakes('Part-time Delivery On-campus Starting dates Throughout the year excluding January & December, by agreement with supervisors')).toEqual([])
@@ -86,11 +106,12 @@ test('every filled value keeps the page wording and the approved calendar docume
   expect(code).not.toMatch(/website_v2_|website_edge_|website_api_v2_|zoho_edge_|function api\./)
 })
 
-test('the fixtures cover pairs, lists, a label alone, excluded months and provenance', () => {
-  for (const p of ['PASS explicit pairs and lists name each period', 'PASS a label alone gives no date', 'PASS a month the page excludes is not an intake',
+test('the fixtures cover both setting values, pairs, lists, a label alone, excluded months and provenance', () => {
+  for (const p of ['PASS setting 0: pair and list wording names nothing new', 'PASS explicit pairs and lists name each period', 'PASS a label alone gives no date', 'PASS a month the page excludes is not an intake',
     'PASS every filled value keeps its page wording and calendar evidence', 'PASS named period only: no month-to-period inference',
     'PASS chain: stored reading -> intake row -> search projection -> consumer API']) expect(fixtures).toContain(`raise notice '${p}';`)
-  for (const w of ["'\"Semester 1 and 2\" names Semester 2'", "'a list names each period'", "'pairs and lists read; a year is not a period'",
+  for (const w of ["'setting 0: single named periods only'", "'setting 0: a list names nothing new'", "'setting 0: the rule recorded by mode'",
+    "'\"Semester 1 and 2\" names Semester 2'", "'a list names each period'", "'pairs and lists read; a year is not a period'",
     "'listed for withdrawal: exactly UWA''s two rows'", "'the AI month parser drops excluded months only'", "'every filled value has its evidence'",
     "'an earlier value''s evidence completed'"]) expect(fixtures).toContain(w)
 })
