@@ -65,6 +65,8 @@ const Automations=lazyPage(()=>import('./Automations'))
 const SearchCapCard=lazyPage(()=>import('./SearchCapCard'))
 const PipelineSettings=lazyPage(()=>import('./PipelineSettings'))
 const CoverageView=lazyPage(()=>import('./course-coverage'),'CoverageView')
+// CF-247 AER Phase B (mandate 2 Nov 2026 §13): academic entry requirements on Coverage & completeness › Attributes, Curator and above
+const AerCoverage=lazyPage(()=>import('./AerCoverage'))
 const AdaptersWorkspace=lazyPage(()=>import('./AdaptersWorkspace'))
 const Layer23Operations=lazyPage(()=>import('./Layer23Operations'))
 const ScreenUse=lazyPage(()=>import('./ScreenUse'))
@@ -112,7 +114,7 @@ function ReferenceList({routeParams,navigate,onError}){
 }
 function CoverageAttributes({rank}){
   const[scope,setScope]=useState({country:'',provider:null})
-  return <div className="m-page-stack"><CoverageView view="attributes" onScope={setScope} belowFilters={({country,provider})=><FieldCoverage rank={rank} country={country} provider={provider}/>}/><details className="m-admin-advanced cov-by-area"><summary>By area: providers, courses, campuses and scholarships</summary><DomainReadiness rank={rank}/></details>{rank>=4&&<p className="sd-desc" data-attributes-moved>Fee schedules, English policies and academic calendars are approved in <a className="cf-link" href="#layer-2-discovery?tab=builder">Layer 2 › Adapter builder</a> (1.3) for one university, or across universities on <a className="cf-link" href="#layer-2-discovery?tab=universities">Layer 2 › Onboarding</a>.</p>}</div>
+  return <div className="m-page-stack"><CoverageView view="attributes" onScope={setScope} belowFilters={({country,provider})=><FieldCoverage rank={rank} country={country} provider={provider}/>}/><details className="m-admin-advanced cov-by-area"><summary>By area: providers, courses, campuses and scholarships</summary><DomainReadiness rank={rank}/></details>{rank>=4&&<p className="sd-desc" data-attributes-moved>Fee schedules, English policies and academic calendars are approved in <a className="cf-link" href="#layer-2-discovery?tab=builder">Layer 2 › Adapter builder</a> (1.3) for one university, or across universities on <a className="cf-link" href="#layer-2-discovery?tab=universities">Layer 2 › Onboarding</a>.</p>}{rank>=3&&<AerCoverage rank={rank}/>}</div>
 }
 
 // v2.15.253 (Platform Admin, 12 Oct 2026): Layer 4 › Attributes retired. Fee schedules, English policies and academic calendars are
