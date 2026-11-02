@@ -48,10 +48,10 @@ insert into search.enrichment_gates values ('courses', 'course_intake', 'approve
 insert into search.enrichment_source_gates values ('courses', 'course_intake', pg_temp.u('sweep'), 'approved');
 
 -- the stored readings: Harbour's calendar as the parser reads it now (calendar-dates-v1), approved by a person; Bay's approved before it
-insert into pipeline.provider_policy_proposals(id, provider_id, kind, parser, url, proposal, status, decided_at)
-values (pg_temp.u('cal harbour'), pg_temp.u('harbour'), 'intake_calendar', 'provider-policy-v0.2.5', 'https://www.harbour.edu.au/calendar', :'cal'::jsonb, 'approved', now());
-insert into pipeline.provider_policy_proposals(id, provider_id, kind, parser, url, proposal, status, decided_at)
-select pg_temp.u('cal bay'), pg_temp.u('bay'), 'intake_calendar', 'provider-policy-v0.2.2', 'https://www.bay.edu.au/key-dates',
+insert into pipeline.provider_policy_proposals(id, provider_id, kind, parser, url, evidence_id, proposal, status, decided_at)
+values (pg_temp.u('cal harbour'), pg_temp.u('harbour'), 'intake_calendar', 'provider-policy-v0.2.5', 'https://www.harbour.edu.au/calendar', pg_temp.u('cal ev harbour'), :'cal'::jsonb, 'approved', now());
+insert into pipeline.provider_policy_proposals(id, provider_id, kind, parser, url, evidence_id, proposal, status, decided_at)
+select pg_temp.u('cal bay'), pg_temp.u('bay'), 'intake_calendar', 'provider-policy-v0.2.2', 'https://www.bay.edu.au/key-dates', pg_temp.u('cal ev bay'),
        jsonb_build_object('parser', 'provider-policy-v0.2.2', 'periods', jsonb_build_array(
          -- as live: the approved Semester 1 also lists July, from a supplementary exams row
          jsonb_build_object('period', 'semester 1', 'months', '[3, 7]'::jsonb, 'years', jsonb_build_array(pg_temp.y(1)),
@@ -77,11 +77,19 @@ select pg_temp.course('exact', 'harbour', 'harbour.edu.au', 'MC271', 'Master of 
        pg_temp.course('trinoyear', 'harbour', 'harbour.edu.au', 'MC282', 'Master of Journalism', 'Trimester 2 intake'),
        pg_temp.course('triyear', 'harbour', 'harbour.edu.au', 'MC283', 'Master of Translation', format('Trimester 2, %s', pg_temp.y(1))),
        pg_temp.course('oldshape', 'bay', 'bay.edu.au', 'MC301', 'Master of Engineering', 'Commencing Semester 1 or Term 1; Semester 2 entry'),
-       pg_temp.course('nocal', 'nocal', 'inland.edu.au', 'MC401', 'Master of Nursing', 'Semester 1');
+       pg_temp.course('nocal', 'nocal', 'inland.edu.au', 'MC401', 'Master of Nursing', 'Semester 1'),
+       -- 23:24: explicit pairs and lists; a label alone; excluded months; a value filled before the page wording was kept
+       pg_temp.course('pair', 'harbour', 'harbour.edu.au', 'MC290', 'Master of Data Analytics', 'Intakes: Semester 1 and 2'),
+       pg_temp.course('trilist', 'harbour', 'harbour.edu.au', 'MC291', 'Master of Cyber Security', format('Start in Trimesters 1, 2 and 3 (%s)', pg_temp.y(1))),
+       pg_temp.course('pairbay', 'bay', 'bay.edu.au', 'MC302', 'Master of Construction', 'Semester 1 and 2'),
+       pg_temp.course('uwa', 'harbour', 'harbour.edu.au', 'MP292', 'Master of Philosophy', 'Starting dates Throughout the year excluding January & December, by agreement with supervisors'),
+       pg_temp.course('legacy', 'harbour', 'harbour.edu.au', 'MC293', 'Master of Biotechnology', 'Semester 1');
 select pg_temp.intake('exact', 'March'), pg_temp.intake('exact', 'July'), pg_temp.intake('monthonly', 'November'), pg_temp.intake('monthnamed', 'March'),
        pg_temp.intake('aiquote', 'March'), pg_temp.intake('aiother', 'March'), pg_temp.intake('trinoyear', 'July'), pg_temp.intake('triyear', 'July'),
        pg_temp.intake('rolling', 'July'), pg_temp.intake('past', 'March', pg_temp.y(-1)), pg_temp.intake('locked', 'March'),
        pg_temp.intake('refused', 'March'), pg_temp.intake('sibling', 'March', null, 'heldby'),
+       pg_temp.intake('pair', 'March'), pg_temp.intake('pair', 'July'), pg_temp.intake('trilist', 'July'), pg_temp.intake('pairbay', 'February'),
+       pg_temp.intake('uwa', 'January'), pg_temp.intake('uwa', 'December'), pg_temp.intake('legacy', 'March', pg_temp.y(1)),
        pg_temp.intake('oldshape', 'March'), pg_temp.intake('oldshape', 'February'), pg_temp.intake('oldshape', 'July'), pg_temp.intake('oldshape', 'January'), pg_temp.intake('nocal', 'March');
 -- the AI readings: Economics' quote is from the page behind its intake; Finance's is from another page
 insert into pipeline.field_enrich_items(provider_id, course_id, field, state, value, quote, evidence_id) values
@@ -92,6 +100,17 @@ insert into catalogue.provider_registrations values (pg_temp.u('harbour'), 'CRIC
 insert into catalogue.course_registrations values (pg_temp.u('exact'), 'CRICOS', 'C0001');
 insert into pipeline.course_fact_source_qualifications values (pg_temp.u('sweep'), 'H0001', 'qualified');
 insert into ref.currencies values ('AUD') on conflict do nothing;
+-- UWA's AI reading of the same wording
+insert into pipeline.field_enrich_items(provider_id, course_id, field, state, value, quote, evidence_id) values
+  (pg_temp.u('harbour'), pg_temp.u('uwa'), 'intakes', 'filled', '{"months": ["January", "December"]}', 'Starting dates Throughout the year excluding January & December, by agreement with supervisors.', pg_temp.u('ev uwa'));
+-- as live after v2.15.407: the July intake of "Semester 1 and 2" was looked at under the strict rule and skipped; Biotechnology's March value was filled
+-- before the page wording and calendar document were kept
+update catalogue.course_intakes set start_date = make_date(pg_temp.y(1), 3, 1) where course_id = pg_temp.u('legacy');
+insert into pipeline.course_intake_dates(intake_id, course_id, provider_id, proposal_id, outcome, reason, periods, start_precision, deadline_kind, start_quote, before_value, after_value)
+select (pg_temp.row('pair', 'July')).id, pg_temp.u('pair'), pg_temp.u('harbour'), pg_temp.u('cal harbour'), 'skipped', 'the course page names no study period of the calendar (month only)', null::text[], 'month', null, null, '{}'::jsonb, '{}'::jsonb
+union all
+select (pg_temp.row('legacy', 'March')).id, pg_temp.u('legacy'), pg_temp.u('harbour'), pg_temp.u('cal harbour'), 'filled', null, '{semester 1}'::text[], 'day', 'not_stated',
+       format('1 March %s | Semester 1 starts', pg_temp.y(1)), '{}', '{}';
 -- a person locked Social Work's intakes; Architecture's page was refused for it; the Graduate Diploma's month came from the Master's page
 insert into pipeline.manual_locks values ('course', pg_temp.u('locked'), 'intakes');
 insert into pipeline.page_rejections(course_id, url, provider_id, source, reason, signals)
@@ -126,8 +145,8 @@ begin
   perform pg_temp.ok(exists (select 1 from pipeline.automation_catalogue where jobname = 'intake-dates-apply'), 'job catalogued');
   v := security.intake_dates_apply_v1(null);
   perform pg_temp.ok(v = '{"enabled": false, "filled": 0}'::jsonb, 'off: does nothing');
-  perform pg_temp.ok(not exists (select 1 from catalogue.course_intakes where intake_year is not null and intake_year <> pg_temp.y(-1) or start_date is not null or application_deadline is not null), 'off: no intake changed');
-  perform pg_temp.ok(not exists (select 1 from pipeline.course_intake_dates), 'off: nothing recorded');
+  perform pg_temp.ok(not exists (select 1 from catalogue.course_intakes where course_id <> pg_temp.u('legacy') and (intake_year is not null and intake_year <> pg_temp.y(-1) or start_date is not null or application_deadline is not null)), 'off: no intake changed');
+  perform pg_temp.ok((select count(*) from pipeline.course_intake_dates) = 2, 'off: nothing recorded');
   raise notice 'PASS off by default';
 end $$;
 
@@ -137,7 +156,7 @@ declare v jsonb; r pipeline.course_intake_dates;
 begin
   perform pg_temp.switch(true);
   v := security.intake_dates_apply_v1(null);
-  perform pg_temp.ok((v->>'filled')::int = 7 and (v->>'courses')::int = 5, 'filled 7 rows of 5 courses: ' || v::text);
+  perform pg_temp.ok((v->>'filled')::int = 10 and (v->>'courses')::int = 7 and (v->>'provenance_completed')::int = 1, 'filled 10 rows of 7 courses, one earlier value''s evidence completed: ' || v::text);
   -- exact date and year kept, with the deadline
   perform pg_temp.ok((pg_temp.row('exact', 'March')).intake_year = pg_temp.y(1) and (pg_temp.row('exact', 'March')).start_date = make_date(pg_temp.y(1), 3, 1)
                      and (pg_temp.row('exact', 'March')).application_deadline = make_date(pg_temp.y(0), 11, 30), 'exact date, year and deadline');
@@ -193,6 +212,41 @@ begin
   perform pg_temp.ok((pg_temp.rec('nocal', 'March')).intake_id is null and (pg_temp.row('nocal', 'March')).intake_year is null, 'no calendar, nothing');
   perform pg_temp.ok((select count(*) from public.fixture_refresh_calls) = 1, 'the search projection is refreshed once for the courses changed');
   raise notice 'PASS backfill from stored readings';
+  -- 23:24 intake wording: "Semester 1 and 2" names both periods; the July row the strict rule skipped is looked at once more and filled
+  perform pg_temp.ok((pg_temp.row('pair', 'March')).start_date = make_date(pg_temp.y(1), 3, 1) and (pg_temp.row('pair', 'July')).start_date = make_date(pg_temp.y(1), 7, 26)
+                     and (pg_temp.rec('pair', 'July')).rule = 'named-period-pairs-v2' and (pg_temp.rec('pair', 'July')).periods = array['semester 2'], '"Semester 1 and 2" names Semester 2');
+  -- a list names each period ("Trimesters 1, 2 and 3"), and the year printed with it counts
+  perform pg_temp.ok((pg_temp.row('trilist', 'July')).start_date = make_date(pg_temp.y(1), 7, 5) and (pg_temp.rec('trilist', 'July')).periods = array['trimester 2'], 'a list names each period');
+  perform pg_temp.ok(security.intake_period_text_v1('Semesters 1 & 2') ~ '\msemester 2\M' and security.intake_period_text_v1('Semester One and Two') ~ '\msemester 2\M'
+                     and security.intake_period_text_v1('Trimester 1, 2 and 3') ~ '\mtrimester 3\M' and security.intake_period_text_v1('Term 1, 2027') !~ '\mterm 2\M', 'pairs and lists read; a year is not a period');
+  raise notice 'PASS explicit pairs and lists name each period';
+  -- a label alone gives no date: Bay's Semester 2 has no dated start in the approved calendar
+  perform pg_temp.ok((pg_temp.row('pairbay', 'February')).start_date is null and (pg_temp.row('pairbay', 'February')).intake_year is null
+                     and (pg_temp.rec('pairbay', 'February')).reason = 'the year of the named period is not printed (month only)', 'label alone: ' || coalesce((pg_temp.rec('pairbay', 'February')).reason, 'no record'));
+  raise notice 'PASS a label alone gives no date';
+  -- a month the page only excludes is not an intake: nothing filled, listed for the withdrawal paste file, and the AI month parser no longer reads it
+  perform pg_temp.ok((pg_temp.row('uwa', 'January')).intake_year is null and (pg_temp.rec('uwa', 'January')).reason = 'the page excludes this month (listed for withdrawal)', 'excluded month not filled');
+  perform pg_temp.ok((select array_agg(n.intake_label order by n.intake_label) from security.intake_negated_months_v1() n) = array['December', 'January'], 'listed for withdrawal: exactly UWA''s two rows');
+  perform pg_temp.ok(security.enrich_parse_intakes_v1('January, December', 'Starting dates Throughout the year excluding January & December') is null
+                     and security.enrich_parse_intakes_v1('February, July', 'Intakes in February and July') = '{"months": ["February", "July"]}', 'the AI month parser drops excluded months only');
+  perform pg_temp.ok((pg_temp.row('uwa', 'January')).status = 'active', 'not withdrawn by the change itself (paste file after approval)');
+  -- the clear wordings live (UWA, UED, OPIE, GHMC/AIBT) and the ambiguous one (SSC adapter pattern)
+  perform pg_temp.ok(security.intake_month_negated_v1('students may commence at any time throughout the year, except December and January', 1)
+                     and security.intake_month_negated_v1('Intake Dates Every month on the 15th (Except December)', 12)
+                     and security.intake_month_negated_v1('Intake Dates: Monthly intakes except June and December Study Period', 6)
+                     and security.intake_month_negated_v1('not offered in July', 7)
+                     and not security.intake_month_negated_v1('Intakes in February and July, except for the Bachelor of Arts', 2)
+                     and not security.intake_month_negated_v1('adapter pattern: Except January February March April May July August September October November', 1)
+                     and not security.intake_month_negated_v1('adapter pattern: Except January February March April May July August September October November', 9)
+                     and not security.intake_month_negated_v1('Start in March or July; no intake in December', 3), 'clear excluding wordings only; a run-together list is ambiguous');
+  raise notice 'PASS a month the page excludes is not an intake';
+  -- every filled value keeps the page wording that named the period and the approved calendar's quote and document
+  perform pg_temp.ok(not exists (select 1 from pipeline.course_intake_dates d where d.outcome = 'filled'
+                       and (coalesce(d.page_quote, '') = '' or d.start_quote is null or d.calendar_url is null or d.calendar_evidence_id is null)), 'every filled value has its evidence');
+  perform pg_temp.ok((pg_temp.rec('pair', 'July')).page_quote = 'Intakes: Semester 1 and 2' and (pg_temp.rec('pair', 'July')).calendar_url = 'https://www.harbour.edu.au/calendar'
+                     and (pg_temp.rec('pair', 'July')).calendar_evidence_id = pg_temp.u('cal ev harbour') and (pg_temp.rec('pair', 'July')).start_quote like '26 July % | Semester 2 begins', 'page wording and calendar evidence kept');
+  perform pg_temp.ok((pg_temp.rec('legacy', 'March')).page_quote = 'Semester 1' and (pg_temp.rec('legacy', 'March')).calendar_url = 'https://www.harbour.edu.au/calendar', 'an earlier value''s evidence completed');
+  raise notice 'PASS every filled value keeps its page wording and calendar evidence';
 end $$;
 
 -- 4. idempotent: a second run looks at nothing; a re-admission without a year keeps the dates; an older year never replaces a later one ------
@@ -243,7 +297,10 @@ begin
   insert into pipeline.provider_policy_proposals(id, provider_id, kind, parser, url, proposal, status, decided_at)
   select pg_temp.u('cal harbour 2'), provider_id, kind, parser, url, proposal, 'approved', now() + interval '1 second' from pipeline.provider_policy_proposals where id = pg_temp.u('cal harbour');
   v := security.intake_dates_apply_v1(null);
-  perform pg_temp.ok((v->>'filled')::int = 0 and (v->>'looked_at')::int > 0, 'new calendar: looked at again, nothing overwritten: ' || v::text);
+  -- the only change is an empty column filled: Biotechnology's deadline (its year and date were held and stay)
+  perform pg_temp.ok((v->>'filled')::int = 1 and (v->>'looked_at')::int > 0 and (pg_temp.row('legacy', 'March')).application_deadline = make_date(pg_temp.y(0), 11, 30)
+                     and (pg_temp.row('legacy', 'March')).start_date = make_date(pg_temp.y(1), 3, 1) and (pg_temp.row('exact', 'March')).start_date = make_date(pg_temp.y(1), 3, 1),
+                     'new calendar: looked at again, only an empty column filled, nothing overwritten: ' || v::text);
   v := security.intake_dates_apply_v1(null);
   perform pg_temp.ok((v->>'looked_at')::int = 0, 'new calendar: once');
   raise notice 'PASS the backfill is idempotent';
