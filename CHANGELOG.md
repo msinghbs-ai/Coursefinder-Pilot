@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.338 — 3 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.411** (direction 2 Nov 2026 23:24, Workstream E; housekeeping finding H05; mandate 3 Nov 00:03 Agent E). Migration `20261103030000_cf247_url_fill_respects_layer4`: md5-guarded edit of security.course_url_fill_v1 (9ae50ba4 -> 270be3f5); settings course_url.fill_respects_layer4 (1) and course_url.retraction_min_fills (50); skip count in the run event and one integration issue by fingerprint. Retractions unchanged; nothing dropped; consumer API untouched. Spec s225. Admin SOP 2.21.
+
 ## 0.1.337 — 3 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.410** (overnight direction 2 Nov 2026 23:24 §1 Descriptions; pilot finding 2 Nov 16:16). Migration `20261102130000_cf247_pdesc_page_choice`: page rule security.provider_description_page_v1 with settings for allowed and refused words; md5-guarded edits to provider_description_stored_v1, svc_provider_description_next and provider_description_validate_v1 (new rule incomplete_sentence). Worker coverage-sweep v0.58.0 keeps sentences and quotes whole. No setting value changed (pdesc.max_chars 1,200 held as a proposal). Consumer API untouched.
