@@ -1,16 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.407'
-export const PACKAGE_VERSION='0.1.334'
+export const UI_VERSION='2.15.408'
+export const PACKAGE_VERSION='0.1.335'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'2 Nov 2026',
-  title:'Intake dates are filled only for a named teaching period',
+  title:'Academic entry requirements: catalogue-first coverage and gap queue',
   changes:[
-    'The intake fill job (still off) now gives an exact start date only when the course\'s own page names the teaching period (for example \'Semester 1\') and the university\'s approved calendar dates that period. A page that gives only a month keeps the month. A year is filled only when it is printed.',
-    'The CRICOS course write now keeps an intake\'s held year, start date and deadline, and an older year never replaces a later one.'
+    'Coverage & completeness › Academic entry requirements now measures four things against every eligible Australian and New Zealand provider in the catalogue (1,476): sources discovered, requirements extracted, requirements admitted through Layer 4, and requirements a counsellor can see. Each shows its numerator and denominator.',
+    'A gap queue lists every eligible provider with its status (not discovered, source held, reader failed, awaiting Layer 4, active, course-level only), groups repeated faults under one root cause, and reopens a gap that comes back. The provider drill-down shows the next action and owner.',
+    'An hourly check (off until switched on) compares the catalogue with what is held, from the database only, with no page reads.',
+    'A weekly AER report section for Monday 08:00 (off until switched on): e-mail by the existing alert route, a copy kept in the repository and shown on this screen.'
   ],
   bugFixes:[]
 }
