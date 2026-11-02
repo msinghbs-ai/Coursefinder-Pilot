@@ -2285,7 +2285,7 @@ async function handle(req: Request): Promise<Response> {
     // value must quote the page), titles are classified (field of study, level), a university's campus names become one campus list,
     // and a provider's address is read from its stored contact page or, when the job allows the scraper, its home page read once.
     // The pinned central-pages model is used. The database checks every code again and applies only missing values.
-    // v0.56.0 (CF-247 P1 provider descriptions, Platform Admin 2 Nov 2026 10:28): one provider's official About / Overview page, stored copy
+    // v0.57.0 (CF-247 P1 provider descriptions, Platform Admin 2 Nov 2026 10:28): one provider's official About / Overview page, stored copy
     // first, then a pinned-model description whose every sentence quotes the page. The database validates, proposes to Layer 4 and admits
     // nothing by itself; this mode never writes a description.
     if (mode === "provider_description") {

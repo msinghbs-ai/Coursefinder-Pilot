@@ -1,4 +1,4 @@
-// v0.56.0 (2 Nov 2026, CF-247 missing-field enrichment Priority 1, Platform Admin 2 Nov 2026 10:28): the provider description reader.
+// v0.57.0 (2 Nov 2026, CF-247 missing-field enrichment Priority 1, Platform Admin 2 Nov 2026 10:28): the provider description reader.
 // Mode provider_description: the database (public.svc_provider_description_next) gives each provider's verified website hosts, a stored
 // About / Overview copy when one is held, the page-name patterns, the pinned model and the limits. The worker uses the stored copy first;
 // otherwise it reads the provider's home page directly (robots.txt respected), picks the About / Overview link on the provider's own hosts and

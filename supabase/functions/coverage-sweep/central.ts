@@ -4,7 +4,7 @@
 // v0.47.0 (CF-247 Track C, entry requirements step A): page type entry_requirements (a provider's academic entry minimums by country of
 // prior education; Part 1 address and link-text patterns). It is suggested from the whole-site map only: no extra targeted map is asked for
 // it (weakKinds leaves it out), so central_find spends no more credits. The entry matrix reader attaches the suggestions while it is on.
-// v0.56.0 (CF-247 P1 provider descriptions, Platform Admin 2 Nov 2026 10:28): page type about_page (the provider's own About, Overview or
+// v0.57.0 (CF-247 P1 provider descriptions, Platform Admin 2 Nov 2026 10:28): page type about_page (the provider's own About, Overview or
 // institutional profile page), suggested from the whole-site map only (no extra targeted map, so no new central_find spend). The provider
 // description reader takes the suggestions itself (public.svc_provider_description_next); they are not provider-facts sources.
 export type CentralKind = "intake_calendar" | "fee_schedule" | "english_policy" | "entry_requirements" | "about_page";
