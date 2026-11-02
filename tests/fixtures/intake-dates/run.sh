@@ -8,7 +8,8 @@
 #   3 the intake-dates migration unchanged (its md5 guard and post-check run), then again (no change); its functions checked against live;
 #   4 the named-period migration (Platform Admin 2 Nov 2026 ~14:50) unchanged, then again (no change), with the AU CRICOS admission write
 #     rebuilt from the archive and checked against live first;
-#   5 fixtures.sql: the cases, and the chain stored reading -> intake row -> search projection -> consumer API intake objects.
+#   5 the semester-pairs migration (Platform Admin 2 Nov 2026 23:24) unchanged, then again, from the definitions checked against live after v2.15.407;
+#   6 fixtures.sql: the cases, and the chain stored reading -> intake row -> search projection -> consumer API intake objects.
 # Drops the throwaway database at the end.
 set -euo pipefail
 cd "$(dirname "$0")/../../.."
@@ -18,6 +19,7 @@ E16=tests/fixtures/e16-binding-validation
 E16MIG=supabase/migrations/20261102030000_cf247_e16_binding_validation.sql
 MIG=supabase/migrations/20261102080000_cf247_intake_dates_persist.sql
 MIG2=supabase/migrations/20261102100000_cf247_intake_named_period.sql
+MIG3=supabase/migrations/20261103060000_cf247_intake_semester_pairs.sql
 TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
 $P -d postgres -c "drop database if exists $DB" -c "create database $DB" >/dev/null
 [ -n "${INTAKE_KEEP:-}" ] || trap 'rm -rf "$TMP"; $P -d postgres -c "drop database if exists $DB" >/dev/null' EXIT
@@ -57,7 +59,17 @@ AFTER2=$(md5of "$NP"); echo "named period after: $AFTER2"
 $P -d $DB -1 -At -f $MIG2 | grep -c 'already applied' | grep -qx 2 || { echo "a second run of the named-period migration changed something"; exit 1; }
 [ "$(md5of "$NP")" = "$AFTER2" ] || { echo "a second run changed a definition"; exit 1; }
 echo "named period second run: already applied, unchanged"
+# 5 explicit pairs and lists, excluded months, evidence of every value (Platform Admin 2 Nov 2026 23:24), from the definitions live after v2.15.407
+LIVE3="array['security.intake_dates_plan_v1(uuid[],integer)', 'security.intake_dates_apply_v1(integer)', 'security.enrich_parse_intakes_v1(text,text)']"
+[ "$(md5of "$LIVE3")" = "4e3847587271c68e70018de23d0b74b6 2ee1ce769cb5de8d300d9ad6e1bdbf7f 28beada5c58b585bd9e655381231f20f" ] || { echo "functions differ from live after v2.15.407: $(md5of "$LIVE3")"; exit 1; }
+echo "after v2.15.407 (rebuilt = live): $(md5of "$LIVE3")"
+SP="array['security.intake_dates_apply_v1(integer)', 'security.enrich_parse_intakes_v1(text,text)', 'security.intake_dates_plan_v2(uuid[],integer)']"
+$P -d $DB -1 -o /dev/null -f $MIG3
+AFTER3=$(md5of "$SP"); echo "semester pairs after: $AFTER3"
+$P -d $DB -1 -At -f $MIG3 | grep -c 'already applied' | grep -qx 2 || { echo "a second run of the semester-pairs migration changed something"; exit 1; }
+[ "$(md5of "$SP")" = "$AFTER3" ] || { echo "a second run changed a definition"; exit 1; }
+echo "semester pairs second run: already applied, unchanged"
 [ "$(md5of "array['api.website_v2_label_month(text)']")" = "4263b5ad2369e87c99674f9159d672f8" ] || { echo "the API month helper differs from live"; exit 1; }
-# 5 the cases
+# 6 the cases
 CAL=$(node tests/fixtures/intake-dates/parse.mjs)
 $P -d $DB -v cal="$CAL" -f tests/fixtures/intake-dates/fixtures.sql 2>&1 | sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'

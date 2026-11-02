@@ -276,12 +276,18 @@ const MONTHS = ["January", "February", "March", "April", "May", "June", "July", 
 // Month names must be capitalised ("May" the month, not "may" the verb); the lead-in words are matched in any case.
 // Windows about money, visas, deadlines, holidays, exams or events are not intakes.
 const NOT_INTAKE = /(living cost|visa|fee|payment|tuition|deadline|clos(?:e|es|ing)|census|orientation|exam|holiday|break|results?|graduation|open day|webinar|event|updated|published|as of|from \w+ 20\d\d,)/i
+// 2 Nov 2026 23:24 (intake wording): a month named only to exclude it ("throughout the year excluding January & December", "(Except December)",
+// "except June and December") is not an intake. The clause is the word and at most two months joined by "and", "&", "or" or a comma; a run-together
+// month list after the word is ambiguous and is left as it is (the same rule as security.intake_month_negated_v1).
+const MON_ALT = "(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*"
+const EXCLUDED = new RegExp(`\\b(?:exclud(?:e|es|ed|ing)|except(?:ing)?|other than|apart from|but not|not (?:offered|available|run)|no (?:intakes?|entry|start))\\b\\s*(?:in|during)?\\s*\\(?\\s*${MON_ALT}(?:\\s*(?:,|&|\\band\\b|\\bor\\b)\\s*${MON_ALT})?\\b(?!\\s+${MON_ALT}\\b)`, "gi")
+export const withoutExcluded = (s: string) => s.replace(EXCLUDED, " ")
 export function intakeEvidence(text: string) {
   const lead = /(?:next intake|intakes?|commenc\w*|semester|trimester|start date|starts?)/gi
   const out: string[] = []
   for (const m of text.matchAll(lead)) {
     const win = text.slice((m.index || 0) + m[0].length, (m.index || 0) + m[0].length + 100).split(/[.!?]/)[0]
-    if (NOT_INTAKE.test(win) || !MONTHS.some((mon) => new RegExp(`\\b${mon}\\b`).test(win))) continue
+    if (NOT_INTAKE.test(win) || !MONTHS.some((mon) => new RegExp(`\\b${mon}\\b`).test(withoutExcluded(win)))) continue
     out.push(clean(text.slice(Math.max(0, (m.index || 0) - 40), (m.index || 0) + m[0].length + win.length)).slice(0, 200))
     if (out.length >= 3) break
   }
@@ -293,7 +299,7 @@ export function intakes(text: string) {
   for (const m of text.matchAll(lead)) {
     const win = text.slice((m.index || 0) + m[0].length, (m.index || 0) + m[0].length + 100).split(/[.!?]/)[0]
     if (NOT_INTAKE.test(win)) continue
-    for (const mon of MONTHS) if (new RegExp(`\\b${mon}\\b`).test(win)) found.add(mon)
+    for (const mon of MONTHS) if (new RegExp(`\\b${mon}\\b`).test(withoutExcluded(win))) found.add(mon)
   }
   return MONTHS.filter((m) => found.has(m))
 }

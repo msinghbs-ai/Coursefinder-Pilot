@@ -1,7 +1,7 @@
-<!-- sop-export: id=admin-sop; version=2.21; reviewed-release=2.15.413; source-commit=c735a7752e1a; content-sha256=626cfe1d4eaa870c243c9983fa22a714bc984d7ae215852c5770cccbb9cd4cb2 -->
+<!-- sop-export: id=admin-sop; version=2.21; reviewed-release=2.15.414; source-commit=4d2f187bc631; content-sha256=3709ef48708f0e61639cf346bb007635cce421f961136103d82a4820090a6a37 -->
 # StudySearch – Platform Admin SOP
 
-**Version:** 2.21 (reviewed for platform release v2.15.413)  
+**Version:** 2.21 (reviewed for platform release v2.15.414)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
