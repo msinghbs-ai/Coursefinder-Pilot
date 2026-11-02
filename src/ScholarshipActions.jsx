@@ -8,6 +8,7 @@ import React,{useEffect,useState}from'react'
 import{Search,RefreshCw,Sparkles,Globe,Power}from'lucide-react'
 import{Button,StatusChip,fmtDateTime}from'./ui-kit'
 import{supabase}from'./lib/supabase'
+import{fmtNumber}from'./lib/format.js'
 import JobButton from'./JobButton'
 
 function useCanRunTasks(){
@@ -87,7 +88,11 @@ export function ProviderFillAction({providerId,name,website}){
 // Scholarships › Coverage: several providers at once (one task)
 export async function startProviderScans(providerIds,count){
   // v2.15.247 (bugs 11/10-4): confirm only, no reason; the log records "Started from Scholarships › Coverage"
-  if(!window.confirm(`Find scholarships now for ${count} provider(s)? Every page is read through the scraper (about one credit a page).`))return null
+  // 3 Nov 2026 (Platform Admin 09:32 §3): the estimate before the scan, from what a provider's scan used in the last 30 days (the Enrichment plan's unit costs)
+  let est=''
+  try{const{data:u}=await supabase.rpc('admin_enrich_plan',{p_action:'unit_costs',p_args:{}});const c=Number(u?.unit_costs?.scholarship_credits||0),d=Number(u?.unit_costs?.scholarship_usd||0)
+    if(c||d)est=` Estimate: about ${fmtNumber(Math.round(c*count))} Firecrawl credits and US$${(d*count).toFixed(2)} AI (${c} credits and US$${d.toFixed(4)} a provider, the last 30 days).`}catch{}
+  if(!window.confirm(`Find scholarships now for ${count} provider(s)? Every page is read through the scraper (about one credit a page).${est}`))return null
   const{data,error}=await supabase.rpc('admin_jobs',{p_action:'start',p_args:{kind:'scholarship_provider_scan',args:{provider_ids:providerIds},from:'Scholarships › Coverage'}})
   if(error)throw error
   return data
