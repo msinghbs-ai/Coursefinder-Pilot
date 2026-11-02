@@ -1,17 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.415'
-export const PACKAGE_VERSION='0.1.342'
+export const UI_VERSION='2.15.416'
+export const PACKAGE_VERSION='0.1.343'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Nov 2026',
-  title:'Entry requirements: only complete reads can be approved; a corrected read safely replaces a pending one',
+  title:'Course links: a replaced, rejected, held or retired link is never made active again by a background job',
   changes:[
-    'A provider entry table (matrix run) can be approved only when it was read from the current stored copy, every published row is accounted for and no row is mis-mapped; otherwise approval is refused with nothing changed and the card says why.',
-    'A course read is also held when it drops a minimum no kept row covers, keeps rows that are not requirements, or stores a domestic route for everyone. Leaving rows out with Approve except can release the last two; uncovered drops need a new read.',
-    'A corrected read of the same course and page replaces the pending one in a single step: the earlier item is marked superseded with its evidence kept, the new item shows rows added, removed and unchanged, and nothing is approved automatically. Decided items, items a reviewer is working on and locked courses are protected.'
+    'A course link that a person or a governed correction set aside, rejected, held for review or retired stays inactive when a background reader or admission finds it again. The rediscovery is recorded as evidence and tracked once in the integration queue instead of being published.',
+    'Address spellings that mean the same page (for example a #/overview fragment) are compared as the same page; addresses that differ only in their query (for example Auckland programme codes) stay distinct.',
+    'A Layer 4 course-link rule no longer makes a replaced link primary without a person. People editing a course, and Layer 4 reviewers, can still restore a link deliberately.'
   ],
   bugFixes:[]
 }
