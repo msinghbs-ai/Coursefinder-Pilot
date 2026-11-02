@@ -339,6 +339,43 @@ do $t$ declare v jsonb; begin
   raise notice 'PASS metrics (eligible published providers, present, missing, proposed, held, admitted, cost)';
 end $t$;
 
+-- 12b the page rule (pilot 2 Nov 2026 16:16): the three pages the first pilot run read, and the right one
+do $t$ declare v jsonb; c text[]; begin
+  -- Monash: a held Pharmacy news article with "about" in its path (alpha-old.edu.au is Alpha's approved other website, as monash.edu is Monash's)
+  if security.provider_description_page_v1('10000000-0000-0000-0000-000000000001', 'https://alpha-old.edu.au/pharm/about/news/2025/new-dean')->>'rule' <> 'refused_word' then raise exception 'news page'; end if;
+  -- ACU: the home page's "our university" link to research on a staff subdomain; and the same path on the main site
+  if security.provider_description_page_v1('10000000-0000-0000-0000-000000000001', 'https://staff.alpha.edu.au/our_university/research')->>'rule' <> 'refused_host' then raise exception 'staff subdomain'; end if;
+  if security.provider_description_page_v1('10000000-0000-0000-0000-000000000001', 'https://www.alpha.edu.au/our_university/research')->>'rule' <> 'refused_word' then raise exception 'research page'; end if;
+  -- CDU: /about-cdu on the main site is the About page
+  v := security.provider_description_page_v1('10000000-0000-0000-0000-000000000001', 'https://www.alpha.edu.au/about-cdu');
+  if not (v->>'ok')::boolean or not (v->>'main_host')::boolean then raise exception 'about-cdu: %', v; end if;
+  foreach c slice 1 in array array[array['https://www.alpha.edu.au/en/about', 'about_page'], array['https://alpha-old.edu.au/about-us/', 'about_page'],
+      array['https://www.alpha.edu.au/about/overview/history', 'not_about_page'], array['https://www.alpha.edu.au/study/about', 'refused_word'],
+      array['https://www.alpha.edu.au/discover-alpha', 'not_about_page'], array['https://news.alpha.edu.au/about', 'refused_host'],
+      array['https://www.alpha.edu.au/about/news', 'refused_word'], array['https://www.other.edu.au/about', 'wrong_host'], array['https://www.alpha.edu.au/', 'not_about_page']] loop
+    if security.provider_description_page_v1('10000000-0000-0000-0000-000000000001', c[1])->>'rule' <> c[2] then
+      raise exception '% gave %, expected %', c[1], security.provider_description_page_v1('10000000-0000-0000-0000-000000000001', c[1])->>'rule', c[2];
+    end if;
+  end loop;
+  -- a stored news copy is never used because it is held, even when it is the newest or the only copy
+  insert into pipeline.sources(id, source_type, provider_id) values ('20000000-0000-0000-0000-000000000006', 'provider_course_page_sweep', '10000000-0000-0000-0000-000000000006');
+  insert into pipeline.evidence_artifacts(id, source_id, source_url, storage_path, content_hash, mime_type, captured_at) values
+   ('30000000-0000-0000-0000-000000000006', '20000000-0000-0000-0000-000000000006', 'https://zeta.ac.nz/pharm/about/news/2025/new-dean', 'layer2/NZ/x/zeta-news.html.gz', 'h6', 'text/html', now()),
+   ('30000000-0000-0000-0000-000000000007', '20000000-0000-0000-0000-000000000001', 'https://alpha-old.edu.au/pharm/about/news/2025/new-dean', 'layer2/AU/x/alpha-news.html.gz', 'h7', 'text/html', now());
+  if security.provider_description_stored_v1('10000000-0000-0000-0000-000000000006') is not null then raise exception 'a held news copy was used'; end if;
+  if security.provider_description_stored_v1('10000000-0000-0000-0000-000000000001') <> '30000000-0000-0000-0000-000000000001' then raise exception 'the About copy was not chosen over a newer news copy'; end if;
+  -- the validation refuses a wrong page, so it is never proposed
+  v := security.provider_description_validate_v1('10000000-0000-0000-0000-000000000001', 'https://alpha-old.edu.au/pharm/about/news/2025/new-dean', now(), (select a from ans where k = 'good'));
+  if v->>'outcome' <> 'refused' or v->>'rule' <> 'refused_word' then raise exception 'validation: %', v; end if;
+  v := security.provider_description_validate_v1('10000000-0000-0000-0000-000000000001', 'https://staff.alpha.edu.au/our_university/research', now(), (select a from ans where k = 'good'));
+  if v->>'rule' <> 'refused_host' then raise exception 'validation staff: %', v; end if;
+  -- the lease gives the worker the lists
+  v := public.svc_provider_description_next(1);
+  if not (v->'page_rule'->'refused_path_words' ? 'news') or not (v->'page_rule'->'refused_host_labels' ? 'staff') or (v->'page_rule'->>'about_max_segments')::int <> 2
+     or not (v->'page_rule'->'about_prefixes' ? 'about-') then raise exception 'page rule lists: %', v->'page_rule'; end if;
+  raise notice 'PASS page rule: Monash news copy, ACU staff research page refused; CDU about page allowed; lists are settings';
+end $t$;
+
 -- 13 privileges: the worker functions are the service role's; the screen function is signed-in users' (rank checked inside)
 do $t$ begin
   if has_function_privilege('anon', 'public.svc_provider_description_next(integer)', 'execute') or has_function_privilege('authenticated', 'public.svc_provider_description_record(jsonb)', 'execute')

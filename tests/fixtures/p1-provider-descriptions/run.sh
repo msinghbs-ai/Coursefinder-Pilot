@@ -10,6 +10,8 @@ DB=${P1DESC_DB:-p1desc_fixtures}
 FX=tests/fixtures/p1-provider-descriptions
 P="psql -v ON_ERROR_STOP=1 -q -X"
 MIG=supabase/migrations/20261102090000_cf247_p1_provider_descriptions.sql
+MIG2=supabase/migrations/20261102100000_cf247_pdesc_page_choice.sql
+SIGS2="array['security.provider_description_stored_v1(uuid)', 'public.svc_provider_description_next(integer)', 'security.provider_description_validate_v1(uuid,text,timestamptz,jsonb)']"
 SIGS="array['security.layer4_review_decide_impl(uuid,text,text,jsonb)', 'security.ai_spend_today_v1()', 'security.layer4_inbox_kinds_v1()', 'security.layer4_inbox_items_v1()', 'public.admin_layer4_inbox(text,jsonb)', 'l4_api.layer4_review_bulk_decide(text,text,text,text,text,text,integer)', 'security.layer4_batch_decide_v1_impl(uuid[],text,text,text,text)']"
 dropdb --if-exists "$DB" >/dev/null 2>&1 || true
 createdb "$DB"
@@ -26,4 +28,12 @@ AFTER=$(md5s); echo "after: $AFTER"
 PGOPTIONS='-c check_function_bodies=off' $P -d "$DB" -1 -At -f $MIG | grep -c 'already applied' | grep -qx 7 || { echo "a second run changed something"; exit 1; }
 [ "$(md5s)" = "$AFTER" ] || { echo "a second run changed a definition"; exit 1; }
 echo "second run: already applied, unchanged"
+# the page rule (pilot 2 Nov 2026 16:16): its three edits start from the v2.15.406 definitions, as live
+md5s2() { $P -d "$DB" -Atc "select string_agg(md5(pg_get_functiondef(f::regprocedure)), ' ' order by o) from unnest($SIGS2) with ordinality t(f, o)"; }
+B2=$(md5s2); [ "$B2" = "d9f9244ea3dd37c511b0ff75f04d5e30 d4fd17854056f1ad69c0d1dc0e0abf11 9a3fbd7f15f5cf30d1a13359d6062280" ] || { echo "v2.15.406 definitions differ from live: $B2"; exit 1; }
+echo "page rule before (= live v2.15.406): $B2"
+PGOPTIONS='-c check_function_bodies=off' $P -d "$DB" -1 -o /dev/null -f $MIG2
+A2=$(md5s2); echo "page rule after: $A2"
+PGOPTIONS='-c check_function_bodies=off' $P -d "$DB" -1 -At -f $MIG2 | grep -c 'already applied' | grep -qx 3 || { echo "a second run of the page rule changed something"; exit 1; }
+[ "$(md5s2)" = "$A2" ] || { echo "a second run of the page rule changed a definition"; exit 1; }
 $P -d "$DB" -f $FX/fixtures.sql 2>&1 | sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'
