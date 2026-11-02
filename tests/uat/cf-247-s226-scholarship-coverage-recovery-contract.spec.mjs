@@ -182,7 +182,7 @@ test('F7 moved and redirected sources; F3 a refused or failed map is deferred, n
 })
 
 test('worker v0.59.0 wiring: sources, deferred maps, section and redirect reads, paginated listings, settings instead of literals', () => {
-  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.59\.0";/)
+  expect(worker).toMatch(/(const WORKER = "coverage-sweep-worker-v0\.59\.0"; |\/\/ was v0\.59\.0 )\/\/ v0\.59\.0 \(3 Nov 2026, CF-247 Scholarship/)  // later versions keep the note
   expect(worker).toContain('import { awardSections, mapOutcome, nextPage, pagingState, redirectOutcome, sectionCode, sectionHtml, statedTotal } from "./catalogue.ts";')
   expect(worker).toContain('const outcome = mapOutcome(methods, cands.length);  // v0.58.0 (F3)')
   expect(worker).toContain('const srcs = [...new Set([site.origin, ...((p.sources || []).filter((u) => /^https?:\\/\\//i.test(u)))])].slice(0, wsNum("scholarship.sources_per_provider_max", 5));')
