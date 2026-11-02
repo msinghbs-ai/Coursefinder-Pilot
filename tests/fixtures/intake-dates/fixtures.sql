@@ -2,7 +2,8 @@
 -- application deadline from the university's approved calendar, only for the study period the course's own page names in its stored reading
 -- (the page reader's intake quotes, or the AI reading's quote), and the chain stored reading -> intake row -> search projection -> consumer API.
 -- Each case raises a notice "PASS ..." or stops with an error. Years are relative to today (Y this year, N next year, L last year), so the
--- fixtures never age. The calendar of provider "harbour" is the real parser's reading of calendar.md (passed in by run.sh as :cal); the
+-- fixtures never age. The pair and list reading (Platform Admin 2 Nov 2026 23:24) is behind intake_dates.name_period_lists: section 3 runs
+-- at its default 0 (a single named period only, as the live rule), section 3b at 1 (pair and list wording names each period). The calendar of provider "harbour" is the real parser's reading of calendar.md (passed in by run.sh as :cal); the
 -- calendar of provider "bay" was approved before calendar-dates-v1 (months and quotes only). No live data.
 \set ON_ERROR_STOP 1
 create function pg_temp.ok(p boolean, p_what text) returns void language plpgsql as $f$
@@ -35,6 +36,8 @@ create function pg_temp.rec(p_key text, p_month text) returns pipeline.course_in
   select d.* from pipeline.course_intake_dates d join catalogue.course_intakes i on i.id = d.intake_id where i.course_id = pg_temp.u(p_key) and i.intake_label = p_month $f$;
 create function pg_temp.switch(p_on boolean) returns void language sql as $f$
   update pipeline.platform_toolset_settings set value = to_jsonb(p_on) where toolset_key = 'pipeline' and key = 'intake_dates.apply_enabled' $f$;
+create function pg_temp.lists(p int) returns void language sql as $f$
+  update pipeline.platform_toolset_settings set value = to_jsonb(p) where toolset_key = 'pipeline' and key = 'intake_dates.name_period_lists' $f$;
 
 -- providers, sources, gates ------------------------------------------------------------------------------------------------------------
 insert into ref.countries(id, iso_alpha2) values (pg_temp.u('AU'), 'AU');
@@ -140,6 +143,8 @@ do $$
 declare v jsonb;
 begin
   perform pg_temp.ok((select value from pipeline.platform_toolset_settings where toolset_key = 'pipeline' and key = 'intake_dates.apply_enabled') = 'false'::jsonb, 'setting off');
+  perform pg_temp.ok((select value from pipeline.platform_toolset_settings where toolset_key = 'pipeline' and key = 'intake_dates.name_period_lists') = '0'::jsonb
+                     and security.pipeline_num_v1('intake_dates.name_period_lists', 1) = 0, 'pair and list reading off by default (intake_dates.name_period_lists = 0)');
   perform pg_temp.ok((select not active from cron.job where jobname = 'intake-dates-apply'), 'job paused');
   perform pg_temp.ok((select command from cron.job where jobname = 'intake-dates-apply') = 'select security.intake_dates_apply_v1(security.pipeline_num_v1(''batch.intake_dates_apply'', 200)::int)', 'job size from a setting');
   perform pg_temp.ok(exists (select 1 from pipeline.automation_catalogue where jobname = 'intake-dates-apply'), 'job catalogued');
@@ -150,13 +155,13 @@ begin
   raise notice 'PASS off by default';
 end $$;
 
--- 3. the plan, then the apply with the switch on --------------------------------------------------------------------------------------
+-- 3. the plan, then the apply with the switch on (intake_dates.name_period_lists at its default 0) --------------------------------------------------------------------------------------
 do $$
 declare v jsonb; r pipeline.course_intake_dates;
 begin
   perform pg_temp.switch(true);
   v := security.intake_dates_apply_v1(null);
-  perform pg_temp.ok((v->>'filled')::int = 10 and (v->>'courses')::int = 7 and (v->>'provenance_completed')::int = 1, 'filled 10 rows of 7 courses, one earlier value''s evidence completed: ' || v::text);
+  perform pg_temp.ok((v->>'filled')::int = 8 and (v->>'courses')::int = 6 and (v->>'provenance_completed')::int = 1, 'filled 8 rows of 6 courses, one earlier value''s evidence completed: ' || v::text);
   -- exact date and year kept, with the deadline
   perform pg_temp.ok((pg_temp.row('exact', 'March')).intake_year = pg_temp.y(1) and (pg_temp.row('exact', 'March')).start_date = make_date(pg_temp.y(1), 3, 1)
                      and (pg_temp.row('exact', 'March')).application_deadline = make_date(pg_temp.y(0), 11, 30), 'exact date, year and deadline');
@@ -212,18 +217,19 @@ begin
   perform pg_temp.ok((pg_temp.rec('nocal', 'March')).intake_id is null and (pg_temp.row('nocal', 'March')).intake_year is null, 'no calendar, nothing');
   perform pg_temp.ok((select count(*) from public.fixture_refresh_calls) = 1, 'the search projection is refreshed once for the courses changed');
   raise notice 'PASS backfill from stored readings';
-  -- 23:24 intake wording: "Semester 1 and 2" names both periods; the July row the strict rule skipped is looked at once more and filled
-  perform pg_temp.ok((pg_temp.row('pair', 'March')).start_date = make_date(pg_temp.y(1), 3, 1) and (pg_temp.row('pair', 'July')).start_date = make_date(pg_temp.y(1), 7, 26)
-                     and (pg_temp.rec('pair', 'July')).rule = 'named-period-pairs-v2' and (pg_temp.rec('pair', 'July')).periods = array['semester 2'], '"Semester 1 and 2" names Semester 2');
-  -- a list names each period ("Trimesters 1, 2 and 3"), and the year printed with it counts
-  perform pg_temp.ok((pg_temp.row('trilist', 'July')).start_date = make_date(pg_temp.y(1), 7, 5) and (pg_temp.rec('trilist', 'July')).periods = array['trimester 2'], 'a list names each period');
-  perform pg_temp.ok(security.intake_period_text_v1('Semesters 1 & 2') ~ '\msemester 2\M' and security.intake_period_text_v1('Semester One and Two') ~ '\msemester 2\M'
-                     and security.intake_period_text_v1('Trimester 1, 2 and 3') ~ '\mtrimester 3\M' and security.intake_period_text_v1('Term 1, 2027') !~ '\mterm 2\M', 'pairs and lists read; a year is not a period');
-  raise notice 'PASS explicit pairs and lists name each period';
-  -- a label alone gives no date: Bay's Semester 2 has no dated start in the approved calendar
-  perform pg_temp.ok((pg_temp.row('pairbay', 'February')).start_date is null and (pg_temp.row('pairbay', 'February')).intake_year is null
-                     and (pg_temp.rec('pairbay', 'February')).reason = 'the year of the named period is not printed (month only)', 'label alone: ' || coalesce((pg_temp.rec('pairbay', 'February')).reason, 'no record'));
-  raise notice 'PASS a label alone gives no date';
+  -- 23:24 intake wording, setting at 0: pair and list wording names nothing new (the live rule: a single named period). "Semester 1 and 2" names
+  -- Semester 1 (March filled); its July row, skipped by the earlier rule, is looked at once more under this rule (recorded by mode) and stays month only
+  perform pg_temp.ok((pg_temp.row('pair', 'March')).start_date = make_date(pg_temp.y(1), 3, 1) and (pg_temp.rec('pair', 'March')).rule = 'named-period-v2', 'setting 0: "Semester 1 and 2" names Semester 1');
+  perform pg_temp.ok((pg_temp.row('pair', 'July')).start_date is null and (pg_temp.row('pair', 'July')).intake_year is null
+                     and (pg_temp.rec('pair', 'July')).rule = 'named-period-v2' and (pg_temp.rec('pair', 'July')).outcome = 'skipped'
+                     and (pg_temp.rec('pair', 'July')).reason = 'the named period does not start in this month', 'setting 0: "Semester 1 and 2" does not name Semester 2: ' || coalesce((pg_temp.rec('pair', 'July')).reason, 'no record'));
+  perform pg_temp.ok((pg_temp.row('trilist', 'July')).start_date is null and (pg_temp.rec('trilist', 'July')).outcome = 'skipped', 'setting 0: a list names nothing new');
+  perform pg_temp.ok((pg_temp.rec('exact', 'March')).rule = 'named-period-v2', 'setting 0: the rule recorded by mode');
+  perform pg_temp.ok(security.intake_period_text_v1('Semester 1 and 2', false) !~ '\msemester 2\M' and security.intake_period_text_v1('Semesters 1 & 2', false) !~ '\msemester 2\M'
+                     and security.intake_period_text_v1('Semester One and Two', false) !~ '\msemester 2\M' and security.intake_period_text_v1('Trimester 1, 2 and 3', false) !~ '\mtrimester 3\M'
+                     and security.intake_period_text_v1('Semester One', false) ~ '\msemester 1\M' and security.intake_period_text_v1('Term 1, 2027', false) ~ '\mterm 1\M', 'setting 0: single named periods only');
+  perform pg_temp.ok((pg_temp.row('pairbay', 'February')).start_date is null and (pg_temp.rec('pairbay', 'February')).reason = 'the named period does not start in this month', 'setting 0: Bay''s pair names Semester 1 only');
+  raise notice 'PASS setting 0: pair and list wording names nothing new';
   -- a month the page only excludes is not an intake: nothing filled, listed for the withdrawal paste file, and the AI month parser no longer reads it
   perform pg_temp.ok((pg_temp.row('uwa', 'January')).intake_year is null and (pg_temp.rec('uwa', 'January')).reason = 'the page excludes this month (listed for withdrawal)', 'excluded month not filled');
   perform pg_temp.ok((select array_agg(n.intake_label order by n.intake_label) from security.intake_negated_months_v1() n) = array['December', 'January'], 'listed for withdrawal: exactly UWA''s two rows');
@@ -240,6 +246,28 @@ begin
                      and not security.intake_month_negated_v1('adapter pattern: Except January February March April May July August September October November', 9)
                      and not security.intake_month_negated_v1('Start in March or July; no intake in December', 3), 'clear excluding wordings only; a run-together list is ambiguous');
   raise notice 'PASS a month the page excludes is not an intake';
+end $$;
+
+-- 3b. intake_dates.name_period_lists at 1: pair and list wording names each period; rows skipped at 0 are looked at once more -----------------
+do $$
+declare v jsonb;
+begin
+  perform pg_temp.lists(1);
+  v := security.intake_dates_apply_v1(null);
+  perform pg_temp.ok((v->>'filled')::int = 2 and (v->>'courses')::int = 2 and (v->>'provenance_completed')::int = 0, 'setting 1: filled the two rows the pair and list name: ' || v::text);
+  -- 23:24 intake wording: "Semester 1 and 2" names both periods; the July row skipped at 0 is looked at once more and filled
+  perform pg_temp.ok((pg_temp.row('pair', 'March')).start_date = make_date(pg_temp.y(1), 3, 1) and (pg_temp.row('pair', 'July')).start_date = make_date(pg_temp.y(1), 7, 26)
+                     and (pg_temp.rec('pair', 'July')).rule = 'named-period-pairs-v2' and (pg_temp.rec('pair', 'July')).periods = array['semester 2'], '"Semester 1 and 2" names Semester 2');
+  -- a list names each period ("Trimesters 1, 2 and 3"), and the year printed with it counts
+  perform pg_temp.ok((pg_temp.row('trilist', 'July')).start_date = make_date(pg_temp.y(1), 7, 5) and (pg_temp.rec('trilist', 'July')).periods = array['trimester 2'], 'a list names each period');
+  perform pg_temp.ok(security.intake_period_text_v1('Semester 1 and 2', true) ~ '\msemester 2\M' and security.intake_period_text_v1('Semesters 1 & 2', true) ~ '\msemester 2\M'
+                     and security.intake_period_text_v1('Semester One and Two', true) ~ '\msemester 2\M'
+                     and security.intake_period_text_v1('Trimester 1, 2 and 3', true) ~ '\mtrimester 3\M' and security.intake_period_text_v1('Term 1, 2027', true) !~ '\mterm 2\M', 'pairs and lists read; a year is not a period');
+  raise notice 'PASS explicit pairs and lists name each period';
+  -- a label alone gives no date: Bay's Semester 2 has no dated start in the approved calendar
+  perform pg_temp.ok((pg_temp.row('pairbay', 'February')).start_date is null and (pg_temp.row('pairbay', 'February')).intake_year is null
+                     and (pg_temp.rec('pairbay', 'February')).reason = 'the year of the named period is not printed (month only)', 'label alone: ' || coalesce((pg_temp.rec('pairbay', 'February')).reason, 'no record'));
+  raise notice 'PASS a label alone gives no date';
   -- every filled value keeps the page wording that named the period and the approved calendar's quote and document
   perform pg_temp.ok(not exists (select 1 from pipeline.course_intake_dates d where d.outcome = 'filled'
                        and (coalesce(d.page_quote, '') = '' or d.start_quote is null or d.calendar_url is null or d.calendar_evidence_id is null)), 'every filled value has its evidence');

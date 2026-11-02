@@ -19,7 +19,7 @@ E16=tests/fixtures/e16-binding-validation
 E16MIG=supabase/migrations/20261102030000_cf247_e16_binding_validation.sql
 MIG=supabase/migrations/20261102080000_cf247_intake_dates_persist.sql
 MIG2=supabase/migrations/20261102100000_cf247_intake_named_period.sql
-MIG3=supabase/migrations/20261103050000_cf247_intake_semester_pairs.sql
+MIG3=supabase/migrations/20261103060000_cf247_intake_semester_pairs.sql
 TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
 $P -d postgres -c "drop database if exists $DB" -c "create database $DB" >/dev/null
 [ -n "${INTAKE_KEEP:-}" ] || trap 'rm -rf "$TMP"; $P -d postgres -c "drop database if exists $DB" >/dev/null' EXIT

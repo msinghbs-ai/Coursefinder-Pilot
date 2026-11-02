@@ -4,10 +4,15 @@
 -- Why: under "Named period only" (20261102100000, v2.15.407, job on since 2 Nov) a page that says "Semester 1 and 2" named Semester 1 only, so its
 --   July intake kept its month. The reader also turned "Starting dates Throughout the year excluding January & December" (UWA, Master of Philosophy)
 --   into January and December intakes. And pipeline.course_intake_dates kept the calendar's quote but not the page's wording that named the period.
+-- The pair reading ships OFF behind the new pipeline setting intake_dates.name_period_lists (0 by default): decision items are recorded as
+--   proposed until the Platform Admin approves. At 0, plan v2 names periods exactly as the live rule (a single named period: "Semester 1",
+--   "Term 1, 2027"); at 1, pair and list wording names each period. Excluded months, the re-look of skipped rows and provenance are always on.
 -- What:
---   1 security.intake_period_text_v1(text): the page wording as the plan compares it ("Semester One" = "semester 1"), with explicit pairs and lists
---     written out: "Semester 1 and 2", "Semesters 1 & 2", "Trimester 1, 2 and 3", "Terms 1 or 2" name each period. Only single digits after the
---     period word count, so "Term 1, 2027" names Term 1 only.
+--   0 Setting (G2): intake_dates.name_period_lists (0 = a single named period only, as the live rule; 1 = pair and list wording names each period).
+--     Read by plan v2 with security.pipeline_num_v1('intake_dates.name_period_lists', 0). Nothing here switches it on.
+--   1 security.intake_period_text_v1(text, boolean): the page wording as the plan compares it ("Semester One" = "semester 1"); when the second
+--     argument is true, explicit pairs and lists are written out too: "Semester 1 and 2", "Semesters 1 & 2", "Trimester 1, 2 and 3", "Terms 1 or 2"
+--     name each period. Only single digits after the period word count, so "Term 1, 2027" names Term 1 only.
 --   2 security.intake_month_negated_v1(text, month): true when every mention of the month in the wording sits in an excluding clause: the word
 --     and at most two months joined by "and", "&", "or" or a comma ("excluding January & December", "(Except December)", "except June and December",
 --     "not offered in July"). A run-together list after the word ("Except January February March April ...", an SSC adapter pattern) is ambiguous
@@ -17,7 +22,8 @@
 --   4 security.intake_dates_plan_v2: the v1 plan (live md5 4e3847587271c68e70018de23d0b74b6) with (1) and (2), and four more columns: page_quote
 --     (the page wording that named the period), calendar_evidence_id and calendar_url (the approved calendar's stored document), and rule. A date
 --     still needs the approved calendar's dated start for the named period: a label alone gives nothing. A row the earlier rule looked at and did
---     not fill is looked at once more under this rule; a filled row is not looked at again for the same calendar.
+--     not fill is looked at once more under this rule; a filled row is not looked at again for the same calendar. The rule is recorded by mode
+--     (named-period-v2 with the setting at 0, named-period-pairs-v2 at 1), so switching the setting on later looks once more at rows skipped at 0.
 --   5 security.intake_dates_apply_v1 (md5-guarded edit): uses plan v2, records the four columns, and first completes the provenance of rows filled
 --     before the page wording was kept (batched; the wording as stored now).
 --   6 security.enrich_parse_intakes_v1 (md5-guarded edit, the AI reader's month parser): a month the quote mentions only in an excluding clause is not
@@ -26,9 +32,11 @@
 --     withdrawn here: the paste files docs/paste/PASTE-20261103-intake-excluded-months-withdrawal(-rollback).sql do it after the Platform Admin
 --     approves. Until then plan v2 records them as skipped ("the page excludes this month") and fills nothing for them.
 -- Replaces: security.intake_dates_plan_v1 (by security.intake_dates_plan_v2; marked retiring); security.intake_dates_apply_v1 and
---   security.enrich_parse_intakes_v1 (md5-guarded edits, same names)
+--   security.enrich_parse_intakes_v1 (md5-guarded edits, same names). The page reader (extract.ts) does no pair reading: plan v2 is the only place
+--   pairs are read, so intake_dates.name_period_lists is the single switch.
 -- Retires: security.intake_dates_plan_v1 (retiring; dropped by a paste file after hygiene.retire_after_days once unused)
--- Nothing is dropped, deleted or switched on. No catalogue row changes when this migration is applied. Consumer API untouched (G3).
+-- Nothing is dropped, deleted or switched on (intake_dates.name_period_lists is added at 0). No catalogue row changes when this migration is applied.
+-- Consumer API untouched (G3).
 
 create or replace function pg_temp.edit_once(p_sig text, p_before text, p_after text, p_edits text[][], p_times int[]) returns text language plpgsql as $f$
 declare v_def text := pg_get_functiondef(p_sig::regprocedure); i int; v_c int;
@@ -55,6 +63,14 @@ begin
   end if;
 end $$;
 
+-- 0 setting (G2): the pair and list reading, off until the Platform Admin approves it ---------------------------------------------------
+insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, section, used_by, reason) values
+ ('pipeline', 'intake_dates.name_period_lists', 'Intake dates: pairs and lists name each period',
+  '1 reads "Semester 1 and 2", "Semesters 1 & 2", "Trimester 1, 2 and 3" and "Semester One and Two" on the course page as naming each period, so each gets the approved calendar''s dated start. 0 counts a single named period only ("Semester 1", "Term 1, 2027"), as before. A label alone never gives a date in either mode.',
+  'number', '0'::jsonb, '0', '1', 'on/off', 993, 'Intake dates', 'job intake-dates-apply; security.intake_dates_plan_v2',
+  'Platform Admin direction 2 Nov 2026 23:24 §1 (intake wording): proposed until approved, so off by default')
+on conflict (toolset_key, key) do nothing;
+
 -- provenance columns --------------------------------------------------------------------------------------------------------------------
 alter table pipeline.course_intake_dates add column if not exists page_quote text;
 alter table pipeline.course_intake_dates add column if not exists calendar_evidence_id uuid;
@@ -63,7 +79,7 @@ alter table pipeline.course_intake_dates add column if not exists rule text;
 comment on table pipeline.course_intake_dates is 'CF-247 intake dates (Platform Admin 2 Nov 2026 11:10 §2; "Named period only" ~14:50; pairs 23:24): one row per course intake looked at by security.intake_dates_apply_v1 (job intake-dates-apply), for the approved calendar (proposal_id) it was matched against: the outcome, the reason when nothing was filled, the period(s), how precise the start is (day, year or month only), whether the deadline is a date, rolling (kept as text, never a date) or not stated, the evidence of every filled value (page_quote: the stored page wording that named the period; start_quote and deadline_quote: the calendar rows; calendar_evidence_id and calendar_url: the approved calendar document), the rule that decided it, and the values before and after. Never read by the consumer API.';
 
 -- 1 the wording as compared, with pairs and lists written out ---------------------------------------------------------------------------
-create or replace function security.intake_period_text_v1(p_text text)
+create or replace function security.intake_period_text_v1(p_text text, p_lists boolean)
  returns text
  language sql
  immutable
@@ -72,14 +88,14 @@ as $function$
   with t as (
     -- "Semester One", "first semester" and "semester 1" are the same period (as security.enrich_parse_intake_periods_v1)
     select regexp_replace(regexp_replace(regexp_replace(lower(coalesce(p_text, '')), '\mone\M|\mfirst\M', '1', 'g'), '\mtwo\M|\msecond\M', '2', 'g'), '\mthree\M|\mthird\M', '3', 'g') t)
-  select t.t || coalesce(' | ' || (
-    -- "semester 1 and 2", "semesters 1 & 2", "trimester 1, 2 and 3", "terms 1 or 2": each period named; single digits only ("term 1, 2027" is term 1)
+  select t.t || case when p_lists then coalesce(' | ' || (
+    -- intake_dates.name_period_lists at 1 only: "semester 1 and 2", "semesters 1 & 2", "trimester 1, 2 and 3", "terms 1 or 2": each period named; single digits only ("term 1, 2027" is term 1)
     select string_agg(m[1] || ' ' || n, ' | ')
       from regexp_matches(t.t, '\m(semester|trimester|term|study period|teaching period|session|block|quarter)s?\s*([0-9](?:\s*(?:,|&|\mand\M|\mor\M|/)\s*[0-9])+)\M', 'g') m,
-           regexp_split_to_table(m[2], '\s*(?:,|&|\mand\M|\mor\M|/)\s*') n), '')
+           regexp_split_to_table(m[2], '\s*(?:,|&|\mand\M|\mor\M|/)\s*') n), '') else '' end
     from t
 $function$;
-revoke all on function security.intake_period_text_v1(text) from public, anon, authenticated;
+revoke all on function security.intake_period_text_v1(text, boolean) from public, anon, authenticated;
 
 -- 2 a month the wording only excludes ----------------------------------------------------------------------------------------------------
 create or replace function security.intake_month_negated_v1(p_text text, p_month int)
@@ -126,7 +142,8 @@ create or replace function security.intake_dates_plan_v2(p_course_ids uuid[] def
  set search_path to ''
 as $function$
 declare
-  v_rule constant text := 'named-period-pairs-v2';  -- fixed: the name of this rule in the record
+  v_lists boolean := security.pipeline_num_v1('intake_dates.name_period_lists', 0) = 1;
+  v_rule constant text := case when v_lists then 'named-period-pairs-v2' else 'named-period-v2' end;  -- fixed: the name of this rule in the record, by mode
   v_today date := (now() at time zone 'Australia/Melbourne')::date;  -- fixed: the calendar day in Australia (month roll-over)
   v_max_before int := security.pipeline_num_v1('intake_dates.deadline_max_days_before', 366)::int;
   v_limit int := coalesce(p_limit, security.pipeline_num_v1('batch.intake_dates_apply', 200)::int);
@@ -170,15 +187,15 @@ begin
     if v_chk->>'verdict' is distinct from 'pass' then
       outcome := 'skipped'; reason := 'page not proved to be the course''s own (E16 ' || coalesce(v_chk->>'verdict', 'no verdict') || ')'; return next; continue;
     end if;
-    -- Named period only (Platform Admin 2 Nov 2026 ~14:50), with explicit pairs and lists (23:24): the period must be named in the stored reading of
-    -- the page that gave the intake. No month-to-period inference; a label alone gives no date.
+    -- Named period only (Platform Admin 2 Nov 2026 ~14:50): the period must be named in the stored reading of the page that gave the intake;
+    -- explicit pairs and lists (23:24) count only with intake_dates.name_period_lists at 1. No month-to-period inference; a label alone gives no date.
     v_raw := security.intake_page_wording_v1(r.course_id, r.evidence_id, v_url);
     page_quote := left(v_raw, 600);
     -- a month the page only excludes ("throughout the year excluding January & December") is not an intake: nothing is filled for it
     if security.intake_month_negated_v1(v_raw, v_m) then
       outcome := 'skipped'; reason := 'the page excludes this month (listed for withdrawal)'; return next; continue;
     end if;
-    v_pq := security.intake_period_text_v1(v_raw);
+    v_pq := security.intake_period_text_v1(v_raw, v_lists);
     select array_agg(distinct s.period) into v_named from security.calendar_dated_periods_v1(r.provider_id) s
      where s.kind = 'start' and s.period ~ '^[a-z][a-z _-]*[0-9]+$'
        and v_pq ~ ('\m' || regexp_replace(s.period, '[ _-]+', '[ _-]*', 'g') || '\M');
@@ -231,7 +248,7 @@ begin
   end loop;
 end $function$;
 revoke all on function security.intake_dates_plan_v2(uuid[], int) from public, anon, authenticated;
-comment on function security.intake_dates_plan_v2(uuid[], int) is 'CF-247 intake dates, named period only with explicit pairs and lists (Platform Admin 2 Nov 2026 ~14:50 and 23:24): read-only plan of what each active month intake would gain from the approved calendar, with the page wording and calendar document behind each value, or the reason it gains nothing. Replaces security.intake_dates_plan_v1.';
+comment on function security.intake_dates_plan_v2(uuid[], int) is 'CF-247 intake dates, named period only (Platform Admin 2 Nov 2026 ~14:50), with explicit pairs and lists only when intake_dates.name_period_lists is 1 (23:24, off by default): read-only plan of what each active month intake would gain from the approved calendar, with the page wording and calendar document behind each value, or the reason it gains nothing. Replaces security.intake_dates_plan_v1.';
 
 -- 5 the apply uses plan v2 and keeps the evidence of every filled value -------------------------------------------------------------------
 select pg_temp.edit_once('security.intake_dates_apply_v1(integer)', '2ee1ce769cb5de8d300d9ad6e1bdbf7f', 'd15c04c680dc0128ca5da33556426c43', array[
@@ -289,11 +306,11 @@ comment on function security.intake_negated_months_v1(uuid) is 'CF-247 intake wo
 
 -- housekeeping ---------------------------------------------------------------------------------------------------------------------------
 insert into pipeline.component_register(kind, name, layer, area, purpose, status, replaces, introduced_in) values
- ('function', 'security.intake_dates_plan_v2', 'Layer 2', 'Admission', 'Intake dates plan: named period only, with explicit pairs and lists; evidence of each value', 'active', '{security.intake_dates_plan_v1}', '20261103050000'),
- ('function', 'security.intake_period_text_v1', 'Layer 2', 'Admission', 'Page wording as compared, with "Semester 1 and 2" written out as each period', 'active', '{}', '20261103050000'),
- ('function', 'security.intake_month_negated_v1', 'Layer 2', 'Admission', 'A month the wording mentions only to exclude it', 'active', '{}', '20261103050000'),
- ('function', 'security.intake_page_wording_v1', 'Layer 2', 'Admission', 'Stored wording of the page behind an intake', 'active', '{}', '20261103050000'),
- ('function', 'security.intake_negated_months_v1', 'Layer 2', 'Admission', 'Active month intakes the page only excludes (for the withdrawal paste file)', 'active', '{}', '20261103050000')
+ ('function', 'security.intake_dates_plan_v2', 'Layer 2', 'Admission', 'Intake dates plan: named period only (pairs and lists behind intake_dates.name_period_lists, off); excluded months; evidence of each value', 'active', '{security.intake_dates_plan_v1}', '20261103060000'),
+ ('function', 'security.intake_period_text_v1', 'Layer 2', 'Admission', 'Page wording as compared; "Semester 1 and 2" written out as each period when asked (intake_dates.name_period_lists)', 'active', '{}', '20261103060000'),
+ ('function', 'security.intake_month_negated_v1', 'Layer 2', 'Admission', 'A month the wording mentions only to exclude it', 'active', '{}', '20261103060000'),
+ ('function', 'security.intake_page_wording_v1', 'Layer 2', 'Admission', 'Stored wording of the page behind an intake', 'active', '{}', '20261103060000'),
+ ('function', 'security.intake_negated_months_v1', 'Layer 2', 'Admission', 'Active month intakes the page only excludes (for the withdrawal paste file)', 'active', '{}', '20261103060000')
 on conflict do nothing;
 update pipeline.component_register
    set status = 'retiring', replaced_by = 'security.intake_dates_plan_v2', retire_after = current_date + security.pipeline_num_v1('hygiene.retire_after_days', 14)::int, updated_at = now()
@@ -305,8 +322,11 @@ begin
   if md5(pg_get_functiondef('security.intake_dates_apply_v1(integer)'::regprocedure)) <> 'd15c04c680dc0128ca5da33556426c43'
      or md5(pg_get_functiondef('security.enrich_parse_intakes_v1(text,text)'::regprocedure)) <> '4372e1ccce2242733433607aed8b6924' then
     raise exception 'semester pairs post-check: an edited function has an unexpected definition'; end if;
-  if security.intake_period_text_v1('Semester 1 and 2') !~ '\msemester 2\M' or security.intake_period_text_v1('Term 1, 2027') ~ '\mterm 2\M' then
+  if security.intake_period_text_v1('Semester 1 and 2', true) !~ '\msemester 2\M' or security.intake_period_text_v1('Term 1, 2027', true) ~ '\mterm 2\M'
+     or security.intake_period_text_v1('Semester 1 and 2', false) ~ '\msemester 2\M' then
     raise exception 'semester pairs post-check: pair reading'; end if;
+  if not exists (select 1 from pipeline.platform_toolset_settings where toolset_key = 'pipeline' and key = 'intake_dates.name_period_lists') then
+    raise exception 'semester pairs post-check: the setting intake_dates.name_period_lists is missing'; end if;
   if not security.intake_month_negated_v1('Starting dates Throughout the year excluding January & December, by agreement with supervisors', 1)
      or security.intake_month_negated_v1('Intakes in February and July', 2) then
     raise exception 'semester pairs post-check: excluded months'; end if;
