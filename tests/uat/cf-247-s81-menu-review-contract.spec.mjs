@@ -18,7 +18,7 @@ test('menu: 20 pages (was 23; v2.15.363 added Catalogue › Entry requirements);
   expect(PAGES.scholarships.tabs.map(t => t.key)).toEqual(['list', 'coverage'])
   expect(PAGES.coverage.tabs.map(t => t.key)).toEqual(['courses', 'attributes', 'progress'])
   expect(PAGES.layer2.tabs.map(t => t.key)).toEqual(['operations', 'flags', 'universities', 'sources', 'plan', 'build', 'builder', 'enrich', 'scholarships'] /* v2.15.321: Course sources */ /* v2.15.306: Enrichment plan */)
-  expect(PAGES.health.tabs.map(t => [t.key, t.min])).toEqual([['checks', 3], ['queues', 3], ['storage', 6]])
+  expect(PAGES.health.tabs.map(t => [t.key, t.min])).toEqual([['checks', 3], ['queues', 3], ['integration', 5], ['storage', 6]])  // CF-247 2 Nov 2026: Integration queue
   expect(PAGES.environment.tabs.map(t => [t.key, t.min])).toEqual([['settings', 6], ['api', 4], ['backup', 6]]) // v2.15.310: Backup & restore
   expect(PAGES.rankings.tabs.map(t => t.key)).toEqual(['overview', 'compare', 'qilt', 'prisms', 'datasets'])
   expect(PAGES.reference.tabs).toBeUndefined()
@@ -48,7 +48,8 @@ test('old addresses open the new places', () => {
 test('role gates are kept: Operators see API usage only on Settings; Curators see Reference data, Flags and Scholarship extraction', () => {
   expect(allowedTabs(PAGES.environment, 4).map(t => t.key)).toEqual(['api'])
   expect(canOpen('environment', 3)).toBe(false)
-  expect(allowedTabs(PAGES.health, 5).map(t => t.key)).toEqual(['checks', 'queues'])
+  expect(allowedTabs(PAGES.health, 5).map(t => t.key)).toEqual(['checks', 'queues', 'integration'])  // CF-247 2 Nov 2026: Integration queue, PIM Admin and above
+  expect(allowedTabs(PAGES.health, 4).map(t => t.key)).toEqual(['checks', 'queues'])
   expect(allowedTabs(PAGES.services, 3).map(t => t.key)).toEqual(['ai'])
   expect(canOpen('reference', 3)).toBe(true)
   expect(canOpen('layer1', 3)).toBe(false)
@@ -145,7 +146,7 @@ test.describe('mocked browser', () => {
   test('Storage & retention is a Platform health tab; Capacity is on the Go-live checklist', async ({ page }) => {
     await mockAdmin(page)
     await page.goto('/#platform-health')
-    await expect(page.getByRole('tab')).toHaveText(['Health checks', 'Work queues', 'Storage & retention'])
+    await expect(page.getByRole('tab')).toHaveText(['Health checks', 'Work queues', 'Integration queue', 'Storage & retention'])
     await page.goto('/#platform-health?tab=readiness')
     await expect(page).toHaveURL(/#environment-migration$/)
     await expect(page.locator('[data-golive-capacity]')).toBeVisible()

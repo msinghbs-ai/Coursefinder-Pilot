@@ -31,6 +31,7 @@ import{PAGES,SECTIONS,SECTION_OF,resolveTarget,hrefFor,canOpen,shownTabs,effecti
 import{ViewerContext}from'./lib/viewer'
 import PlatformHealth,{readPlatformHealth,healthTone,HEALTH_WORDS}from'./PlatformHealth'
 import QueueWatch from'./QueueWatch'
+import IntegrationQueue from'./IntegrationQueue'
 import CourseSources from'./CourseSources'
 import{DomainReadiness}from'./data-quality-entry'
 import CreditBanner from'./CreditBanner'
@@ -336,7 +337,7 @@ function Page({pageKey,tab,requestedTab='',routeParams,rank,actorId,onError,navi
       case'layer4':return <Layer4Inbox onError={err} routeParams={routeParams}/>
       // v2.15.300: Screen use (Platform Admin) under the health checks, to decide which screens retire
       // v2.15.301: Capacity moved to the Go-live checklist; Storage & retention is a tab here
-      case'health':return tab==='storage'?<RetentionScreen onError={onError}/>:tab==='queues'?<QueueWatch onError={onError}/>:<><PlatformHealth onError={onError}/>{rank>=6&&<ScreenUse onError={onError}/>}</>
+      case'health':return tab==='storage'?<RetentionScreen onError={onError}/>:tab==='queues'?<QueueWatch onError={onError}/>:tab==='integration'?<IntegrationQueue onError={onError}/>:<><PlatformHealth onError={onError}/>{rank>=6&&<ScreenUse onError={onError}/>}</>
       case'jobs':return tab==='tasks'?<AdminTasks rank={rank} onError={onError}/>:tab==='automations'?<div className="m-page-stack"><Automations onError={err}/><RefreshWorkspace onError={err}/></div>:<JobsWorkspace/>
       case'evidence':return <EvidenceWorkspace onError={onError} navigate={navigate} routeParams={routeParams}/>
       // CF-247 (16 Oct 2026): calls to the API version URLs (zoho-api-v2 first), by key and action; v2.15.301 Settings › API usage
