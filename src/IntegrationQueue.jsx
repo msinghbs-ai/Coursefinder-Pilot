@@ -4,7 +4,7 @@
 // Read only; PIM Admin and above (checked again on the server: public.admin_integration_queue). Issues are moved and closed by the
 // Integration Controller, never from this screen.
 import React,{useEffect,useMemo,useState}from'react'
-import{AlertTriangle,CheckCircle2,GitBranch,History,RefreshCw,RotateCcw}from'lucide-react'
+import{AlertTriangle,BarChart3,CheckCircle2,GitBranch,History,RefreshCw,RotateCcw}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{Button,Empty,Loading,Metric,SectionTitle,StatusChip,fmtDateTime,fmtNumber}from'./ui-kit'
 import{plainError}from'./lib/errors'
@@ -65,6 +65,7 @@ export default function IntegrationQueue({onError}){
         {open===i.id&&<tr className="iq-detail"><td colSpan={7}>{!hist?<Loading label="Reading its history…"/>:<IssueDetail h={hist}/>}</td></tr>}</React.Fragment>)}
       </tbody></table></div>:<Empty icon={CheckCircle2} text={scope==='open'?'Nothing open.':'Nothing here.'}/>}
     </section>
+    <PipelineYield onError={onError}/>
   </>
 }
 
@@ -87,4 +88,21 @@ function IssueDetail({h}){
     <h4>History</h4>
     {(h.events||[]).length?<ul className="qw-list">{h.events.map(e=><li key={e.id} data-iq-event={e.kind}><strong>{e.kind.replace(/_/g,' ')}</strong>{e.to_status&&e.from_status!==e.to_status?` · ${st(e.from_status).label} → ${st(e.to_status).label}`:''}<small>{e.actor} · {fmtDateTime(e.at)}{e.note?` · ${e.note}`:''}</small></li>)}</ul>:<Empty text="No history yet."/>}
   </div>
+}
+
+// Pipeline yield (Platform Admin direction 2 Nov 2026 23:24 §3): each lane, stage by stage, so a job that ran is never read as work done.
+// Server: public.admin_pipeline_yield (PIM Admin and above; existing tables only).
+export const YIELD_STAGES=[['invoked','Invoked'],['source_accessed','Source accessed'],['pages_discovered','Pages discovered'],['read_completely','Read completely'],
+  ['extracted','Extracted'],['accepted_or_held','Accepted or held'],['published','Published'],['consumer_read_back','Consumer read-back']]
+const stageText=v=>v==null?'—':typeof v==='object'?Object.entries(v).map(([k,n])=>`${fmtNumber(n||0)} ${k.replace(/_/g,' ')}`).join(' · '):fmtNumber(v)
+function PipelineYield({onError}){
+  const[y,setY]=useState(null)
+  useEffect(()=>{let live=true;supabase.rpc('admin_pipeline_yield',{p_args:{}}).then(({data,error})=>{if(!live)return;if(error){onError?.(plainError(error));setY({lanes:[]})}else setY(data||{lanes:[]})});return()=>{live=false}},[])
+  if(!y)return <section className="m-panel"><Loading label="Counting each stage…"/></section>
+  return <section className="m-panel" data-pipeline-yield>
+    <SectionTitle icon={BarChart3} title="Pipeline yield" subtitle={`Each lane over the last ${fmtNumber(y.window_hours||24)} hours, stage by stage. A job that ran but found, read or published nothing shows here as a drop between stages.`}/>
+    <div className="cf-table-wrap"><table className="cf-table iq-yield"><thead><tr><th>Stage</th>{(y.lanes||[]).map(l=><th key={l.lane}>{l.label}</th>)}</tr></thead><tbody>
+      {YIELD_STAGES.map(([k,label])=><tr key={k} data-yield-stage={k}><th scope="row">{label}</th>{(y.lanes||[]).map(l=><td key={l.lane} data-yield-lane={l.lane}>{stageText(l.stages?.[k])}</td>)}</tr>)}
+    </tbody></table></div>
+  </section>
 }

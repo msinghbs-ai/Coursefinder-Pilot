@@ -1,16 +1,16 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.411'
-export const PACKAGE_VERSION='0.1.338'
+export const UI_VERSION='2.15.412'
+export const PACKAGE_VERSION='0.1.339'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Nov 2026',
-  title:'Official link fill waits for a pending Layer 4 review',
+  title:'Pipeline yield checks: a job that ran is not work done',
   changes:[
-    'The nightly official link fill leaves a course alone while a Layer 4 course-link review is pending on it, so the reviewer decides the page first. Each run counts the courses it left alone, and they appear once in the integration queue.',
-    'The switch is Settings › Pipeline settings › Official link: wait for Layer 4 (on). The pause rule\'s minimum number of fills is now a setting too.'
+    'The twice-hourly integration check now also finds worker calls that failed while the job counted as succeeded, modes that keep running with no work done, course lists and entry tables not read to the end, and providers whose pages keep failing. Each becomes one tracked issue in the integration queue; a repeat updates it.',
+    'Platform health › Integration queue shows a Pipeline yield section: for scholarships, course pages, entry requirements and descriptions, how much was invoked, read, extracted, held, published and read back by the website.'
   ],
   bugFixes:[]
 }
