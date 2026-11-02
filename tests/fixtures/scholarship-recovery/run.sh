@@ -2,12 +2,12 @@
 # CF-247 Scholarship Coverage Recovery on isolated fixtures (mandate 2 Nov 2026 17:41; overnight direction 23:24). Needs a scratch PostgreSQL
 # (never a Supabase project): PGHOST/PGPORT/PGUSER point at it. Builds a throwaway database (stubs.sql: live column definitions); loads the
 # definitions the migration replaces, edits or reads from their live text (live-defs.json) and checks each md5 against the live md5 read on
-# 2 Nov 2026; reproduces the defects on the live definitions (fixtures-before.sql); applies the 20261102140000 migration unchanged (its own md5
+# 2 Nov 2026; reproduces the defects on the live definitions (fixtures-before.sql); applies the 20261103050000 migration unchanged (its own md5
 # guards and after-md5 checks run), applies it again (no change), then runs fixtures.sql. Drops the throwaway database at the end.
 set -euo pipefail
 cd "$(dirname "$0")"
 DB=${SCHREC_DB:-scholarship_recovery_fixtures}
-MIG=../../../supabase/migrations/20261102140000_cf247_scholarship_recovery.sql
+MIG=../../../supabase/migrations/20261103050000_cf247_scholarship_recovery.sql
 P="psql -v ON_ERROR_STOP=1 -q -X"
 $P -d postgres -c "drop database if exists $DB" -c "create database $DB" >/dev/null
 trap '$P -d postgres -c "drop database if exists $DB" >/dev/null' EXIT

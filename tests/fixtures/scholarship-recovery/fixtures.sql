@@ -1,6 +1,6 @@
 -- CF-247 Scholarship Coverage Recovery: behaviour after the migration (applied unchanged by run.sh). Every case prints "ok <case>" or stops
 -- with an error. UNSW Sydney and UNSW College carry their live ids; the UNSW umbrella awards are the ten read from the official Term 1, 2027
--- page on 2 Nov 2026 (unsw-term1-2027.html, the same items the worker's awardSections returns in s224); other providers are synthetic.
+-- page on 2 Nov 2026 (unsw-term1-2027.html, the same items the worker's awardSections returns in s226); other providers are synthetic.
 create function fx_ok(p_case text, p_cond boolean, p_detail text default '') returns void language plpgsql as
 $f$ begin if p_cond is not true then raise exception 'FAILED %: %', p_case, p_detail; end if; raise notice 'ok %', p_case; end $f$;
 

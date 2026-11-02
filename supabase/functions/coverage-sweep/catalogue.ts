@@ -1,5 +1,5 @@
 // CF-247 Scholarship Coverage Recovery (Platform Admin mandate 2 Nov 2026 17:41; overnight direction 2 Nov 2026 23:24 §1 Scholarships, §3).
-// Pure helpers for scholarship catalogues, kept apart from the worker so the central guard (s224) runs them directly:
+// Pure helpers for scholarship catalogues, kept apart from the worker so the central guard (s226) runs them directly:
 //   F3 mapOutcome      a refused or failed site map is "deferred" (tried again later), never a final "empty";
 //   F5 awardSections   an umbrella page that lists several awards (UNSW "Scholarships for International Students Commencing Term 1,
 //                      2027": ten awards, most without their own page) becomes one item per award, keyed by the award code;

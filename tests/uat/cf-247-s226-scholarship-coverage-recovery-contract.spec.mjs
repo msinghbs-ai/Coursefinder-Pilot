@@ -11,7 +11,7 @@ import path from 'node:path'
 import fs from 'node:fs'
 import { execFileSync } from 'node:child_process'
 
-const MIG = 'supabase/migrations/20261102140000_cf247_scholarship_recovery.sql'
+const MIG = 'supabase/migrations/20261103050000_cf247_scholarship_recovery.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const FX = 'tests/fixtures/scholarship-recovery'
 const fx = (f) => fs.readFileSync(`${FX}/${f}`, 'utf8')
@@ -181,7 +181,7 @@ test('F7 moved and redirected sources; F3 a refused or failed map is deferred, n
   for (const [c, methods, kept, out] of MAPS) expect(mapOutcome(methods, kept), c).toBe(out)
 })
 
-test('worker v0.58.0 wiring: sources, deferred maps, section and redirect reads, paginated listings, settings instead of literals', () => {
+test('worker v0.59.0 wiring: sources, deferred maps, section and redirect reads, paginated listings, settings instead of literals', () => {
   expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.58\.0";/)
   expect(worker).toContain('import { awardSections, mapOutcome, nextPage, pagingState, redirectOutcome, sectionCode, sectionHtml, statedTotal } from "./catalogue.ts";')
   expect(worker).toContain('const outcome = mapOutcome(methods, cands.length);  // v0.58.0 (F3)')

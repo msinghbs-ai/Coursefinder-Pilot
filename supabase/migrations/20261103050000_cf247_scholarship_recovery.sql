@@ -809,20 +809,20 @@ end $j$;
 
 -- 7. register (housekeeping) ----------------------------------------------------------------------------------------------------------
 insert into pipeline.component_register(kind, name, layer, area, purpose, status, replaces, introduced_in) values
- ('job', 'worker-outcome-check', 'Platform', 'Platform upkeep', 'Worker run outcomes behind a successful schedule (paused until activated)', 'active', '{}', '20261102140000'),
- ('table', 'pipeline.scholarship_listing_members', 'Layer 2', 'Scholarships', 'Listing and catalogue membership of scholarship items', 'active', '{}', '20261102140000'),
- ('table', 'pipeline.scholarship_source_moves', 'Layer 2', 'Scholarships', 'Scholarship pages that moved or redirect away', 'active', '{}', '20261102140000'),
- ('table', 'pipeline.scholarship_round_states', 'Layer 2', 'Scholarships', 'Closed round versus ended scholarship (report)', 'active', '{}', '20261102140000'),
- ('function', 'public.svc_scholarship_listing_record_v2', 'Layer 2', 'Scholarships', 'Listing read with pagination state and fan-out to candidates', 'active', '{public.svc_scholarship_listing_record}', '20261102140000'),
- ('function', 'security.worker_call_outcome_v1', 'Platform', 'Platform upkeep', 'Outcome of one worker call', 'active', '{}', '20261102140000'),
- ('function', 'security.job_outcomes_v1', 'Platform', 'Platform upkeep', 'Worker outcomes per mode with the jobs that call it', 'active', '{}', '20261102140000'),
- ('function', 'security.worker_outcome_check_v1', 'Platform', 'Platform upkeep', 'Job worker-outcome-check', 'active', '{}', '20261102140000'),
- ('function', 'security.scholarship_discovery_tier_refresh_v1', 'Layer 2', 'Scholarships', 'Stored discovery tier', 'active', '{}', '20261102140000'),
- ('function', 'security.scholarship_candidate_skip_v1', 'Layer 2', 'Scholarships', 'Address skip rules on new and unread candidates', 'active', '{}', '20261102140000'),
- ('function', 'security.scholarship_round_state_refresh_v1', 'Layer 2', 'Scholarships', 'Round states of active scholarships', 'active', '{}', '20261102140000'),
- ('function', 'security.scholarship_admission_provider_ok_v1', 'Layer 2', 'Scholarships', 'Provider rule for scholarship admission (non-university proposal off)', 'active', '{}', '20261102140000'),
- ('function', 'security.scholarship_legitimacy_v1', 'Layer 2', 'Scholarships', 'Evidence-based legitimacy (proposal off)', 'active', '{}', '20261102140000'),
- ('function', 'security.scholarship_flag_v1', 'Layer 2', 'Scholarships', 'Boolean pipeline setting reader', 'active', '{}', '20261102140000')
+ ('job', 'worker-outcome-check', 'Platform', 'Platform upkeep', 'Worker run outcomes behind a successful schedule (paused until activated)', 'active', '{}', '20261103050000'),
+ ('table', 'pipeline.scholarship_listing_members', 'Layer 2', 'Scholarships', 'Listing and catalogue membership of scholarship items', 'active', '{}', '20261103050000'),
+ ('table', 'pipeline.scholarship_source_moves', 'Layer 2', 'Scholarships', 'Scholarship pages that moved or redirect away', 'active', '{}', '20261103050000'),
+ ('table', 'pipeline.scholarship_round_states', 'Layer 2', 'Scholarships', 'Closed round versus ended scholarship (report)', 'active', '{}', '20261103050000'),
+ ('function', 'public.svc_scholarship_listing_record_v2', 'Layer 2', 'Scholarships', 'Listing read with pagination state and fan-out to candidates', 'active', '{public.svc_scholarship_listing_record}', '20261103050000'),
+ ('function', 'security.worker_call_outcome_v1', 'Platform', 'Platform upkeep', 'Outcome of one worker call', 'active', '{}', '20261103050000'),
+ ('function', 'security.job_outcomes_v1', 'Platform', 'Platform upkeep', 'Worker outcomes per mode with the jobs that call it', 'active', '{}', '20261103050000'),
+ ('function', 'security.worker_outcome_check_v1', 'Platform', 'Platform upkeep', 'Job worker-outcome-check', 'active', '{}', '20261103050000'),
+ ('function', 'security.scholarship_discovery_tier_refresh_v1', 'Layer 2', 'Scholarships', 'Stored discovery tier', 'active', '{}', '20261103050000'),
+ ('function', 'security.scholarship_candidate_skip_v1', 'Layer 2', 'Scholarships', 'Address skip rules on new and unread candidates', 'active', '{}', '20261103050000'),
+ ('function', 'security.scholarship_round_state_refresh_v1', 'Layer 2', 'Scholarships', 'Round states of active scholarships', 'active', '{}', '20261103050000'),
+ ('function', 'security.scholarship_admission_provider_ok_v1', 'Layer 2', 'Scholarships', 'Provider rule for scholarship admission (non-university proposal off)', 'active', '{}', '20261103050000'),
+ ('function', 'security.scholarship_legitimacy_v1', 'Layer 2', 'Scholarships', 'Evidence-based legitimacy (proposal off)', 'active', '{}', '20261103050000'),
+ ('function', 'security.scholarship_flag_v1', 'Layer 2', 'Scholarships', 'Boolean pipeline setting reader', 'active', '{}', '20261103050000')
 on conflict do nothing;
 update pipeline.component_register set status = 'retiring', replaced_by = 'public.svc_scholarship_listing_record_v2',
        retire_after = (now() + make_interval(days => security.pipeline_num_v1('hygiene.retire_after_days', 14)::int))::date, updated_at = now()
