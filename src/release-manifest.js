@@ -11,7 +11,7 @@ export const RELEASE={
   changes:[
     'A month the course page excludes ("excluding January & December", "Monthly intakes except June and December") is never read as an intake, by the page reader, the AI month reader or the intake date plan.',
     'Every filled intake year or date now records the page wording that named the period, the calendar quote and the calendar document; values filled earlier are completed too. Rows an earlier rule skipped are looked at once more.',
-    'Reading "Semester 1 and 2" or "Trimester 1, 2 and 3" as naming each period ships off (Settings › Pipeline settings › Intake: read period lists) for the Platform Admin to decide. A semester label alone never gives a date.'
+    'Reading "Semester 1 and 2" or "Trimester 1, 2 and 3" as naming each period ships off (Settings › Pipeline settings › Intake dates: pairs and lists name each period) for the Platform Admin to decide. A semester label alone never gives a date.'
   ],
   bugFixes:[]
 }
