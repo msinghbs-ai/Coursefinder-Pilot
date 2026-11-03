@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.347 — 3 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.420** (Platform Admin direction 3 Nov 2026 09:32 §4 and §7; P0 mandate 10:44 §3 Agents D, E and F; integration issues IQ-00053, IQ-00048). Migration `20261103140000_cf247_hidden_failures_country_config`: md5-guarded edits of admin_jobs_tick_v1, admin_job_slice_v1, admin_job_watch_v1, enrich_fields_slice_v1 (FOR NO KEY UPDATE), svc_nz_cop_next, enrich_focus_v1, enrich_focus_refresh_v1, scholarship_discovery_refill_v1, integration_yield_checks_v1, pipeline_yield_v1; security.cricos_peo_fire_v1, security.country_scope_gate_run_v1, ranking-edition-check job (paused); settings enrich.focus_countries, scholarship.refill_priority_countries, scholarship.refill_open_countries, country_scope.gate_countries. Worker coverage-sweep v0.59.3. Nothing dropped; consumer API untouched. Spec s236.
+
 ## 0.1.346 — 3 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.419** (Platform Admin direction 3 Nov 2026 09:32: platform-led enrichment; acceptance report item 3). Migration `20261103120000_cf247_enrich_plan_continuity`: md5-guarded edits of enrich_plan_auto_v1, field_crosscheck_v1, admin_enrich_fields and admin_enrich_plan; security.enrich_item_in_flight_v1 and two helpers; seven plans.* settings (plans.replan_per_hour 0 = off). Layer 2 schedules marked retiring; stale Layer 2 refresh requests closed only by an approved paste file. Admin SOP 2.22. Nothing dropped; consumer API untouched. Spec s234.
