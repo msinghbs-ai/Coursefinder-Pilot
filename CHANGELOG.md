@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.376 — 4 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.449** (IQ-00111 D12). Migration `20261104300000_cf247_fee_admitted_recheck`: security.fee_admitted_recheck_v1, trigger fee_admitted_recheck_settle on pipeline.enrichment_flags (fees.recheck_keep_withdraws_on, on); remedy fee_admitted_recheck. No live function edited. Paste for the 5 older AI fee rows (D12). Nothing dropped; consumer API untouched. Spec s265.
+
 ## 0.1.375 — 4 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.448** (v2.15.447 production defect). Migration `20261104280000_cf247_l4_rule_runs_table`: pipeline.layer4_course_link_rule_runs and layer4_course_link_rule_run_items; md5-guarded edit of `security.layer4_course_link_rule_execute_v1` (d4aa9145 → 86e1089a); the live-only pipeline.layer4_rule_runs keeps its rows and gets its own comment back; the empty pipeline.layer4_rule_run_items is marked retiring. Nothing dropped; consumer API untouched. Spec s267.
