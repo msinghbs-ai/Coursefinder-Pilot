@@ -5,7 +5,9 @@
 --   .../bachelor-of-information-and-communication-technology-professional/ while 095881J is bound to the same page (no trailing slash, the same
 --   text_sha) because the page states 095881J (identity_basis cricos_code). Both stored copies are one page; the page proves 095881J, not 088407E,
 --   and the page fee (44,300) reached 088407E. The scholarship agent counted 214 such addresses and 633 of 1,780 shared-page links whose stored copy
---   was read for another course. Today's binding guard (E16, trigger coverage_page_refused_host) checks the page against the course's own title,
+--   was read for another course (method not recorded). This change's own evaluation, read live 3 Nov 2026 22:56 AEDT: 559 title-only bindings
+--   (active, not by hand, not locked) on 526 addresses at 185 providers would be refused (556 same address, 3 same page text; 556 exact_title,
+--   3 adapter_title; most RMIT 44, Swinburne 39, UTS 31). Shared pages: 4,164 links on 1,829 addresses; 1,282 stored copies read for another course. Today's binding guard (E16, trigger coverage_page_refused_host) checks the page against the course's own title,
 --   level and variants; it does not ask whether the page proves a different course.
 -- What:
 --   1 Settings: binding.cricos_identity_guard_on (0, off), binding.title_identity_bases (the identity bases that are a title, not a code).
@@ -116,11 +118,17 @@ language sql stable security definer set search_path to '' as $function$
   proved as (select provider_id, k, sha, course_id, course_code from g where ib = 'cricos_code' and life = 'active'),
   cand as (select g.* from g where g.life = 'active' and g.ib in (select x from tb) and coalesce(g.basis, '') <> 'manual'
              and not exists (select 1 from pipeline.manual_locks l where l.entity = 'course' and l.entity_id = g.course_id and l.field in ('official_url', 'course_url'))),
-  hit as (select distinct on (c.course_id) c.*, p.course_code other_code, p.course_id other_course,
-                 case when p.k = c.k then 'same address' else 'same page text' end how
-            from cand c join proved p on p.provider_id = c.provider_id and p.course_id <> c.course_id and p.course_code is distinct from c.course_code
-                                    and (p.k = c.k or (c.sha is not null and p.sha = c.sha))
-           order by c.course_id, (p.k = c.k) desc, p.course_code),
+  -- two equality joins (an address join and a page-text join), not one join on either: the planner can hash each
+  pair as (select c.course_id, p.course_code other_code, p.course_id other_course, 'same address' how, 1 o
+             from cand c join proved p on p.provider_id = c.provider_id and p.k = c.k
+            where p.course_id <> c.course_id and p.course_code is distinct from c.course_code
+           union all
+           select c.course_id, p.course_code, p.course_id, 'same page text', 2
+             from cand c join proved p on p.provider_id = c.provider_id and p.sha = c.sha
+            where c.sha is not null and p.course_id <> c.course_id and p.course_code is distinct from c.course_code),
+  hit as (select distinct on (c.course_id) c.*, x.other_code, x.other_course, x.how
+            from pair x join cand c using (course_id)
+           order by c.course_id, x.o, x.other_code),
   shared as (select g.k from g group by g.k having count(distinct g.course_id) > 1),
   sl as (select g.*, (select e.metadata->>'course_id' from pipeline.evidence_artifacts e where e.id = g.evidence_id) ev_course from g join shared using (k))
   select jsonb_build_object(
