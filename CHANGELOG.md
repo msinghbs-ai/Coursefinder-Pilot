@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.360 — 3 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.433** (workstream G). Migration `20261104060000_cf247_ops_provider_identity_lifecycle`: md5-guarded edit of provider_onboarding_tick_v1; provider_identity_* checks, findings and investigations; provider lifecycle events and plans; job provider-identity-check; 6 root causes and 5 remedies. Candidate site checks and the lifecycle cascade ship off. Nothing dropped; consumer API untouched. Spec s249.
+
 ## 0.1.359 — 3 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.432** (workstream F). Migration `20261104050000_cf247_ops_cost_yield`: md5-guarded edits of svc_fc_spend and waste_guard_v1; ops_step_value_v1, ops_cost_report_v1, ops_cost_waste_v1, ops_cost_guard_v1; 8 root causes and 3 remedies. Enforcement switches ops_cost.enforce_* ship 0. Nothing dropped; consumer API untouched. Spec s248.

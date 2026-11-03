@@ -1,17 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.432'
-export const PACKAGE_VERSION='0.1.359'
+export const UI_VERSION='2.15.433'
+export const PACKAGE_VERSION='0.1.360'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Nov 2026',
-  title:'The platform measures wasted spend and the cost of each verified improvement',
+  title:'Provider websites and identities are checked every hour; retirements are planned with every related record before anything changes',
   changes:[
-    'Every hour the waste check measures repeated searches, repeated AI reads of the same evidence, paid reads of pages already stored, retry loops and scans of ineligible providers, and opens one issue per kind of waste.',
-    'Breakers that refuse or hold wasteful work are built into the existing Firecrawl and AI guards and ship switched off; no budget, share or ceiling changes.',
-    'A value estimate for each planned step and a cost-per-verified-improvement report by lane are available to the planner and the operations report.'
+    'An hourly check finds provider websites that are malformed, shared with an unrelated provider, redirected or parked, or whose register record changed, and opens one investigation per provider with the platform\'s own evidence; nothing is corrected automatically.',
+    'Provider retirement (deregistered, closed, merged) and country retirement need register or first-party evidence and produce a reviewed plan covering courses, scholarships, entry requirements, campuses, contacts, source mappings, Layer 2 to 4 work and the search projection; it is carried out only on a Platform Admin decision and can be reversed.',
+    'A provider that is temporarily unavailable is held from new work without being archived or hidden.'
   ],
   bugFixes:[]
 }
