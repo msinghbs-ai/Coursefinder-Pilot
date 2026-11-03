@@ -32,3 +32,4 @@ create table scholarship.scholarships(id uuid primary key default gen_random_uui
   created_at timestamptz not null default now(), updated_at timestamptz not null default now());
 alter table pipeline.field_enrich_items add column if not exists field text, add column if not exists reason text, add column if not exists cost_usd numeric,
   add column if not exists created_at timestamptz not null default now(), add column if not exists updated_at timestamptz not null default now();
+create table pipeline.firecrawl_budget_refusals(day date not null, grp text not null, reason text not null, n int not null default 0, last_at timestamptz, primary key (day, grp, reason));
