@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.380 — 4 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.453** (IQ-00189). Migration `20261104350000_cf247_l4_rule_target_scheme`: md5-guarded edits of security.layer4_course_link_rule_validate_v1 (3a5d088e → 0cf77b67) and security.layer4_course_link_rule_execute_v1 (85c991e7 → cafae1b6). The decision path and link apply step are not edited. Also carries the v2.15.452 frontend (its Workers build failed on main). Nothing dropped; consumer API untouched. Spec s269.
+
 ## 0.1.379 — 4 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.452** (SS-020 step 1, Decision 269). Migration `20261104340000_cf247_ss020_step1_retire_dead_sections`: 2 automation catalogue area updates and 20 component register rows marked retiring. No live function edited; roles and consumer API unchanged. Tabs 53 → 53.
