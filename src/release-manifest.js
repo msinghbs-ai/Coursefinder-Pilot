@@ -1,16 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.451'
-export const PACKAGE_VERSION='0.1.378'
+export const UI_VERSION='2.15.452'
+export const PACKAGE_VERSION='0.1.379'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'4 Nov 2026',
-  title:'Approved Course Link rules run within their time budget, item by item',
+  title:'Admin menu step 1: dead sections retired',
   changes:[
-    'The rule executor picks the rule\'s waiting items first and checks each one on its own, within a time budget; items it does not reach come first in the next call.',
-    'The strict course-level check reads the level once per item with the same settings as the binding check; an item whose level cannot be confirmed still fails with its reason.'
+    'Sections for services and layers no longer in use are removed: the Health checks Layer 3 block, the Serper, ScrapingBee, Search pass and Sample runs cards, the dropped fetchers, the Layer 3 model profiles and dropped-provider gates on Go-live, and Courses with each field (use Attributes).',
+    'The Layer 3 AI area of Automations is gone; its three live jobs are shown under Course pages and Admission, unchanged.',
+    'Retired components are marked retiring in the component register; nothing is dropped and no tab moves.'
   ],
   bugFixes:[]
 }

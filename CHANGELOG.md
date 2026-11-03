@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.379 — 4 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.452** (SS-020 step 1, Decision 269). Migration `20261104340000_cf247_ss020_step1_retire_dead_sections`: 2 automation catalogue area updates and 20 component register rows marked retiring. No live function edited; roles and consumer API unchanged. Tabs 53 → 53.
+
 ## 0.1.378 — 4 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.451** (Simon Fraser rule could not run). Migration `20261104330000_cf247_l4_rule_sfu_perf`: md5-guarded edits of security.layer4_course_link_rule_validate_v1 (31bd052c → 3a5d088e) and security.layer4_course_link_rule_execute_v1 (86e1089a → 85c991e7); security.layer4_rule_level_v1; setting layer4.rule_execute_time_budget_s. Nothing dropped; consumer API untouched. Spec s268.
