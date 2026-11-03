@@ -1,18 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.429'
-export const PACKAGE_VERSION='0.1.356'
+export const UI_VERSION='2.15.430'
+export const PACKAGE_VERSION='0.1.357'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Nov 2026',
-  title:'The platform diagnoses, fixes, verifies and closes its own operational issues',
+  title:'Every task and plan records what it achieved; interrupted and stale work recovers without paying twice',
   changes:[
-    'An operations controller runs twice an hour on the integration queue: it groups issues that share a cause, diagnoses each from live job runs and release times, and runs only the fixes registered as automatic after checking its authority.',
-    'A fix is verified on a later run before its issue closes; an issue that needs a code release or a Platform Admin decision is marked as blocked once, with the evidence and the decision needed, instead of being retried.',
-    'While a fix runs, the database refuses changes to the fix registers, setting limits, budgets, Layer 4 decisions, admissions and manual locks.',
-    'Every task can now record one of eight outcomes, and the controller writes hourly checkpoints and a daily summary of platform health, data improvement, autonomy, efficiency and governance.'
+    'Every task and plan now records one of eight outcomes when it ends (moved data, no data moved, not needed, waiting on another step, held by policy, held for evidence, failed and retryable, failed needing a fix), measured from the rows it changed; past tasks and plans are given their outcome without changing their history.',
+    'A university whose last three automatic plans moved nothing, with no new evidence, is no longer offered to the automatic planner; a person\'s Run now still sees every step.',
+    'A failed course-page search step is planned again on the next hourly run, and its search waits while that university\'s earlier searches are still queued, so no search is paid for twice.',
+    'Every automatic planner run is recorded with what it created, or why it created nothing.'
   ],
   bugFixes:[]
 }
