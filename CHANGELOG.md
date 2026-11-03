@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.358 — 3 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.431** (workstream B). Migration `20261104030000_cf247_ops_source_recovery`: md5-guarded edits of source_proof_feed_v1, course_relink_provider_v1 and course_relink_tick_v1; job field-absence-recovery; pipeline.field_absence_recovery and run log; field_absence_d1_decision_v1; 9 root causes and 4 remedies. Free recovery routes (relink.statuses, slug variants, current year, stored-search reuse, absence input) ship off; proof.search_per_run stays 0. Nothing dropped; consumer API untouched. Spec s246.
+
 ## 0.1.357 — 3 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.430** (workstream D; IQ-00064, IQ-00066 follow-up). Migration `20261104020000_cf247_ops_job_lifecycle`: md5-guarded edits of admin_job_close_v1, admin_job_watch_v1, enrich_plan_tick_v1, enrich_plan_v1, plan_outcomes_v1 and enrich_plan_auto_v1; job ops-job-lifecycle; pipeline.enrich_plan_auto_runs and enrich_ai_answers; 9 root causes and 9 remedies through the operations contract. Lease, queue, duplicate, retry-cost and answer-replay repairs ship off. Nothing dropped; consumer API untouched. Spec s245.
