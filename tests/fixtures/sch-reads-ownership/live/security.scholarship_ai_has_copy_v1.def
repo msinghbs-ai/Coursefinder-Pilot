@@ -1,0 +1,17 @@
+CREATE OR REPLACE FUNCTION security.scholarship_ai_has_copy_v1(p_queue_id bigint)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+  -- CF-247 lanes (3 Nov 2026): the scholarship AI item has a stored copy the worker reads without Firecrawl (the same sources, in the same
+  -- order, as public.svc_scholarship_ai_next gives the worker)
+  select exists (select 1 from pipeline.scholarship_ai_queue q
+                  where q.id = p_queue_id
+                    and (q.storage_path is not null
+                         or exists (select 1 from pipeline.scholarship_page_candidates c where c.id = q.candidate_id and c.storage_path is not null)
+                         or exists (select 1 from pipeline.scholarship_pages sp join pipeline.evidence_artifacts e on e.id = sp.evidence_id where sp.scholarship_id = q.scholarship_id and e.storage_path is not null)
+                         or exists (select 1 from scholarship.scholarships s join pipeline.evidence_artifacts e on e.id = s.evidence_id where s.id = q.scholarship_id and e.storage_path is not null)
+                         or exists (select 1 from pipeline.scholarship_ai_extractions x where x.url = q.url and x.storage_path is not null and x.error is null
+                                       and x.at > now() - make_interval(hours => security.pipeline_num_v1('waste.page_reuse_hours', 24)::int))))
+$function$
