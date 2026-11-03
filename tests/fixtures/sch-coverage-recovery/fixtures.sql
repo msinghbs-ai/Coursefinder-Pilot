@@ -1,4 +1,4 @@
--- Cases after 20261104370000. Each block raises on failure and prints NOTICE "ok ..." on success.
+-- Cases after 20261104390000. Each block raises on failure and prints NOTICE "ok ..." on success.
 create or replace function pg_temp.ok(p boolean, p_msg text) returns void language plpgsql as $$
 begin if p is not true then raise exception 'FAILED: %', p_msg; end if; raise notice 'ok %', p_msg; end $$;
 create or replace function pg_temp.st(p_key text) returns text language sql as $$ select state from pipeline.scholarship_coverage_items where item_key = p_key and present $$;

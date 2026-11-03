@@ -4,13 +4,13 @@
 # helpers australian_university, url_on_provider_sites and scholarship_admission_provider_ok_v1 carry their live text), workstream A's contract
 # (stub-ops-contract.sql), the work-continuity contract taken from its migration (20261104170000: settings, policies, work items, the report
 # function), the three live definitions this change edits (live/, each checked against its live md5), seed.sql, fixtures-before.sql (the defects
-# on the live definitions), the 20261104370000 migration, then again (nothing changes), fixtures.sql. Drops the database at the end
+# on the live definitions), the 20261104390000 migration, then again (nothing changes), fixtures.sql. Drops the database at the end
 # (SCHCOV_KEEP=1 keeps it).
 set -euo pipefail
 cd "$(dirname "$0")"
 DB=${SCHCOV_DB:-sch_coverage_recovery_fixtures}
 ROOT=../../..
-MIG=$ROOT/supabase/migrations/20261104370000_cf247_sch_coverage_recovery.sql
+MIG=$ROOT/supabase/migrations/20261104390000_cf247_sch_coverage_recovery.sql
 WC=$ROOT/supabase/migrations/20261104170000_cf247_work_continuity.sql
 P="psql -v ON_ERROR_STOP=1 -q -X"
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }

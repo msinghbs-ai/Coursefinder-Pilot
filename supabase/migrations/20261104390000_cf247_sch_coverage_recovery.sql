@@ -645,7 +645,7 @@ select security.ops_remedy_register_v1('sch_subbrand_host_decision', jsonb_build
   'title', 'Platform Admin decides whether a sub-brand host belongs to the provider (discovery allowed_hosts)',
   'notes', 'No host is added automatically; the case is quarantined (identity) with its evidence.'));
 select security.ops_remedy_register_v1('sch_read_again_due', jsonb_build_object('authority', 'release', 'treats', jsonb_build_array('sch_read_again_not_due'),
-  'title', 'A page requested since its last read is due (public.svc_scholarship_read_next, release 20261104370000)',
+  'title', 'A page requested since its last read is due (public.svc_scholarship_read_next, release 20261104390000)',
   'notes', 'Read once per request; the recorder clears requested_at.'));
 
 -- 11. jobs (G1), catalogue first -----------------------------------------------------------------------------------------------------------------------
@@ -669,12 +669,12 @@ end $j$;
 
 -- 12. register (housekeeping) ----------------------------------------------------------------------------------------------------------------------------
 insert into pipeline.component_register(kind, name, layer, area, purpose, status, replaces, introduced_in) values
- ('job', 'scholarship-coverage-classify', 'Layer 2', 'Scholarships', 'Scholarship coverage cases in 13 states, work items and escalation', 'active', '{}', '20261104370000'),
- ('job', 'scholarship-coverage-recover', 'Layer 2', 'Scholarships', 'Bounded once-per-case scholarship coverage recovery (switches off)', 'active', '{}', '20261104370000'),
- ('table', 'pipeline.scholarship_coverage_state_codes', 'Layer 2', 'Scholarships', 'The 13 coverage states', 'active', '{}', '20261104370000'),
- ('table', 'pipeline.scholarship_coverage_items', 'Layer 2', 'Scholarships', 'Scholarship coverage cases per provider', 'active', '{}', '20261104370000'),
- ('table', 'pipeline.scholarship_coverage_providers', 'Layer 2', 'Scholarships', 'Scholarship coverage state per provider', 'active', '{}', '20261104370000'),
- ('table', 'pipeline.scholarship_coverage_recoveries', 'Layer 2', 'Scholarships', 'Scholarship coverage recovery actions and outcomes', 'active', '{}', '20261104370000')
+ ('job', 'scholarship-coverage-classify', 'Layer 2', 'Scholarships', 'Scholarship coverage cases in 13 states, work items and escalation', 'active', '{}', '20261104390000'),
+ ('job', 'scholarship-coverage-recover', 'Layer 2', 'Scholarships', 'Bounded once-per-case scholarship coverage recovery (switches off)', 'active', '{}', '20261104390000'),
+ ('table', 'pipeline.scholarship_coverage_state_codes', 'Layer 2', 'Scholarships', 'The 13 coverage states', 'active', '{}', '20261104390000'),
+ ('table', 'pipeline.scholarship_coverage_items', 'Layer 2', 'Scholarships', 'Scholarship coverage cases per provider', 'active', '{}', '20261104390000'),
+ ('table', 'pipeline.scholarship_coverage_providers', 'Layer 2', 'Scholarships', 'Scholarship coverage state per provider', 'active', '{}', '20261104390000'),
+ ('table', 'pipeline.scholarship_coverage_recoveries', 'Layer 2', 'Scholarships', 'Scholarship coverage recovery actions and outcomes', 'active', '{}', '20261104390000')
 on conflict do nothing;
 
 -- 13. post-check ---------------------------------------------------------------------------------------------------------------------------------------
