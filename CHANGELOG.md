@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.381 — 4 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.454** (SS-020 step 2, Decision 269). Screens only: no migration, no tab moved (53 tabs), roles and consumer API unchanged. Course sources and Course-level reading are paged on screen (server paging is a follow-up).
+
 ## 0.1.380 — 4 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.453** (IQ-00189). Migration `20261104350000_cf247_l4_rule_target_scheme`: md5-guarded edits of security.layer4_course_link_rule_validate_v1 (3a5d088e → 0cf77b67) and security.layer4_course_link_rule_execute_v1 (85c991e7 → cafae1b6). The decision path and link apply step are not edited. Also carries the v2.15.452 frontend (its Workers build failed on main). Nothing dropped; consumer API untouched. Spec s269.
