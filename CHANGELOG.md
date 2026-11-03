@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.387 — 4 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.460** (IQ-00215, IQ-00216, IQ-00219; mandate 4 Nov 05:08 §2–§5). Migration `20261104390000_cf247_sch_coverage_recovery`: md5-guarded edits of security.scholarship_university (00ca2485 → cee99ebc), security.scholarship_coverage_v1 (cf9a3828 → 77200414), public.svc_scholarship_read_next (b30f59a2 → 452c288e); classification and Read again on; sch_cov.legal_name_identity_on, policy_disposition_on, recover_register_pages_on, recover_stored_reads_on, recover_listings_on ship 0. Nothing dropped; consumer API untouched. Spec s270.
+
 ## 0.1.386 — 4 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.459** (IQ-00116). Migration `20261104380000_cf247_tuition_publication`: md5-guarded edit of security.layer4_tuition_apply_impl (ef89bdd9 → a6148e35); security.tuition_publication_check_v1 (read only); remedy layer4_tuition_publication_repair (auto) with root cause layer4_tuition_source_gate_closed; setting layer4.tuition_publication_batch. The projection builder and the consumer API are not changed. Spec s271.

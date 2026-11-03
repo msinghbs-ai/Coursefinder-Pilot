@@ -1,16 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.459'
-export const PACKAGE_VERSION='0.1.386'
+export const UI_VERSION='2.15.460'
+export const PACKAGE_VERSION='0.1.387'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'4 Nov 2026',
-  title:'Layer 4 tuition approvals reach the website',
+  title:'Scholarship coverage states and bounded recovery; Read again reads the page',
   changes:[
-    'A tuition fee approved in Layer 4 now opens its source for the website projection, as the other fee paths already do; a blocked source, or a source that holds an unreviewed fee, is never opened.',
-    'A read-only check compares the catalogue, the website projection and the fee rule Zoho reads, with a cause for each missing approval; an automatic remedy repairs approvals already saved and verifies them.'
+    'Scholarship coverage now tells apart 13 states (source not discovered, found but unread, traversal incomplete, refused correctly or wrongly, international eligibility unresolved, domestic-only, expired, ownership conflict, awaiting Layer 4, admitted not published, published and consumer-verified, evidence-backed none), each unresolved case with an owner, evidence, a next recovery time and an escalation condition.',
+    'Read again on a scholarship page now reads it once on the next run, within the existing caps.',
+    'Bounded recovery of never-read register pages, stored copies and listings, and the legal-name identity test, are built and switched off.'
   ],
   bugFixes:[]
 }
