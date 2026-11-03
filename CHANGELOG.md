@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.382 — 4 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.455** (SS-020 step 3, Decision 269, Final board F31 and F41). Screens only: tabs 53 → 51 on 20 pages; LEGACY redirects (models-services?tab=limits|fetchers, scrapers, scrapers-fetchers, administration, platform-health?tab=integration&view=yield); roles unchanged; consumer API untouched.
+
 ## 0.1.381 — 4 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.454** (SS-020 step 2, Decision 269). Screens only: no migration, no tab moved (53 tabs), roles and consumer API unchanged. Course sources and Course-level reading are paged on screen (server paging is a follow-up).

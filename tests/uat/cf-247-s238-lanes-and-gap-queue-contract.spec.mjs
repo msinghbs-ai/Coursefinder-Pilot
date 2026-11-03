@@ -148,7 +148,7 @@ test('Platform health › Integration queue › Pipeline yield shows each lane w
     lane({ lane: 'stored_evidence', label: 'Stored evidence and direct reads', eligible: { course_pages_due: 12 }, processed: 40 }),
     lane({ lane: 'paid_acquisition', label: 'New paid pages (Firecrawl)', held: { budget_held: 60 }, live_hold: { sch_scrape: 'budget_held: no room left in today\'s Firecrawl share for scholarships' }, cost: { firecrawl_credits_today: 120 } }),
     lane({ lane: 'gap_queue', label: 'Standing gap queue', last_run: { at: '2026-11-03T00:23:00Z', outcome: 'held', hold_reason: 'scan_continues', items: 0 } })] } }) }))
-  await page.goto('/#platform-health?tab=integration')
+  await page.goto('/#platform-health?tab=queues') // SS-020 step 3 (Decision 269): Pipeline yield is on Queues & yield
   const t = page.locator('[data-lane-status]')
   await expect(t).toContainText('Lanes now: work, holds and cost, each lane on its own')
   await expect(t.locator('[data-lane-row="eligible"] [data-lane="stored_evidence"]')).toHaveText('12 course pages due')

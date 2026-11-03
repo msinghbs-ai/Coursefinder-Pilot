@@ -247,7 +247,7 @@ test('v2.15.319 progress watchdog: queue states, alerts for Stuck and Out of too
   expect(mig).toContain("select cron.schedule('queue-watch'")
   expect(mig.indexOf("('queue-watch', 'Platform upkeep'")).toBeLessThan(mig.indexOf("select cron.schedule('queue-watch'"))
   for (const k of ['window_minutes', 'stuck_minutes', 'fail_percent', 'fail_min', 'alert_repeat_hours', 'retry_batch', 'retry_days', 'retry_after_hours', 'report_hours']) expect(mig).toContain(`'queue_watch.${k}'`)
-  expect(nav).toContain("{ key: 'queues', label: 'Work queues', min: 3 },")
+  expect(nav).toContain("{ key: 'queues', label: 'Queues & yield', min: 3 },") // SS-020 step 3: Work queues + Pipeline yield
   expect(ui).toContain("supabase.rpc('admin_queue_watch'")
   expect(ui).not.toContain('window.prompt')
 })

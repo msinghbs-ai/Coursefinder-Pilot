@@ -41,7 +41,7 @@ test.describe('mocked browser', () => {
     await mockAdmin(page)
     await page.goto('/#layer-2-discovery') // v2.15.300: Layer 2/3 › Operations
     await page.locator('[data-notice="firecrawl:2:search_held"] [data-notice-go]').click()
-    await expect(page).toHaveURL(/tab=limits/)
+    await expect(page).toHaveURL(/#models-services\?card=/) // SS-020 step 3: Toolsets & limits is in Services & limits, the first tab
     await expect(page.locator('[data-card="services.toolset.firecrawl.credits"]')).toHaveAttribute('data-card-open', 'true')
     await expect(page.locator('[data-fc-refused-uni="u-vu"]')).toBeVisible()
   })

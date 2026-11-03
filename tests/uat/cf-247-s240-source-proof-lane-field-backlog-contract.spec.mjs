@@ -87,7 +87,7 @@ test('Platform health › Integration queue › Pipeline yield shows the field b
     row({ field: 'intakes', label: 'Intake dates', eligible: 20727, waiting_layer4: 377, not_supported: 5422, stored_source: 9800, requires_acquisition: 5128, admitted_24h: 120, admitted_7d: 840, accepted_per_hour: 5, forecast_hours: 3061 }),
     row({ field: 'rankings', label: 'Rankings (universities with none)', eligible: 52, not_supported: 52, note: 'no active ranking source' })],
     source_proof: { waiting_for_page_proof: 10900, settled_24h: 96, free_per_run: 50, paid_search_per_run: 0 } } }) }))
-  await page.goto('/#platform-health?tab=integration')
+  await page.goto('/#platform-health?tab=queues') // SS-020 step 3 (Decision 269): Pipeline yield is on Queues & yield
   const t = page.locator('[data-field-backlog]')
   await expect(t).toContainText('Field backlog now')
   await expect(t.locator('[data-backlog-field="intakes"] [data-backlog-col="eligible"]')).toHaveText('20,727')
