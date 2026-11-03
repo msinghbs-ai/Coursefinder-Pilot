@@ -821,7 +821,7 @@
 .iq-facts dt{font-weight:600}
 .iq-facts dd{margin:0;overflow-wrap:anywhere}
 /* SS-020 step 2 (Decision 269): Reference data › Key dates edits one date in a drawer; Scheduled jobs › Automations areas open on request */
-.kd-drawer{position:fixed;top:0;right:0;bottom:0;z-index:50;width:min(440px,100vw);background:var(--cf-surface);border-left:1px solid var(--cf-border);box-shadow:-8px 0 24px rgba(0,0,0,.12);padding:16px;overflow:auto;display:grid;align-content:start;gap:12px}
+.kd-drawer{position:fixed;top:0;right:0;bottom:0;z-index:50;width:min(440px,100vw);background:var(--cf-surface);border-left:1px solid var(--cf-border);box-shadow:var(--cf-shadow-drawer);padding:16px;overflow:auto;display:grid;align-content:start;gap:12px}
 .kd-drawer-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .kd-drawer-fields{display:grid;grid-template-columns:110px minmax(0,1fr);gap:8px 12px;margin:0}
 .kd-drawer-fields dt{font-size:var(--cf-fs-xs);color:var(--cf-text-2)}
