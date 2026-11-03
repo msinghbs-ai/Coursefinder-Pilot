@@ -77,7 +77,7 @@ test('browser: notices on the layer page, acknowledged with a reason', async ({ 
   await expect(page.locator('[data-layer-notices="3"]')).toHaveCount(0)
 })
 
-test('browser: Models & services — OpenRouter observe only, key and plan limits, settings by section, sample runs started and continued', async ({ page }) => {
+test('browser: Models & services — OpenRouter observe only; Serper, ScrapingBee, Search pass and Sample runs cards retired (SS-020 step 1)', async ({ page }) => {
   await mockAdmin(page)
   page.on('dialog', d => d.accept('Decision 252 sample'))
   await page.goto('/#models-services?tab=limits')
@@ -87,34 +87,15 @@ test('browser: Models & services — OpenRouter observe only, key and plan limit
   await expect(or.locator('[data-openrouter]')).toContainText('Balance US$27.67')
   await or.getByRole('button', { name: 'Switch to stop at limits' }).click()
   await expect.poll(() => page.l3calls.find(c => c.toolsets === 'enforcement')?.args).toMatchObject({ toolset: 'openrouter', enforcement: 'stop' })
-  const q = page.locator('[data-toolset-setting="serper.course_query"]')
-  await q.getByRole('textbox').fill('"{course}" {provider}')
-  await q.getByRole('button', { name: 'Save' }).click()
-  await expect.poll(() => page.l3calls.find(c => c.toolsets === 'setting')?.args).toMatchObject({ toolset: 'serper', key: 'course_query', value: '"{course}" {provider}' })
-  const cc = page.locator('[data-toolset-setting="serper.sample_countries"]')
-  await cc.getByRole('textbox').fill('AU, NZ, CA, GB')
-  await cc.getByRole('button', { name: 'Save' }).click()
-  await expect.poll(() => page.l3calls.filter(c => c.toolsets === 'setting').map(c => c.args.value)).toContainEqual(['AU', 'NZ', 'CA', 'GB'])
-  await expect(page.locator('[data-toolset-key="scrapingbee"]')).toContainText('No key saved')
-  const plan = page.locator('[data-toolset-plan="serper"]')
-  await expect(plan).toContainText('Free plan')
-  await expect(plan).toContainText('48 of 2,500 credits used since 2026-10-04')
-  await expect(page.locator('[data-toolset-key="serper"]')).toContainText('Replace the key on Settings')
-  for (const sec of ['Key and plan limits', 'How the service is used', 'Sample runs']) await expect(page.locator(`[data-toolset-section="serper:${sec}"]`)).toBeVisible()
-  const credits = page.locator('[data-toolset-setting="serper.plan_credits"]')
-  await credits.getByRole('textbox').fill('50000')
-  await credits.getByRole('button', { name: 'Save' }).click()
-  await expect.poll(() => page.l3calls.filter(c => c.toolsets === 'setting').map(c => c.args)).toContainEqual(expect.objectContaining({ toolset: 'serper', key: 'plan_credits', value: '50000' }))
   await expect(page.locator('[data-toolsets]')).not.toContainText(/trial/i)
-  const tr = page.locator('[data-toolset-samples]')
-  await expect(tr.getByRole('button', { name: 'Run a sample with ScrapingBee: Read pages that need a browser' })).toBeDisabled()
-  await tr.getByRole('button', { name: 'Run a sample with Serper: Find provider websites' }).click()
-  await expect.poll(() => page.l3calls.find(c => c.sample === 'start')?.args).toMatchObject({ toolset: 'serper', purpose: 'find_provider_site' })
-  await expect.poll(() => page.l3calls.find(c => c.runnerKick)?.runnerKick).toMatchObject({ action: 'run', run_id: '7d1e0000-0000-4000-8000-000000000002' })
-  await tr.locator('[data-sample-run="7d1e0000-0000-4000-8000-000000000001"]').getByRole('button', { name: 'Continue' }).click()
-  await expect.poll(() => page.l3calls.filter(c => c.runnerKick).length).toBe(2)
-  await expect(tr.locator('[data-sample-results] [data-sample-outcome="found_on_provider_site"]')).toContainText('14 (70%)')
-  await expect(tr.locator('[data-sample-projection]')).toContainText('US$7.33')
+  // SS-020 step 1 (Decision 269, 3 Nov 2026): Firecrawl only (4 Oct); the rows and their history stay in the database
+  for (const k of ['serper', 'scrapingbee']) {
+    await expect(page.locator(`[data-toolset="${k}"]`)).toHaveCount(0)
+    await expect(page.locator(`[data-toolset-key="${k}"]`)).toHaveCount(0)
+  }
+  await expect(page.locator('[data-toolset-samples]')).toHaveCount(0)
+  await expect(page.locator('[data-search-pass]')).toHaveCount(0)
+  expect(page.l3calls.some(c => c.sample || c.pass || c.runnerKick)).toBe(false)
 })
 
 // Decision 252 steps 1 and 2 (v2.15.179): search pass into the identity check; addresses repaired from stored results
@@ -129,18 +110,6 @@ test('search pass: migration shaped, worker binds found pages only for a pass, n
   const w = read('supabase/functions/toolset-runner/index.ts')
   expect(w).toContain('if (batch.applies && res.outcome === "found_on_provider_site")')
   expect(w).toContain('rpc("svc_toolset_sample_continue", { p_run_id: runId })')
-})
-
-test('browser: search pass panel — start with a reason, pages sent to the identity check, repairs listed', async ({ page }) => {
-  await mockAdmin(page)
-  page.on('dialog', d => d.accept('Decision 252 step 1'))
-  await page.goto('/#models-services?tab=limits')
-  await openCards(page)
-  const p = page.locator('[data-search-pass]')
-  await expect(p.locator('[data-pass-links] [data-pass-state="verified"]')).toContainText('64')
-  await expect(p.locator('[data-pass-repairs]')).toContainText('392')
-  await p.getByRole('button', { name: 'Run the search pass' }).click()
-  await expect.poll(() => page.l3calls.find(c => c.pass)?.pass).toMatchObject({ p_reason: 'Decision 252 step 1' })
 })
 
 // Decision 253 (v2.15.180): Firecrawl only, by use case, for target universities; every run call logged for support
