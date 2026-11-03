@@ -1,17 +1,15 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.452'
-export const PACKAGE_VERSION='0.1.379'
+export const UI_VERSION='2.15.453'
+export const PACKAGE_VERSION='0.1.380'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'4 Nov 2026',
-  title:'Admin menu step 1: dead sections retired',
+  title:'Approved Course Link rules apply http addresses as their https form',
   changes:[
-    'Sections for services and layers no longer in use are removed: the Health checks Layer 3 block, the Serper, ScrapingBee, Search pass and Sample runs cards, the dropped fetchers, the Layer 3 model profiles and dropped-provider gates on Go-live, and Courses with each field (use Attributes).',
-    'The Layer 3 AI area of Automations is gone; its three live jobs are shown under Course pages and Admission, unchanged.',
-    'Retired components are marked retiring in the component register; nothing is dropped and no tab moves.'
+    'When an approved rule uses a proposed page held as http://, the decision records the same page as a full https:// address (shown as an edited approval with both addresses in the history); an address that still is not a full web address fails with a clear reason before any decision.'
   ],
   bugFixes:[]
 }
