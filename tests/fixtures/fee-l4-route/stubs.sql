@@ -1,5 +1,5 @@
 -- CF-247 IQ-00111 D12 fee re-check route: isolated fixture database (scratch PostgreSQL only; never a Supabase project). The tables the
--- 20261104230000 migration and the live Layer 4 inbox read or write, with the live columns they use (read-only, 3 Nov 2026 22:0x AEDT); helpers
+-- 20261104270000 migration and the live Layer 4 inbox read or write, with the live columns they use (read-only, 3 Nov 2026 22:0x AEDT); helpers
 -- as small stand-ins. security.layer4_inbox_items_v1 is loaded from live/ (live md5), then the Layer 4 owner's 20261104150000 edit (4fc05d14). Nothing here is live data.
 create schema if not exists pipeline; create schema if not exists catalogue; create schema if not exists security; create schema if not exists search;
 create schema if not exists scholarship; create schema if not exists fx;

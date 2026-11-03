@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CF-247 IQ-00111 D12 (fee re-check route, migration 20261104230000) on isolated fixtures. Scratch PostgreSQL only (PGHOST/PGUSER). Builds a
+# CF-247 IQ-00111 D12 (fee re-check route, migration 20261104270000) on isolated fixtures. Scratch PostgreSQL only (PGHOST/PGUSER). Builds a
 # throwaway database: stubs.sql, the live Layer 4 inbox definition (checked against its live md5) and the Layer 4 owner's 20261104150000 edit of it
 # (l4-inbox-4fc05d14.sql; the version the cards render through), workstream A's contract (stub-ops-contract.sql, byte for byte), the migration
 # twice (second run changes nothing; the inbox is never edited by it), fixtures.sql (every case), then the governed paste on its own stub.
@@ -7,7 +7,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 ROOT=../../..
 DB=${FEE_L4_DB:-cf_fee_l4_route_fixtures}
-MIG=$ROOT/supabase/migrations/20261104230000_cf247_fee_admitted_recheck.sql
+MIG=$ROOT/supabase/migrations/20261104270000_cf247_fee_admitted_recheck.sql
 P="psql -v ON_ERROR_STOP=1 -q -X"
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }
 q() { $P -d $DB -Atc "$1"; }
