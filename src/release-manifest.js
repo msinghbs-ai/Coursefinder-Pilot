@@ -1,17 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.419'
-export const PACKAGE_VERSION='0.1.346'
+export const UI_VERSION='2.15.420'
+export const PACKAGE_VERSION='0.1.347'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Nov 2026',
-  title:'Enrichment keeps going between cycles; retry, export and spend preview on the existing controls',
+  title:'No failure hidden behind a successful schedule; country rules are settings; ranking edition check',
   changes:[
-    'A university can be planned again before its 14-day wait ends when its missing values have grown, at a set number of re-plans per hour (off until switched on). The standing gap queue\'s cross-check runs in about a quarter of the time, so its runs stop timing out.',
-    'Enrich fields and Enrichment plan gain Retry failed items and Export results (CSV); Preview shows the expected AI and scraper spend and how many items another task already holds. Start skips course fields another open task holds and unpublished providers, so a manual run and the standing queue never work the same item.',
-    'Cancelling an Enrichment plan now also cancels the tasks its running steps started. Find scholarships now shows a credit and AI estimate before it starts. Scheduled jobs › Run on demand is turned off for Layer 2 schedules, which no worker processes.'
+    'The AI field reader no longer times out against the background task runner\'s lock, so its answers are recorded instead of failing after three tries. The NZ code-of-practice reader reports what it read and its picker answers in milliseconds. The CRICOS provider check only calls its worker when a provider is due.',
+    'Countries that shared jobs give priority to (course-link focus, scholarship refill) and the country scope gate are now settings with today\'s values, so nothing changes in behaviour and no job command names a country.',
+    'A daily ranking edition check raises one integration issue per ranking system when a newer edition exists or the last import is older than a set age; it imports nothing and ships paused. The Pipeline yield checks now watch the provider description and Enrich fields lanes, and a picker held by its own daily cap counts as idle.'
   ],
   bugFixes:[]
 }
