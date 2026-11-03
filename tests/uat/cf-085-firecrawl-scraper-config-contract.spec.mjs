@@ -15,8 +15,9 @@ test.describe('CF-085 Firecrawl scraper configuration contract',()=>{
   // v2.15.300 (Platform Admin, 20 Oct 2026): Scrapers & fetchers is the Fetchers tab of Models & services
   // SS-020 step 3 (Decision 269): Fetchers is part of Models & services › Services & limits (same minimum role)
   expect(await fs.readFile('src/nav-map.js','utf8')).toContain("{ key: 'services', label: 'Services & limits', min: 4 },")
-  expect(shell).toContain("<section data-fetchers-merged>")
-  expect(shell).toContain("<Layer2ProviderConfig rank={rank} embedded/>")
+  // SS-020 step 3 cards (Final board F41): one card per service; the Firecrawl card holds the fetcher settings (monthly limit and reserve)
+  expect(shell).toContain("svc('firecrawl','Firecrawl'")
+  expect(shell).toContain("<Layer2ProviderConfig rank={rank} embedded only={['firecrawl']}/>")
   expect(provider).toContain('aria-label="Firecrawl monthly limit"')
   expect(provider).toContain('aria-label="Firecrawl safety reserve"')
   expect(provider).toContain('monthly_vendor_units_limit:limit')
