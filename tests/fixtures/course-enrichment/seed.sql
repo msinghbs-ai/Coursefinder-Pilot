@@ -21,3 +21,8 @@ insert into pipeline.central_ai_settings values (1, 'openai/gpt-4.1-mini', 'mini
 insert into cron.job(jobname, schedule, command) values ('field-gap-queue', '23 */6 * * *', 'select security.field_gap_queue_run_v1()');
 insert into pipeline.automation_catalogue(jobname, area, sort, label, description, control_rank, batch_editable) values
  ('field-gap-queue', 'Course pages', 30, 'Fill the gaps (standing queue) and cross-check', 'Every 6 hours: cross-checks held duration, level and delivery against the latest course page reading. Runs through security.field_gap_queue_run_v1: the gaps are found in bounded slices.', 6, false);
+insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, section, used_by) values
+ ('pipeline', 'course_url.fill_countries', 'f', 'h', 'list', '["AU", "NZ", "CA"]', null, null, 'countries', 1, 'Course pages', 'security.source_proof_feed_v1');
+insert into cron.job(jobname, schedule, command) values ('source-proof-feed', '14,44 * * * *', 'select security.source_proof_feed_v1()');
+insert into pipeline.automation_catalogue(jobname, area, sort, label, description, control_rank, batch_editable) values
+ ('source-proof-feed', 'Course pages', 31, 'Find page proof for waiting courses', 'Routes courses waiting for page proof to the lane that can prove a page.', 6, false);

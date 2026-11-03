@@ -159,3 +159,15 @@ create function cron.alter_job(job_id bigint, schedule text default null, comman
 returns void language sql as $$ update cron.job set schedule = coalesce(alter_job.schedule, cron.job.schedule), command = coalesce(alter_job.command, cron.job.command),
   active = coalesce(alter_job.active, cron.job.active) where jobid = job_id $$;
 create table pipeline.automation_catalogue (jobname text primary key, area text, sort int, label text, description text, control_rank int, batch_editable boolean, layer23_stage text);
+-- shapes job source-proof-feed reads (security.source_proof_feed_v1, Release A 20261103190000)
+create table pipeline.source_proof_requests (course_id uuid primary key, provider_id uuid, route text, state text, fingerprint text, attempts int default 0, requested_at timestamptz,
+  settled_at timestamptz, outcome text, considered_at timestamptz, detail jsonb default '{}');
+create table pipeline.course_relink (course_id uuid primary key, state text, reason text, result_url text, decided_at timestamptz, started_at timestamptz);
+create table pipeline.course_link_search (course_id uuid primary key, provider_id uuid, stage text, state text, bound_url text, attempts int default 0, done_at timestamptz,
+  sent_at timestamptz, queued_at timestamptz);
+create table pipeline.coverage_provider_urls (provider_id uuid);
+create table pipeline.course_link_recipes (provider_id uuid, search_domain text, active boolean);
+create table pipeline.provider_priority (provider_id uuid, rank int);
+create function security.coverage_country(p uuid) returns text language sql stable as $$
+  select k.iso_alpha2::text from catalogue.providers x join ref.countries k on k.id = x.country_id where x.id = p $$;
+alter table pipeline.coverage_course_pages add column read_attempts int;

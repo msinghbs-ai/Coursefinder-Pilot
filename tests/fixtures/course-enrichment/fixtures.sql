@@ -242,3 +242,34 @@ begin
               and (label = '' or unit is null or used_by is null or (kind = 'number' and (min_value is null or max_value is null)))) then raise exception '10: settings'; end if;
   raise notice 'ok 10 settings: label, range, unit and used_by on all eight';
 end $$;
+
+-- 11 job source-proof-feed records every run: nothing waiting (idle, no_page_proof_input); a course routed to course-relink (done); nothing new (held)
+do $$
+declare v jsonb;
+begin
+  delete from pipeline.course_page_proofs;
+  v := security.source_proof_feed_v1();
+  if (select outcome || '/' || hold_reason from pipeline.source_proof_feed_runs order by id desc limit 1) <> 'idle/no_page_proof_input' then raise exception '11: idle run'; end if;
+  insert into pipeline.course_page_proofs values ('00000000-0000-0000-0000-0000000000c9', 'k1', false, now());
+  insert into pipeline.coverage_course_pages(course_id, provider_id, url, status, read_status, identity_basis) values
+   ('00000000-0000-0000-0000-0000000000c9', '00000000-0000-0000-0000-0000000000b1', 'https://x.example/c9', 'mismatch', 'identity_mismatch', null);
+  v := security.source_proof_feed_v1();
+  if (select outcome || '/' || coalesce(hold_reason, '-') || '/' || (routed->>'relink') from pipeline.source_proof_feed_runs order by id desc limit 1) <> 'done/-/1' then
+    raise exception '11: routed run %', (select row_to_json(r) from pipeline.source_proof_feed_runs r order by id desc limit 1); end if;
+  v := security.source_proof_feed_v1();
+  if (select outcome || '/' || hold_reason from pipeline.source_proof_feed_runs order by id desc limit 1) <> 'held/requests_open' then
+    raise exception '11: open request %', (select row_to_json(r) from pipeline.source_proof_feed_runs r order by id desc limit 1); end if;
+  if (select count(*) from pipeline.source_proof_feed_runs) <> 3 or v <> jsonb_build_object('settled', 0, 'routed', '{}'::jsonb, 'ms', v->'ms') then raise exception '11: answer unchanged, one row a run'; end if;
+  if (select description from pipeline.automation_catalogue where jobname = 'source-proof-feed') not like '%source_proof_feed_runs%' then raise exception '11: catalogue'; end if;
+  raise notice 'ok 11 source-proof-feed: one run row each time, idle with no_page_proof_input when no course waits, done when a course is routed to course-relink, held with requests_open when every waiting course has an open request; its answer is unchanged';
+end $$;
+
+-- 12 a run held for courses waiting for page proof advances the next hour (the feed is not starved between gap runs)
+do $$
+begin
+  update pipeline.admin_jobs set state = 'done' where kind = 'enrich_fields';
+  delete from pipeline.field_gap_queue_runs;
+  insert into pipeline.field_gap_queue_runs(run_at, outcome, hold_reason, items) values (now() - interval '61 minutes', 'held', 'waiting_for_page_proof', 0);
+  if not security.field_gap_queue_due_v1() then raise exception '12: held for page proof: due the next hour'; end if;
+  raise notice 'ok 12 a gap run held for page proof is due again after gaps.advance_minutes, so page proofs keep reaching source-proof-feed';
+end $$;

@@ -3,7 +3,7 @@
 // one read of a course's stored page for every missing field, an explicit and configurable absence catalogue recorded per course and field
 // (evidence, content hash, reader version, confidence, reason, next eligibility), no re-read of an unchanged copy after a verified negative, and
 // the standing gap queue checked hourly. The behaviour runs on isolated fixtures by tests/fixtures/course-enrichment/run.sh (scratch PostgreSQL;
-// the five live functions the migration edits and the four it reads against are loaded from their live text and checked against the live md5s;
+// the six live functions the migration edits and the four it reads against are loaded from their live text and checked against the live md5s;
 // the migration applied twice; every case asserted). This spec holds the contract of the change.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
@@ -24,9 +24,10 @@ const EDITS = {
   'public.svc_enrich_ai_record(jsonb)': ['ae1ced1c1f1fd092afe885cfc37be0b4', 'bcbfc91ce997b1516d90b1320264fa12'],
   'security.field_enrich_items_flag_v1()': ['d2180b8be792558f8c9f3fa1eb3daf98', 'a874a3b37e11a116f39742c80311a50b'],
   'security.course_coverage_build_v1()': ['f698bf7f6cc2130adf3c9a4e174c3810', '2f6a9a8314281004d9fa4253527a5488'],
+  'security.source_proof_feed_v1()': ['085c5dbb58b662260846526229c7b613', 'cade6b2de219c216709129ce4bc447ff'],
 }
 
-test('five live definitions are edited only from their live md5 and checked after; the fixture loads the same live text', () => {
+test('six live definitions are edited only from their live md5 and checked after; the fixture loads the same live text', () => {
   for (const [sig, [b, a]] of Object.entries(EDITS)) {
     expect(edit(sig)).toContain(`'${b}', '${a}'`)
     expect(run).toContain(`["${sig}"]=${b}`)
@@ -85,13 +86,22 @@ test('throughput: the standing gap queue is checked hourly and advances when its
   expect(m).toContain("perform cron.alter_job(v_id, schedule := '23 * * * *', command := 'select security.field_gap_queue_run_v1() where security.field_gap_queue_due_v1()');")
   expect(m).toContain("if v_cmd <> 'select security.field_gap_queue_run_v1()' or v_sched <> '23 */6 * * *' then")
   const d = fn('security.field_gap_queue_due_v1')
-  for (const k of ["'gaps.advance_minutes', 60", "'gaps.idle_rerun_minutes', 360", "j.state in ('queued', 'running', 'paused')", 'k.cursor_course_id', "l.outcome from l) = 'done'"])
+  for (const k of ["'gaps.advance_minutes', 60", "'gaps.idle_rerun_minutes', 360", "j.state in ('queued', 'running', 'paused')", 'k.cursor_course_id', "l.outcome from l) in ('done', 'held')"])
     expect(d).toContain(k)
+})
+
+test('job source-proof-feed records every run (Integration Controller 3 Nov 2026 13:50): outcome, hold reason, settled, routed, time', () => {
+  expect(m).toContain('create table if not exists pipeline.source_proof_feed_runs (')
+  expect(m).toContain("comment on table pipeline.source_proof_feed_runs is '")
+  const e = edit('security.source_proof_feed_v1()')
+  expect(e).toContain('insert into pipeline.source_proof_feed_runs(outcome, hold_reason, settled, routed, ms)')
+  for (const r of ["'no_page_proof_input'", "'nothing_routable'", "'requests_open'"]) expect(e).toContain(r)
+  expect(e).toContain("return jsonb_build_object('settled', v_settled, 'routed', n, 'ms', (extract(epoch from clock_timestamp() - v_t0) * 1000)::int);")  // the answer is unchanged
 })
 
 test('the fixture covers every case, before and after, applied twice', () => {
   expect(before).toContain("<> 'not_on_page'")
   expect(run).toContain('a second run changed jobs, settings, registers or absences')
-  for (const n of ['ok 1 backfill', 'ok 2 multi-field', 'ok 3 lease', 'ok 4 record', 'ok 5 D2', 'ok 5b D2', 'ok 6 a person', 'ok 6b switched off', 'ok 7 D3', 'ok 7b', 'ok 8 coverage', 'ok 9 gap queue', 'ok 10 settings'])
+  for (const n of ['ok 1 backfill', 'ok 2 multi-field', 'ok 3 lease', 'ok 4 record', 'ok 5 D2', 'ok 5b D2', 'ok 6 a person', 'ok 6b switched off', 'ok 7 D3', 'ok 7b', 'ok 8 coverage', 'ok 9 gap queue', 'ok 10 settings', 'ok 11 source-proof-feed', 'ok 12 a gap run held'])
     expect(fixtures).toContain(`raise notice '${n}`)
 })

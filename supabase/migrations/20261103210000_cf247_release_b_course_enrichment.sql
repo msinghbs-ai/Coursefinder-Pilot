@@ -26,12 +26,15 @@
 --     new page makes it due again. The coverage cache (course_coverage_build_v1) shows the class for the fields in absence.coverage_fields
 --     (delivery, duration) instead of the blanket "not on page", in a new column course_attribute_coverage.absence_class.
 --   3 Throughput (§6 priority 5): job field-gap-queue is checked hourly (23 * * * *) and runs when security.field_gap_queue_due_v1 says so:
---     no standing task open, at least gaps.advance_minutes since the last run, and either the pass is unfinished or the last run found work, or
---     gaps.idle_rerun_minutes have passed. Minute :23 is outside the load policy's busy windows (:00-:05, :35-:42, :47-:48).
+--     no standing task open, at least gaps.advance_minutes since the last run, and either the pass is unfinished, the last run found work or held
+--     courses waiting for page proof (which feed job source-proof-feed), or gaps.idle_rerun_minutes have passed. Minute :23 is outside the load policy's busy windows (:00-:05, :35-:42, :47-:48).
+--   4 Job source-proof-feed (Integration Controller 3 Nov 2026 13:50): security.source_proof_feed_v1 records every run in a new table
+--     pipeline.source_proof_feed_runs (outcome done / held / idle, hold reason such as no_page_proof_input, settled, routed, ms), as
+--     field_gap_queue_run_v1 does, so a run with nothing to do is told apart from a run that never happened.
 -- Spend: no Firecrawl (D1: no new acquisition; siblings read only the stored copy already leased). AI through the existing enrich_fields lane and
 --   its guard (security.ai_use_allowed_v1('enrich_fields'), the platform daily ceiling); siblings share the page call.
 -- Consumer API (G3): unchanged. Values reach only the columns the existing admission paths write.
--- Replaces: public.svc_enrich_ai_next, public.svc_enrich_ai_record, security.enrich_fields_slice_v1, security.field_enrich_items_flag_v1, security.course_coverage_build_v1 (same names; md5-guarded edits); the blanket "not on page" coverage state for delivery and duration
+-- Replaces: public.svc_enrich_ai_next, public.svc_enrich_ai_record, security.enrich_fields_slice_v1, security.field_enrich_items_flag_v1, security.course_coverage_build_v1, security.source_proof_feed_v1 (same names; md5-guarded edits); the blanket "not on page" coverage state for delivery and duration
 -- Retires: nothing
 -- Nothing is dropped or deleted. No job is added (field-gap-queue's schedule and guard change). Multi-field reading ships on (enrich.multi_field_on 1:
 --   no paid acquisition, inside the existing AI guard); the hourly gap queue ships at gaps.advance_minutes 60.
@@ -93,7 +96,7 @@ insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, ki
   'list', '["delivery", "duration"]'::jsonb, null, null, 'fields', 1116, 'Field absence (D2, D3)',
   'security.course_coverage_build_v1 (job course-coverage-build)', 'CF-247 Release B (decision D2, 3 Nov 2026 13:09)'),
  ('pipeline', 'gaps.advance_minutes', 'Gap queue: shortest time between runs',
-  'The standing gap queue is checked every hour and starts its next batch once the previous one has finished and this many minutes have passed, while its pass is unfinished or its last run found work.',
+  'The standing gap queue is checked every hour and starts its next batch once the previous one has finished and this many minutes have passed, while its pass is unfinished, its last run found work, or it holds courses waiting for page proof (the input of job source-proof-feed).',
   'number', to_jsonb(60), 60, 720, 'minutes', 1024, 'Gap queue',
   'security.field_gap_queue_due_v1 (job field-gap-queue)', 'CF-247 Release B (mandate 3 Nov 2026 13:09 §6 priority 5): automatic next-batch advancement'),
  ('pipeline', 'gaps.idle_rerun_minutes', 'Gap queue: run again after a pass that found nothing',
@@ -336,7 +339,7 @@ create or replace function security.field_gap_queue_due_v1() returns boolean lan
   select not exists (select 1 from pipeline.admin_jobs j where j.kind = 'enrich_fields' and coalesce((j.args->>'standing')::boolean, false) and j.state in ('queued', 'running', 'paused'))
      and (not exists (select 1 from l)
           or ((select l.run_at from l) <= now() - make_interval(mins => security.pipeline_num_v1('gaps.advance_minutes', 60)::int) + interval '5 minutes'  -- fixed: the hourly job starts a few seconds either side
-              and ((select k.cursor_course_id from k) is not null or (select l.outcome from l) = 'done'
+              and ((select k.cursor_course_id from k) is not null or (select l.outcome from l) in ('done', 'held')
                    or (select l.run_at from l) <= now() - make_interval(mins => security.pipeline_num_v1('gaps.idle_rerun_minutes', 360)::int) + interval '5 minutes'))) -- fixed: as above
 $$;
 comment on function security.field_gap_queue_due_v1() is 'CF-247 Release B (mandate 3 Nov 2026 13:09 §6 priority 5): whether job field-gap-queue (checked hourly) starts its next batch: no standing task open, gaps.advance_minutes since the last run, and the pass unfinished or the last run found work, or gaps.idle_rerun_minutes since a run that found nothing.';
@@ -417,6 +420,24 @@ select pg_temp.edit_once('security.course_coverage_build_v1()', 'f698bf7f6cc2130
    $n$  left join _ei ei on ei.course_id=c.course_id and ei.field=case a.attribute when 'campus_city' then 'campus' else a.attribute end
   left join _ab ab on ab.course_id=c.course_id and ab.field=a.attribute$n$]], array[1, 1, 1, 1, 1]);
 
+-- 4f job source-proof-feed: every run recorded (Integration Controller 3 Nov 2026 13:50)
+create table if not exists pipeline.source_proof_feed_runs (
+  id bigserial primary key, run_at timestamptz not null default now(), outcome text not null check (outcome in ('done', 'held', 'idle')), hold_reason text,
+  settled int not null default 0, routed jsonb not null default '{}'::jsonb, ms int);
+create index if not exists source_proof_feed_runs_at_idx on pipeline.source_proof_feed_runs (run_at desc);
+comment on table pipeline.source_proof_feed_runs is 'CF-247 Release B (Integration Controller 3 Nov 2026 13:50): every run of job source-proof-feed (security.source_proof_feed_v1): done (requests settled or courses routed to a lane), held (courses considered, none routable now: nothing_routable, or every waiting course already has an open request: requests_open), idle (no course waits for page proof: no_page_proof_input); with the settled count, the routes taken and the run time.';
+select pg_temp.edit_once('security.source_proof_feed_v1()', '085c5dbb58b662260846526229c7b613', 'cade6b2de219c216709129ce4bc447ff', array[
+  [$o$  return jsonb_build_object('settled', v_settled, 'routed', n, 'ms', (extract(epoch from clock_timestamp() - v_t0) * 1000)::int);  -- fixed: milliseconds$o$,
+   $n$  -- CF-247 Release B (Integration Controller 3 Nov 2026 13:50): every run is recorded with an honest outcome (pipeline.source_proof_feed_runs)
+  v_act := v_settled > 0 or coalesce((n->>'relink')::int, 0) + coalesce((n->>'search')::int, 0) > 0;
+  insert into pipeline.source_proof_feed_runs(outcome, hold_reason, settled, routed, ms)
+  values (case when v_act then 'done' when n <> '{}'::jsonb then 'held'
+               when exists (select 1 from pipeline.course_page_proofs pp where not pp.proven) then 'held' else 'idle' end,
+          case when v_act then null when n <> '{}'::jsonb then 'nothing_routable'
+               when exists (select 1 from pipeline.course_page_proofs pp where not pp.proven) then 'requests_open' else 'no_page_proof_input' end,
+          v_settled, n, (extract(epoch from clock_timestamp() - v_t0) * 1000)::int);  -- fixed: milliseconds
+  return jsonb_build_object('settled', v_settled, 'routed', n, 'ms', (extract(epoch from clock_timestamp() - v_t0) * 1000)::int);  -- fixed: milliseconds$n$]], array[1]);
+
 -- 5. the absence of delivery and duration already settled (the coverage fields): classified from each course's latest settled item ------------
 -- (bounded: the latest item of each course for these fields; a data write beside the catalogue, nothing changed in it)
 do $b$
@@ -443,6 +464,8 @@ begin
     raise exception 'release B: field-gap-queue runs % at % (not what this change was written against)', v_cmd, v_sched; end if;
   perform cron.alter_job(v_id, schedule := '23 * * * *', command := 'select security.field_gap_queue_run_v1() where security.field_gap_queue_due_v1()');
 end $j$;
+update pipeline.automation_catalogue set description = description || ' Every run is recorded with its outcome and hold reason (pipeline.source_proof_feed_runs).'
+ where jobname = 'source-proof-feed' and description not like '%source_proof_feed_runs%';
 update pipeline.automation_catalogue set description = replace(description, 'Every 6 hours: ', 'Checked every hour (CF-247 Release B): ')
  where jobname = 'field-gap-queue' and description like 'Every 6 hours: %';
 update pipeline.automation_catalogue set description = description || ' Starts its next batch only when security.field_gap_queue_due_v1 says so: no standing task open, gaps.advance_minutes since the last run, and the pass unfinished or the last run found work, or gaps.idle_rerun_minutes after a run that found nothing.'
@@ -460,7 +483,8 @@ insert into pipeline.component_register(kind, name, layer, area, purpose, status
  ('function', 'security.field_absence_other_page_v1', 'Layer 2', 'Enrichment', 'Another stored reading of the course holds the field', 'active', '{}', '20261103210000'),
  ('function', 'security.enrich_course_field_missing_v1', 'Layer 2', 'Enrichment', 'A course is missing a field (gap queue rules)', 'active', '{}', '20261103210000'),
  ('function', 'security.enrich_siblings_v1', 'Layer 2', 'Enrichment', 'Every missing field read from the same stored page (multi-field)', 'active', '{}', '20261103210000'),
- ('function', 'security.field_gap_queue_due_v1', 'Layer 2', 'Enrichment', 'Job field-gap-queue: the next batch is due', 'active', '{}', '20261103210000')
+ ('function', 'security.field_gap_queue_due_v1', 'Layer 2', 'Enrichment', 'Job field-gap-queue: the next batch is due', 'active', '{}', '20261103210000'),
+ ('table', 'pipeline.source_proof_feed_runs', 'Layer 2', 'Enrichment', 'Every run of job source-proof-feed with its outcome and hold reason', 'active', '{}', '20261103210000')
 on conflict do nothing;
 
 -- 8. post-check ------------------------------------------------------------------------------------------------------------------------------
