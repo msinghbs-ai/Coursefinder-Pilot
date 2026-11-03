@@ -1,17 +1,16 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.460'
-export const PACKAGE_VERSION='0.1.387'
+export const UI_VERSION='2.15.461'
+export const PACKAGE_VERSION='0.1.388'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'4 Nov 2026',
-  title:'Scholarship coverage states and bounded recovery; Read again reads the page',
+  title:'Scholarship coverage classification runs again',
   changes:[
-    'Scholarship coverage now tells apart 13 states (source not discovered, found but unread, traversal incomplete, refused correctly or wrongly, international eligibility unresolved, domestic-only, expired, ownership conflict, awaiting Layer 4, admitted not published, published and consumer-verified, evidence-backed none), each unresolved case with an owner, evidence, a next recovery time and an escalation condition.',
-    'Read again on a scholarship page now reads it once on the next run, within the existing caps.',
-    'Bounded recovery of never-read register pages, stored copies and listings, and the legal-name identity test, are built and switched off.'
+    'Scholarship coverage classification no longer fails when a listing page names the same scholarship address more than once; each case is kept once.',
+    'A failed progress report for one provider no longer stops the run; it is counted and sent again on the next run.'
   ],
   bugFixes:[]
 }

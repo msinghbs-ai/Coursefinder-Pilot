@@ -77,3 +77,20 @@ test('the fixture reproduces the defects first and asserts every case after', ()
     'TAFE SA (outside the admission policy) is never recovered', 'a recovery that did not move its case fails and is escalated', 'nothing admitted, no Layer 4 item decided or added, nothing published'])
     expect(fixtures).toContain(s)
 })
+
+// Integration Controller, 4 Nov 2026 (v2.15.460 production defect): job scholarship-coverage-classify failed its first run because a listing lists
+// the same address twice, so one insert met the same (provider_id, item_key) twice.
+const FIX = fs.readFileSync('supabase/migrations/20261104430000_cf247_sch_coverage_classify_fix.sql', 'utf8')
+test('classification fix: one row per case with a deterministic winner; a failed report write never aborts the run', () => {
+  expect(FIX).toContain("select pg_temp.edit_once('security.scholarship_coverage_classify_v1(uuid[])', 'a268ce816990d71ef545dbdc0ae28a5e', 'c072494c5e0082e2a8b58a06dfd94a00'")
+  expect(FIX).toContain("md5(pg_get_functiondef('security.scholarship_coverage_items_v1(uuid[])'::regprocedure)) <> 'd3dfacf0e70fd33162eab7a57aca72e4'")
+  expect(FIX).toContain('select distinct on (n.provider_id, n.item_key) n.provider_id')
+  expect(FIX).toContain('order by n.provider_id, n.item_key, k.sort, md5(n.evidence::text)')
+  expect(FIX).toContain("v_rerr := v_rerr + 1; v_rlast := left(r.code || ': ' || sqlerrm, 300); v_rep := v_rep - r.code;")
+  expect(FIX).toContain("'duplicate_cases', v_dup, 'report_errors', v_rerr")
+  const dup = fs.readFileSync(`${FX}/fixtures-dup-before.sql`, 'utf8'), fx = fs.readFileSync(`${FX}/fixtures-fix.sql`, 'utf8')
+  expect(dup).toContain('exception when cardinality_violation')
+  expect(run).toContain('fixtures-dup-before.sql')
+  for (const s of ['an address listed twice is one case', 'the winner is deterministic', 'a failed report write is counted and the run completes for every provider',
+    'the next run sends the report that failed']) expect(fx).toContain(s)
+})
