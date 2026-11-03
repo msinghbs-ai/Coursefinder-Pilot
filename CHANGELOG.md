@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.365 — 3 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.438** (Layer 4 readiness and admission throughput; Platform Admin 18:14). Migration `20261104120000_cf247_ops_layer4_throughput`: job layer4-readiness (:22, :52); readiness, blocker, admission-check, reconcile and throughput functions; review order function; 7 root causes and 6 remedies through the operations contract. layer4.arrival_guard_on and layer4.reconcile_supersede_on ship 0. No live function edited; no decision written; nothing dropped; consumer API untouched. Spec s255.
+
 ## 0.1.364 — 3 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.437** (workstream B worker release v0.59.5 for workstreams A, C, D and F). Edge function coverage-sweep (ops-diagnose.ts, link-share.ts, entry.ts, index.ts); migration `20261104110000_cf247_ops_worker_requests`: job ops-diagnose, settings batch.ops_diagnose, reading.answer_tokens.ops_diagnosis, reading.entry_range_lower_bound_on, reading.entry_subject_rows_on, reading.entry_global_pages_on, reading.link_search_share_on (all behaviour switches 0). ops.ai_diagnosis_on unchanged (0). Nothing dropped; consumer API untouched. Spec s254.

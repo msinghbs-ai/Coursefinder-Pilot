@@ -1,18 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.437'
-export const PACKAGE_VERSION='0.1.364'
+export const UI_VERSION='2.15.438'
+export const PACKAGE_VERSION='0.1.365'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Nov 2026',
-  title:'Worker: AI-assisted diagnosis mode, paid answers kept before recording, entry-requirement reader fixes',
+  title:'Layer 4 shows reviewers what is ready, names what is blocked, and checks every approval reached the catalogue',
   changes:[
-    'The worker can answer the operations controller\'s diagnosis requests with the pinned model, exactly once per request, through the existing AI guards; it runs only when AI-assisted diagnosis is switched on.',
-    'Enrichment AI answers are kept before they are recorded, so a failed recording can be retried without paying for a second read.',
-    'The entry-requirement reader keeps the model\'s value and scale on every dropped row, and can read printed ranges, subject-equivalence tables and global-qualification pages; each of these reading changes ships switched off.',
-    'Course-page search can answer every course with the same query from one paid search; this ships switched off.'
+    'Every waiting Layer 4 item is marked ready for a person, technically blocked (with the reason and where it is repaired) or resolvable by the platform, and the review list can put ready items first.',
+    'After every approval the platform checks that the value reached the catalogue and the website, and opens one issue per kind and reason when it did not.',
+    'Settling items the platform can resolve, and stopping a question already settled from being raised again, are built and ship switched off; neither ever approves, rejects or touches a lock.'
   ],
   bugFixes:[]
 }

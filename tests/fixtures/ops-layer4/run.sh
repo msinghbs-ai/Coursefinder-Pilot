@@ -31,9 +31,13 @@ $P -d $DB -f tests/fixtures/integration-queue/stubs.sql
 $P -d $DB -1 -o /dev/null -f supabase/migrations/20261102120000_cf247_integration_queue.sql 2>&1 | show
 $P -d $DB -f tests/fixtures/ops-controller/stubs-extra.sql
 $P -d $DB -1 -o /dev/null -f supabase/migrations/20261104010000_cf247_ops_controller.sql 2>&1 | show
+# Integration Controller 3 Nov 2026: the reopen rule (v2.15.436, 20261104100000) is live, so it is loaded as released (its own prerequisites first)
+$P -d $DB -1 -o /dev/null -f tests/fixtures/ops-reopen/ai-guards.sql 2>&1 | show
+$P -d $DB -f tests/fixtures/ops-reopen/stubs-extra.sql
+$P -d $DB -1 -o /dev/null -f supabase/migrations/20261104100000_cf247_ops_reopen_rule_ai_contract.sql 2>&1 | show
 $P -d $DB -f $FX/stubs.sql
 declare -A LIVE=(
-  ["security.integration_issue_upsert_v1(jsonb,text)"]=f292f65689a35e213a3d12a539c11b1d
+  ["security.integration_issue_upsert_v1(jsonb,text)"]=c5ce0cb9c431a337789d67bc1878be62
   ["security.ops_remedy_register_v1(text,jsonb)"]=cec6cd2f6518b453fbc8ec3137ce39bd
   ["security.ops_root_cause_register_v1(text,jsonb)"]=591616a6a0bd60d607f65c41c18e2968
   ["security.pipeline_list_v1(text,jsonb)"]=c33c2152bbadc8d01625ced9bf2c9bda

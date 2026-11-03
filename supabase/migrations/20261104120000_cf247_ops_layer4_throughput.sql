@@ -45,7 +45,7 @@ begin
   if to_regclass('pipeline.ops_remedies') is null then
     raise exception 'workstream A''s operations contract (migration 20261104010000) must be applied before this change';
   end if;
-  for r in select * from (values ('security.integration_issue_upsert_v1(jsonb,text)', 'f292f65689a35e213a3d12a539c11b1d')) v(sig, m) loop
+  for r in select * from (values ('security.integration_issue_upsert_v1(jsonb,text)', 'c5ce0cb9c431a337789d67bc1878be62')) v(sig, m) loop
     if md5(pg_get_functiondef(r.sig::regprocedure)) <> r.m then
       raise exception 'live % differs from the definition this change was written against (md5 %)', r.sig, md5(pg_get_functiondef(r.sig::regprocedure)); end if;
   end loop;

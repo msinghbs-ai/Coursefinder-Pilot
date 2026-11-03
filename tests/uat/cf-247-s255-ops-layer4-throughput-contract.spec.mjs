@@ -18,12 +18,12 @@ const seed = fs.readFileSync(`${FX}/seed.sql`, 'utf8')
 
 test('codes against workstream A\'s live contract and edits no existing function', () => {
   expect(m).toContain("if to_regclass('pipeline.ops_remedies') is null then")
-  expect(m).toContain("('security.integration_issue_upsert_v1(jsonb,text)', 'f292f65689a35e213a3d12a539c11b1d')")
+  expect(m).toContain("('security.integration_issue_upsert_v1(jsonb,text)', 'c5ce0cb9c431a337789d67bc1878be62')")
   expect(m).not.toMatch(/edit_once|replace_once/)
   expect(m).toMatch(/^-- Replaces: nothing/m)
   expect(m).toMatch(/^-- Retires: nothing/m)
   for (const [sig, md5] of [['security.ops_remedy_register_v1(text,jsonb)', 'cec6cd2f6518b453fbc8ec3137ce39bd'], ['security.ops_root_cause_register_v1(text,jsonb)', '591616a6a0bd60d607f65c41c18e2968'],
-    ['security.integration_issue_upsert_v1(jsonb,text)', 'f292f65689a35e213a3d12a539c11b1d'], ['security.pipeline_list_v1(text,jsonb)', 'c33c2152bbadc8d01625ced9bf2c9bda']])
+    ['security.integration_issue_upsert_v1(jsonb,text)', 'c5ce0cb9c431a337789d67bc1878be62'], ['security.pipeline_list_v1(text,jsonb)', 'c33c2152bbadc8d01625ced9bf2c9bda']])
     expect(run).toContain(`["${sig}"]=${md5}`)
   expect(run).toContain('supabase/migrations/20261104010000_cf247_ops_controller.sql')
   expect(run).toContain("without A's contract: refused, nothing left")
