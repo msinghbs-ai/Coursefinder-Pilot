@@ -1,15 +1,15 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.439'
-export const PACKAGE_VERSION='0.1.366'
+export const UI_VERSION='2.15.440'
+export const PACKAGE_VERSION='0.1.367'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Nov 2026',
-  title:'Layer 4 readiness goes live (deployment correction)',
+  title:'Operations controller verifies a fix in the run it falls due',
   changes:[
-    'The Layer 4 readiness, admission-check and reviewer-throughput changes of v2.15.438 are applied: the first deployment stopped before any change because the component register does not accept a trigger entry, so the trigger is now registered through its function.'
+    'A fix\'s verification, and an issue due for a look, now count as due within the run\'s own minute, so a verification no longer slips a whole run because the scheduler started a fraction of a second early; a verification not yet due is counted in the run summary instead of being skipped silently.'
   ],
   bugFixes:[]
 }
