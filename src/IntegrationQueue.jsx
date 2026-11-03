@@ -106,7 +106,15 @@ function PipelineYield({onError}){
     </tbody></table></div>
     {(y.lane_status?.lanes||[]).length>0&&<LaneStatus lanes={y.lane_status.lanes}/>}
     {(y.field_backlog?.fields||[]).length>0&&<FieldBacklog b={y.field_backlog}/>}
+    {y.plan_outcomes&&<PlanOutcomes o={y.plan_outcomes}/>}
   </section>
+}
+
+// Plan outcomes (CF-247 IQ-00066): enrichment plans finished by outcome. A done plan whose steps were all not needed moved no data and is
+// counted apart. Server: security.plan_outcomes_v1 (read-only), returned by admin_pipeline_yield as plan_outcomes.
+function PlanOutcomes({o}){
+  const steps=Object.entries(o.steps_not_needed||{}).map(([k,n])=>`${fmtNumber(n)} ${k}`).join(' · ')
+  return <p className="muted" data-plan-outcomes>Enrichment plans finished since {fmtDateTime(o.window_since)}: {fmtNumber(o.moved||0)} moved data · {fmtNumber(o.not_needed||0)} not needed (nothing eligible to do) · {fmtNumber(o.no_movement||0)} moved nothing{steps?` · steps not needed: ${steps}`:''} · {fmtNumber(o.tasks_not_needed||0)} tasks ended not needed</p>
 }
 
 // Field backlog (Platform Admin mandate 3 Nov 2026 12:04 §5): per field, the eligible backlog split into what waits on Layer 4, what the

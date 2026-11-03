@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.353 — 3 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.426** (IQ-00066, IQ-00053 residual, IQ-00063). Migration `20261103230000_cf247_orchestration_followups`: md5-guarded edits of enrich_plan_v1, enrich_plan_tick_v1, admin_job_watch_v1, admin_jobs_tick_v1, admin_pipeline_yield, course_description_check_v1 and provider_onboarding_tick_v1; settings plans.step_needs_work_on (1), onboarding.website_check_on (1), plans.outcome_window_hours (24). No paid spend; nothing dropped; consumer API untouched. Spec s243.
+
 ## 0.1.352 — 3 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.425** (Release B; Platform Admin mandate 3 Nov 2026 13:09 §4, D2, D3, §6). Migration `20261103210000_cf247_release_b_course_enrichment`: md5-guarded edits of enrich_fields_slice_v1, svc_enrich_ai_next, svc_enrich_ai_record, field_enrich_items_flag_v1, course_coverage_build_v1 and source_proof_feed_v1; tables field_absence_classes, field_absence_rules, course_field_absence, source_proof_feed_runs; field-gap-queue checked hourly (gaps.advance_minutes 60, gaps.idle_rerun_minutes 360); enrich.multi_field_on ships 0. No paid spend; nothing dropped; consumer API untouched. Spec s242.
