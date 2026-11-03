@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.364 — 3 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.437** (workstream B worker release v0.59.5 for workstreams A, C, D and F). Edge function coverage-sweep (ops-diagnose.ts, link-share.ts, entry.ts, index.ts); migration `20261104110000_cf247_ops_worker_requests`: job ops-diagnose, settings batch.ops_diagnose, reading.answer_tokens.ops_diagnosis, reading.entry_range_lower_bound_on, reading.entry_subject_rows_on, reading.entry_global_pages_on, reading.link_search_share_on (all behaviour switches 0). ops.ai_diagnosis_on unchanged (0). Nothing dropped; consumer API untouched. Spec s254.
+
 ## 0.1.363 — 3 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.436** (workstream A follow-up; IQ-00067 false reopen). Migration `20261104100000_cf247_ops_reopen_rule_ai_contract`: md5-guarded edits of integration_issue_upsert_v1, integration_validate_v1, ops_issue_signals_v1, ops_controller_tick_v1, svc_ops_diagnosis_next and svc_ops_diagnosis_record; ops_recurrence_v1; settings ops.ai_diagnosis_usd_per_day. ops.ai_diagnosis_on stays 0; nothing dropped; consumer API untouched. Spec s253.

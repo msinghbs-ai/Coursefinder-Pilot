@@ -111,7 +111,7 @@ export type EntryHeadRow = { line: string; cells: { h: string; c: string }[] };
 //   segments: the lines of the tables that carry a lead label, each exactly as it stands in the page text. A quote may not run across the
 //          start or end of such a line: a labelled row is quoted within itself, never joined to another row or to the next table's label
 //          (the country printed after it), so a row cannot be tied to a country it is not printed under.
-export type EntryLineSet = EntryBandLine[] & { forms?: string[]; heads?: EntryHeadRow[]; segments?: string[] };
+export type EntryLineSet = EntryBandLine[] & { forms?: string[]; heads?: EntryHeadRow[]; segments?: string[]; rangeLower?: boolean };  // v0.59.5: rangeLower (reading.entry_range_lower_bound_on)
 // a table's lead label: the last piece of text the markup prints before a table with no header row (the country named on the button or
 // heading above its table), when it is a label and not a sentence, carried onto each of the table's lines as the PDF reader carries a
 // section ("Argentina | NCEA Level 2 Certificate/Diploma Level | Titulo de Bachiller")
@@ -200,7 +200,23 @@ const head0 = (c: string | undefined) => String(c || "").trim();
 const flat = (s: string) => String(s || "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "");
 const ENGLISH_TEST = /\b(ielts|toefl|pte|duolingo|cambridge english|oet)\b/i;
 
-export type EntryDrop = { reason: string; country?: string; quote?: string };
+// v0.59.5 (workstream C interface request, UWA China rows): a dropped entry keeps the value, grade and scale the model gave, so a read that lost
+// rows can be diagnosed and corrected without reading the page again (it kept only the quote and the reason before).
+export type EntryDrop = { reason: string; country?: string; quote?: string; value?: number | null; grade?: string | null; scale?: string | null };
+// v0.59.5 (workstream C, UWA "488 to 491 | 65% | 70"): a printed range's lower bound. When the value the model gave is not printed in the quote but
+// lies within exactly one range the quote prints ("488 to 491", "488-491", "488 – 491"), the value is that range's printed lower bound: the
+// minimum the page publishes. Any other case gives null (the row is dropped as value_not_in_quote, as before). Setting
+// reading.entry_range_lower_bound_on (ships off).
+export function entryRangeLower(value: number | null, quote: string): number | null {
+  if (value == null || !Number.isFinite(value)) return null;
+  const hits: number[] = [];
+  for (const m of String(quote || "").matchAll(/(\d+(?:\.\d+)?)\s*(?:to|–|—|-)\s*(\d+(?:\.\d+)?)/gi)) {
+    const lo = Number(m[1]), hi = Number(m[2]);
+    if (Number.isFinite(lo) && Number.isFinite(hi) && lo < hi && value >= lo && value <= hi) hits.push(lo);
+  }
+  return new Set(hits).size === 1 ? hits[0] : null;
+}
+export type EntryParseOptions = { rangeLower?: boolean };
 // v0.48.2: bandLines (from entryTables) are the page's table lines with the band each publishes. A row whose quote is such a line and shows
 // its band must give that band (band_missing otherwise); a band given must be in the quote (band_not_in_quote) and be the one the line
 // publishes (band_mismatch); lines that match the quote with different bands leave it unproven (band_ambiguous). The band kept is the one
@@ -209,20 +225,23 @@ export type EntryDrop = { reason: string; country?: string; quote?: string };
 // the page when it is in the page text or in one structural form; each form is printed text of one table row with the structure that
 // names it, so a value must still be printed in the quote. A band given with words of its column header is the printed cell only when the
 // whole row is quoted, the cell is in that column and the other words are that column's header words (headerBand).
-export function entryMatrixParsed(a: any, page: string, bandLines: EntryLineSet = []) {
+export function entryMatrixParsed(a: any, page: string, bandLines: EntryLineSet = [], opts: EntryParseOptions = {}) {
   const F = (bandLines.forms || []).map(flat), within = segmentCheck(page, bandLines.segments || []);
   const P = flat(page), on = (q: string) => flat(q).length >= 6 && ((P.includes(flat(q)) && within(flat(q))) || F.some((f) => f.includes(flat(q))));
   const numIn = (n: number, q: string) => [String(n), String(n).replace(/\.0$/, ""), n.toFixed(1), n.toFixed(2)].some((d) => String(q || "").includes(d));
   const rows: any[] = [], dropped: EntryDrop[] = [];
   for (const x of (Array.isArray(a?.rows) ? a.rows : []) as any[]) {
     const quote = String(x?.quote || "").trim(), cc = String(x?.country_code || "").toUpperCase().trim();
-    const d = (reason: string) => dropped.push({ reason, country: cc || String(x?.country_name || ""), quote: quote.slice(0, 120) });
+    const d = (reason: string) => dropped.push({ reason, country: cc || String(x?.country_name || ""), quote: quote.slice(0, 120),
+      value: typeof x?.min_value === "number" && Number.isFinite(x.min_value) ? x.min_value : null, grade: x?.min_grade == null ? null : String(x.min_grade).slice(0, 120),
+      scale: x?.grade_scale == null ? null : String(x.grade_scale) });
     if (!/^[A-Z]{2}$/.test(cc)) { d("unknown_country"); continue }
     if (flat(quote).length < 6) { d("quote_too_short"); continue }  // a bare cell ("70 10.5") proves nothing: the whole row is quoted
     if (!on(quote)) { d("quote_not_on_page"); continue }
     if (ENGLISH_TEST.test(quote) && ENGLISH_TEST.test(String(x?.qualification_name || ""))) { d("english_test_row"); continue }
     const scale = ENTRY_SCALES.includes(x?.grade_scale) ? x.grade_scale : "none";
-    const value = typeof x?.min_value === "number" && Number.isFinite(x.min_value) ? x.min_value : null;
+    const asked = typeof x?.min_value === "number" && Number.isFinite(x.min_value) ? x.min_value : null;
+    const value = asked != null && !numIn(asked, quote) && (opts.rangeLower ?? bandLines.rangeLower) ? (entryRangeLower(asked, quote) ?? asked) : asked;
     if (value != null && scale === "none") { d("value_without_scale"); continue }
     if (value != null && !numIn(value, quote)) { d("value_not_in_quote"); continue }
     const grade = x?.min_grade == null ? null : String(x.min_grade).trim() || null;
@@ -296,7 +315,8 @@ export function headerBand(given: string, Q: string, heads: EntryHeadRow[]): str
 // line's, and its qualification must name the entry's column. The read is complete only when every entry is matched once and every kept
 // row is explained; otherwise it is held whole (never proposed in part). A page whose tables cannot be read this way is "unparsed".
 export type EntryManifestEntry = { line: string; level: string; band: string | null; col: number; header: string; cell: string };
-export type EntryManifest = { status: "ok" | "none" | "unparsed"; reason: string | null; heading: string; entries: EntryManifestEntry[]; columns: string[]; footnotes: string[] };
+export type EntryManifest = { status: "ok" | "none" | "unparsed"; reason: string | null; heading: string; entries: EntryManifestEntry[]; columns: string[]; footnotes: string[];
+  global?: string | null };  // v0.59.5: the global qualification the page says applies in any country (entryGlobalQualification), if any
 const NA = /^(not applicable|n\/a|-|–|—)$/i;
 const FOOTNOTE_ROW = /^(grading|calculation|note|notes|\*)|\b(grading|calculation system)\b/i;
 const allWords = (s: string) => new Set(String(s || "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, " ").split(" ").filter(Boolean));
@@ -383,7 +403,7 @@ export function entryPageCountry(heading: string, countries: EntryCountryRef[]):
 export function entryNonCountryShape(man: EntryManifest, countries: EntryCountryRef[]): string | null {
   const req = man.columns.filter((c) => REQUIREMENT_COLUMN.test(c));
   if (req.length) return `requirement-type columns, not qualifications (${req.join("; ")})`.slice(0, 300);
-  if (!entryPageCountry(man.heading, countries)) return `no country named in the page heading ("${man.heading.slice(0, 120)}")`;
+  if (!entryPageCountry(man.heading, countries) && !man.global) return `no country named in the page heading ("${man.heading.slice(0, 120)}")`;
   return null;
 }
 
@@ -471,4 +491,47 @@ export function entryDropNoMinimum(man: EntryManifest, emptyLines: string[], row
     else keep.push(x);
   }
   return { rows: keep, dropped };
+}
+
+// v0.59.5 (workstream C interface request, UWA US Advanced Placement): a subject-equivalence table ("Chemistry | Chemistry; 3 or higher") lists
+// subject prerequisites, not qualification minimums. Rows that share one identity (country, study level, qualification, band, course) and each
+// name a subject are one subject-prerequisite row: conditions.subject_minimums holds every subject with its grade, conditions.subject_quotes
+// every row's quote (each on the page), and the row's own quote is the first. A row without a subject, or alone with its identity, is unchanged.
+// Completeness is checked on the rows before they are merged. Setting reading.entry_subject_rows_on (ships off). Every row still goes to Layer 4.
+const subjectOf = (x: any) => {
+  const sm = Array.isArray(x?.conditions?.subject_minimums) ? x.conditions.subject_minimums.filter((m: any) => String(m?.subject || "").trim()) : [];
+  if (sm.length) return sm.map((m: any) => ({ subject: String(m.subject).trim(), min_grade: m?.min_grade == null ? (x?.min_grade ?? null) : String(m.min_grade) }));
+  const first = String(x?.quote || "").split("|")[0].trim();
+  return first && x?.min_grade && String(x?.quote || "").includes("|") ? [{ subject: first, min_grade: String(x.min_grade) }] : [];
+};
+export function entrySubjectRows(rows: any[]): { rows: any[]; merged: number } {
+  const key = (x: any) => [x?.country_code, flat(x?.study_level || ""), flat(x?.qualification_name || ""), flat(x?.benchmark_band || ""), flat(x?.course_name || "")].join("|");
+  const groups = new Map<string, any[]>();
+  for (const x of rows) { const k = key(x); groups.set(k, [...(groups.get(k) || []), x]) }
+  const out: any[] = []; let merged = 0; const done = new Set<string>();
+  for (const x of rows) {
+    const k = key(x), g = groups.get(k) || [];
+    if (g.length < 2 || !g.every((y) => subjectOf(y).length)) { out.push(x); continue }
+    if (done.has(k)) continue;
+    done.add(k); merged += g.length;
+    const subjects: { subject: string; min_grade: string | null }[] = [];
+    for (const y of g) for (const s1 of subjectOf(y)) if (!subjects.some((z) => flat(z.subject) === flat(s1.subject) && flat(z.min_grade || "") === flat(s1.min_grade || ""))) subjects.push(s1);
+    out.push({ ...g[0], min_grade: null, min_value: null, grade_scale: "none", confidence: Math.min(...g.map((y) => Number(y?.confidence ?? 0))),
+      conditions: { ...(g[0].conditions || {}), subject_minimums: subjects, subject_quotes: g.map((y) => String(y.quote || "")), best_n: g[0]?.conditions?.best_n ?? null,
+                    alternatives: g[0]?.conditions?.alternatives ?? [] }, row_kind: "subject_prerequisites" });
+  }
+  return { rows: out, merged };
+}
+
+// v0.59.5 (workstream C interface request, RMIT "International Baccalaureate", "Global Assessment Certificate"): a page whose heading names a
+// global qualification (setting reading.entry_global_qualifications) instead of a country is not held as "no country named in the page heading"
+// when the page itself says the qualification applies whatever the country (one of reading.entry_global_phrases is printed on it). Anything
+// else is held as before. Setting reading.entry_global_pages_on (ships off). The read's rows still need a country the database knows; the
+// result names the global qualification so the run and Layer 4 can see it.
+export function entryGlobalQualification(heading: string, page: string, quals: string[], phrases: string[]): string | null {
+  const H = ` ${String(heading || "").toLowerCase().replace(/[^a-z0-9]+/g, " ")} `, P = String(page || "").toLowerCase().replace(/\s+/g, " ");
+  const q = (quals || []).map((x) => String(x || "").toLowerCase().trim()).filter((x) => x.length >= 2)
+    .find((x) => H.includes(` ${x.replace(/[^a-z0-9]+/g, " ").trim()} `));
+  if (!q) return null;
+  return (phrases || []).some((p) => { const t = String(p || "").toLowerCase().trim(); return t.length >= 6 && P.includes(t) }) ? q : null;
 }
