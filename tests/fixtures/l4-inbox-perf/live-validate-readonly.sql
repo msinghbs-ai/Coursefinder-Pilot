@@ -1,4 +1,4 @@
--- CF-247 Layer 4 Inbox performance: read-only checks on production after migration 20261104410000 is released (Integration Controller).
+-- CF-247 Layer 4 Inbox performance: read-only checks on production after migration 20261104440000 is released (Integration Controller).
 -- Run with the Supabase SQL tool at Sydney minutes :x6 to :x8 only (never :35 to :42 or :47 to :48). Reads only; nothing is written.
 -- Acceptance (Platform Admin 06:53 §6; AER decision 06:58 §5): the UNSW items in the screenshot, UNSW Bachelor of Actuarial Studies
 -- (ca4df458-faa0-4b54-bc6c-9b81522e5595) and its Honours (09d58d03-7a71-452a-9096-125683d689dc), both course_entry_first_read and pending on

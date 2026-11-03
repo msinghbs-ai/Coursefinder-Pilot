@@ -1,4 +1,4 @@
--- CF-247 Layer 4 Inbox performance (migration 20261104410000): the cases, on the production-scale seed after the migration. Scratch PostgreSQL only.
+-- CF-247 Layer 4 Inbox performance (migration 20261104440000): the cases, on the production-scale seed after the migration. Scratch PostgreSQL only.
 -- Budget for each first-load read of the screen (summary, universities, first page of a university or kind, the page's detail): 300 ms here.
 create table fx.budget(ms numeric);
 insert into fx.budget values (300);

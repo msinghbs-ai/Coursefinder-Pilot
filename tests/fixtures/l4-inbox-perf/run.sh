@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CF-247 Layer 4 Inbox performance (migration 20261104410000) on a production-scale fixture. Needs a scratch PostgreSQL 16 (never a Supabase
+# CF-247 Layer 4 Inbox performance (migration 20261104440000) on a production-scale fixture. Needs a scratch PostgreSQL 16 (never a Supabase
 # project): PGHOST/PGPORT/PGUSER point at it. Steps:
 #   1 ../l4-course-link/run.sh builds the live Layer 4 functions the way they reached production, with its own fixtures (it must pass);
 #     the three Inbox definitions are then checked against the live md5 read 4 Nov 2026 06:55 AEDT.
@@ -12,7 +12,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 DB=${L4P_DB:-l4_inbox_perf_fixtures}
 P="psql -v ON_ERROR_STOP=1 -q -X"
-MIG=supabase/migrations/20261104410000_cf247_l4_inbox_paging.sql
+MIG=supabase/migrations/20261104440000_cf247_l4_inbox_paging.sql
 FX=tests/fixtures/l4-inbox-perf
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }
 q() { $P -d $DB -Atc "$1"; }

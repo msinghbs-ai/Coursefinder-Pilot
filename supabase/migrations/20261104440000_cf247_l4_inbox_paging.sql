@@ -574,11 +574,11 @@ $def$);
 
 -- 7 component register ----------------------------------------------------------------------------------------------------------------------
 insert into pipeline.component_register(kind, name, layer, purpose, status, replaces, introduced_in) values
- ('table', 'pipeline.layer4_inbox_kind_hooks', 'Layer 4', 'Kinds and recovery choices that plug into Layer 4 › Inbox (counts, pages, lazy detail, decisions)', 'active', '{}', '20261104410000'),
- ('function', 'security.layer4_inbox_items_v2', 'Layer 4', 'Items that need a person, filtered by university, kind or item at the source; detail on request', 'active', '{}', '20261104410000'),
- ('function', 'security.layer4_inbox_counts_v1', 'Layer 4', 'Layer 4 Inbox counts by kind and university without building items', 'active', '{}', '20261104410000'),
- ('function', 'security.layer4_inbox_hooks_v1', 'Layer 4', 'Layer 4 Inbox kinds with registered hooks', 'active', '{}', '20261104410000'),
- ('function', 'security.layer4_inbox_hook_counts_v1', 'Layer 4', 'Counts of registered Layer 4 kinds', 'active', '{}', '20261104410000'),
- ('function', 'security.layer4_inbox_hook_call_v1', 'Layer 4', 'A registered kind''s page or detail, errors contained', 'active', '{}', '20261104410000'),
- ('function', 'security.layer4_inbox_hook_fn_v1', 'Layer 4', 'Find a hook function in schema security', 'active', '{}', '20261104410000')
+ ('table', 'pipeline.layer4_inbox_kind_hooks', 'Layer 4', 'Kinds and recovery choices that plug into Layer 4 › Inbox (counts, pages, lazy detail, decisions)', 'active', '{}', '20261104440000'),
+ ('function', 'security.layer4_inbox_items_v2', 'Layer 4', 'Items that need a person, filtered by university, kind or item at the source; detail on request', 'active', '{}', '20261104440000'),
+ ('function', 'security.layer4_inbox_counts_v1', 'Layer 4', 'Layer 4 Inbox counts by kind and university without building items', 'active', '{}', '20261104440000'),
+ ('function', 'security.layer4_inbox_hooks_v1', 'Layer 4', 'Layer 4 Inbox kinds with registered hooks', 'active', '{}', '20261104440000'),
+ ('function', 'security.layer4_inbox_hook_counts_v1', 'Layer 4', 'Counts of registered Layer 4 kinds', 'active', '{}', '20261104440000'),
+ ('function', 'security.layer4_inbox_hook_call_v1', 'Layer 4', 'A registered kind''s page or detail, errors contained', 'active', '{}', '20261104440000'),
+ ('function', 'security.layer4_inbox_hook_fn_v1', 'Layer 4', 'Find a hook function in schema security', 'active', '{}', '20261104440000')
 on conflict do nothing;

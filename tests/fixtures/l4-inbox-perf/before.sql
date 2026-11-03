@@ -1,4 +1,4 @@
--- CF-247 Layer 4 Inbox performance fixture, before migration 20261104410000: what the live definitions return and how long they take on the
+-- CF-247 Layer 4 Inbox performance fixture, before migration 20261104440000: what the live definitions return and how long they take on the
 -- production-scale seed, kept in fx.* to compare after the migration. Scratch PostgreSQL only.
 create schema if not exists fx;
 create table fx.v1_before as select to_jsonb(i) j from security.layer4_inbox_items_v1() i;

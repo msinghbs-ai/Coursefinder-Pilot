@@ -1,16 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.461'
-export const PACKAGE_VERSION='0.1.388'
+export const UI_VERSION='2.15.462'
+export const PACKAGE_VERSION='0.1.389'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'4 Nov 2026',
-  title:'Scholarship coverage classification runs again',
+  title:'Layer 4 Inbox pages from the server; kind pills show exact waiting counts',
   changes:[
-    'Scholarship coverage classification no longer fails when a listing page names the same scholarship address more than once; each case is kept once.',
-    'A failed progress report for one provider no longer stops the run; it is counted and sent again on the next run.'
+    'The Layer 4 Inbox reads only the university, kind and page shown, and loads card detail (AER rows, evidence) when the card comes on screen, so it no longer times out.',
+    'Pages show 25 items and 25 universities; both are settings.',
+    'Clicking a university\'s kind pill (Entry requirements, Course link, Held scholarship, University description) shows only that university\'s waiting items of that kind, with the exact waiting count in the heading, kept through paging, Refresh and decisions.',
+    'E13-held AER cards show the waiting rows, dropped requirements and a link to the stored copy; approval stays blocked.'
   ],
   bugFixes:[]
 }
