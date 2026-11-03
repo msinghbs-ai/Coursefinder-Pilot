@@ -1,17 +1,16 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.443'
-export const PACKAGE_VERSION='0.1.370'
+export const UI_VERSION='2.15.444'
+export const PACKAGE_VERSION='0.1.371'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Nov 2026',
-  title:'One blocked item no longer stops unrelated work: shared work continuity with bounded recovery',
+  title:'The provider identity check runs again for every provider',
   changes:[
-    'Every lane can record its work items in one place with their stage, attempts, failure class, next eligible time, recovery deadline, locks and evidence, and the platform applies a recovery policy by failure class with bounded retries; a parked item holds no lease and raises no repeated review item.',
-    'Course relink now takes universities in turn, isolates each one and stops within its time budget, so one slow university no longer fails the whole run.',
-    'Work in a full Layer 4 review category waits without counting an attempt or raising a review item; no Layer 4 limit is raised or bypassed. Repeated blockers raise one deduplicated issue that is never re-notified while unchanged.'
+    'The provider identity check writes its integration issues with values the issue queue accepts, so its runs no longer fail and its findings land for every provider.',
+    'A refused issue write is recorded in the run\'s result and never rolls back the findings of the run.'
   ],
   bugFixes:[]
 }

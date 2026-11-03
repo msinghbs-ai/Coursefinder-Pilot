@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.371 — 3 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.444** (SS-021 audit F2, IQ-00077). Migration `20261104180000_cf247_identity_check_issue_values`: md5-guarded edit of `security.provider_identity_check_v1` (fe1df994 → ad78092b): root_cause_class data_drift, workstream A10, each issue write in its own block. Nothing dropped; consumer API untouched. Spec s264.
+
 ## 0.1.370 — 3 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.443** (SS-021, work continuity). Migration `20261104170000_cf247_work_continuity`: pipeline.work_items, work_recovery_policies, work_review_categories; security.work_item_report_v1, work_fair_pick_v1, work_claim_v1, work_claims_release_v1, work_continuity_report_v1 (section of ops_report_v1); md5-guarded edits of security.course_relink_tick_v1 (0cd20104 → 656d308b) and security.ops_report_v1 (ff46a882 → 5a1e21cc); 20 wc.* settings; wc.on, wc.escalate_on, wc.relink_fair_on on, wc.ai_recovery_on off; job work-continuity (catalogued); 8 root causes and 6 remedies. Nothing dropped; consumer API untouched. Spec s261.
