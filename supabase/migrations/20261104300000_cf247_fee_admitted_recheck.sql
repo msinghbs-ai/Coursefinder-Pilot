@@ -136,6 +136,6 @@ select security.ops_remedy_register_v1('fee_admitted_recheck', jsonb_build_objec
  where exists (select 1 from pipeline.ops_root_causes r where r.code = 'fee_reader_hold_bypass');
 
 insert into pipeline.component_register(kind, name, layer, purpose, status, replaces, introduced_in) values
- ('function', 'security.fee_admitted_recheck_v1', 'Layer 4', 'CF-247 IQ-00111 D12: raise a "Fee fails the check" item to re-check an admitted AI fee, with evidence and earlier decisions', 'active', '{}', '20261104270000'),
- ('function', 'security.fee_admitted_recheck_settle_tg', 'Layer 4', 'CF-247 IQ-00111 D12: Keep the CRICOS total on a re-check item withdraws the AI fee (trigger fee_admitted_recheck_settle)', 'active', '{}', '20261104270000')
+ ('function', 'security.fee_admitted_recheck_v1', 'Layer 4', 'CF-247 IQ-00111 D12: raise a "Fee fails the check" item to re-check an admitted AI fee, with evidence and earlier decisions', 'active', '{}', '20261104300000'),
+ ('function', 'security.fee_admitted_recheck_settle_tg', 'Layer 4', 'CF-247 IQ-00111 D12: Keep the CRICOS total on a re-check item withdraws the AI fee (trigger fee_admitted_recheck_settle)', 'active', '{}', '20261104300000')
 on conflict do nothing;
