@@ -1,17 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.426'
-export const PACKAGE_VERSION='0.1.353'
+export const UI_VERSION='2.15.427'
+export const PACKAGE_VERSION='0.1.354'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Nov 2026',
-  title:'Plans propose only steps with work to do; course descriptions record faster; onboarding stops on a website that is not a web address',
+  title:'Entry requirements are read on a schedule by eligibility rules',
   changes:[
-    'An automatic enrichment plan proposes a step only when there is eligible work for it now. A step whose task finds nothing it may do ends as Not needed, never as done, and Pipeline yield shows how many plans moved data.',
-    'Recording course descriptions is faster: each new description is compared with the provider\'s others once instead of word by word for every pair, so a batch no longer runs out of time.',
-    'Provider onboarding stops with a named reason when a provider\'s website is not a web address (for example an email address), instead of trying again every few minutes; it carries on once the website is corrected.'
+    'A scheduled job reads course entry requirements for eligible providers in the countries switched on, using stored official pages, within a per-run size, a daily cap and the existing AI guards, and stops adding reads while 600 entry-requirement items wait in Layer 4.',
+    'Held course reads are read again at most twice, 14 days apart, only when a corrected read can fix them; due entry-requirement pages are refreshed by the existing matrix reader.',
+    'Read next batch, Next by priority and Course-level reading use the same eligibility rules instead of fixed provider lists; a read-only preview shows what the next run would ask and what it would cost.'
   ],
   bugFixes:[]
 }
