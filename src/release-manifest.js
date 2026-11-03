@@ -1,17 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.436'
-export const PACKAGE_VERSION='0.1.363'
+export const UI_VERSION='2.15.437'
+export const PACKAGE_VERSION='0.1.364'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Nov 2026',
-  title:'Closed issues reopen only on new evidence; the AI diagnosis contract is fixed',
+  title:'Worker: AI-assisted diagnosis mode, paid answers kept before recording, entry-requirement reader fixes',
   changes:[
-    'A closed integration issue is reopened only by evidence observed after it was closed, so a health check counting failures from before a fix no longer reopens a resolved issue.',
-    'The operations controller\'s recurrence signal uses the same rule and revisits an issue reopened since its last diagnosis on its next run.',
-    'AI-assisted diagnosis has a fixed request and answer contract, records its cost in the AI spend ledger and holds at its own daily cap; it stays switched off.'
+    'The worker can answer the operations controller\'s diagnosis requests with the pinned model, exactly once per request, through the existing AI guards; it runs only when AI-assisted diagnosis is switched on.',
+    'Enrichment AI answers are kept before they are recorded, so a failed recording can be retried without paying for a second read.',
+    'The entry-requirement reader keeps the model\'s value and scale on every dropped row, and can read printed ranges, subject-equivalence tables and global-qualification pages; each of these reading changes ships switched off.',
+    'Course-page search can answer every course with the same query from one paid search; this ships switched off.'
   ],
   bugFixes:[]
 }
