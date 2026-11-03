@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.362 — 3 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.435** (workstream C, AER missing-university strategy; Platform Admin 16:24 and 18:17). Migration `20261104090000_cf247_ops_c_aer_missing_universities`: pipeline.aer_source_inventory, security.aer_source_class_v1, security.aer_provider_stage_v1; md5-guarded edits of aer_course_population_v1 (priority order only, behind coverage.aer_reader_priority_on), aer_coverage_v1 and coverage_due_v1. Back-pressure, daily cap and all gates unchanged; Layer 4 unchanged; nothing dropped; consumer API untouched. Spec s252.
+
 ## 0.1.361 — 3 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.434** (workstream C; IQ-00041, IQ-00058). Migration `20261104040000_cf247_ops_c_scholarship_aer_coverage`: md5-guarded edit of aer_provider_states_v1; jobs scholarship-discovery-settle and coverage-reconcile; pipeline.coverage_provider_reconciliation; 16 root causes and 3 remedies. Nothing admitted automatically; nothing dropped; consumer API untouched. Spec s247.
