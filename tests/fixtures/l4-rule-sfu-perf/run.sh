@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CF-247 Layer 4 rule executor bounded (migration 20261104310000) on isolated fixtures. Needs a scratch PostgreSQL (never a Supabase project):
+# CF-247 Layer 4 rule executor bounded (migration 20261104330000) on isolated fixtures. Needs a scratch PostgreSQL (never a Supabase project):
 # PGHOST/PGPORT/PGUSER point at it. Builds the Layer 4 course-link fixture database as it reached production (../l4-course-link/run.sh, kept),
 # applies 20261104280000 (the executor's own run tables, v2.15.448), checks the two edited definitions against the live md5s read 4 Nov 2026
 # 00:29 AEDT, applies this migration twice (the second run changes nothing), then seed.sql and fixtures.sql. Drops the database at the end.
@@ -7,7 +7,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 DB=l4_rule_sfu_perf_fixtures
 P="psql -v ON_ERROR_STOP=1 -q -X"
-MIG=supabase/migrations/20261104310000_cf247_l4_rule_sfu_perf.sql
+MIG=supabase/migrations/20261104330000_cf247_l4_rule_sfu_perf.sql
 FX=tests/fixtures/l4-rule-sfu-perf
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }
 q() { $P -d $DB -Atc "$1"; }

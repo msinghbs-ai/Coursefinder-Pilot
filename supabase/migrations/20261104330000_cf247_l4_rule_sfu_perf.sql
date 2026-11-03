@@ -113,5 +113,5 @@ select pg_temp.edit_once('security.layer4_course_link_rule_execute_v1(text,integ
   ], array[1, 1, 1, 1, 1]);
 
 insert into pipeline.component_register(kind, name, layer, purpose, status, replaces, introduced_in) values
- ('function', 'security.layer4_rule_level_v1', 'Layer 4', 'The binding check''s level reading alone, for strict course-link rules', 'active', '{}', '20261104310000')
+ ('function', 'security.layer4_rule_level_v1', 'Layer 4', 'The binding check''s level reading alone, for strict course-link rules', 'active', '{}', '20261104330000')
 on conflict do nothing;
