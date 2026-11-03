@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.370 — 3 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.443** (SS-021, work continuity). Migration `20261104170000_cf247_work_continuity`: pipeline.work_items, work_recovery_policies, work_review_categories; security.work_item_report_v1, work_fair_pick_v1, work_claim_v1, work_claims_release_v1, work_continuity_report_v1 (section of ops_report_v1); md5-guarded edits of security.course_relink_tick_v1 (0cd20104 → 656d308b) and security.ops_report_v1 (ff46a882 → 5a1e21cc); 20 wc.* settings; wc.on, wc.escalate_on, wc.relink_fair_on on, wc.ai_recovery_on off; job work-continuity (catalogued); 8 root causes and 6 remedies. Nothing dropped; consumer API untouched. Spec s261.
+
 ## 0.1.369 — 3 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.442** (IQ-00111, P0 fee integrity). Migration `20261104140000_cf247_fee_units_holds`: md5-guarded edits of `public.svc_fee_ai_record` (0fb74c63 → 5ec65e53) and `security.fee_course_pages_enqueue_v1` (91b2591e → 67b1b7db); `pipeline.fee_country_profiles.units_are`; settings fees.units_load_fix_on and fees.respect_holds_on (on); fees.respect_all_exclusions_on (off). Worker coverage-sweep v0.59.6 (fees.ts). fees.course_pages stays 0 until the Platform Admin restores it. Containment, correction and read-back pastes in docs/paste. Nothing dropped; consumer API untouched. Spec s257.
