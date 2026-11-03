@@ -9,7 +9,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import crypto from 'node:crypto'
 
-const MIG = 'supabase/migrations/20261104400000_cf247_human_assisted_recovery.sql'
+const MIG = 'supabase/migrations/20261104450000_cf247_human_assisted_recovery.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const FX = 'tests/fixtures/human-assisted-recovery'
 const run = fs.readFileSync(`${FX}/run.sh`, 'utf8')

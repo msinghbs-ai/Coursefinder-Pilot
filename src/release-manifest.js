@@ -1,18 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.462'
-export const PACKAGE_VERSION='0.1.389'
+export const UI_VERSION='2.15.463'
+export const PACKAGE_VERSION='0.1.390'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'4 Nov 2026',
-  title:'Layer 4 Inbox pages from the server; kind pills show exact waiting counts',
+  title:'Human-assisted recovery: Layer 4 asks for exactly what is missing, then the platform resumes',
   changes:[
-    'The Layer 4 Inbox reads only the university, kind and page shown, and loads card detail (AER rows, evidence) when the card comes on screen, so it no longer times out.',
-    'Pages show 25 items and 25 universities; both are settings.',
-    'Clicking a university\'s kind pill (Entry requirements, Course link, Held scholarship, University description) shows only that university\'s waiting items of that kind, with the exact waiting count in the heading, kept through paging, Refresh and decisions.',
-    'E13-held AER cards show the waiting rows, dropped requirements and a link to the stored copy; approval stays blocked.'
+    'When the platform cannot find a source, read a document, identify a course or complete a field, it records one intervention per missing fact, parks only that work and asks Layer 4 for exactly what is needed.',
+    'Reviewers can supply an official URL or document, enter or correct values against evidence, confirm identity or audience, request a fresh search, mark a source as not published, return the item to technical recovery or reject unsupported evidence. A URL or document is never approval to publish.',
+    'After valid input the platform resumes the right reader automatically, within existing caps, and verifies the result.',
+    'E13-held AER cards offer re-read from stored evidence, request evidence, AI analysis (switched off) and human input; approval stays blocked.',
+    'Recovery metrics per workstream are in the operations report.'
   ],
   bugFixes:[]
 }

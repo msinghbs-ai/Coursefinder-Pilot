@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CF-247 human-assisted recovery (migration 20261104400000; Platform Admin design decision 4 Nov 2026 06:30) on isolated fixtures. Needs a scratch
+# CF-247 human-assisted recovery (migration 20261104450000; Platform Admin design decision 4 Nov 2026 06:30) on isolated fixtures. Needs a scratch
 # PostgreSQL 16 (never a Supabase project): PGHOST/PGUSER point at it. Builds a throwaway database:
 #   1 the live Layer 4 Inbox exactly as ../l4-course-link/run.sh rebuilds it (the stubs, the live-before definitions, the migrations that reached
 #     production, then 20261104260000), checked against the live md5s read 4 Nov 2026 06:31 AEDT; the Inbox functions are not edited (they
@@ -14,7 +14,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 DB=${HAR_DB:-human_assisted_recovery_fixtures}
 P="psql -v ON_ERROR_STOP=1 -q -X"
-MIG=supabase/migrations/20261104400000_cf247_human_assisted_recovery.sql
+MIG=supabase/migrations/20261104450000_cf247_human_assisted_recovery.sql
 FX=tests/fixtures/human-assisted-recovery
 P1=tests/fixtures/p1-provider-descriptions
 WC=supabase/migrations/20261104170000_cf247_work_continuity.sql

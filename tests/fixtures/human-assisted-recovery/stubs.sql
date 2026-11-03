@@ -1,4 +1,4 @@
--- CF-247 human-assisted recovery (migration 20261104400000): the other live shapes the change reads or writes, on top of the Layer 4 build of
+-- CF-247 human-assisted recovery (migration 20261104450000): the other live shapes the change reads or writes, on top of the Layer 4 build of
 -- ../l4-course-link (providers, courses, evidence, Layer 4 items, the Inbox functions) and workstream A's contract (../sch-coverage-recovery/
 -- stub-ops-contract.sql). Columns are the ones the change uses, as live (read 4 Nov 2026 06:35-06:50 AEDT). Helpers the change only calls are
 -- stand-ins. Fixture database only; nothing here is live data.

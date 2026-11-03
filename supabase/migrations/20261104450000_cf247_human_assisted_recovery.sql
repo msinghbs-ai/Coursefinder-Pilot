@@ -1831,18 +1831,18 @@ select security.ops_remedy_register_v1('layer4_intervention', jsonb_build_object
 
 -- 16 component register -----------------------------------------------------------------------------------------------------------------------
 insert into pipeline.component_register(kind, name, layer, area, purpose, status, replaces, introduced_in) values
- ('table', 'pipeline.layer4_interventions', 'Layer 4', 'Platform', 'Human-assisted recovery: one deduplicated intervention per lane, entity and missing fact', 'active', '{}', '20261104400000'),
- ('table', 'pipeline.layer4_intervention_classes', 'Layer 4', 'Platform', 'Human-assisted recovery: failure classes, actions and ranks', 'active', '{}', '20261104400000'),
- ('table', 'pipeline.layer4_intervention_handlers', 'Layer 4', 'Platform', 'Human-assisted recovery: the resume handler registry', 'active', '{}', '20261104400000'),
- ('table', 'pipeline.layer4_intervention_events', 'Layer 4', 'Platform', 'Human-assisted recovery: the audit', 'active', '{}', '20261104400000'),
- ('table', 'pipeline.layer4_intervention_values', 'Layer 4', 'Platform', 'Human-assisted recovery: supplied values with provenance (proposals)', 'active', '{}', '20261104400000'),
- ('job', 'layer4-interventions', 'Layer 4', 'Platform upkeep', 'Raise, verify, recheck and escalate interventions', 'active', '{}', '20261104400000'),
- ('function', 'security.layer4_intervention_resolve_v1', 'Layer 4', 'Platform', 'The one server function behind every intervention action', 'active', '{}', '20261104400000'),
- ('function', 'security.layer4_intervention_report_v1', 'Layer 4', 'Platform', 'The §9 recovery metrics (in ops_report_v1)', 'active', '{}', '20261104400000'),
- ('table', 'pipeline.layer4_aer_recovery_actions', 'Layer 4', 'Entry requirements', 'Recovery actions on AER reads held by E13 or D-R3 (decision 06:58)', 'active', '{}', '20261104400000'),
- ('function', 'security.layer4_aer_recovery_decide_v1', 'Layer 4', 'Entry requirements', 'Recovery choices on a held AER read (Inbox extend hook)', 'active', '{}', '20261104400000'),
- ('function', 'security.layer4_aer_recovery_detail_v1', 'Layer 4', 'Entry requirements', 'Recovery state on an E13 or D-R3 card (Inbox extend hook)', 'active', '{}', '20261104400000'),
- ('function', 'security.layer4_intervention_inbox_page_v1', 'Layer 4', 'Platform', 'Interventions for the Inbox: a keyset page (kind hook)', 'active', '{}', '20261104400000')
+ ('table', 'pipeline.layer4_interventions', 'Layer 4', 'Platform', 'Human-assisted recovery: one deduplicated intervention per lane, entity and missing fact', 'active', '{}', '20261104450000'),
+ ('table', 'pipeline.layer4_intervention_classes', 'Layer 4', 'Platform', 'Human-assisted recovery: failure classes, actions and ranks', 'active', '{}', '20261104450000'),
+ ('table', 'pipeline.layer4_intervention_handlers', 'Layer 4', 'Platform', 'Human-assisted recovery: the resume handler registry', 'active', '{}', '20261104450000'),
+ ('table', 'pipeline.layer4_intervention_events', 'Layer 4', 'Platform', 'Human-assisted recovery: the audit', 'active', '{}', '20261104450000'),
+ ('table', 'pipeline.layer4_intervention_values', 'Layer 4', 'Platform', 'Human-assisted recovery: supplied values with provenance (proposals)', 'active', '{}', '20261104450000'),
+ ('job', 'layer4-interventions', 'Layer 4', 'Platform upkeep', 'Raise, verify, recheck and escalate interventions', 'active', '{}', '20261104450000'),
+ ('function', 'security.layer4_intervention_resolve_v1', 'Layer 4', 'Platform', 'The one server function behind every intervention action', 'active', '{}', '20261104450000'),
+ ('function', 'security.layer4_intervention_report_v1', 'Layer 4', 'Platform', 'The §9 recovery metrics (in ops_report_v1)', 'active', '{}', '20261104450000'),
+ ('table', 'pipeline.layer4_aer_recovery_actions', 'Layer 4', 'Entry requirements', 'Recovery actions on AER reads held by E13 or D-R3 (decision 06:58)', 'active', '{}', '20261104450000'),
+ ('function', 'security.layer4_aer_recovery_decide_v1', 'Layer 4', 'Entry requirements', 'Recovery choices on a held AER read (Inbox extend hook)', 'active', '{}', '20261104450000'),
+ ('function', 'security.layer4_aer_recovery_detail_v1', 'Layer 4', 'Entry requirements', 'Recovery state on an E13 or D-R3 card (Inbox extend hook)', 'active', '{}', '20261104450000'),
+ ('function', 'security.layer4_intervention_inbox_page_v1', 'Layer 4', 'Platform', 'Interventions for the Inbox: a keyset page (kind hook)', 'active', '{}', '20261104450000')
 on conflict do nothing;
 
 -- 17 post-check ----------------------------------------------------------------------------------------------------------------------------------
