@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.367 — 3 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.440** (workstream A follow-up). Migration `20261104130000_cf247_ops_verify_due_minute`: md5-guarded edit of ops_controller_tick_v1 (b4df5f81 -> 5dce3c47). A verification is still never made in the run that acted. Nothing dropped; consumer API untouched. Spec s256.
+
 ## 0.1.366 — 3 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.439** (deployment correction of v2.15.438). Migration `20261104120000_cf247_ops_layer4_throughput` (never applied: the v2.15.438 deploy failed on component_register_kind_check and rolled back) now registers trigger layer4_review_items_zz_arrival through its function security.layer4_arrival_guard_trg_v1; the fixture adds the live kind check. No other change. Spec s255.
