@@ -1,17 +1,15 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.447'
-export const PACKAGE_VERSION='0.1.374'
+export const UI_VERSION='2.15.448'
+export const PACKAGE_VERSION='0.1.375'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'3 Nov 2026',
-  title:'Layer 4 Course Link: stored copies linked, Course page needed, approved rules applied item by item',
+  date:'4 Nov 2026',
+  title:'The approved Course Link rules can run: the rule executor records in its own tables',
   changes:[
-    'Course Link and fee review items link the newest stored copy of their page, so reviewers see the evidence without a new read.',
-    'A refused page for a course with no held page goes to one Course page needed list grouped by university, with Add the page, Search again and No page exists, instead of raising another review item.',
-    'Approved university rules are applied item by item through the normal decision path; every item is re-checked when applied and a failed item stays pending with its reason. Reviewers also get Refuse this proposal and Duplicate of a published scholarship, and non-Australian cards say Course code instead of CRICOS.'
+    'The course-link rule executor records its runs and items in its own tables; it no longer collides with an older table of the same name used by the automatic Layer 4 rules, which keeps its rows and its writers.'
   ],
   bugFixes:[]
 }
