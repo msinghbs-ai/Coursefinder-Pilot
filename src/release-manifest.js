@@ -1,17 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.421'
-export const PACKAGE_VERSION='0.1.348'
+export const UI_VERSION='2.15.422'
+export const PACKAGE_VERSION='0.1.349'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Nov 2026',
-  title:'Enrichment plans: safe re-planning, Run now takes over automatic plans, no orphaned work',
+  title:'Course descriptions and application deadlines are read by the platform',
   changes:[
-    'A university can be planned again early when its missing values grew, when new verified course pages are stored, or when a failed step\'s cause has cleared; plans with unchanged inputs are never started twice, completed steps are not redone, and failures time cannot fix are never retried on a timer. Never-planned and longest-waiting universities come first.',
-    'Run now takes over an open automatic plan for that university instead of being refused, so nothing runs twice; a recent Run now holds the automatic plan.',
-    'A cancelled plan can never start another step, its tasks are cancelled as the person who started them, and any plan task left running without its plan raises an integration issue. Scheduled jobs no longer shows Run on demand for Layer 2 schedules.'
+    'Course description and Application deadline are now fields of Enrich fields, the standing gap queue and enrichment plans, read from the course\'s own stored, proven page with no new fetching. Up to a set number of items per field per day are created by the standing queue.',
+    'A description is quoted sentence by sentence from the course page and held, never cut or completed, when it is too long, a fragment, unsupported by its quote, a marketing claim the page does not make, or copied from another course; first descriptions go to Layer 4 review, and an approved one is written exactly as read.',
+    'A deadline is taken only when the page prints the full date, tied to the intake the page names or the course\'s only intake, never after the intake starts and never over a deadline already held.'
   ],
   bugFixes:[]
 }

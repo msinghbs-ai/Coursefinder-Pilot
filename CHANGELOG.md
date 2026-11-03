@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.349 — 3 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.422** (Platform Admin direction 3 Nov 2026 09:32; P0 mandate 10:44 §3 Agent B). Migration `20261103110000_cf247_course_description_deadline_fields`: md5-guarded edits of enrich_fields_v1, svc_enrich_ai_record, field_gap_queue_tick_v1, admin_enrich_fields, field_stalled_v1, enrich_coverage_snapshot_v1, layer4_review_decide_impl, layer4_inbox_items_v1; security.course_description_check_v1; Layer 4 field course_description_first_read; ten settings. Worker coverage-sweep v0.59.4 (course-text.ts). Writes only catalogue.courses.description and catalogue.course_intakes.application_deadline (existing columns the API reads); consumer API untouched. Spec s233. Admin SOP 2.24.
+
 ## 0.1.348 — 3 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.421** (Platform Admin P0 mandate 3 Nov 2026 10:44 §3 Agent A). Migration `20261103150000_cf247_plan_lifecycle`: md5-guarded edits of enrich_plan_auto_v1, admin_enrich_plan, enrich_plan_start_step_v1, enrich_plan_tick_v1, enrich_plan_cancel_steps_v1; input fingerprint, pipeline.enrich_plan_noop, orphan check wired into integration-validate; settings plans.replan_on_evidence, plans.replan_on_retry, plans.fair_order (0) and plans.run_now_supersedes_auto (1). Admin SOP 2.23. Nothing dropped; consumer API untouched. Spec s237.
