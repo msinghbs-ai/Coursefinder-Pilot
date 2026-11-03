@@ -1,7 +1,7 @@
 // Guards: M2.5 Evidence lineage reconciliation and contact claim contract
 import fs from'node:fs/promises'
-import{execFileSync}from'node:child_process'
 import{test,expect}from'@playwright/test'
+import{buildOnce}from'./support/build-once.mjs'
 import{writeRunEnvironment}from'./support/runtime-evidence.mjs'
 
 test.describe('M2.5 Evidence lineage reconciliation and contact claim contract',()=>{
@@ -87,13 +87,7 @@ test.describe('M2.5 Evidence lineage reconciliation and contact claim contract',
     expect(versionEntry).toContain('Evidence lineage reconciliation and contact claim hardening')
     expect(releaseTest).toContain('release notes @deployed')
 
-    const output=execFileSync('npm',['run','build'],{
-      cwd:process.cwd(),
-      env:process.env,
-      encoding:'utf8',
-      timeout:60000,
-      stdio:['ignore','pipe','pipe'],
-    })
+    const output=buildOnce()
     expect(output).toContain('built in')
   })
 })

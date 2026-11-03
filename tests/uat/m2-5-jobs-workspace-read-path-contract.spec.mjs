@@ -1,8 +1,8 @@
 // Guards: M2.5: CF-060 targeted validation trigger — canonical Jobs route must remain server-paged.
 // CF-060 targeted validation trigger — canonical Jobs route must remain server-paged.
 import fs from'node:fs/promises'
-import{execFileSync}from'node:child_process'
 import{test,expect}from'@playwright/test'
+import{buildOnce}from'./support/build-once.mjs'
 import{writeRunEnvironment}from'./support/runtime-evidence.mjs'
 
 test.describe('M2.5 Jobs workspace read-path source contract',()=>{
@@ -58,13 +58,7 @@ test.describe('M2.5 Jobs workspace read-path source contract',()=>{
     expect(versionEntry).toContain('Pipeline Jobs workspace restoration')
     expect(releaseTest).toContain('release notes @deployed')
 
-    const output=execFileSync('npm',['run','build'],{
-      cwd:process.cwd(),
-      env:process.env,
-      encoding:'utf8',
-      timeout:60000,
-      stdio:['ignore','pipe','pipe'],
-    })
+    const output=buildOnce()
     expect(output).toContain('built in')
   })
 })

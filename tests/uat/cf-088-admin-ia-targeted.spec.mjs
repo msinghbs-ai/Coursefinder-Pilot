@@ -1,7 +1,7 @@
 // Guards: CF-088 M2.4.5 Administration IA hardening
 import { test, expect } from '@playwright/test'
+import { buildOnce } from './support/build-once.mjs'
 import fs from 'node:fs'
-import { execFileSync } from 'node:child_process'
 import { attachRuntimeEvidence, assertNoServerErrors, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
 
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
@@ -26,6 +26,6 @@ test.describe('CF-088 M2.4.5 Administration IA hardening @targeted',()=>{
     expect(access).toContain("export function AccessRolesEmbedded")
     expect(index).not.toContain('id="access-roles-root"')
     expect(index).not.toContain('src="/src/access-roles-entry.jsx"')
-    execFileSync('npm',['run','build'],{stdio:'inherit'})
+    buildOnce()
   })
 })

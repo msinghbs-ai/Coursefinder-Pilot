@@ -1,8 +1,8 @@
 // Guards: CF-065 targeted source contract — compact Layer 1 operations v2.
 // CF-065 targeted source contract — compact Layer 1 operations v2.
 import fs from'node:fs/promises'
-import{execFileSync}from'node:child_process'
 import{test,expect}from'@playwright/test'
+import{buildOnce}from'./support/build-once.mjs'
 
 test.describe('CF-065 Layer 1 operations v2 source contract',()=>{
   test('country-first operations and Administration configuration stay separated',async()=>{
@@ -47,7 +47,7 @@ test.describe('CF-065 Layer 1 operations v2 source contract',()=>{
     expect(index).toContain('<title>StudySearch PIM Admin</title>')
     expect(index).not.toMatch(/StudySearch PIM Admin v2\.15\.\d+/)
     expect(versionEntry).toContain('Layer 1 source configuration UI restoration')
-    const output=execFileSync('npm',['run','build'],{cwd:process.cwd(),env:process.env,encoding:'utf8',timeout:60000,stdio:['ignore','pipe','pipe']})
+    const output=buildOnce()
     expect(output).toContain('built in')
   })
 })

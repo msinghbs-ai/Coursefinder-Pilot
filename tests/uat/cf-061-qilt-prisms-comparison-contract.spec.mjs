@@ -1,7 +1,7 @@
 // Guards: CF-061 QILT PRISMS comparison source/server contract
 import fs from'node:fs/promises'
-import{execFileSync}from'node:child_process'
 import{test,expect}from'@playwright/test'
+import{buildOnce}from'./support/build-once.mjs'
 import{writeRunEnvironment}from'./support/runtime-evidence.mjs'
 
 // Permanent CF-061 source/build contract.
@@ -67,7 +67,7 @@ test.describe('CF-061 QILT PRISMS comparison source/server contract',()=>{
 
   expect(version).toContain('Course comparison provider coverage correction')
 
-  const output=execFileSync('npm',['run','build'],{cwd:process.cwd(),env:process.env,encoding:'utf8',timeout:60000,stdio:['ignore','pipe','pipe']})
+  const output=buildOnce()
   expect(output).toContain('built in')
  })
 })
