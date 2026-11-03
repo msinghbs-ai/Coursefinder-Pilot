@@ -27,8 +27,11 @@
 --     (pipeline.scholarship_duplicate_closures). The decision stays with the reviewer.
 --   5 Wording: the CRICOS-differs reason and the code label say "course code" for providers outside Australia (display; stored text unchanged).
 --   6 security.layer4_refusal_search_cost_v1(days): Firecrawl credits of the search lanes that feed refusals against the refusals they raised.
---   7 pipeline.layer4_course_link_rules (the three approved university rules) and security.layer4_course_link_rule_validate_v1(rule): pass or fail
---     per item with reasons. Validation only: nothing executes a rule.
+--   7 pipeline.layer4_course_link_rules (the three approved university rules), pipeline.layer4_review_owners (the ownership register in data),
+--     security.layer4_course_link_rule_validate_v1(rule, item): pass or fail per item with reasons, and
+--     security.layer4_course_link_rule_execute_v1(rule, limit, apply): item by item, validated again at execution, decided through
+--     security.layer4_review_decide_impl under the system automation account with the rule and its approval reference; failed items stay
+--     waiting with their reasons (pipeline.layer4_rule_runs, layer4_rule_run_items). Overnight mandate 3 Nov 2026 21:59 D1 and D2.
 -- Edited live functions (md5-guarded, before -> after):
 --   security.layer4_inbox_kinds_v1()                       f5fc812e0971a415b664926ec5dbdf8c -> e79ce1815952b4a0e59108981bf62c36
 --   security.layer4_inbox_items_v1()                       a56bc3313e02ac0611deb5657da95ce0 -> 4fc05d14f4ba49335ff90496a20f582d
@@ -85,7 +88,13 @@ insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, ki
  ('pipeline', 'layer4.refusal_lane_purposes', 'Layer 4: search lanes and the Firecrawl purpose each one spends under',
   'lane=purpose pairs: the search lane recorded on a refused page and the Firecrawl ledger purpose of its searches. Used to report credits against refusals.',
   'list', '["firecrawl_search=fc_search", "cricos_search=course_link_search", "title_search=course_link_search"]'::jsonb, null, null, 'lane=purpose', 1236, 'Layer 4 readiness',
-  'security.layer4_refusal_search_cost_v1', 'Handover 3 Nov 2026 Priority 2a "measure Firecrawl credit use by the search lanes that feed refusals"')
+  'security.layer4_refusal_search_cost_v1', 'Handover 3 Nov 2026 Priority 2a "measure Firecrawl credit use by the search lanes that feed refusals"'),
+ ('pipeline', 'layer4.rule_execute_batch', 'Layer 4 rules: items decided in one executor call',
+  'At most this many items of an approved course-link rule are validated and decided in one call of the rule executor.',
+  'number', to_jsonb(50), 1, 500, 'items', 1237, 'Layer 4 readiness', 'security.layer4_course_link_rule_execute_v1', 'Decision 263; overnight mandate 3 Nov 2026 21:59 D1, D2 (item by item)'),
+ ('pipeline', 'layer4.rule_evidence_max_age_days', 'Layer 4 rules: oldest stored copy a strict rule accepts',
+  'A strict rule (Simon Fraser) decides an item only when the stored copy of the page it uses is no older than this.',
+  'number', to_jsonb(90), 1, 365, 'days', 1238, 'Layer 4 readiness', 'security.layer4_course_link_rule_validate_v1', 'Overnight mandate 3 Nov 2026 21:59 D2 ("current evidence")')
 on conflict do nothing;
 
 -- 2 tables ------------------------------------------------------------------------------------------------------------------------------------
@@ -139,22 +148,27 @@ create table if not exists pipeline.layer4_course_link_rules (
   approved_by text not null,
   approved_at text not null,
   approved_items int not null,
+  approval_ref text not null,
+  strict boolean not null default false,
   note text,
   created_at timestamptz not null default now()
 );
-comment on table pipeline.layer4_course_link_rules is 'CF-247 Decision 263 logged rules for course links, as approved by the Platform Admin (3 Nov 2026, after 20:40 AEDT; admin 2026-11-03-layer4-course-link-growth-review.md): per university, the address pattern (held_regex on the held page key and proposed_replace giving the proposed page key), the choice (keep the held page or use the proposed one) and the stored-copy identity bases accepted as exact course identity. Read by security.layer4_course_link_rule_validate_v1, which only validates; executing a rule is the Integration Controller''s, one university at a time. Never read by the consumer API.';
+comment on table pipeline.layer4_course_link_rules is 'CF-247 Decision 263 logged rules for course links, as approved by the Platform Admin (3 Nov 2026, after 20:40 AEDT; admin 2026-11-03-layer4-course-link-growth-review.md): per university, the address pattern (held_regex on the held page key and proposed_replace giving the proposed page key), the choice (keep the held page or use the proposed one) the stored-copy identity bases accepted as exact course identity, the approval reference recorded on every decision, and strict (the course level and a current stored copy are verified too: Simon Fraser, overnight mandate 21:59 D2). Validated by security.layer4_course_link_rule_validate_v1; executed item by item only by security.layer4_course_link_rule_execute_v1 (Integration Controller, one university at a time). Never read by the consumer API.';
 alter table pipeline.layer4_course_link_rules enable row level security;
 revoke all on pipeline.layer4_course_link_rules from public, anon, authenticated;
-insert into pipeline.layer4_course_link_rules(code, provider_id, choice, reason_like, held_regex, proposed_replace, identity_bases, approved_by, approved_at, approved_items, note)
-select x.code, x.pid, x.choice, x.reason_like, x.held_regex, x.proposed_replace, x.bases, 'Platform Admin', '3 Nov 2026, after 20:40 AEDT', x.n, x.note
+insert into pipeline.layer4_course_link_rules(code, provider_id, choice, reason_like, held_regex, proposed_replace, identity_bases, approved_by, approved_at, approved_items, approval_ref, strict, note)
+select x.code, x.pid, x.choice, x.reason_like, x.held_regex, x.proposed_replace, x.bases, 'Platform Admin', '3 Nov 2026, after 20:40 AEDT', x.n, x.ref, x.strict, x.note
   from (values
    ('adelaide_keep_held', 'de2201a1-69ee-40ff-b6aa-0e54e535e6c0'::uuid, 'keep', '%CRICOS code is a different address%', '^adelaide\.edu\.au/', 'adelaideuni.edu.au/', array['cricos_code'], 207,
+    'Platform Admin 3 Nov 2026 after 20:40 (course-link growth review); overnight mandate 21:59 D1 (title-only matches stay for a person)', false,
     'Keep the held adelaide.edu.au page (international view, shows the course''s CRICOS code); stop raising the adelaideuni.edu.au pattern'),
    ('canberra_no_year', '0e1532b8-de30-4761-87fe-460684608633'::uuid, 'use', '%CRICOS code is a different address%', '/20[0-9]{2}$', '', array['cricos_code'], 100,
+    'Platform Admin 3 Nov 2026 after 20:40 (course-link growth review); overnight mandate 21:59 D1 (title-only matches stay for a person)', false,
     'Use the address with no year (its canonical; it states the current year and will not date)'),
    ('sfu_no_term', 'd47b6006-396a-4785-b2ae-15186c3e7709'::uuid, 'use', '%CRICOS code is a different address%', '^(sfu\.ca/students/calendar/)20[0-9]{2}/(spring|summer|fall)/', '\1',
-    array['field_award', 'exact_title', 'title_level', 'cricos_code'], 59,
-    'Use the address with no term (current calendar); the other 46 Simon Fraser items stay for separate review')) x(code, pid, choice, reason_like, held_regex, proposed_replace, bases, n, note)
+    array['field_award'], 59,
+    'Platform Admin 3 Nov 2026 after 20:40 (course-link growth review); overnight mandate 21:59 D2 (field-and-award matches with identity, current evidence and course level verified)', true,
+    'Use the address with no term (current calendar); the other 46 Simon Fraser items stay for separate review')) x(code, pid, choice, reason_like, held_regex, proposed_replace, bases, n, ref, strict, note)
  where exists (select 1 from catalogue.providers p where p.id = x.pid)
 on conflict (code) do nothing;
 
@@ -474,16 +488,79 @@ language sql stable security definer set search_path to '' as $function$
 $function$;
 revoke all on function security.layer4_refusal_search_cost_v1(int) from public, anon, authenticated;
 
--- 8 validation of the approved university rules (Decision 263): pass or fail per item; nothing is executed ---------------------------------
-create or replace function security.layer4_course_link_rule_validate_v1(p_rule text)
+-- 8 approved university rules (Decision 263): who owns which review, per-item validation, and the item-by-item executor ---------------------
+-- the ownership register in data (admin docs/platform/nz-enrichment-brief/2026-11-03-layer4-review-ownership.md is its source of record)
+create table if not exists pipeline.layer4_review_owners (
+  id bigserial primary key,
+  provider_id uuid not null references catalogue.providers(id),
+  field_code text not null,
+  owner text not null check (owner in ('claude', 'chatgpt', 'engineering')),
+  scope text not null,
+  basis text not null,
+  since timestamptz not null default now(),
+  closed_at timestamptz,
+  note text
+);
+comment on table pipeline.layer4_review_owners is 'CF-247 Layer 4 review ownership (mandate 3 Nov 2026 20:47 §3): which reviewer owns the items of a university and kind, mirrored from the ownership register in the admin repo (2026-11-03-layer4-review-ownership.md) by the Integration Controller. owner claude: the Integration Controller (approved logged rules); chatgpt: the parallel browser reviewer; engineering: no person decides. A row is open while closed_at is null. security.layer4_course_link_rule_execute_v1 decides only items of a university with an open claude row and no open chatgpt row. Never deleted. Never read by the consumer API.';
+create index if not exists layer4_review_owners_open_idx on pipeline.layer4_review_owners (provider_id, field_code) where closed_at is null;
+alter table pipeline.layer4_review_owners enable row level security;
+revoke all on pipeline.layer4_review_owners from public, anon, authenticated;
+revoke all on sequence pipeline.layer4_review_owners_id_seq from public, anon, authenticated;
+-- the register's rows for the three approved rules (3 Nov 2026 21:00, Claude: Adelaide, Canberra, Simon Fraser approved address rules)
+insert into pipeline.layer4_review_owners(provider_id, field_code, owner, scope, basis, since, note)
+select r.provider_id, 'official_course_url', 'claude', 'approved address rule ' || r.code, 'Platform Admin decision 3 Nov 2026 after 20:40; ownership register 21:00',
+       '2026-11-03 10:00:00+00'::timestamptz, 'Items outside the rule''s validated scope are not covered'
+  from pipeline.layer4_course_link_rules r
+ where not exists (select 1 from pipeline.layer4_review_owners o where o.provider_id = r.provider_id and o.field_code = 'official_course_url' and o.owner = 'claude' and o.scope = 'approved address rule ' || r.code);
+
+create table if not exists pipeline.layer4_rule_runs (
+  id bigserial primary key,
+  rule text not null references pipeline.layer4_course_link_rules(code),
+  apply boolean not null,
+  invoked_by uuid,
+  approval_ref text not null,
+  at timestamptz not null default now(),
+  examined int not null default 0,
+  decided int not null default 0,
+  would_decide int not null default 0,
+  failed int not null default 0,
+  result jsonb not null default '{}'::jsonb
+);
+comment on table pipeline.layer4_rule_runs is 'CF-247 Decision 263: every call of security.layer4_course_link_rule_execute_v1 (counting or applying): the rule, who invoked it, the approval reference, and how many items were examined, decided, would be decided and failed. Items are in pipeline.layer4_rule_run_items. Never read by the consumer API.';
+alter table pipeline.layer4_rule_runs enable row level security;
+revoke all on pipeline.layer4_rule_runs from public, anon, authenticated;
+revoke all on sequence pipeline.layer4_rule_runs_id_seq from public, anon, authenticated;
+
+create table if not exists pipeline.layer4_rule_run_items (
+  run_id bigint not null references pipeline.layer4_rule_runs(id),
+  item_id uuid not null,
+  course_id uuid,
+  outcome text not null check (outcome in ('decided', 'would_decide', 'failed')),
+  reasons text[] not null default '{}',
+  decision_id uuid,
+  action text,
+  at timestamptz not null default now(),
+  primary key (run_id, item_id)
+);
+comment on table pipeline.layer4_rule_run_items is 'CF-247 Decision 263: each item a rule run examined: decided (with the Layer 4 decision it saved through the existing decision path), would_decide (a counting run) or failed (left waiting, with the reasons found at execution time). Never read by the consumer API.';
+create index if not exists layer4_rule_run_items_item_idx on pipeline.layer4_rule_run_items (item_id);
+alter table pipeline.layer4_rule_run_items enable row level security;
+revoke all on pipeline.layer4_rule_run_items from public, anon, authenticated;
+
+create or replace function security.layer4_course_link_rule_validate_v1(p_rule text, p_item uuid default null)
 returns table(rule text, item_id uuid, course_id uuid, course_code text, choice text, held_url text, proposed_url text, target_url text, pass boolean, reasons text[], detail jsonb)
 language sql stable security definer set search_path to '' as $function$
--- For one approved rule (pipeline.layer4_course_link_rules), every waiting official-link item of its university with the CRICOS-differs reason:
--- still waiting and not claimed; exactly one held page; the addresses follow the approved pattern; course active; a stored copy of the page the
--- rule keeps or uses, read for this course with an exact-course identity basis; open to international students (and a CRICOS code for an
--- Australian course); the course's active official page is still exactly the held page; the binding was not set by hand; no manual lock; for
--- a rule that uses the proposed page, that page is not refused for the course. A failed item stays in Layer 4 with its reasons.
+-- For one approved rule (pipeline.layer4_course_link_rules), every waiting official-link item of its university with the CRICOS-differs reason
+-- (or only p_item): still waiting and not claimed; the university owned by the Integration Controller in the ownership register and not by the
+-- parallel reviewer; exactly one held page; the addresses follow the approved pattern; course active; a stored copy of the page the rule keeps or
+-- uses, read for this course with an exact-course identity basis; open to international students (and a CRICOS code for an Australian
+-- course); the course's active official page is still exactly the held page; the binding was not set by hand; no manual lock; for a rule that
+-- uses the proposed page, that page is not refused for the course. A strict rule also needs the course's level on the page (the binding
+-- check's level reading, security.course_page_check_v1) and a stored copy no older than layer4.rule_evidence_max_age_days. A failed item
+-- stays in Layer 4 with its reasons.
   with rule as (select * from pipeline.layer4_course_link_rules r where r.code = p_rule),
+  own as (select bool_or(o.owner = 'claude') claude, bool_or(o.owner = 'chatgpt') chatgpt from pipeline.layer4_review_owners o, rule
+           where o.provider_id = rule.provider_id and o.field_code = 'official_course_url' and o.closed_at is null),
   it as (
     select i.id item_id, i.entity_id course_id, i.claimed_at, i.assigned_to, i.status, i.before_value, i.layer2_state, i.escalation_reason,
            security.layer4_url_key_v1(case when jsonb_typeof(i.before_value) = 'array' then i.before_value->>0 end) held_key,
@@ -492,9 +569,9 @@ language sql stable security definer set search_path to '' as $function$
            coalesce(i.proposed_value->>'course_url', i.proposed_value->>'url') prop_url,
            case when jsonb_typeof(i.before_value) = 'array' then jsonb_array_length(i.before_value) else 0 end n_held
       from pipeline.layer4_review_items i join catalogue.courses c on c.id = i.entity_id join rule on c.provider_id = rule.provider_id
-     where i.status = 'pending' and i.field_code = 'official_course_url' and i.escalation_reason ilike rule.reason_like),
+     where i.status = 'pending' and i.field_code = 'official_course_url' and i.escalation_reason ilike rule.reason_like and (p_item is null or i.id = p_item)),
   m as (
-    select it.*, rule.code, rule.choice, rule.identity_bases,
+    select it.*, rule.code, rule.choice, rule.identity_bases, rule.strict,
            it.held_key ~ rule.held_regex and it.prop_key = regexp_replace(it.held_key, rule.held_regex, rule.proposed_replace) pattern_ok,
            case when rule.choice = 'keep' then it.held_url else it.prop_url end target_url,
            case when rule.choice = 'keep' then it.held_key else it.prop_key end target_key
@@ -510,30 +587,116 @@ language sql stable security definer set search_path to '' as $function$
              where l.course_id = m.course_id and l.link_type = 'official_course' and l.status = 'active') active_keys,
            (select g.basis from pipeline.coverage_course_pages g where g.course_id = m.course_id) binding_basis,
            exists (select 1 from pipeline.manual_locks l where l.entity = 'course' and l.entity_id = m.course_id and l.field in ('official_url', 'course_url')) locked,
-           exists (select 1 from pipeline.page_rejections r where r.course_id = m.course_id and security.layer4_url_key_v1(r.url) = m.target_key) target_refused
+           exists (select 1 from pipeline.page_rejections r where r.course_id = m.course_id and security.layer4_url_key_v1(r.url) = m.target_key) target_refused,
+           case when m.strict then security.course_page_check_v1(m.course_id, m.target_url) end chk
       from m join catalogue.courses c on c.id = m.course_id
       left join catalogue.providers p on p.id = c.provider_id left join ref.countries k on k.id = p.country_id),
+  lv as (
+    select e.*,
+           coalesce((select array_agg(x) from jsonb_array_elements_text(case when jsonb_typeof(e.chk->'checks'->'course_levels') = 'array' then e.chk->'checks'->'course_levels' else '[]'::jsonb end) x), '{}') course_lv,
+           coalesce((select array_agg(x) from jsonb_array_elements_text(case when jsonb_typeof(e.chk->'checks'->'page_levels') = 'array' then e.chk->'checks'->'page_levels' else '[]'::jsonb end) x), '{}') page_lv
+      from e),
   v as (
-    select e.*, array_remove(array[
-             case when e.claimed_at is not null or e.assigned_to is not null then 'claimed by a reviewer' end,
-             case when e.n_held <> 1 then 'not exactly one page held (' || e.n_held || ')' end,
-             case when not coalesce(e.pattern_ok, false) then 'addresses do not follow the approved pattern' end,
-             case when e.lifecycle_status is distinct from 'active' then 'course not active' end,
-             case when e.copy is null then 'no stored copy of the ' || case when e.choice = 'keep' then 'held' else 'proposed' end || ' page' end,
-             case when e.copy is not null and e.copy->>'course_id' is distinct from e.course_id::text then 'stored copy was read for another course' end,
-             case when e.copy is not null and not (coalesce(e.copy->>'identity_basis', '') = any (e.identity_bases)) then 'stored copy identity basis ' || coalesce(e.copy->>'identity_basis', 'none') || ' is not an exact-course basis' end,
-             case when e.open_to_international is false then 'course not open to international students' end,
-             case when e.country = 'AU' and coalesce(e.course_code, '') !~ '^[0-9]{6}[0-9A-Z]$' then 'no CRICOS code on the course record' end,
-             case when e.active_keys is distinct from array[e.held_key] then 'active official page is no longer exactly the held page' end,
-             case when e.binding_basis = 'manual' then 'page binding was set by hand' end,
-             case when e.locked then 'manual lock on the official page' end,
-             case when e.choice = 'use' and e.target_refused then 'the proposed page was refused for this course' end], null) reasons
-      from e)
+    select lv.*, array_remove(array[
+             case when lv.claimed_at is not null or lv.assigned_to is not null then 'claimed by a reviewer' end,
+             case when coalesce((select chatgpt from own), false) then 'university owned by the parallel reviewer (ownership register)' end,
+             case when not coalesce((select claude from own), false) then 'no ownership row for the Integration Controller (ownership register)' end,
+             case when lv.n_held <> 1 then 'not exactly one page held (' || lv.n_held || ')' end,
+             case when not coalesce(lv.pattern_ok, false) then 'addresses do not follow the approved pattern' end,
+             case when lv.lifecycle_status is distinct from 'active' then 'course not active' end,
+             case when lv.copy is null then 'no stored copy of the ' || case when lv.choice = 'keep' then 'held' else 'proposed' end || ' page' end,
+             case when lv.copy is not null and lv.copy->>'course_id' is distinct from lv.course_id::text then 'stored copy was read for another course' end,
+             case when lv.copy is not null and not (coalesce(lv.copy->>'identity_basis', '') = any (lv.identity_bases)) then 'stored copy identity basis ' || coalesce(lv.copy->>'identity_basis', 'none') || ' is not an exact-course basis' end,
+             case when lv.open_to_international is false then 'course not open to international students' end,
+             case when lv.country = 'AU' and coalesce(lv.course_code, '') !~ '^[0-9]{6}[0-9A-Z]$' then 'no CRICOS code on the course record' end,
+             case when lv.active_keys is distinct from array[lv.held_key] then 'active official page is no longer exactly the held page' end,
+             case when lv.binding_basis = 'manual' then 'page binding was set by hand' end,
+             case when lv.locked then 'manual lock on the official page' end,
+             case when lv.choice = 'use' and lv.target_refused then 'the proposed page was refused for this course' end,
+             case when lv.strict and (cardinality(lv.course_lv) = 0 or cardinality(lv.page_lv) = 0 or not (lv.course_lv && lv.page_lv))
+                  then 'course level not verified on the page (course ' || coalesce(nullif(array_to_string(lv.course_lv, ','), ''), 'unknown') || ', page ' || coalesce(nullif(array_to_string(lv.page_lv, ','), ''), 'none') || ')' end,
+             case when lv.strict and lv.copy is not null and (lv.copy->>'captured_at')::timestamptz < now() - make_interval(days => security.pipeline_num_v1('layer4.rule_evidence_max_age_days', 90)::int)
+                  then 'stored copy is older than ' || security.pipeline_num_v1('layer4.rule_evidence_max_age_days', 90) || ' days' end], null) reasons
+      from lv)
   select v.code, v.item_id, v.course_id, v.course_code, v.choice, v.held_url, v.prop_url, v.target_url, coalesce(cardinality(v.reasons), 0) = 0, v.reasons,
-         jsonb_build_object('stored_copy', v.copy, 'active_pages', to_jsonb(v.active_keys), 'binding_basis', v.binding_basis, 'country', v.country, 'claimed_at', v.claimed_at)
+         jsonb_build_object('stored_copy', v.copy, 'active_pages', to_jsonb(v.active_keys), 'binding_basis', v.binding_basis, 'country', v.country, 'claimed_at', v.claimed_at,
+                            'course_levels', to_jsonb(v.course_lv), 'page_levels', to_jsonb(v.page_lv), 'page_check', v.chk->>'verdict')
     from v order by v.course_code, v.item_id
 $function$;
-revoke all on function security.layer4_course_link_rule_validate_v1(text) from public, anon, authenticated;
+revoke all on function security.layer4_course_link_rule_validate_v1(text, uuid) from public, anon, authenticated;
+
+create or replace function security.layer4_course_link_rule_execute_v1(p_rule text, p_limit int, p_apply boolean) returns jsonb
+language plpgsql security definer set search_path to '' as $function$
+-- Executes an approved rule item by item (Decision 263; overnight mandate 3 Nov 2026 21:59 D1, D2). For each item, at execution time: the item is
+-- locked (an item another reviewer is deciding is skipped, never waited for), validated again on its own (security.layer4_course_link_rule_validate_v1:
+-- waiting, not claimed, ownership, same binding, no manual lock, identity, evidence, and the course level for a strict rule), then decided
+-- through the existing decision path (security.layer4_review_decide_impl) under the system automation account: keep the held page (reject) or use
+-- the proposed page (approve). The reason names the rule and its approval reference. One decision per item; an item that fails, or whose
+-- decision is refused, stays waiting with its reason (pipeline.layer4_rule_run_items). p_apply false only counts. Platform Admin or the
+-- Integration Controller (no signed-in user).
+declare r pipeline.layer4_course_link_rules; v record; w record; v_run bigint; v_res jsonb; v_reason text; v_prev text; v_n int := 0; v_ok int := 0; v_would int := 0; v_fail int := 0;
+        v_sys uuid := 'c0ffee00-0000-4000-8000-000000000150';  -- fixed: the system automation account that records Decision 263 rule decisions
+        v_caller uuid := auth.uid(); v_lock int; v_by jsonb := '{}'::jsonb; v_why text;
+begin
+  if v_caller is not null and coalesce(security.current_role_rank(), 0) < 6 then raise exception 'Platform Admin role required' using errcode = '42501'; end if;
+  select * into r from pipeline.layer4_course_link_rules where code = p_rule;
+  if r.code is null then raise exception 'no approved rule %', p_rule using errcode = 'P0002'; end if;
+  insert into pipeline.layer4_rule_runs(rule, apply, invoked_by, approval_ref) values (r.code, coalesce(p_apply, false), v_caller, r.approval_ref) returning id into v_run;
+  for v in select x.item_id from security.layer4_course_link_rule_validate_v1(r.code, null) x
+            order by x.item_id limit least(greatest(coalesce(p_limit, 0), 0), security.pipeline_num_v1('layer4.rule_execute_batch', 50)::int) loop
+    v_n := v_n + 1;
+    begin
+      -- the item, locked for this decision; one another reviewer holds is skipped
+      begin
+        select 1 into v_lock from pipeline.layer4_review_items i where i.id = v.item_id and i.status = 'pending' for update nowait;
+      exception when lock_not_available then
+        raise exception using errcode = 'P0001', message = 'l4rule:another reviewer is deciding this item';
+      end;
+      if v_lock is null then raise exception using errcode = 'P0001', message = 'l4rule:no longer waiting'; end if;
+      v_lock := null;
+      -- validated again, on its own, now
+      w := null;
+      select x.item_id, x.pass, x.reasons, x.course_id, x.target_url into w from security.layer4_course_link_rule_validate_v1(r.code, v.item_id) x;
+      if w.item_id is null then raise exception using errcode = 'P0001', message = 'l4rule:no longer in the rule''s scope'; end if;
+      if not w.pass then raise exception using errcode = 'P0001', message = 'l4rule:' || array_to_string(w.reasons, '; '); end if;
+      if not coalesce(p_apply, false) then
+        insert into pipeline.layer4_rule_run_items(run_id, item_id, course_id, outcome, action) values (v_run, v.item_id, w.course_id, 'would_decide', case r.choice when 'keep' then 'reject' else 'approve' end);
+        v_would := v_would + 1;
+        continue;
+      end if;
+      v_reason := left(format('[rule %s] %s. %s: %s. Approved by %s (%s)', r.code,
+                              case r.choice when 'keep' then 'Keep the page we hold' else 'Use the new page' end, 'Decision 263 logged rule, validated item by item',
+                              coalesce(w.target_url, ''), r.approved_by, r.approval_ref), 1000);
+      -- the existing decision path, under the system automation account (Decision 263), then the caller's identity again
+      v_prev := current_setting('request.jwt.claim.sub', true);
+      perform set_config('request.jwt.claim.sub', v_sys::text, true);
+      begin
+        v_res := security.layer4_review_decide_impl(v.item_id, case r.choice when 'keep' then 'reject' else 'approve' end, v_reason, null);
+      exception when others then
+        perform set_config('request.jwt.claim.sub', coalesce(v_prev, ''), true);
+        raise;
+      end;
+      perform set_config('request.jwt.claim.sub', coalesce(v_prev, ''), true);
+      insert into pipeline.layer4_rule_run_items(run_id, item_id, course_id, outcome, decision_id, action)
+      values (v_run, v.item_id, w.course_id, 'decided', nullif(v_res->>'decision_id', '')::uuid, v_res->>'action');
+      v_ok := v_ok + 1;
+    exception when others then
+      v_why := case when sqlerrm like 'l4rule:%' then substr(sqlerrm, 8) else 'decision refused: ' || left(sqlerrm, 300) end;
+      insert into pipeline.layer4_rule_run_items(run_id, item_id, outcome, reasons) values (v_run, v.item_id, 'failed', string_to_array(v_why, '; '))
+      on conflict (run_id, item_id) do update set outcome = 'failed', reasons = excluded.reasons, decision_id = null, action = null;
+      v_by := jsonb_set(v_by, array[left(v_why, 120)], to_jsonb(coalesce((v_by->>left(v_why, 120))::int, 0) + 1));
+      v_fail := v_fail + 1;
+    end;
+  end loop;
+  update pipeline.layer4_rule_runs set examined = v_n, decided = v_ok, would_decide = v_would, failed = v_fail,
+         result = jsonb_build_object('failed_by_reason', v_by) where id = v_run;
+  insert into pipeline.admin_control_events(area, action, target, detail, actor)
+  values ('layer4', case when coalesce(p_apply, false) then 'rule_execute' else 'rule_count' end, r.code,
+          jsonb_build_object('run_id', v_run, 'examined', v_n, 'decided', v_ok, 'would_decide', v_would, 'failed', v_fail, 'failed_by_reason', v_by, 'approval_ref', r.approval_ref), v_caller);
+  return jsonb_build_object('run_id', v_run, 'rule', r.code, 'apply', coalesce(p_apply, false), 'examined', v_n, 'decided', v_ok, 'would_decide', v_would, 'failed', v_fail,
+                            'failed_by_reason', v_by, 'approval_ref', r.approval_ref);
+end $function$;
+revoke all on function security.layer4_course_link_rule_execute_v1(text, int, boolean) from public, anon, authenticated;
 
 -- 9 component register --------------------------------------------------------------------------------------------------------------------
 insert into pipeline.component_register(kind, name, layer, purpose, status, replaces, introduced_in) values
@@ -547,5 +710,9 @@ insert into pipeline.component_register(kind, name, layer, purpose, status, repl
  ('function', 'security.layer4_course_link_refuse_v1', 'Layer 4', 'Refuse this proposal', 'active', '{}', '20261104150000'),
  ('function', 'security.scholarship_duplicate_close_v1', 'Layer 4', 'Close a held scholarship as a duplicate', 'active', '{}', '20261104150000'),
  ('function', 'security.layer4_refusal_search_cost_v1', 'Layer 4', 'Firecrawl credits of the lanes that feed refusals', 'active', '{}', '20261104150000'),
- ('function', 'security.layer4_course_link_rule_validate_v1', 'Layer 4', 'Validate an approved course-link rule per item', 'active', '{}', '20261104150000')
+ ('function', 'security.layer4_course_link_rule_validate_v1', 'Layer 4', 'Validate an approved course-link rule per item', 'active', '{}', '20261104150000'),
+ ('function', 'security.layer4_course_link_rule_execute_v1', 'Layer 4', 'Execute an approved course-link rule item by item through the decision path', 'active', '{}', '20261104150000'),
+ ('table', 'pipeline.layer4_review_owners', 'Layer 4', 'Layer 4 review ownership register in data', 'active', '{}', '20261104150000'),
+ ('table', 'pipeline.layer4_rule_runs', 'Layer 4', 'Runs of the course-link rule executor', 'active', '{}', '20261104150000'),
+ ('table', 'pipeline.layer4_rule_run_items', 'Layer 4', 'Items of each rule run: decided, would decide or failed with reasons', 'active', '{}', '20261104150000')
 on conflict do nothing;

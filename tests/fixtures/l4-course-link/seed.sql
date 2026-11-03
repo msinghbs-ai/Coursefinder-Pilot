@@ -81,3 +81,4 @@ insert into pipeline.scholarship_ai_reviews(id, provider_id, scholarship_id, url
 insert into pipeline.coverage_vendor_usage(units, purpose, at) values (2, 'fc_search', now() - interval '1 hour'), (2, 'fc_search', now() - interval '1 hour'), (2, 'course_link_search', now() - interval '2 hours');
 -- the signed-in reviewer
 insert into auth.users(id, email) values ('90000000-0000-0000-0000-0000000000aa', 'admin@example.test'), ('90000000-0000-0000-0000-0000000000bb', 'curator@example.test');
+

@@ -3,7 +3,7 @@
 -- production (read-only, 3 Nov 2026 20:50-21:00 AEDT). Run on a scratch PostgreSQL only (never on a Supabase project). Nothing here is live data.
 
 -- columns the p1 stubs leave out (live columns)
-alter table catalogue.courses add column if not exists open_to_international boolean, add column if not exists course_url text;
+alter table catalogue.courses add column if not exists open_to_international boolean, add column if not exists course_url text, add column if not exists updated_at timestamptz default now();
 alter table scholarship.scholarships add column if not exists publication_status text, add column if not exists lifecycle_status text default 'active';
 alter table pipeline.scholarship_ai_reviews add column if not exists scholarship_id uuid, add column if not exists decided_at timestamptz, add column if not exists note text,
   add column if not exists decision jsonb, add column if not exists candidate_id bigint, add column if not exists storage_path text, add column if not exists decided_by uuid;
@@ -57,3 +57,24 @@ insert into catalogue.providers(id, stable_key, canonical_name, country_id) valu
  ('de2201a1-69ee-40ff-b6aa-0e54e535e6c0', 'adelaide', 'Adelaide University', 'f0000000-0000-0000-0000-0000000000a1'),
  ('0e1532b8-de30-4761-87fe-460684608633', 'canberra', 'University of Canberra', 'f0000000-0000-0000-0000-0000000000a1'),
  ('d47b6006-396a-4785-b2ae-15186c3e7709', 'sfu', 'Simon Fraser University (SFU)', 'f0000000-0000-0000-0000-0000000000c1');
+
+-- who is signed in, as live: auth.uid() reads the request's subject claim (the p1 stand-in reads fx.uid; both are kept), and the system
+-- automation account (Decision 263 rule decisions) holds the Pipeline Operator role, rank 4, as live
+create or replace function auth.uid() returns uuid language sql stable as
+  $f$ select coalesce(nullif(current_setting('fx.uid', true), ''), nullif(current_setting('request.jwt.claim.sub', true), ''))::uuid $f$;
+create or replace function security.current_role_rank() returns int language sql stable as
+  $f$ select coalesce(nullif(current_setting('fx.rank', true), '')::int,
+                      case when auth.uid() = 'c0ffee00-0000-4000-8000-000000000150'::uuid then 4 end, 0) $f$;
+
+create schema if not exists fx;
+-- what the existing course-link apply calls (stand-ins): the reference list of non-course sites, the scoped search refresh
+create table if not exists fx.reference_hosts(host text primary key, use text not null);
+create or replace function security.reference_url_has_use(p_url text, p_use text) returns boolean language sql stable as
+  $f$ select exists (select 1 from fx.reference_hosts h where h.use = p_use and h.host = lower(substring(p_url from '^https?://([^/]+)'))) $f$;
+create or replace function search.refresh_course_enrichment_scoped_v1(p_ids uuid[], p_force boolean) returns jsonb language sql as $f$ select '{}'::jsonb $f$;
+
+-- the binding check's level reading (live security.course_page_check_v1; stand-in answering from a table)
+create table fx.page_levels(course_id uuid, url text, course_levels jsonb, page_levels jsonb, primary key (course_id, url));
+create or replace function security.course_page_check_v1(p_course uuid, p_url text, p_title text default null, p_identity text default null) returns jsonb language sql stable as
+  $f$ select jsonb_build_object('verdict', 'pass', 'checks', jsonb_strip_nulls(jsonb_build_object('course_levels', l.course_levels, 'page_levels', l.page_levels)))
+        from (select 1) one left join fx.page_levels l on l.course_id = p_course and l.url = p_url $f$;

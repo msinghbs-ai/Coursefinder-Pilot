@@ -24,8 +24,13 @@ PGOPTIONS='-c check_function_bodies=off' $P -d $DB -f $P1/stubs.sql >/dev/null
 for f in $P1/live-before/*.sql; do PGOPTIONS='-c check_function_bodies=off' $P -d $DB -f "$f" >/dev/null; done
 PGOPTIONS='-c check_function_bodies=off' $P -d $DB -1 -o /dev/null -f supabase/migrations/20261102090000_cf247_p1_provider_descriptions.sql 2>&1 | show
 M=supabase/migrations/20261103110000_cf247_course_description_deadline_fields.sql
-{ sed -n '/^create or replace function pg_temp.edit_once/,/^end \$f\$;/p' $M; sed -n "/^select pg_temp.edit_once('security.layer4_inbox_items_v1()'/,/]], array\[/p" $M; } > "$TMP/items.sql"
+# the decision path as live: its text before 20261103110000 (../course-text/live), then that migration's edit of it and of the item list
+PGOPTIONS='-c check_function_bodies=off' $P -d $DB -f tests/fixtures/course-text/live/security.layer4_review_decide_impl.sql >/dev/null
+{ sed -n '/^create or replace function pg_temp.edit_once/,/^end \$f\$;/p' $M; sed -n "/^select pg_temp.edit_once('security.layer4_inbox_items_v1()'/,/]], array\[/p" $M
+  sed -n "/^select pg_temp.edit_once('security.layer4_review_decide_impl(uuid,text,text,jsonb)'/,/]], array\[/p" $M; } > "$TMP/items.sql"
 PGOPTIONS='-c check_function_bodies=off' $P -d $DB -At -f "$TMP/items.sql" >/dev/null
+# the course-link apply as live (../iq67-coverage-admit/live)
+PGOPTIONS='-c check_function_bodies=off' $P -d $DB -f tests/fixtures/iq67-coverage-admit/live/security.layer4_course_link_apply_impl.def >/dev/null
 sed -n '/^create or replace function security.binding_refusal_route_v1/,/^end \$function\$;/p' supabase/migrations/20261102030000_cf247_e16_binding_validation.sql > "$TMP/brr.sql"
 sed -n '/^create or replace function security.layer4_url_key_v1/,/^\$function\$;/p' supabase/migrations/20261104120000_cf247_ops_layer4_throughput.sql > "$TMP/key.sql"
 PGOPTIONS='-c check_function_bodies=off' $P -d $DB -f "$TMP/brr.sql" -f "$TMP/key.sql" >/dev/null
@@ -37,6 +42,8 @@ declare -A LIVE=(
   ["security.binding_refusal_route_v1(uuid,text,jsonb,text,uuid)"]=488ef1836fa2ba842009168b9e499d73
   ["security.layer4_url_key_v1(text)"]=42e28a9caf6a28be1d19e7924d3a6067
   ["security.pipeline_list_v1(text,jsonb)"]=c33c2152bbadc8d01625ced9bf2c9bda
+  ["security.layer4_review_decide_impl(uuid,text,text,jsonb)"]=55353f1903c97b268255c8c1e4f5ca6f
+  ["security.layer4_course_link_apply_impl(uuid,uuid,jsonb,text)"]=75a53dbbcd5e20e1018a05b61f6763aa
 )
 for s in "${!LIVE[@]}"; do [ "$(md5of "$s")" = "${LIVE[$s]}" ] || { echo "loaded $s differs from live: $(md5of "$s")"; exit 1; }; done
 echo "before (loaded = live): ${#LIVE[@]} definitions"
@@ -58,7 +65,7 @@ echo "applied twice: the second run changed nothing"
 echo "new function md5s:"; q "select '  ' || p.oid::regprocedure::text || ' ' || md5(pg_get_functiondef(p.oid)) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
   where n.nspname = 'security' and p.proname in ('layer4_stored_copy_v1', 'layer4_item_page_v1', 'layer4_evidence_link_trg_v1', 'layer4_evidence_backfill_v1', 'course_page_needed_add_v1',
   'course_page_needed_convert_v1', 'course_page_needed_decide_v1', 'layer4_course_link_refuse_v1', 'scholarship_duplicate_close_v1', 'layer4_refusal_search_cost_v1',
-  'layer4_course_link_rule_validate_v1') order by 1"
+  'layer4_course_link_rule_validate_v1', 'layer4_course_link_rule_execute_v1') order by 1"
 
 $P -d $DB -f $FX/seed.sql
 $P -d $DB -f $FX/fixtures.sql 2>&1 | show

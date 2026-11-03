@@ -220,6 +220,124 @@ begin
   raise notice 'C1 ok: Firecrawl credits of the lanes that feed refusals, beside the refusals they raised';
 end $f$;
 
+-- the rule executor's cases (Simon Fraser, Adelaide and a refused-decision item), raised as they were before this change
+-- rule executor cases: Simon Fraser (strict: level and current copy) and Adelaide (keep the held page); a Canberra item whose decision the
+-- existing apply refuses (a social-site address), so it must stay waiting
+update catalogue.courses set provider_id = 'de2201a1-69ee-40ff-b6aa-0e54e535e6c0', course_code = '115900H' where id = 'c0000000-0000-0000-0000-000000000023';
+insert into pipeline.evidence_artifacts(id, source_id, source_url, content_hash, captured_at, metadata) values
+ ('e0000000-0000-0000-0000-000000000021', 'b0000000-0000-0000-0000-000000000001', 'https://www.sfu.ca/students/calendar/programs/c21/ma.html', 'h21', now() - interval '1 day', '{"course_id": "c0000000-0000-0000-0000-000000000021", "identity_basis": "field_award"}'),
+ ('e0000000-0000-0000-0000-000000000022', 'b0000000-0000-0000-0000-000000000001', 'https://www.sfu.ca/students/calendar/programs/c22/ba.html', 'h22', now() - interval '200 days', '{"course_id": "c0000000-0000-0000-0000-000000000022", "identity_basis": "field_award"}'),
+ ('e0000000-0000-0000-0000-000000000023', 'b0000000-0000-0000-0000-000000000001', 'https://adelaide.edu.au/study/degrees/c23/', 'h23', now() - interval '1 day', '{"course_id": "c0000000-0000-0000-0000-000000000023", "identity_basis": "cricos_code"}'),
+ ('e0000000-0000-0000-0000-000000000014', 'b0000000-0000-0000-0000-000000000001', 'https://www.facebook.com/c14/7', 'h14', now() - interval '1 day', '{"course_id": "c0000000-0000-0000-0000-000000000014", "identity_basis": "cricos_code"}');
+insert into catalogue.course_links(course_id, link_type, url, is_primary, status) values
+ ('c0000000-0000-0000-0000-000000000021', 'official_course', 'https://www.sfu.ca/students/calendar/2026/fall/programs/c21/ma.html', true, 'active'),
+ ('c0000000-0000-0000-0000-000000000022', 'official_course', 'https://www.sfu.ca/students/calendar/2026/fall/programs/c22/ba.html', true, 'active'),
+ ('c0000000-0000-0000-0000-000000000023', 'official_course', 'https://adelaide.edu.au/study/degrees/c23/', true, 'active'),
+ ('c0000000-0000-0000-0000-000000000014', 'official_course', 'https://www.facebook.com/c14/7/2027', true, 'active');
+insert into fx.reference_hosts values ('www.facebook.com', 'not_course_page') on conflict do nothing;
+insert into fx.page_levels values
+ ('c0000000-0000-0000-0000-000000000020', 'https://www.sfu.ca/students/calendar/programs/c20/ba.html', '["bachelor"]', '["bachelor"]'),
+ ('c0000000-0000-0000-0000-000000000021', 'https://www.sfu.ca/students/calendar/programs/c21/ma.html', '["bachelor"]', '["master"]'),
+ ('c0000000-0000-0000-0000-000000000022', 'https://www.sfu.ca/students/calendar/programs/c22/ba.html', '["bachelor"]', '["bachelor"]');
+update pipeline.platform_toolset_settings set value = '0' where key = 'layer4.evidence_link_on';
+insert into pipeline.layer4_review_items(id, entity_type, entity_id, field_code, before_value, proposed_value, layer2_state, status, escalation_reason, created_at) values
+ ('10000000-0000-0000-0000-000000000021', 'course', 'c0000000-0000-0000-0000-000000000021', 'official_course_url', '["https://www.sfu.ca/students/calendar/2026/fall/programs/c21/ma.html"]',
+  '{"course_url": "https://www.sfu.ca/students/calendar/programs/c21/ma.html"}', '{"source": "coverage sweep"}', 'pending',
+  'The course page that shows this course''s CRICOS code is a different address from the official page we hold. Please check which page is current.', now() - interval '2 days'),
+ ('10000000-0000-0000-0000-000000000022', 'course', 'c0000000-0000-0000-0000-000000000022', 'official_course_url', '["https://www.sfu.ca/students/calendar/2026/fall/programs/c22/ba.html"]',
+  '{"course_url": "https://www.sfu.ca/students/calendar/programs/c22/ba.html"}', '{"source": "coverage sweep"}', 'pending',
+  'The course page that shows this course''s CRICOS code is a different address from the official page we hold. Please check which page is current.', now() - interval '2 days'),
+ ('10000000-0000-0000-0000-000000000023', 'course', 'c0000000-0000-0000-0000-000000000023', 'official_course_url', '["https://adelaide.edu.au/study/degrees/c23/"]',
+  '{"course_url": "https://adelaideuni.edu.au/study/degrees/c23/"}', '{"source": "coverage sweep"}', 'pending',
+  'The course page that shows this course''s CRICOS code is a different address from the official page we hold. Please check which page is current.', now() - interval '2 days'),
+ ('10000000-0000-0000-0000-000000000014', 'course', 'c0000000-0000-0000-0000-000000000014', 'official_course_url', '["https://www.facebook.com/c14/7/2027"]',
+  '{"course_url": "https://www.facebook.com/c14/7"}', '{"source": "coverage sweep"}', 'pending',
+  'The course page that shows this course''s CRICOS code is a different address from the official page we hold. Please check which page is current.', now() - interval '2 days');
+update pipeline.platform_toolset_settings set value = '1' where key = 'layer4.evidence_link_on';
+
+-- X0 the ownership register in data: the migration opened the Integration Controller's rows for the three approved rules
+do $f$
+begin
+  if (select count(*) from pipeline.layer4_review_owners where owner = 'claude' and closed_at is null) <> 3 then raise exception 'X0: owners'; end if;
+  if (select string_agg(code || ':' || strict, ',' order by code) from pipeline.layer4_course_link_rules) <> 'adelaide_keep_held:false,canberra_no_year:false,sfu_no_term:true'
+     or (select identity_bases from pipeline.layer4_course_link_rules where code = 'sfu_no_term') <> array['field_award'] then raise exception 'X0: rules'; end if;
+  raise notice 'X0 ok: ownership rows for the three rules; Simon Fraser strict, field-and-award only';
+end $f$;
+
+-- X1 counting decides nothing: one Canberra item would be decided; title-only, lock and no-copy items fail with reasons
+do $f$
+declare r jsonb; n_dec int := (select count(*) from pipeline.layer4_decisions);
+begin
+  r := security.layer4_course_link_rule_execute_v1('canberra_no_year', 50, false);
+  raise notice 'X1 %', r;
+  if (r->>'would_decide')::int <> 2 or (r->>'decided')::int <> 0 then raise exception 'X1: %', r; end if;
+  if (select count(*) from pipeline.layer4_decisions) <> n_dec or exists (select 1 from pipeline.layer4_review_items where id in ('10000000-0000-0000-0000-000000000010', '10000000-0000-0000-0000-000000000014') and status <> 'pending') then
+    raise exception 'X1: something was decided'; end if;
+  if (select outcome from pipeline.layer4_rule_run_items where run_id = (r->>'run_id')::bigint and item_id = '10000000-0000-0000-0000-000000000012') <> 'failed' then raise exception 'X1: title-only'; end if;
+  raise notice 'X1 ok: a count decides nothing; the title-only, locked and no-copy items fail with their reasons';
+end $f$;
+
+-- X2 the parallel reviewer's university, a claimed item and a curator are all refused at execution time
+do $f$
+declare r jsonb;
+begin
+  insert into pipeline.layer4_review_owners(provider_id, field_code, owner, scope, basis) values ('0e1532b8-de30-4761-87fe-460684608633', 'official_course_url', 'chatgpt', 'declared university', 'ownership register');
+  r := security.layer4_course_link_rule_execute_v1('canberra_no_year', 50, true);
+  if (r->>'decided')::int <> 0 or (r->'failed_by_reason')::text not like '%university owned by the parallel reviewer%' then raise exception 'X2: owner %', r; end if;
+  update pipeline.layer4_review_owners set closed_at = now() where owner = 'chatgpt';
+  update pipeline.layer4_review_items set claimed_at = now() where id = '10000000-0000-0000-0000-000000000010';
+  r := security.layer4_course_link_rule_execute_v1('canberra_no_year', 50, true);
+  if (select reasons from pipeline.layer4_rule_run_items where run_id = (r->>'run_id')::bigint and item_id = '10000000-0000-0000-0000-000000000010') <> array['claimed by a reviewer'] then raise exception 'X2: claimed %', r; end if;
+  update pipeline.layer4_review_items set claimed_at = null where id = '10000000-0000-0000-0000-000000000010';
+  perform set_config('fx.uid', '90000000-0000-0000-0000-0000000000bb', false); perform set_config('fx.rank', '3', false);
+  begin perform security.layer4_course_link_rule_execute_v1('canberra_no_year', 50, false); raise exception 'X2: a curator ran it';
+  exception when insufficient_privilege then null; end;
+  perform set_config('fx.uid', '', false); perform set_config('fx.rank', '', false);
+  raise notice 'X2 ok: the parallel reviewer''s university, a claimed item and a curator are refused; nothing decided';
+end $f$;
+
+-- X3 applying: each item through the existing decision path under the system automation account, with the rule and approval reference; an item
+-- whose decision the existing apply refuses stays waiting with that reason; a second run decides nothing more
+do $f$
+declare r jsonb; d record;
+begin
+  r := security.layer4_course_link_rule_execute_v1('canberra_no_year', 50, true);
+  raise notice 'X3 %', r;
+  if (r->>'decided')::int <> 1 then raise exception 'X3: %', r; end if;
+  select * into d from pipeline.layer4_decisions where review_item_id = '10000000-0000-0000-0000-000000000010';
+  if d.action <> 'approve' or d.actor_id <> 'c0ffee00-0000-4000-8000-000000000150' or d.reason not like '[rule canberra_no_year] Use the new page.%Approved by Platform Admin (Platform Admin 3 Nov 2026 after 20:40%' then raise exception 'X3: decision %', d; end if;
+  if (select status from pipeline.layer4_review_items where id = '10000000-0000-0000-0000-000000000010') <> 'approved'
+     or not exists (select 1 from catalogue.course_links where course_id = 'c0000000-0000-0000-0000-000000000010' and url = 'https://www.canberra.edu.au/course/c10/7' and status = 'active' and is_primary) then raise exception 'X3: not applied'; end if;
+  if (select decision_id from pipeline.layer4_rule_run_items where run_id = (r->>'run_id')::bigint and item_id = '10000000-0000-0000-0000-000000000010') <> d.id then raise exception 'X3: run item'; end if;
+  if (select status from pipeline.layer4_review_items where id = '10000000-0000-0000-0000-000000000014') <> 'pending'
+     or (select array_to_string(reasons, '; ') from pipeline.layer4_rule_run_items where run_id = (r->>'run_id')::bigint and item_id = '10000000-0000-0000-0000-000000000014') not like 'decision refused: use the provider''s own course page%'
+     or exists (select 1 from pipeline.layer4_decisions where review_item_id = '10000000-0000-0000-0000-000000000014') then raise exception 'X3: refused decision'; end if;
+  if (select count(*) from pipeline.layer4_decisions where review_item_id = '10000000-0000-0000-0000-000000000010') <> 1 then raise exception 'X3: one decision'; end if;
+  if auth.uid() is not null then raise exception 'X3: the caller identity was not restored'; end if;
+  r := security.layer4_course_link_rule_execute_v1('canberra_no_year', 50, true);
+  if (r->>'decided')::int <> 0 then raise exception 'X3: second run %', r; end if;
+  raise notice 'X3 ok: decided through layer4_review_decide_impl (system account, rule and approval in the reason, link applied); a refused decision leaves the item waiting; second run decides nothing';
+end $f$;
+
+-- X4 Simon Fraser is strict: the course level on the page and a current stored copy; Adelaide keeps the held page (reject, link unchanged)
+do $f$
+declare r jsonb;
+begin
+  r := security.layer4_course_link_rule_execute_v1('sfu_no_term', 50, true);
+  raise notice 'X4 %', r;
+  if (select status from pipeline.layer4_review_items where id = '10000000-0000-0000-0000-000000000020') <> 'approved' then raise exception 'X4: c20'; end if;
+  if (select array_to_string(reasons, '; ') from pipeline.layer4_rule_run_items where run_id = (r->>'run_id')::bigint and item_id = '10000000-0000-0000-0000-000000000021')
+     <> 'course level not verified on the page (course bachelor, page master)' then raise exception 'X4: c21'; end if;
+  if (select array_to_string(reasons, '; ') from pipeline.layer4_rule_run_items where run_id = (r->>'run_id')::bigint and item_id = '10000000-0000-0000-0000-000000000022')
+     <> 'stored copy is older than 90 days' then raise exception 'X4: c22'; end if;
+  r := security.layer4_course_link_rule_execute_v1('adelaide_keep_held', 50, true);
+  if (select status from pipeline.layer4_review_items where id = '10000000-0000-0000-0000-000000000023') <> 'rejected'
+     or (select action from pipeline.layer4_decisions where review_item_id = '10000000-0000-0000-0000-000000000023') <> 'reject'
+     or not exists (select 1 from catalogue.course_links where course_id = 'c0000000-0000-0000-0000-000000000023' and url = 'https://adelaide.edu.au/study/degrees/c23/' and status = 'active') then raise exception 'X4: adelaide %', r; end if;
+  if (select count(*) from pipeline.layer4_rule_runs) < 6 or not exists (select 1 from pipeline.admin_control_events where action = 'rule_execute') then raise exception 'X4: audit'; end if;
+  raise notice 'X4 ok: Simon Fraser decides only with the level verified and a current copy; Adelaide keeps the held page; every run audited';
+end $f$;
+
 -- Z1 no lock was removed or changed by any case except the person's own Add the page
 do $f$
 begin

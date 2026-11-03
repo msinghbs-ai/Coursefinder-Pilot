@@ -2,8 +2,8 @@
 // 2026 20:29; Decision 263 rule validation): stored copies are linked to course-link and fee cards without a read; a refused page of a course
 // with no held page goes to one Course page needed list (grouped by university; add the page, search again, no page exists) and its waiting
 // items move there with their history; Refuse this proposal claims no held page; a held scholarship can be closed as a duplicate of a named
-// published one; the CRICOS wording is for Australian providers only; the approved university rules are validated per item and never executed
-// here. The behaviour runs on isolated fixtures by tests/fixtures/l4-course-link/run.sh (scratch PostgreSQL; the four edited live definitions
+// published one; the CRICOS wording is for Australian providers only; the approved university rules are validated per item and executed
+// item by item only by the rule executor, through the existing decision path. The behaviour runs on isolated fixtures by tests/fixtures/l4-course-link/run.sh (scratch PostgreSQL; the four edited live definitions
 // rebuilt from the repository and checked against the live md5s; the migration applied, applied again unchanged; every case asserted).
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
@@ -74,10 +74,27 @@ test('wording: no CRICOS code is named for a provider outside Australia', () => 
   expect(fixtures).toContain('W1 ok')
 })
 
-test('approved university rules are validated per item and never executed; search spend is measured against refusals', () => {
+test('the rule executor: item by item through the existing decision path, validated again at execution, owners respected, failures stay waiting', () => {
+  const x = m.slice(m.indexOf('create or replace function security.layer4_course_link_rule_execute_v1'), m.indexOf('revoke all on function security.layer4_course_link_rule_execute_v1'))
+  expect(x).toContain("v_res := security.layer4_review_decide_impl(v.item_id, case r.choice when 'keep' then 'reject' else 'approve' end, v_reason, null);")
+  expect(x).toContain('for update nowait;')
+  expect(x).toContain('from security.layer4_course_link_rule_validate_v1(r.code, v.item_id) x;')
+  expect(x).toContain("perform set_config('request.jwt.claim.sub', coalesce(v_prev, ''), true);")
+  expect(x).toContain("v_reason := left(format('[rule %s] %s. %s: %s. Approved by %s (%s)'")
+  expect(x).toContain("if v_caller is not null and coalesce(security.current_role_rank(), 0) < 6 then raise exception 'Platform Admin role required'")
+  expect(x).not.toMatch(/insert into pipeline\.layer4_decisions|update pipeline\.layer4_review_items|manual_locks/)
+  expect(m).toContain("'university owned by the parallel reviewer (ownership register)'")
+  expect(m).toContain("'no ownership row for the Integration Controller (ownership register)'")
+  expect(m).toContain("case when m.strict then security.course_page_check_v1(m.course_id, m.target_url) end chk")
+  expect(m).toMatch(/\('sfu_no_term'[\s\S]*?array\['field_award'\], 59,[\s\S]*?D2 \(field-and-award matches with identity, current evidence and course level verified\)', true,/)
+  expect(run).toContain('["security.layer4_review_decide_impl(uuid,text,text,jsonb)"]=55353f1903c97b268255c8c1e4f5ca6f')
+  for (const k of ['X0 ok', 'X1 ok', 'X2 ok', 'X3 ok', 'X4 ok']) expect(fixtures).toContain(`raise notice '${k}`)
+})
+
+test('approved university rules are validated per item; search spend is measured against refusals', () => {
   for (const code of ['adelaide_keep_held', 'canberra_no_year', 'sfu_no_term']) expect(m).toContain(`('${code}', `)
   expect(m).toContain('returns table(rule text, item_id uuid, course_id uuid, course_code text, choice text, held_url text, proposed_url text, target_url text, pass boolean, reasons text[], detail jsonb)')
-  const v = m.slice(m.indexOf('create or replace function security.layer4_course_link_rule_validate_v1'), m.indexOf('revoke all on function security.layer4_course_link_rule_validate_v1'))
+  const v = m.slice(m.indexOf('create or replace function security.layer4_course_link_rule_validate_v1'), m.indexOf('revoke all on function security.layer4_course_link_rule_validate_v1(text, uuid)'))
   expect(v).not.toMatch(/\b(insert|update|delete)\b/i)
   expect(v).toContain("'manual lock on the official page'")
   expect(m).toContain("'list', '[\"firecrawl_search=fc_search\", \"cricos_search=course_link_search\", \"title_search=course_link_search\"]'::jsonb")
