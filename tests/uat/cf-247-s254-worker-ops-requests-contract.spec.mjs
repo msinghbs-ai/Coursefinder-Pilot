@@ -1,5 +1,6 @@
 // Guards: P0 Autonomous AI Operations, worker release v0.59.5 for the workstreams' interface requests (Integration Controller 3 Nov 2026 18:20):
-// AI diagnosis through the existing OpenRouter path with the pinned model, a job that does nothing while ops.ai_diagnosis_on is 0 (workstream A);
+// AI diagnosis through the existing OpenRouter path with the pinned model under workstream A2's contract ops-diagnose-v1 (only the contract's
+// fields, {error} on any failure, every request answered exactly once), a job that does nothing while ops.ai_diagnosis_on is 0 (workstream A);
 // enrich_ai answers kept before they are recorded (workstream D); entry reader fidelity: dropped entries keep the model's values, printed ranges,
 // subject-equivalence rows and global-qualification pages, each behind a setting that ships off and still to Layer 4 (workstream C); one paid
 // course-page search per query, behind a setting that ships off (workstream F). The migration runs on isolated fixtures by
@@ -7,7 +8,7 @@
 // the live md5s; applied twice; every case asserted). This spec runs the worker's pure functions and holds the wiring.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-import { OPS_DIAGNOSE_TOKENS_DEFAULT, OPS_DIAGNOSE_TOKENS_KEY, opsDiagnoseAnswer, opsDiagnoseCodes, opsDiagnoseLimit, opsDiagnoseRequest } from '../../supabase/functions/coverage-sweep/ops-diagnose.ts'
+import { OPS_DIAGNOSE_CONTRACT, OPS_DIAGNOSE_TOKENS_DEFAULT, OPS_DIAGNOSE_TOKENS_KEY, opsContextText, opsDiagnoseAnswer, opsDiagnoseLimit, opsDiagnoseRequest, opsDiagnoseUsable } from '../../supabase/functions/coverage-sweep/ops-diagnose.ts'
 import { linkQueryKey, linkSearchGroups, linkSearchShareOn } from '../../supabase/functions/coverage-sweep/link-share.ts'
 import { entryGlobalQualification, entryMatrixParsed, entryNonCountryShape, entryRangeLower, entrySubjectRows } from '../../supabase/functions/coverage-sweep/entry.ts'
 
@@ -19,8 +20,11 @@ const run = fs.readFileSync(`${FX}/run.sh`, 'utf8')
 const fixtures = fs.readFileSync(`${FX}/fixtures.sql`, 'utf8')
 const mode = (name) => { const a = worker.indexOf(`if (mode === "${name}") {`); expect(a, name).toBeGreaterThan(-1); return worker.slice(a, worker.indexOf('\n    if (mode === "', a + 10)) }
 
-const ctx = { issue: 'IQ-00070', failure: 'coverage-admit failed 3 of 6 runs', evidence: { error: 'canceling statement due to statement timeout' },
-  root_causes: [{ code: 'statement_timeout', class: 'transient', title: 'Statement time-out' }, { code: 'lock_conflict', class: 'transient', title: 'Lock conflict' }] }
+const ctx = { issue: 'IQ-00070', failure: 'coverage-admit failed 3 of 6 runs', evidence: { error: 'canceling statement "refresh" due to statement timeout' } }
+const item = { id: 7, model: 'openai/gpt-4.1-mini', lease_until: '2026-11-03T08:00:00Z', contract: 'ops-diagnose-v1', context: ctx, instructions: 'You diagnose one issue.',
+  response_schema: { type: 'object', required: ['root_cause', 'confidence', 'evidence'], additionalProperties: false,
+    properties: { root_cause: { type: 'string', enum: ['lock_conflict', 'statement_timeout'] }, confidence: { type: 'number', minimum: 0, maximum: 1 },
+                  evidence: { type: 'array', minItems: 1, items: { type: 'string' } }, reasoning: { type: 'string' } } } }
 const reply = (content, extra = {}) => ({ model: 'openai/gpt-4.1-mini', usage: { cost: 0.0012, completion_tokens: 90 }, choices: [{ finish_reason: 'stop', message: { content: JSON.stringify(content) } }], ...extra })
 
 test('version: v0.59.5, below v0.60, with the v0.59.4 note kept in the chain', () => {
@@ -28,32 +32,53 @@ test('version: v0.59.5, below v0.60, with the v0.59.4 note kept in the chain', (
   expect(worker).toContain('\n// was v0.59.4 // v0.59.4 (3 Nov 2026, CF-247 Workstream C')
 })
 
-test('ops_diagnose (A): pinned model, structured answer from registered causes, quotes from the context, cut answers never parsed', () => {
-  const r = opsDiagnoseRequest('openai/gpt-4.1-mini', ctx, 800)
+test('ops_diagnose (A2 contract ops-diagnose-v1): the given instructions and schema to the pinned model; only the contract fields; {error} on failure', () => {
+  expect(OPS_DIAGNOSE_CONTRACT).toBe('ops-diagnose-v1')
+  expect(opsDiagnoseUsable(item)).toBeNull()
+  expect(opsDiagnoseUsable({ ...item, contract: 'old' })).toContain('unsupported contract')
+  expect(opsDiagnoseUsable({ ...item, response_schema: null })).toContain('no instructions or response_schema')
+  const r = opsDiagnoseRequest(item, 800)
   expect(r.model).toBe('openai/gpt-4.1-mini'); expect(r.temperature).toBe(0); expect(r.provider).toEqual({ require_parameters: true }); expect(r.max_tokens).toBe(800)
-  expect(r.response_format.json_schema.schema.properties.root_cause.enum).toEqual(['statement_timeout', 'lock_conflict'])
-  expect(opsDiagnoseCodes(ctx)).toEqual(['statement_timeout', 'lock_conflict'])
+  expect(r.messages[0]).toEqual({ role: 'system', content: 'You diagnose one issue.' })
+  expect(r.response_format.json_schema.schema).toBe(item.response_schema)
+  expect(r.response_format.json_schema.strict).toBe(false)  // reasoning is optional, so strict mode cannot be asked
   expect(opsDiagnoseLimit({})).toBe(OPS_DIAGNOSE_TOKENS_DEFAULT); expect(opsDiagnoseLimit({ [OPS_DIAGNOSE_TOKENS_KEY]: 1200 })).toBe(1200)
-  const ok = opsDiagnoseAnswer(reply({ root_cause: 'statement_timeout', confidence: 1.4, evidence: ['statement timeout', 'invented text', 'a "quoted" bit'], reasoning: 'The error names it.' }), ctx, 800, true)
-  expect(ok.ok).toBe(true)
-  expect(ok.answer.evidence).toEqual(['statement timeout']); expect(ok.answer.dropped_quotes).toBe(2); expect(ok.answer.confidence).toBe(1); expect(ok.cost).toBe(0.0012)
-  const cut = opsDiagnoseAnswer(reply({}, { choices: [{ finish_reason: 'length', message: { content: '{"root' } }] }), ctx, 800, true)
-  expect(cut.ok).toBe(false); expect(cut.cut).toBe(true); expect(cut.error).toContain('output_truncated'); expect(cut.cost).toBe(0.0012)
-  const other = opsDiagnoseAnswer(reply({ root_cause: 'lock_conflict', confidence: 0.9, evidence: ['statement timeout'], reasoning: '' }), ctx, 800, false)
-  expect(other.ok).toBe(false); expect(other.error).toContain('not the pinned model')
+  expect(opsContextText(ctx)).toBe('IQ-00070\ncoverage-admit failed 3 of 6 runs\ncanceling statement "refresh" due to statement timeout')
+  // an answer: exactly the contract's fields; quotes from the context's text (quotation marks allowed), invented ones left out
+  const ok = opsDiagnoseAnswer(reply({ root_cause: 'statement_timeout', confidence: 0.8, evidence: ['statement "refresh" due to statement timeout', 'invented text'], reasoning: 'It says so.', extra: 1 }), item, 800, true)
+  expect(ok.answer).toEqual({ root_cause: 'statement_timeout', confidence: 0.8, evidence: ['statement "refresh" due to statement timeout'], reasoning: 'It says so.' })
+  expect(ok.dropped_quotes).toBe(1); expect(ok.cost).toBe(0.0012)
+  expect(Object.keys(opsDiagnoseAnswer(reply({ root_cause: 'lock_conflict', confidence: 0.4, evidence: ['coverage-admit failed'] }), item, 800, true).answer).sort()).toEqual(['confidence', 'evidence', 'root_cause'])
+  // every failure is {error} with the cost spent
+  const errs = [
+    opsDiagnoseAnswer(reply({}, { choices: [{ finish_reason: 'length', message: { content: '{"root' } }] }), item, 800, true),
+    opsDiagnoseAnswer(reply({ root_cause: 'lock_conflict', confidence: 0.9, evidence: ['coverage-admit'] }, { model: 'other/model' }), item, 800, true),
+    opsDiagnoseAnswer(reply({ root_cause: 'not_registered', confidence: 0.9, evidence: ['coverage-admit'] }), item, 800, true),
+    opsDiagnoseAnswer(reply({ root_cause: 'lock_conflict', confidence: 1.4, evidence: ['coverage-admit'] }), item, 800, true),
+    opsDiagnoseAnswer(reply({ root_cause: 'lock_conflict', confidence: 0.9, evidence: ['nowhere in it'] }), item, 800, true),
+    opsDiagnoseAnswer({ error: { message: 'bad request' } }, item, 800, false, 400),
+    opsDiagnoseAnswer({ choices: [{ finish_reason: 'stop', message: { content: '' } }] }, item, 800, true),
+  ]
+  for (const e of errs) expect(Object.keys(e.answer)).toEqual(['error'])
+  expect(errs[0].answer.error).toContain('output_truncated'); expect(errs[0].cost).toBe(0.0012)
+  expect(errs[1].answer.error).toContain('not openai/gpt-4.1-mini')
+  // the mode answers every leased request exactly once: one record call, after either the answer or the error
   const d = mode('ops_diagnose')
   expect(d).toContain('await rpc("svc_ops_diagnosis_next", { p_limit: Math.min(Number(body.limit || 5), 20) })')
-  expect(d).toContain('await rpc("svc_ops_diagnosis_record", { p_id: Number(it.id), p_answer: answer, p_cost_usd: ans.cost })')
+  expect((d.match(/rpc\("svc_ops_diagnosis_record"/g) || []).length).toBe(1)
+  expect(d).toContain('await rpc("svc_ops_diagnosis_record", { p_id: Number(it.id), p_answer: out.answer, p_cost_usd: out.cost })')
+  expect(d).toContain('if (why) out = { answer: { error: why }, cost: 0, dropped_quotes: 0 };')
+  expect(d).not.toMatch(/\breturn\b[^\n]*\n[^\n]*svc_ops_diagnosis_record/)
   expect(d).toContain('ors.fetch("https://openrouter.ai/api/v1/chat/completions"')
   expect(d).toContain('layer3_provider_credential_resolve_service')
-  expect(d).toContain('String(d.model).startsWith(model)')
   expect(d).not.toMatch(/firecrawl|useFc|svc_fc_spend/i)
+  expect(fixtures).toContain('W4 ok')
 })
 
 test('ops-diagnose job: catalogued, no number in its command, does nothing while ops.ai_diagnosis_on is 0', () => {
   expect(m).toContain("perform cron.schedule('ops-diagnose', '27,57 * * * *', $c$select pipeline.svc_pilot_submit_nonce('coverage-sweep', jsonb_build_object('mode', 'ops_diagnose', 'limit', security.pipeline_num_v1('batch.ops_diagnose', 5)::int)) where security.pipeline_num_v1('ops.ai_diagnosis_on', 0) >= 1 and exists")
   expect(m).toContain("('ops-diagnose', 'Platform upkeep', 61, 'AI diagnosis of low-confidence issues',")
-  for (const [k, v] of Object.entries({ 'public.svc_ops_diagnosis_next(integer)': 'ade1ae9613bbdfd6f45bd6408e20d880', 'public.svc_ops_diagnosis_record(bigint,jsonb,numeric)': '1ac0cc3359af6bca9c0e28e74ed49bcd',
+  for (const [k, v] of Object.entries({ 'public.svc_ops_diagnosis_next(integer)': 'adc209ebf9196c613e3dd82fa76fed61', 'public.svc_ops_diagnosis_record(bigint,jsonb,numeric)': '6f1fd77189ea85610a57c6feef16a130',
     'public.svc_enrich_ai_stash_v1(jsonb)': '70a97d7a560571d2de2fecc68ea8ee64' })) { expect(m).toContain(`'${k}'::regprocedure)) <> '${v}'`); expect(run).toContain(`["${k}"]=${v}`) }
   expect(fixtures).toContain('W1 ok')
 })

@@ -53,3 +53,25 @@ begin
   if not exists (select 1 from pipeline.automation_catalogue where jobname = 'ops-diagnose') then raise exception 'W3: catalogue'; end if;
   raise notice 'W3 ok: service role only; four behaviours ship off; job catalogued';
 end $f$;
+
+-- W4 the worker's two answer shapes against A2's recorder (contract ops-diagnose-v1): {error} is recorded with its cost and never handed out
+-- again; a contract answer whose quote holds quotation marks is checked against the context's text values and accepted
+do $f$
+declare v jsonb; v_id1 bigint; v_id2 bigint;
+begin
+  insert into pipeline.ops_root_causes(code, class, title) values ('statement_timeout', 'transient', 'Statement time-out');
+  insert into pipeline.integration_issues(diagnosis) values ('{"root_cause": "statement_timeout", "confidence": 0.3}');
+  insert into pipeline.ops_ai_diagnosis_requests(issue_id, state, leased_until, model, context)
+  values (currval('pipeline.integration_issues_id_seq'), 'leased', now() + interval '10 minutes', 'openai/gpt-4.1-mini', '{"evidence": {"error": "canceling statement \"refresh\" due to statement timeout"}}')
+  returning id into v_id1;
+  insert into pipeline.ops_ai_diagnosis_requests(issue_id, state, leased_until, model, context)
+  values (currval('pipeline.integration_issues_id_seq'), 'leased', now() + interval '10 minutes', 'openai/gpt-4.1-mini', '{"title": "x"}') returning id into v_id2;
+  -- an answer as opsDiagnoseAnswer gives it: only the contract's fields
+  v := public.svc_ops_diagnosis_record(v_id1, '{"root_cause": "statement_timeout", "confidence": 0.8, "evidence": ["statement \"refresh\" due to statement timeout"], "reasoning": "The error names it."}', 0.0012);
+  if v->>'state' <> 'answered' or not (v->>'applied')::boolean then raise exception 'W4: contract answer %', v; end if;
+  -- a worker failure as the worker sends it
+  v := public.svc_ops_diagnosis_record(v_id2, '{"error": "output_truncated: reached reading.answer_tokens.ops_diagnosis (800)"}', 0.0007);
+  if v->>'state' <> 'refused' or (select cost_usd from pipeline.ops_ai_diagnosis_requests where id = v_id2) <> 0.0007 then raise exception 'W4: error answer %', v; end if;
+  if exists (select 1 from pipeline.ops_ai_diagnosis_requests where id = v_id2 and (state in ('queued', 'leased'))) then raise exception 'W4: error request can be handed out again'; end if;
+  raise notice 'W4 ok: contract answer applied (quote with quotation marks), {error} refused with its cost and not handed out again';
+end $f$;

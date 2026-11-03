@@ -1,9 +1,9 @@
 -- CF-247 P0 Autonomous AI Operations, workstream B: one worker release (coverage-sweep v0.59.5) for the other workstreams' interface requests
 -- (Integration Controller 3 Nov 2026 18:20; branch cf247-ops-b2; spec s254). This migration holds only what the worker needs from the database.
 -- Why (live, read-only, 3 Nov 2026 18:15-18:35 AEDT):
---   1 Workstream A (v2.15.429) queues AI diagnosis requests (pipeline.ops_ai_diagnosis_requests) and serves them through
---     public.svc_ops_diagnosis_next (md5 ade1ae96...) and public.svc_ops_diagnosis_record (md5 1ac0cc33...), but no worker mode reads them and no
---     job calls one: ops.ai_diagnosis_on cannot be switched on usefully.
+--   1 Workstream A (v2.15.429) queues AI diagnosis requests (pipeline.ops_ai_diagnosis_requests); A2 (migration 20261104100000, contract
+--     ops-diagnose-v1) serves them through public.svc_ops_diagnosis_next (md5 adc209eb...) and public.svc_ops_diagnosis_record (md5 6f1fd771...),
+--     but no worker mode reads them and no job calls one: ops.ai_diagnosis_on cannot be switched on usefully.
 --   2 Workstream D (v2.15.430) added public.svc_enrich_ai_stash_v1 (md5 70a97d7a...); the worker did not call it (ops.answer_replay_on needs it).
 --   3 Workstream C: the entry matrix reader dropped all 8 UWA China rows printed as ranges ("488 to 491") as value_not_in_quote, keeping no value;
 --     stored UWA US Advanced Placement subject equivalences as seven minimums with one identity; and holds RMIT's International Baccalaureate and
@@ -29,10 +29,11 @@ do $g$
 begin
   if to_regclass('pipeline.ops_ai_diagnosis_requests') is null or to_regprocedure('public.svc_ops_diagnosis_next(integer)') is null
      or to_regprocedure('public.svc_ops_diagnosis_record(bigint,jsonb,numeric)') is null or to_regprocedure('public.svc_enrich_ai_stash_v1(jsonb)') is null then
-    raise exception 'worker requests: apply workstream A (20261104010000) and workstream D (20261104020000) first';
+    raise exception 'worker requests: apply workstream A (20261104010000, 20261104100000) and workstream D (20261104020000) first';
   end if;
-  if md5(pg_get_functiondef('public.svc_ops_diagnosis_next(integer)'::regprocedure)) <> 'ade1ae9613bbdfd6f45bd6408e20d880'
-     or md5(pg_get_functiondef('public.svc_ops_diagnosis_record(bigint,jsonb,numeric)'::regprocedure)) <> '1ac0cc3359af6bca9c0e28e74ed49bcd'
+  -- contract ops-diagnose-v1: the definitions after workstream A2's migration 20261104100000
+  if md5(pg_get_functiondef('public.svc_ops_diagnosis_next(integer)'::regprocedure)) <> 'adc209ebf9196c613e3dd82fa76fed61'
+     or md5(pg_get_functiondef('public.svc_ops_diagnosis_record(bigint,jsonb,numeric)'::regprocedure)) <> '6f1fd77189ea85610a57c6feef16a130'
      or md5(pg_get_functiondef('public.svc_enrich_ai_stash_v1(jsonb)'::regprocedure)) <> '70a97d7a560571d2de2fecc68ea8ee64'
      or to_regprocedure('public.svc_course_link_search_record(uuid,integer,text[],text)') is null then  -- live only (no migration in the repository); called as before
     raise exception 'worker requests: a live function the worker v0.59.5 calls differs from the definition it was written against';

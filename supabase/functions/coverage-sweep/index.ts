@@ -11,7 +11,7 @@ import { callRecord, pageHtml, readOutcome, scrapeBody, searchBody, searchCandid
 import { applyAdapter, inspectPage, jsonAt, jsonFind, jsonShape, pageJson, patternValues, viewApplies, withView } from "./adapters.ts";
 import { CENTRAL_SEARCH, centralCandidates, weakKinds } from "./central.ts";
 import { ENTRY_PROMPT_VERSION, ENTRY_TABLE_BASIS, NAMED_NOTE, PDF_NOTE, entryCellList, entryCompleteness, entryDropNoMinimum, entryGlobalQualification, entrySubjectRows, entryManifestDetail, entryMatrixParsed, entryMatrixRequest, entryNoAnswerWhy, entryNonCountryShape, entrySlices, entryTables, entryUnscaledColumns } from "./entry.ts";
-import { OPS_DIAGNOSE_PROMPT_VERSION, opsDiagnoseAnswer, opsDiagnoseLimit, opsDiagnoseRequest } from "./ops-diagnose.ts";
+import { OPS_DIAGNOSE_CONTRACT, opsDiagnoseAnswer, opsDiagnoseLimit, opsDiagnoseRequest, opsDiagnoseUsable } from "./ops-diagnose.ts";
 import { linkSearchGroups, linkSearchShareOn } from "./link-share.ts";
 import type { EntryBandLine, EntryCountryRef, EntryLineSet, EntryManifest } from "./entry.ts";
 import { COURSE_ENTRY_PROMPT_VERSION, courseEntryAnswer, courseEntryMerge, courseEntryPlan, courseEntryRequest, courseEntrySliceRows, courseEntryUser } from "./course-entry.ts";
@@ -74,7 +74,7 @@ const VERSION = "coverage-sweep-v0.5.6"; // extractor version (unchanged by v0.6
 // v0.38.1 (22 Oct 2026, NZ course list pages): a page the AI page match chose from the university's own site addresses (its course list or
 // site map) is listed on the university's own site, so it may be read through the scraper when the direct read is blocked (Otago, Lincoln, AUT).
 const FC_TRUSTED_BASIS = ["cricos_search", "cricos_code", "cricos_code_on_page", "nzqa_code", "adapter_code", "title_match", "cms_path_public", "manual", "firecrawl_upgrade", "ai_match", "programme_list"]; // v0.45.0: a page bound by its NZ or CA code is as trusted as one bound by a CRICOS code
-const WORKER = "coverage-sweep-worker-v0.59.5"; // v0.59.5 (3 Nov 2026, CF-247 P0 autonomous operations, workstream B worker release for the other workstreams' interface requests, Integration Controller 18:20): new mode ops_diagnose (ops-diagnose.ts; workstream A: AI-assisted diagnosis through svc_ops_diagnosis_next and svc_ops_diagnosis_record, pinned model, existing OpenRouter path); enrich_ai keeps its answers first (svc_enrich_ai_stash_v1, workstream D) and records them as before; the entry matrix reader keeps the model's value, grade and scale in every dropped entry and, each behind a reading.* setting that ships off, reads a printed range as its lower bound, merges subject-equivalence rows into one subject-prerequisite row and stops holding a global-qualification page that says it applies in any country (entry.ts; workstream C); link_search answers each distinct query once and reuses an earlier answer for the same query (link-share.ts, reading.link_search_share_on, ships off; workstream F).
+const WORKER = "coverage-sweep-worker-v0.59.5"; // v0.59.5 (3 Nov 2026, CF-247 P0 autonomous operations, workstream B worker release for the other workstreams' interface requests, Integration Controller 18:20): new mode ops_diagnose (ops-diagnose.ts; workstream A contract ops-diagnose-v1: AI-assisted diagnosis through svc_ops_diagnosis_next and svc_ops_diagnosis_record, pinned model, existing OpenRouter path, each request answered exactly once, {error} on failure); enrich_ai keeps its answers first (svc_enrich_ai_stash_v1, workstream D) and records them as before; the entry matrix reader keeps the model's value, grade and scale in every dropped entry and, each behind a reading.* setting that ships off, reads a printed range as its lower bound, merges subject-equivalence rows into one subject-prerequisite row and stops holding a global-qualification page that says it applies in any country (entry.ts; workstream C); link_search answers each distinct query once and reuses an earlier answer for the same query (link-share.ts, reading.link_search_share_on, ships off; workstream F).
 // was v0.59.4 // v0.59.4 (3 Nov 2026, CF-247 Workstream C, Platform Admin direction 3 Nov 2026 09:32, acceptance report item 1): enrich_ai reads course description and application deadline (Enrich fields fields description and deadline) from the course's stored page in one call per course (course-text.ts, prompt course-text-v1, the central model, answer limit reading.answer_tokens.course_text); every quote is checked against the page; nothing is fetched or cut here; the database admits, holds or sends to Layer 4 (security.enrich_course_text_record_v1); every other read is unchanged.
 // was v0.59.3 // v0.59.3 (3 Nov 2026, CF-247 Workstream F, hidden failures; Platform Admin direction 3 Nov 2026 09:32 §5): nz_cop reports what each call did (read: files read, failed: files that failed), so the run ledger counts its work; it was recorded as 0 items on every call and looked as if it had never succeeded; nothing else changes.
 // was v0.59.1 // v0.59.1 (3 Nov 2026, CF-247 Workstream D, intake wording): the page reader (extract.ts) never keeps a month the page excludes ("excluding January & December", "except June and December") as an intake; nothing else changes.
@@ -2099,42 +2099,39 @@ async function handle(req: Request): Promise<Response> {
       return j({ ok: true, mode, items: items.length, tally, cost_usd: cost, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER });
     }
     // v0.21.0 (fix 3): central pages read with a pinned model; recorded as proposals for a person to approve
-    // v0.59.5 (3 Nov 2026, CF-247 P0 autonomous operations; workstream A interface request): AI-assisted diagnosis of integration issues the
-    // deterministic classifier diagnosed with low confidence (ops-diagnose.ts). public.svc_ops_diagnosis_next leases requests only while
-    // ops.ai_diagnosis_on is 1, within ops.ai_requests_per_day and under the daily AI ceiling, each with its pinned model (ops.ai_diagnosis_model)
-    // and the context it may quote. One call per request through the existing OpenRouter path: the pinned model only (an answer from another model
-    // is not used), parameters required of the provider, the answer limit a setting, a cut answer never parsed, the cost of every call recorded.
-    // public.svc_ops_diagnosis_record checks the cause and the quotes and applies or keeps the answer; it never chooses a remedy. A call that
-    // fails before any answer leaves the lease to expire (asked again within the day's limit); an answer that cannot be used is recorded, so the
-    // database refuses it and it is not asked again.
+    // v0.59.5 (3 Nov 2026, CF-247 P0 autonomous operations; workstream A interface request, contract ops-diagnose-v1 of migration
+    // 20261104100000): AI-assisted diagnosis of integration issues the deterministic classifier diagnosed with low confidence (ops-diagnose.ts).
+    // public.svc_ops_diagnosis_next leases requests only while ops.ai_diagnosis_on is 1 and inside the AI guards (daily ceiling, lane cap
+    // ops.ai_diagnosis_usd_per_day); each carries its pinned model, instructions and response_schema. One call per request through the existing
+    // OpenRouter path (credential, require_parameters, the pinned model only, the answer limit a setting); every request leased is answered exactly
+    // once through public.svc_ops_diagnosis_record: the contract's answer, or {error} with the cost spent (recorded, never asked again).
     if (mode === "ops_diagnose") {
       const w: any = await rpc("svc_ops_diagnosis_next", { p_limit: Math.min(Number(body.limit || 5), 20) });  // fixed: the setting batch.ops_diagnose's upper bound
       const items: any[] = Array.isArray(w?.items) ? w.items : [];
       if (!items.length) return j({ ok: true, mode, items: 0, held: w?.held ?? null, worker: WORKER });
       let key = Deno.env.get("OPENROUTER_API_KEY") || "";
-      if (!key) { const prof = await rpc("layer3_routing_profile_service", { p_code: AI_MATCH_PROFILE }); const { data } = await c.rpc("layer3_provider_credential_resolve_service", { p_profile_id: prof?.id }); key = typeof data === "string" ? data : "" }
-      if (!key) return j({ ok: false, mode, error: "OpenRouter credential unavailable", worker: WORKER }, 503);
-      const maxTokens = opsDiagnoseLimit(ws), ors = orStats(), tally: Record<string, number> = {}; let cost = 0;
+      if (!key) { const prof = await rpc("layer3_routing_profile_service", { p_code: AI_MATCH_PROFILE }).catch(() => null); const { data } = await c.rpc("layer3_provider_credential_resolve_service", { p_profile_id: prof?.id }); key = typeof data === "string" ? data : "" }
+      const maxTokens = opsDiagnoseLimit(ws), ors = orStats(), tally: Record<string, number> = {}; let cost = 0, dropped = 0;
       await pool(items, 2, async (it) => {
-        const model = String(it.model || "");
-        if (!model) { tally.no_model = (tally.no_model || 0) + 1; return }
-        if (Date.now() - t0 > BUDGET_MS - 20000) { tally.time_budget = (tally.time_budget || 0) + 1; return }
+        let out: { answer: Record<string, unknown>; cost: number; dropped_quotes: number };
+        const why = !key ? "OpenRouter credential unavailable" : opsDiagnoseUsable(it) ?? (Date.now() - t0 > BUDGET_MS - 20000 ? "time budget" : null);
+        if (why) out = { answer: { error: why }, cost: 0, dropped_quotes: 0 };
+        else {
+          try {
+            const r = await ors.fetch("https://openrouter.ai/api/v1/chat/completions", { method: "POST", headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
+              body: JSON.stringify(opsDiagnoseRequest(it, maxTokens)), signal: AbortSignal.timeout(60000) });  // fixed: API time-out of one call
+            const d = await r.json().catch((e) => ({ unreadable: e instanceof Error ? e.message : String(e) }));
+            out = opsDiagnoseAnswer(d, it, maxTokens, r.ok, r.status);
+          } catch (e) { out = { answer: { error: `call failed: ${(e instanceof Error ? e.message : String(e)).slice(0, 200)}` }, cost: 0, dropped_quotes: 0 } }
+        }
+        cost += out.cost; dropped += out.dropped_quotes;
         try {
-          const r = await ors.fetch("https://openrouter.ai/api/v1/chat/completions", { method: "POST", headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
-            body: JSON.stringify(opsDiagnoseRequest(model, it.context, maxTokens)), signal: AbortSignal.timeout(60000) });  // fixed: API time-out of one call
-          const d = await r.json().catch(() => ({}));
-          // a refused request (4xx other than 408 and 429) is recorded as an unusable answer, so it is not asked again; a transient failure waits for the lease
-          if (!r.ok && (r.status === 408 || r.status === 429 || r.status >= 500)) { tally.http_transient = (tally.http_transient || 0) + 1; return }
-          const ans = r.ok ? opsDiagnoseAnswer(d, it.context, maxTokens, !d?.model || String(d.model).startsWith(model))
-                           : { ok: false as const, cut: false, cost: Number(d?.usage?.cost || 0) || 0, error: `HTTP ${r.status}: ${JSON.stringify(d?.error || d).slice(0, 200)}` };
-          cost += ans.cost;
-          const answer = ans.ok ? ans.answer : { root_cause: null, confidence: null, evidence: [], reasoning: ans.error, prompt_version: OPS_DIAGNOSE_PROMPT_VERSION };
-          const res = await rpc("svc_ops_diagnosis_record", { p_id: Number(it.id), p_answer: answer, p_cost_usd: ans.cost });
+          const res = await rpc("svc_ops_diagnosis_record", { p_id: Number(it.id), p_answer: out.answer, p_cost_usd: out.cost });
           const st = String(res?.state || "recorded") + (res?.applied ? "_applied" : "");
           tally[st] = (tally[st] || 0) + 1;
-        } catch (e) { tally.error = (tally.error || 0) + 1 }
+        } catch (e) { tally.record_failed = (tally.record_failed || 0) + 1 }
       });
-      return j({ ok: true, mode, items: items.length, tally, cost_usd: cost, openrouter: ors.summary(), prompt_version: OPS_DIAGNOSE_PROMPT_VERSION, ms: Date.now() - t0, worker: WORKER });
+      return j({ ok: true, mode, items: items.length, tally, dropped_quotes: dropped, cost_usd: cost, openrouter: ors.summary(), contract: OPS_DIAGNOSE_CONTRACT, ms: Date.now() - t0, worker: WORKER });
     }
     if (mode === "central_ai") {
       let key = Deno.env.get("OPENROUTER_API_KEY") || "";
