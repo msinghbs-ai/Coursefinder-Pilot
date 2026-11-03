@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.375 — 4 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.448** (v2.15.447 production defect). Migration `20261104280000_cf247_l4_rule_runs_table`: pipeline.layer4_course_link_rule_runs and layer4_course_link_rule_run_items; md5-guarded edit of `security.layer4_course_link_rule_execute_v1` (d4aa9145 → 86e1089a); the live-only pipeline.layer4_rule_runs keeps its rows and gets its own comment back; the empty pipeline.layer4_rule_run_items is marked retiring. Nothing dropped; consumer API untouched. Spec s267.
+
 ## 0.1.374 — 3 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.447** (SS-019 Layer 4 Course Link; Decision 179). Migration `20261104260000_cf247_l4_course_link`: md5-guarded edits of `security.layer4_inbox_kinds_v1` (f5fc812e → e79ce181), `security.layer4_inbox_items_v1` (a56bc331 → 4fc05d14), `public.admin_layer4_inbox` (f1f0d760 → 1fb97548), `security.binding_refusal_route_v1` (488ef183 → 717fb44d); layer4.evidence_link_on and layer4.page_needed_on on; pipeline.layer4_course_link_rules; security.layer4_evidence_backfill_v1, course_page_needed_convert_v1, layer4_course_link_rule_validate_v1, layer4_course_link_rule_execute_v1, layer4_refusal_search_cost_v1. Build-once helper for source contracts (test turnaround review). Nothing dropped; consumer API untouched. Spec s258.
