@@ -94,6 +94,8 @@ function Row({row,settings,can,canQualify,picked,onPick,open,onOpen,onChanged,on
       <span className="adp-chips adp-hide-sm" title="Fields that passed in the latest Qualify">{q?(passing.length?<><small className="sl-sub">Passed:</small><Fields list={passing} tone="info"/></>:<small className="sl-sub">Qualify: nothing passed</small>):<small className="sl-sub">Not qualified yet</small>}{q&&<small className="sl-sub">{fmtDate(q.at)}</small>}</span>
       <span className="adp-hide-sm"><small className="sl-sub">{fmtNumber(row.pages_read)} of {fmtNumber(row.pages)} pages read{row.next_read?` · next read ${fmtDate(row.next_read)}`:''}</small>
         {row.target&&<Pill tone={row.target.included?'info':'neutral'}>{row.target.included?'Firecrawl target':'Not a Firecrawl target'}</Pill>}</span>
+      {/* SS-020 step 4 (Decision 269, 3 Nov 2026): the one-click Build adapter (Decision 267) is a row action here; it was its own tab */}
+      {merged&&<a className="cf-link adp-hide-sm" href={hrefFor('layer2','universities',{build:pid})} data-uni-build title="Build adapter: readiness by field, one-click admit">Build</a>}
       {merged&&<a className="cf-link adp-hide-sm" href={hrefFor('layer2','builder',{provider:pid})} data-uni-builder title="Open in the Adapter builder">Builder</a>}
       {/* v2.15.306: the university's enrichment plan (steps, estimate, Run now) */}
       {merged&&<a className="cf-link adp-hide-sm" href={hrefFor('layer2','plan',{provider:pid})} data-uni-plan title="Open the university's enrichment plan">Plan</a>}

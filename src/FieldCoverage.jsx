@@ -22,6 +22,7 @@ import Card from'./Card'
 import{Button,Empty,Loading,StatusChip}from'./ui-kit'
 import{fmtNumber,fmtDateTime}from'./lib/format.js'
 import{plainError}from'./lib/errors'
+import{hrefFor}from'./nav-map'
 import SnapshotStamp from'./SnapshotStamp' // CF-247 W35: every country's figures come from a cached snapshot; one university's are read live
 
 const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
@@ -32,19 +33,25 @@ const STATE_LABEL={queued:'Waiting',waiting:'Waiting',ai:'With AI',leased:'With 
 const pct=(n,t)=>t?Math.round(n/t*1000)/10:null
 const fmtPct=v=>v==null?'—':`${v}%`
 
-export default function FieldCoverage({rank=0,country='',provider=null,onError}){
+// SS-020 step 4 (Decision 269, 3 Nov 2026): part 'measures' (Coverage › Attributes) shows the read-only measures, with each stalled field linking
+// to Layer 2/3 › Enrich fields with its country and field; part 'run' (Enrich fields) holds Stalled fields with Fill now and Release holds, and
+// Fill the gaps (standing queue); part 'pdesc' (Enrich fields) holds Provider descriptions. Same reads, writes and role checks as before.
+export default function FieldCoverage({rank=0,country='',provider=null,onError,part='measures',field=''}){
   const[data,setData]=useState(null),[busy,setBusy]=useState(false)
   const scope={...(country?{country}:{}),...(provider?{provider:provider.id}:{})}
-  const load=()=>{setBusy(true);call('overview',scope).then(setData).catch(e=>onError?.(errText(e))).finally(()=>setBusy(false))}
+  const load=()=>{if(part==='pdesc')return;setBusy(true);call('overview',scope).then(setData).catch(e=>onError?.(errText(e))).finally(()=>setBusy(false))}
   useEffect(()=>{load()},[country,provider?.id])
+  if(part==='pdesc')return <ProviderDescriptions country={country} rank={rank} onError={onError}/>
   if(!data)return <section className="m-panel"><Loading label="Loading every field…"/></section>
-  return <div className="m-page-stack" data-field-coverage>
-    <StalledFields scope={scope} onChanged={load} onError={onError}/>
-    <FieldMatrix data={data} rank={rank} busy={busy} onReload={load} onSaved={setData} onError={onError}/>
+  if(part==='run')return <div className="m-page-stack" data-field-coverage="run">
+    <StalledFields scope={scope} focus={field} onChanged={load} onError={onError}/>
     <GapQueue data={data} rank={rank} onSaved={setData} onReload={load} onError={onError}/>
+  </div>
+  return <div className="m-page-stack" data-field-coverage>
+    <StalledFields scope={scope} readOnly onChanged={load} onError={onError}/>
+    <FieldMatrix data={data} rank={rank} busy={busy} onReload={load} onSaved={setData} onError={onError}/>
     <CrossCheck data={data} scope={scope} rank={rank} onDecided={load} onError={onError}/>
     <DeliveryWording onError={onError}/>
-    <ProviderDescriptions country={country} rank={rank} onError={onError}/>
   </div>
 }
 
@@ -130,7 +137,7 @@ function CrossCheck({data,scope,rank,onDecided,onError}){
 
 const REASON={flat:['Not moving','warning'],behind:['Behind other countries','info'],no_reader:['No reader yet','neutral']}
 const CAUSE={not_stated:'Pages read do not state it',not_read:'Pages not read for it yet',no_page:'No course page found yet',in_review:'Waiting for a person',in_queue:'Being filled now',register:'Register value missing',no_reader:'Nothing reads it yet',provider:'Provider field'}
-function StalledFields({scope,onChanged,onError}){
+function StalledFields({scope,onChanged,onError,readOnly=false,focus=''}){
   const[d,setD]=useState(null),[busy,setBusy]=useState(''),[note,setNote]=useState(''),[reason,setReason]=useState('')
   const load=()=>call('stalled',scope).then(setD).catch(e=>onError?.(errText(e)))
   useEffect(()=>{load()},[scope.country])
@@ -144,18 +151,18 @@ function StalledFields({scope,onChanged,onError}){
     subtitle={`Fields below their target that have gained less than ${d?fmtNumber(d.min_points):1} point in ${d?fmtNumber(d.days):7} days, that trail the best country by ${d?fmtNumber(d.gap_points):30} points or more, or that nothing reads yet. Each shows its main cause, the action that resolves it and the universities missing it most. The same list raises Platform health issues every 3 hours; an issue closes itself when the field moves again.`}
     meta={<span className={`cf-chip tone-${flat?'warning':'neutral'}`}>{fmtNumber(flat)} not moving · {fmtNumber(items.length)} in all</span>} data-stalled-fields>
     {!d?<Loading compact/>:items.length===0?<Empty text="No field is stalled."/>:<>
-    {d.can_release&&<p className="fc-actions"><input value={reason} onChange={e=>setReason(e.target.value)} placeholder="Reason (needed to release holds)" aria-label="Reason for releasing holds"/><small className="sd-desc">Release holds and fill: use after a new central page, adapter rule or reader, so courses whose page did not state the field are read again.</small></p>}
+    {!readOnly&&d.can_release&&<p className="fc-actions"><input value={reason} onChange={e=>setReason(e.target.value)} placeholder="Reason (needed to release holds)" aria-label="Reason for releasing holds"/><small className="sd-desc">Release holds and fill: use after a new central page, adapter rule or reader, so courses whose page did not state the field are read again.</small></p>}
     {note&&<p className="sd-desc" role="status">{note}</p>}
     <div className="dq-table-wrap"><table className="dq-table"><thead><tr><th>Country</th><th>Field</th><th className="num">Now</th><th className="num">{fmtNumber(d.days)} days ago</th><th>Why</th><th>What resolves it</th><th/></tr></thead>
-      <tbody>{items.map(x=>{const[rl,tone]=REASON[x.reason]||[x.reason,'neutral'];return <tr key={x.country+x.field} data-stalled={x.reason}>
+      <tbody>{items.map(x=>{const[rl,tone]=REASON[x.reason]||[x.reason,'neutral'];return <tr key={x.country+x.field} data-stalled={x.reason} className={focus&&focus===x.field?'fc-focus':undefined}>
         <td>{COUNTRY[x.country]||x.country}</td>
         <td><strong>{x.label}</strong><small><StatusChip value={x.reason} tone={tone} label={rl}/></small></td>
         <td className="num"><strong>{fmtPct(Number(x.pct))}</strong><small>target {fmtPct(Number(x.target))}{x.best_country&&x.best_country!==x.country?` · best ${x.best_country} ${fmtPct(Number(x.best_pct))}`:''}</small></td>
         <td className="num">{x.pct_ago==null?<small>no history yet</small>:<>{fmtPct(Number(x.pct_ago))}<small>{Number(x.moved)>=0?'+':''}{x.moved} points</small></>}</td>
         <td>{CAUSE[x.cause]||x.cause}{x.causes&&<small>{Object.entries(x.causes).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k,n])=>`${CAUSE[k]||k}: ${fmtNumber(n)}`).join(' · ')}</small>}</td>
         <td><small>{x.action}</small>{(x.top_providers||[]).length>0&&<small className="fc-top">Most missing: {x.top_providers.map((p,i)=><span key={p.id}>{i?', ':''}<a className="cf-link" href={`#providers?id=${encodeURIComponent(p.id)}`}>{p.name}</a> ({fmtNumber(p.missing)})</span>)}</small>}</td>
-        <td className="fc-decide">{x.can_fill&&d.can_fill&&<Button compact onClick={()=>act(x,'fill_now')} disabled={!!busy}><Play size={14}/>Fill now</Button>}
-          {x.can_fill&&d.can_release&&x.cause==='not_stated'&&<Button compact onClick={()=>act(x,'release_and_fill')} disabled={!!busy||reason.trim().length<4} title="Needs a reason above">Release holds and fill</Button>}</td>
+        <td className="fc-decide">{readOnly?<a className="cf-link" href={hrefFor('layer2','enrich',{country:x.country,field:x.field})} data-fill-link={`${x.country}|${x.field}`}>Fill on Enrich fields</a>:<>{x.can_fill&&d.can_fill&&<Button compact onClick={()=>act(x,'fill_now')} disabled={!!busy}><Play size={14}/>Fill now</Button>}
+          {x.can_fill&&d.can_release&&x.cause==='not_stated'&&<Button compact onClick={()=>act(x,'release_and_fill')} disabled={!!busy||reason.trim().length<4} title="Needs a reason above">Release holds and fill</Button>}</>}</td>
       </tr>})}</tbody></table></div></>}
   </Card>
 }

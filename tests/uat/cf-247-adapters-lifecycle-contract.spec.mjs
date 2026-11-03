@@ -26,8 +26,8 @@ test('migration 1750: read cycle, Adapters list and detail, per-adapter admit, a
 })
 
 test('screens: Layer 2 is Adapters, Adapter builder and Scholarships, Coverage has no Universities tab, redirects keep old links working', () => {
-  expect(PAGES.layer2.tabs.map(t => t.key)).toEqual(['operations', 'flags', 'universities', 'sources', 'plan', 'build', 'builder', 'enrich', 'scholarships'] /* v2.15.321: Course sources */ /* v2.15.306: Enrichment plan */) // v2.15.301: Flags beside Operations; v2.15.300: Layer 2/3, Operations first; Universities joins Adapters and Onboarding; builder hidden
-  expect(PAGES.coverage.tabs.map(t => t.key)).toEqual(['courses', 'attributes', 'progress']) /* v2.15.301: Flags moved to Layer 2/3; v2.15.282: Flags; v2.15.300: Counsellor reports retired into the Inbox */ // v2.15.266: Progress
+  expect(PAGES.layer2.tabs.map(t => t.key)).toEqual(['operations', 'universities', 'enrich', 'plan', 'builder', 'sources', 'flags', 'scholarships'] /* SS-020 step 4 (Decision 269): approved order; Build adapter is a Universities row action and builder step 0 */ /* v2.15.321: Course sources */ /* v2.15.306: Enrichment plan */) // v2.15.301: Flags beside Operations; v2.15.300: Layer 2/3, Operations first; Universities joins Adapters and Onboarding; builder hidden
+  expect(PAGES.coverage.tabs.map(t => t.key)).toEqual(['courses', 'attributes']) /* SS-020 step 4: Progress on Operations; v2.15.301: Flags moved to Layer 2/3; v2.15.282: Flags; v2.15.300: Counsellor reports retired into the Inbox */ // v2.15.266: Progress
   for (const old of ['start', 'history', 'profiles', 'adapters', 'onboarding']) expect(resolveTarget('layer-2-discovery', new URLSearchParams({ tab: old }))).toMatchObject({ page: 'layer2', tab: 'universities' })
   expect(resolveTarget('coverage', new URLSearchParams({ tab: 'universities' }))).toMatchObject({ page: 'layer2', tab: 'universities' })
   expect(resolveTarget('layer-2-operations')).toMatchObject({ page: 'layer2', tab: 'operations' })

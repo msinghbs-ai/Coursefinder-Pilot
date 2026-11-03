@@ -68,18 +68,24 @@ export default function ScholarshipCoverage({rank=3,onError,navigate}){
       </table></div>}
     </section>
     {open&&<ProviderCoverage providerId={open} rank={rank} onClose={()=>setOpen(null)} onError={onError} onChanged={load}/>}
-    <details className="m-panel sc-controls" data-scholarship-controls><summary>Settings and jobs</summary>
-      <p className="sc-sub">Every scholarship job and setting: switch a job on or off, change how many it handles per run. Platform Admin.</p>
-      <SkipRules onError={onError}/>
-      <ScholarshipLayer layer={2} rank={rank} onError={onError} only="controls"/>
-      <ScholarshipLayer layer={4} rank={rank} onError={onError} only="controls"/>
-    </details>
+    {/* SS-020 step 4 (Decision 269, 3 Nov 2026): the "Settings and jobs" fold moved to Layer 2/3 › Scholarships (ScholarshipSettings below) */}
+    <p className="sc-note" data-scholarship-controls-moved>Scholarship settings and jobs are on <a className="cf-link" href="#layer-2-discovery?tab=scholarships">Layer 2/3 › Scholarships</a>.</p>
   </div>
+}
+
+// SS-020 step 4: the scholarship settings and jobs, shown on Layer 2/3 › Scholarships (same controls and role checks as on Coverage before)
+export function ScholarshipSettings({rank,onError}){
+  return <details className="m-panel sc-controls" data-scholarship-controls><summary>Settings and jobs</summary>
+    <p className="sc-sub">Every scholarship job and setting: switch a job on or off, change how many it handles per run. Platform Admin.</p>
+    <SkipRules onError={onError}/>
+    {/* the Layer 2 jobs and settings are already on this tab (Reading scholarships), so only the publishing (Layer 4) controls are added */}
+    <ScholarshipLayer layer={4} rank={rank} onError={onError} only="controls"/>
+  </details>
 }
 
 function AutoPublished({ap,can,onError,onChanged}){
   const items=ap.recent||[],[show,setShow]=useState(false)
-  if(!ap.on&&!items.length)return <p className="sc-note">Automatic publishing is off. Turn it on under Settings and jobs.</p>
+  if(!ap.on&&!items.length)return <p className="sc-note">Automatic publishing is off. Turn it on under Layer 2/3 › Scholarships › Settings and jobs.</p>
   return <div className="sc-auto" data-auto-published>
     <div><ShieldCheck size={16}/><span><strong>{fmtNumber(items.length)}</strong> published automatically in the last 3 days{ap.on?'':' (now switched off)'}. Each passed every check; hold any that is wrong.</span>
       {items.length>0&&<Button compact onClick={()=>setShow(s=>!s)}>{show?'Hide':'Review'}</Button>}</div>

@@ -28,7 +28,7 @@ test('source shape: page sizes are screen lengths, filters return to the first p
   expect(read('src/pipeline-ops-entry.jsx')).toContain("adminRead('pipeline_sources_page',{limit:PAGE_SIZE,offset,")
   expect(read('src/layer1-operations-entry.jsx')).toContain('openKey={open} onOpen={setOpen} dataAttr="data-l1-source"')
   // parked: the Inbox belongs to another branch in flight
-  expect(read('src/Layer4Inbox.jsx')).not.toContain('SS-020')
+  expect(read('src/Layer4Inbox.jsx').match(/SS-020/g) || []).toHaveLength(1) // step 4 adds only the review readiness line
 })
 
 test('browser: Automations areas start closed; a filter opens the matching areas; controls are inside', async ({ page }) => {

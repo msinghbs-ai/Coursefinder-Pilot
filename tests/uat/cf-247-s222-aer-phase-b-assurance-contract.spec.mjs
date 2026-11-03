@@ -225,7 +225,7 @@ test.describe('mocked browser', () => {
     await expect(panel.locator('[data-aer-disposition="not_discovered"]')).toContainText('1,427')
     await expect(panel.locator('[data-aer-provider="c5c5d225-3d4c-4e41-8275-78eddd261073"] [data-aer-disp]')).toHaveText('Not discovered')
     await expect(panel.locator('[data-aer-provider="p-rmit"] [data-aer-states]')).toHaveText('source read · held · active')
-    await expect(panel.locator('[data-aer-readiness]')).toContainText('Awaiting human review 539')
+    await expect(panel.locator('[data-aer-readiness]')).toHaveCount(0) // SS-020 step 4 (Decision 269): the readiness line is on Layer 4 › Inbox
     await expect(panel.locator('[data-aer-weekly] summary')).toContainText('Weekly report, week of 2026-10-26 · Monday e-mail off')
     await panel.getByRole('button', { name: 'RMIT University (RMIT)' }).click()
     await expect(panel.locator('[data-aer-provider-detail]')).toContainText('2 of 31 published minimums not read')
