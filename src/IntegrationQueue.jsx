@@ -105,7 +105,26 @@ function PipelineYield({onError}){
       {YIELD_STAGES.map(([k,label])=><tr key={k} data-yield-stage={k}><th scope="row">{label}</th>{(y.lanes||[]).map(l=><td key={l.lane} data-yield-lane={l.lane}>{stageText(l.stages?.[k])}</td>)}</tr>)}
     </tbody></table></div>
     {(y.lane_status?.lanes||[]).length>0&&<LaneStatus lanes={y.lane_status.lanes}/>}
+    {(y.field_backlog?.fields||[]).length>0&&<FieldBacklog b={y.field_backlog}/>}
   </section>
+}
+
+// Field backlog (Platform Admin mandate 3 Nov 2026 12:04 §5): per field, the eligible backlog split into what waits on Layer 4, what the
+// official source does not state, what has a verified stored page and what needs acquisition; processed and admitted over 24 hours and 7 days;
+// and the forecast from the measured accepted rate (none when nothing was admitted). Server: security.field_backlog_v1 (read-only), returned by
+// admin_pipeline_yield as field_backlog.
+export const BACKLOG_COLS=[['eligible','Eligible'],['waiting_layer4','Layer 4'],['not_supported','Not stated'],['stored_source','Stored page'],['requires_acquisition','Needs a page'],
+  ['processed_24h','Processed 24 h'],['admitted_24h','Admitted 24 h'],['processed_7d','Processed 7 d'],['admitted_7d','Admitted 7 d']]
+const forecastText=f=>f.forecast_hours==null?'No rate yet':f.forecast_hours<48?`${fmtNumber(f.forecast_hours)} h`:`${fmtNumber(Math.round(f.forecast_hours/24))} days`
+function FieldBacklog({b}){
+  const p=b.source_proof||{}
+  return <div className="cf-table-wrap" data-field-backlog><table className="cf-table iq-yield"><caption>Field backlog now{b.country?` (${b.country})`:''}: what is left, where it waits, and the time left at the measured rate</caption>
+    <thead><tr><th>Field</th>{BACKLOG_COLS.map(([k,l])=><th key={k}>{l}</th>)}<th>Admitted an hour</th><th>Time left</th></tr></thead><tbody>
+    {b.fields.map(f=><tr key={f.field} data-backlog-field={f.field}><th scope="row">{f.label}</th>{BACKLOG_COLS.map(([k])=><td key={k} data-backlog-col={k}>{fmtNumber(f[k]||0)}</td>)}
+      <td>{fmtNumber(f.accepted_per_hour||0)}</td><td data-backlog-col="forecast" title={f.note||''}>{forecastText(f)}</td></tr>)}
+    </tbody></table>
+    <p className="muted" data-source-proof>Source proof: {fmtNumber(p.waiting_for_page_proof||0)} courses wait for page proof · {fmtNumber(p.settled_24h||0)} settled in 24 h · free page finding {fmtNumber(p.free_per_run||0)} a run · paid search {fmtNumber(p.paid_search_per_run||0)} a run</p>
+  </div>
 }
 
 // Lanes (Platform Admin P0 mandate 3 Nov 2026 10:44 §6): stored evidence, new paid pages, AI extraction, Layer 4 admission and the standing gap
