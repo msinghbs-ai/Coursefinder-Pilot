@@ -1,6 +1,6 @@
 -- CF-247 IQ-00111 D12 fee re-check route: isolated fixture database (scratch PostgreSQL only; never a Supabase project). The tables the
--- 20261104180000 migration and the live Layer 4 inbox read or write, with the live columns they use (read-only, 3 Nov 2026 22:0x AEDT); helpers
--- as small stand-ins. security.layer4_inbox_items_v1 is loaded from live/ by run.sh and checked against its live md5. Nothing here is live data.
+-- 20261104230000 migration and the live Layer 4 inbox read or write, with the live columns they use (read-only, 3 Nov 2026 22:0x AEDT); helpers
+-- as small stand-ins. security.layer4_inbox_items_v1 is loaded from live/ (live md5), then the Layer 4 owner's 20261104150000 edit (4fc05d14). Nothing here is live data.
 create schema if not exists pipeline; create schema if not exists catalogue; create schema if not exists security; create schema if not exists search;
 create schema if not exists scholarship; create schema if not exists fx;
 do $$ begin create role anon; exception when duplicate_object then null; end $$;
@@ -21,8 +21,11 @@ create table pipeline.admin_control_events(id bigserial primary key, area text n
 -- the 20261104140000 function this change requires (stand-in)
 create function security.fee_reader_hold_v1(p uuid) returns text language sql stable as $f$ select null::text $f$;
 
-create table catalogue.providers(id uuid primary key, canonical_name text, display_name text);
-create table catalogue.courses(id uuid primary key, provider_id uuid, canonical_title text, display_title text, course_code text);
+create schema if not exists ref;
+create table ref.countries(id uuid primary key, iso_alpha2 text);
+create table catalogue.providers(id uuid primary key, canonical_name text, display_name text, country_id uuid);
+create table catalogue.courses(id uuid primary key, provider_id uuid, canonical_title text, display_title text, course_code text, lifecycle_status text default 'active');
+create table catalogue.course_links(course_id uuid, link_type text, status text);
 create table catalogue.course_fees(id uuid primary key default gen_random_uuid(), course_id uuid, fee_year int, audience text default 'international', fee_type text,
   amount numeric, currency_code text, basis text, notes text, evidence_id uuid, status text default 'active', valid_to date,
   created_at timestamptz default now(), updated_at timestamptz default now());
@@ -57,3 +60,5 @@ create table pipeline.scholarship_ai_extractions(id bigint, answer jsonb);
 create table pipeline.scholarship_ai_reviews(id bigint, provider_id uuid, extraction_ids bigint[], url text, reason text, recheck jsonb, created_at timestamptz, status text);
 create table pipeline.data_flags(id bigint, entity_type text, entity_id uuid, field_code text, detail jsonb, created_at timestamptz, flag_code text, status text);
 create table pipeline.layer1_provider_departures(id uuid, provider_id uuid, courses_retired int, note text, created_at timestamptz, status text);
+create table pipeline.course_page_needed(course_id uuid, provider_id uuid, refused int, last_refused_reason text, last_refused_url text, last_refused_lane text,
+  last_refused_evidence uuid, converted_items jsonb, searches_requested int, created_at timestamptz, state text);

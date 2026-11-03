@@ -2,12 +2,13 @@
 // courses a person already decided go to Layer 4 on the existing "Fee fails the check" card, with the stored copy, evidence and earlier decisions
 // attached; no decided item is overwritten; "Keep the CRICOS total" withdraws the AI fee it names; a manual value is never touched. The behaviour
 // runs on isolated fixtures by tests/fixtures/fee-l4-route/run.sh (scratch PostgreSQL; the live inbox loaded from its live text and checked
-// against its live md5; the migration applied twice; every case asserted; the governed paste run and refused a second time).
+// against its live md5, then the Layer 4 owner's 20261104150000 edit the cards render through; the migration applied twice and never editing the
+// inbox; every case asserted; the governed paste run and refused a second time).
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import crypto from 'node:crypto'
 
-const MIG = 'supabase/migrations/20261104180000_cf247_fee_admitted_recheck.sql'
+const MIG = 'supabase/migrations/20261104230000_cf247_fee_admitted_recheck.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const FX = 'tests/fixtures/fee-l4-route'
 const run = fs.readFileSync(`${FX}/run.sh`, 'utf8')
@@ -16,12 +17,15 @@ const paste = fs.readFileSync('docs/paste/PASTE-20261104-fee-admitted-recheck.sq
 const observe = fs.readFileSync('docs/paste/OBSERVE-20261104-fee-reads-v2.15.442.sql', 'utf8')
 const md5 = (s) => crypto.createHash('md5').update(s).digest('hex')
 
-test('only the Layer 4 inbox is edited, from its live text, md5-guarded both ways', () => {
+test('the Layer 4 inbox is not edited here: the items render through the Layer 4 owner\'s version (20261104150000, 4fc05d14)', () => {
   expect(md5(fs.readFileSync(`${FX}/live/layer4_inbox_items_v1.def`, 'utf8'))).toBe('a56bc3313e02ac0611deb5657da95ce0')
-  expect(m).toContain("select pg_temp.edit_once('security.layer4_inbox_items_v1()', 'a56bc3313e02ac0611deb5657da95ce0', 'c930125d7fda6efb4793b78eed0a10b5', array[")
-  expect(m).toContain('--   security.layer4_inbox_items_v1() a56bc3313e02ac0611deb5657da95ce0 -> c930125d7fda6efb4793b78eed0a10b5')
-  expect((m.match(/pg_temp\.edit_once\('/g) || []).length).toBe(1)
+  const l4 = fs.readFileSync(`${FX}/l4-inbox-4fc05d14.sql`, 'utf8')
+  expect(l4).toContain("select pg_temp.edit_once('security.layer4_inbox_items_v1()', 'a56bc3313e02ac0611deb5657da95ce0', '4fc05d14f4ba49335ff90496a20f582d', array[")
+  expect(m).not.toContain('pg_temp.edit_once')
+  expect(m).not.toMatch(/create or replace function security\.layer4_inbox_items_v1/)
+  expect(m).toContain('-- Edited live functions: none.')
   expect(m).not.toMatch(/\b(drop|delete|truncate)\s+(table|function|trigger|from)\b/i)
+  expect(run).toContain("applied; the Layer 4 inbox is unchanged ($L4)")
   expect(run).toContain('applied twice: the second run changed nothing')
 })
 
@@ -30,8 +34,7 @@ test('a re-check is a new item on the existing fee check card; a decided item is
   expect(m).toContain("'earlier_decisions', v_prior")
   expect(m).toContain("'the course has a manual value; it is never re-checked automatically'")
   for (const c of ['raise: the decided item is not changed', 'raise: fee, stored copy, quote, CRICOS total, exclusion and earlier decision attached',
-    'refused: a manual value is never touched', 'card: Fee fails the check, stored copy linked, earlier decision in the reason', 'card: the decided item is not listed again',
-    'card: an ordinary fee check hold now links the course page held'])
+    'refused: a manual value is never touched', 'card: Fee fails the check, stored copy linked, earlier decision in the reason', 'card: the decided item is not listed again'])
     expect(fixtures).toContain(c)
 })
 

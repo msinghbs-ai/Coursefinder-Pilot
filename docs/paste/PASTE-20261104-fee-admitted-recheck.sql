@@ -1,6 +1,6 @@
 -- CF-247 IQ-00111 D12 (Platform Admin decision D12, 3 Nov 2026 21:59): send the older AI fee rows admitted on courses with a released fee check
 -- decision to Layer 4, with their evidence and the earlier decisions attached. PASTE FILE: Platform Admin, SQL editor of fxcwkweaxjtknorudmwp
--- (NOT coursefinder-demo). Run only after migration 20261104180000 is released. Changes no fee and no decided item: it raises 5 new "Fee fails
+-- (NOT coursefinder-demo). Run only after migration 20261104230000 is released. Changes no fee and no decided item: it raises 5 new "Fee fails
 -- the check" items (pipeline.enrichment_flags, field fee_ai_recheck) through security.fee_admitted_recheck_v1. No rollback is needed beyond a
 -- person deciding each item; an item raised in error is released on the card with "Keep" only after reading it (that withdraws the AI fee).
 -- The six rows of D12 (live 3 Nov 2026 22:0x AEDT; active AI fee, fee_crosscheck flag released by a person, fee exclusion active):
@@ -18,7 +18,7 @@ declare v_ids uuid[] := array['04b4c75e-f020-4d17-a9c4-3310156d8b76', '0f7d0c66-
                               '5d897b64-1f04-4171-8321-228ff54f2388', 'a4f9c399-8194-4b58-bcec-62df728c98af']::uuid[];
         v_n int; v_md5 text; v_r jsonb; v_raised int := 0; v_id uuid;
 begin
-  if to_regprocedure('security.fee_admitted_recheck_v1(uuid,text,text)') is null then raise exception 'migration 20261104180000 is not released; nothing changed'; end if;
+  if to_regprocedure('security.fee_admitted_recheck_v1(uuid,text,text)') is null then raise exception 'migration 20261104230000 is not released; nothing changed'; end if;
   select count(*), md5(string_agg(f.id::text || ':' || md5(f.notes), ',' order by f.id)) into v_n, v_md5
     from catalogue.course_fees f where f.id = any (v_ids) and f.status = 'active' and f.fee_type = 'provider_current_tuition';
   if v_n <> 5 or v_md5 <> 'ccc44c30f3bf04340cdc7a2ec11223b2' then

@@ -11,7 +11,7 @@ insert into catalogue.courses values
  ('00000000-0000-0000-0000-000000000c05', '00000000-0000-0000-0000-0000000000b1', 'Held course', null, 'HELD001');
 insert into pipeline.evidence_artifacts values ('00000000-0000-0000-0000-00000000e001', 'https://www.utas.edu.au/c7u', 'p', '2026-10-05'),
                                                ('00000000-0000-0000-0000-00000000e005', 'https://example.edu/held', 'p', '2026-11-02');
-insert into pipeline.coverage_course_pages values ('00000000-0000-0000-0000-000000000c05', '00000000-0000-0000-0000-00000000e005');
+insert into pipeline.coverage_course_pages values ('00000000-0000-0000-0000-000000000c05', '00000000-0000-0000-0000-00000000e005'), ('00000000-0000-0000-0000-000000000c01', '00000000-0000-0000-0000-00000000e001');
 insert into catalogue.course_fees(id, course_id, fee_year, fee_type, amount, currency_code, basis, notes, evidence_id) values
  ('00000000-0000-0000-0000-0000000000f1', '00000000-0000-0000-0000-000000000c01', 2027, 'provider_current_tuition', 27338, 'AUD', 'annual', 'AI fee reader (https://www.utas.edu.au/c7u)', '00000000-0000-0000-0000-00000000e001'),
  ('00000000-0000-0000-0000-0000000000f2', '00000000-0000-0000-0000-000000000c02', 2027, 'provider_current_tuition', 30000, 'AUD', 'annual', 'AI fee reader (https://x)', null),
@@ -41,13 +41,11 @@ select fx.ok((security.fee_admitted_recheck_v1('00000000-0000-0000-0000-00000000
 select fx.ok((security.fee_admitted_recheck_v1('00000000-0000-0000-0000-0000000000f2', 'IQ-00111 D12: locked course', 'x')->>'why') like 'the course has a manual value%', 'refused: a manual value is never touched');
 select fx.ok((security.fee_admitted_recheck_v1('00000000-0000-0000-0000-0000000000f4', 'IQ-00111 D12: adapter fee', 'x')->>'raised')::boolean = false, 'refused: not an AI fee reader value');
 select fx.ok((select count(*) from pipeline.enrichment_flags where field = 'fee_ai_recheck') = 1, 'refusals raise nothing');
--- 3 the card: "Fee fails the check", stored copy linked, re-check evidence carried; decided items not listed
-select fx.ok((select kind = 'fee_check' and detail->>'evidence_id' = '00000000-0000-0000-0000-00000000e001' and detail->'recheck'->>'fee_id' = '00000000-0000-0000-0000-0000000000f1'
+-- 3 the card (the Layer 4 owner's inbox, 4fc05d14): "Fee fails the check", stored copy of the bound page linked, earlier decision in the reason; decided items not listed
+select fx.ok((select kind = 'fee_check' and detail->>'evidence_id' = '00000000-0000-0000-0000-00000000e001' and detail->>'flag_id' is not null
                and why like 'Re-check an admitted AI fee: AUD 27,338.00 for 2027 is active, but a person decided earlier: Platform Admin 18 Oct 2026%'
               from security.layer4_inbox_items_v1() where detail->>'course_id' = '00000000-0000-0000-0000-000000000c01'), 'card: Fee fails the check, stored copy linked, earlier decision in the reason');
 select fx.ok(not exists (select 1 from security.layer4_inbox_items_v1() where ref = '19713'), 'card: the decided item is not listed again');
-select fx.ok((select detail->>'evidence_id' = '00000000-0000-0000-0000-00000000e005' and detail->'recheck' is null from security.layer4_inbox_items_v1() where ref = '19800'),
-             'card: an ordinary fee check hold now links the course page held');
 -- 4 "Keep the CRICOS total" (the card releases the item as a person) withdraws the AI fee
 select security.flag_release_v1((select id from pipeline.enrichment_flags where field = 'fee_ai_recheck'), 'msingh', 'person', 'Layer 4: keep the CRICOS total', '{}', false);
 select fx.ok((select status = 'inactive' and valid_to = current_date and notes like '%Layer 4 re-check item % kept the CRICOS total (msingh)' from catalogue.course_fees where id = '00000000-0000-0000-0000-0000000000f1'),

@@ -17,10 +17,11 @@
 --     scholarship savings are recomputed and the search projection refreshed. "Open the course" (enter or confirm the fee by hand) supersedes the
 --     AI fee through admin_course_edit as today. Setting fees.recheck_keep_withdraws_on ships ON: it only carries out a person's recorded decision,
 --     limited to items this route raised; without it the card's "the page fee stays out" would be untrue.
---   3 security.layer4_inbox_items_v1: a course fee check card links its stored copy (the flag's own evidence, else the course page held) and
---     carries a re-check's evidence. Detail keys are added; nothing is renamed or removed. Not consumer API.
--- Edited live function (md5 read live 3 Nov 2026 22:0x AEDT; guarded both ways):
---   security.layer4_inbox_items_v1() a56bc3313e02ac0611deb5657da95ce0 -> c930125d7fda6efb4793b78eed0a10b5
+--   3 The card is the Layer 4 owner's: security.layer4_inbox_items_v1 as edited by 20261104150000 (cf247-l4-course-link, a56bc331 ->
+--     4fc05d14) lists a raised course flag of reason fee_crosscheck as "Fee fails the check" and links the stored copy of the course's bound
+--     page; the item's reason carries the amount and the earlier decision. This change does not edit it (interface request: a 'recheck' detail
+--     key with the flag's evidence for fee_ai_recheck items).
+-- Edited live functions: none.
 -- Replaces: nothing (the "Keep the CRICOS total" release is unchanged for every other fee check item)
 -- Retires: nothing
 -- Nothing is dropped or deleted. No consumer API object changes (G3). No Firecrawl or AI spend. No item is decided by this change.
@@ -33,26 +34,10 @@ begin
   if to_regprocedure('security.fee_reader_hold_v1(uuid)') is null then
     raise exception 'migration 20261104140000 (fee reader units and holds) must be applied before this change';
   end if;
-end $g$;
-
-create or replace function pg_temp.edit_once(p_sig text, p_before text, p_after text, p_edits text[][], p_times int[]) returns text language plpgsql as $f$
-declare v_def text := pg_get_functiondef(p_sig::regprocedure); i int; v_c int; v_old text; v_new text;
-begin
-  if md5(v_def) = p_after then return p_sig || ': already applied'; end if;
-  if md5(v_def) <> p_before then raise exception 'live % differs from the definition this change edits (md5 %)', p_sig, md5(v_def); end if;
-  for i in 1 .. array_length(p_edits, 1) loop
-    -- fixed: line endings are normalised, so the edit applies the same however the text arrives
-    v_old := replace(p_edits[i][1], chr(13), ''); v_new := replace(p_edits[i][2], chr(13), '');
-    v_c := (length(v_def) - length(replace(v_def, v_old, ''))) / length(v_old);
-    if v_c <> p_times[i] then raise exception '%: edit % must apply exactly % times (found %)', p_sig, i, p_times[i], v_c; end if;
-    v_def := replace(v_def, v_old, v_new);
-  end loop;
-  execute v_def;
-  if md5(pg_get_functiondef(p_sig::regprocedure)) <> p_after then
-    raise exception '% after the edit has md5 %, expected %', p_sig, md5(pg_get_functiondef(p_sig::regprocedure)), p_after;
+  if to_regprocedure('security.flag_release_v1(bigint,text,text,text,jsonb,boolean)') is null then
+    raise exception 'security.flag_release_v1 (the release the card makes) is missing';
   end if;
-  return p_sig || ': applied';
-end $f$;
+end $g$;
 
 -- 1 setting (G2) ------------------------------------------------------------------------------------------------------------------------------
 insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, section, used_by, reason) values
@@ -144,29 +129,13 @@ do $t$ begin
   end if;
 end $t$;
 
--- 4 the fee check card links its stored copy and carries a re-check's evidence --------------------------------------------------------------
-select pg_temp.edit_once('security.layer4_inbox_items_v1()', 'a56bc3313e02ac0611deb5657da95ce0', 'c930125d7fda6efb4793b78eed0a10b5', array[
-  array[$o$         jsonb_build_object('flag_id', f.id, 'course_id', c.id, 'course_code', c.course_code)
-    from pipeline.enrichment_flags f left join catalogue.courses c on c.id::text = f.entity_key
-$o$, $n$         jsonb_build_object('flag_id', f.id, 'course_id', c.id, 'course_code', c.course_code)
-           -- CF-247 IQ-00111 D12: a fee check card links its stored copy (the flag's own, else the course page held) and carries a re-check's evidence
-           || jsonb_strip_nulls(jsonb_build_object('evidence_id', fe.id, 'captured_at', fe.captured_at, 'source_url', fe.source_url,
-                                                   'recheck', case when f.field = 'fee_ai_recheck' then f.evidence end))
-    from pipeline.enrichment_flags f left join catalogue.courses c on c.id::text = f.entity_key
-    left join lateral (select e.id, e.captured_at, e.source_url from pipeline.evidence_artifacts e
-                        where f.reason_code = 'fee_crosscheck'
-                          and e.id = coalesce(case when f.evidence->>'evidence_id' ~ '^[0-9a-f-]{36}$' then (f.evidence->>'evidence_id')::uuid end,
-                                              (select g.evidence_id from pipeline.coverage_course_pages g where g.course_id = c.id))) fe on true
-$n$]
-], array[1]);
-
--- 5 remedy (workstream A's contract) and component register ---------------------------------------------------------------------------------
+-- 4 remedy (workstream A's contract) and component register ---------------------------------------------------------------------------------
 select security.ops_remedy_register_v1('fee_admitted_recheck', jsonb_build_object('title', 'Send an admitted AI fee that contradicts a fee check decision back to Layer 4',
   'treats', jsonb_build_array('fee_reader_hold_bypass'), 'authority', 'admin',
   'notes', 'security.fee_admitted_recheck_v1 through the governed paste docs/paste/PASTE-20261104-fee-admitted-recheck.sql; a person confirms the fee on the course or keeps the CRICOS total (the AI fee is withdrawn).'))
  where exists (select 1 from pipeline.ops_root_causes r where r.code = 'fee_reader_hold_bypass');
 
 insert into pipeline.component_register(kind, name, layer, purpose, status, replaces, introduced_in) values
- ('function', 'security.fee_admitted_recheck_v1', 'Layer 4', 'CF-247 IQ-00111 D12: raise a "Fee fails the check" item to re-check an admitted AI fee, with evidence and earlier decisions', 'active', '{}', '20261104180000'),
- ('function', 'security.fee_admitted_recheck_settle_tg', 'Layer 4', 'CF-247 IQ-00111 D12: Keep the CRICOS total on a re-check item withdraws the AI fee (trigger fee_admitted_recheck_settle)', 'active', '{}', '20261104180000')
+ ('function', 'security.fee_admitted_recheck_v1', 'Layer 4', 'CF-247 IQ-00111 D12: raise a "Fee fails the check" item to re-check an admitted AI fee, with evidence and earlier decisions', 'active', '{}', '20261104230000'),
+ ('function', 'security.fee_admitted_recheck_settle_tg', 'Layer 4', 'CF-247 IQ-00111 D12: Keep the CRICOS total on a re-check item withdraws the AI fee (trigger fee_admitted_recheck_settle)', 'active', '{}', '20261104230000')
 on conflict do nothing;
