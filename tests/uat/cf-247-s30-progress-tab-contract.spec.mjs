@@ -35,7 +35,7 @@ test('retired: Live activity page, Pilot panel, Dashboard health strip, Layers a
 })
 
 test.describe('mocked browser', () => {
-  test('Overview: group picker, needs attention, stages that open Journeys, fields when picked → now, budget and trend', async ({ page }) => {
+  test('Overview: group picker, needs attention, stages that open Journeys, budget and trend; no Courses with each field (SS-020)', async ({ page }) => {
     await mockAdmin(page)
     await page.goto('/#coverage?tab=progress')
     const o = page.locator('[data-progress-overview]')
@@ -44,7 +44,9 @@ test.describe('mocked browser', () => {
     await expect(o.locator('[data-progress-need="firecrawl:2:daily:scholarships:2026-10-13"]')).toContainText('3500 of 3500')
     await expect(o.locator('[data-progress-share="scholarships"]')).toContainText('100% of 3,500')
     await o.locator('[data-progress-group="top"]').click()
-    await expect(o.locator('[data-progress-field="intakes"]')).toContainText('55% → 55%')
+    // SS-020 step 1 (Decision 269): "Courses with each field" retired (it repeated Coverage › Attributes), with a link there instead
+    await expect(o.locator('[data-progress-fields]')).toHaveCount(0)
+    await expect(o.locator('[data-progress-budget] a[href="#coverage?tab=attributes"]')).toBeVisible()
     await expect(o.locator('[data-progress-tile="scholarships"]')).toContainText('883')
     await o.locator('[data-progress-stage="admit_scholarships"]').click()
     await expect(page).toHaveURL(/view=journeys/)

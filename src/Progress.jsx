@@ -54,7 +54,7 @@ function Overview({group,setGroup,onError}){
   const load=async()=>{try{setD(await read('overview',{group}))}catch(e){onError?.(errText(e))}}
   useEffect(()=>{setD(null);load()},[group])
   if(!d)return <Loading label="Reading progress…"/>
-  const st=d.stages||{},f=d.fields||{},s=d.scholarships||{},pg=d.pages_hour||{},b=d.budget||{}
+  const st=d.stages||{},s=d.scholarships||{},pg=d.pages_hour||{},b=d.budget||{}
   const needs=[]
   for(const[k,n]of Object.entries(d.stop_reasons||{}))if(Number(n)>0){const h=heldText(k);needs.push({key:`stop:${k}`,tone:['nothing_ready','approve_central'].includes(k)?'warning':'neutral',title:`${fmtNumber(n)} ${Number(n)===1?'university':'universities'}: ${h[0]}`,hint:h[1],href:hrefFor('coverage','progress',{view:'journeys',group,held:'stopped',stop:k})})}
   for(const n of d.notices||[])needs.push({key:n.key,tone:n.severity==='high'?'danger':'warning',title:n.title,hint:[n.detail,n.hint].filter(Boolean).join(' ')})
@@ -78,14 +78,7 @@ function Overview({group,setGroup,onError}){
       <ol className="pg-stages">{STAGES.map(([k,l],i)=><li key={k}><a href={journeyHref(k)} data-progress-stage={k}><small>{k==='done'?'':`${i+1}. `}{l}</small><strong>{fmtNumber(st[k]||0)}</strong></a></li>)}</ol>
     </section>
     <div className="pg-two">
-      <section className="m-panel" aria-label="Fields" data-progress-fields>
-        <h3 className="sl-h4">Courses with each field{f.courses_before!=null?' (when picked → now)':''}</h3>
-        <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Field</th><th className="num">Courses</th><th className="num">Share</th></tr></thead><tbody>
-          {[['intakes','Intakes'],['english','English'],['fee','Fee'],['delivery','Delivery']].map(([k,l])=><tr key={k} data-progress-field={k}><td>{l}</td><td className="num">{fmtNumber(f[k])}</td>
-            <td className="num">{f[`${k}_before`]!=null?<>{pctText(f[`${k}_before`],f.courses_before)} → </>:''}<strong>{pctText(f[k],f.courses)}</strong></td></tr>)}
-        </tbody></table></div>
-        <small className="sd-desc">{fmtNumber(f.courses)} courses. {fmtNumber(s.waiting_ai)} scholarship pages wait for the AI.</small>
-      </section>
+      {/* SS-020 step 1 (Decision 269, 3 Nov 2026): "Courses with each field" retired; it repeated Coverage & completeness › Attributes */}
       <section className="m-panel" aria-label="Firecrawl and AI today" data-progress-budget>
         <h3 className="sl-h4">Firecrawl and AI today</h3>
         <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Purpose</th><th className="num">Used</th><th className="num">Share</th><th className="num">Refused</th></tr></thead><tbody>
@@ -93,7 +86,7 @@ function Overview({group,setGroup,onError}){
             <td className="num"><StatusChip tone={Number(g.used)>=Number(g.share)?'danger':Number(g.used)>=0.8*Number(g.share)?'warning':'success'} label={`${pctText(g.used,g.share)} of ${fmtNumber(g.share)}`}/></td><td className="num">{fmtNumber(g.refused)}</td></tr>)}
           {(d.ai_today||[]).map(a=><tr key={a.use} data-progress-ai={a.use}><td>AI: {a.label}</td><td className="num">US${Number(a.spent||0).toFixed(2)}</td><td className="num">guard US${a.guard}</td><td className="num">—</td></tr>)}
         </tbody></table></div>
-        <small className="sd-desc">OpenRouter balance US${d.openrouter_usd!=null?Number(d.openrouter_usd).toFixed(2):'—'}. Change shares and guards on <a className="cf-link" href={hrefFor('environment','settings')}>Settings</a>.</small>
+        <small className="sd-desc">OpenRouter balance US${d.openrouter_usd!=null?Number(d.openrouter_usd).toFixed(2):'—'}. Change shares and guards on <a className="cf-link" href={hrefFor('environment','settings')}>Settings</a>. {fmtNumber(s.waiting_ai)} scholarship pages wait for the AI; each field's share is on <a className="cf-link" href={hrefFor('coverage','attributes')}>Coverage › Attributes</a>.</small>
       </section>
     </div>
     <section className="m-panel" aria-label="Hourly trend" data-progress-trend>

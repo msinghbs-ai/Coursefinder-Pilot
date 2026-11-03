@@ -3,10 +3,11 @@
 // limit or times out; Serper and ScrapingBee run on a key whose plan limits are settings (a free key now, a production
 // key later), with sample runs across every country before scheduled use; and every
 // variable is a setting the Platform Admin changes here — nothing fixed in code.
-// Reads: admin_toolsets_read(), admin_platform_notices_read(layer), admin_toolset_samples_read(run).
+// SS-020 step 1 (Decision 269, 3 Nov 2026): the Serper, ScrapingBee, Search pass and Sample runs cards retired (Firecrawl only, 4 Oct);
+// their rows and history stay (src/retired-services.js).
+// Reads: admin_toolsets_read(), admin_platform_notices_read(layer).
 // CF-247 W35 (Platform Admin 30 Oct 2026 06:53): notices come from a cached snapshot; its time, age and Stale marker are shown (SnapshotStamp).
-// Writes: admin_toolsets_write(action,args), admin_toolset_sample_write(action,args) — Platform Admin with a reason;
-// sample runs are done by the toolset-runner edge function (migrations 20261004000600 to 20261004000900).
+// Writes: admin_toolsets_write(action,args) — Platform Admin with a reason.
 // v2.15.180 (Decision 253): Firecrawl settings by section (Target universities, Read pages, Find pages, Runs) and the
 // Firecrawl work panel (FirecrawlWork.jsx): runs by use case, target universities and the report for Firecrawl support.
 // v2.15.200 (Decision 254, Platform Admin 6 Oct 15:38 "Services, keys and limits only, every card collapsed"): every
@@ -23,21 +24,13 @@ import{plainError}from'./lib/errors'
 import{useIsPlatformAdmin,balanceWords}from'./lib/viewer'
 import SnapshotStamp from'./SnapshotStamp'
 import{gateFor}from'./guide/operatingWords'
+import{RETIRED_TOOLSETS}from'./retired-services'
 
 const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const ask=t=>{const r=window.prompt(`${t}\n\nReason (kept in the log):`);return r&&r.trim().length>=4?r.trim():null}
 const LAYER={0:'Platform',1:'Layer 1',2:'Layer 2',3:'Layer 3',4:'Layer 4'}
 const SEV={high:'danger',warning:'warning',info:'neutral'}
-const NAME={serper:'Serper',scrapingbee:'ScrapingBee'}
-const PURPOSE={find_course_page:'Find course pages',find_provider_site:'Find provider websites',render_page:'Read pages that need a browser'}
-const SAMPLES={serper:['find_course_page','find_provider_site'],scrapingbee:['render_page']}
-const STATUS={ready:'Ready',running:'Running',paused_time_limit:'Paused at the time limit',done:'Finished',stopped:'Stopped',stopped_credit_cap:'Stopped at its credit allowance',stopped_vendor_limit:'Stopped: the service refused calls'}
-const OUT={found_on_provider_site:'Found on the provider’s site',provider_site_no_title_match:'Provider’s site, title did not match',other_sites_only:'Other sites only',no_results:'No results',
-  likely_official_site:'Likely official website',directories_only:'Directories only',no_confident_match:'No confident match',
-  rendered_course_page:'Rendered: the course page',rendered_other_page:'Rendered: a different page',blocked:'Still blocked',error:'Error'}
-const GOOD=new Set(['found_on_provider_site','likely_official_site','rendered_course_page'])
 const money=v=>v==null?'—':`US$${Number(v).toFixed(2)}`
-const pct=(a,b)=>b?`${Math.round(100*a/b)}%`:'—'
 
 // ---- notices on each layer page -------------------------------------------------------------------------------------
 // v2.15.268 (Platform Admin, 13 Oct 2026 14:56: "these notification are asking for cant be fixed and if followed the link its doesnt open
@@ -167,9 +160,7 @@ export default function Toolsets({onError}){
       <SnapshotStamp meta={n?.snapshot} label="Notices checked" what="toolset-notices"/>
       <div className="tn-all" data-toolset-notices>{notices.length?notices.map(x=><Notice key={x.key} n={x} onDone={load}/>):<p className="sl-sub">No notices on any layer.</p>}</div>
     </Card>
-    {(d.toolsets||[]).map(t=><React.Fragment key={t.key}><Toolset t={t} d={d} can={can} write={write}/>{t.key==='firecrawl'&&<><FirecrawlCredits onError={onError}/><FirecrawlWork onError={onError}/></>}</React.Fragment>)}
-    <SearchPass can={Boolean(d.can_manage)} onError={onError}/>
-    <SampleRuns toolsets={d.toolsets||[]} can={Boolean(d.can_manage)} onError={onError}/>
+    {(d.toolsets||[]).filter(t=>!RETIRED_TOOLSETS.has(t.key)).map(t=><React.Fragment key={t.key}><Toolset t={t} d={d} can={can} write={write}/>{t.key==='firecrawl'&&<><FirecrawlCredits onError={onError}/><FirecrawlWork onError={onError}/></>}</React.Fragment>)}
   </div>
 }
 
@@ -178,32 +169,15 @@ function Toolset({t,d,can,write}){
   const or=t.key==='openrouter'?d.openrouter||{}:null
   const sections=SECTION_ORDER.filter(x=>(t.settings||[]).some(s=>(s.section||'Notices')===x))
   return <Card id={`services.toolset.${t.key}`} title={t.label} subtitle={`${(t.layers||[]).map(l=>LAYER[l]).join(', ')}. ${t.help}`} data-toolset={t.key}
-    meta={<>{t.enforcement&&<span className={`cf-chip tone-${t.enforcement==='observe'?'warning':'success'}`}>{t.enforcement==='observe'?'Observe only':'Stops at limits'}</span>}{t.key in SAMPLES&&<span className={`cf-chip tone-${t.key_saved?'success':'warning'}`}>{t.key_saved?'Key saved':'No key'}</span>}{t.plan?.at_reserve&&<span className="cf-chip tone-danger">At its reserve</span>}</>}>
+    meta={<>{t.enforcement&&<span className={`cf-chip tone-${t.enforcement==='observe'?'warning':'success'}`}>{t.enforcement==='observe'?'Observe only':'Stops at limits'}</span>}{t.plan?.at_reserve&&<span className="cf-chip tone-danger">At its reserve</span>}</>}>
     {t.key==='firecrawl'&&<p className="tn-jump"><a href="#layer-2-discovery?tab=universities">Firecrawl runs, targets and university adapters are on Layer 2 › Adapters</a></p>}
     {t.enforcement&&<div className="tn-mode" data-toolset-mode={t.key}>
       <span className={`cf-chip tone-${t.enforcement==='observe'?'warning':'success'}`}>{t.enforcement==='observe'?'Observe only — not stopped by the platform':'Stop at limits'}</span>
       {can&&<Button compact onClick={()=>write('enforcement',{toolset:t.key,enforcement:t.enforcement==='observe'?'stop':'observe'},t.enforcement==='observe'?`Make ${t.label} stop at its spend guards and credit floor?`:`Let ${t.label} run past its spend guards and credit floor (observe only)?`)}>{t.enforcement==='observe'?'Switch to stop at limits':'Switch to observe only'}</Button>}
       <small className="sl-sub">{t.reason}{t.updated_at?` · ${fmtDateTime(t.updated_at)}`:''}</small></div>}
-    {t.key in SAMPLES&&<KeyPlan t={t}/>}
     {or&&<OpenRouter or={or}/>}
     {sections.map(sec=><Settings key={sec} title={sec} t={t} rows={t.settings.filter(s=>(s.section||'Notices')===sec)} can={can} write={write}/>)}
   </Card>
-}
-
-// The key in use and the limits of its plan: replace the key on Settings, then enter the new plan here.
-function KeyPlan({t}){
-  const admin=useIsPlatformAdmin() // UI audit Phase 1: credit figures for the Platform Admin; words for everyone else
-  const p=t.plan||{},pct=p.credits?Math.min(100,Math.round(100*Number(p.used||0)/Number(p.credits))):0
-  return <div className="tn-plan" data-toolset-key={t.key}>
-    <div className="tn-plan-row"><span className={`cf-chip tone-${t.key_saved?'success':'warning'}`}>{t.key_saved?'Key saved in the vault':'No key saved'}</span>
-      <span className={`cf-chip tone-${t.switched_on?'success':'neutral'}`}>{t.switched_on?'Switched on in Models & services':'Switched off in Models & services'}</span>
-      <a href="#environment">{t.key_saved?'Replace the key':'Save the key'} on Settings</a></div>
-    <div className="tn-plan-row" data-toolset-plan={t.key}><strong>{p.name||'Plan not named'}</strong><span data-balance={admin?'figure':'words'}>{admin?`${fmtNumber(p.used)} of ${fmtNumber(p.credits)} credits used`:balanceWords(p.left,p.reserve)}{p.counted_from?` since ${p.counted_from}`:''}{p.renews_monthly?' (renews monthly)':''}</span>
-      <span>{admin?`${fmtNumber(p.left)} left · ${fmtNumber(p.reserve)} kept back · `:''}up to {fmtNumber(p.max_concurrency)} calls at once</span>
-      {p.at_reserve&&<span className="cf-chip tone-danger">At its reserve — work using this key has stopped</span>}</div>
-    <div className="sl-credit-bar" aria-hidden><span style={{width:`${pct}%`}}/></div>
-    <small className="sl-sub">When you move to a production key: save the new key on Settings, then set its plan name, credits, renewal, “Count credits from” (the day you changed it) and calls at once below. Nothing else changes.</small>
-  </div>
 }
 
 function Settings({title,t,rows,can,write}){
@@ -237,83 +211,6 @@ function OpenRouter({or}){
   </div>
 }
 
-// ---- sample runs ----------------------------------------------------------------------------------------------------------
-function SampleRuns({toolsets,can,onError}){
-  return <Card id="services.sample-runs" title="Sample runs" subtitle="Test a key on real cases from every country before scheduled use. Nothing is admitted." data-toolset-samples><SampleRunsBody toolsets={toolsets} can={can} onError={onError}/></Card>
-}
-function SampleRunsBody({toolsets,can,onError}){
-  const[d,setD]=useState(null),[run,setRun]=useState(''),[busy,setBusy]=useState(false)
-  const load=async(r=run)=>{try{const{data,error}=await supabase.rpc('admin_toolset_samples_read',{p_run_id:r||null});if(error)throw error;setD(data||{})}catch(e){onError?.(errText(e))}}
-  useEffect(()=>{load()},[run])
-  useEffect(()=>{const live=(d?.runs||[]).some(r=>r.status==='running');if(!live)return;const t=setTimeout(()=>load(),8000);return()=>clearTimeout(t)},[d])
-  const kick=async id=>{const{data,error}=await supabase.functions.invoke('toolset-runner',{body:{action:'run',run_id:id}});if(error)throw error;if(data?.error)throw new Error(data.error)}
-  const start=async(toolset,purpose)=>{const reason=ask(`Start a ${NAME[toolset]} sample run: ${PURPOSE[purpose]}? It takes cases from each country in the settings and uses the key's credits. Nothing it finds is admitted.`);if(!reason)return
-    setBusy(true);try{const{data,error}=await supabase.rpc('admin_toolset_sample_write',{p_action:'start',p_args:{toolset,purpose,reason}});if(error)throw error;await kick(data.run_id);setRun(data.run_id);await load(data.run_id)}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
-  const resume=async id=>{setBusy(true);try{await kick(id);await load()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
-  const stop=async id=>{const reason=ask('Stop this sample run?');if(!reason)return;setBusy(true);try{const{error}=await supabase.rpc('admin_toolset_sample_write',{p_action:'stop',p_args:{run_id:id,reason}});if(error)throw error;await load()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
-  if(!d)return <Loading label="Loading sample runs…"/>
-  const keys=Object.fromEntries(toolsets.map(t=>[t.key,t]))
-  const sel=(d.runs||[]).find(r=>r.id===run)
-  return <><p className="sl-sub">Each run takes real cases from every country in the service’s settings, calls the service with the key in use and records what came back. Results are for review. Nothing is admitted or written to a course, provider or page.</p>
-    {can&&<div className="tn-starts">{Object.entries(SAMPLES).map(([k,ps])=>ps.map(p=><Button key={k+p} compact disabled={busy||!keys[k]?.key_saved} onClick={()=>start(k,p)} title={keys[k]?.key_saved?'':'Save the key first'}>{`Run a sample with ${NAME[k]}: ${PURPOSE[p]}`}</Button>))}</div>}
-    <h4 className="sl-h4">Backlog the runs take cases from</h4>
-    <div className="cf-table-wrap"><table className="cf-table" data-sample-backlog><thead><tr><th>Work</th>{[...new Set((d.backlog||[]).map(b=>b.country))].map(c=><th key={c} className="num">{c}</th>)}</tr></thead><tbody>
-      {Object.keys(PURPOSE).map(p=><tr key={p}><td>{PURPOSE[p]}</td>{[...new Set((d.backlog||[]).map(b=>b.country))].map(c=>{const b=(d.backlog||[]).find(x=>x.purpose===p&&x.country===c);return <td key={c} className="num">{b?fmtNumber(b.n):'—'}</td>})}</tr>)}
-    </tbody></table></div>
-    <h4 className="sl-h4">Runs</h4>
-    {(d.runs||[]).length===0?<Empty text="No sample runs yet."/>:<div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Started</th><th>Service</th><th>Work</th><th>Countries</th><th>Status</th><th className="num">Cases done</th><th className="num">Credits</th><th></th></tr></thead><tbody>
-      {d.runs.map(r=><tr key={r.id} data-sample-run={r.id} className={r.id===run?'tn-sel':''}><td>{fmtDateTime(r.created_at)}</td><td>{NAME[r.toolset]||r.toolset}</td><td>{PURPOSE[r.purpose]}</td><td>{(r.countries||[]).join(', ')}</td>
-        <td>{STATUS[r.status]||r.status}{r.status_note&&<small className="sl-sub">{r.status_note}</small>}</td><td className="num">{fmtNumber(r.done)} of {fmtNumber(r.cases)}</td><td className="num">{fmtNumber(r.credits_used)}</td>
-        <td><span className="sl-state"><Button compact onClick={()=>setRun(r.id===run?'':r.id)}>{r.id===run?'Hide':'Results'}</Button>
-          {can&&['ready','paused_time_limit'].includes(r.status)&&<Button compact variant="primary" disabled={busy} onClick={()=>resume(r.id)}>Continue</Button>}
-          {can&&['ready','running','paused_time_limit'].includes(r.status)&&<Button compact disabled={busy} onClick={()=>stop(r.id)}>Stop</Button>}</span></td></tr>)}
-    </tbody></table></div>}
-    <Results d={d} sel={sel}/>
-  </>
-}
-
-function Results({d,sel}){
-  const rows=(d.summary||[])
-  if(!rows.length)return null
-  const groups=[...new Set(rows.map(r=>`${r.toolset}|${r.purpose}`))]
-  return <div className="tn-results" data-sample-results>{groups.map(g=>{const[toolset,purpose]=g.split('|');const rs=rows.filter(r=>r.toolset===toolset&&r.purpose===purpose)
-    const countries=[...new Set(rs.map(r=>r.country))],outcomes=[...new Set(rs.map(r=>r.outcome))]
-    const run=sel||(d.runs||[]).find(r=>r.toolset===toolset),price=Number(run?.usd_per_1k_credits??0)
-    return <div key={g}><h4 className="sl-h4">{sel?'This run':'All runs'}: {NAME[toolset]||toolset} — {PURPOSE[purpose]}</h4>
-      <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Outcome</th>{countries.map(c=><th key={c} className="num">{c}</th>)}</tr></thead><tbody>
-        {outcomes.map(o=><tr key={o} data-sample-outcome={o} className={GOOD.has(o)?'tn-good':''}><td>{OUT[o]||o}</td>{countries.map(c=>{const tot=rs.filter(r=>r.country===c).reduce((a,r)=>a+Number(r.n),0),x=rs.find(r=>r.country===c&&r.outcome===o);return <td key={c} className="num">{x?`${fmtNumber(x.n)} (${pct(x.n,tot)})`:'—'}</td>})}</tr>)}
-        <tr><td><strong>Credits per case</strong></td>{countries.map(c=>{const r2=rs.filter(r=>r.country===c),n=r2.reduce((a,r)=>a+Number(r.n),0),cr=r2.reduce((a,r)=>a+Number(r.credits||0),0);return <td key={c} className="num">{n?(cr/n).toFixed(1):'—'}</td>})}</tr>
-        <tr data-sample-projection><td><strong>Projected cost for the whole backlog</strong><small className="sl-sub">Backlog × credits per case × price per 1,000 credits (from the settings).</small></td>{countries.map(c=>{const r2=rs.filter(r=>r.country===c),n=r2.reduce((a,r)=>a+Number(r.n),0),cr=r2.reduce((a,r)=>a+Number(r.credits||0),0),b=(d.backlog||[]).find(x=>x.purpose===purpose&&x.country===c)?.n;return <td key={c} className="num">{n&&b!=null?money(b*(cr/n)*price/1000):'—'}</td>})}</tr>
-      </tbody></table></div></div>})}
-    {sel&&(d.items||[]).length>0&&<details className="tn-items"><summary>Every case in this run ({d.items.length})</summary><div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Country</th><th>Case</th><th>Outcome</th><th>What came back</th><th className="num">Credits</th></tr></thead><tbody>
-      {d.items.map((i,k)=><tr key={k}><td>{i.country}</td><td>{i.input?.course||i.input?.provider}<small className="sl-sub">{i.input?.provider&&i.input?.course?i.input.provider:''}{i.input?.url?` · ${i.input.url}`:''}</small></td><td>{OUT[i.outcome]||i.outcome}</td>
-        <td><small className="sl-sub">{i.result?.found_url||i.result?.suggested_site||i.result?.h1||i.result?.message||(i.result?.top||[]).map(t=>t.link).slice(0,1).join('')||'—'}{i.result?.same_as_earlier_candidate?' · same page the identity check refused earlier':''}{i.result?.markers?` · intake ${i.result.markers.intake?'yes':'no'}, English ${i.result.markers.english?'yes':'no'}, tuition ${i.result.markers.tuition?'yes':'no'}`:''}</small></td><td className="num">{fmtNumber(i.credits)}</td></tr>)}
-    </tbody></table></div></details>}
-  </div>
-}
-
-// ---- search pass (Decision 252 step 1): Serper's found pages go to the identity check; the reader decides -----------------
-const LINK_STATE={found:'Waiting for the identity check',verified:'Confirmed by the identity check',none:'Refused, no other candidate'}
-export function SearchPass({can,onError}){
-  return <Card id="services.search-pass" title="Search pass" subtitle="Serper searches the courses the first search left without a page." data-search-pass><SearchPassBody can={can} onError={onError}/></Card>
-}
-function SearchPassBody({can,onError}){
-  const[d,setD]=useState(null),[busy,setBusy]=useState(false)
-  const load=async()=>{try{const{data,error}=await supabase.rpc('admin_search_pass_read');if(error)throw error;setD(data||{})}catch(e){onError?.(errText(e))}}
-  useEffect(()=>{load()},[])
-  useEffect(()=>{const live=(d?.runs||[]).some(r=>['running','paused_time_limit'].includes(r.status));if(!live)return;const t=setTimeout(load,15000);return()=>clearTimeout(t)},[d])
-  const start=async()=>{const reason=ask('Run the Serper search pass? It searches the courses still without a page (per the Search pass settings) and sends each page it finds to the identity check. Nothing is admitted by the pass.');if(!reason)return
-    setBusy(true);try{const{error}=await supabase.rpc('admin_search_pass_start',{p_reason:reason});if(error)throw error;await load()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
-  if(!d)return null
-  const countries=[...new Set((d.links||[]).map(l=>l.country))]
-  return <><p className="sl-sub">Serper searches the courses the first search left without a page. Each page it finds on the provider’s own site goes to the identity check, like any other page. A confirmed page or a link entered by hand is never replaced.</p>
-    {can&&<div className="tn-starts"><Button compact variant="primary" disabled={busy} onClick={start}>Run the search pass</Button></div>}
-    {(d.runs||[]).length>0&&<div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Started</th><th>Status</th><th className="num">Courses searched</th><th className="num">Credits</th></tr></thead><tbody>
-      {d.runs.map(r=><tr key={r.id} data-pass-run={r.id}><td>{fmtDateTime(r.created_at)}</td><td>{STATUS[r.status]||r.status}{r.status_note&&<small className="sl-sub">{r.status_note}</small>}</td><td className="num">{fmtNumber(r.done)} of {fmtNumber(r.courses)}</td><td className="num">{fmtNumber(r.credits_used)}</td></tr>)}
-    </tbody></table></div>}
-    {countries.length>0&&<><h4 className="sl-h4">Pages sent to the identity check</h4><div className="cf-table-wrap"><table className="cf-table" data-pass-links><thead><tr><th>State</th>{countries.map(c=><th key={c} className="num">{c}</th>)}</tr></thead><tbody>
-      {Object.keys(LINK_STATE).map(st=><tr key={st} data-pass-state={st}><td>{LINK_STATE[st]}</td>{countries.map(c=><td key={c} className="num">{fmtNumber((d.links||[]).filter(l=>l.country===c&&l.state===st).reduce((a,l)=>a+Number(l.n),0))}</td>)}</tr>)}
-    </tbody></table></div></>}
-    {(d.repairs||[]).length>0&&<><h4 className="sl-h4">Page addresses changed (all logged)</h4><ul className="tn-list" data-pass-repairs>{d.repairs.map(r=><li key={r.reason}>{r.reason}: <strong>{fmtNumber(r.n)}</strong> <small className="sl-sub">last {fmtDateTime(r.last_at)}</small></li>)}</ul></>}
-  </>
-}
+// SS-020 step 1 (Decision 269, 3 Nov 2026): the Sample runs and Search pass cards retired with the Serper and ScrapingBee cards (Firecrawl
+// only, 4 Oct 2026). Their history stays in pipeline.toolset_sample_runs, toolset_sample_items and search_pass_links; the functions and the
+// toolset-runner edge function are marked retiring in pipeline.component_register (migration 20261104182000).

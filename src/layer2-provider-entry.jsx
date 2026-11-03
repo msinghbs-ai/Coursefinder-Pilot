@@ -3,17 +3,20 @@ import{KeyRound,Network,Plus,RefreshCw,ShieldCheck,X}from'lucide-react'
 import{adminRead,supabase}from'./lib/supabase'
 import'./layer2-provider.css'
 import{fmtNumber,fmtMoney}from'./lib/format.js'
+import{isRetiredFetcher}from'./retired-services'
 
 const CC='CF-CHG-20260827-044'
 const EMPTY={provider_key:'',display_name:'',adapter_type:'scraper_api',base_url:'',auth_scheme:'query_param',auth_field_name:'token',capabilities:{raw:true,html:true,json:true,screenshot:false,javascript:true,anti_bot:true,proxy:true},request_template:{target_url_parameter:'url'},billing_config:{currency:'USD',unit:'request'},enabled:false,priority:100,rate_limit_per_minute:60,concurrency:2,timeout_seconds:45,operational_owner:'Platform Operations',change_control_ref:CC}
 
+// SS-020 step 1 (Decision 269, 3 Nov 2026): providers dropped for go-live (29 Sep) and Serper and ScrapingBee (Firecrawl only, 4 Oct) are
+// no longer listed; their rows stay (src/retired-services.js).
 // Clean-up batch 2 (9 Oct 2026): the never-mounted self-mount entry, the unused per-source routing and test-fetch code,
 // the Layer 2 automation, dispatcher tuning and scholarship runtime panels were removed. The provider registry and keys stay.
 
 export function Console({rank,onClose=()=>{},embedded=false}){
  const[providers,setProviders]=useState([]),[selected,setSelected]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[newOpen,setNewOpen]=useState(false)
  const control=async(action,payload={})=>{const{data,error:e}=await supabase.functions.invoke('layer2-provider-control',{body:{action,payload}});if(e)throw e;if(data?.error)throw new Error(data.error);return data}
- const load=async()=>{setBusy(true);setError('');try{const p=await adminRead('layer2_acquisition_providers');setProviders(p||[]);setSelected(current=>current?(p||[]).find(x=>x.id===current.id)||current:current)}catch(e){setError(e.message)}finally{setBusy(false)}}
+ const load=async()=>{setBusy(true);setError('');try{const p=await adminRead('layer2_acquisition_providers');setProviders((p||[]).filter(x=>!isRetiredFetcher(x)));setSelected(current=>current?(p||[]).find(x=>x.id===current.id)||current:current)}catch(e){setError(e.message)}finally{setBusy(false)}}
  useEffect(()=>{load()},[])
  const saveProvider=async cfg=>{setBusy(true);setError('');try{await control('create_provider',cfg);setNewOpen(false);await load()}catch(e){setError(e.message)}finally{setBusy(false)}}
  const updateProvider=async cfg=>{setBusy(true);setError('');try{await control('update_provider',cfg);const next=await adminRead('layer2_acquisition_providers');const saved=(next||[]).find(x=>x.id===cfg.id);if(!saved)throw new Error('Provider update could not be verified after save');if(Number(saved.concurrency)!==Number(cfg.concurrency)||Number(saved.timeout_seconds)!==Number(cfg.timeout_seconds)||((saved.rate_limit_per_minute??null)!==(cfg.rate_limit_per_minute??null)))throw new Error('Provider settings did not persist exactly; refresh and retry');if(saved.provider_key==='firecrawl'&&Number(saved.billing_config?.monthly_vendor_units_limit)!==Number(cfg.billing_config?.monthly_vendor_units_limit))throw new Error('Firecrawl monthly limit did not persist exactly; refresh and retry');if(saved.provider_key==='firecrawl'&&Number(saved.billing_config?.stop_at_vendor_units_remaining)!==Number(cfg.billing_config?.stop_at_vendor_units_remaining))throw new Error('Firecrawl safety reserve did not persist exactly; refresh and retry');setProviders(next||[]);setSelected(saved);return saved}catch(e){setError(e.message);throw e}finally{setBusy(false)}}

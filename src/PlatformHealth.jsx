@@ -42,13 +42,20 @@ function human(v){return String(v??'').replaceAll('_',' ').replace(/^\w/,c=>c.to
 function scalar(k,v){if(v==null||v==='')return'—';if(typeof v==='number')return fmtNumber(v);if(typeof v==='boolean')return v?'yes':'no';if(/(_at|since|_end)$/.test(k)&&!Number.isNaN(Date.parse(v)))return fmtDateTime(v);if(typeof v==='string'&&/^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(v)&&!Number.isNaN(Date.parse(v)))return fmtDateTime(v);if(isRouteFragment(v))return screenName(v);if(looksCron(v))return describeSchedule(v).text;return scrubInternals(String(v))} // v2.15.341: raw ISO stamps become dates, raw errors become plain words
 /** Detail text or object → short readable lines. Nested objects are summarised one level deep. */
 // v2.15.131 (hc-details-text, hc-actions): plain names for detail keys, and where to go to fix each check.
-const KEY_LABEL={layer3_stuck_over_1h:'Layer 3 items stuck over 1 hour',stuck_over_2h:'Stuck over 2 hours',openrouter_daily_ceiling_usd:'OpenRouter daily limit (US$)',openrouter_spend_24h_usd:'OpenRouter spend, last 24 h (US$)',
+const KEY_LABEL={stuck_over_2h:'Stuck over 2 hours',openrouter_daily_ceiling_usd:'OpenRouter daily limit (US$)',openrouter_spend_24h_usd:'OpenRouter spend, last 24 h (US$)',
   scholarship_firecrawl_cap:'Scholarship Firecrawl allowance',scholarship_firecrawl_used:'Scholarship Firecrawl used',jobs_overdue:'Jobs overdue',jobs_failing:'Jobs failing',active_jobs:'Active jobs',created_24h:'New in 24 h',decided_24h:'Decided in 24 h',
   invoked_last_24h:'Called in 24 h',window_minutes:'Window (minutes)',by_function:'By function',db_size:'Database size',max_connections:'Connection limit',active_connections:'Active connections',compute_size:'Compute size',ms:'Response (ms)',run_ms:'Run time (ms)',slowest_probe_ms:'Slowest probe (ms)',
   oldest_minutes:'Oldest waiting (minutes)',last_processed_at:'Last processed',next_step:'Next step',cause:'Cause',held_24h:'Held in 24 h (delivery off)',failed_24h:'Failed in 24 h',last_sent_at:'Last delivered',delivery:'External delivery',waiting:'Waiting'}
 const keyLabel=k=>KEY_LABEL[k]||human(k)
+// SS-020 step 1 (Decision 269, 3 Nov 2026): Layer 3 retired on 12 Oct, so Health checks shows no Layer 3 block. The queue check still reports
+// under the server's area name "Layer 3" (it covers Layer 2 run items and the Layer 4 review backlog); it is shown under its real scope, and
+// its two Layer 3 sub-checks (stuck work items, work dispatch; the table has been empty since 11 Oct) are left out. Server tidy: component register.
+export const AREA_WORDS={'Layer 3':'Layer 2 and 4 queues'}
+export const areaName=a=>AREA_WORDS[a]||human(a)
+const LAYER3_QUEUE=/^(layer_queues:)?layer3_/
+export function withoutLayer3(c){const d=c?.detail;if(!d||typeof d!=='object'||Array.isArray(d))return c;const out=Object.fromEntries(Object.entries(d).filter(([k])=>!LAYER3_QUEUE.test(k)));if(Array.isArray(d.queues))out.queues=d.queues.filter(x=>!LAYER3_QUEUE.test(String(x?.queue||'')));return{...c,detail:out}}
 export const FIX_AT={search_refresh:['#scheduled-jobs?tab=automations','Automations'],alerts:['#environment','Pipeline settings › Alerts'],field_stalled:['#coverage?tab=attributes','Coverage › Attributes › Stalled fields'],cron:['#scheduled-jobs?tab=automations','Automations'],edge_calls:['#scheduled-jobs?tab=jobs','Jobs'],coverage_queues:['#coverage','Coverage & completeness'],admission:['#coverage','Coverage & completeness'],
-  scholarship_queues:['#scholarships?tab=coverage','Scholarships › Coverage'],scholarship_review:['#scholarships?tab=coverage','Scholarships › Coverage'] /* v2.15.253: Layer 4 Scholarship publishing retired */,layer_queues:['#layer-4-review','Layer 4 Review'],budgets:['#models-services','Models & services'] /* v2.15.252: Layer 3 Control retired */,db_capacity:['#platform-health?tab=readiness','Capacity'],queue_watch:['#platform-health?tab=queues','Platform health › Work queues']}
+  scholarship_queues:['#scholarships?tab=coverage','Scholarships › Coverage'],scholarship_review:['#scholarships?tab=coverage','Scholarships › Coverage'] /* v2.15.253: Layer 4 Scholarship publishing retired */,layer_queues:['#layer-4-review','Layer 4 Review'],budgets:['#models-services','Models & services'] /* v2.15.252: Layer 3 Control retired */,db_capacity:['#environment-migration','Go-live checklist › Capacity'] /* SS-020 step 1: Capacity moved to the Go-live checklist on 20 Oct */,queue_watch:['#platform-health?tab=queues','Platform health › Work queues']}
 export function DetailText({value}){
   if(value==null||value==='')return null
   if(isRouteFragment(value))return <span className="ph-detail"><ScreenLink href={String(value).trim()}/></span>
@@ -65,14 +72,14 @@ export default function PlatformHealth({onError}){
   useEffect(load,[])
   const areas=useMemo(()=>{
     const m=new Map()
-    for(const i of [...(data?.issues||[])].sort((a,b)=>(SEVERITY_ORDER[a.severity]??9)-(SEVERITY_ORDER[b.severity]??9)||String(b.last_seen||'').localeCompare(String(a.last_seen||'')))){const k=i.area||'Other';if(!m.has(k))m.set(k,[]);m.get(k).push(i)}
+    for(const i of [...(data?.issues||[])].filter(x=>!LAYER3_QUEUE.test(String(x?.check_key||''))).sort((a,b)=>(SEVERITY_ORDER[a.severity]??9)-(SEVERITY_ORDER[b.severity]??9)||String(b.last_seen||'').localeCompare(String(a.last_seen||'')))){const k=i.area||'Other';if(!m.has(k))m.set(k,[]);m.get(k).push(i)}
     return [...m.entries()].sort((a,b)=>String(b[1][0]?.last_seen||'').localeCompare(String(a[1][0]?.last_seen||'')))
   },[data])
   if(state==='loading'&&!data)return <section className="m-panel"><Loading label="Running the health checks…"/></section>
   if(state==='missing')return <section className="m-panel ph-missing"><SectionTitle icon={Info} title="Health checks not available yet" subtitle="The automatic health checks have not been switched on for this environment. Everything else keeps working; this page will fill in once they are."/><Button compact onClick={load}><RefreshCw size={14}/>Try again</Button></section>
   const tone=healthTone(data.overall),counts=data.counts||{}
   const fresh=checkFreshness(data.checks),earlier=(data.checks||[]).filter(c=>fresh(c)!=='current').length
-  const checks=[...(data.checks||[])].sort((a,b)=>({critical:0,warning:1,ok:2,skipped:3}[a.status]??9)-({critical:0,warning:1,ok:2,skipped:3}[b.status]??9)||String(a.area).localeCompare(String(b.area)))
+  const checks=[...(data.checks||[]).map(withoutLayer3)].sort((a,b)=>({critical:0,warning:1,ok:2,skipped:3}[a.status]??9)-({critical:0,warning:1,ok:2,skipped:3}[b.status]??9)||String(a.area).localeCompare(String(b.area)))
   return <>
     <section className={`m-panel ph-overall tone-${tone}`}>
       <div className="ph-overall-head"><StatusDot tone={tone} label={HEALTH_WORDS[tone]}/><div><h2 data-health-heading>{PAGE_WORDS[tone]}</h2><p>Checked {fmtDateTime(data.generated_at)} · {fmtNumber(checks.length)} checks{earlier?<span data-health-earlier={earlier}> · {fmtNumber(earlier)} from an earlier run or with no result yet (see Checked)</span>:null}</p></div><Button compact onClick={load} disabled={state==='loading'}><RefreshCw size={14}/>Check again</Button></div>
@@ -84,14 +91,14 @@ export default function PlatformHealth({onError}){
     </section>
     <section className="m-panel">
       <SectionTitle icon={AlertTriangle} title="Open issues" subtitle="Grouped by area, newest first. An issue closes by itself when its check passes again."/>
-      {areas.length?<div className="ph-areas">{areas.map(([area,items])=><div className="ph-area" key={area}><h3>{human(area)} <span>{fmtNumber(items.length)}</span></h3>
+      {areas.length?<div className="ph-areas">{areas.map(([area,items])=><div className="ph-area" key={area}><h3>{areaName(area)} <span>{fmtNumber(items.length)}</span></h3>
         <ul>{items.map(i=><li key={i.id||i.check_key+i.title}><StatusChip value={i.severity} tone={SEVERITY_TONE[i.severity]||'neutral'} label={human(i.severity)}/><div><strong>{scrubInternals(i.title)}</strong>{(FIX_AT[i.check_key]||FIX_AT[String(i.check_key||'').split(':')[0]])&&<a className="ph-fix" href={(FIX_AT[i.check_key]||FIX_AT[String(i.check_key).split(':')[0]])[0]}>Go to {(FIX_AT[i.check_key]||FIX_AT[String(i.check_key).split(':')[0]])[1]}</a>}<DetailText value={i.detail}/><small>First seen {fmtDateTime(i.first_seen)} · last seen {fmtDateTime(i.last_seen)}{Number(i.occurrences||0)>1?` · seen ${fmtNumber(i.occurrences)} times`:''}{i.acknowledged_at?` · acknowledged ${fmtDateTime(i.acknowledged_at)}`:''}</small>{alerts?.can_change&&!i.acknowledged_at&&i.severity!=='info'&&<AcknowledgeIssue issue={i} onDone={load} onError={onError}/>}</div></li>)}</ul></div>)}</div>
       :<Empty icon={CheckCircle2} text="No open issues."/>}
     </section>
     <section className="m-panel">
       <SectionTitle icon={CheckCircle2} title="Checks" subtitle="Every automatic check and its latest result, with the run that measured it. Skipped means the check could not run here, not that it failed; No result yet is not a pass."/>
       <div className="cf-table-wrap"><table className="cf-table ph-checks"><thead><tr><th>Check</th><th>Area</th><th>Result</th><th>Details</th><th>Checked</th></tr></thead><tbody>
-        {checks.map(c=><tr key={c.key}><td><strong>{c.label||human(c.key)}</strong></td><td>{human(c.area)}</td><td>{fresh(c)==='missing'?<StatusChip value="missing" tone="neutral" label={FRESHNESS_WORDS.missing}/>:<StatusChip value={c.status} tone={CHECK_TONE[c.status]||'neutral'} label={c.status==='ok'?'OK':human(c.status)}/>}</td><td><DetailText value={c.detail}/>{c.status!=='ok'&&FIX_AT[c.key]&&<a className="ph-fix" href={FIX_AT[c.key][0]}>Go to {FIX_AT[c.key][1]}</a>}</td><td data-check-freshness={fresh(c)}>{fresh(c)==='missing'?'—':fmtDateTime(c.checked_at)}<small className="ph-detail">{FRESHNESS_WORDS[fresh(c)]}{c.cadence_minutes?` · runs every ${describeEvery(c.cadence_minutes)}`:''}</small></td></tr>)}
+        {checks.map(c=><tr key={c.key}><td><strong>{c.label||human(c.key)}</strong></td><td>{areaName(c.area)}</td><td>{fresh(c)==='missing'?<StatusChip value="missing" tone="neutral" label={FRESHNESS_WORDS.missing}/>:<StatusChip value={c.status} tone={CHECK_TONE[c.status]||'neutral'} label={c.status==='ok'?'OK':human(c.status)}/>}</td><td><DetailText value={c.detail}/>{c.status!=='ok'&&FIX_AT[c.key]&&<a className="ph-fix" href={FIX_AT[c.key][0]}>Go to {FIX_AT[c.key][1]}</a>}</td><td data-check-freshness={fresh(c)}>{fresh(c)==='missing'?'—':fmtDateTime(c.checked_at)}<small className="ph-detail">{FRESHNESS_WORDS[fresh(c)]}{c.cadence_minutes?` · runs every ${describeEvery(c.cadence_minutes)}`:''}</small></td></tr>)}
       </tbody></table></div>
     </section>
     <AlertsPanel alerts={alerts} onChange={loadAlerts} onError={onError}/>
