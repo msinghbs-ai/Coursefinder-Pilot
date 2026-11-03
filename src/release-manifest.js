@@ -1,17 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.431'
-export const PACKAGE_VERSION='0.1.358'
+export const UI_VERSION='2.15.432'
+export const PACKAGE_VERSION='0.1.359'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Nov 2026',
-  title:'Courses waiting for a proven page are recovered through free routes first and reported as a recovery cohort',
+  title:'The platform measures wasted spend and the cost of each verified improvement',
   changes:[
-    'Courses the free re-try could not reach in one run wait for the next run instead of being counted as needing paid search.',
-    'Candidate addresses are compared in a normalised form (scheme, www, trailing slash, fragment) and a page already rejected for a course is never offered again; no paid search is queued for a course whose earlier paid search left untried candidates.',
-    'A new hourly job keeps the gap recovery cohort by course and provider, with the route each course is on and the yield of each route; the D1 cost-and-yield table is calculated from measured history.'
+    'Every hour the waste check measures repeated searches, repeated AI reads of the same evidence, paid reads of pages already stored, retry loops and scans of ineligible providers, and opens one issue per kind of waste.',
+    'Breakers that refuse or hold wasteful work are built into the existing Firecrawl and AI guards and ship switched off; no budget, share or ceiling changes.',
+    'A value estimate for each planned step and a cost-per-verified-improvement report by lane are available to the planner and the operations report.'
   ],
   bugFixes:[]
 }
