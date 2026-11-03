@@ -1,0 +1,149 @@
+CREATE OR REPLACE FUNCTION security.ops_report_v1(p_window_hours integer DEFAULT 24)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+-- CF-247 P0: the one consolidated operational report (mandate 15:37 §16; acceptance mandate 15:52 §17 scorecard, §18 targets), built from
+-- existing tables only. Sections: platform health, data improvement, autonomy (with the scorecard metrics), efficiency, governance,
+-- reconciliation of the historical cohort and the correlated groups. Each section is read on its own; one that cannot be read reports its
+-- error instead of failing the report. Bounded reads (ops.runs_scan scheduler runs, ops.report_items_scan field items, indexed windows).
+declare v_since timestamptz := now() - make_interval(hours => greatest(coalesce(p_window_hours, 24), 1));
+        v_scan int := security.pipeline_num_v1('ops.runs_scan', 20000)::int; v_items int := security.pipeline_num_v1('ops.report_items_scan', 200000)::int;
+        v_out jsonb := '{}'::jsonb; v jsonb; v_eligible int; v_resolved int; v_x jsonb; v_maxid bigint;
+begin
+  v_out := jsonb_build_object('window_hours', p_window_hours, 'since', v_since, 'generated_at', now(),
+    'operating_mode', (select jsonb_build_object('mode', m.mode, 'set_by', m.set_by, 'set_at', m.set_at) from pipeline.integration_operating_mode m where m.id = 1),
+    'controller', (select jsonb_build_object('on', security.pipeline_num_v1('ops.controller_on', 1) >= 1, 'job_active', coalesce((select j.active from cron.job j where j.jobname = 'ops-controller'), false),
+                   'last_run', s.last_run_at, 'last', s.detail) from pipeline.integration_validate_state s where s.check_key = 'ops_controller'));
+
+  -- platform health: scheduler and workers, failures, time-outs, stuck work, recovery
+  begin
+    with d as (select x.jobid, x.status, x.return_message, x.start_time from cron.job_run_details x
+                where x.runid > (select coalesce(max(y.runid), 0) from cron.job_run_details y) - v_scan and x.start_time >= v_since)
+    select jsonb_build_object('active_jobs', (select count(*) from cron.job j where j.active), 'runs', count(*), 'failed', count(*) filter (where d.status = 'failed'),
+             'failed_timeouts', count(*) filter (where d.status = 'failed' and d.return_message ~* '(statement timeout|canceling statement|timed? ?out)'),
+             'failing_jobs', coalesce((select jsonb_agg(jsonb_build_object('job', z.jobname, 'failed', z.n, 'last', z.msg) order by z.n desc) from (
+                select j.jobname, count(*) n, (array_agg(left(split_part(d2.return_message, E'\n', 1), 160) order by d2.start_time desc))[1] msg from d d2 join cron.job j on j.jobid = d2.jobid
+                 where d2.status = 'failed' group by j.jobname order by count(*) desc limit 10) z), '[]'::jsonb))
+      into v from d;
+    v := v || jsonb_build_object('workers', (select jsonb_build_object('calls', count(*), 'failed_calls', count(*) filter (where l.status >= 400 or coalesce(l.failed, 0) > 0),
+               'items', coalesce(sum(l.items), 0), 'ok', coalesce(sum(l.ok), 0), 'zero_item_calls', count(*) filter (where coalesce(l.items, 0) = 0))
+               from pipeline.mode_outcome_ledger l where l.run_at >= v_since),
+             'stuck', jsonb_build_object('stale_lease_issues', (select count(*) from pipeline.integration_issues i where i.status <> 'closed' and i.fingerprint like 'stale_lease:%'),
+               'stuck_draft_issues', (select count(*) from pipeline.integration_issues i where i.status <> 'closed' and i.fingerprint like 'draft_stuck:%'),
+               'tasks_running_without_progress', (select count(*) from pipeline.admin_jobs j where j.state = 'running'
+                  and j.updated_at < now() - make_interval(mins => security.pipeline_num_v1('integration.lease_stale_minutes', 60)::int))),
+             'recovery', (select coalesce(jsonb_object_agg(z.result, z.n), '{}'::jsonb) from (select u.result, count(*) n from pipeline.ops_remedy_runs u where u.started_at >= v_since group by 1) z));
+    v_out := v_out || jsonb_build_object('platform_health', v);
+  exception when others then v_out := v_out || jsonb_build_object('platform_health', jsonb_build_object('error', left(sqlerrm, 200)));
+  end;
+
+  -- data improvement: missing values at the start and end of the window, values filled, courses repaired, scholarships, page identities
+  begin
+    select max(id) into v_maxid from pipeline.field_enrich_items;
+    v := jsonb_build_object(
+      'missing_values', (with s as (select min(g.at) a0, max(g.at) a1 from pipeline.gap_cause_snapshots g where g.at >= v_since)
+                         select coalesce(jsonb_object_agg(x.attribute, jsonb_build_object('start', x.st, 'end', x.en, 'change', x.en - x.st)), '{}'::jsonb)
+                           from (select g.attribute, sum(g.courses) filter (where g.at = s.a0) st, sum(g.courses) filter (where g.at = s.a1) en
+                                   from pipeline.gap_cause_snapshots g, s where g.at in (s.a0, s.a1) group by g.attribute) x),
+      'field_values', (select coalesce(jsonb_object_agg(x.field, jsonb_build_object('filled', x.f, 'to_review', x.rv, 'skipped', x.sk, 'failed', x.fa)), '{}'::jsonb)
+                         from (select e.field, count(*) filter (where e.state = 'filled') f, count(*) filter (where e.state = 'review') rv,
+                                      count(*) filter (where e.state = 'skipped') sk, count(*) filter (where e.state = 'failed') fa
+                                 from pipeline.field_enrich_items e where e.id > coalesce(v_maxid, 0) - v_items and e.updated_at >= v_since group by e.field) x),
+      'courses_repaired', (select count(distinct e.course_id) from pipeline.field_enrich_items e where e.id > coalesce(v_maxid, 0) - v_items and e.updated_at >= v_since and e.state = 'filled'),
+      'scholarships_added', (select count(*) from scholarship.scholarships s where s.created_at >= v_since),
+      'scholarships_published', (select count(*) from scholarship.scholarships s where s.created_at >= v_since and s.publication_status = 'published'),
+      'page_identities_proven', (select count(*) from pipeline.course_page_proofs p where p.proven and p.checked_at >= v_since));
+    v_out := v_out || jsonb_build_object('data_improvement', v);
+  exception when others then v_out := v_out || jsonb_build_object('data_improvement', jsonb_build_object('error', left(sqlerrm, 200)));
+  end;
+
+  -- autonomy, with the scorecard metrics (acceptance mandate §17, §18)
+  begin
+    select count(*) filter (where c.class <> 'policy'), count(*) filter (where c.class <> 'policy' and i.status = 'closed' and i.closed_at >= v_since and i.verified_by = 'ops-controller')
+      into v_eligible, v_resolved
+      from pipeline.integration_issues i join pipeline.ops_root_causes c on c.code = i.diagnosis->>'root_cause'
+     where (i.status <> 'closed' or i.closed_at >= v_since) and i.detected_at < now();
+    v := jsonb_build_object(
+      'detected', (select count(*) from pipeline.integration_issues i where i.detected_at >= v_since),
+      'detected_automatically', (select count(*) from pipeline.integration_issues i where i.detected_at >= v_since and i.validation_layer in ('V3', 'V4')),
+      'diagnosed', (select count(*) from pipeline.integration_issues i where (i.diagnosis->>'first_at')::timestamptz >= v_since),
+      'remedies_executed', (select count(*) from pipeline.ops_remedy_runs u where u.started_at >= v_since and u.result not in ('refused_authority')),
+      'remedies_verified', (select count(*) from pipeline.ops_remedy_runs u where u.result = 'verified' and (u.evidence->>'verified_at')::timestamptz >= v_since),
+      'remedies_failed_verification', (select count(*) from pipeline.ops_remedy_runs u where u.result = 'verify_failed' and (u.evidence->>'verified_at')::timestamptz >= v_since),
+      'closed_by_controller', (select count(*) from pipeline.integration_issues i where i.status = 'closed' and i.closed_at >= v_since and i.verified_by = 'ops-controller'),
+      'reopened', (select count(*) from pipeline.integration_issue_events e where e.kind = 'reopened_regression' and e.at >= v_since),
+      'needing_decisions', (select count(*) from pipeline.integration_issues i where i.status <> 'closed' and i.ops_state = 'needs_decision'),
+      'needing_release', (select count(*) from pipeline.integration_issues i where i.status <> 'closed' and i.ops_state = 'needs_release'),
+      'superseded_open', (select count(*) from pipeline.integration_issues i where i.status <> 'closed' and i.superseded_by is not null),
+      'root_causes_open', (select coalesce(jsonb_object_agg(z.rc, z.n), '{}'::jsonb) from (select coalesce(i.diagnosis->>'root_cause', 'not diagnosed') rc, count(*) n
+                            from pipeline.integration_issues i where i.status <> 'closed' group by 1) z),
+      'scorecard', jsonb_build_object(
+        'autonomous_resolution_pct', case when v_eligible > 0 then round(100.0 * v_resolved / v_eligible, 1) end,
+        'autonomous_resolution_basis', jsonb_build_object('resolved_by_controller', v_resolved, 'eligible', v_eligible,
+          'excluded_policy_evidence_approval', (select count(*) from pipeline.integration_issues i join pipeline.ops_root_causes c on c.code = i.diagnosis->>'root_cause'
+                                                 where c.class = 'policy' and (i.status <> 'closed' or i.closed_at >= v_since)),
+          'rule', 'eligible: issues open in the window whose diagnosed cause is not a policy, external-evidence or approval matter (those are reported separately); needs_release issues stay in the denominator'),
+        'detection_to_diagnosis_minutes_median', (select round(percentile_cont(0.5) within group (order by extract(epoch from (i.diagnosis->>'first_at')::timestamptz - i.detected_at) / 60)::numeric, 1)
+                                                   from pipeline.integration_issues i where (i.diagnosis->>'first_at')::timestamptz >= v_since),
+        'diagnosis_to_resolution_minutes_median', (select round(percentile_cont(0.5) within group (order by extract(epoch from i.closed_at - (i.diagnosis->>'first_at')::timestamptz) / 60)::numeric, 1)
+                                                    from pipeline.integration_issues i where i.status = 'closed' and i.closed_at >= v_since and i.verified_by = 'ops-controller'),
+        'recurrence', jsonb_build_object('reopened_in_window', (select count(*) from pipeline.integration_issue_events e where e.kind = 'reopened_regression' and e.at >= v_since),
+                                         'controller_closures_reopened', (select count(*) from pipeline.integration_issues i where i.regression_count > 0 and i.status <> 'closed'
+                                                                           and exists (select 1 from pipeline.ops_remedy_runs u where u.issue_id = i.id and u.result = 'verified')))));
+    v_out := v_out || jsonb_build_object('autonomy', v);
+  exception when others then v_out := v_out || jsonb_build_object('autonomy', jsonb_build_object('error', left(sqlerrm, 200)));
+  end;
+
+  -- efficiency: paid work, AI, yield, avoided reads, cost per verified improvement
+  begin
+    v := jsonb_build_object(
+      'firecrawl_credits', (select coalesce(sum(u.units), 0) from pipeline.coverage_vendor_usage u where u.at >= v_since),
+      'ai_usd', (select round(coalesce(sum(a.cost_usd), 0), 2) from pipeline.ai_spend_ledger a where a.at >= v_since),
+      'ai_calls', (select coalesce(sum(a.calls), 0) from pipeline.ai_spend_ledger a where a.at >= v_since),
+      'paid_reads_refused_today', (select coalesce(sum(r.n), 0) from pipeline.firecrawl_budget_refusals r where r.day = (now() at time zone 'UTC')::date),
+      'items_per_worker_call', (select round(coalesce(sum(l.items), 0)::numeric / nullif(count(*), 0), 2) from pipeline.mode_outcome_ledger l where l.run_at >= v_since),
+      'zero_item_share_pct', (select round(100.0 * count(*) filter (where coalesce(l.items, 0) = 0) / nullif(count(*), 0), 1) from pipeline.mode_outcome_ledger l where l.run_at >= v_since));
+    v := v || jsonb_build_object('usd_per_filled_value', case when coalesce(((v_out->'data_improvement'->>'courses_repaired')::int), 0) > 0
+             then round((v->>'ai_usd')::numeric / (select sum((x.value->>'filled')::int) from jsonb_each(coalesce(v_out->'data_improvement'->'field_values', '{}'::jsonb)) x)::numeric, 4) end,
+             'note', 'repeated paid reads and evidence-cache reuse come from workstream F (ops_cost_*) when released');
+    v_out := v_out || jsonb_build_object('efficiency', v);
+  exception when others then v_out := v_out || jsonb_build_object('efficiency', jsonb_build_object('error', left(sqlerrm, 200)));
+  end;
+
+  -- governance: releases, regressions, Layer 4, open policy blockers, consumer consistency
+  begin
+    v := jsonb_build_object(
+      'releases', (select coalesce(jsonb_agg(jsonb_build_object('release', x.release, 'at', x.at, 'source', x.source) order by x.at), '[]'::jsonb) from security.ops_releases_v1() x where x.at >= v_since),
+      'deploy_checks_failed', (select count(*) from pipeline.integration_deploy_checks d where d.checked_at >= v_since and not d.ok),
+      'regressions_reopened', (select count(*) from pipeline.integration_issue_events e where e.kind = 'reopened_regression' and e.at >= v_since),
+      'layer4', (select jsonb_build_object('pending', count(*) filter (where r.status = 'pending'),
+                   'decided_in_window', count(*) filter (where r.decided_at >= v_since), 'approved_in_window', count(*) filter (where r.decided_at >= v_since and r.status in ('approved', 'edited_approved')))
+                   from pipeline.layer4_review_items r where r.status = 'pending' or r.decided_at >= v_since),
+      'open_policy_blockers', (select coalesce(jsonb_agg(jsonb_build_object('issue', i.issue_ref, 'title', left(i.title, 120), 'required', left(i.blocker->>'required', 300)) order by i.severity, i.id), '[]'::jsonb)
+                                 from pipeline.integration_issues i where i.status <> 'closed' and i.ops_state = 'needs_decision'),
+      'consumer_guard', (select jsonb_build_object('last_status', (array_agg(d.status order by d.runid desc))[1], 'last_at', max(d.start_time))
+                           from cron.job_run_details d where d.runid > (select coalesce(max(y.runid), 0) from cron.job_run_details y) - v_scan
+                            and d.jobid in (select j.jobid from cron.job j where j.jobname = 'consumer-api-guard')),
+      'learning', case when to_regclass('pipeline.ai_instruction_versions') is not null then 'see workstream E (ai_instruction_versions)' else 'workstream E not released' end);
+    v_out := v_out || jsonb_build_object('governance', v);
+  exception when others then v_out := v_out || jsonb_build_object('governance', jsonb_build_object('error', left(sqlerrm, 200)));
+  end;
+
+  -- the historical cohort and the correlated groups
+  begin
+    v_x := security.ops_reconciliation_v1('p0-2026-11-03-detected-48');
+    v_out := v_out || jsonb_build_object('reconciliation', jsonb_build_object('cohort', v_x->'cohort', 'by_end_state', v_x->'by_end_state',
+               'issues', (select count(*) from pipeline.ops_baseline_cohort b where b.cohort = 'p0-2026-11-03-detected-48')),
+             'groups', (select coalesce(jsonb_agg(g), '[]'::jsonb) from jsonb_array_elements(security.ops_correlation_groups_v1()) g where (g->>'open')::int > 1));
+  exception when others then v_out := v_out || jsonb_build_object('reconciliation', jsonb_build_object('error', left(sqlerrm, 200)));
+  end;
+  -- work continuity (SS-021, mandate 3 Nov 2026 21:19 §9): lanes, blocked and parked work, recovery and authority (security.work_continuity_report_v1)
+  begin
+    v_out := v_out || jsonb_build_object('work_continuity', security.work_continuity_report_v1());
+  exception when others then v_out := v_out || jsonb_build_object('work_continuity', jsonb_build_object('error', left(sqlerrm, 200)));
+  end;
+  return v_out;
+end $function$
+
