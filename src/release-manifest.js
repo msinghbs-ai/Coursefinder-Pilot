@@ -1,17 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.422'
-export const PACKAGE_VERSION='0.1.349'
+export const UI_VERSION='2.15.423'
+export const PACKAGE_VERSION='0.1.350'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Nov 2026',
-  title:'Course descriptions and application deadlines are read by the platform',
+  title:'Enrichment lanes held separately; the gap queue resumes and takes only readable work; paused jobs stay paused',
   changes:[
-    'Course description and Application deadline are now fields of Enrich fields, the standing gap queue and enrichment plans, read from the course\'s own stored, proven page with no new fetching. Up to a set number of items per field per day are created by the standing queue.',
-    'A description is quoted sentence by sentence from the course page and held, never cut or completed, when it is too long, a fragment, unsupported by its quote, a marketing claim the page does not make, or copied from another course; first descriptions go to Layer 4 review, and an approved one is written exactly as read.',
-    'A deadline is taken only when the page prints the full date, tied to the intake the page names or the course\'s only intake, never after the intake starts and never over a deadline already held.'
+    'Work on stored evidence never waits for paid page fetching: scholarship pickers take items with a stored copy first while the scholarship lane is held, and every worker call records its lane outcome (done, idle, budget held, source limit, failed, switched off) with the reason. Platform health › Pipeline yield shows the lanes now.',
+    'The standing gap queue scans active courses in slices from a saved point, resumes after a stop, and only creates items for courses whose page the reader accepts; the rest are counted as waiting for page proof instead of being skipped one by one.',
+    'A job a person or a governed restore switched off (Settings › Pipeline settings › jobs held off) is never switched back on by the idle recheck and its worker is never called.'
   ],
   bugFixes:[]
 }

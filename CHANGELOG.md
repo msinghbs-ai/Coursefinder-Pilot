@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.350 — 3 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.423** (Platform Admin P0 mandate 3 Nov 2026 10:44 §3 Agent C and §6; integration issue IQ-00060). Migration `20261103160000_cf247_lanes_and_gap_queue`: md5-guarded edits of flag_jobs_v1, svc_worker_report_v1, field_gap_queue_tick_v1, svc_scholarship_ai_next, svc_scholarship_recheck_next, admin_pipeline_yield; security.worker_lane_call_v1, security.lane_status_v1, security.course_page_proven_v1, checkpoint and proof cache tables; settings jobs.held_off (coverage-discover, coverage-discover-2), gaps.page_proof_on, lanes.stored_first_on (on), lanes.skip_held_paid_calls (off). No budget raised; nothing dropped; consumer API untouched. Spec s238.
+
 ## 0.1.349 — 3 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.422** (Platform Admin direction 3 Nov 2026 09:32; P0 mandate 10:44 §3 Agent B). Migration `20261103110000_cf247_course_description_deadline_fields`: md5-guarded edits of enrich_fields_v1, svc_enrich_ai_record, field_gap_queue_tick_v1, admin_enrich_fields, field_stalled_v1, enrich_coverage_snapshot_v1, layer4_review_decide_impl, layer4_inbox_items_v1; security.course_description_check_v1; Layer 4 field course_description_first_read; ten settings. Worker coverage-sweep v0.59.4 (course-text.ts). Writes only catalogue.courses.description and catalogue.course_intakes.application_deadline (existing columns the API reads); consumer API untouched. Spec s233. Admin SOP 2.24.
