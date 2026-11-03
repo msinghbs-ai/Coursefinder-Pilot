@@ -1,7 +1,7 @@
-<!-- sop-export: id=operator-sop; version=2.08; reviewed-release=2.15.421; source-commit=1f9f4c7756c2; content-sha256=1e337694681c6311207deaf39edc66d1d25fda788724a0ae1ab3e62779d32489 -->
+<!-- sop-export: id=operator-sop; version=2.08; reviewed-release=2.15.422; source-commit=826fe6ffb86d; content-sha256=a86967b64fd3a81b47ecfd3dccdabb7f07a0847c2d29fa01ef76bb681d0c30ee -->
 # StudySearch – Operator SOP
 
-**Version:** 2.08 (reviewed for platform release v2.15.421)  
+**Version:** 2.08 (reviewed for platform release v2.15.422)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
