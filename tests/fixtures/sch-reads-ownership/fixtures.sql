@@ -1,4 +1,4 @@
--- Cases after 20261104160000 (each raises on failure; a notice per case passed)
+-- Cases after 20261104210000 (each raises on failure; a notice per case passed)
 create or replace function pg_temp.ok(p boolean, p_case text) returns void language plpgsql as $$
 begin if not coalesce(p, false) then raise exception 'FAILED: %', p_case; end if; raise notice 'ok: %', p_case; end $$;
 
