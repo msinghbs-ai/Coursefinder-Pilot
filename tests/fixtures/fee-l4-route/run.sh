@@ -34,3 +34,17 @@ echo "$OUT" | grep -qxF "$INBOX: already applied" || { echo "second run did not 
 echo "applied twice: the second run changed nothing"
 $P -d $DB -f fixtures.sql 2>&1 | show
 echo "cases: $(grep -c "fx.ok(" fixtures.sql)"
+# the governed paste, on its own database: the 5 live ids with stand-in notes (the notes md5 guard is rewritten to the stand-ins only)
+PD=${DB}_paste
+$P -d postgres -c "drop database if exists $PD" -c "create database $PD" >/dev/null 2>&1
+$P -d $PD -f stubs.sql; $P -d $PD -c "set check_function_bodies = off" -f live/layer4_inbox_items_v1.def; $P -d $PD -f stub-ops-contract.sql
+$P -d $PD -Atc "select security.ops_root_cause_register_v1('fee_reader_hold_bypass', '{\"class\": \"rule\", \"title\": \"as registered by 20261104140000\"}')" >/dev/null
+$P -d $PD -1 -q -o /dev/null -f $MIG
+for id in 04b4c75e-f020-4d17-a9c4-3310156d8b76 0f7d0c66-05d9-413d-bdde-15d08ac2d30f 51ebae9d-67d3-4221-9cb3-1308260f4801 5d897b64-1f04-4171-8321-228ff54f2388 a4f9c399-8194-4b58-bcec-62df728c98af; do
+  $P -d $PD -c "insert into catalogue.course_fees(id, course_id, fee_type, amount, notes) values ('$id', gen_random_uuid(), 'provider_current_tuition', 10000, 'AI fee reader (https://x/$id)')"; done
+G=$($P -d $PD -Atc "select md5(string_agg(f.id::text || ':' || md5(f.notes), ',' order by f.id)) from catalogue.course_fees f")
+tmp=$(mktemp); sed "s/ccc44c30f3bf04340cdc7a2ec11223b2/$G/g" $ROOT/docs/paste/PASTE-20261104-fee-admitted-recheck.sql > $tmp
+$P -d $PD -f $tmp
+echo "paste: raised=$($P -d $PD -Atc "select count(*) from pipeline.enrichment_flags where field = 'fee_ai_recheck' and state = 'raised'") cards=$($P -d $PD -Atc "select count(*) from security.layer4_inbox_items_v1() where kind = 'fee_check' and detail ? 'recheck'") fees_changed=$($P -d $PD -Atc "select count(*) from catalogue.course_fees where status <> 'active'")"
+if $P -d $PD -f $tmp >/dev/null 2>&1; then echo "SECOND PASTE RUN CHANGED SOMETHING"; exit 1; else echo "paste: second run refused (guard)"; fi
+rm -f $tmp; [ -n "${FEE_L4_KEEP:-}" ] || $P -d postgres -c "drop database if exists $PD" >/dev/null 2>&1
