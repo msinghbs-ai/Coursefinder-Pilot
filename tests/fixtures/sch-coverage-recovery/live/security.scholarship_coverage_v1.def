@@ -1,0 +1,127 @@
+create or replace function security.scholarship_coverage_v1(p_providers uuid[] default null)
+returns table(provider_id uuid, country text, provider_name text, provider_type text, disposition text, measures jsonb, categories jsonb, gaps text[], shortfall int)
+language sql stable security definer set search_path to '' as $function$
+  -- CF-247 workstream C (P0 mandates 3 Nov 2026 15:37 §5, §12 and 15:52 §8): each active, published provider of a scholarship country (or only
+  -- p_providers), what its sources list against what the catalogue holds. Anchors are independent of the discovery list: the national register,
+  -- listing pages and their items, a stated total, listing members. Held records are also measured for the facts a student needs (funding type,
+  -- value, application dates, study level, academic and residency requirements, country-specific eligibility). Read-only.
+  with s as (select security.pipeline_num_v1('coverage.sch_represented_min_pct', 50) pct, security.pipeline_num_v1('coverage.sch_listing_min_items', 5) minl,
+                    security.pipeline_num_v1('coverage.sch_category_min_items', 2) minc, security.pipeline_num_v1('coverage.sch_field_min_pct', 50) fpct,
+                    coalesce(security.toolset_setting('pipeline', 'coverage.provider_level_types'), '[]'::jsonb) pl,
+                    coalesce(security.toolset_setting('pipeline', 'coverage.sch_gap_fields'), '[]'::jsonb) gf,
+                    coalesce(security.toolset_setting('pipeline', 'coverage.sch_not_applicable_types'), '[]'::jsonb) na),
+  cat as (select k cat, v pat from security.coverage_kv_v1('coverage.sch_category_patterns')),
+  lev as (select k cat, unnest(string_to_array(v, '|')) code from security.coverage_kv_v1('coverage.sch_category_levels')),
+  pv as (select p.id, k.iso_alpha2::text cc, coalesce(p.display_name, p.short_name, p.canonical_name) nm, t.code ptype
+           from catalogue.providers p join ref.countries k on k.id = p.country_id left join ref.provider_types t on t.id = p.provider_type_id
+          where k.scholarship_ingestion_enabled and p.lifecycle_status = 'active' and p.publication_status = 'published'
+            and (p_providers is null or p.id = any (p_providers))),
+  lp as (select l.provider_id, count(*) pages, count(*) filter (where l.read_at is not null) pages_read,
+                count(*) filter (where l.page_state = 'complete' or l.completed_at is not null) pages_complete, coalesce(max(l.total_stated), 0) stated,
+                coalesce(sum(case when jsonb_typeof(l.items) = 'array' then jsonb_array_length(l.items) else 0 end), 0) items
+           from pipeline.scholarship_listing_pages l join pv on pv.id = l.provider_id
+          where l.active and l.source in ('manual', 'auto') and not security.third_party_host_v1(coalesce(l.url, '')) group by 1),
+  -- every listed name with the anchor it came from: register (name and level; the register lists awards open to international students),
+  -- listing items, listing members
+  ln as (select r.provider_id, 'register' src, coalesce(r.name, '') || ' ' || coalesce(r.level_text, '') txt, true intl
+           from scholarship.register_listings r join pv on pv.id = r.provider_id where r.departed_at is null
+         union all
+         select l.provider_id, 'listing', coalesce(i->>'name', ''), coalesce(i->>'name', '') ~* 'international'
+           from pipeline.scholarship_listing_pages l join pv on pv.id = l.provider_id
+           cross join lateral jsonb_array_elements(case when jsonb_typeof(l.items) = 'array' then l.items else '[]'::jsonb end) i
+          where l.active and l.source in ('manual', 'auto') and not security.third_party_host_v1(coalesce(l.url, ''))
+         union all
+         select m.provider_id, 'member', coalesce(m.name, ''), coalesce(m.name, '') ~* 'international'
+           from pipeline.scholarship_listing_members m join pv on pv.id = m.provider_id where m.present),
+  lc as (select ln.provider_id, cat.cat, count(*) filter (where ln.txt ~* cat.pat) n from ln cross join cat group by 1, 2),
+  li as (select ln.provider_id, count(*) filter (where ln.src = 'register') reg, count(*) filter (where ln.src = 'member') members,
+                count(*) filter (where ln.intl) intl from ln group by 1),
+  ru as (select r.provider_id, count(*) unmatched from scholarship.register_listings r join pv on pv.id = r.provider_id
+          where r.departed_at is null and r.scholarship_id is null group by 1),
+  ca as (select c.provider_id, count(*) n, count(*) filter (where c.admit_status is null and c.matched_scholarship_id is null) pending,
+                count(*) filter (where c.admit_status = 'rejected') rejected,
+                count(*) filter (where c.admitted_scholarship_id is not null or c.matched_scholarship_id is not null) linked
+           from pipeline.scholarship_page_candidates c join pv on pv.id = c.provider_id group by 1),
+  ar as (select x.provider_id, count(*) archived from scholarship.scholarships x join pv on pv.id = x.provider_id where x.lifecycle_status <> 'active' group by 1),
+  sc as (select x.* from scholarship.scholarships x join pv on pv.id = x.provider_id where x.lifecycle_status = 'active'),
+  sf as (select sc.id, sc.provider_id,
+                sc.award_value_type is not null f_funding,
+                (sc.award_amount is not null or sc.award_percentage is not null or nullif(btrim(coalesce(sc.award_value_text, '')), '') is not null
+                 or exists (select 1 from scholarship.award_tiers a where a.scholarship_id = sc.id)) f_value,
+                (sc.application_close_date is not null or sc.application_open_date is not null
+                 or exists (select 1 from scholarship.application_windows w where w.scholarship_id = sc.id and (w.opens_at is not null or w.closes_at is not null))) f_dates,
+                exists (select 1 from scholarship.scopes o where o.scholarship_id = sc.id and o.study_level_id is not null) f_level,
+                exists (select 1 from scholarship.criteria c where c.scholarship_id = sc.id and c.criterion_type in ('academic_minimum', 'institution_admission')) f_academic,
+                (sc.audience is not null and sc.audience <> 'not_stated'
+                 or exists (select 1 from scholarship.criteria c where c.scholarship_id = sc.id and c.criterion_type in ('student_type', 'nationality', 'citizenship_and_residency',
+                            'citizenship_residency_restriction', 'visa_requirement'))) f_residency,
+                coalesce(cardinality(sc.nationalities), 0) > 0 f_country
+           from sc),
+  so as (select sc.provider_id, count(*) active, count(*) filter (where sc.publication_status = 'published') published,
+                count(*) filter (where sc.publication_status <> 'published' or exists (select 1 from pipeline.scholarship_publication_holds h where h.scholarship_id = sc.id and h.released_at is null)) held,
+                count(*) filter (where exists (select 1 from pipeline.layer4_review_items r where r.entity_type = 'scholarship' and r.entity_id = sc.id and r.status = 'pending')) layer4,
+                count(*) filter (where sc.audience in ('international', 'international_and_domestic')) intl,
+                count(*) filter (where sc.audience = 'domestic') domestic
+           from sc group by 1),
+  sfa as (select sf.provider_id, jsonb_build_object('funding_type', count(*) filter (where f_funding), 'value', count(*) filter (where f_value),
+                   'application_dates', count(*) filter (where f_dates), 'study_level', count(*) filter (where f_level),
+                   'academic_requirements', count(*) filter (where f_academic), 'residency_requirements', count(*) filter (where f_residency),
+                   'country_eligibility', count(*) filter (where f_country)) f from sf group by 1),
+  scc as (select sc.provider_id, cat.cat,
+                 count(distinct sc.id) filter (where sc.name ~* cat.pat or exists (select 1 from scholarship.scopes o join ref.study_levels sl on sl.id = o.study_level_id
+                                                                                    join lev on lev.code = sl.code and lev.cat = cat.cat
+                                                                                   where o.scholarship_id = sc.id and o.include_exclude is distinct from 'exclude')) n
+            from sc cross join cat group by 1, 2),
+  d as (select pv.*, dp.status disc, dp.settle_reason, coalesce(lp.pages, 0) pages, coalesce(lp.pages_read, 0) pages_read, coalesce(lp.pages_complete, 0) pages_complete,
+               coalesce(lp.stated, 0) stated, coalesce(lp.items, 0) items, coalesce(li.reg, 0) reg, coalesce(ru.unmatched, 0) reg_unmatched, coalesce(li.members, 0) members,
+               coalesce(li.intl, 0) list_intl, coalesce(ca.n, 0) cands, coalesce(ca.pending, 0) cand_pending, coalesce(ca.rejected, 0) cand_rejected, coalesce(ca.linked, 0) cand_linked,
+               coalesce(so.active, 0) active, coalesce(so.published, 0) published, coalesce(so.held, 0) held, coalesce(so.layer4, 0) layer4, coalesce(ar.archived, 0) archived,
+               coalesce(so.intl, 0) sch_intl, coalesce(so.domestic, 0) domestic, coalesce(sfa.f, '{}'::jsonb) fields,
+               coalesce((select jsonb_object_agg(lc.cat, lc.n) from lc where lc.provider_id = pv.id), '{}'::jsonb) list_cat,
+               coalesce((select jsonb_object_agg(scc.cat, scc.n) from scc where scc.provider_id = pv.id), '{}'::jsonb) sch_cat,
+               coalesce(pv.ptype, '') in (select jsonb_array_elements_text(s.pl)) plevel, coalesce(pv.ptype, '') in (select jsonb_array_elements_text(s.na)) na,
+               security.scholarship_admission_provider_ok_v1(pv.id) admit_ok, s.gf, s.pct, s.minl, s.minc, s.fpct
+          from pv cross join s left join pipeline.scholarship_discovery_providers dp on dp.provider_id = pv.id left join lp on lp.provider_id = pv.id
+          left join li on li.provider_id = pv.id left join ru on ru.provider_id = pv.id left join ca on ca.provider_id = pv.id left join so on so.provider_id = pv.id
+          left join ar on ar.provider_id = pv.id left join sfa on sfa.provider_id = pv.id),
+  a as (select d.*, greatest(d.reg, d.items, d.stated, d.members) anchor from d),
+  g as (select a.*, case
+         -- never in scope (schools), or refused by the admission rule (non-university providers while the pilot does not cover them):
+         -- recorded, with the policy as the only gap, never as missing data
+         when a.na then '{}'::text[]
+         when not a.admit_ok and not a.plevel then case when a.anchor > 0 then array['admission_policy'] else '{}'::text[] end
+         else array_remove(array[
+           case when a.active = 0 and (a.plevel or a.anchor > 0) then 'zero_scholarships' end,
+           case when a.anchor >= a.minl and a.active * 100 < a.pct * a.anchor then 'under_represented' end,
+           case when (a.plevel or a.anchor > 0) and (a.disc is null or a.disc = 'not_eligible') then 'not_searched' end,
+           case when a.pages > 0 and a.pages_complete = 0 then 'listing_partial' end,
+           case when a.items > 0 and a.members = 0 then 'listing_not_fanned_out' end,
+           case when a.list_intl >= a.minc and a.sch_intl = 0 then 'category_missing:international' end]
+           || coalesce(array(select 'category_missing:' || e.key from jsonb_each_text(a.list_cat) e
+                              where e.value::int >= a.minc and coalesce((a.sch_cat->>e.key)::int, 0) = 0 order by e.key), '{}')
+           -- a fact a student needs, held for too few of the provider's scholarships (only once it holds enough to judge)
+           || coalesce(array(select 'fields_incomplete:' || e.key from jsonb_each_text(a.fields) e
+                              where a.active >= a.minc and a.gf ? e.key and e.value::int * 100 < a.fpct * a.active order by e.key), '{}'), null) end gaps
+          from a)
+  select g.id, g.cc, g.nm, g.ptype,
+         case when g.na then 'not_applicable'
+              when 'admission_policy' = any (g.gaps) then 'blocked_policy'
+              when 'zero_scholarships' = any (g.gaps) then 'zero'
+              when 'under_represented' = any (g.gaps) then 'under_represented'
+              when exists (select 1 from unnest(g.gaps) x where x like 'category_missing:%') then 'category_gap'
+              when 'not_searched' = any (g.gaps) then 'not_searched'
+              when exists (select 1 from unnest(g.gaps) x where x like 'fields_incomplete:%') then 'fields_incomplete'
+              when cardinality(g.gaps) > 0 then 'partial_listing'
+              when g.anchor > 0 then 'represented'
+              when g.active > 0 then 'records_without_listing'
+              else 'no_evidence' end,
+         jsonb_build_object('discovery', g.disc, 'discovery_reason', g.settle_reason, 'listing_pages', g.pages, 'listing_pages_read', g.pages_read,
+           'listing_pages_complete', g.pages_complete, 'listing_items', g.items, 'listing_stated', g.stated, 'listing_members', g.members,
+           'register', g.reg, 'register_unmatched', g.reg_unmatched, 'anchor', g.anchor, 'candidates', g.cands, 'candidates_pending', g.cand_pending,
+           'candidates_rejected', g.cand_rejected, 'candidates_linked', g.cand_linked, 'admitted', g.active, 'published', g.published, 'held', g.held,
+           'layer4_pending', g.layer4, 'archived', g.archived, 'international', g.sch_intl, 'domestic_only', g.domestic, 'fields', g.fields, 'provider_level', g.plevel,
+           'admission_ok', g.admit_ok),
+         jsonb_build_object('listed', g.list_cat || jsonb_build_object('international', g.list_intl), 'held', g.sch_cat || jsonb_build_object('international', g.sch_intl)),
+         g.gaps, greatest(0, g.anchor - g.active)::int
+    from g
+$function$;
