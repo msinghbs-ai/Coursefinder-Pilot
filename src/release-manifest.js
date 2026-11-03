@@ -1,17 +1,16 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.450'
-export const PACKAGE_VERSION='0.1.377'
+export const UI_VERSION='2.15.451'
+export const PACKAGE_VERSION='0.1.378'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'4 Nov 2026',
-  title:'Lanes keep moving when one queue is full: AER, course search, fee reader and the issue writer',
+  title:'Approved Course Link rules run within their time budget, item by item',
   changes:[
-    'Work held by a paid daily cap is parked until the cap resets and gives a recorded reason; a task that can never run ends at once with its blocker; course link search isolates each search, re-sends only when due and stops after a set number of tries.',
-    'AER can pick new reads fairly by university and count only distinct review-ready decisions against its unchanged 600 limit; this ships switched off, as do the fee reader\'s per-item claims and releasing a parked plan\'s slot.',
-    'The shared issue writer records unknown values instead of failing the job that reports them.'
+    'The rule executor picks the rule\'s waiting items first and checks each one on its own, within a time budget; items it does not reach come first in the next call.',
+    'The strict course-level check reads the level once per item with the same settings as the binding check; an item whose level cannot be confirmed still fails with its reason.'
   ],
   bugFixes:[]
 }
