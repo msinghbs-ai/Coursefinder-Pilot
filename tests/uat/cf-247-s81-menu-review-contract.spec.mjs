@@ -20,7 +20,7 @@ test('menu: 20 pages (was 23; v2.15.363 added Catalogue › Entry requirements);
   expect(PAGES.layer2.tabs.map(t => t.key)).toEqual(['operations', 'universities', 'enrich', 'plan', 'builder', 'sources', 'flags', 'scholarships'] /* SS-020 step 4 (Decision 269) */ /* v2.15.321: Course sources */ /* v2.15.306: Enrichment plan */)
   expect(PAGES.health.tabs.map(t => [t.key, t.min])).toEqual([['checks', 3], ['queues', 3], ['integration', 5], ['storage', 6]])  // CF-247 2 Nov 2026: Integration queue
   expect(PAGES.environment.tabs.map(t => [t.key, t.min])).toEqual([['settings', 6], ['api', 4], ['backup', 6]]) // v2.15.310: Backup & restore
-  expect(PAGES.rankings.tabs.map(t => t.key)).toEqual(['overview', 'compare', 'qilt', 'prisms', 'datasets'])
+  expect(PAGES.rankings.tabs.map(t => t.key)).toEqual(['overview', 'compare', 'datasets']) // SS-020 step 5: QILT and PRISMS are Datasets › View data
   expect(PAGES.reference.tabs).toBeUndefined()
   expect(PAGES.layer1.tabs).toBeUndefined()
 })
