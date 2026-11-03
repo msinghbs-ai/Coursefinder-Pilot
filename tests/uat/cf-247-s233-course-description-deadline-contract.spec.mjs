@@ -90,7 +90,8 @@ test('deadline admission: explicit dates in the quote, tied to an intake, never 
 })
 
 test('worker v0.59.4: one call per course on the stored page, the central model, quotes checked, nothing fetched', () => {
-  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.59\.4";/)
+  // the v0.59.4 note stays in the version chain once a later worker is released ("// was v0.59.4 // ...")
+  expect(worker).toMatch(/(?:const WORKER = "coverage-sweep-worker-v0\.59\.4"; |\n\/\/ was v0\.59\.4 )\/\/ v0\.59\.4 \(3 Nov 2026, CF-247 Workstream C/)
   expect(worker).toContain('// was v0.59.3 // v0.59.3 (3 Nov 2026, CF-247 Workstream F, hidden failures')
   const t = worker.slice(worker.indexOf('const textRead = async'), worker.indexOf('const entryCall = async'))
   expect(t).toContain('courseTextRequest(model, courseTextUser(pg.provider, pg.title, want, page, courseTextLength(ws)), want, maxTokens)')

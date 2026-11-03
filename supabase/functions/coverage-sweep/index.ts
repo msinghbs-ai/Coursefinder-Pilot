@@ -10,7 +10,9 @@ import { PAGE_ID_CONTRACT, pageIdChecks, pageIdInput, pageIdRequest } from "./pa
 import { callRecord, pageHtml, readOutcome, scrapeBody, searchBody, searchCandidates, searchResults } from "./firecrawl.ts";
 import { applyAdapter, inspectPage, jsonAt, jsonFind, jsonShape, pageJson, patternValues, viewApplies, withView } from "./adapters.ts";
 import { CENTRAL_SEARCH, centralCandidates, weakKinds } from "./central.ts";
-import { ENTRY_PROMPT_VERSION, ENTRY_TABLE_BASIS, NAMED_NOTE, PDF_NOTE, entryCellList, entryCompleteness, entryDropNoMinimum, entryManifestDetail, entryMatrixParsed, entryMatrixRequest, entryNoAnswerWhy, entryNonCountryShape, entrySlices, entryTables, entryUnscaledColumns } from "./entry.ts";
+import { ENTRY_PROMPT_VERSION, ENTRY_TABLE_BASIS, NAMED_NOTE, PDF_NOTE, entryCellList, entryCompleteness, entryDropNoMinimum, entryGlobalQualification, entrySubjectRows, entryManifestDetail, entryMatrixParsed, entryMatrixRequest, entryNoAnswerWhy, entryNonCountryShape, entrySlices, entryTables, entryUnscaledColumns } from "./entry.ts";
+import { OPS_DIAGNOSE_PROMPT_VERSION, opsDiagnoseAnswer, opsDiagnoseLimit, opsDiagnoseRequest } from "./ops-diagnose.ts";
+import { linkSearchGroups, linkSearchShareOn } from "./link-share.ts";
 import type { EntryBandLine, EntryCountryRef, EntryLineSet, EntryManifest } from "./entry.ts";
 import { COURSE_ENTRY_PROMPT_VERSION, courseEntryAnswer, courseEntryMerge, courseEntryPlan, courseEntryRequest, courseEntrySliceRows, courseEntryUser } from "./course-entry.ts";
 import type { CourseSliceOutcome } from "./course-entry.ts";
@@ -72,7 +74,8 @@ const VERSION = "coverage-sweep-v0.5.6"; // extractor version (unchanged by v0.6
 // v0.38.1 (22 Oct 2026, NZ course list pages): a page the AI page match chose from the university's own site addresses (its course list or
 // site map) is listed on the university's own site, so it may be read through the scraper when the direct read is blocked (Otago, Lincoln, AUT).
 const FC_TRUSTED_BASIS = ["cricos_search", "cricos_code", "cricos_code_on_page", "nzqa_code", "adapter_code", "title_match", "cms_path_public", "manual", "firecrawl_upgrade", "ai_match", "programme_list"]; // v0.45.0: a page bound by its NZ or CA code is as trusted as one bound by a CRICOS code
-const WORKER = "coverage-sweep-worker-v0.59.4"; // v0.59.4 (3 Nov 2026, CF-247 Workstream C, Platform Admin direction 3 Nov 2026 09:32, acceptance report item 1): enrich_ai reads course description and application deadline (Enrich fields fields description and deadline) from the course's stored page in one call per course (course-text.ts, prompt course-text-v1, the central model, answer limit reading.answer_tokens.course_text); every quote is checked against the page; nothing is fetched or cut here; the database admits, holds or sends to Layer 4 (security.enrich_course_text_record_v1); every other read is unchanged.
+const WORKER = "coverage-sweep-worker-v0.59.5"; // v0.59.5 (3 Nov 2026, CF-247 P0 autonomous operations, workstream B worker release for the other workstreams' interface requests, Integration Controller 18:20): new mode ops_diagnose (ops-diagnose.ts; workstream A: AI-assisted diagnosis through svc_ops_diagnosis_next and svc_ops_diagnosis_record, pinned model, existing OpenRouter path); enrich_ai keeps its answers first (svc_enrich_ai_stash_v1, workstream D) and records them as before; the entry matrix reader keeps the model's value, grade and scale in every dropped entry and, each behind a reading.* setting that ships off, reads a printed range as its lower bound, merges subject-equivalence rows into one subject-prerequisite row and stops holding a global-qualification page that says it applies in any country (entry.ts; workstream C); link_search answers each distinct query once and reuses an earlier answer for the same query (link-share.ts, reading.link_search_share_on, ships off; workstream F).
+// was v0.59.4 // v0.59.4 (3 Nov 2026, CF-247 Workstream C, Platform Admin direction 3 Nov 2026 09:32, acceptance report item 1): enrich_ai reads course description and application deadline (Enrich fields fields description and deadline) from the course's stored page in one call per course (course-text.ts, prompt course-text-v1, the central model, answer limit reading.answer_tokens.course_text); every quote is checked against the page; nothing is fetched or cut here; the database admits, holds or sends to Layer 4 (security.enrich_course_text_record_v1); every other read is unchanged.
 // was v0.59.3 // v0.59.3 (3 Nov 2026, CF-247 Workstream F, hidden failures; Platform Admin direction 3 Nov 2026 09:32 §5): nz_cop reports what each call did (read: files read, failed: files that failed), so the run ledger counts its work; it was recorded as 0 items on every call and looked as if it had never succeeded; nothing else changes.
 // was v0.59.1 // v0.59.1 (3 Nov 2026, CF-247 Workstream D, intake wording): the page reader (extract.ts) never keeps a month the page excludes ("excluding January & December", "except June and December") as an intake; nothing else changes.
 // was v0.59.0 // v0.59.0 (3 Nov 2026, CF-247 Scholarship Coverage Recovery, mandate 17:41 and direction 23:24): scholarship discovery maps every source a provider has (F4), a refused map is deferred, not empty (F3); listing pages are read page by page until the pagination ends, complete or partial (F6), and their items, including the awards of an umbrella page, become candidates (F5); a page that now opens elsewhere is moved or redirected away (F7); the all-time scholarship cap is retired into the daily share (F8); scholarship run sizes and the render wait are settings (F10).
@@ -1198,6 +1201,34 @@ async function handle(req: Request): Promise<Response> {
       const items: { course_id: string; provider_id: string; stage: string; query: string }[] =
         await rpc("svc_course_link_search_next", { p_limit: Math.min(Number(body.limit || 40), 120) });
       let searched = 0, found = 0, failed = 0;
+      // v0.59.5 (workstream F; reading.link_search_share_on, ships off): one paid search per distinct query, its answer recorded for every course
+      // row with that query; an earlier answer for the same query inside the lookback window is recorded again with no new search (link-share.ts)
+      if (linkSearchShareOn(ws)) {
+        const groups = linkSearchGroups(items);
+        const prior: Record<string, string[]> = (await rpc("svc_course_link_search_prior_v1", { p_queries: groups.map((g) => g.key) }).catch(() => null)) || {};
+        let reused = 0, shared = 0;
+        const recordAll = async (g: { items: typeof items }, http: number, urls: string[], err: string | null) => {
+          for (const it of g.items) if (await rpc("svc_course_link_search_record", { p_course_id: it.course_id, p_http: http, p_urls: urls, p_error: err }) === "found") found++;
+        };
+        await pool(groups, Math.min(Number(body.concurrency || 6), 10), async (g) => {
+          if (Array.isArray(prior[g.key])) { reused += g.items.length; await recordAll(g, 200, prior[g.key].map(String), null); return }
+          if (Date.now() - t0 > BUDGET_MS) { await recordAll(g, 0, [], "time budget"); return }
+          const g0 = g.items[0];
+          { const u = await useFcWhy("course_link_search", g0.provider_id, g.query);
+            if (!u.ok) { await recordAll(g, 0, [], u.why === "target_list_refused" ? "target_list_refused" : "credit budget"); return } }
+          let http = 0, urls: string[] = [], err: string | null = null;
+          try {
+            const r = await fetch("https://api.firecrawl.dev/v1/search", { method: "POST", headers: fcHeaders, body: JSON.stringify({ query: g.query, limit: wsNum("search_results_scholarship_search", 5) }), signal: AbortSignal.timeout(45000) });  // fixed: API time-out
+            http = r.status;
+            const d = await r.json().catch(() => ({}));
+            urls = Array.isArray(d?.data) ? d.data.map((x: { url?: string }) => String(x?.url || "")).filter(Boolean) : [];
+            if (!r.ok) err = String(d?.error || `HTTP ${r.status}`);
+          } catch (e) { err = e instanceof Error ? e.message : String(e) }
+          searched++; if (err) failed++; shared += g.items.length - 1;
+          await recordAll(g, http, urls, err);
+        });
+        return j({ ok: true, mode, workerVersion: VERSION, worker: WORKER, picked: items.length, queries: groups.length, searched, reused, shared, found, failed, ms: Date.now() - t0 });
+      }
       await pool(items, Math.min(Number(body.concurrency || 6), 10), async (it) => {
         if (Date.now() - t0 > BUDGET_MS) { await rpc("svc_course_link_search_record", { p_course_id: it.course_id, p_http: 0, p_urls: [], p_error: "time budget" }); return }
         { const g = await useFcWhy("course_link_search", it.provider_id, it.query);
@@ -2068,6 +2099,43 @@ async function handle(req: Request): Promise<Response> {
       return j({ ok: true, mode, items: items.length, tally, cost_usd: cost, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER });
     }
     // v0.21.0 (fix 3): central pages read with a pinned model; recorded as proposals for a person to approve
+    // v0.59.5 (3 Nov 2026, CF-247 P0 autonomous operations; workstream A interface request): AI-assisted diagnosis of integration issues the
+    // deterministic classifier diagnosed with low confidence (ops-diagnose.ts). public.svc_ops_diagnosis_next leases requests only while
+    // ops.ai_diagnosis_on is 1, within ops.ai_requests_per_day and under the daily AI ceiling, each with its pinned model (ops.ai_diagnosis_model)
+    // and the context it may quote. One call per request through the existing OpenRouter path: the pinned model only (an answer from another model
+    // is not used), parameters required of the provider, the answer limit a setting, a cut answer never parsed, the cost of every call recorded.
+    // public.svc_ops_diagnosis_record checks the cause and the quotes and applies or keeps the answer; it never chooses a remedy. A call that
+    // fails before any answer leaves the lease to expire (asked again within the day's limit); an answer that cannot be used is recorded, so the
+    // database refuses it and it is not asked again.
+    if (mode === "ops_diagnose") {
+      const w: any = await rpc("svc_ops_diagnosis_next", { p_limit: Math.min(Number(body.limit || 5), 20) });  // fixed: the setting batch.ops_diagnose's upper bound
+      const items: any[] = Array.isArray(w?.items) ? w.items : [];
+      if (!items.length) return j({ ok: true, mode, items: 0, held: w?.held ?? null, worker: WORKER });
+      let key = Deno.env.get("OPENROUTER_API_KEY") || "";
+      if (!key) { const prof = await rpc("layer3_routing_profile_service", { p_code: AI_MATCH_PROFILE }); const { data } = await c.rpc("layer3_provider_credential_resolve_service", { p_profile_id: prof?.id }); key = typeof data === "string" ? data : "" }
+      if (!key) return j({ ok: false, mode, error: "OpenRouter credential unavailable", worker: WORKER }, 503);
+      const maxTokens = opsDiagnoseLimit(ws), ors = orStats(), tally: Record<string, number> = {}; let cost = 0;
+      await pool(items, 2, async (it) => {
+        const model = String(it.model || "");
+        if (!model) { tally.no_model = (tally.no_model || 0) + 1; return }
+        if (Date.now() - t0 > BUDGET_MS - 20000) { tally.time_budget = (tally.time_budget || 0) + 1; return }
+        try {
+          const r = await ors.fetch("https://openrouter.ai/api/v1/chat/completions", { method: "POST", headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
+            body: JSON.stringify(opsDiagnoseRequest(model, it.context, maxTokens)), signal: AbortSignal.timeout(60000) });  // fixed: API time-out of one call
+          const d = await r.json().catch(() => ({}));
+          // a refused request (4xx other than 408 and 429) is recorded as an unusable answer, so it is not asked again; a transient failure waits for the lease
+          if (!r.ok && (r.status === 408 || r.status === 429 || r.status >= 500)) { tally.http_transient = (tally.http_transient || 0) + 1; return }
+          const ans = r.ok ? opsDiagnoseAnswer(d, it.context, maxTokens, !d?.model || String(d.model).startsWith(model))
+                           : { ok: false as const, cut: false, cost: Number(d?.usage?.cost || 0) || 0, error: `HTTP ${r.status}: ${JSON.stringify(d?.error || d).slice(0, 200)}` };
+          cost += ans.cost;
+          const answer = ans.ok ? ans.answer : { root_cause: null, confidence: null, evidence: [], reasoning: ans.error, prompt_version: OPS_DIAGNOSE_PROMPT_VERSION };
+          const res = await rpc("svc_ops_diagnosis_record", { p_id: Number(it.id), p_answer: answer, p_cost_usd: ans.cost });
+          const st = String(res?.state || "recorded") + (res?.applied ? "_applied" : "");
+          tally[st] = (tally[st] || 0) + 1;
+        } catch (e) { tally.error = (tally.error || 0) + 1 }
+      });
+      return j({ ok: true, mode, items: items.length, tally, cost_usd: cost, openrouter: ors.summary(), prompt_version: OPS_DIAGNOSE_PROMPT_VERSION, ms: Date.now() - t0, worker: WORKER });
+    }
     if (mode === "central_ai") {
       let key = Deno.env.get("OPENROUTER_API_KEY") || "";
       if (!key) { const prof = await rpc("layer3_routing_profile_service", { p_code: AI_MATCH_PROFILE }); const { data } = await c.rpc("layer3_provider_credential_resolve_service", { p_profile_id: prof?.id }); key = typeof data === "string" ? data : "" }
@@ -2247,6 +2315,12 @@ async function handle(req: Request): Promise<Response> {
           // v0.48.3: a provider under the completeness guard whose stored tables cannot be read as a manifest is held before any AI read;
           // v0.48.4 (D2): so is a table that is not one country's (requirement-type columns, or a heading that names no country). Held
           // unparsed is terminal in the database (state failed, no retry); the logged re-read can bring it back.
+          // v0.59.5 (workstream C, RMIT IB and GAC pages; reading.entry_global_pages_on, ships off): a page whose heading names a global
+          // qualification and that says the qualification applies whatever the country is not held for naming no country (entry.ts)
+          const globalQ = Number(ws["reading.entry_global_pages_on"]) >= 1 && stored.manifest.status === "ok"
+            ? entryGlobalQualification(stored.manifest.heading, page, Array.isArray(ws["reading.entry_global_qualifications"]) ? ws["reading.entry_global_qualifications"] as string[] : [],
+                                       Array.isArray(ws["reading.entry_global_phrases"]) ? ws["reading.entry_global_phrases"] as string[] : []) : null;
+          stored.manifest.global = globalQ;  // entryNonCountryShape: a global-qualification page is not held for naming no country
           const nonCountry = it.completeness_required === true && stored.manifest.status === "ok" ? entryNonCountryShape(stored.manifest, await countryRefs()) : null;
           // v0.48.8 (PR A, R2): a column of bare numbers on a page that prints no scale is a source hold, before any AI read
           const unscaled = it.completeness_required === true && stored.manifest.status === "ok" && !nonCountry ? entryUnscaledColumns(stored.manifest) : [];
@@ -2256,6 +2330,9 @@ async function handle(req: Request): Promise<Response> {
             await rec({ p_error: `held_unparsed: ${why}`.slice(0, 400), p_result: { rows: [], dropped: [], completeness: { ...completeness, status: "unparsed", reason: why }, worker: WORKER, prompt_version: ENTRY_PROMPT_VERSION, page_basis: ENTRY_TABLE_BASIS } });
             tally.held_unparsed = (tally.held_unparsed || 0) + 1; return;
           }
+          // v0.59.5 (workstream C, UWA China ranges; reading.entry_range_lower_bound_on, ships off): a value within one printed range is its lower
+          // bound (entry.ts entryRangeLower), carried to the parser with the page's line structure
+          stored.lines.rangeLower = Number(ws["reading.entry_range_lower_bound_on"]) >= 1;
           // v0.49.2: slice size and answer length from settings (entry.matrix_slice_chars, entry.matrix_max_tokens)
           const slices = entrySlices(page, Number(it.max_rows) || 400, Number(it.slice_chars) || 24000);
           const rows: any[] = [], dropped: any[] = []; let edition: string | null = null, intake_year: number | null = null;
@@ -2291,7 +2368,12 @@ async function handle(req: Request): Promise<Response> {
           // v0.48.3: the whole read is compared with the source-table manifest; a read that is not complete proposes nothing (held, kept, retried
           // within entry.matrix_attempts by the database)
           const completeness = entryCompleteness(stored.manifest, rows);
+          // v0.59.5 (workstream C, UWA AP subject equivalences; reading.entry_subject_rows_on, ships off): rows of one identity that each name a
+          // subject become one subject-prerequisite row, after completeness is checked on the rows as read
+          const subj = Number(ws["reading.entry_subject_rows_on"]) >= 1 ? entrySubjectRows(rows) : { rows, merged: 0 };
+          rows.splice(0, rows.length, ...subj.rows);
           const result = { rows, dropped, edition, intake_year, slices: slices.length, worker: WORKER, prompt_version: ENTRY_PROMPT_VERSION, page_basis: stored.pdf ? PDF_METHOD : ENTRY_TABLE_BASIS, completeness,
+                           ...(subj.merged ? { subject_rows_merged: subj.merged } : {}), ...(globalQ ? { global_qualification: globalQ } : {}),
                            ...(stored.pdf ? { pdf: { tables: stored.pdf.tables.length, rows: stored.pdf.tables.reduce((a, t) => a + t.rows, 0) } } : {}) };
           if (it.completeness_required === true && completeness.status !== "complete") {
             await rec({ p_error: `held_incomplete: ${completeness.reason || completeness.status}`.slice(0, 400), p_result: result, p_cost: c1 });
@@ -2691,8 +2773,12 @@ async function handle(req: Request): Promise<Response> {
       // v0.23.1: a null character in page text or an AI reply cannot be stored; remove it before recording
       const noNul = (v: unknown): unknown => typeof v === "string" ? v.replace(/\u0000/g, "") : Array.isArray(v) ? v.map(noNul)
         : v && typeof v === "object" ? Object.fromEntries(Object.entries(v as Record<string, unknown>).map(([k, x]) => [k, noNul(x)])) : v;
+      // v0.59.5 (workstream D interface request; mandate 15:37 §4 "do not incur a new paid read simply because a previous task failed to persist a
+      // result"): the answers are kept first (public.svc_enrich_ai_stash_v1, one short insert), so a failed record is replayed from the copy, not
+      // read again; a failed stash is reported and the record goes ahead
+      const stash = out.length ? await rpc("svc_enrich_ai_stash_v1", { p_results: noNul(out) }).catch((e) => ({ error: (e instanceof Error ? e.message : String(e)).slice(0, 200) })) : {};
       const res = out.length ? await rpc("svc_enrich_ai_record", { p_results: noNul(out) }) : {};
-      return j({ ok: true, mode, model, items: out.length, tally, recorded: res, cost_usd: cost, openrouter: ors.summary(), ms: Date.now() - t0, worker: WORKER });
+      return j({ ok: true, mode, model, items: out.length, tally, stash, recorded: res, cost_usd: cost, openrouter: ors.summary(), ms: Date.now() - t0, worker: WORKER });
     }
     if (mode === "scholarship_inspect") {
       const chars = Math.min(Number(body.chars || 2500), 8000);
