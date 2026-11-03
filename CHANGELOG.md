@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.354 — 3 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.427** (Release C, decision D6 approved by the Platform Admin 3 Nov 2026 15:52). Migration `20261103220000_cf247_aer_scheduled_reading`: job aer-scheduled-read (ships paused), security.aer_schedule_tick_v1 and population and selector functions, pipeline.aer_schedule_runs and aer_schedule_checks, fourteen settings; md5-guarded edits of entry_matrix_enabled_v1, entry_matrix_fire_v1, course_entry_eligible_v1, course_entry_programme_v1 and aer_course_outcomes_build_v1. No paid budget raised; Layer 4 admission unchanged; consumer API untouched. Spec s235.
+
 ## 0.1.353 — 3 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.426** (IQ-00066, IQ-00053 residual, IQ-00063). Migration `20261103230000_cf247_orchestration_followups`: md5-guarded edits of enrich_plan_v1, enrich_plan_tick_v1, admin_job_watch_v1, admin_jobs_tick_v1, admin_pipeline_yield, course_description_check_v1 and provider_onboarding_tick_v1; settings plans.step_needs_work_on (1), onboarding.website_check_on (1), plans.outcome_window_hours (24). No paid spend; nothing dropped; consumer API untouched. Spec s243.
