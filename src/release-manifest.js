@@ -1,15 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.440'
-export const PACKAGE_VERSION='0.1.367'
+export const UI_VERSION='2.15.441'
+export const PACKAGE_VERSION='0.1.368'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Nov 2026',
-  title:'Operations controller verifies a fix in the run it falls due',
+  title:'The platform evaluates and versions its own AI instructions against human-reviewed decisions',
   changes:[
-    'A fix\'s verification, and an issue due for a look, now count as due within the run\'s own minute, so a verification no longer slips a whole run because the scheduler started a fraction of a second early; a verification not yet due is counted in the run summary instead of being skipped silently.'
+    'Evaluation sets are built only from human-reviewed Layer 4 decisions, accepted corrections and quote-checked readings; unreviewed AI output is refused as ground truth.',
+    'Every AI instruction and rule is versioned against the worker text it runs, with proposals that record the problem, evidence, expected benefit, risks, evaluation set and results, a rejected-proposal ledger and rollback.',
+    'Offline evaluation, canary runs and automatic acceptance of bounded batch-size changes are built and ship switched off; the AI cannot accept its own changes or widen its authority.'
   ],
   bugFixes:[]
 }

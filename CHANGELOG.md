@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.368 — 3 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.441** (workstream E). Migration `20261104070000_cf247_ai_eval_self_improvement`: ai_eval_* examples, sets, runs and scores; ai_instruction_versions and proposals with ledger and boundaries; job ai-eval (hourly at :07); 3 root causes and 2 remedies; 3 seeded proposals from live evidence. ai_eval.offline_runs_on, ai_eval.canary_on and ai_eval.auto_accept_on ship 0. No live function edited; nothing dropped; consumer API untouched. Spec s250.
+
 ## 0.1.367 — 3 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.440** (workstream A follow-up). Migration `20261104130000_cf247_ops_verify_due_minute`: md5-guarded edit of ops_controller_tick_v1 (b4df5f81 -> 5dce3c47). A verification is still never made in the run that acted. Nothing dropped; consumer API untouched. Spec s256.
