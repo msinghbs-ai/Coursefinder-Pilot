@@ -8,6 +8,6 @@
 export const RETIRED_TOOLSETS = new Set(['serper', 'scrapingbee'])
 
 // Acquisition providers no longer shown on Fetchers, the Go-live checklist or Settings (dropped 29 Sep; Serper and ScrapingBee 4 Oct)
-export const RETIRED_FETCHERS = new Set(['scraperapi', 'scrape-do', 'zenrows', 'parsebot', 'serper', 'scrapingbee'])
+export const RETIRED_FETCHERS = new Set(['scraperapi', 'scrape-do', 'zenrows', 'serper', 'scrapingbee'])
 
 export const isRetiredFetcher = (p) => RETIRED_FETCHERS.has(String(p?.provider_key || p?.provider_name || '').toLowerCase())

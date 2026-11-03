@@ -25,7 +25,7 @@ test('migration: the Layer 3 AI jobs move area and keep running; retirements are
 
 test('retired services: one list for Toolsets, Fetchers, Settings and the Go-live checklist', () => {
   expect([...RETIRED_TOOLSETS]).toEqual(['serper', 'scrapingbee'])
-  for (const k of ['scraperapi', 'scrape-do', 'zenrows', 'parsebot']) expect(RETIRED_FETCHERS.has(k)).toBe(true)
+  for (const k of ['scraperapi', 'scrape-do', 'zenrows']) expect(RETIRED_FETCHERS.has(k)).toBe(true)
   expect(isRetiredFetcher({ provider_key: 'firecrawl' })).toBe(false)
   expect(isRetiredFetcher({ provider_key: 'direct-http' })).toBe(false)
   for (const f of ['src/Toolsets.jsx', 'src/layer2-provider-entry.jsx', 'src/platform-maturity-entry.jsx', 'src/EnvironmentMigrationWorkspace.jsx']) expect(read(f)).toContain("from'./retired-services'")
