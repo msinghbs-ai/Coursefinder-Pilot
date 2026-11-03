@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.369 — 3 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.442** (IQ-00111, P0 fee integrity). Migration `20261104140000_cf247_fee_units_holds`: md5-guarded edits of `public.svc_fee_ai_record` (0fb74c63 → 5ec65e53) and `security.fee_course_pages_enqueue_v1` (91b2591e → 67b1b7db); `pipeline.fee_country_profiles.units_are`; settings fees.units_load_fix_on and fees.respect_holds_on (on); fees.respect_all_exclusions_on (off). Worker coverage-sweep v0.59.6 (fees.ts). fees.course_pages stays 0 until the Platform Admin restores it. Containment, correction and read-back pastes in docs/paste. Nothing dropped; consumer API untouched. Spec s257.
+
 ## 0.1.368 — 3 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.441** (workstream E). Migration `20261104070000_cf247_ai_eval_self_improvement`: ai_eval_* examples, sets, runs and scores; ai_instruction_versions and proposals with ledger and boundaries; job ai-eval (hourly at :07); 3 root causes and 2 remedies; 3 seeded proposals from live evidence. ai_eval.offline_runs_on, ai_eval.canary_on and ai_eval.auto_accept_on ship 0. No live function edited; nothing dropped; consumer API untouched. Spec s250.

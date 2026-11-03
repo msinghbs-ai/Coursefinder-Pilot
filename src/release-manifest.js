@@ -1,17 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.441'
-export const PACKAGE_VERSION='0.1.368'
+export const UI_VERSION='2.15.442'
+export const PACKAGE_VERSION='0.1.369'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Nov 2026',
-  title:'The platform evaluates and versions its own AI instructions against human-reviewed decisions',
+  title:'The fee reader turns course and unit fees into yearly fees correctly and respects fee holds',
   changes:[
-    'Evaluation sets are built only from human-reviewed Layer 4 decisions, accepted corrections and quote-checked readings; unreviewed AI output is refused as ground truth.',
-    'Every AI instruction and rule is versioned against the worker text it runs, with proposals that record the problem, evidence, expected benefit, risks, evaluation set and results, a rejected-proposal ledger and rollback.',
-    'Offline evaluation, canary runs and automatic acceptance of bounded batch-size changes are built and ship switched off; the AI cannot accept its own changes or widen its authority.'
+    'A fee stated for a number of units or credit points becomes a yearly fee from the page\'s own full-time load, then the country load only when the count is the same kind, then the whole-course fee over the course length; when the years implied disagree with the course length, the figure goes to Layer 4 instead of being divided.',
+    'A course with a raised fee check hold or a fee exclusion from a fee check decision is no longer read or admitted by the fee reader; its requests close as held.',
+    'The worker asks the model for the kind of count, the page\'s stated load, the course length and whether the amount is the whole course.'
   ],
   bugFixes:[]
 }
