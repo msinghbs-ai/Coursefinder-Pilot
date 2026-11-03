@@ -1,17 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.455'
-export const PACKAGE_VERSION='0.1.382'
+export const UI_VERSION='2.15.456'
+export const PACKAGE_VERSION='0.1.383'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'4 Nov 2026',
-  title:'Admin menu step 3: Queues & yield and Services & limits',
+  title:'Admin menu step 4: Layer 2/3 consolidated',
   changes:[
-    'Platform health › Queues & yield brings the work queues and Pipeline yield together (yield first, rank 5 as before); the Integration queue keeps the defect register.',
-    'Models & services › Services & limits has one card per service: Firecrawl, Direct read, OpenRouter, Database jobs and edge calls, and Notices; any other page service sits in a closed Other page services section. The AI model switches moved to AI & OpenRouter.',
-    'Every old address of a moved tab opens its new home.'
+    'Progress moves to Layer 2/3 › Operations (overview, Where the universities are, Journeys, Every hour) and its Firecrawl and AI today panel to Services & limits.',
+    'Build adapter is a Build action on Universities and step 0 of the Adapter builder; the Attributes run controls (Fill now, Release holds, Fill the gaps, Provider descriptions) move to Enrich fields, and Attributes is read only; the scholarship settings move to Layer 2/3 › Scholarships.',
+    'The Layer 4 Inbox shows one review readiness line under its tiles; decisions, items and paging are unchanged. Every old address opens the new home.'
   ],
   bugFixes:[]
 }
