@@ -79,6 +79,7 @@ insert into pipeline.scholarship_listing_pages(provider_id, url, url_norm, sourc
   now() - interval '1 day', now() + interval '6 days', null,
   '[{"url":"https://www.torrens.edu.au/scholarships/international-scholarships/pepea-scholarship","name":"PEPEA Scholarship"},
     {"url":"https://www.torrens.edu.au/scholarships/international-scholarships/family-scholarship","name":"Family Scholarship"},
+    {"url":"https://www.torrens.edu.au/scholarships/international-scholarships/family-scholarship/","name":"Family Scholarship (listed again, as live listings do)"},
     {"url":null,"name":"Global Scholarships"},
     {"url":"https://www.bluemountains.edu.au/apply/scholarships-available/","name":"BMIHMS"}]'),
  ('10000000-0000-0000-0000-000000000004', 'https://www.example.edu.au/scholarships/international', 'example.edu.au/scholarships/international', 'suggested', false, 'suggested', null, null, null, null),

@@ -47,5 +47,16 @@ OUT=$($P -d $DB -1 -At -f $MIG 2>&1) || { echo "$OUT" | tail -5; exit 1; }
 [ "$(echo "$OUT" | grep -c ': already applied$')" = 3 ] || { echo "a second run changed an edited function"; exit 1; }
 check; [ "$($P -d $DB -Atc "$SNAP")" = "$S1" ] || { echo "a second run changed settings, remedies, root causes, states or jobs"; exit 1; }
 echo "second run: already applied, unchanged"
+# the v2.15.460 production defect (06:29 AEDT 4 Nov 2026) on the released definition, then the fix 20261104430000 (twice)
+FIX=$ROOT/supabase/migrations/20261104430000_cf247_sch_coverage_classify_fix.sql
+[ "$(md5of 'security.scholarship_coverage_classify_v1(uuid[])')" = a268ce816990d71ef545dbdc0ae28a5e ] || { echo "classify differs from live v2.15.460"; exit 1; }
+$P -d $DB -f fixtures-dup-before.sql 2>&1 | show
+A_FIX=$(sed -n "s/^--   security.scholarship_coverage_classify_v1(uuid\[\]) *[0-9a-f]\{32\} -> \([0-9a-f]\{32\}\)$/\1/p" $FIX)
+OUT=$($P -d $DB -1 -At -f $FIX 2>&1) || { echo "$OUT" | tail -5; exit 1; }
+[ "$(echo "$OUT" | grep -c ': applied$')" = 1 ] && [ "$(md5of 'security.scholarship_coverage_classify_v1(uuid[])')" = "$A_FIX" ] || { echo "fix not applied: $OUT"; exit 1; }
+OUT=$($P -d $DB -1 -At -f $FIX 2>&1) || { echo "$OUT" | tail -5; exit 1; }
+[ "$(echo "$OUT" | grep -c ': already applied$')" = 1 ] || { echo "a second run of the fix changed the function"; exit 1; }
+echo "fix: scholarship_coverage_classify_v1 a268ce816990d71ef545dbdc0ae28a5e -> $A_FIX; second run already applied"
 $P -d $DB -f fixtures.sql 2>&1 | show
+$P -d $DB -f fixtures-fix.sql 2>&1 | show
 echo "all scholarship coverage recovery fixtures passed"
