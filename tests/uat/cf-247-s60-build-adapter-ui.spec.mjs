@@ -28,15 +28,16 @@ async function setup(page, rank = 6) {
   })
 }
 
-test('the tab sits on Layer 2 beside Adapters, and the Adapter builder stays', () => {
+test('Build adapter is step 0 of the Adapter builder and a Universities row action (SS-020 step 4); the Adapter builder stays', () => {
   const keys = PAGES.layer2.tabs.map(t => t.key)
-  expect(keys).toEqual(['operations', 'flags', 'universities', 'sources', 'plan', 'build', 'builder', 'enrich', 'scholarships'] /* v2.15.306: Enrichment plan */) // v2.15.301: Flags; v2.15.300: Layer 2/3; the builder opens from a university row
-  expect(PAGES.layer2.tabs.find(t => t.key === 'build').label).toBe('Build adapter')
+  expect(keys).toEqual(['operations', 'universities', 'enrich', 'plan', 'builder', 'sources', 'flags', 'scholarships'] /* SS-020 step 4 (Decision 269) */ /* v2.15.306: Enrichment plan */) // v2.15.301: Flags; v2.15.300: Layer 2/3; the builder opens from a university row
+  // SS-020 step 4: Build adapter is no longer a tab: a Build row action on Universities, step 0 of the Adapter builder; its address opens Universities
+  expect(PAGES.layer2.tabs.find(t => t.key === 'build')).toBeUndefined()
 })
 
 test('browser: universities with stage and readiness; a university page admits Ready fields only, with a reason', async ({ page }) => {
   await setup(page)
-  await page.goto('/#layer-2-discovery?tab=build')
+  await page.goto('/#layer-2-discovery?tab=builder') // SS-020 step 4: step 0 of the Adapter builder
   const list = page.locator('[data-build-list]')
   await expect(list.locator('[data-build-row="u-rb"]')).toContainText('Tested')
   await expect(list.locator('[data-build-row="u-rb"]')).toContainText('4 · 2 · 2')
@@ -57,7 +58,7 @@ test('browser: universities with stage and readiness; a university page admits R
 
 test('browser: build picked universities into a wave; the Waves view lists waves', async ({ page }) => {
   await setup(page)
-  await page.goto('/#layer-2-discovery?tab=build')
+  await page.goto('/#layer-2-discovery?tab=builder') // SS-020 step 4: step 0 of the Adapter builder
   await page.getByRole('checkbox', { name: 'Pick Kestrel College' }).check()
   await page.locator('[data-build-picked]').click()
   await expect.poll(() => page.buildCalls.find(c => c.p_action === 'build')?.p_args).toEqual({ provider_ids: ['u-kc'], reason: 'Admit from the browser test', wave: 'Wave 18' })
@@ -67,7 +68,8 @@ test('browser: build picked universities into a wave; the Waves view lists waves
 
 test('browser: a Curator sees readiness but no Build or Admit', async ({ page }) => {
   await setup(page, 3)
-  await page.goto('/#layer-2-discovery?tab=build')
+  await page.goto('/#layer-2-discovery?tab=universities') // SS-020 step 4: Curators reach the list in the Universities fold (the builder is rank 5)
+  await page.locator('[data-fold="uni-build-waves"] > summary').click()
   await expect(page.locator('[data-build-row="u-rb"]')).toBeVisible()
   await expect(page.locator('[data-build-picked]')).toHaveCount(0)
   await page.getByRole('button', { name: 'Riverbend University' }).click()

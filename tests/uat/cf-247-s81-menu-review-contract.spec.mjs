@@ -16,8 +16,8 @@ test('menu: 20 pages (was 23; v2.15.363 added Catalogue › Entry requirements);
   for (const gone of ['sources', 'apiUsage', 'dataModel', 'retention']) { expect(PAGES[gone]).toBeUndefined(); expect(inMenu).not.toContain(gone) }
   expect(SECTIONS.find(s => s.label === 'Data pipeline').pages).toEqual(['coverage', 'layer1', 'layer2', 'layer4'])
   expect(PAGES.scholarships.tabs.map(t => t.key)).toEqual(['list', 'coverage'])
-  expect(PAGES.coverage.tabs.map(t => t.key)).toEqual(['courses', 'attributes', 'progress'])
-  expect(PAGES.layer2.tabs.map(t => t.key)).toEqual(['operations', 'flags', 'universities', 'sources', 'plan', 'build', 'builder', 'enrich', 'scholarships'] /* v2.15.321: Course sources */ /* v2.15.306: Enrichment plan */)
+  expect(PAGES.coverage.tabs.map(t => t.key)).toEqual(['courses', 'attributes']) // SS-020 step 4: Progress is on Layer 2/3 › Operations
+  expect(PAGES.layer2.tabs.map(t => t.key)).toEqual(['operations', 'universities', 'enrich', 'plan', 'builder', 'sources', 'flags', 'scholarships'] /* SS-020 step 4 (Decision 269) */ /* v2.15.321: Course sources */ /* v2.15.306: Enrichment plan */)
   expect(PAGES.health.tabs.map(t => [t.key, t.min])).toEqual([['checks', 3], ['queues', 3], ['integration', 5], ['storage', 6]])  // CF-247 2 Nov 2026: Integration queue
   expect(PAGES.environment.tabs.map(t => [t.key, t.min])).toEqual([['settings', 6], ['api', 4], ['backup', 6]]) // v2.15.310: Backup & restore
   expect(PAGES.rankings.tabs.map(t => t.key)).toEqual(['overview', 'compare', 'qilt', 'prisms', 'datasets'])
@@ -34,7 +34,7 @@ test('old addresses open the new places', () => {
   expect(to('coverage', { tab: 'flags' })).toEqual(['layer2', 'flags', {}])
   expect(to('coverage', { tab: 'progress', view: 'running' })).toEqual(['jobs', 'tasks', {}])
   expect(to('coverage', { tab: 'progress', view: 'levers' })).toEqual(['environment', 'settings', {}])
-  expect(to('coverage', { tab: 'progress', view: 'journeys' })).toEqual(['coverage', 'progress', { view: 'journeys' }])
+  expect(to('coverage', { tab: 'progress', view: 'journeys' })).toEqual(['layer2', 'operations', { view: 'journeys' }]) // SS-020 step 4
   expect(to('layer-1-register', { tab: 'scholarships' })).toEqual(['layer2', 'scholarships', {}])
   expect(to('layer-1-register', { tab: 'operations' })).toEqual(['layer1', '', {}])
   expect(to('pipeline-sources')).toEqual(['layer1', '', { layer: 'all' }])

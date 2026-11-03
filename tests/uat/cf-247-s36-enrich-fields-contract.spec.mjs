@@ -47,7 +47,7 @@ test('worker v0.22.0: every AI value must quote the stored page; the scraper rea
 
 test('screen: Layer 2 › Enrich fields', () => {
   expect(read('src/nav-map.js')).toContain("{ key: 'enrich', label: 'Enrich fields', min: 3 }")
-  expect(read('src/mature-main.jsx')).toContain("if(tab==='enrich')return <div className=\"m-page-stack\"><EnrichFields rank={rank} onError={err}/>")
+  expect(read('src/mature-main.jsx')).toContain("<EnrichFields rank={rank} onError={err}/><FieldCoverage part=\"pdesc\"") // SS-020 step 4: run controls from Attributes sit around it
 })
 
 test.describe('mocked browser', () => {

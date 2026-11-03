@@ -132,6 +132,8 @@ test.describe('mocked browser', () => {
     await expect(fields).toContainText('provider figures are counted every 10 minutes')
     await expect(fields.locator('[data-snapshot-stamp="field-coverage"]')).toContainText('Provider figures counted')
     await expect(fields.locator('[data-snapshot-stamp="field-coverage"]')).toContainText('(5 min ago)')
+    // SS-020 step 4 (Decision 269): the standing queue (with today's AI spend) is on Layer 2/3 › Enrich fields
+    await page.goto('/#layer-2-discovery?tab=enrich')
     await page.locator('[data-card="coverage.gap-queue"] .cf-card-toggle').click()
     await expect(page.locator('[data-card="coverage.gap-queue"] [data-snapshot-stamp="field-coverage-spend"]')).toContainText('(5 min ago)')
     expect(calls.some((c) => c.p_action === 'overview')).toBe(true)

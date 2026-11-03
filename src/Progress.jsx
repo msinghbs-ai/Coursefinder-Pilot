@@ -42,23 +42,35 @@ const STATE_OF=j=>!j.active?['Paused','warning']:j.running?['Running','success']
 async function read(view,args){const{data,error}=await supabase.rpc('admin_progress_read',{p_view:view,p_args:args||{}});if(error)throw error;return data||{}}
 
 function ViewTabs({view}){
-  return <nav className="pg-views" aria-label="Progress views">{VIEWS.map(([k,l])=><a key={k} href={hrefFor('coverage','progress',k==='overview'?{}:{view:k})} className={`pg-view${view===k?' is-on':''}`} aria-current={view===k?'page':undefined} data-progress-view={k}>{l}</a>)}</nav>
+  return <nav className="pg-views" aria-label="Progress views">{VIEWS.map(([k,l])=><a key={k} href={hrefFor('layer2','operations',k==='overview'?{}:{view:k})} className={`pg-view${view===k?' is-on':''}`} aria-current={view===k?'page':undefined} data-progress-view={k}>{l}</a>)}</nav>
 }
 
 function GroupPicker({group,counts,onPick}){
   return <div className="pg-groups" role="group" aria-label="Group">{GROUPS.map(([k,l])=><Button key={k} compact className={group===k?'is-active':''} aria-pressed={group===k} onClick={()=>onPick(k)} data-progress-group={k}>{l}{counts?.[k]!=null?` (${fmtNumber(counts[k])})`:''}</Button>)}</div>
 }
 
-function Overview({group,setGroup,onError}){
+function Overview({group,setGroup,onError,part='operations'}){
   const[d,setD]=useState(null)
   const load=async()=>{try{setD(await read('overview',{group}))}catch(e){onError?.(errText(e))}}
   useEffect(()=>{setD(null);load()},[group])
   if(!d)return <Loading label="Reading progress…"/>
   const st=d.stages||{},s=d.scholarships||{},pg=d.pages_hour||{},b=d.budget||{}
   const needs=[]
-  for(const[k,n]of Object.entries(d.stop_reasons||{}))if(Number(n)>0){const h=heldText(k);needs.push({key:`stop:${k}`,tone:['nothing_ready','approve_central'].includes(k)?'warning':'neutral',title:`${fmtNumber(n)} ${Number(n)===1?'university':'universities'}: ${h[0]}`,hint:h[1],href:hrefFor('coverage','progress',{view:'journeys',group,held:'stopped',stop:k})})}
+  for(const[k,n]of Object.entries(d.stop_reasons||{}))if(Number(n)>0){const h=heldText(k);needs.push({key:`stop:${k}`,tone:['nothing_ready','approve_central'].includes(k)?'warning':'neutral',title:`${fmtNumber(n)} ${Number(n)===1?'university':'universities'}: ${h[0]}`,hint:h[1],href:hrefFor('layer2','operations',{view:'journeys',group,held:'stopped',stop:k})})}
   for(const n of d.notices||[])needs.push({key:n.key,tone:n.severity==='high'?'danger':'warning',title:n.title,hint:[n.detail,n.hint].filter(Boolean).join(' ')})
-  const journeyHref=stage=>hrefFor('coverage','progress',{view:'journeys',group,stage})
+  const journeyHref=stage=>hrefFor('layer2','operations',{view:'journeys',group,stage})
+  const budget=<section className="m-panel" aria-label="Firecrawl and AI today" data-progress-budget>
+        <h3 className="sl-h4">Firecrawl and AI today</h3>
+        <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Purpose</th><th className="num">Used</th><th className="num">Share</th><th className="num">Refused</th></tr></thead><tbody>
+          {(b.groups||[]).map(g=><tr key={g.group} data-progress-share={g.group}><td>{g.label}</td><td className="num">{fmtNumber(Math.round(g.used))}</td>
+            <td className="num"><StatusChip tone={Number(g.used)>=Number(g.share)?'danger':Number(g.used)>=0.8*Number(g.share)?'warning':'success'} label={`${pctText(g.used,g.share)} of ${fmtNumber(g.share)}`}/></td><td className="num">{fmtNumber(g.refused)}</td></tr>)}
+          {(d.ai_today||[]).map(a=><tr key={a.use} data-progress-ai={a.use}><td>AI: {a.label}</td><td className="num">US${Number(a.spent||0).toFixed(2)}</td><td className="num">guard US${a.guard}</td><td className="num">—</td></tr>)}
+        </tbody></table></div>
+        <small className="sd-desc">OpenRouter balance US${d.openrouter_usd!=null?Number(d.openrouter_usd).toFixed(2):'—'}. Change shares and guards on <a className="cf-link" href={hrefFor('environment','settings')}>Settings</a>. {fmtNumber(s.waiting_ai)} scholarship pages wait for the AI; each field's share is on <a className="cf-link" href={hrefFor('coverage','attributes')}>Coverage › Attributes</a>.</small>
+      </section>
+  // SS-020 step 4 (Decision 269, 3 Nov 2026): Progress left Coverage. Its overview, journeys and hourly history are on Layer 2/3 › Operations
+  // (part 'operations'); Firecrawl and AI today is on Models & services › Services & limits (part 'services')
+  if(part==='services')return <div className="m-page-stack" data-progress-overview="services">{budget}</div>
   return <div className="m-page-stack" data-progress-overview>
     <div className="pg-bar"><GroupPicker group={group} counts={d.groups} onPick={setGroup}/><span className="pg-spacer"/><small className="sd-desc">Course and scholarship counts as of {d.facts_at?fmtTime(d.facts_at):'—'} (hourly)</small><Button compact onClick={load}><RefreshCw size={14}/>Refresh</Button></div>
     <section className="pg-tiles" aria-label="Headline">
@@ -77,18 +89,7 @@ function Overview({group,setGroup,onError}){
       <h3 className="sl-h4">Where the universities are</h3>
       <ol className="pg-stages">{STAGES.map(([k,l],i)=><li key={k}><a href={journeyHref(k)} data-progress-stage={k}><small>{k==='done'?'':`${i+1}. `}{l}</small><strong>{fmtNumber(st[k]||0)}</strong></a></li>)}</ol>
     </section>
-    <div className="pg-two">
-      {/* SS-020 step 1 (Decision 269, 3 Nov 2026): "Courses with each field" retired; it repeated Coverage & completeness › Attributes */}
-      <section className="m-panel" aria-label="Firecrawl and AI today" data-progress-budget>
-        <h3 className="sl-h4">Firecrawl and AI today</h3>
-        <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Purpose</th><th className="num">Used</th><th className="num">Share</th><th className="num">Refused</th></tr></thead><tbody>
-          {(b.groups||[]).map(g=><tr key={g.group} data-progress-share={g.group}><td>{g.label}</td><td className="num">{fmtNumber(Math.round(g.used))}</td>
-            <td className="num"><StatusChip tone={Number(g.used)>=Number(g.share)?'danger':Number(g.used)>=0.8*Number(g.share)?'warning':'success'} label={`${pctText(g.used,g.share)} of ${fmtNumber(g.share)}`}/></td><td className="num">{fmtNumber(g.refused)}</td></tr>)}
-          {(d.ai_today||[]).map(a=><tr key={a.use} data-progress-ai={a.use}><td>AI: {a.label}</td><td className="num">US${Number(a.spent||0).toFixed(2)}</td><td className="num">guard US${a.guard}</td><td className="num">—</td></tr>)}
-        </tbody></table></div>
-        <small className="sd-desc">OpenRouter balance US${d.openrouter_usd!=null?Number(d.openrouter_usd).toFixed(2):'—'}. Change shares and guards on <a className="cf-link" href={hrefFor('environment','settings')}>Settings</a>. {fmtNumber(s.waiting_ai)} scholarship pages wait for the AI; each field's share is on <a className="cf-link" href={hrefFor('coverage','attributes')}>Coverage › Attributes</a>.</small>
-      </section>
-    </div>
+    {/* SS-020 step 1: "Courses with each field" retired (Coverage › Attributes); step 4: Firecrawl and AI today is on Services & limits */}
     <section className="m-panel" aria-label="Hourly trend" data-progress-trend>
       <h3 className="sl-h4">Every hour (last 24 hours, kept 90 days)</h3>
       {(d.trend||[]).length===0?<Empty text="The first hourly snapshot is taken at nine minutes past the hour."/>:
@@ -202,7 +203,7 @@ function JobUnis({job,stage}){
   return <>{d.fallback&&<p className="sd-desc" data-progress-unis-fallback>Nothing for a particular university in the last hour. The universities now at this stage of the journey ({stage}):</p>}<table className="cf-table pg-unis" data-progress-unis={job}><thead><tr><th>University</th><th>Where it is</th><th>What this job did for it</th><th/></tr></thead><tbody>
     {u.map(x=><tr key={x.provider_id} data-progress-uni={x.provider_id}><td><strong>{x.name}</strong><br/><small className="sl-sub">{x.country}</small></td>
       <td>{x.stage?<StagePills stage={x.stage}/>:'Not in onboarding'}</td><td>{x.what}</td>
-      <td>{x.onboarding_id&&<a className="cf-link" href={hrefFor('coverage','progress',{view:'journeys',id:x.onboarding_id,group:'all'})} data-progress-open-journey>Open journey →</a>}</td></tr>)}
+      <td>{x.onboarding_id&&<a className="cf-link" href={hrefFor('layer2','operations',{view:'journeys',id:x.onboarding_id,group:'all'})} data-progress-open-journey>Open journey →</a>}</td></tr>)}
   </tbody></table></>
 }
 
@@ -276,10 +277,11 @@ export function Running({rank,onError}){
 }
 
 
-export default function Progress({routeParams,rank=0,onError}){
+export default function Progress({routeParams,rank=0,onError,part='operations'}){
   const params=routeParams||new URLSearchParams()
   const view=VIEWS.some(([k])=>k===params.get('view'))?params.get('view'):'overview'
   const[group,setGroup]=useState(GROUPS.some(([k])=>k===params.get('group'))?params.get('group'):'all')
+  if(part==='services')return <section data-progress-today><Overview group="all" setGroup={()=>{}} onError={onError} part="services"/></section>
   return <div className="m-page-stack" data-progress>
     <ViewTabs view={view}/>
     {view==='overview'&&<Overview group={group} setGroup={setGroup} onError={onError}/>}

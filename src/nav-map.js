@@ -50,10 +50,8 @@ export const PAGES = {
   coverage: { label: 'Coverage & completeness', slug: 'coverage', icon: 'check', subtitle: 'How complete each course is, and each attribute across all courses.', tabs: [
     { key: 'courses', label: 'Courses', min: 1 },
     { key: 'attributes', label: 'Attributes', min: 1 },
-    // v2.15.266 (Platform Admin, 13 Oct 2026): how the platform is progressing, what is running and where to tweak it
-    // v2.15.301 (Platform Admin, 20 Oct 2026): Progress keeps Overview and Journeys; Running now and Levers retired (Running now is
-    // Scheduled jobs › Task manager and Layer 2/3 › Operations; the pace settings are on Settings)
-    { key: 'progress', label: 'Progress', min: 3 },
+    // v2.15.266 Progress (Overview, Journeys): SS-020 step 4 (Decision 269, 3 Nov 2026) moved it to Layer 2/3 › Operations (overview, journeys,
+    // hourly history) and Models & services › Services & limits (Firecrawl and AI today); its old addresses open Operations (resolveTarget).
     // v2.15.282 (15 Oct 2026) Flags: v2.15.301 moved to Layer 2/3 › Flags (old address redirects)
     // v2.15.292 (19 Oct 2026) Counsellor reports: v2.15.300 retired as a tab; each report is an Inbox kind (Layer 4 › Inbox, Counsellor report)
   ] },
@@ -75,24 +73,18 @@ export const PAGES = {
   // (each stage: working, waiting, stopped for a person, its jobs) first; Universities joins Onboarding and Adapters (one row per university:
   // its journey stage, adapter, Inbox items); the Adapter builder opens from a university row (hidden tab, its address still works).
   layer2: { label: 'Layer 2/3 Build & enrich', slug: 'layer-2-discovery', icon: 'activity', subtitle: 'Find each university\'s pages, build and admit its adapter, enrich its courses and check its scholarships: what is working, waiting or stopped, and the jobs behind it.', tabs: [
+    // SS-020 step 4 (Decision 269, 3 Nov 2026): tab order Operations · Universities · Enrich fields · Enrichment plan · Adapter builder ·
+    // Course sources · Flags · Scholarships. Build adapter (v2.15.287, Decision 267) is step 0 of the Adapter builder and a row action on
+    // Universities (its one-click build stays); its old address opens Universities. Minimum roles unchanged.
+    // v2.15.300: Operations first; v2.15.301 Flags moved here; v2.15.321 Course sources; v2.15.306 Enrichment plan; v2.15.318 Adapter builder
+    // back in the tabs; v2.15.273 Enrich fields; v2.15.301 Scholarships (finding and reading, one tab)
     { key: 'operations', label: 'Operations', min: 3 },
-    // v2.15.301 (Platform Admin, 20 Oct 2026): Flags moved here from Coverage & completeness, beside Operations
-    { key: 'flags', label: 'Flags', min: 3 },
     { key: 'universities', label: 'Universities', min: 3 },
-    // v2.15.321 (Platform Admin 22 Oct 2026 23:46, "Platform needs to independently read website ... manageable from ui"): each university's
-    // course source found by the platform (Firecrawl map, site maps, list pages), with the finder's tries and every control
-    { key: 'sources', label: 'Course sources', min: 3 },
-    // v2.15.306 (Platform Admin, 21 Oct 2026: "end to end data enrichment for universities"): each university's plan from its gaps, Run now
-    // from the on-demand allowance, automatic plans most missing first within the toolset shares
-    { key: 'plan', label: 'Enrichment plan', min: 3 },
-    // v2.15.287 (Decision 267, Platform Admin 18 Oct 11:58 "Keep Adapter builder too"): one click per university, eight fields measured
-    { key: 'build', label: 'Build adapter', min: 3 },
-    // v2.15.318 (Platform Admin 22 Oct 2026 19:05, "accommodate manual actions ... complete the process in manual mode"): the Adapter builder is
-    // back in the tabs; every step can be done by hand there (pages, samples, settings, save, qualify, admit)
-    { key: 'builder', label: 'Adapter builder', min: 5 },
-    // v2.15.273 (Platform Admin, 14 Oct 2026 10:41): a task that fills chosen missing fields for countries or universities
     { key: 'enrich', label: 'Enrich fields', min: 3 },
-    // v2.15.301 (Platform Admin, 20 Oct 2026, "One tab on Layer 2/3"): finding (was Layer 1 › Scholarships) and reading scholarships, one tab
+    { key: 'plan', label: 'Enrichment plan', min: 3 },
+    { key: 'builder', label: 'Adapter builder', min: 5 },
+    { key: 'sources', label: 'Course sources', min: 3 },
+    { key: 'flags', label: 'Flags', min: 3 },
     { key: 'scholarships', label: 'Scholarships', min: 4 },
   ] },
   // v2.15.252 (Platform Admin, 12 Oct 2026): Layer 3 AI validation retired. University adapters (Layer 2) admit intakes,
@@ -297,6 +289,9 @@ export function resolveTarget(target, params = new URLSearchParams()) {
   if (hit.page === 'coverage' && tab === 'flags') return { page: 'layer2', tab: 'flags', params: p }
   if (hit.page === 'coverage' && tab === 'progress' && p.get('view') === 'running') { p.delete('view'); return { page: 'jobs', tab: 'tasks', params: p } }
   if (hit.page === 'coverage' && tab === 'progress' && p.get('view') === 'levers') { p.delete('view'); return { page: 'environment', tab: 'settings', params: p } }
+  // SS-020 step 4 (Decision 269): Progress (Overview, Journeys) is on Layer 2/3 › Operations; Build adapter is a Universities row action
+  if (hit.page === 'coverage' && tab === 'progress') return { page: 'layer2', tab: 'operations', params: p }
+  if (hit.page === 'layer2' && tab === 'build') { if (p.get('provider') && !p.get('build')) { p.set('build', p.get('provider')); p.delete('provider') } return { page: 'layer2', tab: 'universities', params: p } }
   if (hit.page === 'health' && tab === 'readiness') return { page: 'migration', tab: '', params: p }
   // SS-020 step 3 (Decision 269, 3 Nov 2026): Toolsets & limits and Fetchers are Services & limits; Integration queue › Pipeline yield is on
   // Queues & yield (?view=yield on the old tab opens it)
@@ -312,7 +307,7 @@ export function resolveTarget(target, params = new URLSearchParams()) {
   if (hit.page === 'layer2' && ['adapters', 'onboarding'].includes(tab)) return { page: 'layer2', tab: 'universities', params: p }
   // v2.15.300: Counsellor reports, Priority queue and Scrapers & fetchers retired
   if (hit.page === 'coverage' && tab === 'reports') return inboxOf('counsellor_report', p)
-  if (hit.page === 'jobs' && tab === 'priority') return { page: 'layer2', tab: 'build', params: p }
+  if (hit.page === 'jobs' && tab === 'priority') return { page: 'layer2', tab: 'universities', params: p }
   // v2.15.246: Source settings and Manual batch runs are part of Layer 1 › Sources.
   // v2.15.122: the Layer 3 Models list is Platform settings › Models & services (still true after Layer 3 retired).
   // v2.15.252 (Platform Admin, 12 Oct 2026): every other Layer 3 address (Control, Work queue, ...) opens Layer 2 › Adapters.

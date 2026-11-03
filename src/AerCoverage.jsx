@@ -63,8 +63,7 @@ export default function AerCoverage({rank}){
         <Metric label="Progress" value={`${delta('consumer_n',7)} in 7 days`} detail={`Consumer-resolvable providers; ${delta('consumer_n',30)} in 30 days`}/>
       </div>
       <p className="cc-note" data-aer-detail>Countries with active requirements: {fmtNumber(all.detail?.countries_published)} · qualifications: {fmtNumber(all.detail?.qualifications_active)} · postgraduate course rows active {fmtNumber(all.detail?.postgraduate?.active_rows)}, waiting {fmtNumber(all.detail?.postgraduate?.proposed_rows)} · Layer 4 waiting: {fmtNumber(Object.values(all.detail?.layer4_pending||{}).reduce((a,n)=>a+Number(n||0),0))}{(data.alerts||[]).length>0&&<strong data-aer-alert> · Critical: {data.alerts.map(a=>a.title).join('; ')}</strong>}</p>
-      <h3>Layer 4 review readiness</h3>
-      <p className="cc-note" data-aer-readiness>Pending AER items: {READINESS.map(([k,l])=>`${l} ${fmtNumber(data.readiness?.[k]||0)}`).join(' · ')}. Classes are reported here only; decisions stay in Layer 4, one item at a time.</p>
+      {/* SS-020 step 4 (Decision 269, 3 Nov 2026): Layer 4 review readiness is a header line on Layer 4 › Inbox (ReviewReadinessLine) */}
       {data.weekly&&!data.weekly.error&&<details className="m-admin-advanced" data-aer-weekly><summary>Weekly report, week of {data.weekly.week_start}{data.weekly_email?' · e-mailed on Monday':' · Monday e-mail off'}</summary>
         <ul>{MEASURES.map(([k,l])=>{const w=data.weekly.measures?.[k.replace('_n','')];return <li key={k}>{l}: {w?`${fmtNumber(w.n)} of ${fmtNumber(w.of)} (prior week ${w.prior_week==null?'—':fmtNumber(w.prior_week)})`:'not measured'}</li>})}
           <li>Opened {fmtNumber(data.weekly.changes?.opened||0)}, resolved {fmtNumber(data.weekly.changes?.resolved||0)}, reopened {fmtNumber(data.weekly.changes?.reopened||0)}</li>
@@ -104,4 +103,14 @@ function ProviderDetail({d}){
     <ul className="aer-cov-sources">{(d.sources||[]).map(s=><li key={s.id} data-aer-source={s.id}><a className="cf-link" href={s.url} target="_blank" rel="noreferrer">{s.title||s.url}</a> <small>{s.status}{s.shape?` · ${s.shape.replace(/_/g,' ')}`:''}{s.expected!=null?` · ${fmtNumber(s.matched)} of ${fmtNumber(s.expected)} cells`:''}{s.reason?` · ${s.reason}`:''}</small></li>)}</ul>
     <ul className="aer-cov-findings">{(d.findings||[]).map(f=><li key={f.id} data-aer-finding={f.state}><StatusChip tone={SEV_TONE[f.severity]} label={f.severity}/> <StatusChip tone={STATE_TONE[f.state]} label={f.state==='reopened'?`Reopened (${f.reopen_count})`:f.state==='resolved'?'Resolved':'Open'}/> <strong>{f.label}</strong>{f.scope?` · ${f.scope}`:''}{f.study_level?` · ${f.study_level}`:''} <small>first seen {fmtDateTime(f.first_seen)}, last seen {fmtDateTime(f.last_seen)} · {f.next_action} ({f.owner_role})</small></li>)}</ul>
   </div>
+}
+
+// SS-020 step 4 (Decision 269, 3 Nov 2026): Layer 4 review readiness as one header line on Layer 4 › Inbox (was on Coverage › Attributes).
+// The same read (public.admin_aer('coverage'), Curator and above); report classes only, decisions stay in the Inbox. Drawn after the Inbox
+// has loaded and silent when the read is refused or fails, so it never holds the Inbox up.
+export function ReviewReadinessLine(){
+  const[r,setR]=useState(null)
+  useEffect(()=>{let live=true;const t=setTimeout(()=>{aer('coverage',{page_size:1}).then(d=>{if(live&&d?.readiness)setR(d.readiness)}).catch(()=>{})},0);return()=>{live=false;clearTimeout(t)}},[])
+  if(!r)return null
+  return <p className="cc-note l4i-readiness" data-aer-readiness>Entry-requirement review readiness: {READINESS.map(([k,l])=>`${l} ${fmtNumber(r[k]||0)}`).join(' · ')}.</p>
 }

@@ -38,7 +38,7 @@ test('source: Onboarding component, builder approvals, Layer 4 retirements, bann
   const main = read('src/mature-main.jsx')
   // v2.15.300: the Onboarding list retired into Layer 2/3 › Universities (each university) and Operations (stages, settings, approvals)
   expect(main).not.toContain("const ProviderOnboarding=lazyPage(()=>import('./ProviderOnboarding'))")
-  expect(main).toContain("if(tab==='universities')return <AdaptersWorkspace merged rank={rank} actorId={actorId} onError={err} routeParams={routeParams}/>")
+  expect(main).toContain("<AdaptersWorkspace merged rank={rank} actorId={actorId} onError={err} routeParams={routeParams}/></div>}") // SS-020 step 4: after the Build row action and the waves fold
   expect(main).toContain("<CreditBanner rank={rank} canOpenServices={canOpen('services',rank)}/>")
   for (const gone of ['ProviderOnboardingNotice', 'Layer4Attributes', 'FlaggedValues', 'FeeRules', 'ScholarshipPublishing', 'view="blocks"']) expect(main).not.toContain(gone)
   for (const f of ['src/FlaggedValues.jsx', 'src/FeeRules.jsx', 'src/ScholarshipPublishing.jsx', 'src/layer2-provider-onboarding.jsx']) expect(fs.existsSync(f)).toBe(false)

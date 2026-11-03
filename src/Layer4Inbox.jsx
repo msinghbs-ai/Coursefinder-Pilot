@@ -18,6 +18,7 @@ import{supabase}from'./lib/supabase'
 import{hrefFor,roleName}from'./nav-map'
 import{Button,Empty,Loading,Metric,StatusChip,fmtDate,fmtNumber}from'./ui-kit'
 import'./layer4-inbox.css'
+import{ReviewReadinessLine}from'./AerCoverage'
 
 const rpc=async(action,args)=>{const{data,error}=await supabase.rpc('admin_layer4_inbox',{p_action:action,p_args:args||{}});if(error)throw new Error(error.message);return data||{}}
 // SS-016 role simulation (1 Nov 2026): the rank a choice needs, as public.admin_layer4_inbox decides it: its own rank, else rank 4
@@ -69,6 +70,8 @@ export default function Layer4Inbox({onError,routeParams}){
       <Metric label="Waiting for a person" value={fmtNumber(sum.total)} detail={`${fmtNumber(sum.universities)} universities`} icon={Inbox}/>
       <Metric label={`Older than ${sum.target_days} days`} value={fmtNumber(sum.late)} tone={Number(sum.late)?'warning':'success'} detail="Oldest first within each university" icon={AlertTriangle}/>
     </section>
+    {/* SS-020 step 4 (Decision 269, 3 Nov 2026): review readiness header line, moved from Coverage › Attributes */}
+    <ReviewReadinessLine/>
     <div className="l4i-kinds" role="toolbar" aria-label="Kinds of decision">
       <button type="button" className={!kind?'on':''} onClick={()=>setKind('')}>All ({fmtNumber(sum.total)})</button>
       {order.filter(k=>bk[k]?.n).map(k=><button key={k} type="button" className={kind===k?'on':''} data-l4-kind={k} onClick={()=>setKind(k)}>{kinds[k].label} ({fmtNumber(bk[k].n)})</button>)}

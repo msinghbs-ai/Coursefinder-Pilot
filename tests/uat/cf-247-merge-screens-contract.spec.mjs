@@ -39,7 +39,7 @@ test('Readiness is flat: Capacity, gates and UAT on Go-live (v2.15.301); Layer 4
 })
 
 test('v2.15.124: Readiness by area is part of Attributes; the cross-layer Sources list is under Operations', () => {
-  expect(PAGES.coverage.tabs.map(t => t.key)).toEqual(['courses', 'attributes', 'progress']) // v2.15.301: Flags is Layer 2/3 › Flags // v2.15.300: Counsellor reports in the Inbox /* v2.15.282: Flags; v2.15.292: Counsellor reports */ // v2.15.266: Progress; v2.15.200 Decision 254: Universities retired into Layer 2 › Adapters
+  expect(PAGES.coverage.tabs.map(t => t.key)).toEqual(['courses', 'attributes']) /* SS-020 step 4: Progress is on Layer 2/3 › Operations */ // v2.15.301: Flags is Layer 2/3 › Flags // v2.15.300: Counsellor reports in the Inbox /* v2.15.282: Flags; v2.15.292: Counsellor reports */ // v2.15.266: Progress; v2.15.200 Decision 254: Universities retired into Layer 2 › Adapters
   expect(resolveTarget('coverage', new URLSearchParams({ tab: 'domains' })).tab).toBe('attributes')
   expect(resolveTarget('data-quality-readiness').tab).toBe('attributes')
   expect(PAGES.layer1.tabs).toBeUndefined() // v2.15.301: one Sources page with a layer filter (registers first); v2.15.246: one Sources list
