@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.355 — 3 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.428** (IQ-00067). Migration `20261104080000_cf247_iq67_coverage_admit_lock_isolation`: md5-guarded edits of coverage_admission_apply_v1 and coverage_admission_gated_v1; table pipeline.coverage_admission_holds; settings admit.item_error_limit (25), admit.refused_recheck_hours (24); root cause and remedies registered when the operations contract exists. Lock rule and admission validation unchanged; nothing dropped; consumer API untouched. Spec s251.
+
 ## 0.1.354 — 3 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.427** (Release C, decision D6 approved by the Platform Admin 3 Nov 2026 15:52). Migration `20261103220000_cf247_aer_scheduled_reading`: job aer-scheduled-read (ships paused), security.aer_schedule_tick_v1 and population and selector functions, pipeline.aer_schedule_runs and aer_schedule_checks, fourteen settings; md5-guarded edits of entry_matrix_enabled_v1, entry_matrix_fire_v1, course_entry_eligible_v1, course_entry_programme_v1 and aer_course_outcomes_build_v1. No paid budget raised; Layer 4 admission unchanged; consumer API untouched. Spec s235.
