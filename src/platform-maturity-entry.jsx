@@ -7,6 +7,7 @@ import{
 import{fmtDateTime,fmtNumber as fmtNum,fmtPercent}from'./lib/format.js'
 import{adminRead,supabase}from'./lib/supabase'
 import'./platform-maturity.css'
+import{isRetiredFetcher}from'./retired-services'
 
 // Clean-up batch 2 (9 Oct 2026): the unused fallback tab navigation (no view) and the Current Layer 2 wave panel were removed.
 // v2.15.253 (Platform Admin, 12 Oct 2026): view 'blocks' (Layer 4 › Blocks) retired with its tab; blocks already recorded stay enforced by the server.
@@ -140,7 +141,7 @@ function GateTable({heading,items,kind}){
     {!items.length?<Empty>No gates exist for this environment.</Empty>:<div className="pm-table-wrap"><table className="pm-table"><thead><tr><th>{kind==='source'?'Source':kind==='scraper'?'Acquisition provider':'AI profile'}</th>{kind==='source'&&<th>Capability</th>}<th>State</th><th>Enabled</th><th>UAT / benchmark</th><th>Reason</th><th>Updated</th></tr></thead><tbody>{items.map((x,i)=><tr key={x.source_id||x.provider_id||x.profile_id||i}><td><strong>{x.source_label||x.provider_name||x.profile_code||'—'}</strong>{kind==='ai'&&x.model_identifier&&<small>{x.model_identifier}</small>}</td>{kind==='source'&&<td>{title(x.capability)}</td>}<td><Pill tone={toneFor(x.state)}>{title(x.state)}</Pill></td><td><Pill tone={x.enabled?'success':'neutral'}>{x.enabled?'Enabled':'Disabled'}</Pill></td><td>{x.uat_ref||x.benchmark_ref||'—'}</td><td className="pm-reason">{x.reason||'—'}</td><td>{fmtDate(x.updated_at)}</td></tr>)}</tbody></table></div>}
   </section>
 }
-function Gates({gates,environment}){const g=gates||{};return <div className="pm-stack"><section className="pm-panel pm-environment-head"><div><span>Environment</span><strong>{title(environment)}</strong></div>{environment==='production'&&<Pill tone="warning">Read-only until Production provisioning</Pill>}</section><GateTable heading="Layer 1 source capabilities" items={g.source_gates||[]} kind="source"/><GateTable heading="Layer 2 acquisition providers" items={g.scraper_gates||[]} kind="scraper"/><GateTable heading="Layer 3 model profiles" items={g.ai_gates||[]} kind="ai"/></div>}
+function Gates({gates,environment}){const g=gates||{};return <div className="pm-stack"><section className="pm-panel pm-environment-head"><div><span>Environment</span><strong>{title(environment)}</strong></div>{environment==='production'&&<Pill tone="warning">Read-only until Production provisioning</Pill>}</section><GateTable heading="Layer 1 source capabilities" items={g.source_gates||[]} kind="source"/><GateTable heading="Layer 2 acquisition providers" items={(g.scraper_gates||[]).filter(x=>!isRetiredFetcher(x))} kind="scraper"/>{/* SS-020 step 1 (Decision 269): the Layer 3 model profiles gate and the dropped providers' gates retired (Layer 3 retired 12 Oct; Firecrawl only) */}</div>}
 
 function Uat({items}){
   const production=items.filter(x=>x.environment_scope==='production'||x.environment_scope==='both')

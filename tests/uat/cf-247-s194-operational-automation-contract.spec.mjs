@@ -2,6 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
+import * as F from './support/admin-fixtures.mjs'
 
 const m = fs.readFileSync('supabase/migrations/20261031091000_cf247_ss014_operational_automation.sql', 'utf8')
 const code = (s) => s.replace(/--[^\n]*/g, '')
@@ -72,6 +73,10 @@ test('G1: both jobs catalogued and scheduled with no number in their commands; f
 test.describe('mocked browser', () => {
   test('Platform health: alerts held while delivery is off, acknowledge with a reason, test alert, weekly scorecard', async ({ page }) => {
     await mockAdmin(page)
+    // SS-020 step 1 (Decision 269): Layer 3 issues are no longer shown, so a current warning is acknowledged instead
+    const warn = { id: 'i4', area: 'scheduled jobs', title: '1 scheduled job failed in the last hour', detail: { failed: 1 }, severity: 'warning', check_key: 'cron:failing', last_seen: F.platformHealth.generated_at, first_seen: F.platformHealth.generated_at, occurrences: 1, acknowledged_at: null }
+    await page.route('https://example.supabase.co/rest/v1/rpc/admin_read', async (route) => (route.request().postDataJSON() || {}).p_operation === 'platform_health'
+      ? route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ...F.platformHealth, issues: [...F.platformHealth.issues, warn] }) }) : route.fallback())
     await page.goto('/#platform-health')
     const panel = page.locator('[data-platform-alerts]')
     await expect(panel.locator('[data-alert-delivery="off"]')).toContainText('nothing leaves the platform until the Platform Admin approves a destination')
@@ -79,12 +84,13 @@ test.describe('mocked browser', () => {
     await panel.getByLabel('Reason for the test alert').fill('Check the outbox')
     await panel.getByRole('button', { name: 'Send a test alert' }).click()
     await expect.poll(() => page.l3calls.find(c => c.alerts?.p_action === 'test')?.alerts).toEqual({ p_action: 'test', p_args: { reason: 'Check the outbox' } })
-    await page.locator('[data-ack-issue="i1"]').click()
-    const form = page.locator('[data-ack-form="i1"]')
+    await expect(page.locator('[data-ack-issue="i1"]')).toHaveCount(0)
+    await page.locator('[data-ack-issue="i4"]').click()
+    const form = page.locator('[data-ack-form="i4"]')
     await expect(form.getByRole('button', { name: 'Acknowledge' })).toBeDisabled()
-    await form.getByLabel('Reason for acknowledging').fill('Known: Layer 3 retired')
+    await form.getByLabel('Reason for acknowledging').fill('Known: job failed once')
     await form.getByRole('button', { name: 'Acknowledge' }).click()
-    await expect.poll(() => page.l3calls.find(c => c.alerts?.p_action === 'acknowledge')?.alerts).toEqual({ p_action: 'acknowledge', p_args: { id: 'i1', reason: 'Known: Layer 3 retired' } })
+    await expect.poll(() => page.l3calls.find(c => c.alerts?.p_action === 'acknowledge')?.alerts).toEqual({ p_action: 'acknowledge', p_args: { id: 'i4', reason: 'Known: job failed once' } })
     const sc = page.locator('[data-ops-scorecard="2026-10-26"]')
     await expect(sc.locator('[data-scorecard-target]')).toHaveCount(8)
     await expect(sc.locator('[data-scorecard-target="T1"]')).toContainText('incomplete: 4 of 6 days recorded')

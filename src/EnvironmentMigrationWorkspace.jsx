@@ -4,6 +4,8 @@ import{adminRead,supabase}from'./lib/supabase'
 import'./environment-migration.css'
 import PlatformResourcesPanel from'./PlatformResourcesPanel'
 import{fmtNumber,fmtDateTime}from'./lib/format.js'
+// SS-020 step 1 (Decision 269, 3 Nov 2026): retired acquisition providers (dropped 29 Sep; Firecrawl only 4 Oct) are not listed
+import{isRetiredFetcher}from'./retired-services'
 
 const human=v=>String(v||'').replaceAll('_',' ').replace(/\b\w/g,c=>c.toUpperCase())
 const fmt=v=>fmtNumber(v||0)
@@ -18,7 +20,7 @@ export default function EnvironmentMigrationWorkspace({rank,onError=()=>{},view=
  useEffect(()=>{load()},[])
  if(rank<6)return null
  if(busy&&!data)return <section className="env-panel">Loading environment controls…</section>
- const providers=data?.layer2_providers||[],settings=data?.settings||[],manifest=data?.migration_manifest||[],runtime=data?.runtime||{}
+ const providers=(data?.layer2_providers||[]).filter(x=>!isRetiredFetcher(x)),settings=data?.settings||[],manifest=data?.migration_manifest||[],runtime=data?.runtime||{}
  const firecrawl=providers.find(x=>x.provider_key==='firecrawl'),zenrows=providers.find(x=>x.provider_key==='zenrows'),otherProviders=providers.filter(x=>!['firecrawl','zenrows'].includes(x.provider_key)&&x.auth_scheme!=='none')
  const refresh=async text=>{setMsg(text);await load()}
  const showIntegrations=view!=='migration',showMigration=view!=='integrations'
@@ -66,7 +68,7 @@ export default function EnvironmentMigrationWorkspace({rank,onError=()=>{},view=
 // Secrets are listed by NAME only; values are never read or shown.
 const SERVICE_KEYS=[['openrouter','OpenRouter','AI models for Layer 3'],['cloudflare','Cloudflare','Hosting for this admin site'],['smtp','Email (SMTP)','Sending email']]
 function ServicesOverview({data}){
- const providers=data?.layer2_providers||[],secrets=data?.integration_secrets||[],consumers=data?.consumer_credentials||[],l3=data?.layer3_profiles||[]
+ const providers=(data?.layer2_providers||[]).filter(x=>!isRetiredFetcher(x)),secrets=data?.integration_secrets||[],consumers=data?.consumer_credentials||[],l3=data?.layer3_profiles||[]
  const find=k=>secrets.filter(x=>String(x.integration_key||'').toLowerCase().includes(k)||String(x.display_name||'').toLowerCase().includes(k))
  const cards=[
   ...providers.map(p=>({key:p.provider_key,name:p.display_name||p.provider_key,purpose:'Fetching provider pages (Layer 2)',configured:Boolean(p.credential_configured),enabled:Boolean(p.enabled),usage:p.billing_config?.monthly_vendor_units_limit??p.billing_config?.monthly_vendor_units,reserve:p.billing_config?.stop_at_vendor_units_remaining??p.billing_config?.reserve_units})),
