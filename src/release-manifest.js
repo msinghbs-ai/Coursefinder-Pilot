@@ -1,17 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.434'
-export const PACKAGE_VERSION='0.1.361'
+export const UI_VERSION='2.15.435'
+export const PACKAGE_VERSION='0.1.362'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Nov 2026',
-  title:'Scholarship and entry-requirement coverage is checked per provider against what the official sources list',
+  title:'Missing universities: entry-requirement source inventory, reading priority and a per-provider admission view',
   changes:[
-    'An hourly reconciliation compares each provider\'s official scholarship listings and entry-requirement sources with what the catalogue holds, by category and dimension, and opens one provider-level investigation per gap instead of per-record exceptions.',
-    'Scholarship discovery rows for providers the reader refuses now end with a not-eligible outcome and its reason, and return when the reason clears, instead of waiting forever.',
-    'Entry-requirement course counts per provider are counted by course lifecycle, so providers with course-level requirements are no longer reported as having none.'
+    'Each followed university\'s entry-requirement sources are recorded with their verified address, shape and provenance, and the scheduled course reader now reaches the followed universities and the providers with the largest entry-requirement shortfall first, within its existing limits.',
+    'A per-provider view separates sources attached, reads done or held, Layer 4 items ready or technically blocked, rows actually admitted, and what the website projection returns; a discovery or an AI read is never counted as an admission.',
+    'Coverage reporting classifies each provider as no source, source found, read held, awaiting Layer 4, active, course only, or evidenced non-publication.'
   ],
   bugFixes:[]
 }
