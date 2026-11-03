@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CF-247 Layer 4 course link (migration 20261104150000) on isolated fixtures. Needs a scratch PostgreSQL (never a Supabase project):
+# CF-247 Layer 4 course link (migration 20261104260000) on isolated fixtures. Needs a scratch PostgreSQL (never a Supabase project):
 # PGHOST/PGPORT/PGUSER point at it. Builds a throwaway database with the live Layer 4 functions, rebuilt from the repository the way they reached
 # production: ../p1-provider-descriptions (stubs, live-before definitions and migration 20261102090000), the item edit of 20261103110000,
 # security.binding_refusal_route_v1 from 20261102030000 and security.layer4_url_key_v1 from 20261104120000; each edited definition is checked
@@ -9,7 +9,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 DB=${L4CL_DB:-l4_course_link_fixtures}
 P="psql -v ON_ERROR_STOP=1 -q -X"
-MIG=supabase/migrations/20261104150000_cf247_l4_course_link.sql
+MIG=supabase/migrations/20261104260000_cf247_l4_course_link.sql
 FX=tests/fixtures/l4-course-link
 P1=tests/fixtures/p1-provider-descriptions
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }

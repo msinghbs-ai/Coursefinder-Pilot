@@ -1,4 +1,4 @@
--- CF-247 Layer 4 course link (migration 20261104150000) on isolated fixtures: the live shapes this change reads or writes beyond
+-- CF-247 Layer 4 course link (migration 20261104260000) on isolated fixtures: the live shapes this change reads or writes beyond
 -- ../p1-provider-descriptions/stubs.sql, which run.sh loads first with the live Layer 4 functions. Columns read from information_schema on
 -- production (read-only, 3 Nov 2026 20:50-21:00 AEDT). Run on a scratch PostgreSQL only (never on a Supabase project). Nothing here is live data.
 

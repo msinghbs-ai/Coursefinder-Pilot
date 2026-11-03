@@ -700,19 +700,19 @@ revoke all on function security.layer4_course_link_rule_execute_v1(text, int, bo
 
 -- 9 component register --------------------------------------------------------------------------------------------------------------------
 insert into pipeline.component_register(kind, name, layer, purpose, status, replaces, introduced_in) values
- ('table', 'pipeline.course_page_needed', 'Layer 4', 'Decision 179: courses that need a correct page (Course page needed list)', 'active', '{}', '20261104150000'),
- ('table', 'pipeline.scholarship_duplicate_closures', 'Layer 4', 'Held scholarships closed as duplicates of a published one', 'active', '{}', '20261104150000'),
- ('table', 'pipeline.layer4_course_link_rules', 'Layer 4', 'Decision 263 course-link rules approved per university (validated, not executed here)', 'active', '{}', '20261104150000'),
- ('function', 'security.layer4_stored_copy_v1', 'Layer 4', 'Newest stored copy of an address', 'active', '{}', '20261104150000'),
- ('function', 'security.layer4_evidence_backfill_v1', 'Layer 4', 'Link stored copies to waiting items (Integration Controller)', 'active', '{}', '20261104150000'),
- ('function', 'security.course_page_needed_convert_v1', 'Layer 4', 'Move refusal items of one university onto Course page needed', 'active', '{}', '20261104150000'),
- ('function', 'security.course_page_needed_decide_v1', 'Layer 4', 'Course page needed choices', 'active', '{}', '20261104150000'),
- ('function', 'security.layer4_course_link_refuse_v1', 'Layer 4', 'Refuse this proposal', 'active', '{}', '20261104150000'),
- ('function', 'security.scholarship_duplicate_close_v1', 'Layer 4', 'Close a held scholarship as a duplicate', 'active', '{}', '20261104150000'),
- ('function', 'security.layer4_refusal_search_cost_v1', 'Layer 4', 'Firecrawl credits of the lanes that feed refusals', 'active', '{}', '20261104150000'),
- ('function', 'security.layer4_course_link_rule_validate_v1', 'Layer 4', 'Validate an approved course-link rule per item', 'active', '{}', '20261104150000'),
- ('function', 'security.layer4_course_link_rule_execute_v1', 'Layer 4', 'Execute an approved course-link rule item by item through the decision path', 'active', '{}', '20261104150000'),
- ('table', 'pipeline.layer4_review_owners', 'Layer 4', 'Layer 4 review ownership register in data', 'active', '{}', '20261104150000'),
- ('table', 'pipeline.layer4_rule_runs', 'Layer 4', 'Runs of the course-link rule executor', 'active', '{}', '20261104150000'),
- ('table', 'pipeline.layer4_rule_run_items', 'Layer 4', 'Items of each rule run: decided, would decide or failed with reasons', 'active', '{}', '20261104150000')
+ ('table', 'pipeline.course_page_needed', 'Layer 4', 'Decision 179: courses that need a correct page (Course page needed list)', 'active', '{}', '20261104260000'),
+ ('table', 'pipeline.scholarship_duplicate_closures', 'Layer 4', 'Held scholarships closed as duplicates of a published one', 'active', '{}', '20261104260000'),
+ ('table', 'pipeline.layer4_course_link_rules', 'Layer 4', 'Decision 263 course-link rules approved per university (validated, not executed here)', 'active', '{}', '20261104260000'),
+ ('function', 'security.layer4_stored_copy_v1', 'Layer 4', 'Newest stored copy of an address', 'active', '{}', '20261104260000'),
+ ('function', 'security.layer4_evidence_backfill_v1', 'Layer 4', 'Link stored copies to waiting items (Integration Controller)', 'active', '{}', '20261104260000'),
+ ('function', 'security.course_page_needed_convert_v1', 'Layer 4', 'Move refusal items of one university onto Course page needed', 'active', '{}', '20261104260000'),
+ ('function', 'security.course_page_needed_decide_v1', 'Layer 4', 'Course page needed choices', 'active', '{}', '20261104260000'),
+ ('function', 'security.layer4_course_link_refuse_v1', 'Layer 4', 'Refuse this proposal', 'active', '{}', '20261104260000'),
+ ('function', 'security.scholarship_duplicate_close_v1', 'Layer 4', 'Close a held scholarship as a duplicate', 'active', '{}', '20261104260000'),
+ ('function', 'security.layer4_refusal_search_cost_v1', 'Layer 4', 'Firecrawl credits of the lanes that feed refusals', 'active', '{}', '20261104260000'),
+ ('function', 'security.layer4_course_link_rule_validate_v1', 'Layer 4', 'Validate an approved course-link rule per item', 'active', '{}', '20261104260000'),
+ ('function', 'security.layer4_course_link_rule_execute_v1', 'Layer 4', 'Execute an approved course-link rule item by item through the decision path', 'active', '{}', '20261104260000'),
+ ('table', 'pipeline.layer4_review_owners', 'Layer 4', 'Layer 4 review ownership register in data', 'active', '{}', '20261104260000'),
+ ('table', 'pipeline.layer4_rule_runs', 'Layer 4', 'Runs of the course-link rule executor', 'active', '{}', '20261104260000'),
+ ('table', 'pipeline.layer4_rule_run_items', 'Layer 4', 'Items of each rule run: decided, would decide or failed with reasons', 'active', '{}', '20261104260000')
 on conflict do nothing;
