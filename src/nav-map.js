@@ -39,12 +39,13 @@ export const PAGES = {
     { key: 'sources', label: 'Sources, reads and holds', min: 1 },
     { key: 'resolve', label: 'Resolution inspection', min: 1 },
   ] },
-  rankings: { label: 'Rankings & statistics', slug: 'statistics-rankings', icon: 'chart', subtitle: 'QILT, PRISMS, QS and THE data, and side-by-side comparison.', tabs: [
+  rankings: { label: 'Rankings & statistics', slug: 'statistics-rankings', icon: 'chart', subtitle: 'QILT, PRISMS, QS and THE data, side-by-side comparison, and every dataset with its editions and data.', tabs: [
     { key: 'overview', label: 'Overview', min: 1 },
     { key: 'compare', label: 'Compare', min: 1 },
-    { key: 'qilt', label: 'Outcomes (QILT)', min: 1 },
-    { key: 'prisms', label: 'Student flow (PRISMS)', min: 1 },
-    { key: 'datasets', label: 'Datasets', min: 4 },
+    // SS-020 step 5 (Decision 269, 3 Nov 2026): Outcomes (QILT) and Student flow (PRISMS) are "View data" on Datasets (?data=qilt|prisms).
+    // Their data stays open to every role (they were rank 1), so Datasets opens at rank 1; adding and editing datasets and the ranking
+    // imports stay Pipeline Operator and above inside the tab, as before. Old addresses open Datasets on the dataset.
+    { key: 'datasets', label: 'Datasets', min: 1 },
   ] },
 
   coverage: { label: 'Coverage & completeness', slug: 'coverage', icon: 'check', subtitle: 'How complete each course is, and each attribute across all courses.', tabs: [
@@ -181,8 +182,8 @@ export const LEGACY = {
   'live-activity': { page: 'jobs', tab: 'tasks' },
   'activity': { page: 'jobs', tab: 'tasks' },
   'compare': { page: 'rankings', tab: 'compare' },
-  'outcomes-qilt': { page: 'rankings', tab: 'qilt' },
-  'student-flow-prisms': { page: 'rankings', tab: 'prisms' },
+  'outcomes-qilt': { page: 'rankings', tab: 'datasets', set: { data: 'qilt' } },
+  'student-flow-prisms': { page: 'rankings', tab: 'datasets', set: { data: 'prisms' } },
   'layer-1-operations': { page: 'layer1', tab: 'operations' },
   'layer-1-regulatory': { page: 'layer1', tab: 'operations' },
   // v2.15.123: Regulatory settings merged into Layer 1 (Manual batch runs); v2.15.246: that tab is retired, so it opens Sources.
@@ -293,6 +294,7 @@ export function resolveTarget(target, params = new URLSearchParams()) {
   if (hit.page === 'coverage' && tab === 'progress') return { page: 'layer2', tab: 'operations', params: p }
   if (hit.page === 'layer2' && tab === 'build') { if (p.get('provider') && !p.get('build')) { p.set('build', p.get('provider')); p.delete('provider') } return { page: 'layer2', tab: 'universities', params: p } }
   if (hit.page === 'health' && tab === 'readiness') return { page: 'migration', tab: '', params: p }
+  if (hit.page === 'rankings' && ['qilt', 'prisms'].includes(tab)) { if (!p.get('data')) p.set('data', tab); return { page: 'rankings', tab: 'datasets', params: p } }
   // SS-020 step 3 (Decision 269, 3 Nov 2026): Toolsets & limits and Fetchers are Services & limits; Integration queue › Pipeline yield is on
   // Queues & yield (?view=yield on the old tab opens it)
   if (hit.page === 'services' && ['limits', 'fetchers'].includes(tab)) return { page: 'services', tab: 'services', params: p }

@@ -1,17 +1,16 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.456'
-export const PACKAGE_VERSION='0.1.383'
+export const UI_VERSION='2.15.457'
+export const PACKAGE_VERSION='0.1.384'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'4 Nov 2026',
-  title:'Admin menu step 4: Layer 2/3 consolidated',
+  title:'Admin menu step 5: QILT and PRISMS are View data on Rankings › Datasets; the menu reaches 47 tabs',
   changes:[
-    'Progress moves to Layer 2/3 › Operations (overview, Where the universities are, Journeys, Every hour) and its Firecrawl and AI today panel to Services & limits.',
-    'Build adapter is a Build action on Universities and step 0 of the Adapter builder; the Attributes run controls (Fill now, Release holds, Fill the gaps, Provider descriptions) move to Enrich fields, and Attributes is read only; the scholarship settings move to Layer 2/3 › Scholarships.',
-    'The Layer 4 Inbox shows one review readiness line under its tiles; decisions, items and paging are unchanged. Every old address opens the new home.'
+    'Outcomes (QILT) and Student flow (PRISMS) open as View data on Rankings › Datasets for every role that could see them before; the dataset register and ranking imports stay at their existing role inside the tab.',
+    'The admin menu now has 47 tabs on 20 pages, as on the approved Final board; every old address opens the new home.'
   ],
   bugFixes:[]
 }

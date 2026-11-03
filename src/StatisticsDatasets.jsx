@@ -12,7 +12,9 @@ import{plainError}from'./lib/errors'
 const TYPE={statistics:'Statistics',ranking:'Ranking',index:'Index'}
 const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 
-export default function StatisticsDatasets({rank=0}){
+// SS-020 step 5 (Decision 269, 3 Nov 2026): QILT and PRISMS rows open their data here (View data); the Outcomes and Student flow tabs retired
+export const VIEWABLE=['qilt','prisms']
+export default function StatisticsDatasets({rank=0,onView=null}){
   const[rows,setRows]=useState(null),[err,setErr]=useState(''),[busy,setBusy]=useState(''),[adding,setAdding]=useState(false)
   const[f,setF]=useState({dataset_key:'',label:'',dataset_type:'statistics',description:'',source_authority:''})
   const load=async()=>{setErr('');try{const{data,error}=await supabase.rpc('statistics_dataset_registry_read');if(error)throw error;setRows(Array.isArray(data)?data:[])}catch(e){setErr(errText(e));setRows(r=>r||[])}}
@@ -35,7 +37,7 @@ export default function StatisticsDatasets({rank=0}){
       <div className="sd-form-actions"><Button type="submit" disabled={busy==='add'}>Add dataset</Button><Button type="button" onClick={()=>setAdding(false)}>Cancel</Button><small>New datasets start hidden.</small></div>
     </form>}
     {rows.length===0?<Empty text="No datasets yet."/>:<div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Dataset</th><th>Type</th><th>Published by</th><th>On Rankings & statistics</th><th>Imports</th></tr></thead>
-      <tbody>{rows.map(x=><tr key={x.dataset_key} data-dataset={x.dataset_key}><td><strong>{x.label}</strong><small className="sd-desc">{x.description}</small></td><td>{TYPE[x.dataset_type]||x.dataset_type}</td><td>{x.source_authority||'—'}</td>
+      <tbody>{rows.map(x=><tr key={x.dataset_key} data-dataset={x.dataset_key}><td><strong>{x.label}</strong>{onView&&VIEWABLE.includes(x.dataset_key)&&<button type="button" className="cf-link" data-view-data={x.dataset_key} onClick={()=>onView(x.dataset_key)}> View data</button>}<small className="sd-desc">{x.description}</small></td><td>{TYPE[x.dataset_type]||x.dataset_type}</td><td>{x.source_authority||'—'}</td>
         <td>{can?<label className="sd-toggle"><input type="checkbox" checked={Boolean(x.display_enabled)} disabled={busy===x.dataset_key} onChange={e=>save({...x,display_enabled:e.target.checked},x.dataset_key)} aria-label={`Show ${x.label} on Rankings & statistics`}/>{x.display_enabled?'Shown':'Hidden'}</label>
           :<StatusChip value={x.display_enabled?'on':'off'} tone={x.display_enabled?'success':'neutral'} label={x.display_enabled?'Shown':'Hidden'}/>}</td>
         <td>{x.admin_import_system?<a href={`#statistics-rankings?tab=datasets&system=${encodeURIComponent(x.admin_import_system)}`}>Ranking imports</a>:'—'}</td></tr>)}</tbody></table></div>}

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.384 — 4 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.457** (SS-020 step 5, Decision 269). Screens only: tabs 49 → 47 on 20 pages; LEGACY redirects (statistics-rankings?tab=qilt|prisms, outcomes-qilt, student-flow-prisms → datasets?data=…); Datasets opens at rank 1 (no control widened); Link refresh stays on Coverage › Courses pending a decision; consumer API untouched. Spec cf-247-ss020-final-menu-contract.
+
 ## 0.1.383 — 4 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.456** (SS-020 step 4, Decision 269). Screens only: tabs 51 → 49 on 20 pages; LEGACY redirects (coverage?tab=progress → layer2/operations; layer-2-discovery?tab=build → universities?build=…; scheduled-jobs?tab=priority → universities); roles unchanged; admin_layer4_inbox unchanged (1fb97548); consumer API untouched. Review pause recorded for the Inbox change.

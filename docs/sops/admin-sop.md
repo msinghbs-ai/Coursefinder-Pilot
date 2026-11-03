@@ -1,7 +1,7 @@
-<!-- sop-export: id=admin-sop; version=2.28; reviewed-release=2.15.456; source-commit=4bb0f6a6ae73+local; content-sha256=4907083c9cea8ebd34701a46f0f055c45a3992453351d84e1ef79afe954226b8 -->
+<!-- sop-export: id=admin-sop; version=2.29; reviewed-release=2.15.457; source-commit=878c9f42447d+local; content-sha256=12af4cc5cf21e766155cc686acfaa9621fd1b3edf7e52c6ebc6572e65f9eafa2 -->
 # StudySearch – Platform Admin SOP
 
-**Version:** 2.28 (reviewed for platform release v2.15.456)  
+**Version:** 2.29 (reviewed for platform release v2.15.457)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -230,6 +230,7 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 | 2.18 | 1 Nov 2026 | v2.15.395 | Alerts are sent by push and e-mail by the hourly Work queue alerts task (D12): expect up to about 75 minutes; acknowledge on Platform health; Delivered means sent, not read. Entry-requirement items: the choices are Approve all rows, Approve except… and Reject the read (Platform Admin only; D4 for courses with active rows). Version raised to follow this history (it had stayed at 1.56). |
 | 2.19 | 1 Nov 2026 | v2.15.396 | Who admits (SS-016 UR-08): fee schedules always wait for you; English policies and calendars read by the AI are approved automatically by policy-auto-approve while its switches are on, and only flagged ones wait. Budgets (UR-10): the daily Firecrawl budget and the onboarding pace are read from their settings, not from figures in this SOP. A rising Layer 4 count is investigated for its cause before it is called a backlog (UR-11). |
 | 2.20 | 2 Nov 2026 | v2.15.399 | Layer 4 › Inbox decisions are the Pipeline Operator's (every Inbox choice needs rank 4; entry requirement items stay yours); Curators read the items and correct records (SS-016 P1). No rank changed. |
+| 2.29 | 4 Nov 2026 | v2.15.457 | Admin menu at 47 tabs (Decision 269): QILT and PRISMS data open from Rankings › Datasets › View data. Link refresh stays on Coverage › Courses until the Platform Admin decides its Settings home. No step changed. |
 | 2.28 | 4 Nov 2026 | v2.15.456 | Layer 2/3 consolidation (Decision 269): the start-of-day Progress check is on Layer 2/3 › Operations; Build adapter is a Build row action on Universities and step 0 of the Adapter builder; Stalled fields Fill now, the standing queue and Provider descriptions are on Enrich fields (Attributes is read only and links there); scholarship Settings and jobs are on Layer 2/3 › Scholarships; the review readiness line is on the Inbox. Old addresses open the new places. |
 | 2.27 | 4 Nov 2026 | v2.15.455 | Admin menu, two merged tabs (Decision 269): Models & services › Services & limits holds the page-service switches, Toolsets and limits and Fetchers; the AI model switches are on AI & OpenRouter. Platform health › Queues & yield holds Work queues and Pipeline yield; Integration queue keeps the defect register. Old addresses open the new tabs. Steps name the new tabs. |
 | 2.26 | 4 Nov 2026 | v2.15.454 | Admin menu, paging and length (Decision 269): Automations areas start closed (Failed in 24h opens the failing ones); Course sources shows 50 universities a page; Course-level reading 100 providers a page; Key dates are edited in a drawer from Edit; toolset notices show on Layer 2/3 › Operations only. No step changed. |

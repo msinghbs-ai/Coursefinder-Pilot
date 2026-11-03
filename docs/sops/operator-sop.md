@@ -1,7 +1,7 @@
-<!-- sop-export: id=operator-sop; version=2.12; reviewed-release=2.15.456; source-commit=4bb0f6a6ae73+local; content-sha256=8f07b0406b8677a146a19265343e7520f700eeacd5a178b38dedcb4569177506 -->
+<!-- sop-export: id=operator-sop; version=2.13; reviewed-release=2.15.457; source-commit=878c9f42447d+local; content-sha256=e3e05f53237d4470f9a093fe5e52e8b02c8fafc00ce5d955581de7b503eaeb68 -->
 # StudySearch – Operator SOP
 
-**Version:** 2.12 (reviewed for platform release v2.15.456)  
+**Version:** 2.13 (reviewed for platform release v2.15.457)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -216,6 +216,7 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | 2.05 | 29 Oct 2026 | v2.15.364 | Reviewed: Catalogue › Entry requirements shows the course-level reading programme by provider and marks a rendered page with no requirements table (read only for operators). |
 | 2.06 | 1 Nov 2026 | v2.15.395 | Who controls automations: the Pipeline Operator diagnoses, records and escalates; the PIM Admin paces, pauses, resumes and runs again (the Platform Admin for automations marked Platform Admin). Entry requirement (AER) items are decided by the Platform Admin only. Alerts arrive by push and e-mail. Version raised to follow this history (it had stayed at 1.53). |
 | 2.07 | 1 Nov 2026 | v2.15.396 | The PIM Admin no longer owns the priority queue (retired in v2.15.300). A rising Layer 4 count is investigated for its cause (new arrivals, evidence that will not open, a repeated defect, work waiting on another step) before it is called a backlog (SS-016 UR-08, UR-11). |
+| 2.13 | 4 Nov 2026 | v2.15.457 | Rankings: QILT and PRISMS data open from Datasets › View data (the Overview cards link there). No step changed. |
 | 2.12 | 4 Nov 2026 | v2.15.456 | Layer 2/3 (Decision 269): Progress is on Operations; Fill now for a stalled field is on Enrich fields (Attributes links there); Build adapter is the Build link on a Universities row; the Inbox shows a review readiness line. |
 | 2.11 | 4 Nov 2026 | v2.15.455 | Admin menu (Decision 269): Platform health › Work queues is Queues & yield (with Pipeline yield for PIM Admins); Models & services › Services, Toolsets & limits and Fetchers are one tab, Services & limits. Old addresses open the new tabs. |
 | 2.10 | 4 Nov 2026 | v2.15.454 | Admin menu, paging and length (Decision 269): Automations areas start closed (use Failed in 24h); Key dates: press Edit on a row to change it; Layer 2/3 notices are on Operations. No step changed. |
