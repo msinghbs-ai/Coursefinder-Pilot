@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.385 — 4 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.458** (overnight mandate D7). Migration `20261104360000_cf247_cricos_identity_guard`: security.cricos_identity_conflict_v1, cricos_identity_guard_trg_v1 (trigger coverage_page_refused_host_zz_cricos, after the existing guard, which is not edited, f2e4102f), cricos_identity_guard_evaluate_v1 (read only); binding.cricos_identity_guard_on ships 0. Nothing dropped; consumer API untouched. Spec s263.
+
 ## 0.1.384 — 4 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.457** (SS-020 step 5, Decision 269). Screens only: tabs 49 → 47 on 20 pages; LEGACY redirects (statistics-rankings?tab=qilt|prisms, outcomes-qilt, student-flow-prisms → datasets?data=…); Datasets opens at rank 1 (no control widened); Link refresh stays on Coverage › Courses pending a decision; consumer API untouched. Spec cf-247-ss020-final-menu-contract.

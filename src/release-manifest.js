@@ -1,16 +1,16 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.457'
-export const PACKAGE_VERSION='0.1.384'
+export const UI_VERSION='2.15.458'
+export const PACKAGE_VERSION='0.1.385'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'4 Nov 2026',
-  title:'Admin menu step 5: QILT and PRISMS are View data on Rankings › Datasets; the menu reaches 47 tabs',
+  title:'CRICOS identity guard built and switched off, with a read-only evaluation',
   changes:[
-    'Outcomes (QILT) and Student flow (PRISMS) open as View data on Rankings › Datasets for every role that could see them before; the dataset register and ranking imports stay at their existing role inside the tab.',
-    'The admin menu now has 47 tabs on 20 pages, as on the approved Final board; every old address opens the new home.'
+    'A guard that refuses binding a page to a course by title alone when that page is the CRICOS-proved page of another active course at the same provider; it never touches a page set by hand, a course locked by hand or a binding proved by the course\'s own code, and ships switched off (binding.cricos_identity_guard_on = 0).',
+    'A read-only evaluation reports what the guard would refuse; the existing title-only bindings stay until a separate governed re-check is approved.'
   ],
   bugFixes:[]
 }
