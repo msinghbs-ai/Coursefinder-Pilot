@@ -3,7 +3,7 @@
 create schema fx;
 create table fx.ids (k text primary key, id uuid not null default gen_random_uuid());
 insert into fx.ids(k) select unnest(array['AU','NZ','VIC','AUK','P1','P2','P3','A','B','C','NOCITY','INACT','OTHERK',
-  'c1','c2','c3','c4','c5','c6','S1','S2','S3','S4','S5','S6','S7','S8','S9','S10']);
+  'c1','c2','c3','c4','c5','c6','S1','S2','S3','S4','S5','S6','S7','S8','S9','S10','S11']);
 create function fx.i(text) returns uuid language sql stable as $$ select id from fx.ids where k = $1 $$;
 insert into ref.countries values (fx.i('AU'),'AU'),(fx.i('NZ'),'NZ');
 insert into ref.subdivisions values (fx.i('VIC'),'AU-VIC'),(fx.i('AUK'),'NZ-AUK');
@@ -30,11 +30,12 @@ insert into catalogue.course_campuses(course_id, campus_id) values
   (fx.i('c5'),fx.i('A')),(fx.i('c6'),fx.i('B')),(fx.i('c1'),fx.i('NOCITY')),(fx.i('c1'),fx.i('INACT')),(fx.i('c5'),fx.i('OTHERK'));
 -- scholarships: one per nationality case
 insert into scholarship.scholarships(id, stable_key, provider_id, name) select fx.i(k), 'scholarship:fx:'||k, fx.i('P1'), 'Scholarship '||k
-  from unnest(array['S1','S2','S3','S4','S5','S6','S7','S8','S9','S10']) k;
+  from unnest(array['S1','S2','S3','S4','S5','S6','S7','S8','S9','S10','S11']) k;
 insert into scholarship.criteria(scholarship_id, criterion_type, value_codes) select fx.i(k), 'student_type', array['international']
-  from unnest(array['S1','S2','S3','S4','S5','S7','S8','S9','S10']) k;
+  from unnest(array['S1','S2','S3','S4','S5','S7','S8','S9','S10','S11']) k;
 insert into scholarship.criteria(scholarship_id, criterion_type, value_codes) values (fx.i('S6'),'student_type',array['domestic']),
-  (fx.i('S7'),'nationality',array['CN']);
+  (fx.i('S7'),'nationality',array['CN']),
+  (fx.i('S11'),'nationality',array['ID','VN']);
 insert into scholarship.nationality_readings(scholarship_id, codes, phrases, reader_version) values
   (fx.i('S1'),'{IN}','{"IN":"citizen of India"}','scholarship-nationality-v1'),
   (fx.i('S2'),'{R-SASIA}','{"R-SASIA":"student from South Asia"}','scholarship-nationality-v1'),
@@ -44,7 +45,8 @@ insert into scholarship.nationality_readings(scholarship_id, codes, phrases, rea
   (fx.i('S6'),'{}','{}','scholarship-nationality-v1'),
   (fx.i('S8'),'{}','{}','scholarship-nationality-v1'),
   (fx.i('S9'),'{}','{}','scholarship-nationality-v1'),
-  (fx.i('S10'),'{}','{}','scholarship-nationality-v1');
+  (fx.i('S10'),'{}','{}','scholarship-nationality-v1'),
+  (fx.i('S11'),'{}','{}','scholarship-nationality-v1');
 insert into pipeline.layer4_review_items(entity_type, entity_id, field_code, status) values
   ('scholarship',fx.i('S5'),'audience','pending'),('scholarship',fx.i('S9'),'award_value_text','pending'),('scholarship',fx.i('S10'),'nationalities','approved');
 insert into pipeline.scholarship_ai_reviews(scholarship_id, reason, status) values
@@ -52,7 +54,7 @@ insert into pipeline.scholarship_ai_reviews(scholarship_id, reason, status) valu
 
 create table fx.before (kind text, k text, j jsonb);
 insert into fx.before select 'campus', k, api.website_v2_provider_campuses(fx.i(k)) from unnest(array['P1','P2','P3']) k;
-insert into fx.before select 'scholarship', k, api.website_v2_scholarship_item(fx.i(k)) from unnest(array['S1','S2','S3','S4','S5','S6','S7','S8','S9','S10']) k;
+insert into fx.before select 'scholarship', k, api.website_v2_scholarship_item(fx.i(k)) from unnest(array['S1','S2','S3','S4','S5','S6','S7','S8','S9','S10','S11']) k;
 do $d$
 declare v jsonb := (select j from fx.before where k = 'P1');
 begin

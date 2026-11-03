@@ -34,7 +34,7 @@ begin
 
   -- N1: nationality_eligibility_status
   for kk, exp in select * from (values ('S1','restricted'),('S2','restricted'),('S3','unknown'),('S4','unrestricted'),('S5','under_review'),
-                                      ('S6','restricted'),('S7','restricted'),('S8','under_review'),('S9','unknown'),('S10','unknown')) e(a, b) loop
+                                      ('S6','restricted'),('S7','restricted'),('S8','under_review'),('S9','unknown'),('S10','unknown'),('S11','restricted')) e(a, b) loop
     x := api.website_v2_scholarship_item(fx.i(kk));
     st := x->>'nationality_eligibility_status';
     if st is distinct from exp then raise exception 'N1: % expected %, got %', kk, exp, st; end if;
@@ -45,5 +45,5 @@ begin
   if api.website_v2_scholarship_item(fx.i('S2'))->'citizenship_eligibility' <> '["R-SASIA"]'::jsonb then raise exception 'N1: region code changed'; end if;
   -- an empty list is never unrestricted
   if api.website_v2_scholarship_item(fx.i('S3'))->'citizenship_eligibility' <> '[]'::jsonb then raise exception 'N1: S3 list changed'; end if;
-  raise notice 'ok N1 nationality: restricted (country, region, domestic-only, criteria list), unrestricted only with explicit evidence, empty list unknown, open review under_review, unrelated or closed review ignored; every other field identical for 10 scholarships';
+  raise notice 'ok N1 nationality: restricted (country, region, domestic-only, criteria list), unrestricted only with explicit evidence, empty list unknown, open review under_review, unrelated or closed review ignored; criteria-only restriction with an empty list restricted; every other field identical for 11 scholarships';
 end $t$;

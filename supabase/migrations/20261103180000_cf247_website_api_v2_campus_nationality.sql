@@ -20,7 +20,8 @@
 --      under_review  an open Layer 4 item on who the scholarship is for (fields nationalities, nationality, citizenship_eligibility, audience,
 --                    student_type) or a pending AI review whose reason is who it is for;
 --      restricted    the list the API returns (citizenship_eligibility) names at least one country or region code, each read from the
---                    scholarship's own wording, or the scholarship is for domestic students only;
+--                    scholarship's own wording; or an active extracted nationality criterion (with its quote) names countries even where
+--                    the list is still empty (16 scholarships on 3 Nov 2026); or the scholarship is for domestic students only;
 --      unrestricted  only when the nationality reading holds an explicit "any nationality" phrase (key ANY in its phrases) and no code; no
 --                    reader writes it yet, so none on 3 Nov 2026;
 --      unknown       otherwise: nothing on nationality is held. An empty list is never read as unrestricted.
@@ -118,7 +119,7 @@ $function$
 $def$);
 
 -- 3. N1: scholarship nationality_eligibility_status, beside the unchanged lists
-select pg_temp.edit_once('api.website_v2_scholarship_item(uuid)', 'd1792cc7161101ce8c22abad70ecbd36', '74fb94060500970a2b7dc8923afe04a7', array[
+select pg_temp.edit_once('api.website_v2_scholarship_item(uuid)', 'd1792cc7161101ce8c22abad70ecbd36', '04532402307717c6dab17567551364e1', array[
  array[$o$    'citizenship_eligibility', to_jsonb((select codes from nat)), 'eligible_countries_list', to_jsonb((select codes from nat)),
 $o$, $n$    'citizenship_eligibility', to_jsonb((select codes from nat)), 'eligible_countries_list', to_jsonb((select codes from nat)),
     -- CF-247 Website API v2 developer request (mandate 3 Nov 2026 11:46 §3): additive; an empty list is never read as unrestricted
@@ -127,7 +128,9 @@ $o$, $n$    'citizenship_eligibility', to_jsonb((select codes from nat)), 'eligi
                       and r.field_code in ('nationalities', 'nationality', 'citizenship_eligibility', 'audience', 'student_type'))
          or exists (select 1 from pipeline.scholarship_ai_reviews a where a.scholarship_id = s.id and a.status = 'pending' and a.reason ~* 'who it is for')
          then 'under_review'
-       when coalesce(cardinality((select codes from nat)), 0) > 0 or (select v from st) = 'domestic' then 'restricted'
+       when coalesce(cardinality((select codes from nat)), 0) > 0 or (select v from st) = 'domestic'
+         or exists (select 1 from cr where cr.criterion_type in ('nationality', 'citizenship_and_residency') and cardinality(cr.value_codes) > 0)
+         then 'restricted'
        when exists (select 1 from scholarship.nationality_readings nr where nr.scholarship_id = s.id and cardinality(nr.codes) = 0 and nr.phrases ? 'ANY')
          then 'unrestricted'
        else 'unknown' end,

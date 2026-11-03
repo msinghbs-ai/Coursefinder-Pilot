@@ -20,7 +20,7 @@ test('pending approval: the migration refuses to apply before it changes anythin
 
 test('md5-guarded: the two consumer definitions are replaced only from the live text read on 3 Nov 2026', () => {
   expect(m).toContain("select pg_temp.replace_once('api.website_v2_provider_campuses(uuid)', '57115d3b8ddbc40729ec04078ee15d41', '698afad0bc236a314fb356632938c403', $def$")
-  expect(m).toContain("select pg_temp.edit_once('api.website_v2_scholarship_item(uuid)', 'd1792cc7161101ce8c22abad70ecbd36', '74fb94060500970a2b7dc8923afe04a7', array[")
+  expect(m).toContain("select pg_temp.edit_once('api.website_v2_scholarship_item(uuid)', 'd1792cc7161101ce8c22abad70ecbd36', '04532402307717c6dab17567551364e1', array[")
   expect(m).toContain("md5(pg_get_functiondef('security.place_presentable(text)'::regprocedure)) <> 'a7b720fc9b34203d0a23315376fd483a'")
   expect(m).toContain("md5(pg_get_viewdef('security.layer4_search_blocked_courses'::regclass)) <> '35cdaa19a775ffaaf60fc2be302affec'")
 })
@@ -44,7 +44,8 @@ test('nationality: additive status, lists unchanged, an empty list is never unre
   expect(m).toContain("$o$    'citizenship_eligibility', to_jsonb((select codes from nat)), 'eligible_countries_list', to_jsonb((select codes from nat)),\n$o$")
   expect(m).toContain("'nationality_eligibility_status', case")
   expect(m).toContain("then 'under_review'")
-  expect(m).toContain("when coalesce(cardinality((select codes from nat)), 0) > 0 or (select v from st) = 'domestic' then 'restricted'")
+  expect(m).toContain("when coalesce(cardinality((select codes from nat)), 0) > 0 or (select v from st) = 'domestic'")
+  expect(m).toContain("or exists (select 1 from cr where cr.criterion_type in ('nationality', 'citizenship_and_residency') and cardinality(cr.value_codes) > 0)")
   expect(m).toContain("cardinality(nr.codes) = 0 and nr.phrases ? 'ANY')")
   expect(m).toContain("else 'unknown' end,")
   expect(code(m).match(/select pg_temp\.(edit_once|replace_once)\(/g)).toHaveLength(2)
@@ -56,5 +57,5 @@ test('the fixture harness proves refusal, md5s, two runs and every case', () => 
   expect(run).toContain('no approval: refused, nothing changed')
   expect(run).toContain('second run: already applied, unchanged')
   const fx = fs.readFileSync('tests/fixtures/website-api-v2-campus-nationality/fixtures.sql', 'utf8')
-  for (const c of ["('S3','unknown')", "('S4','unrestricted')", "('S5','under_review')", "('S6','restricted')", "'[\"R-SASIA\"]'::jsonb", 'array[2,1,0]']) expect(fx).toContain(c)
+  for (const c of ["('S11','restricted')", "('S3','unknown')", "('S4','unrestricted')", "('S5','under_review')", "('S6','restricted')", "'[\"R-SASIA\"]'::jsonb", 'array[2,1,0]']) expect(fx).toContain(c)
 })
