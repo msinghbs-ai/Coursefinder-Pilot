@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.392 — 4 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.465** (Platform Admin mandate 4 Nov 08:16 §8). Migration `20261104470000_cf247_aer_throughput`: md5-guarded edits of security.layer4_readiness_tick_v1 (5ed0f7d1 → 06e5f439; never-gated entry items first), security.aer_technical_recovery_v1 (3b8ea81a → 370baa57; gate class per hold, records only), security.aer_schedule_held_v1 (0ea5886c → 2a0d51fa; yields to E13 recovery only while aer.e13_recover_on is 1). aer.e13_recover_on ships 0. Layer 4 600 limit, E13 and D-R3 gates untouched. Nothing dropped; consumer API untouched. Spec s276.
+
 ## 0.1.391 — 4 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.464** (Platform Admin mandate 4 Nov 08:16 §3–§5, §10). Migration `20261104460000_cf247_first_run_verification`: `pipeline.release_job_verifications`, progress contract and `pipeline.progress_observations`, `security.recovery_link_duplicates_v1`, `security.recovery_route_engineering_v1`, job `first-run-verify` (:02, :32, catalogued); md5-guarded edit of security.ops_report_v1 (3ba694dc → 518b5bf8). Settings frv.*, progress.*, recovery.*: recording and linking on; recovery.close_on_verified_on ships 0. Nothing merges, grants budget, bypasses Layer 4 or overrides locks. Nothing dropped; consumer API untouched. Spec s275.
