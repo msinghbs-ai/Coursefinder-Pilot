@@ -15,12 +15,12 @@ test('12100: one read for the AI tab; central pages model and switch by a Platfo
   expect(sql).not.toMatch(/^\s*(drop|delete|truncate)\b/im)
 })
 
-test('nav: Models & services has Services, AI & OpenRouter and Toolsets & limits tabs', () => {
+test('nav: Models & services has Services & limits and AI & OpenRouter tabs (SS-020 step 3: Toolsets & limits merged)', () => {
   const nav = fs.readFileSync('src/nav-map.js', 'utf8')
-  expect(nav).toContain("{ key: 'services', label: 'Services', min: 4 },")
+  expect(nav).toContain("{ key: 'services', label: 'Services & limits', min: 4 },")
   expect(nav).toContain("{ key: 'ai', label: 'AI & OpenRouter', min: 3 },") // v2.15.301: Scholarship extraction (Curator) is on this tab; AiConfig stays rank 4
   expect(fs.readFileSync('src/mature-main.jsx', 'utf8')).toContain("{rank>=4&&<AiConfig onError={err}/>}")
-  expect(nav).toContain("{ key: 'limits', label: 'Toolsets & limits', min: 4 },")
+  expect(nav).not.toContain("key: 'limits'")
 })
 
 test.describe('mocked browser', () => {
@@ -43,12 +43,13 @@ test.describe('mocked browser', () => {
     await expect(t.locator('[data-ai-scholarship-models] [data-sx-models]')).toBeVisible()
     await expect(t.locator('[data-ai-profile="openrouter-intake-l3c-qwen3-30b-a3b-2507-v1"]')).toContainText('0ef16b1996e1')
   })
-  test('Toolsets & limits is its own tab', async ({ page }) => {
+  test('Toolsets & limits is part of Services & limits; the AI model switches are on AI & OpenRouter (SS-020 step 3)', async ({ page }) => {
     await mockAdmin(page)
     await page.goto('/#models-services?tab=limits')
-    await expect(page.locator('[data-toolsets]')).toBeVisible()
-    await page.goto('/#models-services')
+    await expect(page.locator('[data-services-limits] [data-toolsets]').first()).toBeVisible()
+    await expect(page.locator('[data-card="services.ai-models"]')).toHaveCount(0)
+    await page.goto('/#models-services?tab=ai')
     await expect(page.locator('[data-card="services.ai-models"]')).toBeVisible()
-    await expect(page.locator('[data-toolsets]')).toHaveCount(0)
+    await expect(page.locator('[data-services-limits]')).toHaveCount(0)
   })
 })

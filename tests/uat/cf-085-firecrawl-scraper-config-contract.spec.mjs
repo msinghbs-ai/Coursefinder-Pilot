@@ -13,8 +13,9 @@ test.describe('CF-085 Firecrawl scraper configuration contract',()=>{
   // Config owns the Firecrawl quota) is unchanged.
   // v2.15.107: Scraper Config is the Platform settings > Scrapers & fetchers page.
   // v2.15.300 (Platform Admin, 20 Oct 2026): Scrapers & fetchers is the Fetchers tab of Models & services
-  expect(await fs.readFile('src/nav-map.js','utf8')).toContain("{ key: 'fetchers', label: 'Fetchers', min: 4 },")
-  expect(shell).toContain("tab==='fetchers'?<>")
+  // SS-020 step 3 (Decision 269): Fetchers is part of Models & services › Services & limits (same minimum role)
+  expect(await fs.readFile('src/nav-map.js','utf8')).toContain("{ key: 'services', label: 'Services & limits', min: 4 },")
+  expect(shell).toContain("<section data-fetchers-merged>")
   expect(shell).toContain("<Layer2ProviderConfig rank={rank} embedded/>")
   expect(provider).toContain('aria-label="Firecrawl monthly limit"')
   expect(provider).toContain('aria-label="Firecrawl safety reserve"')
@@ -22,7 +23,7 @@ test.describe('CF-085 Firecrawl scraper configuration contract',()=>{
   expect(provider).toContain('stop_at_vendor_units_remaining:reserve')
   expect(provider).toContain('Firecrawl monthly limit did not persist exactly')
   expect(provider).toContain('Firecrawl safety reserve did not persist exactly')
-  expect(environment).toContain('Monthly entitlement and reserve are managed in Platform settings → Scrapers & fetchers.')
+  expect(environment).toContain('Monthly entitlement and reserve are managed on Models & services › Services & limits.')
   expect(environment).not.toContain('title="Firecrawl" hint="Update the recorded monthly entitlement')
  })
 })

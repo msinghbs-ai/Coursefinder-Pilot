@@ -33,12 +33,11 @@ test('retired services: one list for Toolsets, Fetchers, Settings and the Go-liv
   expect(read('src/Toolsets.jsx')).not.toMatch(/function (SearchPass|SampleRuns|KeyPlan)\b/)
 })
 
-test('step 1 changes no tab and no role: 53 tabs on 20 pages, minimum roles as before', () => {
-  const tabs = Object.values(PAGES).reduce((n, p) => n + (p.tabs ? p.tabs.length : 1), 0)
-  expect(tabs).toBe(53)
-  expect(Object.keys(PAGES)).toHaveLength(20)
-  expect(PAGES.services.tabs.map((t) => [t.key, t.min])).toEqual([['services', 4], ['ai', 3], ['limits', 4], ['fetchers', 4]])
+test('step 1 changes no role: the pages it touched keep their minimum roles', () => {
+  expect(PAGES.services.min).toBe(3)
   expect(PAGES.migration.min).toBe(6)
+  expect(PAGES.health.tabs.find((t) => t.key === 'checks').min).toBe(3)
+  expect(PAGES.coverage.tabs.find((t) => t.key === 'attributes').min).toBe(1)
 })
 
 test('browser: Health checks shows no Layer 3 block and links Capacity to the Go-live checklist', async ({ page }) => {
@@ -71,7 +70,7 @@ test('browser: Fetchers and the Go-live checklist list only the providers in use
     return route.fallback()
   })
   await page.goto('/#models-services?tab=fetchers')
-  const list = page.locator('.l2p-provider-list')
+  const list = page.locator('[data-services-limits]') // SS-020 step 3: each service's list sits in its card
   await expect(list).toContainText('Firecrawl')
   await expect(list).toContainText('Direct HTTP')
   await expect(list).not.toContainText('ZenRows')

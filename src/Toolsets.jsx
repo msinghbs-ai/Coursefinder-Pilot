@@ -38,7 +38,7 @@ const money=v=>v==null?'—':`US$${Number(v).toFixed(2)}`
 // (Action needed, Action outside StudySearch, Optional) or not (Nothing to do), its Go to button opens the exact card or setting
 // (the card is opened and scrolled to; see focusTarget in mature-main.jsx), the universities it is about are listed in the notice with
 // Search again or a website box, and information-only notices are kept to Toolsets and limits, not shown on the layer pages.
-const LIMITS={page:'services',tab:'limits'}
+const LIMITS={page:'services',tab:'services'} // SS-020 step 3: Toolsets & limits is part of Services & limits
 const go=(label,page,tab,card,at)=>({label,page,tab,card,at})
 const NEED={action:['Action needed','warning'],outside:['Action outside StudySearch','warning'],optional:['Optional','neutral'],info:['Nothing to do','success']}
 export function noticePlan(n){
@@ -144,7 +144,8 @@ function NoticeItems({n,mode,onDone}){
 }
 
 // ---- Models & services › Toolsets and limits ------------------------------------------------------------------------
-export default function Toolsets({onError}){
+// SS-020 step 3 cards (Final board F41): only=[keys] draws just those toolset cards ('notices' = the notices card), for one card per service
+export default function Toolsets({onError,only=null}){
   const[d,setD]=useState(null),[n,setN]=useState(null),[failed,setFailed]=useState(''),[busy,setBusy]=useState(false)
   const load=async()=>{setFailed('');try{const[a,b]=await Promise.all([supabase.rpc('admin_toolsets_read'),supabase.rpc('admin_platform_notices_read',{p_layer:null})]);if(a.error)throw a.error;setD(a.data||{});setN(b.data||{})}catch(e){setFailed(errText(e))}}
   useEffect(()=>{load()},[])
@@ -153,14 +154,15 @@ export default function Toolsets({onError}){
   if(!d)return <section className="m-panel"><Loading label="Loading toolsets…"/></section>
   const can=Boolean(d.can_manage)&&!busy
   const notices=(n?.notices||[])
-  return <div className="m-page-stack" data-toolsets>
-    <Card id="services.toolsets" title="Toolsets and limits" subtitle="The outside services and platform limits each layer depends on. A notice appears on the layer’s page when one of them hits a limit or times out."
+  const want=k=>!only||only.includes(k)
+  return <div className="m-page-stack" data-toolsets={only?only.join(' '):''}>
+    {want('notices')&&<Card id="services.toolsets" title="Toolsets and limits" subtitle="The outside services and platform limits each layer depends on. A notice appears on the layer’s page when one of them hits a limit or times out."
       meta={<span className={`cf-chip tone-${notices.length?'warning':'success'}`}>{notices.length?`${fmtNumber(notices.length)} notice${notices.length===1?'':'s'}`:'No notices'}</span>}>
       {!d.can_manage&&<p className="l3v-note">You can view this. Only a Platform Admin can change it.</p>}
       <SnapshotStamp meta={n?.snapshot} label="Notices checked" what="toolset-notices"/>
       <div className="tn-all" data-toolset-notices>{notices.length?notices.map(x=><Notice key={x.key} n={x} onDone={load}/>):<p className="sl-sub">No notices on any layer.</p>}</div>
-    </Card>
-    {(d.toolsets||[]).filter(t=>!RETIRED_TOOLSETS.has(t.key)).map(t=><React.Fragment key={t.key}><Toolset t={t} d={d} can={can} write={write}/>{t.key==='firecrawl'&&<><FirecrawlCredits onError={onError}/><FirecrawlWork onError={onError}/></>}</React.Fragment>)}
+    </Card>}
+    {(d.toolsets||[]).filter(t=>!RETIRED_TOOLSETS.has(t.key)&&want(t.key)).map(t=><React.Fragment key={t.key}><Toolset t={t} d={d} can={can} write={write}/>{t.key==='firecrawl'&&<><FirecrawlCredits onError={onError}/><FirecrawlWork onError={onError}/></>}</React.Fragment>)}
   </div>
 }
 

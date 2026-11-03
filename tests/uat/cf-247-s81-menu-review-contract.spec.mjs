@@ -146,7 +146,7 @@ test.describe('mocked browser', () => {
   test('Storage & retention is a Platform health tab; Capacity is on the Go-live checklist', async ({ page }) => {
     await mockAdmin(page)
     await page.goto('/#platform-health')
-    await expect(page.getByRole('tab')).toHaveText(['Health checks', 'Work queues', 'Integration queue', 'Storage & retention'])
+    await expect(page.getByRole('tab')).toHaveText(['Health checks', 'Queues & yield', 'Integration queue', 'Storage & retention'])
     await page.goto('/#platform-health?tab=readiness')
     await expect(page).toHaveURL(/#environment-migration$/)
     await expect(page.locator('[data-golive-capacity]')).toBeVisible()

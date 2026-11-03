@@ -31,7 +31,7 @@ import{PAGES,SECTIONS,SECTION_OF,resolveTarget,hrefFor,canOpen,shownTabs,effecti
 import{ViewerContext}from'./lib/viewer'
 import PlatformHealth,{readPlatformHealth,healthTone,HEALTH_WORDS}from'./PlatformHealth'
 import QueueWatch from'./QueueWatch'
-import IntegrationQueue from'./IntegrationQueue'
+import IntegrationQueue,{PipelineYield}from'./IntegrationQueue'
 import CourseSources from'./CourseSources'
 import{DomainReadiness}from'./data-quality-entry'
 import CreditBanner from'./CreditBanner'
@@ -105,6 +105,26 @@ function SourcesPage({routeParams,navigate}){
 // v2.15.301 (Platform Admin, 20 Oct 2026, "One list with a type filter"): Key dates and Reference sources, one list; Ranking imports is on
 // Rankings & statistics › Datasets.
 const REFERENCE_TYPES=[['','All'],['dates','Key dates'],['links','Reference sources']]
+// SS-020 step 3 cards (Decision 269, Final board F41): Services & limits as one card per outside service, built from the same components
+// (each limited to its service), so every switch, limit and setting stays where it is changed and nothing is drawn twice.
+const SVC_NAMED=['firecrawl','direct-http']
+function ServicesLimits({rank,err}){
+  const svc=(id,title,subtitle,children)=><section className="m-panel svc-card" data-service-card={id}><SectionTitle title={title} subtitle={subtitle}/>{children}</section>
+  return <div className="m-page-stack" data-services-limits>
+    {svc('firecrawl','Firecrawl','Switch, monthly cap and reserve, course-page search budget, credits today and its daily shares.',<><ModelsServices part="services" only={['firecrawl']} onError={err}/><SearchCapCard/><Toolsets only={['firecrawl']} onError={err}/><Layer2ProviderConfig rank={rank} embedded only={['firecrawl']}/></>)}
+    {svc('direct','Direct read','Switch, rate, calls at once and time limit for reading pages directly.',<><ModelsServices part="services" only={['direct-http']} onError={err}/><Layer2ProviderConfig rank={rank} embedded only={['direct-http']}/></>)}
+    {svc('openrouter','OpenRouter','Balance, spend today against each daily guard, the credit floor and the mode. Models and the key are on AI & OpenRouter.',<Toolsets only={['openrouter']} onError={err}/>)}
+    {svc('platform','Database jobs and edge calls','Scheduled jobs, edge function calls and the pipeline job sizes, re-reads and retries.',<Toolsets only={['scheduled_jobs','edge_functions','pipeline']} onError={err}/>)}
+    {svc('notices','Notices','Every toolset notice on every layer, and what each one asks.',<Toolsets only={['notices']} onError={err}/>)}
+    {/* anything else still registered (for example a custom gateway kept switched off) stays reachable here */}
+    <LazyFold className="m-panel" data="other-services" summary={<strong>Other page services</strong>}>{()=><><ModelsServices part="services" except={SVC_NAMED} onError={err}/><Layer2ProviderConfig rank={rank} embedded except={SVC_NAMED}/></>}</LazyFold>
+  </div>
+}
+// SS-020: a fold whose content is drawn (and read) only once it is opened
+function LazyFold({className,data,open:initial=false,summary,children}){
+  const[open,setOpen]=useState(initial)
+  return <details className={className} data-fold={data} open={open} onToggle={e=>setOpen(e.currentTarget.open)}><summary>{summary}</summary>{open&&children()}</details>
+}
 function ReferenceList({routeParams,navigate,onError}){
   const t=routeParams?.get?.('type')||'',type=REFERENCE_TYPES.some(([k])=>k===t)?t:''
   return <div className="m-page-stack" data-reference-list={type||'all'}>
@@ -339,7 +359,7 @@ function Page({pageKey,tab,requestedTab='',routeParams,rank,actorId,onError,navi
       case'layer4':return <Layer4Inbox onError={err} routeParams={routeParams}/>
       // v2.15.300: Screen use (Platform Admin) under the health checks, to decide which screens retire
       // v2.15.301: Capacity moved to the Go-live checklist; Storage & retention is a tab here
-      case'health':return tab==='storage'?<RetentionScreen onError={onError}/>:tab==='queues'?<QueueWatch onError={onError}/>:tab==='integration'?<IntegrationQueue onError={onError}/>:<><PlatformHealth onError={onError}/>{rank>=6&&<ScreenUse onError={onError}/>}</>
+      case'health':return tab==='storage'?<RetentionScreen onError={onError}/>:tab==='queues'?<div className="m-page-stack" data-queues-yield>{/* SS-020 step 3 (Decision 269, Final board F31: lanes first): Pipeline yield moved here from Integration queue; PIM Admin and above, as before (server checks too) */}{rank>=5&&<PipelineYield onError={onError}/>}<QueueWatch onError={onError}/></div>:tab==='integration'?<IntegrationQueue onError={onError}/>:<><PlatformHealth onError={onError}/>{rank>=6&&<ScreenUse onError={onError}/>}</>
       case'jobs':return tab==='tasks'?<AdminTasks rank={rank} onError={onError}/>:tab==='automations'?<div className="m-page-stack"><Automations onError={err}/><RefreshWorkspace onError={err}/></div>:<JobsWorkspace/>
       case'evidence':return <EvidenceWorkspace onError={onError} navigate={navigate} routeParams={routeParams}/>
       // CF-247 (16 Oct 2026): calls to the API version URLs (zoho-api-v2 first), by key and action; v2.15.301 Settings › API usage
@@ -348,7 +368,7 @@ function Page({pageKey,tab,requestedTab='',routeParams,rank,actorId,onError,navi
       // v2.15.300 (Platform Admin, 20 Oct 2026): Scrapers & fetchers is Models & services › Fetchers
       // v2.15.264: Models & services in three tabs (Services · AI & OpenRouter · Toolsets & limits)
       // v2.15.301: Scholarship extraction (was Scholarships › Extraction) under the AI configuration
-      case'services':return tab==='ai'?<div className="m-page-stack">{rank>=4&&<AiConfig onError={err}/>}<section data-scholarship-extraction-moved><SectionTitle title="Scholarship extraction" subtitle="The AI that reads each stored scholarship page: models, qualification, instructions and answers."/><ScholarshipExtraction onError={onError}/></section></div>:tab==='limits'?<div className="m-page-stack"><SearchCapCard/><Toolsets onError={err}/></div>:tab==='fetchers'?<><p className="l3v-note">Switch services on or off on the Services tab. Keys are on <a href="#environment">Settings</a>.</p><Layer2ProviderConfig rank={rank} embedded/></>:<div className="m-page-stack"><ModelsServices onError={err}/></div>
+      case'services':return tab==='ai'?<div className="m-page-stack">{rank>=4&&<AiConfig onError={err}/>}{/* SS-020 step 3 (Decision 269): the AI model switches moved here from Services; Pipeline Operator and above, as before */}{rank>=4&&<ModelsServices part="models" onError={err}/>}<section data-scholarship-extraction-moved><SectionTitle title="Scholarship extraction" subtitle="The AI that reads each stored scholarship page: models, qualification, instructions and answers."/><ScholarshipExtraction onError={onError}/></section></div>:<ServicesLimits rank={rank} err={err}/>
       case'migration':return <div className="m-page-stack"><EnvironmentMigrationWorkspace rank={rank} onError={onError} view="migration"/><PlatformMaturity rank={rank} onError={onError} view="golive"/>{/* v2.15.301: Capacity (was Platform health › Capacity) */}<section data-golive-capacity><PlatformMaturity rank={rank} onError={onError} view="capacity"/></section>{/* v2.15.228: the Reset database control was retired (Platform Admin, 9 Oct 2026) */}</div>
       // v2.15.301 (Platform Admin, 20 Oct 2026): Data model retired (its address opens Coverage › Attributes); Storage & retention is a Platform health tab
       case'users':return <AccessRolesEmbedded actorId={actorId}/>
