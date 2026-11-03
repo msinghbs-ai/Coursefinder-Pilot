@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.351 — 3 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.424** (Platform Admin mandate 3 Nov 2026 12:04 §5 and §6). Migration `20261103190000_cf247_source_proof_lane_field_backlog`: job source-proof-feed (catalogued, active) running security.source_proof_feed_v1; md5-guarded edits of course_relink_tick_v1, course_relink_provider_v1 and admin_pipeline_yield; security.field_backlog_v1; settings proof.feed_per_run (50), proof.search_per_run (0 = paid search off), proof.max_attempts (3), backlog.not_stated_reasons, backlog.rate_window_hours. No paid spend; nothing dropped; consumer API untouched. Spec s240.
+
 ## 0.1.350 — 3 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.423** (Platform Admin P0 mandate 3 Nov 2026 10:44 §3 Agent C and §6; integration issue IQ-00060). Migration `20261103160000_cf247_lanes_and_gap_queue`: md5-guarded edits of flag_jobs_v1, svc_worker_report_v1, field_gap_queue_tick_v1, svc_scholarship_ai_next, svc_scholarship_recheck_next, admin_pipeline_yield; security.worker_lane_call_v1, security.lane_status_v1, security.course_page_proven_v1, checkpoint and proof cache tables; settings jobs.held_off (coverage-discover, coverage-discover-2), gaps.page_proof_on, lanes.stored_first_on (on), lanes.skip_held_paid_calls (off). No budget raised; nothing dropped; consumer API untouched. Spec s238.

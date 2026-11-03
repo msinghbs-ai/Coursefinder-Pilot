@@ -1,17 +1,16 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.423'
-export const PACKAGE_VERSION='0.1.350'
+export const UI_VERSION='2.15.424'
+export const PACKAGE_VERSION='0.1.351'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Nov 2026',
-  title:'Enrichment lanes held separately; the gap queue resumes and takes only readable work; paused jobs stay paused',
+  title:'Courses waiting for page proof go to the page-finding engines; the platform measures each field\'s backlog',
   changes:[
-    'Work on stored evidence never waits for paid page fetching: scholarship pickers take items with a stored copy first while the scholarship lane is held, and every worker call records its lane outcome (done, idle, budget held, source limit, failed, switched off) with the reason. Platform health › Pipeline yield shows the lanes now.',
-    'The standing gap queue scans active courses in slices from a saved point, resumes after a stop, and only creates items for courses whose page the reader accepts; the rest are counted as waiting for page proof instead of being skipped one by one.',
-    'A job a person or a governed restore switched off (Settings › Pipeline settings › jobs held off) is never switched back on by the idle recheck and its worker is never called.'
+    'Courses whose page is not yet proven are routed by a new twice-hourly feed to the existing page-finding engines: a free re-try of the course\'s candidate addresses when its stored page was refused, paid course-page search only when switched on, and left alone when a Layer 4 decision or a lock applies. Each course is tried a limited number of times and again only when its inputs change.',
+    'Platform health › Pipeline yield shows each field\'s backlog: waiting on Layer 4, not stated by the official source, with a verified stored page, or needing a page; with processed and admitted counts over 24 hours and 7 days and a forecast only when there is a measured rate.'
   ],
   bugFixes:[]
 }
