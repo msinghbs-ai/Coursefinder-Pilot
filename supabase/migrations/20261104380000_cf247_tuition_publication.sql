@@ -135,6 +135,8 @@ language sql stable security definer set search_path to '' as $function$
            f.updated_at fupd, c.lifecycle_status life, doc.course_id doc_cid, doc.generated_at doc_at,
            (select g.gate_status from search.enrichment_source_gates g
              where g.projection_code = 'courses' and g.domain_code = 'provider_current_tuition' and g.source_id = f.source_id) gate,
+           (select g.approved_at from search.enrichment_source_gates g
+             where g.projection_code = 'courses' and g.domain_code = 'provider_current_tuition' and g.source_id = f.source_id) gate_at,
            ((f.valid_from is null or f.valid_from <= current_date) and (f.valid_to is null or f.valid_to >= current_date)) in_window,
            exists (select 1 from jsonb_array_elements(coalesce(doc.provider_tuition_options, '[]'::jsonb)) o
                     where (o->>'amount') ~ '^[0-9]+(\.[0-9]+)?$' and (o->>'amount')::numeric = f.amount
@@ -156,7 +158,7 @@ language sql stable security definer set search_path to '' as $function$
               when x.gate is null then 'source_gate_closed'
               when x.gate <> 'approved' then 'source_gate_' || x.gate
               when not x.in_window then 'outside_validity'
-              when x.doc_at is null or x.doc_at < x.fupd then 'refresh_pending'
+              when x.doc_at is null or x.doc_at < greatest(x.fupd, x.gate_at) then 'refresh_pending'
               else 'projection_rule_other' end
     from x
 $function$;
@@ -220,16 +222,20 @@ language plpgsql security definer set search_path to '' as $function$
 declare r record; v_gates jsonb := '{}'::jsonb; v_res text; v_ids uuid[] := '{}'; v_decs uuid[] := '{}'; v_dec uuid; v_n int := 0;
         v_batch int := security.pipeline_num_v1('layer4.tuition_publication_batch', 200)::int;
 begin
-  for r in select x.source_id, min(x.review_item_id::text) ref from security.tuition_publication_rows_v1(null) x where x.cause = 'source_gate_closed' group by 1 loop
+  for r in select x.source_id, min(x.review_item_id::text) ref, array_agg(x.course_id) cids, array_agg(x.decision_id) dids
+             from security.tuition_publication_rows_v1(null) x where x.cause = 'source_gate_closed' group by 1 loop
     v_res := security.layer4_tuition_gate_open_v1(r.source_id, 'review item ' || r.ref);
     v_gates := jsonb_set(v_gates, array[v_res], to_jsonb(coalesce((v_gates->>v_res)::int, 0) + 1));
+    if v_res = 'opened' then v_ids := v_ids || r.cids; v_decs := v_decs || r.dids; end if;
   end loop;
-  select coalesce(array_agg(distinct x.course_id), '{}'), coalesce(array_agg(distinct x.decision_id), '{}') into v_ids, v_decs
-    from (select y.course_id, y.decision_id, y.cause from security.tuition_publication_rows_v1(null) y
-           where y.cause in ('source_gate_closed', 'refresh_pending') or (y.cause = 'published' and exists (
-                   select 1 from pipeline.layer4_admission_checks c where c.decision_id = y.decision_id and c.result = 'admitted_not_published'))
-           ) x;
-  -- after the gates opened, the rows that were closed now wait on the refresh: refresh them (the batch), then record the checks
+  -- the approvals whose projection is older than their fee or gate, and published ones whose admission check has not caught up
+  select v_ids || coalesce(array_agg(y.course_id) filter (where y.cause = 'refresh_pending'), '{}'), v_decs || coalesce(array_agg(y.decision_id), '{}')
+    into v_ids, v_decs
+    from security.tuition_publication_rows_v1(null) y
+   where y.cause = 'refresh_pending' or (y.cause = 'published' and exists (
+           select 1 from pipeline.layer4_admission_checks c where c.decision_id = y.decision_id and c.result = 'admitted_not_published'));
+  v_ids := array(select distinct unnest(v_ids)); v_decs := array(select distinct unnest(v_decs));
+  -- refresh them (the batch), then record the approvals' admission checks
   if cardinality(v_ids) > 0 then
     v_ids := v_ids[1:v_batch];
     perform search.refresh_course_enrichment_scoped_v1(v_ids, true);

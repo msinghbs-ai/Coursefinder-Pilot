@@ -9,7 +9,7 @@ begin
                      'check: 3 approvals, 1 published, 2 failing for a closed source gate: ' || (v - 'rule_differs' - 'failing_rows' - 'wide')::text);
   perform pg_temp.ok((v->>'rule_agrees')::int = 3, 'check: the fee rule Zoho reads agrees with all 3 approved fees (amount and year)');
   perform pg_temp.ok((v->'wide'->>'missing_in_projection')::int = 3 and (v->'wide'->>'missing_layer4')::int = 2 and (v->'wide'->'by_cause'->>'source_gate_closed')::int = 3,
-                     'check (wide): 3 page fees the rule uses are missing from the projection, 2 of them Layer 4 approvals, all a closed gate: ' || (v->'wide' - 'courses')::text);
+                     'check (wide): 3 page fees the rule uses are missing from the projection, 2 of them Layer 4 approvals, all a closed gate: ' || ((v->'wide') - 'courses')::text);
   perform pg_temp.ok(not (security.layer4_tuition_publication_verify_v1(116)->>'passed')::boolean, 'verify: fails before the repair');
 
   -- the fixed apply path: a new approval on a source never opened is published at once
@@ -65,7 +65,7 @@ begin
   -- the remedy
   r := security.layer4_tuition_publication_repair_v1(116);
   perform pg_temp.ok((r->>'ok')::boolean and (r->>'changed')::boolean and (r->'evidence'->'gates'->>'opened')::int = 3 and (r->'evidence'->'gates'->>'mixed_source')::int = 1,
-                     'repair: opens 3 closed sources (acts, ef, young), keeps the mixed one: ' || (r->'evidence' - 'check')::text);
+                     'repair: opens 3 closed sources (acts, ef, young), keeps the mixed one: ' || ((r->'evidence') - 'check')::text);
   perform pg_temp.ok(pg_temp.has_fee('nz acts') and pg_temp.has_fee('nz ef') and pg_temp.has_fee('nz young'), 'repair: the three approvals are on the projection');
   perform pg_temp.ok((select provider_annual_tuition_amount from search.course_documents where course_id = pg_temp.u('nz acts')) = 7500
                      and (select provider_annual_tuition_amount from search.course_documents where course_id = pg_temp.u('au gated')) = 31000,
