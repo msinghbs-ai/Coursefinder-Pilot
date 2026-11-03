@@ -256,6 +256,9 @@ language plpgsql stable security definer set search_path to '' set statement_tim
 -- that is not the course's own is not "not stated": it needs a page). Processed and admitted in the
 -- last 24 hours and 7 days from each engine's own tables; accepted per hour over backlog.rate_window_hours; forecast hours = (eligible - not
 -- stated) / accepted per hour, null when nothing was admitted. Course fields read the coverage cache (pipeline.course_attribute_coverage).
+-- Rankings read schema ranking (as public.website_v2_provider_rankings): eligible = published universities not linked to an observation in the
+-- latest accepted edition of any active system; Layer 4 = a candidate mapping waits for review; stored = an accepted mapping or an older link
+-- (the data is held, the latest edition is not linked); rates from ranking.manual_imports and ranking.observation_provider_links.
 declare v_c text := nullif(upper(btrim(p_country)), '');
         v_d1 timestamptz := now() - interval '24 hours';  -- fixed: the mandate's 24-hour window
         v_d7 timestamptz := now() - interval '7 days';    -- fixed: the mandate's 7-day window
@@ -366,8 +369,21 @@ begin
              when exists (select 1 from pipeline.scholarship_page_candidates c where c.provider_id = pv.id and c.storage_path is not null and c.admit_status is null) then 'stored'
              else 'acquire' end k
           from pv where not exists (select 1 from scholarship.scholarships x where x.provider_id = pv.id and x.lifecycle_status = 'active')),
-  rk as (select pv.id, case when not exists (select 1 from ref.ranking_sources x where x.status = 'active') then 'not_supported' else 'acquire' end k
-           from pv where pv.ptype = 'university' and not exists (select 1 from catalogue.provider_rankings x where x.provider_id = pv.id))
+  -- rankings live in schema ranking (read by public.website_v2_provider_rankings): the latest accepted edition of each active system
+  le as materialized (select distinct on (e.system_id) e.id, e.system_id, sy.code, e.edition_year from ranking.editions e join ranking.systems sy on sy.id = e.system_id
+                       where sy.active and e.status = 'accepted' order by e.system_id, e.edition_year desc),
+  uni as materialized (   -- published universities (the API's provider scope), whether or not they have active courses
+    select p.id from catalogue.providers p join ref.countries k on k.id = p.country_id join ref.provider_types t on t.id = p.provider_type_id
+     where t.code = 'university' and (v_c is null or k.iso_alpha2 = v_c) and not exists (select 1 from security.provider_hidden_v1 h where h.provider_id = p.id)),
+  held as materialized (select distinct l.provider_id, le.code from ranking.observation_provider_links l join ranking.observations o on o.id = l.observation_id
+                          join le on le.id = o.edition_id where l.provider_id in (select uni.id from uni)),
+  rk as (select u.id, case
+             when exists (select 1 from held h where h.provider_id = u.id) then 'held'
+             when exists (select 1 from ranking.provider_mappings m where m.provider_id = u.id and m.status = 'candidate') then 'layer4'
+             when exists (select 1 from ranking.provider_mappings m where m.provider_id = u.id and m.status = 'accepted')
+                  or exists (select 1 from ranking.observation_provider_links l where l.provider_id = u.id) then 'stored'
+             else 'acquire' end k
+           from uni u)
   select jsonb_build_object(
     'provider_description', jsonb_build_object('label', 'Provider description', 'sort', 3, 'level', 'provider',
         'eligible', (select count(*) from d), 'waiting_layer4', (select count(*) from d where k = 'layer4'), 'not_supported', (select count(*) from d where k = 'not_supported'),
@@ -385,15 +401,19 @@ begin
         'processed_7d', (select count(*) from pipeline.scholarship_page_candidates c where c.read_at > v_d7 and c.provider_id in (select pv.id from pv)),
         'admitted_7d', (select count(*) from pipeline.scholarship_page_candidates c where c.admitted_at > v_d7 and c.admit_status = 'admitted' and c.provider_id in (select pv.id from pv)),
         'admitted_in_rate_window', (select count(*) from pipeline.scholarship_page_candidates c where c.admitted_at > v_rs and c.admit_status = 'admitted' and c.provider_id in (select pv.id from pv))),
-    'rankings', jsonb_build_object('label', 'Rankings (universities with none)', 'sort', 12, 'level', 'provider',
-        'eligible', (select count(*) from rk), 'waiting_layer4', 0, 'not_supported', (select count(*) from rk where k = 'not_supported'),
-        'stored_source', 0, 'requires_acquisition', (select count(*) from rk where k = 'acquire'),
-        'processed_24h', (select count(*) from catalogue.provider_rankings x where x.verified_at > v_d1 and x.provider_id in (select pv.id from pv)),
-        'admitted_24h', (select count(*) from catalogue.provider_rankings x where x.verified_at > v_d1 and x.provider_id in (select pv.id from pv)),
-        'processed_7d', (select count(*) from catalogue.provider_rankings x where x.verified_at > v_d7 and x.provider_id in (select pv.id from pv)),
-        'admitted_7d', (select count(*) from catalogue.provider_rankings x where x.verified_at > v_d7 and x.provider_id in (select pv.id from pv)),
-        'admitted_in_rate_window', (select count(*) from catalogue.provider_rankings x where x.verified_at > v_rs and x.provider_id in (select pv.id from pv)),
-        'note', case when not exists (select 1 from ref.ranking_sources x where x.status = 'active') then 'no active ranking source' end))
+    'rankings', jsonb_build_object('label', 'Rankings (published universities not in the latest edition)', 'sort', 12, 'level', 'provider',
+        'universities', (select count(*) from rk), 'held', (select count(*) from rk where k = 'held'),
+        'held_by_system', coalesce((select jsonb_object_agg(z.code, z.n) from (select h.code, count(*) n from held h group by 1) z), '{}'::jsonb),
+        'latest_editions', coalesce((select jsonb_object_agg(le.code, le.edition_year) from le), '{}'::jsonb),
+        'eligible', (select count(*) from rk where k <> 'held'), 'waiting_layer4', (select count(*) from rk where k = 'layer4'), 'not_supported', 0,
+        'stored_source', (select count(*) from rk where k = 'stored'), 'requires_acquisition', (select count(*) from rk where k = 'acquire'),
+        'processed_24h', (select count(*) from ranking.manual_imports i where i.uploaded_at > v_d1),
+        'admitted_24h', (select count(distinct l.provider_id) from ranking.observation_provider_links l where l.created_at > v_d1 and l.provider_id in (select uni.id from uni)),
+        'processed_7d', (select count(*) from ranking.manual_imports i where i.uploaded_at > v_d7),
+        'admitted_7d', (select count(distinct l.provider_id) from ranking.observation_provider_links l where l.created_at > v_d7 and l.provider_id in (select uni.id from uni)),
+        'admitted_in_rate_window', (select count(distinct l.provider_id) from ranking.observation_provider_links l where l.created_at > v_rs and l.provider_id in (select uni.id from uni)),
+        'note', nullif(concat_ws('; ', 'processed = ranking files imported; admitted = universities newly linked to an observation',
+                  (select 'active systems with no accepted edition: ' || string_agg(sy.code, ', ') from ranking.systems sy where sy.active and not exists (select 1 from le where le.system_id = sy.id))), '')))
     into v_prov;
 
   -- rows with the measured rate and forecast (no rate, no forecast)

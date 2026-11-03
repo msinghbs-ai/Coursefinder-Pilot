@@ -68,6 +68,10 @@ test('field backlog: twelve fields, read-only and bounded, each split adds up, f
   expect(b).toContain("language plpgsql stable security definer set search_path to '' set statement_timeout to '20s'")
   expect(b).not.toMatch(/\b(insert into|update|delete from)\s+(pipeline|catalogue)\./)
   expect(b).toContain('from pipeline.course_attribute_coverage a')
+  // rankings are read where the Website API reads them (schema ranking), not from the empty catalogue.provider_rankings
+  expect(b).toContain("where sy.active and e.status = 'accepted' order by e.system_id, e.edition_year desc")
+  expect(b).toContain('from ranking.observation_provider_links l join ranking.observations o on o.id = l.observation_id')
+  expect(b).not.toMatch(/catalogue\.provider_rankings|ref\.ranking_sources/)
   for (const f of ['course_description', 'application_deadline', 'provider_description', 'intakes', 'aer_course', 'scholarships', 'fees', 'english', 'campus', 'delivery', 'duration', 'rankings']) expect(b).toContain(`'${f}'`)
   for (const k of ['waiting_layer4', 'not_supported', 'stored_source', 'requires_acquisition', 'processed_24h', 'admitted_24h', 'processed_7d', 'admitted_7d', 'accepted_per_hour', 'forecast_hours']) expect(b).toContain(`'${k}'`)
   expect(b).toContain("'forecast_hours', case when coalesce((r.v->>'admitted_in_rate_window')::numeric, 0) > 0")

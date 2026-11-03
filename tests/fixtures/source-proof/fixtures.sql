@@ -125,10 +125,12 @@ begin
   select x0 into x from jsonb_array_elements(v->'fields') x0 where x0->>'field' = 'course_description';
   if x->>'not_supported' <> '1' or x->>'stored_source' <> '1' then raise exception 'B1 description: %', x; end if;
   select x0 into x from jsonb_array_elements(v->'fields') x0 where x0->>'field' = 'rankings';
-  if x->>'not_supported' <> '1' or x->>'note' <> 'no active ranking source' then raise exception 'B1 rankings: %', x; end if;
+  if x->>'universities' <> '3' or x->>'held' <> '1' or x->>'eligible' <> '2' or x->>'waiting_layer4' <> '1' or x->>'stored_source' <> '1' or x->>'requires_acquisition' <> '0'
+     or x->'held_by_system' <> '{"qs_wur": 1}'::jsonb or x->'latest_editions' <> '{"qs_wur": 2027, "the_wur": 2026}'::jsonb or x->>'note' not like '%no accepted edition: arwu%'
+     or x->>'forecast_hours' is not null then raise exception 'B1 rankings: %', x; end if;
   if (v->'source_proof'->>'waiting_for_page_proof')::int <> 9 then raise exception 'B1 source proof: %', v->'source_proof'; end if;
   if (security.field_backlog_v1('NZ')->'fields'->3->>'eligible') <> '1' then raise exception 'B1 NZ'; end if;
-  raise notice 'B1 ok: 12 fields, each split adds up; intakes 9 = 1 Layer 4 + 1 not stated + 1 stored + 6 acquisition, 1 admitted in 24 h, forecast 1,344 h; AER excludes out-of-scope, no rate -> no forecast; NZ 1; source proof %', v->'source_proof';
+  raise notice 'B1 ok: 12 fields, each split adds up; intakes 9 = 1 Layer 4 + 1 not stated + 1 stored + 6 acquisition, 1 admitted in 24 h, forecast 1,344 h; AER excludes out-of-scope, no rate -> no forecast; rankings from schema ranking: 3 universities, 1 held (QS 2027), 2 eligible = 1 candidate mapping + 1 held but not linked in the latest edition, ARWU has no edition; NZ 1; source proof %', v->'source_proof';
 end $$;
 
 -- B2: Platform health › Pipeline yield returns it, PIM Admin and above only

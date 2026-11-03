@@ -65,3 +65,16 @@ insert into pipeline.field_enrich_items(job_id, provider_id, course_id, field, s
  (gen_random_uuid(), 'a1000000-0000-0000-0000-000000000001', 'c0000000-0000-0000-0000-000000000004', 'intakes', 'skipped', now() - interval '3 days', 'no correct course page: the page found is for another course'),
  (gen_random_uuid(), 'a1000000-0000-0000-0000-000000000001', 'c0000000-0000-0000-0000-000000000007', 'description', 'skipped', now() - interval '3 days', 'no correct course page: the page found is for another course');
 update pipeline.field_enrich_items set state = 'review', updated_at = now() - interval '1 hour' where course_id = 'c0000000-0000-0000-0000-000000000004' and field = 'intakes';
+-- rankings: QS (2026, 2027 accepted) and THE (2026 accepted) active, ARWU active with no edition; Uni One linked in QS 2027 (held), Uni Four
+-- has a candidate mapping (Layer 4), Uni Five an accepted mapping and a link only in QS 2026 (stored, the latest edition not linked); links 30 days old
+insert into catalogue.providers(id, canonical_name, lifecycle_status, website, country_id, provider_type_id) values
+ ('a1000000-0000-0000-0000-000000000004', 'Uni Four', 'active', 'https://u4.example', '00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000b1'),
+ ('a1000000-0000-0000-0000-000000000005', 'Uni Five', 'active', 'https://u5.example', '00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000b1');
+insert into ranking.systems(id, code, active) values ('00000000-0000-0000-0000-0000000000d1', 'qs_wur', true), ('00000000-0000-0000-0000-0000000000d2', 'the_wur', true), ('00000000-0000-0000-0000-0000000000d3', 'arwu', true);
+insert into ranking.editions(id, system_id, edition_year, status) values ('00000000-0000-0000-0000-0000000000e6', '00000000-0000-0000-0000-0000000000d1', 2026, 'accepted'),
+ ('00000000-0000-0000-0000-0000000000e7', '00000000-0000-0000-0000-0000000000d1', 2027, 'accepted'), ('00000000-0000-0000-0000-0000000000f6', '00000000-0000-0000-0000-0000000000d2', 2026, 'accepted');
+insert into ranking.observations(id, edition_id) values ('00000000-0000-0000-0000-000000000071', '00000000-0000-0000-0000-0000000000e7'), ('00000000-0000-0000-0000-000000000075', '00000000-0000-0000-0000-0000000000e6');
+insert into ranking.observation_provider_links(observation_id, provider_id, link_method, is_primary, created_at) values
+ ('00000000-0000-0000-0000-000000000071', 'a1000000-0000-0000-0000-000000000001', 'primary_exact', true, now() - interval '30 days'),
+ ('00000000-0000-0000-0000-000000000075', 'a1000000-0000-0000-0000-000000000005', 'primary_exact', true, now() - interval '30 days');
+insert into ranking.provider_mappings(provider_id, status) values ('a1000000-0000-0000-0000-000000000004', 'candidate'), ('a1000000-0000-0000-0000-000000000005', 'accepted');

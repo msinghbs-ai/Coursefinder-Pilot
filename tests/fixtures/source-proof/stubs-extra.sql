@@ -34,3 +34,11 @@ create or replace function security.course_link_bind_v1(p_course uuid, p_provide
   update pipeline.coverage_course_pages set url = p_url, status = 'bound', read_status = null, identity_basis = null, evidence_id = null where course_id = p_course $$;
 create or replace function cron.schedule(p_name text, p_schedule text, p_command text) returns bigint language sql as $$
   insert into cron.job(jobname, schedule, command) values (p_name, p_schedule, p_command) returning jobid $$;
+-- rankings (schema ranking, as read by public.website_v2_provider_rankings)
+create schema if not exists ranking;
+create table ranking.systems (id uuid primary key default gen_random_uuid(), code text, active boolean);
+create table ranking.editions (id uuid primary key default gen_random_uuid(), system_id uuid, edition_year int, status text);
+create table ranking.observations (id uuid primary key default gen_random_uuid(), edition_id uuid, provider_id uuid);
+create table ranking.observation_provider_links (observation_id uuid, provider_id uuid, link_method text, is_primary boolean, created_at timestamptz default now());
+create table ranking.provider_mappings (id uuid primary key default gen_random_uuid(), provider_id uuid, status text);
+create table ranking.manual_imports (id uuid primary key default gen_random_uuid(), uploaded_at timestamptz default now());
