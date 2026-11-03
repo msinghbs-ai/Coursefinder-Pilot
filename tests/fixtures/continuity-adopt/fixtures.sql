@@ -1,4 +1,4 @@
--- CF-247 SS-021 part 3 (20261104190000) acceptance on fixtures (overnight mandate 3 Nov 2026 21:59 §3): AER at its limit does not stop fees or
+-- CF-247 SS-021 part 3 (20261104320000) acceptance on fixtures (overnight mandate 3 Nov 2026 21:59 §3): AER at its limit does not stop fees or
 -- intakes; one university cannot starve others; the paid cap parks and later resumes; Layer 4 admission is unchanged; failures stay with their
 -- item; the issue writer maps refused values. Each check raises on failure and says "ok" when it holds.
 set client_min_messages = notice;

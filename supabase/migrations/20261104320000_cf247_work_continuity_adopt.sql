@@ -663,13 +663,13 @@ end $c$;
 
 -- 8 component register --------------------------------------------------------------------------------------------------------------------
 insert into pipeline.component_register(kind, name, layer, purpose, status, replaces, introduced_in) values
- ('job', 'work-continuity-lanes', 'Platform', 'CF-247 SS-021 F3: Find course pages parked behind the paid cap; tasks that can never run ended', 'active', '{}', '20261104190000'),
- ('function', 'security.page_find_continuity_v1', 'Platform', 'CF-247 SS-021 F3: job work-continuity-lanes', 'active', '{}', '20261104190000'),
- ('function', 'security.course_search_paid_cap_v1', 'Platform', 'CF-247 SS-021 F3: the course search caps and their reset', 'active', '{}', '20261104190000'),
- ('function', 'security.link_search_park_v1', 'Platform', 'CF-247 SS-021 F9: a course page search at its send cap is parked', 'active', '{}', '20261104190000'),
- ('function', 'security.aer_fair_courses_v1', 'Platform', 'CF-247 SS-021 F4: AER course reads in turn, within shares and the reserve', 'active', '{}', '20261104190000'),
- ('function', 'security.aer_provider_load_v1', 'Platform', 'CF-247 SS-021 F4: each university''s AER decisions waiting and reads in progress', 'active', '{}', '20261104190000'),
- ('function', 'security.aer_technical_recovery_v1', 'Platform', 'CF-247 SS-021 F4: technically held and duplicate entry items recorded for recovery', 'active', '{}', '20261104190000'),
- ('function', 'security.work_review_ready_v1', 'Platform', 'CF-247 SS-021 F4: review category waiting items by readiness', 'active', '{}', '20261104190000'),
- ('function', 'security.integration_issue_allowed_v1', 'Platform', 'CF-247 SS-021 F2: values the issue queue''s checks allow', 'active', '{}', '20261104190000')
+ ('job', 'work-continuity-lanes', 'Platform', 'CF-247 SS-021 F3: Find course pages parked behind the paid cap; tasks that can never run ended', 'active', '{}', '20261104320000'),
+ ('function', 'security.page_find_continuity_v1', 'Platform', 'CF-247 SS-021 F3: job work-continuity-lanes', 'active', '{}', '20261104320000'),
+ ('function', 'security.course_search_paid_cap_v1', 'Platform', 'CF-247 SS-021 F3: the course search caps and their reset', 'active', '{}', '20261104320000'),
+ ('function', 'security.link_search_park_v1', 'Platform', 'CF-247 SS-021 F9: a course page search at its send cap is parked', 'active', '{}', '20261104320000'),
+ ('function', 'security.aer_fair_courses_v1', 'Platform', 'CF-247 SS-021 F4: AER course reads in turn, within shares and the reserve', 'active', '{}', '20261104320000'),
+ ('function', 'security.aer_provider_load_v1', 'Platform', 'CF-247 SS-021 F4: each university''s AER decisions waiting and reads in progress', 'active', '{}', '20261104320000'),
+ ('function', 'security.aer_technical_recovery_v1', 'Platform', 'CF-247 SS-021 F4: technically held and duplicate entry items recorded for recovery', 'active', '{}', '20261104320000'),
+ ('function', 'security.work_review_ready_v1', 'Platform', 'CF-247 SS-021 F4: review category waiting items by readiness', 'active', '{}', '20261104320000'),
+ ('function', 'security.integration_issue_allowed_v1', 'Platform', 'CF-247 SS-021 F2: values the issue queue''s checks allow', 'active', '{}', '20261104320000')
 on conflict do nothing;

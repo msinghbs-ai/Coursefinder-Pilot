@@ -1,4 +1,4 @@
--- CF-247 SS-021 part 3 (20261104190000): the live shapes the adopted lanes read, beside the work-continuity fixture database
+-- CF-247 SS-021 part 3 (20261104320000): the live shapes the adopted lanes read, beside the work-continuity fixture database
 -- (../work-continuity/run.sh steps 1-2). Shapes only: columns and functions the edited definitions call, with fixture-controlled answers
 -- (schema fx). Nothing here is a live definition; the definitions this change edits are in live/ and checked against their live md5.
 

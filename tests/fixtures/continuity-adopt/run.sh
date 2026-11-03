@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CF-247 SS-021 part 3: lanes adopt work continuity (migration 20261104190000) on isolated fixtures. Needs a scratch PostgreSQL 16 (never a
+# CF-247 SS-021 part 3: lanes adopt work continuity (migration 20261104320000) on isolated fixtures. Needs a scratch PostgreSQL 16 (never a
 # Supabase project): PGHOST/PGPORT/PGUSER point at it. Builds a throwaway database as ../work-continuity/run.sh does (the integration queue
 # stubs and migration 20261102120000, ../ops-controller/stubs-extra.sql, workstream A's migration 20261104010000, the reopen rule
 # 20261104100000, ../work-continuity/stubs.sql and live/), then the contract migration 20261104170000 itself (v2.15.443, as live), then
@@ -11,7 +11,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 DB=${WCA_DB:-continuity_adopt_fixtures}
 P="psql -v ON_ERROR_STOP=1 -q -X"
-MIG=supabase/migrations/20261104190000_cf247_work_continuity_adopt.sql
+MIG=supabase/migrations/20261104320000_cf247_work_continuity_adopt.sql
 WC=tests/fixtures/work-continuity
 FX=tests/fixtures/continuity-adopt
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }
