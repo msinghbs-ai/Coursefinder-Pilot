@@ -21,7 +21,7 @@ const call=async(action,args)=>{const{data,error}=await supabase.rpc('admin_enri
 const COUNTRY={AU:'Australia',NZ:'New Zealand',CA:'Canada'}
 const GROUP={course_search:'Finding course pages',reads:'Reading pages',central:'Central pages',scholarships:'Scholarships',other:'Other'}
 const STATUS={pending:['Waiting to start','neutral'],waiting:['Waiting for budget','warning'],running:['Running','info'],done:['Done','success'],person:['A person admits','warning'],
-  skipped:['Skipped','neutral'],failed:['Failed','danger'],cancelled:['Cancelled','neutral'],stopped:['Stopped','danger'],timed_out:['Timed out','warning'],queued:['Queued','neutral'],handed_over:['Carried into Run now','info']}
+  skipped:['Skipped','neutral'],failed:['Failed','danger'],cancelled:['Cancelled','neutral'],stopped:['Stopped','danger'],timed_out:['Timed out','warning'],not_needed:['Not needed','neutral'],queued:['Queued','neutral'],handed_over:['Carried into Run now','info']}
 const usd=v=>`US$${Number(v||0).toFixed(Number(v||0)<1?3:2)}`
 const cr=v=>`${fmtNumber(Math.round(Number(v||0)))} credits`
 
@@ -124,6 +124,7 @@ function PlanPanel({pid,onClose,onRan,onError}){
         <td><small>{s.why}</small></td><td><small>{(s.fields||[]).join(', ')}</small></td>
         <td className="num">{cr(s.est_credits)}<small>{GROUP[s.group]||''}</small></td><td className="num">{usd(s.est_usd)}</td></tr>)}</tbody>
       <tfoot><tr><td/><td colSpan={3}><strong>Chosen steps</strong></td><td className="num"><strong>{cr(estC)}</strong></td><td className="num"><strong>{usd(estU)}</strong></td></tr></tfoot></table></div>}
+    {(p.not_proposed||[]).length>0&&<p className="sd-desc" data-plan-not-proposed>Not proposed (nothing eligible to do now): {p.not_proposed.map(x=>`${x.label}: ${x.reason}`).join('; ')}</p>}
     <p className="sd-desc">On-demand left today: {cr(p.on_demand?.credits_left)} and {usd(p.on_demand?.usd_left)}. Estimates are what the same steps used in the last 30 days; the run records what it actually used.</p>
     {open?<div className="fc-actions"><StatusChip value={open.state} tone={(STATUS[open.state]||[])[1]||'info'} label={`${open.mode==='auto'?'Automatic':'Manual'} run ${(STATUS[open.state]||[open.state])[0].toLowerCase()}`}/>
         {p.can_run&&<Button compact onClick={()=>cancel(open.id)} disabled={busy}>Cancel the run</Button>}</div>:null}
