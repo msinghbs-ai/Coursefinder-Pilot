@@ -47,8 +47,7 @@ test('mocked browser: a university\'s Coverage panel tells the journey of its la
 
 test('mocked browser: Settings and jobs lists the skip rules with the pages each skipped', async ({ page }) => {
   await mockAdmin(page)
-  await page.goto('/#scholarships?tab=coverage')
-  await page.locator('[data-cov-row="vu-1"]').click()
+  await page.goto('/#layer-2-discovery?tab=scholarships') // SS-020 step 4 (Decision 269): Settings and jobs moved from Scholarships › Coverage
   await page.locator('[data-scholarship-controls] > summary').click()
   await expect(page.locator('[data-skip-rules]')).toContainText('Course page')
   await expect(page.locator('[data-skip-rule="1"]')).toContainText('27')

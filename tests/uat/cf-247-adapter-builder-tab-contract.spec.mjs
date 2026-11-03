@@ -7,7 +7,7 @@ test('Layer 2 Adapter builder tab is wired to its read function and the existing
   expect(nav).toContain("{ key: 'builder', label: 'Adapter builder', min: 5 },") // v2.15.300: opened from a university row
   expect(nav).toContain("{ key: 'universities', label: 'Universities', min: 3 },")
   const main = fs.readFileSync('src/mature-main.jsx', 'utf8')
-  expect(main).toContain("if(tab==='builder')return <AdapterBuilderTab rank={rank} onError={err} initialProvider={routeParams?.get?.('provider')||''}/>")
+  expect(main).toContain("<AdapterBuilderTab rank={rank} onError={err} initialProvider={routeParams?.get?.('provider')||''}/></div>") // SS-020 step 4: after step 0 (one-click Build)
   const ui = fs.readFileSync('src/AdapterBuilderTab.jsx', 'utf8')
   expect(ui).toContain("supabase.rpc('admin_adapter_builder_basics'")
   expect(ui).toContain("supabase.rpc('admin_provider_central_page'")

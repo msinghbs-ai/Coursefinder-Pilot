@@ -18,7 +18,7 @@ import{startTableResize}from'./table-resize'
 import'./ui-standard.css'
 import{CourseEditor,ProviderEditor,CreateRecord}from'./RecordEditor'
 import ArchivedReview from'./ArchivedReview'
-import ScholarshipCoverage from'./ScholarshipCoverage'
+import ScholarshipCoverage,{ScholarshipSettings}from'./ScholarshipCoverage'
 import ScholarshipExtraction from'./ScholarshipExtraction'
 import ListEdit from'./ListEdit'
 import DashboardHome from'./Dashboard'
@@ -111,7 +111,7 @@ const SVC_NAMED=['firecrawl','direct-http']
 function ServicesLimits({rank,err}){
   const svc=(id,title,subtitle,children)=><section className="m-panel svc-card" data-service-card={id}><SectionTitle title={title} subtitle={subtitle}/>{children}</section>
   return <div className="m-page-stack" data-services-limits>
-    {svc('firecrawl','Firecrawl','Switch, monthly cap and reserve, course-page search budget, credits today and its daily shares.',<><ModelsServices part="services" only={['firecrawl']} onError={err}/><SearchCapCard/><Toolsets only={['firecrawl']} onError={err}/><Layer2ProviderConfig rank={rank} embedded only={['firecrawl']}/></>)}
+    {svc('firecrawl','Firecrawl','Switch, monthly cap and reserve, course-page search budget, credits today and its daily shares.',<><ModelsServices part="services" only={['firecrawl']} onError={err}/><SearchCapCard/><Toolsets only={['firecrawl']} onError={err}/>{/* SS-020 step 4: Firecrawl and AI today (was Coverage › Progress) */}<Progress part="services" onError={err}/><Layer2ProviderConfig rank={rank} embedded only={['firecrawl']}/></>)}
     {svc('direct','Direct read','Switch, rate, calls at once and time limit for reading pages directly.',<><ModelsServices part="services" only={['direct-http']} onError={err}/><Layer2ProviderConfig rank={rank} embedded only={['direct-http']}/></>)}
     {svc('openrouter','OpenRouter','Balance, spend today against each daily guard, the credit floor and the mode. Models and the key are on AI & OpenRouter.',<Toolsets only={['openrouter']} onError={err}/>)}
     {svc('platform','Database jobs and edge calls','Scheduled jobs, edge function calls and the pipeline job sizes, re-reads and retries.',<Toolsets only={['scheduled_jobs','edge_functions','pipeline']} onError={err}/>)}
@@ -332,7 +332,7 @@ function Page({pageKey,tab,requestedTab='',routeParams,rank,actorId,onError,navi
         if(tab==='datasets')return <div className="m-page-stack"><StatisticsDatasets rank={rank}/>{rank>=4&&<section data-ranking-imports><RankingImportPanel onError={onError} routeParams={routeParams} navigate={navigate}/></section>}</div>
         return <StatisticsRankings onError={onError} navigate={navigate} rank={rank} routeParams={routeParams}/>
       // v2.15.301: Flags moved to Layer 2/3 › Flags
-      case'coverage':if(tab==='progress')return <Progress routeParams={routeParams} rank={rank} onError={onError}/>;return tab==='attributes'?<CoverageAttributes rank={rank}/>:<div className="m-page-stack"><CoverageView view="courses"/><LinkRefresh/></div>
+      case'coverage':return tab==='attributes'?<CoverageAttributes rank={rank}/>:<div className="m-page-stack"><CoverageView view="courses"/><LinkRefresh/></div>
       // v2.15.301 (Platform Admin, 20 Oct 2026, "Merge into one Sources page"): one Sources page with a layer filter; registers first
       case'layer1':return <SourcesPage routeParams={routeParams} navigate={navigate}/>
       // v2.15.301 (Platform Admin, 20 Oct 2026, "One list with a type filter"): Key dates and Reference sources in one list
@@ -341,18 +341,25 @@ function Page({pageKey,tab,requestedTab='',routeParams,rank,actorId,onError,navi
         // v2.15.300 (Platform Admin, 20 Oct 2026, "Operations first"): Layer 2/3 Build & enrich. Operations first; Universities joins the
         // old Onboarding and Adapters tabs (their addresses redirect, see nav-map.js); the Adapter builder opens from a university row.
         // v2.15.301 (Platform Admin, 20 Oct 2026, "One tab on Layer 2/3"): finding scholarships (was Layer 1 › Scholarships), then reading them
-        if(tab==='scholarships')return <div className="m-page-stack" data-scholarships-merged><SectionTitle title="Finding scholarships" subtitle="Countries switched on and the sources for each."/><ScholarshipLayer layer={1} rank={rank} onError={err}/><SectionTitle title="Reading scholarships" subtitle="Discovery and reading by country, refusals, the jobs and their limits."/><ScholarshipLayer layer={2} rank={rank} onError={err}/></div>
+        if(tab==='scholarships')return <div className="m-page-stack" data-scholarships-merged><SectionTitle title="Finding scholarships" subtitle="Countries switched on and the sources for each."/><ScholarshipLayer layer={1} rank={rank} onError={err}/><SectionTitle title="Reading scholarships" subtitle="Discovery and reading by country, refusals, the jobs and their limits."/><ScholarshipLayer layer={2} rank={rank} onError={err}/>{/* SS-020 step 4: was the Scholarships › Coverage fold */}<ScholarshipSettings rank={rank} onError={err}/></div>
         if(tab==='flags')return <FlagsPanel onError={onError}/>
         // v2.15.309 (Platform Admin 21 Oct 2026, fee reader): the AI fee reader sits under Enrich fields
-        if(tab==='enrich')return <div className="m-page-stack"><EnrichFields rank={rank} onError={err}/><FeeReader onError={err}/></div>
+        // SS-020 step 4 (Decision 269): Enrich fields takes in the Coverage › Attributes run controls (Stalled fields Fill now, the standing queue,
+        // Provider descriptions); Attributes keeps the measures and links here with ?country=&field=
+        if(tab==='enrich')return <div className="m-page-stack"><FieldCoverage part="run" rank={rank} country={routeParams?.get?.('country')||''} field={routeParams?.get?.('field')||''} onError={err}/><EnrichFields rank={rank} onError={err}/><FieldCoverage part="pdesc" rank={rank} onError={err}/><FeeReader onError={err}/></div>
         if(tab==='plan')return <EnrichPlan rank={rank} onError={err} initialProvider={routeParams?.get?.('provider')||''}/>
-        // v2.15.287 (Decision 267): Build adapter, one click per university
-        if(tab==='build')return <BuildAdapter rank={rank} onError={err} initialProvider={routeParams?.get?.('provider')||''}/>
-        if(tab==='builder')return <AdapterBuilderTab rank={rank} onError={err} initialProvider={routeParams?.get?.('provider')||''}/>
+        // v2.15.287 (Decision 267): Build adapter, one click per university. SS-020 step 4 (Decision 269): no longer a tab; it is step 0 of the
+        // Adapter builder (every university and the waves) and a Build row action on Universities (?build=<university>)
+        if(tab==='builder')return <div className="m-page-stack"><LazyFold className="m-panel ba-step0" data="builder-step0" open={!routeParams?.get?.('provider')} summary={<><strong>Step 0: one-click Build</strong> <small>Readiness by field for every university, the waves, and Admit for the ready fields (Decision 267)</small></>}>{()=><BuildAdapter rank={rank} onError={err} initialProvider={routeParams?.get?.('provider')||''}/>}</LazyFold><AdapterBuilderTab rank={rank} onError={err} initialProvider={routeParams?.get?.('provider')||''}/></div>
         // v2.15.321: Course sources, found by the platform (job source-find), managed here
         if(tab==='sources')return <CourseSources rank={rank} onError={err}/>
-        if(tab==='universities')return <AdaptersWorkspace merged rank={rank} actorId={actorId} onError={err} routeParams={routeParams}/>
-        return <Layer23Operations rank={rank} actorId={actorId} onError={err}/>
+        if(tab==='universities'){const build=routeParams?.get?.('build')||''
+          return <div className="m-page-stack">{build&&<section className="m-panel" data-uni-build-open={build}><SectionTitle title="Build adapter" subtitle="This university's eight fields: Ready, Review or Not ready, and what each would add." action={<a className="cf-link" href={hrefFor('layer2','universities')}>Close</a>}/><BuildAdapter key={build} rank={rank} onError={err} initialProvider={build}/></section>}
+            {/* SS-020 step 4: the Build adapter list and its waves stay open to Curators and Operators here (the Adapter builder is PIM Admin and above) */}
+            <LazyFold className="m-panel" data="uni-build-waves" summary={<strong>Build adapter: every university and the waves</strong>}>{()=><BuildAdapter rank={rank} onError={err}/>}</LazyFold>
+            <AdaptersWorkspace merged rank={rank} actorId={actorId} onError={err} routeParams={routeParams}/></div>}
+        // SS-020 step 4 (Decision 269): Operations takes in Progress (where the universities are, journeys, every hour)
+        return <div className="m-page-stack"><Layer23Operations rank={rank} actorId={actorId} onError={err}/><section data-operations-progress><Progress routeParams={routeParams} rank={rank} onError={onError}/></section></div>
       // v2.15.252 (Platform Admin, 12 Oct 2026): Layer 3 AI validation and Layer 4 AI send-back tab retired; adapters admit the values.
       // v2.15.253 (Platform Admin, 12 Oct 2026): Flagged values, Fee rules, Attributes, Scholarship publishing and Blocks retired (old addresses redirect in nav-map.js).
       // v2.15.300 (Platform Admin, 20 Oct 2026): Review queue, AI could not decide and Websites to find retired into the Inbox kinds.

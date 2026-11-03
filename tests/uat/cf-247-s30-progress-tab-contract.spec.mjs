@@ -31,7 +31,8 @@ test('retired: Live activity page, Pilot panel, Dashboard health strip, Layers a
   const tm = read('src/AdminTasks.jsx')
   expect(tm).not.toContain('function RunningNow(')
   expect(tm).toContain('data-task-running-link')
-  expect(read('src/nav-map.js')).toContain("{ key: 'progress', label: 'Progress', min: 3 },")
+  // SS-020 step 4 (Decision 269): Progress is on Layer 2/3 › Operations; its address opens there
+  expect(read('src/nav-map.js')).toContain("if (hit.page === 'coverage' && tab === 'progress') return { page: 'layer2', tab: 'operations', params: p }")
 })
 
 test.describe('mocked browser', () => {
@@ -42,11 +43,10 @@ test.describe('mocked browser', () => {
     await expect(o.locator('[data-progress-tile="universities"]')).toContainText('1,201')
     await expect(o.locator('[data-progress-need="stop:nothing_ready"]')).toContainText('41')
     await expect(o.locator('[data-progress-need="firecrawl:2:daily:scholarships:2026-10-13"]')).toContainText('3500 of 3500')
-    await expect(o.locator('[data-progress-share="scholarships"]')).toContainText('100% of 3,500')
+    await expect(o.locator('[data-progress-budget]')).toHaveCount(0) // SS-020 step 4: Firecrawl and AI today is on Services & limits
     await o.locator('[data-progress-group="top"]').click()
     // SS-020 step 1 (Decision 269): "Courses with each field" retired (it repeated Coverage › Attributes), with a link there instead
     await expect(o.locator('[data-progress-fields]')).toHaveCount(0)
-    await expect(o.locator('[data-progress-budget] a[href="#coverage?tab=attributes"]')).toBeVisible()
     await expect(o.locator('[data-progress-tile="scholarships"]')).toContainText('883')
     await o.locator('[data-progress-stage="admit_scholarships"]').click()
     await expect(page).toHaveURL(/view=journeys/)
@@ -102,8 +102,8 @@ test.describe('mocked browser', () => {
   test('Dashboard keeps Waiting for you and the four tiles, and links to Progress; Task manager links to Running now', async ({ page }) => {
     await mockAdmin(page)
     await page.goto('/#dashboard')
-    await expect(page.locator('[data-dashboard-progress] a').first()).toHaveAttribute('href', '#coverage?tab=progress')
-    await expect(page.locator('[data-dashboard-progress] a').nth(1)).toHaveAttribute('href', '#layer-2-discovery') // v2.15.301: what is running
+    await expect(page.locator('[data-dashboard-progress] a').first()).toHaveAttribute('href', '#layer-2-discovery') // SS-020 step 4: Progress is on Operations
+    await expect(page.locator('[data-dashboard-progress] a')).toHaveCount(1) // SS-020 step 4: progress and what is running are one place
     await expect(page.locator('.db-health')).toHaveCount(0)
     await page.goto('/#scheduled-jobs?tab=tasks')
     await expect(page.locator('[data-task-running-link] a')).toHaveAttribute('href', '#layer-2-discovery') // v2.15.301

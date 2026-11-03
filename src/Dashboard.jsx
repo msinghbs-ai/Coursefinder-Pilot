@@ -59,6 +59,6 @@ export default function Dashboard({onError}){
     </div>
     {/* v2.15.266 (Platform Admin, 13 Oct 2026): the health strip, Layers and Recent activity are retired; how the platform is progressing,
         what is running and what to tweak are on Coverage & completeness › Progress, and health checks on Platform health. */}
-    <p className="sd-desc db-progress-link" data-dashboard-progress>How the platform is progressing: <a className="cf-link" href="#coverage?tab=progress">Coverage &amp; completeness › Progress</a>. What is running: <a className="cf-link" href="#layer-2-discovery">Layer 2/3 › Operations</a>.</p>
+    <p className="sd-desc db-progress-link" data-dashboard-progress>How the platform is progressing and what is running: <a className="cf-link" href="#layer-2-discovery">Layer 2/3 › Operations</a> (SS-020: Progress moved there).</p>
   </div>
 }

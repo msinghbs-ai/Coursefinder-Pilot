@@ -10,7 +10,8 @@ const read = p => fs.readFileSync(p, 'utf8')
 
 test('the Priority queue tab is retired; its address opens Build adapter; the database functions stay guarded and admin-only', () => {
   expect(PAGES.jobs.tabs.map(t => t.key)).toEqual(['automations', 'jobs', 'tasks'])
-  expect(resolveTarget('scheduled-jobs', new URLSearchParams({ tab: 'priority' }))).toMatchObject({ page: 'layer2', tab: 'build' })
+  // SS-020 step 4 (Decision 269): Build adapter is a Build action on Layer 2/3 › Universities, so the old address opens Universities
+  expect(resolveTarget('scheduled-jobs', new URLSearchParams({ tab: 'priority' }))).toMatchObject({ page: 'layer2', tab: 'universities' })
   expect(fs.existsSync('src/PriorityQueue.jsx')).toBe(false)
   const m = read('supabase/migrations-archive/20260930100000_cf247_priority_queue.sql')
   expect(m).toContain("security.current_role_rank()<5 then raise exception 'Platform Admin role required'")
