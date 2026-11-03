@@ -1,17 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.420'
-export const PACKAGE_VERSION='0.1.347'
+export const UI_VERSION='2.15.421'
+export const PACKAGE_VERSION='0.1.348'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Nov 2026',
-  title:'No failure hidden behind a successful schedule; country rules are settings; ranking edition check',
+  title:'Enrichment plans: safe re-planning, Run now takes over automatic plans, no orphaned work',
   changes:[
-    'The AI field reader no longer times out against the background task runner\'s lock, so its answers are recorded instead of failing after three tries. The NZ code-of-practice reader reports what it read and its picker answers in milliseconds. The CRICOS provider check only calls its worker when a provider is due.',
-    'Countries that shared jobs give priority to (course-link focus, scholarship refill) and the country scope gate are now settings with today\'s values, so nothing changes in behaviour and no job command names a country.',
-    'A daily ranking edition check raises one integration issue per ranking system when a newer edition exists or the last import is older than a set age; it imports nothing and ships paused. The Pipeline yield checks now watch the provider description and Enrich fields lanes, and a picker held by its own daily cap counts as idle.'
+    'A university can be planned again early when its missing values grew, when new verified course pages are stored, or when a failed step\'s cause has cleared; plans with unchanged inputs are never started twice, completed steps are not redone, and failures time cannot fix are never retried on a timer. Never-planned and longest-waiting universities come first.',
+    'Run now takes over an open automatic plan for that university instead of being refused, so nothing runs twice; a recent Run now holds the automatic plan.',
+    'A cancelled plan can never start another step, its tasks are cancelled as the person who started them, and any plan task left running without its plan raises an integration issue. Scheduled jobs no longer shows Run on demand for Layer 2 schedules.'
   ],
   bugFixes:[]
 }
