@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.348 — 3 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.421** (Platform Admin P0 mandate 3 Nov 2026 10:44 §3 Agent A). Migration `20261103150000_cf247_plan_lifecycle`: md5-guarded edits of enrich_plan_auto_v1, admin_enrich_plan, enrich_plan_start_step_v1, enrich_plan_tick_v1, enrich_plan_cancel_steps_v1; input fingerprint, pipeline.enrich_plan_noop, orphan check wired into integration-validate; settings plans.replan_on_evidence, plans.replan_on_retry, plans.fair_order (0) and plans.run_now_supersedes_auto (1). Admin SOP 2.23. Nothing dropped; consumer API untouched. Spec s237.
+
 ## 0.1.347 — 3 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.420** (Platform Admin direction 3 Nov 2026 09:32 §4 and §7; P0 mandate 10:44 §3 Agents D, E and F; integration issues IQ-00053, IQ-00048). Migration `20261103140000_cf247_hidden_failures_country_config`: md5-guarded edits of admin_jobs_tick_v1, admin_job_slice_v1, admin_job_watch_v1, enrich_fields_slice_v1 (FOR NO KEY UPDATE), svc_nz_cop_next, enrich_focus_v1, enrich_focus_refresh_v1, scholarship_discovery_refill_v1, integration_yield_checks_v1, pipeline_yield_v1; security.cricos_peo_fire_v1, security.country_scope_gate_run_v1, ranking-edition-check job (paused); settings enrich.focus_countries, scholarship.refill_priority_countries, scholarship.refill_open_countries, country_scope.gate_countries. Worker coverage-sweep v0.59.3. Nothing dropped; consumer API untouched. Spec s236.

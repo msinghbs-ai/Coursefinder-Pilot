@@ -21,7 +21,7 @@ const call=async(action,args)=>{const{data,error}=await supabase.rpc('admin_enri
 const COUNTRY={AU:'Australia',NZ:'New Zealand',CA:'Canada'}
 const GROUP={course_search:'Finding course pages',reads:'Reading pages',central:'Central pages',scholarships:'Scholarships',other:'Other'}
 const STATUS={pending:['Waiting to start','neutral'],waiting:['Waiting for budget','warning'],running:['Running','info'],done:['Done','success'],person:['A person admits','warning'],
-  skipped:['Skipped','neutral'],failed:['Failed','danger'],cancelled:['Cancelled','neutral'],stopped:['Stopped','danger'],timed_out:['Timed out','warning'],queued:['Queued','neutral']}
+  skipped:['Skipped','neutral'],failed:['Failed','danger'],cancelled:['Cancelled','neutral'],stopped:['Stopped','danger'],timed_out:['Timed out','warning'],queued:['Queued','neutral'],handed_over:['Carried into Run now','info']}
 const usd=v=>`US$${Number(v||0).toFixed(Number(v||0)<1?3:2)}`
 const cr=v=>`${fmtNumber(Math.round(Number(v||0)))} credits`
 
@@ -111,22 +111,26 @@ function PlanPanel({pid,onClose,onRan,onError}){
   const retry=async id=>{const reason=window.prompt('Run the failed steps of this run again now? Give a reason (kept with the run).')||'';if(reason.trim().length<4)return
     setBusy(true);setNote('');try{const r=await call('retry',{run_id:id,reason:reason.trim()});setNote(`Started again: ${(r?.steps||[]).join(', ')}. Estimate ${cr(r?.estimate?.credits)} and ${usd(r?.estimate?.usd)}.`);load();onRan?.()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
   const open=p.open_run&&p.open_run!=='null'?p.open_run:null
+  // 3 Nov 2026 (P0 mandate 10:44 §3 Agent A): Run now takes over an open automatic plan (its running tasks carry on inside the Run now plan);
+  // an open Run now plan is never taken over
+  const takeover=!!open&&open.mode==='auto'
   return <Card id="layer2.plan.university" title={`Plan: ${p.name}`} icon={Route} level={2}
     subtitle={`${COUNTRY[p.country]||p.country} · ${fmtNumber(p.courses)} courses · ${fmtNumber(p.missing)} missing values. Fill missing fields starts straight away on its own track; the other steps run in order. Each says why it is needed and what it is expected to use.`}
     meta={<Button compact onClick={onClose}>Close</Button>} data-plan-panel>
     {steps.length===0?<Empty text="Nothing left that a step can fill; remaining gaps need a reader or a person."/>:<div className="dq-table-wrap"><table className="dq-table"><thead><tr><th/><th>Step</th><th>Why</th><th>Fills</th><th className="num">Firecrawl</th><th className="num">AI</th></tr></thead>
       <tbody>{steps.map((s,i)=><tr key={s.step} data-plan-step={s.step}>
-        <td>{s.person||s.running?null:<input type="checkbox" checked={pick.includes(s.step)} onChange={e=>setPick(e.target.checked?[...pick,s.step]:pick.filter(x=>x!==s.step))} aria-label={`Include ${s.label}`} disabled={!!open}/>}</td>
+        <td>{s.person||s.running?null:<input type="checkbox" checked={pick.includes(s.step)} onChange={e=>setPick(e.target.checked?[...pick,s.step]:pick.filter(x=>x!==s.step))} aria-label={`Include ${s.label}`} disabled={!!open&&!takeover}/>}</td>
         <td><strong>{i+1}. {s.label}</strong>{s.person&&<small>A person admits it on Layer 2/3 › Universities</small>}{s.running&&<small>Already running (onboarding)</small>}{s.blocked&&<small>{s.blocked}</small>}</td>
         <td><small>{s.why}</small></td><td><small>{(s.fields||[]).join(', ')}</small></td>
         <td className="num">{cr(s.est_credits)}<small>{GROUP[s.group]||''}</small></td><td className="num">{usd(s.est_usd)}</td></tr>)}</tbody>
       <tfoot><tr><td/><td colSpan={3}><strong>Chosen steps</strong></td><td className="num"><strong>{cr(estC)}</strong></td><td className="num"><strong>{usd(estU)}</strong></td></tr></tfoot></table></div>}
     <p className="sd-desc">On-demand left today: {cr(p.on_demand?.credits_left)} and {usd(p.on_demand?.usd_left)}. Estimates are what the same steps used in the last 30 days; the run records what it actually used.</p>
     {open?<div className="fc-actions"><StatusChip value={open.state} tone={(STATUS[open.state]||[])[1]||'info'} label={`${open.mode==='auto'?'Automatic':'Manual'} run ${(STATUS[open.state]||[open.state])[0].toLowerCase()}`}/>
-        {p.can_run&&<Button compact onClick={()=>cancel(open.id)} disabled={busy}>Cancel the run</Button>}</div>
-      :p.can_run&&steps.length>0&&<div className="fc-actions">
+        {p.can_run&&<Button compact onClick={()=>cancel(open.id)} disabled={busy}>Cancel the run</Button>}</div>:null}
+    {(!open||takeover)&&p.can_run&&steps.length>0&&<div className="fc-actions" data-plan-runnow={takeover?'takeover':'new'}>
         <input value={reason} onChange={e=>setReason(e.target.value)} placeholder="Reason (kept with the run)" aria-label="Reason for the run"/>
-        <Button compact onClick={run} disabled={busy||pick.length===0||reason.trim().length<4||over} title={over?'More than the on-demand allowance left today':''}><Play size={14}/>Run now</Button>
+        <Button compact onClick={run} disabled={busy||pick.length===0||reason.trim().length<4||over} title={over?'More than the on-demand allowance left today':''}><Play size={14}/>{takeover?'Run now (takes over the automatic plan)':'Run now'}</Button>
+        {takeover&&<small className="sd-desc">The automatic plan ends; the steps it is running carry on inside this Run now plan and are not started twice.</small>}
         {over&&<small className="sd-desc">More than the on-demand allowance left today: untick a step, or raise the allowance on Models &amp; services › Toolsets &amp; limits.</small>}</div>}
     {note&&<p className="sd-desc" role="status">{note}</p>}
     <h3 className="sd-subhead">Runs</h3>
