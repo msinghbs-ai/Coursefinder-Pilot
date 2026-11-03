@@ -75,3 +75,54 @@ create table pipeline.uni_adapter_drafts (provider_id uuid, created_at timestamp
 create table pipeline.scholarship_ai_extractions (provider_id uuid, at timestamptz, cost_usd numeric);
 create table pipeline.provider_onboarding (id uuid primary key, status text, stop_reason text);
 create table search.refresh_requests (requested_by text);
+
+-- Release A additions (consolidated mandate 13:09): the list reader, the control events, the scholarship scan and provider fill watchers'
+-- reads (cut to the columns used), and the integration yield checks' tables and helpers (live shapes; helpers are stand-ins)
+create or replace function security.pipeline_list_v1(p_key text, p_default jsonb) returns text[] language sql stable set search_path to '' as $$
+  select array(select jsonb_array_elements_text(coalesce((select s.value from pipeline.platform_toolset_settings s where s.toolset_key = 'pipeline' and s.key = p_key), p_default))) $$;
+create table pipeline.admin_control_events (id bigint generated always as identity primary key, area text not null, action text not null, target text, detail jsonb not null default '{}',
+  actor uuid, created_at timestamptz not null default now());
+create schema if not exists scholarship;
+create table scholarship.scholarships (id uuid primary key default gen_random_uuid(), provider_id uuid, lifecycle_status text default 'active', created_at timestamptz default now(), name text);
+create table pipeline.scholarship_pages (scholarship_id uuid, requested_at timestamptz, read_at timestamptz);
+create table pipeline.scholarship_discovery_providers (provider_id uuid, status text, attempts int default 0);
+create table pipeline.scholarship_page_candidates (provider_id uuid, admit_status text, matched_scholarship_id uuid, source text, next_read_at timestamptz, attempts int default 0);
+create table pipeline.scholarship_sweep_changes (scholarship_id uuid, field text, changed_at timestamptz);
+create table scholarship.course_mappings (course_id uuid, scholarship_id uuid, mapping_state text);
+create or replace function security.scholarship_task_fire_v1(p text[]) returns void language sql as $$ select null::void $$;
+create or replace function security.scholarship_job_items_sync_v1(p uuid) returns void language sql as $$ select null::void $$;
+alter table catalogue.providers add column phone text, add column email text;
+create table catalogue.courses (id uuid primary key default gen_random_uuid(), provider_id uuid, lifecycle_status text default 'active');
+create table pipeline.coverage_provider_discovery (provider_id uuid primary key, status text, site_searched_at timestamptz, site_evidence jsonb);
+create table pipeline.provider_contact_checks (provider_id uuid, kind text, checked_at timestamptz, outcome text);
+create table pipeline.provider_central_search (provider_id uuid primary key, state text, found jsonb);
+create or replace function security.provider_task_fire_v1(p text) returns void language sql as $$ select null::void $$;
+create or replace function security.flag_provider_held_v1(p uuid, p_codes text[]) returns boolean language sql stable as $$ select false $$;
+-- integration yield checks
+create table pipeline.integration_validate_state (check_key text primary key, last_run_at timestamptz, watermark_id bigint, watermark_at timestamptz, last_error text);
+create table pipeline.integration_yield_buckets (kind text, key text, bucket timestamptz, calls int default 0, failures int default 0, sample text, items int default 0, ok int default 0,
+  primary key (kind, key, bucket));
+alter table net._http_response add column created timestamptz default now(), add column timed_out boolean, add column error_msg text;
+alter table pipeline.edge_request_log add column slot int;
+create table pipeline.mode_outcome_ledger (id bigint generated always as identity primary key, run_at timestamptz default now(), mode text, items int, ok int, failed int);
+create table pipeline.provider_course_lists (provider_id uuid, status text, reason text, links_found int);
+create table pipeline.entry_matrix_runs (provider_id uuid, state text, error text);
+create table pipeline.coverage_course_pages (provider_id uuid, read_status text, read_attempts int);
+alter table pipeline.enrichment_flags add column provider_id uuid, add column tries int default 0, add column cleared_at timestamptz;
+create or replace function security.worker_mode_capped_v1(p text) returns text language sql stable as $$ select null::text $$;
+create table pipeline.integration_issues (id bigint generated always as identity primary key, fingerprint text unique, status text default 'detected', severity text, failure text,
+  evidence jsonb, condition_cleared_at timestamptz, observed int default 1);
+create table pipeline.integration_issue_events (issue_id bigint, kind text, from_status text, to_status text, actor text, note text);
+-- the live upsert opens or re-observes one issue by fingerprint (cut to that)
+create or replace function security.integration_issue_upsert_v1(p jsonb, p_actor text default 'integration-validate') returns jsonb language plpgsql as $$
+begin
+  insert into pipeline.integration_issues(fingerprint, severity, failure, evidence) values (p->>'fingerprint', p->>'severity', p->>'failure', p->'evidence')
+  on conflict (fingerprint) do update set observed = pipeline.integration_issues.observed + 1, condition_cleared_at = null, failure = excluded.failure, evidence = excluded.evidence;
+  return '{}'::jsonb;
+end $$;
+create or replace function security.integration_alert_sync_v1(p_issue bigint, p_observed boolean, p_actor text default 'integration-validate') returns void language sql as $$ select null::void $$;
+-- live plan settings (3 Nov 2026 13:12 AEDT)
+insert into pipeline.platform_toolset_settings(toolset_key, key, kind, value) values
+ ('pipeline', 'plans.replan_on_retry', 'number', '1'), ('pipeline', 'plans.retry_after_hours', 'number', '6'), ('pipeline', 'plans.step_retry_max', 'number', '3'),
+ ('pipeline', 'plans.step_max_hours', 'number', '24'), ('pipeline', 'tasks.stall_seconds', 'number', '60'),
+ ('pipeline', 'plans.retry_waits_for_change', 'list', '["too_few_pages", "nothing_ready", "no_website", "not a search target", "no website is recorded", "already has a read page", "Needs a website first"]');
