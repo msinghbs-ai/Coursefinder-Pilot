@@ -1,0 +1,19 @@
+CREATE OR REPLACE FUNCTION security.worker_call_outcome_v1(p_status integer, p_body jsonb, p_items integer, p_ok integer, p_failed integer)
+ RETURNS text
+ LANGUAGE sql
+ IMMUTABLE
+ SET search_path TO ''
+AS $function$
+  -- items that waited or were refused are not work done: a run whose every item waited for the scraper did nothing
+  with w as (select coalesce(sum(case when e.key in ('waiting_scraper', 'deferred', 'credits_refused', 'scrape_failed', 'record_failed', 'blocked', 'fetch_failed') and jsonb_typeof(e.value) = 'number'
+                                      then (e.value #>> '{}')::numeric end), 0) n
+               from jsonb_each(coalesce(case when jsonb_typeof(p_body->'tally') = 'object' then p_body->'tally' end, '{}'::jsonb)
+                               || coalesce(case when jsonb_typeof(p_body->'candidates'->'tally') = 'object' then p_body->'candidates'->'tally' end, '{}'::jsonb)) e)
+  select case when coalesce(p_status, 200) >= 400 or coalesce(p_body->>'ok', 'true') = 'false' or p_body ? 'error' then 'failed'
+              when coalesce(p_ok, 0) - w.n <= 0 and (coalesce(p_failed, 0) > 0 or w.n > 0
+                   or coalesce(p_body::text, '') ~* '"(errors?|last_error)"\s*:\s*"|map:(budget|scholarship_share|credits_refused|credits_reserve|target_list_refused|no_firecrawl_key|timeout|[45][0-9][0-9])|credits_refused|statement timeout|section_missing') then 'zero_work_error'
+              when coalesce(p_ok, 0) = 0 and coalesce(p_items, 0) = 0 then 'idle'
+              when coalesce(p_ok, 0) - w.n <= 0 then 'zero_work_error'
+              else 'succeeded' end
+    from w
+$function$

@@ -104,5 +104,17 @@ function PipelineYield({onError}){
     <div className="cf-table-wrap"><table className="cf-table iq-yield"><thead><tr><th>Stage</th>{(y.lanes||[]).map(l=><th key={l.lane}>{l.label}</th>)}</tr></thead><tbody>
       {YIELD_STAGES.map(([k,label])=><tr key={k} data-yield-stage={k}><th scope="row">{label}</th>{(y.lanes||[]).map(l=><td key={l.lane} data-yield-lane={l.lane}>{stageText(l.stages?.[k])}</td>)}</tr>)}
     </tbody></table></div>
+    {(y.lane_status?.lanes||[]).length>0&&<LaneStatus lanes={y.lane_status.lanes}/>}
   </section>
+}
+
+// Lanes (Platform Admin P0 mandate 3 Nov 2026 10:44 §6): stored evidence, new paid pages, AI extraction, Layer 4 admission and the standing gap
+// queue, each with its own work, holds and cost. Server: security.lane_status_v1 (read-only), returned by admin_pipeline_yield as lane_status.
+const LANE_ROWS=[['eligible','Eligible work'],['processed','Processed'],['failed','Failed'],['held','Held (calls by reason)'],['live_hold','Held now'],['cost','Cost']]
+const laneText=v=>v==null?'—':typeof v==='object'?(Object.entries(v).filter(([,n])=>n!=null&&n!=='').map(([k,n])=>`${typeof n==='number'?fmtNumber(n):String(n)} ${k.replace(/_/g,' ')}`).join(' · ')||'none'):typeof v==='number'?fmtNumber(v):String(v)
+function LaneStatus({lanes}){
+  return <div className="cf-table-wrap" data-lane-status><table className="cf-table iq-yield"><caption>Lanes now: work, holds and cost, each lane on its own</caption><thead><tr><th>Measure</th>{lanes.map(l=><th key={l.lane}>{l.label}</th>)}</tr></thead><tbody>
+    {LANE_ROWS.map(([k,label])=><tr key={k} data-lane-row={k}><th scope="row">{label}</th>{lanes.map(l=><td key={l.lane} data-lane={l.lane}>{laneText(l[k])}</td>)}</tr>)}
+    <tr data-lane-row="last_run"><th scope="row">Last run</th>{lanes.map(l=><td key={l.lane} data-lane={l.lane}>{l.last_run?`${l.last_run.outcome}${l.last_run.hold_reason?` (${l.last_run.hold_reason.replace(/_/g,' ')})`:''} · ${fmtNumber(l.last_run.items||0)} items · ${fmtDateTime(l.last_run.at)}`:'—'}</td>)}</tr>
+  </tbody></table></div>
 }
