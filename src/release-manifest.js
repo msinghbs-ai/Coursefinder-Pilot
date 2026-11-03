@@ -1,16 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.428'
-export const PACKAGE_VERSION='0.1.355'
+export const UI_VERSION='2.15.429'
+export const PACKAGE_VERSION='0.1.356'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Nov 2026',
-  title:'Coverage admission holds courses locked by hand and no longer stops on one refused item',
+  title:'The platform diagnoses, fixes, verifies and closes its own operational issues',
   changes:[
-    'Coverage admission sets aside courses whose page or English requirement was set by hand, with the reason recorded, instead of offering them for change.',
-    'One refused item no longer stops the whole admission run: each item is applied on its own, refusals are recorded and capped per run, and a refused proposal is not tried again for a day unless it changes.'
+    'An operations controller runs twice an hour on the integration queue: it groups issues that share a cause, diagnoses each from live job runs and release times, and runs only the fixes registered as automatic after checking its authority.',
+    'A fix is verified on a later run before its issue closes; an issue that needs a code release or a Platform Admin decision is marked as blocked once, with the evidence and the decision needed, instead of being retried.',
+    'While a fix runs, the database refuses changes to the fix registers, setting limits, budgets, Layer 4 decisions, admissions and manual locks.',
+    'Every task can now record one of eight outcomes, and the controller writes hourly checkpoints and a daily summary of platform health, data improvement, autonomy, efficiency and governance.'
   ],
   bugFixes:[]
 }
