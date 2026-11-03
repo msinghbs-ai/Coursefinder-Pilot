@@ -27,11 +27,13 @@
 -- Edited (md5-guarded; workstream C's own functions from 20261104040000, not yet live; before = the after of that migration on the fixtures):
 --   security.aer_coverage_v1(uuid[])   012a27171f32b8d6362e901f0edf7115 -> ec486095eb5a909b32e4e9a7b341ad90
 --   security.coverage_due_v1(text,integer)   95f59636b46681f9f345bfa6233c6c3b -> 39b354778a124ba5a8bd13d987d7fb08
--- Replaces: security.aer_coverage_v1, security.coverage_due_v1 (same names; md5-guarded)
+--   security.aer_course_population_v1()   f6cac5f2357e2091b9884295428341bb -> 0eb8ddc8b94133648ced5e8750752011   (Release C, live md5 read 3 Nov 2026 18:2x; edit authorised by the Integration Controller 18:30)
+-- Replaces: security.aer_coverage_v1, security.coverage_due_v1, security.aer_course_population_v1 (same names; md5-guarded)
 -- Retires: nothing
--- Consumer API: untouched (G3). Nothing is read from the web by this migration, nothing is attached, admitted or published; nothing is dropped
--- or deleted. Release C (aer_schedule_*, entry_matrix_enabled_v1, entry_matrix_fire_v1, course_entry_eligible_v1, course_entry_programme_v1,
--- aer_course_outcomes_build_v1) is not touched.
+-- Consumer API: untouched (G3); security.aer_provider_stage_v1 only calls public.website_v2_provider/website_v2_course to read what is published.
+-- Nothing is read from the web by this migration, nothing is attached, admitted or published; nothing is dropped or deleted. Of Release C only
+-- security.aer_course_population_v1 is edited (the order of providers, behind coverage.aer_reader_priority_on; authorised 18:30); aer_schedule_*,
+-- entry_matrix_enabled_v1, entry_matrix_fire_v1, course_entry_eligible_v1, course_entry_programme_v1 and aer_course_outcomes_build_v1 are not.
 
 do $guard$
 begin
@@ -233,6 +235,121 @@ select security.ops_remedy_register_v1('aer_reader_row_fidelity', jsonb_build_ob
   'treats', jsonb_build_array('aer_reader_value_not_printed', 'aer_subject_rows_one_identity'), 'authority', 'release', 'verify_fn', 'security.coverage_investigation_verify_v1(bigint)',
   'max_attempts_key', 'coverage.remedy_max_attempts', 'cooldown_key', 'coverage.remedy_cooldown_minutes', 'active', true,
   'notes', 'Interface request to workstream B (coverage-sweep entry reader); then one governed Read again of the UWA source (security.aer_reread_v1) for Platform Admin review. Active rows are never rewritten.'));
+
+-- 3b. the scheduled course reader takes providers with an AER shortfall first (Integration Controller authority, 3 Nov 2026 18:30, Release C) --
+insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, section, used_by, reason) values
+ ('pipeline', 'coverage.aer_reader_priority_on', 'Entry reading: providers with a coverage shortfall first',
+  'On: the entry-reading population (security.aer_course_population_v1) puts the providers in coverage.aer_priority_providers first, then providers whose coverage ledger shows an entry-requirement shortfall, largest first, then the provider types in aer.priority_provider_types. Off: the order is types, then name, as before. Only the order changes: the per-run size, the daily cap, the 600-item back-pressure and every gate are unchanged.',
+  'boolean', 'true'::jsonb, null, null, null, 1121, 'Coverage reconciliation', 'security.aer_course_population_v1 (job aer-scheduled-read; Read next batch)',
+  'Integration Controller 3 Nov 2026 18:30 (Platform Admin P1 18:17): Deakin has 218 bound course pages the reader has not reached'),
+ ('pipeline', 'coverage.aer_priority_providers', 'Entry reading and staged status: providers followed first',
+  'Provider ids read first by the entry reader and reported by security.aer_provider_stage_v1: the eight universities of the missing-university strategy, UWA and RMIT.',
+  'list', '["6f5cb7f7-7c70-4c06-970f-f368c3a786e2", "c5c5d225-3d4c-4e41-8275-78eddd261073", "fa0e0d13-838a-42ff-b6a3-9cea84bd80b2", "fec52f92-a8a3-4de8-a862-06f355e4e2f7", "030992c3-72c6-452d-8a3b-10ceb0fd77f2", "fe6af182-f5ca-4a3c-bfb4-b0773ff1b113", "f02d9d9b-0eb2-4f0e-8215-27a36ae63aa6", "551383f9-7732-4588-a843-dd2b97c13f6f", "9109fe0c-9f44-4e2d-a136-eb00dec24701", "8e1adb6c-e069-43db-9584-bd054255e702"]'::jsonb,
+  null, null, 'providers', 1122, 'Coverage reconciliation', 'security.aer_course_population_v1; security.aer_provider_stage_v1',
+  'AER missing-university strategy (Platform Admin 3 Nov 2026 16:24) and P1 18:17'),
+ ('pipeline', 'coverage.stage_gate_scan', 'Staged status: waiting Layer 4 items checked per provider',
+  'security.aer_provider_stage_v1 runs the Layer 4 gates (D-R3 for matrix runs, E13 for course reads) on at most this many waiting items of each provider, newest first, and says how many it checked.',
+  'number', to_jsonb(50), 1, 1000, 'items', 1123, 'Coverage reconciliation', 'security.aer_provider_stage_v1', 'Integration Controller 3 Nov 2026 18:30 item 2'),
+ ('pipeline', 'coverage.stage_consumer_course_sample', 'Staged status: courses checked in the consumer projection',
+  'security.aer_provider_stage_v1 reads the website projection (public.website_v2_course, read only) for at most this many of the provider''s courses with an active requirement.',
+  'number', to_jsonb(20), 0, 500, 'courses', 1124, 'Coverage reconciliation', 'security.aer_provider_stage_v1', 'Integration Controller 3 Nov 2026 18:30 item 2')
+on conflict do nothing;
+
+select pg_temp.edit_once('security.aer_course_population_v1()', 'f6cac5f2357e2091b9884295428341bb', '0eb8ddc8b94133648ced5e8750752011', array[
+  array[$e$                    coalesce(security.toolset_setting('pipeline', 'aer.priority_provider_types'), '[]'::jsonb) pt),$e$,
+        $e$                    coalesce(security.toolset_setting('pipeline', 'aer.priority_provider_types'), '[]'::jsonb) pt,
+                    -- CF-247 workstream C (Integration Controller 3 Nov 2026 18:30): followed providers, then the largest AER shortfall, first
+                    coalesce((security.toolset_setting('pipeline', 'coverage.aer_reader_priority_on') #>> '{}')::boolean, false) gap_first,
+                    coalesce(security.toolset_setting('pipeline', 'coverage.aer_priority_providers'), '[]'::jsonb) followed),$e$],
+  array[$e$                case when s.pt ? coalesce(t.code, '') then 1 else 2 end tier$e$,
+        $e$                case when s.gap_first and s.followed ? e.provider_id::text then -1000000
+                     when s.gap_first and coalesce(k.shortfall, 0) > 0 then -least(k.shortfall, 999999)
+                     when s.pt ? coalesce(t.code, '') then 1 else 2 end tier$e$],
+  array[$e$           left join ref.provider_types t on t.id = p.provider_type_id$e$,
+        $e$           left join ref.provider_types t on t.id = p.provider_type_id
+           left join pipeline.coverage_provider_reconciliation k on k.domain = 'aer' and k.provider_id = e.provider_id$e$]
+]::text[][], array[1, 1, 1]);
+
+-- 3c. per-provider staged status (Integration Controller 3 Nov 2026 18:30 item 2) ------------------------------------------------------------
+create or replace function security.aer_provider_stage_v1(p_providers uuid[] default null)
+returns table(provider_id uuid, provider_name text, stage text, sources jsonb, reads jsonb, layer4 jsonb, admitted jsonb, consumer jsonb)
+language plpgsql stable security definer set search_path to '' as $function$
+-- CF-247 workstream C: where each followed provider stands, stage by stage, kept apart: sources attached; reads done or held (with the reason);
+-- Layer 4 items judgement-ready or technically blocked (the D-R3 matrix gate and the E13 course gate, at most coverage.stage_gate_scan items a
+-- provider); rows admitted (active); and what the website projection returns (public.website_v2_provider and public.website_v2_course, read only).
+-- Discovery and an AI read never count as admission. Read-only.
+declare v_ids uuid[] := coalesce(p_providers, array(select x::uuid from jsonb_array_elements_text(coalesce(security.toolset_setting('pipeline', 'coverage.aer_priority_providers'), '[]'::jsonb)) x));
+        v_scan int := greatest(1, security.pipeline_num_v1('coverage.stage_gate_scan', 50)::int);
+        v_sample int := greatest(0, security.pipeline_num_v1('coverage.stage_consumer_course_sample', 20)::int);
+        r record; i record; g jsonb; v_ready int; v_block int; v_checked int; v_why jsonb; v_pub int; v_seen int; v_prov jsonb; v_cpub int; v_ccheck int;
+begin
+  for r in select p.id, coalesce(p.display_name, p.short_name, p.canonical_name) nm, p.stable_key from catalogue.providers p where p.id = any (v_ids) order by 2 loop
+    provider_id := r.id; provider_name := r.nm;
+    select jsonb_build_object('attached', count(*), 'read', count(*) filter (where s.status = 'read'), 'failed', count(*) filter (where s.status = 'failed'),
+                              'unread', count(*) filter (where s.status not in ('read', 'failed')), 'fingerprint', md5(string_agg(s.url || '=' || coalesce(s.content_hash, ''), '|' order by s.url)))
+      into sources from pipeline.entry_matrix_sources s where s.provider_id = r.id;
+    with lr as (select distinct on (x.source_id) x.* from pipeline.entry_matrix_runs x where x.provider_id = r.id order by x.source_id, x.created_at desc),
+    cr as (select li.status, count(*) n from pipeline.layer4_review_items li join catalogue.courses c on c.id = li.entity_id
+            where c.provider_id = r.id and li.field_code = 'course_entry_first_read' group by 1)
+    select jsonb_build_object('matrix_done', (select count(*) from lr where lr.state = 'done'),
+             'matrix_held', (select count(*) from lr where lr.state = 'failed'),
+             'matrix_held_reasons', (select coalesce(jsonb_object_agg(w, n), '{}'::jsonb) from (select split_part(coalesce(lr.error, 'failed'), ':', 1) w, count(*) n from lr where lr.state = 'failed' group by 1) z),
+             'course_reads', (select coalesce(jsonb_object_agg(cr.status, cr.n), '{}'::jsonb) from cr))
+      into reads;
+    v_ready := 0; v_block := 0; v_checked := 0; v_why := '{}'::jsonb;
+    for i in (select 'matrix' kind, x.id run_id, li.id item_id, li.created_at from pipeline.entry_matrix_runs x join pipeline.layer4_review_items li on li.id = x.review_item_id
+               where x.provider_id = r.id and li.status = 'pending'
+              union all
+              select 'course', null, li.id, li.created_at from pipeline.layer4_review_items li join catalogue.courses c on c.id = li.entity_id
+               where c.provider_id = r.id and li.field_code = 'course_entry_first_read' and li.status = 'pending')
+             order by 4 desc limit v_scan loop
+      g := case i.kind when 'matrix' then security.entry_matrix_gate_v1(i.run_id, '{}'::uuid[]) else security.course_entry_gate_v1(i.item_id, '{}'::uuid[]) end;
+      v_checked := v_checked + 1;
+      if coalesce((g->>'complete')::boolean, false) then v_ready := v_ready + 1;
+      else
+        v_block := v_block + 1;
+        v_why := v_why || jsonb_build_object(i.kind || ': ' || left(coalesce(g->'reasons'->>0, 'incomplete'), 90),
+                                             coalesce((v_why->>(i.kind || ': ' || left(coalesce(g->'reasons'->>0, 'incomplete'), 90)))::int, 0) + 1);
+      end if;
+    end loop;
+    layer4 := jsonb_build_object('pending', (select count(*) from (select li.id from pipeline.entry_matrix_runs x join pipeline.layer4_review_items li on li.id = x.review_item_id
+                                                                    where x.provider_id = r.id and li.status = 'pending'
+                                                                   union all select li.id from pipeline.layer4_review_items li join catalogue.courses c on c.id = li.entity_id
+                                                                    where c.provider_id = r.id and li.field_code = 'course_entry_first_read' and li.status = 'pending') z),
+                                 'checked', v_checked, 'judgement_ready', v_ready, 'technically_blocked', v_block, 'blocked_reasons', v_why);
+    select jsonb_build_object('matrix_active', (select count(*) from catalogue.provider_entry_matrix m where m.provider_id = r.id and m.status = 'active'),
+                              'matrix_proposed', (select count(*) from catalogue.provider_entry_matrix m where m.provider_id = r.id and m.status = 'proposed'),
+                              'course_rows_active', count(*) filter (where x.status = 'active'), 'courses_with_active', count(distinct x.course_id) filter (where x.status = 'active'),
+                              'course_rows_proposed', count(*) filter (where x.status = 'proposed'))
+      into admitted from catalogue.course_entry_requirements x join catalogue.courses c on c.id = x.course_id where c.provider_id = r.id;
+    -- the website projection, read only (the consumer API is not changed or re-shaped; G3)
+    v_prov := case when to_regprocedure('public.website_v2_provider(text)') is not null then public.website_v2_provider(r.stable_key) end;
+    v_pub := coalesce(jsonb_array_length(case when jsonb_typeof(v_prov->'item'->'entry_matrix') = 'array' then v_prov->'item'->'entry_matrix' end), 0);
+    v_cpub := 0; v_ccheck := 0;
+    if to_regprocedure('public.website_v2_course(text)') is not null then
+      for i in select c.stable_key from catalogue.courses c where c.provider_id = r.id and c.lifecycle_status = 'active'
+                 and exists (select 1 from catalogue.course_entry_requirements x where x.course_id = c.id and x.status = 'active') order by c.id limit v_sample loop
+        g := public.website_v2_course(i.stable_key)->'item'->'entry';
+        v_ccheck := v_ccheck + 1;
+        if g is not null and jsonb_typeof(g) = 'object' and (g->>'min_score' is not null or jsonb_array_length(coalesce(case when jsonb_typeof(g->'prerequisites') = 'array' then g->'prerequisites' end, '[]'::jsonb)) > 0)
+          then v_cpub := v_cpub + 1; end if;
+      end loop;
+    end if;
+    consumer := jsonb_build_object('provider_matrix_rows_published', v_pub, 'provider_found', coalesce(v_prov ? 'item', false),
+                                   'courses_checked', v_ccheck, 'courses_with_published_entry', v_cpub);
+    stage := case when v_pub > 0 or v_cpub > 0 then 'published'
+                  when (admitted->>'matrix_active')::int + (admitted->>'course_rows_active')::int > 0 then 'admitted_not_published'
+                  when v_ready > 0 then 'awaiting_judgement'
+                  when v_block > 0 then 'technically_blocked'
+                  when (reads->>'matrix_held')::int > 0 then 'read_held'
+                  when (sources->>'read')::int > 0 or jsonb_typeof(reads->'course_reads') = 'object' and reads->'course_reads' <> '{}'::jsonb then 'read'
+                  when (sources->>'attached')::int > 0 then 'source_attached'
+                  else 'no_source' end;
+    return next;
+  end loop;
+end $function$;
+revoke all on function security.aer_provider_stage_v1(uuid[]) from public, anon, authenticated;
+comment on function security.aer_provider_stage_v1(uuid[]) is 'CF-247 workstream C (Integration Controller 3 Nov 2026 18:30): per followed provider (coverage.aer_priority_providers, or those given), the AER stages kept apart: sources attached; reads done or held with reasons; Layer 4 items judgement-ready or technically blocked (D-R3 and E13 gates, coverage.stage_gate_scan items); active rows; and what the website projection returns (public.website_v2_provider, public.website_v2_course, read only). Discovery and an AI read never count as admission. Read-only.';
 
 -- 4. register (housekeeping) --------------------------------------------------------------------------------------------------------------
 insert into pipeline.component_register(kind, name, layer, area, purpose, status, replaces, introduced_in) values

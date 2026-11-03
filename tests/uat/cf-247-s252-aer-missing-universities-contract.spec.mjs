@@ -18,10 +18,14 @@ test('the inventory covers the eight universities; the migration attaches nothin
   for (const id of EIGHT) expect(m, id).toContain(`('${id}'`)
   expect(m).not.toMatch(/insert into pipeline\.entry_matrix_sources/)
   const guarded = [...m.matchAll(/select pg_temp\.edit_once\('([^']+)', '([0-9a-f]{32})', '([0-9a-f]{32})'/g)].map(([, s]) => s)
-  expect(guarded).toEqual(['security.aer_coverage_v1(uuid[])', 'security.coverage_due_v1(text,integer)'])
+  expect(guarded).toEqual(['security.aer_coverage_v1(uuid[])', 'security.coverage_due_v1(text,integer)', 'security.aer_course_population_v1()'])
+  // Release C: only the population's order is edited (authorised 3 Nov 2026 18:30), from its live md5, behind a switch
+  expect(m).toContain("select pg_temp.edit_once('security.aer_course_population_v1()', 'f6cac5f2357e2091b9884295428341bb', '0eb8ddc8b94133648ced5e8750752011'")
+  expect(m).toMatch(/'coverage\.aer_reader_priority_on'[\s\S]{0,900}?'boolean', 'true'::jsonb/)
+  expect(fx('fixtures.sql')).toContain("'M4 off: types then name, as before'")
   for (const f of ['aer_schedule_', 'entry_matrix_enabled_v1', 'entry_matrix_fire_v1', 'course_entry_eligible_v1', 'course_entry_programme_v1', 'aer_course_outcomes_build_v1'])
     expect(m, f).not.toMatch(new RegExp(`(create or replace function|edit_once\\(')security\\.${f}`))
-  expect(fx('run.sh')).toContain(`grep -c ': already applied$')" = 2`)
+  expect(fx('run.sh')).toContain(`grep -c ': already applied$')" = 3`)
 })
 
 test('no URL is invented: every inventory URL is on the university\'s own domain, a blocked site has none, only readable pages are attached', () => {
@@ -44,6 +48,14 @@ test('attachment is a count-guarded paste file of exactly the inventory URLs, wi
   expect(fx('run.sh')).toContain('rollback: removes the 4 while unread; refused once one has been read')
 })
 
+test('the staged status keeps attachment, reading, Layer 4 readiness, admission and publication apart; publication only from the projection', () => {
+  const st = m.slice(m.indexOf('create or replace function security.aer_provider_stage_v1'), m.indexOf('comment on function security.aer_provider_stage_v1'))
+  for (const k of ["'attached'", "'matrix_held_reasons'", "'judgement_ready'", "'technically_blocked'", "'matrix_active'", "'course_rows_active'", "'provider_matrix_rows_published'"]) expect(st, k).toContain(k)
+  expect(st).toContain("public.website_v2_provider(r.stable_key)")
+  expect(st).not.toMatch(/\b(insert|update|delete)\b/i)
+  expect(fx('fixtures.sql')).toContain("'M5 Harbour: read done, blocked, nothing admitted: '")
+})
+
 test('report classes are not status values; the ledger carries class, fingerprint and inventory; incremental on inventory changes', () => {
   for (const c of ['no_source', 'source_found', 'read_held', 'awaiting_layer4', 'active', 'course_only', 'evidenced_non_publication'])
     expect(m.slice(m.indexOf('create or replace function security.aer_source_class_v1'), m.indexOf('comment on function security.aer_source_class_v1'))).toContain(`'${c}'`)
@@ -51,4 +63,15 @@ test('report classes are not status values; the ledger carries class, fingerprin
   expect(m).toContain("'aer_class', security.aer_source_class_v1(h.id),")
   expect(m).toContain("union all select i.provider_id, i.recorded_at from pipeline.aer_source_inventory i, w where p_domain = 'aer' and i.recorded_at > w.since")
   expect(fx('fixtures.sql')).toContain("'M2 no new status value'")
+})
+
+test('the rendered pilot uses the existing host list only, is capped to two pages, and rolls back to the four hosts exactly', () => {
+  const pilot = fs.readFileSync('docs/paste/PASTE-20261104-aer-render-pilot.sql', 'utf8')
+  const back = fs.readFileSync('docs/paste/PASTE-20261104-aer-render-pilot-rollback.sql', 'utf8')
+  expect(pilot).toContain("v_before || '[\"jcu.edu.au\", \"unisq.edu.au\"]'::jsonb")
+  expect(pilot).toContain("if v_n <> 2 then raise exception 'guard: % entry pages on the pilot hosts, expected exactly 2; rolled back', v_n; end if;")
+  expect(pilot).not.toMatch(/toolset_key = 'firecrawl'|key = '(daily_budget|daily_share|scholarship_cap)/)  // no Firecrawl limit is changed
+  expect(back).toContain("set value = '[\"wgtn.ac.nz\", \"whitireiaweltec.ac.nz\", \"newcastle.edu.au\", \"griffith.edu.au\"]'::jsonb")
+  expect(fs.readFileSync('docs/paste/MEASURE-20261104-aer-render-pilot.sql', 'utf8')).not.toMatch(/\b(insert|update|delete)\b/i)
+  expect(fx('run.sh')).toContain('render pilot: two hosts added, exactly two pages')
 })
