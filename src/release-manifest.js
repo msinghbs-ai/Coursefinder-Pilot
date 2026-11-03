@@ -1,18 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.464'
-export const PACKAGE_VERSION='0.1.391'
+export const UI_VERSION='2.15.465'
+export const PACKAGE_VERSION='0.1.392'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'4 Nov 2026',
-  title:'First-run verification, pipeline progress and the recovery loop',
+  title:'AER readiness checks held reads first; held reads record why they are held',
   changes:[
-    'Each release now records the first scheduled run of every job it changes: when it is expected, what happened, expected and actual output, and whether the next stage became eligible. A release stays \'deployed, operationally unverified\' until that run proves it.',
-    'Each scholarship and AER pipeline stage now records eligible input, processed, created, rejected, parked, queued downstream, admitted and published, with the last time it moved. A stage that stops moving is raised even when its job reports success, and a run that creates nothing carries a reason.',
-    'Issues that describe the same failure are linked to one canonical issue, and a code or SQL defect becomes owned engineering work with its evidence and a next checkpoint.',
-    'A self-sustainability scorecard is added to the operations report.'
+    'The Layer 4 readiness check now checks entry-requirement reads that were never checked before re-checking old ones, so incomplete reads are no longer shown as ready for review.',
+    'Each held entry-requirement read records why it is held (dropped requirements, row limit, shared page or row-level) and whether a re-read could fix it.',
+    'Re-reading held items from their stored copies is built and switched off.'
   ],
   bugFixes:[]
 }
