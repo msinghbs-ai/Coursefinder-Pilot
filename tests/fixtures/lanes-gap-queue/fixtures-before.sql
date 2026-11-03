@@ -16,8 +16,16 @@ insert into pipeline.field_enrich_items(job_id, provider_id, course_id, field, s
 select '00000000-0000-0000-0000-00000000f001', c.provider_id, c.id, 'duration', (array['filled', 'queued', 'skipped', 'skipped', 'not_stated'])[1 + n % 5],
        case when n % 5 = 3 then now() - interval '90 days' when n % 5 = 4 then now() - interval '2 days' else now() - interval '1 day' end
   from (select c.*, row_number() over (order by c.id) n from catalogue.courses c where c.duration_value is null and c.lifecycle_status = 'active') c where c.n <= 60;
+-- course pages: most courses have a proven page (bound, read with an identity proof, stored); every sixth has none, every eleventh a page the
+-- course page check refuses, every thirteenth a page not read with a proof (E16)
+insert into pipeline.evidence_artifacts(id, storage_path) select md5('ev' || c.id)::uuid, 'layer2/AU/coverage/' || c.id || '.html.gz' from catalogue.courses c;
+insert into pipeline.coverage_course_pages(course_id, provider_id, url, status, read_at, read_status, identity_basis, evidence_id, candidates)
+select c.id, c.provider_id, 'https://p.example/' || case when c.n % 11 = 0 then 'refuse/' else '' end || c.n, 'bound', now() - interval '30 days',
+       'read', case when c.n % 13 = 0 then null else 'cricos_code' end, md5('ev' || c.id)::uuid, '{}'::jsonb
+  from (select c.*, row_number() over (order by c.id) n from catalogue.courses c) c where c.n % 6 <> 0;
 insert into pipeline.coverage_course_pages(course_id, provider_id, read_at)
-select e.course_id, e.provider_id, now() from pipeline.field_enrich_items e where e.state = 'not_stated';
+select e.course_id, e.provider_id, now() from pipeline.field_enrich_items e where e.state = 'not_stated'
+on conflict (course_id) do update set read_at = excluded.read_at;
 insert into pipeline.manual_locks(entity, entity_id, field) select 'course', c.id, 'level' from catalogue.courses c order by c.id limit 5;
 
 -- the old single statement (live tick) selects this set; it is kept to compare with the new slices
@@ -28,6 +36,11 @@ begin
   raise notice 'before, live tick: %', v - 'crosscheck';
   create table public.fx_old_set as select e.provider_id, e.course_id, e.field from pipeline.field_enrich_items e where e.job_id = (v->>'job_id')::uuid;
   raise notice 'before, live tick selected % items (% courses)', (select count(*) from public.fx_old_set), (select count(distinct course_id) from public.fx_old_set);
+  -- what the reader would skip at once (E16): page-only fields (duration, intakes) of courses with no proven page
+  create table public.fx_old_unproven as select o.* from public.fx_old_set o where o.field in ('duration', 'intakes')
+     and not exists (select 1 from pipeline.coverage_course_pages g where g.course_id = o.course_id and g.read_status = 'read' and g.identity_basis is not null and g.evidence_id is not null and g.url not like '%refuse%');
+  create table public.fx_expect as select * from public.fx_old_set except select * from public.fx_old_unproven;
+  raise notice 'before, of those % would be skipped by the reader as no proven course page (E16)', (select count(*) from public.fx_old_unproven);
   -- reset: the fixture task and its items are removed so the new run starts from the same state
   delete from pipeline.field_enrich_items where job_id = (v->>'job_id')::uuid;
   delete from pipeline.admin_job_events where job_id = (v->>'job_id')::uuid;
@@ -63,4 +76,15 @@ begin
   if v->0->>'url' <> 'https://a.example/r1' then raise exception 'before D3: %', v; end if;
   raise notice 'before D3 reproduced: the review with no stored copy is re-checked while held (recorded "could not be read again")';
   update pipeline.scholarship_ai_reviews set recheck = '{"state":"queued"}';
+end $$;
+
+-- D4 (IQ-00060): the live flag recheck switches the jobs paused by the governed restore on again for a "trial run"
+do $$
+declare v jsonb := security.flag_jobs_v1();
+begin
+  if not (select bool_and(active) from cron.job where jobname in ('coverage-discover', 'coverage-discover-2', 'central-find')) then raise exception 'before D4: %', v; end if;
+  raise notice 'before D4 reproduced: flag recheck switched on coverage-discover and coverage-discover-2 (paused by event #28683) and central-find: %', v;
+  -- back to the state the restore left: off, idle flag raised and due
+  update cron.job set active = false where jobname in ('coverage-discover', 'coverage-discover-2', 'central-find');
+  update pipeline.enrichment_flags set state = 'raised', released_at = null, next_check_at = now() - interval '1 minute' where entity = 'job';
 end $$;
