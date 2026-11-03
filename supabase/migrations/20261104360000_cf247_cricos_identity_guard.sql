@@ -151,7 +151,7 @@ revoke all on function security.cricos_identity_guard_evaluate_v1(uuid) from pub
 
 -- 5 component register ---------------------------------------------------------------------------------------------------------------------
 insert into pipeline.component_register(kind, name, layer, purpose, status, replaces, introduced_in) values
- ('function', 'security.cricos_identity_conflict_v1', 'Layer 2', 'D7: other courses whose CRICOS-proved page is this page', 'active', '{}', '20261104200000'),
- ('function', 'security.cricos_identity_guard_trg_v1', 'Layer 2', 'D7: refuse a title-only binding on a page that proves another course (switch, off)', 'active', '{}', '20261104200000'),
- ('function', 'security.cricos_identity_guard_evaluate_v1', 'Layer 2', 'D7: read-only evaluation of the CRICOS identity guard', 'active', '{}', '20261104200000')
+ ('function', 'security.cricos_identity_conflict_v1', 'Layer 2', 'D7: other courses whose CRICOS-proved page is this page', 'active', '{}', '20261104360000'),
+ ('function', 'security.cricos_identity_guard_trg_v1', 'Layer 2', 'D7: refuse a title-only binding on a page that proves another course (switch, off)', 'active', '{}', '20261104360000'),
+ ('function', 'security.cricos_identity_guard_evaluate_v1', 'Layer 2', 'D7: read-only evaluation of the CRICOS identity guard', 'active', '{}', '20261104360000')
 on conflict do nothing;

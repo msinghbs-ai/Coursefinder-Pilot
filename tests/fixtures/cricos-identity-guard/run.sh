@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CF-247 D7 CRICOS identity guard (migration 20261104200000) on isolated fixtures. Needs a scratch PostgreSQL (never a Supabase project):
+# CF-247 D7 CRICOS identity guard (migration 20261104360000) on isolated fixtures. Needs a scratch PostgreSQL (never a Supabase project):
 # PGHOST/PGPORT/PGUSER point at it. Builds the database the E16 fixture builds (../e16-binding-validation: its five live definitions rebuilt
 # from the repository, its stubs, then the E16 migration), so the binding guard, the refusal route and the course page check are as live; adds
 # security.layer4_url_key_v1 (20261104120000) and security.pipeline_list_v1 (20261103140000), checks the definitions this change relies on
@@ -8,7 +8,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 DB=${CIG_DB:-cricos_identity_guard_fixtures}
 P="psql -v ON_ERROR_STOP=1 -q -X"
-MIG=supabase/migrations/20261104200000_cf247_cricos_identity_guard.sql
+MIG=supabase/migrations/20261104360000_cf247_cricos_identity_guard.sql
 FX=tests/fixtures/cricos-identity-guard
 E16=tests/fixtures/e16-binding-validation
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }

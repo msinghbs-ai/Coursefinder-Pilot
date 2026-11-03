@@ -6,7 +6,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = 'supabase/migrations/20261104200000_cf247_cricos_identity_guard.sql'
+const MIG = 'supabase/migrations/20261104360000_cf247_cricos_identity_guard.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const FX = 'tests/fixtures/cricos-identity-guard'
 const run = fs.readFileSync(`${FX}/run.sh`, 'utf8')
