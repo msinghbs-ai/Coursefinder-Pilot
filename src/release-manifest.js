@@ -1,17 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.433'
-export const PACKAGE_VERSION='0.1.360'
+export const UI_VERSION='2.15.434'
+export const PACKAGE_VERSION='0.1.361'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Nov 2026',
-  title:'Provider websites and identities are checked every hour; retirements are planned with every related record before anything changes',
+  title:'Scholarship and entry-requirement coverage is checked per provider against what the official sources list',
   changes:[
-    'An hourly check finds provider websites that are malformed, shared with an unrelated provider, redirected or parked, or whose register record changed, and opens one investigation per provider with the platform\'s own evidence; nothing is corrected automatically.',
-    'Provider retirement (deregistered, closed, merged) and country retirement need register or first-party evidence and produce a reviewed plan covering courses, scholarships, entry requirements, campuses, contacts, source mappings, Layer 2 to 4 work and the search projection; it is carried out only on a Platform Admin decision and can be reversed.',
-    'A provider that is temporarily unavailable is held from new work without being archived or hidden.'
+    'An hourly reconciliation compares each provider\'s official scholarship listings and entry-requirement sources with what the catalogue holds, by category and dimension, and opens one provider-level investigation per gap instead of per-record exceptions.',
+    'Scholarship discovery rows for providers the reader refuses now end with a not-eligible outcome and its reason, and return when the reason clears, instead of waiting forever.',
+    'Entry-requirement course counts per provider are counted by course lifecycle, so providers with course-level requirements are no longer reported as having none.'
   ],
   bugFixes:[]
 }

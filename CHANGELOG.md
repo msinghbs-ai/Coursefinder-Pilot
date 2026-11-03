@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.361 — 3 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.434** (workstream C; IQ-00041, IQ-00058). Migration `20261104040000_cf247_ops_c_scholarship_aer_coverage`: md5-guarded edit of aer_provider_states_v1; jobs scholarship-discovery-settle and coverage-reconcile; pipeline.coverage_provider_reconciliation; 16 root causes and 3 remedies. Nothing admitted automatically; nothing dropped; consumer API untouched. Spec s247.
+
 ## 0.1.360 — 3 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.433** (workstream G). Migration `20261104060000_cf247_ops_provider_identity_lifecycle`: md5-guarded edit of provider_onboarding_tick_v1; provider_identity_* checks, findings and investigations; provider lifecycle events and plans; job provider-identity-check; 6 root causes and 5 remedies. Candidate site checks and the lifecycle cascade ship off. Nothing dropped; consumer API untouched. Spec s249.
