@@ -8,7 +8,7 @@
 import React,{useEffect,useMemo,useState}from'react'
 import{CheckCircle2,Compass,Globe2,ListChecks,RefreshCw,Search,XCircle}from'lucide-react'
 import{supabase}from'./lib/supabase'
-import{Button,Empty,Loading,Metric,SectionTitle,StatusChip,fmtDateTime,fmtNumber}from'./ui-kit'
+import{Button,Empty,Loading,Metric,Pager,SectionTitle,StatusChip,fmtDateTime,fmtNumber}from'./ui-kit'
 import{plainError}from'./lib/errors'
 
 export const FINDER_STATES={
@@ -18,6 +18,7 @@ export const FINDER_STATES={
   failed:{label:'Failed',tone:'danger',help:'The finder could not finish; it tries again later.'},
   leased:{label:'Looking now',tone:'info',help:'The finder is looking at this university now.'},
 }
+const CS_PAGE=50 // universities a page (screen length, not an operational value)
 const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const finderOf=s=>FINDER_STATES[s]||{label:s||'Not looked at',tone:'neutral',help:''}
 const viaLabel=v=>v==='map'?'Firecrawl map':v==='sitemap'?'Site map':v==='firecrawl'?'Scraper':v==='direct'?'Direct':v||'—'
@@ -30,6 +31,11 @@ export default function CourseSources({rank=3,onError}){
     setBusy(action+(args.provider_id||args.id||args.value||args.country||''));setMsg('')
     try{const{error}=await supabase.rpc('admin_course_sources',{p_action:action,p_args:{...args,reason:reason.trim()}});if(error)throw error;setMsg(done);await load()}catch(e){onError?.(errText(e))}finally{setBusy('')}}
   const rows=useMemo(()=>(d?.providers||[]).filter(p=>(country==='all'||p.country===country)&&(!q||String(p.name).toLowerCase().includes(q.toLowerCase()))),[d,q,country])
+  // SS-020 step 2 (Decision 269, 3 Nov 2026): 50 universities a page (the tab was about 74,000 px with 1,991 buttons); a search or a country
+  // chip goes back to the first page. The metrics above still count every university.
+  const[offset,setOffset]=useState(0)
+  useEffect(()=>setOffset(0),[q,country])
+  const pageRows=rows.slice(offset,offset+CS_PAGE)
   if(!d)return <section className="m-panel"><Loading label="Reading course sources…"/></section>
   const all=d.providers||[],n=k=>all.filter(p=>p.finder?.state===k).length
   const waiting=all.filter(p=>(p.programmes||[]).some(s=>!s.approved_at&&s.status!=='stopped'&&Number(s.states?.created||0)+Number(s.states?.matched||0)>0)).length
@@ -53,7 +59,7 @@ export default function CourseSources({rank=3,onError}){
         {['all',...(d.countries||[]).map(c=>c.country_code)].map(c=><button key={c} type="button" className={`cs-chip${country===c?' on':''}`} onClick={()=>setCountry(c)}>{c==='all'?'All':c}</button>)}
       </div>
       <div className="cf-table-wrap"><table className="cf-table qw-table" data-cs-table><thead><tr><th>University</th><th>Finder</th><th>Sources</th><th></th></tr></thead><tbody>
-        {rows.length?rows.map(p=>{const f=p.finder||{},st=finderOf(f.state),isOpen=open===p.provider_id;return <React.Fragment key={p.provider_id}><tr data-cs-row={p.provider_id}>
+        {pageRows.length?pageRows.map(p=>{const f=p.finder||{},st=finderOf(f.state),isOpen=open===p.provider_id;return <React.Fragment key={p.provider_id}><tr data-cs-row={p.provider_id}>
           <td><strong>{p.name}</strong><small className="qw-sub">{p.country} · {p.website||'no website'}</small></td>
           <td><StatusChip value={f.state||'none'} tone={st.tone} label={st.label} title={st.help}/>{f.tried_at&&<small className="qw-sub">{fmtDateTime(f.tried_at)}</small>}{f.pattern_basis&&<small className="qw-sub">Pattern from {f.pattern_basis}</small>}{f.reason&&<small className="qw-sub">{f.reason}</small>}{f.added&&<small className="qw-sub">Added a {f.added==='programme_list'?'programme list':'course list'}</small>}</td>
           <td>{(p.lists||[]).map(l=><div key={l.id} className="cs-src"><span className="cs-kind">Course list</span> <a className="cf-link" href={l.url} target="_blank" rel="noreferrer">{l.url}</a><small className="qw-sub">{l.status} · {viaLabel(l.read_via||l.via)} · {fmtNumber(l.links||0)} links ({fmtNumber(l.new||0)} new){l.by_finder?' · found by the platform':' · added by a person'}{l.read_at?` · read ${fmtDateTime(l.read_at)}`:''}</small>
@@ -77,6 +83,7 @@ export default function CourseSources({rank=3,onError}){
         </div></td></tr>}
         </React.Fragment>}):<tr><td colSpan={4} className="cf-empty-cell">No university here yet. The finder adds them as it looks.</td></tr>}
       </tbody></table></div>
+      {rows.length>CS_PAGE&&<Pager offset={offset} limit={CS_PAGE} total={rows.length} onOffset={setOffset} withIcons/>}
     </section>
     <div className="qw-grid">
       <section className="m-panel">

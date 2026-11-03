@@ -23,3 +23,10 @@ export async function openAdapter(page, id, blocks = []) {
   for (const b of blocks) await row.locator(`[data-ad-block="${b}"] > .adp-row-name`).click()
   return row
 }
+
+// SS-020 step 2 (Decision 269, 3 Nov 2026): Scheduled jobs › Automations areas start closed. Opens every area on the page.
+export async function openAutomationAreas(page) {
+  await page.locator('[data-area-toggle]').first().waitFor()
+  const closed = page.locator('[data-area-toggle][aria-expanded="false"]')
+  for (let n = await closed.count(); n > 0; n = await closed.count()) await closed.first().click()
+}
