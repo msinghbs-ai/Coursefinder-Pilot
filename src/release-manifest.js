@@ -1,18 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.424'
-export const PACKAGE_VERSION='0.1.351'
+export const UI_VERSION='2.15.425'
+export const PACKAGE_VERSION='0.1.352'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Nov 2026',
-  title:'Release A — orchestration: plan steps never finish with work left; page-proof lane; per-field backlog',
+  title:'Course enrichment reads what stored pages hold, records why a field stays empty, and runs the gap queue hourly',
   changes:[
-    'A plan step whose lane is held (budget, idle or unavailable) stays held with what is left, its checkpoint, its reason and when it resumes, carries on by itself when the lane has room, and ends failed with a reason after 24 hours without progress; a plan is never done while a step still has work. The idle guard no longer pauses a lane while a task has work waiting for it. Applies to Find course pages, scholarship scans and provider fill.',
-    'Steps that ended done with work left in the last 7 days (18 steps, 314 items) are marked failed with their reason so automatic re-planning picks them up; a check raises an integration issue if any step ends done with work left again.',
-    'Courses whose page is not yet proven are routed by a new twice-hourly feed to the existing page-finding engines: a free re-try of the course\'s candidate addresses when its stored page was refused, paid course-page search only when switched on, and left alone when a Layer 4 decision or a lock applies. Each course is tried a limited number of times and again only when its inputs change.',
-    'Platform health › Pipeline yield shows each field\'s backlog: waiting on Layer 4, not stated by the official source, with a verified stored page, or needing a page; with processed and admitted counts over 24 hours and 7 days and a forecast only when there is a measured rate.'
+    'Reading every missing field from the same stored page (setting enrich.multi_field_on) is ready and ships switched off: once on, a course\'s stored page is read once for all its missing fields instead of once per field.',
+    'Each course field left empty now records why: not on this page, on another stored page, needs a source, evidence pending, explicitly not stated, not applicable or page identity unresolved, with its evidence, reader version, confidence and when it is due again. An unchanged page is not read again for a field it was verified not to state.',
+    'Coverage shows delivery and duration by that reason instead of a blanket "not on page".',
+    'The standing gap queue checks hourly and starts its next batch when work remains, so courses waiting for page proof keep reaching the source-proof feed; the feed now records every run.'
   ],
   bugFixes:[]
 }
