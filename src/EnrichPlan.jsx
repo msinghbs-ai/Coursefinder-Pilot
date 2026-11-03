@@ -139,12 +139,27 @@ function PlanPanel({pid,onClose,onRan,onError}){
       <p><StatusChip value={r.state} tone={(STATUS[r.state]||[])[1]||'neutral'} label={`${r.mode==='auto'?'Automatic':'Manual'}: ${(STATUS[r.state]||[r.state])[0]}`}/> <small>{fmtDateTime(r.created_at)} · {r.reason}</small></p>
       <div className="dq-table-wrap"><table className="dq-table"><thead><tr><th>Step</th><th>Status</th><th className="num">Estimate</th><th>Note</th></tr></thead>
         <tbody>{(r.steps||[]).map(s=><tr key={s.step}><td>{s.label}</td><td><StatusChip value={s.status} tone={(STATUS[s.status]||[])[1]||'neutral'} label={(STATUS[s.status]||[s.status])[0]}/></td>
-          <td className="num">{cr(s.est_credits)} · {usd(s.est_usd)}</td><td><small>{s.note||(s.started_at?`started ${fmtDateTime(s.started_at)}`:'')}</small></td></tr>)}</tbody></table></div>
+          <td className="num">{cr(s.est_credits)} · {usd(s.est_usd)}</td><td><small>{s.note||(s.started_at?`started ${fmtDateTime(s.started_at)}`:'')}</small>
+            <StepHold s={s}/></td></tr>)}</tbody></table></div>
       {r.needs_person&&<p className="sd-desc" data-run-needs-person><strong>Needs a person:</strong> {r.needs_person}</p>}
       {p.can_run&&!open&&['done','failed','cancelled'].includes(r.state)&&(r.steps||[]).some(s=>['failed','timed_out','stopped'].includes(s.status))&&<div className="fc-actions"><Button compact onClick={()=>retry(r.id)} disabled={busy} data-plan-retry>Retry failed steps</Button></div>}
       {r.state==='done'&&<p className="sd-desc">Used {cr(r.actual?.credits)} ({cr(r.actual?.credits_on_demand)} on demand) and {usd(r.actual?.usd)}; estimate {cr(r.estimate?.credits)} and {usd(r.estimate?.usd)}. {gained(r)}</p>}
     </div>)}
   </Card>
+}
+
+// CF-247 IQ-00064 (mandate 3 Nov 2026 13:09 §3.5): a held step shows what is left, its checkpoint, why it waits and when it gives up; an ended
+// step shows what was left and when the governed re-plan may retry it.
+function StepHold({s}){
+  const h=s.held,rs=s.restart
+  if(!h&&!rs&&s.remaining==null)return null
+  return <small className="sd-desc" data-step-hold={h?'held':'ended'}>
+    {s.remaining!=null&&<>{fmtNumber(Number(s.remaining))} left. </>}
+    {h&&<>Held since {fmtDateTime(h.since)}{h.checkpoint?` at ${fmtNumber(Number(h.checkpoint.done))} of ${fmtNumber(Number(h.checkpoint.total))}`:''}; {h.resumes}; gives up {fmtDateTime(h.ends_at)} if nothing moves. </>}
+    {rs&&(rs.waits_for_change?<>Restart: waits for new evidence or gaps (the cause does not clear with time).</>
+      :rs.retry_on?<>Restart: the automatic plan may retry it after {fmtDateTime(rs.after)} (at most {fmtNumber(Number(rs.retry_max))} times).</>
+      :<>Restart: automatic retry is off; use Retry failed steps.</>)}
+  </small>
 }
 
 function gained(r){const b=r.fields_before||{},a=r.fields_after||{};const g=Object.keys(a).map(k=>[k,Number(a[k]?.filled||0)-Number(b[k]?.filled||0)]).filter(([,n])=>n>0)
