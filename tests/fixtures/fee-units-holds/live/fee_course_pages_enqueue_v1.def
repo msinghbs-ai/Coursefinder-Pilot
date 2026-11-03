@@ -1,0 +1,64 @@
+CREATE OR REPLACE FUNCTION security.fee_course_pages_enqueue_v1()
+ RETURNS integer
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare v int := 0; v2 int := 0; rq record; v_hash text;
+begin
+  if security.pipeline_num_v1('fees.course_pages', 1) < 1 then return 0; end if;
+  -- a) requests from the course page, first in line, once the page was read after the request (a fee held does not stop them)
+  for rq in
+    select q.course_id, g.provider_id, g.evidence_id, g.identity_basis, e.content_hash, k.iso_alpha2 cc, g.read_at, q.requested_at
+      from pipeline.fee_course_requests q
+      join pipeline.coverage_course_pages g on g.course_id = q.course_id
+      left join pipeline.evidence_artifacts e on e.id = g.evidence_id and e.storage_path is not null
+      join catalogue.providers p on p.id = g.provider_id join ref.countries k on k.id = p.country_id
+     where q.queued_at is null
+     for update of q skip locked
+  loop
+    if rq.read_at is null or rq.read_at < rq.requested_at or rq.evidence_id is null then
+      if rq.requested_at < now() - make_interval(hours => security.pipeline_num_v1('enrich.wait_page_hours', 6)::int) then
+        update pipeline.fee_course_requests set queued_at = now(), outcome = 'page_not_read' where course_id = rq.course_id;
+      end if;
+      continue;
+    end if;
+    if not security.coverage_identity_allowed(rq.provider_id, rq.identity_basis, 'tuition')
+       or rq.cc not in (select jsonb_array_elements_text(s.value) from pipeline.platform_toolset_settings s where s.toolset_key = 'pipeline' and s.key = 'fees.countries') then
+      update pipeline.fee_course_requests set queued_at = now(), outcome = 'not_admitted' where course_id = rq.course_id;
+      continue;
+    end if;
+    v_hash := coalesce(rq.content_hash, rq.evidence_id::text);
+    update pipeline.fee_reader_queue set state = 'queued', attempts = 0, leased_until = null, error = null, priority = 1
+     where course_id = rq.course_id and content_hash = v_hash and state <> 'leased';
+    if not found then
+      insert into pipeline.fee_reader_queue(fact_source_id, course_id, provider_id, evidence_id, content_hash, priority)
+      select rq.evidence_id, rq.course_id, rq.provider_id, rq.evidence_id, v_hash, 1
+       where not exists (select 1 from pipeline.fee_reader_queue x where x.fact_source_id = rq.evidence_id and x.content_hash = v_hash);
+    end if;
+    update pipeline.fee_course_requests set queued_at = now(), outcome = 'queued' where course_id = rq.course_id;
+    v2 := v2 + 1;
+  end loop;
+
+  -- b) course pages that show one international fee, or an adapter fee excluded for the course, for a course with no fee held
+  insert into pipeline.fee_reader_queue(fact_source_id, course_id, provider_id, evidence_id, content_hash)
+  select g.evidence_id, g.course_id, g.provider_id, g.evidence_id, coalesce(e.content_hash, g.evidence_id::text)
+    from pipeline.coverage_course_pages g
+    join pipeline.evidence_artifacts e on e.id = g.evidence_id and e.storage_path is not null
+    join catalogue.courses c on c.id = g.course_id and c.lifecycle_status = 'active'
+    join catalogue.providers p on p.id = g.provider_id join ref.countries k on k.id = p.country_id
+   where g.status = 'bound' and g.read_status = 'read'
+     and ((g.candidates->'fee'->'candidates' @> '[{"international": true}]'::jsonb and security.coverage_tuition_target_v1(g.candidates->'fee') is not null)
+          or (g.candidates->>'fee_by' = 'adapter' and nullif(g.candidates->'fee'->>'value', '') is not null and security.uni_adapter_excluded(g.course_id, 'fee')))
+     and k.iso_alpha2 in (select jsonb_array_elements_text(s.value) from pipeline.platform_toolset_settings s where s.toolset_key = 'pipeline' and s.key = 'fees.countries')
+     and security.coverage_identity_allowed(g.provider_id, g.identity_basis, 'tuition')
+     and not exists (select 1 from catalogue.course_fees f where f.course_id = g.course_id and f.fee_type = 'provider_current_tuition' and f.status = 'active')
+     and not exists (select 1 from pipeline.layer4_review_items r where r.entity_id = g.course_id and r.field_code = 'provider_current_tuition_validation' and r.status = 'pending')
+     and not exists (select 1 from security.provider_hidden_v1 h where h.provider_id = g.provider_id)
+     and not exists (select 1 from pipeline.fee_reader_queue q where q.course_id = g.course_id and q.content_hash = coalesce(e.content_hash, g.evidence_id::text))
+   order by g.read_at desc
+   limit security.pipeline_num_v1('fees.course_pages_per_tick', 40)::int
+  on conflict do nothing;
+  get diagnostics v = row_count;
+  return v + v2;
+end $function$

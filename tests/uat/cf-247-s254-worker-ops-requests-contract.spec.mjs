@@ -28,7 +28,9 @@ const item = { id: 7, model: 'openai/gpt-4.1-mini', lease_until: '2026-11-03T08:
 const reply = (content, extra = {}) => ({ model: 'openai/gpt-4.1-mini', usage: { cost: 0.0012, completion_tokens: 90 }, choices: [{ finish_reason: 'stop', message: { content: JSON.stringify(content) } }], ...extra })
 
 test('version: v0.59.5, below v0.60, with the v0.59.4 note kept in the chain', () => {
-  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.59\.5";/)
+  // the v0.59.5 note stays in the version chain once a later worker is released ("// was v0.59.5 // ..."), as s233 does for v0.59.4
+  expect(worker).toMatch(/(?:const WORKER = "coverage-sweep-worker-v0\.59\.5"; |\n\/\/ was v0\.59\.5 )\/\/ v0\.59\.5 \(3 Nov 2026, CF-247 P0 autonomous operations/)
+  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.59\.\d+";/)  // below v0.60
   expect(worker).toContain('\n// was v0.59.4 // v0.59.4 (3 Nov 2026, CF-247 Workstream C')
 })
 
