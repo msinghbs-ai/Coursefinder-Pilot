@@ -1,5 +1,6 @@
 // Guards: SS-016 six-role simulation (Platform Admin overnight mandate 1 Nov 2026 §3; usability review UR-02, UR-17 role walkthroughs): in isolated fixtures, each of Viewer (1), Counsellor (2), Curator (3), Pipeline Operator (4), PIM Admin (5) and Platform Admin (6) sees the screens and actions its rank allows, and a forbidden action is hidden or refused with words that name the next owner. The mocked server refuses where the live function refuses, with its live words (support/role-fixtures.mjs). Fixture evidence only: no real lower-role session is claimed.
 import { test, expect } from '@playwright/test'
+import { openAutomationAreas } from './support/cards.mjs'
 import { asRole, mockAer, mockAutomations, mockInbox, LIVE } from './support/role-fixtures.mjs'
 
 test('a refusal that names the role it needs keeps those words on screen; one that names no role becomes the general sentence', async () => {
@@ -100,6 +101,7 @@ test.describe('mocked browser', () => {
 
     const auto = await mockAutomations(page, 4)
     await page.goto('/#scheduled-jobs')
+    await openAutomationAreas(page) // SS-020 step 2: areas start closed
     await expect(page.getByText('You can view automations. Each one names the role that changes it (PIM Admin or Platform Admin)')).toBeVisible()
     await expect(page.locator('tr[data-job="coverage-read"]')).toBeVisible()
     await expect(page.getByRole('button', { name: /Pause|Resume/ })).toHaveCount(0)
@@ -118,6 +120,7 @@ test.describe('mocked browser', () => {
     const auto = await mockAutomations(page, 5, { staleRank: { 'consumer-api-guard': 5 } })
     page.on('dialog', (d) => d.accept())
     await page.goto('/#scheduled-jobs')
+    await openAutomationAreas(page) // SS-020 step 2: areas start closed
     const row = page.locator('tr[data-job="coverage-read"]')
     await row.getByRole('button', { name: 'Pause' }).click()
     await expect(row).toContainText('Paused')
@@ -141,6 +144,7 @@ test.describe('mocked browser', () => {
     await asRole(page, 5)
     await mockAutomations(page, 5)
     await page.goto('/#scheduled-jobs')
+    await openAutomationAreas(page) // SS-020 step 2: areas start closed
     const row = page.locator('tr[data-job="consumer-api-guard"]')
     await expect(row).toContainText('Platform Admin only')
     await expect(row.getByRole('button')).toHaveCount(0)

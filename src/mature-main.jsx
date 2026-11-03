@@ -286,7 +286,9 @@ function Page({pageKey,tab,requestedTab='',routeParams,rank,actorId,onError,navi
   if(refused)return <PageLayout tabs={tabs} active={tab} onTab={onTab} label={`${page.label} sections`}><div className="m-alert compact" role="status" data-tab-handoff><AlertTriangle size={15}/><span>{handoffText(`${page.label} › ${refused.tab.label}`,refused.min,rank)} Shown instead: {page.tabs.find(t=>t.key===tab)?.label||page.label}.</span></div>{body}</PageLayout>
   // v2.15.177 (Decision 252): a notice on the layer's page when a toolset it depends on hits a limit or times out
   const layerNo=/^layer[1-4]$/.test(pageKey)?Number(pageKey.slice(5)):null
-  return <PageLayout tabs={tabs} active={tab} onTab={onTab} label={`${page.label} sections`}>{layerNo&&<LayerNotices layer={layerNo}/>}{body}</PageLayout>
+  // SS-020 step 2 (Decision 269, 3 Nov 2026): the Layer 2/3 notice strip (about 104 inputs) is drawn on Operations only, not on all its tabs
+  const notices=layerNo&&!(pageKey==='layer2'&&tab&&tab!=='operations')
+  return <PageLayout tabs={tabs} active={tab} onTab={onTab} label={`${page.label} sections`}>{notices&&<LayerNotices layer={layerNo}/>}{body}</PageLayout>
   function pageBody(){
     switch(pageKey){
       case'dashboard':return <DashboardHome onError={onError}/>

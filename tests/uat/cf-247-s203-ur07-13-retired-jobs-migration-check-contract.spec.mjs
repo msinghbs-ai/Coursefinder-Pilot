@@ -1,5 +1,6 @@
 // Guards: StudySearch usability remediation UR-07 and UR-13 (Platform Admin mandate 1 Nov 2026 11:48, Tranche C; admin record §36): a retiring or retired job cannot be resumed, run or re-scheduled singly or by Resume area and shows as Retired without controls; and the migration helper skips an already-applied version only when its recorded md5 equals the file, refusing a changed file before anything runs.
 import { test, expect } from '@playwright/test'
+import { openAutomationAreas } from './support/cards.mjs'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -63,6 +64,7 @@ test.describe('mocked browser', () => {
         retirement: { status: 'retiring', replaced_by: 'Layer 4 review', retire_after: '2026-11-14' } },
       { job: 'layer4-ok', area: 'Layer 4', sort: 2, label: 'Active job', description: '', schedule: '*/10 * * * *', active: false, control_rank: 6, catalogued: true, runs_24h: 1, failed_24h: 0 }] } }))
     await page.goto('/#scheduled-jobs')
+    await openAutomationAreas(page) // SS-020 step 2: areas start closed
     const retired = page.locator('[data-job="l4-rule-low-agreement"]')
     await expect(retired).toContainText('Retiring')
     await expect(retired.locator('[data-retired-job]')).toContainText('replaced by Layer 4 review')

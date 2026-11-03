@@ -1,7 +1,7 @@
-<!-- sop-export: id=operator-sop; version=2.09; reviewed-release=2.15.453; source-commit=e36a3e570401+local; content-sha256=acf6d82c4687b0823a98bd77854eaba93a35733166506e6b68394a3a35cacd3e -->
+<!-- sop-export: id=operator-sop; version=2.10; reviewed-release=2.15.453; source-commit=ca2fd56d9a4f+local; content-sha256=301191b965db2189406e8d9e90517504a2aa5448c6e36032e18fb393b29ce7e0 -->
 # StudySearch – Operator SOP
 
-**Version:** 2.09 (reviewed for platform release v2.15.453)  
+**Version:** 2.10 (reviewed for platform release v2.15.453)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -216,5 +216,6 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | 2.05 | 29 Oct 2026 | v2.15.364 | Reviewed: Catalogue › Entry requirements shows the course-level reading programme by provider and marks a rendered page with no requirements table (read only for operators). |
 | 2.06 | 1 Nov 2026 | v2.15.395 | Who controls automations: the Pipeline Operator diagnoses, records and escalates; the PIM Admin paces, pauses, resumes and runs again (the Platform Admin for automations marked Platform Admin). Entry requirement (AER) items are decided by the Platform Admin only. Alerts arrive by push and e-mail. Version raised to follow this history (it had stayed at 1.53). |
 | 2.07 | 1 Nov 2026 | v2.15.396 | The PIM Admin no longer owns the priority queue (retired in v2.15.300). A rising Layer 4 count is investigated for its cause (new arrivals, evidence that will not open, a repeated defect, work waiting on another step) before it is called a backlog (SS-016 UR-08, UR-11). |
+| 2.10 | 4 Nov 2026 | v2.15.454 | Admin menu, paging and length (Decision 269): Automations areas start closed (use Failed in 24h); Key dates: press Edit on a row to change it; Layer 2/3 notices are on Operations. No step changed. |
 | 2.09 | 4 Nov 2026 | v2.15.452 | Admin menu, dead sections (Decision 269): Health checks has no Layer 3 block; Automations has no Layer 3 AI area (its jobs are under Course pages and Admission); Progress has no Courses with each field (use Coverage › Attributes). No step changed. |
 | 2.08 | 2 Nov 2026 | v2.15.399 | Layer 4 › Inbox (Course link, Held scholarship, Website needed) is decided by the Pipeline Operator: the server needs rank 4 for every Inbox choice. Curators read the items and their evidence, correct the course or entry requirement record and hand the decision on (SS-016 P1). No rank changed. |

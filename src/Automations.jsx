@@ -43,7 +43,9 @@ export default function Automations({onError}){
         <Button compact onClick={load} disabled={busy}><RefreshCw size={14}/>{busy?'Updating…':'Refresh'}</Button></div>}/>
       {rank<5&&<p className="l3v-note">You can view automations. Each one names the role that changes it (PIM Admin or Platform Admin): note the job, the error and when, and hand it to that role.</p>}
     </section>
-    {areas.filter(a=>shown.some(j=>j.area===a)).map(a=><AreaPanel key={a} area={a} jobs={shown.filter(j=>j.area===a)} all={jobs.filter(j=>j.area===a)} rank={rank} busy={busy} act={act}/>)}
+    {/* SS-020 step 2 (Decision 269, 3 Nov 2026): each area starts collapsed (the tab was about 40,800 px with 486 buttons); a search or a
+        Paused or Failed filter opens the areas that match, and an area with a failure in 24 hours says so on its closed header */}
+    {areas.filter(a=>shown.some(j=>j.area===a)).map(a=><AreaPanel key={a} area={a} jobs={shown.filter(j=>j.area===a)} all={jobs.filter(j=>j.area===a)} rank={rank} busy={busy} act={act} filtered={Boolean(q)||show!=='all'}/>)}
     {!shown.length&&<section className="m-panel"><Empty text="No automation matches."/></section>}
     <section className="m-panel"><SectionTitle title="Recent changes"/>
       {(data.events||[]).length?<ul className="l3c-events">{data.events.map((e,i)=><li key={i}><span>{fmtDateTime(e.at)}</span><strong>{ACTION_LABEL[e.action]||e.action}</strong><small>{[jobs.find(j=>j.job===e.target)?.label||e.target,e.detail?.minutes&&EVERY.find(x=>x[0]===Number(e.detail.minutes))?.[1],e.detail?.batch&&`batch ${e.detail.batch}`].filter(Boolean).join(' · ')}</small></li>)}</ul>:<Empty text="No changes recorded."/>}
@@ -51,15 +53,16 @@ export default function Automations({onError}){
   </>
 }
 
-function AreaPanel({area,jobs,all,rank,busy,act}){
+function AreaPanel({area,jobs,all,rank,busy,act,filtered}){
   const off=all.filter(j=>!j.active&&!j.retirement).length,can=rank>=5&&!busy // UR-07: retired jobs are not counted as resumable
-  return <section className="m-panel au-area" data-area={area}>
-    <SectionTitle title={area} subtitle={`${all.length} automation${all.length===1?'':'s'}${off?`, ${off} paused`:''}`} action={rank>=5&&<div className="l3c-actions">
+  const failing=all.filter(j=>Number(j.failed_24h)>0).length,[opened,setOpened]=useState(false),open=opened||filtered
+  return <section className="m-panel au-area" data-area={area} data-area-open={open?'yes':'no'}>
+    <SectionTitle title={<button type="button" className="cf-linkbtn au-area-toggle" aria-expanded={open} onClick={()=>setOpened(!opened)} data-area-toggle={area}>{open?'▾':'▸'} {area}</button>} subtitle={`${all.length} automation${all.length===1?'':'s'}${off?`, ${off} paused`:''}${failing?`, ${failing} failed in 24 hours`:''}`} action={rank>=5&&<div className="l3c-actions">
       <Button compact onClick={()=>act(null,'pause_area',{area},`Pause every automation in ${area}?`)} disabled={!can||off===all.length}><Pause size={14}/>Pause area</Button>
       <Button compact onClick={()=>act(null,'resume_area',{area})} disabled={!can||off===0}><Play size={14}/>Resume area</Button></div>}/>
-    <div className="cf-table-wrap"><table className="cf-table au-table"><thead><tr><th>Automation</th><th>How often</th><th>Last run</th><th className="num">Last 24 hours</th><th>State</th>{rank>=5&&<th>Change</th>}</tr></thead><tbody>
+    {open&&<div className="cf-table-wrap"><table className="cf-table au-table"><thead><tr><th>Automation</th><th>How often</th><th>Last run</th><th className="num">Last 24 hours</th><th>State</th>{rank>=5&&<th>Change</th>}</tr></thead><tbody>
       {jobs.map(j=><JobRow key={j.job} j={j} rank={rank} busy={busy} act={act}/>)}
-    </tbody></table></div>
+    </tbody></table></div>}
   </section>
 }
 

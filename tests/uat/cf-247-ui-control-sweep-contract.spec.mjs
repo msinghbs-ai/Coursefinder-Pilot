@@ -2,6 +2,7 @@
 // v2.15.110 UI control sweep: every scheduled automation and scholarship publishing are operated from the admin UI
 // (moving review items back to the AI retired with Layer 3 in v2.15.252). Source checks plus a mocked browser run against the local dev server.
 import { test, expect } from '@playwright/test'
+import { openAutomationAreas } from './support/cards.mjs'
 import fs from 'node:fs'
 import { PAGES, resolveTarget, hrefFor } from '../../src/nav-map.js'
 import { describeSchedule } from '../../src/automation-schedule.js'
@@ -67,6 +68,7 @@ test.describe('mocked browser', () => {
     await mockAdmin(page)
     page.on('dialog', d => d.accept())
     await page.goto('/#scheduled-jobs')
+    await openAutomationAreas(page) // SS-020 step 2: areas start closed
     await expect(page.getByRole('tab', { name: 'Automations' })).toHaveAttribute('aria-selected', 'true')
     await expect(page.locator('.au-area')).toHaveCount(4)
     const read = page.locator('tr[data-job="coverage-read"]')

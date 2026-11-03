@@ -4,22 +4,25 @@
 // provider, course or scholarship is under "More". Curator and above; every change is logged.
 // Read: public.admin_key_dates_read(); write: public.admin_key_date_save(id, fields), public.admin_key_date_action(id, action)
 // (migration 20261001112000_cf247_key_dates_edit).
+// SS-020 step 2 (Decision 269, 3 Nov 2026): the list is read only and shows 50 dates a page; Edit opens one date in a drawer.
 import React,{useEffect,useRef,useState}from'react'
 import{CalendarClock,ExternalLink,History,Plus}from'lucide-react'
 import{supabase}from'./lib/supabase'
-import{Button,Empty,Loading,SectionTitle,StatusChip,fmtDateTime}from'./ui-kit'
+import{Button,Empty,Loading,Pager,SectionTitle,StatusChip,fmtDateTime}from'./ui-kit'
 import{plainError}from'./lib/errors'
 
 const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 export const KINDS={course_application_deadline:'Course application deadline',provider_application_window:'University application window',intake_date:'Intake date',scholarship_window:'Scholarship window',regulatory_dataset_release:'Government data release',national_education_event:'National education event'}
 export const PRECISION={exact:'Exact date',date_range:'Date range',month:'Month only',term:'Term only',year:'Year only',source_vague:'Vague (keep the wording)'}
 const COUNTRY={AU:'Australia',NZ:'New Zealand',CA:'Canada'}
+const KD_PAGE=50 // dates a page (screen length)
 export const auDate=v=>{if(!v)return'';const[y,m,d]=String(v).slice(0,10).split('-');return d&&m&&y?`${d}/${m}/${y}`:String(v)}
 
 export default function KeyDates({onError}){
-  const[data,setData]=useState(null),[busy,setBusy]=useState(false),[err,setErr]=useState(''),[done,setDone]=useState(''),[adding,setAdding]=useState(false),[showCancelled,setShowCancelled]=useState(false)
+  const[data,setData]=useState(null),[busy,setBusy]=useState(false),[err,setErr]=useState(''),[done,setDone]=useState(''),[adding,setAdding]=useState(false),[showCancelled,setShowCancelled]=useState(false),[editing,setEditing]=useState(null),[offset,setOffset]=useState(0)
   const load=async()=>{try{const{data:d,error}=await supabase.rpc('admin_key_dates_read');if(error)throw error;setData(d||{})}catch(e){onError?.(errText(e))}}
   useEffect(()=>{load()},[])
+  useEffect(()=>setOffset(0),[showCancelled])
   const call=async(fn,args,msg)=>{setBusy(true);setErr('');setDone('');try{const{data:d,error}=await supabase.rpc(fn,args);if(error)throw error;setData(d||{});if(msg)setDone(msg);return true}catch(e){setErr(errText(e));return false}finally{setBusy(false)}}
   if(!data)return <section className="m-panel"><Loading label="Loading key dates…"/></section>
   const can=Boolean(data.can_edit),items=(data.items||[]).filter(x=>showCancelled||x.status!=='cancelled')
@@ -32,23 +35,46 @@ export default function KeyDates({onError}){
       {err&&<p className="fr-error" role="alert">{err}</p>}
       {done&&<p className="sb-done" role="status">{done}</p>}
       {adding&&<AddDate onCancel={()=>setAdding(false)} onSave={async f=>{if(await call('admin_key_date_save',{p_id:null,p_fields:f},'Date added.'))setAdding(false)}}/>}
-      {items.length?<div className="cf-table-wrap"><table className="cf-table rs-table" data-key-dates>
+      {/* SS-020 step 2 (Decision 269, 3 Nov 2026): the list is read only and paged (the page was about 18,000 px with 150 buttons, every row
+          open for editing); Edit opens one date in a drawer with the same editors, Cancel date and Restore */}
+      {items.length?<><div className="cf-table-wrap"><table className="cf-table rs-table" data-key-dates>
         <thead><tr><th>Date</th><th>What</th><th>Kind</th><th>Precision</th><th>Source</th><th>Warn</th><th/></tr></thead>
-        <tbody>{items.map(x=><tr key={x.id} className={x.status==='cancelled'?'ms-off':''} data-date={x.title}>
-          <td><DateCell x={x} can={can&&x.status!=='cancelled'} onSave={f=>save(x,f)}/></td>
-          <td className="rs-site"><Text value={x.title} can={can} label={`Title of ${x.title}`} onSave={v=>save(x,{title:v})} strong/>
-            {(x.precision==='source_vague'||x.wording)&&<Text value={x.wording||''} can={can} label={`Source wording of ${x.title}`} onSave={v=>save(x,{wording:v})} muted placeholder="Add the source wording"/>}
-            <span className="l3v-code">{COUNTRY[x.country]||x.country}{x.scope&&x.scope!=='country_reference'?` · tied to a ${x.scope}`:''}{x.refresh_layer?` · refreshes Layer ${x.refresh_layer}`:''}</span></td>
-          <td>{can?<select className="fv-filter" value={x.event_type} aria-label={`Kind of ${x.title}`} onChange={e=>save(x,{event_type:e.target.value})}>{Object.entries(KINDS).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select>:KINDS[x.event_type]||x.event_type}</td>
-          <td>{can?<select className="fv-filter" value={x.precision} aria-label={`Precision of ${x.title}`} onChange={e=>save(x,{precision:e.target.value})}>{Object.entries(PRECISION).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select>:PRECISION[x.precision]||x.precision}</td>
-          <td><Text value={x.source_url} can={can} label={`Source address of ${x.title}`} onSave={v=>save(x,{source_url:v})} link short/></td>
-          <td><Text value={String(x.warning_days??'')} can={can} label={`Warning days for ${x.title}`} onSave={v=>save(x,{warning_days:v})} suffix=" days"/></td>
-          <td>{x.status==='cancelled'?<>{can&&<Button compact onClick={()=>call('admin_key_date_action',{p_id:x.id,p_action:'restore'},`${x.title} restored.`)} disabled={busy}>Restore</Button>}</>:can&&<Button compact onClick={()=>{if(window.confirm(`Cancel "${x.title}"? It stays listed as cancelled and can be restored.`))call('admin_key_date_action',{p_id:x.id,p_action:'cancel'},`${x.title} cancelled.`)}} disabled={busy}>Cancel date</Button>}</td>
-        </tr>)}</tbody></table></div>:<Empty text="No key dates yet. Use Add date to record one from its source."/>}
+        <tbody>{items.slice(offset,offset+KD_PAGE).map(x=><tr key={x.id} className={x.status==='cancelled'?'ms-off':''} data-date={x.title}>
+          <td><strong>{x.starts_on?`${auDate(x.starts_on)}${x.ends_on?` – ${auDate(x.ends_on)}`:''}`:'—'}</strong></td>
+          <td className="rs-site"><strong>{x.title}</strong>{x.wording&&<span className="rs-muted">{x.wording}</span>}
+            <span className="l3v-code">{COUNTRY[x.country]||x.country}{x.scope&&x.scope!=='country_reference'?` · tied to a ${x.scope}`:''}{x.refresh_layer?` · refreshes Layer ${x.refresh_layer}`:''}{x.status==='cancelled'?' · cancelled':''}</span></td>
+          <td>{KINDS[x.event_type]||x.event_type}</td>
+          <td>{PRECISION[x.precision]||x.precision}</td>
+          <td>{x.source_url?<a className="cf-link" href={x.source_url} target="_blank" rel="noreferrer" title={x.source_url}>{(()=>{try{return new URL(x.source_url).hostname.replace(/^www\./,'')}catch{return x.source_url}})()}</a>:'—'}</td>
+          <td>{x.warning_days!=null?`${x.warning_days} days`:'—'}</td>
+          <td><Button compact onClick={()=>setEditing(x.id)} aria-label={`${can?'Edit':'Open'} ${x.title}`} data-date-edit={x.id}>{can?'Edit':'Open'}</Button></td>
+        </tr>)}</tbody></table></div>
+        {items.length>KD_PAGE&&<Pager offset={offset} limit={KD_PAGE} total={items.length} onOffset={setOffset}/>}</>
+        :<Empty text="No key dates yet. Use Add date to record one from its source."/>}
+      {editing&&(()=>{const x=(data.items||[]).find(i=>i.id===editing);return x?<DateDrawer x={x} can={can} busy={busy} save={save} call={call} onClose={()=>setEditing(null)}/>:null})()}
     </section>
     {(data.events||[]).length>0&&<section className="m-panel"><SectionTitle icon={History} title="Recent changes"/>
       <ul className="ms-events">{data.events.map((e,i)=><li key={i}><strong>{e.target}</strong> {e.action==='change'?'changed':e.action==='add'?'added':e.action==='cancel'?'cancelled':'restored'}<span className="l3v-code">{[e.by,fmtDateTime(e.at)].filter(Boolean).join(' · ')}</span></li>)}</ul></section>}
   </>
+}
+
+// SS-020 step 2: one date's editors, the ones the list used to show on every row (click a value to change it; Enter or leaving saves)
+function DateDrawer({x,can,busy,save,call,onClose}){
+  const ed=can&&x.status!=='cancelled'
+  return <aside className="kd-drawer" role="dialog" aria-label={`Key date: ${x.title}`} data-date-drawer={x.id}>
+    <header className="kd-drawer-head"><strong>{x.title}</strong><Button compact onClick={onClose} aria-label="Close">Close</Button></header>
+    <dl className="kd-drawer-fields">
+      <dt>Date</dt><dd><DateCell x={x} can={ed} onSave={f=>save(x,f)}/></dd>
+      <dt>What</dt><dd><Text value={x.title} can={can} label={`Title of ${x.title}`} onSave={v=>save(x,{title:v})} strong/></dd>
+      <dt>Source wording</dt><dd><Text value={x.wording||''} can={can} label={`Source wording of ${x.title}`} onSave={v=>save(x,{wording:v})} muted placeholder="Add the source wording"/></dd>
+      <dt>Kind</dt><dd>{can?<select className="fv-filter" value={x.event_type} aria-label={`Kind of ${x.title}`} onChange={e=>save(x,{event_type:e.target.value})}>{Object.entries(KINDS).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select>:KINDS[x.event_type]||x.event_type}</dd>
+      <dt>Precision</dt><dd>{can?<select className="fv-filter" value={x.precision} aria-label={`Precision of ${x.title}`} onChange={e=>save(x,{precision:e.target.value})}>{Object.entries(PRECISION).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select>:PRECISION[x.precision]||x.precision}</dd>
+      <dt>Source</dt><dd><Text value={x.source_url} can={can} label={`Source address of ${x.title}`} onSave={v=>save(x,{source_url:v})} link/></dd>
+      <dt>Warn</dt><dd><Text value={String(x.warning_days??'')} can={can} label={`Warning days for ${x.title}`} onSave={v=>save(x,{warning_days:v})} suffix=" days"/></dd>
+    </dl>
+    {can&&<div className="l3c-actions">{x.status==='cancelled'?<Button compact onClick={async()=>{if(await call('admin_key_date_action',{p_id:x.id,p_action:'restore'},`${x.title} restored.`))onClose()}} disabled={busy}>Restore</Button>
+      :<Button compact onClick={()=>{if(window.confirm(`Cancel "${x.title}"? It stays listed as cancelled and can be restored.`))call('admin_key_date_action',{p_id:x.id,p_action:'cancel'},`${x.title} cancelled.`).then(ok=>ok&&onClose())}} disabled={busy}>Cancel date</Button>}</div>}
+  </aside>
 }
 
 function DateCell({x,can,onSave}){
