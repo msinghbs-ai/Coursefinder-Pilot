@@ -65,7 +65,7 @@ export default function IntegrationQueue({onError}){
         {open===i.id&&<tr className="iq-detail"><td colSpan={7}>{!hist?<Loading label="Reading its history…"/>:<IssueDetail h={hist}/>}</td></tr>}</React.Fragment>)}
       </tbody></table></div>:<Empty icon={CheckCircle2} text={scope==='open'?'Nothing open.':'Nothing here.'}/>}
     </section>
-    <PipelineYield onError={onError}/>
+    {/* SS-020 step 3 (Decision 269, 3 Nov 2026): Pipeline yield is on Platform health › Queues & yield; this tab keeps the defect register */}
   </>
 }
 
@@ -95,7 +95,7 @@ function IssueDetail({h}){
 export const YIELD_STAGES=[['invoked','Invoked'],['source_accessed','Source accessed'],['pages_discovered','Pages discovered'],['read_completely','Read completely'],
   ['extracted','Extracted'],['accepted_or_held','Accepted or held'],['published','Published'],['consumer_read_back','Consumer read-back']]
 const stageText=v=>v==null?'—':typeof v==='object'?Object.entries(v).map(([k,n])=>`${fmtNumber(n||0)} ${k.replace(/_/g,' ')}`).join(' · '):fmtNumber(v)
-function PipelineYield({onError}){
+export function PipelineYield({onError}){
   const[y,setY]=useState(null)
   useEffect(()=>{let live=true;supabase.rpc('admin_pipeline_yield',{p_args:{}}).then(({data,error})=>{if(!live)return;if(error){onError?.(plainError(error));setY({lanes:[]})}else setY(data||{lanes:[]})});return()=>{live=false}},[])
   if(!y)return <section className="m-panel"><Loading label="Counting each stage…"/></section>

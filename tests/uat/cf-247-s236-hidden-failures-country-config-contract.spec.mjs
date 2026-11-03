@@ -129,7 +129,7 @@ test('Platform health › Integration queue shows the Enrich fields lane beside 
     { lane: 'aer', label: 'Academic entry requirements', stages: st({}) }, { lane: 'descriptions', label: 'University descriptions', stages: st({}) },
     { lane: 'enrich_fields', label: 'Enrich fields (AI reads)', stages: st({ invoked: { calls: 398, failed_calls: 173 }, pages_discovered: null, consumer_read_back: null,
       accepted_or_held: { accepted: 1265, held: 73, not_stated: 8998, failed: 2243 } }) }] }) }))
-  await page.goto('/#platform-health?tab=integration')
+  await page.goto('/#platform-health?tab=queues') // SS-020 step 3 (Decision 269): Pipeline yield is on Queues & yield
   const y = page.locator('[data-pipeline-yield]')
   await expect(y.getByRole('columnheader', { name: 'Enrich fields (AI reads)' })).toBeVisible()
   await expect(y.locator('[data-yield-stage="invoked"] [data-yield-lane="enrich_fields"]')).toHaveText('398 calls · 173 failed calls')

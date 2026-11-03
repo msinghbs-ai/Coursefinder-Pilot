@@ -109,7 +109,9 @@ export const PAGES = {
   health: { label: 'Platform health', slug: 'platform-health', icon: 'health', subtitle: 'Automatic checks across jobs, queues, budgets and the database; what takes space and purging it.', tabs: [
     { key: 'checks', label: 'Health checks', min: 3 },
     // v2.15.319 (Platform Admin 22 Oct 2026 19:53, "Watchdog" first): each enrichment queue's state, alerts and self-fixes
-    { key: 'queues', label: 'Work queues', min: 3 },
+    // SS-020 step 3 (Decision 269, 3 Nov 2026): Work queues and the Pipeline yield section of Integration queue are one tab, Queues & yield
+    // (same key, so old addresses still open it; Pipeline yield keeps its PIM Admin minimum inside the tab)
+    { key: 'queues', label: 'Queues & yield', min: 3 },
     // CF-247 (Platform Admin 2 Nov 2026 16:58, continuous validation mandate §3 and §9): the integration feedback queue and the operating mode
     { key: 'integration', label: 'Integration queue', min: 5 },
     { key: 'storage', label: 'Storage & retention', min: 6 },
@@ -136,12 +138,12 @@ export const PAGES = {
   ] },
   // v2.15.300 (Platform Admin, 20 Oct 2026): Scrapers & fetchers is the Fetchers tab of Models & services (old addresses redirect).
   // v2.15.264 (Platform Admin, 13 Oct 2026 00:09): three tabs; the AI configuration Layer 3 used to hold is back as AI & OpenRouter.
-  services: { label: 'Models & services', slug: 'models-services', icon: 'ai', min: 4, subtitle: 'Switch AI models and page-fetching services on or off; configure the AI that runs now and OpenRouter; and the limits each layer depends on.', tabs: [
-    { key: 'services', label: 'Services', min: 4 },
+  services: { label: 'Models & services', slug: 'models-services', icon: 'ai', min: 4, subtitle: 'Page services, their switches, keys and limits; the AI models, their switches and OpenRouter.', tabs: [
+    // SS-020 step 3 (Decision 269, 3 Nov 2026): Services, Toolsets & limits and Fetchers are one tab, Services & limits (same minimum role,
+    // Pipeline Operator); their old addresses open it (resolveTarget). The AI model switches moved to AI & OpenRouter.
+    { key: 'services', label: 'Services & limits', min: 4 },
     // v2.15.301: Scholarship extraction (was Scholarships › Extraction, Curator and above) is on this tab; the AI configuration stays Operator and above
     { key: 'ai', label: 'AI & OpenRouter', min: 3 },
-    { key: 'limits', label: 'Toolsets & limits', min: 4 },
-    { key: 'fetchers', label: 'Fetchers', min: 4 },
   ] },
   // v2.15.301 (Platform Admin, 20 Oct 2026): Capacity (was Platform health › Capacity) is part of the checklist
   migration: { label: 'Go-live checklist', slug: 'environment-migration', icon: 'shield', min: 6, subtitle: 'What must be set up and pass before Production is switched on, and the capacity it needs.' },
@@ -207,8 +209,8 @@ export const LEGACY = {
   'layer-2-enrichment': { page: 'layer2', tab: 'universities' },
   'layer-2-operations': { page: 'layer2', tab: 'operations' },
   // v2.15.300: Scrapers & fetchers is Models & services › Fetchers
-  'scrapers': { page: 'services', tab: 'fetchers' },
-  'scrapers-fetchers': { page: 'services', tab: 'fetchers' },
+  'scrapers': { page: 'services', tab: 'services' },
+  'scrapers-fetchers': { page: 'services', tab: 'services' },
   // v2.15.252: Layer 3 retired; every old Layer 3 address opens Layer 2 › Adapters (see resolveTarget).
   'layer-3-ai-interpretation': { page: 'layer2', tab: 'universities', legacyL3: true },
   'layer-3-ai': { page: 'layer2', tab: 'universities', legacyL3: true },
@@ -224,15 +226,15 @@ export const LEGACY = {
   // The old '#settings' address opened Administration > Platform (readiness), not the regulatory page; v2.15.301 Capacity is on the Go-live checklist.
   'settings': { page: 'migration' },
   'statistics-rankings': { page: 'rankings' },
-  'administration': { page: 'services', tab: 'fetchers' },
+  'administration': { page: 'services', tab: 'services' },
 }
 
 // Old Administration sections (#administration?section=...) → new page and tab.
 export const LEGACY_ADMIN_SECTIONS = {
-  'overview': { page: 'services', tab: 'fetchers' },
+  'overview': { page: 'services', tab: 'services' },
   'sources-imports': { page: 'rankings', tab: 'datasets' },
   'layer1-sources': { page: 'layer1', tab: 'operations' },
-  'layer2-providers': { page: 'services', tab: 'fetchers' },
+  'layer2-providers': { page: 'services', tab: 'services' },
   'provider-assets': { page: 'providers', tab: 'assets' },
   'layer2-sources': { page: 'layer2', tab: 'universities' },
   'onboarding': { page: 'layer2', tab: 'universities' },
@@ -296,6 +298,10 @@ export function resolveTarget(target, params = new URLSearchParams()) {
   if (hit.page === 'coverage' && tab === 'progress' && p.get('view') === 'running') { p.delete('view'); return { page: 'jobs', tab: 'tasks', params: p } }
   if (hit.page === 'coverage' && tab === 'progress' && p.get('view') === 'levers') { p.delete('view'); return { page: 'environment', tab: 'settings', params: p } }
   if (hit.page === 'health' && tab === 'readiness') return { page: 'migration', tab: '', params: p }
+  // SS-020 step 3 (Decision 269, 3 Nov 2026): Toolsets & limits and Fetchers are Services & limits; Integration queue › Pipeline yield is on
+  // Queues & yield (?view=yield on the old tab opens it)
+  if (hit.page === 'services' && ['limits', 'fetchers'].includes(tab)) return { page: 'services', tab: 'services', params: p }
+  if (hit.page === 'health' && tab === 'integration' && p.get('view') === 'yield') { p.delete('view'); return { page: 'health', tab: 'queues', params: p } }
   // v2.15.124: Readiness by area is part of Attributes; Layer 1 › Sources is Operations › Sources.
   if (hit.page === 'jobs' && tab === 'schedules') return { page: 'jobs', tab: 'automations', params: p }
   if (hit.page === 'coverage' && tab === 'domains') return { page: 'coverage', tab: 'attributes', params: p }

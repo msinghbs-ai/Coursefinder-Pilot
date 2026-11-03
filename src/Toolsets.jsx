@@ -38,7 +38,7 @@ const money=v=>v==null?'—':`US$${Number(v).toFixed(2)}`
 // (Action needed, Action outside StudySearch, Optional) or not (Nothing to do), its Go to button opens the exact card or setting
 // (the card is opened and scrolled to; see focusTarget in mature-main.jsx), the universities it is about are listed in the notice with
 // Search again or a website box, and information-only notices are kept to Toolsets and limits, not shown on the layer pages.
-const LIMITS={page:'services',tab:'limits'}
+const LIMITS={page:'services',tab:'services'} // SS-020 step 3: Toolsets & limits is part of Services & limits
 const go=(label,page,tab,card,at)=>({label,page,tab,card,at})
 const NEED={action:['Action needed','warning'],outside:['Action outside StudySearch','warning'],optional:['Optional','neutral'],info:['Nothing to do','success']}
 export function noticePlan(n){

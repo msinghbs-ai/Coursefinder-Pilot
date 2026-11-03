@@ -31,7 +31,7 @@ import{PAGES,SECTIONS,SECTION_OF,resolveTarget,hrefFor,canOpen,shownTabs,effecti
 import{ViewerContext}from'./lib/viewer'
 import PlatformHealth,{readPlatformHealth,healthTone,HEALTH_WORDS}from'./PlatformHealth'
 import QueueWatch from'./QueueWatch'
-import IntegrationQueue from'./IntegrationQueue'
+import IntegrationQueue,{PipelineYield}from'./IntegrationQueue'
 import CourseSources from'./CourseSources'
 import{DomainReadiness}from'./data-quality-entry'
 import CreditBanner from'./CreditBanner'
@@ -339,7 +339,7 @@ function Page({pageKey,tab,requestedTab='',routeParams,rank,actorId,onError,navi
       case'layer4':return <Layer4Inbox onError={err} routeParams={routeParams}/>
       // v2.15.300: Screen use (Platform Admin) under the health checks, to decide which screens retire
       // v2.15.301: Capacity moved to the Go-live checklist; Storage & retention is a tab here
-      case'health':return tab==='storage'?<RetentionScreen onError={onError}/>:tab==='queues'?<QueueWatch onError={onError}/>:tab==='integration'?<IntegrationQueue onError={onError}/>:<><PlatformHealth onError={onError}/>{rank>=6&&<ScreenUse onError={onError}/>}</>
+      case'health':return tab==='storage'?<RetentionScreen onError={onError}/>:tab==='queues'?<div className="m-page-stack" data-queues-yield><QueueWatch onError={onError}/>{/* SS-020 step 3 (Decision 269): Pipeline yield moved here from Integration queue; PIM Admin and above, as before (server checks too) */}{rank>=5&&<PipelineYield onError={onError}/>}</div>:tab==='integration'?<IntegrationQueue onError={onError}/>:<><PlatformHealth onError={onError}/>{rank>=6&&<ScreenUse onError={onError}/>}</>
       case'jobs':return tab==='tasks'?<AdminTasks rank={rank} onError={onError}/>:tab==='automations'?<div className="m-page-stack"><Automations onError={err}/><RefreshWorkspace onError={err}/></div>:<JobsWorkspace/>
       case'evidence':return <EvidenceWorkspace onError={onError} navigate={navigate} routeParams={routeParams}/>
       // CF-247 (16 Oct 2026): calls to the API version URLs (zoho-api-v2 first), by key and action; v2.15.301 Settings › API usage
@@ -348,7 +348,7 @@ function Page({pageKey,tab,requestedTab='',routeParams,rank,actorId,onError,navi
       // v2.15.300 (Platform Admin, 20 Oct 2026): Scrapers & fetchers is Models & services › Fetchers
       // v2.15.264: Models & services in three tabs (Services · AI & OpenRouter · Toolsets & limits)
       // v2.15.301: Scholarship extraction (was Scholarships › Extraction) under the AI configuration
-      case'services':return tab==='ai'?<div className="m-page-stack">{rank>=4&&<AiConfig onError={err}/>}<section data-scholarship-extraction-moved><SectionTitle title="Scholarship extraction" subtitle="The AI that reads each stored scholarship page: models, qualification, instructions and answers."/><ScholarshipExtraction onError={onError}/></section></div>:tab==='limits'?<div className="m-page-stack"><SearchCapCard/><Toolsets onError={err}/></div>:tab==='fetchers'?<><p className="l3v-note">Switch services on or off on the Services tab. Keys are on <a href="#environment">Settings</a>.</p><Layer2ProviderConfig rank={rank} embedded/></>:<div className="m-page-stack"><ModelsServices onError={err}/></div>
+      case'services':return tab==='ai'?<div className="m-page-stack">{rank>=4&&<AiConfig onError={err}/>}{/* SS-020 step 3 (Decision 269): the AI model switches moved here from Services; Pipeline Operator and above, as before */}{rank>=4&&<ModelsServices part="models" onError={err}/>}<section data-scholarship-extraction-moved><SectionTitle title="Scholarship extraction" subtitle="The AI that reads each stored scholarship page: models, qualification, instructions and answers."/><ScholarshipExtraction onError={onError}/></section></div>:<div className="m-page-stack" data-services-limits>{/* SS-020 step 3 (Decision 269, 3 Nov 2026): Services & limits = the page-service switches, Toolsets & limits and Fetchers in one tab; keys stay on Settings */}<ModelsServices part="services" onError={err}/><SearchCapCard/><Toolsets onError={err}/><section data-fetchers-merged><SectionTitle title="Fetchers" subtitle="Each page service's address, rate, calls at once, time limit and monthly quota. Keys are on Settings."/><Layer2ProviderConfig rank={rank} embedded/></section></div>
       case'migration':return <div className="m-page-stack"><EnvironmentMigrationWorkspace rank={rank} onError={onError} view="migration"/><PlatformMaturity rank={rank} onError={onError} view="golive"/>{/* v2.15.301: Capacity (was Platform health › Capacity) */}<section data-golive-capacity><PlatformMaturity rank={rank} onError={onError} view="capacity"/></section>{/* v2.15.228: the Reset database control was retired (Platform Admin, 9 Oct 2026) */}</div>
       // v2.15.301 (Platform Admin, 20 Oct 2026): Data model retired (its address opens Coverage › Attributes); Storage & retention is a Platform health tab
       case'users':return <AccessRolesEmbedded actorId={actorId}/>

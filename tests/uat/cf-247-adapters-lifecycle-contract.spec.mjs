@@ -55,7 +55,7 @@ test('every card starts collapsed and is remembered for the browser session only
 test.describe('mocked browser', () => {
   test('Models & services: every card collapsed, one opens, and stays open after a reload in the same session', async ({ page }) => {
     await mockAdmin(page)
-    await page.goto('/#models-services')
+    await page.goto('/#models-services?tab=ai') // SS-020 step 3: the AI model switches are on AI & OpenRouter
     const toggles = page.locator('.cf-card-toggle')
     await toggles.first().waitFor()
     expect(await page.locator('.cf-card-toggle[aria-expanded="true"]').count()).toBe(0)
@@ -64,7 +64,7 @@ test.describe('mocked browser', () => {
     await expect(page.locator('[data-model="sonnet-english"]')).toBeVisible()
     await page.reload()
     await expect(page.locator('[data-card="services.ai-models"] .cf-card-toggle')).toHaveAttribute('aria-expanded', 'true')
-    await expect(page.locator('[data-card="services.fetching"] .cf-card-toggle')).toHaveAttribute('aria-expanded', 'false')
+    await expect(page.locator('[data-card="services.ai.openrouter"] .cf-card-toggle')).toHaveAttribute('aria-expanded', 'false')
   })
 
   test('Adapters: filters, one collapsed row per university, open a row, read schedule and switch consequences', async ({ page }) => {

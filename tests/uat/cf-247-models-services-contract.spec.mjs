@@ -28,7 +28,7 @@ test.describe('mocked browser', () => {
     await mockAdmin(page)
     const prompts = []
     page.on('dialog', d => { prompts.push(d.message()); d.accept('Too slow') })
-    await page.goto('/#models-services')
+    await page.goto('/#models-services?tab=ai') // SS-020 step 3: the AI model switches are on AI & OpenRouter
     await openCards(page) // v2.15.200: cards start collapsed
     await expect(page.locator('[data-model="sonnet-english"]')).toHaveClass(/ms-off/)
     await expect(page.locator('[data-model="old-model"] [role="switch"]')).toHaveCount(0)
@@ -41,6 +41,8 @@ test.describe('mocked browser', () => {
     expect(prompts[0]).toContain('English step 1, Intake step 1')
     await expect(page.getByRole('status')).toContainText('qwen/qwen3-30b-a3b switched off; 2 cascade steps switched off.')
     await expect(page.locator('[data-model="qwen3-30b"]')).toHaveClass(/ms-off/)
+    await page.goto('/#models-services') // the page-service switches are on Services & limits
+    await openCards(page)
     await page.getByRole('switch', { name: 'Switch on Custom gateway' }).click()
     await expect.poll(() => page.l3calls.find(c => c.p_kind === 'service')?.p_enabled).toBe(true)
     await expect(page.locator('[data-service="custom-gateway"] [role="switch"]')).toHaveAttribute('aria-checked', 'true')

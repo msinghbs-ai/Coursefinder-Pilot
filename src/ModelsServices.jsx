@@ -13,6 +13,7 @@ import{supabase}from'./lib/supabase'
 import Card from'./Card'
 import{Button,Empty,Loading,Metric,StatusChip,fmtDateTime,fmtNumber,humanLabel}from'./ui-kit'
 import{plainError}from'./lib/errors'
+import{isRetiredFetcher}from'./retired-services'
 
 const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const usd=v=>`US$${Number(v||0).toFixed(2)}`
@@ -28,12 +29,15 @@ export function Switch({on,label,disabled,onChange}){
   return <button type="button" role="switch" aria-checked={on} aria-label={label} className={`ms-switch${on?' on':''}`} disabled={disabled} onClick={()=>onChange(!on)}><span/></button>
 }
 
-export default function ModelsServices({onError}){
+// SS-020 step 3 (Decision 269, 3 Nov 2026): part='services' draws the page-service switches on Services & limits; part='models' draws the AI
+// model switches on AI & OpenRouter. Same read, same write, same role checks; nothing is drawn twice.
+export default function ModelsServices({onError,part='all'}){
   const[data,setData]=useState(null),[busy,setBusy]=useState(false),[done,setDone]=useState('')
   const load=async()=>{setBusy(true);try{const{data:d,error}=await supabase.rpc('admin_services_read');if(error)throw error;setData(d||{})}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
   useEffect(()=>{load()},[])
   if(!data)return <section className="m-panel"><Loading label="Loading models and services…"/></section>
-  const can=Boolean(data.can_control),models=data.models||[],services=data.services||[]
+  const can=Boolean(data.can_control),models=data.models||[],services=(data.services||[]).filter(x=>!isRetiredFetcher({provider_key:x.key}))
+  const showServices=part!=='models',showModels=part!=='services'
   const live=models.filter(m=>!m.retired),retired=models.filter(m=>m.retired)
   const flip=async(kind,x,on)=>{
     const name=kind==='model'?x.model:x.name
@@ -59,13 +63,13 @@ export default function ModelsServices({onError}){
   const head=<thead><tr><th>Model</th><th>Used for</th><th>Cascade steps</th><th className="num">Last 7 days</th><th>Tests</th><th>On</th></tr></thead>
   return <>
     <div className="cf-metric-grid">
-      <Metric label="AI models on" value={`${live.filter(m=>m.enabled).length} of ${live.length}`} icon={BrainCircuit}/>
-      <Metric label="Fetching services on" value={`${services.filter(s=>s.enabled).length} of ${services.length}`} icon={Globe}/>
-      <Metric label="Retired models" value={retired.length} icon={Power}/>
+      {showModels&&<Metric label="AI models on" value={`${live.filter(m=>m.enabled).length} of ${live.length}`} icon={BrainCircuit}/>}
+      {showServices&&<Metric label="Page services on" value={`${services.filter(s=>s.enabled).length} of ${services.length}`} icon={Globe}/>}
+      {showModels&&<Metric label="Retired models" value={retired.length} icon={Power}/>}
     </div>
     {!can&&<p className="l3v-note">You can view these. A PIM Operator or above can switch them on or off.</p>}
     {done&&<p className="sb-done" role="status">{done}</p>}
-    <Card id="services.fetching" icon={Globe} title="Page-fetching services" subtitle="External services that fetch web pages for Layer 2. A service that is off is skipped on every route and is not offered anywhere else."
+    {showServices&&<Card id="services.fetching" icon={Globe} title="Page-fetching services" subtitle="External services that fetch web pages for Layer 2. A service that is off is skipped on every route and is not offered anywhere else."
       meta={<span>{services.filter(s=>s.enabled).length} of {services.length} on</span>} action={<Button compact onClick={load} disabled={busy}><RefreshCw size={14}/>{busy?'Updating…':'Refresh'}</Button>}>
       <div className="cf-table-wrap"><table className="cf-table ms-table"><thead><tr><th>Service</th><th>Type</th><th>Key</th><th className="num">Routes</th><th>Last test</th><th>On</th></tr></thead><tbody>
         {services.map(s=><tr key={s.id} className={s.enabled?'':'ms-off'} data-service={s.key}>
@@ -77,14 +81,14 @@ export default function ModelsServices({onError}){
           <td><Switch on={Boolean(s.enabled)} label={`${s.enabled?'Switch off':'Switch on'} ${s.name}`} disabled={!can||busy} onChange={on=>flip('service',s,on)}/></td>
         </tr>)}
       </tbody></table></div>
-      <p className="l3v-note">Keys are on <a href="#environment">Settings</a>. Address, limits and routing are on <a href="#models-services?tab=fetchers">Scrapers &amp; fetchers</a>.</p>
-    </Card>
-    <Card id="services.ai-models" icon={BrainCircuit} title="AI models" subtitle="Models the platform can use to read scholarship pages. This is the only place to switch a model on or off. A model can be switched on only after it has passed its test. Switching it off also switches off its cascade steps."
+      <p className="l3v-note">Keys are on <a href="#environment">Settings</a>. Address, limits and routing are under Fetchers below.</p>
+    </Card>}
+    {showModels&&<Card id="services.ai-models" icon={BrainCircuit} title="AI models" subtitle="Models the platform can use to read scholarship pages. This is the only place to switch a model on or off. A model can be switched on only after it has passed its test. Switching it off also switches off its cascade steps."
       meta={<span>{live.filter(m=>m.enabled).length} of {live.length} on{retired.length?` · ${retired.length} retired`:''}</span>}>
       {live.length?<div className="cf-table-wrap"><table className="cf-table ms-table">{head}<tbody>{live.map(modelRow)}</tbody></table></div>:<Empty text="No models."/>}
       {retired.length>0&&<details className="ms-retired"><summary>Retired models ({retired.length}) — failed their tests and cannot be switched on</summary>
         <div className="cf-table-wrap"><table className="cf-table ms-table">{head}<tbody>{retired.map(modelRow)}</tbody></table></div></details>}
-    </Card>
+    </Card>}
     {(data.events||[]).length>0&&<Card id="services.recent-changes" icon={History} title="Recent changes" meta={<span>{data.events.length}</span>}>
       <ul className="ms-events">{data.events.map((e,i)=><li key={i}><strong>{e.target}</strong> switched {e.action==='switch_on'?'on':'off'}<span className="l3v-code">{[e.by,fmtDateTime(e.at)].filter(Boolean).join(' · ')}</span></li>)}</ul>
     </Card>}

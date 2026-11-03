@@ -79,7 +79,7 @@ test('Platform health › Integration queue shows the pipeline yield stage by st
   await page.route('**/rest/v1/rpc/admin_pipeline_yield', (route) => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ window_hours: 24, lanes: [
     { lane: 'scholarships', label: 'Scholarships', stages: st({}) }, { lane: 'course_pages', label: 'Course pages and official links', stages: st({ published: 12 }) },
     { lane: 'aer', label: 'Academic entry requirements', stages: st({}) }, { lane: 'descriptions', label: 'University descriptions', stages: st({}) }] }) }))
-  await page.goto('/#platform-health?tab=integration')
+  await page.goto('/#platform-health?tab=queues') // SS-020 step 3 (Decision 269): Pipeline yield is on Queues & yield
   const y = page.locator('[data-pipeline-yield]')
   await expect(y).toContainText('Each lane over the last 24 hours')
   await expect(y.locator('[data-yield-stage="invoked"] [data-yield-lane="scholarships"]')).toHaveText('36 calls · 22 failed calls')
