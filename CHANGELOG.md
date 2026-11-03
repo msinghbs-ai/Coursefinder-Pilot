@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.390 — 4 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.463** (Platform Admin design decision 06:30; AER correction 06:58 §1, §3). Migration `20261104450000_cf247_human_assisted_recovery`: `pipeline.layer4_interventions` (one per lane, entity and missing fact, deduplicated; no lease while waiting), 13 failure classes with time bounds as `har.*` settings, `security.layer4_intervention_resolve_v1` (11 actions, audited), Inbox hook functions (kind `intervention`, AER recovery extension), job `layer4-interventions` (:14, :44, catalogued), md5-guarded edit of security.ops_report_v1 (5a1e21cc → 3ba694dc) for the §9 metrics. On: har.on, generate_aer_on, generate_sch_on, resume_on. Off: har.ai_escalate_on, escalation model empty. Layer 4 limit untouched; nothing dropped; consumer API untouched. Spec s272.
+
 ## 0.1.389 — 4 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.462** (SS-020 follow-up §1, decisions 06:53 and 06:58). Migration `20261104440000_cf247_l4_inbox_paging`: md5-guarded edits of security.layer4_inbox_items_v1 (4fc05d14 → 2fa8b921) and public.admin_layer4_inbox (1fb97548 → 29705b99); new security.layer4_inbox_items_v2 (filter inside each source), security.layer4_inbox_counts_v1 (counts without detail), pipeline.layer4_inbox_kind_hooks (kind and extension hooks; built-in choices win). Page size, universities per page, detail reads at once and hooks switch are settings. No time-out raised; decisions, choice keys, ranks and audit unchanged. Nothing dropped; consumer API untouched. Spec s273.
