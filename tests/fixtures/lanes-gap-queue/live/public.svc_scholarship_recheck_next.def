@@ -1,0 +1,26 @@
+CREATE OR REPLACE FUNCTION public.svc_scholarship_recheck_next(p_limit integer)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare v jsonb; v_model text;
+begin
+  if current_user <> 'postgres' and coalesce(auth.role(), '') <> 'service_role' then raise exception 'service_role required'; end if;
+  select m.model_identifier into v_model from pipeline.scholarship_ai_extract_settings s join pipeline.scholarship_ai_models m on m.code = s.chain[1] where s.id = 1;
+  with pick as (
+    select r.id from pipeline.scholarship_ai_reviews r
+     where r.status = 'pending'
+       and (r.recheck->>'state' = 'queued' or (r.recheck->>'state' = 'leased' and (r.recheck->>'leased_until')::timestamptz < now()))
+       and (r.provider_id is null or not exists (select 1 from security.provider_hidden_v1 h where h.provider_id = r.provider_id))  -- 22 Oct 2026 (Platform Admin 11:42): unpublished providers wait; publishing them again brings them back
+     order by r.id limit greatest(1, least(coalesce(p_limit, 12), 40)) for update skip locked),
+  upd as (update pipeline.scholarship_ai_reviews r set recheck = r.recheck || jsonb_build_object('state', 'leased', 'leased_until', now() + interval '10 minutes',  -- fixed: lease timer
+                                                                                         'tries', coalesce((r.recheck->>'tries')::int, 0) + 1)
+            from pick where r.id = pick.id returning r.*)
+  select coalesce(jsonb_agg(jsonb_build_object('id', u.id, 'url', u.url, 'storage_path', u.storage_path, 'provider_id', u.provider_id, 'reason', u.reason, 'model', v_model,
+           'provider', (select coalesce(p.display_name, p.canonical_name) from catalogue.providers p where p.id = u.provider_id),
+           'country', security.coverage_country(u.provider_id),
+           'name', (select e.answer->>'name' from pipeline.scholarship_ai_extractions e where e.id = u.extraction_ids[array_upper(u.extraction_ids, 1)]))), '[]'::jsonb)
+    into v from upd u;
+  return v;
+end $function$

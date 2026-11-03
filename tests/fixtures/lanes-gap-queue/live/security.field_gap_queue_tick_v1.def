@@ -1,0 +1,82 @@
+CREATE OR REPLACE FUNCTION security.field_gap_queue_tick_v1()
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare c pipeline.field_gap_queue_control%rowtype; v_job uuid; v_n int; v_x jsonb; v_fields text[];
+        v_days int := security.pipeline_num_v1('gaps.recheck_days', 60)::int; v_cap int := security.pipeline_num_v1('gaps.items_per_run', 30000)::int;
+begin
+  if current_user <> 'postgres' and coalesce(auth.role(), '') <> 'service_role' and coalesce(security.current_role_rank(), 0) < 4 then
+    raise exception 'Pipeline Operator role or above required' using errcode = '42501';
+  end if;
+  v_x := jsonb_build_object('crosscheck', security.field_crosscheck_v1());
+  select * into c from pipeline.field_gap_queue_control where id = 1;
+  if not coalesce(c.enabled, false) then return v_x || jsonb_build_object('queue', 'off'); end if;
+  if exists (select 1 from pipeline.admin_jobs j where j.kind = 'enrich_fields' and coalesce((j.args->>'standing')::boolean, false) and j.state in ('queued', 'running', 'paused')) then
+    return v_x || jsonb_build_object('queue', 'previous run still open');
+  end if;
+  v_fields := array(select f.field from security.enrich_fields_v1() f);
+  perform security.campus_regions_apply_v1();  -- 23 Oct 2026: a city whose region is known needs no AI
+  drop table if exists _gap;
+  create temp table _gap(provider_id uuid, course_id uuid, field text, pri int) on commit drop;
+  insert into _gap
+  with miss as (
+    select c2.id course_id, c2.provider_id, f.x field
+      from catalogue.courses c2 cross join unnest(v_fields) f(x)
+     where c2.lifecycle_status = 'active' and f.x not in ('provider_address', 'campus_list', 'campus_region')
+       and case f.x when 'campus' then not exists (select 1 from catalogue.course_campuses x where x.course_id = c2.id)
+                    when 'duration' then c2.duration_value is null when 'level' then c2.study_level_id is null
+                    when 'delivery' then nullif(btrim(c2.delivery_mode), '') is null when 'field_of_study' then c2.primary_field_id is null
+                    when 'international' then c2.open_to_international is null
+                    when 'english' then not exists (select 1 from catalogue.course_english_requirements x where x.course_id = c2.id and coalesce(x.status, 'active') = 'active')
+                    when 'intakes' then not exists (select 1 from catalogue.course_intakes x where x.course_id = c2.id and x.status = 'active') else false end
+    union all
+    select null::uuid, p.id, 'provider_address'
+      from catalogue.providers p
+     where 'provider_address' = any (v_fields) and nullif(btrim(p.address_line1), '') is null and coalesce(p.lifecycle_status, 'active') = 'active'
+       and exists (select 1 from catalogue.courses c3 where c3.provider_id = p.id and c3.lifecycle_status = 'active')
+    union all
+    select null::uuid, p.id, 'campus_region'
+      from catalogue.providers p
+     where 'campus_region' = any (v_fields) and coalesce(p.lifecycle_status, 'active') = 'active'
+       and exists (select 1 from catalogue.campuses k where k.provider_id = p.id and k.status = 'active' and k.subdivision_id is null and nullif(btrim(k.city), '') is not null)),
+  last as (
+    select distinct on (e.provider_id, e.course_id, e.field) e.provider_id, e.course_id, e.field, e.state, e.updated_at, e.reason
+      from pipeline.field_enrich_items e where e.field <> 'campus_list'
+     order by e.provider_id, e.course_id, e.field, e.id desc)
+  select m.provider_id, m.course_id, m.field,
+         case when l.state is null then 1
+              when exists (select 1 from pipeline.coverage_course_pages g where g.course_id = m.course_id and g.read_at > l.updated_at) then 0
+              else 2 end
+    from miss m
+    left join last l on l.provider_id = m.provider_id and l.course_id is not distinct from m.course_id and l.field = m.field
+   where not exists (select 1 from pipeline.manual_locks k where k.entity = case when m.course_id is null then 'provider' else 'course' end
+                       and k.entity_id = coalesce(m.course_id, m.provider_id) and k.field in (m.field, 'all'))
+     and coalesce(l.state, '') not in ('queued', 'waiting', 'ai', 'leased', 'review')   -- being worked on, or waiting for a person
+     and (l.state is null or l.state = 'filled'                                          -- never tried, or filled and since emptied
+          or l.reason = 'provider unpublished'                                           -- 22 Oct 2026: skipped while unpublished, published again
+          or l.updated_at < now() - make_interval(days => v_days)                        -- not stated: checked again after the set days
+          or exists (select 1 from pipeline.coverage_course_pages g where g.course_id = m.course_id and g.read_at > l.updated_at))  -- or once the page is read again
+   order by 4, m.course_id
+   limit v_cap;
+  delete from _gap g where g.course_id is not null and security.enrich_item_held_v1(g.course_id, g.field);  -- the item gate would not queue it
+  delete from _gap g where exists (select 1 from security.provider_hidden_v1 h where h.provider_id = g.provider_id);  -- 22 Oct 2026 (Platform Admin 11:42): unpublished providers wait; publishing them again brings them back
+  select count(*) into v_n from _gap;
+  if v_n = 0 then return v_x || jsonb_build_object('queue', 'nothing due'); end if;
+  insert into pipeline.admin_jobs(kind, lane, state, title, args, progress, requested_by, reason, scope)
+  values ('enrich_fields', 'enrich-standing', 'queued', 'Fill the gaps · all countries (standing)',
+          jsonb_build_object('countries', to_jsonb(security.catalogue_country_codes_v1()), 'provider_ids', '[]'::jsonb, 'fields', to_jsonb(v_fields),
+                             'ai', true, 'scraper', true, 'standing', true),
+          jsonb_build_object('done', 0, 'total', 0), c.owner, 'Standing gap queue (job field-gap-queue): ' || c.reason, 'All countries')
+  returning id into v_job;
+  insert into pipeline.field_enrich_items(job_id, provider_id, course_id, field) select v_job, g.provider_id, g.course_id, g.field from _gap g on conflict do nothing;
+  insert into pipeline.field_enrich_items(job_id, provider_id, course_id, field, state)
+  select distinct v_job, e.provider_id, null::uuid, 'campus_list', 'waiting' from pipeline.field_enrich_items e where e.job_id = v_job and e.field = 'campus'
+  on conflict do nothing;
+  select count(*) into v_n from pipeline.field_enrich_items where job_id = v_job;
+  update pipeline.admin_jobs set progress = jsonb_build_object('done', 0, 'total', v_n) where id = v_job;
+  insert into pipeline.admin_job_events(job_id, note, detail) values (v_job, v_n || ' item(s) to settle (standing gap queue)',
+    (select jsonb_object_agg(field, n) from (select field, count(*) n from pipeline.field_enrich_items where job_id = v_job group by 1) z));
+  return v_x || jsonb_build_object('queue', 'started', 'job_id', v_job, 'items', v_n);
+end $function$

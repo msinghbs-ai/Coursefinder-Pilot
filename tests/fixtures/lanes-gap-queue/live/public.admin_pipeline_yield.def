@@ -1,0 +1,11 @@
+CREATE OR REPLACE FUNCTION public.admin_pipeline_yield(p_args jsonb DEFAULT '{}'::jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare v_rank int := security.current_role_rank();
+begin
+  if auth.uid() is null or coalesce(v_rank, 0) < 5 then raise exception 'PIM Admin role or above required' using errcode = '42501'; end if;
+  return security.pipeline_yield_v1(nullif(p_args->>'hours', '')::int);
+end $function$

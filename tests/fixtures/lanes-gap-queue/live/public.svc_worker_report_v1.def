@@ -1,0 +1,24 @@
+CREATE OR REPLACE FUNCTION public.svc_worker_report_v1(p_mode text, p_status integer, p_ms integer, p_body jsonb, p_worker text)
+ RETURNS bigint
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare v_id bigint; v_items int; v_failed int; v_ok int; v_landed jsonb;
+begin
+  if current_user <> 'postgres' and coalesce(auth.role(), '') <> 'service_role' then raise exception 'service_role required'; end if;
+  v_items := coalesce(security.worker_call_work_v1(p_body::text), 0)::int;
+  v_failed := coalesce(nullif(p_body->>'failed', '')::int, nullif(p_body->'tally'->>'failed', '')::int, 0)
+            + coalesce(nullif(p_body->'tally'->>'fetch_failed', '')::int, 0) + coalesce(nullif(p_body->'tally'->>'scrape_failed', '')::int, 0)
+            + case when p_status >= 400 or coalesce(p_body->>'ok', 'true') = 'false' then 1 else 0 end;
+  v_ok := greatest(0, coalesce(nullif(p_body->>'done', '')::int, nullif(p_body->>'applied', '')::int, v_items - v_failed));
+  v_landed := coalesce(p_body->'landed', p_body->'tally', '{}'::jsonb);
+  insert into pipeline.mode_outcome_ledger(mode, status, ms, items, ok, failed, landed, worker, detail)
+  values (left(coalesce(p_mode, ''), 60), coalesce(p_status, 200), p_ms, v_items, v_ok, v_failed, v_landed, left(p_worker, 80),
+          case when length((p_body - 'ok' - 'mode' - 'workerVersion' - 'tally' - 'landed')::text) <= 4000 then p_body - 'ok' - 'mode' - 'workerVersion' - 'tally' - 'landed'
+               else jsonb_build_object('truncated', true, 'keys', (select jsonb_agg(k) from jsonb_object_keys(p_body) k)) end)  -- fixed: a row keeps at most 4 KB of detail
+  returning id into v_id;
+  -- CF-247 scholarship recovery F2: what the call achieved (an HTTP 500 or no work with an error is never "succeeded")
+  update pipeline.mode_outcome_ledger set outcome = security.worker_call_outcome_v1(coalesce(p_status, 200), p_body, v_items, v_ok, v_failed) where id = v_id;
+  return v_id;
+end $function$
