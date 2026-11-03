@@ -6,7 +6,7 @@
 
 export type FeeItem = {
   provider: string; country: string; url: string; notes?: string | null;
-  profile?: { currency_code?: string; usual_unit?: string; full_time_units_a_year?: number; unit_name?: string; terms_a_year?: number; notes?: string } | null;
+  profile?: { currency_code?: string; usual_unit?: string; full_time_units_a_year?: number; unit_name?: string; units_are?: string; terms_a_year?: number; notes?: string } | null;
   findings?: { kind: string; detail: unknown; times: number }[];
   courses: { id: string; title: string; level: string | null }[];
   course_page?: boolean;
@@ -18,6 +18,10 @@ Rules:
 - unit: per_year (a yearly or annual fee, a fee per EFTS or full-time year), per_credit, per_point (NZ points), per_term (semester, trimester or term), per_course (whole programme), or unknown.
 - An amount printed for a number of points or credits, such as "$19,929.84 (for 60 points)" or "$27,300 (60 points)", is the fee for those points, NOT a fee per point: use per_year when the points are a full-time year, otherwise per_course, and give that number as units_covered. Use per_point or per_credit only when the page says per point, per credit or per paper.
 - units_covered: the number of points or credits the amount is for, when the page states it next to the amount; otherwise null.
+- units_kind: what units_covered counts: "units" (units, subjects, modules or papers), "credit_points" (points, credits, credit points, units of credit or UOC); null when the page does not say. Credit points are never units.
+- full_time_load: the number of the same units or points the page itself says is one full-time year (for example "a full-time load is 48 units of credit", "8 units per year"); null when the page does not say. Never copy it from the country line.
+- course_years: the course length in years when the page states it (for example "1 year full-time" is 1, "18 months" is 1.5); otherwise null.
+- whole_course: true when the page says the amount is for the whole course or programme (total, full course fee, fee to complete the degree); false when it is a yearly, per-term or per-unit amount; null when unclear.
 - audience: international or domestic, from the page's heading or column. If the page is only for international students, every row is international.
 - quote: copy the words of the row from the page exactly, including the amount, so it can be found on the page.
 - course_id: the id of the one course in the given course list that this row's fee is for (same qualification; a subject row belongs to its qualification's course when the list has no separate course for the subject). Use null when no course in the list fits. match_confidence 0 to 1: how sure the match is.
@@ -30,12 +34,16 @@ const fees_schema = {
   required: ["rows", "more_fee_pages", "page_notes"],
   properties: {
     rows: { type: "array", items: { type: "object", additionalProperties: false,
-      required: ["qualification", "subject", "level", "amount_min", "amount_max", "currency", "unit", "units_covered", "audience", "fee_year", "quote", "course_id", "match_confidence"],
+      required: ["qualification", "subject", "level", "amount_min", "amount_max", "currency", "unit", "units_covered", "audience", "fee_year", "quote", "course_id", "match_confidence", "units_kind", "full_time_load", "course_years", "whole_course"],
       properties: {
         qualification: { type: "string" }, subject: { type: ["string", "null"] }, level: { type: ["string", "null"] },
         amount_min: { type: "number" }, amount_max: { type: ["number", "null"] }, currency: { type: "string" },
         unit: { type: "string", enum: ["per_year", "per_credit", "per_point", "per_term", "per_course", "unknown"] },
         units_covered: { type: ["number", "null"] },
+        // v0.59.6 (CF-247 IQ-00111): what the count is, the page's own full-time load, the course length and whether the amount is the whole course;
+        // the database makes the yearly figure from these (security.fee_reader_yearly_v1) and holds an unclear one for a person
+        units_kind: { type: ["string", "null"], enum: ["units", "credit_points", null] }, full_time_load: { type: ["number", "null"] },
+        course_years: { type: ["number", "null"] }, whole_course: { type: ["boolean", "null"] },
         audience: { type: "string", enum: ["international", "domestic"] }, fee_year: { type: ["integer", "null"] },
         quote: { type: "string" }, course_id: { type: ["string", "null"] }, match_confidence: { type: "number" } } } },
     more_fee_pages: { type: "array", items: { type: "string" } },
@@ -48,7 +56,9 @@ const fees_schema = {
 export function feeAiRequest(model: string, it: FeeItem, text: string, maxTokens?: number) {
   const p = it.profile || {};
   const country = `Country ${it.country}: currency ${p.currency_code || "?"}; fees are usually published ${String(p.usual_unit || "per_year").replace("_", " ")}`
-    + (p.full_time_units_a_year ? `; a full-time year is ${p.full_time_units_a_year} ${p.unit_name || "units"}` : "") + (p.notes ? `. ${p.notes}` : "");
+    + (p.full_time_units_a_year ? `; a full-time year is ${p.full_time_units_a_year} ${p.unit_name || "units"}` : "")
+    // v0.59.6 (IQ-00111): the country load counts one kind only; a count of the other kind is not a share of it
+    + (p.units_are ? ` (${p.units_are === "units" ? "units or subjects, not credit points" : "credit points, not units or subjects"})` : "") + (p.notes ? `. ${p.notes}` : "");
   const past = (it.findings || []).slice(0, 20).map((f) => `- ${f.kind} (${f.times}x): ${JSON.stringify(f.detail).slice(0, 220)}`).join("\n");
   const courses = it.courses.map((c) => `${c.id} | ${c.title} | ${c.level || ""}`).join("\n");
   const user = [
