@@ -18,7 +18,7 @@ const md5 = (s) => crypto.createHash('md5').update(s).digest('hex')
 const ACTIONS = ['provide_url', 'attach_document', 'enter_value', 'confirm_identity', 'select_source', 'confirm_scope', 'correct_value', 'search_again',
   'confirm_not_published', 'return_technical', 'reject_evidence']
 const CLASSES = ['aer_source_missing', 'aer_document_unverified', 'aer_rendered_only', 'aer_empty_read', 'aer_read_held', 'aer_course_identity',
-  'sch_source_missing', 'sch_international_unresolved', 'sch_ownership_conflict', 'fee_evidence_conflict', 'intake_incomplete']
+  'sch_source_missing', 'sch_international_unresolved', 'sch_ownership_conflict', 'fee_evidence_conflict', 'intake_incomplete', 'aer_read_evidence', 'aer_read_rows_missing']
 
 test('one guarded edit (the operations report section) from the live text; the Inbox functions are not edited here', () => {
   expect(m).toContain("select pg_temp.edit_once('security.ops_report_v1(integer)', '5a1e21cc42f8f54cbf0d9f3f7fe81c71', '3ba694dc078995d88a983e8e92b2f425'")
@@ -54,7 +54,7 @@ test('the eleven actions of §2 through one server function, with ranks, validat
 })
 
 test('automatic resumption: a handler per lane; verification closes, or returns the same item with a specific request; issues close or reopen', () => {
-  for (const lane of ['aer_source', 'aer_course', 'sch_coverage', 'fee', 'intake']) expect(m).toMatch(new RegExp(`^ \\('${lane}', '`, 'm'))
+  for (const lane of ['aer_source', 'aer_course', 'sch_coverage', 'fee', 'intake', 'aer_item']) expect(m).toMatch(new RegExp(`^ \\('${lane}', '`, 'm'))
   expect(m).toContain("insert into pipeline.entry_matrix_sources as s(provider_id, url, title, rank, found_via, status)")
   expect(m).toContain("'manual', true, 'waiting', now(), auth.uid(), now())")  // a person's listing source
   expect(m).toContain('update pipeline.scholarship_page_candidates set requested_at = now() where id = v_cand;')  // Read again
@@ -90,7 +90,8 @@ test('the kind for the Inbox: counts, a compact page and lazy detail as this cha
   for (const f of ['layer4_intervention_kind_v1()', 'layer4_intervention_inbox_counts_v1()', 'layer4_intervention_inbox_page_v1(p_args jsonb)',
     'layer4_intervention_inbox_detail_v1(p_ref text)', 'layer4_intervention_inbox_decide_v1(p_ref text, p_choice text, p_value text, p_reason text)'])
     expect(m).toContain(`create or replace function security.${f}`)
-  expect(m).toContain("'resolution', jsonb_build_object(")
+  expect(m).toContain("jsonb_build_object('key', 'resolution', 'title', 'Resolution', 'body'")  // paging contract: {sections:[{key, title, body}], actions:[{key, allowed, why}]}
+  expect(m).toContain("'before', case when nullif(p_args->>'after_ref', '') is not null then")
   expect(m).toContain("v_out := v_out || jsonb_build_object('human_assisted_recovery', security.layer4_intervention_report_v1());")
   for (const k of ['automatically_resolved', 'human_input_needed', 'human_resolved', 'resumed', 'admitted', 'published', 'still_blocked', 'avg_minutes_to_resume', 'recovery_success_rate'])
     expect(m).toContain(`'${k}'`)
@@ -102,4 +103,17 @@ test('the fixture proves the six lifecycles of §8 and the rules around them', (
     'a changed failure reopens the same item', 'an unchanged failure came back', 'only the evidenced address is suggested', 'ownership decided below Platform Admin'])
     expect(fixtures).toContain(s)
   expect(run).toContain("[ \"$(grep -c ': already applied$' <<<\"$OUT\")\" = 1 ]")
+})
+
+test('AER reads held by E13 or D-R3: recovery choices, never approval; recorded once per unchanged problem; the corrected read restarts by itself', () => {
+  for (const f of ['layer4_aer_recovery_kind_v1()', 'layer4_aer_recovery_detail_v1(p_ref text)', 'layer4_aer_recovery_decide_v1(p_ref text, p_choice text, p_value text, p_reason text)'])
+    expect(m).toContain(`create or replace function security.${f}`)
+  for (const k of ['reread_stored', 'request_evidence', 'ai_analyse', 'open_intervention']) expect(m).toContain(`{"key": "${k}"`)
+  expect(m).toContain('unique (review_item_id, choice, problem_fingerprint)')
+  expect(m).toContain('v_res := security.course_entry_correction_v1(p_ref::uuid, auth.uid(),')
+  expect(m).toContain('found among the quotations of the requirements the reader dropped')
+  const dec = m.slice(m.indexOf('create or replace function security.layer4_aer_recovery_decide_v1'), m.indexOf('revoke all on function security.layer4_aer_recovery_decide_v1'))
+  expect(dec).not.toMatch(/layer4_review_decide|course_entry_review_apply|status = 'active'/)
+  expect(fixtures).toContain('E13 ok: UNSW Actuarial pattern')
+  for (const s of ['E13: recovery never approves', 'E13: one evidence request for the case', 'E13: dedupe', 'E13: the corrected read restarts by itself']) expect(fixtures).toContain(s)
 })

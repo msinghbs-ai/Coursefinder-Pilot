@@ -284,8 +284,11 @@ begin
   v := security.layer4_intervention_inbox_page_v1(jsonb_build_object('limit', 50, 'after_at', p->'items'->0->>'created_at', 'after_ref', p->'items'->0->>'ref'));
   if jsonb_array_length(v->'items') <> (c->>'n')::int - 1 then raise exception 'R1: keyset paging reaches every item once'; end if;
   d := security.layer4_intervention_inbox_detail_v1((pg_temp.iv('aer_read_held')).id::text);
-  if not (d ? 'issue' and d ? 'evidence' and d ? 'recommended' and d ? 'resolution') then raise exception 'R1: the four sections (%)', d; end if;
-  if (select count(*) from jsonb_array_elements(d->'resolution'->'actions')) <> 4 then raise exception 'R1: only the class''s actions (%)', d->'resolution'->'actions'; end if;
+  if (select array_agg(x->>'key' order by k) from jsonb_array_elements(d->'sections') with ordinality z(x, k)) <> array['issue', 'evidence', 'recommended', 'resolution'] then
+    raise exception 'R1: the four sections in the paging contract shape (%)', d; end if;
+  if jsonb_array_length(d->'actions') <> 4 or exists (select 1 from jsonb_array_elements(d->'actions') a where not (a->>'allowed')::boolean) then raise exception 'R1: only the class''s actions (%)', d->'actions'; end if;
+  if (security.layer4_intervention_inbox_page_v1(jsonb_build_object('limit', 50, 'after_at', p->'items'->0->>'created_at', 'after_ref', p->'items'->0->>'ref'))->>'before')::int <> 1 then
+    raise exception 'R1: before counts the items at or before the cursor'; end if;
   -- return to technical recovery and reject evidence
   i := pg_temp.iv('aer_read_held');
   v := pg_temp.act(i.id, 'reject_evidence', null, 'the held rows are a reader defect');
@@ -312,6 +315,71 @@ begin
   if (v->>'raised')::boolean or v->>'reason' not like '%open limit%' then raise exception 'R1: open limit (%)', v; end if;
   update pipeline.platform_toolset_settings set value = '150' where key = 'har.open_max_per_lane';
   raise notice 'R1 ok: recheck closes, escalation once, Inbox counts/page/detail, return and reject audited, unchanged not re-asked, changed reopens, rank 5 for not published, open limit';
+end $$;
+
+-- E13 the UNSW Bachelor of Actuarial Studies pattern (decision 06:58 §1, §3): two course reads held by E13 because requirements were dropped;
+-- approval stays blocked, recovery is available, grouped into one case, recorded, deduplicated, and the corrected read restarts by itself
+do $$
+declare v jsonb; d jsonb; i pipeline.layer4_interventions; a1 uuid := 'e1300000-0000-4000-8000-000000000001'; a2 uuid := 'e1300000-0000-4000-8000-000000000002'; n int;
+        g jsonb := '{"complete": false, "reasons": ["the reader dropped 2 printed requirement(s) that no row covers (mathematics prerequisite, ATAR)"], "drops_uncovered": 2}';
+begin
+  insert into catalogue.providers(id, stable_key, canonical_name, display_name, website) values ('51000000-0000-4000-8000-0000000000aa', 'unsw', 'UNSW Sydney', 'UNSW', 'https://www.unsw.edu.au');
+  insert into catalogue.courses(id, provider_id, canonical_title, course_code) values
+    ('c1300000-0000-4000-8000-000000000001', '51000000-0000-4000-8000-0000000000aa', 'Bachelor of Actuarial Studies', '013344A'),
+    ('c1300000-0000-4000-8000-000000000002', '51000000-0000-4000-8000-0000000000aa', 'Bachelor of Actuarial Studies (Honours)', '013345B');
+  insert into pipeline.evidence_artifacts(id, source_url, storage_path) values ('e1300000-0000-4000-8000-0000000000e1', 'https://www.unsw.edu.au/study/undergraduate/bachelor-of-actuarial-studies', 'x');
+  insert into pipeline.layer4_review_items(id, entity_type, entity_id, field_code, status, evidence_id, proposed_value) values
+    (a1, 'course', 'c1300000-0000-4000-8000-000000000001', 'course_entry_first_read', 'pending', 'e1300000-0000-4000-8000-0000000000e1',
+     '{"dropped": [{"kind": "prerequisite", "reason": "value_not_in_quote", "quote": "Mathematics Extension 1 (Band E3) is a prerequisite"}, {"kind": "selection_rank", "reason": "value_not_in_quote", "quote": "Guaranteed ATAR 2026: 95.00"}]}'),
+    (a2, 'course', 'c1300000-0000-4000-8000-000000000002', 'course_entry_first_read', 'pending', 'e1300000-0000-4000-8000-0000000000e1',
+     '{"dropped": [{"kind": "prerequisite", "reason": "value_not_in_quote", "quote": "Mathematics Extension 1 (Band E3) is a prerequisite"}, {"kind": "selection_rank", "reason": "value_not_in_quote", "quote": "Guaranteed ATAR 2026: 98.00"}]}');
+  insert into catalogue.course_entry_requirements(course_id, status, quote, provenance) values
+    ('c1300000-0000-4000-8000-000000000001', 'proposed', 'IELTS 6.5 overall', jsonb_build_object('review_item_id', a1)),
+    ('c1300000-0000-4000-8000-000000000002', 'proposed', 'IELTS 6.5 overall', jsonb_build_object('review_item_id', a2));
+  insert into fx.gates values (a1, g), (a2, g);
+  perform pg_temp.as_user('a0000000-0000-4000-8000-000000000004', 4);
+  -- the card: recovery recommended, Reject not the only action, the two reads one case
+  d := security.layer4_aer_recovery_detail_v1(a1::text);
+  if d->'sections'->0->'body'->>'Recommended recovery' <> 'reread_stored' or (d->'sections'->0->'body'->>'Dropped requirements')::int <> 2
+     or (d->'sections'->0->'body'->>'Waiting rows')::int <> 1 or jsonb_array_length(d->'sections'->1->'body'->'Other held reads in this case') <> 1 then raise exception 'E13: card (%)', d; end if;
+  if (select count(*) from jsonb_array_elements(d->'actions') x where (x->>'allowed')::boolean) < 3 then raise exception 'E13: recovery actions other than Reject (%)', d->'actions'; end if;
+  if (select (x->>'allowed')::boolean from jsonb_array_elements(d->'actions') x where x->>'key' = 'ai_analyse') then raise exception 'E13: AI analysis off by default'; end if;
+  -- re-read from stored evidence: the existing corrected read; a second click on the unchanged problem starts nothing
+  v := security.layer4_aer_recovery_decide_v1(a1::text, 'reread_stored', null, 'two requirements dropped; read the stored page again');
+  if not (v->>'ok')::boolean or (select count(*) from pipeline.aer_read_supersessions where old_item_id = a1) <> 1 then raise exception 'E13: re-read (%)', v; end if;
+  v := security.layer4_aer_recovery_decide_v1(a1::text, 'reread_stored', null, 'try again please');
+  if (v->>'ok')::boolean or v->>'request' not like 'This recovery was already started%' or (select count(*) from pipeline.aer_read_supersessions where old_item_id = a1) <> 1 then raise exception 'E13: dedupe (%)', v; end if;
+  select count(*) into n from pipeline.layer4_aer_recovery_actions where review_item_id = a1;
+  if n <> 1 or (select missing_quotes from pipeline.layer4_aer_recovery_actions where review_item_id = a1)::text not like '%Mathematics Extension 1%'
+     or (select reviewer from pipeline.layer4_aer_recovery_actions where review_item_id = a1) <> 'a0000000-0000-4000-8000-000000000004' then raise exception 'E13: the action is recorded with its rows, quotes and reviewer'; end if;
+  -- the corrected read came back still incomplete (refused); the reviewer opens human input for the rows
+  update pipeline.aer_read_supersessions set state = 'refused', outcome = 'the new read dropped the same rows' where old_item_id = a1;
+  v := security.layer4_aer_recovery_decide_v1(a1::text, 'ai_analyse', null, 'ask the model');
+  if (v->>'ok')::boolean or v->>'request' not like '%switched off%' then raise exception 'E13: AI off refuses with the reason (%)', v; end if;
+  v := security.layer4_aer_recovery_decide_v1(a1::text, 'open_intervention', null, 'enter the two dropped requirements');
+  i := (select x from pipeline.layer4_interventions x where x.lane = 'aer_item' and x.entity = a1::text);
+  if not (v->>'ok')::boolean or i.status <> 'awaiting_input' or i.missing_fact <> 'aer_read_rows_missing' then raise exception 'E13: intervention opened (% / %)', v, i; end if;
+  v := security.layer4_aer_recovery_decide_v1(a1::text, 'open_intervention', null, 'again');
+  if (select count(*) from pipeline.layer4_interventions where lane = 'aer_item' and entity = a1::text) <> 1 then raise exception 'E13: one intervention for the unchanged problem'; end if;
+  -- the case's evidence request: one item for both reads
+  v := security.layer4_aer_recovery_decide_v1(a1::text, 'request_evidence', null, 'need the official handbook page');
+  v := security.layer4_aer_recovery_decide_v1(a2::text, 'request_evidence', null, 'same case, honours');
+  if (select count(*) from pipeline.layer4_interventions where missing_fact = 'aer_read_evidence') <> 1 then raise exception 'E13: one evidence request for the case'; end if;
+  -- E13 still refuses approval: nothing here decides or admits
+  if exists (select 1 from pipeline.layer4_review_items where id in (a1, a2) and status <> 'pending') or exists (select 1 from catalogue.course_entry_requirements where status = 'active') then
+    raise exception 'E13: recovery never approves'; end if;
+  -- the reviewer enters the rows: a quotation not on the page is refused; the printed ones restart the corrected read by themselves
+  v := pg_temp.act(i.id, 'enter_value', '[{"requirement": "Mathematics Extension 1", "minimum": "Band E3", "quote": "Maths Extension 1 is assumed knowledge"}]');
+  if (v->>'ok')::boolean then raise exception 'E13: a quotation not dropped from the page was accepted'; end if;
+  v := pg_temp.act(i.id, 'enter_value', '[{"requirement": "Mathematics Extension 1", "minimum": "Band E3", "quote": "Mathematics Extension 1 (Band E3) is a prerequisite"}, {"requirement": "Guaranteed ATAR", "minimum": "95.00", "quote": "Guaranteed ATAR 2026: 95.00"}]');
+  if not (v->>'ok')::boolean or (select count(*) from pipeline.aer_read_supersessions where old_item_id = a1 and state = 'requested') <> 1 then raise exception 'E13: the corrected read restarts by itself (%)', v; end if;
+  -- the new read passes the gates and supersedes the held one; the job verifies and closes the intervention
+  update pipeline.aer_read_supersessions set state = 'superseded' where old_item_id = a1 and state = 'requested';
+  update pipeline.layer4_review_items set status = 'superseded' where id = a1;
+  perform pg_temp.as_user(null, null);
+  v := security.layer4_interventions_tick_v1();
+  if (select status from pipeline.layer4_interventions where id = i.id) <> 'resolved' then raise exception 'E13: resolved on the replaced read'; end if;
+  raise notice 'E13 ok: UNSW Actuarial pattern: approval stays blocked; re-read, evidence, AI (off) and human input offered; one case; every action recorded once; valid rows restart the corrected read';
 end $$;
 
 -- M §9 metrics in the operations report section; nothing admitted by the contract itself

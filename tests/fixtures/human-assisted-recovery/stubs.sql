@@ -81,3 +81,31 @@ create table if not exists pipeline.scholarship_discovery_providers(provider_id 
 
 -- live catalogue.providers also carries short_name (read by the generators for the card subject)
 alter table catalogue.providers add column if not exists short_name text;
+
+-- AER held reads (E13 / D-R3): the gates, the corrected read and the matrix re-read are live functions this change only calls; stand-ins
+-- answering from fx tables with the live contracts (course_entry_correction_v1 refuses a second request; a request leaves a supersession row)
+alter table pipeline.field_enrich_items add column if not exists id bigserial, add column if not exists course_id uuid, add column if not exists field text,
+  add column if not exists state text, add column if not exists value jsonb, add column if not exists job_id uuid, add column if not exists provider_id uuid;
+alter table catalogue.course_entry_requirements add column if not exists provenance jsonb default '{}', add column if not exists quote text;
+alter table catalogue.provider_entry_matrix add column if not exists run_id uuid, add column if not exists quote text;
+create table if not exists pipeline.aer_read_supersessions(id uuid primary key default gen_random_uuid(), old_item_id uuid not null, course_id uuid not null, source_url text not null,
+  old_evidence_id uuid, enrich_item_id bigint not null unique, job_id uuid, requested_by uuid, reason text not null,
+  state text not null default 'requested' check (state in ('requested', 'superseded', 'refused')), new_item_id uuid, outcome text, diff jsonb, requested_at timestamptz not null default now());
+create table if not exists fx.gates(item uuid primary key, result jsonb);
+create or replace function security.course_entry_gate_v1(p_item uuid, p_exclude uuid[] default '{}') returns jsonb language sql stable as
+  $f$ select coalesce((select g.result from fx.gates g where g.item = p_item), '{"complete": true, "reasons": []}'::jsonb) $f$;
+create or replace function security.entry_matrix_gate_v1(p_run uuid, p_exclude uuid[] default '{}') returns jsonb language sql stable as
+  $f$ select coalesce((select g.result from fx.gates g join pipeline.entry_matrix_runs r on r.review_item_id = g.item where r.id = p_run), '{"complete": true}'::jsonb) $f$;
+create or replace function security.course_entry_correction_v1(p_item uuid, p_actor uuid, p_reason text) returns jsonb language plpgsql as $f$
+declare o pipeline.layer4_review_items; v_e bigint;
+begin
+  select * into o from pipeline.layer4_review_items where id = p_item;
+  if exists (select 1 from pipeline.aer_read_supersessions s where s.old_item_id = p_item and s.state = 'requested') then
+    raise exception 'No corrected read (D-R2): a corrected read of this item is already asked for. Nothing was changed'; end if;
+  insert into pipeline.field_enrich_items(course_id, field, state) values (o.entity_id, 'entry_requirements', 'queued') returning id into v_e;
+  insert into pipeline.aer_read_supersessions(old_item_id, course_id, source_url, enrich_item_id, requested_by, reason)
+  values (p_item, o.entity_id, coalesce((select g.url from pipeline.coverage_course_pages g where g.course_id = o.entity_id), 'https://x'), v_e, p_actor, p_reason);
+  return jsonb_build_object('enrich_item_id', v_e, 'review_item_id', p_item);
+end $f$;
+create or replace function security.aer_reread_v1(p_source_id uuid, p_reason text, p_actor uuid default null) returns jsonb language sql as
+  $f$ update pipeline.entry_matrix_runs set state = 'queued' where source_id = p_source_id returning jsonb_build_object('ok', true, 'runs', 1) $f$;

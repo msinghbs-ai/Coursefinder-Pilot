@@ -40,6 +40,12 @@
 --     layer4_review_items.
 --   6 Time bounds per class (har.<class>.max_attempts, escalate_after_hours, recheck_hours, deadline_hours, assigned_to); while waiting for a
 --     person an item holds no lease, spends nothing, blocks nothing else and is never counted as admitted.
+--   6b AER reads held by E13 or D-R3 (Platform Admin decision 4 Nov 2026 06:58 §1, §3; Inbox paging contract §2a, mode extend on aer_review):
+--     security.layer4_aer_recovery_kind_v1/_detail_v1/_decide_v1: Re-read from stored evidence (the existing corrected read, D-R2, or the
+--     matrix re-read), Request official evidence (one aer_read_evidence intervention per recovery case), Ask AI to analyse (behind
+--     har.ai_escalate_on), Open human input (aer_read_rows_missing: rows checked against the dropped quotations); every action recorded in
+--     pipeline.layer4_aer_recovery_actions, once per unchanged problem; valid input restarts the corrected read by itself. The gates still
+--     refuse approval of an incomplete read.
 --   7 Metrics (§9): security.layer4_intervention_report_v1(), a section of security.ops_report_v1 (md5-guarded edit). No new dashboard.
 -- Activation:
 --   ON (records, asks a person, and resumes only on a person's input within the existing readers' caps): har.on, har.generate_aer_on,
@@ -332,6 +338,16 @@ insert into pipeline.layer4_intervention_classes(code, lane, workstream, title, 
   'select_source', 'The value is recorded with its provenance as a proposal for the fee lane; the fee lane''s own checks and Layer 4 admit or refuse it.',
   '{"select_source": 4, "correct_value": 4, "confirm_scope": 4, "enter_value": 4, "return_technical": 4, "reject_evidence": 4}', true,
   'the fee lane has no conflicting evidence for the course', 100),
+ ('aer_read_evidence', 'aer_item', 'AER', 'An incomplete entry-requirement read needs the official evidence again',
+  'The official page or document that states the requirements the reader dropped (the same course''s page, or the university''s requirements document).',
+  'attach_document', 'The evidence is checked to be on the university''s own site and attached; the course is read again by the existing reader (a corrected read, D-R2), and the new read replaces the incomplete one only through the usual gates.',
+  '{"attach_document": 4, "provide_url": 4, "confirm_not_published": 5, "return_technical": 4, "reject_evidence": 4}', false,
+  'the incomplete read is replaced or decided', 55),
+ ('aer_read_rows_missing', 'aer_item', 'AER', 'Requirements were dropped from an entry-requirement read',
+  'Each dropped requirement entered or corrected as a row (what it requires and its minimum, if any), each with the sentence from the official page that states it.',
+  'enter_value', 'Each row''s quotation is checked against the requirements the reader dropped; the rows are kept as evidence and the course is read again (a corrected read) so the gates can pass. A row typed here is never admitted by itself.',
+  '{"enter_value": 4, "correct_value": 4, "return_technical": 4, "reject_evidence": 4}', true,
+  'the incomplete read is replaced or decided', 56),
  ('intake_incomplete', 'intake', 'Intakes', 'Intake commencement or application deadline is incomplete',
   'The missing commencement dates and application deadlines, with the official sentence that states them.',
   'enter_value', 'The dates are recorded with their provenance as a proposal for the intake lane, whose own checks and Layer 4 admit or refuse them.',
@@ -1390,7 +1406,13 @@ language sql stable security definer set search_path to '' as $function$
                 and (nullif(p_args->>'after_ref', '') is null or (i.created_at, i.id) > ((p_args->>'after_at')::timestamptz, (p_args->>'after_ref')::bigint))
               order by i.created_at, i.id
               limit least(greatest(coalesce((p_args->>'limit')::int, 50), 1), 200))  -- fixed: page size bounds, as the Inbox's own
-  select jsonb_build_object('kind', 'intervention', 'items', coalesce(jsonb_agg(jsonb_build_object('kind', 'intervention', 'ref', x.id::text, 'provider_id', x.provider_id,
+  select jsonb_build_object('kind', 'intervention',
+    -- the paging contract's "before": this kind's items for the same university at or before the cursor
+    'before', case when nullif(p_args->>'after_ref', '') is not null then
+                (select count(*) from pipeline.layer4_interventions b where b.status = 'awaiting_input'
+                    and (nullif(p_args->>'provider_id', '') is null or b.provider_id = (p_args->>'provider_id')::uuid)
+                    and (b.created_at, b.id) <= ((p_args->>'after_at')::timestamptz, (p_args->>'after_ref')::bigint)) end,
+    'items', coalesce(jsonb_agg(jsonb_build_object('kind', 'intervention', 'ref', x.id::text, 'provider_id', x.provider_id,
            'provider', (select coalesce(p.display_name, p.canonical_name) from catalogue.providers p where p.id = x.provider_id), 'subject', x.subject, 'why', x.why,
            'suggestion', x.suggestion, 'created_at', x.created_at, 'missing_fact', x.missing_fact,
            'late', x.created_at < now() - make_interval(days => security.pipeline_num_v1('layer4.target_days', 7)::int), 'overdue', x.recover_by < now()) order by x.created_at, x.id), '[]'::jsonb))
@@ -1400,23 +1422,32 @@ revoke all on function security.layer4_intervention_inbox_page_v1(jsonb) from pu
 
 create or replace function security.layer4_intervention_inbox_detail_v1(p_ref text) returns jsonb
 language sql stable security definer set search_path to '' as $function$
--- the card's four sections (decision 06:30 §3), read only when the card is opened: issue summary, evidence, recommended intervention,
--- resolution (the actions this item allows with the rank each needs and whether the caller may take it, the audit lines, the resume target,
--- status and time bounds). The detail of one item only.
-  select jsonb_build_object('kind', 'intervention', 'ref', i.id::text, 'status', i.status, 'lane', i.lane, 'missing_fact', i.missing_fact, 'subject', i.subject,
-    'provider_id', i.provider_id, 'course_id', i.course_id, 'field', i.field,
-    'issue', i.issue || jsonb_build_object('class', c.title, 'automated_attempts', i.automated_attempts, 'repeats', i.repeat_count, 'reopened', i.reopen_count),
-    'evidence', i.evidence || jsonb_build_object('ai', i.ai_analysis),
-    'recommended', i.recommended || jsonb_build_object('required', i.required_input),
-    'resolution', jsonb_build_object(
-      'actions', (select coalesce(jsonb_agg(ch || jsonb_build_object('rank', (i.allowed_actions->>(ch->>'key'))::int,
-                                                                     'allowed', security.current_role_rank() >= (i.allowed_actions->>(ch->>'key'))::int)), '[]'::jsonb)
-                    from jsonb_array_elements(security.layer4_intervention_kind_v1()->'choices') ch where i.allowed_actions ? (ch->>'key')),
-      'resume_target', i.resume_target, 'assigned_to', i.assigned_to, 'escalate_at', i.escalate_at, 'recover_by', i.recover_by,
-      'supplied', i.supplied, 'verified_outcome', i.verified_outcome, 'admitted_at', i.admitted_at, 'published_at', i.published_at,
-      'audit', (select coalesce(jsonb_agg(jsonb_build_object('at', e.at, 'by', e.actor_label, 'rank', e.role_rank, 'action', e.action, 'result', e.result->>'request') order by e.id desc), '[]'::jsonb)
-                  from (select * from pipeline.layer4_intervention_events e where e.intervention_id = i.id order by e.id desc
-                         limit security.pipeline_num_v1('har.history_items', 3)::int) e)))
+-- the card's four sections (decision 06:30 §3), read only when the card is opened, in the paging contract's shape
+-- {sections:[{key, title, body}], actions:[{key, allowed, why?}]}: issue summary, evidence, recommended intervention, resolution (the actions
+-- this item allows and whether the caller's rank may take each, the audit lines, the work resumed, status and time bounds). One item only.
+  select jsonb_build_object('sections', jsonb_build_array(
+      jsonb_build_object('key', 'issue', 'title', 'Issue summary', 'body', jsonb_strip_nulls(jsonb_build_object(
+        'What is missing', c.title, 'Record', i.subject, 'What the platform attempted', i.issue->'attempted', 'Why it could not finish', i.issue->>'why_stopped',
+        'Impact', i.issue->>'impact', 'Automatic attempts', i.automated_attempts, 'Seen again unchanged', i.repeat_count, 'Reopened', i.reopen_count))),
+      jsonb_build_object('key', 'evidence', 'title', 'Evidence', 'body', jsonb_strip_nulls(jsonb_build_object(
+        'Official links', i.evidence->'official_links', 'Stored copies', i.evidence->'stored_copies', 'Quotations', i.evidence->'quotes',
+        'Previous attempts', i.evidence->'attempts', 'Conflicts or missing information', i.evidence->'conflicts',
+        'AI analysis', case when i.ai_analysis is not null then jsonb_strip_nulls(jsonb_build_object('analysis', i.ai_analysis->>'analysis', 'confidence', i.ai_analysis->'confidence',
+                                                                                  'uncertainty', i.ai_analysis->'uncertainty', 'refused', i.ai_analysis->'refused', 'skipped', i.ai_analysis->'skipped')) end))),
+      jsonb_build_object('key', 'recommended', 'title', 'Recommended intervention', 'body', jsonb_strip_nulls(jsonb_build_object(
+        'Next best action', (select ch->>'label' from jsonb_array_elements(security.layer4_intervention_kind_v1()->'choices') ch where ch->>'key' = i.recommended->>'action'),
+        'Information needed', i.required_input->>'ask', 'Still needed after the last answer', i.required_input->>'follow_up',
+        'Suggested answer', i.recommended->'suggested', 'How this unblocks processing', i.recommended->>'unblocks'))),
+      jsonb_build_object('key', 'resolution', 'title', 'Resolution', 'body', jsonb_strip_nulls(jsonb_build_object(
+        'Status', i.status, 'Responsible', i.assigned_to, 'Work resumed on an answer', i.resume_target->>'operation', 'Escalated if unanswered by', i.escalate_at,
+        'Recovery deadline', i.recover_by, 'Verified outcome', i.verified_outcome, 'Admitted', i.admitted_at, 'Published', i.published_at,
+        'Audit', (select coalesce(jsonb_agg(jsonb_build_object('at', e.at, 'by', e.actor_label, 'rank', e.role_rank, 'action', e.action, 'request', e.result->>'request') order by e.id desc), '[]'::jsonb)
+                    from (select * from pipeline.layer4_intervention_events e where e.intervention_id = i.id order by e.id desc
+                           limit security.pipeline_num_v1('har.history_items', 3)::int) e))))),
+    'actions', (select coalesce(jsonb_agg(jsonb_build_object('key', ch->>'key', 'allowed', security.current_role_rank() >= (i.allowed_actions->>(ch->>'key'))::int,
+                                                             'why', case when security.current_role_rank() < (i.allowed_actions->>(ch->>'key'))::int
+                                                                         then 'needs rank ' || (i.allowed_actions->>(ch->>'key')) end)), '[]'::jsonb)
+                  from jsonb_array_elements(security.layer4_intervention_kind_v1()->'choices') ch where i.allowed_actions ? (ch->>'key')))
     from pipeline.layer4_interventions i join pipeline.layer4_intervention_classes c on c.code = i.missing_fact
    where i.id::text = p_ref
 $function$;
@@ -1437,6 +1468,325 @@ begin
                             'returns', v_r->>'returns', 'request', v_r->>'request');
 end $function$;
 revoke all on function security.layer4_intervention_inbox_decide_v1(text, text, text, text) from public, anon, authenticated;
+
+-- 13b AER reads held by E13 or D-R3: governed recovery instead of Reject only (Platform Admin decision 4 Nov 2026 06:58 §1 and §3; Inbox paging
+--     contract §2a: mode 'extend' on kind aer_review). The E13 and D-R3 gates still refuse approval of an incomplete read; these choices
+--     recover it. Every action is recorded in pipeline.layer4_aer_recovery_actions; an unchanged problem never makes a second operation.
+insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, section, used_by, reason) values
+ ('pipeline', 'har.aer_case_items_max', 'Human-assisted recovery: held AER reads listed in one recovery case',
+  'Held reads of the same university that fail the same way are grouped into one recovery case; the card lists at most this many of them.',
+  'number', to_jsonb(20), 1, 200, 'reads', 1519, 'Human-assisted recovery', 'security.layer4_aer_recovery_detail_v1', 'Platform Admin decision 06:58 §3 "group repeated reader failures into one case"')
+on conflict (toolset_key, key) do nothing;
+
+create table if not exists pipeline.layer4_aer_recovery_actions (
+  id bigserial primary key,
+  review_item_id uuid not null,
+  case_key text not null,
+  choice text not null check (choice in ('reread_stored', 'request_evidence', 'ai_analyse', 'open_intervention')),
+  problem_fingerprint text not null,
+  reason text not null,
+  affected_rows jsonb not null default '[]'::jsonb,
+  missing_quotes jsonb not null default '[]'::jsonb,
+  previous_evidence jsonb not null default '{}'::jsonb,
+  reviewer uuid,
+  work_item_status text,
+  next_operation text,
+  intervention_id bigint references pipeline.layer4_interventions(id),
+  result jsonb not null default '{}'::jsonb,
+  at timestamptz not null default now(),
+  unique (review_item_id, choice, problem_fingerprint)
+);
+comment on table pipeline.layer4_aer_recovery_actions is 'CF-247 (Platform Admin decision 4 Nov 2026 06:58 §1, §3): every recovery action on an AER read held by the E13 or D-R3 gate: the choice, the reason, the rows affected, the requirements dropped without a quotation in a row, the evidence the read used, the reviewer, the work item''s new status and the next automatic operation. One row per item, choice and unchanged problem (the problem fingerprint is the gate result), so an unchanged problem never makes a second operation.';
+create index if not exists layer4_aer_recovery_actions_case_idx on pipeline.layer4_aer_recovery_actions (case_key, at desc);
+alter table pipeline.layer4_aer_recovery_actions enable row level security;
+revoke all on pipeline.layer4_aer_recovery_actions from public, anon, authenticated;
+revoke all on sequence pipeline.layer4_aer_recovery_actions_id_seq from public, anon, authenticated;
+
+create or replace function security.layer4_aer_recovery_state_v1(p_item uuid) returns jsonb
+language plpgsql stable security definer set search_path to '' as $function$
+-- What is known about one held AER read, from the existing records only: its kind (course read or matrix run), the gate result (security.
+-- course_entry_gate_v1 or security.entry_matrix_gate_v1, read only), the waiting rows, the dropped requirements and their quotations, the stored
+-- copy, any corrected read already asked for (pipeline.aer_read_supersessions), the open intervention, and the recovery case: the university and
+-- the gate's first reason, so repeated reader failures of one university group into one case.
+declare r pipeline.layer4_review_items; g jsonb; v_run uuid; v_src uuid; v_pid uuid; v_drop jsonb := '[]'::jsonb; v_rows jsonb; v_case text; v_sup record;
+begin
+  select * into r from pipeline.layer4_review_items where id = p_item;
+  if r.id is null or r.field_code not in ('course_entry_first_read', 'entry_matrix_first_run', 'entry_matrix_change') then return null; end if;
+  if r.field_code = 'course_entry_first_read' then
+    select c.provider_id into v_pid from catalogue.courses c where c.id = r.entity_id;
+    g := security.course_entry_gate_v1(r.id, '{}'::uuid[]);
+    v_drop := coalesce(r.proposed_value->'dropped', (select f.value->'dropped' from pipeline.field_enrich_items f where f.id = nullif(r.proposed_value->>'item_id', '')::bigint), '[]'::jsonb);
+    select coalesce(jsonb_agg(jsonb_build_object('id', x.id, 'quote', x.quote) order by x.id), '[]'::jsonb) into v_rows
+      from catalogue.course_entry_requirements x where x.provenance->>'review_item_id' = r.id::text and x.status = 'proposed';
+    select s.state, s.outcome, s.requested_at, s.new_item_id into v_sup from pipeline.aer_read_supersessions s where s.old_item_id = r.id order by s.requested_at desc limit 1;
+  else
+    select x.id, x.source_id, x.provider_id into v_run, v_src, v_pid from pipeline.entry_matrix_runs x where x.review_item_id = r.id order by x.created_at desc limit 1;
+    g := case when v_run is not null then security.entry_matrix_gate_v1(v_run, '{}'::uuid[]) end;
+    select coalesce(jsonb_agg(jsonb_build_object('id', m.id, 'quote', m.quote) order by m.id), '[]'::jsonb) into v_rows
+      from catalogue.provider_entry_matrix m where m.run_id = v_run and m.status = 'proposed';
+  end if;
+  v_case := coalesce(v_pid::text, '-') || '|' || r.field_code || '|' || left(regexp_replace(coalesce(g->'reasons'->>0, 'incomplete'), '[0-9]+', '#', 'g'), 80);
+  return jsonb_build_object('item', r.id, 'field_code', r.field_code, 'course_id', case when r.entity_type = 'course' then r.entity_id end, 'provider_id', v_pid,
+    'run_id', v_run, 'source_id', v_src, 'complete', coalesce((g->>'complete')::boolean, false), 'reasons', coalesce(g->'reasons', '[]'::jsonb), 'gate', g,
+    'waiting_rows', v_rows, 'dropped', v_drop,
+    'missing_quotes', (select coalesce(jsonb_agg(d->'quote'), '[]'::jsonb) from jsonb_array_elements(v_drop) d where nullif(d->>'quote', '') is not null),
+    'evidence_id', r.evidence_id, 'stored_copy', r.evidence_id is not null or exists (select 1 from pipeline.coverage_course_pages p where p.course_id = r.entity_id and p.evidence_id is not null),
+    'corrected_read', case when v_sup.state is not null then jsonb_build_object('state', v_sup.state, 'outcome', v_sup.outcome, 'at', v_sup.requested_at, 'new_item', v_sup.new_item_id) end,
+    'case_key', md5(v_case), 'case_label', left(coalesce(g->'reasons'->>0, 'incomplete read'), 160),
+    'problem_fingerprint', md5(coalesce(g::text, '') || '|' || coalesce(r.evidence_id::text, '') || '|' || v_drop::text));
+end $function$;
+revoke all on function security.layer4_aer_recovery_state_v1(uuid) from public, anon, authenticated;
+
+create or replace function security.layer4_aer_recovery_kind_v1() returns jsonb
+language sql immutable set search_path to '' as $function$
+-- the recovery choices appended to the aer_review kind (paging contract §2a); Approve all, Approve except and Reject the read stay built in
+  select '{"choices": [
+     {"key": "reread_stored", "label": "Re-read from stored evidence", "returns": "The existing reader reads the page again from its stored copy (no new paid read where a copy exists); the new read replaces this one only through the same gates"},
+     {"key": "request_evidence", "label": "Request official evidence", "returns": "One Human input needed item asks for the official page or document for this case; when it is given, the course is read again by itself"},
+     {"key": "ai_analyse", "label": "Ask AI to analyse the failure", "returns": "The pinned stronger model looks at this failure once (within the AI limits) and proposes rows with quotations; a proposal is checked and only suggested"},
+     {"key": "open_intervention", "label": "Open human input", "returns": "One Human input needed item asks for the dropped requirements as rows with quotations; when they check out, the course is read again by itself"}]}'::jsonb
+$function$;
+revoke all on function security.layer4_aer_recovery_kind_v1() from public, anon, authenticated;
+
+create or replace function security.layer4_aer_recovery_detail_v1(p_ref text) returns jsonb
+language plpgsql stable security definer set search_path to '' as $function$
+-- the recovery state on an E13 or D-R3 card (decision 06:58 §3; paging contract §2a, shape {sections, actions}): the gate's counts and reasons,
+-- the recommended recovery, whether a person is needed, the owner, the next automatic attempt, the last attempt and its status, and the case
+-- the read belongs to (other held reads of the same university failing the same way). The E13 facts themselves stay on the built-in card.
+declare st jsonb := security.layer4_aer_recovery_state_v1(p_ref::uuid); v_last record; v_iv pipeline.layer4_interventions; v_rec text; v_case jsonb; v_ai boolean;
+        v_busy text;
+begin
+  if st is null then return jsonb_build_object('sections', '[]'::jsonb, 'actions', '[]'::jsonb); end if;
+  select * into v_last from pipeline.layer4_aer_recovery_actions a where a.review_item_id = p_ref::uuid order by a.id desc limit 1;
+  select * into v_iv from pipeline.layer4_interventions i where i.lane = 'aer_item' and i.status in ('ai_pending', 'awaiting_input', 'resuming')
+     and (i.entity = p_ref or i.entity = (st->>'provider_id') || '|case:' || (st->>'case_key')) order by i.id desc limit 1;
+  v_ai := security.pipeline_num_v1('har.ai_escalate_on', 0) >= 1 and security.pipeline_num_v1('ops.ai_diagnosis_on', 0) >= 1 and security.har_text_v1('har.ai_escalation_model', '') <> '';
+  v_busy := case when st->'corrected_read'->>'state' = 'requested' then 'a corrected read of this item is already asked for'
+                 when exists (select 1 from pipeline.field_enrich_items f where f.course_id = (st->>'course_id')::uuid and f.field = 'entry_requirements' and f.state in ('queued', 'waiting', 'ai', 'leased'))
+                   then 'a read of this course is in progress' end;
+  v_rec := case when (st->>'complete')::boolean then 'none: the read is complete'
+                when v_iv.id is not null then 'answer the open Human input needed item (ref ' || v_iv.id || ')'
+                when v_busy is not null then 'wait: ' || v_busy
+                when coalesce((st->>'stored_copy')::boolean, false) and coalesce(st->'corrected_read'->>'state', '') <> 'superseded'
+                     and not exists (select 1 from pipeline.layer4_aer_recovery_actions a where a.review_item_id = p_ref::uuid and a.choice = 'reread_stored') then 'reread_stored'
+                when not coalesce((st->>'stored_copy')::boolean, false) then 'request_evidence'
+                else 'open_intervention' end;
+  select coalesce(jsonb_agg(jsonb_build_object('ref', z.id, 'subject', z.subject) order by z.created_at), '[]'::jsonb) into v_case
+    from (select li.id, li.created_at, coalesce(c.display_title, c.canonical_title) subject from pipeline.layer4_review_items li left join catalogue.courses c on c.id = li.entity_id
+           where li.status = 'pending' and li.field_code = st->>'field_code' and li.id <> p_ref::uuid
+             and (st->>'course_id') is not null and c.provider_id = (st->>'provider_id')::uuid
+             and (security.layer4_aer_recovery_state_v1(li.id)->>'case_key') = st->>'case_key'
+           order by li.created_at limit security.pipeline_num_v1('har.aer_case_items_max', 20)::int) z;
+  return jsonb_build_object('sections', jsonb_build_array(
+      jsonb_build_object('key', 'recovery', 'title', 'Recovery', 'body', jsonb_strip_nulls(jsonb_build_object(
+        'Waiting rows', jsonb_array_length(st->'waiting_rows'), 'Dropped requirements', jsonb_array_length(st->'dropped'),
+        'Dropped without a row (quotations)', jsonb_array_length(st->'missing_quotes'), 'Why the read is held', st->'reasons',
+        'Recommended recovery', v_rec, 'Human input needed', case when v_rec in ('open_intervention', 'request_evidence') or v_iv.id is not null then 'yes' else 'not yet' end,
+        'Owner', case when v_iv.id is not null then v_iv.assigned_to when v_rec = 'reread_stored' then 'the entry reader (automatic)' else 'Layer 4 reviewer' end,
+        'Next automatic attempt', case when v_busy is not null then 'the requested read' when v_iv.id is not null then coalesce(v_iv.next_action_at::text, 'when the input is given') else 'none until a recovery is chosen' end,
+        'Last attempt', case when v_last.id is not null then v_last.choice || ' at ' || v_last.at || ': ' || coalesce(v_last.next_operation, '') end,
+        'Last attempt status', coalesce(st->'corrected_read'->>'state', v_last.work_item_status)))),
+      jsonb_build_object('key', 'case', 'title', 'Recovery case', 'body', jsonb_build_object('Case', st->>'case_label', 'Other held reads in this case', v_case))),
+    'actions', jsonb_build_array(
+      jsonb_build_object('key', 'reread_stored', 'allowed', v_busy is null and not (st->>'complete')::boolean, 'why', v_busy),
+      jsonb_build_object('key', 'request_evidence', 'allowed', v_iv.id is null, 'why', case when v_iv.id is not null then 'a Human input needed item is already open (ref ' || v_iv.id || ')' end),
+      jsonb_build_object('key', 'ai_analyse', 'allowed', v_ai and v_iv.id is null,
+                         'why', case when not v_ai then 'the stronger-model step is off (har.ai_escalate_on, ops.ai_diagnosis_on or no pinned model)'
+                                     when v_iv.id is not null then 'a Human input needed item is already open (ref ' || v_iv.id || ')' end),
+      jsonb_build_object('key', 'open_intervention', 'allowed', v_iv.id is null, 'why', case when v_iv.id is not null then 'a Human input needed item is already open (ref ' || v_iv.id || ')' end)));
+end $function$;
+revoke all on function security.layer4_aer_recovery_detail_v1(text) from public, anon, authenticated;
+
+create or replace function security.layer4_aer_recovery_decide_v1(p_ref text, p_choice text, p_value text, p_reason text) returns jsonb
+language plpgsql security definer set search_path to '' as $function$
+-- The four recovery choices on a held AER read (decision 06:58 §1). Approval is never reached from here: the E13 and D-R3 gates are untouched.
+--   reread_stored     the existing corrected read: security.course_entry_correction_v1 (course reads, D-R2; scraper off, the stored page) or
+--                     security.aer_reread_v1 (matrix runs, the stored copy); refused by their own rules when a read is already waiting
+--   request_evidence  one aer_read_evidence intervention for the recovery case (all held reads of the university failing the same way)
+--   ai_analyse        the aer_read_rows_missing intervention, sent first to the stronger model (only while har.ai_escalate_on is 1)
+--   open_intervention the aer_read_rows_missing intervention for this read, for a person
+-- Every call is recorded (pipeline.layer4_aer_recovery_actions and the Inbox decision row); the same choice on an unchanged problem returns the
+-- recorded operation instead of starting another.
+declare st jsonb; v_reason text := btrim(coalesce(p_reason, '')); a pipeline.layer4_aer_recovery_actions; v_res jsonb; v_iv jsonb; v_next text; v_ws text;
+        v_ok boolean := true; v_req text; v_ev bigint; v_id bigint; v_wi jsonb; v_class text; v_ent text; v_ai boolean;
+begin
+  if auth.uid() is null then raise exception 'authentication required' using errcode = '42501'; end if;
+  if security.current_role_rank() < 4 then raise exception 'your role cannot take this action (it needs rank 4)' using errcode = '42501'; end if;
+  if p_choice not in ('reread_stored', 'request_evidence', 'ai_analyse', 'open_intervention') then raise exception 'unknown recovery choice %', p_choice using errcode = '22023'; end if;
+  if length(v_reason) < 5 then raise exception 'give a reason (kept with the recovery)'; end if;
+  st := security.layer4_aer_recovery_state_v1(p_ref::uuid);
+  if st is null or not exists (select 1 from pipeline.layer4_review_items r where r.id = p_ref::uuid and r.status = 'pending') then
+    raise exception 'this item is no longer waiting (someone may have decided it)'; end if;
+  select * into a from pipeline.layer4_aer_recovery_actions x where x.review_item_id = p_ref::uuid and x.choice = p_choice and x.problem_fingerprint = st->>'problem_fingerprint';
+  if a.id is not null then
+    v_res := jsonb_build_object('repeat', true, 'recorded', a.id, 'next_operation', a.next_operation, 'intervention_id', a.intervention_id);
+    v_ok := false; v_req := 'This recovery was already started for the same unchanged problem (' || a.next_operation || '); its result is awaited.';
+  else
+    v_wi := jsonb_build_object('lane', 'aer_technical', 'entity', p_ref, 'kind', 'l4_item');
+    if p_choice = 'reread_stored' then
+      begin
+        if st->>'field_code' = 'course_entry_first_read' then
+          v_res := security.course_entry_correction_v1(p_ref::uuid, auth.uid(), 'Layer 4 recovery: ' || v_reason);
+        else
+          v_res := security.aer_reread_v1((st->>'source_id')::uuid, 'Layer 4 recovery: ' || v_reason, auth.uid());
+        end if;
+        v_next := 'the existing reader reads the stored page again; the new read replaces this one only through the same gates';
+      exception when others then
+        v_ok := false; v_req := sqlerrm || '. Choose Request official evidence or Open human input instead.'; v_res := jsonb_build_object('refused', sqlerrm);
+      end;
+    else
+      v_ai := p_choice = 'ai_analyse';
+      if v_ai and not (security.pipeline_num_v1('har.ai_escalate_on', 0) >= 1 and security.pipeline_num_v1('ops.ai_diagnosis_on', 0) >= 1 and security.har_text_v1('har.ai_escalation_model', '') <> '') then
+        v_ok := false; v_req := 'The stronger-model step is switched off (har.ai_escalate_on, ops.ai_diagnosis_on, har.ai_escalation_model). Choose Open human input instead.';
+        v_res := jsonb_build_object('held', 'AI step off');
+      else
+        v_class := case p_choice when 'request_evidence' then 'aer_read_evidence' else 'aer_read_rows_missing' end;
+        v_ent := case p_choice when 'request_evidence' then (st->>'provider_id') || '|case:' || (st->>'case_key') else p_ref end;
+        v_iv := security.layer4_intervention_raise_v1(jsonb_build_object('class', v_class, 'entity', v_ent, 'provider_id', st->>'provider_id', 'course_id', st->>'course_id',
+                  'subject', coalesce((select coalesce(c.display_title, c.canonical_title) from catalogue.courses c where c.id = (st->>'course_id')::uuid), 'Entry requirements') || ': ' ||
+                             case v_class when 'aer_read_evidence' then 'official evidence needed' else 'dropped requirements to enter' end,
+                  'attempts', 99, 'signature', case v_class when 'aer_read_evidence' then st->>'case_key' else st->>'problem_fingerprint' end,
+                  'issue', jsonb_build_object('summary', 'The read is held: ' || (st->>'case_label'), 'attempted', jsonb_build_array('AI course read', 'completeness gate'),
+                                              'why_stopped', st->'reasons'->>0, 'impact', 'the course''s accurate rows cannot be admitted while the read is incomplete'),
+                  'evidence', jsonb_build_object('stored_copies', case when st->>'evidence_id' is not null then jsonb_build_array(st->>'evidence_id') else '[]'::jsonb end,
+                                                 'quotes', st->'missing_quotes', 'attempts', jsonb_build_array(jsonb_build_object('corrected_read', st->'corrected_read')),
+                                                 'conflicts', st->'reasons'),
+                  'resume_target', jsonb_build_object('operation', 'corrected read of the course by the existing reader (D-R2)', 'work_item', v_wi),
+                  'review_item', p_ref));
+        v_id := (v_iv->>'id')::bigint;
+        if v_id is null then v_ok := false; v_req := 'No Human input needed item could be opened: ' || coalesce(v_iv->>'reason', 'refused'); end if;
+        -- ai_analyse sends the new item to the stronger model first; open_intervention and request_evidence go straight to a person
+        update pipeline.layer4_interventions set status = case when v_ai then 'ai_pending' else 'awaiting_input' end,
+               resume_target = resume_target || jsonb_build_object('review_item', p_ref) where id = v_id and status in ('ai_pending', 'awaiting_input');
+        v_next := case when v_id is null then null when v_ai then 'the stronger model analyses the failure once, then the item waits for a person'
+                       else 'Human input needed item ' || v_id || ' waits for a person; the course is read again by itself when the input checks out' end;
+        v_res := v_iv;
+      end if;
+    end if;
+    select w.stage into v_ws from pipeline.work_items w where w.lane = 'aer_technical' and w.entity = p_ref and w.work_kind = 'l4_item';
+    insert into pipeline.layer4_aer_recovery_actions(review_item_id, case_key, choice, problem_fingerprint, reason, affected_rows, missing_quotes, previous_evidence, reviewer,
+                work_item_status, next_operation, intervention_id, result)
+    select p_ref::uuid, st->>'case_key', p_choice, case when v_ok then st->>'problem_fingerprint' else st->>'problem_fingerprint' || ':refused:' || md5(coalesce(v_req, '')) || ':' || now() end,
+           v_reason, st->'waiting_rows', st->'missing_quotes',
+           jsonb_build_object('evidence_id', st->>'evidence_id', 'corrected_read', st->'corrected_read', 'reasons', st->'reasons'), auth.uid(), coalesce(v_ws, 'none'),
+           coalesce(v_next, v_req), v_id, coalesce(v_res, '{}'::jsonb)
+    returning * into a;
+  end if;
+  insert into pipeline.admin_control_events(area, action, target, detail, actor)
+  values ('layer4', 'inbox_decide', 'aer_review:' || p_ref, jsonb_build_object('kind', 'aer_review', 'ref', p_ref, 'choice', p_choice, 'value', p_value, 'reason', v_reason,
+          'provider_id', st->>'provider_id', 'recovery_action', a.id, 'result', v_res), auth.uid()) returning id into v_ev;
+  return jsonb_build_object('ok', v_ok, 'kind', 'aer_review', 'choice', p_choice, 'ref', p_ref, 'event_id', v_ev, 'request', v_req,
+    'returns', case when v_ok then v_next end, 'result', jsonb_build_object('recovery_action', a.id, 'next_operation', a.next_operation, 'work_item_status', a.work_item_status,
+                                                                          'intervention_id', a.intervention_id, 'detail', v_res));
+end $function$;
+revoke all on function security.layer4_aer_recovery_decide_v1(text, text, text, text) from public, anon, authenticated;
+
+-- the aer_item lane: validate the evidence or the rows, then the correct reader restarts by itself (decision 06:58 §1 "automatically resume")
+create or replace function security.har_aer_item_validate_v1(p_id bigint, p_action text, p_payload jsonb) returns jsonb
+language plpgsql stable security definer set search_path to '' as $function$
+-- evidence: an address on the university's own site; rows: a JSON list of {requirement, minimum?, quote}, each quotation at least
+-- har.quote_min_chars long and found among the quotations of the requirements the reader dropped (whitespace and case ignored), so a typed
+-- row is always backed by what the official page printed
+declare i pipeline.layer4_interventions; v jsonb; j jsonb; e jsonb; v_drop jsonb; v_bad int := 0;
+begin
+  select * into i from pipeline.layer4_interventions where id = p_id;
+  if p_action in ('attach_document', 'provide_url') then
+    v := security.har_official_url_v1(p_payload->>'value', i.provider_id);
+    if not coalesce((v->>'ok')::boolean, false) then return jsonb_build_object('valid', false, 'request', v->>'reason'); end if;
+    return jsonb_build_object('valid', true, 'normalised', jsonb_build_object('field', 'source_url', 'url', v->>'url', 'document', (v->>'document')::boolean, 'stored_copy', v->>'stored_copy'));
+  end if;
+  begin j := (p_payload->>'value')::jsonb; exception when others then j := null; end;
+  if j is null or jsonb_typeof(j) <> 'array' or jsonb_array_length(j) = 0 then
+    return jsonb_build_object('valid', false, 'request', 'Enter the dropped requirements as rows: each with what it requires, its minimum if any, and the sentence from the official page.');
+  end if;
+  -- every dropped quotation of the held read(s), not only those shown on the card
+  v_drop := coalesce((select jsonb_agg(q) from (
+              select jsonb_array_elements(security.layer4_aer_recovery_state_v1(x.id)->'missing_quotes') q
+                from pipeline.layer4_review_items x
+               where x.id::text = i.entity or x.id in (select a.review_item_id from pipeline.layer4_aer_recovery_actions a where a.intervention_id = i.id)) z), '[]'::jsonb);
+  for e in select x from jsonb_array_elements(j) x loop
+    if not security.har_quote_ok_v1(e->>'quote') or coalesce(e->>'requirement', '') = '' then v_bad := v_bad + 1; continue; end if;
+    if not exists (select 1 from jsonb_array_elements_text(v_drop) q
+                    where position(lower(regexp_replace(e->>'quote', '\s+', ' ', 'g')) in lower(regexp_replace(q, '\s+', ' ', 'g'))) > 0
+                       or position(lower(regexp_replace(q, '\s+', ' ', 'g')) in lower(regexp_replace(e->>'quote', '\s+', ' ', 'g'))) > 0) then v_bad := v_bad + 1; end if;
+  end loop;
+  if v_bad > 0 then
+    return jsonb_build_object('valid', false, 'request', v_bad || ' row(s) have no requirement or a quotation that is not one the reader dropped from the official page. Copy the sentence exactly from the page.');
+  end if;
+  return jsonb_build_object('valid', true, 'normalised', jsonb_build_object('field', 'entry_rows', 'rows', j, 'quote', j->0->>'quote'));
+end $function$;
+revoke all on function security.har_aer_item_validate_v1(bigint, text, jsonb) from public, anon, authenticated;
+
+create or replace function security.har_aer_item_resume_v1(p_id bigint, p_action text, p_norm jsonb) returns jsonb
+language plpgsql security definer set search_path to '' as $function$
+-- the correct reader restarts by itself: a document becomes the university's entry-requirement source (entry-matrix-read, stored copy first),
+-- and every held course read of the case gets the existing corrected read (security.course_entry_correction_v1; its own rules refuse a second
+-- request); typed rows stay evidence (pipeline.layer4_intervention_values) for the reviewer of the new read
+declare i pipeline.layer4_interventions; v_items uuid[]; v_it uuid; v_ok int := 0; v_no jsonb := '[]'::jsonb; v_res jsonb;
+begin
+  select * into i from pipeline.layer4_interventions where id = p_id;
+  if p_norm->>'field' = 'source_url' and coalesce((p_norm->>'document')::boolean, false) then
+    insert into pipeline.entry_matrix_sources as s(provider_id, url, title, rank, found_via, status)
+    values (i.provider_id, p_norm->>'url', left('Layer 4 intervention ' || i.id || ': ' || i.subject, 300), 1, 'manual', 'found')
+    on conflict (provider_id, url) do nothing;
+  end if;
+  v_items := case when i.entity like '%|case:%'
+                  then array(select a.review_item_id from pipeline.layer4_aer_recovery_actions a join pipeline.layer4_review_items r on r.id = a.review_item_id
+                              where a.intervention_id = i.id and r.status = 'pending' group by 1)
+                  else array[i.entity::uuid] end;
+  foreach v_it in array coalesce(v_items, '{}') loop
+    begin
+      if (select r.field_code from pipeline.layer4_review_items r where r.id = v_it) = 'course_entry_first_read' then
+        v_res := security.course_entry_correction_v1(v_it, i.resolved_by, 'Human input needed ' || i.id || ': ' || coalesce(i.supplied->>'reason', 'input given'));
+      else
+        v_res := security.aer_reread_v1((select x.source_id from pipeline.entry_matrix_runs x where x.review_item_id = v_it order by x.created_at desc limit 1),
+                                        'Human input needed ' || i.id, i.resolved_by);
+      end if;
+      v_ok := v_ok + 1;
+    exception when others then v_no := v_no || jsonb_build_array(jsonb_build_object('item', v_it, 'refused', left(sqlerrm, 200)));
+    end;
+  end loop;
+  return jsonb_build_object('scheduled', v_ok > 0 or (p_norm->>'field' = 'source_url' and coalesce((p_norm->>'document')::boolean, false)),
+                            'operation', 'corrected read of ' || v_ok || ' held read(s) by the existing reader', 'refused', v_no);
+end $function$;
+revoke all on function security.har_aer_item_resume_v1(bigint, text, jsonb) from public, anon, authenticated;
+
+create or replace function security.har_aer_item_verify_v1(p_id bigint) returns jsonb
+language plpgsql stable security definer set search_path to '' as $function$
+-- succeeded when every held read of the item or case was replaced (a corrected read superseded it) or decided; failed when the corrected read was
+-- refused, with its reason; otherwise pending
+declare i pipeline.layer4_interventions; v_items uuid[]; v_pending int; v_refused text;
+begin
+  select * into i from pipeline.layer4_interventions where id = p_id;
+  v_items := case when i.entity like '%|case:%' then array(select a.review_item_id from pipeline.layer4_aer_recovery_actions a where a.intervention_id = i.id group by 1)
+                  else array[i.entity::uuid] end;
+  select count(*) into v_pending from pipeline.layer4_review_items r where r.id = any (v_items) and r.status = 'pending';
+  if v_pending = 0 and cardinality(v_items) > 0 then return jsonb_build_object('state', 'succeeded', 'outcome', 'read_replaced'); end if;
+  -- a corrected read asked for since the input and refused, with no other read of the item still asked for
+  select s.outcome into v_refused from pipeline.aer_read_supersessions s where s.old_item_id = any (v_items) and s.state = 'refused' and s.requested_at >= coalesce(i.input_at, i.created_at)
+     and not exists (select 1 from pipeline.aer_read_supersessions t where t.old_item_id = s.old_item_id and t.state = 'requested')
+   order by s.requested_at desc limit 1;
+  if v_refused is not null then
+    return jsonb_build_object('state', 'failed', 'request', 'The corrected read was not used (' || v_refused || '). Give the official document, or correct the rows against the page.');
+  end if;
+  return jsonb_build_object('state', 'pending', 'evidence', v_pending || ' held read(s) still waiting');
+end $function$;
+revoke all on function security.har_aer_item_verify_v1(bigint) from public, anon, authenticated;
+
+create or replace function security.har_aer_item_recheck_v1(p_id bigint) returns jsonb
+language sql stable security definer set search_path to '' as $function$
+  -- cleared when no held read of the item or case is still pending (decided, or replaced by another route)
+  select jsonb_build_object('cleared', not exists (select 1 from pipeline.layer4_review_items r where r.status = 'pending'
+           and (r.id::text = i.entity or r.id in (select a.review_item_id from pipeline.layer4_aer_recovery_actions a where a.intervention_id = i.id))))
+    from pipeline.layer4_interventions i where i.id = p_id
+$function$;
+revoke all on function security.har_aer_item_recheck_v1(bigint) from public, anon, authenticated;
+
+insert into pipeline.layer4_intervention_handlers(lane, title, validate_fn, resume_fn, verify_fn, recheck_fn, generate_fn, generate_switch, description) values
+ ('aer_item', 'Entry requirements: held reads (E13, D-R3)', 'security.har_aer_item_validate_v1(bigint,text,jsonb)', 'security.har_aer_item_resume_v1(bigint,text,jsonb)',
+  'security.har_aer_item_verify_v1(bigint)', 'security.har_aer_item_recheck_v1(bigint)', null, null,
+  'Raised from the AER review card''s recovery choices (security.layer4_aer_recovery_decide_v1); valid evidence or rows restart the corrected read of every held read of the case.')
+on conflict (lane) do nothing;
 
 -- 14 the job (G1: catalogued first; ships ON: it raises, verifies, rechecks and escalates; it admits and spends nothing) -------------------------
 insert into pipeline.automation_catalogue(jobname, area, sort, label, description, control_rank, batch_editable, layer23_stage) values
@@ -1483,7 +1833,11 @@ insert into pipeline.component_register(kind, name, layer, area, purpose, status
  ('table', 'pipeline.layer4_intervention_values', 'Layer 4', 'Platform', 'Human-assisted recovery: supplied values with provenance (proposals)', 'active', '{}', '20261104400000'),
  ('job', 'layer4-interventions', 'Layer 4', 'Platform upkeep', 'Raise, verify, recheck and escalate interventions', 'active', '{}', '20261104400000'),
  ('function', 'security.layer4_intervention_resolve_v1', 'Layer 4', 'Platform', 'The one server function behind every intervention action', 'active', '{}', '20261104400000'),
- ('function', 'security.layer4_intervention_report_v1', 'Layer 4', 'Platform', 'The §9 recovery metrics (in ops_report_v1)', 'active', '{}', '20261104400000')
+ ('function', 'security.layer4_intervention_report_v1', 'Layer 4', 'Platform', 'The §9 recovery metrics (in ops_report_v1)', 'active', '{}', '20261104400000'),
+ ('table', 'pipeline.layer4_aer_recovery_actions', 'Layer 4', 'Entry requirements', 'Recovery actions on AER reads held by E13 or D-R3 (decision 06:58)', 'active', '{}', '20261104400000'),
+ ('function', 'security.layer4_aer_recovery_decide_v1', 'Layer 4', 'Entry requirements', 'Recovery choices on a held AER read (Inbox extend hook)', 'active', '{}', '20261104400000'),
+ ('function', 'security.layer4_aer_recovery_detail_v1', 'Layer 4', 'Entry requirements', 'Recovery state on an E13 or D-R3 card (Inbox extend hook)', 'active', '{}', '20261104400000'),
+ ('function', 'security.layer4_intervention_inbox_page_v1', 'Layer 4', 'Platform', 'Interventions for the Inbox: a keyset page (kind hook)', 'active', '{}', '20261104400000')
 on conflict do nothing;
 
 -- 17 post-check ----------------------------------------------------------------------------------------------------------------------------------
@@ -1493,14 +1847,14 @@ begin
   for r in select * from (values ('security.ops_report_v1(integer)', '3ba694dc078995d88a983e8e92b2f425')) v(sig, m) loop
     if md5(pg_get_functiondef(r.sig::regprocedure)) <> r.m then raise exception 'post-check: % has md5 %', r.sig, md5(pg_get_functiondef(r.sig::regprocedure)); end if;
   end loop;
-  if (select count(*) from pipeline.layer4_intervention_classes) <> 11 then raise exception 'post-check: 11 failure classes'; end if;
-  if (select count(*) from pipeline.layer4_intervention_handlers) <> 5 then raise exception 'post-check: 5 lanes'; end if;
+  if (select count(*) from pipeline.layer4_intervention_classes) <> 13 then raise exception 'post-check: 13 failure classes'; end if;
+  if (select count(*) from pipeline.layer4_intervention_handlers) <> 6 then raise exception 'post-check: 6 lanes'; end if;
   if exists (select 1 from pipeline.layer4_intervention_classes c, lateral (select k from jsonb_object_keys(c.allowed_actions) k) a
               where a.k not in ('provide_url', 'attach_document', 'enter_value', 'confirm_identity', 'select_source', 'confirm_scope', 'correct_value',
                                 'search_again', 'confirm_not_published', 'return_technical', 'reject_evidence')) then
     raise exception 'post-check: an action outside the decision''s §2 list';
   end if;
-  if (select count(*) from pipeline.platform_toolset_settings where toolset_key = 'pipeline' and key like 'har.%.%' and key ~ '^har\.[a-z_]+\.(max_attempts|escalate_after_hours|recheck_hours|deadline_hours|assigned_to)$') <> 55 then
+  if (select count(*) from pipeline.platform_toolset_settings where toolset_key = 'pipeline' and key like 'har.%.%' and key ~ '^har\.[a-z_]+\.(max_attempts|escalate_after_hours|recheck_hours|deadline_hours|assigned_to)$') <> 65 then
     raise exception 'post-check: every class has its five time bounds';
   end if;
   if security.pipeline_num_v1('har.ai_escalate_on', 0) <> 0 and not exists (select 1 from pipeline.layer4_interventions) then
