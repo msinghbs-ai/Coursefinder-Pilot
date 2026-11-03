@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.1.360 — 3 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.433** (workstream G). Migration `20261104060000_cf247_ops_provider_identity_lifecycle`: md5-guarded edit of provider_onboarding_tick_v1; provider_identity_* checks, findings and investigations; provider lifecycle events and plans; job provider-identity-check; 6 root causes and 5 remedies. Candidate site checks and the lifecycle cascade ship off. Nothing dropped; consumer API untouched. Spec s249.
+
+## 0.1.359 — 3 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.432** (workstream F). Migration `20261104050000_cf247_ops_cost_yield`: md5-guarded edits of svc_fc_spend and waste_guard_v1; ops_step_value_v1, ops_cost_report_v1, ops_cost_waste_v1, ops_cost_guard_v1; 8 root causes and 3 remedies. Enforcement switches ops_cost.enforce_* ship 0. Nothing dropped; consumer API untouched. Spec s248.
+
+## 0.1.358 — 3 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.431** (workstream B). Migration `20261104030000_cf247_ops_source_recovery`: md5-guarded edits of source_proof_feed_v1, course_relink_provider_v1 and course_relink_tick_v1; job field-absence-recovery; pipeline.field_absence_recovery and run log; field_absence_d1_decision_v1; 9 root causes and 4 remedies. Free recovery routes (relink.statuses, slug variants, current year, stored-search reuse, absence input) ship off; proof.search_per_run stays 0. Nothing dropped; consumer API untouched. Spec s246.
+
+## 0.1.357 — 3 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.430** (workstream D; IQ-00064, IQ-00066 follow-up). Migration `20261104020000_cf247_ops_job_lifecycle`: md5-guarded edits of admin_job_close_v1, admin_job_watch_v1, enrich_plan_tick_v1, enrich_plan_v1, plan_outcomes_v1 and enrich_plan_auto_v1; job ops-job-lifecycle; pipeline.enrich_plan_auto_runs and enrich_ai_answers; 9 root causes and 9 remedies through the operations contract. Lease, queue, duplicate, retry-cost and answer-replay repairs ship off. Nothing dropped; consumer API untouched. Spec s245.
+
+## 0.1.356 — 3 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.429** (workstream A, Platform Admin mandates 3 Nov 2026 15:37 and 15:52). Migration `20261104010000_cf247_ops_controller`: the shared operations contract (ops_root_causes, ops_remedies, ops_remedy_runs, ops_outcome_codes, admin_jobs.outcome, integration_issues diagnosis columns, register functions), the controller (job ops-controller at :24 and :54), authority matrix and guard triggers, ops_report_v1 and ops_checkpoints; 23 root causes and 5 remedies; IQ-00067's root cause and remedies registered. No live function edited; AI-assisted diagnosis ships off; nothing dropped; consumer API untouched. Spec s244.
+
+## 0.1.355 — 3 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.428** (IQ-00067). Migration `20261104080000_cf247_iq67_coverage_admit_lock_isolation`: md5-guarded edits of coverage_admission_apply_v1 and coverage_admission_gated_v1; table pipeline.coverage_admission_holds; settings admit.item_error_limit (25), admit.refused_recheck_hours (24); root cause and remedies registered when the operations contract exists. Lock rule and admission validation unchanged; nothing dropped; consumer API untouched. Spec s251.
+
+## 0.1.354 — 3 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.427** (Release C, decision D6 approved by the Platform Admin 3 Nov 2026 15:52). Migration `20261103220000_cf247_aer_scheduled_reading`: job aer-scheduled-read (ships paused), security.aer_schedule_tick_v1 and population and selector functions, pipeline.aer_schedule_runs and aer_schedule_checks, fourteen settings; md5-guarded edits of entry_matrix_enabled_v1, entry_matrix_fire_v1, course_entry_eligible_v1, course_entry_programme_v1 and aer_course_outcomes_build_v1. No paid budget raised; Layer 4 admission unchanged; consumer API untouched. Spec s235.
+
 ## 0.1.353 — 3 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.426** (IQ-00066, IQ-00053 residual, IQ-00063). Migration `20261103230000_cf247_orchestration_followups`: md5-guarded edits of enrich_plan_v1, enrich_plan_tick_v1, admin_job_watch_v1, admin_jobs_tick_v1, admin_pipeline_yield, course_description_check_v1 and provider_onboarding_tick_v1; settings plans.step_needs_work_on (1), onboarding.website_check_on (1), plans.outcome_window_hours (24). No paid spend; nothing dropped; consumer API untouched. Spec s243.

@@ -1,17 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.426'
-export const PACKAGE_VERSION='0.1.353'
+export const UI_VERSION='2.15.433'
+export const PACKAGE_VERSION='0.1.360'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Nov 2026',
-  title:'Plans propose only steps with work to do; course descriptions record faster; onboarding stops on a website that is not a web address',
+  title:'Provider websites and identities are checked every hour; retirements are planned with every related record before anything changes',
   changes:[
-    'An automatic enrichment plan proposes a step only when there is eligible work for it now. A step whose task finds nothing it may do ends as Not needed, never as done, and Pipeline yield shows how many plans moved data.',
-    'Recording course descriptions is faster: each new description is compared with the provider\'s others once instead of word by word for every pair, so a batch no longer runs out of time.',
-    'Provider onboarding stops with a named reason when a provider\'s website is not a web address (for example an email address), instead of trying again every few minutes; it carries on once the website is corrected.'
+    'An hourly check finds provider websites that are malformed, shared with an unrelated provider, redirected or parked, or whose register record changed, and opens one investigation per provider with the platform\'s own evidence; nothing is corrected automatically.',
+    'Provider retirement (deregistered, closed, merged) and country retirement need register or first-party evidence and produce a reviewed plan covering courses, scholarships, entry requirements, campuses, contacts, source mappings, Layer 2 to 4 work and the search projection; it is carried out only on a Platform Admin decision and can be reversed.',
+    'A provider that is temporarily unavailable is held from new work without being archived or hidden.'
   ],
   bugFixes:[]
 }
