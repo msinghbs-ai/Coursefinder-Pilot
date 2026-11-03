@@ -41,8 +41,8 @@ test.describe('mocked browser', () => {
     expect(prompts[0]).toContain('English step 1, Intake step 1')
     await expect(page.getByRole('status')).toContainText('qwen/qwen3-30b-a3b switched off; 2 cascade steps switched off.')
     await expect(page.locator('[data-model="qwen3-30b"]')).toHaveClass(/ms-off/)
-    await page.goto('/#models-services') // the page-service switches are on Services & limits
-    await openCards(page)
+    await page.goto('/#models-services') // the page-service switches are on Services & limits, one card per service
+    await page.locator('[data-fold="other-services"] > summary').click() // a gateway that is neither Firecrawl nor direct read
     await page.getByRole('switch', { name: 'Switch on Custom gateway' }).click()
     await expect.poll(() => page.l3calls.find(c => c.p_kind === 'service')?.p_enabled).toBe(true)
     await expect(page.locator('[data-service="custom-gateway"] [role="switch"]')).toHaveAttribute('aria-checked', 'true')

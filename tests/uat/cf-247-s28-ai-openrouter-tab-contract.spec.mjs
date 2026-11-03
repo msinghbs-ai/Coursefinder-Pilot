@@ -46,10 +46,10 @@ test.describe('mocked browser', () => {
   test('Toolsets & limits is part of Services & limits; the AI model switches are on AI & OpenRouter (SS-020 step 3)', async ({ page }) => {
     await mockAdmin(page)
     await page.goto('/#models-services?tab=limits')
-    await expect(page.locator('[data-toolsets]')).toBeVisible()
+    await expect(page.locator('[data-services-limits] [data-toolsets]').first()).toBeVisible()
     await expect(page.locator('[data-card="services.ai-models"]')).toHaveCount(0)
     await page.goto('/#models-services?tab=ai')
     await expect(page.locator('[data-card="services.ai-models"]')).toBeVisible()
-    await expect(page.locator('[data-toolsets]')).toHaveCount(0)
+    await expect(page.locator('[data-services-limits]')).toHaveCount(0)
   })
 })

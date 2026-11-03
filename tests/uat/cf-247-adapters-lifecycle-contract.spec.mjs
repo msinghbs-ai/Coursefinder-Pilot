@@ -150,7 +150,7 @@ test.describe('mocked browser', () => {
       await expect(page.locator('[data-adapters-workspace]')).toBeVisible()
     }
     await page.goto('/#scrapers')
-    await expect(page.locator('.l2p-provider-list')).toBeVisible()
+    await expect(page.locator('.l2p-provider-list').first()).toBeVisible() // SS-020 step 3: a list per service card
     await expect(page.locator('[data-card="scrapers.source-profiles"]')).toHaveCount(0)
   })
 

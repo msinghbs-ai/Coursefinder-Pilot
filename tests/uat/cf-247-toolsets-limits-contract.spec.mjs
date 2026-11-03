@@ -88,7 +88,7 @@ test('browser: Models & services — OpenRouter observe only; Serper, ScrapingBe
   await expect(or.locator('[data-openrouter]')).toContainText('Balance US$27.67')
   await or.getByRole('button', { name: 'Switch to stop at limits' }).click()
   await expect.poll(() => page.l3calls.find(c => c.toolsets === 'enforcement')?.args).toMatchObject({ toolset: 'openrouter', enforcement: 'stop' })
-  await expect(page.locator('[data-toolsets]')).not.toContainText(/trial/i)
+  await expect(page.locator('[data-services-limits]')).not.toContainText(/trial/i) // SS-020 step 3: one card per service
   // SS-020 step 1 (Decision 269, 3 Nov 2026): Firecrawl only (4 Oct); the rows and their history stay in the database
   for (const k of ['serper', 'scrapingbee']) {
     await expect(page.locator(`[data-toolset="${k}"]`)).toHaveCount(0)
@@ -162,7 +162,7 @@ test('browser: Firecrawl work — credits and report on Models & services, runs 
   const r = page.locator('[data-firecrawl-report]')
   await expect(r.locator('[data-report-errors]')).toContainText('01a10555-0b96-720b-9ea2-dfe988faa072')
   await expect(r.locator('[data-report-totals]')).toContainText('461')
-  await expect(page.locator('[data-toolsets]')).not.toContainText(/trial/i)
+  await expect(page.locator('[data-services-limits]')).not.toContainText(/trial/i) // SS-020 step 3: one card per service
   // Layer 2 › Adapters: the two runs start as tasks, targets are added by hand
   await page.goto('/#layer-2-discovery?tab=universities') // v2.15.300: Layer 2/3 › Universities
   await openCard(page, 'adapters.firecrawl-runs')

@@ -70,7 +70,7 @@ test('browser: Fetchers and the Go-live checklist list only the providers in use
     return route.fallback()
   })
   await page.goto('/#models-services?tab=fetchers')
-  const list = page.locator('.l2p-provider-list')
+  const list = page.locator('[data-services-limits]') // SS-020 step 3: each service's list sits in its card
   await expect(list).toContainText('Firecrawl')
   await expect(list).toContainText('Direct HTTP')
   await expect(list).not.toContainText('ZenRows')

@@ -18,7 +18,7 @@ test('menu: 51 tabs on 20 pages; the merged tabs keep the minimum roles of what 
   const main = fs.readFileSync('src/mature-main.jsx', 'utf8')
   expect(main).toContain('{rank>=5&&<PipelineYield onError={onError}/>}')
   expect(main).toContain('{rank>=4&&<ModelsServices part="models" onError={err}/>}')
-  expect(main).toContain('<ModelsServices part="services" onError={err}/>')
+  expect(main).toContain("<ModelsServices part=\"services\" only={['firecrawl']} onError={err}/>")
   expect(fs.readFileSync('src/IntegrationQueue.jsx', 'utf8')).not.toContain('<PipelineYield onError={onError}/>')
 })
 
@@ -35,20 +35,21 @@ test('LEGACY: every old address of a merged tab lands on its new home', () => {
   for (const f of ['src/CreditBanner.jsx', 'src/FirecrawlWork.jsx', 'src/EnvironmentMigrationWorkspace.jsx', 'src/ModelsServices.jsx']) expect(fs.readFileSync(f, 'utf8')).not.toMatch(/models-services\?tab=(limits|fetchers)/)
 })
 
-test('browser: Services & limits holds the page-service switches, toolsets and fetchers; AI & OpenRouter holds the model switches', async ({ page }) => {
+test('browser: Services & limits is one card per service (Final board F41); AI & OpenRouter holds the model switches', async ({ page }) => {
   await mockAdmin(page)
   await page.goto('/#models-services?tab=limits')
   await expect(page).toHaveURL(/#models-services/)
   const tab = page.locator('[data-services-limits]')
-  await expect(tab.locator('[data-card="services.fetching"]')).toBeVisible()
+  for (const id of ['firecrawl', 'direct', 'openrouter', 'platform', 'notices']) await expect(tab.locator(`[data-service-card="${id}"]`)).toBeVisible()
+  await expect(tab.locator('[data-service-card="firecrawl"] [data-search-cap]')).toBeVisible()
+  await expect(tab.locator('[data-service-card="openrouter"] [data-toolset="openrouter"]')).toHaveCount(1)
+  await expect(tab.locator('[data-toolset="openrouter"]')).toHaveCount(1) // drawn once
   await expect(tab.locator('[data-card="services.ai-models"]')).toHaveCount(0)
-  await expect(tab.locator('[data-toolsets]')).toBeVisible()
-  await expect(tab.locator('[data-fetchers-merged]')).toBeVisible()
   await expect(page.getByRole('tab', { name: 'Toolsets & limits' })).toHaveCount(0)
   await expect(page.getByRole('tab', { name: 'Fetchers' })).toHaveCount(0)
   await page.goto('/#models-services?tab=ai')
   await expect(page.locator('[data-card="services.ai-models"]')).toBeVisible()
-  await expect(page.locator('[data-card="services.fetching"]')).toHaveCount(0)
+  await expect(page.locator('[data-services-limits]')).toHaveCount(0)
 })
 
 test('browser: Queues & yield shows the work queues and Pipeline yield; Integration queue no longer shows the yield', async ({ page }) => {
