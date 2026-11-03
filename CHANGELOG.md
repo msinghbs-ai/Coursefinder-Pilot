@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.363 — 3 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.436** (workstream A follow-up; IQ-00067 false reopen). Migration `20261104100000_cf247_ops_reopen_rule_ai_contract`: md5-guarded edits of integration_issue_upsert_v1, integration_validate_v1, ops_issue_signals_v1, ops_controller_tick_v1, svc_ops_diagnosis_next and svc_ops_diagnosis_record; ops_recurrence_v1; settings ops.ai_diagnosis_usd_per_day. ops.ai_diagnosis_on stays 0; nothing dropped; consumer API untouched. Spec s253.
+
 ## 0.1.362 — 3 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.435** (workstream C, AER missing-university strategy; Platform Admin 16:24 and 18:17). Migration `20261104090000_cf247_ops_c_aer_missing_universities`: pipeline.aer_source_inventory, security.aer_source_class_v1, security.aer_provider_stage_v1; md5-guarded edits of aer_course_population_v1 (priority order only, behind coverage.aer_reader_priority_on), aer_coverage_v1 and coverage_due_v1. Back-pressure, daily cap and all gates unchanged; Layer 4 unchanged; nothing dropped; consumer API untouched. Spec s252.
