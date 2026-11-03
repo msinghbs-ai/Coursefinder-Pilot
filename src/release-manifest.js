@@ -1,18 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.430'
-export const PACKAGE_VERSION='0.1.357'
+export const UI_VERSION='2.15.431'
+export const PACKAGE_VERSION='0.1.358'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Nov 2026',
-  title:'Every task and plan records what it achieved; interrupted and stale work recovers without paying twice',
+  title:'Courses waiting for a proven page are recovered through free routes first and reported as a recovery cohort',
   changes:[
-    'Every task and plan now records one of eight outcomes when it ends (moved data, no data moved, not needed, waiting on another step, held by policy, held for evidence, failed and retryable, failed needing a fix), measured from the rows it changed; past tasks and plans are given their outcome without changing their history.',
-    'A university whose last three automatic plans moved nothing, with no new evidence, is no longer offered to the automatic planner; a person\'s Run now still sees every step.',
-    'A failed course-page search step is planned again on the next hourly run, and its search waits while that university\'s earlier searches are still queued, so no search is paid for twice.',
-    'Every automatic planner run is recorded with what it created, or why it created nothing.'
+    'Courses the free re-try could not reach in one run wait for the next run instead of being counted as needing paid search.',
+    'Candidate addresses are compared in a normalised form (scheme, www, trailing slash, fragment) and a page already rejected for a course is never offered again; no paid search is queued for a course whose earlier paid search left untried candidates.',
+    'A new hourly job keeps the gap recovery cohort by course and provider, with the route each course is on and the yield of each route; the D1 cost-and-yield table is calculated from measured history.'
   ],
   bugFixes:[]
 }
