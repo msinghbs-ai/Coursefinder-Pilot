@@ -37,6 +37,12 @@ begin
   raise notice 'ok 1 backfill: read-and-absent delivery is not_on_this_page (hash kept); no-source duration is needs_source_discovery and shows its page state on Coverage';
 end $$;
 
+-- 2a the migration ships multi-field reading off (Integration Controller 3 Nov 2026: switched on as a separate, recorded setting change)
+do $$ begin
+  if (select value from pipeline.platform_toolset_settings where key = 'enrich.multi_field_on') <> '0'::jsonb then raise exception 'FAIL 2a multi-field must ship off'; end if;
+  raise notice 'ok 2a multi-field ships off';
+end $$;
+update pipeline.platform_toolset_settings set value = '1' where key = 'enrich.multi_field_on';
 -- 2 one item for intakes on a stored page brings the course's other missing fields onto the same copy (standing task)
 insert into pipeline.admin_jobs(id, kind, state, args) values ('00000000-0000-0000-0000-00000000f001', 'enrich_fields', 'running', '{"standing": true, "ai": true}');
 insert into pipeline.field_enrich_items(job_id, provider_id, course_id, field) values

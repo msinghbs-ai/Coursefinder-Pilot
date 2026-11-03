@@ -36,8 +36,9 @@
 -- Consumer API (G3): unchanged. Values reach only the columns the existing admission paths write.
 -- Replaces: public.svc_enrich_ai_next, public.svc_enrich_ai_record, security.enrich_fields_slice_v1, security.field_enrich_items_flag_v1, security.course_coverage_build_v1, security.source_proof_feed_v1 (same names; md5-guarded edits); the blanket "not on page" coverage state for delivery and duration
 -- Retires: nothing
--- Nothing is dropped or deleted. No job is added (field-gap-queue's schedule and guard change). Multi-field reading ships on (enrich.multi_field_on 1:
---   no paid acquisition, inside the existing AI guard); the hourly gap queue ships at gaps.advance_minutes 60.
+-- Nothing is dropped or deleted. No job is added (field-gap-queue's schedule and guard change). Multi-field reading ships OFF (enrich.multi_field_on 0):
+--   the Integration Controller switches it on as a separate, recorded setting change once svc_enrich_ai_record runs clear of statement time-outs
+--   (IQ-00053); the hourly gap queue ships at gaps.advance_minutes 60.
 
 create or replace function pg_temp.edit_once(p_sig text, p_before text, p_after text, p_edits text[][], p_times int[]) returns text language plpgsql as $f$
 declare v_def text := pg_get_functiondef(p_sig::regprocedure); i int; v_c int; v_old text; v_new text;
@@ -74,7 +75,7 @@ end $g$;
 insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, section, used_by, reason) values
  ('pipeline', 'enrich.multi_field_on', 'Read every missing field from the same stored page',
   'On (1): when the reader takes a course''s stored page for one field, the course''s other missing fields (enrich.multi_field_fields) are read from the same copy in the same task. Off (0): one field at a time, as before.',
-  'number', to_jsonb(1), 0, 1, 'on/off', 1111, 'Course description and deadline',
+  'number', to_jsonb(0), 0, 1, 'on/off', 1111, 'Course description and deadline',
   'security.enrich_siblings_v1 (enrich_fields_slice_v1); public.svc_enrich_ai_next', 'CF-247 Release B (mandate 3 Nov 2026 13:09 §6 priority 2): one read of a stored page for every missing field'),
  ('pipeline', 'enrich.multi_field_fields', 'Fields read together from one stored page',
   'The course fields read from the same stored copy when one of them is asked. Only fields the Enrich fields engine reads from the stored page (source ai_stored) and the country''s source rules allow are added.',
