@@ -63,7 +63,7 @@ test('sample-run worker: classifiers, plan limits respected, no constants for li
 test('browser: notices on the layer page, acknowledged with a reason', async ({ page }) => {
   await mockAdmin(page)
   page.on('dialog', d => d.accept('Seen; reviewing the batch size'))
-  await page.goto('/#layer-2-discovery') // v2.15.300: Layer 2/3 › Operations; the layer notices sit above every tab
+  await page.goto('/#layer-2-discovery') // v2.15.300: Layer 2/3 › Operations; SS-020 step 2 (Decision 269): the notices sit on Operations only
   const strip = page.locator('[data-layer-notices="2"]')
   await expect(strip.locator('[data-notice="scheduled_jobs:2:timeout:scholarship-nationality"]')).toContainText('hit the database time limit')
   // v2.15.268: the acknowledged one-off job failure is information only, so it is kept to Toolsets and limits
@@ -71,9 +71,10 @@ test('browser: notices on the layer page, acknowledged with a reason', async ({ 
   await expect(strip.locator('[data-layer-notice-infos]')).toContainText('information-only')
   await strip.locator('[data-notice="scheduled_jobs:2:timeout:scholarship-nationality"]').getByRole('button', { name: 'Acknowledge' }).click()
   await expect.poll(() => page.l3calls.find(c => c.toolsets === 'ack')?.args).toMatchObject({ notice_key: 'scheduled_jobs:2:timeout:scholarship-nationality', reason: 'Seen; reviewing the batch size' })
-  // v2.15.252: Layer 3 retired; its old address opens Layer 2 › Adapters, which shows the Layer 2 notices.
+  // v2.15.252: Layer 3 retired; its old address opens Layer 2/3 › Universities, which (SS-020 step 2) no longer repeats the Layer 2 notices
   await page.goto('/#layer-3-ai')
-  await expect(page.locator('[data-layer-notices="2"]')).toBeVisible()
+  await expect(page.locator('[data-adapters-list]').or(page.locator('main h1'))).toBeVisible()
+  await expect(page.locator('[data-layer-notices="2"]')).toHaveCount(0)
   await expect(page.locator('[data-layer-notices="3"]')).toHaveCount(0)
 })
 

@@ -23,6 +23,7 @@ import'./aer-workspace.css'
 
 export const aer=async(action,args={})=>{const{data,error}=await supabase.rpc('admin_aer',{p_action:action,p_args:args});if(error)throw error;return data}
 const PAGE=50
+const PROGRAMME_PAGE=100 // providers a page on Course-level reading (screen length)
 
 // pills: the shared statusTone system, with plain words (never colour alone)
 export const ROW_PILL={active:['success','Active'],proposed:['info','Waiting in Layer 4'],unverified:['danger','Quarantined'],inactive:['neutral','Withdrawn'],superseded:['neutral','Superseded']}
@@ -491,6 +492,9 @@ export function CourseProgramme({onError,onAsked}){
   useEffect(()=>{let on=true;setErr('');aer('course_programme').then(x=>on&&setD(x)).catch(e=>on&&setErr(plainError(e)));return()=>{on=false}},[refresh])
   useEffect(()=>{setPv(null)},[pid])
   const rows=(d?.providers||[]).map(p=>({...p,id:p.provider_id}))
+  // SS-020 step 2 (Decision 269, 3 Nov 2026): the provider table shows 100 a page (the tab rendered about 49,000 px with every provider);
+  // the totals and the Provider picker still use every provider
+  const[pOff,setPOff]=useState(0),pageRows=rows.slice(pOff,pOff+PROGRAMME_PAGE)
   const tot=k=>rows.reduce((a,r)=>a+Number(r[k]||0),0)
   const preview=async()=>{setMsg('');try{setPv(await aer('course_batch_preview',pid?{provider_id:pid}:{}))}catch(e){setMsg(plainError(e))}}
   // CF-247 scheduled reading (Platform Admin direction 3 Nov 2026 09:32): what the next run of job aer-scheduled-read would ask, on request (rank 4 and above)
@@ -524,7 +528,8 @@ export function CourseProgramme({onError,onAsked}){
       {pv&&!pv.refusal&&<ReasonAction label="Read next batch" confirm="Ask" testid="aer-batch" onDo={ask}/>}
       {msg&&<small role="status">{msg}</small>}
     </div>}
-    <DataTable rows={rows} columns={cols} loading={!d&&!err} tableId="aer-course-programme" onSort={()=>{}}/>
+    <DataTable rows={pageRows} columns={cols} loading={!d&&!err} tableId="aer-course-programme" onSort={()=>{}}/>
+    {rows.length>PROGRAMME_PAGE&&<Pager offset={pOff} limit={PROGRAMME_PAGE} total={rows.length} onOffset={setPOff}/>}
   </section>
 }
 
