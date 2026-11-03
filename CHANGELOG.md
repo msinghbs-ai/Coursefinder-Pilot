@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.372 — 3 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.445** (SS-021, IQ-00074). Migration `20261104240000_cf247_relink_isolation`: md5-guarded edits of `security.course_relink_provider_v1` (77684402 → 07bd965b) and `security.course_relink_fair_run_v1` (cd5a842d → 772a488e); settings relink.urls_per_university and wc.relink_university_seconds; same candidates and binds as before. Nothing dropped; consumer API untouched. Spec s266.
+
 ## 0.1.371 — 3 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.444** (SS-021 audit F2, IQ-00077). Migration `20261104180000_cf247_identity_check_issue_values`: md5-guarded edit of `security.provider_identity_check_v1` (fe1df994 → ad78092b): root_cause_class data_drift, workstream A10, each issue write in its own block. Nothing dropped; consumer API untouched. Spec s264.
