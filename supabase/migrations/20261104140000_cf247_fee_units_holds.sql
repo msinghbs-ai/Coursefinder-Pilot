@@ -35,8 +35,8 @@
 --   5 AU profile note corrected (credit points are not units); root causes and remedies registered through A's contract; an auto verification
 --     remedy that records whether any AI fee is active on a held course or was derived by the old division after this release.
 -- Edited live functions (md5 read live 3 Nov 2026 21:2x AEDT; guarded both ways):
---   public.svc_fee_ai_record(uuid,jsonb,numeric,text) 0fb74c639ca69349ef18813282b0f987 -> c22bcbbcbd0b19b34c6ded4f44e1c6bd
---   security.fee_course_pages_enqueue_v1() 91b2591e44bf9755950619006bf78e32 -> 0d6f2f0ab3c08c2bc77f78f1d1d8e3b7
+--   public.svc_fee_ai_record(uuid,jsonb,numeric,text) 0fb74c639ca69349ef18813282b0f987 -> 5ec65e53403933b98381bd5c9c79b6d1
+--   security.fee_course_pages_enqueue_v1() 91b2591e44bf9755950619006bf78e32 -> 67b1b7db62dbd3c8e90053296f54a46a
 -- Wrong values already active are not changed here: containment and correction are Platform Admin pastes (docs/paste/PASTE-20261104-fee-units-holds-*).
 -- Replaces: the yearly-figure rule of public.svc_fee_ai_record for fees "for N points or credits" (N / profile load), switched off by
 --   fees.units_load_fix_on 1 (the old rule still runs when it is 0)
@@ -204,7 +204,7 @@ revoke all on function security.fee_reader_hold_v1(uuid) from public, anon, auth
 comment on function security.fee_reader_hold_v1(uuid) is 'CF-247 IQ-00111: the reason the AI fee reader keeps a page fee out for a course (raised fee check hold, fee-check exclusion, or any fee exclusion with fees.respect_all_exclusions_on), or null.';
 
 -- 5 the reader: the new yearly rule, ambiguous figures to Layer 4, holds respected ----------------------------------------------------------
-select pg_temp.edit_once('public.svc_fee_ai_record(uuid,jsonb,numeric,text)', '0fb74c639ca69349ef18813282b0f987', 'c22bcbbcbd0b19b34c6ded4f44e1c6bd', array[
+select pg_temp.edit_once('public.svc_fee_ai_record(uuid,jsonb,numeric,text)', '0fb74c639ca69349ef18813282b0f987', '5ec65e53403933b98381bd5c9c79b6d1', array[
   array[$o$        v_max int := security.pipeline_num_v1('fees.max_pages_per_provider', 12)::int; v_notes text; v_x record;
 $o$, $n$        v_max int := security.pipeline_num_v1('fees.max_pages_per_provider', 12)::int; v_notes text; v_x record;
         -- CF-247 IQ-00111: the yearly figure of a fee for a stated count (fees.units_load_fix_on) and fee holds (fees.respect_holds_on)
@@ -251,7 +251,7 @@ $n$]
 ], array[1, 1, 1, 1, 1, 1]);
 
 -- 6 the reader's queue: no AI read is spent on a course whose page fee cannot be admitted ----------------------------------------------------
-select pg_temp.edit_once('security.fee_course_pages_enqueue_v1()', '91b2591e44bf9755950619006bf78e32', '0d6f2f0ab3c08c2bc77f78f1d1d8e3b7', array[
+select pg_temp.edit_once('security.fee_course_pages_enqueue_v1()', '91b2591e44bf9755950619006bf78e32', '67b1b7db62dbd3c8e90053296f54a46a', array[
   array[$o$    v_hash := coalesce(rq.content_hash, rq.evidence_id::text);
 $o$, $n$    -- CF-247 IQ-00111: a request for a course whose page fee is kept out (fee hold or fee-check exclusion) is closed as held, not read
     if security.pipeline_num_v1('fees.respect_holds_on', 1) >= 1 and security.fee_reader_hold_v1(rq.course_id) is not null then

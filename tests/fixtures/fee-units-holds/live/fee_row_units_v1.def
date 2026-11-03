@@ -1,0 +1,17 @@
+CREATE OR REPLACE FUNCTION security.fee_row_units_v1(p_row jsonb)
+ RETURNS integer
+ LANGUAGE sql
+ IMMUTABLE
+ SET search_path TO ''
+AS $function$
+  -- CF-247 22 Oct 2026: points or credits a fee row's amount is for, from the quote ("$19,929.84 (for 60 points)", "$27,300 (60 points)",
+  -- "$41,859.67 for 120 credits"); never for a per-term row or a quote that says per point / per credit / per paper
+  select case
+    when coalesce(p_row->>'unit', '') = 'per_term' then null
+    when coalesce(p_row->>'quote', '') ~* '(\m(per|each)\s+(point|credit|paper)\M|/\s*(point|credit|paper)\M)' then null
+    else nullif(coalesce(
+      (select m[1]::int from regexp_match(coalesce(p_row->>'quote', ''), '\d[\d,]*(?:\.\d{1,2})?\s*\(\s*(?:for\s+)?(\d{1,3})\s*(?:points?|credits?|pts)\M', 'i') m),
+      (select m[1]::int from regexp_match(coalesce(p_row->>'quote', ''), '\d[\d,]*(?:\.\d{1,2})?\s+for\s+(\d{1,3})\s*(?:points?|credits?|pts)\M', 'i') m),
+      case when p_row->>'unit' = 'per_course' and coalesce(p_row->>'units_covered', '') ~ '^\d{1,3}(\.0+)?$' then (p_row->>'units_covered')::numeric::int end), 0)
+  end
+$function$
