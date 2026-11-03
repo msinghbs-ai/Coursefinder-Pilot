@@ -51,11 +51,10 @@ for s in "${!LIVE[@]}"; do [ "$(md5of "$s")" = "${LIVE[$s]}" ] || { echo "loaded
 echo "definitions this change edits or calls (loaded = live): ${#LIVE[@]}"
 EDITED="'security.integration_issue_upsert_v1(jsonb,text)'::regprocedure, 'security.work_review_room_v1(text)'::regprocedure, 'security.aer_schedule_tick_v1(boolean)'::regprocedure,
         'security.fee_reader_tick_v1()'::regprocedure, 'security.course_link_search_tick_v1(integer)'::regprocedure"
-NEW="'integration_issue_allowed_v1', 'work_review_ready_v1', 'aer_provider_load_v1', 'aer_fair_courses_v1', 'aer_technical_recovery_v1', 'course_search_paid_cap_v1', 'page_find_continuity_v1'"
+NEW="'integration_issue_allowed_v1', 'work_review_ready_v1', 'aer_provider_load_v1', 'aer_fair_courses_v1', 'aer_technical_recovery_v1', 'course_search_paid_cap_v1', 'page_find_continuity_v1', 'link_search_park_v1'"
 FNS="select md5(string_agg(p.oid::regprocedure::text || md5(pg_get_functiondef(p.oid)), '|' order by p.oid::regprocedure::text)) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
      where n.nspname in ('security', 'public', 'pipeline') and p.prokind = 'f' and p.oid not in ($EDITED) and p.proname not in ($NEW)"
 F0=$(q "$FNS")
-L4="select md5(coalesce(string_agg(i::text, '|' order by i.id), '')) from pipeline.layer4_review_items i"
 
 # 2 the migration, then again
 OUT=$($P -d $DB -1 -At -f $MIG 2>&1) || { echo "$OUT" | tail -5; exit 1; }

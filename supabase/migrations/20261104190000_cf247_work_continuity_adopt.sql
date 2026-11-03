@@ -52,7 +52,7 @@
 --   security.work_review_room_v1(text)                a7542c70665220ba53a1d6e5bed05a1b -> 55413845185727480e5be78eb762d47c
 --   security.aer_schedule_tick_v1(boolean)            bc28099db02a26344fae2527b624a8c7 -> 5b6a4f8a78f27ccc238a8d2824f11097
 --   security.fee_reader_tick_v1()                     0c93b20de02d1714cd6672c259fddb20 -> 8116602b00bd4bb3972e16bd682d4c17
---   security.course_link_search_tick_v1(integer)      ffc9fb647925f689678a035cdd64b3e1 -> 7e355e77753a7ae8bf6234222f179506
+--   security.course_link_search_tick_v1(integer)      ffc9fb647925f689678a035cdd64b3e1 -> 71bf3bc46df97b90870a8bcf238a8a4a
 -- Called, not edited (live md5): security.work_item_report_v1(text,text,text,text,jsonb) 6a15318c0ecd6644b32f1883463c542e,
 --   security.work_fair_pick_v1(text,text,jsonb,integer) c1e63976b1ff6be67f5a4477baa09588, security.work_item_eligible_v1(text,text,text)
 --   3d7b00a65efca566a464919c5aa3be6d, security.lane_paid_hold_v1(text) 99ec517b8b51b0d1305b739e7f1562fb.
@@ -339,6 +339,20 @@ begin
 end $function$;
 revoke all on function security.course_search_paid_cap_v1() from public, anon, authenticated;
 
+create or replace function security.link_search_park_v1(p_course uuid, p_sends int) returns void
+language plpgsql security definer set search_path to '' as $function$
+-- CF-247 SS-021 F9: a course page search whose row reached wc.link_search_max_attempts sends (counted on the search row, including sends made
+-- before the lane reported its work) ends in error: its work item is parked with the evidence so the blocker is raised once (class
+-- search_unanswered, escalated for a release) and nothing re-sends it.
+begin
+  update pipeline.work_items w set stage = 'parked', next_eligible_at = null, lease_until = null, outcome = 'blocked_evidence',
+         unresolved_blocker = jsonb_build_object('class', w.failure_class, 'title', 'A course page search failed or went unanswered',
+                                                 'reason', 'send cap reached (' || p_sends || ' sends)', 'escalate_as', 'release', 'at', now()),
+         updated_at = now()
+   where w.lane = 'course_link_search' and w.entity = p_course::text and w.work_kind = 'search' and w.stage in ('retry_wait', 'eligible', 'deferred');
+end $function$;
+revoke all on function security.link_search_park_v1(uuid, int) from public, anon, authenticated;
+
 create or replace function security.page_find_continuity_v1() returns jsonb
 language plpgsql security definer set search_path to '' as $function$
 -- CF-247 SS-021 F3 (job work-continuity-lanes): running Find course pages tasks (admin_jobs kind course_page_find), each in its own block.
@@ -528,7 +542,7 @@ $o$, $n$     -- 4 Nov 2026 (SS-021 F9, IQ-00134; wc.fee_item_claims_on): each pa
 $n$]], array[1]);
 
 -- 5.5 F9: course page searches isolated, re-sent when due, capped
-select pg_temp.edit_once('security.course_link_search_tick_v1(integer)', 'ffc9fb647925f689678a035cdd64b3e1', '7e355e77753a7ae8bf6234222f179506',
+select pg_temp.edit_once('security.course_link_search_tick_v1(integer)', 'ffc9fb647925f689678a035cdd64b3e1', '71bf3bc46df97b90870a8bcf238a8a4a',
   array[array[$o$        n_harvest int := 0; n_found int := 0; n_moved int := 0; n_sent int := 0; v_next text;
 $o$, $n$        n_harvest int := 0; n_found int := 0; n_moved int := 0; n_sent int := 0; v_next text;
         -- 4 Nov 2026 (SS-021 F9, IQ-00134; wc.link_search_continuity_on): per-search isolation, re-send when due, a send cap
@@ -562,6 +576,7 @@ $o$, $n$      update pipeline.course_link_search set attempts = attempts + 1, st
                 'owner', 'course-link-search', 'sqlstate', v_wc_state, 'message', v_wc_msg, 'evidence', jsonb_build_object('step', 'harvest', 'http_status', r.status_code)));
       update pipeline.course_link_search set attempts = attempts + 1, state = case when attempts + 1 >= v_wc_max then 'error' else 'queued' end,
              results = jsonb_build_object('error', left(v_wc_msg, 300), 'http_status', r.status_code) where course_id = r.course_id;
+      if r.attempts + 1 >= v_wc_max then perform security.link_search_park_v1(r.course_id, r.attempts + 1); n_capped := n_capped + 1; end if;
       n_failed := n_failed + 1;
     end;
   end loop;
@@ -587,7 +602,7 @@ $o$, $n$      update pipeline.course_link_search set attempts = attempts + 1, st
                  state = case when r.attempts + 1 >= v_wc_max then 'error' when not coalesce((v_wc->>'recorded')::boolean, false) then 'queued' else state end,
                  results = case when r.attempts + 1 >= v_wc_max then jsonb_build_object('error', 'no search answer after ' || (r.attempts + 1) || ' send(s)') else results end
            where course_id = r.course_id and state = 'sent';
-          if r.attempts + 1 >= v_wc_max then n_capped := n_capped + 1; end if;
+          if r.attempts + 1 >= v_wc_max then perform security.link_search_park_v1(r.course_id, r.attempts + 1); n_capped := n_capped + 1; end if;
         elsif security.work_item_eligible_v1('course_link_search', r.course_id::text, 'search') then
           update pipeline.course_link_search set state = 'queued' where course_id = r.course_id and state = 'sent';
           n_resent := n_resent + 1;
@@ -651,6 +666,7 @@ insert into pipeline.component_register(kind, name, layer, purpose, status, repl
  ('job', 'work-continuity-lanes', 'Platform', 'CF-247 SS-021 F3: Find course pages parked behind the paid cap; tasks that can never run ended', 'active', '{}', '20261104190000'),
  ('function', 'security.page_find_continuity_v1', 'Platform', 'CF-247 SS-021 F3: job work-continuity-lanes', 'active', '{}', '20261104190000'),
  ('function', 'security.course_search_paid_cap_v1', 'Platform', 'CF-247 SS-021 F3: the course search caps and their reset', 'active', '{}', '20261104190000'),
+ ('function', 'security.link_search_park_v1', 'Platform', 'CF-247 SS-021 F9: a course page search at its send cap is parked', 'active', '{}', '20261104190000'),
  ('function', 'security.aer_fair_courses_v1', 'Platform', 'CF-247 SS-021 F4: AER course reads in turn, within shares and the reserve', 'active', '{}', '20261104190000'),
  ('function', 'security.aer_provider_load_v1', 'Platform', 'CF-247 SS-021 F4: each university''s AER decisions waiting and reads in progress', 'active', '{}', '20261104190000'),
  ('function', 'security.aer_technical_recovery_v1', 'Platform', 'CF-247 SS-021 F4: technically held and duplicate entry items recorded for recovery', 'active', '{}', '20261104190000'),
