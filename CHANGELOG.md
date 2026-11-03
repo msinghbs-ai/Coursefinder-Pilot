@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.388 — 4 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.461** (IQ-00241, P1). Migration `20261104430000_cf247_sch_coverage_classify_fix`: md5-guarded edit of security.scholarship_coverage_classify_v1 (a268ce81 → c072494c); guard on security.scholarship_coverage_items_v1 (d3dfacf0). One row per (provider, item key) with a deterministic winner; repeats counted as duplicate_cases; per-report error blocks (report_errors). Nothing switched on; nothing dropped; consumer API untouched. Spec s270 extended.
+
 ## 0.1.387 — 4 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.460** (IQ-00215, IQ-00216, IQ-00219; mandate 4 Nov 05:08 §2–§5). Migration `20261104390000_cf247_sch_coverage_recovery`: md5-guarded edits of security.scholarship_university (00ca2485 → cee99ebc), security.scholarship_coverage_v1 (cf9a3828 → 77200414), public.svc_scholarship_read_next (b30f59a2 → 452c288e); classification and Read again on; sch_cov.legal_name_identity_on, policy_disposition_on, recover_register_pages_on, recover_stored_reads_on, recover_listings_on ship 0. Nothing dropped; consumer API untouched. Spec s270.
