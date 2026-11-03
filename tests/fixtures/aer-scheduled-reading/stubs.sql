@@ -76,3 +76,19 @@ create table pipeline.integration_issues(id bigserial primary key, fingerprint t
 create function security.integration_issue_upsert_v1(p jsonb, p_actor text default 'integration-validate') returns jsonb language sql as
   $f$ insert into pipeline.integration_issues(fingerprint, payload, actor) values (p->>'fingerprint', p, p_actor)
       on conflict (fingerprint) do update set payload = excluded.payload returning jsonb_build_object('id', id) $f$;
+-- run-as (mandate 13:09 D6): the role tables as live has them; the fixture owner holds platform_admin (rank 6), as the live owner does
+alter table cron.job add column if not exists username text default 'postgres';
+create table security.roles(code text primary key, name text, rank int, status text default 'active', description text);
+insert into security.roles(code, name, rank) values ('viewer', 'Viewer', 1), ('curator', 'Curator', 3), ('pipeline_operator', 'Pipeline Operator', 4), ('platform_admin', 'Platform Admin', 6);
+create table security.user_roles(user_id uuid, role_code text, expires_at timestamptz, granted_at timestamptz default now(), granted_by uuid);
+insert into security.user_roles(user_id, role_code) values ('63ba56cb-0000-4000-8000-000000000000', 'platform_admin');
+-- Read next batch, Course-level reading and the outcome register (live definitions in live/): the columns and tables they read
+alter table catalogue.courses add column if not exists display_title text, add column if not exists course_code text;
+create table pipeline.aer_course_outcomes(course_id uuid primary key, provider_id uuid, country text, provider_name text, provider_published boolean, course_title text,
+  course_code text, outcome text, detail text, course_url text, page_status text, identity_basis text, read_state text, read_reason text, review_item_id uuid, built_at timestamptz);
+create table pipeline.aer_course_outcome_builds(built_at timestamptz, finished_at timestamptz, took_ms int, courses int, by_outcome jsonb, source text);
+insert into pipeline.platform_toolset_settings(toolset_key, key, kind, value) values
+  ('pipeline', 'entry.course_read_countries', 'list', '["AU", "NZ"]'), ('pipeline', 'entry.course_batch_size', 'number', '50'),
+  ('pipeline', 'entry.course_read_providers', 'list', '["d2000000-0000-4000-8000-000000000003", "d2000000-0000-4000-8000-000000000007"]')
+on conflict do nothing;
+create table if not exists pipeline.admin_control_events(id bigserial primary key, area text, action text, target text, detail jsonb, actor uuid, created_at timestamptz default now());

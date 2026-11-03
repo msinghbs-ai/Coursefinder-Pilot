@@ -1,6 +1,9 @@
 -- CF-247 scheduled reading of academic entry requirements (AER) by eligibility rules (Platform Admin direction 3 Nov 2026 09:32, platform-led
 -- enrichment: "If Claude stops working now, does StudySearch continue ..."; acceptance report 2026-11-03-platform-enrichment-control-autonomy-
--- acceptance-report.md item 4; controls audit 2026-11-03-enrichment-controls-audit.md defect 5). Workstream A.
+-- acceptance-report.md item 4; controls audit 2026-11-03-enrichment-controls-audit.md defect 5). Workstream A; Release C (Platform Admin
+-- consolidated mandate 3 Nov 2026 13:09, decision D6: include the scheduled AER reader, keep its safeguards, keep the 600-item back-pressure and at
+-- most two controlled re-reads, align the manual Read Next Batch selector with the same eligibility rules, run only as the identity and role
+-- permissions the platform already defines, do not activate).
 -- Why (live, read-only, 3 Nov 2026 10:12-10:40 AEDT): no scheduled work reads AER. Course reads are queued only by security.course_entry_read_
 --   enqueue_v1 from Admin screens and corrections, within a fixed list of 41 providers (entry.course_read_providers) in AU and NZ; provider matrix
 --   runs have been idle since 30 Oct 07:14 within a fixed list of 33 providers (entry.providers); Canada has no AER configuration (its
@@ -29,34 +32,59 @@
 --         functions behave exactly as before. Skipped under back-pressure and while the AI lane entry_matrix is stopped.
 --      Each run is recorded (pipeline.aer_schedule_runs), with what it asked and why anything was skipped; held items looked at are recorded
 --      (pipeline.aer_schedule_checks) so every held item is looked at in turn.
+--   1b. Read next batch (manual, Platform Admin) uses the same eligibility rules (D6). security.aer_course_population_v1 is the one population:
+--      AER-eligible, unhidden provider of a country switched on; active course with a bound, stored official page whose identity admits entry
+--      requirements; no manual lock. The scheduled selector (security.aer_schedule_courses_v1) is that population less what is held, waiting,
+--      recent or under a no-value hold; the manual selector security.course_entry_eligible_v1 (md5-guarded edit) is that population, so Read next
+--      batch, "Next by priority" and the per-provider table of Course-level reading (security.course_entry_programme_v1, md5-guarded edit) no
+--      longer use the fixed list entry.course_read_providers or the separate list entry.course_read_countries; the outcome register
+--      (security.aer_course_outcomes_build_v1, md5-guarded edit) calls a course outside the scope by the same rules. A batch still reads only
+--      never-read courses, waits for the last batch, and is refused when AI is stopped or below the OpenRouter floor (unchanged).
+--   1c. Run-as (D6): the job runs as the database role pg_cron uses (postgres, as every platform job) through security-definer functions owned by
+--      postgres. Each read is asked in the name of pipeline.field_gap_queue_control.owner, the owner the platform's standing enrichment already runs
+--      as (job field-gap-queue; pipeline.enrich_plan_control.owner and provider onboarding run as the same account), and only while that owner holds
+--      an active, unexpired role at the rank Read next batch requires (Platform Admin, rank 6); otherwise the run asks nothing and says why.
+--      No role, grant or identity is created or changed here.
 --   2. Read-only preview: security.aer_schedule_tick_v1(true) says what the next run would ask (by country and provider, held reads, matrix
 --      pages, estimated US$ and Firecrawl credits) without writing; public.admin_aer_schedule (rank 4 and above) returns it with the countries
 --      (on, or off with the reason, and eligible courses), the daily figures and the last runs. Shown on Catalogue › Entry requirements › Course
 --      entry requirements › Course-level reading (one line).
 --   3. Canada: scheduled entry reading is off for CA with the reason "no AER configuration", and one integration-queue issue is raised here
 --      (fingerprint aer:country_not_configured:CA, P2, workstream A3) unless it already exists.
--- Measured on live data, read only, 3 Nov 2026 10:46 and 10:56 AEDT (the rules replicated in a SELECT; no function created): eligible for a new
---   read now AU 12,034 courses at 879 providers, NZ 151 at 40, CA 0 (off; no identity admits entry requirements there); a run at the defaults
---   asks 20 (AU 19, NZ 1); of the 499 waiting course reads, 140 are correctable by a corrected read (AU 119, NZ 21), 162 were cut at the row
---   limit, 12 share a page and 11 are claimed, locked or moved; matrix pages: the eligibility rules give 34 providers (the 33 listed and one more
---   with an entry page), and none is due before 25 Nov 2026. Expected a day at the defaults: at most 200 course reads (about US$1.22 at the
---   measured US$0.0061 a read), no Firecrawl for course reads; new reads stop once Layer 4 plus reads in progress reach 600 (539 now).
+-- Measured on live data, read only, 3 Nov 2026 13:16-13:28 AEDT after v2.15.423 (the rules replicated in a SELECT; no function created):
+--   population AU 12,722 courses at 879 providers, NZ 367 at 46 (the fixed list gave 4,416 courses at 30 providers, 3,515 never read);
+--   due a scheduled read AU 12,037 at 879, NZ 151 at 40; never read (Read next batch) the same; CA 0 (off; 3,815 active courses, none with
+--   AER). Layer 4: 499 course reads and 40 matrix runs waiting (539); AER decisions in 7 days 541 (25 on 27 Oct, 58 on 31 Oct, 458 on 1 Nov,
+--   none on the other days); no read in progress. Cost: US$0.00609 a read (1,117 reads with a cost; 7-day spend US$6.80; p90 US$0.00996);
+--   OpenRouter US$85.40 (floor US$5). At the defaults a day asks at most 200 reads (about US$1.22; no Firecrawl for course reads), but new reads
+--   stop at 600 waiting, so with 539 waiting the first runs ask at most 61 new reads before back-pressure. The population takes about 2.3 s.
+--   Held reads: of the 499 waiting (AU 402, NZ 97), 140 are correctable by a corrected read (AU 119, NZ 21; measured 10:56 and still valid: no
+--   AER item decided, created or read since 1 Nov and the gate and D-R2 definitions are unchanged; a 60-item sample at 13:26 agrees), 162 were
+--   cut at the row limit and 12 share a page (left for a person). The gate takes about 0.5 s an item, so aer.schedule_held_scan (40) costs
+--   about 20 s a run and every waiting read is checked in about 13 hourly runs. At most two corrected reads an item (aer.schedule_held_max_tries),
+--   14 days apart: at most 280 corrected reads (about US$1.70) for the 140 over the life of the queue, inside the daily cap.
 -- Settings (G2; Settings › Pipeline settings, section Entry requirements): aer.schedule_countries, aer.schedule_countries_off,
 --   batch.aer_schedule_courses, aer.schedule_daily_max, batch.aer_schedule_held, aer.schedule_held_scan, aer.schedule_held_retry_days,
 --   aer.schedule_held_max_tries, aer.schedule_layer4_max, aer.schedule_retry_days, aer.schedule_per_provider, aer.schedule_lock_fields,
 --   batch.aer_schedule_matrix, aer.schedule_preview_rows. AI spend stays inside the existing lanes (enrich_fields, entry_matrix), their daily
 --   guards and the OpenRouter floor; course reads use the stored page only (no Firecrawl); matrix pages are fetched by the existing worker within
 --   the existing Firecrawl budget. No limit is raised.
--- Before (live, 3 Nov 2026 10:14 AEDT): security.entry_matrix_enabled_v1 15fc1b28e855be2d4234057527a1a086; security.entry_matrix_fire_v1
---   869da9fbdbba2a8321d3f4f3dfba2197. After: entry_matrix_enabled_v1 582a5024ffeca0ac3c5446a903b39b3f; entry_matrix_fire_v1
---   0ab725cb35f7c7d5d2309f18ec94c119 (computed on isolated fixtures loaded from the live definitions, tests/fixtures/aer-scheduled-reading; each
---   helper raises, rolling the migration back, on any difference).
--- Rollback: re-apply the two before definitions; the job stays paused; the new functions, tables and settings are then unused and go by a paste
+-- Before (live, re-read 3 Nov 2026 13:11-13:20 AEDT after v2.15.423; unchanged since 10:14) -> after (computed on isolated fixtures loaded from
+--   the live definitions, tests/fixtures/aer-scheduled-reading; each helper raises, rolling the migration back, on any difference):
+--   security.entry_matrix_enabled_v1(uuid)              15fc1b28e855be2d4234057527a1a086 -> 582a5024ffeca0ac3c5446a903b39b3f
+--   security.entry_matrix_fire_v1()                     869da9fbdbba2a8321d3f4f3dfba2197 -> 0ab725cb35f7c7d5d2309f18ec94c119
+--   security.course_entry_eligible_v1()                 5cfd5355834aad3b6af7ca7a882b0d29 -> 35651ce7033a8b582a9e7e77a419f2c4
+--   security.course_entry_programme_v1(boolean)         3261df74758287c168fc297d8a2093bb -> 8ade3f5654a4e673477de57f5f710e5d
+--   security.aer_course_outcomes_build_v1(text)         51fb4c3896cfff47626711f98cf62dc1 -> 7576ba089273f52f106c03cddbc06c5c
+-- Rollback: re-apply the five before definitions; the job stays paused; the new functions, tables and settings are then unused and go by a paste
 --   file after hygiene.retire_after_days.
--- Replaces: security.entry_matrix_enabled_v1 and security.entry_matrix_fire_v1 (same names; md5-guarded edits); while job aer-scheduled-read is
---   on, the fixed provider lists entry.providers and entry.course_read_providers as the scope of automatic AER reading (eligibility rules instead)
--- Retires: nothing (the fixed lists still scope the manual "Read next batch"; nothing is left unused)
--- Nothing dropped or deleted; nothing switched on. New: two tables, seven functions, fourteen settings, one paused job, one integration issue.
+-- Replaces: security.entry_matrix_enabled_v1, security.entry_matrix_fire_v1, security.course_entry_eligible_v1, security.course_entry_programme_v1
+--   and security.aer_course_outcomes_build_v1 (same names; md5-guarded edits); the fixed list entry.course_read_providers and the list
+--   entry.course_read_countries as the scope of Read next batch and Course-level reading (security.aer_course_population_v1 instead); while job
+--   aer-scheduled-read is on, the fixed list entry.providers as the scope of matrix reading
+-- Retires: the setting entry.course_read_providers (no function reads it after this change; the row stays and its removal goes to the Platform
+--   Admin as a paste file after hygiene.retire_after_days). entry.course_read_countries still scopes the outcome register's population.
+-- Nothing dropped or deleted; nothing switched on. New: two tables, eight functions, fourteen settings, one paused job, one integration issue.
 --   The consumer API is not touched (G3, Decision 266): no website_*, zoho_*, api.* object or edge function changes.
 
 create or replace function pg_temp.edit_once(p_sig text, p_before text, p_after text, p_edits text[][], p_times int[]) returns text language plpgsql as $f$
@@ -86,57 +114,58 @@ begin
                                  ('security.course_entry_correction_v1(uuid,uuid,text)', '1e2947b30a02a38327e2b67e312339af'),
                                  ('security.course_entry_correction_check_v1(uuid,uuid,text,jsonb,jsonb)', '2e93bd9b3bc0c2ca7628f3a407b8f57f'),
                                  ('security.course_entry_gate_v1(uuid,uuid[])', '4fc06c081e451f2d0fb0a504a4fbe10f'),
-                                 ('security.course_entry_cost_v1()', '3f247034427a03584856d1a5fe5dd8e1')) v(sig, m) loop
+                                 ('security.course_entry_cost_v1()', '3f247034427a03584856d1a5fe5dd8e1'),
+                                 ('security.course_entry_batch_v1(uuid,integer,text,uuid,boolean)', 'c4f088b127f207c31e9f1ff41970c6a5')) v(sig, m) loop
     if md5(pg_get_functiondef(r.sig::regprocedure)) <> r.m then raise exception 'live % differs from the definition this change was written against', r.sig; end if;
   end loop;
 end $g$;
 
 -- 1. settings (G2) ----------------------------------------------------------------------------------------------------------------------
 insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, section, used_by, reason) values
- ('pipeline', 'aer.schedule_countries', 'Scheduled entry reading: countries switched on',
-  'Countries whose courses and entry pages the scheduled entry reading (job aer-scheduled-read) may read. A country also needs AER-eligible providers (aer.eligible_countries) and an AER configuration (its course pages admit entry requirements). A country listed below as switched off is off whatever this list says.',
-  'list', '["AU", "NZ"]'::jsonb, null, null, 'countries', 1040, 'Entry requirements',
-  'security.aer_schedule_country_v1 (job aer-scheduled-read; security.entry_matrix_enabled_v1 while the job is on)', 'CF-247 scheduled AER reading (Platform Admin direction 3 Nov 2026 09:32 §7): per-country enablement'),
- ('pipeline', 'aer.schedule_countries_off', 'Scheduled entry reading: countries switched off, with the reason',
-  'Country=reason pairs. Each country here is off for scheduled entry reading and the reason shows on Course-level reading. Canada has no AER configuration yet (integration queue issue aer:country_not_configured:CA).',
-  'list', '["CA=no AER configuration"]'::jsonb, null, null, 'country=reason', 1041, 'Entry requirements',
+ ('pipeline', 'aer.schedule_countries', 'Entry reading: countries switched on (scheduled and Read next batch)',
+  'Countries whose courses the entry reading may read: the scheduled reading (job aer-scheduled-read, which also re-reads their entry pages) and Read next batch on Course-level reading use the same rule. A country also needs AER-eligible providers (aer.eligible_countries) and an AER configuration (its course pages admit entry requirements). A country listed below as switched off is off whatever this list says.',
+  'list', '["AU", "NZ"]'::jsonb, null, null, 'countries', 943, 'Entry requirements',
+  'security.aer_schedule_country_v1 (security.aer_course_population_v1: job aer-scheduled-read and Read next batch; security.entry_matrix_enabled_v1 while the job is on)', 'CF-247 scheduled AER reading (Platform Admin direction 3 Nov 2026 09:32 §7; mandate 13:09 D6): per-country enablement, one rule for scheduled and manual reading'),
+ ('pipeline', 'aer.schedule_countries_off', 'Entry reading: countries switched off, with the reason',
+  'Country=reason pairs. Each country here is off for entry reading (scheduled and Read next batch) and the reason shows on Course-level reading. Canada has no AER configuration yet (integration queue issue aer:country_not_configured:CA).',
+  'list', '["CA=no AER configuration"]'::jsonb, null, null, 'country=reason', 944, 'Entry requirements',
   'security.aer_schedule_country_v1', 'CF-247 scheduled AER reading: Canada reported, not hidden (direction §7)'),
  ('pipeline', 'batch.aer_schedule_courses', 'Scheduled entry reading: course reads asked a run',
   'Most course reads (held reads read again plus new reads) one run of aer-scheduled-read asks for. Each is one AI read of the stored official page, inside the Enrich fields AI lane.',
-  'number', to_jsonb(20), 1, 200, 'courses', 1042, 'Entry requirements', 'security.aer_schedule_tick_v1 (job aer-scheduled-read)', 'CF-247 scheduled AER reading: bounded runs'),
+  'number', to_jsonb(20), 1, 200, 'courses', 945, 'Entry requirements', 'security.aer_schedule_tick_v1 (job aer-scheduled-read)', 'CF-247 scheduled AER reading: bounded runs'),
  ('pipeline', 'aer.schedule_daily_max', 'Scheduled entry reading: course reads a day at most',
   'Most course reads the scheduled entry reading asks for in any 24 hours (held reads read again plus new reads). Manual batches are not counted.',
-  'number', to_jsonb(200), 0, 5000, 'courses a day', 1043, 'Entry requirements', 'security.aer_schedule_tick_v1', 'CF-247 scheduled AER reading: daily cap'),
+  'number', to_jsonb(200), 0, 5000, 'courses a day', 946, 'Entry requirements', 'security.aer_schedule_tick_v1', 'CF-247 scheduled AER reading: daily cap'),
  ('pipeline', 'batch.aer_schedule_held', 'Scheduled entry reading: held reads read again a run',
   'Most waiting course reads held as incomplete (printed requirements dropped that no row covers) that one run reads again through the corrected-read path (D-R2). Counted inside the course reads a run.',
-  'number', to_jsonb(10), 0, 100, 'reads', 1044, 'Entry requirements', 'security.aer_schedule_tick_v1', 'CF-247 scheduled AER reading (b): held reads through D-R2'),
+  'number', to_jsonb(10), 0, 100, 'reads', 947, 'Entry requirements', 'security.aer_schedule_tick_v1', 'CF-247 scheduled AER reading (b): held reads through D-R2'),
  ('pipeline', 'aer.schedule_held_scan', 'Scheduled entry reading: waiting reads checked a run',
   'How many waiting course reads one run checks against the completeness gate to find held ones to read again; the ones checked longest ago come first, so every waiting read is checked in turn.',
-  'number', to_jsonb(40), 1, 500, 'reads', 1045, 'Entry requirements', 'security.aer_schedule_held_v1', 'CF-247 scheduled AER reading: the gate is checked on a bounded window'),
+  'number', to_jsonb(40), 1, 500, 'reads', 948, 'Entry requirements', 'security.aer_schedule_held_v1', 'CF-247 scheduled AER reading: the gate is checked on a bounded window'),
  ('pipeline', 'aer.schedule_held_retry_days', 'Scheduled entry reading: read a held read again after',
   'A held read whose corrected read was asked (and refused or still incomplete) is not asked again for this many days.',
-  'number', to_jsonb(14), 1, 180, 'days', 1046, 'Entry requirements', 'security.aer_schedule_held_v1', 'CF-247 scheduled AER reading: spaced retries'),
+  'number', to_jsonb(14), 1, 180, 'days', 949, 'Entry requirements', 'security.aer_schedule_held_v1', 'CF-247 scheduled AER reading: spaced retries'),
  ('pipeline', 'aer.schedule_held_max_tries', 'Scheduled entry reading: corrected reads asked for one held read at most',
   'After this many corrected reads of one waiting read, the scheduled reading leaves it for a person (reject, or Approve except).',
-  'number', to_jsonb(2), 1, 10, 'tries', 1047, 'Entry requirements', 'security.aer_schedule_held_v1', 'CF-247 scheduled AER reading: bounded retries'),
+  'number', to_jsonb(2), 1, 10, 'tries', 950, 'Entry requirements', 'security.aer_schedule_held_v1', 'CF-247 scheduled AER reading: bounded retries'),
  ('pipeline', 'aer.schedule_layer4_max', 'Scheduled entry reading: stop new reads while Layer 4 holds',
   'New course reads and matrix re-reads are not asked while AER items waiting in Layer 4 (course reads and matrix runs) plus course reads in progress reach this number, so review is not flooded. Held reads are still read again: they replace a waiting item.',
-  'number', to_jsonb(600), 0, 10000, 'items', 1048, 'Entry requirements', 'security.aer_schedule_tick_v1', 'CF-247 scheduled AER reading: back-pressure from Layer 4'),
+  'number', to_jsonb(600), 0, 10000, 'items', 951, 'Entry requirements', 'security.aer_schedule_tick_v1', 'CF-247 scheduled AER reading: back-pressure from Layer 4'),
  ('pipeline', 'aer.schedule_retry_days', 'Scheduled entry reading: read a course again after',
   'A course whose last entry read kept nothing, failed or was rejected is read again by the schedule after this many days (a course with a requirement, or one waiting in Layer 4, is not read).',
-  'number', to_jsonb(30), 1, 365, 'days', 1049, 'Entry requirements', 'security.aer_schedule_courses_v1', 'CF-247 scheduled AER reading: not recently read'),
+  'number', to_jsonb(30), 1, 365, 'days', 952, 'Entry requirements', 'security.aer_schedule_courses_v1', 'CF-247 scheduled AER reading: not recently read'),
  ('pipeline', 'aer.schedule_per_provider', 'Scheduled entry reading: courses of one provider a run',
-  'Most new course reads of one provider in one run; providers take turns.', 'number', to_jsonb(5), 1, 200, 'courses', 1050, 'Entry requirements',
+  'Most new course reads of one provider in one run; providers take turns.', 'number', to_jsonb(5), 1, 200, 'courses', 953, 'Entry requirements',
   'security.aer_schedule_courses_v1', 'CF-247 scheduled AER reading: spread across providers'),
- ('pipeline', 'aer.schedule_lock_fields', 'Scheduled entry reading: course locks that stop a read',
-  'A course with a manual lock on one of these fields (or on all fields) is not read by the schedule.', 'list', '["entry_requirements"]'::jsonb, null, null, 'fields', 1051,
-  'Entry requirements', 'security.aer_schedule_courses_v1', 'CF-247 scheduled AER reading: manual locks respected'),
+ ('pipeline', 'aer.schedule_lock_fields', 'Entry reading: course locks that stop a read',
+  'A course with a manual lock on one of these fields (or on all fields) is not read, by the schedule or by Read next batch.', 'list', '["entry_requirements"]'::jsonb, null, null, 'fields', 954,
+  'Entry requirements', 'security.aer_course_population_v1 (job aer-scheduled-read and Read next batch)', 'CF-247 scheduled AER reading: manual locks respected'),
  ('pipeline', 'batch.aer_schedule_matrix', 'Scheduled entry reading: entry pages fetched again a run',
   'Most provider entry pages, read longer ago than Entry matrices: read again after, that one run sends to be fetched again (read again with AI only when the page changed).',
-  'number', to_jsonb(4), 0, 100, 'pages', 1052, 'Entry requirements', 'security.aer_schedule_tick_v1 (security.entry_matrix_fire_v1 leaves the refresh to it while the job is on)',
+  'number', to_jsonb(4), 0, 100, 'pages', 955, 'Entry requirements', 'security.aer_schedule_tick_v1 (security.entry_matrix_fire_v1 leaves the refresh to it while the job is on)',
   'CF-247 scheduled AER reading (a): due matrix re-reads, bounded'),
  ('pipeline', 'aer.schedule_preview_rows', 'Scheduled entry reading: providers shown in the preview',
-  'Most providers listed in the preview of the next run on Course-level reading.', 'number', to_jsonb(30), 5, 200, 'providers', 1053, 'Entry requirements',
+  'Most providers listed in the preview of the next run on Course-level reading.', 'number', to_jsonb(30), 5, 200, 'providers', 956, 'Entry requirements',
   'public.admin_aer_schedule', 'CF-247 scheduled AER reading (c): preview')
 on conflict (toolset_key, key) do nothing;
 
@@ -188,14 +217,12 @@ $function$;
 revoke all on function security.aer_schedule_active_v1() from public, anon, authenticated;
 comment on function security.aer_schedule_active_v1() is 'CF-247 scheduled AER reading: true while job aer-scheduled-read is switched on. Then eligibility rules replace the fixed entry.providers list (security.entry_matrix_enabled_v1) and the job owns the due entry-page refresh (security.entry_matrix_fire_v1).';
 
--- the courses a scheduled run may read, by eligibility rules (p_all: every eligible course, without the per-provider turn)
-create or replace function security.aer_schedule_courses_v1(p_limit int, p_all boolean default false)
-returns table(course_id uuid, provider_id uuid, country text, provider_name text, tier int, turn bigint)
+-- the course population of entry reading, by eligibility rules: one rule for the scheduled reading and Read next batch (mandate 13:09 D6)
+create or replace function security.aer_course_population_v1()
+returns table(course_id uuid, provider_id uuid, country text, provider_name text, tier int, prio bigint, title text)
 language sql stable security definer set search_path to '' as $function$
-  with s as (select make_interval(days => security.pipeline_num_v1('aer.schedule_retry_days', 30)::int) retry,
-                    coalesce(security.toolset_setting('pipeline', 'aer.schedule_lock_fields'), '[]'::jsonb) locks,
-                    coalesce(security.toolset_setting('pipeline', 'aer.priority_provider_types'), '[]'::jsonb) pt,
-                    security.pipeline_num_v1('aer.schedule_per_provider', 5) per),
+  with s as (select coalesce(security.toolset_setting('pipeline', 'aer.schedule_lock_fields'), '[]'::jsonb) locks,
+                    coalesce(security.toolset_setting('pipeline', 'aer.priority_provider_types'), '[]'::jsonb) pt),
   pv as (select e.provider_id, e.country, coalesce(p.display_name, p.short_name, p.canonical_name) pname,
                 case when s.pt ? coalesce(t.code, '') then 1 else 2 end tier
            from security.aer_eligible_v1() e
@@ -204,29 +231,41 @@ language sql stable security definer set search_path to '' as $function$
           cross join s
           where (security.aer_schedule_country_v1(e.country)->>'on')::boolean
             and not exists (select 1 from security.provider_hidden_v1 h where h.provider_id = e.provider_id)),
-  c as (select c.id, pv.provider_id, pv.country, pv.pname, pv.tier, c.canonical_title
-          from pv
-          join catalogue.courses c on c.provider_id = pv.provider_id and c.lifecycle_status = 'active'
-          join pipeline.coverage_course_pages g on g.course_id = c.id and g.status = 'bound'
-          join pipeline.evidence_artifacts a on a.id = g.evidence_id and a.storage_path is not null
-         cross join s
-         where security.coverage_identity_allowed(c.provider_id, g.identity_basis, 'entry_requirements')
-           and not exists (select 1 from catalogue.course_entry_requirements x where x.course_id = c.id and x.status in ('active', 'proposed'))
-           and not exists (select 1 from pipeline.layer4_review_items r where r.entity_id = c.id and r.field_code = 'course_entry_first_read' and r.status = 'pending')
-           and not exists (select 1 from pipeline.field_enrich_items f where f.course_id = c.id and f.field = 'entry_requirements'
+  pr as (select pv.*, dense_rank() over (order by pv.tier, pv.pname, pv.provider_id) prio from pv)
+  select c.id, pr.provider_id, pr.country, pr.pname, pr.tier, pr.prio, c.canonical_title
+    from pr
+    join catalogue.courses c on c.provider_id = pr.provider_id and c.lifecycle_status = 'active'
+    join pipeline.coverage_course_pages g on g.course_id = c.id and g.status = 'bound'
+    join pipeline.evidence_artifacts a on a.id = g.evidence_id and a.storage_path is not null
+   cross join s
+   where security.coverage_identity_allowed(c.provider_id, g.identity_basis, 'entry_requirements')
+     and not exists (select 1 from pipeline.manual_locks l where l.entity = 'course' and l.entity_id = c.id and (s.locks ? l.field or l.field = 'all'))
+$function$;
+revoke all on function security.aer_course_population_v1() from public, anon, authenticated;
+comment on function security.aer_course_population_v1() is 'CF-247 entry reading (Platform Admin mandate 3 Nov 2026 13:09 D6): the courses entry reading may read, one rule for job aer-scheduled-read and Read next batch (security.course_entry_eligible_v1): an AER-eligible (security.aer_eligible_v1), unhidden provider of a country switched on (aer.schedule_countries less aer.schedule_countries_off); an active course with a bound official page whose stored copy exists and whose identity admits entry requirements; no manual lock in aer.schedule_lock_fields. prio orders providers (aer.priority_provider_types first, then by name). Replaces the fixed list entry.course_read_providers. Read-only.';
+
+-- the courses a scheduled run may read (p_all: every eligible course, without the per-provider turn)
+create or replace function security.aer_schedule_courses_v1(p_limit int, p_all boolean default false)
+returns table(course_id uuid, provider_id uuid, country text, provider_name text, tier int, turn bigint)
+language sql stable security definer set search_path to '' as $function$
+  with s as (select make_interval(days => security.pipeline_num_v1('aer.schedule_retry_days', 30)::int) retry,
+                    security.pipeline_num_v1('aer.schedule_per_provider', 5) per),
+  c as (select p.* from security.aer_course_population_v1() p cross join s
+         where not exists (select 1 from catalogue.course_entry_requirements x where x.course_id = p.course_id and x.status in ('active', 'proposed'))
+           and not exists (select 1 from pipeline.layer4_review_items r where r.entity_id = p.course_id and r.field_code = 'course_entry_first_read' and r.status = 'pending')
+           and not exists (select 1 from pipeline.field_enrich_items f where f.course_id = p.course_id and f.field = 'entry_requirements'
                              and (f.state in ('queued', 'waiting', 'ai', 'leased', 'review') or f.updated_at > now() - s.retry))
-           and not exists (select 1 from pipeline.enrichment_flags fl where fl.entity = 'course' and fl.entity_key = c.id::text and fl.field = 'entry_requirements'
-                             and fl.reason_code = 'enrich_no_value' and fl.state in ('raised', 'counting'))
-           and not exists (select 1 from pipeline.manual_locks l where l.entity = 'course' and l.entity_id = c.id and (s.locks ? l.field or l.field = 'all'))),
-  r as (select c.*, row_number() over (partition by c.provider_id order by c.canonical_title, c.id) turn from c)
-  select r.id, r.provider_id, r.country, r.pname, r.tier, r.turn
+           and not exists (select 1 from pipeline.enrichment_flags fl where fl.entity = 'course' and fl.entity_key = p.course_id::text and fl.field = 'entry_requirements'
+                             and fl.reason_code = 'enrich_no_value' and fl.state in ('raised', 'counting'))),
+  r as (select c.*, row_number() over (partition by c.provider_id order by c.title, c.course_id) turn from c)
+  select r.course_id, r.provider_id, r.country, r.provider_name, r.tier, r.turn
     from r cross join s
    where p_all or r.turn <= s.per
-   order by r.turn, r.tier, r.pname, r.provider_id
+   order by r.turn, r.tier, r.provider_name, r.provider_id
    limit p_limit
 $function$;
 revoke all on function security.aer_schedule_courses_v1(int, boolean) from public, anon, authenticated;
-comment on function security.aer_schedule_courses_v1(int, boolean) is 'CF-247 scheduled AER reading: the courses eligible for a scheduled entry read (AER-eligible, unhidden provider of a switched-on country; active course with a bound, stored official page whose identity admits entry requirements; no requirement held, nothing waiting or in progress, not tried within aer.schedule_retry_days, no open no-value hold, no manual lock), providers taking turns. Read-only.';
+comment on function security.aer_schedule_courses_v1(int, boolean) is 'CF-247 scheduled AER reading: the courses of the entry-reading population (security.aer_course_population_v1) due a scheduled read: no requirement held, nothing waiting or in progress, not tried within aer.schedule_retry_days, no open no-value hold; providers take turns (aer.schedule_per_provider). Read-only.';
 
 -- the waiting course reads looked at this run: held as incomplete and correctable by a corrected read (eligible), or why not
 create or replace function security.aer_schedule_held_v1(p_limit int)
@@ -277,15 +316,20 @@ declare v_batch int := security.pipeline_num_v1('batch.aer_schedule_courses', 20
         v_l4max int := security.pipeline_num_v1('aer.schedule_layer4_max', 600)::int;
         v_mxmax int := security.pipeline_num_v1('batch.aer_schedule_matrix', 4)::int;
         v_cost numeric := security.course_entry_cost_v1(); v_owner uuid; v_used int; v_l4 int; v_prog int; v_bp boolean; v_room int;
-        v_ai text; v_aim text; v_bal numeric; v_floor numeric; v_why text; v_reason text;
+        v_ai text; v_aim text; v_bal numeric; v_floor numeric; v_why text; v_reason text; v_orank int; v_orole text;
         r record; v_job uuid; v_res jsonb; v_held jsonb := '[]'::jsonb; v_new jsonb := '[]'::jsonb; v_mx jsonb := '[]'::jsonb; v_skip jsonb := '[]'::jsonb;
         v_checked jsonb := '[]'::jsonb; v_nh int := 0; v_nn int := 0; v_nm int := 0; v_fc int := 0; v_est numeric;
 begin
   if not p_preview and not pg_try_advisory_xact_lock(hashtext('cf247:aer-scheduled-read')) then  -- fixed: one run at a time
     return jsonb_build_object('skipped', 'another run is in progress');
   end if;
-  -- the owner the platform's standing enrichment runs as (Coverage › Attributes, Fill the gaps): course reads are asked in that name
+  -- run-as (mandate 13:09 D6: only the identity and role permissions the platform already defines): the job runs as the database role cron uses,
+  -- through these security-definer functions; each read is asked in the name of the owner of the platform's standing enrichment
+  -- (pipeline.field_gap_queue_control.owner, Coverage › Attributes, Fill the gaps; the same owner the gap queue and enrichment plans use), and only
+  -- while that owner holds an active, unexpired role at the rank Read next batch requires (admin_aer course_batch). Nothing is granted here.
   select c.owner into v_owner from pipeline.field_gap_queue_control c where c.id = 1;
+  select ro.rank, ro.code into v_orank, v_orole from security.user_roles ur join security.roles ro on ro.code = ur.role_code
+   where ur.user_id = v_owner and (ur.expires_at is null or ur.expires_at > now()) and ro.status = 'active' order by ro.rank desc limit 1;
   select coalesce(sum(x.course_reads + x.corrections), 0) into v_used from pipeline.aer_schedule_runs x
    where x.ran_at > now() - interval '1 day';  -- fixed: the daily cap is counted over the last 24 hours
   select count(*) into v_l4 from pipeline.layer4_review_items i where i.status = 'pending' and i.field_code in ('course_entry_first_read', 'entry_matrix_first_run');
@@ -297,6 +341,7 @@ begin
   select o.remaining_usd into v_bal from pipeline.layer3_openrouter_observations o where o.kind = 'credits' order by o.observed_at desc limit 1;
   v_floor := coalesce((security.toolset_setting('openrouter', 'credit_floor_usd'))::text::numeric, 0);
   v_why := case when v_owner is null then 'no owner to run as (Coverage › Attributes, Fill the gaps)'
+                when coalesce(v_orank, 0) < 6 then 'the owner it runs as does not hold the Platform Admin role that Read next batch requires'  -- fixed: the rank admin_aer course_batch requires
                 when v_ai is not null then 'AI reading is stopped (AI limits): ' || v_ai
                 when v_room = 0 and v_daymax <= v_used then 'the daily cap is reached'
                 when v_room = 0 then 'no course reads a run'
@@ -371,7 +416,8 @@ begin
   return jsonb_build_object('preview', p_preview, 'course_reads', v_nn, 'corrections', v_nh, 'matrix_pages', v_nm, 'firecrawl_credits_estimate', v_fc,
     'estimate_usd', v_est, 'cost_per_course_usd', round(v_cost, 5), 'layer4_waiting', v_l4, 'in_progress', v_prog, 'layer4_max', v_l4max, 'back_pressure', v_bp,
     'used_24h', v_used, 'daily_max', v_daymax, 'room', v_room, 'refusal', v_why, 'matrix_refusal', case when v_aim is not null then 'AI reading is stopped (AI limits): ' || v_aim end,
-    'balance_usd', v_bal, 'floor_usd', v_floor, 'checked', v_checked, 'held', v_held, 'new', v_new, 'matrix', v_mx, 'skipped', v_skip);
+    'balance_usd', v_bal, 'floor_usd', v_floor, 'runs_as', jsonb_build_object('owner', v_owner, 'role', v_orole, 'rank', v_orank, 'source', 'pipeline.field_gap_queue_control.owner'),
+    'checked', v_checked, 'held', v_held, 'new', v_new, 'matrix', v_mx, 'skipped', v_skip);
 end $function$;
 revoke all on function security.aer_schedule_tick_v1(boolean) from public, anon, authenticated;
 comment on function security.aer_schedule_tick_v1(boolean) is 'CF-247 scheduled AER reading: job aer-scheduled-read. Held course reads read again through D-R2, new course reads by eligibility rules (security.course_entry_read_enqueue_v1), due entry pages fetched again; bounded by the run size and the daily cap, the AI lanes and the OpenRouter floor, and Layer 4 back-pressure. With true: what the run would ask, nothing written.';
@@ -386,8 +432,9 @@ begin
     raise exception 'Pipeline Operator or above required' using errcode = '42501'; end if;
   v_next := security.aer_schedule_tick_v1(true);
   return jsonb_build_object(
-    'job', (select jsonb_build_object('jobname', j.jobname, 'schedule', j.schedule, 'active', j.active) from cron.job j where j.jobname = 'aer-scheduled-read'),
-    'next_run', v_next - 'checked' - 'new' - 'held' - 'matrix' - 'skipped'
+    'job', (select jsonb_build_object('jobname', j.jobname, 'schedule', j.schedule, 'active', j.active, 'db_role', j.username) from cron.job j where j.jobname = 'aer-scheduled-read'),
+    'runs_as', jsonb_build_object('role', v_next->'runs_as'->>'role', 'rank', v_next->'runs_as'->'rank', 'source', v_next->'runs_as'->>'source'),
+    'next_run', v_next - 'checked' - 'new' - 'held' - 'matrix' - 'skipped' - 'runs_as'
                 || jsonb_build_object('by_provider', (select coalesce(jsonb_agg(z order by z.n desc, z.provider), '[]'::jsonb) from (
                      select x->>'country' country, x->>'provider' provider, count(*) n from jsonb_array_elements(v_next->'new') x group by 1, 2 order by 3 desc, 2 limit v_rows) z),
                    'by_country', (select coalesce(jsonb_object_agg(k, n), '{}'::jsonb) from (select x->>'country' k, count(*) n from jsonb_array_elements(v_next->'new' || v_next->'held') x group by 1) z)),
@@ -428,6 +475,43 @@ select pg_temp.edit_once('security.entry_matrix_fire_v1()', '869da9fbdbba2a8321d
   get diagnostics v_ref = row_count;$n$]
 ]::text[][], array[1]);
 
+-- Read next batch (manual) uses the same eligibility rules as the scheduled reading (mandate 13:09 D6): the fixed list entry.course_read_providers
+-- and the separate country list entry.course_read_countries no longer decide which courses a batch may read
+select pg_temp.edit_once('security.course_entry_eligible_v1()', '5cfd5355834aad3b6af7ca7a882b0d29', '35651ce7033a8b582a9e7e77a419f2c4', array[
+ array[$o$  with scope as (select (e.v)::uuid pid, e.o from jsonb_array_elements_text(coalesce(security.toolset_setting('pipeline', 'entry.course_read_providers'), '[]'::jsonb)) with ordinality e(v, o))
+  select c.id, c.provider_id, scope.o, c.canonical_title
+    from catalogue.courses c
+    join scope on scope.pid = c.provider_id
+    join catalogue.providers p on p.id = c.provider_id
+    join ref.countries k on k.id = p.country_id
+    join pipeline.coverage_course_pages g on g.course_id = c.id and g.status = 'bound'
+    join pipeline.evidence_artifacts e on e.id = g.evidence_id and e.storage_path is not null
+   where c.lifecycle_status = 'active'
+     and coalesce(security.toolset_setting('pipeline', 'entry.course_read_countries'), '["AU"]'::jsonb) ? k.iso_alpha2
+     and security.coverage_identity_allowed(c.provider_id, g.identity_basis, 'entry_requirements')$o$,
+       $n$  -- CF-247 mandate 3 Nov 2026 13:09 D6: the same eligibility rules as the scheduled reading (security.aer_course_population_v1), not a fixed list
+  select p.course_id, p.provider_id, p.prio, p.title from security.aer_course_population_v1() p$n$]
+]::text[][], array[1]);
+
+-- Course-level reading lists the providers the rules give (not the fixed list), in the rules' priority order, and the countries switched on
+select pg_temp.edit_once('security.course_entry_programme_v1(boolean)', '3261df74758287c168fc297d8a2093bb', '8ade3f5654a4e673477de57f5f710e5d', array[
+ array[$o$  scope as (select (e.v)::uuid pid, e.o from jsonb_array_elements_text(coalesce(security.toolset_setting('pipeline', 'entry.course_read_providers'), '[]'::jsonb)) with ordinality e(v, o)),$o$,
+       $n$  scope as (select el.provider_id pid, min(el.prio) o from el group by el.provider_id),  -- CF-247 D6 (3 Nov 2026): the providers the eligibility rules give$n$],
+ array[$o$    'countries', coalesce(security.toolset_setting('pipeline', 'entry.course_read_countries'), '["AU"]'::jsonb),$o$,
+       $n$    'countries', (select coalesce(jsonb_agg(cc order by cc), '[]'::jsonb) from unnest(security.catalogue_country_codes_v1()) cc  -- CF-247 D6: the countries switched on
+                   where (security.aer_schedule_country_v1(cc)->>'on')::boolean and coalesce(security.toolset_setting('pipeline', 'aer.eligible_countries'), '[]'::jsonb) ? cc),$n$]
+]::text[][], array[1, 1]);
+
+-- the outcome register says a course is outside the scope by the same rules
+select pg_temp.edit_once('security.aer_course_outcomes_build_v1(text)', '51fb4c3896cfff47626711f98cf62dc1', '7576ba089273f52f106c03cddbc06c5c', array[
+ array[$o$  with scope as (select (e.v)::uuid pid from jsonb_array_elements_text(coalesce(security.toolset_setting('pipeline', 'entry.course_read_providers'), '[]'::jsonb)) e(v)),$o$,
+       $n$  with scope as (select el.course_id from security.course_entry_eligible_v1() el),  -- CF-247 D6 (3 Nov 2026): the entry-reading eligibility rules$n$],
+ array[$o$           exists (select 1 from scope s where s.pid = c.provider_id) in_scope$o$,
+       $n$           exists (select 1 from scope s where s.course_id = c.id) in_scope$n$],
+ array[$o$'provider outside the entry-read scope (setting entry.course_read_providers)'$o$,
+       $n$'outside the entry-reading rules (provider not AER-eligible or hidden, country switched off, or a manual lock)'$n$]
+]::text[][], array[1, 1, 1]);
+
 -- 5. Canada: off with its reason, and one integration-queue issue (not raised again by a second run) ------------------------------------
 do $iq$
 begin
@@ -439,14 +523,14 @@ begin
       'country_codes', jsonb_build_array('CA'),
       'failure', 'No Canadian course page admits entry requirements (no identity basis is configured for entry_requirements in Canada), Canada is not in aer.eligible_countries, and no Canadian entry page is recorded. Scheduled entry reading therefore reads nothing in Canada and is switched off there with the reason "no AER configuration".',
       'expected', 'Canada has an approved AER configuration through the onboarding process (identity bases that admit entry requirements, AER eligibility, entry pages or a reader for Canadian provider requirements); then CA is taken off aer.schedule_countries_off and added to aer.schedule_countries, and the same schedule reads it.',
-      'source', 'migration 20261103130000 (scheduled AER reading)', 'validation_layer', 'manual', 'root_cause_class', 'missing_dependency', 'severity', 'P2',
+      'source', 'migration 20261103220000 (scheduled AER reading)', 'validation_layer', 'manual', 'root_cause_class', 'missing_dependency', 'severity', 'P2',
       'impact', (select count(*) || ' active Canadian courses have no academic entry requirement and none can be read' from catalogue.courses c join catalogue.providers p on p.id = c.provider_id
                   join ref.countries k on k.id = p.country_id where k.iso_alpha2 = 'CA' and c.lifecycle_status = 'active'),
       'workstream', 'A3',
       'evidence', jsonb_build_object('direction', 'Platform Admin 3 Nov 2026 09:32 §7: where a country-specific adapter does not exist, report it and route the work to the integration queue',
                                      'settings', jsonb_build_object('aer.schedule_countries_off', security.toolset_setting('pipeline', 'aer.schedule_countries_off'),
                                                                     'aer.eligible_countries', security.toolset_setting('pipeline', 'aer.eligible_countries')))),
-      'migration 20261103130000');
+      'migration 20261103220000');
   end if;
 end $iq$;
 
@@ -466,15 +550,16 @@ end $j$;
 
 -- 7. register (housekeeping) ------------------------------------------------------------------------------------------------------------
 insert into pipeline.component_register(kind, name, layer, area, purpose, status, replaces, introduced_in) values
- ('job', 'aer-scheduled-read', 'Layer 2', 'Entry requirements', 'Scheduled AER reading by eligibility rules (paused until activated)', 'active', '{}', '20261103130000'),
- ('table', 'pipeline.aer_schedule_runs', 'Layer 2', 'Entry requirements', 'Runs of the scheduled AER reading (daily cap, back-pressure, what was asked)', 'active', '{}', '20261103130000'),
- ('table', 'pipeline.aer_schedule_checks', 'Layer 2', 'Entry requirements', 'Waiting course reads checked by the scheduled AER reading, in turn', 'active', '{}', '20261103130000'),
- ('function', 'security.aer_schedule_tick_v1', 'Layer 2', 'Entry requirements', 'Job aer-scheduled-read (and its preview)', 'active', '{}', '20261103130000'),
- ('function', 'security.aer_schedule_courses_v1', 'Layer 2', 'Entry requirements', 'Courses eligible for a scheduled entry read', 'active', '{}', '20261103130000'),
- ('function', 'security.aer_schedule_held_v1', 'Layer 2', 'Entry requirements', 'Held course reads correctable by a corrected read', 'active', '{}', '20261103130000'),
- ('function', 'security.aer_schedule_country_v1', 'Layer 2', 'Entry requirements', 'Per-country switch for scheduled entry reading', 'active', '{}', '20261103130000'),
- ('function', 'security.aer_schedule_active_v1', 'Layer 2', 'Entry requirements', 'Is the scheduled AER reading on', 'active', '{}', '20261103130000'),
- ('function', 'public.admin_aer_schedule', 'Layer 2', 'Entry requirements', 'Course-level reading: preview of the scheduled reading', 'active', '{}', '20261103130000')
+ ('job', 'aer-scheduled-read', 'Layer 2', 'Entry requirements', 'Scheduled AER reading by eligibility rules (paused until activated)', 'active', '{}', '20261103220000'),
+ ('table', 'pipeline.aer_schedule_runs', 'Layer 2', 'Entry requirements', 'Runs of the scheduled AER reading (daily cap, back-pressure, what was asked)', 'active', '{}', '20261103220000'),
+ ('table', 'pipeline.aer_schedule_checks', 'Layer 2', 'Entry requirements', 'Waiting course reads checked by the scheduled AER reading, in turn', 'active', '{}', '20261103220000'),
+ ('function', 'security.aer_schedule_tick_v1', 'Layer 2', 'Entry requirements', 'Job aer-scheduled-read (and its preview)', 'active', '{}', '20261103220000'),
+ ('function', 'security.aer_course_population_v1', 'Layer 2', 'Entry requirements', 'Entry-reading eligibility rules: one population for the scheduled reading and Read next batch', 'active', '{entry.course_read_providers}', '20261103220000'),
+ ('function', 'security.aer_schedule_courses_v1', 'Layer 2', 'Entry requirements', 'Courses eligible for a scheduled entry read', 'active', '{}', '20261103220000'),
+ ('function', 'security.aer_schedule_held_v1', 'Layer 2', 'Entry requirements', 'Held course reads correctable by a corrected read', 'active', '{}', '20261103220000'),
+ ('function', 'security.aer_schedule_country_v1', 'Layer 2', 'Entry requirements', 'Per-country switch for scheduled entry reading', 'active', '{}', '20261103220000'),
+ ('function', 'security.aer_schedule_active_v1', 'Layer 2', 'Entry requirements', 'Is the scheduled AER reading on', 'active', '{}', '20261103220000'),
+ ('function', 'public.admin_aer_schedule', 'Layer 2', 'Entry requirements', 'Course-level reading: preview of the scheduled reading', 'active', '{}', '20261103220000')
 on conflict do nothing;
 
 -- 8. post-check ------------------------------------------------------------------------------------------------------------------------
@@ -491,7 +576,10 @@ begin
     raise exception 'scheduled AER post-check: settings incomplete (G2)'; end if;
   if not exists (select 1 from pipeline.integration_issues where fingerprint = 'aer:country_not_configured:CA') then
     raise exception 'scheduled AER post-check: the Canada issue is missing'; end if;
+  if exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'security'
+               and p.proname in ('course_entry_eligible_v1', 'course_entry_programme_v1', 'aer_course_outcomes_build_v1') and p.prosrc like '%entry.course_read_providers%') then
+    raise exception 'scheduled AER post-check: Read next batch must use the eligibility rules, not the fixed list'; end if;
   if exists (select 1 from pipeline.aer_schedule_runs) or exists (select 1 from pipeline.aer_schedule_checks) then
     raise exception 'scheduled AER post-check: applying the migration must not run anything'; end if;
 end $$;
-select 'CF-247 scheduled AER reading: job aer-scheduled-read created paused; eligibility rules, held reads through D-R2, back-pressure, preview; CA off (integration issue)' ok;
+select 'CF-247 scheduled AER reading: job aer-scheduled-read created paused; one eligibility rule for scheduled reading and Read next batch, held reads through D-R2, back-pressure, run-as checked, preview; CA off (integration issue)' ok;

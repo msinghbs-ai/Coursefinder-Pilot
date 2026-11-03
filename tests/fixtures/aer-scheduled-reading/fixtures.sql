@@ -1,5 +1,5 @@
 -- Guards: Platform Admin direction 3 Nov 2026 09:32 (platform-led enrichment): academic entry requirements read on a schedule by eligibility
--- rules, on isolated fixtures. Runs after the D-R2/D-R3 database, stubs.sql, the live definitions and the 20261103130000 migration (see run.sh).
+-- rules, on isolated fixtures. Runs after the D-R2/D-R3 database, stubs.sql, the live definitions and the 20261103220000 migration (see run.sh).
 -- Every block raises on a failed check; each passing block prints "PASS <name>". No live data is copied: names and quotes are made up.
 \set ON_ERROR_STOP 1
 set client_min_messages = notice;
@@ -242,4 +242,62 @@ do $t$ declare r jsonb; w text := pg_temp.writes(); m text; begin
   perform pg_temp.ok(pg_temp.writes() = w, 'the operator read writes nothing');
   delete from auth.session;
   raise notice 'PASS operator read (rank 4): job state, next run by provider, countries with CA off and its reason, daily figures, last runs';
+end $t$;
+
+-- ------------------------------------------------------------------ run-as (mandate 13:09 D6): only the platform's standing owner, at the rank Read next batch requires
+do $t$ declare r jsonb; w text := pg_temp.writes(); begin
+  r := security.aer_schedule_tick_v1(true);
+  perform pg_temp.ok(r->'runs_as' = '{"owner": "63ba56cb-0000-4000-8000-000000000000", "role": "platform_admin", "rank": 6, "source": "pipeline.field_gap_queue_control.owner"}'::jsonb
+                     and r->>'refusal' is null, 'runs as the standing owner with its role: ' || (r->'runs_as')::text);
+  update security.user_roles set expires_at = now() - interval '1 minute' where user_id = '63ba56cb-0000-4000-8000-000000000000';
+  r := security.aer_schedule_tick_v1();
+  perform pg_temp.ok(r->>'refusal' = 'the owner it runs as does not hold the Platform Admin role that Read next batch requires'
+                     and (r->>'course_reads')::int = 0 and (r->>'corrections')::int = 0, 'an expired role reads nothing: ' || coalesce(r->>'refusal', 'null'));
+  update security.user_roles set expires_at = null, role_code = 'pipeline_operator' where user_id = '63ba56cb-0000-4000-8000-000000000000';
+  r := security.aer_schedule_tick_v1(true);
+  perform pg_temp.ok(r->>'refusal' like 'the owner it runs as does not hold%' and (r->'runs_as'->>'rank')::int = 4, 'a lower role reads nothing');
+  update security.user_roles set role_code = 'platform_admin' where user_id = '63ba56cb-0000-4000-8000-000000000000';
+  update pipeline.field_gap_queue_control set owner = '00000000-0000-4000-8000-0000000000aa';
+  r := security.aer_schedule_tick_v1(true);
+  perform pg_temp.ok(r->>'refusal' like 'the owner it runs as does not hold%', 'an owner without a role reads nothing');
+  update pipeline.field_gap_queue_control set owner = '63ba56cb-0000-4000-8000-000000000000';
+  perform pg_temp.ok((select count(*) from pipeline.admin_jobs) || '/' || (select count(*) from pipeline.field_enrich_items) = split_part(w, '/', 1) || '/' || split_part(w, '/', 2),
+                     'refused runs asked nothing');
+  raise notice 'PASS run-as: the standing owner only while it holds the Platform Admin role; otherwise nothing is asked';
+end $t$;
+
+-- ------------------------------------------------------------------ Read next batch, Course-level reading and the outcome register use the same rules (mandate 13:09 D6)
+do $t$ declare r jsonb; v_el uuid[]; v_pop uuid[]; o text; begin
+  select array_agg(course_id order by course_id) into v_el from security.course_entry_eligible_v1();
+  select array_agg(course_id order by course_id) into v_pop from security.aer_course_population_v1();
+  perform pg_temp.ok(v_el = v_pop, 'the manual selector is the population');
+  -- the fixed list named Listed College (03, does not enrol international students) and Gamma (07): the rules give Alpha, Kiwi and Gamma instead
+  perform pg_temp.ok((select array_agg(distinct provider_id order by provider_id) from security.course_entry_eligible_v1()) = array[pg_temp.p('01'), pg_temp.p('02'), pg_temp.p('07')],
+                     'providers by rules, not the list');
+  perform pg_temp.ok(not (pg_temp.c('1000012') = any (v_el)) and not (pg_temp.c('1000014') = any (v_el)) and pg_temp.c('1000013') = any (v_el), 'manual locks respected as scheduled');
+  perform pg_temp.ok(not exists (select 1 from security.course_entry_eligible_v1() e join catalogue.courses c on c.id = e.course_id where c.provider_id in (pg_temp.p('04'), pg_temp.p('05'), pg_temp.p('06'))),
+                     'no Canadian, unpublished or hidden provider');
+  -- Read next batch: next by priority is the rules' first provider; a listed but ineligible provider has nothing
+  r := security.course_entry_batch_v1(null, 50, null, null, true);
+  perform pg_temp.ok((r->>'courses')::int = (select count(*) from security.course_entry_eligible_v1() e where not exists (select 1 from pipeline.field_enrich_items f where f.course_id = e.course_id and f.field = 'entry_requirements')),
+                     'batch preview: every never-read eligible course: ' || r::text);
+  r := security.course_entry_batch_v1(pg_temp.p('03'), 50, null, null, true);
+  perform pg_temp.ok((r->>'courses')::int = 0 and r->>'refusal' = 'no course is left to read for this choice', 'the old list no longer decides');
+  -- a country switched off is off for the manual batch too
+  perform pg_temp.set('aer.schedule_countries_off', '["CA=no AER configuration", "NZ=paused for the test"]');
+  perform pg_temp.ok(not exists (select 1 from security.course_entry_eligible_v1() where provider_id = pg_temp.p('02')), 'NZ off: no NZ course in a manual batch');
+  r := security.course_entry_programme_v1(true);
+  perform pg_temp.ok(r->'countries' = '["AU"]'::jsonb, 'Course-level reading names the countries switched on: ' || (r->'countries')::text);
+  perform pg_temp.set('aer.schedule_countries_off', '["CA=no AER configuration"]');
+  r := security.course_entry_programme_v1(true);
+  perform pg_temp.ok(r->'countries' = '["AU", "NZ"]'::jsonb and (select array_agg(x->>'provider_name' order by ord) from jsonb_array_elements(r->'providers') with ordinality z(x, ord))
+                     = array['Alpha University', 'Gamma University', 'Kiwi Institute'] and (r->'providers'->0->>'eligible')::int = (select count(*) from security.course_entry_eligible_v1() where provider_id = pg_temp.p('01')),
+                     'Course-level reading: the rule providers, universities first: ' || (r->'providers')::text);
+  -- the outcome register: a course at a provider outside the rules is named so, in words
+  perform security.aer_course_outcomes_build_v1('fixture');
+  select detail into o from pipeline.aer_course_outcomes where course_id = pg_temp.c('3000001');
+  perform pg_temp.ok(o = 'outside the entry-reading rules (provider not AER-eligible or hidden, country switched off, or a manual lock)', 'outcome register: ' || coalesce(o, 'null'));
+  perform pg_temp.ok((select outcome from pipeline.aer_course_outcomes where course_id = pg_temp.c('1000001')) <> 'excluded'
+                     or (select detail from pipeline.aer_course_outcomes where course_id = pg_temp.c('1000001')) not like 'outside%', 'an eligible course is not called outside');
+  raise notice 'PASS Read next batch, Course-level reading and the outcome register use the scheduled reading''s eligibility rules';
 end $t$;
