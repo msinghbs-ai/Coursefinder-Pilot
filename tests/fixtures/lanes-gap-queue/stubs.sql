@@ -59,7 +59,8 @@ create table catalogue.course_intakes (course_id uuid, status text);
 create table catalogue.campuses (id uuid primary key default gen_random_uuid(), provider_id uuid, status text, subdivision_id uuid, city text);
 create view security.provider_hidden_v1 as select p.id provider_id from catalogue.providers p where p.lifecycle_status = 'hidden';
 create table pipeline.manual_locks (entity text, entity_id uuid, field text, mode text, set_by uuid, set_at timestamptz default now());
-create table pipeline.coverage_course_pages (course_id uuid primary key, provider_id uuid, url text, status text default 'bound', read_at timestamptz, next_read_at timestamptz, read_attempts int default 0, leased_until timestamptz);
+create table pipeline.coverage_course_pages (course_id uuid primary key, provider_id uuid, url text, status text default 'bound', read_at timestamptz, next_read_at timestamptz, read_attempts int default 0, leased_until timestamptz,
+  read_status text, identity_basis text, evidence_id uuid, candidates jsonb);
 create table pipeline.field_enrich_items (id bigint generated always as identity primary key, job_id uuid not null, provider_id uuid not null, course_id uuid, field text not null,
   state text not null default 'queued', source text, reason text, storage_path text, attempts int not null default 0, leased_until timestamptz, cost_usd numeric,
   created_at timestamptz not null default now(), updated_at timestamptz not null default now(), unique nulls not distinct (job_id, provider_id, course_id, field));
@@ -68,9 +69,9 @@ create table pipeline.field_gap_queue_control (id int primary key default 1, ena
 create table pipeline.admin_jobs (id uuid primary key default gen_random_uuid(), kind text not null, lane text not null default 'adapters', state text not null default 'queued', title text not null,
   args jsonb not null default '{}', progress jsonb not null default '{}', requested_by uuid not null, reason text not null, scope text, created_at timestamptz not null default now());
 create table pipeline.admin_job_events (id bigint generated always as identity primary key, job_id uuid, at timestamptz default now(), note text, detail jsonb);
-create table pipeline.fields_in_scope (field text primary key, sort int);
+create table pipeline.fields_in_scope (field text primary key, sort int, sources text[] not null default array['ai_stored']);
 create or replace function security.enrich_fields_v1() returns table(field text, label text, level text, sources text[], sort int) language sql immutable as $$
-  select f.field, f.field, 'course', array['ai_stored'], f.sort from pipeline.fields_in_scope f order by f.sort $$;
+  select f.field, f.field, 'course', f.sources, f.sort from pipeline.fields_in_scope f order by f.sort $$;
 create or replace function security.field_crosscheck_v1() returns jsonb language sql as $$ select '{"checked": 0}'::jsonb $$;
 create or replace function security.campus_regions_apply_v1() returns int language sql as $$ select 0 $$;
 create or replace function security.enrich_item_held_v1(p_course uuid, p_field text) returns boolean language sql stable as $$ select false $$;
@@ -114,3 +115,28 @@ begin
   return (select coalesce(sum(case when jsonb_typeof(v) = 'number' then (v #>> '{}')::numeric when jsonb_typeof(v) = 'array' then jsonb_array_length(v) else 0 end), 0)
             from jsonb_each(j) e(k, v) where k in ('providers', 'items', 'rows', 'found', 'read', 'searched', 'pages', 'picked', 'discover', 'applied', 'done', 'checked'));
 end $function$;
+
+-- the idle flag recheck (IQ-00060): flags, the edge log and responses it reads, and the release that switches a job on (flag_requeue_v1's rule)
+create schema if not exists net;
+create table net._http_response (id bigint primary key, status_code int, content text);
+create table pipeline.edge_request_log (request_id bigint, function_name text, mode text, created_at timestamptz default now());
+create table pipeline.enrichment_flags (id bigint generated always as identity primary key, entity text, entity_key text, provider_id uuid, field text default '', reason_code text, reason text,
+  source text, flagged_at timestamptz default now(), cleared_at timestamptz, kind text, state text default 'raised', tries int default 0, checks int default 0, evidence jsonb,
+  next_check_at timestamptz, released_at timestamptz, released_by text, release_reason text, unique (entity, entity_key, field, reason_code));
+create or replace function security.flag_list_num_v1(p_key text, p_n int) returns numeric language sql stable as $$ select null::numeric $$;
+create or replace function security.worker_mode_waiting_v1(p_mode text) returns boolean language sql stable as $$ select false $$;
+create or replace function security.flag_raise_v1(p_entity text, p_key text, p_provider_id uuid, p_field text, p_code text, p_reason text, p_kind text, p_actor text, p_actor_kind text,
+  p_evidence jsonb, p_input_mark text, p_next_check timestamptz) returns bigint language sql as $$
+  insert into pipeline.enrichment_flags(entity, entity_key, field, reason_code, reason, state, next_check_at) values (p_entity, p_key, p_field, p_code, p_reason, 'raised', p_next_check)
+  on conflict (entity, entity_key, field, reason_code) do update set state = 'raised', reason = excluded.reason, next_check_at = excluded.next_check_at returning id $$;
+create or replace function security.flag_release_v1(p_id bigint, p_actor text, p_actor_kind text, p_reason text, p_evidence jsonb, p_keep_checks boolean) returns jsonb language plpgsql as $$
+declare f pipeline.enrichment_flags;
+begin
+  update pipeline.enrichment_flags set state = 'released', released_at = now(), released_by = p_actor, release_reason = p_reason, checks = checks + 1, next_check_at = null where id = p_id returning * into f;
+  if f.entity = 'job' and f.reason_code = 'idle_paused' then perform cron.alter_job((select jobid from cron.job where jobname = f.entity_key), active := true); end if;  -- security.flag_requeue_v1
+  return jsonb_build_object('id', f.id, 'state', 'released');
+end $$;
+
+-- the course page check (E16): a fixture page whose address contains "refuse" is refused
+create or replace function security.course_page_check_v1(p_course uuid, p_url text, p_title text, p_identity text) returns jsonb language sql stable as $$
+  select jsonb_build_object('verdict', case when coalesce(p_url, '') like '%refuse%' then 'refuse' else 'pass' end) $$;

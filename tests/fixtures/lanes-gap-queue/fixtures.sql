@@ -8,13 +8,16 @@ declare v jsonb := security.field_gap_queue_run_v1(); n_new int; n_old int; n_di
 begin
   if v->>'outcome' <> 'done' or v->>'queue' <> 'started' then raise exception 'A1: %', v; end if;
   select count(*) into n_new from pipeline.field_enrich_items where job_id = (v->>'job_id')::uuid and field <> 'campus_list';
-  select count(*) into n_old from public.fx_old_set;
-  select count(*) into n_diff from ((select provider_id, course_id, field from pipeline.field_enrich_items where job_id = (v->>'job_id')::uuid except select * from public.fx_old_set)
-                                    union all (select * from public.fx_old_set except select provider_id, course_id, field from pipeline.field_enrich_items where job_id = (v->>'job_id')::uuid)) d;
-  if n_diff <> 0 or n_new <> n_old then raise exception 'A1: new % items, old %, % differ', n_new, n_old, n_diff; end if;
+  select count(*) into n_old from public.fx_expect;
+  select count(*) into n_diff from ((select provider_id, course_id, field from pipeline.field_enrich_items where job_id = (v->>'job_id')::uuid except select * from public.fx_expect)
+                                    union all (select * from public.fx_expect except select provider_id, course_id, field from pipeline.field_enrich_items where job_id = (v->>'job_id')::uuid)) d;
+  if n_diff <> 0 or n_new <> n_old then raise exception 'A1: new % items, expected %, % differ', n_new, n_old, n_diff; end if;
+  if (select sum((e.value #>> '{}')::int) from jsonb_each(v->'scan'->'waiting_for_page_proof') e) <> (select count(*) from public.fx_old_unproven)
+     or (select sum((e.value #>> '{}')::int) from pipeline.field_gap_queue_checkpoint k, jsonb_each(k.cycle_waiting_proof) e) <> (select count(*) from public.fx_old_unproven) then
+    raise exception 'A1: waiting for page proof %, expected %', v->'scan'->'waiting_for_page_proof', (select count(*) from public.fx_old_unproven); end if;
   if (v->'scan'->>'slices')::int < 3 or not (v->'scan'->>'cycle_complete')::boolean then raise exception 'A1 scan: %', v->'scan'; end if;
   if (select count(*) from pipeline.field_gap_queue_runs where outcome = 'done' and items = n_new) <> 1 then raise exception 'A1: run not recorded'; end if;
-  raise notice 'A1 ok: % items, the same set as the live statement, % slices, pass complete, run recorded done', n_new, v->'scan'->>'slices';
+  raise notice 'A1 ok: % items, the live statement''s set less the % the reader would skip (E16), counted as waiting for page proof %; % slices, pass complete, run recorded done', n_new, (select count(*) from public.fx_old_unproven), v->'scan'->'waiting_for_page_proof', v->'scan'->>'slices';
 end $$;
 
 -- A2: while that standing task is open the next run is held (previous_run_open), never "succeeded with nothing"
@@ -25,13 +28,14 @@ begin
   raise notice 'A2 ok: previous task open -> held, previous_run_open';
 end $$;
 
--- A3: task closed; everything is in progress, so a whole pass finds nothing -> idle, nothing_due
+-- A3: task closed; everything else is in progress, only gaps waiting for page proof remain -> held, waiting_for_page_proof (no items);
+-- with page proof off as well, a whole pass finding nothing -> idle, nothing_due
 update pipeline.admin_jobs set state = 'done' where coalesce((args->>'standing')::boolean, false);
 do $$
 declare v jsonb := security.field_gap_queue_run_v1();
 begin
-  if v->>'outcome' <> 'idle' or v->>'hold_reason' <> 'nothing_due' or not (v->'scan'->>'cycle_complete')::boolean then raise exception 'A3: %', v; end if;
-  raise notice 'A3 ok: a full pass found nothing -> idle, nothing_due (scanned %)', v->'scan'->>'scanned';
+  if v->>'outcome' <> 'held' or v->>'hold_reason' <> 'waiting_for_page_proof' or (v->>'items') is not null or not (v->'scan'->>'cycle_complete')::boolean then raise exception 'A3: %', v; end if;
+  raise notice 'A3 ok: only unproven gaps left -> held, waiting_for_page_proof %, no items', v->'scan'->'waiting_for_page_proof';
 end $$;
 
 -- A4: bounded by the item cap, resumed from the checkpoint; the runs together take the same set
@@ -51,8 +55,8 @@ begin
     update pipeline.admin_jobs set state = 'done' where id = (v->>'job_id')::uuid;
     exit when i > 20;
   end loop;
-  select count(*) into n from ((select * from public.fx_new_set except select * from public.fx_old_set) union all (select * from public.fx_old_set except select * from public.fx_new_set)) d;
-  if n <> 0 or (select count(*) from public.fx_new_set) <> (select count(*) from public.fx_old_set) then raise exception 'A4: % differ, % taken', n, (select count(*) from public.fx_new_set); end if;
+  select count(*) into n from ((select * from public.fx_new_set except select * from public.fx_expect) union all (select * from public.fx_expect except select * from public.fx_new_set)) d;
+  if n <> 0 or (select count(*) from public.fx_new_set) <> (select count(*) from public.fx_expect) then raise exception 'A4: % differ, % taken', n, (select count(*) from public.fx_new_set); end if;
   if (select count(*) from pipeline.field_gap_queue_runs where items > 0 and items <= 40 and run_at > now() - interval '1 minute') < 3 then raise exception 'A4: not bounded'; end if;
   raise notice 'A4 ok: % capped runs of at most 40 items resumed from the checkpoint and took the same % items; then % %', i - 1, (select count(*) from public.fx_new_set), v->>'outcome', v->>'hold_reason';
 end $$;
@@ -74,13 +78,39 @@ update pipeline.platform_toolset_settings set value = '20' where toolset_key = '
 update pipeline.admin_jobs set state = 'done' where coalesce((args->>'standing')::boolean, false);
 update pipeline.platform_toolset_settings set value = '30000' where toolset_key = 'pipeline' and key = 'gaps.items_per_run';
 update pipeline.field_enrich_items set state = 'filled', updated_at = now() - interval '1 day'
- where course_id = (select id from catalogue.courses where lifecycle_status = 'active' and provider_id <> '00000000-0000-0000-0000-0000000000a3' and duration_value is null order by id limit 1) and field = 'duration';
+ where course_id = (select c.id from catalogue.courses c where c.lifecycle_status = 'active' and c.provider_id <> '00000000-0000-0000-0000-0000000000a3' and c.duration_value is null
+                      and security.course_page_proven_v1(c.id) order by c.id limit 1) and field = 'duration';
 update pipeline.field_gap_queue_checkpoint set cursor_course_id = (select id from catalogue.courses order by id offset 200 limit 1);
 do $$
 declare v jsonb := security.field_gap_queue_run_v1();
 begin
   if v->>'outcome' <> 'done' or not (v->'scan'->>'wrapped')::boolean or (v->>'items')::int < 1 then raise exception 'A6: %', v; end if;
   raise notice 'A6 ok: wrapped once and found % item(s) before the checkpoint', v->>'items';
+end $$;
+
+-- A8: with page proof off, the next run takes exactly the gaps that were waiting for page proof (so with it on, nothing else was dropped)
+update pipeline.admin_jobs set state = 'done' where coalesce((args->>'standing')::boolean, false);
+update pipeline.platform_toolset_settings set value = '0' where toolset_key = 'pipeline' and key = 'gaps.page_proof_on';
+update pipeline.field_gap_queue_checkpoint set cursor_course_id = null;
+do $$
+declare v jsonb := security.field_gap_queue_run_v1(); n int;
+begin
+  select count(*) into n from ((select provider_id, course_id, field from pipeline.field_enrich_items where job_id = (v->>'job_id')::uuid and field <> 'campus_list' except select * from public.fx_old_unproven)
+                               union all (select * from public.fx_old_unproven except select provider_id, course_id, field from pipeline.field_enrich_items where job_id = (v->>'job_id')::uuid)) d;
+  if v->>'outcome' <> 'done' or n <> 0 then raise exception 'A8: % differ: %', n, v - 'crosscheck'; end if;
+  raise notice 'A8 ok: page proof off -> exactly the % gaps that waited for page proof are queued, nothing else', v->>'items';
+end $$;
+update pipeline.platform_toolset_settings set value = '1' where toolset_key = 'pipeline' and key = 'gaps.page_proof_on';
+
+-- A9: the proof is kept per page state: unchanged pages are not checked again; a page read again is
+do $$
+declare c uuid; k1 text; t1 timestamptz;
+begin
+  select y.course_id, y.page_key, y.checked_at into c, k1, t1 from pipeline.course_page_proofs y where y.proven order by y.course_id limit 1;
+  if c is null or (select count(*) from pipeline.course_page_proofs) < 10 then raise exception 'A9: no proofs kept'; end if;
+  update pipeline.coverage_course_pages set url = 'https://p.example/refuse/now' where course_id = c;
+  if security.course_page_key_v1(c) = k1 then raise exception 'A9: key did not change'; end if;
+  raise notice 'A9 ok: % proofs kept per page state; a changed page gets a new key (checked again on the next pass)', (select count(*) from pipeline.course_page_proofs);
 end $$;
 
 -- A7: queue switched off -> switched_off, queue_off
@@ -205,10 +235,30 @@ begin
   l := (select x from jsonb_array_elements(v->'lanes') x where x->>'lane' = 'stored_evidence');
   if (l->>'processed')::int <> 5 then raise exception 'E3: %', l; end if;
   l := (select x from jsonb_array_elements(v->'lanes') x where x->>'lane' = 'gap_queue');
-  if l->'last_run'->>'outcome' is null or (l->'held'->>'previous_run_open')::int <> 1 then raise exception 'E4: %', l; end if;
+  if l->'last_run'->>'outcome' is null or (l->'held'->>'previous_run_open')::int <> 1 or (l->'held'->>'waiting_for_page_proof')::int < 1 then raise exception 'E4: %', l; end if;
   perform set_config('request.jwt.claim.sub', gen_random_uuid()::text, true); perform set_config('request.rank', '5', true);
   y := public.admin_pipeline_yield('{}'::jsonb);
   if not (y ? 'lanes' and y ? 'lane_status' and jsonb_array_length(y->'lane_status'->'lanes') = 5) then raise exception 'E5: %', y; end if;
   raise notice 'E ok: five lanes with eligible, processed, held, failed and cost; paid lane held by reason (% held calls, % items waiting for a page); Pipeline yield carries lane_status',
     (select x->'held'->>'budget_held' from jsonb_array_elements(v->'lanes') x where x->>'lane' = 'paid_acquisition'), (select x->'eligible'->>'scholarship_items_waiting_for_a_page' from jsonb_array_elements(v->'lanes') x where x->>'lane' = 'paid_acquisition');
+end $$;
+
+-- F (IQ-00060): held jobs stay off through repeated flag rechecks; a job paused only by its idle rule still gets its trial run
+do $$
+declare v jsonb; i int;
+begin
+  -- D above left these jobs as the seed set them (the guard tests do not change active states)
+  if (select bool_or(active) from cron.job where jobname in ('coverage-discover', 'coverage-discover-2', 'central-find')) then raise exception 'F: not off before the test'; end if;
+  for i in 1 .. 5 loop v := security.flag_jobs_v1(); end loop;
+  if (select bool_or(active) from cron.job where jobname in ('coverage-discover', 'coverage-discover-2')) then raise exception 'F1: a held job was switched on: %', v; end if;
+  if exists (select 1 from pipeline.enrichment_flags where entity = 'job' and entity_key like 'coverage-discover%' and state <> 'raised') then raise exception 'F1: a held job''s flag was released'; end if;
+  if not (select active from cron.job where jobname = 'central-find') then raise exception 'F2: central-find (not held) got no trial run'; end if;
+  if security.worker_lane_call_v1('discover', 'coverage-discover') then raise exception 'F3: held job''s worker would be called'; end if;
+  if not security.worker_lane_call_v1('discover') then raise exception 'F3b: the mode alone is not held'; end if;
+  -- taken off the list, the job is resumed by the recheck as before
+  update pipeline.platform_toolset_settings set value = '["coverage-discover-2"]' where toolset_key = 'pipeline' and key = 'jobs.held_off';
+  v := security.flag_jobs_v1();
+  if not (select active from cron.job where jobname = 'coverage-discover') or (select active from cron.job where jobname = 'coverage-discover-2') then raise exception 'F4: %', v; end if;
+  update pipeline.platform_toolset_settings set value = '["coverage-discover", "coverage-discover-2"]' where toolset_key = 'pipeline' and key = 'jobs.held_off';
+  raise notice 'F ok: 5 flag rechecks, coverage-discover and -2 stay off with their flags raised; central-find (idle rule only) gets its trial run; the held job''s worker is not called; off the list, the job resumes as before';
 end $$;

@@ -16,11 +16,20 @@
 --     the cast failed and none of its calls was recorded (24 h: 0 ledger rows; edge log: a call every 5 minutes, HTTP 200, items 0).
 --   * Standing gap queue (job field-gap-queue, security.field_gap_queue_tick_v1): one statement over every active course (about 35,700) times
 --     every field, with the latest item per course and field found by a DISTINCT ON over all of pipeline.field_enrich_items (about 166,000);
---     2 of its last 4 runs hit the statement time-out in "insert into _gap" (2 Nov 17:23 and 23:23 AEDT) and nothing is kept from a failed run.
+--     2 of its last 4 runs hit the 120 s statement time-out (2 Nov 17:23 and 23:23 AEDT) and nothing is kept from a failed run. v2.15.419 made the
+--     cross-check before it faster (60 s to 26 s; the gap select itself measured 4.6 s); the selection still has no checkpoint, no bound and no
+--     recorded outcome, and 86% of a standing task (240 of 279 at 11:23) is skipped at once by the reader as "no proven course page (E16)".
+--     Missing values on active courses of published providers (11:46 AEDT), and how many have a page read with an identity proof (before the
+--     course page check, which refused 40 of a 400-page sample): campus 5,663 / 1,373; delivery 12,786 / 2,167; duration 6,548 / 1,763;
+--     english 13,570 / 6,177; intakes 20,727 / 9,832; international 4,406 / 909; level 216 / 48 and field of study 231 / 50 (both read from
+--     the title, so not held). The course page check costs about 14 ms a course (574 courses, 8.1 s).
 --   * Repeated calls with nothing to do (24 h): link_search 1,265 calls, last work 2 Nov 12:21 (today's course-search share spent);
 --     discover 1,974 calls, 3 items (jobs coverage-discover and -2 were paused at 01:35 by event #28683, found active, and paused again by
 --     10:57); cricos_peo 1,008 (fixed by branch cf247-hidden-failures-country-config); central_find 258, find_site 404, contact_page 407,
 --     logo_find 134, flag_check 139 (nothing due: their pickers have no budget gate and nothing is due).
+--   * IQ-00060 (P1): security.flag_jobs_v1 (job flag-recheck) switches back on any inactive coverage-sweep job with a raised idle_paused flag once
+--     its recheck is due ("Trial run: switched on again to look for new work"), whatever switched it off. coverage-discover and -2, paused by
+--     the governed restore at 01:35 (event #28683), were switched on again and paused again by its own idle rule, about 30 runs an hour.
 -- What:
 --   1 Lanes: pipeline.worker_mode_lanes names the lane of every worker mode (stored_evidence, paid_acquisition, ai_extraction) and the Firecrawl
 --     purpose of a paid mode. security.lane_paid_hold_v1(purpose) says why new paid reading is held (the monthly plan reserve, or no room in
@@ -40,27 +49,38 @@
 --     place of its single statement. Job field-gap-queue runs security.field_gap_queue_run_v1, which records every run in
 --     pipeline.field_gap_queue_runs with its outcome (done, idle, held, switched_off) and hold reason (previous_run_open, scan_continues,
 --     queue_off, nothing_due); a run never reports nothing due while the scan has not finished its pass.
+--   4b Page proof (integrator, 3 Nov 2026 11:23: a standing task of 279 items had 240 skipped at once as "no proven course page (E16)"): with
+--     gaps.page_proof_on (1), a gap in a field read only from the course's page (Enrich fields sources without any of gaps.page_free_sources:
+--     ai_title, ai_city, institution_rule) is queued only when security.course_page_proven_v1 (the reader's own rule in
+--     security.enrich_fields_slice_v1, with security.course_page_check_v1) passes; the others are counted per field in the checkpoint
+--     (cycle_waiting_proof) and shown as held "waiting for page proof"; a run that finds only such gaps is held, not idle.
 --   5 No calls to a switched-off lane: security.worker_lane_call_v1(mode) answers false when the lane is switched off (course-page search:
 --     pipeline.course_link_search_settings.enabled), and, only with lanes.skip_held_paid_calls on (0, off), while a paid lane is held by the
 --     budget (one ledger row per lanes.hold_note_minutes records the hold instead of a call). Jobs course-link-search-worker, central-find,
 --     coverage-discover, coverage-discover-2, scholarship-listing and scholarship-read call the worker only when it answers true; each keeps
 --     its schedule and its active state.
+--   5b Administrative hold (IQ-00060): setting jobs.held_off lists the jobs a person or a governed restore switched off (seeded with
+--     coverage-discover and coverage-discover-2, "Firecrawl window ended 3 Nov 01:35 (#28683)"). security.job_held_off_v1(job) reads it.
+--     security.flag_jobs_v1 (md5-guarded edit) never trial-resumes a held job (its idle flag stays raised), and security.worker_lane_call_v1
+--     treats a held job as switched off (the guarded job commands pass their own job name). Taking a job off the list lets the flag
+--     recheck resume it as before.
 --   6 Measures: security.lane_status_v1() (read-only): per lane the eligible work, processed and failed in the last lanes.status_window_minutes,
 --     held calls by reason, the live hold, and cost (Firecrawl credits, AI US$) today and in the window; the gap queue's checkpoint and last
 --     run. public.admin_pipeline_yield (md5-guarded edit) adds it as lane_status (Platform health › Integration queue › Pipeline yield).
 --     security.pipeline_yield_v1 is not edited (branch cf247-hidden-failures-country-config edits it).
--- md5 (before = live v2.15.418, read 3 Nov 2026 10:47-10:55 AEDT; after = local replay on PostgreSQL 16, tests/fixtures/lanes-gap-queue/run.sh):
+-- md5 (before = live v2.15.421 (unchanged since v2.15.418), read 3 Nov 2026 10:47-11:30 AEDT and re-checked 11:30; after = local replay on PostgreSQL 16, tests/fixtures/lanes-gap-queue/run.sh):
 --   public.svc_worker_report_v1(text,integer,integer,jsonb,text)   6f3b816265f1a517b9d79140041669bb -> b110a648a8149eede42cbc69cce43a77
 --   security.field_gap_queue_tick_v1()                              d909e54d6b6de0f8d2893fbb2d8553bd -> 200f3210c75a71e6e5f5f0eceb37ea66
 --     (or, after branch cf247-course-description-reader:           387f8edbe3363ea52317e024d96f2369 -> 9bb80b419ee26a049b99a35fb278e272)
 --   public.svc_scholarship_ai_next(integer)                         ddef1e3dd794e26f3588f73e9d51e6b5 -> 18e76dbc9984be55370434ca27066c7b
 --   public.svc_scholarship_recheck_next(integer)                    f35fa04f98a32d0ca4eb4064ea7db6eb -> ccfaf9a9c6bbba4ce5fde64a3d7738af
 --   public.admin_pipeline_yield(jsonb)                              a9d64bbca63b5e1c587edabf4e1fef59 -> a38814324515b163a34129b7a9d01dbd
+--   security.flag_jobs_v1()                                         2421dd1c132bd6460aa12c8dbdce3fa6 -> 22fa89f4c0c3c238b3d281bd481309b2
 -- Spend: no Firecrawl or AI value is raised; nothing reads a page or calls a model that did not before.
 -- Consumer API (G3): untouched.
--- Replaces: public.svc_worker_report_v1, security.field_gap_queue_tick_v1, public.svc_scholarship_ai_next, public.svc_scholarship_recheck_next, public.admin_pipeline_yield (same names; md5-guarded edits); the commands of jobs field-gap-queue, course-link-search-worker, central-find, coverage-discover, coverage-discover-2, scholarship-listing, scholarship-read
+-- Replaces: public.svc_worker_report_v1, security.field_gap_queue_tick_v1, public.svc_scholarship_ai_next, public.svc_scholarship_recheck_next, public.admin_pipeline_yield, security.flag_jobs_v1 (same names; md5-guarded edits); the commands of jobs field-gap-queue, course-link-search-worker, central-find, coverage-discover, coverage-discover-2, scholarship-listing, scholarship-read
 -- Retires: the single-statement gap selection inside security.field_gap_queue_tick_v1 (replaced in the same edit by security.field_gap_scan_v1)
--- Nothing is dropped or deleted. No job is added; every job keeps its schedule and active state. lanes.skip_held_paid_calls ships off.
+-- Nothing is dropped or deleted. No job is added; every job keeps its schedule and active state (coverage-discover and -2 stay off: jobs.held_off). lanes.skip_held_paid_calls ships off.
 
 create or replace function pg_temp.edit_once(p_sig text, p_befores text[], p_afters text[], p_edits text[][], p_times int[]) returns text language plpgsql as $f$
 -- one or more known "before" definitions (p_befores[i] becomes p_afters[i]); the edits are the same for each
@@ -110,10 +130,25 @@ insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, ki
   'number', to_jsonb(60), 15, 1440, 'minutes', 1013, 'Enrichment lanes', 'security.lane_status_v1', 'Platform Admin P0 mandate 3 Nov 2026 10:44 §6'),
  ('pipeline', 'gaps.scan_courses_per_slice', 'Gap queue: courses checked per slice',
   'The standing gap queue checks active courses in slices of this many, in id order, and saves where it stopped after each slice.',
-  'number', to_jsonb(2000), 100, 20000, 'courses', 1020, 'Gap queue', 'security.field_gap_scan_v1 (job field-gap-queue)', 'Platform Admin P0 mandate 3 Nov 2026 10:44 §3 Agent C: bounded batches, durable checkpoints'),
+  'number', to_jsonb(500), 100, 20000, 'courses', 1020, 'Gap queue', 'security.field_gap_scan_v1 (job field-gap-queue)', 'Platform Admin P0 mandate 3 Nov 2026 10:44 §3 Agent C: bounded batches, durable checkpoints'),
  ('pipeline', 'gaps.scan_seconds', 'Gap queue: time a run may spend finding gaps',
-  'A run stops starting new slices after this many seconds and the next run carries on from where it stopped. Keep it well inside the job time-out.',
-  'number', to_jsonb(20), 5, 240, 'seconds', 1021, 'Gap queue', 'security.field_gap_scan_v1 (job field-gap-queue)', 'Platform Admin P0 mandate 3 Nov 2026 10:44 §3 Agent C: resumes after interruptions')
+  'A run stops starting new slices after this many seconds and the next run carries on from where it stopped. Keep it well inside the job time-out (120 s, with the cross-check before it, about 26 s after v2.15.419).',
+  'number', to_jsonb(45), 5, 240, 'seconds', 1021, 'Gap queue', 'security.field_gap_scan_v1 (job field-gap-queue)', 'Platform Admin P0 mandate 3 Nov 2026 10:44 §3 Agent C: resumes after interruptions')
+on conflict (toolset_key, key) do nothing;
+insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, section, used_by, reason) values
+ ('pipeline', 'gaps.page_proof_on', 'Gap queue: page-only fields need a proven course page',
+  'On (1): a gap in a field read only from the course''s own page is queued only when the course has a proven page (the reader''s E16 rule); the others are counted as waiting for page proof. Off (0): every gap is queued and the reader skips those without a proven page.',
+  'number', to_jsonb(1), 0, 1, 'on/off', 1022, 'Gap queue', 'security.field_gap_scan_v1 (job field-gap-queue)', 'Integrator 3 Nov 2026 11:23: 240 of 279 standing items skipped as no proven course page (E16)'),
+ ('pipeline', 'gaps.proof_recheck_days', 'Gap queue: check a course page''s proof again after',
+  'A course''s page proof is kept and checked again after this many days, or at once when the page is read, bound or identified again.',
+  'number', to_jsonb(7), 1, 90, 'days', 1024, 'Gap queue', 'security.field_gap_scan_v1 (pipeline.course_page_proofs)', 'Integrator 3 Nov 2026 11:23 (E16); the proof costs about 14 ms a course'),
+ ('pipeline', 'gaps.page_free_sources', 'Gap queue: sources that work without the course page',
+  'A field with one of these sources (Enrich fields rules) is queued whether or not the course has a proven page.',
+  'list', '["ai_title", "ai_city", "institution_rule"]'::jsonb, null, null, 'sources', 1023, 'Gap queue', 'security.field_gap_scan_v1 (job field-gap-queue)', 'Integrator 3 Nov 2026 11:23 (E16 futile items)'),
+ ('pipeline', 'jobs.held_off', 'Jobs held off by a person or a governed restore',
+  'Scheduled jobs switched off on purpose. The idle flag recheck never switches them on again for a trial run, and their worker is not called. Take a job off this list (with a reason) before switching it on again.',
+  'list', '["coverage-discover", "coverage-discover-2"]'::jsonb, null, null, 'jobs', 1014, 'Enrichment lanes', 'security.job_held_off_v1 (security.flag_jobs_v1, job flag-recheck; security.worker_lane_call_v1)',
+  'Firecrawl window ended 3 Nov 01:35 (#28683); IQ-00060: flag recheck switched them on again')
 on conflict (toolset_key, key) do nothing;
 
 -- 2. lanes and honest outcomes ----------------------------------------------------------------------------------------------------------------
@@ -303,6 +338,7 @@ create table if not exists pipeline.field_gap_queue_checkpoint (
   cursor_course_id uuid,
   cycle_scanned bigint not null default 0,
   cycle_found bigint not null default 0,
+  cycle_waiting_proof jsonb not null default '{}'::jsonb,
   last_run_at timestamptz,
   updated_at timestamptz not null default now()
 );
@@ -329,6 +365,37 @@ comment on table pipeline.field_gap_queue_runs is 'CF-247 P0 mandate 3 Nov 2026 
 alter table pipeline.field_gap_queue_runs enable row level security;
 create index if not exists field_gap_queue_runs_run_at_idx on pipeline.field_gap_queue_runs (run_at desc);
 
+create or replace function security.course_page_proven_v1(p_course uuid) returns boolean
+language sql stable security definer set search_path to '' as $function$
+  -- CF-247 (integrator, 3 Nov 2026 11:23 evidence): the course has a page the Enrich fields reader will read: the reader's own rule in
+  -- security.enrich_fields_slice_v1 (bound, or ambiguous with an identity proof; read with an identity proof; not refused by
+  -- security.course_page_check_v1 while binding.identity_check is on). Otherwise its items are skipped as "no proven course page (E16)".
+  select exists (select 1 from pipeline.coverage_course_pages g join pipeline.evidence_artifacts e on e.id = g.evidence_id
+                  where g.course_id = p_course and g.status in ('bound', 'ambiguous') and (g.status = 'bound' or g.identity_basis is not null)
+                    and g.read_status = 'read' and g.identity_basis is not null and e.storage_path is not null
+                    and (security.pipeline_num_v1('binding.identity_check', 1) < 1
+                         or security.course_page_check_v1(p_course, coalesce(nullif(g.candidates->>'final_url', ''), g.url),
+                                                          coalesce(nullif(g.candidates->>'page_title', ''), g.candidates->>'h1'), g.identity_basis)->>'verdict' <> 'refuse'))
+$function$;
+revoke all on function security.course_page_proven_v1(uuid) from public, anon, authenticated;
+
+create or replace function security.course_page_key_v1(p_course uuid) returns text
+language sql stable security definer set search_path to '' as $function$
+  -- CF-247: the state of the course's page that its proof depends on (a new read, binding or identity changes the key)
+  select md5(concat_ws('|', g.status, g.read_status, g.identity_basis, g.evidence_id, g.url, g.candidates->>'final_url', g.candidates->>'page_title', g.candidates->>'h1'))
+    from pipeline.coverage_course_pages g where g.course_id = p_course
+$function$;
+revoke all on function security.course_page_key_v1(uuid) from public, anon, authenticated;
+
+create table if not exists pipeline.course_page_proofs (
+  course_id uuid primary key,
+  page_key text,
+  proven boolean not null,
+  checked_at timestamptz not null default now()
+);
+comment on table pipeline.course_page_proofs is 'CF-247 (integrator 3 Nov 2026 11:23, E16): whether each course has a page the Enrich fields reader will read (security.course_page_proven_v1), kept per page state (security.course_page_key_v1) so the standing gap queue checks it again only when the page changes or after gaps.proof_recheck_days.';
+alter table pipeline.course_page_proofs enable row level security;
+
 create or replace function security.field_gap_scan_v1(p_fields text[], p_days int, p_cap int) returns jsonb
 language plpgsql security definer set search_path to '' as $function$
 -- CF-247 P0 mandate 3 Nov 2026 10:44 §3 Agent C: the standing gap queue's selection in bounded slices from a durable checkpoint. Fills the
@@ -337,20 +404,30 @@ language plpgsql security definer set search_path to '' as $function$
 -- recheck days, or the page read again since. Courses are taken in id order (primary key), gaps.scan_courses_per_slice at a time; the latest
 -- item per course and field is found through the (course_id, field) index. The run stops at p_cap items or after gaps.scan_seconds and saves
 -- where it stopped; a pass that reaches the end with nothing found wraps once, so "nothing found" means a full pass found nothing.
+-- With gaps.page_proof_on (1), a gap in a field read only from the course's own page (its sources in security.enrich_fields_v1 include none of
+-- gaps.page_free_sources) is taken only when the course has a proven page (security.course_page_proven_v1, the Enrich fields reader's own
+-- E16 rule); the others are counted by field as waiting for page proof, not made into items the reader would skip.
 declare k pipeline.field_gap_queue_checkpoint%rowtype; v_t0 timestamptz := clock_timestamp();
-        v_slice int := greatest(1, security.pipeline_num_v1('gaps.scan_courses_per_slice', 2000)::int);
-        v_secs numeric := security.pipeline_num_v1('gaps.scan_seconds', 20);
+        v_slice int := greatest(1, security.pipeline_num_v1('gaps.scan_courses_per_slice', 500)::int);
+        v_secs numeric := security.pipeline_num_v1('gaps.scan_seconds', 45);
         v_cf text[] := array(select x from unnest(p_fields) x where x not in ('provider_address', 'campus_list', 'campus_region'));
         v_from uuid; v_last uuid; v_ids uuid[]; v_have int := 0; v_n int; v_scanned int := 0; v_slices int := 0; v_stop text; v_wrapped boolean := false;
-        v_start_cycle boolean;
+        v_start_cycle boolean; v_wait jsonb := '{}'::jsonb; v_cut uuid;
+        v_free text[] := coalesce((select array(select jsonb_array_elements_text(s.value)) from pipeline.platform_toolset_settings s
+                                    where s.toolset_key = 'pipeline' and s.key = 'gaps.page_free_sources' and jsonb_typeof(s.value) = 'array'), array['ai_title', 'ai_city', 'institution_rule']);
+        v_pf text[];
 begin
+  -- the fields read only from the course's own page (none of their sources works without it)
+  v_pf := case when security.pipeline_num_v1('gaps.page_proof_on', 1) >= 1
+               then array(select f.field from security.enrich_fields_v1() f where f.field = any (v_cf) and not (f.sources && v_free)) else '{}'::text[] end;
+  create temp table if not exists _gap_cand(provider_id uuid, course_id uuid, field text, pri int, waiting boolean not null default false) on commit drop;
   insert into pipeline.field_gap_queue_checkpoint(id) values (1) on conflict (id) do nothing;
   select * into k from pipeline.field_gap_queue_checkpoint where id = 1 for update;
   v_from := k.cursor_course_id; v_last := k.cursor_course_id; v_start_cycle := k.cursor_course_id is null;
   loop
     if v_last is null and (v_start_cycle or v_wrapped) then
       -- a new pass: provider-level fields once, at its start (the tick's own rules)
-      k.cycle := k.cycle + 1; k.cycle_started_at := now(); k.cycle_scanned := 0; k.cycle_found := 0; v_start_cycle := false;
+      k.cycle := k.cycle + 1; k.cycle_started_at := now(); k.cycle_scanned := 0; k.cycle_found := 0; k.cycle_waiting_proof := '{}'::jsonb; v_start_cycle := false;
       insert into _gap
       select m.provider_id, null::uuid, m.field, case when l.state is null then 1 else 2 end
         from (select p.id provider_id, 'provider_address'::text field from catalogue.providers p
@@ -379,7 +456,8 @@ begin
       if v_have = 0 and not v_wrapped and v_from is not null then v_wrapped := true; continue; end if;
       v_stop := 'end'; exit;
     end if;
-    insert into _gap
+    truncate _gap_cand;
+    insert into _gap_cand(provider_id, course_id, field, pri)
     select m.provider_id, m.course_id, m.field,
            case when l.state is null then 1
                 when exists (select 1 from pipeline.coverage_course_pages g where g.course_id = m.course_id and g.read_at > l.updated_at) then 0
@@ -401,10 +479,29 @@ begin
        and (l.state is null or l.state = 'filled'                                          -- never tried, or filled and since emptied
             or l.reason = 'provider unpublished'                                           -- skipped while unpublished, published again
             or l.updated_at < now() - make_interval(days => p_days)                        -- not stated: checked again after the set days
-            or exists (select 1 from pipeline.coverage_course_pages g where g.course_id = m.course_id and g.read_at > l.updated_at))  -- or once the page is read again
-     order by m.course_id, m.field
+            or exists (select 1 from pipeline.coverage_course_pages g where g.course_id = m.course_id and g.read_at > l.updated_at));  -- or once the page is read again
+    -- a page-only field of a course with no proven page waits for page proof (the proof is checked once per course)
+    if cardinality(v_pf) > 0 then
+      -- the proof is costly (about 14 ms a course on production, 3 Nov 2026): kept per course and page state, checked again only when the
+      -- page changes or after gaps.proof_recheck_days
+      insert into pipeline.course_page_proofs as x (course_id, page_key, proven, checked_at)
+      select d.course_id, security.course_page_key_v1(d.course_id), security.course_page_proven_v1(d.course_id), now()
+        from (select distinct c2.course_id from _gap_cand c2 where c2.field = any (v_pf)) d
+       where not exists (select 1 from pipeline.course_page_proofs y where y.course_id = d.course_id and y.page_key is not distinct from security.course_page_key_v1(d.course_id)
+                           and y.checked_at > now() - make_interval(days => security.pipeline_num_v1('gaps.proof_recheck_days', 7)::int))
+      on conflict (course_id) do update set page_key = excluded.page_key, proven = excluded.proven, checked_at = excluded.checked_at;
+      update _gap_cand c set waiting = true
+       where c.field = any (v_pf) and not coalesce((select y.proven from pipeline.course_page_proofs y where y.course_id = c.course_id), false);
+    end if;
+    insert into _gap
+    select c.provider_id, c.course_id, c.field, c.pri from _gap_cand c where not c.waiting
+     order by c.course_id, c.field
      limit greatest(p_cap - v_have, 0);
     get diagnostics v_n = row_count;
+    -- counted up to where this run stops in the slice (a course checked again next run is counted then)
+    v_cut := case when v_have + v_n >= p_cap then (select g.course_id from _gap g where g.course_id = any (v_ids) order by g.course_id desc limit 1) end;
+    select v_wait || coalesce(jsonb_object_agg(z.field, z.n + coalesce((v_wait->>z.field)::int, 0)), '{}'::jsonb) into v_wait
+      from (select c.field, count(*) n from _gap_cand c where c.waiting and (v_cut is null or c.course_id < v_cut) group by 1) z;
     v_have := v_have + v_n; k.cycle_found := k.cycle_found + v_n; v_scanned := v_scanned + cardinality(v_ids); v_slices := v_slices + 1;
     if v_have >= p_cap then
       -- the cap was reached inside this slice: resume after the last course taken whole (the boundary course is checked again; what was taken
@@ -417,11 +514,12 @@ begin
     v_last := v_ids[cardinality(v_ids)];
     k.cycle_scanned := k.cycle_scanned + cardinality(v_ids);
   end loop;
+  k.cycle_waiting_proof := k.cycle_waiting_proof || coalesce((select jsonb_object_agg(e.key, (e.value #>> '{}')::int + coalesce((k.cycle_waiting_proof->>e.key)::int, 0)) from jsonb_each(v_wait) e), '{}'::jsonb);
   update pipeline.field_gap_queue_checkpoint set cycle = k.cycle, cycle_started_at = k.cycle_started_at, cursor_course_id = v_last,
-         cycle_scanned = k.cycle_scanned, cycle_found = k.cycle_found, last_run_at = now(), updated_at = now()
+         cycle_scanned = k.cycle_scanned, cycle_found = k.cycle_found, cycle_waiting_proof = k.cycle_waiting_proof, last_run_at = now(), updated_at = now()
    where id = 1;
   return jsonb_build_object('cycle', k.cycle, 'cursor_from', v_from, 'cursor_to', v_last, 'scanned', v_scanned, 'slices', v_slices, 'found', v_have,
-                            'stopped', v_stop, 'cycle_complete', v_last is null, 'wrapped', v_wrapped,
+                            'stopped', v_stop, 'cycle_complete', v_last is null, 'wrapped', v_wrapped, 'waiting_for_page_proof', v_wait,
                             'ms', (extract(epoch from clock_timestamp() - v_t0) * 1000)::int);  -- fixed: milliseconds
 end $function$;
 revoke all on function security.field_gap_scan_v1(text[], integer, integer) from public, anon, authenticated;
@@ -485,9 +583,11 @@ begin
   v_scan := v->'scan'; v_q := v->>'queue';
   v_out := case when v_q = 'started' then 'done' when v_q = 'off' then 'switched_off' when v_q = 'previous run still open' then 'held'
                 when v_scan is not null and not coalesce((v_scan->>'cycle_complete')::boolean, true) then 'held'
+                when v_scan->'waiting_for_page_proof' <> '{}'::jsonb then 'held'
                 else 'idle' end;
   v_hold := case when v_q = 'previous run still open' then 'previous_run_open' when v_q = 'off' then 'queue_off'
-                 when v_out = 'held' then 'scan_continues' when v_out = 'idle' then 'nothing_due' end;
+                 when v_out = 'held' and not coalesce((v_scan->>'cycle_complete')::boolean, true) then 'scan_continues'
+                 when v_out = 'held' then 'waiting_for_page_proof' when v_out = 'idle' then 'nothing_due' end;
   insert into pipeline.field_gap_queue_runs(outcome, hold_reason, items, scanned, cycle, cursor_from, cursor_to, cycle_complete, job_id, ms, detail)
   values (v_out, v_hold, coalesce((v->>'items')::int, 0), coalesce((v_scan->>'scanned')::int, 0), (v_scan->>'cycle')::int,
           (v_scan->>'cursor_from')::uuid, (v_scan->>'cursor_to')::uuid, (v_scan->>'cycle_complete')::boolean, (v->>'job_id')::uuid,
@@ -497,14 +597,23 @@ end $function$;
 revoke all on function security.field_gap_queue_run_v1() from public, anon, authenticated;
 
 -- 5. no calls to a switched-off lane (and, with lanes.skip_held_paid_calls on, none while its budget is held) ------------------------------
-create or replace function security.worker_lane_call_v1(p_mode text) returns boolean
+create or replace function security.job_held_off_v1(p_job text) returns boolean
+language sql stable security definer set search_path to '' as $function$
+  -- CF-247 IQ-00060: the job is on jobs.held_off (switched off by a person or a governed restore), so nothing switches it on by itself
+  select coalesce((select s.value ? p_job from pipeline.platform_toolset_settings s where s.toolset_key = 'pipeline' and s.key = 'jobs.held_off'
+                     and jsonb_typeof(s.value) = 'array'), false)
+$function$;
+revoke all on function security.job_held_off_v1(text) from public, anon, authenticated;
+
+create or replace function security.worker_lane_call_v1(p_mode text, p_job text default null) returns boolean
 language plpgsql security definer set search_path to '' as $function$
 -- CF-247 P0 mandate 3 Nov 2026 10:44 §3 Agent C ("does not repeatedly invoke disabled jobs"): whether a job should call the worker for this
--- mode now. A lane switched off is not called. With lanes.skip_held_paid_calls on, a paid lane held by its Firecrawl share or the plan reserve
+-- mode now. A lane switched off is not called, nor a job held off (jobs.held_off). With lanes.skip_held_paid_calls on, a paid lane held by its Firecrawl share or the plan reserve
 -- is not called either; one ledger row per lanes.hold_note_minutes records the hold (lane_outcome budget_held) so it stays visible.
 declare v_purpose text; v_hold text;
 begin
   if p_mode = 'link_search' and not coalesce((select s.enabled from pipeline.course_link_search_settings s where s.id = 1), false) then return false; end if;
+  if p_job is not null and security.job_held_off_v1(p_job) then return false; end if;
   if security.pipeline_num_v1('lanes.skip_held_paid_calls', 0) < 1 then return true; end if;
   select l.fc_purpose into v_purpose from pipeline.worker_mode_lanes l where l.mode = p_mode and l.lane = 'paid_acquisition';
   v_hold := security.lane_paid_hold_v1(v_purpose);
@@ -516,7 +625,15 @@ begin
   end if;
   return false;
 end $function$;
-revoke all on function security.worker_lane_call_v1(text) from public, anon, authenticated;
+revoke all on function security.worker_lane_call_v1(text, text) from public, anon, authenticated;
+
+-- 5c. the idle flag recheck never trial-resumes a job held off (IQ-00060) -------------------------------------------------------------------
+select pg_temp.edit_once('security.flag_jobs_v1()', array['2421dd1c132bd6460aa12c8dbdce3fa6'], array['22fa89f4c0c3c238b3d281bd481309b2'], array[
+ [$o$    elsif not j.active and f.state = 'raised' and f.reason_code = 'idle_paused' and (f.next_check_at <= now() or security.worker_mode_waiting_v1(j.mode)) then  -- 19 Oct: on again when work is waiting
+$o$,
+  $n$    elsif not j.active and f.state = 'raised' and f.reason_code = 'idle_paused' and (f.next_check_at <= now() or security.worker_mode_waiting_v1(j.mode))  -- 19 Oct: on again when work is waiting
+          and not security.job_held_off_v1(j.jobname) then  -- CF-247 IQ-00060: never a job a person or a governed restore switched off (jobs.held_off)
+$n$]], array[1]);
 
 -- 6. measures: one row per lane --------------------------------------------------------------------------------------------------------------
 create or replace function security.lane_status_v1() returns jsonb
@@ -576,7 +693,9 @@ begin
   select * into v_last from pipeline.field_gap_queue_runs order by run_at desc, id desc limit 1;
   v := v || jsonb_build_object('lane', 'gap_queue', 'label', 'Standing gap queue', 'window_since', v_since,
           'eligible', jsonb_build_object('pass', k.cycle, 'pass_started_at', k.cycle_started_at, 'courses_checked_in_pass', k.cycle_scanned,
-                                         'gaps_found_in_pass', k.cycle_found, 'pass_complete', k.cursor_course_id is null),
+                                         'gaps_found_in_pass', k.cycle_found, 'pass_complete', k.cursor_course_id is null,
+                                         'waiting_for_page_proof_in_pass', coalesce((select sum((e.value #>> '{}')::int) from jsonb_each(k.cycle_waiting_proof) e), 0),
+                                         'waiting_for_page_proof_by_field', coalesce(k.cycle_waiting_proof, '{}'::jsonb)),
           'processed', (select coalesce(sum(g.items), 0) from pipeline.field_gap_queue_runs g where g.run_at > v_since),
           'failed', 0,
           'held', coalesce((select jsonb_object_agg(z.h, z.n) from (select g.hold_reason h, count(*) n from pipeline.field_gap_queue_runs g where g.run_at > v_since and g.outcome = 'held' group by 1) z), '{}'::jsonb),
@@ -599,17 +718,17 @@ begin
   for r in select * from (values
     ('field-gap-queue', $c$select security.field_gap_queue_tick_v1()$c$, $c$select security.field_gap_queue_run_v1()$c$),
     ('course-link-search-worker', $c$select pipeline.svc_pilot_submit_nonce('coverage-sweep', jsonb_build_object('mode', 'link_search', 'limit', security.pipeline_num_v1('batch.link_search_worker', 120)::int))$c$,
-                                  $c$select pipeline.svc_pilot_submit_nonce('coverage-sweep', jsonb_build_object('mode', 'link_search', 'limit', security.pipeline_num_v1('batch.link_search_worker', 120)::int)) where security.worker_lane_call_v1('link_search')$c$),
+                                  $c$select pipeline.svc_pilot_submit_nonce('coverage-sweep', jsonb_build_object('mode', 'link_search', 'limit', security.pipeline_num_v1('batch.link_search_worker', 120)::int)) where security.worker_lane_call_v1('link_search', 'course-link-search-worker')$c$),
     ('central-find', $c$select pipeline.svc_pilot_submit_nonce('coverage-sweep', jsonb_build_object('mode', 'central_find', 'limit', security.pipeline_num_v1('batch.central_find', 4)::int))$c$,
-                     $c$select pipeline.svc_pilot_submit_nonce('coverage-sweep', jsonb_build_object('mode', 'central_find', 'limit', security.pipeline_num_v1('batch.central_find', 4)::int)) where security.worker_lane_call_v1('central_find')$c$),
+                     $c$select pipeline.svc_pilot_submit_nonce('coverage-sweep', jsonb_build_object('mode', 'central_find', 'limit', security.pipeline_num_v1('batch.central_find', 4)::int)) where security.worker_lane_call_v1('central_find', 'central-find')$c$),
     ('coverage-discover', $c$select pipeline.svc_pilot_submit_nonce('coverage-sweep', jsonb_build_object('mode', 'discover', 'limit', security.pipeline_num_v1('batch.coverage_discover', 20)::int))$c$,
-                          $c$select pipeline.svc_pilot_submit_nonce('coverage-sweep', jsonb_build_object('mode', 'discover', 'limit', security.pipeline_num_v1('batch.coverage_discover', 20)::int)) where security.worker_lane_call_v1('discover')$c$),
+                          $c$select pipeline.svc_pilot_submit_nonce('coverage-sweep', jsonb_build_object('mode', 'discover', 'limit', security.pipeline_num_v1('batch.coverage_discover', 20)::int)) where security.worker_lane_call_v1('discover', 'coverage-discover')$c$),
     ('coverage-discover-2', $c$select pipeline.svc_pilot_submit_nonce('coverage-sweep', jsonb_build_object('mode', 'discover', 'limit', security.pipeline_num_v1('batch.coverage_discover_2', 8)::int))$c$,
-                            $c$select pipeline.svc_pilot_submit_nonce('coverage-sweep', jsonb_build_object('mode', 'discover', 'limit', security.pipeline_num_v1('batch.coverage_discover_2', 8)::int)) where security.worker_lane_call_v1('discover')$c$),
+                            $c$select pipeline.svc_pilot_submit_nonce('coverage-sweep', jsonb_build_object('mode', 'discover', 'limit', security.pipeline_num_v1('batch.coverage_discover_2', 8)::int)) where security.worker_lane_call_v1('discover', 'coverage-discover-2')$c$),
     ('scholarship-listing', $c$select pipeline.svc_pilot_submit_nonce('coverage-sweep', jsonb_build_object('mode','scholarship_listing','limit',security.scholarship_setting('listing_limit',6)::int))$c$,
-                            $c$select pipeline.svc_pilot_submit_nonce('coverage-sweep', jsonb_build_object('mode','scholarship_listing','limit',security.scholarship_setting('listing_limit',6)::int)) where security.worker_lane_call_v1('scholarship_listing')$c$),
+                            $c$select pipeline.svc_pilot_submit_nonce('coverage-sweep', jsonb_build_object('mode','scholarship_listing','limit',security.scholarship_setting('listing_limit',6)::int)) where security.worker_lane_call_v1('scholarship_listing', 'scholarship-listing')$c$),
     ('scholarship-read', $c$select pipeline.svc_pilot_submit_nonce('coverage-sweep', jsonb_build_object('mode','scholarship_read','limit',security.scholarship_setting('read_limit',20)::int))$c$,
-                         $c$select pipeline.svc_pilot_submit_nonce('coverage-sweep', jsonb_build_object('mode','scholarship_read','limit',security.scholarship_setting('read_limit',20)::int)) where security.worker_lane_call_v1('scholarship_read')$c$)
+                         $c$select pipeline.svc_pilot_submit_nonce('coverage-sweep', jsonb_build_object('mode','scholarship_read','limit',security.scholarship_setting('read_limit',20)::int)) where security.worker_lane_call_v1('scholarship_read', 'scholarship-read')$c$)
   ) x(jobname, old_cmd, new_cmd) loop
     select j.jobid, j.command into v_id, v_cmd from cron.job j where j.jobname = r.jobname;
     if v_id is null then raise exception 'lanes: job % not found', r.jobname; end if;
@@ -621,7 +740,9 @@ end $j$;
 
 update pipeline.automation_catalogue set description = description || ' Runs through security.field_gap_queue_run_v1: the gaps are found in bounded slices from a saved checkpoint (gaps.scan_courses_per_slice, gaps.scan_seconds), the next run resumes where one stopped, and every run is recorded with its outcome and hold reason (pipeline.field_gap_queue_runs).'
  where jobname = 'field-gap-queue' and description not like '%field_gap_queue_run_v1%';
-update pipeline.automation_catalogue set description = description || ' Calls the worker only when security.worker_lane_call_v1 allows it: never while the lane is switched off, and, with lanes.skip_held_paid_calls on, not while its Firecrawl budget is held (the hold is recorded instead).'
+update pipeline.automation_catalogue set description = description || ' Never switched on again for a trial run while it is on jobs.held_off (IQ-00060).'
+ where jobname = 'flag-recheck' and description not like '%jobs.held_off%';
+update pipeline.automation_catalogue set description = description || ' Calls the worker only when security.worker_lane_call_v1 allows it: never while the lane is switched off or the job is on jobs.held_off, and, with lanes.skip_held_paid_calls on, not while its Firecrawl budget is held (the hold is recorded instead).'
  where jobname in ('course-link-search-worker', 'central-find', 'coverage-discover', 'coverage-discover-2', 'scholarship-listing', 'scholarship-read') and description not like '%worker_lane_call_v1%';
 
 -- 8. component register -------------------------------------------------------------------------------------------------------------------------
@@ -636,6 +757,10 @@ insert into pipeline.component_register(kind, name, layer, area, purpose, status
  ('function', 'security.worker_lane_call_v1', 'Platform', 'Platform upkeep', 'Whether a job calls a worker lane now (switched off, held)', 'active', '{}', '20261103160000'),
  ('function', 'security.lane_status_v1', 'Platform', 'Platform upkeep', 'Per-lane work, holds and cost (Pipeline yield)', 'active', '{}', '20261103160000'),
  ('function', 'security.scholarship_ai_has_copy_v1', 'Layer 2', 'Scholarships', 'Scholarship AI item has a stored copy', 'active', '{}', '20261103160000'),
+ ('table', 'pipeline.course_page_proofs', 'Layer 2', 'Enrichment', 'Course page proof kept per page state (gap queue)', 'active', '{}', '20261103160000'),
+ ('function', 'security.course_page_key_v1', 'Layer 2', 'Enrichment', 'The page state a course page proof depends on', 'active', '{}', '20261103160000'),
+ ('function', 'security.course_page_proven_v1', 'Layer 2', 'Enrichment', 'The course has a page the Enrich fields reader will read (E16 rule)', 'active', '{}', '20261103160000'),
+ ('function', 'security.job_held_off_v1', 'Platform', 'Platform upkeep', 'A job held off by a person or a governed restore (jobs.held_off)', 'active', '{}', '20261103160000'),
  ('function', 'security.jsonb_int_v1', 'Platform', 'Platform upkeep', 'A count in a worker answer, read safely', 'active', '{}', '20261103160000')
 on conflict do nothing;
 
@@ -643,13 +768,16 @@ on conflict do nothing;
 do $$
 begin
   if (select count(*) from pipeline.platform_toolset_settings where toolset_key = 'pipeline' and key in ('lanes.stored_first_on', 'lanes.skip_held_paid_calls',
-        'lanes.hold_note_minutes', 'lanes.status_window_minutes', 'gaps.scan_courses_per_slice', 'gaps.scan_seconds')) <> 6 then
+        'lanes.hold_note_minutes', 'lanes.status_window_minutes', 'gaps.scan_courses_per_slice', 'gaps.scan_seconds', 'gaps.page_proof_on', 'gaps.page_free_sources',
+        'gaps.proof_recheck_days', 'jobs.held_off')) <> 10 then
     raise exception 'lanes post-check: a setting is missing'; end if;
   if exists (select 1 from cron.job where jobname in ('field-gap-queue', 'course-link-search-worker', 'central-find', 'coverage-discover', 'coverage-discover-2', 'scholarship-listing', 'scholarship-read')
-              and jobname <> 'field-gap-queue' and command not like '%worker_lane_call_v1(%') then
+              and jobname <> 'field-gap-queue' and command not like '%worker_lane_call_v1(''%'', '''||jobname||''')') then
     raise exception 'lanes post-check: a guarded job still calls the worker without the lane check'; end if;
   if (select command from cron.job where jobname = 'field-gap-queue') <> 'select security.field_gap_queue_run_v1()' then
     raise exception 'lanes post-check: field-gap-queue does not run the recorded wrapper'; end if;
   if (select (value #>> '{}')::numeric from pipeline.platform_toolset_settings where toolset_key = 'pipeline' and key = 'lanes.skip_held_paid_calls') <> 0 then
     raise exception 'lanes post-check: lanes.skip_held_paid_calls must ship off'; end if;
+  if not (security.job_held_off_v1('coverage-discover') and security.job_held_off_v1('coverage-discover-2')) then
+    raise exception 'lanes post-check: coverage-discover and coverage-discover-2 must be held off'; end if;
 end $$;

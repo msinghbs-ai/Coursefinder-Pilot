@@ -22,9 +22,10 @@ const MD5 = {
   'public.svc_scholarship_ai_next(integer)': [['ddef1e3dd794e26f3588f73e9d51e6b5'], ['18e76dbc9984be55370434ca27066c7b']],
   'public.svc_scholarship_recheck_next(integer)': [['f35fa04f98a32d0ca4eb4064ea7db6eb'], ['ccfaf9a9c6bbba4ce5fde64a3d7738af']],
   'public.admin_pipeline_yield(jsonb)': [['a9d64bbca63b5e1c587edabf4e1fef59'], ['a38814324515b163a34129b7a9d01dbd']],
+  'security.flag_jobs_v1()': [['2421dd1c132bd6460aa12c8dbdce3fa6'], ['22fa89f4c0c3c238b3d281bd481309b2']],
 }
 
-test('five live definitions are edited only from their live md5 (the tick also from the course-description branch) and checked after', () => {
+test('six live definitions are edited only from their live md5 (the tick also from the course-description branch) and checked after', () => {
   for (const [sig, [b, a]] of Object.entries(MD5)) {
     const e = edit(sig)
     expect(e).toContain(`array[${b.map((x) => `'${x}'`).join(', ')}]`)
@@ -73,8 +74,8 @@ test('the gap queue: bounded slices from a durable checkpoint, the tick edited o
   expect(tick).toContain("v_x := v_x || jsonb_build_object('scan', security.field_gap_scan_v1(v_fields, v_days, v_cap));")
   { const t = m.slice(m.indexOf("edit_once('security.field_gap_queue_tick_v1()'")); expect(t.indexOf('$n$]], array[1]);')).toBeGreaterThan(0); expect(t.indexOf('$n$]], array[1]);')).toBeLessThan(t.indexOf('create or replace function security.field_gap_queue_run_v1')) }
   const scan = fn('security.field_gap_scan_v1')
-  expect(scan).toContain("security.pipeline_num_v1('gaps.scan_courses_per_slice', 2000)")
-  expect(scan).toContain("security.pipeline_num_v1('gaps.scan_seconds', 20)")
+  expect(scan).toContain("security.pipeline_num_v1('gaps.scan_courses_per_slice', 500)")
+  expect(scan).toContain("security.pipeline_num_v1('gaps.scan_seconds', 45)")
   expect(scan).toContain('where c.lifecycle_status = \'active\' and (v_last is null or c.id > v_last) order by c.id limit v_slice')
   expect(scan).toContain('where e.course_id = m.course_id and e.field = m.field and e.provider_id = m.provider_id order by e.id desc limit 1')
   expect(scan).not.toContain('distinct on')
@@ -88,17 +89,46 @@ test('the gap queue: bounded slices from a durable checkpoint, the tick edited o
   expect(run).toContain('enrich_course_text_gaps_v1')
 })
 
+test('gap queue page proof (E16): page-only fields queued only with a proven page, by the reader\'s own rule; the rest counted as waiting', () => {
+  const pr = fn('security.course_page_proven_v1')
+  // the reader's rule in security.enrich_fields_slice_v1 (E16-1), with its own check function
+  expect(pr).toContain("g.status in ('bound', 'ambiguous') and (g.status = 'bound' or g.identity_basis is not null)")
+  expect(pr).toContain("g.read_status = 'read' and g.identity_basis is not null")
+  expect(pr).toContain("security.course_page_check_v1(p_course, coalesce(nullif(g.candidates->>'final_url', ''), g.url),")
+  expect(pr).toContain("g.identity_basis)->>'verdict' <> 'refuse'")
+  const scan = fn('security.field_gap_scan_v1')
+  expect(scan).toContain("security.pipeline_num_v1('gaps.page_proof_on', 1) >= 1")
+  expect(scan).toContain('not (f.sources && v_free)')
+  expect(scan).toContain('insert into pipeline.course_page_proofs as x (course_id, page_key, proven, checked_at)')
+  expect(scan).toContain("'waiting_for_page_proof', v_wait")
+  expect(fn('security.field_gap_queue_run_v1')).toContain("when v_out = 'held' then 'waiting_for_page_proof'")
+  expect(m).toContain("'list', '[\"ai_title\", \"ai_city\", \"institution_rule\"]'::jsonb")
+  for (const k of ['A1 ok', 'A3 ok', 'A8 ok', 'A9 ok']) expect(fixtures).toContain(k)
+  expect(before).toContain('would be skipped by the reader as no proven course page (E16)')
+})
+
 test('switched-off lanes are not called; skipping held paid lanes ships off; jobs keep schedule and state', () => {
   const g = fn('security.worker_lane_call_v1')
   expect(g).toContain("if p_mode = 'link_search' and not coalesce((select s.enabled from pipeline.course_link_search_settings s where s.id = 1), false) then return false; end if;")
   expect(g).toContain("if security.pipeline_num_v1('lanes.skip_held_paid_calls', 0) < 1 then return true; end if;")
   expect(m).toMatch(/'lanes\.skip_held_paid_calls'[\s\S]*?to_jsonb\(0\), 0, 1, 'on\/off'/)
   for (const [job, mode] of [['course-link-search-worker', 'link_search'], ['central-find', 'central_find'], ['coverage-discover', 'discover'], ['coverage-discover-2', 'discover'], ['scholarship-listing', 'scholarship_listing'], ['scholarship-read', 'scholarship_read']]) {
-    expect(m).toMatch(new RegExp(`\\('${job}', \\$c\\$[^$]+\\$c\\$,\\s*\\$c\\$[^$]+ where security\\.worker_lane_call_v1\\('${mode}'\\)\\$c\\$\\)`))
+    expect(m).toMatch(new RegExp(`\\('${job}', \\$c\\$[^$]+\\$c\\$,\\s*\\$c\\$[^$]+ where security\\.worker_lane_call_v1\\('${mode}', '${job}'\\)\\$c\\$\\)`))
   }
   expect(m).toContain("if v_cmd <> r.old_cmd then raise exception 'lanes: job % runs a command this change was not written against: %', r.jobname, v_cmd; end if;")
   expect(m).not.toMatch(/cron\.(schedule|alter_job\([^)]*active)/)
   expect(fixtures).toContain('D ok')
+})
+
+test('IQ-00060: a job held off by a person or a governed restore is never trial-resumed by the flag recheck, and its worker is not called', () => {
+  expect(m).toContain("('pipeline', 'jobs.held_off', 'Jobs held off by a person or a governed restore',")
+  expect(m).toContain("'list', '[\"coverage-discover\", \"coverage-discover-2\"]'::jsonb, null, null, 'jobs'")
+  expect(m).toContain("'Firecrawl window ended 3 Nov 01:35 (#28683); IQ-00060: flag recheck switched them on again')")
+  const f = after(edit('security.flag_jobs_v1()'))
+  expect(f).toContain('and not security.job_held_off_v1(j.jobname) then')
+  expect(fn('security.worker_lane_call_v1')).toContain('if p_job is not null and security.job_held_off_v1(p_job) then return false; end if;')
+  expect(before).toContain('before D4 reproduced')
+  expect(fixtures).toContain('F ok')
 })
 
 test('lane status: five lanes, each with eligible work, processed, failed, held and cost; read-only; on Pipeline yield', () => {
