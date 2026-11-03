@@ -1,18 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.425'
-export const PACKAGE_VERSION='0.1.352'
+export const UI_VERSION='2.15.426'
+export const PACKAGE_VERSION='0.1.353'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Nov 2026',
-  title:'Course enrichment reads what stored pages hold, records why a field stays empty, and runs the gap queue hourly',
+  title:'Plans propose only steps with work to do; course descriptions record faster; onboarding stops on a website that is not a web address',
   changes:[
-    'Reading every missing field from the same stored page (setting enrich.multi_field_on) is ready and ships switched off: once on, a course\'s stored page is read once for all its missing fields instead of once per field.',
-    'Each course field left empty now records why: not on this page, on another stored page, needs a source, evidence pending, explicitly not stated, not applicable or page identity unresolved, with its evidence, reader version, confidence and when it is due again. An unchanged page is not read again for a field it was verified not to state.',
-    'Coverage shows delivery and duration by that reason instead of a blanket "not on page".',
-    'The standing gap queue checks hourly and starts its next batch when work remains, so courses waiting for page proof keep reaching the source-proof feed; the feed now records every run.'
+    'An automatic enrichment plan proposes a step only when there is eligible work for it now. A step whose task finds nothing it may do ends as Not needed, never as done, and Pipeline yield shows how many plans moved data.',
+    'Recording course descriptions is faster: each new description is compared with the provider\'s others once instead of word by word for every pair, so a batch no longer runs out of time.',
+    'Provider onboarding stops with a named reason when a provider\'s website is not a web address (for example an email address), instead of trying again every few minutes; it carries on once the website is corrected.'
   ],
   bugFixes:[]
 }
