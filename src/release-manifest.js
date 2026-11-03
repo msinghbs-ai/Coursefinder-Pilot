@@ -1,16 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.449'
-export const PACKAGE_VERSION='0.1.376'
+export const UI_VERSION='2.15.450'
+export const PACKAGE_VERSION='0.1.377'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'4 Nov 2026',
-  title:'An admitted AI fee can be sent back to Layer 4 for a re-check, and Keep the CRICOS total withdraws it',
+  title:'Lanes keep moving when one queue is full: AER, course search, fee reader and the issue writer',
   changes:[
-    'An admitted AI reader fee can be sent back to Layer 4 as a Fee fails the check item, with its stored copy, quote, the CRICOS total and every earlier decision; decided items are never changed and manual values are refused.',
-    'When a person chooses Keep the CRICOS total on such an item, the AI fee it concerns is withdrawn, scholarship savings are recomputed and the website is refreshed.'
+    'Work held by a paid daily cap is parked until the cap resets and gives a recorded reason; a task that can never run ends at once with its blocker; course link search isolates each search, re-sends only when due and stops after a set number of tries.',
+    'AER can pick new reads fairly by university and count only distinct review-ready decisions against its unchanged 600 limit; this ships switched off, as do the fee reader\'s per-item claims and releasing a parked plan\'s slot.',
+    'The shared issue writer records unknown values instead of failing the job that reports them.'
   ],
   bugFixes:[]
 }
