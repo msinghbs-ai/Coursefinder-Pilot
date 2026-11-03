@@ -1,15 +1,16 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.448'
-export const PACKAGE_VERSION='0.1.375'
+export const UI_VERSION='2.15.449'
+export const PACKAGE_VERSION='0.1.376'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'4 Nov 2026',
-  title:'The approved Course Link rules can run: the rule executor records in its own tables',
+  title:'An admitted AI fee can be sent back to Layer 4 for a re-check, and Keep the CRICOS total withdraws it',
   changes:[
-    'The course-link rule executor records its runs and items in its own tables; it no longer collides with an older table of the same name used by the automatic Layer 4 rules, which keeps its rows and its writers.'
+    'An admitted AI reader fee can be sent back to Layer 4 as a Fee fails the check item, with its stored copy, quote, the CRICOS total and every earlier decision; decided items are never changed and manual values are refused.',
+    'When a person chooses Keep the CRICOS total on such an item, the AI fee it concerns is withdrawn, scholarship savings are recomputed and the website is refreshed.'
   ],
   bugFixes:[]
 }
