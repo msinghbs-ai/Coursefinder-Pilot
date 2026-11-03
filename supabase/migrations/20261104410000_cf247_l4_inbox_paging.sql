@@ -164,7 +164,8 @@ as $function$
          jsonb_build_object('flag_id', f.id, 'course_id', c.id, 'course_code', c.course_code,
                             -- mandate 3 Nov 2026 20:47 §5: the stored copy of the course's bound page, so a fee or course hold shows its evidence
                             'evidence_id', g.evidence_id, 'captured_at', gev.captured_at, 'source_url', gev.source_url) end
-    from pipeline.enrichment_flags f left join catalogue.courses c on c.id::text = f.entity_key
+    -- the course by its key as written (a lower-case uuid, as c.id::text = f.entity_key matched), so its primary key is used
+    from pipeline.enrichment_flags f left join catalogue.courses c on c.id = case when f.entity_key ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then f.entity_key::uuid end
     cross join lateral (select case f.reason_code when 'not_offered' then 'not_offered' when 'not_on_provider_site' then 'not_on_site' else 'fee_check' end k) z
     left join pipeline.coverage_course_pages g on p_detail and g.course_id = c.id
     left join pipeline.evidence_artifacts gev on gev.id = g.evidence_id
