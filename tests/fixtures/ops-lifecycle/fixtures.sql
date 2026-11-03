@@ -75,7 +75,12 @@ begin
   update pipeline.course_link_search set state = 'none' where state = 'queued' and course_id in (select course_id from pipeline.course_link_search where state = 'queued' limit 3);
   delete from fx.block;
   perform security.admin_job_watch_v1(v_j);
-  perform fx.ok(fx.outcome(v_j) is null and (select state from pipeline.admin_jobs where id = v_j) = 'running', 'W2 it moves again: the provisional outcome is cleared');
+  perform fx.ok(fx.outcome(v_j) = 'blocked_policy' and (select (outcome_detail->>'provisional')::boolean from pipeline.admin_jobs where id = v_j)
+                and (select state from pipeline.admin_jobs where id = v_j) = 'running', 'W2 it moves again: the outcome stays marked provisional until the task ends');
+  update pipeline.admin_jobs set state = 'done', finished_at = now(), result = result || '{"found": 3}' where id = v_j;
+  perform security.admin_job_close_v1(v_j);
+  perform fx.ok(fx.outcome(v_j) = 'failed_retryable' and not coalesce((select (outcome_detail->>'provisional')::boolean from pipeline.admin_jobs where id = v_j), false),
+                'W3 at close the final outcome replaces it (done with work unfinished: failed_retryable)');
 
   -- T1-T2 a finished plan records its outcome; actual.outcome comes from movement
   perform fx.reset3();
@@ -204,9 +209,9 @@ begin
   perform fx.set('ops.lease_orphan_close_on', '1');
   v := security.ops_lease_orphan_close_v1(null);
   perform fx.ok((v->>'changed')::int = 2 and (security.ops_lease_orphan_verify_v1(null)->>'passed')::boolean
-                and (select count(*) from pipeline.ops_remedy_runs where remedy_code = 'lease_orphan_close' and result = 'changed') = 1
+                and (select count(*) from pipeline.admin_control_events where area = 'ops' and action = 'self_heal' and target = 'lease_orphan_close') = 1
                 and (select reason from pipeline.field_enrich_items where state = 'failed' limit 1) like '%orphaned at the attempt cap%',
-                'H2 on: closed as failed with the reason, verified, the remedy run recorded');
+                'H2 on: closed as failed with the reason, verified, what it changed recorded');
   perform fx.set('ops.lease_orphan_close_on', '0');
   -- task precedence left by ended tasks
   v_j := fx.task3('course_page_find', 'running', '{}');
@@ -297,7 +302,8 @@ begin
   perform fx.ok((select count(*) from pipeline.ops_root_causes where code in ('false_completion', 'lease_orphaned', 'lane_work_orphaned', 'job_interrupted', 'task_duplicate',
                  'plan_repeated_empty', 'retry_cost_excess', 'answer_not_persisted', 'step_input_pending')) = 9, 'G1 nine root causes registered');
   perform fx.ok((select count(*) from pipeline.ops_remedies) = 9 and (select count(*) from pipeline.ops_remedies where authority = 'auto' and action_fn is not null) = 6
-                and (select authority from pipeline.ops_remedies where code = 'job_interrupted_check') = 'admin', 'G2 nine remedies: six with an action, one for a person, two built in');
+                and (select authority from pipeline.ops_remedies where code = 'job_interrupted_check') = 'admin'
+                and (select count(*) from pipeline.ops_remedies where authority = 'release') = 2, 'G2 nine remedies: six with an action, one for a person, two built in by this release');
   perform fx.ok((select command from cron.job where jobname = 'ops-job-lifecycle') = 'select security.ops_job_lifecycle_v1()'
                 and exists (select 1 from pipeline.automation_catalogue where jobname = 'ops-job-lifecycle'), 'G3 the job is scheduled and catalogued');
 end $$;

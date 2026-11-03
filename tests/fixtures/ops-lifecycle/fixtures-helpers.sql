@@ -9,7 +9,7 @@ begin
   perform fx.reset2();
   truncate pipeline.field_enrich_items, pipeline.course_link_search, pipeline.jobs, fx.started, fx.priority, fx.fields, pipeline.enrich_plan_noop, fx.recorded,
            pipeline.coverage_course_pages, fx.block, pipeline.provider_contact_checks, pipeline.coverage_provider_discovery, pipeline.scholarship_ai_extractions;
-  if to_regclass('pipeline.enrich_ai_answers') is not null then execute 'truncate pipeline.enrich_ai_answers, pipeline.enrich_plan_auto_runs, pipeline.ops_remedy_runs'; end if;
+  if to_regclass('pipeline.enrich_ai_answers') is not null then execute 'truncate pipeline.enrich_ai_answers, pipeline.enrich_plan_auto_runs, pipeline.admin_control_events'; end if;
   delete from fx.uid; delete from fx.record_fails;
 end $$;
 

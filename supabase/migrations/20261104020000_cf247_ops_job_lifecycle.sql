@@ -51,7 +51,7 @@
 -- Budgets: no Firecrawl or AI value is raised; nothing reads a page or calls a model.
 -- md5 (before = live v2.15.426, read 3 Nov 2026 15:43-15:58 AEDT; after = local replay on PostgreSQL 16, tests/fixtures/ops-lifecycle/run.sh):
 --   security.admin_job_close_v1(uuid)                      233236ffc66e438edb21c4f51a6c45a1 -> 1c33edb08b5ee5724a67a24ebc39913f
---   security.admin_job_watch_v1(uuid)                      995f26c437f0abfb3c666271cd622fec -> a7b17b399222f34c3b49460c73a7cef7
+--   security.admin_job_watch_v1(uuid)                      995f26c437f0abfb3c666271cd622fec -> 947806f31aee1ba3df6311a7ba756e40
 --   security.enrich_plan_tick_v1(uuid)                     77705c2b34e13801f4d7ccc5773bd4c1 -> 9b7c7c05491b95646b99fb7a855a9fa9
 --   security.enrich_plan_v1(uuid)                          a63146c23989eb64ee2248e3f32eade6 -> 774c061974916b878f7762e55de07bb6
 --   security.plan_outcomes_v1()                            0f127f0241764413fb87278f403a2e14 -> f63b93e1bc954221e3388625594c7d56
@@ -330,8 +330,11 @@ begin
   if security.pipeline_num_v1('ops.outcome_on', 0) < 1 then return null; end if;
   v := security.job_outcome_compute_v1(p_job);
   if v is null then return null; end if;
+  -- an open task that is no longer held keeps its provisional outcome (outcome_detail.provisional) until it ends: workstream A's
+  -- security.job_outcome_set_v1 takes a code, not null (interface request: accept null to clear a provisional outcome)
+  if v->>'outcome' is null then return null; end if;
   select j.outcome into v_cur from pipeline.admin_jobs j where j.id = p_job;
-  if v->>'outcome' is null and v_cur is null then return null; end if;
+  if v_cur is not distinct from v->>'outcome' and p_basis = 'held' then return v_cur; end if;
   perform security.job_outcome_set_v1(p_job, v->>'outcome', coalesce(v->'detail', '{}'::jsonb) || jsonb_build_object('basis', p_basis, 'at', now()));
   return v->>'outcome';
 exception when others then
@@ -479,13 +482,13 @@ $o$,
   perform security.job_outcome_record_v1(p_id, 'at_close');  -- CF-247 ops D (P0 mandate 15:37 §7): every ended task records its explicit outcome
 $n$]]::text[][], array[1]);
 
--- 5b a held task carries its provisional outcome (deferred_dependency, blocked_policy or blocked_evidence), cleared when it moves again
-select pg_temp.edit_once('security.admin_job_watch_v1(uuid)', '995f26c437f0abfb3c666271cd622fec', 'a7b17b399222f34c3b49460c73a7cef7', array[
+-- 5b a held task carries its provisional outcome (deferred_dependency, blocked_policy or blocked_evidence) until it ends
+select pg_temp.edit_once('security.admin_job_watch_v1(uuid)', '995f26c437f0abfb3c666271cd622fec', '947806f31aee1ba3df6311a7ba756e40', array[
   [$o$  if v_fin and v_note is not null then insert into pipeline.admin_job_events(job_id, note) values (p_id, v_note); end if;
   return v_fin;$o$,
    $n$  if v_fin and v_note is not null then insert into pipeline.admin_job_events(job_id, note) values (p_id, v_note); end if;
-  -- CF-247 ops D (P0 mandate 15:37 §7): a held task carries its provisional outcome; it is cleared when the task moves again and set for good
-  -- when it ends (security.admin_job_close_v1)
+  -- CF-247 ops D (P0 mandate 15:37 §7): a held task carries its provisional outcome (outcome_detail.provisional); it is set for good when the
+  -- task ends (security.admin_job_close_v1)
   if not v_fin and (v_j.result->'held'->>'code') is distinct from (v_extra->'held'->>'code') then perform security.job_outcome_record_v1(p_id, 'held'); end if;
   return v_fin;$n$]]::text[][], array[1]);
 
@@ -684,11 +687,12 @@ $$;
 
 create or replace function security.ops_d_run_note_v1(p_issue bigint, p_remedy text, p_before bigint, p_after bigint, p_changed int, p_evidence jsonb) returns void
 language plpgsql security definer set search_path = '' as $$
--- CF-247 ops D: one remedy execution in workstream A's pipeline.ops_remedy_runs (only when something was tried with its switch on)
+-- CF-247 ops D: what a self-healing remedy changed when job ops-job-lifecycle ran it on its own (p_issue null), in pipeline.admin_control_events.
+-- When the operations controller runs it for an issue, the controller records the run in pipeline.ops_remedy_runs itself.
 begin
-  insert into pipeline.ops_remedy_runs(issue_id, remedy_code, started_at, finished_at, before, after, result, evidence)
-  values (p_issue, p_remedy, now(), clock_timestamp(), jsonb_build_object('open', p_before), jsonb_build_object('open', p_after),
-          case when p_changed > 0 then 'changed' else 'no_change' end, coalesce(p_evidence, '{}'::jsonb) || jsonb_build_object('changed', p_changed));
+  if p_issue is not null then return; end if;
+  insert into pipeline.admin_control_events(area, action, target, detail)
+  values ('ops', 'self_heal', p_remedy, coalesce(p_evidence, '{}'::jsonb) || jsonb_build_object('open_before', p_before, 'open_after', p_after, 'changed', p_changed));
 exception when others then
   raise notice 'remedy run not recorded: %', sqlerrm;
 end $$;
@@ -949,10 +953,10 @@ select security.ops_remedy_register_v1(c, s) from (values
    'max_attempts_key', 'ops.heal_max_attempts', 'cooldown_key', 'ops.heal_cooldown_minutes', 'notes', 'ops.answer_replay_on (ships off). Needs the worker to call public.svc_enrich_ai_stash_v1 first (workstream B).')),
  ('job_interrupted_check', jsonb_build_object('title', 'Check the task runner', 'treats', jsonb_build_array('job_interrupted'), 'authority', 'admin',
    'verify_fn', 'security.ops_job_interrupted_verify_v1(bigint)', 'notes', 'The runner (job admin-jobs) carries an untouched task on by itself once it runs; a failing runner needs a person.')),
- ('empty_cycle_hold', jsonb_build_object('title', 'Do not propose a university after repeated empty cycles', 'treats', jsonb_build_array('plan_repeated_empty'), 'authority', 'auto',
-   'notes', 'Built into security.enrich_plan_v1 (security.plan_empty_cycles_v1); plans.empty_cycles_max (3, on).')),
- ('step_input_wait', jsonb_build_object('title', 'Wait for the step or lane producing the input', 'treats', jsonb_build_array('step_input_pending'), 'authority', 'auto',
-   'notes', 'Built into security.enrich_plan_tick_v1 (security.plan_step_dependency_v1); plans.lane_backlog_wait_on (on), plans.step_dependency_on (off).'))
+ ('empty_cycle_hold', jsonb_build_object('title', 'Do not propose a university after repeated empty cycles', 'treats', jsonb_build_array('plan_repeated_empty'), 'authority', 'release',
+   'notes', 'Shipped by this release, built into security.enrich_plan_v1 (security.plan_empty_cycles_v1); plans.empty_cycles_max (3, on). Nothing for the controller to run.')),
+ ('step_input_wait', jsonb_build_object('title', 'Wait for the step or lane producing the input', 'treats', jsonb_build_array('step_input_pending'), 'authority', 'release',
+   'notes', 'Shipped by this release, built into security.enrich_plan_tick_v1 (security.plan_step_dependency_v1); plans.lane_backlog_wait_on (on), plans.step_dependency_on (off). Nothing for the controller to run.'))
 ) v(c, s);
 
 -- 11. component register ---------------------------------------------------------------------------------------------------------------------
