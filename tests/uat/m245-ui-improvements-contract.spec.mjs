@@ -1,7 +1,7 @@
 // Guards: M2.4.5 reconciled UI improvements contract
 import fs from'node:fs/promises'
-import{execFileSync}from'node:child_process'
 import{test,expect}from'@playwright/test'
+import{buildOnce}from'./support/build-once.mjs'
 
 test.describe('M2.4.5 reconciled UI improvements contract',()=>{
  test('preserves accepted UI semantics and uses governed server reads',async()=>{
@@ -69,7 +69,7 @@ test.describe('M2.4.5 reconciled UI improvements contract',()=>{
   expect(compare).toContain('<ProviderLogo providerId={logoProviderId}')
   expect(compare).not.toMatch(/\b(update|delete|publish)\s*\(/i)
 
-  const output=execFileSync('npm',['run','build'],{cwd:process.cwd(),env:process.env,encoding:'utf8',timeout:60000,stdio:['ignore','pipe','pipe']})
+  const output=buildOnce()
   expect(output).toContain('built in')
  })
 })

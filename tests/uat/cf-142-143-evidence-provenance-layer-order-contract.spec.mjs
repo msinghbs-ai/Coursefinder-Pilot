@@ -1,8 +1,8 @@
 // Guards: CF-142/143 targeted source contract — Evidence acquisition provenance and stable L1→L4 navigation.
 // CF-142/143 targeted source contract — Evidence acquisition provenance and stable L1→L4 navigation.
 import fs from'node:fs/promises'
-import{execFileSync}from'node:child_process'
 import{test,expect}from'@playwright/test'
+import{buildOnce}from'./support/build-once.mjs'
 
 test.describe('CF-142/143 provenance and navigation order',()=>{
  test('Evidence provenance enhancer and fixed Layer sequence remain wired',async()=>{
@@ -27,7 +27,7 @@ test.describe('CF-142/143 provenance and navigation order',()=>{
   expect(migration).toContain('admin_evidence_acquisition_provenance')
   expect(migration).toContain("'stored_evidence_derived'")
   expect(migration).toContain("'live_acquisition'")
-  const output=execFileSync('npm',['run','build'],{cwd:process.cwd(),env:process.env,encoding:'utf8',timeout:60000,stdio:['ignore','pipe','pipe']})
+  const output=buildOnce()
   expect(output).toContain('built in')
  })
 })
