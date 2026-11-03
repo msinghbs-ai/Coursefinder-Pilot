@@ -1,17 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.454'
-export const PACKAGE_VERSION='0.1.381'
+export const UI_VERSION='2.15.455'
+export const PACKAGE_VERSION='0.1.382'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'4 Nov 2026',
-  title:'Admin menu step 2: long pages are paged and start closed',
+  title:'Admin menu step 3: Queues & yield and Services & limits',
   changes:[
-    'Automations areas start closed, with counts of jobs, paused and failed in the last 24 hours, and a search or Paused/Failed filter opens the matching areas.',
-    'Course sources shows 50 universities a page and Course-level reading 100 a page; Key dates is read only, 50 a page, and Edit opens a drawer with the same editors.',
-    'The Layer 2/3 notice strip shows on Operations only.'
+    'Platform health › Queues & yield brings the work queues and Pipeline yield together (yield first, rank 5 as before); the Integration queue keeps the defect register.',
+    'Models & services › Services & limits has one card per service: Firecrawl, Direct read, OpenRouter, Database jobs and edge calls, and Notices; any other page service sits in a closed Other page services section. The AI model switches moved to AI & OpenRouter.',
+    'Every old address of a moved tab opens its new home.'
   ],
   bugFixes:[]
 }
