@@ -33,36 +33,59 @@ const POS='l4i-pos'
 const readPos=()=>{try{return JSON.parse(sessionStorage.getItem(POS)||'null')}catch{return null}}
 const keyOf=it=>it?{after_o:it.o,after_at:it.created_at,after_kind:it.kind,after_ref:it.ref}:null
 const urlOf=v=>typeof v==='string'?v:Array.isArray(v)?urlOf(v[0]):v&&typeof v==='object'?(v.url||v.course_url||''):''
+// CF-247 Layer 4 Inbox performance (Platform Admin 4 Nov 2026 06:53 §1; admin 2026-11-04-layer4-inbox-paging-contract.md): page sizes come from
+// the server (settings layer4.inbox_page_size, layer4.inbox_universities_page_size, layer4.inbox_detail_parallel); the sizes below are only used
+// when the server does not send them. Expensive detail (an AER item's rows, a kind hook's detail) is read when its card comes on screen, at
+// most a set number at once.
+const pageOf=(sum,k,d)=>Number(sum?.paging?.[k])||d
+let lazyMax=3,lazyRun=0;const lazyQ=[]
+const lazyNext=()=>{while(lazyRun<lazyMax&&lazyQ.length){const[f,ok,no]=lazyQ.shift();lazyRun++;Promise.resolve().then(f).then(ok,no).finally(()=>{lazyRun--;lazyNext()})}}
+const lazy=f=>new Promise((ok,no)=>{lazyQ.push([f,ok,no]);lazyNext()})
+function useOnScreen(ref){const[on,setOn]=useState(false)
+  useEffect(()=>{if(on)return;const el=ref.current;if(!el||typeof IntersectionObserver==='undefined'){setOn(true);return}
+    const o=new IntersectionObserver(es=>{if(es.some(e=>e.isIntersecting)){setOn(true);o.disconnect()}},{rootMargin:'400px 0px'});o.observe(el);return()=>o.disconnect()},[on])
+  return on}
+// AER decision 06:58 §2: the university and the kind pill chosen are kept for this browser tab (paging, refresh, decisions, coming back)
+const SEL='l4i-sel'
+const readSel=()=>{try{return JSON.parse(sessionStorage.getItem(SEL)||'null')}catch{return null}}
 
 export default function Layer4Inbox({onError,routeParams}){
   const want=routeParams?.get?.('kind')||'',wantProvider=routeParams?.get?.('provider')||'',wantView=routeParams?.get?.('view')||'' // v2.15.343: the Dashboard opens the Inbox by kind (?view=kind)
   const[sum,setSum]=useState(null),[view,setView]=useState(want?'kind':wantView==='kind'?'kind':'university'),[kind,setKind]=useState(want),[q,setQ]=useState('')
   const[unis,setUnis]=useState(null),[offset,setOffset]=useState(0),[pick,setPick]=useState(null),[items,setItems]=useState(null),[note,setNote]=useState('')
   const[cur,setCur]=useState(null),[stack,setStack]=useState([]),restored=useRef(readPos()),hold=useRef(true)
-  const posKey=`${view}|${kind}|${pick?.provider_id||''}`
+  const sel0=useRef(!want&&!wantProvider&&!wantView?readSel():null)
+  const[uk,setUk]=useState(sel0.current?.uk||'') // a university's kind pill: that university's waiting items of that kind only
+  const posKey=`${view}|${kind}|${pick?.provider_id||''}|${uk}`
   const kinds=sum?.kinds||{},order=useMemo(()=>Object.entries(kinds).sort((a,b)=>a[1].order-b[1].order).map(([k])=>k),[sum])
+  const UPAGE=pageOf(sum,'universities',50),IPAGE=pageOf(sum,'items',200)
+  if(sum?.paging?.detail_parallel)lazyMax=Number(sum.paging.detail_parallel)||lazyMax
   const loadSum=()=>rpc('summary').then(setSum).catch(e=>onError?.(e.message))
-  const loadUnis=(o=offset)=>{setUnis(null);rpc('universities',{kind,q,limit:50,offset:o}).then(d=>{setUnis(d);if(view==='university'&&!pick&&d.items?.[0])setPick(wantProvider?(d.items.find(u=>u.provider_id===wantProvider)||{provider_id:wantProvider,name:'University'}):d.items[0])}).catch(e=>onError?.(e.message))}
-  const loadItems=(c=cur)=>{if(view==='decided'){setItems(null);rpc('decided',{limit:100}).then(setItems).catch(e=>onError?.(e.message));return}if(view==='kind'&&!kind){setItems(null);return}if(view==='university'&&!pick){setItems(null);return}setItems(null)
-    rpc('items',{...(view==='kind'?{kind}:{provider_id:pick.provider_id,...(kind?{kind}:{})}),limit:200,...(c||{})}).then(setItems).catch(e=>onError?.(e.message))}
+  const loadUnis=(o=offset)=>{if(!sum)return;setUnis(null);rpc('universities',{kind,q,limit:UPAGE,offset:o}).then(d=>{setUnis(d);if(view==='university'&&!pick&&d.items?.[0]){const s=sel0.current;sel0.current=null
+    setPick(wantProvider?(d.items.find(u=>u.provider_id===wantProvider)||{provider_id:wantProvider,name:'University'}):s?.pick?.provider_id?s.pick:d.items[0])}}).catch(e=>onError?.(e.message))}
+  const loadItems=(c=cur)=>{if(view==='decided'){setItems(null);rpc('decided',{limit:100}).then(setItems).catch(e=>onError?.(e.message));return}if(view==='kind'&&!kind){setItems(null);return}if(view==='university'&&!pick){setItems(null);return}if(!sum)return;setItems(null)
+    rpc('items',{...(view==='kind'?{kind}:{provider_id:pick.provider_id,...((uk||kind)?{kind:uk||kind}:{})}),limit:IPAGE,...(c||{})}).then(setItems).catch(e=>onError?.(e.message))}
+  const choose=(u,k)=>{setPick(u);setUk(k||'');setNote('')}
   useEffect(()=>{loadSum()},[])
   // UR-09 (1 Nov 2026): an address that names another kind or university on this screen opens it, without a reload
   const asked=useRef({want,wantProvider})
   useEffect(()=>{const was=asked.current;asked.current={want,wantProvider};if(was.want===want&&was.wantProvider===wantProvider)return
     // SS-016 acceptance (1 Nov 2026 21:20): Back to an address of the same kind left the university list on screen; the view follows the address too
     if(want&&(want!==kind||view!=='kind')){setView('kind');setKind(want);setNote('')}
-    else if(wantProvider&&(wantProvider!==pick?.provider_id||view!=='university')){setView('university');setPick({provider_id:wantProvider,name:'University'});setNote('')}},[want,wantProvider])
-  useEffect(()=>{setOffset(0);setPick(null);loadUnis(0)},[kind,q])
-  useEffect(()=>{let c=null,s=[];const r=restored.current
+    else if(wantProvider&&(wantProvider!==pick?.provider_id||view!=='university')){setView('university');setPick({provider_id:wantProvider,name:'University'});setUk('');setNote('')}},[want,wantProvider])
+  const first=useRef(true)
+  useEffect(()=>{if(!sum)return;setOffset(0);if(first.current)first.current=false;else{setPick(null);setUk('')};loadUnis(0)},[kind,q,!sum])
+  useEffect(()=>{if(view!=='university'||!pick)return;try{sessionStorage.setItem(SEL,JSON.stringify({pick:{provider_id:pick.provider_id,name:pick.name,country:pick.country},uk}))}catch{}},[pick?.provider_id,uk,view])
+  useEffect(()=>{if(!sum)return;let c=null,s=[];const r=restored.current
     if(r&&r.key===posKey){c=r.cur||null;s=r.stack||[]}else if(r&&!(view==='university'&&!pick))restored.current=null  // kept while the same list is shown
     hold.current=true
-    setCur(c);setStack(s);loadItems(c)},[pick?.provider_id,view,kind])
+    setCur(c);setStack(s);loadItems(c)},[pick?.provider_id,view,kind,uk,!sum])
   // the position is saved only from the render after it was set, never from the render that is still restoring it
   useEffect(()=>{if(hold.current){hold.current=false;return}if(view==='university'&&!pick)return;try{sessionStorage.setItem(POS,JSON.stringify({key:posKey,cur,stack}))}catch{}},[posKey,cur,stack])
   const page=c=>{setCur(c);loadItems(c)}
   const next=()=>{restored.current=null;const l=items?.items||[];if(!l.length)return;setStack([...stack,cur]);page(keyOf(l[l.length-1]))}
   const prev=()=>{restored.current=null;const s=[...stack];const c=s.length?s.pop():null;setStack(s);page(c)}
-  const decided=r=>{setNote(outcomeText(r));loadSum();loadItems(cur);if(view==='university')rpc('universities',{kind,q,limit:50,offset}).then(setUnis).catch(()=>{})}
+  const decided=r=>{setNote(outcomeText(r));loadSum();loadItems(cur);if(view==='university')rpc('universities',{kind,q,limit:UPAGE,offset}).then(setUnis).catch(()=>{})}
   if(!sum)return <Loading label="Reading what needs a person…"/>
   const bk=sum.by_kind||{}
   return <div className="l4i" data-l4-inbox>
@@ -86,21 +109,26 @@ export default function Layer4Inbox({onError,routeParams}){
     <div className={view==='university'?'l4i-split':''}>
       {view==='university'&&<aside className="l4i-unis" aria-label="Universities">
         {!unis?<Loading compact/>:(unis.items||[]).length===0?<Empty text="Nothing waits for a person."/>:<>
-          <ul>{unis.items.map(u=><li key={u.provider_id||'platform'}><button type="button" className={pick?.provider_id===u.provider_id?'on':''} onClick={()=>{setPick(u);setNote('')}} data-l4-uni={u.name}>
-            <strong>{u.name}</strong><small>{u.country||''}{u.courses!=null?` · ${fmtNumber(u.courses)} courses`:''}</small>
-            <span className="l4i-uni-kinds">{Object.entries(u.by_kind||{}).sort((a,b)=>(kinds[a[0]]?.order||99)-(kinds[b[0]]?.order||99)).map(([k,n])=><em key={k}>{kinds[k]?.label||k}{n>1?` ${n}`:''}</em>)}</span>
-            {u.late&&<span className="l4i-late">{days(u.oldest)} d</span>}</button></li>)}</ul>
-          {Number(unis.total)>50&&<div className="l4i-pager"><Button compact disabled={offset===0} onClick={()=>{const o=Math.max(0,offset-50);setOffset(o);loadUnis(o)}}>Previous</Button><small>{offset+1}–{Math.min(offset+50,unis.total)} of {fmtNumber(unis.total)}</small><Button compact disabled={offset+50>=unis.total} onClick={()=>{const o=offset+50;setOffset(o);loadUnis(o)}}>Next</Button></div>}
+          {/* AER decision 06:58 §2: the name shows every kind; a kind pill shows only that university's waiting items of that kind */}
+          <ul>{unis.items.map(u=>{const on=pick?.provider_id===u.provider_id;return <li key={u.provider_id||'platform'} className={on?'on':''} data-l4-uni={u.name}>
+            <button type="button" className={`l4i-uni-name${on&&!uk?' on':''}`} onClick={()=>choose(u,'')} data-l4-uni-name={u.name}>
+              <strong>{u.name}</strong><small>{u.country||''}{u.courses!=null?` · ${fmtNumber(u.courses)} courses`:''}</small>
+              {u.late&&<span className="l4i-late">{days(u.oldest)} d</span>}</button>
+            <span className="l4i-uni-kinds">{Object.entries(u.by_kind||{}).sort((a,b)=>(kinds[a[0]]?.order||99)-(kinds[b[0]]?.order||99)).map(([k,n])=><button type="button" key={k} className={on&&uk===k?'on':''} onClick={()=>choose(u,k)} data-l4-pill={k} aria-pressed={on&&uk===k} aria-label={`${kinds[k]?.label||k}: ${n} waiting at ${u.name}`}>{kinds[k]?.label||k} {fmtNumber(n)}</button>)}</span></li>})}</ul>
+          {Number(unis.total)>UPAGE&&<div className="l4i-pager"><Button compact disabled={offset===0} onClick={()=>{const o=Math.max(0,offset-UPAGE);setOffset(o);loadUnis(o)}}>Previous</Button><small>{offset+1}–{Math.min(offset+UPAGE,unis.total)} of {fmtNumber(unis.total)}</small><Button compact disabled={offset+UPAGE>=unis.total} onClick={()=>{const o=offset+UPAGE;setOffset(o);loadUnis(o)}}>Next</Button></div>}
         </>}
       </aside>}
       <section className="l4i-items" aria-label="Items">
-        {view==='university'&&pick&&<header className="l4i-items-head"><h3>{pick.name}</h3><small>{pick.country||''}{pick.courses!=null?` · ${fmtNumber(pick.courses)} active courses`:''}</small></header>}
+        {view==='university'&&pick&&<header className="l4i-items-head"><h3>{pick.name}</h3>
+          {/* AER decision 06:58 §2: the exact number of waiting review items shown (never the university's course count or an AER read's row count) */}
+          <small data-l4-pending>{pick.country?`${pick.country} · `:''}{items&&view==='university'?`${fmtNumber(Number(items.total)||0)} waiting ${uk?(kinds[uk]?.label||uk):'review items'}${uk==='aer_review'?' (each read lists its own requirement rows)':''}`:'…'}</small>
+          {uk&&<Button compact onClick={()=>choose(pick,'')} data-l4-all-kinds>All kinds</Button>}</header>}
         {!items?<Loading compact/>:(items.items||[]).length===0?<Empty text="Nothing left here."/>:
           items.items.map(it=><Item key={`${it.kind}:${it.ref}`} it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider={view==='kind'} rank={sum.rank} onDone={decided} onError={onError}/>)}
-        {items&&view!=='decided'&&(cur||Number(items.total)>(items.items||[]).length)&&(()=>{const b=Number(items.before||0),n=(items.items||[]).length,t=Number(items.total||0)
+        {items&&view!=='decided'&&(cur||items.more===true||Number(items.total)>(items.items||[]).length)&&(()=>{const b=Number(items.before||0),n=(items.items||[]).length,t=Number(items.total||0)
           return <div className="l4i-pager" data-l4-pager><Button compact disabled={!cur} onClick={prev} data-l4-prev>Previous</Button>
             <small data-l4-range>{n?`${fmtNumber(b+1)}–${fmtNumber(b+n)}`:'0'} of {fmtNumber(t)}, oldest first</small>
-            <Button compact disabled={b+n>=t} onClick={next} data-l4-next>Next</Button></div>})()}
+            <Button compact disabled={items.more===undefined?b+n>=t:!items.more} onClick={next} data-l4-next>Next</Button></div>})()}
       </section>
     </div>}
   </div>
@@ -114,8 +142,14 @@ function Item({it,k,showProvider,rank,onDone,onError}){
   const fee=isFeeItem(it)
   // SS-016 (1 Nov 2026): a fee check (provider_current_tuition_validation) shows the proposed fee and is admitted or not; an address is refused
   const feeCheck=isFeeCheck(it)
-  const aerItem=it.kind==='aer_review',[aer,setAer]=useState(null)
-  useEffect(()=>{if(aerItem)aerRead(it.ref).then(setAer).catch(e=>setAer({error:e.message}))},[it.ref])
+  const aerItem=it.kind==='aer_review',[aer,setAer]=useState(null),box=useRef(null),seen=useOnScreen(box)
+  useEffect(()=>{if(aerItem&&seen)lazy(()=>aerRead(it.ref)).then(setAer).catch(e=>setAer({error:e.message}))},[it.ref,seen])
+  // a kind hook's detail (a registered kind, or recovery on a built-in kind): read when the card is on screen; its actions say which of the
+  // hook's choices this person may take on this item
+  const hooked=k.detail===true&&!!(k.hook||k.extension),[hd,setHd]=useState(null),[follow,setFollow]=useState('')
+  useEffect(()=>{if(hooked&&seen)lazy(()=>rpc('detail',{items:[{kind:it.kind,ref:it.ref}]})).then(d=>setHd(d.items?.[0]?.hook_detail||{})).catch(e=>setHd({error:e.message}))},[it.ref,seen])
+  const allowed=hd&&!hd.error&&Array.isArray(hd.actions)?Object.fromEntries(hd.actions.map(a=>[a.key,a.allowed===true])):null
+  const hookOk=c=>!c.hook||!hooked||(!!hd&&!hd.error&&(!allowed||allowed[c.key]===true))
   const aerWaiting=(aer?.rows||[]).filter(r=>r.status==='proposed')
   // E13 (Platform Admin 2 Nov 2026 05:18): a course entry read the completeness gate holds cannot be approved; when the only problem is rows
   // about another programme, Approve except is allowed once every one of them is ticked (the server checks the same)
@@ -128,15 +162,16 @@ function Item({it,k,showProvider,rank,onDone,onError}){
   const flagIds=[...(gate?.not_requirement||[]),...(gate?.audience||[]),...(mgate?.flagged||[])].map(o=>o.id).filter(Boolean)
   const exceptOpen=exceptOnly||(mheld&&mgate.except_fixable===true)
   const gated=c=>(held||mheld)&&(c.key==='approve'||(c.key==='approve_except'&&!exceptOpen))
-  const choices=(k.choices||[]).filter(c=>!(fee&&c.key==='use')).filter(c=>!(feeCheck&&c.key==='enter')).filter(c=>!((fee||feeCheck)&&c.key==='refuse')).map(c=>feeCheck&&FEE_CHECK[c.key]?{...c,...FEE_CHECK[c.key]}:c)
+  const choices=(k.choices||[]).filter(c=>!(fee&&c.key==='use')).filter(c=>!(feeCheck&&c.key==='enter')).filter(c=>!((fee||feeCheck)&&c.key==='refuse')).map(c=>feeCheck&&FEE_CHECK[c.key]?{...c,...FEE_CHECK[c.key]}:c).filter(hookOk)
   const choose=c=>{setErr('');if(c.link){window.location.hash=linkFor(c.link,it).replace(/^#/,'');return}setOpen(c);setReason(c.reason||'');setValue(c.input==='url'&&it.kind==='course_link'&&!fee?urlOf(d.proposed):c.input==='url'&&it.kind==='conjoint_first_run'?(d.proposed?.parent_url||''):(c.input==='courses'||c.input==='rows')?'[]':'')}
   // hotfix 26 Oct 2026: a university's first run (no page published / conjoint rule) shows its sample; "has a page" ticks courses from it
   const firstRun=it.kind==='no_page_first_run'||it.kind==='conjoint_first_run'
   const sample=Array.isArray(d.proposed?.sample)?d.proposed.sample:[]
   const ticked=(()=>{try{return JSON.parse(value||'[]')}catch{return[]}})()
   const tick=id=>setValue(JSON.stringify(ticked.includes(id)?ticked.filter(x=>x!==id):[...ticked,id]))
-  const go=async()=>{setBusy(true);setErr('');try{const r=await rpc('decide',{kind:it.kind,ref:it.ref,choice:open.key,reason,value});setOpen(null);onDone?.(r)}catch(e){setErr(e.message)}finally{setBusy(false)}}
-  return <article className={`l4i-item${it.late?' late':''}`} data-l4-item={it.kind} data-l4-ref={it.ref}>
+  // a kind hook may answer ok false with what it still needs: shown as the next step, the choice stays open
+  const go=async()=>{setBusy(true);setErr('');try{const r=await rpc('decide',{kind:it.kind,ref:it.ref,choice:open.key,reason,value});if(r&&r.ok===false){setFollow(r.request||'More is needed before this can go ahead.');return}setFollow('');setOpen(null);onDone?.(r)}catch(e){setErr(e.message)}finally{setBusy(false)}}
+  return <article ref={box} className={`l4i-item${it.late?' late':''}`} data-l4-item={it.kind} data-l4-ref={it.ref}>
     <header><StatusChip value={it.kind} tone={it.late?'warning':'info'} label={d.field_code==='course_description_first_read'?'Course description':k.label}/>{showProvider&&it.provider&&<strong className="l4i-prov">{it.provider}</strong>}{it.subject&&<span className="l4i-subj">{it.subject}</span>}{d.course_code&&<span className="l4i-code" title={d.code_label==="Course code"?"Course code":"CRICOS code"} data-l4-code>{d.code_label||"CRICOS"} {d.course_code}</span>}<small>{fmtDate(it.created_at)} · {days(it.created_at)} d · <span data-l4-refshow title={it.ref}>Ref {String(it.ref).slice(0,8)}</span></small></header>
     <p className="l4i-why">{it.why}</p>
     {(d.evidence_id||d.course_id)&&!aerItem&&<p className="l4i-evid" data-l4-evidence><small>
@@ -152,6 +187,9 @@ function Item({it,k,showProvider,rank,onDone,onError}){
       {sample.length>0&&<ul className="l4i-sample" data-l4-sample>{sample.map(x=><li key={x.course_id}>{open?.input==='courses'?<label><input type="checkbox" checked={ticked.includes(x.course_id)} onChange={()=>tick(x.course_id)} data-l4-sample-tick={x.course_code||x.code||x.course_id}/> {x.title}{x.code?` (${x.code})`:''} has its own page</label>:<>{x.title}{x.code?` (${x.code})`:''}</>}</li>)}</ul>}
     </div>}
     {aerItem&&<AerRows aer={aer} rank={rank} ticking={open?.input==='rows'} ticked={ticked} tick={tick}/>}
+    {hooked&&(!hd?<Loading compact/>:hd.error?<p className="l4i-err" role="alert">{hd.error}</p>:Array.isArray(hd.sections)&&hd.sections.length>0&&<div className="l4i-hook" data-l4-hook-detail>
+      {hd.sections.map((x,n)=><details key={x.key||n} data-l4-section={x.key}><summary>{x.title||String(x.key||'').replace(/_/g,' ')}</summary>
+        {x.body&&typeof x.body==='object'?<dl className="l4i-dl">{Object.entries(x.body).map(([a,b])=><React.Fragment key={a}><dt>{a.replace(/_/g,' ')}</dt><dd>{b!==null&&typeof b==='object'?JSON.stringify(b):String(b??'—')}</dd></React.Fragment>)}</dl>:<p className="l4i-why"><small>{String(x.body??'')}</small></p>}</details>)}</div>)}
     {it.kind==='provider_description'&&<div className="l4i-dl" data-l4-description>{/* CF-247 P1 (Platform Admin 2 Nov 2026 10:28): the proposed description, each sentence with the page's own words; approved as read or rejected */}
       {d.before?.description&&<p><small>Description held: {d.before.description}</small></p>}
       <p data-l4-description-text><strong>{d.proposed?.description}</strong></p>
@@ -167,13 +205,15 @@ function Item({it,k,showProvider,rank,onDone,onError}){
       <p className="l4i-next"><strong>What happens next:</strong> {open.returns}</p>
       {open.input==='url'&&<input value={value} onChange={e=>setValue(e.target.value)} placeholder="https://…" aria-label="Web address"/>}
       {open.input==='provider'&&<input value={value} onChange={e=>setValue(e.target.value)} placeholder="Successor: its exact name, or its CRICOS or NZQA code" aria-label="Successor provider"/>}
+      {open.input==='text'&&<textarea value={value} onChange={e=>setValue(e.target.value)} rows={3} placeholder="What is missing or correct" aria-label="Details" data-l4-text/>}
       {open.input==='scholarship'&&<input value={value} onChange={e=>setValue(e.target.value)} placeholder="The published scholarship's id (same university)" aria-label="Published scholarship" data-l4-duplicate-of/>}
       {open.input==='rows'&&exceptOpen&&flagIds.length>0&&<p className="l4i-next" data-l4-aer-flag-needed>{flagIds.every(id=>ticked.includes(id))?'Every row that cannot be admitted as read is ticked.':`Tick the ${flagIds.length===1?'row':`${flagIds.length} rows`} marked "cannot be admitted as read" to leave ${flagIds.length===1?'it':'them'} out.`}</p>}
       {open.input==='rows'&&exceptOnly&&otherIds.length>0&&<p className="l4i-next" data-l4-aer-other-needed>{otherIds.every(id=>ticked.includes(id))?'Every row about another programme is ticked.':`Tick the ${otherIds.length===1?'row':`${otherIds.length} rows`} about another programme to leave ${otherIds.length===1?'it':'them'} out.`}</p>}
       {open.input==='rows'&&<p className="l4i-next" data-l4-aer-except-count>{ticked.length===0?'Tick the rows to leave out.':ticked.length>=aerWaiting.length?'Every row is ticked: use Reject the read instead.':`Leaving out ${ticked.length} of ${aerWaiting.length} rows; the other ${aerWaiting.length-ticked.length} become active once the checks pass.`}</p>}
       <input value={reason} onChange={e=>setReason(e.target.value)} placeholder="Why (kept with the decision)" aria-label="Reason"/>
       <Button compact variant="primary" disabled={busy||reason.trim().length<(aerItem?5:4)||(open.input==='rows'&&(ticked.length===0||ticked.length>=aerWaiting.length||(exceptOnly&&!otherIds.every(id=>ticked.includes(id)))||(exceptOpen&&!flagIds.every(id=>ticked.includes(id)))))||(open.input==='url'&&!urlOk(value,fee))||(open.input==='provider'&&value.trim().length<3)||(open.input==='courses'&&ticked.length===0)} onClick={go} data-l4-confirm>{busy?'Saving…':open.label}</Button>
-      <Button compact onClick={()=>setOpen(null)}>Cancel</Button>
+      <Button compact onClick={()=>{setOpen(null);setFollow('')}}>Cancel</Button>
+      {follow&&<p className="l4i-next" role="status" data-l4-request>{follow}</p>}
       {err&&<p className="l4i-err" role="alert">{err}</p>}
     </div>}
   </article>
@@ -195,6 +235,8 @@ function AerRows({aer,rank,ticking,ticked,tick}){
       <dt>Stored copy</dt><dd>{aer.evidence_id?<a href={hrefFor('evidence','',{evidence_id:aer.evidence_id})} data-l4-aer-evidence>Open the stored copy</a>:'—'}{(L.content_hash||(L.row_content_hashes||[])[0])&&<small> · {String(L.content_hash||L.row_content_hashes[0]).slice(0,12)}</small>}</dd>
       {!course&&<><dt>Read</dt><dd data-l4-aer-read>{L.run_id?String(L.run_id).slice(0,8):'—'}{c.status?` · completeness ${c.status}${c.matched!=null?` (${c.matched} matched)`:''}`:''}{L.rows_dropped!=null?` · ${L.rows_dropped} not kept`:''}</dd></>}
     </dl>
+    {gate&&gate.complete===false&&<p className="l4i-why" data-l4-aer-e13-counts><small>{/* AER decision 06:58 §3: waiting rows and dropped requirements, counted apart */}
+      {fmtNumber(rows.filter(r=>r.status==='proposed').length)} waiting row{rows.filter(r=>r.status==='proposed').length===1?'':'s'} · {fmtNumber((gate.drops_uncovered||[]).length+Number(gate.rows_cut||0))} dropped requirement{(gate.drops_uncovered||[]).length+Number(gate.rows_cut||0)===1?'':'s'}{aer.evidence_id?<> · <a href={hrefFor('evidence','',{evidence_id:aer.evidence_id})}>stored copy</a></>:null}</small></p>}
     {gate&&(gate.complete===false?<div className="l4i-why" role="note" data-l4-aer-gate="held"><strong>Held: this read is incomplete, so it cannot be approved ({rule})</strong>
       <ul>{(gate.reasons||[]).map((w,n)=><li key={n}>{w.charAt(0).toUpperCase()+w.slice(1)}.</li>)}</ul></div>
       :<p className="l4i-why" data-l4-aer-gate="complete"><small>{course?'Read whole: no requirement was cut and no row is about another programme.':gate.no_table?'Read whole: no row was read and none was dropped. Open the stored copy to confirm the page publishes no table.':'Read whole: every published row is accounted for.'}</small></p>)}
