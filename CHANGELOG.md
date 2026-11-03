@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.377 — 4 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.450** (SS-021 adoption: audit F2, F3, F4, F9). Migration `20261104320000_cf247_work_continuity_adopt`: md5-guarded edits of security.integration_issue_upsert_v1 (c5ce0cb9 → b0a1a649), work_review_room_v1 (a7542c70 → 55413845), aer_schedule_tick_v1 (bc28099d → 5b6a4f8a), fee_reader_tick_v1 (0c93b20d → 8116602b), course_link_search_tick_v1 (ffc9fb64 → 71bf3bc4); job work-continuity-lanes (catalogued); wc.aer_fair_on, wc.page_find_release_on, wc.fee_item_claims_on ship 0; wc.page_find_park_on, wc.page_find_never_end_on, wc.link_search_continuity_on ship 1. The AER 600 limit is unchanged. Nothing dropped; consumer API untouched. Spec s262.
+
 ## 0.1.376 — 4 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.449** (IQ-00111 D12). Migration `20261104300000_cf247_fee_admitted_recheck`: security.fee_admitted_recheck_v1, trigger fee_admitted_recheck_settle on pipeline.enrichment_flags (fees.recheck_keep_withdraws_on, on); remedy fee_admitted_recheck. No live function edited. Paste for the 5 older AI fee rows (D12). Nothing dropped; consumer API untouched. Spec s265.
