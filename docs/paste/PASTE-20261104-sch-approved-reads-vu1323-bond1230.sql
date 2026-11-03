@@ -2,23 +2,23 @@
 -- 19:23 "keep on using firecrawl credit as you need it, keep storing the page as above layers does as evidence"): exactly two held items.
 --   VU   ref 1323  candidate 7700  https://www.vu.edu.au/bachelor-of-it-professional-placement-scholarship-application   normal read (no stored copy is held)
 --   Bond ref 1230  candidate 6712  https://bond.edu.au/scholarship/abedian-foundation-master-of-architecture-scholarship FRESH read (the 29 Sep 2026 copy is not reused)
--- Each request queues ONE row on the normal scholarship AI path (security.scholarship_read_request_v1, migration 20261104210000). The worker reads
+-- Each request queues ONE row on the normal scholarship AI path (security.scholarship_read_request_v1, migration 20261104250000). The worker reads
 -- the page through svc_fc_spend (1 Firecrawl credit each) and the scholarship model chain (about US$0.001 each), and stores it as evidence
 -- (pipeline.evidence_artifacts, scholarship_ai_page). Nothing is admitted or published: the answer is attached to the held item in Layer 4, where
 -- the decision stays. A page that cannot be read ends the request at once (one credit, no retry).
 -- The allowance scholarship.single_read_daily_max is set to 2 for these two requests and returned to 0 in the same transaction.
--- PASTE FILE. Not applied by any migration. Run after migration 20261104210000 is deployed. Writes 2 requests and 2 queue rows. Nothing is deleted.
+-- PASTE FILE. Not applied by any migration. Run after migration 20261104250000 is deployed. Writes 2 requests and 2 queue rows. Nothing is deleted.
 -- Rollback (before the worker takes them, within about a minute): update pipeline.scholarship_ai_queue set state = 'failed', skip_reason = 'withdrawn'
 --   where read_request_id in (<the two request ids returned>) and state = 'queued'; and the requests to state 'refused'.
 begin;
 do $$
 declare v_n int; a jsonb; b jsonb;
 begin
-  if to_regprocedure('security.scholarship_read_request_v1(bigint,boolean,text,text)') is null then raise exception 'migration 20261104210000 is not deployed; nothing changed'; end if;
+  if to_regprocedure('security.scholarship_read_request_v1(bigint,boolean,text,text)') is null then raise exception 'migration 20261104250000 is not deployed; nothing changed'; end if;
   if md5(pg_get_functiondef('public.svc_scholarship_ai_next(integer)'::regprocedure)) <> '709ad0f93b16e99f8962e85671f0b291'
      or md5(pg_get_functiondef('security.scholarship_ai_has_copy_v1(bigint)'::regprocedure)) <> 'ecc54cd39a4fb9fc9c4c2217f6548d30'
      or md5(pg_get_functiondef('public.svc_scholarship_ai_record(bigint,jsonb,jsonb,text,numeric,integer,integer,numeric,text,text,text,text,jsonb,boolean)'::regprocedure)) <> 'b2fafccb2532afc3e0d1337588b5c43d' then
-    raise exception 'guard: the read path is not the 20261104210000 release (fresh reads and the Layer 4 hand-off); nothing changed';
+    raise exception 'guard: the read path is not the 20261104250000 release (fresh reads and the Layer 4 hand-off); nothing changed';
   end if;
   select count(*) into v_n from pipeline.scholarship_ai_reviews r
    where (r.id, r.candidate_id, r.provider_id) in ((1323, 7700, 'bac82321-ded7-4e10-a71d-b18f3ae4d1c7'::uuid), (1230, 6712, '739948f6-6338-4ee9-8d0c-a8c8e953c29d'::uuid)) and r.status = 'pending';

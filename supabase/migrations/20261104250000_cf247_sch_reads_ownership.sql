@@ -468,7 +468,7 @@ select security.ops_root_cause_register_v1('sch_enqueue_directory_site', jsonb_b
   'detect', jsonb_build_object('fn', 'security.scholarship_sources_report_v1()', 'measure', 'directory_candidates_queueable > 0', 'issue', 'IQ-00132')));
 
 select security.ops_remedy_register_v1('sch_enqueue_directory_gate', jsonb_build_object('authority', 'release', 'treats', jsonb_build_array('sch_enqueue_directory_site'),
-  'title', 'The enqueue marks directory-site candidates refused (not needed) and never queues them (release 20261104210000)',
+  'title', 'The enqueue marks directory-site candidates refused (not needed) and never queues them (release 20261104250000)',
   'verify_fn', 'security.scholarship_sources_verify_v1(bigint)',
   'notes', 'Setting scholarship.enqueue_directory_gate_on (1). A candidate with a pending held item is left to Layer 4.'));
 select security.ops_remedy_register_v1('sch_owner_proposals', jsonb_build_object('authority', 'auto', 'treats', jsonb_build_array('sch_held_on_directory_page'),

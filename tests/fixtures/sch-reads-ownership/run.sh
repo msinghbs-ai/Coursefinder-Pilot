@@ -3,12 +3,12 @@
 # Supabase project): PGHOST/PGUSER point at it. Builds a throwaway database: stubs.sql (live shapes), workstream A's contract as on main
 # (stub-ops-contract.sql), the live definitions in live/ (svc_scholarship_ai_next and scholarship_ai_has_copy_v1 rebuilt by the lanes fixture
 # from 20261103160000; svc_scholarship_ai_record from 20261014013200; scholarship_ai_review_open_v1 and scholarship_ai_enqueue_v1 read 3 Nov 2026), each checked against its
-# live md5; seed.sql; fixtures-before.sql (the defects on the live definitions); the 20261104210000 migration, then again (already applied,
+# live md5; seed.sql; fixtures-before.sql (the defects on the live definitions); the 20261104250000 migration, then again (already applied,
 # nothing changed); fixtures.sql. Drops the database at the end (SCHRO_KEEP=1 keeps it).
 set -euo pipefail
 cd "$(dirname "$0")"
 DB=${SCHRO_DB:-sch_reads_ownership_fixtures}
-MIG=../../../supabase/migrations/20261104210000_cf247_sch_reads_ownership.sql
+MIG=../../../supabase/migrations/20261104250000_cf247_sch_reads_ownership.sql
 P="psql -v ON_ERROR_STOP=1 -q -X"
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }
 md5of() { $P -d $DB -Atc "select md5(pg_get_functiondef('$1'::regprocedure))"; }

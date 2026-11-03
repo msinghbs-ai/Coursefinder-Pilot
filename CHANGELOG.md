@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.373 — 3 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.446** (SS-019 scholarships; IQ-00132). Migration `20261104250000_cf247_sch_reads_ownership`: md5-guarded edits of `public.svc_scholarship_ai_next` (18e76dbc → 709ad0f9), `security.scholarship_ai_has_copy_v1` (08db702a → ecc54cd3), `public.svc_scholarship_ai_record` (aa337a9f → b2fafccb), `security.scholarship_ai_enqueue_v1` (04a9aa8c → 549948c5); pipeline.scholarship_read_requests, scholarship_owner_proposals; security.scholarship_read_request_v1, scholarship_owner_check_v1, scholarship_sources_report_v1; scholarship.single_read_daily_max ships 0; scholarship.enqueue_directory_gate_on ships 1. Pastes for the approved VU/Bond reads, the D4 refusals and the D5 Macquarie re-reads. Nothing dropped; consumer API untouched. Spec s259.
+
 ## 0.1.372 — 3 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.445** (SS-021, IQ-00074). Migration `20261104240000_cf247_relink_isolation`: md5-guarded edits of `security.course_relink_provider_v1` (77684402 → 07bd965b) and `security.course_relink_fair_run_v1` (cd5a842d → 772a488e); settings relink.urls_per_university and wc.relink_university_seconds; same candidates and binds as before. Nothing dropped; consumer API untouched. Spec s266.

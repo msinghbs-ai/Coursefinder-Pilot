@@ -1,16 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.445'
-export const PACKAGE_VERSION='0.1.372'
+export const UI_VERSION='2.15.446'
+export const PACKAGE_VERSION='0.1.373'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Nov 2026',
-  title:'Course relink keeps the work of every university when one is slow',
+  title:'Single approved scholarship reads, ownership proposals and no more directory-site queuing',
   changes:[
-    'Course relink prepares a university\'s stored addresses and titles once instead of once per course, so a large university takes seconds rather than minutes.',
-    'Each university has its own deadline within the run; a slow university is recorded and retried later, then parked after its attempts, and the other universities\' work in the same run is kept.'
+    'An approved scholarship read can be requested for one held item, logged with its approver and reason; a fresh read never reuses a stored copy, and its answer goes to the held item in Layer 4 instead of being admitted.',
+    'The platform proposes the owner of a held scholarship found on a directory page from the institutions the page names, and records duplicate and staging-address cases for a person to decide.',
+    'Scholarship candidates on directory sites are no longer queued for AI reading; each is marked refused once.'
   ],
   bugFixes:[]
 }
