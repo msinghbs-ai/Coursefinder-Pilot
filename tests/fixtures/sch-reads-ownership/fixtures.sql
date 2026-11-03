@@ -170,7 +170,35 @@ end $$;
 -- R12 registers: root causes and remedies through workstream A's contract; the auto remedy only records
 do $$
 begin
-  perform pg_temp.ok((select count(*) = 5 from pipeline.ops_root_causes where code in ('sch_held_on_directory_page', 'sch_held_read_reuses_old_copy', 'sch_held_duplicates_active', 'sch_source_staging_address', 'course_link_title_only_sibling')), 'R12 five root causes');
+  perform pg_temp.ok((select count(*) = 5 from pipeline.ops_root_causes where code in ('sch_held_on_directory_page', 'sch_held_read_reuses_old_copy', 'sch_held_duplicates_active', 'sch_source_staging_address', 'course_link_title_only_sibling')), 'R12 five root causes (with IQ-00132, six)');
   perform pg_temp.ok((select authority = 'auto' and action_fn = 'security.scholarship_owner_proposals_remedy_v1(bigint)'::regprocedure from pipeline.ops_remedies where code = 'sch_owner_proposals'), 'R12 sch_owner_proposals is the only auto remedy');
   perform pg_temp.ok((select count(*) = 5 from pipeline.ops_remedies where code in ('sch_owner_decision', 'sch_single_approved_read', 'sch_duplicate_close', 'sch_staging_reread', 'course_link_cricos_identity') and authority in ('admin', 'release')), 'R12 five admin or release remedies');
+end $$;
+
+-- E1-E4 (IQ-00132): the enqueue never queues a directory-site candidate or re-read; marks it refused once (not needed); held items are left to Layer 4
+do $$
+declare n int;
+begin
+  delete from pipeline.scholarship_ai_queue;
+  n := security.scholarship_ai_enqueue_v1('admit', array['159328df-fb4b-4bb8-a6b8-5f24546437a3']::uuid[], null, true);
+  perform pg_temp.ok(not exists (select 1 from pipeline.scholarship_ai_queue where security.third_party_host_v1(url)), 'E1 no directory-site row is queued (candidates or re-reads)');
+  perform pg_temp.ok(exists (select 1 from pipeline.scholarship_ai_queue where candidate_id = 70002) and exists (select 1 from pipeline.scholarship_ai_queue where scholarship_id = '00000000-0000-0000-0000-00000000aa04'),
+                     'E1 the provider''s own pages are still queued');
+  perform pg_temp.ok((select admit_status = 'skipped' and admit_reasons = array['directory_site'] from pipeline.scholarship_page_candidates where id = 70001), 'E2 the directory candidate is marked refused once');
+  perform pg_temp.ok((select count(*) = 1 from pipeline.scholarship_admission_log where candidate_id = 70001 and action = 'skipped' and detail->>'outcome' = 'not_needed'), 'E2 logged as not needed');
+  perform pg_temp.ok((select admit_status is null from pipeline.scholarship_page_candidates where id = 15138), 'E3 a candidate with a pending held item (1174) is left to Layer 4, not marked');
+  n := security.scholarship_ai_enqueue_v1('admit', array['159328df-fb4b-4bb8-a6b8-5f24546437a3', '1bdef519-6927-4765-8a06-632d396fa2ae']::uuid[], null, true);
+  perform pg_temp.ok((select admit_status = 'skipped' from pipeline.scholarship_page_candidates where id = 15620), 'E3 a candidate whose held item was decided (1177) is marked when met');
+  perform pg_temp.ok((select count(*) = 1 from pipeline.scholarship_admission_log where candidate_id = 70001) and not exists (select 1 from pipeline.scholarship_ai_queue where security.third_party_host_v1(url)),
+                     'E3 a second enqueue marks nothing again and queues nothing on directory sites');
+  perform pg_temp.ok((security.scholarship_sources_report_v1()->>'directory_candidates_queueable')::int = 0, 'E3 report: no directory candidate left queueable');
+  -- switched off: queued as before
+  update pipeline.platform_toolset_settings set value = to_jsonb(0) where key = 'scholarship.enqueue_directory_gate_on';
+  update pipeline.scholarship_page_candidates set admit_status = null, admit_reasons = null where id = 70001;
+  delete from pipeline.scholarship_ai_queue;
+  n := security.scholarship_ai_enqueue_v1('admit', array['159328df-fb4b-4bb8-a6b8-5f24546437a3']::uuid[], null, true);
+  perform pg_temp.ok(exists (select 1 from pipeline.scholarship_ai_queue where candidate_id = 70001), 'E4 with the gate off the enqueue behaves as before');
+  update pipeline.platform_toolset_settings set value = to_jsonb(1) where key = 'scholarship.enqueue_directory_gate_on';
+  perform pg_temp.ok((select authority = 'release' from pipeline.ops_remedies where code = 'sch_enqueue_directory_gate')
+                     and exists (select 1 from pipeline.ops_root_causes where code = 'sch_enqueue_directory_site'), 'E4 root cause and remedy registered');
 end $$;

@@ -15,3 +15,16 @@ begin
   if not exists (select 1 from pipeline.fx_calls where fn = 'apply') then raise exception 'B2 not reproduced: %', r; end if;
   raise notice 'B2 reproduced: the answer went to scholarship_ai_apply_v1 (admission), not to the held item';
 end $$;
+do $$
+declare n1 int; n2 int;
+begin
+  -- B3 (IQ-00132): the enqueue queues directory-site candidates; the AI picker fails them ('directory site'); the next enqueue queues them again
+  delete from pipeline.scholarship_ai_queue;
+  n1 := security.scholarship_ai_enqueue_v1('admit', array['159328df-fb4b-4bb8-a6b8-5f24546437a3']::uuid[], null, true);
+  perform public.svc_scholarship_ai_next(20);
+  select count(*) into n2 from pipeline.scholarship_ai_queue where skip_reason = 'directory site';
+  if n2 < 3 then raise exception 'B3 not reproduced: % failed directory rows', n2; end if;
+  n1 := security.scholarship_ai_enqueue_v1('admit', array['159328df-fb4b-4bb8-a6b8-5f24546437a3']::uuid[], null, true);
+  if (select count(*) from pipeline.scholarship_ai_queue where state = 'queued' and security.third_party_host_v1(url)) < 3 then raise exception 'B3 not reproduced: not queued again'; end if;
+  raise notice 'B3 reproduced: % directory-site rows failed by the worker, then all queued again by the next enqueue', n2;
+end $$;

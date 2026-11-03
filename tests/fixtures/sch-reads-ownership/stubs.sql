@@ -35,7 +35,8 @@ create or replace function security.coverage_sweep_source(p uuid) returns uuid l
 create table pipeline.evidence_artifacts (id uuid primary key default gen_random_uuid(), source_id uuid, evidence_type text, source_url text, storage_path text, content_hash text, mime_type text,
   metadata jsonb, capture_version int, evidence_group_key text, captured_at timestamptz default now());
 create table scholarship.scholarships (id uuid primary key default gen_random_uuid(), name text, provider_id uuid, evidence_id uuid, lifecycle_status text default 'active', publication_status text default 'published');
-create table pipeline.scholarship_pages (scholarship_id uuid primary key, url text, evidence_id uuid, requested_at timestamptz);
+create table pipeline.scholarship_pages (scholarship_id uuid primary key, url text, final_url text, evidence_id uuid, requested_at timestamptz, read_at timestamptz);
+create table pipeline.scholarship_admission_log (id bigint generated always as identity primary key, candidate_id bigint, scholarship_id uuid, provider_id uuid, action text not null, detail jsonb, at timestamptz not null default now());
 create table pipeline.scholarship_page_candidates (id bigint generated always as identity primary key, provider_id uuid, url text, title text, source text, final_url text, storage_path text,
   content_hash text, evidence_id uuid, read_at timestamptz, read_status text, next_read_at timestamptz, leased_until timestamptz, facts jsonb, admit_status text, admit_reasons text[],
   admitted_scholarship_id uuid, matched_scholarship_id uuid);

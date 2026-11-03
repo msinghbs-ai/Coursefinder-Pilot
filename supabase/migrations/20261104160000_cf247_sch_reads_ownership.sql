@@ -31,16 +31,25 @@
 --    their proposals, held items duplicating an active scholarship of the same provider (series key), scholarships on '/staging/' addresses,
 --    and the single-read requests by state. security.scholarship_sources_verify_v1(issue) is the verification of the remedies below.
 -- 4. Root causes and remedies registered through workstream A's contract.
+-- 5. Directory-site candidates are never queued (IQ-00132, overnight mandate 3 Nov 2026 21:59 P1). Live 3 Nov 2026: 22,133 scholarship AI queue
+--    rows (77 providers, 13 Oct to 2 Nov) were queued by the nightly scholarship-ai-backfill (security.scholarship_ai_enqueue_v1) and then failed
+--    by svc_scholarship_ai_next with skip_reason 'directory site'; a failed row leaves no extraction, so the same candidates were queued again
+--    every night (7,962 in the last 7 days). 22:06 AEDT: 7,555 directory-site candidates of 164 providers are still queueable (21 have a pending
+--    held item: the D4 refusals). The enqueue now marks such a candidate refused once (admit_status 'skipped', admit_reasons
+--    {directory_site}, an admission-log row with outcome not_needed) and never queues it; a candidate with a pending held item is left to Layer 4.
+--    A known scholarship whose page is on a directory site is not queued for a re-read either. Ships ON (scholarship.enqueue_directory_gate_on 1):
+--    it only stops work the worker refuses; it reads, spends and admits nothing.
 --
--- Settings (G2): scholarship.single_read_daily_max (0, OFF), batch.scholarship_owner_check (200).
--- Edited live functions (md5-guarded; live md5s read 3 Nov 2026 20:50-20:55 AEDT):
+-- Settings (G2): scholarship.single_read_daily_max (0, OFF), batch.scholarship_owner_check (200), scholarship.enqueue_directory_gate_on (1, ON).
+-- Edited live functions (md5-guarded; live md5s read 3 Nov 2026 20:50-20:55 AEDT and re-read 22:05 AEDT after v2.15.443, unchanged):
 --   public.svc_scholarship_ai_next(integer)                         18e76dbc9984be55370434ca27066c7b -> 709ad0f93b16e99f8962e85671f0b291
 --   public.svc_scholarship_ai_record(bigint,jsonb,jsonb,text,numeric,integer,integer,numeric,text,text,text,text,jsonb,boolean)
 --                                                                   aa337a9fb30a75452a7b54bddbf8d00f -> b2fafccb2532afc3e0d1337588b5c43d
 --   security.scholarship_ai_has_copy_v1(bigint)                     08db702a7e4231ea00acf36da80c04d4 -> ecc54cd39a4fb9fc9c4c2217f6548d30
+--   security.scholarship_ai_enqueue_v1(text,uuid[],uuid,boolean)   04a9aa8c56fc0d5593c813da3ecd270d -> 549948c5251a1ce3d424266d155e70cb
 -- Read, not edited: security.scholarship_ai_review_open_v1(bigint,text) 0f10b0a35109fd6a6c6be36e4d4ea26d.
 -- Not touched: anything changed in v2.15.434 (workstream C), the consumer API (G3), manual course-link bindings.
--- Replaces: the stored-copy-first read for an approved fresh read (svc_scholarship_ai_next, scholarship_ai_has_copy_v1); admission by an approved
+-- Replaces: queuing directory-site candidates every night for the worker to refuse (scholarship_ai_enqueue_v1); the stored-copy-first read for an approved fresh read (svc_scholarship_ai_next, scholarship_ai_has_copy_v1); admission by an approved
 --           single read (svc_scholarship_ai_record: the answer goes to Layer 4)
 -- Retires: nothing
 -- Nothing is dropped or deleted. Nothing is read, spent, admitted or published by this migration.
@@ -95,7 +104,11 @@ insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, ki
  ('pipeline', 'batch.scholarship_owner_check', 'Held scholarships checked for ownership per run',
   'Each run of the owner check (remedy sch_owner_proposals) records at most this many new owner proposals for held scholarships on directory pages.',
   'number', to_jsonb(200), 1, 1000, 'held items', 328, 'CF-247 handover 3 Nov 2026 Priority 3 item 10', 'Scholarships',
-  'security.scholarship_owner_check_v1; remedy sch_owner_proposals')
+  'security.scholarship_owner_check_v1; remedy sch_owner_proposals'),
+ ('pipeline', 'scholarship.enqueue_directory_gate_on', 'Never queue scholarship pages on directory sites',
+  '1: a candidate page on a directory site is marked refused (not needed) when the scholarship AI enqueue meets it, instead of being queued for the worker to refuse every night; known scholarships on a directory site are not queued for a re-read. 0: queued as before.',
+  'number', to_jsonb(1), 0, 1, 'on (1) or off (0)', 329, 'CF-247 IQ-00132, overnight mandate 3 Nov 2026 21:59 P1: stop directory-site refusals being queued again', 'Scholarships',
+  'security.scholarship_ai_enqueue_v1')
 on conflict (toolset_key, key) do nothing;
 
 -- 2. tables and columns (beside the consumer API; nothing it reads changes)
@@ -269,6 +282,35 @@ select pg_temp.edit_once('public.svc_scholarship_ai_record(bigint,jsonb,jsonb,te
   end if;
   select ai_admission into v_on from pipeline.scholarship_ai_extract_settings where id = 1;$e$]], array[1, 1, 1, 1, 1]);
 
+select pg_temp.edit_once('security.scholarship_ai_enqueue_v1(text,uuid[],uuid,boolean)', '04a9aa8c56fc0d5593c813da3ecd270d', '549948c5251a1ce3d424266d155e70cb', array[
+  array[$e$declare a record; v_n int := 0; v_k int;$e$,
+        $e$declare a record; v_n int := 0; v_k int; v_gate boolean := security.pipeline_num_v1('scholarship.enqueue_directory_gate_on', 1) >= 1;$e$],
+  array[$e$  if a.model_code is null then return 0; end if;
+$e$,
+        $e$  if a.model_code is null then return 0; end if;
+  -- CF-247 4 Nov 2026 (IQ-00132): a candidate on a directory site is never queued (the worker refuses it); it is marked refused once, outcome not needed
+  if v_gate then
+    with d as (update pipeline.scholarship_page_candidates c set admit_status = 'skipped', admit_reasons = array['directory_site']
+                where c.provider_id = any (p_provider_ids) and c.source <> 'register' and c.admitted_scholarship_id is null and c.matched_scholarship_id is null
+                  and coalesce(c.admit_status, '') not in ('skipped', 'duplicate', 'admitted', 'matched_held')
+                  and security.third_party_host_v1(coalesce(c.final_url, c.url))
+                  and not exists (select 1 from pipeline.scholarship_ai_reviews r where r.candidate_id = c.id and r.status = 'pending')
+               returning c.id, c.provider_id)
+    insert into pipeline.scholarship_admission_log(candidate_id, provider_id, action, detail)
+    select d.id, d.provider_id, 'skipped', jsonb_build_object('by', 'enqueue', 'reason', 'directory_site', 'outcome', 'not_needed', 'issue', 'IQ-00132') from d;
+  end if;
+$e$],
+  array[$e$     and coalesce(c.admit_status, '') not in ('skipped', 'duplicate', 'admitted', 'matched_held')
+     and not exists$e$,
+        $e$     and coalesce(c.admit_status, '') not in ('skipped', 'duplicate', 'admitted', 'matched_held')
+     and not (v_gate and security.third_party_host_v1(coalesce(c.final_url, c.url)))
+     and not exists$e$],
+  array[$e$     where s.provider_id = any (p_provider_ids) and s.lifecycle_status = 'active'
+$e$,
+        $e$     where s.provider_id = any (p_provider_ids) and s.lifecycle_status = 'active'
+       and not (v_gate and security.third_party_host_v1(coalesce(sp.final_url, sp.url)))  -- CF-247 4 Nov 2026 (IQ-00132)
+$e$]], array[1, 1, 1, 1]);
+
 -- 5. ownership proposals for held scholarships on directory pages (records only)
 create or replace function security.scholarship_owner_check_v1(p_limit integer)
  returns jsonb
@@ -354,6 +396,10 @@ as $function$
                                   where s.lifecycle_status = 'active' and sp.url ~* '/staging/'),
     'staging_addresses_published', (select count(*) from scholarship.scholarships s join pipeline.scholarship_pages sp on sp.scholarship_id = s.id
                                      where s.lifecycle_status = 'active' and s.publication_status = 'published' and sp.url ~* '/staging/'),
+    'directory_candidates_queueable', (select count(*) from pipeline.scholarship_page_candidates c where c.source <> 'register' and c.admitted_scholarship_id is null
+                                        and c.matched_scholarship_id is null and coalesce(c.admit_status, '') not in ('skipped', 'duplicate', 'admitted', 'matched_held')
+                                        and security.third_party_host_v1(coalesce(c.final_url, c.url))
+                                        and not exists (select 1 from pipeline.scholarship_ai_reviews r where r.candidate_id = c.id and r.status = 'pending')),
     'held_on_staging_addresses', (select count(*) from pipeline.scholarship_ai_reviews r where r.status = 'pending' and r.url ~* '/staging/'),
     'read_requests', (select coalesce(jsonb_object_agg(state, n), '{}'::jsonb) from (select state, count(*) n from pipeline.scholarship_read_requests group by 1) x))
 $function$;
@@ -387,6 +433,7 @@ begin
     when 'sch_held_on_directory_page' then (m->>'held_on_directory_pages_without_proposal')::int = 0
     when 'sch_held_duplicates_active' then (m->>'held_duplicating_active')::int = 0
     when 'sch_source_staging_address' then (m->>'staging_addresses_active')::int = 0 and (m->>'held_on_staging_addresses')::int = 0
+    when 'sch_enqueue_directory_site' then (m->>'directory_candidates_queueable')::int = 0
     when 'sch_held_read_reuses_old_copy' then coalesce((m->'read_requests'->>'queued')::int, 0) = 0
     else false end;
   return jsonb_build_object('passed', v_ok, 'measure', m, 'evidence', jsonb_build_object('root_cause', v_rc, 'issue', p_issue));
@@ -415,6 +462,15 @@ select security.ops_root_cause_register_v1('course_link_title_only_sibling', jso
   'description', 'Two active registered courses of a provider share a title; the reader binds the page to one by its CRICOS code and to the other by exact title (Swinburne 095881J cricos_code, 088407E exact_title; 3 Nov 2026: 214 such addresses).',
   'detect', jsonb_build_object('tables', jsonb_build_array('catalogue.course_links', 'pipeline.evidence_artifacts'), 'measure', 'metadata identity_basis exact_title beside cricos_code on the same address')));
 
+select security.ops_root_cause_register_v1('sch_enqueue_directory_site', jsonb_build_object('class', 'rule',
+  'title', 'Scholarship candidates on directory sites are queued every night and refused by the worker',
+  'description', 'security.scholarship_ai_enqueue_v1 had no directory-site gate; svc_scholarship_ai_next failed each row (skip_reason directory site) and left no extraction, so the nightly backfill queued them again (IQ-00132: 22,133 failed rows, 77 providers).',
+  'detect', jsonb_build_object('fn', 'security.scholarship_sources_report_v1()', 'measure', 'directory_candidates_queueable > 0', 'issue', 'IQ-00132')));
+
+select security.ops_remedy_register_v1('sch_enqueue_directory_gate', jsonb_build_object('authority', 'release', 'treats', jsonb_build_array('sch_enqueue_directory_site'),
+  'title', 'The enqueue marks directory-site candidates refused (not needed) and never queues them (release 20261104160000)',
+  'verify_fn', 'security.scholarship_sources_verify_v1(bigint)',
+  'notes', 'Setting scholarship.enqueue_directory_gate_on (1). A candidate with a pending held item is left to Layer 4.'));
 select security.ops_remedy_register_v1('sch_owner_proposals', jsonb_build_object('authority', 'auto', 'treats', jsonb_build_array('sch_held_on_directory_page'),
   'title', 'Record an owner proposal with evidence for each held scholarship on a directory page',
   'action_fn', 'security.scholarship_owner_proposals_remedy_v1(bigint)', 'verify_fn', 'security.scholarship_sources_verify_v1(bigint)',

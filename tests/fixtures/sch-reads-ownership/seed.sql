@@ -1,7 +1,7 @@
 -- Fixture rows modelled on live 3 Nov 2026 (ids and addresses as live; page text is not needed: the worker is simulated by the cases)
 truncate pipeline.scholarship_ai_queue, pipeline.scholarship_ai_extractions, pipeline.scholarship_ai_reviews, pipeline.scholarship_page_candidates, pipeline.evidence_artifacts,
          scholarship.scholarships, pipeline.scholarship_pages, catalogue.providers, catalogue.provider_aliases, pipeline.fx_calls, pipeline.scholarship_discovery_providers,
-         pipeline.scholarship_ai_models cascade;
+         pipeline.scholarship_ai_models, pipeline.scholarship_admission_log cascade;
 do $$ begin
   if to_regclass('pipeline.scholarship_read_requests') is not null then execute 'truncate pipeline.scholarship_read_requests, pipeline.scholarship_owner_proposals'; end if;
 end $$;
@@ -31,6 +31,10 @@ insert into pipeline.scholarship_pages(scholarship_id, url) values
  ('a347e086-55a5-557c-ae62-352b1459881a', 'https://www.mq.edu.au/study/admissions-and-entry/scholarships/international/vice-chancellor-s-international-scholarship/');
 insert into scholarship.scholarships(id, name, provider_id) values ('00000000-0000-0000-0000-00000000aa02', 'Macquarie University ASEAN Scholarship', '188103a5-1aba-4f99-bd3e-0416659086d3');
 insert into pipeline.scholarship_pages(scholarship_id, url) values ('00000000-0000-0000-0000-00000000aa02', 'https://students.mq.edu.au/study/course/overseas/staging/details/macquarie-university-asean-scholarship');
+insert into scholarship.scholarships(id, name, provider_id) values ('00000000-0000-0000-0000-00000000aa03', 'Portal-held award', '159328df-fb4b-4bb8-a6b8-5f24546437a3'),
+ ('00000000-0000-0000-0000-00000000aa04', 'Lexis own award', '159328df-fb4b-4bb8-a6b8-5f24546437a3');
+insert into pipeline.scholarship_pages(scholarship_id, url) values ('00000000-0000-0000-0000-00000000aa03', 'https://search.studyqueensland.qld.gov.au/scholarship/portal-held/1'),
+ ('00000000-0000-0000-0000-00000000aa04', 'https://lexis-training.com/scholarships/own-award');
 insert into pipeline.scholarship_discovery_providers values ('159328df-fb4b-4bb8-a6b8-5f24546437a3', 'map_search(67)'), ('1bdef519-6927-4765-8a06-632d396fa2ae', 'map_search(85)');
 
 -- candidates: Bond 6712 holds the 29 Sep 2026 copy; VU 7700 has none; Macquarie 7347 (staging); directory pages; a plain Macquarie page for the regression case
@@ -46,7 +50,10 @@ insert into pipeline.scholarship_page_candidates(id, provider_id, url, title, so
  (15620, '1bdef519-6927-4765-8a06-632d396fa2ae', 'https://coursesearch.studymelbourne.vic.gov.au/scholarship/alphacrucis-higher-degree-scholarship/8d3513b5dc559c1b3fd5fa00222ca836', 'Alphacrucis Higher Degree Scholarship', 'map',
   'layer2/AU/scholarships/1bdef519/candidates/15620/y.html.gz', 'read', '{"h1": "Alphacrucis Higher Degree Scholarship"}'),
  (15625, '1bdef519-6927-4765-8a06-632d396fa2ae', 'https://coursesearch.studymelbourne.vic.gov.au/scholarship/vice-chancellor-international-excellence-scholarship/b41fc253a66c1dff5db456042a9b34dd', 'Vice-Chancellor International Excellence Scholarship', 'map', null, 'scrape_failed', null),
- (5000, '188103a5-1aba-4f99-bd3e-0416659086d3', 'https://www.mq.edu.au/study/scholarships/regression', 'Regression page', 'sitemap', 'layer2/AU/scholarships/188103a5/candidates/5000/r.html.gz', 'read', null);
+ (5000, '188103a5-1aba-4f99-bd3e-0416659086d3', 'https://www.mq.edu.au/study/scholarships/regression', 'Regression page', 'sitemap', 'layer2/AU/scholarships/188103a5/candidates/5000/r.html.gz', 'read', null),
+ -- IQ-00132: a Lexis candidate on a directory site with no held item, and one on Lexis's own site
+ (70001, '159328df-fb4b-4bb8-a6b8-5f24546437a3', 'https://search.studyqueensland.qld.gov.au/scholarship/south-asia-scholarship/7756f0dbe98b54b47dcc5a067f973638', 'South Asia Scholarship', 'map', null, 'scrape_failed', null),
+ (70002, '159328df-fb4b-4bb8-a6b8-5f24546437a3', 'https://lexis-training.com/scholarships/own-page', 'Lexis own page', 'sitemap', null, null, null);
 
 -- held items (Layer 4 refs as live)
 insert into pipeline.scholarship_ai_reviews(id, candidate_id, provider_id, url, storage_path, extraction_ids, reason) overriding system value values

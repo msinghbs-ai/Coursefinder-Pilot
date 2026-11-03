@@ -1,11 +1,13 @@
--- CF-247 ownership of held scholarships on directory pages (handover 3 Nov 2026 Priority 3 item 10). FOR A PLATFORM ADMIN DECISION: do not run
--- before the Platform Admin approves refusing these 21 held items from their holders.
+-- CF-247 ownership of held scholarships on directory pages (handover 3 Nov 2026 Priority 3 item 10). APPROVED: Platform Admin decision D4,
+-- overnight mandate 3 Nov 2026 21:59 ("refuse the 21 held scholarships from their incorrect current providers, preserving evidence and history;
+-- do not declare the underlying scholarships invalid or silently reassign them"). Submitted by the Integration Controller.
 -- Evidence (pipeline.scholarship_owner_proposals, recorded by the auto remedy sch_owner_proposals of migration 20261104160000): each page is a
 -- state-government listing page (coursesearch.studymelbourne.vic.gov.au 12, search.studyqueensland.qld.gov.au 9), now listed as a directory site;
 -- every candidate of the five holders (Lexis TESOL 9, Marriott Academy 5, Kangaroo International College 3, Prime Education Group 3, Victorian
 -- Skills College 1) is on a portal host, found by site search (map_search), not on the holder's own site. No page names the holder.
--- Effect: each held item is refused in Layer 4 (security.scholarship_ai_review_apply_v1, 'refuse'): its candidate is marked rejected, refused_by_person,
--- with the proposal as the reason. Nothing is reassigned to another provider and nothing is admitted or published. Where the page names an
+-- Effect: each held item is refused from its current holder in Layer 4 (security.scholarship_ai_review_apply_v1, 'refuse'): its candidate is marked rejected, refused_by_person,
+-- with the proposal as the reason. The scholarship is not declared invalid; its page copies, extractions, evidence and the proposal stay as
+-- history. Nothing is reassigned to another provider and nothing is admitted or published. Where the page names an
 -- institution, that institution's own page is the source; RMIT University already holds "RMIT UP General English Bursary for Asia" and Bond
 -- University holds "Bond University Postgraduate Research Scholarship". Unresolved names (ACU, MACC, VU, QUT College, NTG and generic titles) are
 -- for the scholarship coverage owner (workstream C), not this file.
@@ -29,7 +31,7 @@ begin
     perform security.scholarship_ai_review_apply_v1(r.review_id, 'refuse', null,
       'Not this provider''s scholarship: a state-government listing page (' || r.host || ') held under ' || r.holder || ', which the page does not name'
       || case when jsonb_array_length(r.owner_candidates) > 0 then '; the page names ' || (r.owner_candidates->0->>'name') || ', whose own page is the source' else '' end
-      || '. Owner proposal by Claude (CF-247 sources and ownership), approved by Platform Admin <date and time>.', v_by);
+      || '. Platform Admin decision D4, overnight mandate 3 Nov 2026 21:59; submitted by the Integration Controller.', v_by);
   end loop;
   perform security.scholarship_owner_check_v1(security.pipeline_num_v1('batch.scholarship_owner_check', 200)::int);
   select count(*) into v_n from pipeline.scholarship_ai_reviews where id = any (v_refs) and status = 'refused' and decided_by = v_by;
