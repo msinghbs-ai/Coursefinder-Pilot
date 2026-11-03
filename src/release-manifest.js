@@ -1,17 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.435'
-export const PACKAGE_VERSION='0.1.362'
+export const UI_VERSION='2.15.436'
+export const PACKAGE_VERSION='0.1.363'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Nov 2026',
-  title:'Missing universities: entry-requirement source inventory, reading priority and a per-provider admission view',
+  title:'Closed issues reopen only on new evidence; the AI diagnosis contract is fixed',
   changes:[
-    'Each followed university\'s entry-requirement sources are recorded with their verified address, shape and provenance, and the scheduled course reader now reaches the followed universities and the providers with the largest entry-requirement shortfall first, within its existing limits.',
-    'A per-provider view separates sources attached, reads done or held, Layer 4 items ready or technically blocked, rows actually admitted, and what the website projection returns; a discovery or an AI read is never counted as an admission.',
-    'Coverage reporting classifies each provider as no source, source found, read held, awaiting Layer 4, active, course only, or evidenced non-publication.'
+    'A closed integration issue is reopened only by evidence observed after it was closed, so a health check counting failures from before a fix no longer reopens a resolved issue.',
+    'The operations controller\'s recurrence signal uses the same rule and revisits an issue reopened since its last diagnosis on its next run.',
+    'AI-assisted diagnosis has a fixed request and answer contract, records its cost in the AI spend ledger and holds at its own daily cap; it stays switched off.'
   ],
   bugFixes:[]
 }
