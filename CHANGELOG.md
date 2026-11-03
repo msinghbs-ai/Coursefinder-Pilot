@@ -2,7 +2,7 @@
 
 ## 0.1.351 — 3 Nov 2026
 
-- Prepared visible PIM Admin release candidate **v2.15.424** (Platform Admin mandate 3 Nov 2026 12:04 §5 and §6). Migration `20261103190000_cf247_source_proof_lane_field_backlog`: job source-proof-feed (catalogued, active) running security.source_proof_feed_v1; md5-guarded edits of course_relink_tick_v1, course_relink_provider_v1 and admin_pipeline_yield; security.field_backlog_v1; settings proof.feed_per_run (50), proof.search_per_run (0 = paid search off), proof.max_attempts (3), backlog.not_stated_reasons, backlog.rate_window_hours. No paid spend; nothing dropped; consumer API untouched. Spec s240.
+- Prepared visible PIM Admin release candidate **v2.15.424**, Release A (Platform Admin mandates 3 Nov 2026 12:04 §5 and §6 and 13:09 §3–§4; integration issue IQ-00064, P0). Migration `20261103200000_cf247_plan_step_lane_hold`: md5-guarded edits of flag_jobs_v1, admin_job_watch_v1, admin_jobs_tick_v1, enrich_plan_tick_v1, integration_yield_checks_v1; tasks.lane_hold_on (1), tasks.hold_kinds, tasks.lane_hold_max_hours (24); reconciliation of 18 prematurely completed steps (guarded id set); monitoring issue plan_unfinished_done. Migration `20261103190000_cf247_source_proof_lane_field_backlog`: job source-proof-feed (catalogued, active) running security.source_proof_feed_v1; md5-guarded edits of course_relink_tick_v1, course_relink_provider_v1 and admin_pipeline_yield; security.field_backlog_v1; settings proof.feed_per_run (50), proof.search_per_run (0 = paid search off), proof.max_attempts (3), backlog.not_stated_reasons, backlog.rate_window_hours. No paid spend; nothing dropped; consumer API untouched. Spec s240.
 
 ## 0.1.350 — 3 Nov 2026
 
