@@ -1,19 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.463'
-export const PACKAGE_VERSION='0.1.390'
+export const UI_VERSION='2.15.464'
+export const PACKAGE_VERSION='0.1.391'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'4 Nov 2026',
-  title:'Human-assisted recovery: Layer 4 asks for exactly what is missing, then the platform resumes',
+  title:'First-run verification, pipeline progress and the recovery loop',
   changes:[
-    'When the platform cannot find a source, read a document, identify a course or complete a field, it records one intervention per missing fact, parks only that work and asks Layer 4 for exactly what is needed.',
-    'Reviewers can supply an official URL or document, enter or correct values against evidence, confirm identity or audience, request a fresh search, mark a source as not published, return the item to technical recovery or reject unsupported evidence. A URL or document is never approval to publish.',
-    'After valid input the platform resumes the right reader automatically, within existing caps, and verifies the result.',
-    'E13-held AER cards offer re-read from stored evidence, request evidence, AI analysis (switched off) and human input; approval stays blocked.',
-    'Recovery metrics per workstream are in the operations report.'
+    'Each release now records the first scheduled run of every job it changes: when it is expected, what happened, expected and actual output, and whether the next stage became eligible. A release stays \'deployed, operationally unverified\' until that run proves it.',
+    'Each scholarship and AER pipeline stage now records eligible input, processed, created, rejected, parked, queued downstream, admitted and published, with the last time it moved. A stage that stops moving is raised even when its job reports success, and a run that creates nothing carries a reason.',
+    'Issues that describe the same failure are linked to one canonical issue, and a code or SQL defect becomes owned engineering work with its evidence and a next checkpoint.',
+    'A self-sustainability scorecard is added to the operations report.'
   ],
   bugFixes:[]
 }

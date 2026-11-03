@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.391 — 4 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.464** (Platform Admin mandate 4 Nov 08:16 §3–§5, §10). Migration `20261104460000_cf247_first_run_verification`: `pipeline.release_job_verifications`, progress contract and `pipeline.progress_observations`, `security.recovery_link_duplicates_v1`, `security.recovery_route_engineering_v1`, job `first-run-verify` (:02, :32, catalogued); md5-guarded edit of security.ops_report_v1 (3ba694dc → 518b5bf8). Settings frv.*, progress.*, recovery.*: recording and linking on; recovery.close_on_verified_on ships 0. Nothing merges, grants budget, bypasses Layer 4 or overrides locks. Nothing dropped; consumer API untouched. Spec s275.
+
 ## 0.1.390 — 4 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.463** (Platform Admin design decision 06:30; AER correction 06:58 §1, §3). Migration `20261104450000_cf247_human_assisted_recovery`: `pipeline.layer4_interventions` (one per lane, entity and missing fact, deduplicated; no lease while waiting), 13 failure classes with time bounds as `har.*` settings, `security.layer4_intervention_resolve_v1` (11 actions, audited), Inbox hook functions (kind `intervention`, AER recovery extension), job `layer4-interventions` (:14, :44, catalogued), md5-guarded edit of security.ops_report_v1 (5a1e21cc → 3ba694dc) for the §9 metrics. On: har.on, generate_aer_on, generate_sch_on, resume_on. Off: har.ai_escalate_on, escalation model empty. Layer 4 limit untouched; nothing dropped; consumer API untouched. Spec s272.
