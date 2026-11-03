@@ -28,6 +28,8 @@ echo "without A's contract: refused, nothing left"
 
 # 2 the database as live: queue, A's controller (as merged in v2.15.429), the other live shapes
 $P -d $DB -f tests/fixtures/integration-queue/stubs.sql
+# Integration Controller 3 Nov 2026: the live kind check on the component register (the first deploy failed on it; the shared stub lacks it)
+$P -d $DB -c "alter table pipeline.component_register add constraint component_register_kind_check check (kind = any (array['job','table','view','edge_function','screen','function']))"
 $P -d $DB -1 -o /dev/null -f supabase/migrations/20261102120000_cf247_integration_queue.sql 2>&1 | show
 $P -d $DB -f tests/fixtures/ops-controller/stubs-extra.sql
 $P -d $DB -1 -o /dev/null -f supabase/migrations/20261104010000_cf247_ops_controller.sql 2>&1 | show
