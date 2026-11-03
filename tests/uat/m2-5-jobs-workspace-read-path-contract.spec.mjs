@@ -28,7 +28,8 @@ test.describe('M2.5 Jobs workspace read-path source contract',()=>{
     expect(shell).toContain("const JobsWorkspace=lazyPage(()=>import('./pipeline-ops-entry'),'JobsWorkspace')")
     expect(shell).toContain("const SourcesWorkspace=lazyPage(()=>import('./pipeline-ops-entry'),'SourcesWorkspace')")
     // v2.15.107: Jobs is the Scheduled jobs > Jobs tab and Sources the Layer 1 Register > Sources tab (both role rank 4).
-    expect(shell).toContain(`tab==='automations'?<div className="m-page-stack"><Automations onError={err}/><RefreshWorkspace onError={err}/></div>:<JobsWorkspace/>`)
+    // SS-020 follow-up (4 Nov 2026): Refresh schedules left Automations; its runtime health panel stays
+    expect(shell).toContain(`tab==='automations'?<div className="m-page-stack"><Automations onError={err}/><ScheduledRuntimeHealth onNavigate={hash=>{location.hash=hash}}/></div>:<JobsWorkspace/>`)
     expect(shell).toContain("{layer==='all'?<SourcesWorkspace/>:<Layer1Sources/>}") // v2.15.301: Sources is Layer 1's All layers filter
     expect(shell).not.toContain('OperationalList operation="jobs"')
     expect(shell).not.toContain('OperationalList operation="sources"')

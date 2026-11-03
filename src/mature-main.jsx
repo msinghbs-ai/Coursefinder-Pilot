@@ -80,7 +80,9 @@ const AdminTasks=lazyPage(()=>import('./AdminTasks'))
 const PlatformGuide=lazyPage(()=>import('./PlatformGuide'))
 const Sop=lazyPage(()=>import('./Sops'))
 const Layer1Sources=lazyPage(()=>import('./layer1-operations-entry'),'Layer1Sources')
-const RefreshWorkspace=lazyPage(()=>import('./m2-3-intelligence-entry'),'Refresh')
+// SS-020 follow-up (Decision 269 amendment, Platform Admin 4 Nov 2026 "Rewire, then retire"): Automations › Refresh schedules and one-off runs
+// retired; Layer 1 › Sources' Schedule edits the Layer 1 refresh policies. Its runtime health panel stays on Automations.
+const ScheduledRuntimeHealth=lazyPage(()=>import('./ScheduledRuntimeHealth'))
 const Layer2ProviderConfig=lazyPage(()=>import('./layer2-provider-entry'),'Console')
 const PlatformMaturity=lazyPage(()=>import('./platform-maturity-entry'))
 const EnvironmentMigrationWorkspace=lazyPage(()=>import('./EnvironmentMigrationWorkspace'))
@@ -369,7 +371,7 @@ function Page({pageKey,tab,requestedTab='',routeParams,rank,actorId,onError,navi
       // v2.15.300: Screen use (Platform Admin) under the health checks, to decide which screens retire
       // v2.15.301: Capacity moved to the Go-live checklist; Storage & retention is a tab here
       case'health':return tab==='storage'?<RetentionScreen onError={onError}/>:tab==='queues'?<div className="m-page-stack" data-queues-yield>{/* SS-020 step 3 (Decision 269, Final board F31: lanes first): Pipeline yield moved here from Integration queue; PIM Admin and above, as before (server checks too) */}{rank>=5&&<PipelineYield onError={onError}/>}<QueueWatch onError={onError}/></div>:tab==='integration'?<IntegrationQueue onError={onError}/>:<><PlatformHealth onError={onError}/>{rank>=6&&<ScreenUse onError={onError}/>}</>
-      case'jobs':return tab==='tasks'?<AdminTasks rank={rank} onError={onError}/>:tab==='automations'?<div className="m-page-stack"><Automations onError={err}/><RefreshWorkspace onError={err}/></div>:<JobsWorkspace/>
+      case'jobs':return tab==='tasks'?<AdminTasks rank={rank} onError={onError}/>:tab==='automations'?<div className="m-page-stack"><Automations onError={err}/><ScheduledRuntimeHealth onNavigate={hash=>{location.hash=hash}}/></div>:<JobsWorkspace/>
       case'evidence':return <EvidenceWorkspace onError={onError} navigate={navigate} routeParams={routeParams}/>
       // CF-247 (16 Oct 2026): calls to the API version URLs (zoho-api-v2 first), by key and action; v2.15.301 Settings › API usage
       case'environment':if(tab==='api')return <ApiUsagePanel onError={onError}/>;if(tab==='backup')return rank>=6?<SettingsBackup onError={err}/>:null;return <><PipelineSettings onError={err}/><EnvironmentMigrationWorkspace rank={rank} onError={onError} view="integrations"/></>

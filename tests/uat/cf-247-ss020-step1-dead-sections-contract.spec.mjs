@@ -3,7 +3,7 @@
 // the Layer 3 AI area (Automations) and the Layer 3 block (Health checks), the Serper, ScrapingBee and Search pass cards, the dropped
 // acquisition providers, the Go-live Layer 3 model profiles and dropped-provider gates, Progress "Courses with each field", and the Health
 // checks Capacity link. Rows and history stay in the database; the migration re-areas three live jobs and records the register rows only.
-// Refresh schedules and one-off runs is parked (DECISION REQUIRED — SS-020: it holds the only Layer 1 cadence control).
+// Refresh schedules and one-off runs was parked here (it held the only Layer 1 cadence control); it retired in the SS-020 follow-up (s274).
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'

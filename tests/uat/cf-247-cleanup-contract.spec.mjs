@@ -64,13 +64,12 @@ test('batch 2: removed screens are gone and nothing in src/ or the edge function
   }
 })
 
-test('batch 2: Providers › Onboarding links each university to the Adapter builder; Refresh schedules and the provider registry stay', () => {
+test('batch 2: Providers › Onboarding links each university to the Adapter builder; the provider registry stays (Refresh schedules retired 4 Nov 2026, SS-020 follow-up, s274)', () => {
   const main = fs.readFileSync('src/mature-main.jsx', 'utf8')
   // v2.15.253: the notice became the automatic onboarding list; each university opens in the Adapter builder
   // v2.15.300: the Onboarding list retired; each university row on Layer 2/3 › Universities opens the Adapter builder
   expect(fs.readFileSync('src/AdaptersWorkspace.jsx', 'utf8')).toContain("href={hrefFor('layer2','builder',{provider:pid})} data-uni-builder")
   expect(main).toContain("const Layer2ProviderConfig=lazyPage(()=>import('./layer2-provider-entry'),'Console')")
-  expect(main).toContain("const RefreshWorkspace=lazyPage(()=>import('./m2-3-intelligence-entry'),'Refresh')")
   expect(fs.readFileSync('src/layer2-provider-entry.jsx', 'utf8')).toContain("functions.invoke('layer2-provider-control'")
   const nav = fs.readFileSync('src/nav-map.js', 'utf8')
   expect(nav).toContain("{ key: 'builder', label: 'Adapter builder', min: 5 },") // v2.15.318: back in the tabs (manual mode)

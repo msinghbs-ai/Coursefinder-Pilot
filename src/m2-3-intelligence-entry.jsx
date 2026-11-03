@@ -2,7 +2,6 @@ import React,{useEffect,useMemo,useState}from'react'
 import{StatusChip,Empty,Metric}from'./ui-kit'
 import{Check,ExternalLink,RefreshCw,Route,ShieldCheck}from'lucide-react'
 import{supabase}from'./lib/supabase'
-import ScheduledJobsWorkspace from'./ScheduledJobsWorkspace'
 import{useRememberedState}from'./ui-kit'
 import{Layer4MassOperations}from'./layer4-mass-operations-entry'
 import'./m2-3-intelligence.css'
@@ -12,7 +11,7 @@ const human=v=>String(v??'').replaceAll('_',' ').replace(/\b\w/g,x=>x.toUpperCas
 const when=v=>v?fmtDateTime(v):'—'
 const rpc=async(name,args={})=>{const{data,error}=await supabase.rpc(name,args);if(error)throw error;return data}
 // Clean-up batch 2 (9 Oct 2026): the never-mounted self-mount entry and the unused Layer3, Links, Dates and
-// ProviderCredential exports were removed; mature-main.jsx uses Layer4 and Refresh only (Onboarding retired in v2.15.224).
+// ProviderCredential exports were removed; mature-main.jsx uses Layer4 only (Refresh retired 4 Nov 2026, SS-020 follow-up) (Onboarding retired in v2.15.224).
 const askReason=label=>window.prompt(`${label} — reason (required)`,'M2.3 governed decision')||''
 
 export function Layer4({onError,rank=0}){
@@ -212,7 +211,8 @@ export function Layer4({onError,rank=0}){
  </div>
 }
 
-export const Refresh=ScheduledJobsWorkspace
+// SS-020 follow-up (4 Nov 2026): the Refresh export (Automations › Refresh schedules and one-off runs) retired; Layer 1 › Sources' Schedule
+// edits the Layer 1 refresh policies.
 
 // v2.15.224: the onboarding cases panel was retired (no case was ever opened); new providers use the guided Adapter builder
 

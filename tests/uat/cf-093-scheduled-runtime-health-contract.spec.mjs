@@ -4,12 +4,12 @@ import fs from'node:fs'
 
 test.describe('CF-093 Scheduled Tasks runtime health contract',()=>{
  test('uses governed Jobs data without manufacturing missing telemetry',async()=>{
-  const workspace=fs.readFileSync('src/ScheduledJobsWorkspace.jsx','utf8')
+  // SS-020 follow-up (4 Nov 2026): the Refresh schedules section retired; the runtime health panel stays on Scheduled jobs › Automations
+  const shell=fs.readFileSync('src/mature-main.jsx','utf8')
   const runtime=fs.readFileSync('src/ScheduledRuntimeHealth.jsx','utf8')
-  expect(workspace).toContain("import ScheduledRuntimeHealth from'./ScheduledRuntimeHealth'")
-  expect(workspace).toContain('<ScheduledRuntimeHealth jobs={jobs} error={panelErrors.jobs} onNavigate={go}/>')
-  expect(workspace).toContain('const jobStarted=row=>row?.started_at')
-  expect(workspace).toContain('const jobFinished=row=>row?.completed_at')
+  expect(shell).toContain("const ScheduledRuntimeHealth=lazyPage(()=>import('./ScheduledRuntimeHealth'))")
+  expect(shell).toContain('<Automations onError={err}/><ScheduledRuntimeHealth onNavigate={hash=>{location.hash=hash}}/>')
+  expect(runtime).toContain("import'./scheduled-jobs-config.css'")
   expect(runtime).toContain("const UNKNOWN='Unavailable'")
   expect(runtime).toContain('const queueWait=j=>secondsBetween(j?.created_at,j?.started_at)')
   expect(runtime).toContain('const runDuration=j=>secondsBetween(j?.started_at,j?.completed_at)')

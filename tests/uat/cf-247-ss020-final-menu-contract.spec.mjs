@@ -1,7 +1,7 @@
 // Guards: Decision 269 (SS-020, Platform Admin 3 Nov 2026 22:05): the admin menu ends at 47 tabs, every old address of a merged or moved tab opens its new home, and each moved section keeps its minimum role
 // CF-247 SS-020 step 5 and the programme's end state. Step 5: Rankings › Outcomes (QILT) and Student flow (PRISMS) are "View data" on
-// Rankings › Datasets (C16, C17, C18), the Overview cards link there. The Final board names 22 pages; the menu has 20 (the board's own page
-// table lists 20; recorded with the Integration Controller as a count error). Link refresh → Settings (C20, C42) is parked: DECISION REQUIRED.
+// Rankings › Datasets (C16, C17, C18), the Overview cards link there. The menu is 47 tabs on 20 pages (Decision 269 amended 4 Nov 2026 about
+// 05:40). Link refresh and portals stay on Coverage › Courses (same amendment; the move to Settings, C20 and C42, is withdrawn).
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
