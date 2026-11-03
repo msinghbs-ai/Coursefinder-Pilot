@@ -912,14 +912,14 @@ do $c$ begin
   end if;
 end $c$;
 
--- 13 component register -----------------------------------------------------------------------------------------------------------------------
+-- 13 component register (Integration Controller 3 Nov 2026: the first deploy refused kind 'trigger' by component_register_kind_check; the trigger is registered through its function) -----------------------------------------------------------------------------------------------------------------------
 insert into pipeline.component_register(kind, name, layer, purpose, status, replaces, introduced_in) values
  ('table', 'pipeline.layer4_item_readiness', 'Layer 4', 'CF-247 P0 L4: readiness of every Layer 4 item (judgement-ready, technically blocked, resolvable)', 'active', '{}', '20261104120000'),
  ('table', 'pipeline.layer4_supersessions', 'Layer 4', 'CF-247 P0 L4: items the platform superseded instead of asking a person, with reason and cover', 'active', '{}', '20261104120000'),
  ('table', 'pipeline.layer4_admission_checks', 'Layer 4', 'CF-247 P0 L4: post-decision check that each approval reached the catalogue and the projection', 'active', '{}', '20261104120000'),
  ('table', 'pipeline.layer4_readiness_runs', 'Layer 4', 'CF-247 P0 L4: runs of job layer4-readiness', 'active', '{}', '20261104120000'),
  ('job', 'layer4-readiness', 'Layer 4', 'CF-247 P0 L4: classify, verify admissions, settle (switch)', 'active', '{}', '20261104120000'),
- ('trigger', 'layer4_review_items_zz_arrival', 'Layer 4', 'CF-247 P0 L4: generator guard on every Layer 4 insert (switch, off)', 'active', '{}', '20261104120000'),
+ ('function', 'security.layer4_arrival_guard_trg_v1', 'Layer 4', 'CF-247 P0 L4: generator guard on every Layer 4 insert, trigger layer4_review_items_zz_arrival (switch, off)', 'active', '{}', '20261104120000'),
  ('function', 'security.layer4_readiness_tick_v1', 'Layer 4', 'CF-247 P0 L4: job layer4-readiness', 'active', '{}', '20261104120000'),
  ('function', 'security.layer4_resolution_for_v1', 'Layer 4', 'CF-247 P0 L4: can the platform settle an item without a person', 'active', '{}', '20261104120000'),
  ('function', 'security.layer4_blockers_v1', 'Layer 4', 'CF-247 P0 L4: technical blockers of an item', 'active', '{}', '20261104120000'),

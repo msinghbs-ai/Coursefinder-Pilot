@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.366 — 3 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.439** (deployment correction of v2.15.438). Migration `20261104120000_cf247_ops_layer4_throughput` (never applied: the v2.15.438 deploy failed on component_register_kind_check and rolled back) now registers trigger layer4_review_items_zz_arrival through its function security.layer4_arrival_guard_trg_v1; the fixture adds the live kind check. No other change. Spec s255.
+
 ## 0.1.365 — 3 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.438** (Layer 4 readiness and admission throughput; Platform Admin 18:14). Migration `20261104120000_cf247_ops_layer4_throughput`: job layer4-readiness (:22, :52); readiness, blocker, admission-check, reconcile and throughput functions; review order function; 7 root causes and 6 remedies through the operations contract. layer4.arrival_guard_on and layer4.reconcile_supersede_on ship 0. No live function edited; no decision written; nothing dropped; consumer API untouched. Spec s255.
