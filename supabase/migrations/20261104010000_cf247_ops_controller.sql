@@ -1438,3 +1438,27 @@ insert into pipeline.component_register(kind, name, layer, purpose, status, repl
  ('function', 'public.svc_ops_diagnosis_next', 'Platform', 'CF-247 P0: AI diagnosis picker for the worker (off by default)', 'active', '{}', '20261104010000'),
  ('function', 'public.svc_ops_diagnosis_record', 'Platform', 'CF-247 P0: AI diagnosis recorder (quotes checked)', 'active', '{}', '20261104010000')
 on conflict do nothing;
+
+-- Integration Controller 3 Nov 2026: v2.15.428 (20261104080000, IQ-00067) shipped before this contract and registered nothing; its root cause and
+-- remedies are registered here, unchanged, when its functions exist.
+do $reg67$ begin
+  if to_regprocedure('security.coverage_admit_recheck_v1(bigint)') is null then return; end if;
+  perform security.ops_root_cause_register_v1('lock_conflict_in_batch', jsonb_build_object(
+    'class', 'rule',
+    'title', 'A record locked by hand reached a batch apply, and the refusal aborted the whole batch',
+    'description', 'A batch job offered a value for a field set by hand (pipeline.manual_locks); the apply refuses it, correctly, and the raise rolled back every other item in the batch. First seen IQ-00067: coverage-admit failed every run from 3 Nov 2026 13:53 AEDT. Fixed in the admission path by release 20261104080000 (locked rows held as manual_lock before apply; per-item isolation).',
+    'detect', jsonb_build_object('kind', 'cron_failure', 'jobs', jsonb_build_array('coverage-admit', 'coverage-admit-intakes'),
+                                 'message_like', '%set by hand on the course record%', 'context_like', '%layer4_course_link_apply_impl%')));
+
+  perform security.ops_remedy_register_v1('coverage_admit_lock_hold', jsonb_build_object(
+    'title', 'Hold locked courses before the coverage admission apply; isolate each item',
+    'treats', jsonb_build_array('lock_conflict_in_batch'), 'authority', 'release',
+    'notes', 'IQ-00067 release 20261104080000: security.coverage_admission_apply_v1 holds manual_lock rows in pipeline.coverage_admission_holds and isolates each item (admit.item_error_limit). A recurrence in another batch apply needs the same change there.'));
+
+  perform security.ops_remedy_register_v1('coverage_admit_recheck', jsonb_build_object(
+    'title', 'Ask for a full coverage admission pass on the next run, then check it committed',
+    'treats', jsonb_build_array('lock_conflict_in_batch'), 'authority', 'auto',
+    'action_fn', 'security.coverage_admit_recheck_v1(bigint)', 'verify_fn', 'security.coverage_admit_recheck_verify_v1(bigint)',
+    'max_attempts_key', 'admit.remedy_max_attempts', 'cooldown_key', 'admit.remedy_cooldown_minutes',
+    'notes', 'IQ-00067: after the release the next run is full anyway; the remedy makes that explicit and verifies a whole batch committed (job_input_marks.last_full_at moved past the action).'));
+end $reg67$;
