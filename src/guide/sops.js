@@ -9,7 +9,7 @@
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 // Check the admin copy with `node scripts/export-sops.mjs --check-mirror <coursefinder-admin/docs/sops>` (SS-016 UR-03): it exits 1 on drift.
 
-export const SOP_REVIEWED_FOR = '2.15.421'
+export const SOP_REVIEWED_FOR = '2.15.422'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -45,7 +45,7 @@ const step = (o) => o
 
 export const SOPS = [
   {
-    id: 'admin-sop', title: 'Platform Admin SOP', version: '2.23', audience: 'Platform Admin (role rank 6)',
+    id: 'admin-sop', title: 'Platform Admin SOP', version: '2.24', audience: 'Platform Admin (role rank 6)',
     purpose: 'How the Platform Admin runs StudySearch day to day: the approvals only you can give, the budgets and models you own, and the checks that keep automatic admission trustworthy.',
     owns: ['Admitting university adapters (Layer 2/3 › Universities)', 'Approving central pages: fee schedules, English policies, academic calendars', 'AI models, their order, AI admission and the AI allowances', 'Firecrawl and OpenRouter budgets and service keys', 'Onboarding settings, Retry and Stop', 'Users and roles; new countries; go-live'],
     schedule: [
@@ -217,6 +217,7 @@ export const SOPS = [
       { version: '2.18', date: '1 Nov 2026', release: '2.15.395', change: 'Alerts are sent by push and e-mail by the hourly Work queue alerts task (D12): expect up to about 75 minutes; acknowledge on Platform health; Delivered means sent, not read. Entry-requirement items: the choices are Approve all rows, Approve except… and Reject the read (Platform Admin only; D4 for courses with active rows). Version raised to follow this history (it had stayed at 1.56).' },
       { version: '2.19', date: '1 Nov 2026', release: '2.15.396', change: 'Who admits (SS-016 UR-08): fee schedules always wait for you; English policies and calendars read by the AI are approved automatically by policy-auto-approve while its switches are on, and only flagged ones wait. Budgets (UR-10): the daily Firecrawl budget and the onboarding pace are read from their settings, not from figures in this SOP. A rising Layer 4 count is investigated for its cause before it is called a backlog (UR-11).' },
       { version: '2.20', date: '2 Nov 2026', release: '2.15.399', change: 'Layer 4 › Inbox decisions are the Pipeline Operator\'s (every Inbox choice needs rank 4; entry requirement items stay yours); Curators read the items and correct records (SS-016 P1). No rank changed.' },
+      { version: '2.24', date: '3 Nov 2026', release: '2.15.422', change: 'Enrich fields now reads Course description and Application deadline from the course\'s own stored, proven page (nothing new is fetched). A description is quoted from that page and held, never cut, when it is too long, a fragment, unsupported or copied from another course; first descriptions go to Layer 4 › Review (Course description). A deadline is taken only when the page prints the full date, tied to the intake it names. Settings › Pipeline settings › Enrich fields: descriptions reviewed before trust, daily items per field.' },
       { version: '2.23', date: '3 Nov 2026', release: '2.15.421', change: 'Enrichment plan: Run now takes over an open automatic plan for that university (its running tasks carry on inside the Run now plan); a Run now in the last 2 days holds the automatic plan. A cancelled plan never starts another step, and its tasks are cancelled as the person who started them. Early re-plans (Settings › Pipeline settings › Onboarding) also follow new verified course pages and failed steps whose cause has cleared; the same inputs never start a second plan. Scheduled jobs: Layer 2 rows no longer show Run on demand.' },
       { version: '2.22', date: '3 Nov 2026', release: '2.15.419', change: 'Enrich fields and Enrichment plan: Retry failed items (with a reason) and Export results (CSV); Preview shows the AI and scraper spend and items another task already holds; Start skips course fields another task holds and unpublished providers. Cancelling a plan now cancels the tasks its steps started. A university can be planned again early when its missing values grew (Settings › Pipeline settings › Onboarding: re-plans per hour, 0 = off). Scheduled jobs: Run on demand is off for Layer 2 schedules, which no worker processes.' },
       { version: '2.21', date: '3 Nov 2026', release: '2.15.411', change: 'Official link fill: the nightly job leaves a course alone while a Layer 4 course-link review is pending on it, so the reviewer decides the page first; its run note counts those courses. Switch: Settings › Pipeline settings › Official link: wait for Layer 4 (on). The pause rule\'s minimum (Official link: fills before the pause check) is now a setting too.' },

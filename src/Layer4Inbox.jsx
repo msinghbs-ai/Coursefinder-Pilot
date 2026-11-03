@@ -7,6 +7,8 @@
 // counsellor reports are closed here (Fixed, Not changed), and Decided lists the decisions taken here (who, when, choice, reason).
 // CF-247 P1 (Platform Admin, 2 Nov 2026 10:28): a provider description item (kind provider_description) shows the proposed description, every
 // sentence with its quote from the official page and the page itself; it is approved as read or rejected (never edited).
+// CF-247 Workstream C (3 Nov 2026): a course description (field_code course_description_first_read, a provider's first ones) is shown and decided
+// the same way, labelled Course description.
 // CF-247 A1-A3 (Platform Admin, 30 Oct 2026 06:53): an AER item (kind aer_review) shows its source, stored copy, completeness and rows with their
 // quotes (public.layer4_aer_review_read). The Platform Admin approves it, rejects it, or approves it except the ticked rows, with one reason;
 // one item at a time, never in bulk. Curators read it here and keep correcting active rows in Catalogue › Entry requirements.
@@ -132,7 +134,7 @@ function Item({it,k,showProvider,rank,onDone,onError}){
   const tick=id=>setValue(JSON.stringify(ticked.includes(id)?ticked.filter(x=>x!==id):[...ticked,id]))
   const go=async()=>{setBusy(true);setErr('');try{const r=await rpc('decide',{kind:it.kind,ref:it.ref,choice:open.key,reason,value});setOpen(null);onDone?.(r)}catch(e){setErr(e.message)}finally{setBusy(false)}}
   return <article className={`l4i-item${it.late?' late':''}`} data-l4-item={it.kind} data-l4-ref={it.ref}>
-    <header><StatusChip value={it.kind} tone={it.late?'warning':'info'} label={k.label}/>{showProvider&&it.provider&&<strong className="l4i-prov">{it.provider}</strong>}{it.subject&&<span className="l4i-subj">{it.subject}</span>}{d.course_code&&<span className="l4i-code" title="CRICOS code" data-l4-code>CRICOS {d.course_code}</span>}<small>{fmtDate(it.created_at)} · {days(it.created_at)} d · <span data-l4-refshow title={it.ref}>Ref {String(it.ref).slice(0,8)}</span></small></header>
+    <header><StatusChip value={it.kind} tone={it.late?'warning':'info'} label={d.field_code==='course_description_first_read'?'Course description':k.label}/>{showProvider&&it.provider&&<strong className="l4i-prov">{it.provider}</strong>}{it.subject&&<span className="l4i-subj">{it.subject}</span>}{d.course_code&&<span className="l4i-code" title="CRICOS code" data-l4-code>CRICOS {d.course_code}</span>}<small>{fmtDate(it.created_at)} · {days(it.created_at)} d · <span data-l4-refshow title={it.ref}>Ref {String(it.ref).slice(0,8)}</span></small></header>
     <p className="l4i-why">{it.why}</p>
     {(d.evidence_id||d.course_id)&&!aerItem&&<p className="l4i-evid" data-l4-evidence><small>
       {d.evidence_id?<><a href={hrefFor('evidence','',{evidence_id:d.evidence_id})} data-l4-evidence-link>Stored copy</a>{d.captured_at?` captured ${fmtDate(d.captured_at)}`:''}{d.newer_copy?<em className="l4i-match warn" data-l4-newer> a newer copy of this page exists</em>:''}{d.source_url?<> · <a href={d.source_url} target="_blank" rel="noreferrer">source <ExternalLink size={11}/></a></>:null}</>:'No stored copy is linked to this item'}

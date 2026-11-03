@@ -135,6 +135,9 @@ function valueText(i){const v=i.value||{};if(i.field==='duration')return v.value
   if(i.field==='english')return v.overall!=null?`IELTS ${v.overall}${v.band!=null?` (no band below ${v.band})`:''}`:'—'
   if(i.field==='intakes')return (v.months||[]).join(', ')||'—'
   if(i.field==='campus_region')return (v.cities||[]).map(c=>`${c.city}: ${c.region}`).join('; ')||'—'
+  // CF-247 Workstream C (3 Nov 2026): course description (the sentences read) and application deadlines (the dates admitted, or why none)
+  if(i.field==='description')return v.text||(v.sentences||[]).map(s=>s.text).join(' ')||'—'
+  if(i.field==='deadline')return (v.deadlines||[]).map(d=>`${d.date||d.kind?.replace('_',' ')}${d.intake?` (${d.intake})`:''}`).join('; ')||'—'
   return i.state==='filled'?'Set':'—'}
 
 function FieldSources({meta,label,onSaved,onError}){
