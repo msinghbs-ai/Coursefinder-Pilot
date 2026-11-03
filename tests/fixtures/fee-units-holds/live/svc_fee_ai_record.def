@@ -1,0 +1,187 @@
+CREATE OR REPLACE FUNCTION public.svc_fee_ai_record(p_queue_id uuid, p_result jsonb, p_cost numeric, p_error text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare q pipeline.fee_reader_queue%rowtype; f pipeline.provider_fact_sources%rowtype; v_cc text; v_cur text; pr pipeline.fee_country_profiles%rowtype;
+        r jsonb; v_rows int := 0; v_out jsonb := '{}'::jsonb; v_min_conf numeric := security.pipeline_num_v1('fees.auto_admit_confidence', 0.85);
+        v_min_sim numeric := security.pipeline_num_v1('fees.min_title_similarity', 0.6); v_ratio numeric := security.pipeline_num_v1('fees.outlier_ratio', 4);
+        v_median numeric; v_src uuid; v_hash text; v_url text; v_prev int; c record; v_year int := extract(year from now() at time zone 'Pacific/Auckland')::int;
+        v_max int := security.pipeline_num_v1('fees.max_pages_per_provider', 12)::int; v_notes text; v_x record;
+begin
+  if coalesce(auth.role(), '') <> 'service_role' then raise exception 'service role required' using errcode = '42501'; end if;
+  select * into q from pipeline.fee_reader_queue where id = p_queue_id for update;
+  if q.id is null then return jsonb_build_object('error', 'unknown queue item'); end if;
+  select * into f from pipeline.provider_fact_sources where id = q.fact_source_id;
+  -- CF-247 23 Oct 2026: a course's own page (no fee page): its address, stored copy and hash stand in for the fee page's
+  if q.course_id is not null then
+    select coalesce(e.source_url, g.url), q.evidence_id, q.content_hash, q.provider_id into f.url, f.evidence_id, f.content_hash, f.provider_id
+      from pipeline.evidence_artifacts e left join pipeline.coverage_course_pages g on g.course_id = q.course_id where e.id = q.evidence_id;
+  end if;
+  select k.iso_alpha2 into v_cc from catalogue.providers p join ref.countries k on k.id = p.country_id where p.id = q.provider_id;
+  select * into pr from pipeline.fee_country_profiles where country_code = v_cc;
+  v_cur := coalesce(pr.currency_code, (select a.currency_code from pipeline.coverage_admission_countries a join ref.countries k on k.id = a.country_id where k.iso_alpha2 = v_cc));
+  if p_error is not null then
+    update pipeline.fee_reader_queue set state = case when attempts >= 3 then 'failed' else 'queued' end, error = left(p_error, 500), cost_usd = coalesce(cost_usd, 0) + coalesce(p_cost, 0), leased_until = null where id = q.id;
+    if q.attempts >= 3 then perform security.fee_reader_finding_v1(q.provider_id, q.fact_source_id, 'read_failed', q.fact_source_id::text, jsonb_build_object('error', left(p_error, 300), 'url', f.url)); end if;
+    return jsonb_build_object('error', p_error);
+  end if;
+  v_src := security.coverage_sweep_source(q.provider_id);
+  v_median := (select percentile_cont(0.5) within group (order by cf.amount) from catalogue.course_fees cf join catalogue.courses c2 on c2.id = cf.course_id
+                 join catalogue.providers p2 on p2.id = c2.provider_id join ref.countries k2 on k2.id = p2.country_id
+                where k2.iso_alpha2 = v_cc and cf.fee_type = 'provider_current_tuition' and cf.status = 'active' and cf.basis in ('annual', 'indicative_annual'));
+
+  -- 1 each row as published, its yearly figure and its course
+  -- 22 Oct 2026: a page read again replaces its earlier rows (kept, outcome replaced), so old and new readings are never mixed
+  update pipeline.fee_reader_rows set outcome = 'replaced' where queue_id = q.id;
+  for r in select * from jsonb_array_elements(coalesce(p_result->'rows', '[]'::jsonb)) loop
+    v_rows := v_rows + 1;
+    insert into pipeline.fee_reader_rows(queue_id, fact_source_id, provider_id, qualification, subject, level, amount_min, amount_max, currency_code, unit, audience, fee_year, quote,
+                                         yearly, yearly_basis, course_id, match_confidence, title_similarity, outcome, units_covered)
+    select q.id, q.fact_source_id, q.provider_id, left(r->>'qualification', 300), left(r->>'subject', 300), left(r->>'level', 60),
+           nullif(r->>'amount_min', '')::numeric, nullif(r->>'amount_max', '')::numeric, upper(coalesce(r->>'currency', v_cur)),
+           -- 22 Oct 2026: a fee for a stated number of points is per_year when that is a full-time year, otherwise per_course
+           case when security.fee_row_units_v1(r) > 0 then case when security.fee_row_units_v1(r) = pr.full_time_units_a_year then 'per_year' else 'per_course' end
+                else coalesce(r->>'unit', 'unknown') end,
+           coalesce(r->>'audience', 'international'), nullif(r->>'fee_year', '')::int, left(r->>'quote', 500),
+           case when security.fee_row_units_v1(r) > 0 and pr.full_time_units_a_year > 0
+                then round(nullif(r->>'amount_min', '')::numeric / security.fee_row_units_v1(r) * pr.full_time_units_a_year, 2) else
+           case coalesce(r->>'unit', 'unknown')
+             when 'per_year' then nullif(r->>'amount_min', '')::numeric
+             when 'per_credit' then nullif(r->>'amount_min', '')::numeric * pr.full_time_units_a_year
+             when 'per_point' then nullif(r->>'amount_min', '')::numeric * pr.full_time_units_a_year
+             when 'per_term' then nullif(r->>'amount_min', '')::numeric * pr.terms_a_year end end,
+           case when security.fee_row_units_v1(r) > 0 then case when security.fee_row_units_v1(r) = pr.full_time_units_a_year then 'annual' else 'indicative_annual' end else
+           case coalesce(r->>'unit', 'unknown') when 'per_year' then 'annual' when 'per_credit' then 'indicative_annual' when 'per_point' then 'indicative_annual'
+                when 'per_term' then 'indicative_annual' end end,
+           (select c2.id from catalogue.courses c2 where c2.id = nullif(r->>'course_id', '')::uuid and c2.provider_id = q.provider_id),
+           least(greatest(coalesce(nullif(r->>'match_confidence', '')::numeric, 0), 0), 1),
+           (select security.fee_title_similarity_v1(coalesce(r->>'qualification', '') || ' ' || coalesce(r->>'subject', ''), c2.canonical_title)
+              from catalogue.courses c2 where c2.id = nullif(r->>'course_id', '')::uuid and c2.provider_id = q.provider_id),
+           'pending', security.fee_row_units_v1(r);
+    if security.fee_row_units_v1(r) > 0 and r->>'unit' in ('per_point', 'per_credit') then
+      perform security.fee_reader_finding_v1(q.provider_id, q.fact_source_id, 'unit_unknown', left(coalesce(r->>'qualification', '') || ' ' || coalesce(r->>'subject', ''), 300),
+        jsonb_build_object('quote', left(r->>'quote', 200), 'read_as', r->>'unit', 'is', 'the fee for ' || security.fee_row_units_v1(r) || ' points or credits, not a fee per point', 'url', f.url));
+    end if;
+  end loop;
+
+  -- 2 outcome of each row
+  update pipeline.fee_reader_rows x set outcome = case
+      when x.currency_code is distinct from v_cur then 'skipped'
+      when x.audience <> 'international' then 'domestic'
+      when x.yearly is null then 'not_yearly'
+      when x.course_id is null then 'no_course'
+      else 'matched' end,
+      note = case when x.currency_code is distinct from v_cur then 'currency ' || coalesce(x.currency_code, '?') || ' is not ' || v_cur
+                  when x.unit not in ('per_year', 'per_credit', 'per_point', 'per_term', 'per_course') then 'unit not understood' end
+   where x.queue_id = q.id and x.outcome = 'pending';
+  for v_x in select * from pipeline.fee_reader_rows where queue_id = q.id
+             and (outcome in ('skipped', 'no_course') or (outcome = 'not_yearly' and unit <> 'per_course')) loop
+    perform security.fee_reader_finding_v1(q.provider_id, q.fact_source_id,
+      case when v_x.outcome = 'skipped' then 'currency' when v_x.outcome = 'not_yearly' then 'unit_unknown' else 'unmatched_row' end,
+      coalesce(v_x.qualification, '') || ' ' || coalesce(v_x.subject, ''),
+      jsonb_build_object('qualification', v_x.qualification, 'subject', v_x.subject, 'unit', v_x.unit, 'currency', v_x.currency_code, 'url', f.url));
+  end loop;
+
+  -- 3 one fee per course: the lowest yearly figure of its rows (a range is kept in the note), then admit, review, same or conflict
+  for c in
+    select x.course_id, min(x.yearly) yearly, max(x.yearly) high, max(x.fee_year) fee_year, min(x.match_confidence) conf, min(x.title_similarity) sim,
+           (array_agg(x.yearly_basis order by x.yearly))[1] basis, (array_agg(x.quote order by x.yearly))[1] quote, count(*) n,
+           (array_agg(x.unit order by x.yearly))[1] unit, (array_agg(x.amount_min order by x.yearly))[1] published, (array_agg(x.units_covered order by x.yearly))[1] units
+      from pipeline.fee_reader_rows x where x.queue_id = q.id and x.outcome = 'matched' group by x.course_id
+  loop
+    declare v_held record; v_outcome text; v_note text;
+    begin
+      select cf.amount, cf.source_id into v_held from catalogue.course_fees cf
+       where cf.course_id = c.course_id and cf.fee_type = 'provider_current_tuition' and cf.status = 'active' order by cf.updated_at desc limit 1;
+      v_note := case when c.high > c.yearly then 'from ' || c.yearly || ' to ' || c.high || ' by subject; ' else '' end
+             || case when c.units is not null and c.units <> pr.full_time_units_a_year
+                     then 'yearly figure from ' || c.published || ' for ' || c.units || ' points or credits (a full-time year is ' || pr.full_time_units_a_year || '); '
+                     when c.basis = 'indicative_annual' then 'yearly estimate from ' || c.published || ' ' || replace(c.unit, '_', ' ') || ' x full-time load; ' else '' end
+             || 'AI fee reader (' || f.url || ')';
+      v_outcome := case
+        when v_held.amount is not null and abs(v_held.amount - c.yearly) <= greatest(1, v_held.amount * 0.01) then 'same'  -- fixed: rounding
+        when v_held.amount is not null and v_held.source_id is distinct from v_src then 'conflict'
+        when security.fee_below_floor_v1(c.course_id, c.yearly, coalesce(c.basis, 'annual')) is not null then 'review'  -- 23 Oct 2026 (NZ brief C3): below the country floor
+        when c.conf >= v_min_conf and coalesce(c.sim, 0) >= v_min_sim and (v_median is null or c.yearly between v_median / v_ratio and v_median * v_ratio)
+             and coalesce(c.fee_year, v_year) >= v_year - 1 then 'admitted'
+        else 'review' end;
+      if v_outcome = 'review' and security.fee_below_floor_v1(c.course_id, c.yearly, coalesce(c.basis, 'annual')) is not null then
+        v_note := v_note || '; international fee below the country floor (' || v_cur || ' ' || to_char(security.fee_below_floor_v1(c.course_id, c.yearly, coalesce(c.basis, 'annual')), 'FM999,999,999') || ' a year)';
+      end if;
+      if v_outcome = 'admitted' then
+        begin
+          perform security.coverage_apply_course_v1(c.course_id, v_src, f.evidence_id, f.url, f.content_hash,
+            jsonb_build_object('fee_amount', round(c.yearly, 2), 'currency_code', v_cur, 'fee_year', c.fee_year, 'fee_basis', c.basis, 'fee_notes', left(v_note, 500)));
+        exception when others then
+          v_outcome := 'review'; v_note := v_note || '; not admitted: ' || left(sqlerrm, 200);
+        end;
+      end if;
+      if v_outcome in ('review', 'conflict') and not exists (select 1 from pipeline.layer4_review_items l where l.entity_id = c.course_id
+                                                                and l.field_code = 'provider_current_tuition_validation' and l.status = 'pending') then
+        insert into pipeline.layer4_review_items(entity_type, entity_id, field_code, evidence_id, before_value, proposed_value, layer2_state, layer3_state, status, escalation_reason, change_control_ref)
+        values ('course', c.course_id, 'provider_current_tuition_validation', f.evidence_id,
+                case when v_held.amount is not null then jsonb_build_object('amount', v_held.amount) else '{}'::jsonb end,
+                jsonb_build_object('amount', round(c.yearly, 2), 'currency_code', v_cur, 'basis', case when c.basis = 'annual' then 'annual' else 'indicative_annual' end,
+                                   'audience', 'international', 'fee_year', c.fee_year),
+                jsonb_build_object('page', f.url, 'source', 'fee reader', 'quote', c.quote, 'match_confidence', c.conf, 'title_similarity', c.sim, 'note', v_note),
+                '{}'::jsonb, 'pending',
+                case when v_outcome = 'conflict' then 'Fee reader: a different fee is held from another source'
+                     when c.conf < v_min_conf then 'Fee reader: course match not sure enough'
+                     when coalesce(c.sim, 0) < v_min_sim then 'Fee reader: qualification and course title differ'
+                     else 'Fee reader: outside the usual range or an old fee year' end,
+                'CF-CHG-20260915-247');
+      end if;
+      if v_outcome = 'conflict' then
+        perform security.fee_reader_finding_v1(q.provider_id, q.fact_source_id, 'conflict', c.course_id::text, jsonb_build_object('held', v_held.amount, 'read', c.yearly));
+      elsif v_outcome = 'review' and v_median is not null and c.yearly not between v_median / v_ratio and v_median * v_ratio then
+        perform security.fee_reader_finding_v1(q.provider_id, q.fact_source_id, 'outlier', c.course_id::text, jsonb_build_object('read', c.yearly, 'median', round(v_median)));
+      end if;
+      update pipeline.fee_reader_rows set outcome = v_outcome, note = left(v_note, 500) where queue_id = q.id and course_id = c.course_id and outcome = 'matched';
+      v_out := jsonb_set(v_out, array[v_outcome], to_jsonb(coalesce((v_out->>v_outcome)::int, 0) + 1));
+    end;
+  end loop;
+
+  -- 4 the AI's quotes that were not on the page (counted by the worker) and the size of the read
+  if coalesce((p_result->>'quotes_missing')::int, 0) > 0 then
+    perform security.fee_reader_finding_v1(q.provider_id, q.fact_source_id, 'quote_missing', q.fact_source_id::text, jsonb_build_object('rows', (p_result->>'quotes_missing')::int, 'url', f.url));
+  end if;
+  if v_rows = 0 then
+    perform security.fee_reader_finding_v1(q.provider_id, q.fact_source_id, 'no_rows', q.fact_source_id::text, jsonb_build_object('url', f.url));
+  else
+    update pipeline.fee_reader_findings set resolved_at = now() where provider_id = q.provider_id and fact_source_id = q.fact_source_id and kind in ('no_rows', 'read_failed') and resolved_at is null;
+  end if;
+  select o.rows_found into v_prev from pipeline.fee_reader_queue o where o.fact_source_id = q.fact_source_id and o.state = 'done' and o.id <> q.id order by o.finished_at desc limit 1;
+  if v_prev is not null and v_rows < v_prev / 2 then
+    perform security.fee_reader_finding_v1(q.provider_id, q.fact_source_id, 'rows_dropped', q.fact_source_id::text, jsonb_build_object('before', v_prev, 'now', v_rows, 'url', f.url));
+  end if;
+
+  -- 5 the AI's notes on how this provider's fee pages are laid out (versioned)
+  v_notes := nullif(btrim(left(p_result->>'page_notes', 1500)), '');
+  if v_notes is not null then
+    insert into pipeline.fee_reader_recipes(provider_id, notes) values (q.provider_id, v_notes)
+    on conflict (provider_id) do update set history = (jsonb_build_array(jsonb_build_object('version', pipeline.fee_reader_recipes.version, 'notes', pipeline.fee_reader_recipes.notes,
+                                                         'at', pipeline.fee_reader_recipes.updated_at, 'by', pipeline.fee_reader_recipes.updated_by)) || pipeline.fee_reader_recipes.history) - 5,
+           version = pipeline.fee_reader_recipes.version + 1, notes = excluded.notes, updated_at = now(), updated_by = 'fee_ai'
+     where pipeline.fee_reader_recipes.notes is distinct from excluded.notes and pipeline.fee_reader_recipes.updated_by = 'fee_ai';
+  end if;
+
+  -- 6 further fee pages the AI saw linked from this one, on the provider's own site
+  insert into pipeline.provider_fact_sources(provider_id, kind, url, title, rank, found_via, status, linked_from)
+  select q.provider_id, 'fee_schedule', u, case when q.course_id is null then 'linked from a fee page (AI fee reader)' else 'linked from a course page (AI fee reader)' end, 6, 'search', 'found', case when q.course_id is null then q.fact_source_id end
+    from (select distinct left(jsonb_array_elements_text(coalesce(p_result->'more_fee_pages', '[]'::jsonb)), 500) u) m
+   where u ~ '^https?://' and lower(substring(u from '^https?://([^/]+)')) like '%' || lower(regexp_replace(substring(coalesce(f.url, '') from '^https?://([^/]+)'), '^www\.', ''))
+     and (select count(*) from pipeline.provider_fact_sources s where s.provider_id = q.provider_id and s.kind = 'fee_schedule') < v_max
+  on conflict (provider_id, kind, url) do nothing;
+
+  update pipeline.fee_reader_queue set state = 'done', finished_at = now(), rows_found = v_rows, cost_usd = coalesce(cost_usd, 0) + coalesce(p_cost, 0),
+         model = left(p_result->>'model', 120), leased_until = null, error = null where id = q.id;
+  if (v_out->>'admitted') is not null then
+    insert into search.enrichment_source_gates(projection_code, domain_code, source_id, gate_status, approval_ref, approved_at, created_at, updated_at)
+    select 'courses', 'provider_current_tuition', v_src, 'approved', 'CF-CHG-20260915-247, Platform Admin 21 Oct 2026 20:02 (AI fee reader, "Automatic above confidence")', now(), now(), now()
+     where not exists (select 1 from search.enrichment_source_gates g where g.projection_code = 'courses' and g.domain_code = 'provider_current_tuition' and g.source_id = v_src);
+    insert into search.refresh_requests(requested_by) values ('fee reader ' || left(q.id::text, 8));
+  end if;
+  return jsonb_build_object('rows', v_rows) || v_out;
+end $function$
