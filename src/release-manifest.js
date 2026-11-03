@@ -1,17 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.442'
-export const PACKAGE_VERSION='0.1.369'
+export const UI_VERSION='2.15.443'
+export const PACKAGE_VERSION='0.1.370'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Nov 2026',
-  title:'The fee reader turns course and unit fees into yearly fees correctly and respects fee holds',
+  title:'One blocked item no longer stops unrelated work: shared work continuity with bounded recovery',
   changes:[
-    'A fee stated for a number of units or credit points becomes a yearly fee from the page\'s own full-time load, then the country load only when the count is the same kind, then the whole-course fee over the course length; when the years implied disagree with the course length, the figure goes to Layer 4 instead of being divided.',
-    'A course with a raised fee check hold or a fee exclusion from a fee check decision is no longer read or admitted by the fee reader; its requests close as held.',
-    'The worker asks the model for the kind of count, the page\'s stated load, the course length and whether the amount is the whole course.'
+    'Every lane can record its work items in one place with their stage, attempts, failure class, next eligible time, recovery deadline, locks and evidence, and the platform applies a recovery policy by failure class with bounded retries; a parked item holds no lease and raises no repeated review item.',
+    'Course relink now takes universities in turn, isolates each one and stops within its time budget, so one slow university no longer fails the whole run.',
+    'Work in a full Layer 4 review category waits without counting an attempt or raising a review item; no Layer 4 limit is raised or bypassed. Repeated blockers raise one deduplicated issue that is never re-notified while unchanged.'
   ],
   bugFixes:[]
 }
