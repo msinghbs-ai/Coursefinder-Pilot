@@ -981,9 +981,14 @@ begin
   for r in
     with followed as (select x::uuid pid, n from jsonb_array_elements_text(coalesce(security.toolset_setting('pipeline', 'coverage.aer_priority_providers'), '[]'::jsonb)) with ordinality z(x, n)),
     rd as (select s.provider_id, count(*) filter (where s.status = 'read') nread from pipeline.entry_matrix_sources s group by 1),
-    reads as (select (e->>'provider_id')::uuid pid, count(*) n, min(a.ran_at) first_at, jsonb_agg(distinct e->>'course_id') courses
-                from pipeline.aer_schedule_runs a cross join lateral jsonb_array_elements(case when jsonb_typeof(a.detail->'new') = 'array' then a.detail->'new' else '[]'::jsonb end) e
-               where a.ran_at >= v_look and e ? 'provider_id' group by 1),
+    -- course reads of the window made after the university's newest course entry row (CDU: 8 reads since 3 Nov, the last 6 with no row)
+    reads0 as (select (e->>'provider_id')::uuid pid, a.ran_at, e->>'course_id' course
+                 from pipeline.aer_schedule_runs a cross join lateral jsonb_array_elements(case when jsonb_typeof(a.detail->'new') = 'array' then a.detail->'new' else '[]'::jsonb end) e
+                where a.ran_at >= v_look and e ? 'provider_id'),
+    reads as (select q.pid, count(*) n, min(q.ran_at) first_at, jsonb_agg(distinct q.course) courses
+                from reads0 q
+               where q.ran_at > coalesce((select max(x.created_at) from catalogue.course_entry_requirements x join catalogue.courses c on c.id = x.course_id where c.provider_id = q.pid), '-infinity'::timestamptz)
+               group by 1),
     cand as (
       select i.provider_id, i.provider_id::text entity, null::uuid course_id,
              case i.outcome when 'blocked_site' then 'aer_source_missing' when 'unverified_link' then 'aer_document_unverified' else 'aer_rendered_only' end cls,
