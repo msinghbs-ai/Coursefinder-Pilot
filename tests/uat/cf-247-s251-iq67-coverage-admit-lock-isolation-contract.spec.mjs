@@ -3,7 +3,7 @@
 // bounded by admit.item_error_limit), the lock rule itself is unchanged, and the root cause lock_conflict_in_batch is registered with its remedies
 // through workstream A's contract. The behaviour runs on isolated fixtures by tests/fixtures/iq67-coverage-admit/run.sh (scratch PostgreSQL; the
 // four live definitions loaded from their live text and checked against the live md5s; the 13:53 failure reproduced on them; the migration
-// refused without A's contract, applied, applied again unchanged; every case asserted). This spec holds the contract.
+// applied without A's contract in a rolled-back transaction, then with it, applied again unchanged; every case asserted). This spec holds the contract.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import crypto from 'node:crypto'
@@ -77,12 +77,13 @@ test('one refused item never aborts the batch: isolated, held as apply_refused w
   expect(fixtures).toContain('run 3 committed and is marked "more", so the next run is not skipped for no new input')
 })
 
-test('root cause and remedies go through workstream A\'s contract; the migration waits for it', () => {
+test('root cause and remedies go through workstream A\'s contract when it exists; the fix does not wait for it', () => {
   expect(m).toContain("if to_regclass('pipeline.ops_remedies') is null then")
-  expect(m).toContain("select security.ops_root_cause_register_v1('lock_conflict_in_batch', jsonb_build_object(\n  'class', 'rule',")
-  expect(m).toContain("select security.ops_remedy_register_v1('coverage_admit_lock_hold', jsonb_build_object(")
-  expect(m).toMatch(/ops_remedy_register_v1\('coverage_admit_recheck'[\s\S]*?'authority', 'auto',\n  'action_fn', 'security\.coverage_admit_recheck_v1\(bigint\)', 'verify_fn', 'security\.coverage_admit_recheck_verify_v1\(bigint\)'/)
-  expect(run).toContain("without A's contract: refused, nothing changed")
+  expect(m).toContain("if to_regprocedure('security.ops_remedy_register_v1(text,jsonb)') is null then return; end if;")
+  expect(m).toContain("perform security.ops_root_cause_register_v1('lock_conflict_in_batch', jsonb_build_object(")
+  expect(m).toContain("perform security.ops_remedy_register_v1('coverage_admit_lock_hold', jsonb_build_object(")
+  expect(m).toMatch(/ops_remedy_register_v1\('coverage_admit_recheck'[\s\S]*?'authority', 'auto',\n\s+'action_fn', 'security\.coverage_admit_recheck_v1\(bigint\)', 'verify_fn', 'security\.coverage_admit_recheck_verify_v1\(bigint\)'/)
+  expect(run).toContain("without A's contract: applies (checked in a rolled-back transaction) and registers nothing")
   expect(fixtures).toContain('remedy verification passes once a full run committed after the action')
   const stub = fs.readFileSync(`${FX}/stub-ops-contract.sql`, 'utf8')
   expect(stub).toContain('create or replace function security.ops_remedy_register_v1(p_code text, p_spec jsonb) returns jsonb')

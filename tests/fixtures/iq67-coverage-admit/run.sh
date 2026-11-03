@@ -34,10 +34,11 @@ for f in live/*.def; do $P -d $DB -c "set check_function_bodies = off" -f "$f"; 
 for s in "${!LIVE[@]}"; do [ "$(md5of "$s")" = "${LIVE[$s]}" ] || { echo "loaded $s differs from live: $(md5of "$s")"; exit 1; }; done
 echo "live definitions loaded (= live md5): ${#LIVE[@]}"
 # without workstream A's contract the migration refuses to run and changes nothing
-if OUT=$($P -d $DB -1 -At -f $MIG 2>&1); then echo "the migration ran without A's contract"; exit 1; fi
-echo "$OUT" | grep -q "needs workstream A's operations contract" || { echo "$OUT" | tail -3; exit 1; }
+# Integration Controller 3 Nov 2026: the fix ships before A's contract; it applies inside a rolled-back transaction and only notes the missing contract
+OUT=$( { echo 'begin;'; cat $MIG; echo 'rollback;'; } | $P -d $DB -At 2>&1 ) || { echo "$OUT" | tail -3; exit 1; }
+echo "$OUT" | grep -q "operations contract is not deployed yet" || { echo "$OUT" | tail -3; exit 1; }
 [ "$(md5of "$APPLY")" = 2e85e6cbb5d2e64ea1b50fe490c4da76 ] || { echo "a refused run changed the apply"; exit 1; }
-echo "without A's contract: refused, nothing changed"
+echo "without A's contract: applies (checked in a rolled-back transaction) and registers nothing"
 $P -d $DB -f stub-ops-contract.sql
 $P -d $DB -f fixtures-before.sql 2>&1 | show
 OUT=$($P -d $DB -1 -At -f $MIG 2>&1) || { echo "$OUT" | tail -5; exit 1; }
