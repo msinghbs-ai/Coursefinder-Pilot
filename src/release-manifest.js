@@ -1,17 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.446'
-export const PACKAGE_VERSION='0.1.373'
+export const UI_VERSION='2.15.447'
+export const PACKAGE_VERSION='0.1.374'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Nov 2026',
-  title:'Single approved scholarship reads, ownership proposals and no more directory-site queuing',
+  title:'Layer 4 Course Link: stored copies linked, Course page needed, approved rules applied item by item',
   changes:[
-    'An approved scholarship read can be requested for one held item, logged with its approver and reason; a fresh read never reuses a stored copy, and its answer goes to the held item in Layer 4 instead of being admitted.',
-    'The platform proposes the owner of a held scholarship found on a directory page from the institutions the page names, and records duplicate and staging-address cases for a person to decide.',
-    'Scholarship candidates on directory sites are no longer queued for AI reading; each is marked refused once.'
+    'Course Link and fee review items link the newest stored copy of their page, so reviewers see the evidence without a new read.',
+    'A refused page for a course with no held page goes to one Course page needed list grouped by university, with Add the page, Search again and No page exists, instead of raising another review item.',
+    'Approved university rules are applied item by item through the normal decision path; every item is re-checked when applied and a failed item stays pending with its reason. Reviewers also get Refuse this proposal and Duplicate of a published scholarship, and non-Australian cards say Course code instead of CRICOS.'
   ],
   bugFixes:[]
 }

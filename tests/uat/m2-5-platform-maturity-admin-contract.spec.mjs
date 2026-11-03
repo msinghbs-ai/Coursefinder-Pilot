@@ -1,7 +1,7 @@
 // Guards: M2.5 Platform maturity Administration source/server contract
 import fs from'node:fs/promises'
-import{execFileSync}from'node:child_process'
 import{test,expect}from'@playwright/test'
+import{buildOnce}from'./support/build-once.mjs'
 import{writeRunEnvironment}from'./support/runtime-evidence.mjs'
 
 // CF-058 targeted source/build validation trigger — rerun after full managed-run JSX restoration.
@@ -77,13 +77,7 @@ test.describe('M2.5 Platform maturity Administration source/server contract',()=
     expect(migration).not.toMatch(/\b(delete|truncate)\s+from\b/i)
     expect(migration).not.toMatch(/\bupdate\s+pipeline\.(?:environment_source_gates|layer2_provider_environment_gates|layer3_profile_environment_gates)\b/i)
 
-    const output=execFileSync('npm',['run','build'],{
-      cwd:process.cwd(),
-      env:process.env,
-      encoding:'utf8',
-      timeout:60000,
-      stdio:['ignore','pipe','pipe'],
-    })
+    const output=buildOnce()
     expect(output).toContain('built in')
   })
 })

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.374 — 3 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.447** (SS-019 Layer 4 Course Link; Decision 179). Migration `20261104260000_cf247_l4_course_link`: md5-guarded edits of `security.layer4_inbox_kinds_v1` (f5fc812e → e79ce181), `security.layer4_inbox_items_v1` (a56bc331 → 4fc05d14), `public.admin_layer4_inbox` (f1f0d760 → 1fb97548), `security.binding_refusal_route_v1` (488ef183 → 717fb44d); layer4.evidence_link_on and layer4.page_needed_on on; pipeline.layer4_course_link_rules; security.layer4_evidence_backfill_v1, course_page_needed_convert_v1, layer4_course_link_rule_validate_v1, layer4_course_link_rule_execute_v1, layer4_refusal_search_cost_v1. Build-once helper for source contracts (test turnaround review). Nothing dropped; consumer API untouched. Spec s258.
+
 ## 0.1.373 — 3 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.446** (SS-019 scholarships; IQ-00132). Migration `20261104250000_cf247_sch_reads_ownership`: md5-guarded edits of `public.svc_scholarship_ai_next` (18e76dbc → 709ad0f9), `security.scholarship_ai_has_copy_v1` (08db702a → ecc54cd3), `public.svc_scholarship_ai_record` (aa337a9f → b2fafccb), `security.scholarship_ai_enqueue_v1` (04a9aa8c → 549948c5); pipeline.scholarship_read_requests, scholarship_owner_proposals; security.scholarship_read_request_v1, scholarship_owner_check_v1, scholarship_sources_report_v1; scholarship.single_read_daily_max ships 0; scholarship.enqueue_directory_gate_on ships 1. Pastes for the approved VU/Bond reads, the D4 refusals and the D5 Macquarie re-reads. Nothing dropped; consumer API untouched. Spec s259.
