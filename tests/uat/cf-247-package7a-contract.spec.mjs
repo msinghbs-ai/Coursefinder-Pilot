@@ -11,7 +11,7 @@ test('source: Melbourne time, no IST, onboarding merged, datasets component, no 
   expect(fs.readFileSync('src/automation-schedule.js', 'utf8')).not.toMatch(/\bIST\b.*`|330\)/)
   expect(describeSchedule('17 20 * * *').text).not.toContain('IST')
   const main = fs.readFileSync('src/mature-main.jsx', 'utf8')
-  expect(main).toContain("if(tab==='datasets')return <div className=\"m-page-stack\"><StatisticsDatasets rank={rank}/>") // v2.15.301: Ranking imports below
+  expect(main).toContain("{rank>=4&&<StatisticsDatasets rank={rank} onView={view}/>}{rank>=4&&<section data-ranking-imports>") // v2.15.301: Ranking imports below; SS-020 step 5: View data above
   expect(main).toContain('<Layer23Operations rank={rank} actorId={actorId} onError={err}/>') // v2.15.253: automatic onboarding replaced the notice; v2.15.300: on Layer 2/3 › Operations
   for (const f of ['src/platform-maturity-entry.jsx', 'src/pipeline-ops-entry.jsx', 'src/EvidenceWorkspace.jsx'])
     expect(fs.readFileSync(f, 'utf8')).not.toMatch(/M2\.4\.4 permanent baseline|M1-PIPELINE-OPS · |M2\.4\.5 · Scholarship PIM|Private governed evidence/)
