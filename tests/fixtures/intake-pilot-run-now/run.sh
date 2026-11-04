@@ -6,6 +6,7 @@
 #   2 the live security.intake_dates_apply_v1(integer) checked (d15c04c6..., read live 4 Nov 2026 20:07) before this change;
 #   3 the task tables, roles and consumer read-back (stubs.sql); the migration applied, then applied again unchanged;
 #   4 the cases (fixtures.sql), a run refused while another holds the job's lock, then the run and read-back (fixtures2.sql).
+#   3b the cohort scope migration (Platform Admin 4 Nov 2026 20:53) from the cohort function as live after v2.15.476, twice.
 # Drops the throwaway database at the end.
 set -euo pipefail
 cd "$(dirname "$0")/../../.."
@@ -29,6 +30,16 @@ $P -d $DB -1 -o /dev/null -f $MIG
 [ "$(md5of "$SIGS")" = "$AFTER" ] || { echo "a second run changed a definition"; exit 1; }
 [ "$($P -d $DB -Atc "select count(*) from pipeline.platform_toolset_settings where key like 'run_now.%'")" = 3 ] || { echo "settings added twice"; exit 1; }
 echo "second run: unchanged"
+# the cohort scope (Platform Admin 4 Nov 2026 20:53): from the cohort function as live after v2.15.476, the scope migration twice
+MIG2=supabase/migrations/20261104630000_cf247_intake_pilot_top_au_universities.sql
+CC="array['security.run_now_cohort_create_v1(text,uuid,text,text)']"
+[ "$(md5of "$CC")" = "0fd43a771a427530995c20f88eb1af1c" ] || { echo "cohort function differs from live: $(md5of "$CC")"; exit 1; }
+$P -d $DB -c "alter table catalogue.providers add column if not exists provider_type_id uuid" \
+  -c "create table if not exists ref.provider_types(id uuid primary key default gen_random_uuid(), code text unique, name text, description text, status text default 'active')"
+$P -d $DB -1 -o /dev/null -f $MIG2
+CCA=$(md5of "$CC"); echo "cohort scope after: $CCA"
+$P -d $DB -1 -o /dev/null -f $MIG2
+[ "$(md5of "$CC")" = "$CCA" ] || { echo "a second run of the scope migration changed the definition"; exit 1; }
 # the intake-dates fixture's helpers in front of each case file
 sed -n '/^create function pg_temp.ok/,/^create function pg_temp.lists/p' tests/fixtures/intake-dates/fixtures.sql | sed '/^create function pg_temp.lists/,$d' > "$TMP/helpers.sql"
 cat "$TMP/helpers.sql" $FX/fixtures.sql > "$TMP/f1.sql"; cat "$TMP/helpers.sql" $FX/fixtures2.sql > "$TMP/f2.sql"
