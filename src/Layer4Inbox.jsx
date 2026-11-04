@@ -19,6 +19,7 @@ import{hrefFor,roleName}from'./nav-map'
 import{Button,Empty,Loading,Metric,StatusChip,fmtDate,fmtNumber}from'./ui-kit'
 import'./layer4-inbox.css'
 import{ReviewReadinessLine}from'./AerCoverage'
+import{ItemLifecycle}from'./Layer4ItemLifecycle' // CF-247 decision 12:24: action lifecycle, times and acknowledgement on every card
 
 const rpc=async(action,args)=>{const{data,error}=await supabase.rpc('admin_layer4_inbox',{p_action:action,p_args:args||{}});if(error)throw new Error(error.message);return data||{}}
 // SS-016 role simulation (1 Nov 2026): the rank a choice needs, as public.admin_layer4_inbox decides it: its own rank, else rank 4
@@ -158,6 +159,7 @@ export default function Layer4Inbox({onError,routeParams}){
 function Item({it,k,showProvider,rank,onDone,onError}){
   const[open,setOpen]=useState(null),[reason,setReason]=useState(''),[value,setValue]=useState(''),[busy,setBusy]=useState(false),[err,setErr]=useState('')
   const d=it.detail||{}
+  const[ack,setAck]=useState(null),[rev,setRev]=useState(0) // CF-247 decision 12:24 §4: the server's acknowledgement of the last decision here
   // hotfix D1 (24 Oct 2026): a course-link row that holds a fee (identity re-verification quarantine, fee floor) has no new page to use;
   // "Enter another address" binds a person's page (https:// on the provider's own site), which is read again and re-admits the fee
   const fee=isFeeItem(it)
@@ -168,7 +170,7 @@ function Item({it,k,showProvider,rank,onDone,onError}){
   // a kind hook's detail (a registered kind, or recovery on a built-in kind): read when the card is on screen; its actions say which of the
   // hook's choices this person may take on this item
   const hooked=k.detail===true&&!!(k.hook||k.extension),[hd,setHd]=useState(null),[follow,setFollow]=useState('')
-  useEffect(()=>{if(hooked&&seen)lazy(()=>rpc('detail',{items:[{kind:it.kind,ref:it.ref}]})).then(d=>setHd(d.items?.[0]?.hook_detail||{})).catch(e=>setHd({error:e.message}))},[it.ref,seen])
+  useEffect(()=>{if(hooked&&seen)lazy(()=>rpc('detail',{items:[{kind:it.kind,ref:it.ref}]})).then(d=>setHd(d.items?.[0]?.hook_detail||{})).catch(e=>setHd({error:e.message}))},[it.ref,seen,rev])
   const allowed=hd&&!hd.error&&Array.isArray(hd.actions)?Object.fromEntries(hd.actions.map(a=>[a.key,a.allowed===true])):null
   const hookOk=c=>!c.hook||!hooked||(!!hd&&!hd.error&&(!allowed||allowed[c.key]===true))
   const aerWaiting=(aer?.rows||[]).filter(r=>r.status==='proposed')
@@ -191,10 +193,11 @@ function Item({it,k,showProvider,rank,onDone,onError}){
   const ticked=(()=>{try{return JSON.parse(value||'[]')}catch{return[]}})()
   const tick=id=>setValue(JSON.stringify(ticked.includes(id)?ticked.filter(x=>x!==id):[...ticked,id]))
   // a kind hook may answer ok false with what it still needs: shown as the next step, the choice stays open
-  const go=async()=>{setBusy(true);setErr('');try{const r=await rpc('decide',{kind:it.kind,ref:it.ref,choice:open.key,reason,value});if(r&&r.ok===false){setFollow(r.request||'More is needed before this can go ahead.');return}setFollow('');setOpen(null);onDone?.(r)}catch(e){setErr(e.message)}finally{setBusy(false)}}
+  const go=async()=>{setBusy(true);setErr('');try{const r=await rpc('decide',{kind:it.kind,ref:it.ref,choice:open.key,reason,value});setAck(r?.ack||null);setRev(v=>v+1);if(r&&r.ok===false){setFollow(r.request||'More is needed before this can go ahead.');return}setFollow('');setOpen(null);onDone?.(r)}catch(e){setErr(e.message)}finally{setBusy(false)}}
   return <article ref={box} className={`l4i-item${it.late?' late':''}`} data-l4-item={it.kind} data-l4-ref={it.ref}>
     <header><StatusChip value={it.kind} tone={it.late?'warning':'info'} label={d.field_code==='course_description_first_read'?'Course description':k.label}/>{showProvider&&it.provider&&<strong className="l4i-prov">{it.provider}</strong>}{it.subject&&<span className="l4i-subj">{it.subject}</span>}{d.course_code&&<span className="l4i-code" title={d.code_label==="Course code"?"Course code":"CRICOS code"} data-l4-code>{d.code_label||"CRICOS"} {d.course_code}</span>}<small>{fmtDate(it.created_at)} · {days(it.created_at)} d · <span data-l4-refshow title={it.ref}>Ref {String(it.ref).slice(0,8)}</span></small></header>
     <p className="l4i-why">{it.why}</p>
+    <ItemLifecycle kind={it.kind} refId={it.ref} ack={ack} seen={seen}/>
     {(d.evidence_id||d.course_id)&&!aerItem&&<p className="l4i-evid" data-l4-evidence><small>
       {d.evidence_id?<><a href={hrefFor('evidence','',{evidence_id:d.evidence_id})} data-l4-evidence-link>Stored copy</a>{d.captured_at?` captured ${fmtDate(d.captured_at)}`:''}{d.newer_copy?<em className="l4i-match warn" data-l4-newer> a newer copy of this page exists</em>:''}{d.source_url?<> · <a href={d.source_url} target="_blank" rel="noreferrer">source <ExternalLink size={11}/></a></>:null}</>:'No stored copy is linked to this item'}
       {d.course_id&&<> · <a href={hrefFor('courses','',{id:d.course_id})} data-l4-open-record>Open the course record</a></>}</small></p>}
