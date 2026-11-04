@@ -82,7 +82,11 @@ insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, ki
  ('pipeline', 'layer4.duplicate_decision_seconds', 'Layer 4: the same decision sent again within',
   'The same choice on the same item inside this time returns the first decision instead of being taken again (a double click or a retried batch).',
   'number', to_jsonb(120), 10, 3600, 'seconds', 344, 'Layer 4', 'public.admin_layer4_inbox (decide)',
-  'Mandate 16:32 §8 (96 held scholarships decided twice, batch L4B-20261030-1138)')
+  'Mandate 16:32 §8 (96 held scholarships decided twice, batch L4B-20261030-1138)'),
+ ('pipeline', 'layer4.groups_course_link_router_on', 'Layer 4 groups: route official links with the Course Link classifier',
+  'On (1): official-link items are grouped by the Course Link classifier (security.course_link_route_class_v1). Off (0): they stay in Ready for my decision, without calling it (for example if it slows the Inbox).',
+  'number', to_jsonb(1), 0, 1, 'on (1) or off (0)', 345, 'Layer 4', 'security.layer4_groups_v1',
+  'Mandate 16:32 §2 and §3 (Course Link routing is the Course Link workstream''s)')
 on conflict do nothing;
 
 -- 2 the classifier (§2) --------------------------------------------------------------------------------------------------------------------
@@ -110,7 +114,7 @@ create or replace function security.layer4_groups_v1(p_provider uuid default nul
 -- its class and, for A, the existing rule that may settle it. Read only: nothing is decided here. The Course Link workstream's classifier
 -- (security.course_link_route_class_v1(uuid), through security.layer4_cl_group_call_v1) is used for official-link items when it exists.
 declare v_map jsonb := coalesce((select w.value from pipeline.platform_toolset_settings w where w.toolset_key = 'pipeline' and w.key = 'layer4.group_by_kind'), '[]'::jsonb);
-        v_cl boolean := true;  -- official-link items are routed by the Course Link workstream (security.layer4_cl_group_call_v1)
+        v_cl boolean := security.pipeline_num_v1('layer4.groups_course_link_router_on', 1) >= 1;  -- official links: the Course Link workstream's routing
         v_rec_on boolean := security.pipeline_num_v1('layer4.reconcile_supersede_on', 0) >= 1;
 begin
   return query
@@ -122,7 +126,8 @@ begin
                 from i left join pipeline.layer4_review_items r on i.kind in ('course_link', 'aer_review', 'provider_description', 'no_page_first_run', 'conjoint_first_run')
                        and r.id = case when i.ref ~ '^[0-9a-f-]{36}$' then i.ref::uuid end
                 left join pipeline.layer4_item_readiness rd on rd.item_id = r.id and rd.item_status = 'pending'),
-       clh as (select ri.ref, security.layer4_cl_group_call_v1(ri.ref::uuid) j from ri where v_cl and ri.field_code = 'official_course_url'),
+       clh as (select ri.ref, case when v_cl then security.layer4_cl_group_call_v1(ri.ref::uuid) else '{"grp": "C", "cls": "course_link:router_off"}'::jsonb end j
+                 from ri where ri.field_code = 'official_course_url'),
        aiv as (select x.entity, min(x.id) id, bool_or(x.status = 'awaiting_input') waiting from pipeline.layer4_interventions x where x.lane = 'aer_item' and x.status in ('ai_pending', 'awaiting_input', 'resuming') group by 1)
   select ri.kind, ri.ref, ri.provider_id, ri.created_at,
          case when clh.j->>'grp' in ('A', 'B', 'C', 'D') then clh.j->>'grp'

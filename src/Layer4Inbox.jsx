@@ -19,6 +19,7 @@ import{hrefFor,roleName}from'./nav-map'
 import{Button,Empty,Loading,Metric,StatusChip,fmtDate,fmtNumber}from'./ui-kit'
 import'./layer4-inbox.css'
 import{ReviewReadinessLine}from'./AerCoverage'
+import{GroupBar,GroupList,recordNavigation}from'./Layer4Groups' // CF-247 mandate 16:32 §7: the three choices
 import{ItemLifecycle}from'./Layer4ItemLifecycle' // CF-247 decision 12:24: action lifecycle, times and acknowledgement on every card
 
 const rpc=async(action,args)=>{const{data,error}=await supabase.rpc('admin_layer4_inbox',{p_action:action,p_args:args||{}});if(error)throw new Error(error.message);return data||{}}
@@ -54,6 +55,7 @@ const readSel=()=>{try{return JSON.parse(sessionStorage.getItem(SEL)||'null')}ca
 
 export default function Layer4Inbox({onError,routeParams}){
   const want=routeParams?.get?.('kind')||'',wantProvider=routeParams?.get?.('provider')||'',wantView=routeParams?.get?.('view')||'' // v2.15.343: the Dashboard opens the Inbox by kind (?view=kind)
+  const[grp,setGrp]=useState(''),[gtick,setGtick]=useState(0)
   const[sum,setSum]=useState(null),[view,setView]=useState(want?'kind':wantView==='kind'?'kind':'university'),[kind,setKind]=useState(want),[q,setQ]=useState('')
   const[unis,setUnis]=useState(null),[offset,setOffset]=useState(0),[pick,setPick]=useState(null),[items,setItems]=useState(null),[note,setNote]=useState('')
   const[cur,setCur]=useState(null),[stack,setStack]=useState([]),restored=useRef(readPos()),hold=useRef(true)
@@ -66,7 +68,7 @@ export default function Layer4Inbox({onError,routeParams}){
   const loadSum=()=>rpc('summary').then(setSum).catch(e=>onError?.(e.message))
   const loadUnis=(o=offset)=>{if(!sum)return;setUnis(null);rpc('universities',{kind,q,limit:UPAGE,offset:o}).then(d=>{setUnis(d);if(view==='university'&&!pick&&d.items?.[0]){const s=sel0.current;sel0.current=null
     setPick(wantProvider?(d.items.find(u=>u.provider_id===wantProvider)||{provider_id:wantProvider,name:'University'}):s?.pick?.provider_id?s.pick:d.items[0])}}).catch(e=>onError?.(e.message))}
-  const loadItems=(c=cur)=>{if(view==='decided'){setItems(null);rpc('decided',{limit:100}).then(setItems).catch(e=>onError?.(e.message));return}if(view==='kind'&&!kind){setItems(null);return}if(view==='university'&&!pick){setItems(null);return}if(!sum)return;setItems(null)
+  const loadItems=(c=cur)=>{if(view==='group'){setItems(null);return}if(view==='decided'){setItems(null);rpc('decided',{limit:100}).then(setItems).catch(e=>onError?.(e.message));return}if(view==='kind'&&!kind){setItems(null);return}if(view==='university'&&!pick){setItems(null);return}if(!sum)return;setItems(null)
     rpc('items',{...(view==='kind'?{kind}:{provider_id:pick.provider_id,...((uk||kind)?{kind:uk||kind}:{})}),limit:IPAGE,...(c||{})}).then(setItems).catch(e=>onError?.(e.message))}
   const choose=(u,k)=>{setPick(u);setUk(k||'');setNote('')}
   useEffect(()=>{loadSum()},[])
@@ -107,6 +109,7 @@ export default function Layer4Inbox({onError,routeParams}){
     </section>
     {/* SS-020 step 4 (Decision 269, 3 Nov 2026): review readiness header line, moved from Coverage › Attributes */}
     <ReviewReadinessLine/>
+    <GroupBar active={view==='group'?grp:''} onPick={g=>{setGrp(g);setView('group');setNote('')}} refresh={gtick}/>
     <div className="l4i-kinds" role="toolbar" aria-label="Kinds of decision">
       <button type="button" className={!kind?'on':''} onClick={()=>setKind('')}>All ({fmtNumber(sum.total)})</button>
       {order.filter(k=>bk[k]?.n).map(k=><button key={k} type="button" className={kind===k?'on':''} data-l4-kind={k} onClick={()=>setKind(k)}>{kinds[k].label} ({fmtNumber(bk[k].n)})</button>)}
@@ -117,7 +120,8 @@ export default function Layer4Inbox({onError,routeParams}){
       <Button compact onClick={()=>{loadSum();loadUnis(offset);loadItems(cur)}}><RefreshCw size={14}/>Refresh</Button>
     </div>
     {note&&<p className="l4i-note" role="status">{note}</p>}
-    {view==='decided'?<Decided items={items} kinds={kinds}/>:view==='kind'&&!kind?<Empty text="Choose a kind above to see its items across every university."/>:
+    {view==='group'?<GroupList group={grp} refresh={gtick} renderItem={it=><Item it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider rank={sum.rank} onDone={r=>{decided(r);setGtick(x=>x+1)}} onError={onError} onRefresh={()=>{loadSum();setGtick(x=>x+1)}}/>}/>:
+    view==='decided'?<Decided items={items} kinds={kinds}/>:view==='kind'&&!kind?<Empty text="Choose a kind above to see its items across every university."/>:
     <div className={view==='university'?'l4i-split':''}>
       {view==='university'&&<aside className="l4i-unis" aria-label="Universities">
         {!unis?<Loading compact/>:(unis.items||[]).length===0?<Empty text="Nothing waits for a person."/>:<>
@@ -186,7 +190,7 @@ function Item({it,k,showProvider,rank,onDone,onError,onRefresh}){
   const exceptOpen=exceptOnly||(mheld&&mgate.except_fixable===true)
   const gated=c=>(held||mheld)&&(c.key==='approve'||(c.key==='approve_except'&&!exceptOpen))
   const choices=(k.choices||[]).filter(c=>!(fee&&c.key==='use')).filter(c=>!(feeCheck&&c.key==='enter')).filter(c=>!((fee||feeCheck)&&c.key==='refuse')).map(c=>feeCheck&&FEE_CHECK[c.key]?{...c,...FEE_CHECK[c.key]}:c).filter(hookOk)
-  const choose=c=>{setErr('');if(c.link){window.location.hash=linkFor(c.link,it).replace(/^#/,'');return}setOpen(c);setReason(c.reason||'');setValue(c.input==='url'&&it.kind==='course_link'&&!fee?urlOf(d.proposed):c.input==='url'&&it.kind==='conjoint_first_run'?(d.proposed?.parent_url||''):(c.input==='courses'||c.input==='rows')?'[]':'')}
+  const choose=c=>{setErr('');if(c.link){recordNavigation(it.kind,it.ref,c.key);window.location.hash=linkFor(c.link,it).replace(/^#/,'');return}setOpen(c);setReason(c.reason||'');setValue(c.input==='url'&&it.kind==='course_link'&&!fee?urlOf(d.proposed):c.input==='url'&&it.kind==='conjoint_first_run'?(d.proposed?.parent_url||''):(c.input==='courses'||c.input==='rows')?'[]':'')}
   // hotfix 26 Oct 2026: a university's first run (no page published / conjoint rule) shows its sample; "has a page" ticks courses from it
   const firstRun=it.kind==='no_page_first_run'||it.kind==='conjoint_first_run'
   const sample=Array.isArray(d.proposed?.sample)?d.proposed.sample:[]
