@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.402 — 4 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.475** (Platform Admin direction 4 Nov 18:08 §1–§3, §6, §7). Migration `20261104600000_cf247_recovery_knowledge`: recovery knowledge base beside `pipeline.ops_remedies` (patterns per remedy and root cause, outcomes by run id with who achieved them, seeded from real outcomes only); md5-guarded edits of security.ops_authorise_v1 (ae58963c → 9f4a124d; refuses a remedy whose verified rate is below the setting), security.first_run_verify_tick_v1 (9c078d17 → 9df7a97b; learning step, stop after repeated failures), security.self_sustainability_v1 (a91e9c81 → 1965a719; §7 table, authority blockers, Claude-intervention trend). The controller tick and ops_report_v1 are not edited. No AI diagnosis switched on; no admission, policy, spending or code changed by the platform; nothing dropped; consumer API untouched. Spec s285.
+
 ## 0.1.401 — 4 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.474** (Platform Admin mandate 4 Nov 16:32 §2, §7, §8; direction 18:08 §5). Migration `20261104590000_cf247_l4_operational_groups`: `pipeline.layer4_item_groups` (one stored primary disposition per item, secondary reasons apart; rows closed, never deleted), `security.layer4_groups_v1`, `security.layer4_groups_fill_v1` and job `layer4-groups` (:06, :16, :26, :46, :56; batch.layer4_groups, layer4.groups_fill_seconds), `security.layer4_flow_report_v1`; md5-guarded edits of admin_layer4_inbox (c0a972a6 → 1895ed98) and the lifecycle and acknowledgement functions. Reads use stored groups only (no classifier per row). No new admission authority; layer4.reconcile_supersede_on stays off; nothing dropped; consumer API untouched. Spec s283.
