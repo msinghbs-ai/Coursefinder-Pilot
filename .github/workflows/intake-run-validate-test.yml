@@ -6,6 +6,7 @@ on:
       - 'src/intake-run-api.js'
       - 'supabase/migrations/*intake*'
       - 'tests/fixtures/intake-ui/**'
+      - 'tests/fixtures/intake-preview-timeout/**'
       - 'tests/integration/intake-postgres.spec.mjs'
       - 'playwright.intake.config.mjs'
       - '.github/workflows/intake-run-validate-test.yml'
@@ -36,7 +37,7 @@ jobs:
           node-version: 22
       - run: npm install --package-lock=false --ignore-scripts
       - run: npx playwright install --with-deps chromium
-      - run: bash tests/fixtures/intake-ui/run.sh | tee intake-sql-results.log
+      - run: bash tests/fixtures/intake-preview-timeout/run.sh | tee intake-sql-results.log
       - run: npx playwright test --config=playwright.intake.config.mjs
       - run: psql -X -v ON_ERROR_STOP=1 -d intake_ui_fixtures -f tests/fixtures/intake-ui/post.sql
       - uses: actions/upload-artifact@v4
@@ -47,4 +48,5 @@ jobs:
             intake-sql-results.log
             uat-artifacts/intake-integration.json
             uat-artifacts/intake-benchmark.json
+            uat-artifacts/intake-timeout-regression.json
             uat-artifacts/intake-db-results/

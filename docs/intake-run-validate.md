@@ -2,6 +2,26 @@
 
 Authority: Platform Admin's 4 Nov 2026 vertical-feature correction, the [20:05 intake pilot authority](https://github.com/msinghbs-ai/coursefinder-admin/blob/main/docs/platform/2026-11-04-course-intake-pilot-authority-2005.md), Pilot [CLAUDE.md](../CLAUDE.md), and the [canonical operating model](https://github.com/msinghbs-ai/coursefinder-admin/blob/main/docs/platform/DATA-PIPELINE-OPERATING-MODEL.md). Integration Controller: Claude; final release number, merge and deployment remain with Claude.
 
+## Post-release Preview timeout correction (v2.15.478)
+
+The reported UI message `canceling statement due to statement timeout` was reproduced with a bounded **read-only** production query of the preview selector. The exception occurs in `course_title_key` → `course_page_check_v1` → `intake_dates_plan_v2`, before fixing a cohort or starting a Run Now job. The earlier no-evidence-heavy skew benchmark underrepresented this path, so its historical timing is not evidence that dense production pages fit the request limit.
+
+Follow-up migration `20261105010000_intake_preview_identity_lookup.sql` retains the original identity predicates and decisions while adding an indexed, mathematically equivalent sibling-title prefix restriction and provider-scoped URL/final-URL lookup indexes. The immutable ASCII title normalizer and shared identity-check definitions are hash-guarded. No extraction, scheduler, admission rule, consumer response shape, role grant, existing spending/cohort limit or authenticated timeout is changed.
+
+Index optimization alone is insufficient when every candidate has stored evidence. A new governed setting, `run_now.preview_rows_per_university` (default **5**, range 1–1,000 rows), explicitly bounds synchronous preview work, further clamped by the existing university's share of `run_now.cohort_scan_rows`. The operator's **20-course cohort remains unchanged**. The UI already displays each actual scan limit and evaluated denominator. Sparse results describe evaluated rows, not exhaustive eligibility; unexamined rows are not classified as ineligible. Increasing this work setting may reintroduce the timeout and requires capacity review with an audited reason through existing settings controls.
+
+The new fixture loads the **authoritative production title-normalizer**, adds proved course-page evidence in every calendar-backed university (including the 5,200-course provider), and reproduces the old 8-second `57014` failure. After the fix, the accepted local samples were **3,673 / 3,946 / 4,264 ms**, with the unchanged 8-second request limit. All **60 full identity verdict/diagnostic snapshots** and prefix edge cases pass; selected twenty courses and their source-supported values match the baseline. Dense-path twenty-course UI execution, saved recovery and post-browser catalogue/API/evidence-lineage checks are executable with:
+
+```sh
+bash tests/fixtures/intake-preview-timeout/run.sh
+npx playwright test --config=playwright.intake.config.mjs
+psql -X -v ON_ERROR_STOP=1 -d intake_ui_fixtures -f tests/fixtures/intake-ui/post.sql
+```
+
+CI runs this dense regression before the real database-backed browser suite. The frontend now identifies Preview timeout explicitly and confirms it did not dispatch an intake job. Regression evidence is `docs/ui-evidence/intake-preview-timeout-results.json`; these are local measurements, not a claim of post-fix production performance. Claude must deploy and verify the actual production preview; no production job or write was performed during diagnosis.
+
+**Integration risk:** normal index builds briefly block writers on the two indexed tables. Claude should choose a suitable deployment window or build the exact indexes concurrently through an approved separate operation before applying the idempotent migration. A future change to the immutable title normalizer requires index review/rebuild. Do not raise role timeouts or silently increase the scan/work/cohort limits to get a pass. After authorised deployment, verify the observed per-university limits, preview latency and genuine evidence denominator before proceeding to the existing governed Run Now acceptance gate.
+
 ## Implementation
 
 Layer 2/3 → Operations now connects scope discovery → read-only evidence preview → fixed cohort → governed Run Now → saved results → catalogue and consumer verification. Scope is the approved top ten Australian universities **by active course count** (controlled by the existing setting), narrowed to an individual member if selected. The configured top count defaults to ten. No scope is widened when eligible work is sparse. University identities, counts, bounds and evidence are queried from the database, never embedded in React.
