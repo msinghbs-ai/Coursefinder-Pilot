@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.394 — 4 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.467** (Platform Admin direction 4 Nov 10:00 §2, IQ-00264). Migration `20261104480000_cf247_sch_l4_handoff`: md5-guarded edit of security.scholarship_coverage_items_v1 (d3dfacf0 → 56056606): unpublished cases record the publishing checks they fail; person-refused and person-confirmed no-value cases become rejected_correctly. New intervention lane `sch_value` with its own open limit (har.generate_sch_value_on 1; sch_cov.value_apply_on 1: applies only a value a person enters, through the existing Curator edit route). Each raise isolated per provider. No AI or Firecrawl spend; no manual enqueues; admission and pilot policies unchanged. Nothing dropped; consumer API untouched. Spec s280. Governance gap recorded: public.admin_scholarship_edit exists only live (md5 01475532).
+
 ## 0.1.393 — 4 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.466** (hotfix; Platform Admin report 4 Nov 11:13, UNSW Bachelor of Actuarial Studies). Migration `20261104475000_cf247_aer_recovery_detail_hotfix`: md5-guarded replacement of security.layer4_aer_recovery_detail_v1 (a83f37a2 → 636c1764): the case list no longer runs the completeness gate (0.83 s each) for every waiting read of the same field. Case key, deduplication, decide function, E13/D-R3 gates and the 600 limit unchanged; no time-out raised. Nothing dropped; consumer API untouched. Spec s279.
