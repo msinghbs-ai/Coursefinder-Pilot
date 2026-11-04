@@ -18,6 +18,7 @@ async function mount(page, options = {}) {
         window.intakeCalls.push({ method: 'read', view, args })
         if (options.missing) throw new Error('Unknown operation intake_run_validate')
         if (view === 'capabilities') return { ...caps, can_run: !options.readOnly }
+        if (view === 'preview' && options.timeout) throw Object.assign(new Error('canceling statement due to statement timeout'), { code: '57014' })
         if (view === 'preview') return { token: 'preview-1', courses: [course], eligible_courses: 37, rule: 'Most gaps first; round-robin providers and evidence patterns', as_at: '2026-11-04T10:00:00Z', expires_at: '2026-11-04T10:10:00Z' }
         return { cohort_id: cohortId, as_at: '2026-11-04T10:02:00Z', totals: { selected: 1, admitted: 1, published: 1, not_as_planned: 0, vendor_calls: 0 }, runs: [{ state: 'done', processed: 1 }], courses: [{ ...course, now: [{ year: 2027 }], added: [{ intake_id: 'intake-1', before: { year: null }, after: { year: 2027 } }], published: 1, website_intakes: [{ year: 2027 }], zoho_intakes: { error: 'Unsupported read-back' } }] }
       },
@@ -124,4 +125,14 @@ test('browser adapter sends only a cohort to the server-bound governed Run Now f
     { url: 'https://example.supabase.co/rest/v1/rpc/admin_intake_run_read_v1', body: { p_view: 'preview', p_args: { scope: 'au-top', size: 10 } } },
     { url: 'https://example.supabase.co/rest/v1/rpc/admin_intake_run_now_v1', body: { p_cohort_id: cohortId } },
   ])
+})
+
+
+test('preview timeout identifies the failed stage and never prepares or dispatches a job', async ({ page }) => {
+  await mount(page, { timeout: true })
+  await page.getByRole('button', { name: 'Preview eligible courses' }).click()
+  await expect(page.getByRole('alert')).toContainText('Preview timed out before a cohort was fixed. No intake job was started.')
+  await expect(page.getByRole('button', { name: 'Fix previewed cohort' })).toBeDisabled()
+  await expect(page.getByRole('button', { name: 'Run Now', exact: true })).toBeDisabled()
+  expect(await page.evaluate(() => window.intakeCalls.every(c => c.method === 'read'))).toBe(true)
 })
