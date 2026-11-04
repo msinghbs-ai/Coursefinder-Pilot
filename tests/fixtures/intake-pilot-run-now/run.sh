@@ -39,6 +39,11 @@ $P -d $DB -c "alter table catalogue.providers add column if not exists provider_
 $P -d $DB -1 -o /dev/null -f $MIG2
 CCA=$(md5of "$CC"); echo "cohort scope after: $CCA"
 $P -d $DB -1 -o /dev/null -f $MIG2
+# hotfix 20261104640000: production's outcome-code foreign key on admin_jobs, reproduced, then the fix applied twice
+$P -d $DB -q -c "create table if not exists pipeline.ops_outcome_codes(code text primary key); insert into pipeline.ops_outcome_codes values ('succeeded_with_result'),('succeeded_no_movement'),('not_needed'),('deferred_dependency'),('blocked_policy'),('blocked_evidence'),('failed_retryable'),('failed_remediation') on conflict do nothing; alter table pipeline.admin_jobs drop constraint if exists admin_jobs_outcome_fkey; update pipeline.admin_jobs set outcome = null where outcome is not null and outcome not in (select code from pipeline.ops_outcome_codes); alter table pipeline.admin_jobs add constraint admin_jobs_outcome_fkey foreign key (outcome) references pipeline.ops_outcome_codes(code);" >/dev/null
+MIG3=supabase/migrations/20261104640000_cf247_run_now_outcome_code.sql
+$P -d $DB -1 -o /dev/null -f $MIG3
+$P -d $DB -1 -o /dev/null -f $MIG3
 [ "$(md5of "$CC")" = "$CCA" ] || { echo "a second run of the scope migration changed the definition"; exit 1; }
 # the intake-dates fixture's helpers in front of each case file
 sed -n '/^create function pg_temp.ok/,/^create function pg_temp.lists/p' tests/fixtures/intake-dates/fixtures.sql | sed '/^create function pg_temp.lists/,$d' > "$TMP/helpers.sql"

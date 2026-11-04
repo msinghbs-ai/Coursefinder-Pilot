@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.405 — 4 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.478** (Platform Admin authorisation 4 Nov 22:55: Codex PR #872 only; course intake pilot 20:05). Migrations `20261104640000_cf247_run_now_outcome_code` (md5-guarded edit of security.job_run_now_v1 cabacd40 → 2640319b: production outcome codes; identical to held draft #874, which is not merged separately) and `20261105000000_intake_run_validate_bridge` (role-checked browser bridges public.admin_intake_cohort_prepare_v1, public.admin_intake_run_now_v1, public.admin_intake_run_read_v1 with signed preview tokens; per-university bounded selection security.intake_ui_selection_v1; six dependencies md5-guarded; settings run_now.preview_seconds, run_now.history_rows). UI src/IntakeRunValidate.jsx in Layer 2/3 Operations. Production-schema parity fixtures (constraints, triggers, grants, outcome codes) and an isolated browser-to-PostgreSQL integration test. No reader, scheduler, admission rule, spending or consumer API change; nothing dropped.
+
 ## 0.1.404 — 4 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.477** (Platform Admin instruction 4 Nov 20:53 on the 20:05 intake pilot). Migration `20261104630000_cf247_intake_pilot_scope`: md5-guarded edit of security.run_now_cohort_create_v1 (scope to the top `run_now.cohort_top_au_universities` Australian universities by active course count; university list and denominator recorded). No spend; nothing dropped; consumer API untouched. Spec s286 updated.

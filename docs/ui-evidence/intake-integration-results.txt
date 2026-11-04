@@ -1,0 +1,45 @@
+PR #872 final pre-production acceptance — 4 Nov 2026
+Isolated PostgreSQL 17.6, relevant production constraints/triggers/grants/signatures and 8-second authenticated statement limit.
+No production job/admission writes, deployment, release version or merge. Schema metadata read-only; no personal data copied.
+PR #874 migration incorporated byte-for-byte; #875 AER migration/files excluded. Production remains v2.15.477.
+
+SQL acceptance:
+intake-dates fixture: 19 PASS
+NOTICE PASS scope: top Australian universities by active courses only; recorded with counts; a short scope gives a smaller cohort
+NOTICE PASS cohort: picked by the plan, capped, spread, evidence recorded, nothing written
+NOTICE PASS refusals: list, rank, reason, pause, switch, cap, cohort, signed-in entry; each recorded, nothing changed
+NOTICE PASS one run at a time: refused while the job's lock is held, the holding run returned
+NOTICE PASS run: four courses filled through the job's own function and publication path; record, idempotency, read-back and totals
+NOTICE PASS scheduled job unchanged in behaviour; nothing is filled twice
+psql:<stdin>:284: NOTICE:  PASS authoritative constraint, trigger, signature, grant and outcome-code parity
+psql:<stdin>:81: NOTICE:  PASS vertical SQL: scope/evidence, fixed integrity, governed run, admission, catalogue, Website projection, unsupported Zoho, saved/repeated request and zero spend
+psql:<stdin>:91: NOTICE:  PASS authenticated read role cannot prepare/run/read foreign cohort
+psql:<stdin>:118: NOTICE:  PASS read-only preview, signed token tamper, cross-user preview, complete consumer match, deadline mismatch and unsupported status
+psql:<stdin>:140: NOTICE:  PASS narrowed university scope, changed source evidence and expired signed preview
+psql:<stdin>:150: NOTICE:  PASS supported Zoho bridge fixture (not production proof)
+psql:<stdin>:158: NOTICE:  PASS new-object RLS, table and function privilege checks
+PASS same-request concurrency refuses a second dispatch before the shared runner
+psql:<stdin>:73: NOTICE:  PASS 20-course preview, all ten denominators including zero, dominant-university starvation regression under 8-second statement limit
+psql:<stdin>:43: NOTICE:  PASS invalid outcome codes rejected by production FK; corrected successful result persists
+psql:<stdin>:50: NOTICE:  PASS succeeded_no_movement outcome under production FK
+psql:<stdin>:80: NOTICE:  PASS no eligible evidence, refused/blocked_policy, failed_retryable rollback and saved outcomes
+PASS preview performance {"median_ms":3034.999,"max_ms":3178.401,"limit_ms":8000}
+PASS production-representative vertical integration SQL; 20-course browser fixture ready
+psql:<stdin>:21: NOTICE:  PASS post-browser: twenty selected/admitted/published courses, one persisted task after dropped-response recovery, typed API intake contract and authoritative evidence lineage
+
+Database-backed desktop and responsive phone: 2 passed, 0 failed, 0 skipped.
+Focused UAT/intake/central governance/smoke: 31 passed, 0 failed, 0 skipped.
+Production build/release contract v2.15.477, UI tokens and whitespace: PASS.
+Preview measurements (5 EXPLAIN ANALYZE queries): median 3034.999 ms; max 3178.401 ms; limit 8000 ms.
+Controlled skew: ten universities; dominant 5,200 active courses / 2,700 candidates; per-university scan 150 within configured budget 1,500.
+Old global scan yields 0 eligible; independent scans yield a fixed 20-course cohort across 8 universities, reporting 2 zero-eligibility universities.
+
+Actual saved local result:
+cohort_id: 4756b346-111a-40c4-a853-3ceb850307ae
+run_id: cfb819c9-511b-4d1b-82f6-ce56af0ad8ed
+processed / admitted / skipped / failed: 20 / 20 / 0 / 0
+outcome: succeeded_with_result
+one task after dropped-response recovery; all twenty catalogue and Website intake projections verified; refresh preserves result/evidence.
+Zoho: unavailable in main fixture; separate supported-shape regression passed. Hosted Auth/PostgREST and actual production consumer publication remain Claude's gate.
+Full saved result: intake-database-result.json; full timing/plans: intake-benchmark.json.
+Initial test-only SQL alias ambiguity was corrected before the final all-green acceptance run; engine-image disk limit resolved by rebuilding only the disposable test container.

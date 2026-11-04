@@ -1,0 +1,201 @@
+{
+  "source": "Pilot v2.15.477, read-only pg_catalog metadata, 4 Nov 2026; no personal data",
+  "roles": [
+    {
+      "role": "anon",
+      "settings": [
+        "statement_timeout=3s"
+      ]
+    },
+    {
+      "role": "authenticated",
+      "settings": [
+        "statement_timeout=8s"
+      ]
+    },
+    {
+      "role": "authenticator",
+      "settings": [
+        "session_preload_libraries=supautils, safeupdate",
+        "statement_timeout=8s",
+        "lock_timeout=8s"
+      ]
+    }
+  ],
+  "triggers": [
+    {
+      "name": "course_intake_same_month_guard",
+      "definition": "CREATE TRIGGER course_intake_same_month_guard BEFORE INSERT OR UPDATE ON catalogue.course_intakes FOR EACH ROW EXECUTE FUNCTION security.course_intake_same_month_guard()"
+    },
+    {
+      "name": "evidence_entity_links_sync",
+      "definition": "CREATE TRIGGER evidence_entity_links_sync AFTER INSERT OR DELETE OR UPDATE ON catalogue.course_intakes FOR EACH ROW EXECUTE FUNCTION security.sync_evidence_entity_links()"
+    },
+    {
+      "name": "evidence_lineage_stats_sync",
+      "definition": "CREATE TRIGGER evidence_lineage_stats_sync AFTER INSERT OR DELETE OR UPDATE ON catalogue.course_intakes FOR EACH ROW EXECUTE FUNCTION security.sync_evidence_lineage_stats()"
+    },
+    {
+      "name": "manual_lock_guard",
+      "definition": "CREATE TRIGGER manual_lock_guard BEFORE INSERT OR DELETE OR UPDATE ON catalogue.course_intakes FOR EACH ROW EXECUTE FUNCTION security.manual_fact_guard()"
+    }
+  ],
+  "constraints": [
+    {
+      "name": "course_intakes_campus_id_fkey",
+      "table": "catalogue.course_intakes",
+      "definition": "FOREIGN KEY (campus_id) REFERENCES catalogue.campuses(id)"
+    },
+    {
+      "name": "course_intakes_course_id_fkey",
+      "table": "catalogue.course_intakes",
+      "definition": "FOREIGN KEY (course_id) REFERENCES catalogue.courses(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "course_intakes_pkey",
+      "table": "catalogue.course_intakes",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "admin_jobs_kind_fk",
+      "table": "pipeline.admin_jobs",
+      "definition": "FOREIGN KEY (kind) REFERENCES pipeline.admin_job_kinds(kind)"
+    },
+    {
+      "name": "admin_jobs_outcome_fkey",
+      "table": "pipeline.admin_jobs",
+      "definition": "FOREIGN KEY (outcome) REFERENCES pipeline.ops_outcome_codes(code)"
+    },
+    {
+      "name": "admin_jobs_pkey",
+      "table": "pipeline.admin_jobs",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "admin_jobs_state_check",
+      "table": "pipeline.admin_jobs",
+      "definition": "CHECK ((state = ANY (ARRAY['queued'::text, 'running'::text, 'paused'::text, 'done'::text, 'failed'::text, 'cancelled'::text])))"
+    },
+    {
+      "name": "ops_outcome_codes_pkey",
+      "table": "pipeline.ops_outcome_codes",
+      "definition": "PRIMARY KEY (code)"
+    },
+    {
+      "name": "run_now_cohorts_job_fkey",
+      "table": "pipeline.run_now_cohorts",
+      "definition": "FOREIGN KEY (job) REFERENCES pipeline.automation_catalogue(jobname)"
+    },
+    {
+      "name": "run_now_cohorts_pkey",
+      "table": "pipeline.run_now_cohorts",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "run_now_cohort_members_cohort_id_fkey",
+      "table": "pipeline.run_now_cohort_members",
+      "definition": "FOREIGN KEY (cohort_id) REFERENCES pipeline.run_now_cohorts(id)"
+    },
+    {
+      "name": "run_now_cohort_members_pkey",
+      "table": "pipeline.run_now_cohort_members",
+      "definition": "PRIMARY KEY (cohort_id, course_id)"
+    }
+  ],
+  "outcome_codes": [
+    {
+      "code": "succeeded_with_result",
+      "title": "Succeeded with a measurable result",
+      "counts_as_movement": true
+    },
+    {
+      "code": "succeeded_no_movement",
+      "title": "Succeeded without data movement",
+      "counts_as_movement": false
+    },
+    {
+      "code": "not_needed",
+      "title": "Not needed",
+      "counts_as_movement": false
+    },
+    {
+      "code": "deferred_dependency",
+      "title": "Deferred for a dependency",
+      "counts_as_movement": false
+    },
+    {
+      "code": "blocked_policy",
+      "title": "Blocked by policy",
+      "counts_as_movement": false
+    },
+    {
+      "code": "blocked_evidence",
+      "title": "Blocked by evidence",
+      "counts_as_movement": false
+    },
+    {
+      "code": "failed_retryable",
+      "title": "Failed and retryable",
+      "counts_as_movement": false
+    },
+    {
+      "code": "failed_remediation",
+      "title": "Failed and requiring remediation",
+      "counts_as_movement": false
+    }
+  ],
+  "function_signatures": [
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "md5": "d0490f3707199988e87b5f37ca5e7342",
+      "config": [
+        "search_path=\"\""
+      ],
+      "signature": "security.manual_fact_guard()"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "md5": "44e23d4abc1d36cdbb85407287a87e5f",
+      "config": [
+        "search_path=\"\""
+      ],
+      "signature": "security.course_intake_same_month_guard()"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "md5": "8e3e11c3b78e4e52ea0709e48a666ff6",
+      "config": [
+        "search_path=\"\""
+      ],
+      "signature": "security.intake_dates_plan_v2(uuid[],integer)"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "md5": "cabacd4094ed138a57f6b102183eeacc",
+      "config": [
+        "search_path=\"\""
+      ],
+      "signature": "security.job_run_now_v1(text,text,jsonb,uuid)"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "md5": "2a5ccb9fe52041696582a8b524bc8ae2",
+      "config": [
+        "search_path=\"\""
+      ],
+      "signature": "admin_job_run_now_v1(text,text,jsonb)"
+    }
+  ]
+}
