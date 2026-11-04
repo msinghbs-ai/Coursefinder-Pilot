@@ -1,4 +1,4 @@
--- CF-247 AER review queue (migration 20261104490000) on isolated fixtures: the live shapes this change reads beyond ../aer-throughput (its
+-- CF-247 AER review queue (migration 20261104530000) on isolated fixtures: the live shapes this change reads beyond ../aer-throughput (its
 -- stubs and seed) and the Human-assisted recovery contract (20261104450000 §1-§5, §8-§11, §13b), which run.sh loads. Columns as live
 -- (information_schema, read only, 4 Nov 2026 11:19 AEDT). Fixture database only; nothing here is live data.
 

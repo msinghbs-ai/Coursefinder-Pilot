@@ -1,4 +1,5 @@
-// Guards: Platform Admin direction 4 Nov 2026 10:00 §3 and §4 (AER: reviewer-ready items separated from technical recovery; a university-by-
+// Guards: Platform Admin directions 4 Nov 2026 10:00 §3-§4 and 12:16 (RMIT AER settlement: four settlement classes from stored records, deterministic
+// repeats not re-read, review-ready first, a readable recovery case, the university summary, submitted/saved/admitted/published counts) and 10:00 (AER: reviewer-ready items separated from technical recovery; a university-by-
 // university review queue in the existing Layer 4 Inbox with the review packet on each card; one item-level decision and audit event at a time,
 // no bulk approval, no AI admission authority; exclusive ownership through pipeline.layer4_review_owners; held reads classified and routed, with
 // one deduplicated Human-assisted recovery intervention where no automatic remedy can fix them; the E13 recovery pilot bounded to listed
@@ -7,8 +8,9 @@
 // the contract.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
+import { mockAdmin } from './support/admin-mock.mjs'
 
-const MIG = 'supabase/migrations/20261104490000_cf247_aer_review_queue.sql'
+const MIG = 'supabase/migrations/20261104530000_cf247_aer_review_queue.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const FX = 'tests/fixtures/aer-review-queue'
 const run = fs.readFileSync(`${FX}/run.sh`, 'utf8')
@@ -64,6 +66,83 @@ test('the fixture is production-shaped: the live gate split, repeated keys, refu
   expect(run).toContain('$P -d $DB -f $TF/seed.sql')
   expect(seed).toContain('as live 11:16: 2 runs complete, 17 held for dropped published rows (or unscaled values), 22 held only for rows to leave out')
   expect(seed).toContain("'chatgpt', 'university review'")
-  expect(fixtures).toContain("ready: 169 complete course reads, 25 with rows to leave out, 2 complete and 22 except-only matrix runs")
-  expect(fixtures).toContain('held by route: row limit 162, identity 45, matrix source 17')
+  expect(fixtures).toContain('every one of the 605 items is in one of the four classes')
+  expect(seed).toContain('the Diploma of Commerce shape (live 12:18)')
+})
+
+test('RMIT settlement (12:16): four classes from stored records; a row-limit repeat waits for the row boundary, never another read or a rows request', () => {
+  const st = m.slice(m.indexOf('create or replace function security.aer_settlement_v1'), m.indexOf('create or replace function security.layer4_aer_queue_v1'))
+  for (const c of ["'ready'", "'recoverable'", "'needs_input'", "'stale'"]) expect(st).toContain(c)
+  expect(st).not.toContain('course_entry_gate_v1(')
+  expect(st).toContain("when r.rt->>'class' = 'drops_uncovered' and r.refusal ilike '%row limit%' then 'row_limit_stored'")
+  expect(m).toContain("and coalesce(h.refusal, '') not ilike '%row limit%' and coalesce(h.refusal, '') not ilike '%proof does not admit%'")
+  expect(fixtures).toContain('two refusals for the row limit on the same copy: a row boundary is the next action (9 stored rows; no new read)')
+  expect(fixtures).toContain('the E13 pilot never picks them')
+})
+
+test('the Inbox: ready first, a university summary, a readable recovery case; counts for the execution register', () => {
+  const ui = fs.readFileSync('src/Layer4Inbox.jsx', 'utf8')
+  expect(ui).toContain("supabase.rpc('admin_layer4_aer_queue'")
+  for (const a of ['data-l4-aer-summary', 'data-l4-aer-ready-first', 'data-l4-aer-ready', 'data-l4-case', 'data-l4-related']) expect(ui).toContain(a)
+  expect(ui).not.toMatch(/<dd>\{b!==null&&typeof b==='object'\?JSON\.stringify\(b\)/)
+  expect(ui).toContain('<HookValue v={b} label={a}/>')
+  expect(m).toContain("if coalesce(p_args, '{}'::jsonb) ? 'summary_provider_id' then return security.layer4_aer_university_summary_v1(")
+  expect(m).toContain('create or replace function security.aer_progress_counts_v1(p_since timestamptz, p_provider uuid default null) returns jsonb')
+  expect(fixtures).toContain('after one approval: submitted 1, saved 1, admitted 3 rows of 1 course, published 1')
+})
+
+// direction 12:16 §5, §7, §8 at phone width: the university's AER summary, review-ready items first (from the queue, decided by the Inbox's own
+// decide action), and a recovery case as a sentence with related items, never raw JSON. Mocked admin; nothing reaches a real backend.
+const KINDS = { aer_review: { label: 'Entry requirements (AER)', order: 17, extension: 'aer_review:extend', detail: true, choices: [
+  { key: 'approve', label: 'Approve all rows', rank: 6, returns: 'Active' }, { key: 'reject', label: 'Reject the read', rank: 6, returns: 'Withdrawn' }] } }
+const UNI = { provider_id: 'rmit', name: 'RMIT University (RMIT)', country: 'AU', courses: 507, n: 303, oldest: '2026-10-29T00:00:00Z', late: false, by_kind: { aer_review: 303 } }
+const SUMMARY = { provider_id: 'rmit', pending: 303, review_ready: 91, technically_held: 27, human_input_required: 184, stale: 1, unresolved: 212, human_input_open: 3, admitted_courses: 1, admitted_matrix_rows: 380 }
+const held = { kind: 'aer_review', ref: 'h1', provider_id: 'rmit', subject: 'Diploma of Commerce', why: 'Entry requirements to review', created_at: '2026-10-29T00:00:00Z', o: 17, detail: { field_code: 'course_entry_first_read' } }
+const ready = (i) => ({ kind: 'aer_review', ref: `r${i}`, provider_id: 'rmit', subject: `Ready course ${i}`, why: 'Entry requirements to review', created_at: `2026-10-3${i}T00:00:00Z`, ready: true, detail: { field_code: 'course_entry_first_read' } })
+test.describe('settlement on a phone @responsive', () => {
+  test('RMIT: the AER summary, ready items first, and a readable recovery case with its related items', async ({ page }) => {
+    const w = page.viewportSize()?.width || 9999
+    expect(w, 'this test must run at phone width (chromium-mobile)').toBeLessThanOrEqual(480)
+    await mockAdmin(page, { rank: 6 }); const decides = []
+    await page.route('https://example.supabase.co/rest/v1/rpc/admin_layer4_inbox', async (route) => {
+      const b = route.request().postDataJSON(); const a = b.p_args || {}
+      if (b.p_action === 'summary') return route.fulfill({ json: { kinds: KINDS, target_days: 7, rank: 6, total: 303, universities: 1, late: 0, by_kind: { aer_review: { n: 303 } }, paging: { items: 25, universities: 25, detail_parallel: 2 } } })
+      if (b.p_action === 'universities') return route.fulfill({ json: { total: 1, items: [UNI] } })
+      if (b.p_action === 'items') return route.fulfill({ json: { total: 303, before: 0, more: true, items: [held] } })
+      if (b.p_action === 'detail') {
+        const ref = a.items[0].ref
+        const hook_detail = ref === 'h1'
+          ? { sections: [{ key: 'summary', title: 'Summary', body: { Class: 'Needs evidence, input or a decision', Failure: 'the corrected read kept every printed requirement (9 rows) but is over the row limit; a re-read gives the same result', 'Next action': 'a row boundary for the university (entry.max_rows_by_provider, Platform Admin); no new re-read until then' } },
+                         { key: 'case', title: 'Recovery case', body: { Case: 'the reader dropped 2 printed requirement(s)', 'Other waiting reads of this university and kind': { count: 2, first: [{ ref: 'r0', subject: 'Ready course 0' }, { ref: 'zz', subject: 'Bachelor of Design' }] } } }],
+              actions: [] }
+          : { sections: [{ key: 'summary', title: 'Summary', body: { Class: 'Ready for a decision', 'Next action': 'decide it in Layer 4: Approve all rows or Reject the read' } }], actions: [] }
+        return route.fulfill({ json: { items: [{ kind: 'aer_review', ref, detail: {}, hook_detail }] } })
+      }
+      if (b.p_action === 'decide') { decides.push(a); return route.fulfill({ json: { ok: true, returns: 'Done', event_id: 7 } }) }
+      return route.fulfill({ json: {} })
+    })
+    await page.route('https://example.supabase.co/rest/v1/rpc/admin_layer4_aer_queue', async (route) => {
+      const a = route.request().postDataJSON().p_args || {}
+      if (a.summary_provider_id) return route.fulfill({ json: SUMMARY })
+      return route.fulfill({ json: { ready: 91, limit: 25, offset: 0, items: [ready(0), ready(1)] } })
+    })
+    await page.route('https://example.supabase.co/rest/v1/rpc/layer4_aer_review_read', (route) => route.fulfill({ json: { kind: 'course_entry_first_read', status: 'pending', completeness_gate: { complete: true }, rows: [] } }))
+    await page.goto('/#layer-4-review')
+    await page.locator('[data-l4-uni="RMIT University (RMIT)"] [data-l4-pill="aer_review"]').click()
+    await expect(page.locator('[data-l4-aer-summary]')).toContainText('303 pending · 91 ready to decide · 27 technically held · 184 need evidence or input')
+    await expect(page.locator('[data-l4-aer-ready-first]')).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.locator('[data-l4-aer-ready] [data-l4-item]')).toHaveCount(2)
+    await expect(page.locator('[data-l4-aer-ready] [data-l4-item]').first()).toContainText('Ready course 0')
+    await page.locator('[data-l4-aer-all]').click()
+    const card = page.locator('[data-l4-ref="h1"]')
+    await expect(card.locator('[data-l4-section="summary"]')).toContainText('over the row limit')
+    await card.locator('[data-l4-section="case"] summary').first().click()
+    const caseBox = card.locator('[data-l4-case]')
+    await expect(caseBox).toContainText('2 other waiting reads')
+    await expect(card.locator('[data-l4-section="case"]')).not.toContainText('{"count"')
+    await caseBox.locator('summary').click()
+    await expect(caseBox.locator('[data-l4-related-ref="zz"]')).toContainText('Bachelor of Design')
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1)
+    expect(decides).toHaveLength(0)
+  })
 })

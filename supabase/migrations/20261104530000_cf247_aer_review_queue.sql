@@ -36,7 +36,18 @@
 --      aer.e13_recover_total_max requests over the pilot; never an item whose corrected read was refused on the same stored copy (the reader is
 --      deterministic on unchanged evidence). security.aer_e13_pilot_report_v1() measures replacement yield.
 --   7. security.aer_fair_projection_v1(): what wc.aer_fair_on would do now, by university, from stored readiness (read only).
--- Activation: ON (records, presents, asks people; admits and spends nothing): 1-5, 7. OFF: aer.e13_recover_on (unchanged: off).
+--   8. RMIT settlement (Platform Admin direction 4 Nov 2026 12:16, admin docs/platform/2026-11-04-rmit-aer-layer4-settlement-direction-1216.md):
+--      security.aer_settlement_v1(provider): every waiting AER item in one of four classes from stored records only (ready; recoverable: an
+--      automatic step remains; needs_input; stale), with the reason and the next action. A held read whose corrected reads were refused for the
+--      row limit on the same copy (they kept every printed requirement: value.rows_read) is route row_limit_stored: it waits for a row boundary,
+--      never another re-read and never a rows request (a person's rows would only resume the same refused read; the generator skips it).
+--      The queue returns one university's ready items as Inbox items, so the Inbox shows them first and decides them with its own decide action;
+--      security.layer4_aer_university_summary_v1 gives the Inbox's university summary (pending, review-ready, technically held, human input
+--      required, open interventions, admitted, unresolved) through public.admin_layer4_aer_queue({summary_provider_id}); the card's detail opens
+--      with a readable summary (class, failure, next action). security.aer_progress_counts_v1(since, provider) counts submitted, saved,
+--      admitted and published AER decisions for the execution register. src/Layer4Inbox.jsx: the summary line, Ready to decide / All waiting,
+--      and hook detail rendered as text (a recovery case as a sentence with an expandable list of related items linked to their cards).
+-- Activation: ON (records, presents, asks people; admits and spends nothing): 1-5, 7, 8. OFF: aer.e13_recover_on (unchanged: off).
 -- Settings (G2): aer.e13_recover_providers, aer.e13_recover_total_max, aer.row_limit_matrix_rows, aer.review_packet_rows, har.generate_aer_item_on.
 -- Before (live, 4 Nov 2026 11:18 AEDT) -> after:
 --   security.aer_e13_recover_v1(boolean) 90f80d59db94e29aab3fc520d1c99be6 -> 1bd8be8be44d5cd6e25a41a337b43f61
@@ -147,7 +158,7 @@ language plpgsql stable security definer set search_path to '' as $function$
 -- gate classes (never a gate per row). Read only.
 declare r pipeline.layer4_review_items; x pipeline.layer4_item_readiness; g jsonb; v_gsrc text; v_pid uuid; v_course record; v_ev record; v_rt jsonb;
         v_n int := security.pipeline_num_v1('aer.review_packet_rows', 30)::int; v_prop jsonb; v_act jsonb; v_nprop int; v_nact int; v_locks jsonb;
-        v_rec text; v_ex jsonb; v_aud jsonb; v_owner jsonb; v_pos jsonb; v_cons jsonb; v_run record; v_conf jsonb; v_d4 boolean;
+        v_rec text; v_ex jsonb; v_aud jsonb; v_owner jsonb; v_pos jsonb; v_cons jsonb; v_run record; v_conf jsonb; v_d4 boolean; v_set jsonb;
 begin
   select * into r from pipeline.layer4_review_items where id = p_item;
   if r.id is null or r.field_code not in ('course_entry_first_read', 'entry_matrix_first_run', 'entry_matrix_change') then return null; end if;
@@ -234,14 +245,14 @@ begin
   select ev.id, ev.captured_at, ev.source_url into v_ev from pipeline.evidence_artifacts ev where ev.id = r.evidence_id;
   select coalesce(jsonb_agg(jsonb_build_object('owner', o.owner, 'scope', o.scope, 'since', o.since)), '[]'::jsonb) into v_owner
     from pipeline.layer4_review_owners o where o.provider_id = v_pid and o.field_code = r.field_code and o.closed_at is null;
-  -- the university's reviewer-ready queue from stored gate classes
-  with q as (select i.id, i.created_at from pipeline.layer4_review_items i join pipeline.layer4_item_readiness y on y.item_id = i.id
-               left join catalogue.courses c on i.entity_type = 'course' and c.id = i.entity_id
-              where i.status = 'pending' and i.field_code = r.field_code and coalesce(c.provider_id, case when i.entity_type = 'provider' then i.entity_id end) = v_pid
-                and security.aer_route_v1(i.field_code, y.gate)->>'route' in ('review', 'review_except', 'matrix_except')),
-       o as (select q.id, row_number() over (order by q.created_at, q.id) n, count(*) over () t from q)
-  select jsonb_build_object('ready_at_university', coalesce((select max(t) from o), 0), 'position', (select n from o where o.id = p_item),
-           'next_ready', (select o2.id from o o2 where o2.n = coalesce((select n from o where o.id = p_item), 0) + 1)) into v_pos;
+  -- the university's settlement (stored records only, never a gate per row): this item's class and its place among the ready items
+  with st as (select * from security.aer_settlement_v1(v_pid)),
+       o as (select st.item_id, row_number() over (order by st.created_at, st.item_id) n, count(*) over () t from st where st.settlement = 'ready' and st.field_code = r.field_code)
+  select (select jsonb_build_object('settlement', st.settlement, 'why', st.why, 'next_action', st.next_action, 'route', st.route, 'tries', st.tries,
+                                    'last_refusal', st.last_refusal, 'rows_read', st.rows_read) from st where st.item_id = p_item),
+         jsonb_build_object('ready_at_university', coalesce((select max(t) from o), 0), 'position', (select n from o where o.item_id = p_item),
+           'next_ready', (select o2.item_id from o o2 where o2.n = coalesce((select n from o where o.item_id = p_item), 0) + 1))
+    into v_set, v_pos;
   return jsonb_build_object('item', p_item, 'field_code', r.field_code, 'provider_id', v_pid,
     'provider', (select coalesce(p.display_name, p.canonical_name) from catalogue.providers p where p.id = v_pid),
     'course', case when r.field_code = 'course_entry_first_read' then jsonb_build_object('id', v_course.id, 'title', v_course.title, 'code', v_course.course_code,
@@ -252,7 +263,7 @@ begin
     'proposed', jsonb_build_object('count', v_nprop, 'rows', v_prop), 'active', jsonb_build_object('count', v_nact, 'rows', v_act), 'locks', v_locks,
     'gate', jsonb_build_object('source', v_gsrc, 'complete', coalesce((g->>'complete')::boolean, false), 'reasons', coalesce(g->'reasons', '[]'::jsonb)),
     'conflicts', v_conf, 'route', v_rt, 'exclude_row_ids', coalesce(v_ex, '[]'::jsonb), 'recommended', v_rec, 'consequences', v_cons,
-    'owner', v_owner, 'queue', v_pos);
+    'owner', v_owner, 'queue', v_pos, 'settlement', v_set);
 end $function$;
 revoke all on function security.aer_review_packet_v1(uuid) from public, anon, authenticated;
 
@@ -271,6 +282,13 @@ begin
                             'actions', '[]'::jsonb);
   end;
   v_sec := jsonb_build_array(
+    -- direction 12:16 §7: a readable summary first: what this item is, why, and the next action
+    jsonb_build_object('key', 'summary', 'title', 'Summary', 'body', jsonb_strip_nulls(jsonb_build_object(
+      'Class', case p->'settlement'->>'settlement' when 'ready' then 'Ready for a decision' when 'recoverable' then 'Technically held: an automatic recovery remains'
+                                                 when 'needs_input' then 'Needs evidence, input or a decision' when 'stale' then 'Stale: no longer a valid read' end,
+      'Failure', case when p->'settlement'->>'settlement' <> 'ready' then p->'settlement'->>'why' end,
+      'Next action', p->'settlement'->>'next_action',
+      'Corrected reads so far', nullif((p->'settlement'->>'tries')::int, 0)))),
     jsonb_build_object('key', 'review', 'title', 'Review', 'body', jsonb_strip_nulls(jsonb_build_object(
       'University', p->>'provider', 'Course', p->'course'->>'title', 'Course code', p->'course'->>'code', 'Qualification', p->'course'->>'qualification',
       'Country', p->'course'->>'country', 'Source', p->'source'->>'url', 'Audience', p->'audiences', 'Stored copy', p->'evidence',
@@ -294,45 +312,156 @@ update pipeline.layer4_inbox_kind_hooks set detail_fn = 'security.layer4_aer_rev
        note = coalesce(note, '') || ' | 4 Nov 2026 (direction 10:00 §3): detail is the review packet then the recovery detail (security.layer4_aer_review_detail_v1)'
  where kind = 'aer_review' and mode = 'extend' and detail_fn = 'security.layer4_aer_recovery_detail_v1(text)';
 
--- 3 the reviewer-ready queue and ownership --------------------------------------------------------------------------------------------------
+-- 3 settlement classes, the reviewer-ready queue, the university summary and ownership (direction 12:16 §1-§2, §5, §8) -------------------
+create or replace function security.aer_settlement_v1(p_provider uuid) returns table(item_id uuid, field_code text, created_at timestamptz, provider_id uuid, cls text,
+  route text, settlement text, why text, next_action text, tries int, last_refusal text, rows_read int)
+language sql stable security definer set search_path to '' as $function$
+-- CF-247 direction 12:16 §2-§3: each waiting AER item of a university (all universities when null) in one of four settlement classes, from stored
+-- records only (the readiness gate result, the corrected-read history, locks, the bound page; never a gate per row):
+--   ready        a person can decide it now (complete, or rows to leave out)
+--   recoverable  technically held with an automatic recovery that has not yet run on this evidence (an untried corrected read from the stored
+--                copy of the same page), or not yet gated (job layer4-readiness)
+--   needs_input  a person or the Platform Admin must supply something: the course a shared page belongs to, the dropped rows after a refused
+--                corrected read on unchanged evidence (a deterministic repeat), a row boundary (row limit; the stored rows read need no new AI
+--                read once it is set), the matrix source, or a manual lock
+--   stale        no longer a valid read of the course: the course is inactive or its bound page is not the page read
+  with b as (
+    select i.id, i.field_code, i.created_at, i.entity_type, i.entity_id, coalesce(c.provider_id, case when i.entity_type = 'provider' then i.entity_id end) pid, y.gate,
+           c.lifecycle_status, pg.url pg_url, pg.evidence_id pg_ev, i.proposed_value->>'url' read_url,
+           exists (select 1 from pipeline.manual_locks l where i.entity_type = 'course' and l.entity = 'course' and l.entity_id = i.entity_id and l.field = 'entry_requirements') locked,
+           (select count(*)::int from pipeline.aer_read_supersessions s where s.old_item_id = i.id) tries,
+           (select s.outcome from pipeline.aer_read_supersessions s where s.old_item_id = i.id and s.state = 'refused' order by s.requested_at desc limit 1) refusal,
+           (select jsonb_array_length(coalesce(fe.value->'rows_read', '[]'::jsonb))::int from pipeline.aer_read_supersessions s join pipeline.field_enrich_items fe on fe.id = s.enrich_item_id
+             where s.old_item_id = i.id order by s.requested_at desc limit 1) rows_read
+      from pipeline.layer4_review_items i
+      left join pipeline.layer4_item_readiness y on y.item_id = i.id
+      left join catalogue.courses c on i.entity_type = 'course' and c.id = i.entity_id
+      left join pipeline.coverage_course_pages pg on i.entity_type = 'course' and pg.course_id = i.entity_id
+     where i.status = 'pending' and i.field_code in ('course_entry_first_read', 'entry_matrix_first_run', 'entry_matrix_change')
+       and (p_provider is null or coalesce(c.provider_id, case when i.entity_type = 'provider' then i.entity_id end) = p_provider)),
+  r as (select b.*, security.aer_route_v1(b.field_code, b.gate) rt from b)
+  select r.id, r.field_code, r.created_at, r.pid, coalesce(r.rt->>'class', 'unchecked'),
+         case when r.rt->>'class' = 'drops_uncovered' and r.refusal ilike '%row limit%' then 'row_limit_stored'
+              when r.rt->>'class' = 'drops_uncovered' and r.refusal ilike '%proof does not admit%' then 'identity' else r.rt->>'route' end,
+         z.settlement, z.why, z.next_action, r.tries, r.refusal, r.rows_read
+    from r cross join lateral (select * from (values (
+      case when r.entity_type = 'course' and (coalesce(r.lifecycle_status, 'active') <> 'active' or r.pg_url is distinct from r.read_url) then 'stale'
+           when r.gate is null then 'recoverable'
+           when r.locked then 'needs_input'
+           when r.rt->>'route' in ('review', 'review_except', 'matrix_except') then 'ready'
+           when r.rt->>'class' = 'drops_uncovered' and r.tries = 0 and r.pg_ev is not null then 'recoverable'
+           else 'needs_input' end,
+      case when r.entity_type = 'course' and coalesce(r.lifecycle_status, 'active') <> 'active' then 'the course is no longer active'
+           when r.entity_type = 'course' and r.pg_url is distinct from r.read_url then 'the course is now bound to another page: a new first read, not a correction'
+           when r.gate is null then 'not yet checked by the completeness gate'
+           when r.locked then 'the course''s entry requirements are locked by hand'
+           when r.rt->>'route' = 'review' then 'every check passes'
+           when r.rt->>'route' in ('review_except', 'matrix_except') then 'rows a person leaves out'
+           when r.rt->>'class' = 'drops_uncovered' and r.refusal ilike '%row limit%' then 'the corrected read kept every printed requirement (' || coalesce(r.rows_read, 0) || ' rows) but is over the row limit; a re-read gives the same result'
+           when r.rt->>'class' = 'drops_uncovered' and r.refusal ilike '%proof does not admit%' then 'the page''s identity proof does not admit entry requirements'
+           when r.rt->>'class' = 'drops_uncovered' and r.tries = 0 and r.pg_ev is not null then 'printed requirements were dropped; a corrected read from the stored copy has not been tried'
+           when r.rt->>'class' = 'drops_uncovered' and r.pg_ev is null then 'printed requirements were dropped and there is no stored copy to read again'
+           when r.rt->>'class' = 'drops_uncovered' then 'the corrected read was refused on the same stored copy (' || coalesce(r.refusal, 'no reason') || '): the reader repeats itself on unchanged evidence'
+           else coalesce(r.gate->'reasons'->>0, r.rt->>'remedy') end,
+      case when r.entity_type = 'course' and (coalesce(r.lifecycle_status, 'active') <> 'active' or r.pg_url is distinct from r.read_url) then 'Reject the read (it no longer describes the course''s bound page)'
+           when r.gate is null then 'job layer4-readiness gates it (never-gated items first)'
+           when r.locked then 'leave it, or a Platform Admin lifts the lock'
+           when r.rt->>'route' = 'review' then 'decide it in Layer 4: Approve all rows or Reject the read'
+           when r.rt->>'route' in ('review_except', 'matrix_except') then 'decide it in Layer 4: Approve except the named rows, or Reject'
+           when r.rt->>'class' = 'drops_uncovered' and r.refusal ilike '%row limit%' then 'a row boundary for the university (entry.max_rows_by_provider, Platform Admin); no new re-read until then'
+           when r.rt->>'class' = 'drops_uncovered' and r.refusal ilike '%proof does not admit%' then 'confirm the course''s page (aer_course_identity)'
+           when r.rt->>'class' = 'drops_uncovered' and r.tries = 0 and r.pg_ev is not null then 'one corrected read from the stored copy (E13 recovery pilot, or Re-read from stored evidence)'
+           when r.rt->>'class' = 'drops_uncovered' then 'a person enters the dropped rows with their quotations (aer_read_rows_missing); no further re-read of this copy'
+           when r.rt->>'route' in ('row_limit', 'source_is_matrix') then r.rt->>'remedy'
+           when r.rt->>'route' = 'identity' then 'confirm which programme the page belongs to (aer_course_identity)'
+           else coalesce(r.rt->>'remedy', 'see the gate reasons') end)) v(settlement, why, next_action)) z
+$function$;
+revoke all on function security.aer_settlement_v1(uuid) from public, anon, authenticated;
+
 create or replace function security.layer4_aer_queue_v1(p_args jsonb) returns jsonb
 language sql stable security definer set search_path to '' as $function$
--- reviewer-ready AER items (route review, review_except or matrix_except, from stored gate classes) by university: followed universities first
--- (coverage.aer_priority_providers), then the most ready; one university's items oldest first, with the owner of the university and kind
-  with q as (select i.id, i.field_code, i.created_at, coalesce(c.provider_id, case when i.entity_type = 'provider' then i.entity_id end) pid,
-                    coalesce(c.display_title, c.canonical_title) subject, security.aer_route_v1(i.field_code, y.gate)->>'route' route
-               from pipeline.layer4_review_items i join pipeline.layer4_item_readiness y on y.item_id = i.id
-               left join catalogue.courses c on i.entity_type = 'course' and c.id = i.entity_id
-              where i.status = 'pending' and i.field_code in ('course_entry_first_read', 'entry_matrix_first_run', 'entry_matrix_change')),
-       r as (select * from q where q.route in ('review', 'review_except', 'matrix_except')),
+-- reviewer-ready AER items (settlement ready, stored records only) by university: followed universities first (coverage.aer_priority_providers),
+-- then the most ready; one university's ready items oldest first, as Inbox items (kind aer_review), so the Inbox shows them first and decides
+-- them through its own decide action (one item, one audit event)
+  with s as (select * from security.aer_settlement_v1(nullif(p_args->>'provider_id', '')::uuid)),
+       r as (select * from s where s.settlement = 'ready'),
        f as (select x::uuid pid, n from jsonb_array_elements_text(coalesce(security.toolset_setting('pipeline', 'coverage.aer_priority_providers'), '[]'::jsonb)) with ordinality z(x, n)),
-       u as (select r.pid, count(*) ready, count(*) filter (where r.route <> 'review') except_n, min(r.created_at) oldest from r group by 1),
+       u as (select r.provider_id pid, count(*) ready, count(*) filter (where r.route <> 'review') except_n, min(r.created_at) oldest from r group by 1),
        own as (select o.provider_id, jsonb_agg(jsonb_build_object('owner', o.owner, 'field_code', o.field_code, 'scope', o.scope)) owners
-                 from pipeline.layer4_review_owners o where o.closed_at is null and o.field_code in ('course_entry_first_read', 'entry_matrix_first_run', 'entry_matrix_change') group by 1)
+                 from pipeline.layer4_review_owners o where o.closed_at is null and o.field_code in ('course_entry_first_read', 'entry_matrix_first_run', 'entry_matrix_change') group by 1),
+       pg as (select r.* from r where p_args ? 'provider_id' order by r.created_at, r.item_id
+               limit security.pipeline_num_v1('layer4.inbox_page_size', 25)::int offset greatest(coalesce((p_args->>'offset')::int, 0), 0))
   select jsonb_build_object(
-    'unchecked', (select count(*) from q where q.route = 'awaiting_gate'), 'ready', (select count(*) from r),
-    'held', (select jsonb_object_agg(z.route, z.n) from (select q.route, count(*) n from q where q.route not in ('review', 'review_except', 'matrix_except') group by 1) z),
+    'ready', (select count(*) from r), 'by_settlement', (select jsonb_object_agg(z.settlement, z.n) from (select s.settlement, count(*) n from s group by 1) z),
     'universities', coalesce((select jsonb_agg(jsonb_build_object('provider_id', u.pid, 'name', coalesce(p.display_name, p.canonical_name), 'ready', u.ready,
                       'approve_except', u.except_n, 'oldest', u.oldest, 'followed', f.n is not null, 'owners', coalesce(own.owners, '[]'::jsonb))
                       order by f.n nulls last, u.ready desc, coalesce(p.display_name, p.canonical_name))
                  from u left join f on f.pid = u.pid left join own on own.provider_id = u.pid left join catalogue.providers p on p.id = u.pid), '[]'::jsonb),
-    'items', case when p_args ? 'provider_id' then coalesce((select jsonb_agg(jsonb_build_object('ref', r.id, 'kind', 'aer_review', 'field_code', r.field_code,
-                      'subject', r.subject, 'route', r.route, 'created_at', r.created_at) order by r.created_at, r.id)
-                 from (select * from r where r.pid = (p_args->>'provider_id')::uuid order by r.created_at, r.id
-                        limit security.pipeline_num_v1('layer4.inbox_page_size', 25)::int
-                        offset greatest(coalesce((p_args->>'offset')::int, 0), 0)) r), '[]'::jsonb) end)
+    'items', case when p_args ? 'provider_id' then coalesce((select jsonb_agg(jsonb_build_object('kind', 'aer_review', 'ref', pg.item_id::text, 'provider_id', pg.provider_id,
+                      'provider', coalesce(pv.display_name, pv.canonical_name), 'subject', coalesce(c.display_title, c.canonical_title, 'Entry requirements'),
+                      'why', coalesce(nullif(i.escalation_reason, ''), 'Needs a decision'), 'created_at', pg.created_at, 'route', pg.route, 'ready', true,
+                      'detail', jsonb_strip_nulls(jsonb_build_object('field_code', pg.field_code, 'course_id', c.id, 'course_code', c.course_code, 'code_label', 'CRICOS',
+                                                 'evidence_id', i.evidence_id, 'captured_at', ev.captured_at, 'source_url', ev.source_url)))
+                      order by pg.created_at, pg.item_id)
+                 from pg join pipeline.layer4_review_items i on i.id = pg.item_id
+                 left join catalogue.courses c on i.entity_type = 'course' and c.id = i.entity_id
+                 left join catalogue.providers pv on pv.id = pg.provider_id
+                 left join pipeline.evidence_artifacts ev on ev.id = i.evidence_id), '[]'::jsonb) end,
+    'offset', greatest(coalesce((p_args->>'offset')::int, 0), 0), 'limit', security.pipeline_num_v1('layer4.inbox_page_size', 25)::int)
 $function$;
 revoke all on function security.layer4_aer_queue_v1(jsonb) from public, anon, authenticated;
 
+create or replace function security.layer4_aer_university_summary_v1(p_provider uuid) returns jsonb
+language sql stable security definer set search_path to '' as $function$
+-- CF-247 direction 12:16 §8: one university's AER position from stored records: pending, review-ready, technically held (an automatic step
+-- remains), human input required (a person or authority must act), open Human input needed items, stale, admitted (courses with active entry rows
+-- and active matrix rows) and unresolved (pending less review-ready)
+  with s as (select * from security.aer_settlement_v1(p_provider))
+  select jsonb_build_object('provider_id', p_provider,
+    'pending', (select count(*) from s), 'review_ready', (select count(*) from s where s.settlement = 'ready'),
+    'technically_held', (select count(*) from s where s.settlement = 'recoverable'), 'human_input_required', (select count(*) from s where s.settlement = 'needs_input'),
+    'stale', (select count(*) from s where s.settlement = 'stale'), 'unresolved', (select count(*) from s where s.settlement <> 'ready'),
+    'human_input_open', (select count(*) from pipeline.layer4_interventions x where x.provider_id = p_provider and x.lane in ('aer_item', 'aer_course', 'aer_source')
+                          and x.status in ('ai_pending', 'awaiting_input', 'resuming')),
+    'admitted_courses', (select count(distinct q.course_id) from catalogue.course_entry_requirements q join catalogue.courses c on c.id = q.course_id
+                          where c.provider_id = p_provider and q.status = 'active'),
+    'admitted_matrix_rows', (select count(*) from catalogue.provider_entry_matrix m where m.provider_id = p_provider and m.status = 'active'),
+    'by_route', (select jsonb_object_agg(z.route, z.n) from (select coalesce(s.route, 'unchecked') route, count(*) n from s group by 1) z))
+$function$;
+revoke all on function security.layer4_aer_university_summary_v1(uuid) from public, anon, authenticated;
+
 create or replace function public.admin_layer4_aer_queue(p_args jsonb default '{}'::jsonb) returns jsonb
 language plpgsql stable security definer set search_path to '' as $function$
--- CF-247 direction 10:00 §3: the reviewer-ready AER queue (Pipeline Operator and above; read only). Decisions are made in Layer 4 › Inbox.
+-- CF-247 directions 10:00 §3 and 12:16 §5, §8: the reviewer-ready AER queue and one university's summary (Pipeline Operator and above; read
+-- only). Decisions are made in Layer 4 › Inbox, one item at a time.
 begin
   if auth.uid() is null or coalesce(security.current_role_rank(), 0) < 4 then raise exception 'Pipeline Operator or above required' using errcode = '42501'; end if;
+  if coalesce(p_args, '{}'::jsonb) ? 'summary_provider_id' then return security.layer4_aer_university_summary_v1((p_args->>'summary_provider_id')::uuid); end if;
   return security.layer4_aer_queue_v1(coalesce(p_args, '{}'::jsonb));
 end $function$;
 revoke all on function public.admin_layer4_aer_queue(jsonb) from public, anon;
 grant execute on function public.admin_layer4_aer_queue(jsonb) to authenticated;
+
+create or replace function security.aer_progress_counts_v1(p_since timestamptz, p_provider uuid default null) returns jsonb
+language sql stable security definer set search_path to '' as $function$
+-- CF-247 direction 12:16 §10: AER decisions since a time, counted separately: submitted (Inbox decide calls on AER items), saved (Layer 4
+-- decisions recorded), admitted (rows made active by those decisions) and published (courses among them the website's course payload carries,
+-- i.e. in the search projection with active rows). Read only.
+  with dec as (select d.* from pipeline.layer4_decisions d join pipeline.layer4_review_items i on i.id = d.review_item_id
+                left join catalogue.courses c on i.entity_type = 'course' and c.id = i.entity_id
+               where d.created_at >= p_since and i.field_code in ('course_entry_first_read', 'entry_matrix_first_run', 'entry_matrix_change')
+                 and (p_provider is null or coalesce(c.provider_id, case when i.entity_type = 'provider' then i.entity_id end) = p_provider))
+  select jsonb_build_object('since', p_since,
+    'submitted', (select count(*) from pipeline.admin_control_events e where e.area = 'layer4' and e.action = 'inbox_decide' and e.created_at >= p_since
+                   and e.target like 'aer_review:%' and (p_provider is null or e.detail->>'provider_id' = p_provider::text)),
+    'saved', (select count(*) from dec), 'saved_by_action', (select jsonb_object_agg(z.action, z.n) from (select dec.action, count(*) n from dec group by 1) z),
+    'admitted_rows', (select count(*) from catalogue.course_entry_requirements x where x.status = 'active' and x.provenance->>'review_item_id' in (select dec.review_item_id::text from dec))
+                     + (select count(*) from catalogue.provider_entry_matrix m join pipeline.entry_matrix_runs r on r.id = m.run_id where m.status = 'active' and r.review_item_id in (select dec.review_item_id from dec)),
+    'admitted_courses', (select count(distinct x.course_id) from catalogue.course_entry_requirements x where x.status = 'active' and x.provenance->>'review_item_id' in (select dec.review_item_id::text from dec)),
+    'published_courses', (select count(distinct x.course_id) from catalogue.course_entry_requirements x join search.course_documents d on d.course_id = x.course_id
+                           where x.status = 'active' and x.provenance->>'review_item_id' in (select dec.review_item_id::text from dec)))
+$function$;
+revoke all on function security.aer_progress_counts_v1(timestamptz, uuid) from public, anon, authenticated;
 
 create or replace function security.layer4_aer_owner_claim_v1(p_provider uuid, p_owner text, p_basis text) returns jsonb
 language plpgsql security definer set search_path to '' as $function$
@@ -371,14 +500,18 @@ begin
              security.aer_route_v1(i.field_code, y.gate) rt, pg.evidence_id page_ev, (pg.evidence_id is not null and pg.url = i.proposed_value->>'url') stored,
              (select count(*) from pipeline.aer_read_supersessions s where s.old_item_id = i.id) tries,
              exists (select 1 from pipeline.aer_read_supersessions s left join pipeline.field_enrich_items fe on fe.id = s.enrich_item_id
-                      where s.old_item_id = i.id and s.state = 'refused' and (fe.evidence_id is null or fe.evidence_id = pg.evidence_id)) refused_same
+                      where s.old_item_id = i.id and s.state = 'refused' and (fe.evidence_id is null or fe.evidence_id = pg.evidence_id)) refused_same,
+             (select s.outcome from pipeline.aer_read_supersessions s where s.old_item_id = i.id and s.state = 'refused' order by s.requested_at desc limit 1) refusal
         from pipeline.layer4_review_items i join pipeline.layer4_item_readiness y on y.item_id = i.id
         join catalogue.courses c on c.id = i.entity_id left join pipeline.coverage_course_pages pg on pg.course_id = i.entity_id
        where i.status = 'pending' and i.field_code = 'course_entry_first_read' and y.gate is not null),
     cand as (
       select h.*, case when h.rt->>'route' = 'identity' then 'aer_course_identity' else 'aer_read_rows_missing' end cls
         from h where h.rt->>'route' = 'identity'
-          or (h.rt->>'route' in ('missing_scale', 'quote_association', 'low_confidence') and (not coalesce(h.stored, false) or h.refused_same or h.tries >= v_tries))),
+          or (h.rt->>'route' in ('missing_scale', 'quote_association', 'low_confidence') and (not coalesce(h.stored, false) or h.refused_same or h.tries >= v_tries)
+              -- direction 12:16 §3-§4: a read refused for the row limit kept every printed requirement; rows from a person would resume the same
+              -- refused read, so it waits for the row boundary (authority) instead
+              and coalesce(h.refusal, '') not ilike '%row limit%' and coalesce(h.refusal, '') not ilike '%proof does not admit%')),
     ranked as (select c.*, row_number() over (partition by c.provider_id order by c.created_at, c.id) pn from cand c
                 where not exists (select 1 from pipeline.layer4_interventions x where x.entity = c.id::text and x.missing_fact = c.cls
                                     and x.status in ('ai_pending', 'awaiting_input', 'resuming') and x.fingerprint = md5(c.cls || '|' || md5(coalesce(c.gate::text, '') || '|' || coalesce(c.page_ev::text, '')))))
@@ -485,15 +618,15 @@ revoke all on function security.aer_fair_projection_v1() from public, anon, auth
 
 -- 7 component register ----------------------------------------------------------------------------------------------------------------------
 insert into pipeline.component_register(kind, name, layer, purpose, status, replaces, introduced_in) values
- ('function', 'security.aer_route_v1', 'Platform', 'CF-247 AER: the class and route of a waiting AER item from its gate result', 'active', '{}', '20261104490000'),
- ('function', 'security.aer_review_packet_v1', 'Platform', 'CF-247 AER: one item''s review packet (direction 10:00 §3)', 'active', '{}', '20261104490000'),
- ('function', 'security.layer4_aer_review_detail_v1', 'Layer 4', 'CF-247 AER card detail: the review packet, then the recovery detail', 'active', '{security.layer4_aer_recovery_detail_v1 (as hook detail)}', '20261104490000'),
- ('function', 'security.layer4_aer_queue_v1', 'Layer 4', 'CF-247 AER reviewer-ready queue by university', 'active', '{}', '20261104490000'),
- ('function', 'public.admin_layer4_aer_queue', 'Layer 4', 'CF-247 AER reviewer-ready queue (Pipeline Operator and above, read only)', 'active', '{}', '20261104490000'),
- ('function', 'security.layer4_aer_owner_claim_v1', 'Layer 4', 'CF-247 a claim of one university''s AER review in the ownership register', 'active', '{}', '20261104490000'),
- ('function', 'security.har_aer_item_generate_v1', 'Platform', 'CF-247 interventions for held AER course reads no automatic remedy can fix (lane aer_item)', 'active', '{}', '20261104490000'),
- ('function', 'security.aer_e13_pilot_report_v1', 'Platform', 'CF-247 the E13 recovery pilot''s replacement yield', 'active', '{}', '20261104490000'),
- ('function', 'security.aer_fair_projection_v1', 'Platform', 'CF-247 what wc.aer_fair_on would do now, by university', 'active', '{}', '20261104490000')
+ ('function', 'security.aer_route_v1', 'Platform', 'CF-247 AER: the class and route of a waiting AER item from its gate result', 'active', '{}', '20261104530000'),
+ ('function', 'security.aer_review_packet_v1', 'Platform', 'CF-247 AER: one item''s review packet (direction 10:00 §3)', 'active', '{}', '20261104530000'),
+ ('function', 'security.layer4_aer_review_detail_v1', 'Layer 4', 'CF-247 AER card detail: the review packet, then the recovery detail', 'active', '{security.layer4_aer_recovery_detail_v1 (as hook detail)}', '20261104530000'),
+ ('function', 'security.layer4_aer_queue_v1', 'Layer 4', 'CF-247 AER reviewer-ready queue by university', 'active', '{}', '20261104530000'),
+ ('function', 'public.admin_layer4_aer_queue', 'Layer 4', 'CF-247 AER reviewer-ready queue (Pipeline Operator and above, read only)', 'active', '{}', '20261104530000'),
+ ('function', 'security.layer4_aer_owner_claim_v1', 'Layer 4', 'CF-247 a claim of one university''s AER review in the ownership register', 'active', '{}', '20261104530000'),
+ ('function', 'security.har_aer_item_generate_v1', 'Platform', 'CF-247 interventions for held AER course reads no automatic remedy can fix (lane aer_item)', 'active', '{}', '20261104530000'),
+ ('function', 'security.aer_e13_pilot_report_v1', 'Platform', 'CF-247 the E13 recovery pilot''s replacement yield', 'active', '{}', '20261104530000'),
+ ('function', 'security.aer_fair_projection_v1', 'Platform', 'CF-247 what wc.aer_fair_on would do now, by university', 'active', '{}', '20261104530000')
 on conflict do nothing;
 
 -- 8 post-check ------------------------------------------------------------------------------------------------------------------------------

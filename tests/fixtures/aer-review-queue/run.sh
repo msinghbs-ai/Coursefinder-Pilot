@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CF-247 AER review queue, technical routing and recovery pilots (migration 20261104490000; direction 4 Nov 2026 10:00 §3-§4) on isolated
+# CF-247 AER review queue, technical routing and recovery pilots (migration 20261104530000; direction 4 Nov 2026 10:00 §3-§4) on isolated
 # fixtures. Needs a scratch PostgreSQL 16 (never a Supabase project): PGHOST/PGPORT/PGUSER point at it. Builds a throwaway database:
 #   1 the AER database of ../aer-throughput (integration-queue stubs, workstream A's contract stand-in, the work-continuity contract, its
 #     stubs and live definitions, its production-shaped seed: 605 waiting items, gate classes in live proportion, RMIT 303), then the live
@@ -14,7 +14,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 DB=${AERQ_DB:-aer_review_queue_fixtures}
 P="psql -v ON_ERROR_STOP=1 -q -X"
-MIG=supabase/migrations/20261104490000_cf247_aer_review_queue.sql
+MIG=supabase/migrations/20261104530000_cf247_aer_review_queue.sql
 FX=tests/fixtures/aer-review-queue
 TF=tests/fixtures/aer-throughput
 WC=supabase/migrations/20261104170000_cf247_work_continuity.sql
@@ -60,7 +60,7 @@ echo "definitions this change edits or calls (loaded = live 4 Nov 2026 11:18): $
 
 # 3 the migration, then again
 EDITED="'security.aer_e13_recover_v1(boolean)'::regprocedure"
-NEW="'aer_route_v1', 'aer_review_packet_v1', 'layer4_aer_review_detail_v1', 'layer4_aer_queue_v1', 'admin_layer4_aer_queue', 'layer4_aer_owner_claim_v1', 'har_aer_item_generate_v1', 'aer_e13_pilot_report_v1', 'aer_fair_projection_v1'"
+NEW="'aer_route_v1', 'aer_review_packet_v1', 'layer4_aer_review_detail_v1', 'layer4_aer_queue_v1', 'admin_layer4_aer_queue', 'layer4_aer_owner_claim_v1', 'har_aer_item_generate_v1', 'aer_e13_pilot_report_v1', 'aer_fair_projection_v1', 'aer_settlement_v1', 'layer4_aer_university_summary_v1', 'aer_progress_counts_v1'"
 FNS="select md5(string_agg(p.oid::regprocedure::text || md5(pg_get_functiondef(p.oid)), '|' order by p.oid::regprocedure::text)) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
      where n.nspname in ('security', 'public', 'api') and p.prokind = 'f' and p.oid not in ($EDITED) and p.proname not in ($NEW)"
 F0=$(q "$FNS")

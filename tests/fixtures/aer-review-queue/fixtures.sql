@@ -1,4 +1,4 @@
--- CF-247 AER review queue fixtures (migration 20261104490000): assertions on the production-shaped seed. Run by run.sh after the migration.
+-- CF-247 AER review queue fixtures (migration 20261104530000): assertions on the production-shaped seed. Run by run.sh after the migration.
 \set ON_ERROR_STOP on
 create or replace function fx.ok(p boolean, p_what text) returns void language plpgsql as $f$
 begin if p is not true then raise exception 'FAILED: %', p_what; end if; raise notice 'ok: %', p_what; end $f$;
@@ -8,28 +8,52 @@ create or replace function fx.item(p_provider text, p_cls text, p_n int default 
 create temp table before_state as select (select count(*) from pipeline.layer4_review_items where status = 'pending') pending,
   (select count(*) from catalogue.course_entry_requirements where status = 'active') active, (select count(*) from pipeline.layer4_decisions) decisions;
 
--- 1 the reviewer-ready queue: from stored gate classes, followed universities first, one university's items oldest first; read only
+-- 1 settlement classes and the reviewer-ready queue: from stored records, followed universities first, one university's items oldest first
+create or replace function fx.expect_ready() returns bigint language sql as $f$
+  select count(*) from pipeline.layer4_review_items i join fx.gate f on f.item_id = i.id
+    left join catalogue.courses c on i.entity_type = 'course' and c.id = i.entity_id left join pipeline.coverage_course_pages pg on pg.course_id = i.entity_id
+   where i.status = 'pending' and (i.field_code = 'entry_matrix_first_run' and ((f.g->>'complete')::boolean or f.g::text like '%Approve except%')
+         or i.field_code = 'course_entry_first_read' and fx.cls(f.g) in ('complete', 'row_level') and pg.url = i.proposed_value->>'url'
+            and not exists (select 1 from pipeline.manual_locks l where l.entity_id = i.entity_id)) $f$;
 do $$
-declare v jsonb; v_first jsonb; v_rmit jsonb;
+declare v jsonb; v_first jsonb; v_rmit jsonb; s jsonb;
 begin
   v := public.admin_layer4_aer_queue('{}');
-  perform fx.ok((v->>'ready')::int = 169 + 25 + 2 + 22, format('ready: 169 complete course reads, 25 with rows to leave out, 2 complete and 22 except-only matrix runs (%s)', v->>'ready'));
-  perform fx.ok((v->>'unchecked')::int = 0, 'nothing unchecked once readiness has gated every item');
-  perform fx.ok((v->'held'->>'row_limit')::int + coalesce((v->'held'->>'source_is_matrix')::int, 0) = 162 and (v->'held'->>'identity')::int = 45
-                and (v->'held'->>'matrix_source')::int = 17, format('held by route: row limit 162, identity 45, matrix source 17 (%s)', v->'held'));
+  perform fx.ok((v->>'ready')::bigint = fx.expect_ready() and fx.expect_ready() between 205 and 218,
+                format('ready = complete and rows-to-leave-out reads on their bound page and not locked, plus ready matrix runs (%s)', v->>'ready'));
+  perform fx.ok((select sum(value::int) from jsonb_each_text(v->'by_settlement')) = 605 and v->'by_settlement' ?& array['ready', 'recoverable', 'needs_input', 'stale'],
+                format('every one of the 605 items is in one of the four classes (%s)', v->'by_settlement'));
+  perform fx.ok((v->'by_settlement'->>'stale')::int = (select count(*) from pipeline.layer4_review_items i join pipeline.coverage_course_pages pg on pg.course_id = i.entity_id
+                   where i.status = 'pending' and pg.url is distinct from i.proposed_value->>'url'), 'stale: every read whose course is now bound to another page');
   v_first := v->'universities'->0;
   perform fx.ok((v_first->>'followed')::boolean and not exists (select 1 from jsonb_array_elements(v->'universities') with ordinality u(x, n)
                   where not (x->>'followed')::boolean and n < (select max(n2) from jsonb_array_elements(v->'universities') with ordinality u2(x2, n2) where (x2->>'followed')::boolean)),
                 'followed universities (coverage.aer_priority_providers) come first');
   v_rmit := public.admin_layer4_aer_queue('{"provider_id": "8e1adb6c-e069-43db-9584-bd054255e702"}');
-  perform fx.ok(jsonb_array_length(v_rmit->'items') = 25 and (select bool_and(x->>'route' in ('review', 'review_except'))
-                  from jsonb_array_elements(v_rmit->'items') x), 'one university''s page: 25 items (layer4.inbox_page_size), reviewer-ready only');
+  perform fx.ok(jsonb_array_length(v_rmit->'items') = 25 and (select bool_and(x->>'kind' = 'aer_review' and (x->>'ready')::boolean and x ? 'why' and x->'detail' ? 'field_code')
+                  from jsonb_array_elements(v_rmit->'items') x), 'RMIT''s ready page: 25 Inbox items (kind aer_review) ready first, each decidable by the Inbox''s own decide');
   perform fx.ok((select bool_and((a->>'created_at')::timestamptz <= (b->>'created_at')::timestamptz) from jsonb_array_elements(v_rmit->'items') with ordinality a1(a, n)
                   join jsonb_array_elements(v_rmit->'items') with ordinality b1(b, m) on m = n + 1), 'items in order, oldest first');
+  s := public.admin_layer4_aer_queue('{"summary_provider_id": "8e1adb6c-e069-43db-9584-bd054255e702"}');
+  perform fx.ok((s->>'pending')::int = 303 and (s->>'review_ready')::int + (s->>'technically_held')::int + (s->>'human_input_required')::int + (s->>'stale')::int = 303
+                and (s->>'unresolved')::int = 303 - (s->>'review_ready')::int, format('RMIT summary: 303 pending, the four classes add up (%s)', s - 'by_route'));
   update fx.caller set rank = 3;
   begin perform public.admin_layer4_aer_queue('{}'); raise exception 'FAILED: rank 3 read the queue';
   exception when insufficient_privilege then perform fx.ok(true, 'below Pipeline Operator: refused'); end;
   update fx.caller set rank = 4;
+end $$;
+
+-- 1b E13 deterministic repeats: the Diploma of Commerce shape is waiting for a row boundary, not another re-read or a rows request
+do $$
+declare st record; st2 record;
+begin
+  select * into st from security.aer_settlement_v1('8e1adb6c-e069-43db-9584-bd054255e702') z where z.item_id = (select id from fx.dc where n = 1);
+  perform fx.ok(st.settlement = 'needs_input' and st.route = 'row_limit_stored' and st.tries = 2 and st.rows_read = 9
+                and st.why like 'the corrected read kept every printed requirement (9 rows) but is over the row limit%' and st.next_action like 'a row boundary for the university%',
+                'two refusals for the row limit on the same copy: a row boundary is the next action (9 stored rows; no new read)');
+  select * into st2 from security.aer_settlement_v1('8e1adb6c-e069-43db-9584-bd054255e702') z where z.item_id = (select id from fx.dc where n = 2);
+  perform fx.ok(st2.route = 'identity' and st2.settlement = 'needs_input', 'refused because the page''s proof does not admit entry requirements: an identity case');
+  perform fx.ok((select count(*) from jsonb_array_elements(security.aer_e13_recover_v1(true)->'items') x where (x->>'item_id')::uuid in (select id from fx.dc)) = 0, 'the E13 pilot never picks them');
 end $$;
 
 -- 2 the review packet: provider, course, qualification, country, audience, evidence, rows, active rows, locks, checks, decision, consequences
@@ -46,8 +70,9 @@ begin
   perform fx.ok((p->'active'->>'count')::int = 2 and p->>'recommended' = 'Approve all rows (every check passes)'
                 and p->'consequences'->>'approve' like '3 waiting row(s) become active; 2 active row(s) from earlier reads are superseded%'
                 and p->'consequences'->>'reject' like '3 waiting row(s) are quarantined%', 'complete read: Approve all, with its exact consequences (2 active rows superseded)');
-  perform fx.ok((p->'queue'->>'position')::int = 1 and (p->'queue'->>'ready_at_university')::int = 91 and p->'queue'->>'next_ready' = fx.item('RMIT University (RMIT)', 'complete', 2)::text
-                or (p->'queue'->>'next_ready') is not null and (p->'queue'->>'ready_at_university')::int = 91,
+  perform fx.ok((p->'queue'->>'ready_at_university')::int = (select count(*) from security.aer_settlement_v1('8e1adb6c-e069-43db-9584-bd054255e702') z
+                   where z.settlement = 'ready' and z.field_code = 'course_entry_first_read') and (p->'queue'->>'position')::int >= 1 and (p->'queue'->>'next_ready') is not null
+                and p->'settlement'->>'settlement' = 'ready',
                 format('queue: position %s of %s ready at RMIT, with the next ready item', p->'queue'->>'position', p->'queue'->>'ready_at_university'));
   p := security.aer_review_packet_v1(fx.item('RMIT University (RMIT)', 'complete', 2));
   perform fx.ok(p->>'recommended' like 'Reject the read or leave it: the course has a manual lock%' and jsonb_array_length(p->'locks') = 1, 'a manual lock is shown and changes the recommendation');
@@ -79,12 +104,12 @@ begin
                 'the aer_review extend hook reads the review card');
   d := security.layer4_aer_review_detail_v1(fx.item('RMIT University (RMIT)', 'drops_uncovered', 2)::text);
   perform fx.ok((select array_agg(s->>'key' order by n) from jsonb_array_elements(d->'sections') with ordinality z(s, n)) @> array['review', 'checks', 'rows', 'active', 'recovery']
-                and d->'sections'->0->>'key' = 'review', 'sections: review, checks, rows, active rows, then the recovery detail');
-  perform fx.ok(jsonb_array_length(d->'actions') = 4 and d->'sections'->1->'body'->>'Route' is not null, 'Human-assisted recovery''s four actions are kept; the route is shown');
+                and d->'sections'->0->>'key' = 'summary' and d->'sections'->0->'body' ? 'Next action', 'sections: a readable summary (class, failure, next action), review, checks, rows, active rows, then the recovery detail');
+  perform fx.ok(jsonb_array_length(d->'actions') = 4 and d->'sections'->2->'body'->>'Route' is not null, 'Human-assisted recovery''s four actions are kept; the route is shown');
 end $$;
 begin;
 create or replace function security.layer4_aer_recovery_detail_v1(p_ref text) returns jsonb language plpgsql as $f$ begin raise exception 'canceling statement due to statement timeout'; end $f$;
-select fx.ok((security.layer4_aer_review_detail_v1(fx.item('RMIT University (RMIT)', 'complete', 1)::text)->'sections'->0->>'key') = 'review',
+select fx.ok((security.layer4_aer_review_detail_v1(fx.item('RMIT University (RMIT)', 'complete', 1)::text)->'sections'->1->>'key') = 'review',
              'the recovery detail failing (time-out) leaves the review card');
 rollback;
 
@@ -122,6 +147,9 @@ begin
   v2 := security.har_aer_item_generate_v1(40);
   perform fx.ok((select count(*) from pipeline.layer4_interventions) = v_n + (v2->>'raised_or_changed')::int
                 and not exists (select 1 from pipeline.layer4_interventions group by entity, missing_fact having count(*) > 1), 'the next run raises others; never a second item for the same read');
+  for v_n in 1 .. 10 loop perform security.har_aer_item_generate_v1(40); end loop;
+  perform fx.ok(not exists (select 1 from pipeline.layer4_interventions x where x.entity in (select id::text from fx.dc where n = 1)),
+                'the row-limit repeat (Diploma of Commerce shape) raises no rows request: a person''s rows would only resume the same refused read');
 end $$;
 
 -- 6 the E13 recovery pilot: listed universities, the pilot total, never a read refused on the same stored copy; yield measured
@@ -163,6 +191,25 @@ begin
   perform fx.ok((v->>'ready')::int = 213 and (v->>'unchecked')::int = 0 and (v->>'share')::int = 60 and (v->>'room_when_gated')::int = 600 - 213 - (v->>'in_progress')::int, format('projection: 213 distinct ready decisions (218 items less 5 repeated matrix keys), share 60, room 600 less ready and in progress (%s)', v - 'universities'));
   select x into r from jsonb_array_elements(v->'universities') x where x->>'provider_id' = '8e1adb6c-e069-43db-9584-bd054255e702';
   perform fx.ok((r->>'at_share')::boolean and (r->>'new_reads_allowed')::int = 0, format('RMIT (%s ready) is at its share: no new reads for it', r->>'ready'));
+end $$;
+
+-- 7b submitted, saved, admitted and published counts (direction 12:16 §10): a decision as the Inbox records it, then the counts
+do $$
+declare v_item uuid := fx.item('RMIT University (RMIT)', 'complete', 4); v_course uuid; v jsonb; v_t0 timestamptz := now() - interval '1 second';
+begin
+  select entity_id into v_course from pipeline.layer4_review_items where id = v_item;
+  v := security.aer_progress_counts_v1(v_t0, '8e1adb6c-e069-43db-9584-bd054255e702');
+  perform fx.ok((v->>'submitted')::int = 0 and (v->>'saved')::int = 0 and (v->>'admitted_rows')::int = 0, 'before: nothing submitted, saved or admitted');
+  insert into pipeline.admin_control_events(area, action, target, detail) values ('layer4', 'inbox_decide', 'aer_review:' || v_item, jsonb_build_object('provider_id', '8e1adb6c-e069-43db-9584-bd054255e702'));
+  insert into pipeline.layer4_decisions(review_item_id, action) values (v_item, 'approve');
+  update catalogue.course_entry_requirements set status = 'active' where provenance->>'review_item_id' = v_item::text and status = 'proposed';
+  insert into search.course_documents(course_id, provider_id, country_id, provider_name, course_title, search_text, search_tsv, publication_status)
+  select v_course, c.provider_id, p.country_id, p.canonical_name, c.canonical_title, c.canonical_title, to_tsvector(c.canonical_title), 'published' from catalogue.courses c join catalogue.providers p on p.id = c.provider_id where c.id = v_course;
+  v := security.aer_progress_counts_v1(v_t0, '8e1adb6c-e069-43db-9584-bd054255e702');
+  perform fx.ok((v->>'submitted')::int = 1 and (v->>'saved')::int = 1 and (v->>'admitted_rows')::int = 3 and (v->>'admitted_courses')::int = 1 and (v->>'published_courses')::int = 1,
+                format('after one approval: submitted 1, saved 1, admitted 3 rows of 1 course, published 1 (%s)', v));
+  delete from search.course_documents where course_id = v_course; delete from pipeline.layer4_decisions where review_item_id = v_item;
+  update catalogue.course_entry_requirements set status = 'proposed' where provenance->>'review_item_id' = v_item::text and status = 'active';
 end $$;
 
 -- 8 nothing decided, admitted or opened by this change

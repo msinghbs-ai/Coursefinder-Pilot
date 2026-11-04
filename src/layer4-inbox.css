@@ -65,3 +65,12 @@
 .l4i-aer-status{margin-left:8px;font-size:var(--cf-fs-3xs);font-weight:700;border-radius:var(--cf-radius-pill);padding:1px 7px;background:var(--cf-slate-100);color:var(--cf-slate-700)}
 .l4i-aer-status[data-l4-aer-status="excluded"]{background:var(--cf-amber-50);color:var(--cf-amber-700)}
 .l4i-evid{margin:0;font-size:var(--cf-fs-sm);color:var(--cf-slate-700)}
+/* CF-247 RMIT settlement (12:16 §7, §8): readable hook detail, recovery-case lists and the university's AER summary */
+.l4i-plain{margin:0;padding-left:18px;font-size:var(--cf-fs-sm)}
+.l4i-plain q{color:var(--cf-slate-600)}
+.l4i-case-list summary{cursor:pointer;font-size:var(--cf-fs-sm);color:var(--cf-indigo-800)}
+.l4i-related{margin:4px 0 0;padding-left:18px;font-size:var(--cf-fs-sm)}
+.l4i-linkish{border:0;background:none;padding:0;color:var(--cf-indigo-800);text-decoration:underline;cursor:pointer;font:inherit;text-align:left;overflow-wrap:anywhere}
+.l4i-dl-nested{margin:0}
+.l4i-aer-sum{margin:4px 0 0;overflow-wrap:anywhere}
+[data-l4-hook-detail] dd{overflow-wrap:anywhere;min-width:0}

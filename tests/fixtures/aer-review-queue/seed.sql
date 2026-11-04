@@ -54,3 +54,22 @@ update fx.caller set uid = '22222222-2222-2222-2222-222222222222', rank = 4;
 insert into pipeline.platform_toolset_settings(toolset_key, key, kind, value) values ('pipeline', 'coverage.aer_priority_providers', 'list',
   '["6f5cb7f7-7c70-4c06-970f-f368c3a786e2", "551383f9-7732-4588-a843-dd2b97c13f6f", "fa0e0d13-838a-42ff-b6a3-9cea84bd80b2", "fec52f92-a8a3-4de8-a862-06f355e4e2f7", "030992c3-72c6-452d-8a3b-10ceb0fd77f2", "f02d9d9b-0eb2-4f0e-8215-27a36ae63aa6", "c5c5d225-3d4c-4e41-8275-78eddd261073", "fe6af182-f5ca-4a3c-bfb4-b0773ff1b113", "8e1adb6c-e069-43db-9584-bd054255e702", "9109fe0c-9f44-4e2d-a136-eb00dec24701"]')
 on conflict (toolset_key, key) do update set value = excluded.value;
+
+-- the Diploma of Commerce shape (live 12:18): a held RMIT read whose two corrected reads, on the same stored copy, kept every printed requirement
+-- (9 rows read) and were refused for the row limit; and one refused because the page's proof does not admit entry requirements
+create temp table dc as select i.id, i.entity_id, pg.evidence_id ev, row_number() over (order by i.created_at) n
+  from pipeline.layer4_review_items i join fx.gate f on f.item_id = i.id join catalogue.courses c on c.id = i.entity_id join pipeline.coverage_course_pages pg on pg.course_id = i.entity_id
+ where fx.cls(f.g) = 'drops_uncovered' and c.provider_id = '8e1adb6c-e069-43db-9584-bd054255e702' and pg.evidence_id is not null and pg.url = i.proposed_value->>'url'
+   and not exists (select 1 from pipeline.aer_read_supersessions s where s.old_item_id = i.id);
+insert into pipeline.field_enrich_items(id, course_id, field, state, evidence_id, reason, value)
+select 900000 + n * 10 + k, entity_id, 'entry_requirements', 'skipped', ev, 'held_partial: over_row_limit: the page has 9 requirements and the limit is 6; nothing proposed (E13)',
+       jsonb_build_object('rows_read', (select jsonb_agg(jsonb_build_object('kind', 'prior_qualification', 'quote', 'row ' || g)) from generate_series(1, 9) g), 'held', true, 'limit', 6)
+  from dc, generate_series(1, 2) k where n = 1;
+insert into pipeline.aer_read_supersessions(old_item_id, course_id, enrich_item_id, reason, state, outcome, requested_at, closed_at)
+select id, entity_id, 900000 + n * 10 + k, case k when 1 then 'Scheduled entry reading (job aer-scheduled-read): read again' else 'Layer 4 recovery: Rmit read 04111217' end,
+       'refused', 'the corrected read was cut at the row limit (E13)', now() - (3 - k) * interval '10 hours', now() - (3 - k) * interval '10 hours' + interval '2 minutes'
+  from dc, generate_series(1, 2) k where n = 1;
+insert into pipeline.aer_read_supersessions(old_item_id, course_id, reason, state, outcome, requested_at, closed_at)
+select id, entity_id, 'Scheduled entry reading (job aer-scheduled-read): read again', 'refused', 'the page''s proof does not admit entry requirements', now() - interval '20 hours', now() - interval '20 hours'
+  from dc where n = 2;
+create table fx.dc as select id, n from dc where n <= 2;
