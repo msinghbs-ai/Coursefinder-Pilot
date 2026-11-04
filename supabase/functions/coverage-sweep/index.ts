@@ -2189,7 +2189,7 @@ async function handle(req: Request): Promise<Response> {
     // with no paid page read. The dated parser first (its reading recorded as its own proposal for the existing approval); the existing central-page
     // AI queue only when the parser gives no current or future dated teaching start or the address is not a trusted main teaching calendar.
     if (mode === "calendar_reread") {
-      const docs: { id: string; provider_id: string; url: string; storage_path: string; trusted_address: boolean }[] = await rpc("svc_calendar_reread_next", { p_limit: Math.min(Number(body.limit || 10), 60) });
+      const docs: { id: string; provider_id: string; url: string; storage_path: string; trusted_address: boolean }[] = await rpc("svc_calendar_reread_next", { p_limit: Math.min(Number(body.limit || 20), 60) });
       const tally: Record<string, number> = {};
       await pool(docs, 4, async (d) => {
         try {

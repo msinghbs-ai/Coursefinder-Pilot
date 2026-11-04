@@ -85,7 +85,7 @@ insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, ki
   'Off until the Platform Admin decides (a passing qualification never switches anything on by itself)'),
  ('pipeline', 'batch.calendar_reread', 'Calendar re-read: documents a run',
   'Stored calendar documents read again by the current calendar reader in one run of job calendar-reread (no Firecrawl).',
-  'number', to_jsonb(10), 1, 60, 'documents', 998, 'Job sizes', 'job calendar-reread; public.svc_calendar_reread_next',
+  'number', to_jsonb(20), 1, 60, 'documents', 998, 'Job sizes', 'job calendar-reread; public.svc_calendar_reread_next',
   'Platform Admin decision 5 Nov 2026 §2: read stored official calendars first'),
  ('pipeline', 'reading.calendar_slice_chars', 'Calendar reader: characters an AI call reads',
   'A long calendar document is read in slices of this size (the reader saw only the first 24,000 characters before).',
@@ -582,7 +582,7 @@ begin
   with pick as (
     select s.fact_source_id from pipeline.calendar_reread_state s left join pipeline.enrich_focus_providers fp on fp.provider_id = s.provider_id and fp.in_focus
      where (s.state = 'waiting' or (s.state = 'leased' and s.leased_until < now())) and s.attempts < 3  -- fixed: three tries, then failed with the reason
-     order by fp.rank nulls last, s.created_at limit greatest(1, least(coalesce(p_limit, 10), 60)) for update of s skip locked),  -- fixed: the worker's call bound
+     order by fp.rank nulls last, s.created_at limit greatest(1, least(coalesce(p_limit, 20), 60)) for update of s skip locked),  -- fixed: the worker's call bound
   upd as (update pipeline.calendar_reread_state s set state = 'leased', leased_until = now() + interval '4 minutes', attempts = s.attempts + 1  -- fixed: lease
             from pick where s.fact_source_id = pick.fact_source_id returning s.*)
   select coalesce(jsonb_agg(jsonb_build_object('id', f.id, 'provider_id', f.provider_id, 'url', f.url, 'storage_path', e.storage_path,
@@ -811,11 +811,11 @@ grant execute on function public.admin_process_results_v1(text, jsonb) to authen
 -- jobs (G1) -----------------------------------------------------------------------------------------------------------------------------
 insert into pipeline.automation_catalogue(jobname, area, sort, label, description, control_rank, batch_editable) values
  ('calendar-reread', 'Admission', 66, 'Calendar re-read (stored documents)',
-  'Hourly at :13: reads stored academic calendar documents again with the current calendar reader, at most Calendar re-read: documents a run (10), focus universities first. The dated parser first; the pinned central-page model (central-ai queue) only when the parser gives no current or future dated teaching start or the address is not trusted. No Firecrawl. A document is read again only when it or the reader changes (decision 5 Nov 2026 §2, §7).', 5, true),
+  'Hourly at :13: reads stored academic calendar documents again with the current calendar reader, at most Calendar re-read: documents a run (20), focus universities first. The dated parser first; the pinned central-page model (central-ai queue) only when the parser gives no current or future dated teaching start or the address is not trusted. No Firecrawl. A document is read again only when it or the reader changes (decision 5 Nov 2026 §2, §7).', 5, true),
  ('process-results', 'Admission', 67, 'Process results (intake dates)',
   'Hourly at :53: records a dated measurement of the intake dates process for the top Australian universities (pipeline.process_results) and routes universities without a usable calendar to a person through the existing flags. Read and record only (decision 5 Nov 2026 §5, §11).', 5, false)
 on conflict (jobname) do nothing;
-select cron.schedule('calendar-reread', '13 * * * *', $c$select pipeline.svc_pilot_submit_nonce('coverage-sweep', jsonb_build_object('mode', 'calendar_reread', 'limit', security.pipeline_num_v1('batch.calendar_reread', 10)::int))$c$);
+select cron.schedule('calendar-reread', '13 * * * *', $c$select pipeline.svc_pilot_submit_nonce('coverage-sweep', jsonb_build_object('mode', 'calendar_reread', 'limit', security.pipeline_num_v1('batch.calendar_reread', 20)::int))$c$);
 select cron.schedule('process-results', '53 * * * *', 'select security.process_results_record_v1()');
 
 -- component register (housekeeping) ------------------------------------------------------------------------------------------------------
