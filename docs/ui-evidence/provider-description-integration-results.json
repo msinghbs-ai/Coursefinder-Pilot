@@ -37,55 +37,55 @@
   "timings": [
     {
       "stage": "ten_provider_preview",
-      "elapsed_ms": 894.63
+      "elapsed_ms": 295.96
     },
     {
       "stage": "governed_run_dispatch",
-      "elapsed_ms": 888.77
+      "elapsed_ms": 539.48
     },
     {
       "stage": "ten_actual_worker_checks_model_transport_record",
-      "elapsed_ms": 20262.6
+      "elapsed_ms": 11237.18
     },
     {
       "stage": "authorised_layer4_decision_and_consumer_readback",
-      "elapsed_ms": 1232.83
+      "elapsed_ms": 312.69
     },
     {
       "stage": "authorised_layer4_decision_and_consumer_readback",
-      "elapsed_ms": 866.75
+      "elapsed_ms": 356.21
     },
     {
       "stage": "authorised_layer4_decision_and_consumer_readback",
-      "elapsed_ms": 570.68
+      "elapsed_ms": 311.82
     },
     {
       "stage": "authorised_layer4_decision_and_consumer_readback",
-      "elapsed_ms": 2244.55
+      "elapsed_ms": 414.2
     },
     {
       "stage": "authorised_layer4_decision_and_consumer_readback",
-      "elapsed_ms": 787.19
+      "elapsed_ms": 401.73
     },
     {
       "stage": "authorised_layer4_decision_and_consumer_readback",
-      "elapsed_ms": 1255.86
+      "elapsed_ms": 332.75
     },
     {
       "stage": "authorised_layer4_decision_and_consumer_readback",
-      "elapsed_ms": 1634.97
+      "elapsed_ms": 334.51
     },
     {
       "stage": "authorised_layer4_decision_and_consumer_readback",
-      "elapsed_ms": 1154.12
+      "elapsed_ms": 366.76
     },
     {
       "stage": "authorised_layer4_decision_and_consumer_readback",
-      "elapsed_ms": 868.36
+      "elapsed_ms": 301.98
     },
     {
       "stage": "authorised_layer4_decision_and_consumer_readback",
-      "elapsed_ms": 1119.86
+      "elapsed_ms": 417.08
     }
   ]
 }

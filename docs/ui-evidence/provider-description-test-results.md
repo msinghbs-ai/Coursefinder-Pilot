@@ -1,6 +1,6 @@
 # Provider Description development validation
 
-Recorded 4 November 2026. All workflow writes below used the isolated PostgreSQL 17.6 fixture. No production writes, vendor calls, merge or deployment were performed.
+Recorded 4 November 2026. All workflow writes below used the isolated PostgreSQL 17.6 fixture. No production writes, vendor calls, merge or deployment were performed by this workstream.
 
 The actual existing FieldCoverage card and its unmodified Supabase RPC adapter ran against real SQL. The fixture controls authenticated identities, stored HTML delivery and the external model response. Reader extraction, quote/identity checks, price reservation, proposal recording, Layer 4 decisions and Website/Zoho projections execute the real implementations.
 
@@ -8,9 +8,10 @@ The actual existing FieldCoverage card and its unmodified Supabase RPC adapter r
 |---|---|
 | Production-representative schema, positive workflow | 32 assertions passed; ten selected, ten proposals, zero admission before review, then ten authorised admissions and ten Website/Zoho verifications |
 | Negative and recovery workflow | 29 assertions passed; policy, source/identity drift, manual locks, unsupported claims, duplicate work, cost reservations, review capacity, rejection, continuation and consumer mismatch |
-| Database-backed desktop/mobile browser | 3 passed, 0 failed, 0 skipped, 0 flaky; 67.4 seconds |
+| Database-backed desktop/mobile browser | 3 passed, 0 failed, 0 skipped, 0 flaky; 82.5 seconds |
 | Layer 4 navigation | Exact keyset cursor reaches the target after 600 same-provider, same-kind, same-microsecond predecessors; all 601 review rows roll back |
 | Final complete local UAT invocation | 1,877 passed, 2 runner timeouts, 0 skipped; 37.0 minutes |
+| Post-rebase focused regressions | 147 passed, 0 failed, 0 skipped |
 | The two timed-out UAT cases rerun alone | 2 passed, 0 failed, 0 skipped; 19.5 seconds, without retries or product changes |
 
 The complete UAT invocation was **not** an uninterrupted green run. Its two failures were a 20-second element-stability wait in the existing Layer 4 release test and a browser-context teardown exceeding 120 seconds in the existing OpenRouter screen test. Both exact cases passed when rerun in a separate Vite server with separate output. No failing assertion was retired or skipped.
@@ -23,10 +24,10 @@ Performance uses 2,825 active published fictional providers: AU 1,279, NZ 416 an
 
 | Stage | Median | Maximum |
 |---|---:|---:|
-| Authenticated AU preview | 2,379 ms | 2,609 ms |
-| Authenticated NZ preview | 349 ms | 486 ms |
-| Authenticated CA preview | 42 ms | 125 ms |
-| Dominant institution's stored source lookup | 37 ms | 52 ms |
+| Authenticated AU preview | 1,119 ms | 4,085 ms |
+| Authenticated NZ preview | 271 ms | 348 ms |
+| Authenticated CA preview | 31 ms | 122 ms |
+| Dominant institution's stored source lookup | 26 ms | 29 ms |
 
 These are isolated development measurements. They do not establish production latency. Raw plans, buffers and all samples are in [the benchmark](provider-description-benchmark.json).
 

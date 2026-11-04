@@ -13,14 +13,14 @@
           "dead_letter": 0,
           "publication_measured_separately": true
         },
-        "run_id": "952a8ed0-6430-4590-a398-9ccfa8b64c25",
+        "run_id": "90805145-a761-439f-85b6-78a868749b9d",
         "outcome": "succeeded_no_movement",
-        "created_at": "2026-11-04T13:21:58.168159+00:00",
-        "started_at": "2026-11-04T13:21:58.168159+00:00",
-        "finished_at": "2026-11-04T13:21:58.578697+00:00"
+        "created_at": "2026-11-04T13:49:35.55125+00:00",
+        "started_at": "2026-11-04T13:49:35.55125+00:00",
+        "finished_at": "2026-11-04T13:49:35.878986+00:00"
       }
     ],
-    "as_at": "2026-11-04T13:22:36.808478+00:00",
+    "as_at": "2026-11-04T13:49:53.702706+00:00",
     "scope": {
       "mode": "stored",
       "size": 10,
@@ -29,7 +29,7 @@
     },
     "state": "started",
     "reason": "Isolated acceptance ten source-backed provider descriptions",
-    "run_id": "952a8ed0-6430-4590-a398-9ccfa8b64c25",
+    "run_id": "90805145-a761-439f-85b6-78a868749b9d",
     "totals": {
       "retries": 0,
       "admitted": 10,
@@ -45,30 +45,31 @@
       "verified_existing": 0,
       "human_decisions_required": 0
     },
+    "can_run": false,
     "history": [
       {
         "state": "started",
         "reason": "Isolated acceptance ten source-backed provider descriptions",
-        "run_id": "952a8ed0-6430-4590-a398-9ccfa8b64c25",
-        "cohort_id": "9c124b5e-d90e-47a7-a580-fbed8e7cbb8c",
-        "created_at": "2026-11-04T13:21:54.121409+00:00"
+        "run_id": "90805145-a761-439f-85b6-78a868749b9d",
+        "cohort_id": "75f13c86-c5d3-40a0-a7f8-fd3ac48de791",
+        "created_at": "2026-11-04T13:49:34.177352+00:00"
       },
       {
         "state": "preview",
         "reason": null,
         "run_id": null,
-        "cohort_id": "4c99ce14-1970-44dc-8d42-e00cd18c1957",
-        "created_at": "2026-11-04T13:21:53.352769+00:00"
+        "cohort_id": "1b3e476e-f58b-42a1-bef6-7b6acd3a7b0a",
+        "created_at": "2026-11-04T13:49:33.868005+00:00"
       },
       {
         "state": "preview",
         "reason": null,
         "run_id": null,
-        "cohort_id": "27cf7efd-2e0e-4094-bc70-d0e70fa38f50",
-        "created_at": "2026-11-04T13:21:52.829804+00:00"
+        "cohort_id": "7fb8e2c7-faf1-4c96-b0d0-33c7e229ce8f",
+        "created_at": "2026-11-04T13:49:33.69433+00:00"
       }
     ],
-    "cohort_id": "9c124b5e-d90e-47a7-a580-fbed8e7cbb8c",
+    "cohort_id": "75f13c86-c5d3-40a0-a7f8-fd3ac48de791",
     "providers": [
       {
         "name": "Aurora Maritime University",
@@ -77,7 +78,7 @@
         "zoho": {
           "error": null,
           "status": "verified",
-          "read_at": "2026-11-04T13:22:36.808478+00:00",
+          "read_at": "2026-11-04T13:49:53.702706+00:00",
           "api_version": "zoho-v2",
           "description": "Aurora Maritime University offers education in marine navigation and coastal engineering. Teaching focuses on ocean research and nautical practice and develops knowledge through learning in these fields."
         },
@@ -104,10 +105,10 @@
             },
             "reservation": {
               "ok": true,
-              "reserved_usd": 0.00016414,
-              "remaining_usd": 0.99983586
+              "reserved_usd": 0.00015414,
+              "remaining_usd": 0.99984586
             },
-            "max_cost_usd": 0.00016414,
+            "max_cost_usd": 0.00015414,
             "quote_source": "controlled fixture model catalogue",
             "input_tokens_bound": 6207,
             "provider_max_price": {
@@ -115,7 +116,7 @@
               "request": 0,
               "completion": 0.02
             },
-            "output_tokens_bound": 2000
+            "output_tokens_bound": 1500
           },
           "identity_snapshot": {
             "website": "https://p1.example.edu",
@@ -127,10 +128,10 @@
         "reason": null,
         "worker": "isolated-controlled-model-transport",
         "country": "AU",
-        "read_id": "a467776d-082f-4b1e-a899-5d163fb43406",
+        "read_id": "9c8e257e-949e-44e5-bd96-a2780b63254e",
         "website": {
           "status": "verified",
-          "read_at": "2026-11-04T13:22:36.808478+00:00",
+          "read_at": "2026-11-04T13:49:53.702706+00:00",
           "description": "Aurora Maritime University offers education in marine navigation and coastal engineering. Teaching focuses on ocean research and nautical practice and develops knowledge through learning in these fields."
         },
         "admitted": true,
@@ -152,17 +153,17 @@
         ],
         "source_url": "https://p1.example.edu/about",
         "stable_key": "fixture:provider:1",
-        "evidence_id": "fb20536c-c3e5-40b9-81d8-fc441d302934",
+        "evidence_id": "fe612725-6304-4002-9054-8034024b7d4c",
         "provider_id": "10000000-0000-0000-0000-000000000001",
         "publication": {
           "zoho": {
             "error": null,
             "status": "verified",
-            "read_at": "2026-11-04T13:22:36.808478+00:00",
+            "read_at": "2026-11-04T13:49:53.702706+00:00",
             "api_version": "zoho-v2",
             "description": "Aurora Maritime University offers education in marine navigation and coastal engineering. Teaching focuses on ocean research and nautical practice and develops knowledge through learning in these fields."
           },
-          "as_at": "2026-11-04T13:22:36.808478+00:00",
+          "as_at": "2026-11-04T13:49:53.702706+00:00",
           "website": {
             "status": "verified"
           },
@@ -172,17 +173,17 @@
         },
         "source_hash": "0101010101010101010101010101010101010101010101010101010101010101",
         "last_read_id": null,
-        "published_at": "2026-11-04T13:22:24.847041+00:00",
+        "published_at": "2026-11-04T13:49:49.899359+00:00",
         "registration": [
           {
             "code": "FX000001",
             "scheme": "cricos",
             "status": "active",
             "valid_to": null,
-            "source_id": "9a7f85f5-6ba4-4987-ab64-565ce53984ed",
-            "checked_at": "2026-11-04T13:21:48.574996+00:00",
-            "evidence_id": "fb20536c-c3e5-40b9-81d8-fc441d302934",
-            "registration_id": "dd4f3990-0c26-4d30-8751-8e5a1eefafde"
+            "source_id": "21ad596c-6f9f-4b4d-a281-4f9d4d5f90ce",
+            "checked_at": "2026-11-04T13:49:32.033853+00:00",
+            "evidence_id": "fe612725-6304-4002-9054-8034024b7d4c",
+            "registration_id": "f849d14b-93f2-4f62-bf6c-ea16d5085644"
           }
         ],
         "reserved_usd": 0,
@@ -190,24 +191,24 @@
         "cost_uncertain": false,
         "prompt_version": "provider-description-v2",
         "read_completed": true,
-        "review_item_id": "29c17ce5-53d5-4354-b43a-8049603be0bf",
+        "review_item_id": "4133ee8d-2ebf-4ba9-bba5-4ffd9e52c9bb",
         "approval_status": "authorised admission",
         "consumer_checks": null,
-        "source_age_days": 0.0000663403125,
+        "source_age_days": 0.00002580445601851852,
         "evidence_version": "0101010101010101010101010101010101010101010101010101010101010101",
-        "last_verified_at": "2026-11-04T13:22:24.847041+00:00",
+        "last_verified_at": "2026-11-04T13:49:49.899359+00:00",
         "lifecycle_status": "active",
         "required_approval": "Individual human Layer 4 decision",
-        "review_created_at": "2026-11-04T13:22:03.474731+00:00",
+        "review_created_at": "2026-11-04T13:49:38.657333+00:00",
         "zoho_published_at": null,
         "eligibility_reason": "eligible",
         "publication_status": "published",
-        "source_captured_at": "2026-11-04T13:21:48.389606+00:00",
+        "source_captured_at": "2026-11-04T13:49:31.947847+00:00",
         "active_course_count": 7000,
         "consumer_checked_at": null,
         "current_description": "Aurora Maritime University offers education in marine navigation and coastal engineering. Teaching focuses on ocean research and nautical practice and develops knowledge through learning in these fields.",
         "proposed_description": "Aurora Maritime University offers education in marine navigation and coastal engineering. Teaching focuses on ocean research and nautical practice and develops knowledge through learning in these fields.",
-        "approval_lineage_item_id": "29c17ce5-53d5-4354-b43a-8049603be0bf",
+        "approval_lineage_item_id": "4133ee8d-2ebf-4ba9-bba5-4ffd9e52c9bb",
         "existing_approved_verified": false,
         "review_item_created_this_read": true
       },
@@ -218,7 +219,7 @@
         "zoho": {
           "error": null,
           "status": "verified",
-          "read_at": "2026-11-04T13:22:36.808478+00:00",
+          "read_at": "2026-11-04T13:49:53.702706+00:00",
           "api_version": "zoho-v2",
           "description": "Juniper Social University offers education in social policy and community development. Teaching focuses on public services and social research and develops knowledge through learning in these fields."
         },
@@ -245,10 +246,10 @@
             },
             "reservation": {
               "ok": true,
-              "reserved_usd": 0.00016402,
-              "remaining_usd": 0.99893598
+              "reserved_usd": 0.00015402,
+              "remaining_usd": 0.99894598
             },
-            "max_cost_usd": 0.00016402,
+            "max_cost_usd": 0.00015402,
             "quote_source": "controlled fixture model catalogue",
             "input_tokens_bound": 6201,
             "provider_max_price": {
@@ -256,7 +257,7 @@
               "request": 0,
               "completion": 0.02
             },
-            "output_tokens_bound": 2000
+            "output_tokens_bound": 1500
           },
           "identity_snapshot": {
             "website": "https://p10.example.edu",
@@ -268,10 +269,10 @@
         "reason": null,
         "worker": "isolated-controlled-model-transport",
         "country": "AU",
-        "read_id": "38395f3c-f718-4a9a-979e-7c3b0995aa5d",
+        "read_id": "0825e2d5-0531-4a8e-b399-9c2f3caeaaf4",
         "website": {
           "status": "verified",
-          "read_at": "2026-11-04T13:22:36.808478+00:00",
+          "read_at": "2026-11-04T13:49:53.702706+00:00",
           "description": "Juniper Social University offers education in social policy and community development. Teaching focuses on public services and social research and develops knowledge through learning in these fields."
         },
         "admitted": true,
@@ -293,17 +294,17 @@
         ],
         "source_url": "https://p10.example.edu/about",
         "stable_key": "fixture:provider:10",
-        "evidence_id": "4f7a1ac0-3862-4abc-9c6a-f950965915de",
+        "evidence_id": "efedfb39-cfdd-4798-9e11-c82184cabb09",
         "provider_id": "10000000-0000-0000-0000-000000000010",
         "publication": {
           "zoho": {
             "error": null,
             "status": "verified",
-            "read_at": "2026-11-04T13:22:36.808478+00:00",
+            "read_at": "2026-11-04T13:49:53.702706+00:00",
             "api_version": "zoho-v2",
             "description": "Juniper Social University offers education in social policy and community development. Teaching focuses on public services and social research and develops knowledge through learning in these fields."
           },
-          "as_at": "2026-11-04T13:22:36.808478+00:00",
+          "as_at": "2026-11-04T13:49:53.702706+00:00",
           "website": {
             "status": "verified"
           },
@@ -313,17 +314,17 @@
         },
         "source_hash": "0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a",
         "last_read_id": null,
-        "published_at": "2026-11-04T13:22:25.754992+00:00",
+        "published_at": "2026-11-04T13:49:50.246917+00:00",
         "registration": [
           {
             "code": "FX000010",
             "scheme": "cricos",
             "status": "active",
             "valid_to": null,
-            "source_id": "fc80e827-5da8-44d8-b121-81c689e58f2b",
-            "checked_at": "2026-11-04T13:21:48.574996+00:00",
-            "evidence_id": "4f7a1ac0-3862-4abc-9c6a-f950965915de",
-            "registration_id": "2b3cffa0-17cc-45c9-b1a7-9887a81d31fa"
+            "source_id": "aa4f1ca7-d3aa-4a8f-a1d7-a18c0bc233b7",
+            "checked_at": "2026-11-04T13:49:32.033853+00:00",
+            "evidence_id": "efedfb39-cfdd-4798-9e11-c82184cabb09",
+            "registration_id": "04fd9040-86fb-4e8e-813c-e8369dfed88d"
           }
         ],
         "reserved_usd": 0,
@@ -331,24 +332,24 @@
         "cost_uncertain": false,
         "prompt_version": "provider-description-v2",
         "read_completed": true,
-        "review_item_id": "fb48f92e-df64-418f-9ddb-f20e9aa79afc",
+        "review_item_id": "8d69065e-56bd-4c4f-9a59-e51f43890188",
         "approval_status": "authorised admission",
         "consumer_checks": null,
-        "source_age_days": 0.0000663403125,
+        "source_age_days": 0.00002580445601851852,
         "evidence_version": "0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a",
-        "last_verified_at": "2026-11-04T13:22:25.754992+00:00",
+        "last_verified_at": "2026-11-04T13:49:50.246917+00:00",
         "lifecycle_status": "active",
         "required_approval": "Individual human Layer 4 decision",
-        "review_created_at": "2026-11-04T13:22:18.711089+00:00",
+        "review_created_at": "2026-11-04T13:49:47.51931+00:00",
         "zoho_published_at": null,
         "eligibility_reason": "eligible",
         "publication_status": "published",
-        "source_captured_at": "2026-11-04T13:21:48.389606+00:00",
+        "source_captured_at": "2026-11-04T13:49:31.947847+00:00",
         "active_course_count": 210,
         "consumer_checked_at": null,
         "current_description": "Juniper Social University offers education in social policy and community development. Teaching focuses on public services and social research and develops knowledge through learning in these fields.",
         "proposed_description": "Juniper Social University offers education in social policy and community development. Teaching focuses on public services and social research and develops knowledge through learning in these fields.",
-        "approval_lineage_item_id": "fb48f92e-df64-418f-9ddb-f20e9aa79afc",
+        "approval_lineage_item_id": "8d69065e-56bd-4c4f-9a59-e51f43890188",
         "existing_approved_verified": false,
         "review_item_created_this_read": true
       },
@@ -359,7 +360,7 @@
         "zoho": {
           "error": null,
           "status": "verified",
-          "read_at": "2026-11-04T13:22:36.808478+00:00",
+          "read_at": "2026-11-04T13:49:53.702706+00:00",
           "api_version": "zoho-v2",
           "description": "Inland Languages University offers education in linguistics research and language education. Teaching focuses on cross cultural communication and language study and develops knowledge through learning in these fields."
         },
@@ -386,10 +387,10 @@
             },
             "reservation": {
               "ok": true,
-              "reserved_usd": 0.00016448,
-              "remaining_usd": 0.99890718
+              "reserved_usd": 0.00015448,
+              "remaining_usd": 0.99893718
             },
-            "max_cost_usd": 0.00016448,
+            "max_cost_usd": 0.00015448,
             "quote_source": "controlled fixture model catalogue",
             "input_tokens_bound": 6224,
             "provider_max_price": {
@@ -397,7 +398,7 @@
               "request": 0,
               "completion": 0.02
             },
-            "output_tokens_bound": 2000
+            "output_tokens_bound": 1500
           },
           "identity_snapshot": {
             "website": "https://p9.example.edu",
@@ -409,10 +410,10 @@
         "reason": null,
         "worker": "isolated-controlled-model-transport",
         "country": "AU",
-        "read_id": "e89da7d0-73ab-41f9-8d8d-24788a516667",
+        "read_id": "a53dcf88-e0aa-46d0-9417-9c2520e15c82",
         "website": {
           "status": "verified",
-          "read_at": "2026-11-04T13:22:36.808478+00:00",
+          "read_at": "2026-11-04T13:49:53.702706+00:00",
           "description": "Inland Languages University offers education in linguistics research and language education. Teaching focuses on cross cultural communication and language study and develops knowledge through learning in these fields."
         },
         "admitted": true,
@@ -434,17 +435,17 @@
         ],
         "source_url": "https://p9.example.edu/about",
         "stable_key": "fixture:provider:9",
-        "evidence_id": "585cf934-5e5c-4c34-8499-d35b72873228",
+        "evidence_id": "7b494a6e-8570-4391-b244-726211d47496",
         "provider_id": "10000000-0000-0000-0000-000000000009",
         "publication": {
           "zoho": {
             "error": null,
             "status": "verified",
-            "read_at": "2026-11-04T13:22:36.808478+00:00",
+            "read_at": "2026-11-04T13:49:53.702706+00:00",
             "api_version": "zoho-v2",
             "description": "Inland Languages University offers education in linguistics research and language education. Teaching focuses on cross cultural communication and language study and develops knowledge through learning in these fields."
           },
-          "as_at": "2026-11-04T13:22:36.808478+00:00",
+          "as_at": "2026-11-04T13:49:53.702706+00:00",
           "website": {
             "status": "verified"
           },
@@ -454,17 +455,17 @@
         },
         "source_hash": "0909090909090909090909090909090909090909090909090909090909090909",
         "last_read_id": null,
-        "published_at": "2026-11-04T13:22:26.361792+00:00",
+        "published_at": "2026-11-04T13:49:50.565916+00:00",
         "registration": [
           {
             "code": "FX000009",
             "scheme": "cricos",
             "status": "active",
             "valid_to": null,
-            "source_id": "0e12b05f-f710-4b81-9b43-53dee90d9902",
-            "checked_at": "2026-11-04T13:21:48.574996+00:00",
-            "evidence_id": "585cf934-5e5c-4c34-8499-d35b72873228",
-            "registration_id": "cf4bac13-0f40-49ad-b20c-ee3f78e3d9e2"
+            "source_id": "51ea7719-e9fc-4d28-9925-6e10d8fedac1",
+            "checked_at": "2026-11-04T13:49:32.033853+00:00",
+            "evidence_id": "7b494a6e-8570-4391-b244-726211d47496",
+            "registration_id": "633230c8-531d-4b6d-843a-ab6cce48051f"
           }
         ],
         "reserved_usd": 0,
@@ -472,24 +473,24 @@
         "cost_uncertain": false,
         "prompt_version": "provider-description-v2",
         "read_completed": true,
-        "review_item_id": "e2f79e11-3e72-496d-bfd3-765b69253fd4",
+        "review_item_id": "bf1f7e7b-33f5-4ab9-acb7-079663eb652f",
         "approval_status": "authorised admission",
         "consumer_checks": null,
-        "source_age_days": 0.0000663403125,
+        "source_age_days": 0.00002580445601851852,
         "evidence_version": "0909090909090909090909090909090909090909090909090909090909090909",
-        "last_verified_at": "2026-11-04T13:22:26.361792+00:00",
+        "last_verified_at": "2026-11-04T13:49:50.565916+00:00",
         "lifecycle_status": "active",
         "required_approval": "Individual human Layer 4 decision",
-        "review_created_at": "2026-11-04T13:22:12.772207+00:00",
+        "review_created_at": "2026-11-04T13:49:45.182417+00:00",
         "zoho_published_at": null,
         "eligibility_reason": "eligible",
         "publication_status": "published",
-        "source_captured_at": "2026-11-04T13:21:48.389606+00:00",
+        "source_captured_at": "2026-11-04T13:49:31.947847+00:00",
         "active_course_count": 197,
         "consumer_checked_at": null,
         "current_description": "Inland Languages University offers education in linguistics research and language education. Teaching focuses on cross cultural communication and language study and develops knowledge through learning in these fields.",
         "proposed_description": "Inland Languages University offers education in linguistics research and language education. Teaching focuses on cross cultural communication and language study and develops knowledge through learning in these fields.",
-        "approval_lineage_item_id": "e2f79e11-3e72-496d-bfd3-765b69253fd4",
+        "approval_lineage_item_id": "bf1f7e7b-33f5-4ab9-acb7-079663eb652f",
         "existing_approved_verified": false,
         "review_item_created_this_read": true
       },
@@ -500,7 +501,7 @@
         "zoho": {
           "error": null,
           "status": "verified",
-          "read_at": "2026-11-04T13:22:36.808478+00:00",
+          "read_at": "2026-11-04T13:49:53.702706+00:00",
           "api_version": "zoho-v2",
           "description": "Harbour Digital University offers education in computing systems and software development. Teaching focuses on digital technology and programming practice and develops knowledge through learning in these fields."
         },
@@ -527,10 +528,10 @@
             },
             "reservation": {
               "ok": true,
-              "reserved_usd": 0.0001643,
-              "remaining_usd": 0.99907166
+              "reserved_usd": 0.0001543,
+              "remaining_usd": 0.99909166
             },
-            "max_cost_usd": 0.0001643,
+            "max_cost_usd": 0.0001543,
             "quote_source": "controlled fixture model catalogue",
             "input_tokens_bound": 6215,
             "provider_max_price": {
@@ -538,7 +539,7 @@
               "request": 0,
               "completion": 0.02
             },
-            "output_tokens_bound": 2000
+            "output_tokens_bound": 1500
           },
           "identity_snapshot": {
             "website": "https://p8.example.edu",
@@ -550,10 +551,10 @@
         "reason": null,
         "worker": "isolated-controlled-model-transport",
         "country": "AU",
-        "read_id": "2051a70b-157c-43c1-b1ec-692cfaed158b",
+        "read_id": "ed122326-8cc6-4042-80ae-b8792b96101a",
         "website": {
           "status": "verified",
-          "read_at": "2026-11-04T13:22:36.808478+00:00",
+          "read_at": "2026-11-04T13:49:53.702706+00:00",
           "description": "Harbour Digital University offers education in computing systems and software development. Teaching focuses on digital technology and programming practice and develops knowledge through learning in these fields."
         },
         "admitted": true,
@@ -575,17 +576,17 @@
         ],
         "source_url": "https://p8.example.edu/about",
         "stable_key": "fixture:provider:8",
-        "evidence_id": "449336d4-1ba7-4e07-a840-ea43a75e9f1f",
+        "evidence_id": "ae40ecfc-d81b-4c89-8525-fd6ab1ae113b",
         "provider_id": "10000000-0000-0000-0000-000000000008",
         "publication": {
           "zoho": {
             "error": null,
             "status": "verified",
-            "read_at": "2026-11-04T13:22:36.808478+00:00",
+            "read_at": "2026-11-04T13:49:53.702706+00:00",
             "api_version": "zoho-v2",
             "description": "Harbour Digital University offers education in computing systems and software development. Teaching focuses on digital technology and programming practice and develops knowledge through learning in these fields."
           },
-          "as_at": "2026-11-04T13:22:36.808478+00:00",
+          "as_at": "2026-11-04T13:49:53.702706+00:00",
           "website": {
             "status": "verified"
           },
@@ -595,17 +596,17 @@
         },
         "source_hash": "0808080808080808080808080808080808080808080808080808080808080808",
         "last_read_id": null,
-        "published_at": "2026-11-04T13:22:28.388443+00:00",
+        "published_at": "2026-11-04T13:49:50.890647+00:00",
         "registration": [
           {
             "code": "FX000008",
             "scheme": "cricos",
             "status": "active",
             "valid_to": null,
-            "source_id": "3f889f8e-3167-48a1-a1c0-f84f2ed732d2",
-            "checked_at": "2026-11-04T13:21:48.574996+00:00",
-            "evidence_id": "449336d4-1ba7-4e07-a840-ea43a75e9f1f",
-            "registration_id": "9a9dfcae-eef0-413c-ac4c-630311a6fc79"
+            "source_id": "7b052c09-752b-4ef5-b9ff-5159bc7e2f51",
+            "checked_at": "2026-11-04T13:49:32.033853+00:00",
+            "evidence_id": "ae40ecfc-d81b-4c89-8525-fd6ab1ae113b",
+            "registration_id": "12302cb1-ea94-45bf-8006-e24636f20f05"
           }
         ],
         "reserved_usd": 0,
@@ -613,24 +614,24 @@
         "cost_uncertain": false,
         "prompt_version": "provider-description-v2",
         "read_completed": true,
-        "review_item_id": "a1aaa66f-9b1a-4ba3-bdf2-ad0a3471f447",
+        "review_item_id": "2dd9a022-e5f6-49df-8715-ce71a2505fd7",
         "approval_status": "authorised admission",
         "consumer_checks": null,
-        "source_age_days": 0.0000663403125,
+        "source_age_days": 0.00002580445601851852,
         "evidence_version": "0808080808080808080808080808080808080808080808080808080808080808",
-        "last_verified_at": "2026-11-04T13:22:28.388443+00:00",
+        "last_verified_at": "2026-11-04T13:49:50.890647+00:00",
         "lifecycle_status": "active",
         "required_approval": "Individual human Layer 4 decision",
-        "review_created_at": "2026-11-04T13:22:12.772207+00:00",
+        "review_created_at": "2026-11-04T13:49:45.182417+00:00",
         "zoho_published_at": null,
         "eligibility_reason": "eligible",
         "publication_status": "published",
-        "source_captured_at": "2026-11-04T13:21:48.389606+00:00",
+        "source_captured_at": "2026-11-04T13:49:31.947847+00:00",
         "active_course_count": 184,
         "consumer_checked_at": null,
         "current_description": "Harbour Digital University offers education in computing systems and software development. Teaching focuses on digital technology and programming practice and develops knowledge through learning in these fields.",
         "proposed_description": "Harbour Digital University offers education in computing systems and software development. Teaching focuses on digital technology and programming practice and develops knowledge through learning in these fields.",
-        "approval_lineage_item_id": "a1aaa66f-9b1a-4ba3-bdf2-ad0a3471f447",
+        "approval_lineage_item_id": "2dd9a022-e5f6-49df-8715-ce71a2505fd7",
         "existing_approved_verified": false,
         "review_item_created_this_read": true
       },
@@ -641,7 +642,7 @@
         "zoho": {
           "error": null,
           "status": "verified",
-          "read_at": "2026-11-04T13:22:36.808478+00:00",
+          "read_at": "2026-11-04T13:49:53.702706+00:00",
           "api_version": "zoho-v2",
           "description": "Granite Health University offers education in nursing practice and community health. Teaching focuses on clinical learning and public healthcare and develops knowledge through learning in these fields."
         },
@@ -668,10 +669,10 @@
             },
             "reservation": {
               "ok": true,
-              "reserved_usd": 0.00016404,
-              "remaining_usd": 0.99923596
+              "reserved_usd": 0.00015404,
+              "remaining_usd": 0.99924596
             },
-            "max_cost_usd": 0.00016404,
+            "max_cost_usd": 0.00015404,
             "quote_source": "controlled fixture model catalogue",
             "input_tokens_bound": 6202,
             "provider_max_price": {
@@ -679,7 +680,7 @@
               "request": 0,
               "completion": 0.02
             },
-            "output_tokens_bound": 2000
+            "output_tokens_bound": 1500
           },
           "identity_snapshot": {
             "website": "https://p7.example.edu",
@@ -691,10 +692,10 @@
         "reason": null,
         "worker": "isolated-controlled-model-transport",
         "country": "AU",
-        "read_id": "e9cc51d4-d711-430a-a895-3f8ea12dbeb9",
+        "read_id": "2d44d277-dc5f-4ac3-97c8-7f677e971dcb",
         "website": {
           "status": "verified",
-          "read_at": "2026-11-04T13:22:36.808478+00:00",
+          "read_at": "2026-11-04T13:49:53.702706+00:00",
           "description": "Granite Health University offers education in nursing practice and community health. Teaching focuses on clinical learning and public healthcare and develops knowledge through learning in these fields."
         },
         "admitted": true,
@@ -716,17 +717,17 @@
         ],
         "source_url": "https://p7.example.edu/about",
         "stable_key": "fixture:provider:7",
-        "evidence_id": "c81ee9dd-4608-4667-9ab3-40ec5dd07629",
+        "evidence_id": "bacac81a-5495-469a-94e4-c27cca9aa7c3",
         "provider_id": "10000000-0000-0000-0000-000000000007",
         "publication": {
           "zoho": {
             "error": null,
             "status": "verified",
-            "read_at": "2026-11-04T13:22:36.808478+00:00",
+            "read_at": "2026-11-04T13:49:53.702706+00:00",
             "api_version": "zoho-v2",
             "description": "Granite Health University offers education in nursing practice and community health. Teaching focuses on clinical learning and public healthcare and develops knowledge through learning in these fields."
           },
-          "as_at": "2026-11-04T13:22:36.808478+00:00",
+          "as_at": "2026-11-04T13:49:53.702706+00:00",
           "website": {
             "status": "verified"
           },
@@ -736,17 +737,17 @@
         },
         "source_hash": "0707070707070707070707070707070707070707070707070707070707070707",
         "last_read_id": null,
-        "published_at": "2026-11-04T13:22:29.32122+00:00",
+        "published_at": "2026-11-04T13:49:51.31375+00:00",
         "registration": [
           {
             "code": "FX000007",
             "scheme": "cricos",
             "status": "active",
             "valid_to": null,
-            "source_id": "1cd538f5-e6e9-4242-84ea-ff71dc1dcd30",
-            "checked_at": "2026-11-04T13:21:48.574996+00:00",
-            "evidence_id": "c81ee9dd-4608-4667-9ab3-40ec5dd07629",
-            "registration_id": "74c42479-fab7-4bd7-8d32-946b8ee84a5f"
+            "source_id": "789c13bc-fd37-4356-bc30-a1911f4e2a24",
+            "checked_at": "2026-11-04T13:49:32.033853+00:00",
+            "evidence_id": "bacac81a-5495-469a-94e4-c27cca9aa7c3",
+            "registration_id": "ea7ac81b-b514-4436-9557-1bab3efc1faa"
           }
         ],
         "reserved_usd": 0,
@@ -754,24 +755,24 @@
         "cost_uncertain": false,
         "prompt_version": "provider-description-v2",
         "read_completed": true,
-        "review_item_id": "62bc73de-1a28-43e6-a407-2bf598fe18f4",
+        "review_item_id": "7f981385-ccef-4424-9aab-e9b36620c837",
         "approval_status": "authorised admission",
         "consumer_checks": null,
-        "source_age_days": 0.0000663403125,
+        "source_age_days": 0.00002580445601851852,
         "evidence_version": "0707070707070707070707070707070707070707070707070707070707070707",
-        "last_verified_at": "2026-11-04T13:22:29.32122+00:00",
+        "last_verified_at": "2026-11-04T13:49:51.31375+00:00",
         "lifecycle_status": "active",
         "required_approval": "Individual human Layer 4 decision",
-        "review_created_at": "2026-11-04T13:22:12.772207+00:00",
+        "review_created_at": "2026-11-04T13:49:45.182417+00:00",
         "zoho_published_at": null,
         "eligibility_reason": "eligible",
         "publication_status": "published",
-        "source_captured_at": "2026-11-04T13:21:48.389606+00:00",
+        "source_captured_at": "2026-11-04T13:49:31.947847+00:00",
         "active_course_count": 171,
         "consumer_checked_at": null,
         "current_description": "Granite Health University offers education in nursing practice and community health. Teaching focuses on clinical learning and public healthcare and develops knowledge through learning in these fields.",
         "proposed_description": "Granite Health University offers education in nursing practice and community health. Teaching focuses on clinical learning and public healthcare and develops knowledge through learning in these fields.",
-        "approval_lineage_item_id": "62bc73de-1a28-43e6-a407-2bf598fe18f4",
+        "approval_lineage_item_id": "7f981385-ccef-4424-9aab-e9b36620c837",
         "existing_approved_verified": false,
         "review_item_created_this_read": true
       },
@@ -782,7 +783,7 @@
         "zoho": {
           "error": null,
           "status": "verified",
-          "read_at": "2026-11-04T13:22:36.808478+00:00",
+          "read_at": "2026-11-04T13:49:53.702706+00:00",
           "api_version": "zoho-v2",
           "description": "Fjord Technical University offers education in mechanical design and manufacturing systems. Teaching focuses on industrial projects and mechanical laboratories and develops knowledge through learning in these fields."
         },
@@ -809,10 +810,10 @@
             },
             "reservation": {
               "ok": true,
-              "reserved_usd": 0.0001644,
-              "remaining_usd": 0.99920788
+              "reserved_usd": 0.0001544,
+              "remaining_usd": 0.99923788
             },
-            "max_cost_usd": 0.0001644,
+            "max_cost_usd": 0.0001544,
             "quote_source": "controlled fixture model catalogue",
             "input_tokens_bound": 6220,
             "provider_max_price": {
@@ -820,7 +821,7 @@
               "request": 0,
               "completion": 0.02
             },
-            "output_tokens_bound": 2000
+            "output_tokens_bound": 1500
           },
           "identity_snapshot": {
             "website": "https://p6.example.edu",
@@ -832,10 +833,10 @@
         "reason": null,
         "worker": "isolated-controlled-model-transport",
         "country": "AU",
-        "read_id": "e887ee17-920a-49c1-9170-93c756b12487",
+        "read_id": "da3248c4-f7eb-47ff-abfd-7d55d845c540",
         "website": {
           "status": "verified",
-          "read_at": "2026-11-04T13:22:36.808478+00:00",
+          "read_at": "2026-11-04T13:49:53.702706+00:00",
           "description": "Fjord Technical University offers education in mechanical design and manufacturing systems. Teaching focuses on industrial projects and mechanical laboratories and develops knowledge through learning in these fields."
         },
         "admitted": true,
@@ -857,17 +858,17 @@
         ],
         "source_url": "https://p6.example.edu/about",
         "stable_key": "fixture:provider:6",
-        "evidence_id": "e76e96df-f7bc-4b98-b48b-81c88e05374d",
+        "evidence_id": "3f05ba84-c05d-4dc2-8c14-1ba6c12a87dd",
         "provider_id": "10000000-0000-0000-0000-000000000006",
         "publication": {
           "zoho": {
             "error": null,
             "status": "verified",
-            "read_at": "2026-11-04T13:22:36.808478+00:00",
+            "read_at": "2026-11-04T13:49:53.702706+00:00",
             "api_version": "zoho-v2",
             "description": "Fjord Technical University offers education in mechanical design and manufacturing systems. Teaching focuses on industrial projects and mechanical laboratories and develops knowledge through learning in these fields."
           },
-          "as_at": "2026-11-04T13:22:36.808478+00:00",
+          "as_at": "2026-11-04T13:49:53.702706+00:00",
           "website": {
             "status": "verified"
           },
@@ -877,17 +878,17 @@
         },
         "source_hash": "0606060606060606060606060606060606060606060606060606060606060606",
         "last_read_id": null,
-        "published_at": "2026-11-04T13:22:30.508717+00:00",
+        "published_at": "2026-11-04T13:49:51.707113+00:00",
         "registration": [
           {
             "code": "FX000006",
             "scheme": "cricos",
             "status": "active",
             "valid_to": null,
-            "source_id": "25bbdf5b-4928-4347-b59e-0f7029ae3b31",
-            "checked_at": "2026-11-04T13:21:48.574996+00:00",
-            "evidence_id": "e76e96df-f7bc-4b98-b48b-81c88e05374d",
-            "registration_id": "6e95541a-ea00-45e9-a775-671ce12cc3d7"
+            "source_id": "c40dcf58-bf0f-4c58-b015-5cf421d1be35",
+            "checked_at": "2026-11-04T13:49:32.033853+00:00",
+            "evidence_id": "3f05ba84-c05d-4dc2-8c14-1ba6c12a87dd",
+            "registration_id": "fc5fe12a-2503-47f5-8fd3-2b17035300d8"
           }
         ],
         "reserved_usd": 0,
@@ -895,24 +896,24 @@
         "cost_uncertain": false,
         "prompt_version": "provider-description-v2",
         "read_completed": true,
-        "review_item_id": "9f81a52b-f8c8-4650-848b-49a768c0d17e",
+        "review_item_id": "8429e39e-3b79-4c8b-baf7-6c0d41c7b975",
         "approval_status": "authorised admission",
         "consumer_checks": null,
-        "source_age_days": 0.0000663403125,
+        "source_age_days": 0.00002580445601851852,
         "evidence_version": "0606060606060606060606060606060606060606060606060606060606060606",
-        "last_verified_at": "2026-11-04T13:22:30.508717+00:00",
+        "last_verified_at": "2026-11-04T13:49:51.707113+00:00",
         "lifecycle_status": "active",
         "required_approval": "Individual human Layer 4 decision",
-        "review_created_at": "2026-11-04T13:22:07.760524+00:00",
+        "review_created_at": "2026-11-04T13:49:41.211975+00:00",
         "zoho_published_at": null,
         "eligibility_reason": "eligible",
         "publication_status": "published",
-        "source_captured_at": "2026-11-04T13:21:48.389606+00:00",
+        "source_captured_at": "2026-11-04T13:49:31.947847+00:00",
         "active_course_count": 158,
         "consumer_checked_at": null,
         "current_description": "Fjord Technical University offers education in mechanical design and manufacturing systems. Teaching focuses on industrial projects and mechanical laboratories and develops knowledge through learning in these fields.",
         "proposed_description": "Fjord Technical University offers education in mechanical design and manufacturing systems. Teaching focuses on industrial projects and mechanical laboratories and develops knowledge through learning in these fields.",
-        "approval_lineage_item_id": "9f81a52b-f8c8-4650-848b-49a768c0d17e",
+        "approval_lineage_item_id": "8429e39e-3b79-4c8b-baf7-6c0d41c7b975",
         "existing_approved_verified": false,
         "review_item_created_this_read": true
       },
@@ -923,7 +924,7 @@
         "zoho": {
           "error": null,
           "status": "verified",
-          "read_at": "2026-11-04T13:22:36.808478+00:00",
+          "read_at": "2026-11-04T13:49:53.702706+00:00",
           "api_version": "zoho-v2",
           "description": "Elm Arts University offers education in music composition and theatre performance. Teaching focuses on creative production and dramatic interpretation and develops knowledge through learning in these fields."
         },
@@ -950,10 +951,10 @@
             },
             "reservation": {
               "ok": true,
-              "reserved_usd": 0.0001638,
-              "remaining_usd": 0.99937228
+              "reserved_usd": 0.0001538,
+              "remaining_usd": 0.99939228
             },
-            "max_cost_usd": 0.0001638,
+            "max_cost_usd": 0.0001538,
             "quote_source": "controlled fixture model catalogue",
             "input_tokens_bound": 6190,
             "provider_max_price": {
@@ -961,7 +962,7 @@
               "request": 0,
               "completion": 0.02
             },
-            "output_tokens_bound": 2000
+            "output_tokens_bound": 1500
           },
           "identity_snapshot": {
             "website": "https://p5.example.edu",
@@ -973,10 +974,10 @@
         "reason": null,
         "worker": "isolated-controlled-model-transport",
         "country": "AU",
-        "read_id": "77496fa3-0142-491a-96d0-d252623d84a2",
+        "read_id": "036252e0-edcb-4a5b-a161-78d9e4c45e28",
         "website": {
           "status": "verified",
-          "read_at": "2026-11-04T13:22:36.808478+00:00",
+          "read_at": "2026-11-04T13:49:53.702706+00:00",
           "description": "Elm Arts University offers education in music composition and theatre performance. Teaching focuses on creative production and dramatic interpretation and develops knowledge through learning in these fields."
         },
         "admitted": true,
@@ -998,17 +999,17 @@
         ],
         "source_url": "https://p5.example.edu/about",
         "stable_key": "fixture:provider:5",
-        "evidence_id": "3f929e3b-0375-4723-a519-033a128061b7",
+        "evidence_id": "19dc2482-b8f2-4439-ad8d-470914d91ff9",
         "provider_id": "10000000-0000-0000-0000-000000000005",
         "publication": {
           "zoho": {
             "error": null,
             "status": "verified",
-            "read_at": "2026-11-04T13:22:36.808478+00:00",
+            "read_at": "2026-11-04T13:49:53.702706+00:00",
             "api_version": "zoho-v2",
             "description": "Elm Arts University offers education in music composition and theatre performance. Teaching focuses on creative production and dramatic interpretation and develops knowledge through learning in these fields."
           },
-          "as_at": "2026-11-04T13:22:36.808478+00:00",
+          "as_at": "2026-11-04T13:49:53.702706+00:00",
           "website": {
             "status": "verified"
           },
@@ -1018,17 +1019,17 @@
         },
         "source_hash": "0505050505050505050505050505050505050505050505050505050505050505",
         "last_read_id": null,
-        "published_at": "2026-11-04T13:22:32.128773+00:00",
+        "published_at": "2026-11-04T13:49:52.053853+00:00",
         "registration": [
           {
             "code": "FX000005",
             "scheme": "cricos",
             "status": "active",
             "valid_to": null,
-            "source_id": "9e5f9dd3-c64b-47cf-bbe4-b3fdc3ad8e16",
-            "checked_at": "2026-11-04T13:21:48.574996+00:00",
-            "evidence_id": "3f929e3b-0375-4723-a519-033a128061b7",
-            "registration_id": "ced9e377-9df4-4b94-a5ea-882e708b3f39"
+            "source_id": "9de17e0c-bc6c-43f0-b0f8-afce9f211938",
+            "checked_at": "2026-11-04T13:49:32.033853+00:00",
+            "evidence_id": "19dc2482-b8f2-4439-ad8d-470914d91ff9",
+            "registration_id": "1a3fb907-5e33-41b0-9c13-b9a7c288b740"
           }
         ],
         "reserved_usd": 0,
@@ -1036,24 +1037,24 @@
         "cost_uncertain": false,
         "prompt_version": "provider-description-v2",
         "read_completed": true,
-        "review_item_id": "bec63632-21fd-494d-97dc-bc036eed42e4",
+        "review_item_id": "16bf8009-fb5e-4f6b-81a1-19e572cfb5af",
         "approval_status": "authorised admission",
         "consumer_checks": null,
-        "source_age_days": 0.0000663403125,
+        "source_age_days": 0.00002580445601851852,
         "evidence_version": "0505050505050505050505050505050505050505050505050505050505050505",
-        "last_verified_at": "2026-11-04T13:22:32.128773+00:00",
+        "last_verified_at": "2026-11-04T13:49:52.053853+00:00",
         "lifecycle_status": "active",
         "required_approval": "Individual human Layer 4 decision",
-        "review_created_at": "2026-11-04T13:22:07.760524+00:00",
+        "review_created_at": "2026-11-04T13:49:41.211975+00:00",
         "zoho_published_at": null,
         "eligibility_reason": "eligible",
         "publication_status": "published",
-        "source_captured_at": "2026-11-04T13:21:48.389606+00:00",
+        "source_captured_at": "2026-11-04T13:49:31.947847+00:00",
         "active_course_count": 145,
         "consumer_checked_at": null,
         "current_description": "Elm Arts University offers education in music composition and theatre performance. Teaching focuses on creative production and dramatic interpretation and develops knowledge through learning in these fields.",
         "proposed_description": "Elm Arts University offers education in music composition and theatre performance. Teaching focuses on creative production and dramatic interpretation and develops knowledge through learning in these fields.",
-        "approval_lineage_item_id": "bec63632-21fd-494d-97dc-bc036eed42e4",
+        "approval_lineage_item_id": "16bf8009-fb5e-4f6b-81a1-19e572cfb5af",
         "existing_approved_verified": false,
         "review_item_created_this_read": true
       },
@@ -1064,7 +1065,7 @@
         "zoho": {
           "error": null,
           "status": "verified",
-          "read_at": "2026-11-04T13:22:36.808478+00:00",
+          "read_at": "2026-11-04T13:49:53.702706+00:00",
           "api_version": "zoho-v2",
           "description": "Dune Plains University offers education in desert botany and environmental planning. Teaching focuses on arid landscapes and ecological restoration and develops knowledge through learning in these fields."
         },
@@ -1091,10 +1092,10 @@
             },
             "reservation": {
               "ok": true,
-              "reserved_usd": 0.00016392,
-              "remaining_usd": 0.99953608
+              "reserved_usd": 0.00015392,
+              "remaining_usd": 0.99954608
             },
-            "max_cost_usd": 0.00016392,
+            "max_cost_usd": 0.00015392,
             "quote_source": "controlled fixture model catalogue",
             "input_tokens_bound": 6196,
             "provider_max_price": {
@@ -1102,7 +1103,7 @@
               "request": 0,
               "completion": 0.02
             },
-            "output_tokens_bound": 2000
+            "output_tokens_bound": 1500
           },
           "identity_snapshot": {
             "website": "https://p4.example.edu",
@@ -1114,10 +1115,10 @@
         "reason": null,
         "worker": "isolated-controlled-model-transport",
         "country": "AU",
-        "read_id": "a86ebeab-1af6-4d02-8d25-af12166baaf7",
+        "read_id": "1015d354-14ae-4143-a81b-174cfd120b71",
         "website": {
           "status": "verified",
-          "read_at": "2026-11-04T13:22:36.808478+00:00",
+          "read_at": "2026-11-04T13:49:53.702706+00:00",
           "description": "Dune Plains University offers education in desert botany and environmental planning. Teaching focuses on arid landscapes and ecological restoration and develops knowledge through learning in these fields."
         },
         "admitted": true,
@@ -1139,17 +1140,17 @@
         ],
         "source_url": "https://p4.example.edu/about",
         "stable_key": "fixture:provider:4",
-        "evidence_id": "ab5b6c1f-eef9-4851-80eb-0ff4babbc737",
+        "evidence_id": "49ab686f-2834-4205-b640-4a3c103af998",
         "provider_id": "10000000-0000-0000-0000-000000000004",
         "publication": {
           "zoho": {
             "error": null,
             "status": "verified",
-            "read_at": "2026-11-04T13:22:36.808478+00:00",
+            "read_at": "2026-11-04T13:49:53.702706+00:00",
             "api_version": "zoho-v2",
             "description": "Dune Plains University offers education in desert botany and environmental planning. Teaching focuses on arid landscapes and ecological restoration and develops knowledge through learning in these fields."
           },
-          "as_at": "2026-11-04T13:22:36.808478+00:00",
+          "as_at": "2026-11-04T13:49:53.702706+00:00",
           "website": {
             "status": "verified"
           },
@@ -1159,17 +1160,17 @@
         },
         "source_hash": "0404040404040404040404040404040404040404040404040404040404040404",
         "last_read_id": null,
-        "published_at": "2026-11-04T13:22:33.437208+00:00",
+        "published_at": "2026-11-04T13:49:52.38081+00:00",
         "registration": [
           {
             "code": "FX000004",
             "scheme": "cricos",
             "status": "active",
             "valid_to": null,
-            "source_id": "48d8b117-ca11-4556-a17d-a55d774233a8",
-            "checked_at": "2026-11-04T13:21:48.574996+00:00",
-            "evidence_id": "ab5b6c1f-eef9-4851-80eb-0ff4babbc737",
-            "registration_id": "4e2fd26a-0289-4e67-959c-bc0fbe85eaa8"
+            "source_id": "a26d362e-00e6-45a9-9998-c5dc50f74beb",
+            "checked_at": "2026-11-04T13:49:32.033853+00:00",
+            "evidence_id": "49ab686f-2834-4205-b640-4a3c103af998",
+            "registration_id": "cf440eb6-1643-46dc-afbb-7215ffb370f5"
           }
         ],
         "reserved_usd": 0,
@@ -1177,24 +1178,24 @@
         "cost_uncertain": false,
         "prompt_version": "provider-description-v2",
         "read_completed": true,
-        "review_item_id": "afb53a38-37db-43fa-892d-7712c9b601e0",
+        "review_item_id": "e113464f-4820-492c-a872-253d02c83908",
         "approval_status": "authorised admission",
         "consumer_checks": null,
-        "source_age_days": 0.0000663403125,
+        "source_age_days": 0.00002580445601851852,
         "evidence_version": "0404040404040404040404040404040404040404040404040404040404040404",
-        "last_verified_at": "2026-11-04T13:22:33.437208+00:00",
+        "last_verified_at": "2026-11-04T13:49:52.38081+00:00",
         "lifecycle_status": "active",
         "required_approval": "Individual human Layer 4 decision",
-        "review_created_at": "2026-11-04T13:22:07.760524+00:00",
+        "review_created_at": "2026-11-04T13:49:41.211975+00:00",
         "zoho_published_at": null,
         "eligibility_reason": "eligible",
         "publication_status": "published",
-        "source_captured_at": "2026-11-04T13:21:48.389606+00:00",
+        "source_captured_at": "2026-11-04T13:49:31.947847+00:00",
         "active_course_count": 132,
         "consumer_checked_at": null,
         "current_description": "Dune Plains University offers education in desert botany and environmental planning. Teaching focuses on arid landscapes and ecological restoration and develops knowledge through learning in these fields.",
         "proposed_description": "Dune Plains University offers education in desert botany and environmental planning. Teaching focuses on arid landscapes and ecological restoration and develops knowledge through learning in these fields.",
-        "approval_lineage_item_id": "afb53a38-37db-43fa-892d-7712c9b601e0",
+        "approval_lineage_item_id": "e113464f-4820-492c-a872-253d02c83908",
         "existing_approved_verified": false,
         "review_item_created_this_read": true
       },
@@ -1205,7 +1206,7 @@
         "zoho": {
           "error": null,
           "status": "verified",
-          "read_at": "2026-11-04T13:22:36.808478+00:00",
+          "read_at": "2026-11-04T13:49:53.702706+00:00",
           "api_version": "zoho-v2",
           "description": "Copper Ridge University offers education in mineral geology and resource surveying. Teaching focuses on mountain fieldwork and geological mapping and develops knowledge through learning in these fields."
         },
@@ -1232,10 +1233,10 @@
             },
             "reservation": {
               "ok": true,
-              "reserved_usd": 0.00016394,
-              "remaining_usd": 0.9995078
+              "reserved_usd": 0.00015394,
+              "remaining_usd": 0.9995378
             },
-            "max_cost_usd": 0.00016394,
+            "max_cost_usd": 0.00015394,
             "quote_source": "controlled fixture model catalogue",
             "input_tokens_bound": 6197,
             "provider_max_price": {
@@ -1243,7 +1244,7 @@
               "request": 0,
               "completion": 0.02
             },
-            "output_tokens_bound": 2000
+            "output_tokens_bound": 1500
           },
           "identity_snapshot": {
             "website": "https://p3.example.edu",
@@ -1255,10 +1256,10 @@
         "reason": null,
         "worker": "isolated-controlled-model-transport",
         "country": "AU",
-        "read_id": "0f6c1a79-5277-4155-a605-c887812701ea",
+        "read_id": "35dc397f-00db-4e23-8f10-9b83320fe4a6",
         "website": {
           "status": "verified",
-          "read_at": "2026-11-04T13:22:36.808478+00:00",
+          "read_at": "2026-11-04T13:49:53.702706+00:00",
           "description": "Copper Ridge University offers education in mineral geology and resource surveying. Teaching focuses on mountain fieldwork and geological mapping and develops knowledge through learning in these fields."
         },
         "admitted": true,
@@ -1280,17 +1281,17 @@
         ],
         "source_url": "https://p3.example.edu/about",
         "stable_key": "fixture:provider:3",
-        "evidence_id": "ee0ad8b8-7905-4434-8ce5-376c542b8f17",
+        "evidence_id": "bd24e7a0-b188-4ed2-9b05-d97a74204f0d",
         "provider_id": "10000000-0000-0000-0000-000000000003",
         "publication": {
           "zoho": {
             "error": null,
             "status": "verified",
-            "read_at": "2026-11-04T13:22:36.808478+00:00",
+            "read_at": "2026-11-04T13:49:53.702706+00:00",
             "api_version": "zoho-v2",
             "description": "Copper Ridge University offers education in mineral geology and resource surveying. Teaching focuses on mountain fieldwork and geological mapping and develops knowledge through learning in these fields."
           },
-          "as_at": "2026-11-04T13:22:36.808478+00:00",
+          "as_at": "2026-11-04T13:49:53.702706+00:00",
           "website": {
             "status": "verified"
           },
@@ -1300,17 +1301,17 @@
         },
         "source_hash": "0303030303030303030303030303030303030303030303030303030303030303",
         "last_read_id": null,
-        "published_at": "2026-11-04T13:22:34.164429+00:00",
+        "published_at": "2026-11-04T13:49:52.71371+00:00",
         "registration": [
           {
             "code": "FX000003",
             "scheme": "cricos",
             "status": "active",
             "valid_to": null,
-            "source_id": "4295070e-cc17-4769-823b-43c56de5cac7",
-            "checked_at": "2026-11-04T13:21:48.574996+00:00",
-            "evidence_id": "ee0ad8b8-7905-4434-8ce5-376c542b8f17",
-            "registration_id": "826a33e3-91d2-4da7-b1a6-11bc2ee0400f"
+            "source_id": "365506ff-1622-4591-816e-12992b353680",
+            "checked_at": "2026-11-04T13:49:32.033853+00:00",
+            "evidence_id": "bd24e7a0-b188-4ed2-9b05-d97a74204f0d",
+            "registration_id": "16be156d-60b9-40c6-9a3a-aedc7d5b3ce5"
           }
         ],
         "reserved_usd": 0,
@@ -1318,24 +1319,24 @@
         "cost_uncertain": false,
         "prompt_version": "provider-description-v2",
         "read_completed": true,
-        "review_item_id": "c772cae1-02b8-42be-9e0a-f29bbc2f1c76",
+        "review_item_id": "60cc0e88-f2c1-43dd-b11b-47f9703930fb",
         "approval_status": "authorised admission",
         "consumer_checks": null,
-        "source_age_days": 0.0000663403125,
+        "source_age_days": 0.00002580445601851852,
         "evidence_version": "0303030303030303030303030303030303030303030303030303030303030303",
-        "last_verified_at": "2026-11-04T13:22:34.164429+00:00",
+        "last_verified_at": "2026-11-04T13:49:52.71371+00:00",
         "lifecycle_status": "active",
         "required_approval": "Individual human Layer 4 decision",
-        "review_created_at": "2026-11-04T13:22:03.474731+00:00",
+        "review_created_at": "2026-11-04T13:49:38.657333+00:00",
         "zoho_published_at": null,
         "eligibility_reason": "eligible",
         "publication_status": "published",
-        "source_captured_at": "2026-11-04T13:21:48.389606+00:00",
+        "source_captured_at": "2026-11-04T13:49:31.947847+00:00",
         "active_course_count": 119,
         "consumer_checked_at": null,
         "current_description": "Copper Ridge University offers education in mineral geology and resource surveying. Teaching focuses on mountain fieldwork and geological mapping and develops knowledge through learning in these fields.",
         "proposed_description": "Copper Ridge University offers education in mineral geology and resource surveying. Teaching focuses on mountain fieldwork and geological mapping and develops knowledge through learning in these fields.",
-        "approval_lineage_item_id": "c772cae1-02b8-42be-9e0a-f29bbc2f1c76",
+        "approval_lineage_item_id": "60cc0e88-f2c1-43dd-b11b-47f9703930fb",
         "existing_approved_verified": false,
         "review_item_created_this_read": true
       },
@@ -1346,7 +1347,7 @@
         "zoho": {
           "error": null,
           "status": "verified",
-          "read_at": "2026-11-04T13:22:36.808478+00:00",
+          "read_at": "2026-11-04T13:49:53.702706+00:00",
           "api_version": "zoho-v2",
           "description": "Birch Valley University offers education in forest ecology and sustainable agriculture. Teaching focuses on woodland conservation and agricultural science and develops knowledge through learning in these fields."
         },
@@ -1373,10 +1374,10 @@
             },
             "reservation": {
               "ok": true,
-              "reserved_usd": 0.00016412,
-              "remaining_usd": 0.99967174
+              "reserved_usd": 0.00015412,
+              "remaining_usd": 0.99969174
             },
-            "max_cost_usd": 0.00016412,
+            "max_cost_usd": 0.00015412,
             "quote_source": "controlled fixture model catalogue",
             "input_tokens_bound": 6206,
             "provider_max_price": {
@@ -1384,7 +1385,7 @@
               "request": 0,
               "completion": 0.02
             },
-            "output_tokens_bound": 2000
+            "output_tokens_bound": 1500
           },
           "identity_snapshot": {
             "website": "https://p2.example.edu",
@@ -1396,10 +1397,10 @@
         "reason": null,
         "worker": "isolated-controlled-model-transport",
         "country": "AU",
-        "read_id": "21f2fef2-719f-4753-9bca-31fdcc537618",
+        "read_id": "6cdd8bbb-7ef6-43ff-9fdc-6bc152295122",
         "website": {
           "status": "verified",
-          "read_at": "2026-11-04T13:22:36.808478+00:00",
+          "read_at": "2026-11-04T13:49:53.702706+00:00",
           "description": "Birch Valley University offers education in forest ecology and sustainable agriculture. Teaching focuses on woodland conservation and agricultural science and develops knowledge through learning in these fields."
         },
         "admitted": true,
@@ -1421,17 +1422,17 @@
         ],
         "source_url": "https://p2.example.edu/about",
         "stable_key": "fixture:provider:2",
-        "evidence_id": "be339aee-aaba-4b24-b230-9f0d0235a447",
+        "evidence_id": "7fbde073-1005-4768-9bce-5db29528d5f8",
         "provider_id": "10000000-0000-0000-0000-000000000002",
         "publication": {
           "zoho": {
             "error": null,
             "status": "verified",
-            "read_at": "2026-11-04T13:22:36.808478+00:00",
+            "read_at": "2026-11-04T13:49:53.702706+00:00",
             "api_version": "zoho-v2",
             "description": "Birch Valley University offers education in forest ecology and sustainable agriculture. Teaching focuses on woodland conservation and agricultural science and develops knowledge through learning in these fields."
           },
-          "as_at": "2026-11-04T13:22:36.808478+00:00",
+          "as_at": "2026-11-04T13:49:53.702706+00:00",
           "website": {
             "status": "verified"
           },
@@ -1441,17 +1442,17 @@
         },
         "source_hash": "0202020202020202020202020202020202020202020202020202020202020202",
         "last_read_id": null,
-        "published_at": "2026-11-04T13:22:35.359682+00:00",
+        "published_at": "2026-11-04T13:49:53.118843+00:00",
         "registration": [
           {
             "code": "FX000002",
             "scheme": "cricos",
             "status": "active",
             "valid_to": null,
-            "source_id": "6da93c03-d3f9-49f7-891b-24aec867e8e6",
-            "checked_at": "2026-11-04T13:21:48.574996+00:00",
-            "evidence_id": "be339aee-aaba-4b24-b230-9f0d0235a447",
-            "registration_id": "7402b9ba-5573-4d0c-b115-85135408d8ed"
+            "source_id": "bb5a0948-aa2a-4df5-a0f6-205d9c4ed2e6",
+            "checked_at": "2026-11-04T13:49:32.033853+00:00",
+            "evidence_id": "7fbde073-1005-4768-9bce-5db29528d5f8",
+            "registration_id": "50ae22ac-6b5e-4698-b855-49ca884f2542"
           }
         ],
         "reserved_usd": 0,
@@ -1459,24 +1460,24 @@
         "cost_uncertain": false,
         "prompt_version": "provider-description-v2",
         "read_completed": true,
-        "review_item_id": "ada286da-875e-486b-9b3d-175ff42f0436",
+        "review_item_id": "61f4a8cd-59ab-450c-88e7-69ba34caa685",
         "approval_status": "authorised admission",
         "consumer_checks": null,
-        "source_age_days": 0.0000663403125,
+        "source_age_days": 0.00002580445601851852,
         "evidence_version": "0202020202020202020202020202020202020202020202020202020202020202",
-        "last_verified_at": "2026-11-04T13:22:35.359682+00:00",
+        "last_verified_at": "2026-11-04T13:49:53.118843+00:00",
         "lifecycle_status": "active",
         "required_approval": "Individual human Layer 4 decision",
-        "review_created_at": "2026-11-04T13:22:03.474731+00:00",
+        "review_created_at": "2026-11-04T13:49:38.657333+00:00",
         "zoho_published_at": null,
         "eligibility_reason": "eligible",
         "publication_status": "published",
-        "source_captured_at": "2026-11-04T13:21:48.389606+00:00",
+        "source_captured_at": "2026-11-04T13:49:31.947847+00:00",
         "active_course_count": 106,
         "consumer_checked_at": null,
         "current_description": "Birch Valley University offers education in forest ecology and sustainable agriculture. Teaching focuses on woodland conservation and agricultural science and develops knowledge through learning in these fields.",
         "proposed_description": "Birch Valley University offers education in forest ecology and sustainable agriculture. Teaching focuses on woodland conservation and agricultural science and develops knowledge through learning in these fields.",
-        "approval_lineage_item_id": "ada286da-875e-486b-9b3d-175ff42f0436",
+        "approval_lineage_item_id": "61f4a8cd-59ab-450c-88e7-69ba34caa685",
         "existing_approved_verified": false,
         "review_item_created_this_read": true
       }
@@ -1487,7 +1488,8 @@
       "country": "AU",
       "provider_type": "university"
     },
-    "created_at": "2026-11-04T13:21:54.121409+00:00",
+    "created_at": "2026-11-04T13:49:34.177352+00:00",
+    "reason_code": null,
     "verified_at": null,
     "requested_by": "90000000-0000-0000-0000-0000000000aa",
     "zoho_verified": 10,

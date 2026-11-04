@@ -1,7 +1,7 @@
 {
   "stats": {
-    "startTime": "2026-11-04T13:39:17.576Z",
-    "duration": 67391.163,
+    "startTime": "2026-11-04T13:52:36.074Z",
+    "duration": 82501.944,
     "expected": 3,
     "skipped": 0,
     "unexpected": 0,
@@ -14,7 +14,7 @@
       "results": [
         {
           "status": "passed",
-          "duration_ms": 40195
+          "duration_ms": 46463
         }
       ]
     },
@@ -24,7 +24,7 @@
       "results": [
         {
           "status": "passed",
-          "duration_ms": 6333
+          "duration_ms": 7321
         }
       ]
     },
@@ -34,7 +34,7 @@
       "results": [
         {
           "status": "passed",
-          "duration_ms": 10876
+          "duration_ms": 9855
         }
       ]
     }

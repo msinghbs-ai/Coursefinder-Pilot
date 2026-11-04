@@ -1,5 +1,5 @@
 {
-  "captured_at": "2026-11-04T13:43:56.255Z",
+  "captured_at": "2026-11-04T13:56:14.057Z",
   "boundary": "Actual existing Card and RPC adapter against isolated PostgreSQL; controlled model/storage transport and authorised fixture reviewer; no production writes or vendor calls.",
   "cohort": {
     "runs": [
@@ -14,14 +14,14 @@
           "dead_letter": 0,
           "publication_measured_separately": true
         },
-        "run_id": "66c1df72-2fc0-49e0-a9d0-1802869b9bc8",
+        "run_id": "25031e5b-a0cf-41be-b6ab-17b8d4c141e3",
         "outcome": "succeeded_no_movement",
-        "created_at": "2026-11-04T13:39:44.825727+00:00",
-        "started_at": "2026-11-04T13:39:44.825727+00:00",
-        "finished_at": "2026-11-04T13:39:46.222882+00:00"
+        "created_at": "2026-11-04T13:53:17.738282+00:00",
+        "started_at": "2026-11-04T13:53:17.738282+00:00",
+        "finished_at": "2026-11-04T13:53:20.161344+00:00"
       }
     ],
-    "as_at": "2026-11-04T13:43:56.059384+00:00",
+    "as_at": "2026-11-04T13:56:13.866442+00:00",
     "scope": {
       "mode": "stored",
       "size": 1,
@@ -33,7 +33,7 @@
     },
     "state": "started",
     "reason": "Isolated browser acceptance of stored official provider evidence",
-    "run_id": "66c1df72-2fc0-49e0-a9d0-1802869b9bc8",
+    "run_id": "25031e5b-a0cf-41be-b6ab-17b8d4c141e3",
     "totals": {
       "retries": 0,
       "admitted": 1,
@@ -49,79 +49,80 @@
       "verified_existing": 0,
       "human_decisions_required": 0
     },
+    "can_run": false,
     "history": [
       {
         "state": "started",
         "reason": "Isolated browser acceptance of stored official provider evidence",
-        "run_id": "66c1df72-2fc0-49e0-a9d0-1802869b9bc8",
-        "cohort_id": "4f6c8608-7bbe-4799-90ab-7605d119c6b7",
-        "created_at": "2026-11-04T13:39:32.911652+00:00"
+        "run_id": "25031e5b-a0cf-41be-b6ab-17b8d4c141e3",
+        "cohort_id": "56a732d5-9c01-4430-b8f3-317a88c4952b",
+        "created_at": "2026-11-04T13:53:02.278932+00:00"
       },
       {
         "state": "preview",
         "reason": null,
         "run_id": null,
-        "cohort_id": "c9047af6-9f26-4a53-8deb-044a2dfcd0c5",
-        "created_at": "2026-11-04T13:26:54.316732+00:00"
+        "cohort_id": "01bb9984-fc3c-4ae6-83b7-f26a0cf53cca",
+        "created_at": "2026-11-04T13:50:40.914958+00:00"
       },
       {
         "state": "preview",
         "reason": null,
         "run_id": null,
-        "cohort_id": "72cb5a76-18f5-4eaf-a704-8d26a5b33c5d",
-        "created_at": "2026-11-04T13:25:26.438285+00:00"
+        "cohort_id": "d9844dd1-4f94-4945-a7ee-a1ed4d1aa526",
+        "created_at": "2026-11-04T13:50:40.745157+00:00"
       },
       {
         "state": "preview",
         "reason": null,
         "run_id": null,
-        "cohort_id": "bc490dc2-7c82-4427-a5d5-3ff06cbf23a3",
-        "created_at": "2026-11-04T13:25:26.223601+00:00"
+        "cohort_id": "8aac0444-8602-45f2-9e33-bb97b7845762",
+        "created_at": "2026-11-04T13:50:40.583139+00:00"
       },
       {
         "state": "preview",
         "reason": null,
         "run_id": null,
-        "cohort_id": "12a6605b-56c1-4787-a2e0-52070470e5aa",
-        "created_at": "2026-11-04T13:25:25.968696+00:00"
+        "cohort_id": "f6e9f273-b6ee-4a53-a27a-2972fede7447",
+        "created_at": "2026-11-04T13:50:40.41103+00:00"
       },
       {
         "state": "preview",
         "reason": null,
         "run_id": null,
-        "cohort_id": "2d91b60f-e8e3-43ed-a498-757b7a009aaa",
-        "created_at": "2026-11-04T13:25:25.734924+00:00"
+        "cohort_id": "9489198c-5cc6-44a9-824a-644920de637d",
+        "created_at": "2026-11-04T13:50:40.140811+00:00"
       },
       {
         "state": "preview",
         "reason": null,
         "run_id": null,
-        "cohort_id": "d88c0111-5a83-43f6-8f40-242e0c522c7e",
-        "created_at": "2026-11-04T13:25:25.382396+00:00"
+        "cohort_id": "47d0289d-716f-429b-afd7-57fe96ad9543",
+        "created_at": "2026-11-04T13:50:39.722214+00:00"
       },
       {
         "state": "preview",
         "reason": null,
         "run_id": null,
-        "cohort_id": "570dde07-7f3e-4e2b-ae8b-fd49efdc70a6",
-        "created_at": "2026-11-04T13:25:24.857071+00:00"
+        "cohort_id": "1035ce70-4b57-4980-9646-7f5aea27c1fd",
+        "created_at": "2026-11-04T13:50:39.289229+00:00"
       },
       {
         "state": "preview",
         "reason": null,
         "run_id": null,
-        "cohort_id": "c8b17bb0-a7c7-4624-8f1e-1e12ea3dff0d",
-        "created_at": "2026-11-04T13:25:24.220506+00:00"
+        "cohort_id": "c5abeaf2-c298-4cbf-bc48-f4e71c1f4bca",
+        "created_at": "2026-11-04T13:50:38.787211+00:00"
       },
       {
         "state": "preview",
         "reason": null,
         "run_id": null,
-        "cohort_id": "149190f9-d3e9-4d20-99a4-27816b985b34",
-        "created_at": "2026-11-04T13:25:23.324469+00:00"
+        "cohort_id": "b68d5413-59f6-47a1-88bb-d3f33f2dde38",
+        "created_at": "2026-11-04T13:50:38.450137+00:00"
       }
     ],
-    "cohort_id": "4f6c8608-7bbe-4799-90ab-7605d119c6b7",
+    "cohort_id": "56a732d5-9c01-4430-b8f3-317a88c4952b",
     "providers": [
       {
         "name": "Browser Cedar University",
@@ -130,7 +131,7 @@
         "zoho": {
           "error": null,
           "status": "verified",
-          "read_at": "2026-11-04T13:43:56.059384+00:00",
+          "read_at": "2026-11-04T13:56:13.866442+00:00",
           "api_version": "zoho-v2",
           "description": "Browser Cedar University offers education in botanical science and plant conservation. Teaching focuses on garden research and ecological education and develops knowledge through learning in these fields."
         },
@@ -180,10 +181,10 @@
         "reason": null,
         "worker": "isolated-controlled-model-transport",
         "country": "AU",
-        "read_id": "ce295060-92d9-4419-b8b6-27f22ce64fbf",
+        "read_id": "f13bc328-c2d2-4164-8f05-55036d4a6e31",
         "website": {
           "status": "verified",
-          "read_at": "2026-11-04T13:43:56.059384+00:00",
+          "read_at": "2026-11-04T13:56:13.866442+00:00",
           "description": "Browser Cedar University offers education in botanical science and plant conservation. Teaching focuses on garden research and ecological education and develops knowledge through learning in these fields."
         },
         "admitted": true,
@@ -192,7 +193,7 @@
         "eligible": true,
         "provider": "Browser Cedar University",
         "diagnosis": {
-          "at": "2026-11-04T13:39:59.649709+00:00",
+          "at": "2026-11-04T13:53:34.209657+00:00",
           "rule": "missing",
           "method": "stored_checks",
           "ai_used": false,
@@ -214,17 +215,17 @@
         ],
         "source_url": "https://p13.example.edu/about",
         "stable_key": "fixture:provider:browser",
-        "evidence_id": "72b736a3-0efc-4885-89de-77fd423df4e0",
+        "evidence_id": "abffc0fd-a696-42c8-aa93-e365ed63bb67",
         "provider_id": "10000000-0000-0000-0000-000000000013",
         "publication": {
           "zoho": {
             "error": null,
             "status": "verified",
-            "read_at": "2026-11-04T13:43:56.059384+00:00",
+            "read_at": "2026-11-04T13:56:13.866442+00:00",
             "api_version": "zoho-v2",
             "description": "Browser Cedar University offers education in botanical science and plant conservation. Teaching focuses on garden research and ecological education and develops knowledge through learning in these fields."
           },
-          "as_at": "2026-11-04T13:43:56.059384+00:00",
+          "as_at": "2026-11-04T13:56:13.866442+00:00",
           "website": {
             "status": "verified"
           },
@@ -234,17 +235,17 @@
         },
         "source_hash": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d",
         "last_read_id": null,
-        "published_at": "2026-11-04T13:39:56.336585+00:00",
+        "published_at": "2026-11-04T13:53:30.70174+00:00",
         "registration": [
           {
             "code": "FX000013",
             "scheme": "cricos",
             "status": "active",
             "valid_to": null,
-            "source_id": "fd8b3cfa-8ff4-4206-aa7d-3100a341140e",
-            "checked_at": "2026-11-04T13:21:48.574996+00:00",
-            "evidence_id": "72b736a3-0efc-4885-89de-77fd423df4e0",
-            "registration_id": "106236a1-bcc1-42ee-a176-437a2f92bfdb"
+            "source_id": "f1e627bc-aefc-42c0-bf4b-22f3a39fe966",
+            "checked_at": "2026-11-04T13:49:32.033853+00:00",
+            "evidence_id": "abffc0fd-a696-42c8-aa93-e365ed63bb67",
+            "registration_id": "a3873e57-ce87-4bd4-95b4-08f26ee23c6d"
           }
         ],
         "reserved_usd": 0,
@@ -252,24 +253,24 @@
         "cost_uncertain": false,
         "prompt_version": "provider-description-v2",
         "read_completed": true,
-        "review_item_id": "4f893ad5-1946-4b91-acac-5782ba1ebc09",
+        "review_item_id": "2c6f7946-ce27-439e-b0f2-856be21a43c2",
         "approval_status": "authorised admission",
         "consumer_checks": null,
-        "source_age_days": 0.01232085701388889,
+        "source_age_days": 0.0024343875578703702,
         "evidence_version": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d",
-        "last_verified_at": "2026-11-04T13:39:56.336585+00:00",
+        "last_verified_at": "2026-11-04T13:53:30.70174+00:00",
         "lifecycle_status": "active",
         "required_approval": "Individual human Layer 4 decision",
-        "review_created_at": "2026-11-04T13:39:50.968155+00:00",
+        "review_created_at": "2026-11-04T13:53:25.620253+00:00",
         "zoho_published_at": null,
         "eligibility_reason": "eligible",
         "publication_status": "published",
-        "source_captured_at": "2026-11-04T13:21:48.389606+00:00",
+        "source_captured_at": "2026-11-04T13:49:31.947847+00:00",
         "active_course_count": 249,
         "consumer_checked_at": null,
         "current_description": "Browser Cedar University offers education in botanical science and plant conservation. Teaching focuses on garden research and ecological education and develops knowledge through learning in these fields.",
         "proposed_description": "Browser Cedar University offers education in botanical science and plant conservation. Teaching focuses on garden research and ecological education and develops knowledge through learning in these fields.",
-        "approval_lineage_item_id": "4f893ad5-1946-4b91-acac-5782ba1ebc09",
+        "approval_lineage_item_id": "2c6f7946-ce27-439e-b0f2-856be21a43c2",
         "existing_approved_verified": false,
         "review_item_created_this_read": true
       }
@@ -283,8 +284,9 @@
       "provider_type": "university",
       "description_state": "all"
     },
-    "created_at": "2026-11-04T13:39:32.911652+00:00",
-    "verified_at": "2026-11-04T13:39:57.008198+00:00",
+    "created_at": "2026-11-04T13:53:02.278932+00:00",
+    "reason_code": null,
+    "verified_at": "2026-11-04T13:53:31.229212+00:00",
     "requested_by": "90000000-0000-0000-0000-0000000000aa",
     "zoho_verified": 1,
     "last_verification": {
@@ -300,14 +302,14 @@
             "dead_letter": 0,
             "publication_measured_separately": true
           },
-          "run_id": "66c1df72-2fc0-49e0-a9d0-1802869b9bc8",
+          "run_id": "25031e5b-a0cf-41be-b6ab-17b8d4c141e3",
           "outcome": "succeeded_no_movement",
-          "created_at": "2026-11-04T13:39:44.825727+00:00",
-          "started_at": "2026-11-04T13:39:44.825727+00:00",
-          "finished_at": "2026-11-04T13:39:46.222882+00:00"
+          "created_at": "2026-11-04T13:53:17.738282+00:00",
+          "started_at": "2026-11-04T13:53:17.738282+00:00",
+          "finished_at": "2026-11-04T13:53:20.161344+00:00"
         }
       ],
-      "as_at": "2026-11-04T13:39:57.008198+00:00",
+      "as_at": "2026-11-04T13:53:31.229212+00:00",
       "scope": {
         "mode": "stored",
         "size": 1,
@@ -319,7 +321,7 @@
       },
       "state": "started",
       "reason": "Isolated browser acceptance of stored official provider evidence",
-      "run_id": "66c1df72-2fc0-49e0-a9d0-1802869b9bc8",
+      "run_id": "25031e5b-a0cf-41be-b6ab-17b8d4c141e3",
       "totals": {
         "retries": 0,
         "admitted": 1,
@@ -335,7 +337,8 @@
         "verified_existing": 0,
         "human_decisions_required": 0
       },
-      "cohort_id": "4f6c8608-7bbe-4799-90ab-7605d119c6b7",
+      "can_run": false,
+      "cohort_id": "56a732d5-9c01-4430-b8f3-317a88c4952b",
       "providers": [
         {
           "name": "Browser Cedar University",
@@ -344,7 +347,7 @@
           "zoho": {
             "error": null,
             "status": "verified",
-            "read_at": "2026-11-04T13:39:57.008198+00:00",
+            "read_at": "2026-11-04T13:53:31.229212+00:00",
             "api_version": "zoho-v2",
             "description": "Browser Cedar University offers education in botanical science and plant conservation. Teaching focuses on garden research and ecological education and develops knowledge through learning in these fields."
           },
@@ -394,10 +397,10 @@
           "reason": null,
           "worker": "isolated-controlled-model-transport",
           "country": "AU",
-          "read_id": "ce295060-92d9-4419-b8b6-27f22ce64fbf",
+          "read_id": "f13bc328-c2d2-4164-8f05-55036d4a6e31",
           "website": {
             "status": "verified",
-            "read_at": "2026-11-04T13:39:57.008198+00:00",
+            "read_at": "2026-11-04T13:53:31.229212+00:00",
             "description": "Browser Cedar University offers education in botanical science and plant conservation. Teaching focuses on garden research and ecological education and develops knowledge through learning in these fields."
           },
           "admitted": true,
@@ -419,17 +422,17 @@
           ],
           "source_url": "https://p13.example.edu/about",
           "stable_key": "fixture:provider:browser",
-          "evidence_id": "72b736a3-0efc-4885-89de-77fd423df4e0",
+          "evidence_id": "abffc0fd-a696-42c8-aa93-e365ed63bb67",
           "provider_id": "10000000-0000-0000-0000-000000000013",
           "publication": {
             "zoho": {
               "error": null,
               "status": "verified",
-              "read_at": "2026-11-04T13:39:57.008198+00:00",
+              "read_at": "2026-11-04T13:53:31.229212+00:00",
               "api_version": "zoho-v2",
               "description": "Browser Cedar University offers education in botanical science and plant conservation. Teaching focuses on garden research and ecological education and develops knowledge through learning in these fields."
             },
-            "as_at": "2026-11-04T13:39:57.008198+00:00",
+            "as_at": "2026-11-04T13:53:31.229212+00:00",
             "website": {
               "status": "verified"
             },
@@ -439,17 +442,17 @@
           },
           "source_hash": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d",
           "last_read_id": null,
-          "published_at": "2026-11-04T13:39:56.336585+00:00",
+          "published_at": "2026-11-04T13:53:30.70174+00:00",
           "registration": [
             {
               "code": "FX000013",
               "scheme": "cricos",
               "status": "active",
               "valid_to": null,
-              "source_id": "fd8b3cfa-8ff4-4206-aa7d-3100a341140e",
-              "checked_at": "2026-11-04T13:21:48.574996+00:00",
-              "evidence_id": "72b736a3-0efc-4885-89de-77fd423df4e0",
-              "registration_id": "106236a1-bcc1-42ee-a176-437a2f92bfdb"
+              "source_id": "f1e627bc-aefc-42c0-bf4b-22f3a39fe966",
+              "checked_at": "2026-11-04T13:49:32.033853+00:00",
+              "evidence_id": "abffc0fd-a696-42c8-aa93-e365ed63bb67",
+              "registration_id": "a3873e57-ce87-4bd4-95b4-08f26ee23c6d"
             }
           ],
           "reserved_usd": 0,
@@ -457,24 +460,24 @@
           "cost_uncertain": false,
           "prompt_version": "provider-description-v2",
           "read_completed": true,
-          "review_item_id": "4f893ad5-1946-4b91-acac-5782ba1ebc09",
+          "review_item_id": "2c6f7946-ce27-439e-b0f2-856be21a43c2",
           "approval_status": "authorised admission",
           "consumer_checks": null,
-          "source_age_days": 0.01232085701388889,
+          "source_age_days": 0.0024343875578703702,
           "evidence_version": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d",
-          "last_verified_at": "2026-11-04T13:39:56.336585+00:00",
+          "last_verified_at": "2026-11-04T13:53:30.70174+00:00",
           "lifecycle_status": "active",
           "required_approval": "Individual human Layer 4 decision",
-          "review_created_at": "2026-11-04T13:39:50.968155+00:00",
+          "review_created_at": "2026-11-04T13:53:25.620253+00:00",
           "zoho_published_at": null,
           "eligibility_reason": "eligible",
           "publication_status": "published",
-          "source_captured_at": "2026-11-04T13:21:48.389606+00:00",
+          "source_captured_at": "2026-11-04T13:49:31.947847+00:00",
           "active_course_count": 249,
           "consumer_checked_at": null,
           "current_description": "Browser Cedar University offers education in botanical science and plant conservation. Teaching focuses on garden research and ecological education and develops knowledge through learning in these fields.",
           "proposed_description": "Browser Cedar University offers education in botanical science and plant conservation. Teaching focuses on garden research and ecological education and develops knowledge through learning in these fields.",
-          "approval_lineage_item_id": "4f893ad5-1946-4b91-acac-5782ba1ebc09",
+          "approval_lineage_item_id": "2c6f7946-ce27-439e-b0f2-856be21a43c2",
           "existing_approved_verified": false,
           "review_item_created_this_read": true
         }
@@ -488,7 +491,8 @@
         "provider_type": "university",
         "description_state": "all"
       },
-      "created_at": "2026-11-04T13:39:32.911652+00:00",
+      "created_at": "2026-11-04T13:53:02.278932+00:00",
+      "reason_code": null,
       "verified_at": null,
       "requested_by": "90000000-0000-0000-0000-0000000000aa",
       "zoho_verified": 1
@@ -500,7 +504,7 @@
     "dispatch_body": {
       "mode": "provider_description",
       "limit": 3,
-      "cohort_id": "4f6c8608-7bbe-4799-90ab-7605d119c6b7"
+      "cohort_id": "56a732d5-9c01-4430-b8f3-317a88c4952b"
     },
     "fixed_members": 1,
     "reader_attempts": 1,
