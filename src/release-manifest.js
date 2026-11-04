@@ -1,17 +1,15 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.476'
-export const PACKAGE_VERSION='0.1.403'
+export const UI_VERSION='2.15.477'
+export const PACKAGE_VERSION='0.1.404'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'4 Nov 2026',
-  title:'Governed Run Now and the 20-course intake pilot',
+  title:'Intake pilot cohort: top Australian universities only',
   changes:[
-    'A Platform Admin can run an existing catalogued job once, now, through a governed Run Now: only allow-listed jobs, with a reason, respecting the job\'s own switches, pause, budget and concurrency, refusing a second run while one is in flight, capped for pilots, and recorded with requester, reason, run id, times and counts.',
-    'A fixed cohort of up to 20 eligible courses for Course Intake Dates is selected automatically from existing official evidence and approved calendars, recorded with its evidence, and processed by the normal intake job through its own validation and publication path.',
-    'A read-back shows, per course and in total, what was selected, filled, admitted and published on the website, Zoho where supported, what was skipped and why, and spend.'
+    'The intake pilot cohort is now selected only from the top Australian universities by active course count (10 by default, a setting), round-robin across them, from existing official evidence; the cohort record lists the universities, their course counts and the eligible denominator, and is never widened if fewer than 20 courses qualify.'
   ],
   bugFixes:[]
 }
