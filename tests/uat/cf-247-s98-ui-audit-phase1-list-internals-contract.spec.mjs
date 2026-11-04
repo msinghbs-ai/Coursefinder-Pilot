@@ -11,7 +11,7 @@ const refs = fs.readFileSync('src/ReferenceSources.jsx', 'utf8')
 const health = fs.readFileSync('src/PlatformHealth.jsx', 'utf8')
 const queues = fs.readFileSync('src/QueueWatch.jsx', 'utf8')
 const autos = fs.readFileSync('src/Automations.jsx', 'utf8')
-const sched = fs.readFileSync('src/ScheduledJobsWorkspace.jsx', 'utf8')
+// SS-020 follow-up (4 Nov 2026): the Refresh schedules section (ScheduledJobsWorkspace.jsx) is retired; its target-id assertion went with it
 const evidence = fs.readFileSync('src/EvidenceWorkspace.jsx', 'utf8')
 const models = fs.readFileSync('src/ModelsServices.jsx', 'utf8')
 const ai = fs.readFileSync('src/AiConfig.jsx', 'utf8')
@@ -81,7 +81,6 @@ test('Scheduled jobs: the row shows the label only (slug on hover and in data-jo
   expect(autos).toContain('<tr className={j.active?\'\':\'l3c-off\'} data-job={j.job}>')
   expect(autos).toContain('<td title={j.job}><strong>{j.label||j.job}</strong><span className="au-desc" title={j.description||undefined}>{plainDescription(j.description)}</span>')
   expect(autos).not.toContain('<span className="l3v-code">{j.job}</span>')
-  expect(sched).toContain('target:<td key={id} title={technicalTarget(p)} data-target={technicalTarget(p)}>')
 })
 
 test('Evidence: no id or hash fragments in the list; job slugs and state strings read as words', () => {

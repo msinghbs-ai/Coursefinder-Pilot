@@ -3,6 +3,7 @@ import{StatusChip}from'./ui-kit'
 import{ExternalLink}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{fmtDateTime}from'./lib/format.js'
+import'./scheduled-jobs-config.css' // SS-020 follow-up: was loaded by the retired Refresh schedules section
 
 const UNKNOWN='Unavailable'
 const terminal=new Set(['completed','failed','cancelled','blocked','succeeded','success'])

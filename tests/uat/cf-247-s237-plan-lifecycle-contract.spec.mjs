@@ -68,10 +68,4 @@ test('cancellation: a cancelled run starts no step, its tasks are cancelled as t
   for (const c of ['ok C1-C2 cancel', 'ok C3 an open run', 'ok D1-D3 orphans', 'ok E1 the Enrichment plan overview']) expect(fixtures).toContain(c)
 })
 
-test('Refresh schedules: Layer 2 rows show a note, not an inoperative Run on demand button; Layer 1 keeps it', () => {
-  const ws = read('src/ScheduledJobsWorkspace.jsx')
-  expect(ws).toContain("{layer2Retiring(p)?<small className=\"cf-scheduler-v2__layer2-note\" data-testid=\"layer2-run-note\"")
-  expect(ws).toContain("const LAYER2_ROW_NOTE='Layer 2 is fed by its own jobs; run it from Layer 2/3.'")
-  expect(ws).toContain('Run on demand</button>}')
-  expect(read('src/scheduled-jobs-config.css')).toContain('.cf-scheduler-v2__layer2-note{')
-})
+// 'Refresh schedules: Layer 2 rows show a note ...' retired 4 Nov 2026 with the section (SS-020 follow-up, Decision 269 amendment; s274)

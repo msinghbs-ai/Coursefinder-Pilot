@@ -13,19 +13,17 @@ test.describe('CF-209 deployed Scheduler and Jobs operations acceptance @deploye
  })
 
  // v2.15.124 (Schedules folded into Automations) and v2.15.200 (Administration's Scheduling sub-tab retired): the scheduling intelligence
- // is the "Refresh schedules and one-off runs" section of Scheduled jobs › Automations.
- test('shows governed Scheduling intelligence without generic execution controls',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+ // was the "Refresh schedules and one-off runs" section of Scheduled jobs › Automations. SS-020 follow-up (Decision 269 amendment, 4 Nov 2026):
+ // that section retired (register schedules are edited on Layer 1 › Sources); Automations keeps Runtime Health and no generic execution controls.
+ test('shows Automations with Runtime Health, no Refresh schedules section and no generic execution controls',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page)
   await clickPrimaryNav(page,'Scheduled Tasks')
   await expect(page.locator('.m-title-wrap h1')).toContainText('Scheduled jobs',ui)
   const tab=page.locator('.cf-page-tabs [role="tab"]').filter({hasText:'Automations'}).first()
   await expect(tab).toHaveAttribute('aria-selected','true',ui)
-  const scheduling=page.locator('.cf-scheduler-v2-native')
-  await expect(scheduling).toBeVisible({timeout:20_000})
-  await expect(scheduling.getByRole('heading',{name:'Schedule Configuration',exact:true})).toBeVisible({timeout:20_000})
-  await expect(scheduling.getByRole('heading',{name:'Latest Refresh Queue',exact:true})).toBeVisible(ui)
-  await expect(scheduling.getByRole('heading',{name:/^Downstream Search refresh signals$/i})).toBeVisible(ui)
-  await expect(scheduling).toContainText('Historical Jobs are never reset or replayed')
+  await expect(page.getByRole('heading',{name:'Runtime Health',exact:true})).toBeVisible({timeout:20_000})
+  await expect(page.getByRole('heading',{name:'Refresh schedules and one-off runs'})).toHaveCount(0)
+  await expect(page.getByRole('heading',{name:'Schedule Configuration',exact:true})).toHaveCount(0)
   await expect(page.getByRole('button',{name:/Retry scheduled refresh/i})).toHaveCount(0)
   await expect(page.getByRole('button',{name:/Replay scheduled refresh/i})).toHaveCount(0)
   await expect(page.getByRole('button',{name:/Reset scheduled refresh/i})).toHaveCount(0)

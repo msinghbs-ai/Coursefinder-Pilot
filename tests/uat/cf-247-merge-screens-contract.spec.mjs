@@ -51,9 +51,8 @@ test('v2.15.124: Readiness by area is part of Attributes; the cross-layer Source
 
 test('v2.15.124: Schedules folded into Automations; the copied job list is gone (history is on Jobs)', () => {
   expect(PAGES.jobs.tabs.map(t => t.key)).toEqual(['automations', 'jobs', 'tasks']) // v2.15.197: Task manager; v2.15.300: Priority queue retired
-  expect(resolveTarget('scheduled-jobs', new URLSearchParams({ tab: 'schedules' })).tab).toBe('automations')
-  expect(resolveTarget('scheduled-tasks').tab).toBe('automations')
-  const w = read('src/ScheduledJobsWorkspace.jsx')
-  expect(w).not.toContain('<h3>Recent Job Runs</h3>')
-  expect(w).toContain('cf-scheduler-v2-native')
+  // SS-020 follow-up (Decision 269 amendment, 4 Nov 2026): the refresh schedules left Automations; their old addresses open Layer 1 › Sources
+  expect(resolveTarget('scheduled-jobs', new URLSearchParams({ tab: 'schedules' })).page).toBe('layer1')
+  expect(resolveTarget('scheduled-tasks').page).toBe('layer1')
+  expect(fs.existsSync('src/ScheduledJobsWorkspace.jsx')).toBe(false)
 })

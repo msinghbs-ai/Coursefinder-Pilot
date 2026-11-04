@@ -109,7 +109,7 @@ export const PAGES = {
     { key: 'integration', label: 'Integration queue', min: 5 },
     { key: 'storage', label: 'Storage & retention', min: 6 },
   ] },
-  jobs: { label: 'Scheduled jobs', slug: 'scheduled-jobs', icon: 'workflow', subtitle: 'Every automation the platform runs, the order work is taken in, job history and refresh schedules.', tabs: [
+  jobs: { label: 'Scheduled jobs', slug: 'scheduled-jobs', icon: 'workflow', subtitle: 'Every automation the platform runs, the order work is taken in, and job history.', tabs: [
     { key: 'automations', label: 'Automations', min: 4 },
     // v2.15.300 (Platform Admin, 20 Oct 2026, "Priority queue"): retired (no use in 7 days; the focus list and Build adapter waves order the
     // work). The course-page search cap moved to Models & services › Toolsets & limits.
@@ -212,9 +212,10 @@ export const LEGACY = {
   'review-queue': { page: 'layer4' },
   'jobs-schedules': { page: 'jobs' },
   'jobs': { page: 'jobs', tab: 'jobs' },
-  // v2.15.124: Schedules folded into Automations (refresh schedules and one-off runs) and Jobs (history).
-  'scheduled-tasks': { page: 'jobs', tab: 'automations' },
-  'refresh-scheduling': { page: 'jobs', tab: 'automations' },
+  // v2.15.124: Schedules folded into Automations (refresh schedules and one-off runs) and Jobs (history). SS-020 follow-up (Decision 269
+  // amendment, 4 Nov 2026): that section retired; the register schedules are edited on Layer 1 › Sources, where these addresses now lead.
+  'scheduled-tasks': { page: 'layer1' },
+  'refresh-scheduling': { page: 'layer1' },
   'attributes': { page: 'coverage', tab: 'attributes' },
   // The old '#settings' address opened Administration > Platform (readiness), not the regulatory page; v2.15.301 Capacity is on the Go-live checklist.
   'settings': { page: 'migration' },
@@ -300,7 +301,8 @@ export function resolveTarget(target, params = new URLSearchParams()) {
   if (hit.page === 'services' && ['limits', 'fetchers'].includes(tab)) return { page: 'services', tab: 'services', params: p }
   if (hit.page === 'health' && tab === 'integration' && p.get('view') === 'yield') { p.delete('view'); return { page: 'health', tab: 'queues', params: p } }
   // v2.15.124: Readiness by area is part of Attributes; Layer 1 › Sources is Operations › Sources.
-  if (hit.page === 'jobs' && tab === 'schedules') return { page: 'jobs', tab: 'automations', params: p }
+  // SS-020 follow-up (4 Nov 2026): the old Schedules tab (refresh schedules) opens Layer 1 › Sources, which edits them now
+  if (hit.page === 'jobs' && tab === 'schedules') return { page: 'layer1', tab: '', params: p }
   if (hit.page === 'coverage' && tab === 'domains') return { page: 'coverage', tab: 'attributes', params: p }
   // v2.15.200 (Decision 254): Coverage › Universities and the retired Layer 2 tabs open Layer 2 › Adapters.
   if (hit.page === 'coverage' && tab === 'universities') return { page: 'layer2', tab: 'universities', params: p }

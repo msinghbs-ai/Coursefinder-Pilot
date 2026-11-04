@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.395 — 4 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.468** (SS-020 follow-up; Decision 269 amendment; Platform Admin Option A, direction 4 Nov 10:00 §8). Migration `20261104510000_cf247_ss020_followup_layer1_schedule`: md5-guarded replacement of public.admin_layer1_schedule (53b48153 → cc0c680d) calling the existing policy edit bridge for policy registers (rank 4+, reason 5+, same audit row); new public.admin_layer1_policy_run_v1 (574e4ece) calling the existing run-now bridge; refresh_scheduler_tick_impl and both bridges guarded, unchanged. Legacy screen and 6 functions marked retiring (14 days); nothing dropped. Roles not widened. Consumer API untouched. Spec s274; cf-092, cf-093 and one s237 test retired with reasons.
+
 ## 0.1.394 — 4 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.467** (Platform Admin direction 4 Nov 10:00 §2, IQ-00264). Migration `20261104480000_cf247_sch_l4_handoff`: md5-guarded edit of security.scholarship_coverage_items_v1 (d3dfacf0 → 56056606): unpublished cases record the publishing checks they fail; person-refused and person-confirmed no-value cases become rejected_correctly. New intervention lane `sch_value` with its own open limit (har.generate_sch_value_on 1; sch_cov.value_apply_on 1: applies only a value a person enters, through the existing Curator edit route). Each raise isolated per provider. No AI or Firecrawl spend; no manual enqueues; admission and pilot policies unchanged. Nothing dropped; consumer API untouched. Spec s280. Governance gap recorded: public.admin_scholarship_edit exists only live (md5 01475532).

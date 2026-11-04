@@ -76,7 +76,7 @@ test('retry, export and estimates reuse the existing RPCs and settings; the scre
   for (const c of ['ok D1 preview estimate', 'ok D2', 'ok F1 export', 'ok G1 plan retry', 'ok G2', 'ok G3 plan export', 'ok G4-G5']) expect(fixtures).toContain(c)
 })
 
-test('Run now never changes a recurring schedule (mandate §6): plan Run now and retry, Automations Run now, Refresh schedules Run on demand', () => {
+test('Run now never changes a recurring schedule (mandate §6): plan Run now and retry, Automations Run now', () => {
   // Enrichment plan: run and retry insert a manual run and start it; they never touch the automatic switch or a cron job
   const plan = m.slice(m.indexOf("select pg_temp.edit_once('public.admin_enrich_plan(text,jsonb)'"), m.indexOf('-- 9. housekeeping'))
   expect(plan).not.toMatch(/enrich_plan_control|cron\./)
@@ -88,10 +88,7 @@ test('Run now never changes a recurring schedule (mandate §6): plan Run now and
     .map((f) => read(`supabase/migrations/${f}`)).find((s) => s.includes("p_action='run_now' then") && s.includes('admin_automation_control_v1'))
   const block = autoMig.slice(autoMig.indexOf("p_action='run_now' then"), autoMig.indexOf('elsif', autoMig.indexOf("p_action='run_now' then")))
   expect(block.replace(/\s+/g, ' ').trim()).toBe("p_action='run_now' then execute j.command;")
-  // Refresh schedules › Run on demand: Layer 1 only now; the request it writes leaves the schedule as it was
-  const ws = read('src/ScheduledJobsWorkspace.jsx')
-  expect(ws).toContain('const runEligible=policy=>Number(policy?.layer)<=2&&!layer2Retiring(policy)&&Boolean(policy?.enabled)')
-  expect(ws).toContain('does not change its recurring cadence or next-run time')
+  // Refresh schedules › Run on demand retired with its section (SS-020 follow-up, 4 Nov 2026; guarded by s274)
 })
 
 test('Layer 2 refresh schedules retire: marked retiring with replaced_by and retire_after; the paste closes the measured requests and switches the schedules off; nothing deleted', () => {
