@@ -133,3 +133,15 @@ select pg_temp.ok((select count(*) from jsonb_array_elements(security.ops_learni
                   and (select x->>'verified_outcome' from jsonb_array_elements(security.ops_learning_report_v1()->'table') x where x->>'metric' = 'repeated_ineffective_prevented') = 'improved',
                   'section 7: seven metrics with baseline and current; prevented repeats improved on the baseline');
 select pg_temp.ok(security.self_sustainability_v1(24) ?& array['autonomy', 'recovery_learning'], 'section 7: in the ops_report_v1 self_sustainability section');
+
+-- an authority blocker is reported, never learned from: alerts held because their destination was paused by the Platform Admin -----------------------
+insert into pipeline.platform_alerts(check_key, kind, severity, title, body, status, dedupe_key, created_at)
+select 'queue:x' || g, 'raised', 'warning', 'alert ' || g, 'b', 'pending', 'k' || g, now() - interval '1 day' from generate_series(1, 17) g;
+select pg_temp.history('health:platform_alerts:undelivered', 'record_capacity_profile', 'record_capacity_profile', 'verify_failed', 4);
+select security.ops_learning_tick_v1();
+select pg_temp.ok(not exists (select 1 from pipeline.ops_remedy_outcomes where fingerprint = 'health:platform_alerts:undelivered')
+                  and not exists (select 1 from pipeline.ops_remedy_blocks where fingerprint = 'health:platform_alerts:undelivered'),
+                  'alerts: undelivered alerts are not a remedy candidate: no outcome learned, no block');
+select pg_temp.ok((select (x->>'waiting')::int from jsonb_array_elements(security.ops_learning_report_v1()->'authority_blockers') x
+                   where x->>'blocker' = 'alerts not delivered: destination paused by the Platform Admin') = 17,
+                  'alerts: reported as a Platform Admin authority blocker (17 waiting)');

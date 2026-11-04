@@ -97,6 +97,11 @@ insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, ki
  ('pipeline', 'learn.rate_min_outcomes', 'Recovery knowledge: outcomes needed before a remedy''s rate is judged',
   'A remedy''s success rate is judged only once it has at least this many verified or failed outcomes.',
   'number', to_jsonb(6), 2, 100, 'outcomes', 1534, 'Direction 4 Nov 2026 18:08 §3', 'First-run verification and progress', 'security.ops_learning_harvest_v1'),
+ ('pipeline', 'learn.not_remedy_fingerprints', 'Recovery knowledge: failures that are never remedy candidates',
+  'Issues whose fingerprint matches one of these patterns are never learned from or stopped as remedy outcomes: their cause is an authority decision, not a defect the platform can repair (for example alerts held because their delivery destination was paused by the Platform Admin).',
+  'list', '["%platform_alerts%", "%platform-alerts%", "%alert%deliver%", "%watchdog%"]'::jsonb, null, null, 'fingerprint patterns', 1536,
+  'Integration Controller 4 Nov 2026: alert delivery paused by the Platform Admin is an authority blocker, not a remedy candidate', 'First-run verification and progress',
+  'security.ops_learning_harvest_v1; security.ops_learning_gate_v1'),
  ('pipeline', 'learn.reading_minutes', 'Recovery knowledge: keep a §7 reading every',
   'The learning step keeps one reading of the §7 measures at most this often.',
   'number', to_jsonb(60), 15, 1440, 'minutes', 1535, 'Direction 4 Nov 2026 18:08 §7 "track whether Claude interventions decrease"', 'First-run verification and progress', 'security.ops_learning_tick_v1')
@@ -217,6 +222,13 @@ language sql stable security definer set search_path to '' as $function$
 $function$;
 revoke all on function security.ops_learning_refusal_v1(text) from public, anon, authenticated;
 
+create or replace function security.ops_learning_not_remedy_v1(p_fingerprint text) returns boolean
+language sql stable security definer set search_path to '' as $function$
+-- an issue whose cause is an authority decision (learn.not_remedy_fingerprints) is never a remedy candidate
+  select coalesce(p_fingerprint, '') like any (coalesce((select array_agg(x) from jsonb_array_elements_text(security.toolset_setting('pipeline', 'learn.not_remedy_fingerprints')) x), '{}'))
+$function$;
+revoke all on function security.ops_learning_not_remedy_v1(text) from public, anon, authenticated;
+
 create or replace function security.ops_learning_harvest_v1() returns jsonb
 language plpgsql security definer set search_path to '' as $function$
 -- CF-247 (direction 4 Nov 2026 18:08 §2-§3): every controller run that verified or failed becomes an outcome of its pattern (remedy:root_cause),
@@ -232,6 +244,7 @@ begin
             order by u.id limit security.pipeline_num_v1('recovery.issues_per_run', 200)::int loop
     select * into m from pipeline.ops_remedies where code = r.remedy_code;
     select * into i from pipeline.integration_issues where id = r.issue_id;
+    continue when security.ops_learning_not_remedy_v1(i.fingerprint);
     v_rc := coalesce(r.evidence->'diagnosis'->>'root_cause', i.diagnosis->>'root_cause', 'unclassified');
     v_code := r.remedy_code || ':' || v_rc; v_ok := r.result = 'verified';
     insert into pipeline.ops_remedy_knowledge(code, lane, title, fingerprint_like, root_cause, remedy_code, trigger_conditions, authority, performed_by, expected_outcome,
@@ -300,6 +313,9 @@ begin
     select * into i from pipeline.integration_issues where fingerprint = b.fingerprint;
     if i.id is null or i.status = 'closed' then
       update pipeline.ops_remedy_blocks set lifted_at = now(), lift_reason = 'issue closed or gone' where id = b.id; v_lift := v_lift + 1; continue;
+    end if;
+    if security.ops_learning_not_remedy_v1(b.fingerprint) then
+      update pipeline.ops_remedy_blocks set lifted_at = now(), lift_reason = 'not a remedy candidate: an authority blocker (learn.not_remedy_fingerprints)' where id = b.id; v_lift := v_lift + 1; continue;
     end if;
     if security.ops_learning_signature_v1(i.id) is distinct from b.signature then
       update pipeline.ops_remedy_blocks set lifted_at = now(), lift_reason = 'evidence changed: status ' || i.status || ', remediation ' || coalesce(i.remediation_status, 'none')
@@ -457,6 +473,15 @@ begin
                 from (select r.at, r.metrics from pipeline.ops_learning_readings r order by r.at desc limit 48) z),
     'patterns', (select jsonb_build_object('total', count(*), 'auto_eligible', count(*) filter (where k2.auto_eligible), 'lost_eligibility', count(*) filter (where not k2.auto_eligible),
                                            'open_blocks', (select count(*) from pipeline.ops_remedy_blocks b2 where b2.lifted_at is null)) from pipeline.ops_remedy_knowledge k2),
+    'authority_blockers', (select coalesce(jsonb_agg(z.b), '[]'::jsonb) from (
+        select jsonb_build_object('blocker', 'alerts not delivered: destination paused by the Platform Admin', 'authority', 'Platform Admin',
+          'detail', 'pipeline.platform_alerts waiting for delivery; their destination (the Work queue alerts scheduled task) was paused by the Platform Admin on 3 Nov 2026 18:21 AEDT, so no platform alert reaches the Platform Admin. Not a remedy candidate: only resuming the destination clears it.',
+          'waiting', count(*), 'oldest', min(a.created_at)) b
+          from pipeline.platform_alerts a where a.status in ('held', 'pending', 'failed') having count(*) > 0
+        union all
+        select jsonb_build_object('blocker', 'issues awaiting a Platform Admin decision', 'authority', 'Platform Admin', 'waiting', count(*),
+                                  'oldest', min(i.detected_at)) from pipeline.integration_issues i
+         where i.status <> 'closed' and i.superseded_by is null and i.ops_state = 'needs_decision' having count(*) > 0) z),
     'note', 'Not self-sustaining because rules are deployed: improved means the platform itself recovered and advanced records (direction 18:08 §7).');
 end $function$;
 revoke all on function security.ops_learning_report_v1() from public, anon, authenticated;

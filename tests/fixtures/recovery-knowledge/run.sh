@@ -51,7 +51,7 @@ for s in "${!LIVE[@]}"; do [ "$(md5of "$s")" = "${LIVE[$s]}" ] || { echo "loaded
 echo "before (loaded = live 18:10 AEDT): ${#LIVE[@]} definitions"
 EDITED=$(grep -E '^--   security\.[a-z_0-9]+\(.*\) +[0-9a-f]{32} -> [0-9a-f]{32}$' $MIG | sed -E 's/^--   (security\.[^ ]+\(.*\)) +[0-9a-f]{32} -> ([0-9a-f]{32})$/\1|\2/')
 [ "$(echo "$EDITED" | wc -l)" = 3 ] || { echo "the header must list three edits"; exit 1; }
-NEW="'ops_learning_signature_v1', 'ops_learning_lane_v1', 'ops_learning_refusal_v1', 'ops_learning_harvest_v1', 'ops_learning_gate_v1', 'ops_learning_retry_check_v1',
+NEW="'ops_learning_signature_v1', 'ops_learning_not_remedy_v1', 'ops_learning_lane_v1', 'ops_learning_refusal_v1', 'ops_learning_harvest_v1', 'ops_learning_gate_v1', 'ops_learning_retry_check_v1',
      'ops_learning_record_v1', 'ops_learning_eligibility_set_v1', 'autonomy_audit_v1', 'ops_learning_metrics_v1', 'ops_learning_report_v1', 'ops_learning_tick_v1',
      'ops_authorise_v1', 'first_run_verify_tick_v1', 'self_sustainability_v1'"
 FNS="select md5(string_agg(p.oid::regprocedure::text || md5(pg_get_functiondef(p.oid)), '|' order by p.oid::regprocedure::text)) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
