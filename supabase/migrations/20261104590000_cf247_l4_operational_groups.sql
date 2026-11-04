@@ -111,12 +111,13 @@ create table if not exists pipeline.layer4_item_groups (
   cls text not null,
   rule text,
   next_action text,
+  secondary jsonb not null default '[]'::jsonb,
   state text not null default 'waiting' check (state in ('waiting', 'closed')),
   input_at timestamptz,
   classified_at timestamptz not null default now(),
   closed_at timestamptz,
   primary key (kind, ref));
-comment on table pipeline.layer4_item_groups is 'CF-247 Layer 4 operational groups (Platform Admin mandate 4 Nov 2026 16:32 §2, §7; Integration Controller 17:4x: stored, never classified at read time). One row per Layer 4 item: its group (A settled by an existing rule, B technical recovery, C a person''s decision, D information from a person), class, the existing rule for A, the next action, and the input time it was grouped from. Filled for new and changed items only by job layer4-groups (security.layer4_groups_fill_v1); a row whose item left the Inbox is marked closed (history kept, never deleted). The Inbox reads this table only; a missing or stale row counts as C ("not grouped yet").';
+comment on table pipeline.layer4_item_groups is 'CF-247 Layer 4 operational groups (Platform Admin mandate 4 Nov 2026 16:32 §2, §7; Integration Controller 17:4x: stored, never classified at read time). One row per Layer 4 item and one primary disposition (direction 18:08 §5): its group (A settled by an existing rule, B technical recovery, C a person''s decision, D information from a person), class, secondary reasons (never counted), the existing rule for A, the next action, and the input time it was grouped from. Human input needed requests (kind intervention) are stored too and counted on their own line, never added to the groups. Filled for new and changed items only by job layer4-groups (security.layer4_groups_fill_v1); a row whose item left the Inbox is marked closed (history kept, never deleted). The Inbox reads this table only; a missing or stale row counts as C ("not grouped yet").';
 create index if not exists layer4_item_groups_waiting_idx on pipeline.layer4_item_groups (grp, item_created_at, kind, ref) where state = 'waiting';
 create index if not exists layer4_item_groups_provider_idx on pipeline.layer4_item_groups (provider_id, grp) where state = 'waiting';
 alter table pipeline.layer4_item_groups enable row level security;
@@ -141,7 +142,7 @@ end $function$;
 revoke all on function security.layer4_cl_group_call_v1(uuid) from public, anon, authenticated;
 
 create or replace function security.layer4_groups_v1(p_provider uuid default null, p_kind text default null, p_keys text[] default null)
- returns table(kind text, ref text, provider_id uuid, created_at timestamptz, grp text, cls text, rule text, why text)
+ returns table(kind text, ref text, provider_id uuid, created_at timestamptz, grp text, cls text, rule text, why text, secondary jsonb)
  language plpgsql stable security definer set search_path to '' as $function$
 -- CF-247 mandate 16:32 §2: every waiting Layer 4 item (security.layer4_inbox_items_v2, and Human input needed items) in group A, B, C or D, with
 -- its class and, for A, the existing rule that may settle it. Read only: nothing is decided here. The Course Link workstream's classifier
@@ -173,11 +174,20 @@ begin
          case when clh.j->>'grp' in ('A', 'B', 'C', 'D') then clh.j->>'rule'
               when ri.readiness = 'resolvable' then 'security.layer4_reconcile_v1 (' || case when v_rec_on then 'on' else 'off: layer4.reconcile_supersede_on' end || ')'
               end,
-         ri.why
+         ri.why,
+         -- direction 18:08 §5: one primary disposition (grp, cls); every other reason that applies is secondary, never a second count
+         to_jsonb(array_remove(array[
+           case when clh.j is not null and ri.readiness is not null then 'readiness:' || ri.route end,
+           case when clh.j is not null and clh.j->>'action' is not null then 'course_link_action:' || (clh.j->>'action') end,
+           case when aiv.id is not null and (coalesce(clh.j->>'grp' in ('A', 'B', 'C', 'D'), false) or coalesce(ri.readiness = 'resolvable', false)) then 'human_input:' || aiv.id end,
+           case when aiv.id is not null and not (coalesce(clh.j->>'grp' in ('A', 'B', 'C', 'D'), false) or coalesce(ri.readiness = 'resolvable', false)) and ri.readiness is not null
+                then 'readiness:' || ri.route end], null))
     from ri left join aiv on aiv.entity = ri.ref left join clh on clh.ref = ri.ref
   union all
   select 'intervention', x.id::text, x.provider_id, x.created_at, case when x.status = 'awaiting_input' then 'D' else 'B' end, 'intervention:' || x.status, null,
-         coalesce(x.required_input->>'ask', x.subject)
+         coalesce(x.required_input->>'ask', x.subject),
+         -- a Human input needed request is work of its own, counted on its own line; the item it serves (if any) is named here
+         case when x.lane = 'aer_item' then jsonb_build_array('for_item:' || x.entity) else '[]'::jsonb end
     from pipeline.layer4_interventions x
    where x.status in ('ai_pending', 'awaiting_input', 'resuming') and (p_kind is null or p_kind = 'intervention')
      and (p_provider is null or x.provider_id = p_provider) and (p_keys is null or 'intervention:' || x.id = any (p_keys));
@@ -186,8 +196,9 @@ revoke all on function security.layer4_groups_v1(uuid, text, text[]) from public
 
 create or replace function security.layer4_group_counts_v1(p_provider uuid default null) returns jsonb
  language sql stable security definer set search_path to '' as $function$
-  -- the Inbox's three choices and group A, from the stored groups only (pipeline.layer4_item_groups; mandate 16:32 §7). A row whose input
-  -- changed since it was grouped counts as C until job layer4-groups groups it again ("not grouped yet")
+  -- the Inbox's three choices and group A, from the stored groups only (pipeline.layer4_item_groups; mandate 16:32 §7). One primary disposition
+  -- per waiting item, so the groups sum to the items waiting (direction 18:08 §5); Human input needed requests are a separate line, never added.
+  -- A row whose input changed since it was grouped counts as C until job layer4-groups groups it again ("not grouped yet")
   with g as (select x.kind, x.ref, x.item_created_at, x.rule, x.cls,
                     case when x.grp <> 'C' and ((rd.classified_at is not null and rd.classified_at > x.input_at) or (iv.updated_at is not null and iv.updated_at > x.input_at)) then 'C' else x.grp end grp,
                     (rd.classified_at is not null and rd.classified_at > x.input_at) or (iv.updated_at is not null and iv.updated_at > x.input_at) stale, x.classified_at
@@ -195,14 +206,20 @@ create or replace function security.layer4_group_counts_v1(p_provider uuid defau
                left join pipeline.layer4_item_readiness rd on x.kind in ('course_link', 'aer_review', 'provider_description', 'no_page_first_run', 'conjoint_first_run')
                     and rd.item_id = case when x.ref ~ '^[0-9a-f-]{36}$' then x.ref::uuid end
                left join pipeline.layer4_interventions iv on x.kind = 'intervention' and iv.id = case when x.ref ~ '^[0-9]+$' then x.ref::bigint end
-              where x.state = 'waiting' and (p_provider is null or x.provider_id = p_provider))
+              where x.state = 'waiting' and (p_provider is null or x.provider_id = p_provider)),
+       it as (select * from g where g.kind <> 'intervention'),
+       hi as (select * from g where g.kind = 'intervention')
   select jsonb_build_object(
-    'groups', (select coalesce(jsonb_object_agg(grp, n), '{}'::jsonb) from (select grp, count(*) n from g group by 1) z),
-    'by_kind', (select coalesce(jsonb_object_agg(grp, k), '{}'::jsonb) from (select grp, jsonb_object_agg(kind, n) k from (select grp, kind, count(*) n from g group by 1, 2) y group by 1) z),
-    'oldest', (select coalesce(jsonb_object_agg(grp, o), '{}'::jsonb) from (select grp, min(item_created_at) o from g group by 1) z),
+    'groups', (select coalesce(jsonb_object_agg(grp, n), '{}'::jsonb) from (select grp, count(*) n from it group by 1) z),
+    'pending', (select count(*) from it),
+    'pending_review_items', (select count(*) from it where it.kind in ('course_link', 'aer_review', 'provider_description', 'no_page_first_run', 'conjoint_first_run')),
+    'pending_other_items', (select count(*) from it where it.kind not in ('course_link', 'aer_review', 'provider_description', 'no_page_first_run', 'conjoint_first_run')),
+    'human_input_requests', jsonb_build_object('waiting', (select count(*) from hi where hi.grp = 'D'), 'recovering', (select count(*) from hi where hi.grp <> 'D')),
+    'by_kind', (select coalesce(jsonb_object_agg(grp, k), '{}'::jsonb) from (select grp, jsonb_object_agg(kind, n) k from (select grp, kind, count(*) n from it group by 1, 2) y group by 1) z),
+    'oldest', (select coalesce(jsonb_object_agg(grp, o), '{}'::jsonb) from (select grp, min(item_created_at) o from it group by 1) z),
     'rules', (select coalesce(jsonb_agg(jsonb_build_object('rule', rule, 'class', cls, 'n', n) order by n desc), '[]'::jsonb)
-                from (select rule, cls, count(*) n from g where grp = 'A' group by 1, 2) z),
-    'waiting', (select count(*) from g), 'regrouping', (select count(*) from g where stale),
+                from (select rule, cls, count(*) n from it where grp = 'A' group by 1, 2) z),
+    'waiting', (select count(*) from it), 'regrouping', (select count(*) from it where stale),
     'grouped_at', security.l4_time_v1((select max(classified_at) from pipeline.layer4_item_groups)))
 $function$;
 revoke all on function security.layer4_group_counts_v1(uuid) from public, anon, authenticated;
@@ -222,7 +239,8 @@ begin
   create temp table if not exists _l4g_now (kind text, ref text, provider_id uuid, created_at timestamptz, input_at timestamptz, primary key (kind, ref)) on commit drop;
   truncate _l4g_now;
   insert into _l4g_now
-  select i.kind, i.ref, i.provider_id, i.created_at, greatest(i.created_at, rd.classified_at)
+  select i.kind, i.ref, i.provider_id, i.created_at,
+         greatest(i.created_at, rd.classified_at, (select max(x.updated_at) from pipeline.layer4_interventions x where x.lane = 'aer_item' and x.entity = i.ref))
     from security.layer4_inbox_items_v2(null, null, null, false) i
     left join pipeline.layer4_item_readiness rd on i.kind in ('course_link', 'aer_review', 'provider_description', 'no_page_first_run', 'conjoint_first_run')
          and rd.item_id = case when i.ref ~ '^[0-9a-f-]{36}$' then i.ref::uuid end
@@ -239,14 +257,14 @@ begin
                         and not ((n.kind || ':' || n.ref) = any (v_done))
                       order by (g.kind is null) desc, g.classified_at nulls first, n.created_at limit v_batch);
     exit when cardinality(v_keys) = 0;
-    insert into pipeline.layer4_item_groups as t(kind, ref, provider_id, item_created_at, grp, cls, rule, next_action, state, input_at, classified_at, closed_at)
+    insert into pipeline.layer4_item_groups as t(kind, ref, provider_id, item_created_at, grp, cls, rule, next_action, secondary, state, input_at, classified_at, closed_at)
     select c.kind, c.ref, coalesce(c.provider_id, n.provider_id), n.created_at, c.grp, c.cls, c.rule,
            case c.grp when 'A' then 'settled when its rule runs: ' || coalesce(c.rule, 'an existing rule') when 'B' then 'technical recovery continues by itself'
                       when 'C' then 'a person decides' else 'a person gives the missing information' end,
-           'waiting', n.input_at, clock_timestamp(), null
+           coalesce(c.secondary, '[]'::jsonb), 'waiting', n.input_at, clock_timestamp(), null
       from security.layer4_groups_v1(null, null, v_keys) c join _l4g_now n on n.kind = c.kind and n.ref = c.ref
     on conflict (kind, ref) do update set provider_id = excluded.provider_id, item_created_at = excluded.item_created_at, grp = excluded.grp, cls = excluded.cls,
-           rule = excluded.rule, next_action = excluded.next_action, state = 'waiting', input_at = excluded.input_at, classified_at = excluded.classified_at, closed_at = null;
+           rule = excluded.rule, next_action = excluded.next_action, secondary = excluded.secondary, state = 'waiting', input_at = excluded.input_at, classified_at = excluded.classified_at, closed_at = null;
     -- an item the classifier no longer lists (it left between the two reads) is not tried again in this run
     v_done := v_done || v_keys;
     v_n := v_n + cardinality(v_keys);
@@ -472,11 +490,12 @@ declare v_lim int := least(greatest(coalesce((p_args->>'limit')::int, security.p
 begin
   if auth.uid() is null then raise exception 'authentication required' using errcode = '42501'; end if;
   if security.current_role_rank() < 3 then raise exception 'Curator role or above required' using errcode = '42501'; end if;
+  if p_args->>'action' = 'flow' then return security.layer4_flow_report_v1(); end if;
   if coalesce(p_args->>'action', 'summary') = 'summary' then
     return security.layer4_group_counts_v1(v_prov) || jsonb_build_object('labels', jsonb_build_object('C', 'Ready for my decision', 'D', 'Information needed from me',
              'B', 'Technical recovery', 'A', 'Settled by existing rules'));
   end if;
-  if v_grp not in ('A', 'B', 'C', 'D') then raise exception 'choose a group: C, D or B (A is counts only)'; end if;
+  if v_grp not in ('A', 'B', 'C', 'D', 'I') then raise exception 'choose a group: C, D, B or I (Human input needed requests; A is counts only)'; end if;
   if v_grp = 'A' then raise exception 'group A is settled by existing rules and has no cards; see its rules in the summary'; end if;
   v_kinds := security.layer4_inbox_hooks_v1()->'kinds';
   -- the stored groups only (never classified here); a row whose input changed since it was grouped is listed under C until it is grouped again
@@ -488,7 +507,8 @@ begin
                              and rd.item_id = case when x.ref ~ '^[0-9a-f-]{36}$' then x.ref::uuid end
                         left join pipeline.layer4_interventions iv on x.kind = 'intervention' and iv.id = case when x.ref ~ '^[0-9]+$' then x.ref::bigint end
                        where x.state = 'waiting' and (v_prov is null or x.provider_id = v_prov) and (v_kind is null or x.kind = v_kind)),
-               g as (select * from g0 where g0.grp = v_grp),
+               -- I: the Human input needed requests (their own line); C, D, B: the waiting items, one disposition each
+               g as (select * from g0 where case when v_grp = 'I' then g0.kind = 'intervention' else g0.kind <> 'intervention' and g0.grp = v_grp end),
                pg as (select * from g order by g.created_at, g.kind, g.ref limit v_lim offset v_off),
                b as (select i.kind, i.ref, i.provider_id, i.subject, i.why, i.suggestion, i.created_at, i.detail
                        from security.layer4_inbox_items_v2(null, null, array(select pg.kind || ':' || pg.ref from pg where pg.kind <> 'intervention'), true) i
@@ -508,19 +528,51 @@ end $function$;
 revoke all on function public.admin_layer4_groups(jsonb) from public, anon;
 grant execute on function public.admin_layer4_groups(jsonb) to authenticated;
 
+-- 7b the flow report (direction 18:08 §5): what actually happened to Layer 4 work, kept apart; a move between queues is never an admission ------
+create or replace function security.layer4_flow_report_v1() returns jsonb
+ language sql stable security definer set search_path to '' as $function$
+  -- over layer4.lifecycle_report_days, from the existing records only: genuine admissions and publication (pipeline.layer4_admission_checks, the
+  -- post-decision check), decisions that did not apply, technical recovery (corrected reads that replaced a held read; Human input needed
+  -- requests resumed and verified), reroutes (Decision 179: official-link items moved to Course page needed), duplicates and other platform
+  -- supersessions (pipeline.layer4_supersessions, reversals left out). Each count is separate; none is added to another.
+  with p as (select make_interval(days => security.pipeline_num_v1('layer4.lifecycle_report_days', 7)::int) d)
+  select jsonb_build_object('days', security.pipeline_num_v1('layer4.lifecycle_report_days', 7),
+    'decisions_applied', (select count(*) from pipeline.admin_control_events e, p where e.area = 'layer4' and e.action = 'inbox_decide' and e.created_at > now() - p.d
+                            and coalesce(e.detail->'result'->>'still_waiting', 'false') <> 'true' and e.detail->'result' ? 'still_waiting'),
+    'decisions_not_applied', (select count(*) from pipeline.admin_control_events e, p where e.area = 'layer4' and e.action = 'inbox_decide' and e.created_at > now() - p.d
+                                and e.detail->'result'->>'still_waiting' = 'true'),
+    'admitted', (select count(*) from pipeline.layer4_admission_checks a, p where a.decided_at > now() - p.d and a.admitted),
+    'admitted_and_published', (select count(*) from pipeline.layer4_admission_checks a, p where a.decided_at > now() - p.d and a.admitted and a.published),
+    'approved_not_admitted', (select count(*) from pipeline.layer4_admission_checks a, p where a.decided_at > now() - p.d and a.result = 'not_admitted'),
+    'technical_recovery', jsonb_build_object(
+       'corrected_reads_replaced', (select count(*) from pipeline.aer_read_supersessions s, p where s.state = 'superseded' and s.closed_at > now() - p.d),
+       'corrected_reads_refused', (select count(*) from pipeline.aer_read_supersessions s, p where s.state = 'refused' and s.closed_at > now() - p.d),
+       'human_input_resumed', (select count(*) from pipeline.layer4_interventions i, p where i.resumed_at > now() - p.d),
+       'human_input_verified', (select count(*) from pipeline.layer4_interventions i, p where i.verified_at > now() - p.d)),
+    'reroutes', jsonb_build_object('decision_179_to_course_page_needed',
+       (select count(*) from pipeline.layer4_review_items r, p where r.status = 'superseded' and r.decided_at > now() - p.d and r.field_code = 'official_course_url'
+           and exists (select 1 from pipeline.course_page_needed n where r.id = any (n.converted_items)))),
+    'duplicates', (select count(*) from pipeline.layer4_supersessions x, p where x.reason = 'duplicate_pending' and x.reversed_at is null and x.at > now() - p.d),
+    'supersessions', (select coalesce(jsonb_object_agg(reason, n), '{}'::jsonb) from (select x.reason, count(*) n from pipeline.layer4_supersessions x, p
+                        where x.reason <> 'duplicate_pending' and x.reversed_at is null and x.at > now() - p.d group by 1) z),
+    'note', 'Admissions are counted only from the post-decision check (pipeline.layer4_admission_checks); reroutes, duplicates and supersessions move work between queues and are never admissions')
+$function$;
+revoke all on function security.layer4_flow_report_v1() from public, anon, authenticated;
+
 -- 8 component register --------------------------------------------------------------------------------------------------------------------
 insert into pipeline.component_register(kind, name, layer, area, purpose, status, replaces, introduced_in) values
- ('function', 'security.layer4_groups_v1', 'Layer 4', 'Layer 4 review', 'Every waiting item in group A, B, C or D (mandate 16:32 §2)', 'active', '{}', '20261104560000'),
- ('function', 'security.layer4_group_counts_v1', 'Layer 4', 'Layer 4 review', 'Counts of the Inbox''s three choices and group A rules', 'active', '{}', '20261104560000'),
- ('function', 'security.layer4_card_evidence_v1', 'Layer 4', 'Layer 4 review', 'Evidence on provider and adapter cards; an earlier decision of the same question', 'active', '{}', '20261104560000'),
- ('function', 'security.layer4_card_group_v1', 'Layer 4', 'Layer 4 review', 'The group, person question and evidence of the cards on screen', 'active', '{}', '20261104560000'),
- ('function', 'security.layer4_decide_guard_v1', 'Layer 4', 'Layer 4 review', 'Same decision sent again; retries on an unchanged stop', 'active', '{}', '20261104560000'),
- ('function', 'security.layer4_cl_group_call_v1', 'Layer 4', 'Layer 4 review', 'The Course Link workstream''s routing, when shipped', 'active', '{}', '20261104560000'),
- ('function', 'public.admin_layer4_groups', 'Layer 4', 'Layer 4 review', 'Layer 4 › Inbox: Ready for my decision, Information needed from me, Technical recovery', 'active', '{}', '20261104560000'),
- ('table', 'pipeline.layer4_item_groups', 'Layer 4', 'Layer 4 review', 'Stored group, class, rule and next action of each Layer 4 item', 'active', '{}', '20261104560000'),
- ('function', 'security.layer4_groups_fill_v1', 'Layer 4', 'Layer 4 review', 'Job layer4-groups: groups new and changed items within a time budget', 'active', '{}', '20261104560000'),
- ('job', 'layer4-groups', 'Layer 4', 'Platform upkeep', 'Stores the operational group of new and changed Layer 4 items', 'active', '{}', '20261104560000'),
- ('function', 'public.admin_layer4_navigate', 'Layer 4', 'Layer 4 review', 'Audit of a Layer 4 choice that opens another screen', 'active', '{}', '20261104560000')
+ ('function', 'security.layer4_groups_v1', 'Layer 4', 'Layer 4 review', 'Every waiting item in group A, B, C or D (mandate 16:32 §2)', 'active', '{}', '20261104590000'),
+ ('function', 'security.layer4_group_counts_v1', 'Layer 4', 'Layer 4 review', 'Counts of the Inbox''s three choices and group A rules', 'active', '{}', '20261104590000'),
+ ('function', 'security.layer4_card_evidence_v1', 'Layer 4', 'Layer 4 review', 'Evidence on provider and adapter cards; an earlier decision of the same question', 'active', '{}', '20261104590000'),
+ ('function', 'security.layer4_card_group_v1', 'Layer 4', 'Layer 4 review', 'The group, person question and evidence of the cards on screen', 'active', '{}', '20261104590000'),
+ ('function', 'security.layer4_decide_guard_v1', 'Layer 4', 'Layer 4 review', 'Same decision sent again; retries on an unchanged stop', 'active', '{}', '20261104590000'),
+ ('function', 'security.layer4_cl_group_call_v1', 'Layer 4', 'Layer 4 review', 'The Course Link workstream''s routing, when shipped', 'active', '{}', '20261104590000'),
+ ('function', 'public.admin_layer4_groups', 'Layer 4', 'Layer 4 review', 'Layer 4 › Inbox: Ready for my decision, Information needed from me, Technical recovery', 'active', '{}', '20261104590000'),
+ ('table', 'pipeline.layer4_item_groups', 'Layer 4', 'Layer 4 review', 'Stored group, class, rule and next action of each Layer 4 item', 'active', '{}', '20261104590000'),
+ ('function', 'security.layer4_groups_fill_v1', 'Layer 4', 'Layer 4 review', 'Job layer4-groups: groups new and changed items within a time budget', 'active', '{}', '20261104590000'),
+ ('job', 'layer4-groups', 'Layer 4', 'Platform upkeep', 'Stores the operational group of new and changed Layer 4 items', 'active', '{}', '20261104590000'),
+ ('function', 'security.layer4_flow_report_v1', 'Layer 4', 'Layer 4 review', 'Admissions, recovery, reroutes, duplicates and supersessions kept apart (direction 18:08 §5)', 'active', '{}', '20261104590000'),
+ ('function', 'public.admin_layer4_navigate', 'Layer 4', 'Layer 4 review', 'Audit of a Layer 4 choice that opens another screen', 'active', '{}', '20261104590000')
 on conflict do nothing;
 
 -- 9 post-check -------------------------------------------------------------------------------------------------------------------------------

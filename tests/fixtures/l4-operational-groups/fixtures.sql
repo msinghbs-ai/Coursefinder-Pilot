@@ -1,4 +1,4 @@
--- CF-247 Layer 4 operational groups (migration 20261104560000; mandate 4 Nov 2026 16:32 §2, §7, §8, §10) on seed.sql. Scratch PostgreSQL 16 only.
+-- CF-247 Layer 4 operational groups (migration 20261104590000; mandate 4 Nov 2026 16:32 §2, §7, §8, §10) on seed.sql. Scratch PostgreSQL 16 only.
 \set ON_ERROR_STOP on
 select set_config('fx.uid', '63ba56cb-48d4-4169-98c2-7c4d1f72925b', false), set_config('fx.rank', '6', false);
 -- the stored groups, filled once in full as on release (job layer4-groups)
@@ -49,9 +49,11 @@ begin
   end loop;
   if n <> t or t <> (select count(*) from security.layer4_groups_v1() where grp = 'C') then raise exception 'G2: paging % of %', n, t; end if;
   v := public.admin_layer4_groups('{"action": "items", "group": "D", "provider_id": "6a000000-0000-4000-8000-000000000001", "limit": 50}');
-  if exists (select 1 from jsonb_array_elements(v->'items') x where x->>'provider_id' <> '6a000000-0000-4000-8000-000000000001')
-     or not exists (select 1 from jsonb_array_elements(v->'items') x where x->>'kind' = 'intervention' and (x->>'hook')::boolean) then raise exception 'G2: university D page %', v; end if;
-  raise notice 'G2 ok: group C pages every item once (% items); a university''s D page holds its Human input needed items; A has no cards', t;
+  if exists (select 1 from jsonb_array_elements(v->'items') x where x->>'provider_id' <> '6a000000-0000-4000-8000-000000000001' or x->>'kind' = 'intervention')
+     or not exists (select 1 from jsonb_array_elements(v->'items') x where x->>'ref' = '6e000000-0000-4000-8000-000000000008') then raise exception 'G2: university D page %', v; end if;
+  v := public.admin_layer4_groups('{"action": "items", "group": "I", "provider_id": "6a000000-0000-4000-8000-000000000001", "limit": 50}');
+  if exists (select 1 from jsonb_array_elements(v->'items') x where x->>'kind' <> 'intervention') or jsonb_array_length(v->'items') = 0 then raise exception 'G2: requests line %', v; end if;
+  raise notice 'G2 ok: group C pages every item once (% items); a university''s D page holds its items and its Human input needed requests are their own line (I); A has no cards', t;
 end $$;
 
 -- G3 each card answers the six questions: group and whether a person is needed, evidence, earlier decision (§7, §8)
@@ -192,4 +194,25 @@ begin
   v := security.layer4_groups_fill_v1(false);
   if (select state from pipeline.layer4_item_groups where ref = '6e000000-0000-4000-8000-000000000020') <> 'closed' then raise exception 'G9: closed'; end if;
   raise notice 'G9 ok: every read answers with the classifiers out of reach (stored groups only); new and reclassified items show C "not grouped yet" until the job regroups them (incremental: %), then nothing; a closed item stays as history', v;
+end $$;
+
+-- G10 one primary disposition per item: the groups sum to the items waiting; Human input needed requests are a separate line (direction 18:08 §5)
+do $$
+declare v jsonb; n_items int; n_req int; s int;
+begin
+  perform security.layer4_groups_fill_v1(false);
+  v := public.admin_layer4_groups('{}');
+  n_items := (select count(*) from security.layer4_inbox_items_v2(null, null, null, false));
+  n_req := (select count(*) from pipeline.layer4_interventions where status in ('ai_pending', 'awaiting_input', 'resuming'));
+  s := (select sum(value::int) from jsonb_each_text(v->'groups'));
+  if s <> n_items or (v->>'pending')::int <> n_items or (v->'human_input_requests'->>'waiting')::int + (v->'human_input_requests'->>'recovering')::int <> n_req
+     or (v->>'pending_review_items')::int + (v->>'pending_other_items')::int <> n_items then
+    raise exception 'G10: groups % sum to % against % items waiting; requests % against %', v->'groups', s, n_items, v->'human_input_requests', n_req; end if;
+  if (select count(*) from pipeline.layer4_item_groups where state = 'waiting' and kind <> 'intervention') <> n_items then raise exception 'G10: one row per item'; end if;
+  -- the AER read with an open request is one item in D (its readiness kept as a secondary reason); its request is counted on its own line
+  if (select secondary from pipeline.layer4_item_groups where ref = '6e000000-0000-4000-8000-000000000008') ? 'readiness:repair:completeness_gate' is not true then raise exception 'G10: secondary'; end if;
+  v := public.admin_layer4_groups('{"action": "flow"}');
+  if not (v ? 'admitted' and v ? 'technical_recovery' and v ? 'reroutes' and v ? 'duplicates' and v ? 'supersessions' and v ? 'decisions_not_applied') then raise exception 'G10: flow %', v; end if;
+  if (v->>'decisions_not_applied')::int < 2 then raise exception 'G10: the not-applied decisions of G4 %', v; end if;
+  raise notice 'G10 ok: % items waiting = sum of the groups %; % Human input needed requests on their own line; flow kept apart: %', n_items, (public.admin_layer4_groups('{}'))->'groups', n_req, v;
 end $$;

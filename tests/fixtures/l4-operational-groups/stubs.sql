@@ -55,3 +55,36 @@ create or replace function security.course_link_route_class_v1(p_item uuid) retu
     from (select 1) z left join pipeline.layer4_review_items r on r.id = p_item and r.status = 'pending' and r.field_code = 'official_course_url'
     left join fx.cl_route c on c.item = p_item
 $f$;
+-- the supersession record and the post-decision admission check, as live (20261104120000 §2, §5)
+create table if not exists pipeline.layer4_supersessions (
+  id bigserial primary key,
+  item_id uuid not null,
+  field_code text not null,
+  entity_type text not null,
+  entity_id uuid not null,
+  reason text not null check (reason in ('duplicate_pending', 'decided_before', 'covered_by_active', 'entity_retired')),
+  covered_by_item uuid,
+  evidence jsonb not null default '{}'::jsonb,
+  mode text not null check (mode in ('arrival', 'reconcile')),
+  at timestamptz not null default now(),
+  reversed_at timestamptz,
+  reversed_by uuid,
+  reversed_note text
+);
+create table if not exists pipeline.layer4_admission_checks (
+  decision_id uuid primary key references pipeline.layer4_decisions(id),
+  review_item_id uuid not null,
+  field_code text not null,
+  entity_type text not null,
+  entity_id uuid not null,
+  decided_at timestamptz not null,
+  result text not null check (result in ('admitted_published', 'admitted', 'admitted_not_published', 'not_admitted', 'superseded_later', 'not_applicable', 'not_checked', 'waiting')),
+  reason text,
+  admitted boolean,
+  published boolean,
+  lag_seconds numeric,
+  detail jsonb not null default '{}'::jsonb,
+  first_checked_at timestamptz not null default now(),
+  checked_at timestamptz not null default now(),
+  checks int not null default 1
+);

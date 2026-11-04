@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CF-247 Layer 4 operational groups (migration 20261104560000; Platform Admin mandate 4 Nov 2026 16:32 §2, §7, §8, §10) on isolated fixtures.
+# CF-247 Layer 4 operational groups (migration 20261104590000; Platform Admin mandate 4 Nov 2026 16:32 §2, §7, §8, §10) on isolated fixtures.
 # Needs a scratch PostgreSQL 16 (never a Supabase project): PGHOST/PGUSER point at it. Builds a throwaway database:
 #   1 ../l4-action-lifecycle/run.sh (it must pass; it builds the live Layer 4 functions as released in v2.15.471), then stubs.sql (the readiness
 #     table as live, the card-evidence columns, and the decide routes this change guards); the six definitions it edits are checked against the
@@ -14,7 +14,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 DB=${L4G_DB:-l4_operational_groups_fixtures}
 P="psql -v ON_ERROR_STOP=1 -q -X"
-MIG=supabase/migrations/20261104560000_cf247_l4_operational_groups.sql
+MIG=supabase/migrations/20261104590000_cf247_l4_operational_groups.sql
 FX=tests/fixtures/l4-operational-groups
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }
 q() { $P -d $DB -Atc "$1"; }

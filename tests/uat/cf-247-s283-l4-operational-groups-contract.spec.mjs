@@ -1,11 +1,11 @@
 // Guards: Platform Admin mandate 4 Nov 2026 16:32 §2, §7, §8 and §10 (Layer 4 simplification): every waiting item in one of four operational groups from one shared server function, with no new admission authority; the Inbox's three choices; shared fixes for duplicate decisions, retries on an unchanged stop, navigation audit, provider and adapter evidence, and re-raised reviews
-// Migration 20261104560000. The groups, the guards and the paging budget are proved on PostgreSQL 16 by tests/fixtures/l4-operational-groups (G1-G8:
+// Migration 20261104590000. The groups, the guards and the paging budget are proved on PostgreSQL 16 by tests/fixtures/l4-operational-groups (G1-G8:
 // Course Link, AER, scholarship and onboarding records). Mocked admin here; nothing reaches a real backend.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
-const m = fs.readFileSync('supabase/migrations/20261104560000_cf247_l4_operational_groups.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations/20261104590000_cf247_l4_operational_groups.sql', 'utf8')
 const fx = fs.readFileSync('tests/fixtures/l4-operational-groups/fixtures.sql', 'utf8')
 const ui = fs.readFileSync('src/Layer4Groups.jsx', 'utf8')
 const inbox = fs.readFileSync('src/Layer4Inbox.jsx', 'utf8')
@@ -56,6 +56,18 @@ test('shared §8 fixes: a decision that did not apply, the same decision again, 
   expect(inbox).toContain('if(c.link){recordNavigation(it.kind,it.ref,c.key);')
 })
 
+test('one primary disposition per item: the groups sum to the items waiting; requests are a separate line; the flow report keeps admissions apart (direction 18:08 §5)', () => {
+  const c = fn('security.layer4_group_counts_v1')
+  expect(c).toContain("it as (select * from g where g.kind <> 'intervention')")
+  expect(c).toContain("'human_input_requests', jsonb_build_object(")
+  expect(m).toContain('secondary jsonb not null default')
+  const f = fn('security.layer4_flow_report_v1')
+  for (const k of ["'admitted'", "'admitted_and_published'", "'technical_recovery'", "'reroutes'", "'duplicates'", "'supersessions'", "'decisions_not_applied'"]) expect(f).toContain(k)
+  expect(fx).toContain('G10 ok:')
+  expect(fx).toContain("raise exception 'G10: groups % sum to % against % items waiting")
+  expect(fs.readFileSync('tests/fixtures/l4-operational-groups/scale.sql', 'utf8')).toContain("raise exception 'S: the groups do not sum to the items waiting: %'")
+})
+
 test('the Inbox shows three choices; group A as counts only; detailed classes stay in the card', () => {
   for (const l of ['Ready for my decision', 'Information needed from me', 'Technical recovery']) expect(ui).toContain(`'${l}'`)
   expect(ui).toContain('Settled by existing rules:')
@@ -67,7 +79,7 @@ const KINDS = {
   nothing_ready: { label: 'Adapter has nothing ready', order: 6, choices: [{ key: 'adapter', label: 'Open the adapter', link: 'builder' }, { key: 'rebuild', label: 'Rebuild the adapter', rank: 5 }] },
   aer_review: { label: 'Entry requirements (AER)', order: 17, choices: [{ key: 'reject', label: 'Reject the read', rank: 6 }] },
 }
-const SUMMARY = { groups: { A: 307, B: 639, C: 3934, D: 530 }, rules: [{ rule: 'security.layer4_reconcile_v1 (off: layer4.reconcile_supersede_on)', class: 'platform:covered_by_active', n: 252 }],
+const SUMMARY = { groups: { A: 307, B: 639, C: 3934, D: 329 }, pending: 5209, human_input_requests: { waiting: 201, recovering: 0 }, rules: [{ rule: 'security.layer4_reconcile_v1 (off: layer4.reconcile_supersede_on)', class: 'platform:covered_by_active', n: 252 }],
   labels: { C: 'Ready for my decision', D: 'Information needed from me', B: 'Technical recovery', A: 'Settled by existing rules' } }
 const ADAPTER = { kind: 'nothing_ready', ref: '6b000000-0000-4000-8000-000000000001', provider_id: 'p-astra', provider: 'Astra College', why: 'Nothing passed after 2 AI attempt(s)',
   created_at: '2026-10-25T01:00:00Z', detail: { stop_reason: 'nothing_ready', onboarding_id: '6b000000-0000-4000-8000-000000000001' }, group: 'B', class: 'kind:nothing_ready' }
@@ -84,7 +96,7 @@ async function screen(page, { calls }) {
   })
   await page.route('https://example.supabase.co/rest/v1/rpc/admin_layer4_groups', async (route) => {
     const a = route.request().postDataJSON().p_args; calls.push(['groups', a.action, a.group])
-    if (a.action === 'summary') return route.fulfill({ json: { ...SUMMARY, waiting: 5410, regrouping: 12, grouped_at: { text: 'Wed 4 Nov 2026, 5:46 pm AEDT' } } })
+    if (a.action === 'summary') return route.fulfill({ json: { ...SUMMARY, waiting: 5209, regrouping: 12, grouped_at: { text: 'Wed 4 Nov 2026, 5:46 pm AEDT' } } })
     return route.fulfill({ json: { group: a.group, total: a.group === 'B' ? 1 : 0, offset: 0, limit: 25, items: a.group === 'B' ? [ADAPTER] : [] } })
   })
   await page.route('https://example.supabase.co/rest/v1/rpc/admin_layer4_lifecycle', (route) => route.fulfill({ json: { items: { [`nothing_ready:${ADAPTER.ref}`]: {
@@ -100,7 +112,9 @@ test.describe('desktop', () => {
     await screen(page, { calls })
     await page.goto('/#layer-4-review')
     await expect(page.locator('[data-l4-group-pick="C"]')).toContainText('Ready for my decision (3,934)')
-    await expect(page.locator('[data-l4-group-pick="D"]')).toContainText('Information needed from me (530)')
+    await expect(page.locator('[data-l4-group-pick="D"]')).toContainText('Information needed from me (329)')
+    await expect(page.locator('[data-l4-group-pick="I"]')).toContainText('Human input needed requests (201)')
+    await expect(page.locator('[data-l4-group-sum]')).toContainText('5,209 items waiting, each in one group; 201 Human input needed requests are a separate line, not added.')
     await expect(page.locator('[data-l4-group-pick="B"]')).toContainText('Technical recovery (639)')
     await expect(page.locator('[data-l4-group-a]')).toContainText('Settled by existing rules: 307')
     await expect(page.locator('[data-l4-grouped-at]')).toContainText('Grouped Wed 4 Nov 2026, 5:46 pm AEDT by the Layer 4 groups task · 12 changed since, shown under Ready for my decision until regrouped')

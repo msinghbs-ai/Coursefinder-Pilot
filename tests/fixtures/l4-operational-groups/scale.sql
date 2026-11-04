@@ -71,5 +71,8 @@ begin
     if ms > b then raise exception 'S: % took % ms (budget % ms)', g, round(ms), b; end if;
   end loop;
   raise notice 'S ok (production scale: % waiting, % official links): %', w, (select count(*) from security.layer4_inbox_items_v2(null, 'course_link', null, false)), m;
-  raise notice 'S groups: %', (public.admin_layer4_groups('{}'))->'groups';
+  v := public.admin_layer4_groups('{}');
+  if (select sum(value::int) from jsonb_each_text(v->'groups')) <> (select count(*) from security.layer4_inbox_items_v2(null, null, null, false)) then
+    raise exception 'S: the groups do not sum to the items waiting: %', v; end if;
+  raise notice 'S groups: % (sum % = items waiting; Human input needed requests apart: %)', v->'groups', v->'pending', v->'human_input_requests';
 end $$;
