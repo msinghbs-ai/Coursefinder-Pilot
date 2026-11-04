@@ -75,3 +75,11 @@ test('20:53: the cohort is picked only from the top Australian universities by a
   expect(scope).not.toMatch(/^\s*(drop|delete|truncate)\b/im)
   expect(fixtures).toContain('scope: top Australian universities by active courses only; recorded with counts; a short scope gives a smaller cohort')
 })
+
+test('hotfix 20261104640000: the Run Now task outcome uses production outcome codes (admin_jobs_outcome_fkey)', () => {
+  const h = fs.readFileSync('supabase/migrations/20261104640000_cf247_run_now_outcome_code.sql', 'utf8')
+  expect(h).toContain("'cabacd4094ed138a57f6b102183eeacc'")
+  for (const c of ['succeeded_with_result', 'succeeded_no_movement', 'failed_retryable', 'blocked_policy']) expect(h).toContain(`'${c}'`)
+  expect(h).toMatch(/^-- Replaces: security\.job_run_now_v1/m)
+  expect(h).toMatch(/^-- Retires: nothing/m)
+})

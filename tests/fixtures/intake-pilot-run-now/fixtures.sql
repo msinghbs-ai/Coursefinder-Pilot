@@ -84,7 +84,7 @@ begin
   update pipeline.platform_toolset_settings set value = to_jsonb(4) where toolset_key = 'pipeline' and key = 'run_now.pilot_cap';
   v := security.job_run_now_v1('intake-dates-apply', 'x', '{}', pg_temp.u('admin'));
   perform pg_temp.ok(v->>'refused' = 'a cohort_id is required', 'no cohort');
-  select count(*) into n from pipeline.admin_jobs where kind = 'job_run_now' and state = 'cancelled' and outcome = 'refused' and requested_by is not null and reason <> '';
+  select count(*) into n from pipeline.admin_jobs where kind = 'job_run_now' and state = 'cancelled' and outcome = 'blocked_policy' and requested_by is not null and reason <> '';
   perform pg_temp.ok(n = 6, 'each refusal is a recorded task: ' || n);
   perform pg_temp.ok((select count(*) from catalogue.course_intakes where start_date is not null and course_id in (pg_temp.u('rn h1'), pg_temp.u('rn b1'))) = 0, 'a refusal changes nothing');
   -- the signed-in entry: no session, refused
