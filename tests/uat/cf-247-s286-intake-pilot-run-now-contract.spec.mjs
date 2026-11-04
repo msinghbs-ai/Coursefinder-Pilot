@@ -1,12 +1,14 @@
 // Guards: Platform Admin decision 4 Nov 2026 20:05 (Course Intake Pilot Authority §1 fixed automatically selected 20-course cohort with its evidence,
 // §2 reuse intake-dates-apply and its functions, §3 governed Run Now: catalogue, allowlist, rank, reason, pause, switch, cap, one run at a time, record,
-// counts, no arbitrary SQL, bounded selector through the job's own path) and 20:02 (immediate validation §2-§3: the read-back the 10-minute gate uses).
+// counts, no arbitrary SQL, bounded selector through the job's own path), 20:53 (cohort only from the top Australian universities by active courses)
+// and 20:02 (immediate validation §2-§3: the read-back the 10-minute gate uses).
 // The behaviour runs on isolated fixtures by tests/fixtures/intake-pilot-run-now/run.sh (scratch PostgreSQL 16; the intake-dates fixture database with
 // the live plan and job md5-checked; the migration applied twice). This spec holds the contract.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
 const m = fs.readFileSync('supabase/migrations/20261104610000_cf247_intake_pilot_run_now.sql', 'utf8')
+const scope = fs.readFileSync('supabase/migrations/20261104630000_cf247_intake_pilot_top_au_universities.sql', 'utf8')
 const FX = 'tests/fixtures/intake-pilot-run-now'
 const run = fs.readFileSync(`${FX}/run.sh`, 'utf8')
 const fixtures = fs.readFileSync(`${FX}/fixtures.sql`, 'utf8') + fs.readFileSync(`${FX}/fixtures2.sql`, 'utf8')
@@ -55,4 +57,21 @@ test('§4-§5 and 20:02 §2: the run fills through the job\'s own path; the veri
   expect(m).toContain('public.zoho_edge_course_lookup_v1(m.course_id::text)')
   for (const s of ["run: four courses filled through the job''s own function and publication path; record, idempotency, read-back and totals",
     'scheduled job unchanged in behaviour; nothing is filled twice', "the job''s own publication refresh, for cohort courses only"]) expect(fixtures).toContain(s)
+})
+
+test('20:53: the cohort is picked only from the top Australian universities by active courses, recorded, never widened', () => {
+  expect(scope).toContain("not in ('0fd43a771a427530995c20f88eb1af1c', '410db5ca480e038e32d12c16f66eefa9')")
+  expect(scope).toContain("<> '410db5ca480e038e32d12c16f66eefa9'")
+  expect(run).toContain('"0fd43a771a427530995c20f88eb1af1c"')
+  expect(scope).toContain("security.pipeline_num_v1('run_now.cohort_top_au_universities', 10)")
+  expect(scope).toContain("'run_now.cohort_top_au_universities', 'Run now: Australian universities a cohort is picked from'")
+  expect(scope).toContain("join ref.provider_types t on t.id = p.provider_type_id and t.code = 'university'")
+  expect(scope).toContain("join ref.countries co on co.id = p.country_id and co.iso_alpha2 = 'AU'")
+  expect(scope).toContain('security.intake_dates_plan_v2(v_scope, v_scan)')
+  expect(scope).not.toContain('security.intake_dates_plan_v2(null')
+  expect(scope).not.toMatch(/canonical_name\s+(i?like|~)/i)
+  expect(scope).toContain("row_number() over (partition by provider_id order by cardinality(fills) desc, md5(course_id::text)) rp")
+  for (const k of ["'universities'", "'active_courses'", "'eligible_courses'", "'eligible_values'", "'scope_courses'"]) expect(scope).toContain(k)
+  expect(scope).not.toMatch(/^\s*(drop|delete|truncate)\b/im)
+  expect(fixtures).toContain('scope: top Australian universities by active courses only; recorded with counts; a short scope gives a smaller cohort')
 })

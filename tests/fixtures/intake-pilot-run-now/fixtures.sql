@@ -18,6 +18,27 @@ select pg_temp.intake('rn h1', 'March'), pg_temp.intake('rn h2', 'March'), pg_te
        pg_temp.intake('rn b2', 'March'), pg_temp.intake('rn lock', 'March');
 insert into pipeline.manual_locks values ('course', pg_temp.u('rn lock'), 'intakes');
 create table public.fixture_run_now(k text primary key, v jsonb);
+-- institution types (ref.provider_types, Decision 258): Harbour, Bay and Inland are Australian universities
+insert into ref.provider_types(code, name) values ('university', 'University'), ('other', 'Other');
+update catalogue.providers set provider_type_id = (select id from ref.provider_types where code = 'university'), lifecycle_status = 'active';
+
+-- 0 the scope (Platform Admin 4 Nov 2026 20:53): top Australian universities by active courses only; never widened ---------------------------
+do $$
+declare v jsonb;
+begin
+  update catalogue.providers set provider_type_id = (select id from ref.provider_types where code = 'other') where id = pg_temp.u('bay');
+  v := security.run_now_cohort_create_v1('intake-dates-apply', pg_temp.u('admin'), 'scope: not a university');
+  perform pg_temp.ok((v->>'members')::int = 3 and (v->>'courses_eligible')::int = 3 and not exists (select 1 from pipeline.run_now_cohort_members where cohort_id = (v->>'cohort_id')::uuid and provider_id = pg_temp.u('bay')),
+                     'a provider whose institution type is not university is outside the scope; the cohort is smaller, not widened: ' || v::text);
+  update catalogue.providers set provider_type_id = (select id from ref.provider_types where code = 'university') where id = pg_temp.u('bay');
+  update pipeline.platform_toolset_settings set value = to_jsonb(1) where toolset_key = 'pipeline' and key = 'run_now.cohort_top_au_universities';
+  v := security.run_now_cohort_create_v1('intake-dates-apply', pg_temp.u('admin'), 'scope: top 1');
+  perform pg_temp.ok(jsonb_array_length(v->'universities') = 1 and v->'universities'->0->>'provider_id' = pg_temp.u('harbour')::text
+                     and (v->'universities'->0->>'active_courses')::int = (select count(*) from catalogue.courses where provider_id = pg_temp.u('harbour') and lifecycle_status = 'active')
+                     and (v->'universities'->0->>'eligible_courses')::int = 3 and (v->>'members')::int = 3, 'top 1: the university with the most active courses, with its counts: ' || v::text);
+  update pipeline.platform_toolset_settings set value = to_jsonb(10) where toolset_key = 'pipeline' and key = 'run_now.cohort_top_au_universities';
+  raise notice 'PASS scope: top Australian universities by active courses only; recorded with counts; a short scope gives a smaller cohort';
+end $$;
 
 -- 1 the cohort is picked by the job's own plan, never by hand ------------------------------------------------------------------------------
 do $$
