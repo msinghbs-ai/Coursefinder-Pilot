@@ -43,6 +43,7 @@ jobs:
       - run: bash tests/fixtures/intake-calendar-v2/run.sh | tee intake-calendar-v2-results.log
       - run: npx playwright test --config=playwright.intake.config.mjs
       - run: psql -X -v ON_ERROR_STOP=1 -d intake_ui_fixtures -f tests/fixtures/intake-ui/post.sql
+      - run: bash tests/fixtures/intake-calendar-v2/browser.sh | tee intake-calendar-v2-browser.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -50,6 +51,7 @@ jobs:
           path: |
             intake-sql-results.log
             intake-calendar-v2-results.log
+            intake-calendar-v2-browser.log
             uat-artifacts/intake-integration.json
             uat-artifacts/intake-benchmark.json
             uat-artifacts/intake-timeout-regression.json

@@ -61,15 +61,15 @@ test('the request: pinned model, strict schema with meaning, scope and who a dea
 
 test('the worker: calendars read by calendar-v2 in the existing central_ai mode, English pages as before; mode calendar_reread reads stored documents with the dated parser first and no Firecrawl', () => {
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-  const ai = w.slice(w.indexOf('if (mode === "central_ai") {'), w.indexOf('// v0.47.0 (CF-247 Track C'))
+  const ai = w.slice(w.indexOf('if (mode === "central_ai") {'), w.indexOf('if (mode === "calendar_reread") {'))
   expect(ai).toContain('if (it.kind === "intake_calendar") {')
   expect(ai).toContain('calendarAiParsed(answers, md, `ai:${it.model_code}:${CALENDAR_READER}`, cut)')
   expect(ai).toContain('wsNum("reading.calendar_slice_chars", 24000), wsNum("reading.calendar_max_slices", 4)')
   expect(ai).toContain('centralAiRequest(it.model, it.kind,')   // English policy unchanged
-  const rr = w.slice(w.indexOf('if (mode === "calendar_reread") {'), w.indexOf('if (mode === "central_ai") {'))
+  const rr = w.slice(w.indexOf('if (mode === "calendar_reread") {'), w.indexOf('// v0.47.0 (CF-247 Track C'))
   expect(rr).toContain('rpc("svc_calendar_reread_next"'); expect(rr).toContain('{ ...calendarStarts(md), parser: CALENDAR_PARSER_DATES }')
-  expect(rr).toContain('p_send_to_ai: !safe.safe'); expect(rr).not.toContain('firecrawl.dev'); expect(rr).toContain('firecrawl_credits: 0')
-  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.60\.0"/)
+  expect(rr).toContain('p_send_to_ai: !safe.safe'); expect(rr).not.toMatch(/firecrawl|useFc/i); expect(rr).toContain('paid_reads: 0')
+  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.59\.7"/)
 })
 
 test('the migration: the decided settings, every guarded edit by md5, the jobs, and the fixture runs in CI', () => {
@@ -83,5 +83,6 @@ test('the migration: the decided settings, every guarded edit by md5, the jobs, 
   expect(m).toContain("and (r.kind <> 'intake_calendar' or fact_source_id is not distinct from r.fact_source_id)")
   const wf = fs.readFileSync('.github/workflows/intake-run-validate-test.yml', 'utf8')
   expect(wf).toContain('bash tests/fixtures/intake-calendar-v2/run.sh')
+  expect(wf).toContain('bash tests/fixtures/intake-calendar-v2/browser.sh')   // the #872 browser workflow again on plan v3
   expect(fs.readFileSync('tests/fixtures/intake-calendar-v2/run.sh', 'utf8')).toContain('Refusing a remote database')
 })

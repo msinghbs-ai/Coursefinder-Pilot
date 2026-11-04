@@ -72,3 +72,10 @@ alter table search.course_documents add column if not exists provider_id uuid;
 update search.course_documents d set provider_id = c.provider_id from catalogue.courses c where c.id = d.course_id and d.provider_id is null;
 -- pg_cron's run history (production extension table), read by the process measurement for the last run and last success
 create table if not exists cron.job_run_details (jobid bigint, runid bigint, job_pid integer, database text, username text, command text, status text, return_message text, start_time timestamptz, end_time timestamptz);
+-- production invariant: every active course has its Website projection row (the #876 dense load created courses without one)
+insert into search.course_documents(course_id, country_code, provider_id)
+select c.id, 'AU', c.provider_id from catalogue.courses c where not exists (select 1 from search.course_documents d where d.course_id = c.id);
+-- production invariant (read 5 Nov 2026 10:02: top 10 universities, 5,399 active intakes, 0 without a source, 0 from a source without an
+-- approved course_intake publication gate): the fixture's sourceless intake rows take the fixture's gated adapter source
+update catalogue.course_intakes i set source_id = (select g.source_id from search.enrichment_source_gates g where g.projection_code = 'courses' and g.domain_code = 'course_intake' and g.gate_status = 'approved' order by g.source_id limit 1)
+ where i.source_id is null;

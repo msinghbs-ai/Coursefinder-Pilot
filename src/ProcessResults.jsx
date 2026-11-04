@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { Button, Loading, Metric, SectionTitle, StatusChip, fmtDateTime } from './ui-kit'
+import { Button, Loading, Metric, SectionTitle, StatusChip, fmtDateTime, fmtMoney, fmtNumber } from './ui-kit'
 import { processResultsApi } from './process-results-api'
 import './intake-run-validate.css'
 
@@ -20,7 +20,7 @@ const ACTIONS = {
   ready_for_scheduled_recovery: 'Ready for scheduled recovery',
 }
 const label = k => ACTIONS[k] || String(k || 'Not classified').replaceAll('_', ' ')
-const n = x => x == null ? 'Not held' : typeof x === 'number' ? x.toLocaleString('en-AU') : String(x)
+const n = x => x == null ? 'Not held' : typeof x === 'number' ? fmtNumber(x) : String(x)
 function Link({ url, children }) {
   try { if (!['https:', 'http:'].includes(new URL(url).protocol)) return null } catch { return null }
   return <a className="cf-link" href={url} target="_blank" rel="noreferrer">{children || 'Official source'}</a>
@@ -46,7 +46,7 @@ function University({ u, client, busy, execute }) {
       <Metric label="Never examined" value={n(u.never_examined)}/>
       <Metric label="Waiting for a change only" value={n(u.waiting_for_change_only)}/>
       <Metric label="Reader findings open" value={n(u.reader_findings_open)}/>
-      <Metric label="AI cost in the window (USD)" value={Number(u.ai_cost_usd_7_days || 0).toFixed(4)}/>
+      <Metric label="AI cost in the window" value={fmtMoney(Number(u.ai_cost_usd_7_days || 0), 'USD', { decimals: 4 })}/>
       <Metric label="Firecrawl credits" value={n(u.firecrawl_credits)}/>
     </div>
     <p>Last attempt {u.last_attempt ? fmtDateTime(u.last_attempt) : 'never'} · next timed revisit {u.next_revisit ? fmtDateTime(u.next_revisit) : 'on a change of evidence, calendar, reader or settings'} · calendar freshness {u.calendar_freshest ? fmtDateTime(u.calendar_freshest) : 'no valid calendar'}</p>

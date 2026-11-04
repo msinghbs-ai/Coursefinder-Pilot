@@ -36,8 +36,14 @@ end $f$;
 create temp table k(name text primary key, id uuid);
 
 do $$
-declare src uuid := '65db9411-9f96-4b6e-af6e-7fc4547969a8'; v jsonb;
+declare src uuid; v jsonb;
 begin
+  -- a Harbour University month intake whose stored page is proved to be its course's own (E16 pass) and not refused
+  select i.id into src from catalogue.course_intakes i join catalogue.courses c on c.id = i.course_id join pipeline.evidence_artifacts e on e.id = i.evidence_id
+   where c.provider_id = '08609bcf-387d-1316-2a52-9fbc0edff508' and i.status = 'active' and c.lifecycle_status = 'active'
+     and not security.page_refused_v1(c.id, e.source_url) and security.course_page_check_v1(c.id, e.source_url, null, null)->>'verdict' = 'pass'
+   order by i.id limit 1;
+  if src is null then raise exception 'no proved Harbour intake to copy'; end if;
   -- the calendars: a second main teaching calendar (calendar-v2 reading), a residential college calendar and an offshore campus calendar
   insert into k values ('main2', public.fixture_calendar('https://www.harbour.edu.au/key-dates/2027', 'ai:gpt-4.1-mini:calendar-v2', $j${"parser": "ai:gpt-4.1-mini:calendar-v2", "reader": "calendar-v2", "scope": "main_teaching", "scope_quote": "Harbour University key dates 2027", "periods": [
     {"period": "autumn session", "months": [2], "years": [2027], "quotes": ["22 February 2027 | Autumn session teaching begins"],
