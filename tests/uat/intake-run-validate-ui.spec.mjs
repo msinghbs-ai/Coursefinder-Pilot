@@ -21,7 +21,7 @@ async function mount(page, options = {}) {
         if (view === 'preview') return { token: 'preview-1', courses: [course], eligible_courses: 37, rule: 'Most gaps first; round-robin providers and evidence patterns', as_at: '2026-11-04T10:00:00Z', expires_at: '2026-11-04T10:10:00Z' }
         return { cohort_id: cohortId, as_at: '2026-11-04T10:02:00Z', totals: { selected: 1, admitted: 1, published: 1, not_as_planned: 0, vendor_calls: 0 }, runs: [{ state: 'done', processed: 1 }], courses: [{ ...course, now: [{ year: 2027 }], added: [{ intake_id: 'intake-1', before: { year: null }, after: { year: 2027 } }], published: 1, website_intakes: [{ year: 2027 }], zoho_intakes: { error: 'Unsupported read-back' } }] }
       },
-      async prepare(args) { window.intakeCalls.push({ method: 'prepare', args }); return { cohort_id: cohortId, preview_token: 'preview-1' } },
+      async prepare(args) { window.intakeCalls.push({ method: 'prepare', args }); return { cohort_id: cohortId, preview_token: 'preview-1', request_key: 'fixture-key' } },
       async run(id, reason, key) {
         window.intakeCalls.push({ method: 'run', id, reason, key }); window.runAttempts++
         if (options.unknown && window.runAttempts === 1) throw new Error('Network interrupted')
@@ -108,7 +108,7 @@ test('phone operators can preview and verify without page overflow @responsive',
   await testInfo.attach('phone UI evidence', { path: testInfo.outputPath('intake-phone.png'), contentType: 'image/png' })
 })
 
-test('browser adapter sends only the governed job, cohort, reason and idempotency key', async ({ page }) => {
+test('browser adapter sends only a cohort to the server-bound governed Run Now facade', async ({ page }) => {
   await page.goto('/')
   const calls = []
   await page.route('https://example.supabase.co/rest/v1/rpc/**', async route => {
@@ -121,7 +121,7 @@ test('browser adapter sends only the governed job, cohort, reason and idempotenc
     await intakeRunApi.run(cohortId, 'Check stored evidence', 'fixed-key')
   }, cohortId)
   expect(calls).toEqual([
-    { url: 'https://example.supabase.co/rest/v1/rpc/admin_read', body: { p_operation: 'intake_run_validate', p_args: { view: 'preview', scope: 'au-top', size: 10 } } },
-    { url: 'https://example.supabase.co/rest/v1/rpc/admin_job_run_now_v1', body: { p_job: 'intake-dates-apply', p_reason: 'Check stored evidence', p_args: { cohort_id: cohortId, idempotency_key: 'fixed-key' } } },
+    { url: 'https://example.supabase.co/rest/v1/rpc/admin_intake_run_read_v1', body: { p_view: 'preview', p_args: { scope: 'au-top', size: 10 } } },
+    { url: 'https://example.supabase.co/rest/v1/rpc/admin_intake_run_now_v1', body: { p_cohort_id: cohortId } },
   ])
 })

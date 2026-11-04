@@ -1,0 +1,173 @@
+{
+    "job": "intake-dates-apply",
+    "rule": "Existing intake-dates-plan-v2 filled outcome: official stored page and approved calendar; most missing fields first, round-robin universities and evidence patterns; no scope widening",
+    "runs": [
+        {
+            "error": null,
+            "state": "done",
+            "failed": 0,
+            "filled": 1,
+            "reason": "Browser to PostgreSQL operational acceptance",
+            "run_id": "c82b8eb6-d212-4def-a2a3-8a289206d66b",
+            "bounded": true,
+            "courses": 1,
+            "enabled": true,
+            "skipped": 0,
+            "admitted": 1,
+            "cohort_id": "7d210865-b1bf-4184-9a2a-d035abdfd634",
+            "looked_at": 1,
+            "processed": 1,
+            "by_outcome": {
+                "filled": 1
+            },
+            "started_at": "2026-11-04T11:07:56.825719+00:00",
+            "finished_at": "2026-11-04T11:07:56.933488+00:00",
+            "vendor_calls": 0,
+            "selected_courses": 1,
+            "provenance_completed": 0
+        }
+    ],
+    "as_at": "2026-11-04T11:09:18.353199+00:00",
+    "label": "Operator intake cohort",
+    "totals": {
+        "admitted": 1,
+        "selected": 1,
+        "published": 1,
+        "vendor_calls": 0,
+        "zoho_checked": 0,
+        "not_as_planned": 0,
+        "eligible_values": 1,
+        "skipped_or_failed": {
+        }
+    },
+    "courses": [
+        {
+            "now": [
+                {
+                    "year": 2027,
+                    "label": "March",
+                    "status": "active",
+                    "intake_id": "add8eae2-8e00-4ded-b4ec-a566a803fbfd",
+                    "start_date": "2027-03-01",
+                    "application_deadline": "2026-11-30"
+                }
+            ],
+            "pick": 1,
+            "added": [
+                {
+                    "after": {
+                        "year": 2027,
+                        "start_date": "2027-03-01",
+                        "application_deadline": "2026-11-30"
+                    },
+                    "before": {
+                        "year": null,
+                        "start_date": null,
+                        "application_deadline": null
+                    },
+                    "periods": [
+                        "semester 1"
+                    ],
+                    "intake_id": "add8eae2-8e00-4ded-b4ec-a566a803fbfd",
+                    "applied_at": "2026-11-04T11:07:56.821574+00:00",
+                    "as_planned": true,
+                    "page_quote": "Semester 1",
+                    "start_quote": "1 March 2027 | Semester 1 starts",
+                    "calendar_url": "https://www.harbour.edu.au/calendar",
+                    "deadline_quote": "30 November 2026 | Applications close for Semester 1"
+                }
+            ],
+            "fills": [
+                "year",
+                "start_date",
+                "application_deadline"
+            ],
+            "pattern": "day/date",
+            "admitted": 1,
+            "course_id": "44a8e70b-274e-e4d7-7c9f-0558379a7499",
+            "published": 1,
+            "provider_id": "08609bcf-387d-1316-2a52-9fbc0edff508",
+            "publication": {
+                "zoho": "unsupported",
+                "website": "verified",
+                "catalogue": "verified"
+            },
+            "at_selection": [
+                {
+                    "rule": "named-period-pairs-v2",
+                    "before": {
+                        "year": null,
+                        "start_date": null,
+                        "application_deadline": null
+                    },
+                    "periods": [
+                        "semester 1"
+                    ],
+                    "planned": {
+                        "year": 2027,
+                        "start_date": "2027-03-01",
+                        "application_deadline": "2026-11-30"
+                    },
+                    "page_url": "https://www.harbour.edu.au/study/master-of-browser-intake-validation-ui104",
+                    "intake_id": "add8eae2-8e00-4ded-b4ec-a566a803fbfd",
+                    "page_quote": "Semester 1",
+                    "proposal_id": "24818cee-28f3-8368-8e3f-5454e23dda68",
+                    "start_quote": "1 March 2027 | Semester 1 starts",
+                    "calendar_url": "https://www.harbour.edu.au/calendar",
+                    "deadline_kind": "date",
+                    "deadline_quote": "30 November 2026 | Applications close for Semester 1",
+                    "calendar_evidence_id": null
+                }
+            ],
+            "course_title": "Master of Browser Intake Validation",
+            "zoho_intakes": {
+                "error": "fixture: Zoho not connected"
+            },
+            "provider_name": "Harbour University",
+            "not_as_planned": 0,
+            "website_intakes": [
+                {
+                    "year": 2027,
+                    "label": "March",
+                    "month": 3,
+                    "start_date": "2027-03-01",
+                    "application_deadline": "2026-11-30"
+                }
+            ]
+        }
+    ],
+    "cohort_id": "7d210865-b1bf-4184-9a2a-d035abdfd634",
+    "picked_at": "2026-11-04T11:07:55.711597+00:00",
+    "selection": {
+        "cap": 4,
+        "rule": "Existing intake-dates-plan-v2 filled outcome: official stored page and approved calendar; most missing fields first, round-robin universities and evidence patterns; no scope widening",
+        "size": 4,
+        "scope": "top-au",
+        "scan_rows": 1500,
+        "rows_planned": 3,
+        "universities": [
+            {
+                "id": "08609bcf-387d-1316-2a52-9fbc0edff508",
+                "name": "Harbour University",
+                "active_courses": 25
+            },
+            {
+                "id": "c77f1151-c85f-c070-fa3b-fae909beac93",
+                "name": "Bay University",
+                "active_courses": 4
+            },
+            {
+                "id": "218c3a6d-1cab-1edd-5b89-46ce76eafba5",
+                "name": "Inland University",
+                "active_courses": 2
+            }
+        ],
+        "rows_eligible": 1,
+        "scope_courses": 31,
+        "eligible_courses": 1,
+        "skipped_by_reason": {
+            "intakes locked by hand": 2
+        }
+    },
+    "next_action": "Compare catalogue and consumer read-backs against the fixed source evidence. Missing/unsupported consumer data is unverified, never a pass."
+}

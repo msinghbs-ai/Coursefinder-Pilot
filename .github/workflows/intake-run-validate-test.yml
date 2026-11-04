@@ -1,0 +1,48 @@
+name: Intake Run and Validate integration
+on:
+  pull_request:
+    paths:
+      - 'src/IntakeRunValidate.jsx'
+      - 'src/intake-run-api.js'
+      - 'supabase/migrations/*intake*'
+      - 'tests/fixtures/intake-ui/**'
+      - 'tests/integration/intake-postgres.spec.mjs'
+      - 'playwright.intake.config.mjs'
+      - '.github/workflows/intake-run-validate-test.yml'
+  workflow_dispatch:
+jobs:
+  isolated-postgres:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: fixture-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: fixture-only
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --package-lock=false --ignore-scripts
+      - run: npx playwright install --with-deps chromium
+      - run: bash tests/fixtures/intake-ui/run.sh | tee intake-sql-results.log
+      - run: npx playwright test --config=playwright.intake.config.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: intake-local-database-evidence
+          path: |
+            intake-sql-results.log
+            uat-artifacts/intake-integration.json
+            uat-artifacts/intake-db-results/

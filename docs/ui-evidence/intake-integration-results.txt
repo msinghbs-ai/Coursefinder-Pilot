@@ -1,0 +1,34 @@
+PR #872 final isolated integration evidence — 4 Nov 2026
+Environment: disposable local PostgreSQL 16, controlled source/identity infrastructure; no hosted test database exists.
+No production migration, execution, admission or publication write. Production function metadata was inspected read-only.
+Local fixture admission/Website projection and controlled Zoho shape checks do not prove production admission/publication.
+
+SQL suite:
+intake-dates fixture: 19 PASS
+NOTICE PASS scope: top Australian universities by active courses only; recorded with counts; a short scope gives a smaller cohort
+NOTICE PASS cohort: picked by the plan, capped, spread, evidence recorded, nothing written
+NOTICE PASS refusals: list, rank, reason, pause, switch, cap, cohort, signed-in entry; each recorded, nothing changed
+NOTICE PASS one run at a time: refused while the job's lock is held, the holding run returned
+NOTICE PASS run: four courses filled through the job's own function and publication path; record, idempotency, read-back and totals
+NOTICE PASS scheduled job unchanged in behaviour; nothing is filled twice
+psql:<stdin>:81: NOTICE:  PASS vertical SQL: scope/evidence, fixed integrity, governed run, admission, catalogue, Website projection, unsupported Zoho, saved/repeated request and zero spend
+psql:<stdin>:91: NOTICE:  PASS authenticated read role cannot prepare/run/read foreign cohort
+psql:<stdin>:118: NOTICE:  PASS read-only preview, signed token tamper, cross-user preview, complete consumer match, deadline mismatch and unsupported status
+psql:<stdin>:140: NOTICE:  PASS narrowed university scope, changed source evidence and expired signed preview
+psql:<stdin>:150: NOTICE:  PASS supported Zoho bridge fixture (not production proof)
+psql:<stdin>:158: NOTICE:  PASS new-object RLS, table and function privilege checks
+PASS same-request concurrency refuses a second dispatch before the shared runner
+PASS isolated vertical integration SQL; browser fixture ready
+
+Browser-to-SQL integration: 2 passed, 0 failed, 0 skipped.
+UAT/regression/governance/smoke: 30 passed, 0 failed, 0 skipped.
+Build, release contract (inherited v2.15.477), UI token guard and whitespace checks: PASS.
+Build warnings: existing shared static/dynamic Supabase import and bundle-size advisories.
+Initial browser test attempts exposed shared Playwright artifact/server interference and a test teardown race; final sequential run uses separate artifacts and awaits actual saved-result RPC completion.
+
+Saved backend result:
+cohort_id: 7d210865-b1bf-4184-9a2a-d035abdfd634
+run_id: c82b8eb6-d212-4def-a2a3-8a289206d66b
+processed/admitted/skipped/failed: 1 / 1 / 0 / 0
+catalogue / Website / Zoho: verified / verified / unsupported
+Full saved verification: intake-database-result.json (execution key omitted).
