@@ -260,11 +260,18 @@ function SourceRowBody({source,rank,onRefresh,candidates}){
  const act=async(name,fn,done)=>{setBusy(name);setError('');setSaved('');try{await fn();await onRefresh();if(done)setSaved(done)}catch(e){setError(errorText(e)||String(e))}finally{setBusy('')}}
  const r=source.latest_run||null,active=['queued','running'].includes(String(r?.status||'').toLowerCase()),isRanking=isRankingSource(source),reason=healthReason(source)
  const runNow=()=>{const warning=source.variance_decision==='warn';if(warning&&!window.confirm(`${source.source_label} has a record-count warning. Confirm you reviewed it and want to run it.`))return;act('run',()=>control({action:'run',source_id:source.source_id,mode:'apply',reason:'Layer 1 › Sources: Run now',acknowledge_warning:warning,idempotency_key:`run:${source.source_id}:apply:${Date.now()}`}),'Run started. Progress shows here and in Scheduled jobs › Jobs.')}
+ // SS-020 follow-up (Option A, Platform Admin direction 4 Nov 2026 10:00 §8): a register with a Layer 1 refresh policy keeps the Pipeline
+ // Operator and PIM Admin controls Refresh schedules gave them: Schedule (not Manual) and Run now, through the same server controls, reason
+ // of at least 5 characters, and audit. The Platform Admin's controls are unchanged.
+ const hasPolicy=Boolean(source.cadence_interval)
+ const askWhy=label=>{const why=window.prompt(`${label}\n\nReason (at least 5 characters, kept in the log):`);return why&&why.trim().length>=5?why.trim():''}
+ const policyRun=()=>{const why=askWhy(`Run ${source.source_label} now?`);if(!why)return;act('run',async()=>{const{error:e}=await supabase.rpc('admin_layer1_policy_run_v1',{p_source_id:source.source_id,p_reason:why});if(e)throw e},'Run requested. It is queued and the schedule is unchanged.')}
+ const policySchedule=v=>{if(!v||v==='custom'||v==='manual')return;const why=askWhy(`Set the schedule of ${source.source_label} to ${SCHEDULE_LABEL[v]}?`);if(!why)return;act('schedule',async()=>{const{error:e}=await supabase.rpc('admin_layer1_schedule',{p_source_id:source.source_id,p_schedule:v,p_reason:why});if(e)throw e},'Schedule saved. The next run moved with it.')}
  const validate=()=>act('validate',()=>control({action:'validate',source_id:source.source_id}),'Checked.')
  const pause=()=>{const why=window.prompt(`${source.paused?'Resume':'Pause'} ${source.source_label}?\n\nReason (kept in the log):`);if(!why||why.trim().length<4)return;act('pause',()=>command('set_pause',{source_id:source.source_id,paused:!source.paused,reason:why.trim()}),source.paused?'Resumed.':'Paused.')}
  const retry=()=>act('retry',()=>control({action:'run',source_id:source.source_id,mode:r?.mode||'apply',offset:r?.resume_cursor||0,retry_of_run_id:r?.id,idempotency_key:`retry:${r?.id}:${Date.now()}`,reason:'Layer 1 › Sources: resume'}),'Resumed.')
  const recover=()=>act('recover',()=>command('recover_stuck',{source_id:source.source_id,run_id:r?.id,reason:'Layer 1 › Sources: recover a stalled run'}),'Recovered.')
- const save=()=>{if(form.reason.trim().length<4){setError('Enter a reason for the change (kept in the log).');return}
+ const save=()=>{if(form.reason.trim().length<(hasPolicy?5:4)){setError(`Enter a reason of at least ${hasPolicy?5:4} characters (kept in the log).`);return}
   act('save',async()=>{
    await command('save_source',{source_id:source.source_id,source_url:form.source_url,authority_name:form.authority_name,authority_domains:form.authority_domains.split(',').map(x=>x.trim()).filter(Boolean),expected_format:form.expected_format,expected_count_kind:source.expected_count_kind||'records',active:true,paused:source.paused,verification_cadence_days:Number(form.verification_cadence_days),ingestion_cadence_days:Number(form.ingestion_cadence_days),variance_warn_percent:Number(form.variance_warn_percent),variance_block_percent:Number(form.variance_block_percent),min_expected_records:form.min_expected_records===''?null:Number(form.min_expected_records),max_expected_records:form.max_expected_records===''?null:Number(form.max_expected_records),reason:form.reason.trim()})
    if(form.schedule!=='custom'&&form.schedule!==scheduleOf(source)){const{error:e}=await supabase.rpc('admin_layer1_schedule',{p_source_id:source.source_id,p_schedule:form.schedule,p_reason:form.reason.trim()});if(e)throw e}
@@ -290,12 +297,14 @@ function SourceRowBody({source,rank,onRefresh,candidates}){
   {error&&<div className="xl-note tone-danger" role="alert">{error}</div>}{saved&&<div className="xl-note tone-success" role="status"><CheckCircle2 size={14}/>{saved}</div>}
   <div className="xl-actions-row">
    {rank>=6&&!active&&<button className="primary" onClick={runNow} disabled={!!busy||source.paused}><Play size={14}/>{busy==='run'?'Starting…':'Run now'}</button>}
+   {rank>=4&&rank<6&&hasPolicy&&!active&&<button className="primary" data-l1-policy-run onClick={policyRun} disabled={!!busy||source.paused||source.schedule_enabled===false}><Play size={14}/>{busy==='run'?'Starting…':'Run now'}</button>}
    {active&&<a className="button" href={jobsHref}><Activity size={14}/>View run</a>}
    {rank>=4&&<button onClick={validate} disabled={!!busy}><ShieldCheck size={14}/>{busy==='validate'?'Checking…':'Check source'}</button>}
    {rank>=6&&<button onClick={pause} disabled={!!busy}>{source.paused?<Play size={14}/>:<Pause size={14}/>}{source.paused?'Resume':'Pause'}</button>}
    {r?.stuck&&r?.status==='running'&&rank>=6&&<button onClick={recover} disabled={!!busy}><AlertTriangle size={14}/>Recover stalled run</button>}
    {isRanking&&rank>=4&&<a className="button" href={`#statistics-rankings?tab=datasets&system=${rankingCode(source)}&year=${encodeURIComponent(source.edition_year||'')}`}><FileCheck2 size={14}/>Upload edition</a>}
   </div>
+  {!canEdit&&rank>=4&&hasPolicy&&<div className="xl-form" data-l1-policy-schedule><XlField label="Schedule"><select aria-label="Schedule" value={scheduleOf(source)} disabled={!!busy} onChange={e=>policySchedule(e.target.value)}>{['custom','manual'].includes(scheduleOf(source))&&<option value={scheduleOf(source)}>{scheduleOf(source)==='manual'?'Manual (set by the Platform Admin)':`Every ${scheduleDays(source)||'—'} days`}</option>}{['daily','weekly','monthly','quarterly','yearly'].map(k=><option key={k} value={k}>{SCHEDULE_LABEL[k]}</option>)}</select></XlField><small>Changes how often this register runs and moves its next run. Manual and the other settings are the Platform Admin's.</small></div>}
   {canEdit?<div className="xl-form" data-l1-source-form>
    <XlField label="Source address" wide><input value={form.source_url} onChange={set('source_url')}/></XlField>
    <XlField label="Authority"><input value={form.authority_name} onChange={set('authority_name')}/></XlField>

@@ -1,4 +1,4 @@
--- Live shapes (4 Nov 2026, fxcwkweaxjtknorudmwp, read only) of what the SS-020 follow-up migration touches
+-- Live shapes (4 Nov 2026, read 06:55-07:20 and 11:09-11:10 AEDT, fxcwkweaxjtknorudmwp, read only) of what the SS-020 follow-up migration touches
 create schema if not exists pipeline; create schema if not exists security; create schema if not exists auth;
 create table auth.fixture_actor (uid uuid, rank int);
 insert into auth.fixture_actor values ('00000000-0000-4000-8000-000000000006', 6);
@@ -29,6 +29,14 @@ create table pipeline.admin_control_events (id bigint generated always as identi
 create table pipeline.component_register (kind text not null check (kind in ('job','table','view','edge_function','screen','function')), name text not null, layer text not null,
   area text, purpose text, status text not null default 'active' check (status in ('active','retiring','retired')), replaces text[] default '{}', replaced_by text, retire_after date,
   introduced_in text, note text, updated_at timestamptz default now(), primary key (kind, name));
+create table pipeline.refresh_policy_action_events (id uuid primary key default gen_random_uuid(), policy_id uuid not null references pipeline.refresh_policies(id) on delete restrict,
+  action text not null check (action in ('edit_schedule','run_on_demand')), reason text not null check (length(trim(reason)) >= 5), actor_id uuid not null,
+  change_control_ref text not null default 'CF-CHG-20260910-092', before_state jsonb not null default '{}', after_state jsonb not null default '{}',
+  refresh_request_id uuid references pipeline.refresh_requests(id) on delete set null, outcome text not null default 'applied' check (outcome in ('applied','queued','existing_active')),
+  created_at timestamptz not null default now(), actor_display_snapshot text, actor_email_snapshot text);
 -- live functions this change edits, as deployed (their md5 is checked against the live md5 read on 4 Nov 2026)
 \i live/admin_layer1_schedule.sql
 \i live/refresh_scheduler_tick_impl.sql
+-- the legacy Refresh schedules controls whose role, reason and audit rules Layer 1 › Sources now uses (Option A, 4 Nov 2026 10:00 §8)
+\i live/scheduler_policy_edit_v1_browser_bridge.sql
+\i live/scheduler_policy_run_now_v1_browser_bridge.sql
