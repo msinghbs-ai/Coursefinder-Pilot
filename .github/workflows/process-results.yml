@@ -1,0 +1,62 @@
+# Process results (CF-247, Platform Admin decision 5 Nov 2026 §5: "Publish concise, dated production checkpoints into the Admin repository
+# through the existing reporting mechanism"). Daily 06:57 Australia/Sydney: reads the latest saved intake dates measurement
+# (pipeline.process_results, recorded hourly by job process-results) and commits it, dated, to the branch process-results-snapshot, as the
+# component register and AER weekly report do (never merged; copied into the admin repository's docs/platform/processes/checkpoints with the
+# execution register entry). When the repository secret ADMIN_REPO_TOKEN is set, it also commits the same dated file straight to the admin
+# repository. Earlier checkpoints are never overwritten: one file per day.
+name: Process results
+on:
+  schedule:
+    - cron: "57 19 * * *"
+    - cron: "57 20 * * *"
+  workflow_dispatch:
+jobs:
+  checkpoint:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      ADMIN_REPO_TOKEN: ${{ secrets.ADMIN_REPO_TOKEN }}
+      REF: ${{ vars.SUPABASE_PROJECT_REF }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: 06:00-06:59 in Sydney only (two UTC times cover daylight saving)
+        id: when
+        run: |
+          h=$(TZ=Australia/Sydney date +%H)
+          if [ "${{ github.event_name }}" = "schedule" ] && [ "$h" != "06" ]; then echo "run=false" >> "$GITHUB_OUTPUT"; echo "Not 06:00 in Sydney ($h): nothing to do"; else echo "run=true" >> "$GITHUB_OUTPUT"; fi
+          echo "day=$(TZ=Australia/Sydney date +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+      - name: Check settings
+        if: steps.when.outputs.run == 'true'
+        run: |
+          if [ -z "$REF" ]; then echo "Repository variable SUPABASE_PROJECT_REF is not set"; exit 1; fi
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then echo "Secret SUPABASE_ACCESS_TOKEN is not set"; exit 1; fi
+      - name: Read the latest saved measurement
+        if: steps.when.outputs.run == 'true'
+        run: |
+          jq -n '{query: "select r.markdown as md, r.measured_at from pipeline.process_results r where r.process_key = '\''intake-dates'\'' order by r.measured_at desc limit 1", read_only: true}' > "$RUNNER_TEMP/q.json"
+          code=$(curl -sS -o "$RUNNER_TEMP/md.json" -w '%{http_code}' -X POST "https://api.supabase.com/v1/projects/$REF/database/query" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" --data @"$RUNNER_TEMP/q.json")
+          if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then echo "::error::Query failed ($code): $(head -c 300 "$RUNNER_TEMP/md.json" | tr -d '\n')"; exit 1; fi
+          jq -r '.[0].md' "$RUNNER_TEMP/md.json" > "$RUNNER_TEMP/intake-dates.md"
+          if [ "$(head -c 42 "$RUNNER_TEMP/intake-dates.md")" != "# Process record: intake dates (generated)" ]; then echo "::error::No saved measurement, or it is malformed"; exit 1; fi
+          head -16 "$RUNNER_TEMP/intake-dates.md" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Commit to the snapshot branch
+        if: steps.when.outputs.run == 'true'
+        run: |
+          git config user.name "process-results"; git config user.email "process-results@users.noreply.github.com"
+          git fetch origin process-results-snapshot || true
+          if git rev-parse --verify -q origin/process-results-snapshot >/dev/null; then git checkout -B process-results-snapshot origin/process-results-snapshot; else git checkout -B process-results-snapshot; fi
+          mkdir -p docs/platform/processes/checkpoints; cp "$RUNNER_TEMP/intake-dates.md" "docs/platform/processes/checkpoints/${{ steps.when.outputs.day }}-intake-dates.md"
+          git add docs/platform/processes/checkpoints
+          git commit -m "Process results checkpoint ${{ steps.when.outputs.day }}" || echo "No change"
+          git push origin process-results-snapshot
+      - name: Commit to the admin repository (when ADMIN_REPO_TOKEN is set)
+        if: steps.when.outputs.run == 'true' && env.ADMIN_REPO_TOKEN != ''
+        run: |
+          git clone --depth 1 "https://x-access-token:${ADMIN_REPO_TOKEN}@github.com/msinghbs-ai/coursefinder-admin.git" "$RUNNER_TEMP/admin"
+          cd "$RUNNER_TEMP/admin"; git config user.name "process-results"; git config user.email "process-results@users.noreply.github.com"
+          mkdir -p docs/platform/processes/checkpoints; cp "$RUNNER_TEMP/intake-dates.md" "docs/platform/processes/checkpoints/${{ steps.when.outputs.day }}-intake-dates.md"
+          git add docs/platform/processes/checkpoints; git commit -m "Process results checkpoint ${{ steps.when.outputs.day }} (intake dates)" || echo "No change"
+          git push origin HEAD:main
