@@ -1,5 +1,6 @@
 // CF-247 Layer 4 operational groups (Platform Admin mandate 4 Nov 2026 16:32 §2 and §7): the Inbox by what a person must do.
-// Ready for my decision (C), Information needed from me (D) and Technical recovery (B), from public.admin_layer4_groups; group A (settled by an
+// Ready for my decision (C), Information needed from me (D) and Technical recovery (B), from public.admin_layer4_groups, which reads the groups
+// stored by job layer4-groups (never classified while the screen reads); group A (settled by an
 // existing rule) is shown as counts with its rules only. Each group pages oldest first, in the Inbox's own cards (renderItem), so every card keeps
 // its choices, its Progress block and its role checks. Detailed classes stay in each card's expandable sections.
 import React,{useEffect,useState}from'react'
@@ -11,14 +12,15 @@ export const GROUPS=[['C','Ready for my decision','Evidence complete; your decis
   ['B','Technical recovery','The platform is recovering it; nothing is needed from you yet']]
 
 /** The three choices, with counts, and group A as counts and rules. onPick(group) opens a group. */
-export function GroupBar({active,onPick,refresh}){
+export function GroupBar({active,onPick,refresh,total}){
   const[s,setS]=useState(null)
   useEffect(()=>{call({action:'summary'}).then(setS).catch(()=>setS(null))},[refresh])
   if(!s||Array.isArray(s)||!s.groups)return null
-  const a=Number(s.groups.A||0)
+  const a=Number(s.groups.A||0),ungrouped=Math.max(0,Number(total||0)-Number(s.waiting||0))
   return <div className="l4i-groups" data-l4-groups>
     <div className="l4i-view" role="group" aria-label="What is needed from me">
       {GROUPS.map(([g,l,h])=><button key={g} type="button" className={active===g?'on':''} aria-pressed={active===g} title={h} onClick={()=>onPick(g)} data-l4-group-pick={g}>{l} ({fmtNumber(Number(s.groups[g]||0))})</button>)}</div>
+    <p className="l4i-why" data-l4-grouped-at><small>Grouped {s.grouped_at?.text||'not yet'} by the Layer 4 groups task{Number(s.regrouping)>0?` · ${fmtNumber(Number(s.regrouping))} changed since, shown under Ready for my decision until regrouped`:''}{ungrouped>0?` · ${fmtNumber(ungrouped)} not grouped yet (in By university and By kind)`:''}</small></p>
     {a>0&&<p className="l4i-why" data-l4-group-a><small>Settled by existing rules: {fmtNumber(a)} · {(s.rules||[]).map(r=>`${fmtNumber(r.n)} by ${r.rule||r.class}`).join(' · ')}</small></p>}
   </div>}
 

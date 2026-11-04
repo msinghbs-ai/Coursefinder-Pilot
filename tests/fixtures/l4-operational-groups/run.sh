@@ -5,7 +5,10 @@
 #     table as live, the card-evidence columns, and the decide routes this change guards); the six definitions it edits are checked against the
 #     live md5s read 4 Nov 2026 17:11-17:27 AEDT;
 #   2 the migration, then again (the second run changes nothing);
-#   3 seed.sql (Course Link, AER, scholarship and onboarding records in production shapes) and fixtures.sql (G1-G8).
+#   3 seed.sql (Course Link, AER, scholarship and onboarding records in production shapes) and fixtures.sql (G1-G9);
+#   4 production scale: ../l4-inbox-perf/indexes.sql and seed-scale.sql (pipeline.data_flags is keyed by uuid here, as live, so its sequence step
+#     is left out), then scale.sql: 5,000+ waiting items with 3,000+ official links, the full fill within its budget, an unchanged run, and every
+#     first-load read under 300 ms.
 # Drops the database at the end (L4G_KEEP=1 keeps it).
 set -euo pipefail
 cd "$(dirname "$0")/../../.."
@@ -56,5 +59,11 @@ echo "applied twice: the second run changed nothing; the item list and the AER r
 
 # 3 the cases
 $P -d $DB -f $FX/seed.sql > /dev/null
-$P -d $DB -f $FX/fixtures.sql 2>&1 | show
+$P -d $DB -f $FX/fixtures.sql 2>&1 | show | grep -v '_l4g_now'
+
+# 4 production scale
+TMP=$(mktemp -d); sed "s/, 'pipeline.data_flags'//" tests/fixtures/l4-inbox-perf/seed-scale.sql > "$TMP/seed-scale.sql"
+$P -d $DB -f tests/fixtures/l4-inbox-perf/indexes.sql > /dev/null
+$P -d $DB -f "$TMP/seed-scale.sql" > /dev/null; rm -rf "$TMP"
+$P -d $DB -f $FX/scale.sql 2>&1 | show | grep -v '_l4g_now'
 echo "all Layer 4 operational groups fixtures passed"

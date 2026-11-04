@@ -109,7 +109,7 @@ export default function Layer4Inbox({onError,routeParams}){
     </section>
     {/* SS-020 step 4 (Decision 269, 3 Nov 2026): review readiness header line, moved from Coverage › Attributes */}
     <ReviewReadinessLine/>
-    <GroupBar active={view==='group'?grp:''} onPick={g=>{setGrp(g);setView('group');setNote('')}} refresh={gtick}/>
+    <GroupBar active={view==='group'?grp:''} onPick={g=>{setGrp(g);setView('group');setNote('')}} refresh={gtick} total={sum.total}/>
     <div className="l4i-kinds" role="toolbar" aria-label="Kinds of decision">
       <button type="button" className={!kind?'on':''} onClick={()=>setKind('')}>All ({fmtNumber(sum.total)})</button>
       {order.filter(k=>bk[k]?.n).map(k=><button key={k} type="button" className={kind===k?'on':''} data-l4-kind={k} onClick={()=>setKind(k)}>{kinds[k].label} ({fmtNumber(bk[k].n)})</button>)}

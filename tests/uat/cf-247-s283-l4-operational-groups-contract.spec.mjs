@@ -11,17 +11,30 @@ const ui = fs.readFileSync('src/Layer4Groups.jsx', 'utf8')
 const inbox = fs.readFileSync('src/Layer4Inbox.jsx', 'utf8')
 const fn = (name) => { const i = m.indexOf(`create or replace function ${name}(`); return m.slice(i, m.indexOf('$function$;', i)) }
 
-test('one shared classifier; group A only under an existing rule, which is named; no new admission authority', () => {
+test('one shared classifier, stored by one catalogued job; the Inbox reads the stored group only (never per item at read time)', () => {
   const g = fn('security.layer4_groups_v1')
   expect(g).toContain("when ri.readiness = 'resolvable' then 'A'")
   expect(g).toContain("security.layer4_cl_group_call_v1(ri.ref::uuid)")
   expect(fn('security.layer4_cl_group_call_v1')).toContain("to_regprocedure('security.course_link_route_class_v1(uuid)') is null then return jsonb_build_object('grp', 'C'")
-  // nothing is decided, superseded or admitted by the classifier or the screen read
-  for (const f of ['security.layer4_groups_v1', 'security.layer4_group_counts_v1', 'public.admin_layer4_groups', 'security.layer4_card_evidence_v1'])
+  // the job is the only caller of the classifiers
+  expect(fn('security.layer4_groups_fill_v1')).toContain('from security.layer4_groups_v1(null, null, v_keys) c')
+  expect(m).toContain("perform cron.schedule('layer4-groups', '6,16,26,46,56 * * * *', $c$select security.layer4_groups_fill_v1(false)$c$);")
+  expect(m).toContain("comment on table pipeline.layer4_item_groups is")
+  for (const f of ['security.layer4_group_counts_v1', 'public.admin_layer4_groups', 'security.layer4_card_group_v1', 'public.admin_layer4_navigate', 'security.layer4_card_evidence_v1']) {
+    expect(fn(f), f).not.toContain('layer4_groups_v1(')
+    expect(fn(f), f).not.toContain('course_link_route_class_v1')
+    expect(fn(f), f).not.toContain('layer4_cl_group_call_v1')
+  }
+  // nothing is decided, superseded or admitted by the classifier or the screen reads
+  for (const f of ['security.layer4_groups_v1', 'security.layer4_group_counts_v1', 'public.admin_layer4_groups', 'security.layer4_card_evidence_v1', 'security.layer4_card_group_v1'])
     expect(fn(f)).not.toMatch(/\b(insert|update|delete)\b/i)
-  expect(m).toContain("if exists (select 1 from security.layer4_groups_v1() g where g.grp = 'A' and g.rule is null) then raise exception 'post-check: a group A item without its existing rule'")
-  expect(m).not.toMatch(/create table/i)
-  expect(fx).toContain("G1 ok:")
+  // missing or stale counts as C, shown as such
+  expect(fn('security.layer4_card_group_v1')).toContain("'Ready for my decision (not grouped yet)'")
+  expect(m).not.toMatch(/create table if not exists pipeline\.(?!layer4_item_groups)/)
+  for (const c of ['G1 ok:', 'G9 ok:']) expect(fx).toContain(c)
+  const sc = fs.readFileSync('tests/fixtures/l4-operational-groups/scale.sql', 'utf8')
+  expect(sc).toContain("if ms > b then raise exception 'S: % took % ms (budget % ms)'")
+  expect(sc).toContain("raise exception 'S: the full fill did not finish within layer4.groups_fill_seconds: %'")
 })
 
 test('guarded edits of the live definitions; the item list and the AER recovery detail are not touched', () => {
@@ -71,7 +84,7 @@ async function screen(page, { calls }) {
   })
   await page.route('https://example.supabase.co/rest/v1/rpc/admin_layer4_groups', async (route) => {
     const a = route.request().postDataJSON().p_args; calls.push(['groups', a.action, a.group])
-    if (a.action === 'summary') return route.fulfill({ json: SUMMARY })
+    if (a.action === 'summary') return route.fulfill({ json: { ...SUMMARY, waiting: 5410, regrouping: 12, grouped_at: { text: 'Wed 4 Nov 2026, 5:46 pm AEDT' } } })
     return route.fulfill({ json: { group: a.group, total: a.group === 'B' ? 1 : 0, offset: 0, limit: 25, items: a.group === 'B' ? [ADAPTER] : [] } })
   })
   await page.route('https://example.supabase.co/rest/v1/rpc/admin_layer4_lifecycle', (route) => route.fulfill({ json: { items: { [`nothing_ready:${ADAPTER.ref}`]: {
@@ -90,6 +103,7 @@ test.describe('desktop', () => {
     await expect(page.locator('[data-l4-group-pick="D"]')).toContainText('Information needed from me (530)')
     await expect(page.locator('[data-l4-group-pick="B"]')).toContainText('Technical recovery (639)')
     await expect(page.locator('[data-l4-group-a]')).toContainText('Settled by existing rules: 307')
+    await expect(page.locator('[data-l4-grouped-at]')).toContainText('Grouped Wed 4 Nov 2026, 5:46 pm AEDT by the Layer 4 groups task · 12 changed since, shown under Ready for my decision until regrouped')
     await page.locator('[data-l4-group-pick="B"]').click()
     const card = page.locator('[data-l4-group-list="B"] [data-l4-item="nothing_ready"]')
     await expect(card.locator('[data-l4-group="B"]')).toContainText('Technical recovery: not yet: the platform is recovering it')

@@ -26,6 +26,10 @@
 --       D human information: kinds that need a URL, pages or a document (website needed, too few pages, pages not found, course page needed),
 --         Human input needed items awaiting input, and held AER reads with an open Human input needed item.
 --     The kind defaults are a setting (layer4.group_by_kind).
+--   1b Stored, never classified at read time (Integration Controller 4 Nov 2026, after the 11:13 time-out): pipeline.layer4_item_groups holds
+--     each item's group, class, rule and next action, filled for new and changed items only by job layer4-groups (security.layer4_groups_fill_v1:
+--     batches of batch.layer4_groups within layer4.groups_fill_seconds; catalogued). The Inbox, the cards and the lifecycle read the stored row;
+--     a missing or stale row counts as C, shown "not grouped yet". The Course Link classifier is called by the job only.
 --   2 public.admin_layer4_groups(args): the Inbox's three choices (C "Ready for my decision", D "Information needed from me", B "Technical
 --     recovery") with counts, group A as counts with its rules, and paged items in the Inbox's own card shape.
 --   3 The lifecycle read (security.layer4_items_lifecycle_v1, security.layer4_item_lifecycle_v1) adds each card's group, whether a person is
@@ -37,7 +41,7 @@
 --   5 public.admin_layer4_navigate(kind, ref, choice): a choice that opens another screen writes an inbox_navigate audit row; the lifecycle shows
 --     it ("Opened … — the item closes when the work there is saved") and the item's own closing time.
 -- Edited live functions (md5-guarded, before -> after):
---   public.admin_layer4_inbox(text,jsonb)                       c0a972a6d6cc0652ce2dcc8f4d9cbbfc -> 708f43b2dcacfa4520a574c659a218ad
+--   public.admin_layer4_inbox(text,jsonb)                       c0a972a6d6cc0652ce2dcc8f4d9cbbfc -> 1895ed9870fdbcb332639befffd5a6ec
 --   security.layer4_lifecycle_one_v1(text,text,boolean)         a93b2bee90704eb3fbd3e09da350ba53 -> e1e3c4a1744663d9793a896816b93f8d
 --   security.layer4_items_lifecycle_v1(jsonb)                   f6eeef05b818c8818d9eef144ff91a18 -> 9abc7baa6fb19a660527559bac78df1a
 --   security.layer4_item_lifecycle_v1(text,text)                a908288151604a4e3d936be5f05a2fad -> f54065d6b84004b3eb0f6e49be6b1779
@@ -45,7 +49,7 @@
 --   security.layer4_ack_normalise_v1(text,text,boolean,jsonb,text,jsonb) 50f4b7b6224c852bcecf4f054b3a81ae -> e5f2fee175a931d3d886259f69c27bca
 -- Replaces: the five functions above (same names and signatures; additive behaviour)
 -- Retires: nothing
--- Nothing is dropped or deleted. No consumer API object changes (G3). No job (the classifier is read when the screen asks). No Firecrawl or AI
+-- Nothing is dropped or deleted. No consumer API object changes (G3). One job (layer4-groups, catalogued). No Firecrawl or AI
 -- spend. Admission authority, the E13 and D-R3 gates, manual bindings, scholarship rules, fee holds, provider lifecycle rules and role ranks are
 -- unchanged.
 
@@ -86,8 +90,37 @@ insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, ki
  ('pipeline', 'layer4.groups_course_link_router_on', 'Layer 4 groups: route official links with the Course Link classifier',
   'On (1): official-link items are grouped by the Course Link classifier (security.course_link_route_class_v1). Off (0): they stay in Ready for my decision, without calling it (for example if it slows the Inbox).',
   'number', to_jsonb(1), 0, 1, 'on (1) or off (0)', 345, 'Layer 4', 'security.layer4_groups_v1',
-  'Mandate 16:32 §2 and §3 (Course Link routing is the Course Link workstream''s)')
+  'Mandate 16:32 §2 and §3 (Course Link routing is the Course Link workstream''s)'),
+ ('pipeline', 'batch.layer4_groups', 'Layer 4 groups: items grouped a batch',
+  'Job layer4-groups groups at most this many new or changed waiting items in one batch, and repeats batches until its time budget is used.',
+  'number', to_jsonb(500), 50, 5000, 'items', 346, 'Layer 4', 'security.layer4_groups_fill_v1 (job layer4-groups)',
+  'Integration Controller 4 Nov 2026: groups are stored by one scheduled step, never computed when the Inbox is read'),
+ ('pipeline', 'layer4.groups_fill_seconds', 'Layer 4 groups: time budget of one run',
+  'One run of job layer4-groups stops starting new batches after this many seconds; the rest is grouped by the next run (until then it shows as not grouped yet).',
+  'number', to_jsonb(30), 5, 120, 'seconds', 347, 'Layer 4', 'security.layer4_groups_fill_v1 (job layer4-groups)',
+  'Integration Controller 4 Nov 2026 (the 11:13 time-out: no per-item classification at read time)')
 on conflict do nothing;
+
+-- 1b the stored group (read by the Inbox; filled by job layer4-groups, below) ------------------------------------------------------------
+create table if not exists pipeline.layer4_item_groups (
+  kind text not null,
+  ref text not null,
+  provider_id uuid,
+  item_created_at timestamptz,
+  grp text not null check (grp in ('A', 'B', 'C', 'D')),
+  cls text not null,
+  rule text,
+  next_action text,
+  state text not null default 'waiting' check (state in ('waiting', 'closed')),
+  input_at timestamptz,
+  classified_at timestamptz not null default now(),
+  closed_at timestamptz,
+  primary key (kind, ref));
+comment on table pipeline.layer4_item_groups is 'CF-247 Layer 4 operational groups (Platform Admin mandate 4 Nov 2026 16:32 §2, §7; Integration Controller 17:4x: stored, never classified at read time). One row per Layer 4 item: its group (A settled by an existing rule, B technical recovery, C a person''s decision, D information from a person), class, the existing rule for A, the next action, and the input time it was grouped from. Filled for new and changed items only by job layer4-groups (security.layer4_groups_fill_v1); a row whose item left the Inbox is marked closed (history kept, never deleted). The Inbox reads this table only; a missing or stale row counts as C ("not grouped yet").';
+create index if not exists layer4_item_groups_waiting_idx on pipeline.layer4_item_groups (grp, item_created_at, kind, ref) where state = 'waiting';
+create index if not exists layer4_item_groups_provider_idx on pipeline.layer4_item_groups (provider_id, grp) where state = 'waiting';
+alter table pipeline.layer4_item_groups enable row level security;
+revoke all on pipeline.layer4_item_groups from public, anon, authenticated;
 
 -- 2 the classifier (§2) --------------------------------------------------------------------------------------------------------------------
 create or replace function security.layer4_cl_group_call_v1(p_item uuid) returns jsonb
@@ -153,16 +186,91 @@ revoke all on function security.layer4_groups_v1(uuid, text, text[]) from public
 
 create or replace function security.layer4_group_counts_v1(p_provider uuid default null) returns jsonb
  language sql stable security definer set search_path to '' as $function$
-  -- the Inbox's three choices and group A, counted without building any card (mandate 16:32 §7)
-  with g as (select * from security.layer4_groups_v1(p_provider, null, null))
+  -- the Inbox's three choices and group A, from the stored groups only (pipeline.layer4_item_groups; mandate 16:32 §7). A row whose input
+  -- changed since it was grouped counts as C until job layer4-groups groups it again ("not grouped yet")
+  with g as (select x.kind, x.ref, x.item_created_at, x.rule, x.cls,
+                    case when x.grp <> 'C' and ((rd.classified_at is not null and rd.classified_at > x.input_at) or (iv.updated_at is not null and iv.updated_at > x.input_at)) then 'C' else x.grp end grp,
+                    (rd.classified_at is not null and rd.classified_at > x.input_at) or (iv.updated_at is not null and iv.updated_at > x.input_at) stale, x.classified_at
+               from pipeline.layer4_item_groups x
+               left join pipeline.layer4_item_readiness rd on x.kind in ('course_link', 'aer_review', 'provider_description', 'no_page_first_run', 'conjoint_first_run')
+                    and rd.item_id = case when x.ref ~ '^[0-9a-f-]{36}$' then x.ref::uuid end
+               left join pipeline.layer4_interventions iv on x.kind = 'intervention' and iv.id = case when x.ref ~ '^[0-9]+$' then x.ref::bigint end
+              where x.state = 'waiting' and (p_provider is null or x.provider_id = p_provider))
   select jsonb_build_object(
     'groups', (select coalesce(jsonb_object_agg(grp, n), '{}'::jsonb) from (select grp, count(*) n from g group by 1) z),
     'by_kind', (select coalesce(jsonb_object_agg(grp, k), '{}'::jsonb) from (select grp, jsonb_object_agg(kind, n) k from (select grp, kind, count(*) n from g group by 1, 2) y group by 1) z),
-    'oldest', (select coalesce(jsonb_object_agg(grp, o), '{}'::jsonb) from (select grp, min(created_at) o from g group by 1) z),
+    'oldest', (select coalesce(jsonb_object_agg(grp, o), '{}'::jsonb) from (select grp, min(item_created_at) o from g group by 1) z),
     'rules', (select coalesce(jsonb_agg(jsonb_build_object('rule', rule, 'class', cls, 'n', n) order by n desc), '[]'::jsonb)
-                from (select rule, cls, count(*) n from g where grp = 'A' group by 1, 2) z))
+                from (select rule, cls, count(*) n from g where grp = 'A' group by 1, 2) z),
+    'waiting', (select count(*) from g), 'regrouping', (select count(*) from g where stale),
+    'grouped_at', security.l4_time_v1((select max(classified_at) from pipeline.layer4_item_groups)))
 $function$;
 revoke all on function security.layer4_group_counts_v1(uuid) from public, anon, authenticated;
+
+-- 2b the stored group (Integration Controller 4 Nov 2026: the Inbox reads the stored value only; one scheduled step fills it) ------------------
+
+create or replace function security.layer4_groups_fill_v1(p_full boolean default false) returns jsonb
+ language plpgsql security definer set search_path to '' as $function$
+-- Job layer4-groups: the stored group of every waiting Layer 4 item, for new and changed items only. One read of the waiting list (no detail),
+-- then batches of batch.layer4_groups items classified by security.layer4_groups_v1 (the Course Link classifier is called here, for the
+-- batch's official links only) until layer4.groups_fill_seconds is used. An item whose input changed since it was grouped (readiness
+-- reclassified, intervention updated, hold or run moved) is grouped again; an item that left the Inbox is marked closed. p_full regroups every
+-- waiting item (once on release), still within the time budget.
+declare v_t0 timestamptz := clock_timestamp(); v_batch int := security.pipeline_num_v1('batch.layer4_groups', 500)::int;
+        v_budget numeric := security.pipeline_num_v1('layer4.groups_fill_seconds', 30); v_keys text[]; v_done text[] := '{}'; v_n int := 0; v_closed int := 0; v_left int := 0; v_waiting int := 0;
+begin
+  create temp table if not exists _l4g_now (kind text, ref text, provider_id uuid, created_at timestamptz, input_at timestamptz, primary key (kind, ref)) on commit drop;
+  truncate _l4g_now;
+  insert into _l4g_now
+  select i.kind, i.ref, i.provider_id, i.created_at, greatest(i.created_at, rd.classified_at)
+    from security.layer4_inbox_items_v2(null, null, null, false) i
+    left join pipeline.layer4_item_readiness rd on i.kind in ('course_link', 'aer_review', 'provider_description', 'no_page_first_run', 'conjoint_first_run')
+         and rd.item_id = case when i.ref ~ '^[0-9a-f-]{36}$' then i.ref::uuid end
+  union all
+  select 'intervention', x.id::text, x.provider_id, x.created_at, x.updated_at from pipeline.layer4_interventions x where x.status in ('ai_pending', 'awaiting_input', 'resuming')
+  on conflict do nothing;
+  get diagnostics v_waiting = row_count;
+  update pipeline.layer4_item_groups g set state = 'closed', closed_at = now()
+   where g.state = 'waiting' and not exists (select 1 from _l4g_now n where n.kind = g.kind and n.ref = g.ref);
+  get diagnostics v_closed = row_count;
+  loop
+    v_keys := array(select n.kind || ':' || n.ref from _l4g_now n left join pipeline.layer4_item_groups g on g.kind = n.kind and g.ref = n.ref
+                      where (g.kind is null or g.state <> 'waiting' or g.input_at is distinct from n.input_at or (p_full and g.classified_at < v_t0))
+                        and not ((n.kind || ':' || n.ref) = any (v_done))
+                      order by (g.kind is null) desc, g.classified_at nulls first, n.created_at limit v_batch);
+    exit when cardinality(v_keys) = 0;
+    insert into pipeline.layer4_item_groups as t(kind, ref, provider_id, item_created_at, grp, cls, rule, next_action, state, input_at, classified_at, closed_at)
+    select c.kind, c.ref, coalesce(c.provider_id, n.provider_id), n.created_at, c.grp, c.cls, c.rule,
+           case c.grp when 'A' then 'settled when its rule runs: ' || coalesce(c.rule, 'an existing rule') when 'B' then 'technical recovery continues by itself'
+                      when 'C' then 'a person decides' else 'a person gives the missing information' end,
+           'waiting', n.input_at, clock_timestamp(), null
+      from security.layer4_groups_v1(null, null, v_keys) c join _l4g_now n on n.kind = c.kind and n.ref = c.ref
+    on conflict (kind, ref) do update set provider_id = excluded.provider_id, item_created_at = excluded.item_created_at, grp = excluded.grp, cls = excluded.cls,
+           rule = excluded.rule, next_action = excluded.next_action, state = 'waiting', input_at = excluded.input_at, classified_at = excluded.classified_at, closed_at = null;
+    -- an item the classifier no longer lists (it left between the two reads) is not tried again in this run
+    v_done := v_done || v_keys;
+    v_n := v_n + cardinality(v_keys);
+    exit when extract(epoch from clock_timestamp() - v_t0) >= v_budget;
+  end loop;
+  select count(*) into v_left from _l4g_now n left join pipeline.layer4_item_groups g on g.kind = n.kind and g.ref = n.ref
+   where g.kind is null or g.state <> 'waiting' or g.input_at is distinct from n.input_at;
+  return jsonb_build_object('waiting', v_waiting, 'grouped', v_n, 'closed', v_closed, 'not_grouped_yet', v_left, 'full', p_full,
+                            'ms', round(extract(epoch from clock_timestamp() - v_t0) * 1000));
+end $function$;
+revoke all on function security.layer4_groups_fill_v1(boolean) from public, anon, authenticated;
+
+-- the job (G1: catalogued first). Every 10 minutes away from :35-:42; no number in its command (G2)
+insert into pipeline.automation_catalogue(jobname, area, sort, label, description, control_rank, batch_editable, layer23_stage) values
+ ('layer4-groups', 'Platform upkeep', 419, 'Layer 4 groups (what each item needs from a person)',
+  'At :06, :16, :26, :46 and :56: groups new and changed waiting Layer 4 items (A settled by an existing rule, B technical recovery, C a person''s decision, D information from a person) in batches of batch.layer4_groups within layer4.groups_fill_seconds, and marks items that left the Inbox. Decides, supersedes and admits nothing.',
+  5, true, null)
+on conflict (jobname) do nothing;
+do $j$
+begin
+  if not exists (select 1 from cron.job where jobname = 'layer4-groups') then
+    perform cron.schedule('layer4-groups', '6,16,26,46,56 * * * *', $c$select security.layer4_groups_fill_v1(false)$c$);
+  end if;
+end $j$;
 
 -- 3 the card's evidence and earlier decision (§7, §8) -------------------------------------------------------------------------------------
 create or replace function security.layer4_card_evidence_v1(p_kind text, p_ref text) returns jsonb
@@ -205,14 +313,24 @@ revoke all on function security.layer4_card_evidence_v1(text, text) from public,
 
 create or replace function security.layer4_card_group_v1(p_items jsonb) returns jsonb
  language sql stable security definer set search_path to '' as $function$
-  -- the group of the cards on screen, keyed 'kind:ref', with whether a person is needed and what moves the item (§7 questions 3 and 4)
-  select coalesce(jsonb_object_agg(g.kind || ':' || g.ref, jsonb_strip_nulls(jsonb_build_object('group', g.grp, 'class', g.cls, 'rule', g.rule,
-           'group_label', case g.grp when 'A' then 'Settled by an existing rule' when 'B' then 'Technical recovery' when 'C' then 'Ready for my decision' else 'Information needed from me' end,
-           'person_needed', case g.grp when 'A' then 'no: an existing rule may settle it' when 'B' then 'not yet: the platform is recovering it' when 'C' then 'yes: a decision'
-                                       else 'yes: information only a person can give' end,
-           'evidence', security.layer4_card_evidence_v1(g.kind, g.ref)))), '{}'::jsonb)
-    from security.layer4_groups_v1(null, null, array(select (x->>'kind') || ':' || (x->>'ref') from jsonb_array_elements(case when jsonb_typeof(p_items) = 'array' then p_items else '[]'::jsonb end) x
-                                                     limit security.pipeline_num_v1('layer4.lifecycle_batch_max', 50)::int)) g
+  -- the group of the cards on screen, keyed 'kind:ref', from the stored groups only, with whether a person is needed, what moves the item and
+  -- the evidence held (§7 questions 3 and 4). A card not grouped yet, or whose input changed since, shows C "not grouped yet"
+  with k as (select distinct x->>'kind' kind, x->>'ref' ref from jsonb_array_elements(case when jsonb_typeof(p_items) = 'array' then p_items else '[]'::jsonb end) x
+              where x ? 'kind' and x ? 'ref' limit security.pipeline_num_v1('layer4.lifecycle_batch_max', 50)::int),
+       g as (select k.kind, k.ref, x.grp, x.cls, x.rule, x.next_action, x.classified_at,
+                    x.kind is null or x.state <> 'waiting' or (rd.classified_at is not null and rd.classified_at > x.input_at) or (iv.updated_at is not null and iv.updated_at > x.input_at) pending
+               from k left join pipeline.layer4_item_groups x on x.kind = k.kind and x.ref = k.ref
+               left join pipeline.layer4_item_readiness rd on k.kind in ('course_link', 'aer_review', 'provider_description', 'no_page_first_run', 'conjoint_first_run')
+                    and rd.item_id = case when k.ref ~ '^[0-9a-f-]{36}$' then k.ref::uuid end
+               left join pipeline.layer4_interventions iv on k.kind = 'intervention' and iv.id = case when k.ref ~ '^[0-9]+$' then k.ref::bigint end)
+  select coalesce(jsonb_object_agg(g.kind || ':' || g.ref, jsonb_strip_nulls(jsonb_build_object(
+           'group', case when g.pending then 'C' else g.grp end, 'class', case when g.pending then 'not_grouped_yet' else g.cls end, 'rule', case when not g.pending then g.rule end,
+           'group_label', case when g.pending then 'Ready for my decision (not grouped yet)' when g.grp = 'A' then 'Settled by an existing rule' when g.grp = 'B' then 'Technical recovery'
+                               when g.grp = 'C' then 'Ready for my decision' else 'Information needed from me' end,
+           'person_needed', case when g.pending then 'treated as a decision until job layer4-groups groups it' when g.grp = 'A' then 'no: an existing rule may settle it'
+                                 when g.grp = 'B' then 'not yet: the platform is recovering it' when g.grp = 'C' then 'yes: a decision' else 'yes: information only a person can give' end,
+           'grouped_at', security.l4_time_v1(g.classified_at), 'evidence', security.layer4_card_evidence_v1(g.kind, g.ref)))), '{}'::jsonb)
+    from g
 $function$;
 revoke all on function security.layer4_card_group_v1(jsonb) from public, anon, authenticated;
 
@@ -270,7 +388,7 @@ begin
 end $function$;
 revoke all on function security.layer4_decide_guard_v1(text, text, text, uuid) from public, anon, authenticated;
 
-select pg_temp.edit_once('public.admin_layer4_inbox(text,jsonb)', 'c0a972a6d6cc0652ce2dcc8f4d9cbbfc', '708f43b2dcacfa4520a574c659a218ad', array[
+select pg_temp.edit_once('public.admin_layer4_inbox(text,jsonb)', 'c0a972a6d6cc0652ce2dcc8f4d9cbbfc', '1895ed9870fdbcb332639befffd5a6ec', array[
  array[$o$  if v_det is null then raise exception 'this item is no longer waiting (someone may have decided it)'; end if;
 $o$,
        $n$  if v_det is null then raise exception 'this item is no longer waiting (someone may have decided it)'; end if;
@@ -290,6 +408,9 @@ $n$],
        $n$  -- CF-247 mandate 16:32 §8: whether the item is still waiting after the decision, so a decision that did not apply is never recorded as done
   if jsonb_typeof(v_r) = 'object' or v_r is null then
     v_r := coalesce(v_r, '{}'::jsonb) || jsonb_build_object('still_waiting', exists (select 1 from security.layer4_inbox_items_v2(null, v_kind, array[v_kind || ':' || v_ref], false)));
+  end if;
+  if coalesce(v_r->>'still_waiting', '') = 'false' then
+    update pipeline.layer4_item_groups set state = 'closed', closed_at = now() where kind = v_kind and ref = v_ref and state = 'waiting';
   end if;
   insert into pipeline.admin_control_events(area, action, target, detail, actor)
   values ('layer4', 'inbox_decide', v_kind || ':' || v_ref, jsonb_build_object('kind', v_kind, 'ref', v_ref, 'choice', v_choice, 'value', v_value, 'reason', v_reason, 'provider_id', v_pid, 'result', v_r), auth.uid())$n$]],
@@ -330,7 +451,7 @@ begin
   if security.current_role_rank() < 3 then raise exception 'Curator role or above required' using errcode = '42501'; end if;
   v_c := (select c from jsonb_array_elements(security.layer4_inbox_hooks_v1()->'kinds'->v_kind->'choices') c where c->>'key' = v_choice);
   if v_c is null or not (v_c ? 'link') then raise exception 'this choice does not open another screen'; end if;
-  select g.provider_id into v_pid from security.layer4_groups_v1(null, v_kind, array[v_kind || ':' || v_ref]) g;
+  select g.provider_id into v_pid from pipeline.layer4_item_groups g where g.kind = v_kind and g.ref = v_ref;
   insert into pipeline.admin_control_events(area, action, target, detail, actor)
   values ('layer4', 'inbox_navigate', v_kind || ':' || v_ref, jsonb_build_object('kind', v_kind, 'ref', v_ref, 'choice', v_choice, 'provider_id', v_pid,
           'result', jsonb_build_object('navigated', v_c->>'link')), auth.uid()) returning id into v_ev;
@@ -358,7 +479,16 @@ begin
   if v_grp not in ('A', 'B', 'C', 'D') then raise exception 'choose a group: C, D or B (A is counts only)'; end if;
   if v_grp = 'A' then raise exception 'group A is settled by existing rules and has no cards; see its rules in the summary'; end if;
   v_kinds := security.layer4_inbox_hooks_v1()->'kinds';
-  return (with g as (select * from security.layer4_groups_v1(v_prov, v_kind, null) x where x.grp = v_grp),
+  -- the stored groups only (never classified here); a row whose input changed since it was grouped is listed under C until it is grouped again
+  return (with g0 as (select x.kind, x.ref, x.provider_id, x.item_created_at created_at, x.cls, x.rule,
+                             case when x.grp <> 'C' and ((rd.classified_at is not null and rd.classified_at > x.input_at) or (iv.updated_at is not null and iv.updated_at > x.input_at)) then 'C' else x.grp end grp,
+                             (rd.classified_at is not null and rd.classified_at > x.input_at) or (iv.updated_at is not null and iv.updated_at > x.input_at) stale
+                        from pipeline.layer4_item_groups x
+                        left join pipeline.layer4_item_readiness rd on x.kind in ('course_link', 'aer_review', 'provider_description', 'no_page_first_run', 'conjoint_first_run')
+                             and rd.item_id = case when x.ref ~ '^[0-9a-f-]{36}$' then x.ref::uuid end
+                        left join pipeline.layer4_interventions iv on x.kind = 'intervention' and iv.id = case when x.ref ~ '^[0-9]+$' then x.ref::bigint end
+                       where x.state = 'waiting' and (v_prov is null or x.provider_id = v_prov) and (v_kind is null or x.kind = v_kind)),
+               g as (select * from g0 where g0.grp = v_grp),
                pg as (select * from g order by g.created_at, g.kind, g.ref limit v_lim offset v_off),
                b as (select i.kind, i.ref, i.provider_id, i.subject, i.why, i.suggestion, i.created_at, i.detail
                        from security.layer4_inbox_items_v2(null, null, array(select pg.kind || ':' || pg.ref from pg where pg.kind <> 'intervention'), true) i
@@ -366,10 +496,12 @@ begin
                j as (select pg.created_at, pg.kind, pg.ref, jsonb_build_object('kind', pg.kind, 'ref', pg.ref, 'provider_id', pg.provider_id,
                               'provider', (select coalesce(p.display_name, p.canonical_name) from catalogue.providers p where p.id = pg.provider_id),
                               'subject', coalesce(b.subject, (select x.subject from pipeline.layer4_interventions x where pg.kind = 'intervention' and x.id::text = pg.ref)),
-                              'why', coalesce(b.why, pg.why), 'suggestion', b.suggestion, 'created_at', pg.created_at, 'late', pg.created_at < now() - make_interval(days => v_t),
+                              'why', b.why, 'suggestion', b.suggestion, 'created_at', pg.created_at, 'late', pg.created_at < now() - make_interval(days => v_t),
                               'detail', coalesce(b.detail, '{}'::jsonb), 'o', (v_kinds->pg.kind->>'order')::int, 'hook', pg.kind = 'intervention',
-                              'group', pg.grp, 'class', pg.cls, 'rule', pg.rule) item
-                       from pg left join b on b.kind = pg.kind and b.ref = pg.ref)
+                              'group', pg.grp, 'class', case when pg.stale then 'not_grouped_yet' else pg.cls end, 'rule', pg.rule) item
+                       from pg left join b on b.kind = pg.kind and b.ref = pg.ref
+                      -- a stored row whose item has just left the Inbox is not drawn (the next run marks it closed)
+                      where pg.kind = 'intervention' or b.ref is not null)
     select jsonb_build_object('group', v_grp, 'total', (select count(*) from g), 'offset', v_off, 'limit', v_lim,
                               'items', coalesce((select jsonb_agg(j.item order by j.created_at, j.kind, j.ref) from j), '[]'::jsonb)));
 end $function$;
@@ -385,6 +517,9 @@ insert into pipeline.component_register(kind, name, layer, area, purpose, status
  ('function', 'security.layer4_decide_guard_v1', 'Layer 4', 'Layer 4 review', 'Same decision sent again; retries on an unchanged stop', 'active', '{}', '20261104560000'),
  ('function', 'security.layer4_cl_group_call_v1', 'Layer 4', 'Layer 4 review', 'The Course Link workstream''s routing, when shipped', 'active', '{}', '20261104560000'),
  ('function', 'public.admin_layer4_groups', 'Layer 4', 'Layer 4 review', 'Layer 4 › Inbox: Ready for my decision, Information needed from me, Technical recovery', 'active', '{}', '20261104560000'),
+ ('table', 'pipeline.layer4_item_groups', 'Layer 4', 'Layer 4 review', 'Stored group, class, rule and next action of each Layer 4 item', 'active', '{}', '20261104560000'),
+ ('function', 'security.layer4_groups_fill_v1', 'Layer 4', 'Layer 4 review', 'Job layer4-groups: groups new and changed items within a time budget', 'active', '{}', '20261104560000'),
+ ('job', 'layer4-groups', 'Layer 4', 'Platform upkeep', 'Stores the operational group of new and changed Layer 4 items', 'active', '{}', '20261104560000'),
  ('function', 'public.admin_layer4_navigate', 'Layer 4', 'Layer 4 review', 'Audit of a Layer 4 choice that opens another screen', 'active', '{}', '20261104560000')
 on conflict do nothing;
 
@@ -393,11 +528,11 @@ do $$
 declare r record;
 begin
   for r in select * from (values
-      ('public.admin_layer4_inbox(text,jsonb)', '708f43b2dcacfa4520a574c659a218ad'),
+      ('public.admin_layer4_inbox(text,jsonb)', '1895ed9870fdbcb332639befffd5a6ec'),
       ('security.layer4_lifecycle_one_v1(text,text,boolean)', 'e1e3c4a1744663d9793a896816b93f8d'),
       ('security.layer4_items_lifecycle_v1(jsonb)', '9abc7baa6fb19a660527559bac78df1a'),
       ('security.layer4_item_lifecycle_v1(text,text)', 'f54065d6b84004b3eb0f6e49be6b1779')) v(sig, m) loop
     if md5(pg_get_functiondef(r.sig::regprocedure)) <> r.m then raise exception 'post-check: % has md5 %', r.sig, md5(pg_get_functiondef(r.sig::regprocedure)); end if;
   end loop;
-  if exists (select 1 from security.layer4_groups_v1() g where g.grp = 'A' and g.rule is null) then raise exception 'post-check: a group A item without its existing rule'; end if;
+  if not exists (select 1 from pipeline.automation_catalogue where jobname = 'layer4-groups') then raise exception 'post-check: job layer4-groups is catalogued'; end if;
 end $$;

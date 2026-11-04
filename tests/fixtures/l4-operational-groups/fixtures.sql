@@ -1,8 +1,11 @@
 -- CF-247 Layer 4 operational groups (migration 20261104560000; mandate 4 Nov 2026 16:32 §2, §7, §8, §10) on seed.sql. Scratch PostgreSQL 16 only.
 \set ON_ERROR_STOP on
 select set_config('fx.uid', '63ba56cb-48d4-4169-98c2-7c4d1f72925b', false), set_config('fx.rank', '6', false);
+-- the stored groups, filled once in full as on release (job layer4-groups)
+select security.layer4_groups_fill_v1(true);
 create or replace function pg_temp.g(p_ref text) returns record language sql as $f$ select (grp, cls, rule) from security.layer4_groups_v1() where ref = p_ref $f$;
 create or replace function pg_temp.grp(p_ref text) returns text language sql as $f$ select grp from security.layer4_groups_v1() where ref = p_ref $f$;
+create or replace function pg_temp.stored(p_ref text) returns text language sql as $f$ select grp from pipeline.layer4_item_groups where ref = p_ref and state = 'waiting' $f$;
 create or replace function pg_temp.decide(p_kind text, p_ref text, p_choice text, p_reason text default 'Fixture: checked on the stored copy', p_value text default null) returns jsonb language sql as
   $f$ select public.admin_layer4_inbox('decide', jsonb_build_object('kind', p_kind, 'ref', p_ref, 'choice', p_choice, 'reason', p_reason, 'value', p_value)) $f$;
 
@@ -155,4 +158,38 @@ begin
   end loop;
   t := clock_timestamp(); perform public.admin_layer4_groups('{}'); ms := extract(epoch from clock_timestamp() - t) * 1000;
   raise notice 'G8 ok: summary % ms; a page of each choice under 300 ms', round(ms);
+end $$;
+
+-- G9 the Inbox reads the stored groups only; new and changed items are regrouped by the job; missing or stale shows as C "not grouped yet"
+do $$
+declare v jsonb; r jsonb; n jsonb;
+begin
+  -- with the classifier and the Course Link classifier out of reach, every read still answers (they are called by the job only)
+  alter function security.layer4_groups_v1(uuid, text, text[]) rename to layer4_groups_v1_away;
+  alter function security.course_link_route_class_v1(uuid) rename to course_link_route_class_v1_away;
+  v := public.admin_layer4_groups('{}');
+  r := public.admin_layer4_groups('{"action": "items", "group": "C", "limit": 5}');
+  n := public.admin_layer4_lifecycle('{"items": [{"kind": "aer_review", "ref": "6e000000-0000-4000-8000-000000000006"}]}');
+  perform public.admin_layer4_navigate('{"kind": "nothing_ready", "ref": "6b000000-0000-4000-8000-000000000011", "choice": "adapter"}');
+  alter function security.layer4_groups_v1_away(uuid, text, text[]) rename to layer4_groups_v1;
+  alter function security.course_link_route_class_v1_away(uuid) rename to course_link_route_class_v1;
+  if (v->>'waiting')::int = 0 or jsonb_array_length(r->'items') = 0 or n->'items'->'aer_review:6e000000-0000-4000-8000-000000000006'->>'group' <> 'C' then raise exception 'G9: reads %', v; end if;
+  -- a new item has no stored group until the job runs: its card says so and counts as C
+  insert into pipeline.layer4_review_items(id, entity_type, entity_id, field_code, status, escalation_reason, created_at)
+  values ('6e000000-0000-4000-8000-000000000020', 'course', '6c000000-0000-4000-8000-000000000010', 'course_entry_first_read', 'pending', 'first read', now());
+  n := (public.admin_layer4_lifecycle('{"items": [{"kind": "aer_review", "ref": "6e000000-0000-4000-8000-000000000020"}]}'))->'items'->'aer_review:6e000000-0000-4000-8000-000000000020';
+  if n->>'group' <> 'C' or n->>'group_label' <> 'Ready for my decision (not grouped yet)' then raise exception 'G9: missing group %', n; end if;
+  -- the readiness check reclassifies an item: its stored group is stale and counts as C until regrouped
+  update pipeline.layer4_item_readiness set readiness = 'technical_blocked', route = 'repair:completeness_gate', classified_at = clock_timestamp() where item_id = '6e000000-0000-4000-8000-000000000006';
+  if ((public.admin_layer4_groups('{}'))->>'regrouping')::int < 1 then raise exception 'G9: stale not counted'; end if;
+  -- the job groups only the new and changed items, then nothing
+  v := security.layer4_groups_fill_v1(false);
+  if (v->>'grouped')::int > 6 or pg_temp.stored('6e000000-0000-4000-8000-000000000006') <> 'B' or pg_temp.stored('6e000000-0000-4000-8000-000000000020') <> 'C' then raise exception 'G9: incremental fill %', v; end if;
+  v := security.layer4_groups_fill_v1(false);
+  if (v->>'grouped')::int <> 0 or (v->>'not_grouped_yet')::int <> 0 then raise exception 'G9: a second run regrouped %', v; end if;
+  -- an item that left the Inbox is marked closed, never deleted
+  update pipeline.layer4_review_items set status = 'rejected' where id = '6e000000-0000-4000-8000-000000000020';
+  v := security.layer4_groups_fill_v1(false);
+  if (select state from pipeline.layer4_item_groups where ref = '6e000000-0000-4000-8000-000000000020') <> 'closed' then raise exception 'G9: closed'; end if;
+  raise notice 'G9 ok: every read answers with the classifiers out of reach (stored groups only); new and reclassified items show C "not grouped yet" until the job regroups them (incremental: %), then nothing; a closed item stays as history', v;
 end $$;
