@@ -1,0 +1,47 @@
+{
+  "environment": "Isolated PostgreSQL 17.6, authoritative relevant schema parity, controlled fixtures; not production admission proof",
+  "base": "820ac18f",
+  "browser_tests": {
+    "startTime": "2026-11-04T22:46:41.249Z",
+    "duration": 510180.687,
+    "expected": 2,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "focused_tests": {
+    "startTime": "2026-11-04T22:55:32.559Z",
+    "duration": 42266.527,
+    "expected": 33,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "sql_statement_and_lock_limit_ms": 8000,
+  "university_page_sql_ms": [
+    209.865,
+    149.823,
+    347.874,
+    234.917,
+    230.032,
+    208.965,
+    243.897,
+    211.869,
+    228.485,
+    25.167
+  ],
+  "max_page_sql_ms": 347.874,
+  "browser_proxy_requests": 272,
+  "max_proxy_request_wall_ms": 9114.876067999983,
+  "query_timeout_ui_resumes": 0,
+  "transport_note": "HTTP wall time includes local Docker/psql startup and JSON delivery; test transport allowance 60s does not raise SQL limits. Actual query timeout responses are recorded and recovered through the visible UI, at most three times.",
+  "complete_scan": "271 pages, 1350 rows, all ten universities, late eligible course, one saved request and consistent cursor counts",
+  "verified_outcome": {
+    "selected": 20,
+    "admitted": 20,
+    "website_verified": 20,
+    "zoho": "unsupported in normal fixture; separately tested supported-shape comparison, not live proof",
+    "one_persisted_run_after_response_recovery": true
+  },
+  "production_acceptance": "Pending Claude deployment and immediate 5\u201310-minute actual admission/publication gate; no production writes performed"
+}

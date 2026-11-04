@@ -39,7 +39,7 @@ async function fix(page) {
   await page.getByRole('button', { name: 'Preview eligible courses' }).click()
   await expect(page.getByText('Bachelor of Science', { exact: true })).toBeVisible()
   await page.getByLabel('Audited reason').fill('Validate stored intake evidence')
-  await page.getByRole('button', { name: 'Fix previewed cohort' }).click()
+  await page.getByRole('button', { name: 'Save cohort only' }).click()
   await expect(page.getByRole('button', { name: 'Run Now', exact: true })).toBeEnabled()
 }
 test('preview, fix, run and verify retain evidence and distinguish publication from Zoho support', async ({ page }, testInfo) => {
@@ -70,7 +70,7 @@ test('missing bridge fails closed and read-only roles cannot prepare or run', as
   await mount(page, { readOnly: true })
   await page.getByRole('button', { name: 'Preview eligible courses' }).click()
   await page.getByLabel('Audited reason').fill('Read only operator')
-  await expect(page.getByRole('button', { name: 'Fix previewed cohort' })).toBeDisabled()
+  await expect(page.getByRole('button', { name: 'Save cohort only' })).toBeDisabled()
   await expect(page.getByRole('button', { name: 'Run Now', exact: true })).toBeDisabled()
   await expect(page.getByRole('button', { name: /AI diagnostic/ })).toHaveCount(0)
 })
@@ -95,7 +95,7 @@ test('scope changes invalidate the preview and require another server selection'
   await expect(page.getByText('Bachelor of Science', { exact: true })).toBeVisible()
   await page.getByLabel('University scope').selectOption('all')
   await expect(page.getByText('Bachelor of Science', { exact: true })).toHaveCount(0)
-  await expect(page.getByRole('button', { name: 'Fix previewed cohort' })).toBeDisabled()
+  await expect(page.getByRole('button', { name: 'Save cohort only' })).toBeDisabled()
 })
 test('phone operators can preview and verify without page overflow @responsive', async ({ page }, testInfo) => {
   expect(page.viewportSize().width).toBeLessThanOrEqual(480)
@@ -132,7 +132,23 @@ test('preview timeout identifies the failed stage and never prepares or dispatch
   await mount(page, { timeout: true })
   await page.getByRole('button', { name: 'Preview eligible courses' }).click()
   await expect(page.getByRole('alert')).toContainText('Preview timed out before a cohort was fixed. No intake job was started.')
-  await expect(page.getByRole('button', { name: 'Fix previewed cohort' })).toBeDisabled()
+  await expect(page.getByRole('button', { name: 'Save cohort only' })).toBeDisabled()
   await expect(page.getByRole('button', { name: 'Run Now', exact: true })).toBeDisabled()
   expect(await page.evaluate(() => window.intakeCalls.every(c => c.method === 'read'))).toBe(true)
+})
+
+
+test('Run Now saves the previewed cohort and dispatches once without a separate save click', async ({ page }) => {
+  await mount(page)
+  await page.getByRole('button', { name: 'Preview eligible courses' }).click()
+  await expect(page.getByText('Enter an audited reason to enable Run Now.')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Run Now', exact: true })).toBeDisabled()
+  await page.getByLabel('Audited reason').fill('Execute validated preview')
+  await expect(page.getByRole('button', { name: 'Run Now', exact: true })).toBeEnabled()
+  await page.getByRole('button', { name: 'Run Now', exact: true }).click()
+  await expect(page.getByText('Processed 1 · Admitted 1 · Skipped 0 · Failed 0')).toBeVisible()
+  const calls = await page.evaluate(() => window.intakeCalls.filter(c => c.method !== 'read'))
+  expect(calls.map(c => c.method)).toEqual(['prepare', 'run'])
+  expect(calls[1].reason).toBe('Execute validated preview')
+  await expect(page.getByRole('button', { name: 'Run Now', exact: true })).toBeDisabled()
 })

@@ -1,0 +1,205 @@
+intake-dates fixture: 19 PASS
+before (rebuilt = live 4 Nov 2026 20:07): d15c04c680dc0128ca5da33556426c43 8e3e11c3b78e4e52ea0709e48a666ff6
+after: 90e2250d2bcfda720b00ad93cada20db d47fbe685ae62287264a1909c988e9d6 8e3e11c3b78e4e52ea0709e48a666ff6
+psql:<stdin>:59: NOTICE:  relation "admin_jobs_run_now_idempotency_uq" already exists, skipping
+psql:<stdin>:70: NOTICE:  relation "run_now_cohorts" already exists, skipping
+psql:<stdin>:80: NOTICE:  relation "run_now_cohort_members" already exists, skipping
+second run: unchanged
+cohort scope after: 410db5ca480e038e32d12c16f66eefa9
+NOTICE:  constraint "admin_jobs_outcome_fkey" of relation "admin_jobs" does not exist, skipping
+psql:<stdin>:29: NOTICE:  security.job_run_now_v1(text,text,jsonb,uuid): applied, md5 2640319be221ab00f39e6e767b78a7b3
+psql:<stdin>:29: NOTICE:  security.job_run_now_v1(text,text,jsonb,uuid): already applied
+NOTICE PASS scope: top Australian universities by active courses only; recorded with counts; a short scope gives a smaller cohort
+NOTICE PASS cohort: picked by the plan, capped, spread, evidence recorded, nothing written
+NOTICE PASS refusals: list, rank, reason, pause, switch, cap, cohort, signed-in entry; each recorded, nothing changed
+NOTICE PASS one run at a time: refused while the job's lock is held, the holding run returned
+NOTICE table "cf_search_enrichment_stage" does not exist, skipping
+NOTICE PASS run: four courses filled through the job's own function and publication path; record, idempotency, read-back and totals
+NOTICE PASS scheduled job unchanged in behaviour; nothing is filled twice
+psql:<stdin>:3: NOTICE:  column "id" of relation "admin_jobs" already exists, skipping
+psql:<stdin>:6: NOTICE:  column "kind" of relation "admin_jobs" already exists, skipping
+psql:<stdin>:8: NOTICE:  column "lane" of relation "admin_jobs" already exists, skipping
+psql:<stdin>:11: NOTICE:  column "state" of relation "admin_jobs" already exists, skipping
+psql:<stdin>:14: NOTICE:  column "title" of relation "admin_jobs" already exists, skipping
+psql:<stdin>:16: NOTICE:  column "args" of relation "admin_jobs" already exists, skipping
+psql:<stdin>:19: NOTICE:  column "cursor" of relation "admin_jobs" already exists, skipping
+psql:<stdin>:22: NOTICE:  column "progress" of relation "admin_jobs" already exists, skipping
+psql:<stdin>:25: NOTICE:  column "result" of relation "admin_jobs" already exists, skipping
+psql:<stdin>:28: NOTICE:  column "error" of relation "admin_jobs" already exists, skipping
+psql:<stdin>:29: NOTICE:  column "cancel_requested" of relation "admin_jobs" already exists, skipping
+psql:<stdin>:32: NOTICE:  column "pause_requested" of relation "admin_jobs" already exists, skipping
+psql:<stdin>:35: NOTICE:  column "requested_by" of relation "admin_jobs" already exists, skipping
+psql:<stdin>:37: NOTICE:  column "reason" of relation "admin_jobs" already exists, skipping
+psql:<stdin>:39: NOTICE:  column "created_at" of relation "admin_jobs" already exists, skipping
+psql:<stdin>:42: NOTICE:  column "started_at" of relation "admin_jobs" already exists, skipping
+psql:<stdin>:43: NOTICE:  column "updated_at" of relation "admin_jobs" already exists, skipping
+psql:<stdin>:46: NOTICE:  column "finished_at" of relation "admin_jobs" already exists, skipping
+psql:<stdin>:47: NOTICE:  column "scope" of relation "admin_jobs" already exists, skipping
+psql:<stdin>:48: NOTICE:  column "outcome" of relation "admin_jobs" already exists, skipping
+psql:<stdin>:49: NOTICE:  column "outcome_detail" of relation "admin_jobs" already exists, skipping
+psql:<stdin>:245: NOTICE:  trigger "evidence_entity_links_sync" for relation "catalogue.course_intakes" does not exist, skipping
+psql:<stdin>:247: NOTICE:  trigger "evidence_lineage_stats_sync" for relation "catalogue.course_intakes" does not exist, skipping
+psql:<stdin>:284: NOTICE:  PASS authoritative constraint, trigger, signature, grant and outcome-code parity
+psql:<stdin>:40: NOTICE:  relation "intake_ui_signing_key" already exists, skipping
+psql:<stdin>:49: NOTICE:  relation "intake_ui_requests" already exists, skipping
+ course | course | course
+--------+--------+--------
+        |        |
+(1 row)
+
+                intake                |                intake                |                intake
+--------------------------------------+--------------------------------------+--------------------------------------
+ cd3e4f81-0edd-48f6-ae04-a62dd2e74ddb | 9be6f472-b6a1-4818-870c-fdcfb6a5c3fa | f94b5e5d-cca5-4141-9c52-10dc9332b207
+(1 row)
+
+              set_config
+--------------------------------------
+ 21232f29-7a57-a5a7-4389-4a0e4a801fc3
+(1 row)
+
+psql:<stdin>:81: NOTICE:  table "cf_search_enrichment_stage" does not exist, skipping
+psql:<stdin>:81: NOTICE:  PASS vertical SQL: scope/evidence, fixed integrity, governed run, admission, catalogue, Website projection, unsupported Zoho, saved/repeated request and zero spend
+        ?column?
+------------------------
+ intake-run-validate-v1
+(1 row)
+
+              set_config
+--------------------------------------
+ 1de9b0a3-0075-ae8c-303e-b420c103c320
+(1 row)
+
+psql:<stdin>:91: NOTICE:  PASS authenticated read role cannot prepare/run/read foreign cohort
+ set_config
+------------
+
+(1 row)
+
+              set_config
+--------------------------------------
+ 21232f29-7a57-a5a7-4389-4a0e4a801fc3
+(1 row)
+
+psql:<stdin>:118: NOTICE:  PASS read-only preview, signed token tamper, cross-user preview, complete consumer match, deadline mismatch and unsupported status
+ course
+--------
+
+(1 row)
+
+                intake
+--------------------------------------
+ 6d1c15a1-c2d4-4ea7-800c-5496555af673
+(1 row)
+
+psql:<stdin>:140: NOTICE:  PASS narrowed university scope, changed source evidence and expired signed preview
+psql:<stdin>:150: NOTICE:  PASS supported Zoho bridge fixture (not production proof)
+psql:<stdin>:158: NOTICE:  PASS new-object RLS, table and function privilege checks
+PASS same-request concurrency refuses a second dispatch before the shared runner
+              set_config
+--------------------------------------
+ 21232f29-7a57-a5a7-4389-4a0e4a801fc3
+(1 row)
+
+psql:<stdin>:73: NOTICE:  PASS 20-course preview, all ten denominators including zero, dominant-university starvation regression under 8-second statement limit
+psql:<stdin>:43: NOTICE:  PASS invalid outcome codes rejected by production FK; corrected successful result persists
+psql:<stdin>:50: NOTICE:  PASS succeeded_no_movement outcome under production FK
+psql:<stdin>:80: NOTICE:  PASS no eligible evidence, refused/blocked_policy, failed_retryable rollback and saved outcomes
+MEASURED legacy synchronous baseline; actual RPC performance guarded separately: [{"timed_out":false,"milliseconds":3136.514},{"timed_out":false,"milliseconds":3115.117},{"timed_out":false,"milliseconds":2994.607},{"timed_out":false,"milliseconds":2974.693},{"timed_out":false,"milliseconds":2914.625}]
+PASS production-representative vertical integration SQL; 20-course browser fixture ready
+psql:<stdin>:15: NOTICE:  relation "courses_provider_title_slug_active_idx" already exists, skipping
+psql:<stdin>:18: NOTICE:  relation "coverage_course_pages_provider_base_url_idx" already exists, skipping
+psql:<stdin>:23: NOTICE:  relation "coverage_course_pages_provider_url_read_idx" already exists, skipping
+psql:<stdin>:25: NOTICE:  relation "coverage_course_pages_provider_final_url_read_idx" already exists, skipping
+psql:<stdin>:13: NOTICE:  PASS 60 authoritative verdict/diagnostic comparisons, prefix edge cases, twenty-course selection and displayed work limits
+PASS ten independent university preview queries under 8s: [186.333,210.482,393.863,252.896,249.364,241.298,394.03,455.751,239.247,25.711]
+PASS old timeout reproduced; authoritative identity/selection unchanged; actual paged-preview requests fit 8s: [186.333,210.482,393.863,252.896,249.364,241.298,394.03,455.751,239.247,25.711]
+psql:<stdin>:27: NOTICE:  relation "intake_preview_sessions" already exists, skipping
+psql:<stdin>:31: NOTICE:  relation "intake_preview_rows" already exists, skipping
+psql:<stdin>:27: NOTICE:  relation "intake_preview_sessions" already exists, skipping
+psql:<stdin>:31: NOTICE:  relation "intake_preview_rows" already exists, skipping
+              set_config
+--------------------------------------
+ 21232f29-7a57-a5a7-4389-4a0e4a801fc3
+(1 row)
+
+psql:<stdin>:28: NOTICE:  PASS canonical compatibility, idempotent page replay and foreign preview denial
+psql:<stdin>:37: NOTICE:  PASS adjacent cursor pages equal uninterrupted canonical plan
+PASS ten independent university preview queries under 8s: [209.865,149.823,347.874,234.917,230.032,208.965,243.897,211.869,228.485,25.167]
+
+
+[WebServer] (node:88483) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:88502) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 2 tests using 1 worker
+
+(node:88510) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 [chromium-desktop] › tests/integration/intake-postgres.spec.mjs:24:1 › operator previews, fixes, runs, verifies and restores saved database outcome (8.2m)
+(node:96917) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  2 [chromium-mobile] › tests/integration/intake-postgres.spec.mjs:95:1 › saved database admission and publication can be inspected on phone @responsive (6.7s)
+
+  Slow test file: [chromium-desktop] › tests/integration/intake-postgres.spec.mjs (8.2m)
+  Consider running tests from slow files in parallel. See: https://playwright.dev/docs/test-parallel
+  2 passed (8.5m)
+
+
+psql:<stdin>:21: NOTICE:  PASS post-browser: twenty selected/admitted/published courses, one persisted task after dropped-response recovery, typed API intake contract and authoritative evidence lineage
+DO
+psql:<stdin>:21: NOTICE:  PASS complete scan: 271 pages, 1350 rows, all ten universities, late eligible course, one saved request and consistent cursor counts
+DO
+psql:<stdin>:37: NOTICE:  PASS paged stale/expired snapshots, invalid scope, unauthorised preparation and unauthenticated preview refused
+DO
+psql:<stdin>:48: NOTICE:  PASS scan-budget setting drift refused; fixture setting restored transactionally
+DO
+psql:<stdin>:61: NOTICE:  schema "pg_temp" does not exist, skipping
+psql:<stdin>:61: NOTICE:  PASS missing source cannot publish through real projection; successful catalogue/source/consumer fixture restored
+DO
+
+
+[WebServer] (node:97254) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 33 tests using 1 worker
+
+(node:97272) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 [chromium-desktop] › tests/uat/cf-247-s120-test-governance-contract.spec.mjs:11:1 › no anonymous tests: every spec starts with the rule or decision it guards (2.7s)
+  ✓   2 [chromium-desktop] › tests/uat/cf-247-s120-test-governance-contract.spec.mjs:19:1 › nothing carried skipped: no unconditional skip, fixme or only; a skip for a missing environment belongs to the deployed track (1.0s)
+  ✓   3 [chromium-desktop] › tests/uat/cf-247-s120-test-governance-contract.spec.mjs:30:1 › the phone viewport runs only responsive-tagged tests and the deployed gate; standing rules keep one guard each (13ms)
+  ✓   4 [chromium-desktop] › tests/uat/cf-247-s120-test-governance-contract.spec.mjs:38:1 › the register generator lists every spec with its category (3ms)
+  ✓   5 [chromium-desktop] › tests/uat/cf-247-s120-test-governance-contract.spec.mjs:47:1 › phone screens stay phone tests: the three operated screens are responsive-tagged, run on the phone project only and assert phone width (7ms)
+  ✓   6 [chromium-desktop] › tests/uat/cf-247-s120-test-governance-contract.spec.mjs:61:1 › live-acting deployed specs are tagged and held unless the switch is on (weekly run and deployed-uat) (35ms)
+  ✓   7 [chromium-desktop] › tests/uat/cf-247-s286-intake-pilot-run-now-contract.spec.mjs:16:1 › §2: the job keeps its command and body; the live definition is md5-guarded before and after (9ms)
+  ✓   8 [chromium-desktop] › tests/uat/cf-247-s286-intake-pilot-run-now-contract.spec.mjs:29:1 › §1: the cohort is picked by the job's own plan, capped, spread, with evidence and denominator recorded (4ms)
+  ✓   9 [chromium-desktop] › tests/uat/cf-247-s286-intake-pilot-run-now-contract.spec.mjs:38:1 › §3: Run Now is governed and extends the task mechanism; no SQL text is taken (8ms)
+  ✓  10 [chromium-desktop] › tests/uat/cf-247-s286-intake-pilot-run-now-contract.spec.mjs:54:1 › §4-§5 and 20:02 §2: the run fills through the job's own path; the verification reads the website and Zoho back (5ms)
+  ✓  11 [chromium-desktop] › tests/uat/cf-247-s286-intake-pilot-run-now-contract.spec.mjs:62:1 › 20:53: the cohort is picked only from the top Australian universities by active courses, recorded, never widened (5ms)
+  ✓  12 [chromium-desktop] › tests/uat/cf-247-s286-intake-pilot-run-now-contract.spec.mjs:79:1 › hotfix 20261104640000: the Run Now task outcome uses production outcome codes (admin_jobs_outcome_fkey) (3ms)
+  ✓  13 [chromium-desktop] › tests/uat/cf-247-s32-controls-in-settings-contract.spec.mjs:36:1 › the register: one settings table, read at run time, every default is today’s value (8ms)
+  ✓  14 [chromium-desktop] › tests/uat/cf-247-s32-controls-in-settings-contract.spec.mjs:47:1 › every job command in the migration reads its size from a setting (13ms)
+  ✓  15 [chromium-desktop] › tests/uat/cf-247-s32-controls-in-settings-contract.spec.mjs:56:1 › guard: no migration from v2.15.269 on writes a number into a job or a business rule into a function (547ms)
+  ✓  16 [chromium-desktop] › tests/uat/cf-247-s32-controls-in-settings-contract.spec.mjs:67:1 › worker v0.21.7: the Firecrawl proxy, site map sizes and search results come from settings (57ms)
+  ✓  17 [chromium-desktop] › tests/uat/cf-247-s32-controls-in-settings-contract.spec.mjs:75:1 › live guard: the controls check is a notice and shows on Pipeline settings (2ms)
+  ✓  18 [chromium-desktop] › tests/uat/cf-247-s32-controls-in-settings-contract.spec.mjs:82:3 › mocked browser › Pipeline settings: controls check, the register by section, a change needs a reason; policy tables change with a reason (6.5s)
+  ✓  19 [chromium-desktop] › tests/uat/cf-247-s42-housekeeping-contract.spec.mjs:30:1 › every migration from Decision 260 on says what it replaces and retires, states table purposes, catalogues jobs, drops nothing (339ms)
+  ✓  20 [chromium-desktop] › tests/uat/cf-247-s42-housekeeping-contract.spec.mjs:38:1 › the register: live jobs, tables and views; edge functions and screens from the repository; nothing removed, gone is retired (11ms)
+  ✓  21 [chromium-desktop] › tests/uat/cf-247-s42-housekeeping-contract.spec.mjs:49:1 › the workflow collects edge functions, screens and calls, updates the register daily and commits the generated document to a snapshot branch (16ms)
+  ✓  22 [chromium-desktop] › tests/uat/cf-247-s57-consumer-api-frozen.spec.mjs:15:1 › the consumer edge functions match the frozen baseline (or the change is approved) (4ms)
+  ✓  23 [chromium-desktop] › tests/uat/cf-247-s57-consumer-api-frozen.spec.mjs:22:1 › no migration after the baseline changes a consumer API function or the tables it reads, unless approved (547ms)
+  ✓  24 [chromium-desktop] › tests/uat/cf-247-s57-consumer-api-frozen.spec.mjs:33:1 › the guard: baseline from live, daily check, hard flag on drift, nothing changed or dropped (4ms)
+  ✓  25 [chromium-desktop] › tests/uat/intake-run-validate-ui.spec.mjs:45:1 › preview, fix, run and verify retain evidence and distinguish publication from Zoho support (2.7s)
+  ✓  26 [chromium-desktop] › tests/uat/intake-run-validate-ui.spec.mjs:66:1 › missing bridge fails closed and read-only roles cannot prepare or run (2.8s)
+  ✓  27 [chromium-desktop] › tests/uat/intake-run-validate-ui.spec.mjs:77:1 › uncertain response recovery reuses the same key and refusal gives a permitted next action (3.6s)
+  ✓  28 [chromium-desktop] › tests/uat/intake-run-validate-ui.spec.mjs:92:1 › scope changes invalidate the preview and require another server selection (3.5s)
+  ✓  29 [chromium-desktop] › tests/uat/intake-run-validate-ui.spec.mjs:112:1 › browser adapter sends only a cohort to the server-bound governed Run Now facade (2.3s)
+  ✓  30 [chromium-desktop] › tests/uat/intake-run-validate-ui.spec.mjs:131:1 › preview timeout identifies the failed stage and never prepares or dispatches a job (1.9s)
+  ✓  31 [chromium-desktop] › tests/uat/intake-run-validate-ui.spec.mjs:141:1 › Run Now saves the previewed cohort and dispatches once without a separate save click (2.0s)
+  ✓  32 [chromium-desktop] › tests/uat/smoke.spec.mjs:6:3 › StudySearch local browser smoke @smoke › login shell renders without a server-side failure (2.0s)
+(node:97583) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  33 [chromium-mobile] › tests/uat/intake-run-validate-ui.spec.mjs:100:1 › phone operators can preview and verify without page overflow @responsive (3.2s)
+
+  33 passed (42.3s)

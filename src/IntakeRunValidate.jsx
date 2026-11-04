@@ -5,9 +5,9 @@ import './intake-run-validate.css'
 
 const value = x => x == null ? 'Not held' : typeof x === 'object' ? JSON.stringify(x, null, 2) : String(x)
 function Evidence({ data }) { return <pre className="intake-evidence">{value(data)}</pre> }
-function Source({ url }) {
+function Source({ url, label = 'Official source' }) {
   try { if (!['https:', 'http:'].includes(new URL(url).protocol)) return null } catch { return null }
-  return <a className="cf-link" href={url} target="_blank" rel="noreferrer">Official source</a>
+  return <a className="cf-link" href={url} target="_blank" rel="noreferrer">{label}</a>
 }
 
 export default function IntakeRunValidate({ rank = 0, client = intakeRunApi }) {
@@ -15,7 +15,8 @@ export default function IntakeRunValidate({ rank = 0, client = intakeRunApi }) {
   const [scope, setScope] = useState(''), [size, setSize] = useState(''), [reason, setReason] = useState('')
   const [preview, setPreview] = useState(null), [cohort, setCohort] = useState(null), [run, setRun] = useState(null)
   const [report, setReport] = useState(null), [lookup, setLookup] = useState(''), [diagnostic, setDiagnostic] = useState(null)
-  const lock = useRef(false), request = useRef(null)
+  const [previewProgress, setPreviewProgress] = useState(null)
+  const lock = useRef(false), request = useRef(null), pausePreview = useRef(false)
   const execute = async (name, fn) => {
     if (lock.current) return
     lock.current = true; setBusy(name); setError('')
@@ -39,10 +40,10 @@ export default function IntakeRunValidate({ rank = 0, client = intakeRunApi }) {
       restore(result)
     }
   })
-  useEffect(() => { load() }, [client])
+  useEffect(() => { pausePreview.current = false; load(); return () => { pausePreview.current = true } }, [client])
   const sizeValid = Number.isInteger(Number(size)) && Number(size) >= caps?.min_size && Number(size) <= caps?.max_size
   const canRun = caps?.can_run === true && rank >= caps?.control_rank
-  const invalidate = () => { setPreview(null); setCohort(null); setRun(null); setReport(null); setDiagnostic(null); request.current = null }
+  const invalidate = () => { setPreview(null); setCohort(null); setRun(null); setReport(null); setDiagnostic(null); setPreviewProgress(null); request.current = null }
   const restore = r => {
     setReport(r); setLookup(r.cohort_id)
     const saved = r.saved_request
@@ -57,7 +58,7 @@ export default function IntakeRunValidate({ rank = 0, client = intakeRunApi }) {
     const r = await client.read('verify', { cohort_id: id })
     restore(r)
   })
-  const prepare = () => execute('Fixing cohort', async () => {
+  const fixPreview = async () => {
     const c = await client.prepare({ p_scope: scope, p_size: Number(size), p_reason: reason.trim(), p_preview_token: preview.token })
     // A bridge must refuse changed selection; never silently run a different cohort.
     if (!c?.cohort_id || c.preview_token !== preview.token || !c.request_key) throw new Error('Selection changed. Preview again before running.')
@@ -65,8 +66,11 @@ export default function IntakeRunValidate({ rank = 0, client = intakeRunApi }) {
     request.current = { key: c.request_key, reason: c.reason || reason.trim(), cohortId: c.cohort_id }
     const [path, search = ''] = location.hash.split('?'); const params = new URLSearchParams(search)
     params.set('intake_cohort', c.cohort_id); history.replaceState(null, '', `${location.pathname}${location.search}${path || '#/layer-2-discovery'}?${params}`)
-  })
+    return c
+  }
+  const prepare = () => execute('Saving cohort', fixPreview)
   const start = () => execute('Running intake job', async () => {
+    if (!request.current) await fixPreview()
     const q = request.current
     setRun({ state: 'awaiting_response' })
     try {
@@ -79,6 +83,9 @@ export default function IntakeRunValidate({ rank = 0, client = intakeRunApi }) {
   const unknown = run?.state === 'outcome_unknown'
   return <section className="m-panel intake-run" aria-label="Course intake Run & Validate">
     <SectionTitle title="Course intake Run & Validate" subtitle="Automatically selected courses, stored official evidence and approved academic calendars. The existing intake job applies its normal controls."/>
+    {previewProgress && !previewProgress.scan_complete && <p role="status">Checking the full governed scan: {previewProgress.rows_planned || 0} intake rows evaluated; {previewProgress.universities_done || 0} of {previewProgress.universities_total || caps?.universities?.length || 0} universities complete. No intake job has been started.</p>}
+    {!busy && previewProgress?.session_id && !previewProgress.scan_complete && <Button onClick={() => execute('Previewing eligible courses', async () => { pausePreview.current = false; setPreview(await client.preview(scope, Number(size), setPreviewProgress, previewProgress.session_id, () => pausePreview.current)) })}>Resume preview</Button>}
+    {busy === 'Previewing eligible courses' && caps?.paged_preview && <Button onClick={() => { pausePreview.current = true }}>Pause preview</Button>}
     {busy && <Loading label={`${busy}…`}/>}
     {error && <p role="alert">{error}</p>}
     {!caps && !busy && <p>Blocked: the required browser bridge is unavailable. Next action: ask the release integrator to provide the intake UI contract; no job has been started.</p>}
@@ -95,15 +102,21 @@ export default function IntakeRunValidate({ rank = 0, client = intakeRunApi }) {
         <label>Audited reason<textarea value={reason} disabled={!!busy || !!cohort} onChange={e => setReason(e.target.value)}/></label>
       </div>
       <div className="intake-actions">
-        <Button disabled={!!busy || !!cohort || !scope || !sizeValid} onClick={() => execute('Previewing eligible courses', async () => { invalidate(); setPreview(await client.read('preview', { scope, size: Number(size) })) })}>Preview eligible courses</Button>
-        <Button disabled={!!busy || !canRun || !!caps.blocked_reason || !preview?.token || !preview.courses?.length || !reason.trim() || !!cohort} onClick={prepare}>Fix previewed cohort</Button>
-        <Button variant="primary" disabled={!!busy || !canRun || !!caps.blocked_reason || !cohort || (!!run && !unknown)} onClick={start}>{unknown ? 'Recover same request' : 'Run Now'}</Button>
+        <Button disabled={!!busy || !!cohort || !scope || !sizeValid} onClick={() => execute('Previewing eligible courses', async () => {
+          invalidate(); pausePreview.current = false
+          setPreview(caps.paged_preview && client.preview ? await client.preview(scope, Number(size), setPreviewProgress, undefined, () => pausePreview.current) : await client.read('preview', { scope, size: Number(size) }))
+        })}>Preview eligible courses</Button>
+        <Button disabled={!!busy || !canRun || !!caps.blocked_reason || !preview?.token || !preview.courses?.length || !reason.trim() || !!cohort} onClick={prepare}>Save cohort only</Button>
+        <Button variant="primary" disabled={!!busy || !canRun || !!caps.blocked_reason || (!cohort && (!preview?.token || !preview.courses?.length || !reason.trim())) || (!!run && !unknown)} onClick={start}>{unknown ? 'Recover same request' : 'Run Now'}</Button>
         {cohort && <Button disabled={!!busy} onClick={() => verify(cohort.cohort_id)}>Verify catalogue & publication</Button>}
       </div>
       {cohort && <Button disabled={!!busy || run?.state === 'awaiting_response' || unknown} onClick={invalidate}>New cohort</Button>}
+      {!cohort && canRun && !caps.blocked_reason && preview?.courses?.length > 0 && !reason.trim() && <p>Enter an audited reason to enable Run Now.</p>}
+      {preview?.token && preview.courses?.length < Number(size) && <p role="status">Only {preview.courses.length} of the requested {size} courses have eligible values in this completed bounded scan. Running this smaller cohort does not meet the requested numerical target.</p>}
+      {!cohort && preview?.courses?.length > 0 && <p>Run Now saves this validated cohort with your reason and starts the existing governed intake job. You can also save the cohort separately.</p>}
       {preview && <p>{preview.courses?.length || 0} selected of {preview.eligible_courses ?? 'unknown'} eligible courses. {preview.rule} Preview at {fmtDateTime(preview.as_at)}; expires {fmtDateTime(preview.expires_at)}.</p>}
-      {preview?.universities && <details open><summary>Eligibility by university (bounded independent scans)</summary>{preview.universities.map(u => <p key={u.id}>{u.name}: {u.active_courses} active courses · {u.eligible_courses} eligible courses in {u.rows_planned} evaluated rows · scan limit {u.scan_limit}</p>)}</details>}
-      {preview && <details><summary>Eligibility stops and missing evidence</summary><Evidence data={preview.skipped_by_reason || {}}/></details>}
+      {preview?.universities && <details open><summary>Eligibility by university (bounded independent scans)</summary>{preview.universities.map(u => <p key={u.id}>{u.name}: {u.active_courses} active courses · {u.eligible_courses} eligible courses in {u.rows_planned} evaluated rows · scan limit {u.scan_limit}{u.calendar_start_rows != null ? ` · approved calendar: ${u.calendar_exact_starts} of ${u.calendar_start_rows} starts have exact dates` : ''}</p>)}</details>}
+      {preview && <details><summary>Eligibility stops and missing evidence</summary><p>Month-only wording cannot prove a course's exact period. Unproved/refused pages need identity review; missing stored wording needs the existing reader; calendars without exact starts need approved source evidence. Running this intake job does not invent or fetch those facts.</p><Evidence data={preview.skipped_by_reason || {}}/></details>}
       {preview && !preview.courses?.length && <p role="status">Blocked: no eligible intake values were found in this bounded preview. Unexamined rows are not classified as ineligible. Next action: review the evaluated scan limits and stored page/calendar evidence. The scope has not been widened.</p>}
       {cohort && <p>Fixed cohort: {cohort.cohort_id}. Reason: {request.current?.reason}. Saved on the server; results and the same request key are restored after refresh.</p>}
       {run && <div role="status"><StatusChip value={run.state}/>{run.outcome && <StatusChip value={run.outcome}/>}<p>Run: {run.run_id || 'Awaiting confirmed run ID'} · Started {fmtDateTime(run.started_at)} · Finished {fmtDateTime(run.finished_at)}</p>
@@ -118,6 +131,7 @@ export default function IntakeRunValidate({ rank = 0, client = intakeRunApi }) {
         <div className="intake-metrics">{Object.entries(report.totals || {}).filter(([, v]) => typeof v === 'number').map(([k, v]) => <Metric key={k} label={k.replaceAll('_', ' ')} value={v}/>)}</div>
         <details><summary>Audited runs and failure reasons</summary><Evidence data={report.runs}/><Evidence data={report.totals?.skipped_or_failed}/></details>
       </>}
+      {preview?.blocked_courses?.length > 0 && <details><summary>Blocked intake rows by course ({preview.blocked_courses.length} courses)</summary>{preview.blocked_courses.map(c => <article key={c.course_id}><strong>{c.course_title}</strong><p>{c.provider_name}</p>{c.stops.map((stop, i) => <p key={i}>{stop.reason} <Source url={stop.page_url} label="Page needing review"/></p>)}</article>)}</details>}
       {courses.map(c => <article key={c.course_id} className="intake-course">
         <h3>{c.course_title || c.course_id}</h3><p>{c.provider_name || c.provider_id} · {c.pattern} · {(c.fills || []).join(', ')}</p><p>{c.eligibility_reason}</p><Source url={c.course_url}/>
         <details><summary>Source evidence and values at selection</summary>{(c.at_selection || c.evidence || []).map((e, i) => <div key={e.intake_id || i}><Source url={e.page_url}/><Source url={e.calendar_url}/><Evidence data={e}/></div>)}</details>

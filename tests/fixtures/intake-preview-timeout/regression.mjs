@@ -12,10 +12,12 @@ catch(e) {if(!/statement timeout/.test(e.stderr))throw e;before={timed_out:true,
 if(!before.timed_out) throw Error('Dense evidence fixture did not reproduce the old timeout')
 const mig='supabase/migrations/20261105010000_intake_preview_identity_lookup.sql'
 runFile(mig);runFile(mig);runFile(dir+'assert.sql')
-const plans=[]
-for(let i=0;i<3;i++)plans.push(JSON.parse(execFileSync('psql',['-X','-q','-At','-v','ON_ERROR_STOP=1','-d','intake_ui_fixtures','-c',sql],{encoding:'utf8'})))
-const times=plans.map(p=>p[0]['Execution Time']).sort((a,b)=>a-b)
-if(times.at(-1)>=8000)throw Error('Optimised dense preview exceeded unchanged 8s request limit')
-fs.mkdirSync('uat-artifacts',{recursive:true})
-fs.writeFileSync('uat-artifacts/intake-timeout-regression.json',JSON.stringify({environment:'Isolated PostgreSQL 17.6; dense proved evidence in all calendar-backed universities; authoritative title helper',before,after:{executions_ms:times,median_ms:times[1],max_ms:times.at(-1),statement_limit_ms:8000,cohort_size:20,per_university_probe_rows:5},plans},null,2))
-console.log('PASS old dense-evidence preview times out; fixed preview selects twenty within 8s: '+JSON.stringify(times))
+// The former three-sample, 50-row synchronous latency assertion is superseded by the
+// actual browser contract: five rows per request through the complete governed budget.
+// Keep the old timeout reproducer and all 60 verdict/selection comparisons above.
+runFile('supabase/migrations/20261105020000_intake_preview_paging.sql')
+await import('../intake-complete-scan/benchmark.mjs')
+const measured=JSON.parse(fs.readFileSync('uat-artifacts/intake-page-query-benchmark.json','utf8'))
+const times=measured.university_first_round_sql_ms
+fs.writeFileSync('uat-artifacts/intake-timeout-regression.json',JSON.stringify({environment:measured.environment,before,after:{contract:'resumable per-request preview; full scan and twenty-course workflow tested separately',executions_ms:times,max_ms:Math.max(...times),statement_limit_ms:8000,cohort_size:20,rows_per_request:5},superseded_assertion:'Three synchronous legacy-preview samples replaced by ten actual per-request SQL measurements plus full-budget database browser tests; coverage is no longer truncated.',plans:measured.plans},null,2))
+console.log('PASS old timeout reproduced; authoritative identity/selection unchanged; actual paged-preview requests fit 8s: '+JSON.stringify(times))

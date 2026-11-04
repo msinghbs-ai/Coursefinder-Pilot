@@ -2,6 +2,49 @@
 
 Authority: Platform Admin's 4 Nov 2026 vertical-feature correction, the [20:05 intake pilot authority](https://github.com/msinghbs-ai/coursefinder-admin/blob/main/docs/platform/2026-11-04-course-intake-pilot-authority-2005.md), Pilot [CLAUDE.md](../CLAUDE.md), and the [canonical operating model](https://github.com/msinghbs-ai/coursefinder-admin/blob/main/docs/platform/DATA-PIPELINE-OPERATING-MODEL.md). Integration Controller: Claude; final release number, merge and deployment remain with Claude.
 
+## Follow-up: complete bounded discovery and one-action Run Now
+
+The v2.15.479 five-row workaround fixed request latency but **did not complete the existing discovery budget**. A three-course UNSW preview was not evidence that the other universities had no eligible courses. Run Now also required a separate saved-cohort action. This follow-up corrects both behaviours; it does not fill unsupported source gaps.
+
+Migration `20261105020000_intake_preview_paging.sql` adds private, operator-owned preview snapshots and resumable, idempotent pages. Each request reads the existing `run_now.preview_rows_per_university` work setting (currently 5), while round-robin discovery continues until each university reaches its share of `run_now.cohort_scan_rows` (currently 1,500 / 10 = 150 intake rows) or candidate end. It does not claim exhaustive catalogue coverage beyond that configured budget. Every university reports its actual denominator and eligible count, including zero. Pause/Resume and lost-response replay retain the cursor without advancing it twice.
+
+The canonical private `security.intake_dates_plan_v2` gains a four-argument cursor overload. The original two-argument signature delegates to that single implementation; there is no second reader. Only the candidate keyset predicate changes. The original definition hash is checked before conversion. Source identity, period matching, manual locks, admission rules, the apply function, scheduler, governed runner and consumer APIs remain unchanged. Claude must reconcile any shared-definition conflict rather than bypass the migration guard.
+
+New browser interfaces:
+
+- `public.admin_intake_preview_v1(text,jsonb)`: start/step/read, rank ≥ 3, owner-only session access. Source/catalogue reads only; it writes private preview metadata and evidence snapshots.
+- `public.admin_intake_preview_prepare_v1(uuid,text)`: existing job control rank, reason required, completed/unexpired snapshot, current approved scope/cap, exact selected-source/value revalidation, existing fixed-cohort/request/audit tables. Repeated preparation returns the same cohort and key.
+- Existing `admin_intake_run_read_v1` advertises `paged_preview`; existing `admin_intake_run_now_v1` remains the only browser execution path. No private function grants are added.
+
+Run Now now saves the validated cohort and invokes that existing governed execution path in one click. An optional **Save cohort only** action remains. The UI explains a missing reason, a smaller-than-requested eligible cohort, per-course evidence stops and approved-calendar exact-date coverage. Saved runs and verification still restore after refresh. No new AI controller or model is introduced.
+
+### Source limitations
+
+Read-only production metadata inspection found that the latest approved UNSW calendar had five start entries but **zero exact start dates**. Sydney, Monash, UTS, RMIT, Flinders and Newcastle had some exact starts; their individual course pages must still prove the corresponding named period. A year-only proposal does not prove a new start date. Missing/refused/unproved course evidence and month-only wording must be resolved through existing source/identity review and calendar approval controls. The intake job must not invent dates or substitute a university-wide date for a course-specific admission decision.
+
+### Reproduce and accept this correction
+
+```sh
+bash tests/fixtures/intake-complete-scan/run.sh
+npx playwright test --config=playwright.intake.config.mjs
+psql -X -v ON_ERROR_STOP=1 -d intake_ui_fixtures -f tests/fixtures/intake-ui/post.sql
+psql -X -v ON_ERROR_STOP=1 -d intake_ui_fixtures -f tests/fixtures/intake-complete-scan/post.sql
+```
+
+The dense fixture adds a supported course after row five, with the same approved intake source and existing search document as standard catalogue fixtures and asserts that the old probe misses it. The real database browser test discovers it during the complete bounded scan, automatically saves/runs twenty courses, recovers a dropped preview response and dropped committed-run response, verifies admissions/publication and restores results on desktop/phone. Test-only RPC transport enforces the unchanged 8-second SQL and lock timeouts. Evidence includes per-request timings, authoritative schema parity, SQL results and screenshots. Controlled fixtures contain no production personal data and do not prove live admission or publication.
+
+The original five-sample full-budget synchronous timing check is retained as a diagnostic baseline, including actual timeout outcomes. The later three-sample fifty-row synchronous preview latency assertion is superseded by ten actual paged-RPC SQL measurements and complete-budget browser acceptance. The original timeout reproducer, sixty authoritative identity/verdict comparisons and selected-cohort checks remain; no SQL timeout is increased and no failed feature check is skipped.
+
+The test HTTP proxy allows up to 60 seconds for Docker/psql startup and JSON delivery, distinct from the unchanged eight-second database statement/lock limit. SQL timings use EXPLAIN ANALYZE; browser request timings include that transport overhead.
+
+Publication remains a separate authority: a missing/unapproved intake source or absent consumer document stays unverified, even when the catalogue admission succeeds. A regression exercises that refusal through the real projection and rolls the fixture back.
+
+Operational limitations: a preview spans several transactions, expires under the existing preview setting and revalidates selected evidence before preparation. Preview tables retain private evidence snapshots; deployment review must include retention under the platform housekeeping policy. No new cleanup scheduler or destructive migration is added. The scan budget remains finite; raising page work may cause timeouts, while raising total coverage requires capacity review. No production operation was performed.
+
+Claude's immediate **5–10 minute post-deployment gate**: use the approved top-ten scope and size 20; confirm all ten universities finish their independent scans and inspect actual evidence/field gains. Enter an audited reason and click Run Now once; confirm one saved cohort/request/run and real admitted values. Verify catalogue before/after and Website API v2 for those exact course IDs, and supported Zoho with independently matching values (unsupported stays unverified). Refresh and inspect the same IDs/results on a phone. If fewer than twenty genuinely supported courses exist, record the actual count and source blockers; do not mark the twenty-course or new-date target met. Resolve source gaps through the existing approved workflow before repeating with a fresh preview. No version assignment, merge or deployment is included here.
+
+Measured development acceptance: **271 pages / 1,350 canonical intake rows / all ten universities**, **20 admitted and Website-verified courses**, one persisted run after lost-response recovery, desktop refresh and phone inspection. Both database-backed browser tests and all 33 focused UI/platform tests passed; build and UI-token checks passed. The ten EXPLAIN ANALYZE page samples measured **25–348 ms**, below the unchanged eight-second SQL limit. The complete local browser run took 8.5 minutes including Docker transport; maximum individual HTTP wall time was 9.115 seconds and zero query-timeout resumes were needed in the final run. HTTP wall time is distinct from SQL duration. Full results, query plans and desktop/phone screenshots are in [the evidence directory](ui-evidence/intake-complete-scan-results.json). Production acceptance remains pending Claude's actual admission/publication gate.
+
 ## Post-release Preview timeout correction (v2.15.478)
 
 The reported UI message `canceling statement due to statement timeout` was reproduced with a bounded **read-only** production query of the preview selector. The exception occurs in `course_title_key` → `course_page_check_v1` → `intake_dates_plan_v2`, before fixing a cohort or starting a Run Now job. The earlier no-evidence-heavy skew benchmark underrepresented this path, so its historical timing is not evidence that dense production pages fit the request limit.
@@ -13,7 +56,7 @@ Index optimization alone is insufficient when every candidate has stored evidenc
 The new fixture loads the **authoritative production title-normalizer**, adds proved course-page evidence in every calendar-backed university (including the 5,200-course provider), and reproduces the old 8-second `57014` failure. After the fix, the accepted local samples were **3,673 / 3,946 / 4,264 ms**, with the unchanged 8-second request limit. All **60 full identity verdict/diagnostic snapshots** and prefix edge cases pass; selected twenty courses and their source-supported values match the baseline. Dense-path twenty-course UI execution, saved recovery and post-browser catalogue/API/evidence-lineage checks are executable with:
 
 ```sh
-bash tests/fixtures/intake-preview-timeout/run.sh
+bash tests/fixtures/intake-complete-scan/run.sh
 npx playwright test --config=playwright.intake.config.mjs
 psql -X -v ON_ERROR_STOP=1 -d intake_ui_fixtures -f tests/fixtures/intake-ui/post.sql
 ```
@@ -56,7 +99,7 @@ New functions:
 
 Public bridges check `auth.uid()` and database role membership; no editable JWT metadata is trusted. Private functions have no client EXECUTE grant. New private tables `pipeline.intake_ui_signing_key` and `pipeline.intake_ui_requests` have RLS enabled and no anonymous/authenticated table grants. All privileged functions pin an empty search path. Component register rows cover new tables/functions. Settings `run_now.preview_seconds` and `run_now.history_rows` include labels, ranges, units and used-by lines and appear through the existing settings UI.
 
-Authoritative schema/function metadata was inspected **read-only** on 4 Nov 2026. Production remains v2.15.477. PR #874 corrects Run Now outcomes from invalid `ran`/`refused` to the registered outcome codes; the bridge guard requires that tested correction before application. Migration preconditions reject drift in these authorities:
+Authoritative schema/function metadata for the original integration baseline was inspected **read-only** on 4 Nov 2026; production was v2.15.477 at that point. PR #874 corrects Run Now outcomes from invalid `ran`/`refused` to the registered outcome codes; the bridge guard requires that tested correction before application. Migration preconditions reject drift in these authorities:
 
 | Existing function | Definition MD5 |
 |---|---|
