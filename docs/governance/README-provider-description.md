@@ -1,6 +1,6 @@
 # Provider description governance records
 
-The requested single draft PR is in `msinghbs-ai/Coursefinder-Pilot`. The canonical governance changes belong in `msinghbs-ai/coursefinder-admin` and are included in `provider-description-admin.patch` for the Integration Controller's review. They are also recorded on that repository's local `codex/provider-description-autonomy` branch.
+The requested single draft PR is [#877 in `msinghbs-ai/Coursefinder-Pilot`](https://github.com/msinghbs-ai/Coursefinder-Pilot/pull/877). The canonical governance changes belong in `msinghbs-ai/coursefinder-admin` and are included in `provider-description-admin.patch` for the Integration Controller's review. They are also recorded on that repository's local `codex/provider-description-autonomy` branch.
 
 From a reconciled admin checkout, inspect and apply with:
 

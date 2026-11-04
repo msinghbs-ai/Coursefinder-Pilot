@@ -1,4 +1,4 @@
-From 7cc9df79e65a727e0a70cda38e18c912a70dd258 Mon Sep 17 00:00:00 2001
+From 1cb9eeef42929ad37f82e17d1ebc26b7927287a2 Mon Sep 17 00:00:00 2001
 From: Mandeep Singh <msingh.bs@gmail.com>
 Date: Wed, 4 Nov 2026 13:57:16 +0000
 Subject: [PATCH] Record provider description development mandate, baseline and
@@ -39,7 +39,7 @@ index bd63a426..2e532c2e 100644
  | Contacts | Provider's own site (public contacts) | Mode `contact_page` (`cs:index.ts:764`), job `provider-contact-page` [V]; "Fill in from website again" (`provider_fill`) [V] | `pipeline.provider_contacts` (+ `provider_contact_points`, `_observations`, `_versions`) | Task manager |
  | Enrols international | Register | Register import [V]; NZ: `nz_cop` [V] | `catalogue.providers.enrols_international` (+ `_basis`) | — |
 diff --git a/docs/platform/STUDYSEARCH-EXECUTION-REGISTER.md b/docs/platform/STUDYSEARCH-EXECUTION-REGISTER.md
-index 34f61c16..431b29e9 100644
+index 34f61c16..459d2717 100644
 --- a/docs/platform/STUDYSEARCH-EXECUTION-REGISTER.md
 +++ b/docs/platform/STUDYSEARCH-EXECUTION-REGISTER.md
 @@ -175,3 +175,5 @@ Claude Layer 4 evidence audit (3 Nov 2026, 19:50 AEDT): [report](nz-enrichment-b
@@ -47,7 +47,7 @@ index 34f61c16..431b29e9 100644
  | 4 Nov 2026 22:05 | **Engineering hold in force (Platform Admin decision 21:59, `2026-11-04-engineering-hold-pr-first-decision-2159.md`).** No discretionary merge or deploy since. Live: v2.15.477 (migration 20261104630000), 163 active jobs, 1 failed run in the last hour (coverage-read, 'job canceled', 1 of 236 in 3 h), watchdog failing only on undelivered alerts (21 waiting; destination paused by the user), open P0 IQ-00111 (deployed, awaiting post-fix fee reads). Held as draft PRs, not merged: #874 Run Now outcome codes (would-be v2.15.478; its local suite was running when the hold began) and #875 AER selector fix (would-be v2.15.479). Open: #872 (Codex, intake Run & Validate UI; blocked on backend bridges). Cohort e7b01f60 exists (20 UNSW courses); no Run Now record exists (the 21:50 run rolled back). Correction: v2.15.477 was PR #873, not #872. |
  
 +
-+| 4 Nov 2026 (Codex development handover) | **SS-018 / SS-021 provider descriptions continuation**, under the [recorded mandate](nz-enrichment-brief/2026-11-04-provider-description-autonomy-mandate.md). Existing reader/schedule/AI controls/Layer 4 extended on `codex/provider-description-autonomy`; complete saved Run & Validate card in the existing Enrich fields workspace. Read-only production baseline: five eligible, three suitable stored sources (zero unread), four actual pending decisions, no admissions/publications; caps and human admission authority retained. Isolated PostgreSQL 17.6 qualification: ten source-grounded proposals → ten test-authorised individual decisions → ten exact catalogue, Website and Zoho read-backs, with actual worker and controlled model transport; desktop/mobile and interruption recovery verified. Schema fixture carries actual outcome FK, constraints/triggers/grants/RLS/function hashes and limits. **Development only, not production acceptance.** No merge, deploy, production write or release assignment. One draft Pilot PR will carry the admin governance patch and exact Controller 5–10 minute procedure; Claude remains Integration Controller. Existing programme status stays Implementing. |
++| 4 Nov 2026 (Codex development handover) | **SS-018 / SS-021 provider descriptions continuation**, under the [recorded mandate](nz-enrichment-brief/2026-11-04-provider-description-autonomy-mandate.md). Existing reader/schedule/AI controls/Layer 4 extended on `codex/provider-description-autonomy`; complete saved Run & Validate card in the existing Enrich fields workspace. Read-only production baseline: five eligible, three suitable stored sources (zero unread), four actual pending decisions, no admissions/publications; caps and human admission authority retained. Isolated PostgreSQL 17.6 qualification: ten source-grounded proposals → ten test-authorised individual decisions → ten exact catalogue, Website and Zoho read-backs, with actual worker and controlled model transport; desktop/mobile and interruption recovery verified. Schema fixture carries actual outcome FK, constraints/triggers/grants/RLS/function hashes and limits. **Development only, not production acceptance.** No merge, deploy, production write or release assignment. [Draft Pilot PR #877](https://github.com/msinghbs-ai/Coursefinder-Pilot/pull/877) carries the admin governance patch and exact Controller 5–10 minute procedure; Claude remains Integration Controller. Existing programme status stays Implementing. |
 diff --git a/docs/platform/TEST-REGISTER.md b/docs/platform/TEST-REGISTER.md
 index 5816e047..a530165d 100644
 --- a/docs/platform/TEST-REGISTER.md
@@ -1044,13 +1044,13 @@ index 00000000..dff9c1bb
 +Replaces/Retires intent: extend the existing reader and replace its retry-only Admin card with Run & Validate in place; retire no scheduler or admission mechanism. The implementation must reconcile current main, live schema metadata and PR #872's outcome-FK correction. The detailed baseline, validation results, limits and Controller acceptance procedure will be recorded beside this mandate before handover.
 diff --git a/docs/platform/nz-enrichment-brief/2026-11-04-provider-description-autonomy-response.md b/docs/platform/nz-enrichment-brief/2026-11-04-provider-description-autonomy-response.md
 new file mode 100644
-index 00000000..eb78b791
+index 00000000..559bfe45
 --- /dev/null
 +++ b/docs/platform/nz-enrichment-brief/2026-11-04-provider-description-autonomy-response.md
 @@ -0,0 +1,33 @@
 +# Provider descriptions — development handover
 +
-+Recorded 4 November 2026 under the [original Codex mandate](2026-11-04-provider-description-autonomy-mandate.md), extending the existing SS-018 and SS-021 workstreams. Branch: `codex/provider-description-autonomy` in `msinghbs-ai/Coursefinder-Pilot`. Development base reconciled to current main `9d907cff` (PR #872, v2.15.478). This work assigns no release. Claude remains the sole Integration Controller.
++Recorded 4 November 2026 under the [original Codex mandate](2026-11-04-provider-description-autonomy-mandate.md), extending the existing SS-018 and SS-021 workstreams. Branch: `codex/provider-description-autonomy` in `msinghbs-ai/Coursefinder-Pilot`. Draft delivery: [Coursefinder-Pilot PR #877](https://github.com/msinghbs-ai/Coursefinder-Pilot/pull/877). Development base reconciled to current main `9d907cff` (PR #872, v2.15.478). This work assigns no release. Claude remains the sole Integration Controller.
 +
 +## Delivered behaviour
 +
