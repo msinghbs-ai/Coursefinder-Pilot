@@ -341,7 +341,7 @@ begin
   -- the card: recovery recommended, Reject not the only action, the two reads one case
   d := security.layer4_aer_recovery_detail_v1(a1::text);
   if d->'sections'->0->'body'->>'Recommended recovery' <> 'reread_stored' or (d->'sections'->0->'body'->>'Dropped requirements')::int <> 2
-     or (d->'sections'->0->'body'->>'Waiting rows')::int <> 1 or jsonb_array_length(d->'sections'->1->'body'->'Other held reads in this case') <> 1 then raise exception 'E13: card (%)', d; end if;
+     or (d->'sections'->0->'body'->>'Waiting rows')::int <> 1 or (d->'sections'->1->'body'->'Other waiting reads of this university and kind'->>'count')::int <> 1 or jsonb_array_length(d->'sections'->1->'body'->'Other waiting reads of this university and kind'->'first') <> 1 then raise exception 'E13: card (%)', d; end if;
   if (select count(*) from jsonb_array_elements(d->'actions') x where (x->>'allowed')::boolean) < 3 then raise exception 'E13: recovery actions other than Reject (%)', d->'actions'; end if;
   if (select (x->>'allowed')::boolean from jsonb_array_elements(d->'actions') x where x->>'key' = 'ai_analyse') then raise exception 'E13: AI analysis off by default'; end if;
   -- re-read from stored evidence: the existing corrected read; a second click on the unchanged problem starts nothing

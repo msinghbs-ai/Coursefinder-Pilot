@@ -1,17 +1,16 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.465'
-export const PACKAGE_VERSION='0.1.392'
+export const UI_VERSION='2.15.466'
+export const PACKAGE_VERSION='0.1.393'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'4 Nov 2026',
-  title:'AER readiness checks held reads first; held reads record why they are held',
+  title:'Held AER cards load their recovery actions again',
   changes:[
-    'The Layer 4 readiness check now checks entry-requirement reads that were never checked before re-checking old ones, so incomplete reads are no longer shown as ready for review.',
-    'Each held entry-requirement read records why it is held (dropped requirements, row limit, shared page or row-level) and whether a re-read could fix it.',
-    'Re-reading held items from their stored copies is built and switched off.'
+    'A held Entry requirements (AER) card no longer times out loading its recovery panel, so Re-read from stored evidence, Request official evidence and Open human input appear beside Reject the read.',
+    'The panel names the other waiting reads of the same university and kind instead of re-checking each one.'
   ],
   bugFixes:[]
 }
