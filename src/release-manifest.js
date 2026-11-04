@@ -1,18 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.469'
-export const PACKAGE_VERSION='0.1.396'
+export const UI_VERSION='2.15.470'
+export const PACKAGE_VERSION='0.1.397'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'4 Nov 2026',
-  title:'Job output measures, kept classifier results and governed issue severity',
+  title:'AER review queue: ready items first, university summary and readable recovery',
   changes:[
-    'The interventions and readiness jobs now report what they produced (created, reused, resolved, returned to recovery, awaiting input; checked, newly classified, technically blocked, ready for judgement, superseded); a run that produces nothing is verified only with a justified reason.',
-    'Each scholarship classifier run now keeps its result, including repeated cases folded and report errors.',
-    'An issue\'s severity can be changed through a governed function with the old and new severity, an evidence-based reason, the deciding authority and an audit event; the issue, its fingerprint and history are kept.',
-    'The operations report shows progress by stage for scholarships and AER (eligible, processed, technically recovered, review-ready, human-decided, admitted, published, blocked) and lists work with no recovery condition.'
+    'A university\'s Entry requirements (AER) pill opens on its items ready to decide first, with All waiting one click away; every decision is still one item at a time through the existing Approve, Approve except and Reject actions, gated as before.',
+    'Each university shows a summary: pending, ready, technically held, needing input, stale, open human input, admitted and unresolved.',
+    'Held AER cards show a review packet (course, qualification, country, audience, stored evidence and quotations, proposed and active rows, manual locks, checks, recommended decision and its consequences) and a readable recovery summary instead of raw data.',
+    'Held reads that no automatic fix can reach raise one Human input needed item each; reads refused at the row limit wait for a row-limit decision and are not re-read or sent for rows.',
+    'Reviewers can claim a university so two reviewers do not work the same items.'
   ],
   bugFixes:[]
 }

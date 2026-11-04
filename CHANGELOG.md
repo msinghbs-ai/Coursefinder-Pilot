@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.397 — 4 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.470** (Platform Admin directions 4 Nov 10:00 §3–§4 and 12:16 RMIT AER settlement). Migration `20261104530000_cf247_aer_review_queue`: settlement classes from stored gate results (no gate per row), ready-first queue, university summary, review packet (`security.layer4_aer_review_detail_v1`, calling the recovery detail by name), claims in `pipeline.layer4_review_owners`, `security.aer_progress_counts_v1` (submitted, saved, admitted, published); md5-guarded edit of security.aer_e13_recover_v1 (90f80d59 → 1bd8be8b; pilot bounded to named universities, total cap, never re-reads a read refused on the same stored copy). On: har.generate_aer_item_on (asks people only). Off: aer.e13_recover_on. Layer 4 600 limit, E13, D-R3, manual locks and roles unchanged; nothing dropped; consumer API untouched. Spec s277.
+
 ## 0.1.396 — 4 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.469** (Platform Admin direction 4 Nov 10:00 §6, §7, §10, §11). Migration `20261104520000_cf247_verification_measures`: `pipeline.job_output_contracts`, `pipeline.scholarship_coverage_classify_runs`, `security.integration_issue_severity_v1`, `security.recovery_condition_gaps_v1`, `security.pipeline_progress_table_v1`; md5-guarded edits of integration_issue_upsert_v1 (b0a1a649 → f9d7bf1a; a governed severity is not undone by the next observation), scholarship_coverage_classify_v1 (c072494c → 7cd32235; isolated run ledger), progress_measure_v1, progress_zero_reason_v1, release_first_run_register_v1, self_sustainability_v1. Scope basis corrected: 2,560 in scope; 755 is providers with candidates. Nothing switched; nothing dropped; consumer API untouched. Spec s278.
