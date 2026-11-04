@@ -7,7 +7,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261104500000_cf247_verification_measures.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations/20261104520000_cf247_verification_measures.sql', 'utf8')
 const FX = 'tests/fixtures/verification-measures'
 const run = fs.readFileSync(`${FX}/run.sh`, 'utf8')
 const fixtures = fs.readFileSync(`${FX}/fixtures.sql`, 'utf8')

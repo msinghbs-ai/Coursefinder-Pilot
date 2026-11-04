@@ -123,7 +123,7 @@ on conflict (jobname) do nothing;
 
 -- the three released jobs awaiting a measure get their contract (records only; judged on the next check)
 update pipeline.release_job_verifications v set transition_key = c.measure_key,
-       evidence = v.evidence || jsonb_build_object('output_contract', c.measure_key, 'contract_set_by', '20261104500000')
+       evidence = v.evidence || jsonb_build_object('output_contract', c.measure_key, 'contract_set_by', '20261104520000')
   from pipeline.job_output_contracts c
  where c.jobname = v.jobname and v.transition_key is null and v.status = 'awaiting_first_run';
 
@@ -379,7 +379,7 @@ begin
                                     'providers_without_source', (select count(distinct g.provider_id) from pipeline.aer_gap_findings g where g.state = 'open' and g.root_cause = 'no_source')))),
     'scholarship_scope', jsonb_build_object('in_scope_providers', v_scope, 'classified', v_classified, 'not_yet_classified', v_scope - v_classified,
       'providers_with_candidates', v_cand,
-      'meaning', 'in scope: providers of the scholarship coverage ledger (pipeline.coverage_provider_reconciliation, domain scholarship) except not applicable and out of scope. providers_with_candidates (755 on 4 Nov) counts providers with at least one candidate page ever found, of any status: a subset of the scope, not an eligibility count; it was the progress reading''s eligible measure until 20261104500000.'));
+      'meaning', 'in scope: providers of the scholarship coverage ledger (pipeline.coverage_provider_reconciliation, domain scholarship) except not applicable and out of scope. providers_with_candidates (755 on 4 Nov) counts providers with at least one candidate page ever found, of any status: a subset of the scope, not an eligibility count; it was the progress reading''s eligible measure until 20261104520000.'));
 end $function$;
 revoke all on function security.pipeline_progress_table_v1(integer) from public, anon, authenticated;
 comment on function security.pipeline_progress_table_v1(integer) is 'CF-247 direction 4 Nov 2026 10:00 §11: verified progress by pipeline (read only)';
@@ -395,11 +395,11 @@ select pg_temp.edit_once('security.self_sustainability_v1(integer)', '77c269232c
 
 -- 8. register (housekeeping) and post-check ----------------------------------------------------------------------------------------------------------------
 insert into pipeline.component_register(kind, name, layer, area, purpose, status, replaces, introduced_in) values
- ('table', 'pipeline.job_output_contracts', 'Platform', 'Platform upkeep', 'Measurable output of scheduled jobs outside the progress chains', 'active', '{}', '20261104500000'),
- ('table', 'pipeline.scholarship_coverage_classify_runs', 'Layer 2', 'Scholarships', 'Each scholarship classifier run''s answer', 'active', '{}', '20261104500000'),
- ('function', 'security.integration_issue_severity_v1', 'Platform', 'Platform upkeep', 'Governed issue severity change', 'active', '{}', '20261104500000'),
- ('function', 'security.recovery_condition_gaps_v1', 'Platform', 'Platform upkeep', 'States with no recovery condition or authority blocker', 'active', '{}', '20261104500000'),
- ('function', 'security.pipeline_progress_table_v1', 'Platform', 'Platform upkeep', 'Verified progress by pipeline (§11)', 'active', '{}', '20261104500000')
+ ('table', 'pipeline.job_output_contracts', 'Platform', 'Platform upkeep', 'Measurable output of scheduled jobs outside the progress chains', 'active', '{}', '20261104520000'),
+ ('table', 'pipeline.scholarship_coverage_classify_runs', 'Layer 2', 'Scholarships', 'Each scholarship classifier run''s answer', 'active', '{}', '20261104520000'),
+ ('function', 'security.integration_issue_severity_v1', 'Platform', 'Platform upkeep', 'Governed issue severity change', 'active', '{}', '20261104520000'),
+ ('function', 'security.recovery_condition_gaps_v1', 'Platform', 'Platform upkeep', 'States with no recovery condition or authority blocker', 'active', '{}', '20261104520000'),
+ ('function', 'security.pipeline_progress_table_v1', 'Platform', 'Platform upkeep', 'Verified progress by pipeline (§11)', 'active', '{}', '20261104520000')
 on conflict do nothing;
 
 do $$

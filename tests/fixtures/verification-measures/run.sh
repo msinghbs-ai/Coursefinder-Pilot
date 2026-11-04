@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CF-247 verification measures (migration 20261104500000; direction 4 Nov 2026 10:00 §6, §7, §10, §11) on isolated fixtures. Needs a scratch
+# CF-247 verification measures (migration 20261104520000; direction 4 Nov 2026 10:00 §6, §7, §10, §11) on isolated fixtures. Needs a scratch
 # PostgreSQL 16 (never a Supabase project): PGHOST/PGPORT/PGUSER point at it. Builds the database as ../first-run-verification/run.sh does (the
 # queue, workstream A, the reopen rule, SS-021 F2, ops_report_v1 at 3ba694dc), applies first-run verification 20261104460000 as released (v2.15.464),
 # then stubs.sql and the scholarship classifier as live (its definition from 20261104390000 with the v2.15.461 edit from 20261104430000). Checks
@@ -9,7 +9,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 DB=${VM_DB:-verification_measures_fixtures}
 P="psql -v ON_ERROR_STOP=1 -q -X"
-MIG=supabase/migrations/20261104500000_cf247_verification_measures.sql
+MIG=supabase/migrations/20261104520000_cf247_verification_measures.sql
 FRV=tests/fixtures/first-run-verification
 FX=tests/fixtures/verification-measures
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }

@@ -1,4 +1,4 @@
--- CF-247 verification-measures fixtures (migration 20261104500000). Each case asserts an outcome; a failed assertion raises and stops run.sh.
+-- CF-247 verification-measures fixtures (migration 20261104520000). Each case asserts an outcome; a failed assertion raises and stops run.sh.
 -- Times are relative to now(); jobs, runs, issues and rows are synthetic.
 \set ON_ERROR_STOP on
 create or replace function pg_temp.ok(p_cond boolean, p_what text) returns void language plpgsql as $$
