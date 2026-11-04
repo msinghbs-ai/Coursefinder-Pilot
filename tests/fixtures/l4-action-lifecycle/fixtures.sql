@@ -33,6 +33,16 @@ begin
   -- Refresh: the card reads the same acknowledgement back from the audit row
   v := pg_temp.lc('aer_review', v_ref);
   if v->'last_action'->>'ref' <> r->'ack'->>'ref' or v->'last_action'->'result'->>'outcome' <> 'already_requested' then raise exception 'C1: refresh lost the acknowledgement %', v->'last_action'; end if;
+  -- observation 13:00: the Platform Admin's wording, every attempt with its operation, reader times and result; the compact summary
+  if r->'ack'->>'headline' <> 'Recovery refused — unchanged evidence and reader' then raise exception 'C1: headline %', r->'ack'->>'headline'; end if;
+  v := pg_temp.lc('aer_review', v_ref);
+  if (select count(*) from jsonb_array_elements(v->'history') h where h->>'action' = 'corrected read' and (h->>'attempt')::int in (1, 2)) <> 2
+     or v->'recovery'->>'attempt' <> '2' or v->'recovery'->'operation'->>'request' <> 'd05725e2-4814-4b80-957a-3d74357a67a5' or v->'recovery'->'operation'->>'enrich_item' <> '270218'
+     or v->'recovery'->'reader'->'started'->>'hm' <> '12:17 AEDT' or v->'recovery'->'reader'->'completed'->>'hm' <> '12:18 AEDT' or v->'recovery'->'reader'->>'cost_usd' <> '0.0063'
+     or v->'recovery'->'reader'->>'stored_copy' <> 'a0ffab81-9eff-40dc-9d7b-b5dfbdd7c032' or v->'recovery'->>'original_read' <> v_ref
+     or v->'recovery'->'result'->>'headline' <> 'Recovery completed — still held under E13' then raise exception 'C1: recovery attempt %', v->'recovery'; end if;
+  if v->>'course_id' <> 'b365fde8-d003-4ef6-80c3-4136fbd5587a' or v->>'provider_id' <> '8e1adb6c-e069-43db-9584-bd054255e702' or v->'waiting'->>'text' not like '% d % h'
+     or v->>'poll' is not null then raise exception 'C1: summary %', v - 'history'; end if;
   raise notice 'C1 ok: RMIT: requested 12:17 pm AEDT (audit #28863), executed 12:18 pm, refused (row limit), still pending since 29 Oct 12:44 pm; the same read is not offered, a second click names the original action and its refusal and reads nothing';
 end $$;
 
@@ -42,7 +52,14 @@ declare r jsonb; v_ref text := '5e000000-0000-4000-8000-000000000002'; v_e bigin
 begin
   r := pg_temp.decide('aer_review', v_ref, 'reread_stored');
   if not (r->>'ok')::boolean or r->'ack'->>'outcome' <> 'queued' or r->'ack'->>'stage' <> 'scheduled' or r->'ack'->>'next' not like 'the entry reader reads the stored copy (job %' then raise exception 'C2: accepted %', r->'ack'; end if;
+  if r->'ack'->>'headline' not like 'Recovery queued — __:__ AEDT' then raise exception 'C2: headline %', r->'ack'->>'headline'; end if;
   v_e := (r->'result'->'detail'->>'enrich_item_id')::bigint;
+  -- a second click while it is queued returns that operation and starts nothing
+  n := (select count(*) from pipeline.aer_read_supersessions);
+  r := pg_temp.decide('aer_review', v_ref, 'reread_stored');
+  if (r->>'ok')::boolean or r->'ack'->>'headline' <> 'Already queued — existing request retained' or r->'result'->'detail'->'existing'->>'enrich_item' <> v_e::text
+     or (select count(*) from pipeline.aer_read_supersessions) <> n then raise exception 'C2: second click while queued %', r; end if;
+  if pg_temp.lc('aer_review', v_ref)->'poll'->>'every_seconds' <> '15' then raise exception 'C2: the card does not poll while queued'; end if;
   -- C2a Refresh during the asynchronous read: scheduled, then running, from the persisted records
   if pg_temp.lc('aer_review', v_ref)->>'stage' <> 'scheduled' then raise exception 'C2a: refresh while queued'; end if;
   update pipeline.field_enrich_items set state = 'leased' where id = v_e;
@@ -78,7 +95,9 @@ begin
   if not (r1->>'ok')::boolean or r1->'ack'->>'outcome' <> 'human_input' or r1->'ack'->>'intervention_id' is null then raise exception 'C3: first %', r1->'ack'; end if;
   n := (select count(*) from pipeline.layer4_interventions);
   r2 := pg_temp.decide('aer_review', v_ref, 'open_intervention');
-  if (r2->>'ok')::boolean or r2->'ack'->>'outcome' <> 'already_requested' or r2->>'request' not like 'Already requested: recovery action % Now: Human input needed item % is awaiting input.%'
+  if (r2->>'ok')::boolean or r2->'ack'->>'outcome' <> 'already_requested' or r2->'ack'->>'headline' <> 'Already queued — existing request retained'
+     or r2->>'request' not like 'Already queued — existing request retained: Human input needed item % (awaiting input, opened %'
+     or r2->'result'->'detail'->'existing'->>'intervention_id' <> r1->'ack'->>'intervention_id'
      or (select count(*) from pipeline.layer4_interventions) <> n then raise exception 'C3: duplicate %', r2; end if;
   if pg_temp.lc('aer_review', v_ref)->>'stage' <> 'awaiting_input' or pg_temp.lc('aer_review', v_ref)->'next'->>'text' not like 'Human input needed item % waits for a person%' then raise exception 'C3: lifecycle'; end if;
   raise notice 'C3 ok: the first request opens Human input needed (linked), the second names the original action and the item''s current state and opens nothing';
@@ -94,6 +113,8 @@ begin
   if o->>'stage' <> 'superseded' or o->>'open' <> 'false' or o->'successor'->>'ref' <> v_new::text or o->'steps'->>'valid' <> 'yes (complete)' then raise exception 'C4: original %', o - 'history'; end if;
   if n->'predecessor'->>'ref' <> v_old or n->'times'->'first_entered'->>'at' <> o->'times'->'first_entered'->>'at' or n->'times'->'item_created'->>'at' = n->'times'->'first_entered'->>'at'
      or n->>'stage' <> 'awaiting_decision' then raise exception 'C4: new read %', n - 'history'; end if;
+  if o->'recovery'->'result'->>'headline' <> 'Recovery completed — replacement read ready for review' or o->'recovery'->>'replacement_read' <> v_new::text
+     or o->'recovery'->'re_entered' is null or o->'successor'->>'complete' is null then raise exception 'C4: replacement %', o->'recovery'; end if;
   raise notice 'C4 ok: the corrected read replaced the original (superseded, linked to its successor); the new read names its predecessor and keeps the first-entered time';
 end $$;
 
@@ -167,6 +188,21 @@ begin
   if (select count(*) from jsonb_object_keys(v->'items')) <> least(jsonb_array_length(v_items), 50) then raise exception 'C9: page read %', (select count(*) from jsonb_object_keys(v->'items')); end if;
   raise notice 'C9 ok: % items over every kind (% kinds and Human input needed) have a lifecycle, times and a reason; a page of % in % ms',
     n, (select count(distinct kind) from security.layer4_inbox_items_v2(null, null, null, false)), jsonb_array_length(v_items), round(extract(epoch from clock_timestamp() - t) * 1000);
+end $$;
+
+-- C11 deferred, and a read the scheduled job asked for is returned to a reviewer's click (observation 13:00 §3, §6)
+do $$
+declare r jsonb; v_ref text := '5e000000-0000-4000-8000-000000000009'; n int;
+begin
+  if security.layer4_ack_normalise_v1('aer_review', 'reread_stored', false, '{"refused": "the daily cap is reached"}', null, null)->>'outcome' <> 'deferred'
+     or security.layer4_ack_normalise_v1('aer_review', 'reread_stored', false, '{"refused": "the corrected read was cut at the row limit (E13)"}', null, null)->>'outcome' <> 'refused'
+     or security.layer4_recovery_headline_v1('refused', 'AI reading is stopped (AI limits): daily cap', now()) <> 'Recovery deferred — daily limit reached' then raise exception 'C11: deferred'; end if;
+  perform security.course_entry_correction_v1(v_ref::uuid, '63ba56cb-48d4-4169-98c2-7c4d1f72925b', 'Scheduled entry reading (job aer-scheduled-read): fixture');
+  n := (select count(*) from pipeline.aer_read_supersessions);
+  r := pg_temp.decide('aer_review', v_ref, 'reread_stored');
+  if (r->>'ok')::boolean or r->'ack'->>'headline' <> 'Already queued — existing request retained' or (select count(*) from pipeline.aer_read_supersessions) <> n
+     or r->>'request' not like 'Already queued — existing request retained: request % enrich item % (queued, asked %' then raise exception 'C11: %', r; end if;
+  raise notice 'C11 ok: a cap or budget refusal is "Recovery deferred — daily limit reached"; a reviewer''s click on a read the scheduled job queued returns that request and starts nothing';
 end $$;
 
 -- C10 the measures (§10)

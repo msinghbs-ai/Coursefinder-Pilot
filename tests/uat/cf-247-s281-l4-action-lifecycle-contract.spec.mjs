@@ -1,4 +1,4 @@
-// Guards: Platform Admin decision 4 Nov 2026 12:24 (Layer 4 usability, action lifecycle and audit review; IQ-00279 RMIT Diploma of Commerce): every Layer 4 action has a traceable, durable outcome; §3 timestamps in Australian time; no deterministic repeat of a refused read
+// Guards: Platform Admin decision 4 Nov 2026 12:24 (Layer 4 usability, action lifecycle and audit review; IQ-00279 RMIT Diploma of Commerce) and observation 13:00 (re-read transparency): every Layer 4 action has a traceable, durable outcome in the Platform Admin's wording; §3 timestamps in Australian time; no duplicate or deterministic repeat of a recovery; the card updates by itself when a recovery completes
 // Migration 20261104540000; audit matrix admin docs/platform/ui-audit/2026-11-04-layer4-kind-audit-matrix.md. The lifecycle, the
 // acknowledgement and the repeat guard are proved on PostgreSQL 16 by tests/fixtures/l4-action-lifecycle (C1-C10: the RMIT E13 case, accepted
 // but incomplete, refused, duplicate, successful corrected read, superseded, role-disabled, admission and publication, re-entry, Refresh during
@@ -40,12 +40,26 @@ test('a refused corrected read of an unchanged stored copy is neither recommende
   expect(fx).toContain("raise exception 'C1: a read was started'")
 })
 
+test('the acknowledgement uses the Platform Admin\'s wording (observation 13:00 §3), chosen on the server', () => {
+  const head = fn('security.layer4_recovery_headline_v1') + fn('security.layer4_ack_headline_v1')
+  expect(fn('security.layer4_action_ack_v1')).toContain('security.layer4_ack_headline_v1(')
+  expect(fn('security.layer4_lifecycle_one_v1')).toContain('security.layer4_ack_headline_v1(')
+  for (const w of ["'Recovery queued — '", "'Already queued — existing request retained'", "'Recovery deferred — '", "'daily limit reached'",
+                   "'Recovery refused — unchanged evidence and reader'", "'Recovery completed — still held under E13'", "'Recovery completed — replacement read ready for review'"]) expect(head).toContain(w)
+  expect(m).toContain("'hm', to_char(p_at, 'HH24:MI TZ')")
+  // a repeated click while queued or running returns that operation, for every recovery choice
+  const dec = fn('security.layer4_aer_recovery_decide_v1')
+  expect(dec).toContain("if v_osup.id is not null or v_ofe.id is not null or v_oiv.id is not null then")
+  expect(fx).toContain('C11 ok:')
+  expect(ui).toContain('data-l4-ack-headline')
+})
+
 test('every Inbox decision replies with a normalised acknowledgement built after the server has acted', () => {
   expect(m).toContain('return security.layer4_action_ack_v1(v_kind, v_ref, jsonb_build_object(\'ok\', true,')
   expect(m).toContain('return security.layer4_action_ack_v1(v_kind, v_ref, jsonb_build_object(\'ok\', coalesce((v_r->>\'ok\')::boolean, false),')
   const norm = fn('security.layer4_ack_normalise_v1')
   for (const o of ['accepted', 'refused', 'queued', 'already_requested', 'completed', 'incomplete', 'human_input']) expect(norm).toContain(`'${o}'`)
-  expect(fn('security.layer4_action_ack_v1')).toContain("'ack', v_n || jsonb_build_object('ref'")
+  expect(fn('security.layer4_action_ack_v1')).toContain("'ack', v_n || jsonb_build_object('headline', v_head, 'ref'")
 })
 
 test('the lifecycle keeps the five distinctions and the §3 times in Australian time; the first entry is never reset', () => {
@@ -61,7 +75,7 @@ test('the lifecycle keeps the five distinctions and the §3 times in Australian 
 
 test('the card shows the lifecycle from persisted records, in its own component; the Inbox only hooks it in', () => {
   expect(inbox).toContain("import{ItemLifecycle}from'./Layer4ItemLifecycle'")
-  expect(inbox).toContain('<ItemLifecycle kind={it.kind} refId={it.ref} ack={ack} seen={seen}/>')
+  expect(inbox).toContain('<ItemLifecycle kind={it.kind} refId={it.ref} ack={ack} seen={seen} onSettled={()=>{setRev(v=>v+1);onRefresh?.()}}/>')
   expect(inbox).toContain('setAck(r?.ack||null)')
   expect(ui).toContain("supabase.rpc('admin_layer4_lifecycle',{p_args:{items:")
   expect(ui).not.toMatch(/setAck\(\{|ok:\s*true/) // success is never assumed on the client
@@ -111,9 +125,9 @@ test.describe('desktop', () => {
   test("a decision shows only the server's acknowledgement, and it survives Refresh from the persisted record", async ({ page }) => {
     await mockAdmin(page, { rank: 6 })
     let decided = false
-    const ack = { outcome: 'human_input', ref: 'audit #30001', at: T('Wed 4 Nov 2026, 1:05 pm AEDT'), next: 'Human input needed item 77 waits for a person' }
+    const ack = { outcome: 'human_input', headline: 'Human input needed — item 77 — 13:05 AEDT', ref: 'audit #30001', at: T('Wed 4 Nov 2026, 1:05 pm AEDT'), next: 'Human input needed item 77 waits for a person' }
     await card(page, {
-      lifecycle: () => LC(decided ? { at: ack.at, by: 'reviewer', action: 'open_intervention', ref: 'audit #30001', result: { outcome: 'human_input' } } : null),
+      lifecycle: () => LC(decided ? { at: ack.at, by: 'reviewer', action: 'open_intervention', ref: 'audit #30001', result: { outcome: 'human_input', headline: ack.headline } } : null),
       decide: () => { decided = true; return { ok: true, kind: 'aer_review', choice: 'open_intervention', event_id: 30001, ack } },
     })
     await page.goto('/#layer-4-review')
@@ -124,10 +138,34 @@ test.describe('desktop', () => {
     await c.locator('[data-l4-choice="open_intervention"]').click()
     await c.getByLabel('Reason').fill('Dropped rows need a person')
     await c.locator('[data-l4-confirm]').click()
+    await expect(page.locator('[data-l4-ack="human_input"]').first()).toContainText('Human input needed — item 77 — 13:05 AEDT')
     await expect(page.locator('[data-l4-ack="human_input"]').first()).toContainText('audit #30001')
     await page.reload()
     await page.locator('[data-l4-uni="RMIT University"] [data-l4-pill="aer_review"]').click()
     await expect(page.locator('[data-l4-item="aer_review"] [data-l4-ack="human_input"]')).toContainText('audit #30001 · Wed 4 Nov 2026, 1:05 pm AEDT')
+  })
+})
+
+test.describe('automatic reconciliation', () => {
+  test('a queued recovery is read again by itself; when it completes the card and the counts refresh', async ({ page }) => {
+    await mockAdmin(page, { rank: 6 })
+    let reads = 0, summaries = 0
+    await card(page, { decide: () => ({}), lifecycle: () => {
+      reads++
+      const done = reads >= 3
+      return { ...LC(null), stage: done ? 'failed' : 'scheduled', stage_label: done ? 'Failed: still pending' : 'Scheduled', repeat_guard: null,
+        poll: done ? null : { every_seconds: 5, max: 10 },
+        recovery: { attempt: 3, at: T('Wed 4 Nov 2026, 1:10 pm AEDT'), result: { headline: done ? 'Recovery completed — still held under E13' : 'Recovery queued — 13:10 AEDT' } } } } })
+    page.on('request', (r) => { if (r.url().endsWith('/rpc/admin_layer4_inbox') && r.postDataJSON()?.p_action === 'summary') summaries++ })
+    await page.goto('/#layer-4-review')
+    await page.locator('[data-l4-uni="RMIT University"] [data-l4-pill="aer_review"]').click()
+    const c = page.locator('[data-l4-item="aer_review"]')
+    await expect(c.locator('[data-l4-last-recovery]')).toContainText('Attempt 3: Recovery queued — 13:10 AEDT')
+    await expect(c.locator('[data-l4-polling]')).toBeVisible()
+    const before = summaries
+    await expect(c.locator('[data-l4-last-recovery]')).toContainText('Recovery completed — still held under E13', { timeout: 20000 })
+    await expect(c.locator('[data-l4-polling]')).toHaveCount(0)
+    await expect.poll(() => summaries, { timeout: 5000 }).toBeGreaterThan(before)
   })
 })
 

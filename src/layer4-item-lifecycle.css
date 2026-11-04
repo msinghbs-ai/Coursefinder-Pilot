@@ -15,3 +15,5 @@
 .l4lc-more summary{cursor:pointer;min-height:44px;display:flex;align-items:center}
 .l4lc-err{color:var(--cf-danger,#b3261e)}
 @media (max-width:480px){.l4lc-times,.l4lc-steps{grid-template-columns:1fr}.l4lc-times dd,.l4lc-steps dd{margin-bottom:.2rem}}
+.l4lc-ev{display:block;color:var(--cf-muted,#5d6670);margin:.1rem 0 .3rem}
+.l4lc-summary{margin-top:.2rem}

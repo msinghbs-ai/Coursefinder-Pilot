@@ -24,7 +24,7 @@
 --     requested, refused and completed, automatic resumptions, verified admissions, consumer publication, repeated no-yield actions).
 -- Edited live functions (md5-guarded, before -> after):
 --   security.layer4_aer_recovery_detail_v1(text)                636c1764788b008fb7456365d600b452 -> dbf06336a7ee14fd0a84697d616cb67c
---   security.layer4_aer_recovery_decide_v1(text,text,text,text) 841234cb4826983b3297d39a34cb0978 -> 5ceebd7df012f59e1bec84569c2fcb57
+--   security.layer4_aer_recovery_decide_v1(text,text,text,text) 841234cb4826983b3297d39a34cb0978 -> f247220fd13231654f47877ecc72240e
 --   public.admin_layer4_inbox(text,jsonb)                       29705b99108e7a0b4d68fea398565d36 -> c0a972a6d6cc0652ce2dcc8f4d9cbbfc
 -- Replaces: security.layer4_aer_recovery_detail_v1(text) and security.layer4_aer_recovery_decide_v1(text,text,text,text) (same names and
 --   signatures; the repeat guard and the readable last corrected read); public.admin_layer4_inbox (same name and actions; decide replies add ack)
@@ -40,7 +40,7 @@ begin
   if v not in (p_before, p_after) then raise exception 'live % differs from the definition this change edits (md5 %)', p_sig, v; end if;
 end $f$;
 select pg_temp.guard('security.layer4_aer_recovery_detail_v1(text)', '636c1764788b008fb7456365d600b452', 'dbf06336a7ee14fd0a84697d616cb67c');
-select pg_temp.guard('security.layer4_aer_recovery_decide_v1(text,text,text,text)', '841234cb4826983b3297d39a34cb0978', '5ceebd7df012f59e1bec84569c2fcb57');
+select pg_temp.guard('security.layer4_aer_recovery_decide_v1(text,text,text,text)', '841234cb4826983b3297d39a34cb0978', 'f247220fd13231654f47877ecc72240e');
 select pg_temp.guard('public.admin_layer4_inbox(text,jsonb)', '29705b99108e7a0b4d68fea398565d36', 'c0a972a6d6cc0652ce2dcc8f4d9cbbfc');
 
 -- 1 settings (G2; Settings › Pipeline settings, section Layer 4) --------------------------------------------------------------------------------
@@ -68,7 +68,15 @@ insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, ki
  ('pipeline', 'layer4.lifecycle_report_days', 'Layer 4 lifecycle: report window',
   'The days the Layer 4 lifecycle measures cover (actions requested, refused and completed, resumptions, admissions, repeats).',
   'number', to_jsonb(7), 1, 90, 'days', 339, 'Layer 4', 'security.layer4_lifecycle_report_v1',
-  'Platform Admin 4 Nov 2026 12:24 §10')
+  'Platform Admin 4 Nov 2026 12:24 §10'),
+ ('pipeline', 'layer4.lifecycle_poll_seconds', 'Layer 4 lifecycle: re-read a running recovery every',
+  'While a card''s recovery is queued or running, the card reads its progress again this often, so it updates by itself when the recovery completes.',
+  'number', to_jsonb(15), 5, 300, 'seconds', 340, 'Layer 4', 'security.layer4_lifecycle_one_v1; src/Layer4ItemLifecycle.jsx',
+  'Platform Admin observation 4 Nov 2026 13:00 §5 (automatic state reconciliation)'),
+ ('pipeline', 'layer4.lifecycle_poll_max', 'Layer 4 lifecycle: progress reads of one running recovery at most',
+  'A card stops reading its progress by itself after this many reads; Refresh reads it again.',
+  'number', to_jsonb(40), 1, 500, 'reads', 341, 'Layer 4', 'security.layer4_lifecycle_one_v1; src/Layer4ItemLifecycle.jsx',
+  'Platform Admin observation 4 Nov 2026 13:00 §5 (bounded)')
 on conflict do nothing;
 -- a setting that has only been created has not changed: its first time is set before any corrected read existed, so creating
 -- layer4.reader_revision and layer4.reread_change_keys here does not count as a reader change for earlier refusals
@@ -111,7 +119,8 @@ language sql stable set search_path to ''
 set timezone to 'Australia/Sydney'  -- fixed: the decision (§3) fixes Australian time, AEDT or AEST by date
 as $function$
   -- a time for a Layer 4 card: the instant and its Australian reading, e.g. "Wed 4 Nov 2026, 12:17 pm AEDT"
-  select case when p_at is null then null else jsonb_build_object('at', p_at, 'text', to_char(p_at, 'Dy FMDD Mon YYYY, FMHH12:MI am TZ')) end
+  -- and a short one for acknowledgements, e.g. "12:17 AEDT" (observation 13:00 §3)
+  select case when p_at is null then null else jsonb_build_object('at', p_at, 'text', to_char(p_at, 'Dy FMDD Mon YYYY, FMHH12:MI am TZ'), 'hm', to_char(p_at, 'HH24:MI TZ')) end
 $function$;
 revoke all on function security.l4_time_v1(timestamptz) from public, anon, authenticated;
 
@@ -157,13 +166,30 @@ begin
 end $function$;
 revoke all on function security.layer4_reread_repeat_v1(uuid) from public, anon, authenticated;
 
+create or replace function security.layer4_recovery_headline_v1(p_state text, p_outcome text, p_at timestamptz) returns text
+language sql stable set search_path to '' as $function$
+  -- the Platform Admin's wording (observation 4 Nov 2026 13:00 §3) for one corrected read, from its record: queued, deferred, completed and still
+  -- held under E13, completed with a replacement read, or completed and not used (with the reason)
+  select case
+    when p_state = 'requested' then 'Recovery queued — ' || (security.l4_time_v1(p_at)->>'hm')
+    when p_state = 'superseded' then 'Recovery completed — replacement read ready for review'
+    when p_state = 'refused' and coalesce(p_outcome, '') ~* '(daily (cap|limit)|limit reached|back-pressure|AI limits|budget)' and coalesce(p_outcome, '') !~* 'row limit'
+      then 'Recovery deferred — ' || case when p_outcome ~* 'daily' then 'daily limit reached' else p_outcome end
+    when p_state = 'refused' and coalesce(p_outcome, '') ~* '(E13|row limit|still drops|has no row|not entry requirements)' then 'Recovery completed — still held under E13'
+    when p_state = 'refused' then 'Recovery completed — not used: ' || coalesce(p_outcome, 'refused')
+    else null end
+$function$;
+revoke all on function security.layer4_recovery_headline_v1(text, text, timestamptz) from public, anon, authenticated;
+
 create or replace function security.layer4_ack_normalise_v1(p_kind text, p_choice text, p_ok boolean, p_result jsonb, p_request text, p_outcome jsonb) returns jsonb
 language sql immutable set search_path to '' as $function$
   -- the normalised result of one Layer 4 action, from the reply or from its audit row (p_ok null: read from the result):
-  -- accepted | refused | queued | already_requested | completed | incomplete | human_input, with the reason and the permitted alternative
+  -- accepted | refused | deferred | queued | already_requested | completed | incomplete | human_input, with the reason and the permitted alternative
   with x as (select coalesce(p_result, '{}'::jsonb) r, coalesce(p_result->'detail', p_result, '{}'::jsonb) d),
        o as (select case
          when x.r ? 'repeat' or x.d ? 'repeat' then 'already_requested'
+         when (x.d ? 'refused' or x.d ? 'held' or p_ok is false) and coalesce(p_request, x.d->>'refused', x.d->>'held', '') ~* '(daily (cap|limit)|limit reached|back-pressure|AI limits|budget)'
+              and coalesce(p_request, x.d->>'refused', '') !~* 'row limit' then 'deferred'
          when p_ok is false and (x.d ? 'refused' or x.d ? 'held') then 'refused'
          when p_ok is null and (x.d ? 'refused' or x.d ? 'held') then 'refused'
          when p_kind = 'intervention' and coalesce(x.r->>'ok', '') = 'false' then 'incomplete'
@@ -182,7 +208,7 @@ language sql immutable set search_path to '' as $function$
          else 'accepted' end k from x)
   select jsonb_build_object('outcome', o.k,
     'reason', coalesce(p_request, x.d->>'refused', x.d->>'held', case when o.k = 'already_requested' then 'already requested' end),
-    'alternative', case when o.k in ('refused', 'already_requested', 'incomplete') then
+    'alternative', case when o.k in ('refused', 'deferred', 'already_requested', 'incomplete') then
                      case when p_kind = 'aer_review' then coalesce(x.d->>'alternative', 'Open human input with the dropped requirements, or Request official evidence')
                           when p_kind = 'intervention' then 'Correct the input as asked, or Return to technical recovery'
                           else 'Choose another permitted action, or leave the item pending with its reason' end end,
@@ -203,13 +229,17 @@ declare v_n int := security.pipeline_num_v1('layer4.lifecycle_history_max', 8)::
         v_first timestamptz; v_created timestamptz; v_upd timestamptz; v_rev timestamptz; v_auto timestamptz; v_entered timestamptz; v_next timestamptz; v_next_text text;
         v_decided timestamptz; v_admitted timestamptz; v_published timestamptz; v_status text; v_stage text; v_why text; v_owner text; v_entries int := 1;
         v_requested text := 'no'; v_executed text := 'not applicable'; v_valid text := 'not applicable'; v_approved text := 'not yet'; v_adm text := 'not yet'; v_pub text := 'not yet';
-        v_rows int; v_pid uuid; v_open boolean := true; v_first_ev timestamptz;
+        v_rows int; v_pid uuid; v_open boolean := true; v_first_ev timestamptz; v_att record; v_recovery jsonb; v_course uuid; v_poll jsonb;
 begin
   -- the Inbox's own audit rows for the item (every reviewer action, accepted or refused), newest first
   for e in select x.id, x.created_at, x.actor, x.detail from pipeline.admin_control_events x
             where x.area = 'layer4' and x.target = p_kind || ':' || p_ref and x.action = 'inbox_decide' order by x.id desc limit v_n loop
     v_hist := v_hist || jsonb_build_array(jsonb_build_object('at', security.l4_time_v1(e.created_at), 'by', 'reviewer', 'action', e.detail->>'choice', 'ref', 'audit #' || e.id,
-                'event_id', e.id, 'reason', e.detail->>'reason', 'result', security.layer4_ack_normalise_v1(p_kind, e.detail->>'choice', null, e.detail->'result', null, null)));
+                'event_id', e.id, 'reason', e.detail->>'reason',
+                'result', security.layer4_ack_normalise_v1(p_kind, e.detail->>'choice', null, e.detail->'result', null, null)
+                          || jsonb_build_object('headline', security.layer4_ack_headline_v1(e.detail->>'choice',
+                               security.layer4_ack_normalise_v1(p_kind, e.detail->>'choice', null, e.detail->'result', null, null),
+                               coalesce(e.detail->'result'->'detail', e.detail->'result', '{}'::jsonb), e.created_at))));
     v_rev := greatest(v_rev, e.created_at);
   end loop;
   select min(x.created_at) into v_first_ev from pipeline.admin_control_events x where x.area = 'layer4' and x.target = p_kind || ':' || p_ref and x.action = 'inbox_decide';
@@ -220,6 +250,8 @@ begin
     select * into r from pipeline.layer4_review_items where id = p_ref::uuid;
     if r.id is null then return jsonb_build_object('kind', p_kind, 'ref', p_ref, 'found', false); end if;
     v_created := r.created_at; v_entered := r.created_at; v_status := r.status; v_decided := r.decided_at; v_open := r.status = 'pending';
+    v_course := case when r.entity_type = 'course' then r.entity_id end;
+    v_pid := coalesce((select c.provider_id from catalogue.courses c where c.id = v_course), case when r.entity_type = 'provider' then r.entity_id end);
     v_approved := case when r.status in ('approved', 'edited_approved') then 'yes' when r.status = 'pending' then 'not yet' else 'no (' || r.status || ')' end;
     -- first entered Layer 4: the earliest item of the same record and field, and up the chain of corrected reads (never reset by a re-read)
     select min(x.created_at), count(*) into v_first, v_entries from pipeline.layer4_review_items x where x.entity_id = r.entity_id and x.field_code = r.field_code;
@@ -231,15 +263,28 @@ begin
     if r.field_code = 'course_entry_first_read' then
       v_executed := 'not asked'; v_valid := 'not asked';
       -- corrected reads asked for this item (the reviewer's, the scheduled job's and recovery's)
-      for s in select * from pipeline.aer_read_supersessions x where x.old_item_id = r.id order by x.requested_at desc limit v_n loop
-        v_hist := v_hist || jsonb_build_array(jsonb_build_object('at', security.l4_time_v1(s.requested_at),
-                    'by', case when s.reason ilike 'Layer 4 recovery%' then 'reviewer' when s.reason ilike 'Human input needed%' then 'human input' else 'automatic' end,
-                    'action', 'corrected read', 'ref', 'request ' || left(s.id::text, 8), 'reason', s.reason,
-                    'result', jsonb_build_object('outcome', case s.state when 'requested' then 'queued' when 'superseded' then 'completed' else 'failed' end,
-                                                 'reason', coalesce(s.outcome, case s.state when 'superseded' then 'complete: a new read replaced this one' else 'waiting for the reader' end),
-                                                 'at', security.l4_time_v1(s.closed_at))));
-        if s.reason not ilike 'Layer 4 recovery%' then v_auto := greatest(v_auto, s.requested_at, s.closed_at); end if;
-        v_upd := greatest(v_upd, s.requested_at, s.closed_at);
+      -- observation 13:00 §2: each corrected read with its attempt number, operation (request and enrich item), reader times, the original and
+      -- replacement reads and when the replacement entered Layer 4
+      for v_att in select x.*, row_number() over (order by x.requested_at) n, f2.created_at f_start, f2.updated_at f_end, f2.state f_state, f2.reason f_reason,
+                          f2.evidence_id f_ev, f2.cost_usd f_cost, nr.created_at new_at
+                     from pipeline.aer_read_supersessions x left join pipeline.field_enrich_items f2 on f2.id = x.enrich_item_id
+                     left join pipeline.layer4_review_items nr on nr.id = x.new_item_id
+                    where x.old_item_id = r.id order by x.requested_at desc limit v_n loop
+        v_hist := v_hist || jsonb_build_array(jsonb_build_object('at', security.l4_time_v1(v_att.requested_at),
+                    'by', case when v_att.reason ilike 'Layer 4 recovery%' then 'reviewer' when v_att.reason ilike 'Human input needed%' then 'human input' else 'automatic' end,
+                    'action', 'corrected read', 'attempt', v_att.n, 'ref', 'request ' || left(v_att.id::text, 8), 'reason', v_att.reason,
+                    'operation', jsonb_build_object('request', v_att.id, 'enrich_item', v_att.enrich_item_id, 'job', v_att.job_id),
+                    'reader', jsonb_strip_nulls(jsonb_build_object('started', security.l4_time_v1(v_att.f_start),
+                                'completed', case when v_att.state <> 'requested' then security.l4_time_v1(coalesce(v_att.closed_at, v_att.f_end)) end,
+                                'state', v_att.f_state, 'detail', v_att.f_reason, 'stored_copy', v_att.f_ev, 'cost_usd', v_att.f_cost)),
+                    'original_read', v_att.old_item_id, 'replacement_read', v_att.new_item_id, 're_entered', security.l4_time_v1(v_att.new_at),
+                    'result', jsonb_build_object('outcome', case v_att.state when 'requested' then 'queued' when 'superseded' then 'completed' else 'failed' end,
+                                                 'headline', security.layer4_recovery_headline_v1(v_att.state, v_att.outcome, v_att.requested_at),
+                                                 'reason', coalesce(v_att.outcome, case v_att.state when 'superseded' then 'complete: a new read replaced this one' else 'waiting for the reader' end),
+                                                 'at', security.l4_time_v1(v_att.closed_at))));
+        if v_recovery is null then v_recovery := v_hist->-1; end if;
+        if v_att.reason not ilike 'Layer 4 recovery%' then v_auto := greatest(v_auto, v_att.requested_at, v_att.closed_at); end if;
+        v_upd := greatest(v_upd, v_att.requested_at, v_att.closed_at);
       end loop;
       select * into s from pipeline.aer_read_supersessions x where x.old_item_id = r.id order by x.requested_at desc limit 1;
       if s.id is not null then
@@ -250,7 +295,9 @@ begin
         v_stage := case when s.state = 'requested' and f.state in ('leased', 'ai') then 'executing' when s.state = 'requested' then 'scheduled'
                         when s.state = 'refused' then 'failed' else 'completed' end;
         if s.state = 'superseded' then
-          v_succ := (select jsonb_build_object('ref', s.new_item_id, 'relation', 'replaced by a corrected read', 'status', x.status, 'at', security.l4_time_v1(s.closed_at))
+          v_succ := (select jsonb_build_object('ref', s.new_item_id, 'relation', 'replaced by a corrected read', 'status', x.status, 'at', security.l4_time_v1(s.closed_at),
+                                               're_entered', security.l4_time_v1(x.created_at),
+                                               'complete', case when p_full then (security.course_entry_gate_v1(x.id, '{}'::uuid[])->>'complete')::boolean end)
                        from pipeline.layer4_review_items x where x.id = s.new_item_id);
         end if;
       end if;
@@ -374,7 +421,15 @@ begin
   end if;
   v_owner := coalesce(v_owner, case when v_stage in ('scheduled', 'executing') then 'the platform (automatic)' when v_open then 'Layer 4 reviewer' end);
   v_upd := greatest(v_upd, v_created, v_rev, v_auto, v_decided, v_entered);
-  return jsonb_build_object('kind', p_kind, 'ref', p_ref, 'found', true, 'status', v_status, 'open', v_open,
+  if v_open and v_stage in ('scheduled', 'executing') then
+    v_poll := jsonb_build_object('every_seconds', security.pipeline_num_v1('layer4.lifecycle_poll_seconds', 15), 'max', security.pipeline_num_v1('layer4.lifecycle_poll_max', 40));
+  end if;
+  return jsonb_build_object('kind', p_kind, 'ref', p_ref, 'found', true, 'status', v_status, 'open', v_open, 'provider_id', v_pid, 'course_id', v_course,
+    'recovery', v_recovery, 'poll', v_poll,
+    'waiting', case when v_open then jsonb_build_object('hours', round(extract(epoch from now() - coalesce(v_first, v_created)) / 3600, 1),
+                     'text', case when now() - coalesce(v_first, v_created) >= make_interval(days => 1)
+                                  then extract(day from now() - coalesce(v_first, v_created))::int || ' d ' || extract(hour from now() - coalesce(v_first, v_created))::int || ' h'
+                                  else extract(hour from now() - coalesce(v_first, v_created))::int || ' h ' || extract(minute from now() - coalesce(v_first, v_created))::int || ' min' end) end,
     'stage', v_stage,
     'stage_label', case v_stage when 'awaiting_decision' then 'Waiting for a reviewer' when 'accepted' then 'Accepted' when 'refused' then 'Refused'
                      when 'scheduled' then 'Scheduled' when 'executing' then 'Running' when 'completed' then 'Completed' when 'failed' then 'Failed: still pending'
@@ -410,17 +465,40 @@ language sql stable security definer set search_path to '' as $function$
 $function$;
 revoke all on function security.layer4_items_lifecycle_v1(jsonb) from public, anon, authenticated;
 
+create or replace function security.layer4_ack_headline_v1(p_choice text, p_n jsonb, p_d jsonb, p_at timestamptz) returns text
+language sql stable set search_path to '' as $function$
+  -- observation 4 Nov 2026 13:00 §3: the Platform Admin's wording for one action, chosen from what the server did (never before it confirmed
+  -- it); the same words on the reply (security.layer4_action_ack_v1) and, after Refresh, on the card (security.layer4_lifecycle_one_v1)
+  with z as (select security.l4_time_v1(p_at)->>'hm' v_hm)
+  select case
+    when p_n->>'outcome' = 'already_requested' and p_d ? 'existing' then 'Already queued — existing request retained'
+    when p_n->>'outcome' in ('refused', 'already_requested') and (p_d ? 'repeat_of' or coalesce((p_d->>'unchanged')::boolean, false)) then 'Recovery refused — unchanged evidence and reader'
+    when p_n->>'outcome' = 'deferred' then 'Recovery deferred — ' || case when coalesce(p_n->>'reason', '') ~* 'daily' then 'daily limit reached' else coalesce(p_n->>'reason', 'a limit is reached') end
+    when p_n->>'outcome' = 'queued' and p_choice = 'reread_stored' then 'Recovery queued — ' || v_hm
+    when p_n->>'outcome' = 'already_requested' then 'Already requested — ' || coalesce(p_d->>'current_state', 'recorded')
+    when p_n->>'outcome' = 'human_input' then 'Human input needed' || coalesce(' — item ' || (p_n->>'intervention_id'), '') || ' — ' || v_hm
+    when p_n->>'outcome' = 'queued' then 'Queued — ' || v_hm
+    when p_n->>'outcome' = 'completed' then 'Done — ' || v_hm
+    when p_n->>'outcome' = 'refused' then 'Refused — ' || coalesce(p_n->>'reason', 'see the reason')
+    when p_n->>'outcome' = 'incomplete' then 'Still incomplete — ' || coalesce(p_n->>'reason', 'more input is needed')
+    else 'Accepted — ' || v_hm end
+    from z
+$function$;
+revoke all on function security.layer4_ack_headline_v1(text, jsonb, jsonb, timestamptz) from public, anon, authenticated;
+
 -- 5 the acknowledgement on every decision (§4) ----------------------------------------------------------------------------------------------------
 create or replace function security.layer4_action_ack_v1(p_kind text, p_ref text, p_reply jsonb) returns jsonb
 language plpgsql stable security definer set search_path to '' as $function$
 -- the reply of an Inbox decision with its normalised acknowledgement: {outcome, ref, at, reason, alternative, next, stage}. Built only after
 -- the server has done the work and written its audit row (never before), from the same records the card reads after Refresh.
-declare v_n jsonb; v_at timestamptz; v_lc jsonb;
+declare v_n jsonb; v_at timestamptz; v_lc jsonb; v_d jsonb := coalesce(p_reply->'result'->'detail', p_reply->'result', '{}'::jsonb); v_hm text; v_head text;
 begin
   v_n := security.layer4_ack_normalise_v1(p_kind, p_reply->>'choice', (p_reply->>'ok')::boolean, p_reply->'result', p_reply->>'request', p_reply->'outcome');
   select x.created_at into v_at from pipeline.admin_control_events x where x.id = nullif(p_reply->>'event_id', '')::bigint;
   v_lc := security.layer4_lifecycle_one_v1(p_kind, p_ref, false);
-  return p_reply || jsonb_build_object('ack', v_n || jsonb_build_object('ref', case when p_reply ? 'event_id' then 'audit #' || (p_reply->>'event_id') end,
+  v_hm := security.l4_time_v1(coalesce(v_at, now()))->>'hm';
+  v_head := security.layer4_ack_headline_v1(p_reply->>'choice', v_n, v_d, coalesce(v_at, now()));
+  return p_reply || jsonb_build_object('ack', v_n || jsonb_build_object('headline', v_head, 'ref', case when p_reply ? 'event_id' then 'audit #' || (p_reply->>'event_id') end,
     'at', security.l4_time_v1(coalesce(v_at, now())), 'returns', p_reply->>'returns',
     'next', coalesce(v_lc->'next'->>'text', case when v_lc->>'open' = 'false' then 'nothing: the item is ' || lower(v_lc->>'stage_label') end),
     'stage', v_lc->>'stage', 'stage_label', v_lc->>'stage_label'));
@@ -553,6 +631,7 @@ language plpgsql security definer set search_path to '' as $function$
 -- recorded operation and its current state instead of starting another.
 declare st jsonb; v_reason text := btrim(coalesce(p_reason, '')); a pipeline.layer4_aer_recovery_actions; v_res jsonb; v_iv jsonb; v_next text; v_ws text;
         v_ok boolean := true; v_req text; v_ev bigint; v_id bigint; v_wi jsonb; v_class text; v_ent text; v_ai boolean; v_rep jsonb; v_now text; v_outcome text;
+        v_osup pipeline.aer_read_supersessions; v_oiv pipeline.layer4_interventions; v_ofe pipeline.field_enrich_items;
 begin
   if auth.uid() is null then raise exception 'authentication required' using errcode = '42501'; end if;
   if security.current_role_rank() < 4 then raise exception 'your role cannot take this action (it needs rank 4)' using errcode = '42501'; end if;
@@ -563,7 +642,31 @@ begin
     raise exception 'this item is no longer waiting (someone may have decided it)'; end if;
   v_rep := case when p_choice = 'reread_stored' and st->>'field_code' = 'course_entry_first_read' then security.layer4_reread_repeat_v1(p_ref::uuid) end;
   select * into a from pipeline.layer4_aer_recovery_actions x where x.review_item_id = p_ref::uuid and x.choice = p_choice and x.problem_fingerprint = st->>'problem_fingerprint';
-  if a.id is not null then
+  -- observation 13:00 §6: a repeated click while the operation is queued or running returns that operation, whoever asked for it (a reviewer,
+  -- the scheduled reading or human input), and starts nothing
+  if p_choice = 'reread_stored' then
+    select * into v_osup from pipeline.aer_read_supersessions x where x.old_item_id = p_ref::uuid and x.state = 'requested' order by x.requested_at desc limit 1;
+    if v_osup.id is null then
+      select * into v_ofe from pipeline.field_enrich_items f where f.course_id = (st->>'course_id')::uuid and f.field = 'entry_requirements' and f.state in ('queued', 'waiting', 'ai', 'leased')
+       order by f.id desc limit 1;
+    else
+      select * into v_ofe from pipeline.field_enrich_items f where f.id = v_osup.enrich_item_id;
+    end if;
+  else
+    select * into v_oiv from pipeline.layer4_interventions i where i.lane = 'aer_item' and i.status in ('ai_pending', 'awaiting_input', 'resuming')
+       and (i.entity = p_ref or i.entity = (st->>'provider_id') || '|case:' || (st->>'case_key')) order by i.id desc limit 1;
+  end if;
+  if v_osup.id is not null or v_ofe.id is not null or v_oiv.id is not null then
+    v_outcome := 'already_requested'; v_ok := false;
+    v_res := jsonb_build_object('repeat', true, 'existing', jsonb_strip_nulls(jsonb_build_object('request', v_osup.id, 'enrich_item', v_ofe.id, 'job', coalesce(v_osup.job_id, v_ofe.job_id),
+                                  'intervention_id', v_oiv.id, 'asked_at', coalesce(v_osup.requested_at, v_ofe.created_at, v_oiv.created_at),
+                                  'state', coalesce(case when v_ofe.state in ('leased', 'ai') then 'running' when v_ofe.id is not null then 'queued' end, v_oiv.status))),
+                                'recorded', a.id, 'intervention_id', v_oiv.id);
+    v_req := 'Already queued — existing request retained: ' ||
+             case when v_oiv.id is not null then 'Human input needed item ' || v_oiv.id || ' (' || replace(v_oiv.status, '_', ' ') || ', opened ' || (security.l4_time_v1(v_oiv.created_at)->>'text') || ')'
+                  else coalesce('request ' || left(v_osup.id::text, 8) || ', ', '') || 'enrich item ' || v_ofe.id || ' (' ||
+                       case when v_ofe.state in ('leased', 'ai') then 'running' else 'queued' end || ', asked ' || (security.l4_time_v1(coalesce(v_osup.requested_at, v_ofe.created_at))->>'text') || ')' end || '.';
+  elsif a.id is not null then
     -- already requested: the original action and where it stands now
     v_now := case when p_choice = 'reread_stored' then
                     (select case s.state when 'requested' then 'waiting for the reader'
@@ -573,7 +676,7 @@ begin
                   else (select 'Human input needed item ' || i.id || ' is ' || replace(i.status, '_', ' ') from pipeline.layer4_interventions i where i.id = a.intervention_id) end;
     v_outcome := 'already_requested';
     v_res := jsonb_build_object('repeat', true, 'recorded', a.id, 'recorded_at', a.at, 'next_operation', a.next_operation, 'intervention_id', a.intervention_id,
-                                'current_state', v_now, 'alternative', v_rep->>'alternative');
+                                'current_state', v_now, 'alternative', v_rep->>'alternative', 'unchanged', coalesce((v_rep->>'repeat')::boolean, false));
     v_ok := false;
     v_req := 'Already requested: recovery action ' || a.id || ' at ' || (security.l4_time_v1(a.at)->>'text') || '. Now: ' || coalesce(v_now, a.next_operation, 'recorded') || '.'
              || case when coalesce((v_rep->>'repeat')::boolean, false) then ' Reading the same stored copy again would be refused the same way. Instead: ' || (v_rep->>'alternative') || '.' else '' end;
@@ -686,7 +789,7 @@ do $$
 declare r record;
 begin
   for r in select * from (values ('security.layer4_aer_recovery_detail_v1(text)', 'dbf06336a7ee14fd0a84697d616cb67c'),
-                                 ('security.layer4_aer_recovery_decide_v1(text,text,text,text)', '5ceebd7df012f59e1bec84569c2fcb57'),
+                                 ('security.layer4_aer_recovery_decide_v1(text,text,text,text)', 'f247220fd13231654f47877ecc72240e'),
                                  ('public.admin_layer4_inbox(text,jsonb)', 'c0a972a6d6cc0652ce2dcc8f4d9cbbfc')) v(sig, m) loop
     if md5(pg_get_functiondef(r.sig::regprocedure)) <> r.m then raise exception 'post-check: % has md5 %', r.sig, md5(pg_get_functiondef(r.sig::regprocedure)); end if;
   end loop;

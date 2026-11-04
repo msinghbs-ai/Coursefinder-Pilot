@@ -54,7 +54,9 @@ insert into pipeline.field_enrich_items(id, course_id, field, state, value, job_
  (265315, 'b365fde8-d003-4ef6-80c3-4136fbd5587a', 'entry_requirements', 'skipped', '{}', '14d6f338-ec30-48f3-9c37-fd4e8f618957', '8e1adb6c-e069-43db-9584-bd054255e702',
   'a0ffab81-9eff-40dc-9d7b-b5dfbdd7c032', 'ai_stored', 'held_partial: over_row_limit: the page has 9 requirements and the limit is 6; nothing proposed (E13)', '2026-11-03 06:13:00+00', '2026-11-03 06:14:47+00'),
  (270218, 'b365fde8-d003-4ef6-80c3-4136fbd5587a', 'entry_requirements', 'skipped', '{}', '8fb3173c-1de8-448d-ad86-b0ddeb1ac21b', '8e1adb6c-e069-43db-9584-bd054255e702',
-  'a0ffab81-9eff-40dc-9d7b-b5dfbdd7c032', 'ai_stored', 'held_partial: over_row_limit: the page has 9 requirements and the limit is 6; nothing proposed (E13)', '2026-11-04 01:17:46+00', '2026-11-04 01:18:11+00');
+  'a0ffab81-9eff-40dc-9d7b-b5dfbdd7c032', 'ai_stored', 'held_partial: over_row_limit: the page has 9 requirements and the limit is 6; nothing proposed (E13)', '2026-11-04 01:17:46.99+00', '2026-11-04 01:18:11.95+00');
+-- live 13:01 AEDT (Integration Controller): enrich item 270218 cost US$0.0063, one attempt
+update pipeline.field_enrich_items set cost_usd = 0.0063 where id = 270218;
 select setval(pg_get_serial_sequence('pipeline.field_enrich_items', 'id'), 300000);
 insert into pipeline.aer_read_supersessions(id, old_item_id, course_id, source_url, old_evidence_id, enrich_item_id, job_id, requested_by, reason, state, outcome, requested_at, closed_at) values
  ('3c06308a-1032-4b80-8cb9-b6fc8e37f487', 'a7849f66-bfa7-412e-b26e-4fecc7fdaa6e', 'b365fde8-d003-4ef6-80c3-4136fbd5587a', 'https://www.rmit.edu.au/x', '6ac70f57-7eba-4fe0-a907-4ca9554bf81f',
