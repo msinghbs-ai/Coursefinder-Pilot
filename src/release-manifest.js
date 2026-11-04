@@ -1,17 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.472'
-export const PACKAGE_VERSION='0.1.399'
+export const UI_VERSION='2.15.473'
+export const PACKAGE_VERSION='0.1.400'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'4 Nov 2026',
-  title:'Course Link classes and a per-university reconciliation',
+  title:'AER recovery reads only what can succeed',
   changes:[
-    'Each waiting Course Link item now has a class (automatically settleable under an existing decision, technical, or a person\'s decision) with its authority, reason and recommended decision.',
-    'A reconciliation, run one university at a time and counting first, moves refused pages on courses with no page to Course page needed (Decision 179), closes the items of retired providers reversibly, and links stored copies to their cards. It admits no new link.',
-    'Old-year addresses, pages the binding check refused that a course still shows, and two-page cases are no longer treated as already settled, so they stay with a person; a decided page is no longer raised again in an http, www or trailing-slash variant.'
+    'Every held AER read now has one recovery class (row limit, unchanged evidence, transient, duplicate, needs a person, decision, or recoverable) with its last attempt, stored copy, reader and settings versions, next action and the reason an identical retry is not allowed.',
+    'Holds that would fail the same way again are parked instead of re-checked; they come back by themselves when the stored copy, the reader or a relevant setting changes. Transient failures keep bounded retries.',
+    'The scheduled corrected reads and the stored-copy pilot only take reads that can succeed. A row-limit hold\'s card names the row-limit decision as its next step, because typed rows would re-run the same refused read.'
   ],
   bugFixes:[]
 }
