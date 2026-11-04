@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.403 — 4 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.476** (Platform Admin decision 4 Nov 20:05, course intake pilot; correction 20:02, 10-minute gate). Migration `20261104610000_cf247_intake_pilot_run_now`: `security.job_run_now_v1` (allow-listed catalogued jobs, rank and reason, switch, pause and concurrency checks, idempotency key, `run_now.pilot_cap` 20, run record), `security.run_now_cohort_create_v1`, `security.run_now_cohort_verify_v1`, cohort tables; md5-guarded edit of security.intake_dates_apply_v1(integer) (d15c04c6 → 90e2250d) delegating to the new (integer, uuid[]) form with no selector, so the scheduled job behaves as before. No AI or Firecrawl spend; manual locks and holds respected; nothing dropped; consumer API untouched. Spec s286.
+
 ## 0.1.402 — 4 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.475** (Platform Admin direction 4 Nov 18:08 §1–§3, §6, §7). Migration `20261104600000_cf247_recovery_knowledge`: recovery knowledge base beside `pipeline.ops_remedies` (patterns per remedy and root cause, outcomes by run id with who achieved them, seeded from real outcomes only); md5-guarded edits of security.ops_authorise_v1 (ae58963c → 9f4a124d; refuses a remedy whose verified rate is below the setting), security.first_run_verify_tick_v1 (9c078d17 → 9df7a97b; learning step, stop after repeated failures), security.self_sustainability_v1 (a91e9c81 → 1965a719; §7 table, authority blockers, Claude-intervention trend). The controller tick and ops_report_v1 are not edited. No AI diagnosis switched on; no admission, policy, spending or code changed by the platform; nothing dropped; consumer API untouched. Spec s285.

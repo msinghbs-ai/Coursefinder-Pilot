@@ -1,18 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.475'
-export const PACKAGE_VERSION='0.1.402'
+export const UI_VERSION='2.15.476'
+export const PACKAGE_VERSION='0.1.403'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'4 Nov 2026',
-  title:'Recovery learns from outcomes',
+  title:'Governed Run Now and the 20-course intake pilot',
   changes:[
-    'Each remedy the platform uses now keeps a record of its real outcomes: the failure it addressed, the evidence and conditions, the authority it needed, what was expected and what happened, and when it must not be tried again.',
-    'When a remedy fails three times in a row on the same failure, it is not repeated until the evidence changes; a remedy that rarely verifies loses automatic use until a named person restores it with a reason.',
-    'Unfamiliar code defects become owned engineering work instead of repeated jobs. Authority blockers, such as platform alerts not being delivered because their destination is paused, are reported as such and never treated as a remedy.',
-    'The operations report shows automatically diagnosed and recovered incidents, repeated ineffective attempts prevented, cases needing Claude, human-only decisions, and actual records admitted and published, against a baseline.'
+    'A Platform Admin can run an existing catalogued job once, now, through a governed Run Now: only allow-listed jobs, with a reason, respecting the job\'s own switches, pause, budget and concurrency, refusing a second run while one is in flight, capped for pilots, and recorded with requester, reason, run id, times and counts.',
+    'A fixed cohort of up to 20 eligible courses for Course Intake Dates is selected automatically from existing official evidence and approved calendars, recorded with its evidence, and processed by the normal intake job through its own validation and publication path.',
+    'A read-back shows, per course and in total, what was selected, filled, admitted and published on the website, Zoho where supported, what was skipped and why, and spend.'
   ],
   bugFixes:[]
 }
