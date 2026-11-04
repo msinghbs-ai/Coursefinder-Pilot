@@ -1,0 +1,22 @@
+{
+  "atomic_replay": "PASS",
+  "retained_marker_drift_refused": true,
+  "rollback_preserved_functions": true,
+  "after_hashes": {
+    "security.provider_description_fire_v1()": "b334fbefe8a7fb2b8cfd2feda570a616",
+    "security.provider_description_enqueue_v1()": "0a1897bb7f56697a9f01d4ec3e8befc0",
+    "public.svc_provider_description_next(integer)": "9da6a77b2a0ef512de7c3e45d3ecd966",
+    "public.svc_provider_description_record(jsonb)": "d95f0bafc894b662468a309254544444",
+    "security.layer4_provider_description_apply_impl(uuid,uuid,jsonb,text)": "97685b737007410288297dea9d650d2a",
+    "security.provider_description_validate_v1(uuid,text,timestamptz,jsonb)": "b79d85509ab969a90ebcc1d10915755d"
+  },
+  "grants": {
+    "admin_anon": false,
+    "admin_auth": true,
+    "cohort_auth": false,
+    "private_auth": false,
+    "reserve_auth": false,
+    "cohort_service": true,
+    "reserve_service": true
+  }
+}

@@ -1,0 +1,16 @@
+-- Guards: Provider Description exact identity/lifecycle schema metadata, 4 Nov 2026.
+create table pipeline.provider_identity_findings (provider_id uuid not null,check_code text not null,state text default 'open'::text not null,reason text not null,detail jsonb default '{}'::jsonb not null,first_seen_at timestamptz default now() not null,last_seen_at timestamptz default now() not null,cleared_at timestamptz,observations int4 default 1 not null);
+create table pipeline.provider_lifecycle_events (id int8 not null,scope text not null,provider_id uuid,country_id uuid,transition text not null,successor_provider_id uuid,effective_date date not null,evidence jsonb default '[]'::jsonb not null,source text not null,state text default 'proposed'::text not null,plan jsonb,planned_at timestamptz,decided_by uuid,decided_at timestamptz,decision_note text,executed_at timestamptz,executed_by uuid,execution jsonb,reversed_at timestamptz,reversed_by uuid,reverse_note text,created_at timestamptz default now() not null,updated_at timestamptz default now() not null);
+alter table pipeline.provider_identity_findings add constraint provider_identity_findings_check_code_check CHECK (check_code = ANY (ARRAY['website_malformed'::text, 'identity_unconfirmed'::text, 'domain_shared'::text, 'redirected_or_parked'::text, 'register_changed'::text]));
+alter table pipeline.provider_identity_findings add constraint provider_identity_findings_pkey PRIMARY KEY (provider_id, check_code);
+alter table pipeline.provider_identity_findings add constraint provider_identity_findings_provider_id_fkey FOREIGN KEY (provider_id) REFERENCES catalogue.providers(id);
+alter table pipeline.provider_identity_findings add constraint provider_identity_findings_state_check CHECK (state = ANY (ARRAY['open'::text, 'cleared'::text]));
+alter table pipeline.provider_lifecycle_events add constraint provider_lifecycle_events_check CHECK (scope = 'provider'::text AND provider_id IS NOT NULL AND transition <> 'retired'::text OR scope = 'country'::text AND country_id IS NOT NULL AND transition = 'retired'::text);
+alter table pipeline.provider_lifecycle_events add constraint provider_lifecycle_events_check1 CHECK (transition <> 'merged'::text OR successor_provider_id IS NOT NULL);
+alter table pipeline.provider_lifecycle_events add constraint provider_lifecycle_events_pkey PRIMARY KEY (id);
+alter table pipeline.provider_lifecycle_events add constraint provider_lifecycle_events_provider_id_fkey FOREIGN KEY (provider_id) REFERENCES catalogue.providers(id);
+alter table pipeline.provider_lifecycle_events add constraint provider_lifecycle_events_scope_check CHECK (scope = ANY (ARRAY['provider'::text, 'country'::text]));
+alter table pipeline.provider_lifecycle_events add constraint provider_lifecycle_events_state_check CHECK (state = ANY (ARRAY['proposed'::text, 'planned'::text, 'approved'::text, 'executed'::text, 'reversed'::text, 'rejected'::text]));
+alter table pipeline.provider_lifecycle_events add constraint provider_lifecycle_events_successor_provider_id_fkey FOREIGN KEY (successor_provider_id) REFERENCES catalogue.providers(id);
+alter table pipeline.provider_lifecycle_events add constraint provider_lifecycle_events_transition_check CHECK (transition = ANY (ARRAY['deregistered'::text, 'closed'::text, 'merged'::text, 'temporarily_unavailable'::text, 'retired'::text]));
+

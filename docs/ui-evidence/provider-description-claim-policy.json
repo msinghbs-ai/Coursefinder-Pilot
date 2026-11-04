@@ -1,0 +1,19 @@
+{
+  "cases": [
+    {
+      "term": "campus-based study",
+      "rule": "unsupported_claim"
+    },
+    {
+      "term": "scholarships for applicants",
+      "rule": "unsupported_claim"
+    },
+    {
+      "term": "guarantees personal mentoring",
+      "rule": "unsupported_claim"
+    }
+  ],
+  "custom_words_preserved": true,
+  "replay_duplicates": 0,
+  "actual_vendor_calls": 0
+}

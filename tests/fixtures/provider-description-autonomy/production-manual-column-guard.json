@@ -1,0 +1,12 @@
+{
+  "acl": [
+    "postgres=X/postgres"
+  ],
+  "md5": "5bdd50600212c1ed9a875193d391bbb7",
+  "owner": "postgres",
+  "config": [
+    "search_path=\"\""
+  ],
+  "signature": "security.manual_column_guard()",
+  "definition": "CREATE OR REPLACE FUNCTION security.manual_column_guard()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare v_new jsonb; v_old jsonb; f text; v_entity text := TG_ARGV[0];\nbegin\n  if coalesce(current_setting('cf.manual_edit', true), '') = 'on' then return NEW; end if;\n  if not exists (select 1 from pipeline.manual_locks l where l.entity = v_entity and l.entity_id = OLD.id) then return NEW; end if;\n  v_new := to_jsonb(NEW); v_old := to_jsonb(OLD);\n  for f in select l.field from pipeline.manual_locks l where l.entity = v_entity and l.entity_id = OLD.id loop\n    if v_old ? f then v_new := jsonb_set(v_new, array[f], v_old->f); end if;\n  end loop;\n  NEW := jsonb_populate_record(NEW, v_new);\n  return NEW;\nend $function$\n"
+}

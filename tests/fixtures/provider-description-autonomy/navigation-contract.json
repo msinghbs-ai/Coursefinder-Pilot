@@ -1,0 +1,425 @@
+{
+  "kinds": {
+    "fee_check": {
+      "label": "Fee fails the check",
+      "order": 11,
+      "choices": [
+        {
+          "key": "course",
+          "link": "course",
+          "label": "Open the course",
+          "returns": "Enter or confirm the fee on the course"
+        },
+        {
+          "key": "keep",
+          "label": "Keep the CRICOS total",
+          "returns": "The hold is released; the page fee stays out"
+        }
+      ]
+    },
+    "site_down": {
+      "label": "Website not answering",
+      "order": 9,
+      "choices": [
+        {
+          "key": "website",
+          "input": "url",
+          "label": "Change the website",
+          "returns": "The hold is released and onboarding starts again from the website"
+        },
+        {
+          "key": "archive",
+          "rank": 5,
+          "label": "Archive the university",
+          "returns": "Unpublished and hidden from the consumer API; reviewable on Archived"
+        },
+        {
+          "key": "wait",
+          "label": "Keep waiting",
+          "returns": "Checked every 10 minutes as before; asked again in 30 days"
+        }
+      ]
+    },
+    "aer_review": {
+      "label": "Entry requirements (AER)",
+      "order": 17,
+      "choices": [
+        {
+          "key": "approve",
+          "rank": 6,
+          "label": "Approve all rows",
+          "returns": "Every waiting row becomes active once the identity, completeness, scale and basis checks pass; the source's earlier rows are superseded"
+        },
+        {
+          "key": "approve_except",
+          "rank": 6,
+          "input": "rows",
+          "label": "Approve except…",
+          "returns": "The ticked rows stay unadmitted, marked excluded with your reason; every other row becomes active once the same checks pass. An earlier active row is replaced only by an approved row with its identity; one whose replacement you leave out stays active (D4)"
+        },
+        {
+          "key": "reject",
+          "rank": 6,
+          "label": "Reject the read",
+          "returns": "No row is admitted; every waiting row is withdrawn with your reason"
+        }
+      ]
+    },
+    "course_link": {
+      "label": "Course link",
+      "order": 1,
+      "choices": [
+        {
+          "key": "keep",
+          "label": "Keep the page we hold",
+          "returns": "Closed; the same pair of pages is not asked again"
+        },
+        {
+          "key": "use",
+          "label": "Use the new page",
+          "returns": "The new page becomes the official page (a person's value, never overwritten); it is read again and the adapter applies"
+        },
+        {
+          "key": "enter",
+          "input": "url",
+          "label": "Enter another address",
+          "returns": "That address becomes the official page; it is read again and the adapter applies"
+        },
+        {
+          "key": "refuse",
+          "label": "Refuse this proposal",
+          "returns": "Closed; this page is recorded as refused for the course and is not asked again. Any page we hold stays as it is"
+        }
+      ]
+    },
+    "not_offered": {
+      "label": "Course not offered",
+      "order": 10,
+      "choices": [
+        {
+          "key": "archive_course",
+          "rank": 5,
+          "label": "Archive the course",
+          "returns": "Unpublished and hidden from the consumer API; reviewable on Archived"
+        },
+        {
+          "key": "keep",
+          "label": "Keep it",
+          "returns": "The hold is released; the course stays as it is"
+        }
+      ]
+    },
+    "not_on_site": {
+      "label": "Course not on the university's site",
+      "order": 13,
+      "choices": [
+        {
+          "key": "archive_course",
+          "rank": 5,
+          "label": "Archive the course",
+          "returns": "Unpublished and hidden from the consumer API; reviewable on Archived"
+        },
+        {
+          "key": "keep",
+          "label": "Keep it",
+          "returns": "The hold is released; CRICOS still lists it"
+        },
+        {
+          "key": "course",
+          "link": "course",
+          "label": "Open the course",
+          "returns": "Enter its page on the course"
+        }
+      ]
+    },
+    "nothing_ready": {
+      "label": "Adapter has nothing ready",
+      "order": 6,
+      "choices": [
+        {
+          "key": "adapter",
+          "link": "builder",
+          "label": "Open the adapter",
+          "returns": "Fix a pattern and qualify again; what passes is admitted"
+        },
+        {
+          "key": "rebuild",
+          "rank": 5,
+          "label": "Rebuild the adapter",
+          "returns": "Onboarding builds and qualifies the adapter again; what passes is admitted, then courses are enriched and scholarships found"
+        },
+        {
+          "key": "cricos_only",
+          "label": "CRICOS data only",
+          "returns": "No more work on its adapter; it keeps its register data"
+        }
+      ]
+    },
+    "too_few_pages": {
+      "label": "Too few course pages",
+      "order": 5,
+      "choices": [
+        {
+          "key": "pages",
+          "link": "builder",
+          "label": "Add page addresses",
+          "returns": "Onboarding carries on by itself once 3 pages are read"
+        },
+        {
+          "key": "cricos_only",
+          "label": "CRICOS data only",
+          "returns": "No adapter and no credits; it keeps its register data"
+        }
+      ]
+    },
+    "website_needed": {
+      "label": "Website needed",
+      "order": 3,
+      "choices": [
+        {
+          "key": "website",
+          "input": "url",
+          "label": "Enter the website",
+          "returns": "Onboarding starts again from the website: its course pages are found and read, then the adapter is built"
+        },
+        {
+          "key": "cricos_only",
+          "label": "CRICOS data only",
+          "returns": "No adapter and no credits; it keeps its register data"
+        },
+        {
+          "key": "archive",
+          "rank": 5,
+          "label": "Archive the university",
+          "returns": "Unpublished and hidden from the consumer API; reviewable on Archived"
+        }
+      ]
+    },
+    "pages_not_found": {
+      "label": "Course pages not found",
+      "order": 4,
+      "choices": [
+        {
+          "key": "website",
+          "input": "url",
+          "label": "Change the website",
+          "returns": "The hold is released, the site is mapped again and onboarding starts again"
+        },
+        {
+          "key": "pages",
+          "link": "builder",
+          "label": "Add page addresses",
+          "returns": "Opens the Adapter builder (2.1); release the hold here once pages are added"
+        },
+        {
+          "key": "release",
+          "rank": 4,
+          "label": "Release and try again",
+          "returns": "The hold is released; the site is mapped again and onboarding starts again"
+        },
+        {
+          "key": "cricos_only",
+          "label": "CRICOS data only",
+          "returns": "Stays held; labelled CRICOS data only"
+        }
+      ]
+    },
+    "held_scholarship": {
+      "label": "Held scholarship",
+      "order": 2,
+      "choices": [
+        {
+          "key": "publish",
+          "label": "Publish",
+          "returns": "Taken as for international students and offered; the hourly publish checks still apply"
+        },
+        {
+          "key": "not_international",
+          "label": "Not for international students",
+          "reason": "The page does not say international students may apply",
+          "returns": "Refused; the same page copy is not asked again"
+        },
+        {
+          "key": "not_scholarship",
+          "label": "Not a scholarship",
+          "reason": "Not a scholarship page",
+          "returns": "Refused; the same page copy is not asked again"
+        },
+        {
+          "key": "duplicate",
+          "input": "scholarship",
+          "label": "Duplicate of a published scholarship",
+          "returns": "Closed as a duplicate of the published scholarship you name (same provider); nothing on that scholarship changes"
+        }
+      ]
+    },
+    "counsellor_report": {
+      "label": "Counsellor report",
+      "order": 12,
+      "choices": [
+        {
+          "key": "report_fixed",
+          "label": "Fixed",
+          "returns": "Closed as fixed with your note; Zoho shows the outcome to the counsellor"
+        },
+        {
+          "key": "report_not_changed",
+          "label": "Not changed",
+          "returns": "Closed as not changed with your reason; Zoho shows it to the counsellor"
+        },
+        {
+          "key": "course",
+          "link": "course",
+          "label": "Open the course",
+          "returns": "Correct the value on the course, then close the report here"
+        }
+      ]
+    },
+    "no_page_first_run": {
+      "label": "No page published: first run",
+      "order": 15,
+      "choices": [
+        {
+          "key": "approve",
+          "label": "Approve: none has its own page",
+          "returns": "The sample is recorded as no page published; at the 60% rule the university is trusted and its later cases are recorded without a person; any page found later re-opens a course"
+        },
+        {
+          "key": "has_page",
+          "input": "courses",
+          "label": "Approve, except courses that have a page",
+          "returns": "The ticked courses keep looking for their page; the others are recorded; the university is trusted only at the 60% rule"
+        },
+        {
+          "key": "reject",
+          "label": "Reject",
+          "returns": "Nothing is recorded and the university is not trusted; its courses keep looking for their pages"
+        }
+      ]
+    },
+    "onboarding_failed": {
+      "label": "Adapter proposal failed",
+      "order": 8,
+      "choices": [
+        {
+          "key": "retry",
+          "rank": 5,
+          "label": "Try again",
+          "returns": "Onboarding starts again from the step that stopped"
+        },
+        {
+          "key": "builder",
+          "link": "builder",
+          "label": "Build by hand",
+          "returns": "Opens the Adapter builder"
+        }
+      ]
+    },
+    "central_to_approve": {
+      "label": "Central pages to approve",
+      "order": 7,
+      "choices": [
+        {
+          "key": "open",
+          "link": "builder",
+          "label": "Open the central pages",
+          "returns": "Approve or refuse each page; onboarding carries on by itself"
+        }
+      ]
+    },
+    "conjoint_first_run": {
+      "label": "Conjoint or double degrees: first run",
+      "order": 16,
+      "choices": [
+        {
+          "key": "approve",
+          "label": "Approve: no page of their own",
+          "returns": "The conjoint degrees of this university leave the course search, recorded as conjoint; any page found later re-opens a course"
+        },
+        {
+          "key": "parent",
+          "input": "url",
+          "label": "Approve with their shared page",
+          "returns": "Recorded as conjoint, with this address as their shared conjoint page"
+        },
+        {
+          "key": "reject",
+          "label": "Reject",
+          "returns": "Nothing is recorded; the conjoint degrees keep looking for their pages"
+        }
+      ]
+    },
+    "course_page_needed": {
+      "label": "Course page needed",
+      "order": 19,
+      "choices": [
+        {
+          "key": "add_page",
+          "input": "url",
+          "label": "Add the page",
+          "returns": "The verified page becomes the course's official page (a person's value, never overwritten); it is read first in line"
+        },
+        {
+          "key": "search_again",
+          "label": "Search again",
+          "returns": "The course-link search looks for the page again within its own limits; the course comes back here if the next page found is refused"
+        },
+        {
+          "key": "no_page",
+          "input": "url",
+          "label": "No page exists",
+          "returns": "Recorded as no page of its own, with the address you give as evidence; searching stops until a page is found"
+        }
+      ]
+    },
+    "provider_departure": {
+      "label": "Provider left the register",
+      "order": 14,
+      "choices": [
+        {
+          "key": "closed",
+          "rank": 6,
+          "label": "Closed: archive it",
+          "returns": "Archived through the clean-up workflow and hidden from the consumer API"
+        },
+        {
+          "key": "merged",
+          "rank": 6,
+          "input": "provider",
+          "label": "Merged into another provider",
+          "returns": "Archived, and the merger recorded with its successor"
+        },
+        {
+          "key": "reviewed",
+          "rank": 6,
+          "label": "Still operating: keep it",
+          "returns": "Closed; the provider stays as it is"
+        }
+      ]
+    },
+    "provider_description": {
+      "label": "University description",
+      "order": 18,
+      "choices": [
+        {
+          "key": "approve",
+          "label": "Approve as read",
+          "returns": "The description is published as read from the official page (every sentence quoted from it); the website shows it from its next read"
+        },
+        {
+          "key": "reject",
+          "label": "Reject",
+          "returns": "Nothing is published; the university is read again after the set wait"
+        }
+      ]
+    }
+  },
+  "items_md5": "1895ed9870fdbcb332639befffd5a6ec",
+  "source_md5": "1e3af24861d931c1d63d30bb87ffa0d6",
+  "captured_at": "2026-11-04T12:44:23.941202+00:00",
+  "schema_only": true,
+  "items_signature": "public.admin_layer4_inbox(text,jsonb)",
+  "items_definition": "CREATE OR REPLACE FUNCTION public.admin_layer4_inbox(p_action text, p_args jsonb DEFAULT '{}'::jsonb)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare v_rank int; v_hooks jsonb; v_kinds jsonb; v_kind text; v_ref text; v_choice text; v_reason text; v_value text; v_pid uuid;\n        v_target int := security.pipeline_num_v1('layer4.target_days', 7)::int; v_actor text; v_lim int; v_off int; v_q text; v_r jsonb; v_c jsonb; v_det jsonb; v_out jsonb; v_ids uuid[]; v_event bigint;\n        -- CF-247 Layer 4 Inbox performance (4 Nov 2026): counts, pages, lazy detail and kind hooks\n        v_hc jsonb; v_prov uuid; v_fkind text; v_bkind text; v_has boolean; v_ao int; v_aat timestamptz; v_ak text; v_ar text; v_h jsonb; v_hp jsonb; v_hargs jsonb;\n        v_total bigint := 0; v_before bigint := 0; v_hitems jsonb := '[]'; v_keys text[]; v_fn text; v_np bigint; v_ho int;\nbegin\n  if auth.uid() is null then raise exception 'authentication required' using errcode = '42501'; end if;\n  v_rank := security.current_role_rank();\n  v_actor := coalesce((select u.email from auth.users u where u.id = auth.uid()), auth.uid()::text);\n  if v_rank < 3 then raise exception 'Curator role or above required' using errcode = '42501'; end if;\n  v_lim := least(greatest(coalesce((p_args->>'limit')::int, 50), 1), 200); v_off := greatest(coalesce((p_args->>'offset')::int, 0), 0);  -- fixed: page size bounds\n  v_q := nullif(btrim(p_args->>'q'), '');\n  v_hooks := security.layer4_inbox_hooks_v1(); v_kinds := v_hooks->'kinds';\n  v_fkind := nullif(p_args->>'kind', '');\n  -- a built-in kind is read from the item list; a registered kind from its hooks\n  v_bkind := case when v_fkind is null or security.layer4_inbox_kinds_v1() ? v_fkind then v_fkind else '-' end;\n\n  if p_action = 'summary' then\n    -- counts only: no item is built (Platform Admin 4 Nov 2026 06:53 §1, bounded first queries)\n    v_hc := security.layer4_inbox_hook_counts_v1(v_hooks, null);\n    return (with b as (select * from security.layer4_inbox_counts_v1(v_target)),\n                 h as (select x->>'kind' kind, (x->>'n')::bigint n, (x->>'oldest')::timestamptz oldest, (x->>'late')::bigint late, x->'by_provider' bp from jsonb_array_elements(v_hc->'items') x),\n                 k as (select kind, sum(n)::bigint n, min(oldest) oldest, sum(late)::bigint late from b group by 1 union all select kind, n, oldest, late from h where n > 0)\n      select jsonb_build_object('kinds', v_kinds, 'target_days', v_target, 'rank', v_rank,\n        'by_kind', (select coalesce(jsonb_object_agg(k.kind, jsonb_build_object('n', k.n, 'oldest', k.oldest, 'late', k.late)), '{}'::jsonb) from k),\n        'total', (select coalesce(sum(n), 0) from k),\n        'universities', (select count(distinct p) from (select provider_id p from b where provider_id is not null\n                                                        union select (y->>'provider_id')::uuid from h, jsonb_array_elements(h.bp) y where y->>'provider_id' is not null) u),\n        'late', (select coalesce(sum(late), 0) from k),\n        'paging', jsonb_build_object('items', security.pipeline_num_v1('layer4.inbox_page_size', 25)::int,\n                                     'universities', security.pipeline_num_v1('layer4.inbox_universities_page_size', 25)::int,\n                                     'detail_parallel', security.pipeline_num_v1('layer4.inbox_detail_parallel', 3)::int),\n        'hooks_missing', v_hooks->'missing', 'hooks_failed', (v_hooks->'failed') || (v_hc->'failed')));\n\n  elsif p_action = 'universities' then\n    -- counts by university; names and course counts for the universities of this page only\n    v_hc := case when v_bkind = '-' or v_fkind is null then security.layer4_inbox_hook_counts_v1(v_hooks, v_fkind) else '{\"items\": []}'::jsonb end;\n    return (with c as (select b.kind, b.provider_id, b.n, b.oldest from security.layer4_inbox_counts_v1(v_target) b where v_bkind is distinct from '-' and (v_fkind is null or b.kind = v_fkind)\n                       union all\n                       select x->>'kind', (y->>'provider_id')::uuid, (y->>'n')::bigint, (y->>'oldest')::timestamptz\n                         from jsonb_array_elements(v_hc->'items') x, jsonb_array_elements(x->'by_provider') y where coalesce((y->>'n')::bigint, 0) > 0),\n                 g as (select c.provider_id, sum(c.n)::bigint n, min(c.oldest) oldest, min((v_kinds->c.kind->>'order')::int) first_order, jsonb_object_agg(c.kind, c.n) by_kind\n                         from c group by 1),\n                 u as (select g.*, coalesce(p.display_name, p.canonical_name, 'Platform') name, k.iso_alpha2::text country,\n                              (select count(*) from catalogue.courses cc where cc.provider_id = g.provider_id and cc.lifecycle_status = 'active') courses\n                         from g left join catalogue.providers p on p.id = g.provider_id left join ref.countries k on k.id = p.country_id\n                        where (nullif(p_args->>'country', '') is null or k.iso_alpha2 = p_args->>'country')\n                          and (v_q is null or coalesce(p.display_name, p.canonical_name, '') ilike '%' || v_q || '%'))\n      select jsonb_build_object('total', (select count(*) from u), 'limit', v_lim, 'offset', v_off,\n        'items', coalesce((select jsonb_agg(jsonb_build_object('provider_id', z.provider_id, 'name', z.name, 'country', z.country, 'courses', z.courses, 'n', z.n, 'oldest', z.oldest,\n                     'late', z.oldest < now() - make_interval(days => v_target), 'by_kind', z.by_kind)\n                   order by z.first_order, z.courses desc nulls last, z.name)\n            from (select * from u order by first_order, courses desc nulls last, name limit v_lim offset v_off) z), '[]'::jsonb)));\n\n  elsif p_action = 'items' then\n    if not (p_args ? 'provider_id' or p_args ? 'kind') then return jsonb_build_object('total', 0, 'items', '[]'::jsonb, 'before', 0, 'more', false); end if;\n    v_prov := nullif(p_args->>'provider_id', '')::uuid;\n    -- UR-04 (1 Nov 2026): a stable position (kind order, kind, created, ref) so every item is reached once, oldest first; kinds have their own order\n    v_has := p_args ? 'after_ref';\n    if v_has then v_ao := (p_args->>'after_o')::int; v_aat := (p_args->>'after_at')::timestamptz; v_ak := p_args->>'after_kind'; v_ar := p_args->>'after_ref'; end if;\n    -- the built-in kinds: keys first (no detail), then the detail of this page's items only\n    if v_bkind is distinct from '-' then\n      with k as (select e.key kind, (e.value->>'order')::int o from jsonb_each(v_kinds) e),\n           x as (select i.kind, i.ref, i.created_at, k.o, count(*) over () t,\n                        count(*) filter (where v_has and (k.o, i.kind, i.created_at, i.ref) <= (v_ao, v_ak, v_aat, v_ar)) over () b\n                   from security.layer4_inbox_items_v2(v_prov, v_bkind, null, false) i join k on k.kind = i.kind),\n           pg as (select * from x where not v_has or (x.o, x.kind, x.created_at, x.ref) > (v_ao, v_ak, v_aat, v_ar) order by o, kind, created_at, ref limit v_lim + 1)\n      select coalesce((select max(t) from x), 0), coalesce((select max(b) from x), 0), array(select pg.kind || ':' || pg.ref from pg) into v_total, v_before, v_keys;\n    end if;\n    -- registered kinds: their own pages and counts, merged in the same order\n    for v_h in select x from jsonb_array_elements(v_hooks->'hooks') x where x->>'mode' = 'kind' and (v_fkind is null or x->>'kind' = v_fkind) loop\n      v_ho := (v_h->>'order')::int;\n      if v_hc is null then v_hc := security.layer4_inbox_hook_counts_v1(v_hooks, v_fkind); end if;\n      v_np := coalesce((select case when v_prov is null then (x->>'n')::bigint\n                                     else (select sum((y->>'n')::bigint) from jsonb_array_elements(x->'by_provider') y where (y->>'provider_id')::uuid = v_prov) end\n                          from jsonb_array_elements(v_hc->'items') x where x->>'kind' = v_h->>'kind'), 0);\n      v_total := v_total + v_np;\n      if v_has and (v_ho, v_h->>'kind') < (v_ao, v_ak) then v_before := v_before + v_np; continue; end if;\n      v_hargs := jsonb_strip_nulls(jsonb_build_object('provider_id', v_prov, 'limit', v_lim + 1));\n      if v_has and (v_ho, v_h->>'kind') = (v_ao, v_ak) then v_hargs := v_hargs || jsonb_build_object('after_at', v_aat, 'after_ref', v_ar); end if;\n      v_hp := security.layer4_inbox_hook_call_v1(v_h->>'page_fn', v_hargs, null);\n      if v_hp ? 'error' or jsonb_typeof(v_hp->'items') is distinct from 'array' then continue; end if;\n      if v_has and (v_ho, v_h->>'kind') = (v_ao, v_ak) then v_before := v_before + coalesce((v_hp->>'before')::bigint, 0); end if;\n      v_hitems := v_hitems || coalesce((select jsonb_agg(i || jsonb_build_object('kind', v_h->>'kind', 'o', v_ho, '_s', lpad(n::text, 10, '0'),\n                                                 'late', coalesce((i->>'late')::boolean, (i->>'created_at')::timestamptz < now() - make_interval(days => v_target)),\n                                                 'detail', coalesce(i->'detail', '{}'::jsonb)) order by n)\n                                          from jsonb_array_elements(v_hp->'items') with ordinality y(i, n) where i ? 'ref'), '[]'::jsonb);\n    end loop;\n    return (with b as (select i.kind, i.ref, i.provider_id, coalesce(p.display_name, p.canonical_name) provider, i.subject, i.why, i.suggestion, i.created_at, i.detail,\n                              (v_kinds->i.kind->>'order')::int o\n                         from security.layer4_inbox_items_v2(v_prov, v_bkind, v_keys, true) i left join catalogue.providers p on p.id = i.provider_id\n                        where coalesce(array_length(v_keys, 1), 0) > 0),\n                 m as (select b.o, b.kind, b.created_at, b.ref s, jsonb_build_object('kind', b.kind, 'ref', b.ref, 'provider_id', b.provider_id, 'provider', b.provider, 'subject', b.subject,\n                              'why', b.why, 'suggestion', b.suggestion, 'created_at', b.created_at, 'late', b.created_at < now() - make_interval(days => v_target), 'detail', b.detail, 'o', b.o) j from b\n                       union all\n                       select (h->>'o')::int, h->>'kind', (h->>'created_at')::timestamptz, h->>'_s', (h - '_s') || jsonb_build_object('hook', true) from jsonb_array_elements(v_hitems) h),\n                 pg as (select * from m order by o, kind, created_at, s limit v_lim)\n      select jsonb_build_object('total', v_total, 'before', v_before, 'more', (select count(*) from m) > v_lim,\n                                'items', coalesce((select jsonb_agg(pg.j order by pg.o, pg.kind, pg.created_at, pg.s) from pg), '[]'::jsonb)));\n\n  elsif p_action = 'detail' then\n    -- lazy detail of the items on screen (at most one page): the stored-copy facts of a built-in item and a hook's detail (kind or extension)\n    return (with a as (select x->>'kind' kind, x->>'ref' ref from jsonb_array_elements(case when jsonb_typeof(p_args->'items') = 'array' then p_args->'items' else '[]'::jsonb end) x\n                        where x ? 'kind' and x ? 'ref' limit v_lim),\n                 b as (select i.kind, i.ref, i.detail from security.layer4_inbox_items_v2(null, null, array(select a.kind || ':' || a.ref from a where security.layer4_inbox_kinds_v1() ? a.kind), true) i\n                        where exists (select 1 from a where security.layer4_inbox_kinds_v1() ? a.kind))\n      select jsonb_build_object('items', coalesce(jsonb_agg(jsonb_build_object('kind', a.kind, 'ref', a.ref, 'detail', b.detail,\n               'hook_detail', security.layer4_inbox_hook_call_v1((select h->>'detail_fn' from jsonb_array_elements(v_hooks->'hooks') h where h->>'kind' = a.kind limit 1), null, a.ref))), '[]'::jsonb))\n        from a left join b on b.kind = a.kind and b.ref = a.ref);\n  end if;\n\n  -- CF-247 20 Oct 2026: the decisions taken here, newest first (replaces the old Review queue history)\n  if p_action = 'decided' then\n    return jsonb_build_object('items', coalesce((select jsonb_agg(jsonb_build_object('at', e.created_at, 'kind', e.detail->>'kind', 'choice', e.detail->>'choice', 'value', e.detail->>'value',\n             'reason', e.detail->>'reason', 'provider_id', e.detail->>'provider_id',\n             'provider', (select coalesce(p.display_name, p.canonical_name) from catalogue.providers p where p.id::text = e.detail->>'provider_id'),\n             'by', (select u.email from auth.users u where u.id::text = e.actor::text)) order by e.id desc)\n           from (select * from pipeline.admin_control_events x where x.area = 'layer4' and x.action = 'inbox_decide' order by x.id desc limit v_lim offset v_off) e), '[]'::jsonb));\n  end if;\n  if p_action <> 'decide' then raise exception 'unknown action %', p_action; end if;\n  v_kind := p_args->>'kind'; v_ref := p_args->>'ref'; v_choice := p_args->>'choice'; v_value := nullif(btrim(p_args->>'value'), '');\n  v_c := (select c from jsonb_array_elements(v_kinds->v_kind->'choices') c where c->>'key' = v_choice);\n  if v_c is null then raise exception 'unknown choice % for %', v_choice, v_kind; end if;\n  if v_c ? 'link' then raise exception 'this choice opens another screen'; end if;\n  if v_rank < coalesce((v_c->>'rank')::int, 4) then raise exception 'your role cannot make this choice' using errcode = '42501'; end if;  -- fixed: university and value choices need Pipeline Operator or above unless the choice names a higher rank\n  -- a registered kind or recovery choice is decided by its own function, which checks the item, enforces its rules and writes its own audit row\n  if v_c ? 'hook' then\n    v_fn := (select h->>'decide_fn' from jsonb_array_elements(v_hooks->'hooks') h where h->>'id' = v_c->>'hook');\n    if v_fn is null then raise exception 'this choice is not available yet'; end if;\n    execute format('select %s($1, $2, $3, $4)', v_fn) into v_r using v_ref, v_choice, v_value, coalesce(nullif(btrim(p_args->>'reason'), ''), v_c->>'reason', '');\n    -- CF-247 decision 12:24 §4: the reply carries its normalised acknowledgement, read from the records just written\n    return security.layer4_action_ack_v1(v_kind, v_ref, jsonb_build_object('ok', coalesce((v_r->>'ok')::boolean, false), 'kind', v_kind, 'choice', v_choice, 'returns', coalesce(v_r->>'returns', v_c->>'returns'),\n                              'result', v_r->'result', 'ref', v_ref, 'event_id', v_r->'event_id', 'request', v_r->'request', 'outcome', v_r->'outcome', 'hook', v_c->>'hook'));\n  end if;\n  v_reason := coalesce(nullif(btrim(p_args->>'reason'), ''), v_c->>'reason', '');\n  if length(v_reason) < 4 then raise exception 'give a reason (kept with the decision)'; end if;\n  if v_c->>'input' = 'url' and (v_value is null or v_value !~* '^https?://[^\\s/]+\\.[^\\s]+$') then raise exception 'enter the full web address (https://…)'; end if;\n  select i.provider_id, i.detail into v_pid, v_det from security.layer4_inbox_items_v2(null, v_kind, array[v_kind || ':' || v_ref], true) i;\n  if v_det is null then raise exception 'this item is no longer waiting (someone may have decided it)'; end if;\n  -- CF-247 mandate 16:32 §8: the same decision sent again returns the first; a retry on an unchanged stop is refused (both audited, never taken)\n  v_det := v_det || jsonb_build_object('_guard', security.layer4_decide_guard_v1(v_kind, v_ref, v_choice, v_pid));\n  if v_det->'_guard' is not null and jsonb_typeof(v_det->'_guard') = 'object' then\n    insert into pipeline.admin_control_events(area, action, target, detail, actor)\n    values ('layer4', 'inbox_refused', v_kind || ':' || v_ref, jsonb_build_object('kind', v_kind, 'ref', v_ref, 'choice', v_choice, 'value', v_value, 'reason', v_reason, 'provider_id', v_pid,\n            'result', v_det->'_guard'), auth.uid()) returning id into v_event;\n    return security.layer4_action_ack_v1(v_kind, v_ref, jsonb_build_object('ok', false, 'kind', v_kind, 'choice', v_choice, 'ref', v_ref, 'event_id', v_event,\n                                         'request', v_det->'_guard'->>'request', 'result', v_det->'_guard'));\n  end if;\n  v_det := v_det - '_guard';\n\n  -- SS-016 fee check (1 Nov 2026): an address on a fee-check item was taken as a plain Approve and admitted the proposed fee (46 decisions\n  -- on 30 Oct). A fee check is admitted or not; a different course page is set on the course record.\n  if v_kind = 'course_link' and v_det->>'field_code' = 'provider_current_tuition_validation' and v_choice = 'enter' then\n    raise exception 'this is a fee check: admit the proposed fee or do not admit it. A different course page is set on the course record';\n  end if;\n\n  -- 24 Oct 2026 (hotfix D1): a course-link row that holds a fee (identity re-verification quarantine, fee floor) is not a link decision\n  if v_kind = 'course_link' and v_det->>'field_code' = 'provider_current_tuition' and v_choice in ('use', 'enter') then\n    if v_choice = 'use' then raise exception 'this item holds a fee, not a new page: enter the course page''s address, or keep the page we hold'; end if;\n    v_r := security.layer4_fee_item_rebind_v1(v_ref::uuid, v_value, v_reason);\n  elsif v_kind in ('no_page_first_run', 'conjoint_first_run') then\n    -- hotfix 26 Oct 2026: a university's first run (no page published / conjoint rule); applied by security.no_page_review_apply_v1\n    if v_choice = 'has_page' then\n      begin\n        v_ids := array(select jsonb_array_elements_text(v_value::jsonb)::uuid);\n      exception when others then raise exception 'tick the sample courses that have their own page';\n      end;\n      if coalesce(array_length(v_ids, 1), 0) = 0 then raise exception 'tick the sample courses that have their own page'; end if;\n      if exists (select 1 from unnest(v_ids) x(id) where not exists (select 1 from pipeline.course_no_page n where n.review_item_id = v_ref::uuid and n.course_id = x.id)) then\n        raise exception 'a ticked course is not in this sample';\n      end if;\n    end if;\n    v_r := public.layer4_review_decide(v_ref::uuid,\n             case v_choice when 'approve' then 'approve' when 'reject' then 'reject' else 'edit_and_approve' end, v_reason,\n             case v_choice when 'has_page' then jsonb_build_object('has_page_course_ids', to_jsonb(v_ids))\n                           when 'parent' then jsonb_build_object('parent_url', v_value) end);\n  elsif v_kind = 'aer_review' then\n    -- CF-247 A1-A3 (Platform Admin 30 Oct 2026 06:53): one AER item at a time; Approve except sends the ticked rows to leave out\n    if v_choice = 'approve_except' then\n      begin\n        v_ids := array(select jsonb_array_elements_text(v_value::jsonb)::uuid);\n      exception when others then raise exception 'tick the rows to leave out';\n      end;\n      if coalesce(array_length(v_ids, 1), 0) = 0 then raise exception 'tick the rows to leave out'; end if;\n    end if;\n    v_r := public.layer4_review_decide(v_ref::uuid, case v_choice when 'approve' then 'approve' when 'reject' then 'reject' else 'edit_and_approve' end, v_reason,\n             case when v_choice = 'approve_except' then jsonb_build_object('mode', 'approve_except', 'exclude_row_ids', to_jsonb(v_ids)) end);\n  elsif v_kind = 'provider_description' then\n    -- CF-247 P1 (Platform Admin 2 Nov 2026 10:28): a university description is approved as read or rejected, never edited\n    v_r := public.layer4_review_decide(v_ref::uuid, case v_choice when 'approve' then 'approve' else 'reject' end, v_reason, null);\n  elsif v_kind = 'course_link' and v_choice = 'refuse' then\n    -- mandate 3 Nov 2026 20:47 §5: refuse the proposed page without claiming a held page\n    v_r := security.layer4_course_link_refuse_v1(v_ref::uuid, v_reason);\n  elsif v_kind = 'course_page_needed' then\n    -- Decision 179 (Platform Admin 3 Nov 2026 20:29): add the page, search again, or record that no page exists\n    v_r := security.course_page_needed_decide_v1(v_ref::uuid, v_choice, v_value, v_reason);\n  elsif v_kind = 'held_scholarship' and v_choice = 'duplicate' then\n    -- handover 3 Nov 2026 Priority 2 item 8: close a held scholarship as a duplicate of a published one (the reviewer names it)\n    v_r := security.scholarship_duplicate_close_v1(v_ref::bigint, v_value, v_reason);\n  elsif v_kind = 'course_link' then\n    v_r := public.layer4_review_decide(v_ref::uuid, case v_choice when 'keep' then 'reject' when 'use' then 'approve' else 'edit_and_approve' end, v_reason,\n                                       case when v_choice = 'enter' then to_jsonb(v_value) end);\n  elsif v_kind = 'held_scholarship' then\n    v_r := public.admin_scholarship_ai('review_decide', jsonb_build_object('review_id', v_ref::bigint, 'decision', case when v_choice = 'publish' then 'admit' else 'refuse' end,\n                                                                         'extraction_id', v_det->'extraction_id', 'reason', v_reason));\n  elsif v_kind = 'provider_departure' then  -- CF-247 20 Oct 2026: from the retired Review queue (Provider departures); Platform Admin\n    if v_choice = 'merged' then\n      select array_agg(p.id) into v_ids from catalogue.providers p\n       where p.lifecycle_status = 'active' and p.id <> v_pid and p.country_id = (select q.country_id from catalogue.providers q where q.id = v_pid)\n         and (lower(coalesce(p.display_name, p.canonical_name)) = lower(v_value)\n              or p.id in (select r.provider_id from catalogue.provider_registrations r where upper(r.registration_code) = upper(v_value)));\n      if coalesce(array_length(v_ids, 1), 0) <> 1 then raise exception 'enter the successor''s exact name or its CRICOS or NZQA code (% found)', coalesce(array_length(v_ids, 1), 0); end if;\n    end if;\n    v_r := public.layer4_provider_departure_decide(v_ref::bigint, v_choice, case when v_choice = 'merged' then v_ids[1] end, v_reason);\n  elsif v_kind = 'counsellor_report' then  -- CF-247 20 Oct 2026: closed here (Coverage › Counsellor reports retired); Zoho reads the outcome back\n    v_r := public.admin_counsellor_reports('close', jsonb_build_object('ids', jsonb_build_array(v_ref), 'outcome', case v_choice when 'report_fixed' then 'fixed' else 'not_changed' end, 'reason', v_reason));\n  elsif v_choice = 'website' then\n    v_r := public.admin_provider_website_set(v_pid, v_value);\n    if v_kind in ('pages_not_found', 'site_down') then\n      v_r := v_r || jsonb_build_object('released', security.flag_release_v1((v_det->>'flag_id')::bigint, v_actor, 'person', 'Layer 4: website changed to ' || v_value || '. ' || v_reason, jsonb_build_object('user_id', auth.uid()), false));\n    end if;\n  elsif v_choice in ('release', 'keep') then\n    v_r := security.flag_release_v1((v_det->>'flag_id')::bigint, v_actor, 'person', 'Layer 4: ' || v_reason, jsonb_build_object('user_id', auth.uid()), false);\n  elsif v_choice = 'wait' then\n    update pipeline.enrichment_flags set flagged_at = now() where id = (v_det->>'flag_id')::bigint;  -- asked again after the waiting period\n    v_r := jsonb_build_object('waiting', true);\n  elsif v_choice = 'cricos_only' then\n    v_r := public.admin_adapter_build('set_wave', jsonb_build_object('wave', 'cricos-only', 'provider_ids', jsonb_build_array(v_pid)));\n  elsif v_choice = 'rebuild' then\n    v_r := public.admin_adapter_build('build', jsonb_build_object('provider_ids', jsonb_build_array(v_pid), 'reason', 'Layer 4: ' || v_reason));\n  elsif v_choice = 'retry' then\n    v_r := public.admin_provider_onboarding('retry', jsonb_build_object('ids', jsonb_build_array((v_det->>'onboarding_id')::uuid), 'reason', 'Layer 4: ' || v_reason));\n  elsif v_choice = 'archive' then\n    v_r := public.admin_provider_archive(v_pid, 'Layer 4: ' || v_reason, false);\n  elsif v_choice = 'archive_course' then\n    v_r := public.admin_course_edit((v_det->>'course_id')::uuid, 'archive', jsonb_build_object('reason', 'Layer 4: ' || v_reason));\n    perform security.flag_release_v1((v_det->>'flag_id')::bigint, v_actor, 'person', 'Layer 4: course archived. ' || v_reason, jsonb_build_object('user_id', auth.uid()), false);\n  else\n    raise exception 'choice % is not handled', v_choice;\n  end if;\n  -- CF-247 mandate 16:32 §8: whether the item is still waiting after the decision, so a decision that did not apply is never recorded as done\n  if jsonb_typeof(v_r) = 'object' or v_r is null then\n    v_r := coalesce(v_r, '{}'::jsonb) || jsonb_build_object('still_waiting', exists (select 1 from security.layer4_inbox_items_v2(null, v_kind, array[v_kind || ':' || v_ref], false)));\n  end if;\n  if coalesce(v_r->>'still_waiting', '') = 'false' then\n    update pipeline.layer4_item_groups set state = 'closed', closed_at = now() where kind = v_kind and ref = v_ref and state = 'waiting';\n  end if;\n  insert into pipeline.admin_control_events(area, action, target, detail, actor)\n  values ('layer4', 'inbox_decide', v_kind || ':' || v_ref, jsonb_build_object('kind', v_kind, 'ref', v_ref, 'choice', v_choice, 'value', v_value, 'reason', v_reason, 'provider_id', v_pid, 'result', v_r), auth.uid())\n  returning id into v_event;\n  -- UR-06 (1 Nov 2026): the reply names the audit event and what the decision actually did, read back from its destination\n  return security.layer4_action_ack_v1(v_kind, v_ref, jsonb_build_object('ok', true, 'kind', v_kind, 'choice', v_choice, 'returns', v_c->>'returns', 'result', v_r, 'ref', v_ref, 'event_id', v_event,\n                            'outcome', security.layer4_decision_outcome_v1(v_kind, v_choice, v_r)));\nend $function$\n",
+  "source_signature": "security.layer4_inbox_items_v2(uuid,text,text[],boolean)",
+  "source_definition": "CREATE OR REPLACE FUNCTION security.layer4_inbox_items_v2(p_provider_id uuid DEFAULT NULL::uuid, p_kind text DEFAULT NULL::text, p_keys text[] DEFAULT NULL::text[], p_detail boolean DEFAULT true)\n RETURNS TABLE(kind text, ref text, provider_id uuid, subject text, why text, suggestion text, created_at timestamp with time zone, detail jsonb)\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n  -- CF-247 Layer 4 Inbox performance (4 Nov 2026): every item that needs a person, one row each, as security.layer4_inbox_items_v1 had them.\n  -- A university (p_provider_id), a kind (p_kind) or items ('kind:ref' in p_keys) are chosen inside each source before anything is built;\n  -- p_detail false leaves the detail out (counts and keys only).\n  with ob as (select distinct on (o.provider_id) o.* from pipeline.provider_onboarding o order by o.provider_id, o.created_at desc),\n  cricos_only as (select b.provider_id from pipeline.adapter_builds b where b.wave = 'cricos-only'),\n  held_pages as (select f.provider_id from pipeline.enrichment_flags f where f.entity = 'provider' and f.state = 'raised' and f.reason_code = 'course_pages_not_found')\n  -- course links and other review items\n  -- hotfix 26 Oct 2026: a first run for a university (no page published, conjoint rule) carries its university and its own kind\n  select z.k, r.id::text, z.pid,\n         coalesce(nullif(c.display_title, ''), c.canonical_title, s.name,\n                  case when r.entity_type = 'provider' and r.field_code = 'no_page_first_run' then 'No page published: first run'\n                       when r.entity_type = 'provider' and r.field_code = 'conjoint_rule_first_run' then 'Conjoint or double degrees: first run' end,\n                  case r.field_code when 'entry_matrix_first_run' then 'Entry requirements: first read of the provider table'\n                                       when 'entry_matrix_change' then 'Entry requirements: the provider table changed'\n                                       when 'provider_description' then 'University description from the official page' end,\n                  r.field_code),\n         -- mandate 3 Nov 2026 20:47 §5: a CRICOS code is named only for Australian providers\n         case when coalesce(kc.iso_alpha2, 'AU') <> 'AU' and r.escalation_reason ilike '%CRICOS%'\n              then replace(replace(r.escalation_reason, 'this course''s CRICOS code', 'this course''s code'), 'CRICOS code', 'course code')\n              else coalesce(nullif(r.escalation_reason, ''), 'Needs a decision') end, null::text, r.created_at,\n         case when p_detail then\n         jsonb_build_object('field_code', r.field_code, 'course_id', c.id, 'course_code', c.course_code, 'before', r.before_value, 'proposed', r.proposed_value,\n                            'code_label', case when coalesce(kc.iso_alpha2, 'AU') = 'AU' then 'CRICOS' else 'Course code' end,\n                            -- UR-05 (1 Nov 2026): the stored copy behind the item, when it was captured, and whether a newer copy of the same page exists\n                            'evidence_id', r.evidence_id, 'captured_at', ev.captured_at, 'source_url', ev.source_url,\n                            'newer_copy', ev.id is not null and exists (select 1 from pipeline.evidence_artifacts n where lower(n.source_url) = lower(ev.source_url) and n.captured_at > ev.captured_at)) end\n    from pipeline.layer4_review_items r\n    left join catalogue.courses c on r.entity_type = 'course' and c.id = r.entity_id\n    left join scholarship.scholarships s on r.entity_type = 'scholarship' and s.id = r.entity_id\n    cross join lateral (select case when r.entity_type = 'provider' and r.field_code = 'no_page_first_run' then 'no_page_first_run'\n              when r.entity_type = 'provider' and r.field_code = 'conjoint_rule_first_run' then 'conjoint_first_run'\n              when r.field_code = any (security.aer_review_kinds_v1()) then 'aer_review'  -- CF-247 A1-A3 (30 Oct 2026): the AER review path\n              when r.entity_type = 'provider' and r.field_code = 'provider_description' then 'provider_description'  -- CF-247 P1 (2 Nov 2026): university descriptions\n              when r.entity_type = 'course' and r.field_code = 'course_description_first_read' then 'provider_description'  -- CF-247 Workstream C (3 Nov 2026): course descriptions, the same review (approve as read or reject)\n              else 'course_link' end::text k,\n              coalesce(c.provider_id, s.provider_id, case when r.entity_type = 'provider' then r.entity_id end) pid) z\n    left join pipeline.evidence_artifacts ev on p_detail and ev.id = r.evidence_id\n    left join catalogue.providers pv on pv.id = coalesce(c.provider_id, s.provider_id)\n    left join ref.countries kc on kc.id = pv.country_id\n   where r.status = 'pending'\n     and (p_provider_id is null or z.pid = p_provider_id) and (p_kind is null or z.k = p_kind) and (p_keys is null or z.k || ':' || r.id::text = any (p_keys))\n  union all\n  -- held scholarship pages, with the AI re-check\n  select 'held_scholarship', r.id::text, r.provider_id,\n         coalesce((select e.answer->>'name' from pipeline.scholarship_ai_extractions e where e.id = r.extraction_ids[array_upper(r.extraction_ids, 1)]), r.url),\n         r.reason, r.recheck->>'why', r.created_at,\n         case when p_detail then\n         jsonb_build_object('url', r.url, 'recommendation', r.recheck->>'recommendation', 'audience_quote', r.recheck->>'audience_quote', 'value_quote', r.recheck->>'value_quote',\n                            'extraction_id', (select e.id from pipeline.scholarship_ai_extractions e where e.id = any (r.extraction_ids) and coalesce((e.answer->>'is_scholarship')::boolean, false) order by e.id desc limit 1)) end\n    from pipeline.scholarship_ai_reviews r where r.status = 'pending'\n     and (p_kind is null or p_kind = 'held_scholarship') and (p_provider_id is null or r.provider_id = p_provider_id)\n     and (p_keys is null or 'held_scholarship:' || r.id::text = any (p_keys))\n  union all\n  -- universities whose onboarding stopped and needs a person\n  select z.k, ob.id::text, ob.provider_id, null, coalesce(ob.note, ob.stop_reason), null, ob.updated_at,\n         case when p_detail then jsonb_build_object('stop_reason', ob.stop_reason, 'onboarding_id', ob.id) end\n    from ob\n    cross join lateral (select case ob.stop_reason when 'no_website' then 'website_needed' when 'too_few_pages' then 'too_few_pages' when 'nothing_ready' then 'nothing_ready'\n              when 'approve_central' then 'central_to_approve' else 'onboarding_failed' end k) z\n   where ob.status = 'stopped' and ob.stop_reason in ('no_website', 'too_few_pages', 'nothing_ready', 'approve_central', 'proposal_failed', 'capture_failed')\n     and ob.provider_id not in (select provider_id from cricos_only)\n     and not (ob.stop_reason = 'too_few_pages' and ob.provider_id in (select provider_id from held_pages))\n     and (p_kind is null or z.k = p_kind) and (p_provider_id is null or ob.provider_id = p_provider_id) and (p_keys is null or z.k || ':' || ob.id::text = any (p_keys))\n  union all\n  -- provider holds a person lifts\n  select z.k, f.id::text, f.provider_id, null, f.reason, null, f.flagged_at, case when p_detail then jsonb_build_object('flag_id', f.id, 'evidence', f.evidence) end\n    from pipeline.enrichment_flags f\n    cross join lateral (select case f.reason_code when 'course_pages_not_found' then 'pages_not_found' when 'site_unreachable' then 'site_down' else 'fee_check' end k) z\n   where f.entity = 'provider' and f.state = 'raised'\n     and (f.reason_code in ('course_pages_not_found', 'adapter_fee_fails_check')\n          or (f.reason_code = 'site_unreachable' and f.flagged_at < now() - make_interval(days => security.pipeline_num_v1('layer4.site_down_days', 30)::int)))\n     and (p_kind is null or z.k = p_kind) and (p_provider_id is null or f.provider_id = p_provider_id) and (p_keys is null or z.k || ':' || f.id::text = any (p_keys))\n  union all\n  -- course holds a person decides\n  select z.k, f.id::text, coalesce(f.provider_id, c.provider_id), coalesce(nullif(c.display_title, ''), c.canonical_title), f.reason, null, f.flagged_at,\n         case when p_detail then\n         jsonb_build_object('flag_id', f.id, 'course_id', c.id, 'course_code', c.course_code,\n                            -- mandate 3 Nov 2026 20:47 §5: the stored copy of the course's bound page, so a fee or course hold shows its evidence\n                            'evidence_id', g.evidence_id, 'captured_at', gev.captured_at, 'source_url', gev.source_url) end\n    -- the course by its key as written (a lower-case uuid, as c.id::text = f.entity_key matched), so its primary key is used\n    from pipeline.enrichment_flags f left join catalogue.courses c on c.id = case when f.entity_key ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then f.entity_key::uuid end\n    cross join lateral (select case f.reason_code when 'not_offered' then 'not_offered' when 'not_on_provider_site' then 'not_on_site' else 'fee_check' end k) z\n    left join pipeline.coverage_course_pages g on p_detail and g.course_id = c.id\n    left join pipeline.evidence_artifacts gev on gev.id = g.evidence_id\n   where f.entity = 'course' and f.state = 'raised' and f.reason_code in ('not_offered', 'not_on_provider_site', 'fee_crosscheck')\n     and (p_kind is null or z.k = p_kind) and (p_provider_id is null or coalesce(f.provider_id, c.provider_id) = p_provider_id)\n     and (p_keys is null or z.k || ':' || f.id::text = any (p_keys))\n  union all\n  -- Decision 179 (Platform Admin 3 Nov 2026 20:29): courses that need a correct page, while open and still without an official page\n  select 'course_page_needed', n.course_id::text, n.provider_id, coalesce(nullif(c.display_title, ''), c.canonical_title),\n         'No page of this course has been verified. ' || n.refused || ' page' || case when n.refused = 1 then ' was' else 's were' end || ' found and refused, the last: '\n           || coalesce(n.last_refused_reason, 'not proved to be this course''s page'),\n         null, n.created_at,\n         case when p_detail then\n         jsonb_build_object('course_id', c.id, 'course_code', c.course_code, 'code_label', case when coalesce(kc.iso_alpha2, 'AU') = 'AU' then 'CRICOS' else 'Course code' end,\n                            'proposed', jsonb_build_object('course_url', n.last_refused_url), 'refused', n.refused, 'lane', n.last_refused_lane, 'converted_items', to_jsonb(n.converted_items),\n                            'searches_requested', n.searches_requested, 'evidence_id', n.last_refused_evidence, 'captured_at', nev.captured_at, 'source_url', nev.source_url) end\n    from pipeline.course_page_needed n join catalogue.courses c on c.id = n.course_id\n    left join catalogue.providers pv on pv.id = n.provider_id left join ref.countries kc on kc.id = pv.country_id\n    left join pipeline.evidence_artifacts nev on p_detail and nev.id = n.last_refused_evidence\n   where n.state = 'open' and c.lifecycle_status = 'active'\n     and not exists (select 1 from catalogue.course_links l where l.course_id = n.course_id and l.link_type = 'official_course' and l.status = 'active')\n     and (p_kind is null or p_kind = 'course_page_needed') and (p_provider_id is null or n.provider_id = p_provider_id)\n     and (p_keys is null or 'course_page_needed:' || n.course_id::text = any (p_keys))\n  union all\n  -- counsellor reports from Zoho\n  select 'counsellor_report', d.id::text, z.pid, coalesce(d.detail->>'label', d.field_code), coalesce(d.detail->>'note', 'Reported by a counsellor'), null, d.created_at,\n         case when p_detail then d.detail end\n    from pipeline.data_flags d\n    cross join lateral (select coalesce((select c.provider_id from catalogue.courses c where d.entity_type = 'course' and c.id = d.entity_id), case when d.entity_type = 'provider' then d.entity_id end) pid) z\n   where d.flag_code = 'reported' and d.status = 'open'\n     and (p_kind is null or p_kind = 'counsellor_report') and (p_provider_id is null or z.pid = p_provider_id) and (p_keys is null or 'counsellor_report:' || d.id::text = any (p_keys))\n  union all\n  -- CF-247 20 Oct 2026: providers whose every registered course left the register (from the retired Review queue)\n  select 'provider_departure', d.id::text, d.provider_id, coalesce(p.display_name, p.canonical_name),\n         'Every registered course left the register (' || d.courses_retired || ' course' || case when d.courses_retired = 1 then '' else 's' end || '). Closed, merged into another provider, or still operating?',\n         null, d.created_at, case when p_detail then jsonb_build_object('departure_id', d.id, 'courses_retired', d.courses_retired, 'note', d.note) end\n    from pipeline.layer1_provider_departures d left join catalogue.providers p on p.id = d.provider_id where d.status = 'needs_review'\n     and (p_kind is null or p_kind = 'provider_departure') and (p_provider_id is null or d.provider_id = p_provider_id)\n     and (p_keys is null or 'provider_departure:' || d.id::text = any (p_keys))\n$function$\n"
+}

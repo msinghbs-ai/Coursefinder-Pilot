@@ -21,6 +21,7 @@ import'./layer4-inbox.css'
 import{ReviewReadinessLine}from'./AerCoverage'
 import{GroupBar,GroupList,recordNavigation}from'./Layer4Groups' // CF-247 mandate 16:32 §7: the three choices
 import{ItemLifecycle}from'./Layer4ItemLifecycle' // CF-247 decision 12:24: action lifecycle, times and acknowledgement on every card
+import{layer4DeepLinkCursor}from'./layer4-deep-link'
 
 const rpc=async(action,args)=>{const{data,error}=await supabase.rpc('admin_layer4_inbox',{p_action:action,p_args:args||{}});if(error)throw new Error(error.message);return data||{}}
 // SS-016 role simulation (1 Nov 2026): the rank a choice needs, as public.admin_layer4_inbox decides it: its own rank, else rank 4
@@ -54,11 +55,12 @@ const SEL='l4i-sel'
 const readSel=()=>{try{return JSON.parse(sessionStorage.getItem(SEL)||'null')}catch{return null}}
 
 export default function Layer4Inbox({onError,routeParams}){
-  const want=routeParams?.get?.('kind')||'',wantProvider=routeParams?.get?.('provider')||'',wantView=routeParams?.get?.('view')||'' // v2.15.343: the Dashboard opens the Inbox by kind (?view=kind)
+  const want=routeParams?.get?.('kind')||'',wantProvider=routeParams?.get?.('provider')||'',wantView=routeParams?.get?.('view')||'',wantRef=routeParams?.get?.('ref')||'',wantAt=routeParams?.get?.('review_at')||'' // v2.15.343: the Dashboard opens the Inbox by kind (?view=kind)
   const[grp,setGrp]=useState(''),[gtick,setGtick]=useState(0)
-  const[sum,setSum]=useState(null),[view,setView]=useState(want?'kind':wantView==='kind'?'kind':'university'),[kind,setKind]=useState(want),[q,setQ]=useState('')
+  const[sum,setSum]=useState(null),[view,setView]=useState(wantProvider?'university':want?'kind':wantView==='kind'?'kind':'university'),[kind,setKind]=useState(want),[q,setQ]=useState('')
   const[unis,setUnis]=useState(null),[offset,setOffset]=useState(0),[pick,setPick]=useState(null),[items,setItems]=useState(null),[note,setNote]=useState('')
   const[cur,setCur]=useState(null),[stack,setStack]=useState([]),restored=useRef(readPos()),hold=useRef(true)
+  const linkedPosition=useRef('')
   const sel0=useRef(!want&&!wantProvider&&!wantView?readSel():null)
   const[uk,setUk]=useState(sel0.current?.uk||'') // a university's kind pill: that university's waiting items of that kind only
   const posKey=`${view}|${kind}|${pick?.provider_id||''}|${uk}`
@@ -76,17 +78,23 @@ export default function Layer4Inbox({onError,routeParams}){
   const asked=useRef({want,wantProvider})
   useEffect(()=>{const was=asked.current;asked.current={want,wantProvider};if(was.want===want&&was.wantProvider===wantProvider)return
     // SS-016 acceptance (1 Nov 2026 21:20): Back to an address of the same kind left the university list on screen; the view follows the address too
-    if(want&&(want!==kind||view!=='kind')){setView('kind');setKind(want);setNote('')}
-    else if(wantProvider&&(wantProvider!==pick?.provider_id||view!=='university')){setView('university');setPick({provider_id:wantProvider,name:'University'});setUk('');setNote('')}},[want,wantProvider])
+    if(wantProvider&&(wantProvider!==pick?.provider_id||view!=='university'||want!==kind)){setView('university');setPick({provider_id:wantProvider,name:'University'});setKind(want);setUk('');setNote('')}
+    else if(want&&!wantProvider&&(want!==kind||view!=='kind')){setView('kind');setKind(want);setNote('')}},[want,wantProvider])
   const first=useRef(true)
   useEffect(()=>{if(!sum)return;setOffset(0);if(first.current)first.current=false;else{setPick(null);setUk('')};loadUnis(0)},[kind,q,!sum])
   useEffect(()=>{if(view!=='university'||!pick)return;try{sessionStorage.setItem(SEL,JSON.stringify({pick:{provider_id:pick.provider_id,name:pick.name,country:pick.country},uk}))}catch{}},[pick?.provider_id,uk,view])
   useEffect(()=>{if(!sum)return;let c=null,s=[];const r=restored.current
-    if(r&&r.key===posKey){c=r.cur||null;s=r.stack||[]}else if(r&&!(view==='university'&&!pick))restored.current=null  // kept while the same list is shown
+    const linkKey=`${wantProvider}|${want}|${wantRef}|${wantAt}`
+    const direct=wantRef&&wantAt&&want&&kind===want&&view==='university'&&pick?.provider_id===wantProvider&&linkedPosition.current!==linkKey?layer4DeepLinkCursor(sum.kinds,want,wantRef,wantAt):null
+    if(direct){c=direct;linkedPosition.current=linkKey;restored.current=null}
+    else if(r&&r.key===posKey){c=r.cur||null;s=r.stack||[]}else if(r&&!(view==='university'&&!pick))restored.current=null  // kept while the same list is shown
     hold.current=true
-    setCur(c);setStack(s);loadItems(c)},[pick?.provider_id,view,kind,uk,!sum])
+    setCur(c);setStack(s);loadItems(c)},[pick?.provider_id,view,kind,uk,!sum,wantRef,wantAt])
   // the position is saved only from the render after it was set, never from the render that is still restoring it
   useEffect(()=>{if(hold.current){hold.current=false;return}if(view==='university'&&!pick)return;try{sessionStorage.setItem(POS,JSON.stringify({key:posKey,cur,stack}))}catch{}},[posKey,cur,stack])
+  // Provider description Run & Validate links to the existing decision, without creating another approval path.
+  useEffect(()=>{if(!wantRef||!items?.items)return;const item=items.items.find(x=>String(x.ref)===wantRef);if(!item)return
+    const frame=requestAnimationFrame(()=>goToCard(wantRef));return()=>cancelAnimationFrame(frame)},[wantRef,items])
   const page=c=>{setCur(c);loadItems(c)}
   const next=()=>{restored.current=null;const l=items?.items||[];if(!l.length)return;setStack([...stack,cur]);page(keyOf(l[l.length-1]))}
   const prev=()=>{restored.current=null;const s=[...stack];const c=s.length?s.pop():null;setStack(s);page(c)}
@@ -189,7 +197,8 @@ function Item({it,k,showProvider,rank,onDone,onError,onRefresh}){
   const flagIds=[...(gate?.not_requirement||[]),...(gate?.audience||[]),...(mgate?.flagged||[])].map(o=>o.id).filter(Boolean)
   const exceptOpen=exceptOnly||(mheld&&mgate.except_fixable===true)
   const gated=c=>(held||mheld)&&(c.key==='approve'||(c.key==='approve_except'&&!exceptOpen))
-  const choices=(k.choices||[]).filter(c=>!(fee&&c.key==='use')).filter(c=>!(feeCheck&&c.key==='enter')).filter(c=>!((fee||feeCheck)&&c.key==='refuse')).map(c=>feeCheck&&FEE_CHECK[c.key]?{...c,...FEE_CHECK[c.key]}:c).filter(hookOk)
+  const choices=(k.choices||[]).filter(c=>!(fee&&c.key==='use')).filter(c=>!(feeCheck&&c.key==='enter')).filter(c=>!((fee||feeCheck)&&c.key==='refuse')).map(c=>feeCheck&&FEE_CHECK[c.key]?{...c,...FEE_CHECK[c.key]}:c)
+    .map(c=>it.kind==='provider_description'&&c.key==='reject'?{...c,returns:'Rejects this proposal; another read requires eligible evidence and existing retry/approval rules.'}:c).filter(hookOk)
   const choose=c=>{setErr('');if(c.link){recordNavigation(it.kind,it.ref,c.key);window.location.hash=linkFor(c.link,it).replace(/^#/,'');return}setOpen(c);setReason(c.reason||'');setValue(c.input==='url'&&it.kind==='course_link'&&!fee?urlOf(d.proposed):c.input==='url'&&it.kind==='conjoint_first_run'?(d.proposed?.parent_url||''):(c.input==='courses'||c.input==='rows')?'[]':'')}
   // hotfix 26 Oct 2026: a university's first run (no page published / conjoint rule) shows its sample; "has a page" ticks courses from it
   const firstRun=it.kind==='no_page_first_run'||it.kind==='conjoint_first_run'

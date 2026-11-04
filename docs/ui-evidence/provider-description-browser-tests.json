@@ -1,0 +1,42 @@
+{
+  "stats": {
+    "startTime": "2026-11-04T13:39:17.576Z",
+    "duration": 67391.163,
+    "expected": 3,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "cases": [
+    {
+      "title": "operator runs a fixed cohort, recovers its committed request, then inspects the authorised admission and publication",
+      "project": "chromium-desktop",
+      "results": [
+        {
+          "status": "passed",
+          "duration_ms": 40195
+        }
+      ]
+    },
+    {
+      "title": "database permissions refuse a read-only operator and the same role cannot save or run through the screen",
+      "project": "chromium-desktop",
+      "results": [
+        {
+          "status": "passed",
+          "duration_ms": 6333
+        }
+      ]
+    },
+    {
+      "title": "saved evidence, review links and publication remain inspectable on a phone @responsive",
+      "project": "chromium-mobile",
+      "results": [
+        {
+          "status": "passed",
+          "duration_ms": 10876
+        }
+      ]
+    }
+  ]
+}
