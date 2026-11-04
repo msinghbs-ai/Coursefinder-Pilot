@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.401 — 4 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.474** (Platform Admin mandate 4 Nov 16:32 §2, §7, §8; direction 18:08 §5). Migration `20261104590000_cf247_l4_operational_groups`: `pipeline.layer4_item_groups` (one stored primary disposition per item, secondary reasons apart; rows closed, never deleted), `security.layer4_groups_v1`, `security.layer4_groups_fill_v1` and job `layer4-groups` (:06, :16, :26, :46, :56; batch.layer4_groups, layer4.groups_fill_seconds), `security.layer4_flow_report_v1`; md5-guarded edits of admin_layer4_inbox (c0a972a6 → 1895ed98) and the lifecycle and acknowledgement functions. Reads use stored groups only (no classifier per row). No new admission authority; layer4.reconcile_supersede_on stays off; nothing dropped; consumer API untouched. Spec s283.
+
 ## 0.1.400 — 4 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.473** (Platform Admin mandate 4 Nov 16:32 §4–§6; IQ-00232). Migration `20261104580000_cf247_aer_recovery_selector` (renumbered after 570000): `security.aer_recovery_rule_v1` (shared eligibility, reusing layer4_reread_repeat_v1 change keys); md5-guarded edits of aer_technical_recovery_v1 (370baa57 → 08322eb5), aer_schedule_held_v1 (2a0d51fa → c866167b), aer_e13_recover_v1 (1bd8be8b → a81a54b1), har_aer_item_generate_v1 (22cb0e54 → b25b89a1; identity requests only), layer4_aer_recovery_detail_v1 (dbf06336 → 5d08d39e), layer4_reread_repeat_v1 (80c53ac4 → 19b6d24e). No caps or spending raised; no manual enqueues; E13, D-R3, 600 limit unchanged; nothing dropped; consumer API untouched. Spec s282.

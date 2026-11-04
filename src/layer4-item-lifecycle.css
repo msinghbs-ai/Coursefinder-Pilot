@@ -17,3 +17,7 @@
 @media (max-width:480px){.l4lc-times,.l4lc-steps{grid-template-columns:1fr}.l4lc-times dd,.l4lc-steps dd{margin-bottom:.2rem}}
 .l4lc-ev{display:block;color:var(--cf-muted);margin:.1rem 0 .3rem}
 .l4lc-summary{margin-top:.2rem}
+/* CF-247 mandate 16:32 §7: the Inbox's three choices */
+.l4i-groups{margin:.4rem 0}
+.l4i-groups .l4i-view{display:flex;flex-wrap:wrap;gap:.3rem}
+.l4i-groups .l4i-view button{min-height:44px;max-width:100%;white-space:normal;text-align:left}

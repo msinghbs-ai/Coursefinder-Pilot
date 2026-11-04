@@ -1,17 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.473'
-export const PACKAGE_VERSION='0.1.400'
+export const UI_VERSION='2.15.474'
+export const PACKAGE_VERSION='0.1.401'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'4 Nov 2026',
-  title:'AER recovery reads only what can succeed',
+  title:'Layer 4 groups: ready for my decision, information needed, technical recovery',
   changes:[
-    'Every held AER read now has one recovery class (row limit, unchanged evidence, transient, duplicate, needs a person, decision, or recoverable) with its last attempt, stored copy, reader and settings versions, next action and the reason an identical retry is not allowed.',
-    'Holds that would fail the same way again are parked instead of re-checked; they come back by themselves when the stored copy, the reader or a relevant setting changes. Transient failures keep bounded retries.',
-    'The scheduled corrected reads and the stored-copy pilot only take reads that can succeed. A row-limit hold\'s card names the row-limit decision as its next step, because typed rows would re-run the same refused read.'
+    'Every waiting Layer 4 item now has one primary group: automatically resolvable by an existing rule, technical recovery, a person\'s decision, or information needed from a person, with any secondary reasons kept separately; the groups add up to the items waiting.',
+    'The Inbox offers three choices: Ready for my decision, Information needed from me and Technical recovery; automatically resolvable items show as counts with their rule. Human input needed requests are a separate line.',
+    'Each card says why it is in Layer 4, what the platform has done, whether a person is needed, what moves it forward, when it entered and changed, and whether an earlier action worked.',
+    'A repeated decision within two minutes returns the first; a decision that did not take effect says Still incomplete; repeated retries of an unchanged stop are refused; buttons that open another screen are recorded.'
   ],
   bugFixes:[]
 }

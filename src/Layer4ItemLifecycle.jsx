@@ -69,6 +69,7 @@ export function ItemLifecycle({kind,refId,ack,seen=true,onSettled}){
     {ack?<Ack a={ack}/>:last&&<Ack a={{...last.result,ref:last.ref,at:last.at}} action={last.action}/>}
     <dl className="l4lc-times l4lc-summary" data-l4-summary>
       <dt>First entered Layer 4</dt><dd data-l4-time="first_entered">{t.first_entered?.text||'—'}</dd>
+      {lc.group_label&&<><dt>Person needed</dt><dd data-l4-group={lc.group}>{lc.group_label}: {lc.person_needed}</dd></>}
       <dt>Status</dt><dd><span className={`l4lc-chip tone-${TONE[lc.stage]||'info'}`} data-l4-stage>{lc.stage_label}</span>{lc.why_pending&&<span data-l4-why-pending> {lc.why_pending}</span>}</dd>
       <dt>Last reviewer action</dt><dd data-l4-last-reviewer>{last&&last.by==='reviewer'?`${label(last.action)} · ${last.at?.text||''}`:(t.last_reviewer_action?.text||'none yet')}</dd>
       {rc&&<><dt>Last recovery</dt><dd data-l4-last-recovery>{`Attempt ${rc.attempt}: ${rc.result?.headline||label(rc.result?.outcome)} · ${rc.at?.text||''}`}</dd></>}
@@ -80,6 +81,8 @@ export function ItemLifecycle({kind,refId,ack,seen=true,onSettled}){
     {(lc.predecessor||lc.successor)&&<p className="l4lc-link" data-l4-lineage>
       {lc.predecessor&&<>Replaces an earlier read ({short(lc.predecessor.ref)}, superseded{lc.predecessor.at?.text?` ${lc.predecessor.at.text}`:''}). </>}
       {lc.successor&&<>Replaced by a corrected read ({short(lc.successor.ref)}, now {label(lc.successor.status)}{lc.successor.complete===true?', complete: ready for review':lc.successor.complete===false?', still held':''}).</>}</p>}
+    {lc.evidence&&typeof lc.evidence==='object'&&<details className="l4lc-more" data-l4-evidence-held><summary>What the platform holds</summary>
+      <dl className="l4lc-steps">{Object.entries(lc.evidence).map(([k,v])=><React.Fragment key={k}><dt>{k}</dt><dd>{v!==null&&typeof v==='object'?Object.entries(v).map(([a,b])=>`${a}: ${typeof b==='object'?JSON.stringify(b):b}`).join('; '):String(v)}</dd></React.Fragment>)}</dl></details>}
     <details className="l4lc-more"><summary>Event history, times and steps</summary>
       {(lc.history||[]).length>0&&<ol className="l4lc-history" data-l4-history>{lc.history.map((h,i)=><Event key={i} h={h}/>)}</ol>}
       <dl className="l4lc-times" data-l4-times>{TIMES.filter(([k])=>t[k]?.text).map(([k,l])=><React.Fragment key={k}><dt>{l}</dt><dd data-l4-time-all={k}>{t[k].text}</dd></React.Fragment>)}
