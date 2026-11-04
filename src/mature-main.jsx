@@ -69,6 +69,7 @@ const CoverageView=lazyPage(()=>import('./course-coverage'),'CoverageView')
 // CF-247 AER Phase B (mandate 2 Nov 2026 §13): academic entry requirements on Coverage & completeness › Attributes, Curator and above
 const AerCoverage=lazyPage(()=>import('./AerCoverage'))
 const AdaptersWorkspace=lazyPage(()=>import('./AdaptersWorkspace'))
+const IntakeRunValidate=lazyPage(()=>import('./IntakeRunValidate'))
 const Layer23Operations=lazyPage(()=>import('./Layer23Operations'))
 const ScreenUse=lazyPage(()=>import('./ScreenUse'))
 const AdapterBuilderTab=lazyPage(()=>import('./AdapterBuilderTab'))
@@ -363,7 +364,7 @@ function Page({pageKey,tab,requestedTab='',routeParams,rank,actorId,onError,navi
             <LazyFold className="m-panel" data="uni-build-waves" summary={<strong>Build adapter: every university and the waves</strong>}>{()=><BuildAdapter rank={rank} onError={err}/>}</LazyFold>
             <AdaptersWorkspace merged rank={rank} actorId={actorId} onError={err} routeParams={routeParams}/></div>}
         // SS-020 step 4 (Decision 269): Operations takes in Progress (where the universities are, journeys, every hour)
-        return <div className="m-page-stack"><Layer23Operations rank={rank} actorId={actorId} onError={err}/><section data-operations-progress><Progress routeParams={routeParams} rank={rank} onError={onError}/></section></div>
+        return <div className="m-page-stack"><Layer23Operations rank={rank} actorId={actorId} onError={err}/><IntakeRunValidate rank={rank}/><section data-operations-progress><Progress routeParams={routeParams} rank={rank} onError={onError}/></section></div>
       // v2.15.252 (Platform Admin, 12 Oct 2026): Layer 3 AI validation and Layer 4 AI send-back tab retired; adapters admit the values.
       // v2.15.253 (Platform Admin, 12 Oct 2026): Flagged values, Fee rules, Attributes, Scholarship publishing and Blocks retired (old addresses redirect in nav-map.js).
       // v2.15.300 (Platform Admin, 20 Oct 2026): Review queue, AI could not decide and Websites to find retired into the Inbox kinds.
