@@ -1,18 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.474'
-export const PACKAGE_VERSION='0.1.401'
+export const UI_VERSION='2.15.475'
+export const PACKAGE_VERSION='0.1.402'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'4 Nov 2026',
-  title:'Layer 4 groups: ready for my decision, information needed, technical recovery',
+  title:'Recovery learns from outcomes',
   changes:[
-    'Every waiting Layer 4 item now has one primary group: automatically resolvable by an existing rule, technical recovery, a person\'s decision, or information needed from a person, with any secondary reasons kept separately; the groups add up to the items waiting.',
-    'The Inbox offers three choices: Ready for my decision, Information needed from me and Technical recovery; automatically resolvable items show as counts with their rule. Human input needed requests are a separate line.',
-    'Each card says why it is in Layer 4, what the platform has done, whether a person is needed, what moves it forward, when it entered and changed, and whether an earlier action worked.',
-    'A repeated decision within two minutes returns the first; a decision that did not take effect says Still incomplete; repeated retries of an unchanged stop are refused; buttons that open another screen are recorded.'
+    'Each remedy the platform uses now keeps a record of its real outcomes: the failure it addressed, the evidence and conditions, the authority it needed, what was expected and what happened, and when it must not be tried again.',
+    'When a remedy fails three times in a row on the same failure, it is not repeated until the evidence changes; a remedy that rarely verifies loses automatic use until a named person restores it with a reason.',
+    'Unfamiliar code defects become owned engineering work instead of repeated jobs. Authority blockers, such as platform alerts not being delivered because their destination is paused, are reported as such and never treated as a remedy.',
+    'The operations report shows automatically diagnosed and recovered incidents, repeated ineffective attempts prevented, cases needing Claude, human-only decisions, and actual records admitted and published, against a baseline.'
   ],
   bugFixes:[]
 }
