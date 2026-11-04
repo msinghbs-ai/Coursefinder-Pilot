@@ -15,11 +15,11 @@
 -- What (shared mechanisms; no new admission authority; no item is decided, superseded or admitted by this change):
 --   1 security.layer4_groups_v1(provider, kind, keys): every waiting item (the Inbox's own list, security.layer4_inbox_items_v2, and open Human
 --     input needed items) in one of four groups, with its class and, for group A, the existing rule that may settle it:
---       A automatically resolvable: an existing authorised rule covers it. Only two exist: the platform's resolution rules
---         (security.layer4_reconcile_v1: repeat, decided before with no new evidence, already active, record retired; switch
---         layer4.reconcile_supersede_on) and the three approved Course Link rules (security.layer4_course_link_rule_execute_v1: adelaide_keep_held,
---         canberra_no_year, sfu_no_term; run item by item, validated again at execution). Course Link routing beyond these is the Course Link
---         workstream's: when it ships security.layer4_course_link_group_v1(uuid) the classifier uses it instead.
+--       A automatically resolvable: an existing authorised rule covers it, named on the item. For review items other than official links: the
+--         platform's resolution rules (security.layer4_reconcile_v1: repeat, decided before with no new evidence, already active, record
+--         retired; switch layer4.reconcile_supersede_on). Official links are routed by the Course Link workstream's classifier,
+--         security.course_link_route_class_v1(uuid) (migration 20261104570000: Decision 263 rules, Decision 179 conversion, the resolution rules);
+--         while it is missing they stay in C.
 --       B technical recovery: readiness technically_blocked, kinds that are a technical stop (adapter nothing ready, proposal failed, site down),
 --         Human input needed items being analysed or resuming.
 --       C human decision: readiness judgement_ready, and kinds that are a protected decision.
@@ -42,7 +42,7 @@
 --   security.layer4_items_lifecycle_v1(jsonb)                   f6eeef05b818c8818d9eef144ff91a18 -> 9abc7baa6fb19a660527559bac78df1a
 --   security.layer4_item_lifecycle_v1(text,text)                a908288151604a4e3d936be5f05a2fad -> f54065d6b84004b3eb0f6e49be6b1779
 --   security.layer4_ack_headline_v1(text,jsonb,jsonb,timestamptz) c715ccb353dcdd77cc6c8f88402595e6 -> 54654848fd9ed4d833e36ad3494dcf3a
---   security.layer4_ack_normalise_v1(text,text,boolean,jsonb,text,jsonb) 50f4b7b6224c852bcecf4f054b3a81ae -> d69e61f1092b85f6527d7fb232aeda55
+--   security.layer4_ack_normalise_v1(text,text,boolean,jsonb,text,jsonb) 50f4b7b6224c852bcecf4f054b3a81ae -> e5f2fee175a931d3d886259f69c27bca
 -- Replaces: the five functions above (same names and signatures; additive behaviour)
 -- Retires: nothing
 -- Nothing is dropped or deleted. No consumer API object changes (G3). No job (the classifier is read when the screen asks). No Firecrawl or AI
@@ -88,14 +88,18 @@ on conflict do nothing;
 -- 2 the classifier (§2) --------------------------------------------------------------------------------------------------------------------
 create or replace function security.layer4_cl_group_call_v1(p_item uuid) returns jsonb
  language plpgsql stable security definer set search_path to '' as $function$
--- the Course Link workstream's routing for one official-link item, when it exists (contract: security.layer4_course_link_group_v1(uuid) returns
--- jsonb {grp: A|B|C|D, cls, rule}); null otherwise, and the classifier's own rule match applies
+-- the Course Link workstream's routing for one official-link item (security.course_link_route_class_v1(uuid), migration 20261104570000:
+-- {group A|B|C|D or null, class, action, authority, reason, recommended, evidence}) as {grp, cls, rule}; while that function is missing, or for
+-- an item it does not route, the item stays in C (Integration Controller 4 Nov 2026)
 declare v jsonb;
 begin
-  if to_regprocedure('security.layer4_course_link_group_v1(uuid)') is null then return null; end if;
-  execute 'select security.layer4_course_link_group_v1($1)' into v using p_item;
-  return v;
-exception when others then return null;
+  if to_regprocedure('security.course_link_route_class_v1(uuid)') is null then return jsonb_build_object('grp', 'C', 'cls', 'course_link:router_missing'); end if;
+  execute 'select security.course_link_route_class_v1($1)' into v using p_item;
+  return case when v->>'group' in ('A', 'B', 'C', 'D')
+              then jsonb_build_object('grp', v->>'group', 'cls', 'course_link:' || coalesce(v->>'class', 'routed'),
+                                      'rule', case when v->>'group' = 'A' then coalesce(v->>'authority', v->>'action') end, 'action', v->>'action', 'reason', v->>'reason')
+              else jsonb_build_object('grp', 'C', 'cls', 'course_link:not_routed') end;
+exception when others then return jsonb_build_object('grp', 'C', 'cls', 'course_link:router_failed');
 end $function$;
 revoke all on function security.layer4_cl_group_call_v1(uuid) from public, anon, authenticated;
 
@@ -104,9 +108,9 @@ create or replace function security.layer4_groups_v1(p_provider uuid default nul
  language plpgsql stable security definer set search_path to '' as $function$
 -- CF-247 mandate 16:32 §2: every waiting Layer 4 item (security.layer4_inbox_items_v2, and Human input needed items) in group A, B, C or D, with
 -- its class and, for A, the existing rule that may settle it. Read only: nothing is decided here. The Course Link workstream's classifier
--- (security.layer4_course_link_group_v1(uuid) returning {grp, cls, rule}) is used for official-link items when it exists.
+-- (security.course_link_route_class_v1(uuid), through security.layer4_cl_group_call_v1) is used for official-link items when it exists.
 declare v_map jsonb := coalesce((select w.value from pipeline.platform_toolset_settings w where w.toolset_key = 'pipeline' and w.key = 'layer4.group_by_kind'), '[]'::jsonb);
-        v_cl boolean := to_regprocedure('security.layer4_course_link_group_v1(uuid)') is not null;
+        v_cl boolean := true;  -- official-link items are routed by the Course Link workstream (security.layer4_cl_group_call_v1)
         v_rec_on boolean := security.pipeline_num_v1('layer4.reconcile_supersede_on', 0) >= 1;
 begin
   return query
@@ -119,27 +123,20 @@ begin
                        and r.id = case when i.ref ~ '^[0-9a-f-]{36}$' then i.ref::uuid end
                 left join pipeline.layer4_item_readiness rd on rd.item_id = r.id and rd.item_status = 'pending'),
        clh as (select ri.ref, security.layer4_cl_group_call_v1(ri.ref::uuid) j from ri where v_cl and ri.field_code = 'official_course_url'),
-       clr as (select ri.ref, min(u.code) code
-                 from ri join catalogue.courses c on c.id = ri.entity_id join pipeline.layer4_course_link_rules u on u.provider_id = c.provider_id
-                where ri.field_code = 'official_course_url' and not v_cl and ri.escalation_reason ilike u.reason_like and jsonb_typeof(ri.before_value) = 'array'
-                  and jsonb_array_length(ri.before_value) = 1 and security.layer4_url_key_v1(ri.before_value->>0) ~ u.held_regex
-                  and security.layer4_url_key_v1(coalesce(ri.proposed_value->>'course_url', ri.proposed_value->>'url'))
-                      = regexp_replace(security.layer4_url_key_v1(ri.before_value->>0), u.held_regex, u.proposed_replace)
-                group by 1),
-       aiv as (select x.entity, min(x.id) id from pipeline.layer4_interventions x where x.lane = 'aer_item' and x.status in ('ai_pending', 'awaiting_input', 'resuming') group by 1)
+       aiv as (select x.entity, min(x.id) id, bool_or(x.status = 'awaiting_input') waiting from pipeline.layer4_interventions x where x.lane = 'aer_item' and x.status in ('ai_pending', 'awaiting_input', 'resuming') group by 1)
   select ri.kind, ri.ref, ri.provider_id, ri.created_at,
          case when clh.j->>'grp' in ('A', 'B', 'C', 'D') then clh.j->>'grp'
-              when ri.readiness = 'resolvable' then 'A' when clr.code is not null then 'A' when aiv.id is not null then 'D'
+              when ri.readiness = 'resolvable' then 'A' when aiv.id is not null then case when aiv.waiting then 'D' else 'B' end
               when ri.readiness = 'technical_blocked' then 'B' when ri.readiness = 'judgement_ready' then 'C'
               else coalesce((select def.g from def where def.k = ri.kind), 'C') end,
          case when clh.j->>'grp' in ('A', 'B', 'C', 'D') then coalesce(clh.j->>'cls', 'course_link')
-              when ri.readiness = 'resolvable' then coalesce(ri.route, 'platform:resolvable') when clr.code is not null then 'course_link_rule:' || clr.code
-              when aiv.id is not null then 'human_input:' || aiv.id when ri.readiness is not null then ri.route else 'kind:' || ri.kind end,
+              when ri.readiness = 'resolvable' then coalesce(ri.route, 'platform:resolvable')
+              when aiv.id is not null then case when aiv.waiting then 'human_input:' else 'human_input_resuming:' end || aiv.id when ri.readiness is not null then ri.route else 'kind:' || ri.kind end,
          case when clh.j->>'grp' in ('A', 'B', 'C', 'D') then clh.j->>'rule'
               when ri.readiness = 'resolvable' then 'security.layer4_reconcile_v1 (' || case when v_rec_on then 'on' else 'off: layer4.reconcile_supersede_on' end || ')'
-              when clr.code is not null then 'security.layer4_course_link_rule_execute_v1(''' || clr.code || ''') (run by the Integration Controller; validated item by item)' end,
+              end,
          ri.why
-    from ri left join clr on clr.ref = ri.ref left join aiv on aiv.entity = ri.ref left join clh on clh.ref = ri.ref
+    from ri left join aiv on aiv.entity = ri.ref left join clh on clh.ref = ri.ref
   union all
   select 'intervention', x.id::text, x.provider_id, x.created_at, case when x.status = 'awaiting_input' then 'D' else 'B' end, 'intervention:' || x.status, null,
          coalesce(x.required_input->>'ask', x.subject)
@@ -252,7 +249,6 @@ begin
   if p_choice = any (security.pipeline_list_v1('layer4.once_only_choices', '["retry", "rebuild", "release"]'::jsonb)) and p_pid is not null then
     select x.id, x.created_at into e from pipeline.admin_control_events x
      where x.area = 'layer4' and x.action = 'inbox_decide' and x.detail->>'kind' = p_kind and x.detail->>'choice' = p_choice and x.detail->>'provider_id' = p_pid::text
-       and coalesce(x.detail->'result'->>'still_waiting', 'false') <> 'true'
      order by x.id desc limit 1;
     select p.updated_at into v_upd from catalogue.providers p where p.id = p_pid;
     if e.id is not null and (v_upd is null or v_upd <= e.created_at) then
@@ -295,15 +291,18 @@ $n$],
  array[1, 1]);
 
 -- the acknowledgement: a decision that left the item waiting is "Still incomplete"; an opened screen is named
-select pg_temp.edit_once('security.layer4_ack_normalise_v1(text,text,boolean,jsonb,text,jsonb)', '50f4b7b6224c852bcecf4f054b3a81ae', 'd69e61f1092b85f6527d7fb232aeda55', array[
+select pg_temp.edit_once('security.layer4_ack_normalise_v1(text,text,boolean,jsonb,text,jsonb)', '50f4b7b6224c852bcecf4f054b3a81ae', 'e5f2fee175a931d3d886259f69c27bca', array[
  array[$o$         when x.r ? 'repeat' or x.d ? 'repeat' then 'already_requested'$o$,
        $n$         when x.r ? 'repeat' or x.d ? 'repeat' then 'already_requested'
          when coalesce(x.r->>'still_waiting', '') = 'true' and p_choice in ('approve', 'approve_except', 'reject', 'keep', 'use', 'enter', 'refuse', 'publish', 'not_international',
               'not_scholarship', 'duplicate', 'archive', 'archive_course', 'closed', 'merged', 'reviewed', 'report_fixed', 'report_not_changed', 'has_page', 'parent', 'no_page') then 'incomplete'
          when x.d ? 'navigated' then 'accepted'$n$],
  array[$o$    'reason', coalesce(p_request,$o$,
-       $n$    'reason', coalesce(p_request, case when o.k = 'incomplete' and coalesce(x.r->>'still_waiting', '') = 'true' then 'sent, but the item is still waiting: the decision was not applied' end,$n$]],
- array[1, 1]);
+       $n$    'reason', coalesce(p_request, case when o.k = 'incomplete' and coalesce(x.r->>'still_waiting', '') = 'true' then 'sent, but the item is still waiting: the decision was not applied' end,$n$],
+ array[$o$    'alternative', case when o.k in ('refused', 'deferred', 'already_requested', 'incomplete') then$o$,
+       $n$    'alternative', case when o.k in ('refused', 'deferred', 'already_requested', 'incomplete') and p_kind <> 'aer_review' and x.d->>'alternative' is not null then x.d->>'alternative'
+                        when o.k in ('refused', 'deferred', 'already_requested', 'incomplete') then$n$]],
+ array[1, 1, 1]);
 select pg_temp.edit_once('security.layer4_ack_headline_v1(text,jsonb,jsonb,timestamptz)', 'c715ccb353dcdd77cc6c8f88402595e6', '54654848fd9ed4d833e36ad3494dcf3a', array[
  array[$o$  select case
 $o$,
@@ -383,3 +382,17 @@ insert into pipeline.component_register(kind, name, layer, area, purpose, status
  ('function', 'public.admin_layer4_groups', 'Layer 4', 'Layer 4 review', 'Layer 4 › Inbox: Ready for my decision, Information needed from me, Technical recovery', 'active', '{}', '20261104560000'),
  ('function', 'public.admin_layer4_navigate', 'Layer 4', 'Layer 4 review', 'Audit of a Layer 4 choice that opens another screen', 'active', '{}', '20261104560000')
 on conflict do nothing;
+
+-- 9 post-check -------------------------------------------------------------------------------------------------------------------------------
+do $$
+declare r record;
+begin
+  for r in select * from (values
+      ('public.admin_layer4_inbox(text,jsonb)', '708f43b2dcacfa4520a574c659a218ad'),
+      ('security.layer4_lifecycle_one_v1(text,text,boolean)', 'e1e3c4a1744663d9793a896816b93f8d'),
+      ('security.layer4_items_lifecycle_v1(jsonb)', '9abc7baa6fb19a660527559bac78df1a'),
+      ('security.layer4_item_lifecycle_v1(text,text)', 'f54065d6b84004b3eb0f6e49be6b1779')) v(sig, m) loop
+    if md5(pg_get_functiondef(r.sig::regprocedure)) <> r.m then raise exception 'post-check: % has md5 %', r.sig, md5(pg_get_functiondef(r.sig::regprocedure)); end if;
+  end loop;
+  if exists (select 1 from security.layer4_groups_v1() g where g.grp = 'A' and g.rule is null) then raise exception 'post-check: a group A item without its existing rule'; end if;
+end $$;
