@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.399 — 4 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.472** (Platform Admin mandate 4 Nov 16:32 §3). Migration `20261104570000_cf247_course_link_simplify`: `security.course_link_route_class_v1(uuid)`, `security.course_link_reconcile_v1(provider, limit, apply)` (apply false only counts; calls the existing `course_page_needed_convert_v1` for Decision 179 and the existing supersession for retired providers); md5-guarded edits of security.layer4_resolution_for_v1 (487fc2ec → c5ec24cb; 252 old-year, refused-but-shown and two-page items no longer resolve as covered_by_active) and security.binding_refusal_route_v1 (717fb44d → 54070a80; no re-raise of a decided page in a URL variant). No new admission authority; layer4.reconcile_supersede_on and layer4.arrival_guard_on stay off; manual bindings untouched; nothing dropped; consumer API untouched. Spec s284.
+
 ## 0.1.398 — 4 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.471** (Platform Admin decision 4 Nov 12:24 and observation 13:00; IQ-00279). Migration `20261104540000_cf247_l4_action_lifecycle`: item lifecycle derived from existing records (admin_control_events, layer4_aer_recovery_actions, aer_read_supersessions, field_enrich_items, layer4_interventions, work items); normalised acknowledgement on every Inbox decide; md5-guarded edits of security.layer4_aer_recovery_detail_v1 (636c1764 → dbf06336), security.layer4_aer_recovery_decide_v1 (841234cb → f247220f), public.admin_layer4_inbox (29705b99 → c0a972a6; decide replies only); new column enrichment_flags.first_flagged_at (trigger and backfill) so Keep waiting no longer resets first entry. Settings layer4.lifecycle_poll_seconds, layer4.lifecycle_poll_max, layer4.reader_revision, layer4.reread_change_keys. Admission rules, spending, manual locks and roles unchanged; nothing dropped; consumer API untouched. Spec s281; SOPs admin 2.31, operator 2.15.
