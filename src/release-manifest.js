@@ -1,17 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.468'
-export const PACKAGE_VERSION='0.1.395'
+export const UI_VERSION='2.15.469'
+export const PACKAGE_VERSION='0.1.396'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'4 Nov 2026',
-  title:'Layer 1 register schedules move to Layer 1 › Sources (SS-020 follow-up, Option A)',
+  title:'Job output measures, kept classifier results and governed issue severity',
   changes:[
-    'Schedule on Layer 1 › Sources now sets the CRICOS and NZQA refresh policies and moves their next run; Run now runs them once.',
-    'Pipeline Operators and PIM Admins keep Schedule (not Manual) and Run now for those registers, with a reason, exactly as before (Option A).',
-    'Refresh schedules and one-off runs is no longer on Scheduled jobs › Automations; its old addresses open Layer 1 › Sources. Link refresh stays on Coverage › Courses.'
+    'The interventions and readiness jobs now report what they produced (created, reused, resolved, returned to recovery, awaiting input; checked, newly classified, technically blocked, ready for judgement, superseded); a run that produces nothing is verified only with a justified reason.',
+    'Each scholarship classifier run now keeps its result, including repeated cases folded and report errors.',
+    'An issue\'s severity can be changed through a governed function with the old and new severity, an evidence-based reason, the deciding authority and an audit event; the issue, its fingerprint and history are kept.',
+    'The operations report shows progress by stage for scholarships and AER (eligible, processed, technically recovered, review-ready, human-decided, admitted, published, blocked) and lists work with no recovery condition.'
   ],
   bugFixes:[]
 }

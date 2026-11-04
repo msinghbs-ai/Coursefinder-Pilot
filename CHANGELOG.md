@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.396 — 4 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.469** (Platform Admin direction 4 Nov 10:00 §6, §7, §10, §11). Migration `20261104520000_cf247_verification_measures`: `pipeline.job_output_contracts`, `pipeline.scholarship_coverage_classify_runs`, `security.integration_issue_severity_v1`, `security.recovery_condition_gaps_v1`, `security.pipeline_progress_table_v1`; md5-guarded edits of integration_issue_upsert_v1 (b0a1a649 → f9d7bf1a; a governed severity is not undone by the next observation), scholarship_coverage_classify_v1 (c072494c → 7cd32235; isolated run ledger), progress_measure_v1, progress_zero_reason_v1, release_first_run_register_v1, self_sustainability_v1. Scope basis corrected: 2,560 in scope; 755 is providers with candidates. Nothing switched; nothing dropped; consumer API untouched. Spec s278.
+
 ## 0.1.395 — 4 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.468** (SS-020 follow-up; Decision 269 amendment; Platform Admin Option A, direction 4 Nov 10:00 §8). Migration `20261104510000_cf247_ss020_followup_layer1_schedule`: md5-guarded replacement of public.admin_layer1_schedule (53b48153 → cc0c680d) calling the existing policy edit bridge for policy registers (rank 4+, reason 5+, same audit row); new public.admin_layer1_policy_run_v1 (574e4ece) calling the existing run-now bridge; refresh_scheduler_tick_impl and both bridges guarded, unchanged. Legacy screen and 6 functions marked retiring (14 days); nothing dropped. Roles not widened. Consumer API untouched. Spec s274; cf-092, cf-093 and one s237 test retired with reasons.
