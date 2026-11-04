@@ -1,7 +1,7 @@
-<!-- sop-export: id=operator-sop; version=2.14; reviewed-release=2.15.465; source-commit=adcbae921aad; content-sha256=87b5e4f701cd9c5815cf8a39718112384d5b7f7ecfdafb32c5a39c97ab1d91ea -->
+<!-- sop-export: id=operator-sop; version=2.14; reviewed-release=2.15.468; source-commit=7e968816866c+local; content-sha256=6856381066ba35192d0e3ef40dc6b87e2776c8a4e55c21e8b7d63404cb97fadd -->
 # StudySearch – Operator SOP
 
-**Version:** 2.14 (reviewed for platform release v2.15.465)  
+**Version:** 2.14 (reviewed for platform release v2.15.468)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -216,7 +216,7 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | 2.05 | 29 Oct 2026 | v2.15.364 | Reviewed: Catalogue › Entry requirements shows the course-level reading programme by provider and marks a rendered page with no requirements table (read only for operators). |
 | 2.06 | 1 Nov 2026 | v2.15.395 | Who controls automations: the Pipeline Operator diagnoses, records and escalates; the PIM Admin paces, pauses, resumes and runs again (the Platform Admin for automations marked Platform Admin). Entry requirement (AER) items are decided by the Platform Admin only. Alerts arrive by push and e-mail. Version raised to follow this history (it had stayed at 1.53). |
 | 2.07 | 1 Nov 2026 | v2.15.396 | The PIM Admin no longer owns the priority queue (retired in v2.15.300). A rising Layer 4 count is investigated for its cause (new arrivals, evidence that will not open, a repeated defect, work waiting on another step) before it is called a backlog (SS-016 UR-08, UR-11). |
-| 2.14 | 4 Nov 2026 | v2.15.466 | Scheduled jobs › Automations no longer shows Refresh schedules and one-off runs (Decision 269 amendment, Option A): Pipeline Operators and PIM Admins change how often CRICOS or NZQA runs, or run it once, on Layer 1 › Sources (Schedule, Run now; a reason of 5 or more characters), as before; Manual and other sources are the Platform Admin's. Link refresh stays on Coverage › Courses, where you change it as before. No step changed. |
+| 2.14 | 4 Nov 2026 | v2.15.468 | Scheduled jobs › Automations no longer shows Refresh schedules and one-off runs (Decision 269 amendment, Option A): Pipeline Operators and PIM Admins change how often CRICOS or NZQA runs, or run it once, on Layer 1 › Sources (Schedule, Run now; a reason of 5 or more characters), as before; Manual and other sources are the Platform Admin's. Link refresh stays on Coverage › Courses, where you change it as before. No step changed. |
 | 2.13 | 4 Nov 2026 | v2.15.457 | Rankings: QILT and PRISMS data open from Datasets › View data (the Overview cards link there). No step changed. |
 | 2.12 | 4 Nov 2026 | v2.15.456 | Layer 2/3 (Decision 269): Progress is on Operations; Fill now for a stalled field is on Enrich fields (Attributes links there); Build adapter is the Build link on a Universities row; the Inbox shows a review readiness line. |
 | 2.11 | 4 Nov 2026 | v2.15.455 | Admin menu (Decision 269): Platform health › Work queues is Queues & yield (with Pipeline yield for PIM Admins); Models & services › Services, Toolsets & limits and Fetchers are one tab, Services & limits. Old addresses open the new tabs. |
