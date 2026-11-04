@@ -1,19 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.470'
-export const PACKAGE_VERSION='0.1.397'
+export const UI_VERSION='2.15.471'
+export const PACKAGE_VERSION='0.1.398'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'4 Nov 2026',
-  title:'AER review queue: ready items first, university summary and readable recovery',
+  title:'Layer 4 shows what happened after every action',
   changes:[
-    'A university\'s Entry requirements (AER) pill opens on its items ready to decide first, with All waiting one click away; every decision is still one item at a time through the existing Approve, Approve except and Reject actions, gated as before.',
-    'Each university shows a summary: pending, ready, technically held, needing input, stale, open human input, admitted and unresolved.',
-    'Held AER cards show a review packet (course, qualification, country, audience, stored evidence and quotations, proposed and active rows, manual locks, checks, recommended decision and its consequences) and a readable recovery summary instead of raw data.',
-    'Held reads that no automatic fix can reach raise one Human input needed item each; reads refused at the row limit wait for a row-limit decision and are not re-read or sent for rows.',
-    'Reviewers can claim a university so two reviewers do not work the same items.'
+    'Every Layer 4 action returns a result confirmed by the server, kept on the card through Refresh: for example "Recovery queued — 12:17 AEDT", "Recovery refused — unchanged evidence and reader", "Recovery completed — still held under E13" or "Recovery completed — replacement read ready for review", with its audit reference.',
+    'Each card has a Progress block: first entered Layer 4, status, last reviewer action, last recovery and its result, next step and time waiting, with an expandable event history (requests, reads with start and finish times and attempt numbers, validations, supersessions and decisions) in AEDT/AEST.',
+    'While a recovery runs the card updates by itself; a replacement read is linked and Approve opens only when the completeness gates pass.',
+    'A re-read on an unchanged stored copy that was already refused is no longer recommended or run; a repeated click returns the existing request or Human input needed item instead of starting another.'
   ],
   bugFixes:[]
 }

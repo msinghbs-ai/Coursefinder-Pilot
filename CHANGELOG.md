@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.398 — 4 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.471** (Platform Admin decision 4 Nov 12:24 and observation 13:00; IQ-00279). Migration `20261104540000_cf247_l4_action_lifecycle`: item lifecycle derived from existing records (admin_control_events, layer4_aer_recovery_actions, aer_read_supersessions, field_enrich_items, layer4_interventions, work items); normalised acknowledgement on every Inbox decide; md5-guarded edits of security.layer4_aer_recovery_detail_v1 (636c1764 → dbf06336), security.layer4_aer_recovery_decide_v1 (841234cb → f247220f), public.admin_layer4_inbox (29705b99 → c0a972a6; decide replies only); new column enrichment_flags.first_flagged_at (trigger and backfill) so Keep waiting no longer resets first entry. Settings layer4.lifecycle_poll_seconds, layer4.lifecycle_poll_max, layer4.reader_revision, layer4.reread_change_keys. Admission rules, spending, manual locks and roles unchanged; nothing dropped; consumer API untouched. Spec s281; SOPs admin 2.31, operator 2.15.
+
 ## 0.1.397 — 4 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.470** (Platform Admin directions 4 Nov 10:00 §3–§4 and 12:16 RMIT AER settlement). Migration `20261104530000_cf247_aer_review_queue`: settlement classes from stored gate results (no gate per row), ready-first queue, university summary, review packet (`security.layer4_aer_review_detail_v1`, calling the recovery detail by name), claims in `pipeline.layer4_review_owners`, `security.aer_progress_counts_v1` (submitted, saved, admitted, published); md5-guarded edit of security.aer_e13_recover_v1 (90f80d59 → 1bd8be8b; pilot bounded to named universities, total cap, never re-reads a read refused on the same stored copy). On: har.generate_aer_item_on (asks people only). Off: aer.e13_recover_on. Layer 4 600 limit, E13, D-R3, manual locks and roles unchanged; nothing dropped; consumer API untouched. Spec s277.
