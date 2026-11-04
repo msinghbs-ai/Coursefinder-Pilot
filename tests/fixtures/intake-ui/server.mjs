@@ -21,7 +21,7 @@ const server = http.createServer(async (req, res) => {
     if (req.url === '/rest/v1/rpc/admin_intake_cohort_prepare_v1') call = `public.admin_intake_cohort_prepare_v1(${text(a.p_scope)},${text(a.p_size)}::integer,${text(a.p_reason)},${text(a.p_preview_token)})`
     if (req.url === '/rest/v1/rpc/admin_intake_run_now_v1') call = `public.admin_intake_run_now_v1(${text(a.p_cohort_id)}::uuid)`
     if (!call) throw Error('Unsupported local fixture RPC')
-    const sql = `begin; set local role authenticated; do $$begin perform set_config('request.jwt.claim.sub',${text(actor)},true); end$$; select ${call}; commit;`
+    const sql = `begin; set local statement_timeout='8s'; set local lock_timeout='8s'; set local role authenticated; do $$begin perform set_config('request.jwt.claim.sub',${text(actor)},true); end$$; select ${call}; commit;`
     const { stdout } = await exec('psql', ['-X', '-q', '-At', '-v', 'ON_ERROR_STOP=1', '-d', database, '-c', sql], { maxBuffer: 8 << 20 })
     res.end(JSON.stringify(JSON.parse(stdout.trim())))
   } catch (e) { res.statusCode = 400; res.end(JSON.stringify({ message: e.stderr || e.message })) }

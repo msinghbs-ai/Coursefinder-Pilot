@@ -17,7 +17,7 @@ jobs:
       contents: read
     services:
       postgres:
-        image: postgres:16
+        image: postgres:17.6-alpine
         env:
           POSTGRES_PASSWORD: fixture-only
         ports:
@@ -38,6 +38,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: bash tests/fixtures/intake-ui/run.sh | tee intake-sql-results.log
       - run: npx playwright test --config=playwright.intake.config.mjs
+      - run: psql -X -v ON_ERROR_STOP=1 -d intake_ui_fixtures -f tests/fixtures/intake-ui/post.sql
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -45,4 +46,5 @@ jobs:
           path: |
             intake-sql-results.log
             uat-artifacts/intake-integration.json
+            uat-artifacts/intake-benchmark.json
             uat-artifacts/intake-db-results/

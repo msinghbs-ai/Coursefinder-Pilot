@@ -6,6 +6,9 @@ case "${PGHOST:-127.0.0.1}" in 127.0.0.1|localhost|/tmp) ;; *) echo 'Refusing a 
 export RUN_NOW_DB=intake_ui_fixtures RUN_NOW_KEEP=1
 bash tests/fixtures/intake-pilot-run-now/run.sh
 P=(psql -X -q -v ON_ERROR_STOP=1 -d "$RUN_NOW_DB")
+# Rebuild relevant constraints/triggers/grants from the committed authoritative metadata snapshot.
+node tests/fixtures/intake-ui/parity.mjs > /tmp/intake-ui-parity.sql
+"${P[@]}" -1 -f /tmp/intake-ui-parity.sql
 MIG=supabase/migrations/20261105000000_intake_run_validate_bridge.sql
 BEFORE=$("${P[@]}" -Atc "select md5(pg_get_functiondef('security.run_now_cohort_create_v1(text,uuid,text,text)'::regprocedure)) || md5(pg_get_functiondef('security.job_run_now_v1(text,text,jsonb,uuid)'::regprocedure))")
 "${P[@]}" -1 -f "$MIG"
@@ -24,11 +27,10 @@ R=$("${P[@]}" -Atc "do \$\$begin perform set_config('request.jwt.claim.sub',md5(
 wait "$HOLDER"
 [[ "$R" == *'"state": "in_progress"'* ]] || { echo "Duplicate request not held: $R"; exit 1; }
 echo 'PASS same-request concurrency refuses a second dispatch before the shared runner'
-# Leave one eligible controlled course for the real-browser SQL transport test.
-cat tests/fixtures/intake-ui/helpers.sql > "$TMP"
-cat >> "$TMP" <<'SQL'
-select pg_temp.course('ui browser','harbour','harbour.edu.au','UI104','Master of Browser Intake Validation','Semester 1');
-select pg_temp.intake('ui browser','March');
-SQL
+# Build the 20-course/10-university acceptance dataset and starvation/performance regression.
+cat tests/fixtures/intake-ui/helpers.sql tests/fixtures/intake-ui/twenty.sql > "$TMP"
 "${P[@]}" -f "$TMP"
-echo 'PASS isolated vertical integration SQL; browser fixture ready'
+cat tests/fixtures/intake-ui/helpers.sql tests/fixtures/intake-ui/outcomes.sql > "$TMP"
+"${P[@]}" -f "$TMP"
+node tests/fixtures/intake-ui/benchmark.mjs
+echo 'PASS production-representative vertical integration SQL; 20-course browser fixture ready'

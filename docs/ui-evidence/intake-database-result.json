@@ -1,42 +1,43 @@
 {
     "job": "intake-dates-apply",
-    "rule": "Existing intake-dates-plan-v2 filled outcome: official stored page and approved calendar; most missing fields first, round-robin universities and evidence patterns; no scope widening",
+    "rule": "Existing intake-dates-plan-v2 filled outcome: official stored page and approved calendar; independent equal-share scan per university; most missing fields first, round-robin universities and evidence patterns; no scope widening",
     "runs": [
         {
             "error": null,
             "state": "done",
             "failed": 0,
-            "filled": 1,
+            "filled": 20,
             "reason": "Browser to PostgreSQL operational acceptance",
-            "run_id": "c82b8eb6-d212-4def-a2a3-8a289206d66b",
+            "run_id": "cfb819c9-511b-4d1b-82f6-ce56af0ad8ed",
             "bounded": true,
-            "courses": 1,
+            "courses": 20,
             "enabled": true,
+            "outcome": "succeeded_with_result",
             "skipped": 0,
-            "admitted": 1,
-            "cohort_id": "7d210865-b1bf-4184-9a2a-d035abdfd634",
-            "looked_at": 1,
-            "processed": 1,
+            "admitted": 20,
+            "cohort_id": "4756b346-111a-40c4-a853-3ceb850307ae",
+            "looked_at": 20,
+            "processed": 20,
             "by_outcome": {
-                "filled": 1
+                "filled": 20
             },
-            "started_at": "2026-11-04T11:07:56.825719+00:00",
-            "finished_at": "2026-11-04T11:07:56.933488+00:00",
+            "started_at": "2026-11-04T11:23:27.474286+00:00",
+            "finished_at": "2026-11-04T11:23:29.178467+00:00",
             "vendor_calls": 0,
-            "selected_courses": 1,
+            "selected_courses": 20,
             "provenance_completed": 0
         }
     ],
-    "as_at": "2026-11-04T11:09:18.353199+00:00",
+    "as_at": "2026-11-04T11:26:17.970851+00:00",
     "label": "Operator intake cohort",
     "totals": {
-        "admitted": 1,
-        "selected": 1,
-        "published": 1,
+        "admitted": 20,
+        "selected": 20,
+        "published": 20,
         "vendor_calls": 0,
         "zoho_checked": 0,
         "not_as_planned": 0,
-        "eligible_values": 1,
+        "eligible_values": 20,
         "skipped_or_failed": {
         }
     },
@@ -47,7 +48,7 @@
                     "year": 2027,
                     "label": "March",
                     "status": "active",
-                    "intake_id": "add8eae2-8e00-4ded-b4ec-a566a803fbfd",
+                    "intake_id": "2ced404f-8aee-434a-b5c7-1b2f7137f9dd",
                     "start_date": "2027-03-01",
                     "application_deadline": "2026-11-30"
                 }
@@ -68,8 +69,665 @@
                     "periods": [
                         "semester 1"
                     ],
-                    "intake_id": "add8eae2-8e00-4ded-b4ec-a566a803fbfd",
-                    "applied_at": "2026-11-04T11:07:56.821574+00:00",
+                    "intake_id": "2ced404f-8aee-434a-b5c7-1b2f7137f9dd",
+                    "applied_at": "2026-11-04T11:23:27.463396+00:00",
+                    "as_planned": true,
+                    "page_quote": "Semester 1",
+                    "start_quote": "1 March 2027 | Semester 1 starts",
+                    "calendar_url": "https://fixture4.edu.au/calendar",
+                    "deadline_quote": "30 November 2026 | Applications close for Semester 1"
+                }
+            ],
+            "fills": [
+                "year",
+                "start_date",
+                "application_deadline"
+            ],
+            "pattern": "day/date",
+            "admitted": 1,
+            "course_id": "d1273af9-6a9f-eb6e-65d7-5556a4871173",
+            "published": 1,
+            "provider_id": "ac74361f-4801-1c2d-518b-cd99ae646cce",
+            "publication": {
+                "zoho": "unsupported",
+                "website": "verified",
+                "catalogue": "verified"
+            },
+            "at_selection": [
+                {
+                    "rule": "named-period-pairs-v2",
+                    "before": {
+                        "year": null,
+                        "start_date": null,
+                        "application_deadline": null
+                    },
+                    "periods": [
+                        "semester 1"
+                    ],
+                    "planned": {
+                        "year": 2027,
+                        "start_date": "2027-03-01",
+                        "application_deadline": "2026-11-30"
+                    },
+                    "page_url": "https://www.fixture4.edu.au/study/master-of-intake-acceptance-scale-uni-4-1-tw46cce1",
+                    "intake_id": "2ced404f-8aee-434a-b5c7-1b2f7137f9dd",
+                    "page_quote": "Semester 1",
+                    "proposal_id": "4dd7b201-d38e-615e-0ada-ce1d4d26689a",
+                    "start_quote": "1 March 2027 | Semester 1 starts",
+                    "calendar_url": "https://fixture4.edu.au/calendar",
+                    "deadline_kind": "date",
+                    "deadline_quote": "30 November 2026 | Applications close for Semester 1",
+                    "calendar_evidence_id": "9681606c-308a-7505-55f5-94392f48c657"
+                }
+            ],
+            "course_title": "Master of Intake Acceptance scale uni 4 1",
+            "zoho_intakes": {
+                "error": "fixture: Zoho not connected"
+            },
+            "provider_name": "Fixture Australian University 4",
+            "not_as_planned": 0,
+            "website_intakes": [
+                {
+                    "year": 2027,
+                    "label": "March",
+                    "month": 3,
+                    "start_date": "2027-03-01",
+                    "application_deadline": "2026-11-30"
+                }
+            ]
+        },
+        {
+            "now": [
+                {
+                    "year": 2027,
+                    "label": "March",
+                    "status": "active",
+                    "intake_id": "b14b264c-f3cf-4593-87fb-93f1aee5c1e5",
+                    "start_date": "2027-03-02",
+                    "application_deadline": null
+                }
+            ],
+            "pick": 2,
+            "added": [
+                {
+                    "after": {
+                        "year": 2027,
+                        "start_date": "2027-03-02",
+                        "application_deadline": null
+                    },
+                    "before": {
+                        "year": null,
+                        "start_date": null,
+                        "application_deadline": null
+                    },
+                    "periods": [
+                        "semester 1"
+                    ],
+                    "intake_id": "b14b264c-f3cf-4593-87fb-93f1aee5c1e5",
+                    "applied_at": "2026-11-04T11:23:27.463396+00:00",
+                    "as_planned": true,
+                    "page_quote": "Semester 1",
+                    "start_quote": "2 March 2027 | Semester 1 commences",
+                    "calendar_url": "https://www.bay.edu.au/key-dates",
+                    "deadline_quote": null
+                }
+            ],
+            "fills": [
+                "year",
+                "start_date"
+            ],
+            "pattern": "day/not_stated",
+            "admitted": 1,
+            "course_id": "16c364c4-e247-d927-a604-108605027277",
+            "published": 1,
+            "provider_id": "c77f1151-c85f-c070-fa3b-fae909beac93",
+            "publication": {
+                "zoho": "unsupported",
+                "website": "verified",
+                "catalogue": "verified"
+            },
+            "at_selection": [
+                {
+                    "rule": "named-period-pairs-v2",
+                    "before": {
+                        "year": null,
+                        "start_date": null,
+                        "application_deadline": null
+                    },
+                    "periods": [
+                        "semester 1"
+                    ],
+                    "planned": {
+                        "year": 2027,
+                        "start_date": "2027-03-02",
+                        "application_deadline": null
+                    },
+                    "page_url": "https://www.bay.edu.au/study/master-of-intake-acceptance-bay-1-tweac931",
+                    "intake_id": "b14b264c-f3cf-4593-87fb-93f1aee5c1e5",
+                    "page_quote": "Semester 1",
+                    "proposal_id": "7bfb0729-afae-faf4-6ba6-8b788f300707",
+                    "start_quote": "2 March 2027 | Semester 1 commences",
+                    "calendar_url": "https://www.bay.edu.au/key-dates",
+                    "deadline_kind": "not_stated",
+                    "deadline_quote": null,
+                    "calendar_evidence_id": "a84d4de9-6c3e-8754-ddde-a7a586c8433d"
+                }
+            ],
+            "course_title": "Master of Intake Acceptance bay 1",
+            "zoho_intakes": {
+                "error": "fixture: Zoho not connected"
+            },
+            "provider_name": "Bay University",
+            "not_as_planned": 0,
+            "website_intakes": [
+                {
+                    "year": 2027,
+                    "label": "March",
+                    "month": 3,
+                    "start_date": "2027-03-02",
+                    "application_deadline": null
+                }
+            ]
+        },
+        {
+            "now": [
+                {
+                    "year": 2027,
+                    "label": "March",
+                    "status": "active",
+                    "intake_id": "10ce4e5c-aa4f-4fb2-adb9-2bc209b09e89",
+                    "start_date": "2027-03-01",
+                    "application_deadline": "2026-11-30"
+                }
+            ],
+            "pick": 3,
+            "added": [
+                {
+                    "after": {
+                        "year": 2027,
+                        "start_date": "2027-03-01",
+                        "application_deadline": "2026-11-30"
+                    },
+                    "before": {
+                        "year": null,
+                        "start_date": null,
+                        "application_deadline": null
+                    },
+                    "periods": [
+                        "semester 1"
+                    ],
+                    "intake_id": "10ce4e5c-aa4f-4fb2-adb9-2bc209b09e89",
+                    "applied_at": "2026-11-04T11:23:27.463396+00:00",
+                    "as_planned": true,
+                    "page_quote": "Semester 1",
+                    "start_quote": "1 March 2027 | Semester 1 starts",
+                    "calendar_url": "https://fixture6.edu.au/calendar",
+                    "deadline_quote": "30 November 2026 | Applications close for Semester 1"
+                }
+            ],
+            "fills": [
+                "year",
+                "start_date",
+                "application_deadline"
+            ],
+            "pattern": "day/date",
+            "admitted": 1,
+            "course_id": "898c1984-ebdf-1e03-a627-f69d6f292cc1",
+            "published": 1,
+            "provider_id": "288f3a1f-cd51-3c5e-3ce9-32851ce09a3c",
+            "publication": {
+                "zoho": "unsupported",
+                "website": "verified",
+                "catalogue": "verified"
+            },
+            "at_selection": [
+                {
+                    "rule": "named-period-pairs-v2",
+                    "before": {
+                        "year": null,
+                        "start_date": null,
+                        "application_deadline": null
+                    },
+                    "periods": [
+                        "semester 1"
+                    ],
+                    "planned": {
+                        "year": 2027,
+                        "start_date": "2027-03-01",
+                        "application_deadline": "2026-11-30"
+                    },
+                    "page_url": "https://www.fixture6.edu.au/study/master-of-intake-acceptance-scale-uni-6-3-tw09a3c3",
+                    "intake_id": "10ce4e5c-aa4f-4fb2-adb9-2bc209b09e89",
+                    "page_quote": "Semester 1",
+                    "proposal_id": "1f3e439b-5cfc-acd7-a2be-6225684b14a2",
+                    "start_quote": "1 March 2027 | Semester 1 starts",
+                    "calendar_url": "https://fixture6.edu.au/calendar",
+                    "deadline_kind": "date",
+                    "deadline_quote": "30 November 2026 | Applications close for Semester 1",
+                    "calendar_evidence_id": "9681606c-308a-7505-55f5-94392f48c657"
+                }
+            ],
+            "course_title": "Master of Intake Acceptance scale uni 6 3",
+            "zoho_intakes": {
+                "error": "fixture: Zoho not connected"
+            },
+            "provider_name": "Fixture Australian University 6",
+            "not_as_planned": 0,
+            "website_intakes": [
+                {
+                    "year": 2027,
+                    "label": "March",
+                    "month": 3,
+                    "start_date": "2027-03-01",
+                    "application_deadline": "2026-11-30"
+                }
+            ]
+        },
+        {
+            "now": [
+                {
+                    "year": 2027,
+                    "label": "March",
+                    "status": "active",
+                    "intake_id": "3dbbbb2e-eb92-4ff6-9c6e-7713cb4e81f5",
+                    "start_date": "2027-03-01",
+                    "application_deadline": "2026-11-30"
+                }
+            ],
+            "pick": 4,
+            "added": [
+                {
+                    "after": {
+                        "year": 2027,
+                        "start_date": "2027-03-01",
+                        "application_deadline": "2026-11-30"
+                    },
+                    "before": {
+                        "year": null,
+                        "start_date": null,
+                        "application_deadline": null
+                    },
+                    "periods": [
+                        "semester 1"
+                    ],
+                    "intake_id": "3dbbbb2e-eb92-4ff6-9c6e-7713cb4e81f5",
+                    "applied_at": "2026-11-04T11:23:27.463396+00:00",
+                    "as_planned": true,
+                    "page_quote": "Semester 1",
+                    "start_quote": "1 March 2027 | Semester 1 starts",
+                    "calendar_url": "https://fixture7.edu.au/calendar",
+                    "deadline_quote": "30 November 2026 | Applications close for Semester 1"
+                }
+            ],
+            "fills": [
+                "year",
+                "start_date",
+                "application_deadline"
+            ],
+            "pattern": "day/date",
+            "admitted": 1,
+            "course_id": "a5da360b-7108-9d82-da8a-4ab9af0c27ba",
+            "published": 1,
+            "provider_id": "f717945d-5bc5-6c4f-def0-75fcc8a5ce37",
+            "publication": {
+                "zoho": "unsupported",
+                "website": "verified",
+                "catalogue": "verified"
+            },
+            "at_selection": [
+                {
+                    "rule": "named-period-pairs-v2",
+                    "before": {
+                        "year": null,
+                        "start_date": null,
+                        "application_deadline": null
+                    },
+                    "periods": [
+                        "semester 1"
+                    ],
+                    "planned": {
+                        "year": 2027,
+                        "start_date": "2027-03-01",
+                        "application_deadline": "2026-11-30"
+                    },
+                    "page_url": "https://www.fixture7.edu.au/study/master-of-intake-acceptance-scale-uni-7-3-tw5ce373",
+                    "intake_id": "3dbbbb2e-eb92-4ff6-9c6e-7713cb4e81f5",
+                    "page_quote": "Semester 1",
+                    "proposal_id": "56c199b7-9675-ef7a-6154-c60256f7915a",
+                    "start_quote": "1 March 2027 | Semester 1 starts",
+                    "calendar_url": "https://fixture7.edu.au/calendar",
+                    "deadline_kind": "date",
+                    "deadline_quote": "30 November 2026 | Applications close for Semester 1",
+                    "calendar_evidence_id": "9681606c-308a-7505-55f5-94392f48c657"
+                }
+            ],
+            "course_title": "Master of Intake Acceptance scale uni 7 3",
+            "zoho_intakes": {
+                "error": "fixture: Zoho not connected"
+            },
+            "provider_name": "Fixture Australian University 7",
+            "not_as_planned": 0,
+            "website_intakes": [
+                {
+                    "year": 2027,
+                    "label": "March",
+                    "month": 3,
+                    "start_date": "2027-03-01",
+                    "application_deadline": "2026-11-30"
+                }
+            ]
+        },
+        {
+            "now": [
+                {
+                    "year": 2027,
+                    "label": "March",
+                    "status": "active",
+                    "intake_id": "7adf2f5c-69d0-4919-a0b2-0cbcdd2e29e0",
+                    "start_date": "2027-03-01",
+                    "application_deadline": "2026-11-30"
+                }
+            ],
+            "pick": 5,
+            "added": [
+                {
+                    "after": {
+                        "year": 2027,
+                        "start_date": "2027-03-01",
+                        "application_deadline": "2026-11-30"
+                    },
+                    "before": {
+                        "year": null,
+                        "start_date": null,
+                        "application_deadline": null
+                    },
+                    "periods": [
+                        "semester 1"
+                    ],
+                    "intake_id": "7adf2f5c-69d0-4919-a0b2-0cbcdd2e29e0",
+                    "applied_at": "2026-11-04T11:23:27.463396+00:00",
+                    "as_planned": true,
+                    "page_quote": "Semester 1",
+                    "start_quote": "1 March 2027 | Semester 1 starts",
+                    "calendar_url": "https://fixture2.edu.au/calendar",
+                    "deadline_quote": "30 November 2026 | Applications close for Semester 1"
+                }
+            ],
+            "fills": [
+                "year",
+                "start_date",
+                "application_deadline"
+            ],
+            "pattern": "day/date",
+            "admitted": 1,
+            "course_id": "c1827c2d-e95f-dba9-998e-d6778e47c2b2",
+            "published": 1,
+            "provider_id": "c9017d09-273f-b8c7-6771-cc3d0c314b5b",
+            "publication": {
+                "zoho": "unsupported",
+                "website": "verified",
+                "catalogue": "verified"
+            },
+            "at_selection": [
+                {
+                    "rule": "named-period-pairs-v2",
+                    "before": {
+                        "year": null,
+                        "start_date": null,
+                        "application_deadline": null
+                    },
+                    "periods": [
+                        "semester 1"
+                    ],
+                    "planned": {
+                        "year": 2027,
+                        "start_date": "2027-03-01",
+                        "application_deadline": "2026-11-30"
+                    },
+                    "page_url": "https://www.fixture2.edu.au/study/master-of-intake-acceptance-scale-uni-2-3-tw14b5b3",
+                    "intake_id": "7adf2f5c-69d0-4919-a0b2-0cbcdd2e29e0",
+                    "page_quote": "Semester 1",
+                    "proposal_id": "fa83060b-07b1-9b23-0665-25e24a1ad68b",
+                    "start_quote": "1 March 2027 | Semester 1 starts",
+                    "calendar_url": "https://fixture2.edu.au/calendar",
+                    "deadline_kind": "date",
+                    "deadline_quote": "30 November 2026 | Applications close for Semester 1",
+                    "calendar_evidence_id": "9681606c-308a-7505-55f5-94392f48c657"
+                }
+            ],
+            "course_title": "Master of Intake Acceptance scale uni 2 3",
+            "zoho_intakes": {
+                "error": "fixture: Zoho not connected"
+            },
+            "provider_name": "Fixture Australian University 2",
+            "not_as_planned": 0,
+            "website_intakes": [
+                {
+                    "year": 2027,
+                    "label": "March",
+                    "month": 3,
+                    "start_date": "2027-03-01",
+                    "application_deadline": "2026-11-30"
+                }
+            ]
+        },
+        {
+            "now": [
+                {
+                    "year": 2027,
+                    "label": "March",
+                    "status": "active",
+                    "intake_id": "02073f1b-d063-433b-8df2-c6e7e399d1db",
+                    "start_date": "2027-03-01",
+                    "application_deadline": "2026-11-30"
+                }
+            ],
+            "pick": 6,
+            "added": [
+                {
+                    "after": {
+                        "year": 2027,
+                        "start_date": "2027-03-01",
+                        "application_deadline": "2026-11-30"
+                    },
+                    "before": {
+                        "year": null,
+                        "start_date": null,
+                        "application_deadline": null
+                    },
+                    "periods": [
+                        "semester 1"
+                    ],
+                    "intake_id": "02073f1b-d063-433b-8df2-c6e7e399d1db",
+                    "applied_at": "2026-11-04T11:23:27.463396+00:00",
+                    "as_planned": true,
+                    "page_quote": "Semester 1",
+                    "start_quote": "1 March 2027 | Semester 1 starts",
+                    "calendar_url": "https://fixture5.edu.au/calendar",
+                    "deadline_quote": "30 November 2026 | Applications close for Semester 1"
+                }
+            ],
+            "fills": [
+                "year",
+                "start_date",
+                "application_deadline"
+            ],
+            "pattern": "day/date",
+            "admitted": 1,
+            "course_id": "6cb69277-1477-b3a3-6b8a-29e0865af0f6",
+            "published": 1,
+            "provider_id": "db158fcd-c80b-5367-2975-28dafb3cbb8d",
+            "publication": {
+                "zoho": "unsupported",
+                "website": "verified",
+                "catalogue": "verified"
+            },
+            "at_selection": [
+                {
+                    "rule": "named-period-pairs-v2",
+                    "before": {
+                        "year": null,
+                        "start_date": null,
+                        "application_deadline": null
+                    },
+                    "periods": [
+                        "semester 1"
+                    ],
+                    "planned": {
+                        "year": 2027,
+                        "start_date": "2027-03-01",
+                        "application_deadline": "2026-11-30"
+                    },
+                    "page_url": "https://www.fixture5.edu.au/study/master-of-intake-acceptance-scale-uni-5-3-twcbb8d3",
+                    "intake_id": "02073f1b-d063-433b-8df2-c6e7e399d1db",
+                    "page_quote": "Semester 1",
+                    "proposal_id": "167dbaba-6504-104f-cacb-8505b7664e72",
+                    "start_quote": "1 March 2027 | Semester 1 starts",
+                    "calendar_url": "https://fixture5.edu.au/calendar",
+                    "deadline_kind": "date",
+                    "deadline_quote": "30 November 2026 | Applications close for Semester 1",
+                    "calendar_evidence_id": "9681606c-308a-7505-55f5-94392f48c657"
+                }
+            ],
+            "course_title": "Master of Intake Acceptance scale uni 5 3",
+            "zoho_intakes": {
+                "error": "fixture: Zoho not connected"
+            },
+            "provider_name": "Fixture Australian University 5",
+            "not_as_planned": 0,
+            "website_intakes": [
+                {
+                    "year": 2027,
+                    "label": "March",
+                    "month": 3,
+                    "start_date": "2027-03-01",
+                    "application_deadline": "2026-11-30"
+                }
+            ]
+        },
+        {
+            "now": [
+                {
+                    "year": 2027,
+                    "label": "March",
+                    "status": "active",
+                    "intake_id": "b8d041e2-5fb4-48df-8c6a-102f6b8d95bb",
+                    "start_date": "2027-03-01",
+                    "application_deadline": "2026-11-30"
+                }
+            ],
+            "pick": 7,
+            "added": [
+                {
+                    "after": {
+                        "year": 2027,
+                        "start_date": "2027-03-01",
+                        "application_deadline": "2026-11-30"
+                    },
+                    "before": {
+                        "year": null,
+                        "start_date": null,
+                        "application_deadline": null
+                    },
+                    "periods": [
+                        "semester 1"
+                    ],
+                    "intake_id": "b8d041e2-5fb4-48df-8c6a-102f6b8d95bb",
+                    "applied_at": "2026-11-04T11:23:27.463396+00:00",
+                    "as_planned": true,
+                    "page_quote": "Semester 1",
+                    "start_quote": "1 March 2027 | Semester 1 starts",
+                    "calendar_url": "https://fixture3.edu.au/calendar",
+                    "deadline_quote": "30 November 2026 | Applications close for Semester 1"
+                }
+            ],
+            "fills": [
+                "year",
+                "start_date",
+                "application_deadline"
+            ],
+            "pattern": "day/date",
+            "admitted": 1,
+            "course_id": "8e207a37-fceb-3ce5-a057-0075fd7eccd0",
+            "published": 1,
+            "provider_id": "9c3f62e4-091a-f187-408c-1cac3d7f7f74",
+            "publication": {
+                "zoho": "unsupported",
+                "website": "verified",
+                "catalogue": "verified"
+            },
+            "at_selection": [
+                {
+                    "rule": "named-period-pairs-v2",
+                    "before": {
+                        "year": null,
+                        "start_date": null,
+                        "application_deadline": null
+                    },
+                    "periods": [
+                        "semester 1"
+                    ],
+                    "planned": {
+                        "year": 2027,
+                        "start_date": "2027-03-01",
+                        "application_deadline": "2026-11-30"
+                    },
+                    "page_url": "https://www.fixture3.edu.au/study/master-of-intake-acceptance-scale-uni-3-2-twf7f742",
+                    "intake_id": "b8d041e2-5fb4-48df-8c6a-102f6b8d95bb",
+                    "page_quote": "Semester 1",
+                    "proposal_id": "51058a2b-a874-c125-ae5c-72c06b9a6fa7",
+                    "start_quote": "1 March 2027 | Semester 1 starts",
+                    "calendar_url": "https://fixture3.edu.au/calendar",
+                    "deadline_kind": "date",
+                    "deadline_quote": "30 November 2026 | Applications close for Semester 1",
+                    "calendar_evidence_id": "9681606c-308a-7505-55f5-94392f48c657"
+                }
+            ],
+            "course_title": "Master of Intake Acceptance scale uni 3 2",
+            "zoho_intakes": {
+                "error": "fixture: Zoho not connected"
+            },
+            "provider_name": "Fixture Australian University 3",
+            "not_as_planned": 0,
+            "website_intakes": [
+                {
+                    "year": 2027,
+                    "label": "March",
+                    "month": 3,
+                    "start_date": "2027-03-01",
+                    "application_deadline": "2026-11-30"
+                }
+            ]
+        },
+        {
+            "now": [
+                {
+                    "year": 2027,
+                    "label": "March",
+                    "status": "active",
+                    "intake_id": "5892d89e-17da-405d-86a5-944ca3bd5266",
+                    "start_date": "2027-03-01",
+                    "application_deadline": "2026-11-30"
+                }
+            ],
+            "pick": 8,
+            "added": [
+                {
+                    "after": {
+                        "year": 2027,
+                        "start_date": "2027-03-01",
+                        "application_deadline": "2026-11-30"
+                    },
+                    "before": {
+                        "year": null,
+                        "start_date": null,
+                        "application_deadline": null
+                    },
+                    "periods": [
+                        "semester 1"
+                    ],
+                    "intake_id": "5892d89e-17da-405d-86a5-944ca3bd5266",
+                    "applied_at": "2026-11-04T11:23:27.463396+00:00",
                     "as_planned": true,
                     "page_quote": "Semester 1",
                     "start_quote": "1 March 2027 | Semester 1 starts",
@@ -84,7 +742,7 @@
             ],
             "pattern": "day/date",
             "admitted": 1,
-            "course_id": "44a8e70b-274e-e4d7-7c9f-0558379a7499",
+            "course_id": "e80e2c42-edf4-8b2b-3e5d-d45631aecf99",
             "published": 1,
             "provider_id": "08609bcf-387d-1316-2a52-9fbc0edff508",
             "publication": {
@@ -108,8 +766,8 @@
                         "start_date": "2027-03-01",
                         "application_deadline": "2026-11-30"
                     },
-                    "page_url": "https://www.harbour.edu.au/study/master-of-browser-intake-validation-ui104",
-                    "intake_id": "add8eae2-8e00-4ded-b4ec-a566a803fbfd",
+                    "page_url": "https://www.harbour.edu.au/study/master-of-intake-acceptance-harbour-3-twff5083",
+                    "intake_id": "5892d89e-17da-405d-86a5-944ca3bd5266",
                     "page_quote": "Semester 1",
                     "proposal_id": "24818cee-28f3-8368-8e3f-5454e23dda68",
                     "start_quote": "1 March 2027 | Semester 1 starts",
@@ -119,7 +777,1133 @@
                     "calendar_evidence_id": null
                 }
             ],
-            "course_title": "Master of Browser Intake Validation",
+            "course_title": "Master of Intake Acceptance harbour 3",
+            "zoho_intakes": {
+                "error": "fixture: Zoho not connected"
+            },
+            "provider_name": "Harbour University",
+            "not_as_planned": 0,
+            "website_intakes": [
+                {
+                    "year": 2027,
+                    "label": "March",
+                    "month": 3,
+                    "start_date": "2027-03-01",
+                    "application_deadline": "2026-11-30"
+                }
+            ]
+        },
+        {
+            "now": [
+                {
+                    "year": 2027,
+                    "label": "March",
+                    "status": "active",
+                    "intake_id": "295637c8-9cb5-48ba-b8ab-55f60550e29b",
+                    "start_date": "2027-03-02",
+                    "application_deadline": null
+                }
+            ],
+            "pick": 9,
+            "added": [
+                {
+                    "after": {
+                        "year": 2027,
+                        "start_date": "2027-03-02",
+                        "application_deadline": null
+                    },
+                    "before": {
+                        "year": null,
+                        "start_date": null,
+                        "application_deadline": null
+                    },
+                    "periods": [
+                        "semester 1"
+                    ],
+                    "intake_id": "295637c8-9cb5-48ba-b8ab-55f60550e29b",
+                    "applied_at": "2026-11-04T11:23:27.463396+00:00",
+                    "as_planned": true,
+                    "page_quote": "Semester 1",
+                    "start_quote": "2 March 2027 | Semester 1 commences",
+                    "calendar_url": "https://www.bay.edu.au/key-dates",
+                    "deadline_quote": null
+                }
+            ],
+            "fills": [
+                "year",
+                "start_date"
+            ],
+            "pattern": "day/not_stated",
+            "admitted": 1,
+            "course_id": "307425c9-5cc8-8fd1-150b-1db0154e797e",
+            "published": 1,
+            "provider_id": "c77f1151-c85f-c070-fa3b-fae909beac93",
+            "publication": {
+                "zoho": "unsupported",
+                "website": "verified",
+                "catalogue": "verified"
+            },
+            "at_selection": [
+                {
+                    "rule": "named-period-pairs-v2",
+                    "before": {
+                        "year": null,
+                        "start_date": null,
+                        "application_deadline": null
+                    },
+                    "periods": [
+                        "semester 1"
+                    ],
+                    "planned": {
+                        "year": 2027,
+                        "start_date": "2027-03-02",
+                        "application_deadline": null
+                    },
+                    "page_url": "https://www.bay.edu.au/study/master-of-intake-acceptance-bay-3-tweac933",
+                    "intake_id": "295637c8-9cb5-48ba-b8ab-55f60550e29b",
+                    "page_quote": "Semester 1",
+                    "proposal_id": "7bfb0729-afae-faf4-6ba6-8b788f300707",
+                    "start_quote": "2 March 2027 | Semester 1 commences",
+                    "calendar_url": "https://www.bay.edu.au/key-dates",
+                    "deadline_kind": "not_stated",
+                    "deadline_quote": null,
+                    "calendar_evidence_id": "a84d4de9-6c3e-8754-ddde-a7a586c8433d"
+                }
+            ],
+            "course_title": "Master of Intake Acceptance bay 3",
+            "zoho_intakes": {
+                "error": "fixture: Zoho not connected"
+            },
+            "provider_name": "Bay University",
+            "not_as_planned": 0,
+            "website_intakes": [
+                {
+                    "year": 2027,
+                    "label": "March",
+                    "month": 3,
+                    "start_date": "2027-03-02",
+                    "application_deadline": null
+                }
+            ]
+        },
+        {
+            "now": [
+                {
+                    "year": 2027,
+                    "label": "March",
+                    "status": "active",
+                    "intake_id": "ba65accd-39d1-4d16-8b46-636501076a2e",
+                    "start_date": "2027-03-01",
+                    "application_deadline": "2026-11-30"
+                }
+            ],
+            "pick": 10,
+            "added": [
+                {
+                    "after": {
+                        "year": 2027,
+                        "start_date": "2027-03-01",
+                        "application_deadline": "2026-11-30"
+                    },
+                    "before": {
+                        "year": null,
+                        "start_date": null,
+                        "application_deadline": null
+                    },
+                    "periods": [
+                        "semester 1"
+                    ],
+                    "intake_id": "ba65accd-39d1-4d16-8b46-636501076a2e",
+                    "applied_at": "2026-11-04T11:23:27.463396+00:00",
+                    "as_planned": true,
+                    "page_quote": "Semester 1",
+                    "start_quote": "1 March 2027 | Semester 1 starts",
+                    "calendar_url": "https://fixture5.edu.au/calendar",
+                    "deadline_quote": "30 November 2026 | Applications close for Semester 1"
+                }
+            ],
+            "fills": [
+                "year",
+                "start_date",
+                "application_deadline"
+            ],
+            "pattern": "day/date",
+            "admitted": 1,
+            "course_id": "583564c3-b75b-bf29-faba-85504507479f",
+            "published": 1,
+            "provider_id": "db158fcd-c80b-5367-2975-28dafb3cbb8d",
+            "publication": {
+                "zoho": "unsupported",
+                "website": "verified",
+                "catalogue": "verified"
+            },
+            "at_selection": [
+                {
+                    "rule": "named-period-pairs-v2",
+                    "before": {
+                        "year": null,
+                        "start_date": null,
+                        "application_deadline": null
+                    },
+                    "periods": [
+                        "semester 1"
+                    ],
+                    "planned": {
+                        "year": 2027,
+                        "start_date": "2027-03-01",
+                        "application_deadline": "2026-11-30"
+                    },
+                    "page_url": "https://www.fixture5.edu.au/study/master-of-intake-acceptance-scale-uni-5-1-twcbb8d1",
+                    "intake_id": "ba65accd-39d1-4d16-8b46-636501076a2e",
+                    "page_quote": "Semester 1",
+                    "proposal_id": "167dbaba-6504-104f-cacb-8505b7664e72",
+                    "start_quote": "1 March 2027 | Semester 1 starts",
+                    "calendar_url": "https://fixture5.edu.au/calendar",
+                    "deadline_kind": "date",
+                    "deadline_quote": "30 November 2026 | Applications close for Semester 1",
+                    "calendar_evidence_id": "9681606c-308a-7505-55f5-94392f48c657"
+                }
+            ],
+            "course_title": "Master of Intake Acceptance scale uni 5 1",
+            "zoho_intakes": {
+                "error": "fixture: Zoho not connected"
+            },
+            "provider_name": "Fixture Australian University 5",
+            "not_as_planned": 0,
+            "website_intakes": [
+                {
+                    "year": 2027,
+                    "label": "March",
+                    "month": 3,
+                    "start_date": "2027-03-01",
+                    "application_deadline": "2026-11-30"
+                }
+            ]
+        },
+        {
+            "now": [
+                {
+                    "year": 2027,
+                    "label": "March",
+                    "status": "active",
+                    "intake_id": "94e35a35-1159-4cd5-b554-20b25b451be7",
+                    "start_date": "2027-03-01",
+                    "application_deadline": "2026-11-30"
+                }
+            ],
+            "pick": 11,
+            "added": [
+                {
+                    "after": {
+                        "year": 2027,
+                        "start_date": "2027-03-01",
+                        "application_deadline": "2026-11-30"
+                    },
+                    "before": {
+                        "year": null,
+                        "start_date": null,
+                        "application_deadline": null
+                    },
+                    "periods": [
+                        "semester 1"
+                    ],
+                    "intake_id": "94e35a35-1159-4cd5-b554-20b25b451be7",
+                    "applied_at": "2026-11-04T11:23:27.463396+00:00",
+                    "as_planned": true,
+                    "page_quote": "Semester 1",
+                    "start_quote": "1 March 2027 | Semester 1 starts",
+                    "calendar_url": "https://fixture3.edu.au/calendar",
+                    "deadline_quote": "30 November 2026 | Applications close for Semester 1"
+                }
+            ],
+            "fills": [
+                "year",
+                "start_date",
+                "application_deadline"
+            ],
+            "pattern": "day/date",
+            "admitted": 1,
+            "course_id": "cbdf210e-33e2-a544-200e-622f258ccc89",
+            "published": 1,
+            "provider_id": "9c3f62e4-091a-f187-408c-1cac3d7f7f74",
+            "publication": {
+                "zoho": "unsupported",
+                "website": "verified",
+                "catalogue": "verified"
+            },
+            "at_selection": [
+                {
+                    "rule": "named-period-pairs-v2",
+                    "before": {
+                        "year": null,
+                        "start_date": null,
+                        "application_deadline": null
+                    },
+                    "periods": [
+                        "semester 1"
+                    ],
+                    "planned": {
+                        "year": 2027,
+                        "start_date": "2027-03-01",
+                        "application_deadline": "2026-11-30"
+                    },
+                    "page_url": "https://www.fixture3.edu.au/study/master-of-intake-acceptance-scale-uni-3-1-twf7f741",
+                    "intake_id": "94e35a35-1159-4cd5-b554-20b25b451be7",
+                    "page_quote": "Semester 1",
+                    "proposal_id": "51058a2b-a874-c125-ae5c-72c06b9a6fa7",
+                    "start_quote": "1 March 2027 | Semester 1 starts",
+                    "calendar_url": "https://fixture3.edu.au/calendar",
+                    "deadline_kind": "date",
+                    "deadline_quote": "30 November 2026 | Applications close for Semester 1",
+                    "calendar_evidence_id": "9681606c-308a-7505-55f5-94392f48c657"
+                }
+            ],
+            "course_title": "Master of Intake Acceptance scale uni 3 1",
+            "zoho_intakes": {
+                "error": "fixture: Zoho not connected"
+            },
+            "provider_name": "Fixture Australian University 3",
+            "not_as_planned": 0,
+            "website_intakes": [
+                {
+                    "year": 2027,
+                    "label": "March",
+                    "month": 3,
+                    "start_date": "2027-03-01",
+                    "application_deadline": "2026-11-30"
+                }
+            ]
+        },
+        {
+            "now": [
+                {
+                    "year": 2027,
+                    "label": "March",
+                    "status": "active",
+                    "intake_id": "ecc0b1f4-8af9-401a-8f02-8d046ed5dab3",
+                    "start_date": "2027-03-01",
+                    "application_deadline": "2026-11-30"
+                }
+            ],
+            "pick": 12,
+            "added": [
+                {
+                    "after": {
+                        "year": 2027,
+                        "start_date": "2027-03-01",
+                        "application_deadline": "2026-11-30"
+                    },
+                    "before": {
+                        "year": null,
+                        "start_date": null,
+                        "application_deadline": null
+                    },
+                    "periods": [
+                        "semester 1"
+                    ],
+                    "intake_id": "ecc0b1f4-8af9-401a-8f02-8d046ed5dab3",
+                    "applied_at": "2026-11-04T11:23:27.463396+00:00",
+                    "as_planned": true,
+                    "page_quote": "Semester 1",
+                    "start_quote": "1 March 2027 | Semester 1 starts",
+                    "calendar_url": "https://fixture7.edu.au/calendar",
+                    "deadline_quote": "30 November 2026 | Applications close for Semester 1"
+                }
+            ],
+            "fills": [
+                "year",
+                "start_date",
+                "application_deadline"
+            ],
+            "pattern": "day/date",
+            "admitted": 1,
+            "course_id": "68433aeb-90be-cd0e-816c-33178c8eecbc",
+            "published": 1,
+            "provider_id": "f717945d-5bc5-6c4f-def0-75fcc8a5ce37",
+            "publication": {
+                "zoho": "unsupported",
+                "website": "verified",
+                "catalogue": "verified"
+            },
+            "at_selection": [
+                {
+                    "rule": "named-period-pairs-v2",
+                    "before": {
+                        "year": null,
+                        "start_date": null,
+                        "application_deadline": null
+                    },
+                    "periods": [
+                        "semester 1"
+                    ],
+                    "planned": {
+                        "year": 2027,
+                        "start_date": "2027-03-01",
+                        "application_deadline": "2026-11-30"
+                    },
+                    "page_url": "https://www.fixture7.edu.au/study/master-of-intake-acceptance-scale-uni-7-1-tw5ce371",
+                    "intake_id": "ecc0b1f4-8af9-401a-8f02-8d046ed5dab3",
+                    "page_quote": "Semester 1",
+                    "proposal_id": "56c199b7-9675-ef7a-6154-c60256f7915a",
+                    "start_quote": "1 March 2027 | Semester 1 starts",
+                    "calendar_url": "https://fixture7.edu.au/calendar",
+                    "deadline_kind": "date",
+                    "deadline_quote": "30 November 2026 | Applications close for Semester 1",
+                    "calendar_evidence_id": "9681606c-308a-7505-55f5-94392f48c657"
+                }
+            ],
+            "course_title": "Master of Intake Acceptance scale uni 7 1",
+            "zoho_intakes": {
+                "error": "fixture: Zoho not connected"
+            },
+            "provider_name": "Fixture Australian University 7",
+            "not_as_planned": 0,
+            "website_intakes": [
+                {
+                    "year": 2027,
+                    "label": "March",
+                    "month": 3,
+                    "start_date": "2027-03-01",
+                    "application_deadline": "2026-11-30"
+                }
+            ]
+        },
+        {
+            "now": [
+                {
+                    "year": 2027,
+                    "label": "March",
+                    "status": "active",
+                    "intake_id": "2ae3617e-c26b-4e0a-98ce-1ae42da9195b",
+                    "start_date": "2027-03-01",
+                    "application_deadline": "2026-11-30"
+                }
+            ],
+            "pick": 13,
+            "added": [
+                {
+                    "after": {
+                        "year": 2027,
+                        "start_date": "2027-03-01",
+                        "application_deadline": "2026-11-30"
+                    },
+                    "before": {
+                        "year": null,
+                        "start_date": null,
+                        "application_deadline": null
+                    },
+                    "periods": [
+                        "semester 1"
+                    ],
+                    "intake_id": "2ae3617e-c26b-4e0a-98ce-1ae42da9195b",
+                    "applied_at": "2026-11-04T11:23:27.463396+00:00",
+                    "as_planned": true,
+                    "page_quote": "Semester 1",
+                    "start_quote": "1 March 2027 | Semester 1 starts",
+                    "calendar_url": "https://fixture4.edu.au/calendar",
+                    "deadline_quote": "30 November 2026 | Applications close for Semester 1"
+                }
+            ],
+            "fills": [
+                "year",
+                "start_date",
+                "application_deadline"
+            ],
+            "pattern": "day/date",
+            "admitted": 1,
+            "course_id": "b8148bac-89d9-7d43-6740-0cd0b3062a0d",
+            "published": 1,
+            "provider_id": "ac74361f-4801-1c2d-518b-cd99ae646cce",
+            "publication": {
+                "zoho": "unsupported",
+                "website": "verified",
+                "catalogue": "verified"
+            },
+            "at_selection": [
+                {
+                    "rule": "named-period-pairs-v2",
+                    "before": {
+                        "year": null,
+                        "start_date": null,
+                        "application_deadline": null
+                    },
+                    "periods": [
+                        "semester 1"
+                    ],
+                    "planned": {
+                        "year": 2027,
+                        "start_date": "2027-03-01",
+                        "application_deadline": "2026-11-30"
+                    },
+                    "page_url": "https://www.fixture4.edu.au/study/master-of-intake-acceptance-scale-uni-4-2-tw46cce2",
+                    "intake_id": "2ae3617e-c26b-4e0a-98ce-1ae42da9195b",
+                    "page_quote": "Semester 1",
+                    "proposal_id": "4dd7b201-d38e-615e-0ada-ce1d4d26689a",
+                    "start_quote": "1 March 2027 | Semester 1 starts",
+                    "calendar_url": "https://fixture4.edu.au/calendar",
+                    "deadline_kind": "date",
+                    "deadline_quote": "30 November 2026 | Applications close for Semester 1",
+                    "calendar_evidence_id": "9681606c-308a-7505-55f5-94392f48c657"
+                }
+            ],
+            "course_title": "Master of Intake Acceptance scale uni 4 2",
+            "zoho_intakes": {
+                "error": "fixture: Zoho not connected"
+            },
+            "provider_name": "Fixture Australian University 4",
+            "not_as_planned": 0,
+            "website_intakes": [
+                {
+                    "year": 2027,
+                    "label": "March",
+                    "month": 3,
+                    "start_date": "2027-03-01",
+                    "application_deadline": "2026-11-30"
+                }
+            ]
+        },
+        {
+            "now": [
+                {
+                    "year": 2027,
+                    "label": "March",
+                    "status": "active",
+                    "intake_id": "93050e66-bc03-448c-848c-574fbfe6dc9c",
+                    "start_date": "2027-03-01",
+                    "application_deadline": "2026-11-30"
+                }
+            ],
+            "pick": 14,
+            "added": [
+                {
+                    "after": {
+                        "year": 2027,
+                        "start_date": "2027-03-01",
+                        "application_deadline": "2026-11-30"
+                    },
+                    "before": {
+                        "year": null,
+                        "start_date": null,
+                        "application_deadline": null
+                    },
+                    "periods": [
+                        "semester 1"
+                    ],
+                    "intake_id": "93050e66-bc03-448c-848c-574fbfe6dc9c",
+                    "applied_at": "2026-11-04T11:23:27.463396+00:00",
+                    "as_planned": true,
+                    "page_quote": "Semester 1",
+                    "start_quote": "1 March 2027 | Semester 1 starts",
+                    "calendar_url": "https://www.harbour.edu.au/calendar",
+                    "deadline_quote": "30 November 2026 | Applications close for Semester 1"
+                }
+            ],
+            "fills": [
+                "year",
+                "start_date",
+                "application_deadline"
+            ],
+            "pattern": "day/date",
+            "admitted": 1,
+            "course_id": "87acef58-7fcc-0b42-f2ae-e1753df99705",
+            "published": 1,
+            "provider_id": "08609bcf-387d-1316-2a52-9fbc0edff508",
+            "publication": {
+                "zoho": "unsupported",
+                "website": "verified",
+                "catalogue": "verified"
+            },
+            "at_selection": [
+                {
+                    "rule": "named-period-pairs-v2",
+                    "before": {
+                        "year": null,
+                        "start_date": null,
+                        "application_deadline": null
+                    },
+                    "periods": [
+                        "semester 1"
+                    ],
+                    "planned": {
+                        "year": 2027,
+                        "start_date": "2027-03-01",
+                        "application_deadline": "2026-11-30"
+                    },
+                    "page_url": "https://www.harbour.edu.au/study/master-of-intake-acceptance-harbour-1-twff5081",
+                    "intake_id": "93050e66-bc03-448c-848c-574fbfe6dc9c",
+                    "page_quote": "Semester 1",
+                    "proposal_id": "24818cee-28f3-8368-8e3f-5454e23dda68",
+                    "start_quote": "1 March 2027 | Semester 1 starts",
+                    "calendar_url": "https://www.harbour.edu.au/calendar",
+                    "deadline_kind": "date",
+                    "deadline_quote": "30 November 2026 | Applications close for Semester 1",
+                    "calendar_evidence_id": null
+                }
+            ],
+            "course_title": "Master of Intake Acceptance harbour 1",
+            "zoho_intakes": {
+                "error": "fixture: Zoho not connected"
+            },
+            "provider_name": "Harbour University",
+            "not_as_planned": 0,
+            "website_intakes": [
+                {
+                    "year": 2027,
+                    "label": "March",
+                    "month": 3,
+                    "start_date": "2027-03-01",
+                    "application_deadline": "2026-11-30"
+                }
+            ]
+        },
+        {
+            "now": [
+                {
+                    "year": 2027,
+                    "label": "March",
+                    "status": "active",
+                    "intake_id": "1b17953c-1dfe-4d50-ad5d-0dab747300b3",
+                    "start_date": "2027-03-01",
+                    "application_deadline": "2026-11-30"
+                }
+            ],
+            "pick": 15,
+            "added": [
+                {
+                    "after": {
+                        "year": 2027,
+                        "start_date": "2027-03-01",
+                        "application_deadline": "2026-11-30"
+                    },
+                    "before": {
+                        "year": null,
+                        "start_date": null,
+                        "application_deadline": null
+                    },
+                    "periods": [
+                        "semester 1"
+                    ],
+                    "intake_id": "1b17953c-1dfe-4d50-ad5d-0dab747300b3",
+                    "applied_at": "2026-11-04T11:23:27.463396+00:00",
+                    "as_planned": true,
+                    "page_quote": "Semester 1",
+                    "start_quote": "1 March 2027 | Semester 1 starts",
+                    "calendar_url": "https://fixture2.edu.au/calendar",
+                    "deadline_quote": "30 November 2026 | Applications close for Semester 1"
+                }
+            ],
+            "fills": [
+                "year",
+                "start_date",
+                "application_deadline"
+            ],
+            "pattern": "day/date",
+            "admitted": 1,
+            "course_id": "7a56d088-dbce-584e-090b-6e346f49361b",
+            "published": 1,
+            "provider_id": "c9017d09-273f-b8c7-6771-cc3d0c314b5b",
+            "publication": {
+                "zoho": "unsupported",
+                "website": "verified",
+                "catalogue": "verified"
+            },
+            "at_selection": [
+                {
+                    "rule": "named-period-pairs-v2",
+                    "before": {
+                        "year": null,
+                        "start_date": null,
+                        "application_deadline": null
+                    },
+                    "periods": [
+                        "semester 1"
+                    ],
+                    "planned": {
+                        "year": 2027,
+                        "start_date": "2027-03-01",
+                        "application_deadline": "2026-11-30"
+                    },
+                    "page_url": "https://www.fixture2.edu.au/study/master-of-intake-acceptance-scale-uni-2-2-tw14b5b2",
+                    "intake_id": "1b17953c-1dfe-4d50-ad5d-0dab747300b3",
+                    "page_quote": "Semester 1",
+                    "proposal_id": "fa83060b-07b1-9b23-0665-25e24a1ad68b",
+                    "start_quote": "1 March 2027 | Semester 1 starts",
+                    "calendar_url": "https://fixture2.edu.au/calendar",
+                    "deadline_kind": "date",
+                    "deadline_quote": "30 November 2026 | Applications close for Semester 1",
+                    "calendar_evidence_id": "9681606c-308a-7505-55f5-94392f48c657"
+                }
+            ],
+            "course_title": "Master of Intake Acceptance scale uni 2 2",
+            "zoho_intakes": {
+                "error": "fixture: Zoho not connected"
+            },
+            "provider_name": "Fixture Australian University 2",
+            "not_as_planned": 0,
+            "website_intakes": [
+                {
+                    "year": 2027,
+                    "label": "March",
+                    "month": 3,
+                    "start_date": "2027-03-01",
+                    "application_deadline": "2026-11-30"
+                }
+            ]
+        },
+        {
+            "now": [
+                {
+                    "year": 2027,
+                    "label": "March",
+                    "status": "active",
+                    "intake_id": "a7c91781-b619-4a56-8ea9-649286338e22",
+                    "start_date": "2027-03-01",
+                    "application_deadline": "2026-11-30"
+                }
+            ],
+            "pick": 16,
+            "added": [
+                {
+                    "after": {
+                        "year": 2027,
+                        "start_date": "2027-03-01",
+                        "application_deadline": "2026-11-30"
+                    },
+                    "before": {
+                        "year": null,
+                        "start_date": null,
+                        "application_deadline": null
+                    },
+                    "periods": [
+                        "semester 1"
+                    ],
+                    "intake_id": "a7c91781-b619-4a56-8ea9-649286338e22",
+                    "applied_at": "2026-11-04T11:23:27.463396+00:00",
+                    "as_planned": true,
+                    "page_quote": "Semester 1",
+                    "start_quote": "1 March 2027 | Semester 1 starts",
+                    "calendar_url": "https://fixture6.edu.au/calendar",
+                    "deadline_quote": "30 November 2026 | Applications close for Semester 1"
+                }
+            ],
+            "fills": [
+                "year",
+                "start_date",
+                "application_deadline"
+            ],
+            "pattern": "day/date",
+            "admitted": 1,
+            "course_id": "c3c73420-a582-91f6-34e1-f180282e0c12",
+            "published": 1,
+            "provider_id": "288f3a1f-cd51-3c5e-3ce9-32851ce09a3c",
+            "publication": {
+                "zoho": "unsupported",
+                "website": "verified",
+                "catalogue": "verified"
+            },
+            "at_selection": [
+                {
+                    "rule": "named-period-pairs-v2",
+                    "before": {
+                        "year": null,
+                        "start_date": null,
+                        "application_deadline": null
+                    },
+                    "periods": [
+                        "semester 1"
+                    ],
+                    "planned": {
+                        "year": 2027,
+                        "start_date": "2027-03-01",
+                        "application_deadline": "2026-11-30"
+                    },
+                    "page_url": "https://www.fixture6.edu.au/study/master-of-intake-acceptance-scale-uni-6-2-tw09a3c2",
+                    "intake_id": "a7c91781-b619-4a56-8ea9-649286338e22",
+                    "page_quote": "Semester 1",
+                    "proposal_id": "1f3e439b-5cfc-acd7-a2be-6225684b14a2",
+                    "start_quote": "1 March 2027 | Semester 1 starts",
+                    "calendar_url": "https://fixture6.edu.au/calendar",
+                    "deadline_kind": "date",
+                    "deadline_quote": "30 November 2026 | Applications close for Semester 1",
+                    "calendar_evidence_id": "9681606c-308a-7505-55f5-94392f48c657"
+                }
+            ],
+            "course_title": "Master of Intake Acceptance scale uni 6 2",
+            "zoho_intakes": {
+                "error": "fixture: Zoho not connected"
+            },
+            "provider_name": "Fixture Australian University 6",
+            "not_as_planned": 0,
+            "website_intakes": [
+                {
+                    "year": 2027,
+                    "label": "March",
+                    "month": 3,
+                    "start_date": "2027-03-01",
+                    "application_deadline": "2026-11-30"
+                }
+            ]
+        },
+        {
+            "now": [
+                {
+                    "year": 2027,
+                    "label": "March",
+                    "status": "active",
+                    "intake_id": "2d800752-95a9-4c14-bb67-fe57ab0c1b9e",
+                    "start_date": "2027-03-02",
+                    "application_deadline": null
+                }
+            ],
+            "pick": 17,
+            "added": [
+                {
+                    "after": {
+                        "year": 2027,
+                        "start_date": "2027-03-02",
+                        "application_deadline": null
+                    },
+                    "before": {
+                        "year": null,
+                        "start_date": null,
+                        "application_deadline": null
+                    },
+                    "periods": [
+                        "semester 1"
+                    ],
+                    "intake_id": "2d800752-95a9-4c14-bb67-fe57ab0c1b9e",
+                    "applied_at": "2026-11-04T11:23:27.463396+00:00",
+                    "as_planned": true,
+                    "page_quote": "Semester 1",
+                    "start_quote": "2 March 2027 | Semester 1 commences",
+                    "calendar_url": "https://www.bay.edu.au/key-dates",
+                    "deadline_quote": null
+                }
+            ],
+            "fills": [
+                "year",
+                "start_date"
+            ],
+            "pattern": "day/not_stated",
+            "admitted": 1,
+            "course_id": "7627e3ba-16b0-04fe-1caa-012b2d3ce60f",
+            "published": 1,
+            "provider_id": "c77f1151-c85f-c070-fa3b-fae909beac93",
+            "publication": {
+                "zoho": "unsupported",
+                "website": "verified",
+                "catalogue": "verified"
+            },
+            "at_selection": [
+                {
+                    "rule": "named-period-pairs-v2",
+                    "before": {
+                        "year": null,
+                        "start_date": null,
+                        "application_deadline": null
+                    },
+                    "periods": [
+                        "semester 1"
+                    ],
+                    "planned": {
+                        "year": 2027,
+                        "start_date": "2027-03-02",
+                        "application_deadline": null
+                    },
+                    "page_url": "https://www.bay.edu.au/study/master-of-intake-acceptance-bay-2-tweac932",
+                    "intake_id": "2d800752-95a9-4c14-bb67-fe57ab0c1b9e",
+                    "page_quote": "Semester 1",
+                    "proposal_id": "7bfb0729-afae-faf4-6ba6-8b788f300707",
+                    "start_quote": "2 March 2027 | Semester 1 commences",
+                    "calendar_url": "https://www.bay.edu.au/key-dates",
+                    "deadline_kind": "not_stated",
+                    "deadline_quote": null,
+                    "calendar_evidence_id": "a84d4de9-6c3e-8754-ddde-a7a586c8433d"
+                }
+            ],
+            "course_title": "Master of Intake Acceptance bay 2",
+            "zoho_intakes": {
+                "error": "fixture: Zoho not connected"
+            },
+            "provider_name": "Bay University",
+            "not_as_planned": 0,
+            "website_intakes": [
+                {
+                    "year": 2027,
+                    "label": "March",
+                    "month": 3,
+                    "start_date": "2027-03-02",
+                    "application_deadline": null
+                }
+            ]
+        },
+        {
+            "now": [
+                {
+                    "year": 2027,
+                    "label": "March",
+                    "status": "active",
+                    "intake_id": "c458c8ed-99ac-43e2-b886-ce1f111112da",
+                    "start_date": "2027-03-01",
+                    "application_deadline": "2026-11-30"
+                }
+            ],
+            "pick": 18,
+            "added": [
+                {
+                    "after": {
+                        "year": 2027,
+                        "start_date": "2027-03-01",
+                        "application_deadline": "2026-11-30"
+                    },
+                    "before": {
+                        "year": null,
+                        "start_date": null,
+                        "application_deadline": null
+                    },
+                    "periods": [
+                        "semester 1"
+                    ],
+                    "intake_id": "c458c8ed-99ac-43e2-b886-ce1f111112da",
+                    "applied_at": "2026-11-04T11:23:27.463396+00:00",
+                    "as_planned": true,
+                    "page_quote": "Semester 1",
+                    "start_quote": "1 March 2027 | Semester 1 starts",
+                    "calendar_url": "https://fixture3.edu.au/calendar",
+                    "deadline_quote": "30 November 2026 | Applications close for Semester 1"
+                }
+            ],
+            "fills": [
+                "year",
+                "start_date",
+                "application_deadline"
+            ],
+            "pattern": "day/date",
+            "admitted": 1,
+            "course_id": "c8738870-d09b-bef0-8b0d-ed33b5558b02",
+            "published": 1,
+            "provider_id": "9c3f62e4-091a-f187-408c-1cac3d7f7f74",
+            "publication": {
+                "zoho": "unsupported",
+                "website": "verified",
+                "catalogue": "verified"
+            },
+            "at_selection": [
+                {
+                    "rule": "named-period-pairs-v2",
+                    "before": {
+                        "year": null,
+                        "start_date": null,
+                        "application_deadline": null
+                    },
+                    "periods": [
+                        "semester 1"
+                    ],
+                    "planned": {
+                        "year": 2027,
+                        "start_date": "2027-03-01",
+                        "application_deadline": "2026-11-30"
+                    },
+                    "page_url": "https://www.fixture3.edu.au/study/master-of-intake-acceptance-scale-uni-3-3-twf7f743",
+                    "intake_id": "c458c8ed-99ac-43e2-b886-ce1f111112da",
+                    "page_quote": "Semester 1",
+                    "proposal_id": "51058a2b-a874-c125-ae5c-72c06b9a6fa7",
+                    "start_quote": "1 March 2027 | Semester 1 starts",
+                    "calendar_url": "https://fixture3.edu.au/calendar",
+                    "deadline_kind": "date",
+                    "deadline_quote": "30 November 2026 | Applications close for Semester 1",
+                    "calendar_evidence_id": "9681606c-308a-7505-55f5-94392f48c657"
+                }
+            ],
+            "course_title": "Master of Intake Acceptance scale uni 3 3",
+            "zoho_intakes": {
+                "error": "fixture: Zoho not connected"
+            },
+            "provider_name": "Fixture Australian University 3",
+            "not_as_planned": 0,
+            "website_intakes": [
+                {
+                    "year": 2027,
+                    "label": "March",
+                    "month": 3,
+                    "start_date": "2027-03-01",
+                    "application_deadline": "2026-11-30"
+                }
+            ]
+        },
+        {
+            "now": [
+                {
+                    "year": 2027,
+                    "label": "March",
+                    "status": "active",
+                    "intake_id": "ea565d8f-35ef-41f3-a2ab-2a018da7bb03",
+                    "start_date": "2027-03-01",
+                    "application_deadline": "2026-11-30"
+                }
+            ],
+            "pick": 19,
+            "added": [
+                {
+                    "after": {
+                        "year": 2027,
+                        "start_date": "2027-03-01",
+                        "application_deadline": "2026-11-30"
+                    },
+                    "before": {
+                        "year": null,
+                        "start_date": null,
+                        "application_deadline": null
+                    },
+                    "periods": [
+                        "semester 1"
+                    ],
+                    "intake_id": "ea565d8f-35ef-41f3-a2ab-2a018da7bb03",
+                    "applied_at": "2026-11-04T11:23:27.463396+00:00",
+                    "as_planned": true,
+                    "page_quote": "Semester 1",
+                    "start_quote": "1 March 2027 | Semester 1 starts",
+                    "calendar_url": "https://fixture4.edu.au/calendar",
+                    "deadline_quote": "30 November 2026 | Applications close for Semester 1"
+                }
+            ],
+            "fills": [
+                "year",
+                "start_date",
+                "application_deadline"
+            ],
+            "pattern": "day/date",
+            "admitted": 1,
+            "course_id": "7c3af16f-145c-df62-9317-1074b90d9175",
+            "published": 1,
+            "provider_id": "ac74361f-4801-1c2d-518b-cd99ae646cce",
+            "publication": {
+                "zoho": "unsupported",
+                "website": "verified",
+                "catalogue": "verified"
+            },
+            "at_selection": [
+                {
+                    "rule": "named-period-pairs-v2",
+                    "before": {
+                        "year": null,
+                        "start_date": null,
+                        "application_deadline": null
+                    },
+                    "periods": [
+                        "semester 1"
+                    ],
+                    "planned": {
+                        "year": 2027,
+                        "start_date": "2027-03-01",
+                        "application_deadline": "2026-11-30"
+                    },
+                    "page_url": "https://www.fixture4.edu.au/study/master-of-intake-acceptance-scale-uni-4-3-tw46cce3",
+                    "intake_id": "ea565d8f-35ef-41f3-a2ab-2a018da7bb03",
+                    "page_quote": "Semester 1",
+                    "proposal_id": "4dd7b201-d38e-615e-0ada-ce1d4d26689a",
+                    "start_quote": "1 March 2027 | Semester 1 starts",
+                    "calendar_url": "https://fixture4.edu.au/calendar",
+                    "deadline_kind": "date",
+                    "deadline_quote": "30 November 2026 | Applications close for Semester 1",
+                    "calendar_evidence_id": "9681606c-308a-7505-55f5-94392f48c657"
+                }
+            ],
+            "course_title": "Master of Intake Acceptance scale uni 4 3",
+            "zoho_intakes": {
+                "error": "fixture: Zoho not connected"
+            },
+            "provider_name": "Fixture Australian University 4",
+            "not_as_planned": 0,
+            "website_intakes": [
+                {
+                    "year": 2027,
+                    "label": "March",
+                    "month": 3,
+                    "start_date": "2027-03-01",
+                    "application_deadline": "2026-11-30"
+                }
+            ]
+        },
+        {
+            "now": [
+                {
+                    "year": 2027,
+                    "label": "March",
+                    "status": "active",
+                    "intake_id": "9d338f1a-4577-4c5f-962c-c6cda26425f9",
+                    "start_date": "2027-03-01",
+                    "application_deadline": "2026-11-30"
+                }
+            ],
+            "pick": 20,
+            "added": [
+                {
+                    "after": {
+                        "year": 2027,
+                        "start_date": "2027-03-01",
+                        "application_deadline": "2026-11-30"
+                    },
+                    "before": {
+                        "year": null,
+                        "start_date": null,
+                        "application_deadline": null
+                    },
+                    "periods": [
+                        "semester 1"
+                    ],
+                    "intake_id": "9d338f1a-4577-4c5f-962c-c6cda26425f9",
+                    "applied_at": "2026-11-04T11:23:27.463396+00:00",
+                    "as_planned": true,
+                    "page_quote": "Semester 1",
+                    "start_quote": "1 March 2027 | Semester 1 starts",
+                    "calendar_url": "https://www.harbour.edu.au/calendar",
+                    "deadline_quote": "30 November 2026 | Applications close for Semester 1"
+                }
+            ],
+            "fills": [
+                "year",
+                "start_date",
+                "application_deadline"
+            ],
+            "pattern": "day/date",
+            "admitted": 1,
+            "course_id": "ac64f3ae-ad9f-7049-6317-d80491fccf27",
+            "published": 1,
+            "provider_id": "08609bcf-387d-1316-2a52-9fbc0edff508",
+            "publication": {
+                "zoho": "unsupported",
+                "website": "verified",
+                "catalogue": "verified"
+            },
+            "at_selection": [
+                {
+                    "rule": "named-period-pairs-v2",
+                    "before": {
+                        "year": null,
+                        "start_date": null,
+                        "application_deadline": null
+                    },
+                    "periods": [
+                        "semester 1"
+                    ],
+                    "planned": {
+                        "year": 2027,
+                        "start_date": "2027-03-01",
+                        "application_deadline": "2026-11-30"
+                    },
+                    "page_url": "https://www.harbour.edu.au/study/master-of-intake-acceptance-harbour-2-twff5082",
+                    "intake_id": "9d338f1a-4577-4c5f-962c-c6cda26425f9",
+                    "page_quote": "Semester 1",
+                    "proposal_id": "24818cee-28f3-8368-8e3f-5454e23dda68",
+                    "start_quote": "1 March 2027 | Semester 1 starts",
+                    "calendar_url": "https://www.harbour.edu.au/calendar",
+                    "deadline_kind": "date",
+                    "deadline_quote": "30 November 2026 | Applications close for Semester 1",
+                    "calendar_evidence_id": null
+                }
+            ],
+            "course_title": "Master of Intake Acceptance harbour 2",
             "zoho_intakes": {
                 "error": "fixture: Zoho not connected"
             },
@@ -136,37 +1920,113 @@
             ]
         }
     ],
-    "cohort_id": "7d210865-b1bf-4184-9a2a-d035abdfd634",
-    "picked_at": "2026-11-04T11:07:55.711597+00:00",
+    "cohort_id": "4756b346-111a-40c4-a853-3ceb850307ae",
+    "picked_at": "2026-11-04T11:23:21.846227+00:00",
     "selection": {
-        "cap": 4,
-        "rule": "Existing intake-dates-plan-v2 filled outcome: official stored page and approved calendar; most missing fields first, round-robin universities and evidence patterns; no scope widening",
-        "size": 4,
+        "cap": 20,
+        "rule": "Existing intake-dates-plan-v2 filled outcome: official stored page and approved calendar; independent equal-share scan per university; most missing fields first, round-robin universities and evidence patterns; no scope widening",
+        "size": 20,
         "scope": "top-au",
         "scan_rows": 1500,
-        "rows_planned": 3,
+        "rows_planned": 1350,
         "universities": [
+            {
+                "id": "92adeb7e-cbba-e334-016b-bca58381f659",
+                "name": "Fixture Australian University 1",
+                "scan_limit": 150,
+                "rows_planned": 150,
+                "active_courses": 5200,
+                "eligible_values": 0,
+                "eligible_courses": 0
+            },
             {
                 "id": "08609bcf-387d-1316-2a52-9fbc0edff508",
                 "name": "Harbour University",
-                "active_courses": 25
+                "scan_limit": 150,
+                "rows_planned": 150,
+                "active_courses": 227,
+                "eligible_values": 3,
+                "eligible_courses": 3
             },
             {
                 "id": "c77f1151-c85f-c070-fa3b-fae909beac93",
                 "name": "Bay University",
-                "active_courses": 4
+                "scan_limit": 150,
+                "rows_planned": 150,
+                "active_courses": 207,
+                "eligible_values": 3,
+                "eligible_courses": 3
+            },
+            {
+                "id": "c9017d09-273f-b8c7-6771-cc3d0c314b5b",
+                "name": "Fixture Australian University 2",
+                "scan_limit": 150,
+                "rows_planned": 150,
+                "active_courses": 203,
+                "eligible_values": 3,
+                "eligible_courses": 3
+            },
+            {
+                "id": "288f3a1f-cd51-3c5e-3ce9-32851ce09a3c",
+                "name": "Fixture Australian University 6",
+                "scan_limit": 150,
+                "rows_planned": 150,
+                "active_courses": 203,
+                "eligible_values": 3,
+                "eligible_courses": 3
+            },
+            {
+                "id": "db158fcd-c80b-5367-2975-28dafb3cbb8d",
+                "name": "Fixture Australian University 5",
+                "scan_limit": 150,
+                "rows_planned": 150,
+                "active_courses": 203,
+                "eligible_values": 3,
+                "eligible_courses": 3
+            },
+            {
+                "id": "f717945d-5bc5-6c4f-def0-75fcc8a5ce37",
+                "name": "Fixture Australian University 7",
+                "scan_limit": 150,
+                "rows_planned": 150,
+                "active_courses": 203,
+                "eligible_values": 3,
+                "eligible_courses": 3
+            },
+            {
+                "id": "ac74361f-4801-1c2d-518b-cd99ae646cce",
+                "name": "Fixture Australian University 4",
+                "scan_limit": 150,
+                "rows_planned": 150,
+                "active_courses": 203,
+                "eligible_values": 3,
+                "eligible_courses": 3
+            },
+            {
+                "id": "9c3f62e4-091a-f187-408c-1cac3d7f7f74",
+                "name": "Fixture Australian University 3",
+                "scan_limit": 150,
+                "rows_planned": 150,
+                "active_courses": 203,
+                "eligible_values": 3,
+                "eligible_courses": 3
             },
             {
                 "id": "218c3a6d-1cab-1edd-5b89-46ce76eafba5",
                 "name": "Inland University",
-                "active_courses": 2
+                "scan_limit": 150,
+                "rows_planned": 0,
+                "active_courses": 202,
+                "eligible_values": 0,
+                "eligible_courses": 0
             }
         ],
-        "rows_eligible": 1,
-        "scope_courses": 31,
-        "eligible_courses": 1,
+        "rows_eligible": 24,
+        "scope_courses": 7054,
+        "eligible_courses": 24,
         "skipped_by_reason": {
-            "intakes locked by hand": 2
+            "intakes locked by hand": 2,
+            "no page behind the intake": 1324
         }
     },
     "next_action": "Compare catalogue and consumer read-backs against the fixed source evidence. Missing/unsupported consumer data is unverified, never a pass."

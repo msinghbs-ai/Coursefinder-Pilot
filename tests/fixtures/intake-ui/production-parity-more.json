@@ -1,0 +1,332 @@
+{
+  "grants": [
+    {
+      "grantee": "service_role",
+      "grantor": "postgres",
+      "is_grantable": "NO",
+      "routine_name": "admin_job_run_now_v1",
+      "specific_name": "admin_job_run_now_v1_10926738",
+      "privilege_type": "EXECUTE",
+      "routine_schema": "public",
+      "routine_catalog": "postgres",
+      "specific_schema": "public",
+      "specific_catalog": "postgres"
+    },
+    {
+      "grantee": "authenticated",
+      "grantor": "postgres",
+      "is_grantable": "NO",
+      "routine_name": "admin_job_run_now_v1",
+      "specific_name": "admin_job_run_now_v1_10926738",
+      "privilege_type": "EXECUTE",
+      "routine_schema": "public",
+      "routine_catalog": "postgres",
+      "specific_schema": "public",
+      "specific_catalog": "postgres"
+    },
+    {
+      "grantee": "postgres",
+      "grantor": "postgres",
+      "is_grantable": "YES",
+      "routine_name": "admin_job_run_now_v1",
+      "specific_name": "admin_job_run_now_v1_10926738",
+      "privilege_type": "EXECUTE",
+      "routine_schema": "public",
+      "routine_catalog": "postgres",
+      "specific_schema": "public",
+      "specific_catalog": "postgres"
+    }
+  ],
+  "columns": [
+    {
+      "name": "evidence_id",
+      "type": "uuid",
+      "table": "pipeline.evidence_lineage_stats",
+      "default": null,
+      "not_null": true
+    },
+    {
+      "name": "observation_count",
+      "type": "bigint",
+      "table": "pipeline.evidence_lineage_stats",
+      "default": "0",
+      "not_null": true
+    },
+    {
+      "name": "source_null_count",
+      "type": "bigint",
+      "table": "pipeline.evidence_lineage_stats",
+      "default": "0",
+      "not_null": true
+    },
+    {
+      "name": "rejected_count",
+      "type": "bigint",
+      "table": "pipeline.evidence_lineage_stats",
+      "default": "0",
+      "not_null": true
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "table": "pipeline.evidence_lineage_stats",
+      "default": "now()",
+      "not_null": true
+    },
+    {
+      "name": "evidence_id",
+      "type": "uuid",
+      "table": "pipeline.evidence_entity_links",
+      "default": null,
+      "not_null": true
+    },
+    {
+      "name": "entity_type",
+      "type": "text",
+      "table": "pipeline.evidence_entity_links",
+      "default": null,
+      "not_null": true
+    },
+    {
+      "name": "entity_id",
+      "type": "uuid",
+      "table": "pipeline.evidence_entity_links",
+      "default": null,
+      "not_null": true
+    },
+    {
+      "name": "provider_id",
+      "type": "uuid",
+      "table": "pipeline.evidence_entity_links",
+      "default": null,
+      "not_null": false
+    },
+    {
+      "name": "link_count",
+      "type": "bigint",
+      "table": "pipeline.evidence_entity_links",
+      "default": "0",
+      "not_null": true
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "table": "pipeline.evidence_entity_links",
+      "default": "now()",
+      "not_null": true
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "table": "pipeline.admin_jobs",
+      "default": "gen_random_uuid()",
+      "not_null": true
+    },
+    {
+      "name": "kind",
+      "type": "text",
+      "table": "pipeline.admin_jobs",
+      "default": null,
+      "not_null": true
+    },
+    {
+      "name": "lane",
+      "type": "text",
+      "table": "pipeline.admin_jobs",
+      "default": "'adapters'::text",
+      "not_null": true
+    },
+    {
+      "name": "state",
+      "type": "text",
+      "table": "pipeline.admin_jobs",
+      "default": "'queued'::text",
+      "not_null": true
+    },
+    {
+      "name": "title",
+      "type": "text",
+      "table": "pipeline.admin_jobs",
+      "default": null,
+      "not_null": true
+    },
+    {
+      "name": "args",
+      "type": "jsonb",
+      "table": "pipeline.admin_jobs",
+      "default": "'{}'::jsonb",
+      "not_null": true
+    },
+    {
+      "name": "cursor",
+      "type": "jsonb",
+      "table": "pipeline.admin_jobs",
+      "default": "'{}'::jsonb",
+      "not_null": true
+    },
+    {
+      "name": "progress",
+      "type": "jsonb",
+      "table": "pipeline.admin_jobs",
+      "default": "'{}'::jsonb",
+      "not_null": true
+    },
+    {
+      "name": "result",
+      "type": "jsonb",
+      "table": "pipeline.admin_jobs",
+      "default": "'{}'::jsonb",
+      "not_null": true
+    },
+    {
+      "name": "error",
+      "type": "text",
+      "table": "pipeline.admin_jobs",
+      "default": null,
+      "not_null": false
+    },
+    {
+      "name": "cancel_requested",
+      "type": "boolean",
+      "table": "pipeline.admin_jobs",
+      "default": "false",
+      "not_null": true
+    },
+    {
+      "name": "pause_requested",
+      "type": "boolean",
+      "table": "pipeline.admin_jobs",
+      "default": "false",
+      "not_null": true
+    },
+    {
+      "name": "requested_by",
+      "type": "uuid",
+      "table": "pipeline.admin_jobs",
+      "default": null,
+      "not_null": true
+    },
+    {
+      "name": "reason",
+      "type": "text",
+      "table": "pipeline.admin_jobs",
+      "default": null,
+      "not_null": true
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "table": "pipeline.admin_jobs",
+      "default": "now()",
+      "not_null": true
+    },
+    {
+      "name": "started_at",
+      "type": "timestamp with time zone",
+      "table": "pipeline.admin_jobs",
+      "default": null,
+      "not_null": false
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "table": "pipeline.admin_jobs",
+      "default": "now()",
+      "not_null": true
+    },
+    {
+      "name": "finished_at",
+      "type": "timestamp with time zone",
+      "table": "pipeline.admin_jobs",
+      "default": null,
+      "not_null": false
+    },
+    {
+      "name": "scope",
+      "type": "text",
+      "table": "pipeline.admin_jobs",
+      "default": null,
+      "not_null": false
+    },
+    {
+      "name": "outcome",
+      "type": "text",
+      "table": "pipeline.admin_jobs",
+      "default": null,
+      "not_null": false
+    },
+    {
+      "name": "outcome_detail",
+      "type": "jsonb",
+      "table": "pipeline.admin_jobs",
+      "default": null,
+      "not_null": false
+    }
+  ],
+  "indexes": [
+    "CREATE UNIQUE INDEX course_intakes_pkey ON catalogue.course_intakes USING btree (id)",
+    "CREATE INDEX course_intakes_course_idx ON catalogue.course_intakes USING btree (course_id, intake_year, status)",
+    "CREATE INDEX course_intakes_campus_idx ON catalogue.course_intakes USING btree (campus_id)",
+    "CREATE UNIQUE INDEX course_intakes_source_identity_uidx ON catalogue.course_intakes USING btree (course_id, source_id, source_intake_key) WHERE ((source_id IS NOT NULL) AND (source_intake_key IS NOT NULL))",
+    "CREATE INDEX course_intakes_evidence_idx ON catalogue.course_intakes USING btree (evidence_id)",
+    "CREATE UNIQUE INDEX courses_pkey ON catalogue.courses USING btree (id)",
+    "CREATE UNIQUE INDEX courses_stable_key_key ON catalogue.courses USING btree (stable_key)",
+    "CREATE UNIQUE INDEX courses_provider_code_version_idx ON catalogue.courses USING btree (provider_id, COALESCE(course_code, stable_key), COALESCE(source_version, ''::text))",
+    "CREATE INDEX courses_provider_pub_idx ON catalogue.courses USING btree (provider_id, publication_status)",
+    "CREATE INDEX courses_level_field_idx ON catalogue.courses USING btree (study_level_id, primary_field_id)",
+    "CREATE INDEX courses_primary_field_idx ON catalogue.courses USING btree (primary_field_id)",
+    "CREATE INDEX courses_course_code_upper_idx ON catalogue.courses USING btree (upper(course_code)) WHERE (course_code IS NOT NULL)",
+    "CREATE INDEX courses_open_to_international_idx ON catalogue.courses USING btree (open_to_international)",
+    "CREATE INDEX courses_canonical_title_lower_id_idx ON catalogue.courses USING btree (lower(canonical_title), id)",
+    "CREATE INDEX courses_provider_with_url_idx ON catalogue.courses USING btree (provider_id, id) WHERE ((course_url IS NOT NULL) AND (course_url <> ''::text))",
+    "CREATE INDEX courses_not_active_idx ON catalogue.courses USING btree (id) WHERE (lifecycle_status IS DISTINCT FROM 'active'::text)",
+    "CREATE INDEX courses_provider_code_trim_active_idx ON catalogue.courses USING btree (provider_id, upper(btrim(course_code))) WHERE (lifecycle_status = 'active'::text)"
+  ],
+  "evidence_constraints": [
+    {
+      "name": "evidence_lineage_stats_evidence_id_fkey",
+      "table": "pipeline.evidence_lineage_stats",
+      "definition": "FOREIGN KEY (evidence_id) REFERENCES pipeline.evidence_artifacts(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "evidence_lineage_stats_observation_count_check",
+      "table": "pipeline.evidence_lineage_stats",
+      "definition": "CHECK ((observation_count >= 0))"
+    },
+    {
+      "name": "evidence_lineage_stats_pkey",
+      "table": "pipeline.evidence_lineage_stats",
+      "definition": "PRIMARY KEY (evidence_id)"
+    },
+    {
+      "name": "evidence_lineage_stats_rejected_count_check",
+      "table": "pipeline.evidence_lineage_stats",
+      "definition": "CHECK ((rejected_count >= 0))"
+    },
+    {
+      "name": "evidence_lineage_stats_source_null_count_check",
+      "table": "pipeline.evidence_lineage_stats",
+      "definition": "CHECK ((source_null_count >= 0))"
+    },
+    {
+      "name": "evidence_entity_links_entity_type_check",
+      "table": "pipeline.evidence_entity_links",
+      "definition": "CHECK ((entity_type = ANY (ARRAY['provider'::text, 'course'::text, 'campus'::text, 'scholarship'::text])))"
+    },
+    {
+      "name": "evidence_entity_links_evidence_id_fkey",
+      "table": "pipeline.evidence_entity_links",
+      "definition": "FOREIGN KEY (evidence_id) REFERENCES pipeline.evidence_artifacts(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "evidence_entity_links_link_count_check",
+      "table": "pipeline.evidence_entity_links",
+      "definition": "CHECK ((link_count >= 0))"
+    },
+    {
+      "name": "evidence_entity_links_pkey",
+      "table": "pipeline.evidence_entity_links",
+      "definition": "PRIMARY KEY (evidence_id, entity_type, entity_id)"
+    }
+  ]
+}

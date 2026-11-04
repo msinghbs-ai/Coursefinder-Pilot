@@ -33,3 +33,6 @@ create or replace function api.website_v2_course_item(p_course_id uuid, p_cities
                  from jsonb_array_elements(coalesce(d.intake_options,'[]'::jsonb)) i where nullif(i->>'label','') is not null), '[]'::jsonb))
     from search.course_documents d where d.course_id = p_course_id $f$;
 create or replace function public.zoho_edge_course_lookup_v1(p_identifier text) returns jsonb language plpgsql as $f$ begin raise exception 'fixture: Zoho not connected'; end $f$;
+
+-- Authoritative admin_jobs progress default/nullability (production pg_attribute, 4 Nov 2026).
+alter table pipeline.admin_jobs alter column progress set default '{}'::jsonb, alter column progress set not null;
