@@ -1,0 +1,19 @@
+/* CF-247 Layer 4 action lifecycle (decision 4 Nov 2026 12:24): the Progress block of a Layer 4 card. Phone width: everything wraps, no sideways scroll. */
+.l4lc{margin:.5rem 0;padding:.5rem .6rem;border:1px solid var(--cf-border);border-radius:6px;font-size:.85rem;max-width:100%;overflow-wrap:anywhere}
+.l4lc p{margin:.25rem 0}
+.l4lc-ack{padding:.4rem .5rem;border-left:3px solid var(--cf-info);background:var(--cf-surface-2);margin-bottom:.4rem;overflow-wrap:anywhere}
+.l4lc-ack.tone-danger{border-left-color:var(--cf-danger)}
+.l4lc-ack.tone-warning{border-left-color:var(--cf-warning)}
+.l4lc-ack.tone-success{border-left-color:var(--cf-success)}
+.l4lc-ref{color:var(--cf-muted)}
+.l4lc-chip{display:inline-block;padding:0 .4rem;border-radius:999px;border:1px solid currentColor;font-weight:600}
+.l4lc-chip.tone-danger{color:var(--cf-danger)}.l4lc-chip.tone-warning{color:var(--cf-warning)}.l4lc-chip.tone-success{color:var(--cf-success)}.l4lc-chip.tone-info{color:var(--cf-info)}
+.l4lc-times,.l4lc-steps{display:grid;grid-template-columns:minmax(8rem,max-content) 1fr;gap:.1rem .6rem;margin:.35rem 0}
+.l4lc-times dt,.l4lc-steps dt{color:var(--cf-muted)}
+.l4lc-times dd,.l4lc-steps dd{margin:0;min-width:0}
+.l4lc-history{margin:.3rem 0;padding-left:1.1rem}
+.l4lc-more summary{cursor:pointer;min-height:44px;display:flex;align-items:center}
+.l4lc-err{color:var(--cf-danger)}
+@media (max-width:480px){.l4lc-times,.l4lc-steps{grid-template-columns:1fr}.l4lc-times dd,.l4lc-steps dd{margin-bottom:.2rem}}
+.l4lc-ev{display:block;color:var(--cf-muted);margin:.1rem 0 .3rem}
+.l4lc-summary{margin-top:.2rem}
