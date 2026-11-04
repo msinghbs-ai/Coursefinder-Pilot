@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.393 — 4 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.466** (hotfix; Platform Admin report 4 Nov 11:13, UNSW Bachelor of Actuarial Studies). Migration `20261104475000_cf247_aer_recovery_detail_hotfix`: md5-guarded replacement of security.layer4_aer_recovery_detail_v1 (a83f37a2 → 636c1764): the case list no longer runs the completeness gate (0.83 s each) for every waiting read of the same field. Case key, deduplication, decide function, E13/D-R3 gates and the 600 limit unchanged; no time-out raised. Nothing dropped; consumer API untouched. Spec s279.
+
 ## 0.1.392 — 4 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.465** (Platform Admin mandate 4 Nov 08:16 §8). Migration `20261104470000_cf247_aer_throughput`: md5-guarded edits of security.layer4_readiness_tick_v1 (5ed0f7d1 → 06e5f439; never-gated entry items first), security.aer_technical_recovery_v1 (3b8ea81a → 370baa57; gate class per hold, records only), security.aer_schedule_held_v1 (0ea5886c → 2a0d51fa; yields to E13 recovery only while aer.e13_recover_on is 1). aer.e13_recover_on ships 0. Layer 4 600 limit, E13 and D-R3 gates untouched. Nothing dropped; consumer API untouched. Spec s276.

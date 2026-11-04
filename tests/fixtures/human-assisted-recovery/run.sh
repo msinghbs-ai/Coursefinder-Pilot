@@ -73,6 +73,13 @@ OUT=$($P -d $DB -1 -At -f $MIG 2>&1) || { echo "$OUT" | tail -5; exit 1; }
 for s in "security.layer4_inbox_kinds_v1()" "security.layer4_inbox_items_v1()" "public.admin_layer4_inbox(text,jsonb)"; do
   [ "$(md5of "$s")" = "${LIVE[$s]}" ] || { echo "the migration changed $s, which it does not own"; exit 1; }; done
 echo "applied twice: the second run changed nothing; the Inbox functions are untouched"
+# CF-247 hotfix (Platform Admin report 4 Nov 2026 11:13): the recovery detail's case list without the per-read gate, applied twice
+HOT=supabase/migrations/20261104475000_cf247_aer_recovery_detail_hotfix.sql
+$P -d $DB -1 -q -f $HOT >/dev/null 2>&1 || { $P -d $DB -1 -f $HOT 2>&1 | tail -5; exit 1; }
+H1=$(md5of "security.layer4_aer_recovery_detail_v1(text)")
+$P -d $DB -1 -q -f $HOT >/dev/null 2>&1 || { echo "the hotfix did not apply a second time"; exit 1; }
+[ "$(md5of "security.layer4_aer_recovery_detail_v1(text)")" = "$H1" ] || { echo "the hotfix's second run changed the detail"; exit 1; }
+echo "hotfix: security.layer4_aer_recovery_detail_v1(text) -> $H1 (applied twice, unchanged)"
 $P -d $DB -f $FX/seed.sql >/dev/null
 $P -d $DB -f $FX/fixtures.sql 2>&1 | show
 echo "all human-assisted recovery fixtures passed"
