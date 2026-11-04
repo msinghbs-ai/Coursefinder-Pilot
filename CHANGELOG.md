@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.400 — 4 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.473** (Platform Admin mandate 4 Nov 16:32 §4–§6; IQ-00232). Migration `20261104580000_cf247_aer_recovery_selector` (renumbered after 570000): `security.aer_recovery_rule_v1` (shared eligibility, reusing layer4_reread_repeat_v1 change keys); md5-guarded edits of aer_technical_recovery_v1 (370baa57 → 08322eb5), aer_schedule_held_v1 (2a0d51fa → c866167b), aer_e13_recover_v1 (1bd8be8b → a81a54b1), har_aer_item_generate_v1 (22cb0e54 → b25b89a1; identity requests only), layer4_aer_recovery_detail_v1 (dbf06336 → 5d08d39e), layer4_reread_repeat_v1 (80c53ac4 → 19b6d24e). No caps or spending raised; no manual enqueues; E13, D-R3, 600 limit unchanged; nothing dropped; consumer API untouched. Spec s282.
+
 ## 0.1.399 — 4 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.472** (Platform Admin mandate 4 Nov 16:32 §3). Migration `20261104570000_cf247_course_link_simplify`: `security.course_link_route_class_v1(uuid)`, `security.course_link_reconcile_v1(provider, limit, apply)` (apply false only counts; calls the existing `course_page_needed_convert_v1` for Decision 179 and the existing supersession for retired providers); md5-guarded edits of security.layer4_resolution_for_v1 (487fc2ec → c5ec24cb; 252 old-year, refused-but-shown and two-page items no longer resolve as covered_by_active) and security.binding_refusal_route_v1 (717fb44d → 54070a80; no re-raise of a decided page in a URL variant). No new admission authority; layer4.reconcile_supersede_on and layer4.arrival_guard_on stay off; manual bindings untouched; nothing dropped; consumer API untouched. Spec s284.

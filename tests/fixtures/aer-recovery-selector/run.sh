@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CF-247 AER technical recovery selector (migration 20261104550000; mandate 4 Nov 2026 16:32 §4-§6, §10) on isolated fixtures. Needs a scratch
+# CF-247 AER technical recovery selector (migration 20261104580000; mandate 4 Nov 2026 16:32 §4-§6, §10) on isolated fixtures. Needs a scratch
 # PostgreSQL 16 (never a Supabase project): PGHOST/PGPORT/PGUSER point at it. Builds a throwaway database:
 #   1 the AER database as live after v2.15.471: the base and seed of ../aer-review-queue (605 waiting items in live proportion, RMIT 303, the
 #     work-continuity contract, Human-assisted recovery), the live migrations 20261104470000 and 20261104530000, and from 20261104540000 the
@@ -15,7 +15,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 DB=${AERS_DB:-aer_recovery_selector_fixtures}
 P="psql -v ON_ERROR_STOP=1 -q -X"
-MIG=supabase/migrations/20261104550000_cf247_aer_recovery_selector.sql
+MIG=supabase/migrations/20261104580000_cf247_aer_recovery_selector.sql
 FX=tests/fixtures/aer-recovery-selector
 RQ=tests/fixtures/aer-review-queue
 TF=tests/fixtures/aer-throughput

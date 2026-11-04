@@ -1,4 +1,4 @@
--- CF-247 AER recovery selector fixtures (migration 20261104550000): mandate 16:32 §10 items 1-5 and 7-10 for AER. Run by run.sh.
+-- CF-247 AER recovery selector fixtures (migration 20261104580000): mandate 16:32 §10 items 1-5 and 7-10 for AER. Run by run.sh.
 \set ON_ERROR_STOP on
 create or replace function fx.ok(p boolean, p_what text) returns void language plpgsql as $f$
 begin if p is not true then raise exception 'FAILED: %', p_what; end if; raise notice 'ok: %', p_what; end $f$;

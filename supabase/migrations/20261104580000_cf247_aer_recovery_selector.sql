@@ -407,8 +407,8 @@ revoke all on function security.aer_recovery_report_v1(timestamptz) from public,
 
 -- 8 component register and post-check ---------------------------------------------------------------------------------------------------------
 insert into pipeline.component_register(kind, name, layer, purpose, status, replaces, introduced_in) values
- ('function', 'security.aer_recovery_rule_v1', 'Platform', 'CF-247 AER: the shared recovery eligibility rule (mandate 16:32 §4-§5)', 'active', '{}', '20261104550000'),
- ('function', 'security.aer_recovery_report_v1', 'Platform', 'CF-247 AER: technical recovery measures as transitions (mandate 16:32 §6, §11)', 'active', '{}', '20261104550000')
+ ('function', 'security.aer_recovery_rule_v1', 'Platform', 'CF-247 AER: the shared recovery eligibility rule (mandate 16:32 §4-§5)', 'active', '{}', '20261104580000'),
+ ('function', 'security.aer_recovery_report_v1', 'Platform', 'CF-247 AER: technical recovery measures as transitions (mandate 16:32 §6, §11)', 'active', '{}', '20261104580000')
 on conflict do nothing;
 do $p$
 begin
