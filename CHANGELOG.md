@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.404 — 4 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.477** (Platform Admin instruction 4 Nov 20:53 on the 20:05 intake pilot). Migration `20261104630000_cf247_intake_pilot_scope`: md5-guarded edit of security.run_now_cohort_create_v1 (scope to the top `run_now.cohort_top_au_universities` Australian universities by active course count; university list and denominator recorded). No spend; nothing dropped; consumer API untouched. Spec s286 updated.
+
 ## 0.1.403 — 4 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.476** (Platform Admin decision 4 Nov 20:05, course intake pilot; correction 20:02, 10-minute gate). Migration `20261104610000_cf247_intake_pilot_run_now`: `security.job_run_now_v1` (allow-listed catalogued jobs, rank and reason, switch, pause and concurrency checks, idempotency key, `run_now.pilot_cap` 20, run record), `security.run_now_cohort_create_v1`, `security.run_now_cohort_verify_v1`, cohort tables; md5-guarded edit of security.intake_dates_apply_v1(integer) (d15c04c6 → 90e2250d) delegating to the new (integer, uuid[]) form with no selector, so the scheduled job behaves as before. No AI or Firecrawl spend; manual locks and holds respected; nothing dropped; consumer API untouched. Spec s286.
