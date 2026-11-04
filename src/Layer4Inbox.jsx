@@ -27,6 +27,8 @@ const needs=c=>c.link?0:Number(c.rank||4)
 const days=t=>t?Math.max(0,Math.floor((Date.now()-new Date(t).getTime())/86400000)):0
 const linkFor=(link,it)=>link==='builder'?hrefFor('layer2','builder',{provider:it.provider_id}):link==='course'?hrefFor('courses','',{id:it.detail?.course_id||(it.detail?.entity==='course'?it.detail?.key:'')}):'#'
 const aerRead=id=>supabase.rpc('layer4_aer_review_read',{p_review_item_id:id}).then(({data,error})=>{if(error)throw new Error(error.message);return data||{}})
+// CF-247 RMIT settlement (12:16 §5, §8): the reviewer-ready AER queue and a university's AER summary (read only; stored classes)
+const aerQueue=args=>supabase.rpc('admin_layer4_aer_queue',{p_args:args||{}}).then(({data,error})=>{if(error)throw new Error(error.message);return data})
 // UR-04 (1 Nov 2026): items are read page by page from a stable position (kind order, created, kind, ref), not by offset, so a decision or a
 // new arrival never hides or repeats an item; the position is kept for this browser tab so returning from a destination screen resumes it
 const POS='l4i-pos'
@@ -85,7 +87,16 @@ export default function Layer4Inbox({onError,routeParams}){
   const page=c=>{setCur(c);loadItems(c)}
   const next=()=>{restored.current=null;const l=items?.items||[];if(!l.length)return;setStack([...stack,cur]);page(keyOf(l[l.length-1]))}
   const prev=()=>{restored.current=null;const s=[...stack];const c=s.length?s.pop():null;setStack(s);page(c)}
-  const decided=r=>{setNote(outcomeText(r));loadSum();loadItems(cur);if(view==='university')rpc('universities',{kind,q,limit:UPAGE,offset}).then(setUnis).catch(()=>{})}
+  // CF-247 RMIT settlement (Platform Admin 4 Nov 2026 12:16 §5, §8): a university's AER position from stored classes (public.admin_layer4_aer_queue),
+  // and its review-ready AER items first, decided one at a time through the Inbox's own decide action
+  const[aerSum,setAerSum]=useState(null),[readyFirst,setReadyFirst]=useState(true),[ready,setReady]=useState(null),[readyOff,setReadyOff]=useState(0)
+  const aerPid=view==='university'&&pick&&(uk==='aer_review'||Number(pick.by_kind?.aer_review)>0)?pick.provider_id:null
+  const loadAer=()=>{if(!aerPid){setAerSum(null);return}aerQueue({summary_provider_id:aerPid}).then(d=>setAerSum(d&&typeof d==='object'&&!Array.isArray(d)&&d.pending!=null?d:null)).catch(()=>setAerSum(null))}
+  useEffect(()=>{loadAer()},[aerPid])
+  const showReady=uk==='aer_review'&&readyFirst&&Number(aerSum?.review_ready)>0
+  const loadReady=(o=readyOff)=>{if(!showReady)return;setReady(null);aerQueue({provider_id:aerPid,offset:o}).then(d=>setReady(Array.isArray(d?.items)?d:{items:[]})).catch(e=>onError?.(e.message))}
+  useEffect(()=>{setReadyOff(0);if(showReady)loadReady(0)},[showReady,aerPid])
+  const decided=r=>{setNote(outcomeText(r));loadSum();loadItems(cur);loadAer();if(showReady)loadReady();if(view==='university')rpc('universities',{kind,q,limit:UPAGE,offset}).then(setUnis).catch(()=>{})}
   if(!sum)return <Loading label="Reading what needs a person…"/>
   const bk=sum.by_kind||{}
   return <div className="l4i" data-l4-inbox>
@@ -122,10 +133,20 @@ export default function Layer4Inbox({onError,routeParams}){
         {view==='university'&&pick&&<header className="l4i-items-head"><h3>{pick.name}</h3>
           {/* AER decision 06:58 §2: the exact number of waiting review items shown (never the university's course count or an AER read's row count) */}
           <small data-l4-pending>{pick.country?`${pick.country} · `:''}{items&&view==='university'?`${fmtNumber(Number(items.total)||0)} waiting ${uk?(kinds[uk]?.label||uk):'review items'}${uk==='aer_review'?' (each read lists its own requirement rows)':''}`:'…'}</small>
-          {uk&&<Button compact onClick={()=>choose(pick,'')} data-l4-all-kinds>All kinds</Button>}</header>}
-        {!items?<Loading compact/>:(items.items||[]).length===0?<Empty text="Nothing left here."/>:
+          {uk&&<Button compact onClick={()=>choose(pick,'')} data-l4-all-kinds>All kinds</Button>}
+          {aerSum&&<p className="l4i-aer-sum" data-l4-aer-summary><small>Entry requirements (AER): {fmtNumber(aerSum.pending)} pending · <strong>{fmtNumber(aerSum.review_ready)} ready to decide</strong> · {fmtNumber(aerSum.technically_held)} technically held · {fmtNumber(aerSum.human_input_required)} need evidence or input{Number(aerSum.stale)?` · ${fmtNumber(aerSum.stale)} stale`:''} · {fmtNumber(aerSum.human_input_open)} human input open · admitted: {fmtNumber(aerSum.admitted_courses)} course{Number(aerSum.admitted_courses)===1?'':'s'}{Number(aerSum.admitted_matrix_rows)?`, ${fmtNumber(aerSum.admitted_matrix_rows)} matrix rows`:''} · {fmtNumber(aerSum.unresolved)} unresolved</small>
+            {uk!=='aer_review'&&Number(pick.by_kind?.aer_review)>0&&<> <button type="button" className="l4i-linkish" onClick={()=>choose(pick,'aer_review')} data-l4-aer-summary-open>Show the AER items</button></>}</p>}
+          {uk==='aer_review'&&Number(aerSum?.review_ready)>0&&<div className="l4i-view" role="group" aria-label="Order" data-l4-aer-order>
+            <button type="button" className={readyFirst?'on':''} aria-pressed={readyFirst} onClick={()=>setReadyFirst(true)} data-l4-aer-ready-first>Ready to decide ({fmtNumber(aerSum.review_ready)})</button>
+            <button type="button" className={!readyFirst?'on':''} aria-pressed={!readyFirst} onClick={()=>setReadyFirst(false)} data-l4-aer-all>All waiting</button></div>}</header>}
+        {showReady?<div data-l4-aer-ready>{!ready?<Loading compact/>:(ready.items||[]).length===0?<Empty text="Nothing is ready to decide here."/>:
+          ready.items.map(it=><Item key={`${it.kind}:${it.ref}`} it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider={false} rank={sum.rank} onDone={decided} onError={onError}/>)}
+          {ready&&Number(aerSum?.review_ready)>(ready.items||[]).length&&<div className="l4i-pager" data-l4-ready-pager><Button compact disabled={readyOff===0} onClick={()=>{const o=Math.max(0,readyOff-Number(ready.limit||25));setReadyOff(o);loadReady(o)}}>Previous</Button>
+            <small>{fmtNumber(readyOff+1)}–{fmtNumber(readyOff+(ready.items||[]).length)} of {fmtNumber(aerSum.review_ready)} ready, oldest first</small>
+            <Button compact disabled={readyOff+(ready.items||[]).length>=Number(aerSum.review_ready)} onClick={()=>{const o=readyOff+Number(ready.limit||25);setReadyOff(o);loadReady(o)}}>Next</Button></div>}</div>:
+        !items?<Loading compact/>:(items.items||[]).length===0?<Empty text="Nothing left here."/>:
           items.items.map(it=><Item key={`${it.kind}:${it.ref}`} it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider={view==='kind'} rank={sum.rank} onDone={decided} onError={onError}/>)}
-        {items&&view!=='decided'&&(cur||items.more===true||Number(items.total)>(items.items||[]).length)&&(()=>{const b=Number(items.before||0),n=(items.items||[]).length,t=Number(items.total||0)
+        {!showReady&&items&&view!=='decided'&&(cur||items.more===true||Number(items.total)>(items.items||[]).length)&&(()=>{const b=Number(items.before||0),n=(items.items||[]).length,t=Number(items.total||0)
           return <div className="l4i-pager" data-l4-pager><Button compact disabled={!cur} onClick={prev} data-l4-prev>Previous</Button>
             <small data-l4-range>{n?`${fmtNumber(b+1)}–${fmtNumber(b+n)}`:'0'} of {fmtNumber(t)}, oldest first</small>
             <Button compact disabled={items.more===undefined?b+n>=t:!items.more} onClick={next} data-l4-next>Next</Button></div>})()}
@@ -188,8 +209,8 @@ function Item({it,k,showProvider,rank,onDone,onError}){
     </div>}
     {aerItem&&<AerRows aer={aer} rank={rank} ticking={open?.input==='rows'} ticked={ticked} tick={tick}/>}
     {hooked&&(!hd?<Loading compact/>:hd.error?<p className="l4i-err" role="alert">{hd.error}</p>:Array.isArray(hd.sections)&&hd.sections.length>0&&<div className="l4i-hook" data-l4-hook-detail>
-      {hd.sections.map((x,n)=><details key={x.key||n} data-l4-section={x.key}><summary>{x.title||String(x.key||'').replace(/_/g,' ')}</summary>
-        {x.body&&typeof x.body==='object'?<dl className="l4i-dl">{Object.entries(x.body).map(([a,b])=><React.Fragment key={a}><dt>{a.replace(/_/g,' ')}</dt><dd>{b!==null&&typeof b==='object'?JSON.stringify(b):String(b??'—')}</dd></React.Fragment>)}</dl>:<p className="l4i-why"><small>{String(x.body??'')}</small></p>}</details>)}</div>)}
+      {hd.sections.map((x,n)=><details key={x.key||n} data-l4-section={x.key} open={x.key==='summary'||undefined}><summary>{x.title||String(x.key||'').replace(/_/g,' ')}</summary>
+        {x.body&&typeof x.body==='object'?(Array.isArray(x.body)?<HookValue v={x.body}/>:<dl className="l4i-dl">{Object.entries(x.body).map(([a,b])=><React.Fragment key={a}><dt>{a.replace(/_/g,' ')}</dt><dd><HookValue v={b} label={a}/></dd></React.Fragment>)}</dl>):<p className="l4i-why"><small>{String(x.body??'')}</small></p>}</details>)}</div>)}
     {it.kind==='provider_description'&&<div className="l4i-dl" data-l4-description>{/* CF-247 P1 (Platform Admin 2 Nov 2026 10:28): the proposed description, each sentence with the page's own words; approved as read or rejected */}
       {d.before?.description&&<p><small>Description held: {d.before.description}</small></p>}
       <p data-l4-description-text><strong>{d.proposed?.description}</strong></p>
@@ -218,6 +239,26 @@ function Item({it,k,showProvider,rank,onDone,onError}){
     </div>}
   </article>
 }
+
+// CF-247 RMIT settlement (Platform Admin 4 Nov 2026 12:16 §7): a hook's detail values read as text, never raw JSON. A recovery case
+// ({count, first}) reads as a sentence with an expandable list of the related items, each linked to its card when that card is on this page.
+const goToCard=ref=>{const el=typeof document!=='undefined'?document.querySelector(`[data-l4-ref="${ref}"]`):null;if(el){el.scrollIntoView({behavior:'smooth',block:'start'});return true}return false}
+const plain=v=>v===null||v===undefined||v===''?'—':typeof v==='boolean'?(v?'yes':'no'):String(v)
+function Related({items}){const[gone,setGone]=useState('')
+  return <ul className="l4i-related" data-l4-related>{items.map((r,n)=>{const ref=r.ref||r.id||r.item_id,name=r.subject||r.title||r.name||(ref?`Ref ${String(ref).slice(0,8)}`:plain(r))
+    return <li key={ref||n}>{ref?<button type="button" className="l4i-linkish" onClick={()=>{if(!goToCard(ref))setGone(ref)}} data-l4-related-ref={ref}>{name}</button>:name}
+      {gone===ref&&<small> · on another page of this list (Ref {String(ref).slice(0,8)})</small>}</li>})}</ul>}
+export function HookValue({v,label}){
+  if(v===null||v===undefined||typeof v!=='object')return <>{plain(v)}</>
+  if(Array.isArray(v)){if(!v.length)return <>none</>
+    if(v.every(x=>x===null||typeof x!=='object'))return <ul className="l4i-plain">{v.map((x,n)=><li key={n}>{plain(x)}</li>)}</ul>
+    if(v.some(x=>x&&(x.ref||x.item_id)))return <details className="l4i-case-list"><summary>{v.length} related item{v.length===1?'':'s'}</summary><Related items={v}/></details>
+    return <ul className="l4i-plain" data-l4-value-list>{v.map((x,n)=><li key={n}>{x&&typeof x==='object'?<>{[x.kind&&String(x.kind).replace(/_/g,' '),x.country,x.level,x.qualification,x.audience,x.min_grade,x.min_score!=null?`${x.min_score}${x.basis?` (${x.basis})`:''}`:null,x.owner,x.scope].filter(Boolean).join(' · ')||Object.entries(x).filter(([k])=>k!=='quote'&&k!=='id').map(([k,y])=>`${k.replace(/_/g,' ')}: ${plain(y&&typeof y==='object'?'…':y)}`).join(' · ')}{x.quote&&<> <q>{x.quote}</q></>}</>:plain(x)}</li>)}</ul>}
+  if('count' in v&&'first' in v){const n=Number(v.count)||0,first=Array.isArray(v.first)?v.first:[]
+    return <div data-l4-case><span>{n===0?'No other waiting read':`${n} other waiting read${n===1?'':'s'}`}{label?'':''}</span>
+      {first.length>0&&<details className="l4i-case-list"><summary>Show {first.length===n?'them':`the first ${first.length}`}</summary><Related items={first}/></details>}</div>}
+  if(v.ref||v.item_id)return <Related items={[v]}/>
+  return <dl className="l4i-dl l4i-dl-nested">{Object.entries(v).map(([a,b])=><React.Fragment key={a}><dt>{a.replace(/_/g,' ')}</dt><dd><HookValue v={b} label={a}/></dd></React.Fragment>)}</dl>}
 
 // CF-247 A1: the rows of an AER item, each with its quote; ticked rows are left out by "Approve except…" (Platform Admin, A3)
 const ROW_STATUS={proposed:'Waiting',active:'Active',inactive:'Withdrawn',superseded:'Superseded',unverified:'Quarantined'}
