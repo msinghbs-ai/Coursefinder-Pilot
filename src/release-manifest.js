@@ -1,18 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.471'
-export const PACKAGE_VERSION='0.1.398'
+export const UI_VERSION='2.15.472'
+export const PACKAGE_VERSION='0.1.399'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'4 Nov 2026',
-  title:'Layer 4 shows what happened after every action',
+  title:'Course Link classes and a per-university reconciliation',
   changes:[
-    'Every Layer 4 action returns a result confirmed by the server, kept on the card through Refresh: for example "Recovery queued — 12:17 AEDT", "Recovery refused — unchanged evidence and reader", "Recovery completed — still held under E13" or "Recovery completed — replacement read ready for review", with its audit reference.',
-    'Each card has a Progress block: first entered Layer 4, status, last reviewer action, last recovery and its result, next step and time waiting, with an expandable event history (requests, reads with start and finish times and attempt numbers, validations, supersessions and decisions) in AEDT/AEST.',
-    'While a recovery runs the card updates by itself; a replacement read is linked and Approve opens only when the completeness gates pass.',
-    'A re-read on an unchanged stored copy that was already refused is no longer recommended or run; a repeated click returns the existing request or Human input needed item instead of starting another.'
+    'Each waiting Course Link item now has a class (automatically settleable under an existing decision, technical, or a person\'s decision) with its authority, reason and recommended decision.',
+    'A reconciliation, run one university at a time and counting first, moves refused pages on courses with no page to Course page needed (Decision 179), closes the items of retired providers reversibly, and links stored copies to their cards. It admits no new link.',
+    'Old-year addresses, pages the binding check refused that a course still shows, and two-page cases are no longer treated as already settled, so they stay with a person; a decided page is no longer raised again in an http, www or trailing-slash variant.'
   ],
   bugFixes:[]
 }
