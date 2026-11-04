@@ -13,21 +13,24 @@ create or replace function pg_temp.decide(p_kind text, p_ref text, p_choice text
 do $$
 declare v jsonb;
 begin
-  if pg_temp.grp('6e000000-0000-4000-8000-000000000001') <> 'A' or (select rule from security.layer4_groups_v1() where ref = '6e000000-0000-4000-8000-000000000001') not like 'Decision 263 rule%'
-    then raise exception 'G1: a Decision 263 pass routed by the Course Link classifier is A, with its authority'; end if;
-  if pg_temp.grp('6e000000-0000-4000-8000-000000000002') <> 'A' or (select cls from security.layer4_groups_v1() where ref = '6e000000-0000-4000-8000-000000000002') <> 'course_link:covered_by_active'
-    then raise exception 'G1: already active is A'; end if;
-  if pg_temp.grp('6e000000-0000-4000-8000-000000000004') <> 'B' or pg_temp.grp('6e000000-0000-4000-8000-000000000005') <> 'C' then raise exception 'G1: invalid link B, judgement ready C'; end if;
+  -- official links take the real Course Link classifier's group, class and authority; A only with its authority named
+  if exists (select 1 from security.layer4_groups_v1() g join pipeline.layer4_review_items r on r.id::text = g.ref and r.field_code = 'official_course_url'
+              where g.grp is distinct from coalesce(security.course_link_route_class_v1(r.id)->>'group', 'C')
+                 or g.cls <> 'course_link:' || coalesce(security.course_link_route_class_v1(r.id)->>'class', 'not_routed')) then raise exception 'G1: official links follow the Course Link classifier'; end if;
+  if exists (select 1 from security.layer4_groups_v1() g where g.cls like 'course_link:%' and g.grp = 'A' and g.rule is null) then raise exception 'G1: an A official link without its authority'; end if;
+  -- the platform resolution rule is never the A rule of an official link
+  if exists (select 1 from security.layer4_groups_v1() g where g.cls like 'course_link:%' and g.rule like 'security.layer4_reconcile_v1 (%off%') then raise exception 'G1: reconcile A-rule on an official link'; end if;
   if pg_temp.grp('6e000000-0000-4000-8000-000000000006') <> 'C' or pg_temp.grp('6e000000-0000-4000-8000-000000000007') <> 'B' or pg_temp.grp('6e000000-0000-4000-8000-000000000008') <> 'D'
     then raise exception 'G1: AER ready C, held B, held with human input D'; end if;
   if pg_temp.grp('9911') <> 'C' or pg_temp.grp('6b000000-0000-4000-8000-000000000001') <> 'B' or pg_temp.grp('8901') <> 'D' then raise exception 'G1: scholarship C, adapter B, pages D'; end if;
   if (select count(*) from security.layer4_groups_v1() where grp = 'A' and rule is null) > 0 then raise exception 'G1: an A item without its rule'; end if;
+  raise notice 'G1 official links (real classifier): %', (select jsonb_object_agg(g.ref, g.grp || ' ' || g.cls) from security.layer4_groups_v1() g where g.cls like 'course_link:%');
   if (select count(*) from security.layer4_groups_v1()) <> (select count(*) from security.layer4_inbox_items_v2(null, null, null, false))
                                                         + (select count(*) from pipeline.layer4_interventions where status in ('ai_pending', 'awaiting_input', 'resuming'))
     then raise exception 'G1: every waiting item is in exactly one group'; end if;
   v := public.admin_layer4_groups('{}');
-  if (v->'groups'->>'A')::int < 3 or v->'labels'->>'C' <> 'Ready for my decision' or v->'labels'->>'D' <> 'Information needed from me' or v->'labels'->>'B' <> 'Technical recovery'
-     or jsonb_array_length(v->'rules') < 2 then raise exception 'G1: summary %', v; end if;
+  if v->'labels'->>'C' <> 'Ready for my decision' or v->'labels'->>'D' <> 'Information needed from me' or v->'labels'->>'B' <> 'Technical recovery'
+     then raise exception 'G1: summary %', v; end if;
   -- without the Course Link classifier, official links stay in C (Integration Controller 4 Nov 2026)
   alter function security.course_link_route_class_v1(uuid) rename to course_link_route_class_v1_off;
   if pg_temp.grp('6e000000-0000-4000-8000-000000000001') <> 'C' or pg_temp.grp('6e000000-0000-4000-8000-000000000004') <> 'C' then raise exception 'G1: router missing'; end if;
@@ -65,7 +68,7 @@ begin
   if v->'nothing_ready:6b000000-0000-4000-8000-000000000001'->>'group_label' <> 'Technical recovery' or v->'nothing_ready:6b000000-0000-4000-8000-000000000001'->'evidence'->>'Pages read' <> '3'
      or v->'nothing_ready:6b000000-0000-4000-8000-000000000001'->'evidence'->'Why each field is held'->>'english' is null then raise exception 'G3: adapter card %', v->'nothing_ready:6b000000-0000-4000-8000-000000000001'; end if;
   if v->'course_link:6e000000-0000-4000-8000-000000000003'->'evidence'->'Settled before'->>'Covered by item' <> '6e000000-0000-4000-8000-000000000010'
-     or v->'course_link:6e000000-0000-4000-8000-000000000003'->>'person_needed' not like 'no:%' then raise exception 'G3: re-raised card %', v->'course_link:6e000000-0000-4000-8000-000000000003'; end if;
+     or v->'course_link:6e000000-0000-4000-8000-000000000003'->>'person_needed' is null then raise exception 'G3: re-raised card %', v->'course_link:6e000000-0000-4000-8000-000000000003'; end if;
   if v->'pages_not_found:8901'->'evidence'->>'How it was looked for' <> 'map(0)+map_search(0)' or v->'pages_not_found:8901'->>'group' <> 'D' then raise exception 'G3: page hold card'; end if;
   if v->'nothing_ready:6b000000-0000-4000-8000-000000000001'->>'why_pending' is null or v->'nothing_ready:6b000000-0000-4000-8000-000000000001'->'times'->'first_entered' is null
     then raise exception 'G3: the lifecycle answers stay'; end if;

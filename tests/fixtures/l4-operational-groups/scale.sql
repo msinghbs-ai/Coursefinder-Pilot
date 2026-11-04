@@ -1,8 +1,8 @@
 -- CF-247 Layer 4 operational groups at production scale (Integration Controller 4 Nov 2026: 5,000 items, including 3,000 Course Link). Run by
 -- run.sh after ../l4-inbox-perf/indexes.sql and seed-scale.sql (about 5,000 waiting items over 200 universities: 3,300 official links, 600 AER,
 -- 465 descriptions, 132 held scholarships, 150 stopped onboardings, 140 holds, 75 course pages needed, 20 reports, 7 departures). Every waiting
--- review item gets a readiness row in the live proportions (17:16 AEDT); official links are routed by the Course Link classifier stand-in, which
--- costs here what a classifier with a few indexed look-ups costs. Then: the full fill (as on release) within its budget, an incremental run,
+-- review item gets a readiness row in the live proportions (17:16 AEDT); official links are routed by the real Course Link classifier
+-- (20261104570000). Then: the full fill (as on release) within its budget, an incremental run,
 -- and every first-load read of the Inbox and of the three choices under the paging contract budget (300 ms each). Scratch PostgreSQL only.
 \set ON_ERROR_STOP on
 select set_config('fx.uid', '63ba56cb-48d4-4169-98c2-7c4d1f72925b', false), set_config('fx.rank', '6', false);
@@ -22,19 +22,7 @@ select r.id, r.entity_type, r.entity_id, r.field_code, r.created_at, 'pending',
             when r.field_code = 'official_course_url' and n % 100 < 11 then 'repair:invalid_link' else 'review:curator' end
   from (select r.*, row_number() over (order by r.id) n from pipeline.layer4_review_items r where r.status = 'pending'
           and not exists (select 1 from pipeline.layer4_item_readiness x where x.item_id = r.id)) r;
--- the Course Link classifier stand-in with the cost of a real one: the item, its course, the course's active links and its readiness, each indexed
-create or replace function security.course_link_route_class_v1(p_item uuid) returns jsonb language sql stable security definer set search_path to '' as $f$
-  select case when r.id is null then jsonb_build_object('item', p_item, 'group', null)
-              when c.item is not null then jsonb_build_object('item', p_item, 'group', c.grp, 'class', c.cls, 'action', c.action, 'authority', c.authority)
-              else jsonb_build_object('item', p_item,
-                     'group', case when rd.route = 'platform:covered_by_active' or exists (select 1 from catalogue.course_links l where l.course_id = r.entity_id and l.status = 'active') then 'A'
-                                   when rd.readiness = 'technical_blocked' then 'B' else 'C' end,
-                     'class', case when rd.route = 'platform:covered_by_active' then 'covered_by_active' when rd.readiness = 'technical_blocked' then 'evidence_missing' else 'cricos_page_differs' end,
-                     'action', 'keep', 'authority', case when rd.route = 'platform:covered_by_active' then 'security.layer4_reconcile_v1 (layer4.reconcile_supersede_on)' end,
-                     'evidence', jsonb_build_object('course', (select co.lifecycle_status from catalogue.courses co where co.id = r.entity_id))) end
-    from (select 1) z left join pipeline.layer4_review_items r on r.id = p_item and r.status = 'pending' and r.field_code = 'official_course_url'
-    left join pipeline.layer4_item_readiness rd on rd.item_id = r.id left join fx.cl_route c on c.item = p_item
-$f$;
+-- official links are routed by the real Course Link classifier (migration 20261104570000, live md5 3eaaabca)
 analyze;
 do $$
 declare v jsonb; t timestamptz; ms numeric; b numeric := (select x.ms from fx.budget_ms x); g text; w int; r jsonb; m jsonb := '{}';

@@ -16,8 +16,7 @@ select ('6c000000-0000-4000-8000-0000000000' || lpad(n::text, 2, '0'))::uuid, ca
 insert into pipeline.layer4_course_link_rules(code, provider_id, choice, reason_like, held_regex, proposed_replace, identity_bases, approved_by, approved_at, approved_items, approval_ref, strict, note)
 values ('fx_group_no_year', '6a000000-0000-4000-8000-000000000001', 'use', '%CRICOS code is a different address%', '/20[0-9]{2}$', '', array['cricos_code'], 'Platform Admin', 'fixture', 1, 'fixture', false, 'fixture')
 on conflict do nothing;
--- official-link items, routed by the Course Link classifier: a Decision 263 rule passes (A), already active (A), decided before (A), evidence
--- missing (B), CRICOS page differs (C)
+-- official-link items, routed by the real Course Link classifier (20261104570000): its class decides their group
 insert into pipeline.layer4_review_items(id, entity_type, entity_id, field_code, status, escalation_reason, before_value, proposed_value, created_at) values
  ('6e000000-0000-4000-8000-000000000001', 'course', '6c000000-0000-4000-8000-000000000001', 'official_course_url', 'pending', 'The page found by this course''s CRICOS code is a different address',
   '["https://www.groupuni.edu.au/courses/c1/2026"]', '{"course_url": "https://www.groupuni.edu.au/courses/c1"}', now() - interval '6 days'),
@@ -68,9 +67,3 @@ insert into pipeline.provider_onboarding(id, provider_id, status, stop_reason, n
 insert into pipeline.enrichment_flags(id, entity, entity_key, provider_id, state, reason_code, reason, evidence, flagged_at) values
  (8901, 'provider', '6a000000-0000-4000-8000-000000000004', '6a000000-0000-4000-8000-000000000004', 'raised', 'course_pages_not_found', 'no course pages',
   '{"site": "https://www.intia.com.au", "wave": "refind-1", "method": "map(0)+map_search(0)", "addresses": 0, "discovery": "failed", "pages_read": 0}', now() - interval '15 days');
-insert into fx.cl_route values
- ('6e000000-0000-4000-8000-000000000001', 'A', 'rule_d263_pass', 'rule_d263', 'Decision 263 rule fx_group_no_year (security.layer4_course_link_rule_execute_v1)'),
- ('6e000000-0000-4000-8000-000000000002', 'A', 'covered_by_active', 'supersede', 'security.layer4_reconcile_v1 (layer4.reconcile_supersede_on)'),
- ('6e000000-0000-4000-8000-000000000003', 'A', 'decided_before', 'supersede', 'security.layer4_reconcile_v1 (layer4.reconcile_supersede_on)'),
- ('6e000000-0000-4000-8000-000000000004', 'B', 'evidence_missing', 'read_page', null),
- ('6e000000-0000-4000-8000-000000000005', 'C', 'cricos_page_differs', 'keep', null);

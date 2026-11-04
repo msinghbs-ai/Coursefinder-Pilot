@@ -45,16 +45,6 @@ begin
    where id = (p_args->>'review_id')::bigint and status = 'pending';
   return jsonb_build_object('applied', jsonb_build_object('review_id', p_args->>'review_id', 'decision', p_args->>'decision'));
 end $f$;
--- the Course Link workstream's classifier (security.course_link_route_class_v1, migration 20261104570000), as a stand-in with its published
--- contract: {item, group A|B|C|D or null when the item is not a pending official link, class, action, authority, reason, recommended, evidence}
-create table if not exists fx.cl_route(item uuid primary key, grp text, cls text, action text, authority text);
-create or replace function security.course_link_route_class_v1(p_item uuid) returns jsonb language sql stable security definer set search_path to '' as $f$
-  select case when r.id is null then jsonb_build_object('item', p_item, 'group', null)
-              else jsonb_build_object('item', p_item, 'group', coalesce(c.grp, 'C'), 'class', coalesce(c.cls, 'cricos_page_differs'), 'action', coalesce(c.action, 'keep'),
-                                      'authority', c.authority, 'reason', 'fixture', 'recommended', null, 'evidence', '{}'::jsonb) end
-    from (select 1) z left join pipeline.layer4_review_items r on r.id = p_item and r.status = 'pending' and r.field_code = 'official_course_url'
-    left join fx.cl_route c on c.item = p_item
-$f$;
 -- the supersession record and the post-decision admission check, as live (20261104120000 §2, §5)
 create table if not exists pipeline.layer4_supersessions (
   id bigserial primary key,
