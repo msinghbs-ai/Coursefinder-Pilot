@@ -30,7 +30,8 @@
 --   signatures; the repeat guard and the readable last corrected read); public.admin_layer4_inbox (same name and actions; decide replies add ack)
 -- Retires: nothing
 -- Nothing is dropped or deleted. No consumer API object changes (G3). No job, no Firecrawl or AI spend. Admission authority, spending limits,
--- manual locks, the E13 and D-R3 gates and role ranks are unchanged. Two indexes are added for the lifecycle's look-ups.
+-- manual locks, the E13 and D-R3 gates and role ranks are unchanged. Three indexes are added for the lifecycle's look-ups, and one column with its
+-- trigger (pipeline.enrichment_flags.first_flagged_at) so Keep waiting no longer resets a hold's first entry.
 
 -- 0 guards: the live definitions this change edits ---------------------------------------------------------------------------------------------
 create or replace function pg_temp.guard(p_sig text, p_before text, p_after text) returns void language plpgsql as $f$
@@ -69,11 +70,40 @@ insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, ki
   'number', to_jsonb(7), 1, 90, 'days', 339, 'Layer 4', 'security.layer4_lifecycle_report_v1',
   'Platform Admin 4 Nov 2026 12:24 §10')
 on conflict do nothing;
+-- a setting that has only been created has not changed: its first time is set before any corrected read existed, so creating
+-- layer4.reader_revision and layer4.reread_change_keys here does not count as a reader change for earlier refusals
+update pipeline.platform_toolset_settings set updated_at = '2026-10-01 00:00:00+10'  -- fixed: the creation is not a change
+ where toolset_key = 'pipeline' and key in ('layer4.reader_revision', 'layer4.reread_change_keys', 'layer4.reread_transient_refusals') and updated_by is null and updated_at > '2026-11-04 12:00:00+11';
 
 -- 2 indexes for the look-ups (the Inbox audit rows of one item; corrected reads of one item, either side) ---------------------------------------
 create index if not exists admin_control_events_layer4_target_idx on pipeline.admin_control_events (target, id desc) where area = 'layer4';
 create index if not exists aer_read_supersessions_old_item_idx on pipeline.aer_read_supersessions (old_item_id, requested_at desc);
 create index if not exists aer_read_supersessions_new_item_idx on pipeline.aer_read_supersessions (new_item_id) where new_item_id is not null;
+
+-- 2b a hold's first entry is kept (decision 12:24 §3 "do not reset an item's original age"): Keep waiting moves flagged_at forward (asked again
+--    after the waiting period), which made the hold look new. A new column beside it keeps the first time; flagged_at keeps its meaning.
+alter table pipeline.enrichment_flags add column if not exists first_flagged_at timestamptz;
+comment on column pipeline.enrichment_flags.first_flagged_at is 'CF-247 (decision 4 Nov 2026 12:24 §3): when the hold was first raised; kept when flagged_at moves forward (Keep waiting, re-raise). Shown as "first entered Layer 4".';
+create or replace function security.enrichment_flags_first_v1() returns trigger
+language plpgsql set search_path to '' as $function$
+begin
+  new.first_flagged_at := case when tg_op = 'INSERT' then coalesce(new.first_flagged_at, new.flagged_at)
+                               else coalesce(old.first_flagged_at, new.first_flagged_at, old.flagged_at, new.flagged_at) end;
+  return new;
+end $function$;
+revoke all on function security.enrichment_flags_first_v1() from public, anon, authenticated;
+do $t$
+begin
+  if not exists (select 1 from pg_trigger where tgname = 'enrichment_flags_first' and tgrelid = 'pipeline.enrichment_flags'::regclass) then
+    create trigger enrichment_flags_first before insert or update on pipeline.enrichment_flags for each row execute function security.enrichment_flags_first_v1();
+  end if;
+end $t$;
+-- the holds waiting now: the earlier of flagged_at and the first Layer 4 action on them (an earlier Keep waiting already moved some forward)
+update pipeline.enrichment_flags f set first_flagged_at = least(f.flagged_at, e.first_at)
+  from (select split_part(x.target, ':', 2) id, min(x.created_at) first_at from pipeline.admin_control_events x
+         where x.area = 'layer4' and x.action = 'inbox_decide' and x.target ~ '^(pages_not_found|site_down|fee_check|not_offered|not_on_site):[0-9]+$' group by 1) e
+ where f.state = 'raised' and f.first_flagged_at is null and f.id::text = e.id;
+update pipeline.enrichment_flags f set first_flagged_at = f.flagged_at where f.state = 'raised' and f.first_flagged_at is null;
 
 -- 3 helpers ----------------------------------------------------------------------------------------------------------------------------------
 create or replace function security.l4_time_v1(p_at timestamptz) returns jsonb
@@ -143,6 +173,7 @@ language sql immutable set search_path to '' as $function$
          when p_kind = 'intervention' then 'accepted'
          when nullif(x.r->>'intervention_id', '') is not null or (x.d ? 'raised' and nullif(x.d->>'id', '') is not null) then 'human_input'
          when x.d ? 'request_id' or x.d ? 'job_id' or x.d ? 'enrich_item_id' then 'queued'
+         when p_choice = 'wait' or p_outcome->>'class' = 'deferred' then 'accepted'
          when p_outcome->>'class' in ('admitted', 'applied', 'reconciled') then 'completed'
          when p_outcome->>'class' = 'downstream' then 'queued'
          when p_choice in ('rebuild', 'retry', 'website', 'search_again', 'add_page') then 'queued'
@@ -225,7 +256,10 @@ begin
       end if;
       v_rep := security.layer4_reread_repeat_v1(r.id);
       select * into w from pipeline.work_items x where x.lane = 'aer_technical' and x.entity = p_ref and x.work_kind = 'l4_item';
-      if w.id is not null then v_auto := greatest(v_auto, w.last_attempt_at); v_upd := greatest(v_upd, w.updated_at); v_next := w.next_eligible_at; end if;
+      if w.id is not null then
+        v_auto := greatest(v_auto, w.last_attempt_at); v_upd := greatest(v_upd, w.updated_at); v_next := w.next_eligible_at;
+        if w.next_eligible_at is not null and w.next_eligible_at > now() then v_next_text := 'technical recovery tries again (' || coalesce(w.failure_class, w.stage) || ')'; end if;
+      end if;
       select * into iv from pipeline.layer4_interventions x where x.lane = 'aer_item' and x.entity = p_ref and x.status in ('ai_pending', 'awaiting_input', 'resuming')
        order by x.id desc limit 1;
       if iv.id is null then
@@ -271,8 +305,9 @@ begin
     select * into fl from pipeline.enrichment_flags x where x.id = p_ref::bigint;
     -- Keep waiting moves flagged_at forward (asked again later); the first entry is the earliest of it and the first action on the item
     v_created := fl.flagged_at; v_entered := fl.flagged_at; v_status := fl.state; v_decided := fl.released_at; v_open := fl.state = 'raised';
-    v_first := least(fl.flagged_at, v_first_ev); v_next := fl.next_check_at; v_auto := fl.updated_at; v_pid := fl.provider_id;
-    if p_kind = 'site_down' and v_open then v_next_text := 'the site is checked again automatically'; end if;
+    v_first := least(coalesce(fl.first_flagged_at, fl.flagged_at), v_first_ev); v_next := fl.next_check_at; v_auto := fl.updated_at; v_pid := fl.provider_id;
+    if v_open and fl.next_check_at is not null then v_next_text := 'checked again automatically'; end if;
+    if p_kind = 'site_down' and v_open then v_next_text := 'the site is checked again automatically; asked again after the waiting period'; end if;
   elsif p_kind = 'course_page_needed' then
     for e in select * from pipeline.course_page_needed x where x.course_id = p_ref::uuid loop
       v_created := e.created_at; v_first := e.created_at; v_entered := coalesce(e.last_refused_at, e.created_at); v_status := e.state; v_decided := e.decided_at;
@@ -328,9 +363,10 @@ begin
     when v_stage in ('scheduled', 'executing') then 'Waiting for the operation that was asked for'
     when v_stage = 'refused' then 'The last action was refused: ' || coalesce(v_last->'result'->>'reason', 'see the reason')
     else 'No reviewer action yet' end);
+  if coalesce((v_rep->>'repeat')::boolean, false) and v_open then v_next_text := v_rep->>'alternative'; v_next := null; end if;
   if v_open and v_next_text is null then
+    v_next := null;
     v_next_text := case
-      when coalesce((v_rep->>'repeat')::boolean, false) then v_rep->>'alternative'
       when v_stage = 'scheduled' and s.id is not null then 'the entry reader reads the stored copy (job ' || left(s.job_id::text, 8) || ')'
       when v_stage = 'executing' then 'running now'
       when v_last->'result'->>'alternative' is not null and v_stage in ('refused', 'awaiting_input') then v_last->'result'->>'alternative'
@@ -634,15 +670,15 @@ end $e$;
 
 -- 11 component register ----------------------------------------------------------------------------------------------------------------------
 insert into pipeline.component_register(kind, name, layer, area, purpose, status, replaces, introduced_in) values
- ('function', 'security.layer4_lifecycle_one_v1', 'Layer 4', 'Layer 4 review', 'The action lifecycle of one Layer 4 item from existing records (decision 12:24 §2, §3)', 'active', '{}', '20261104530000'),
- ('function', 'security.layer4_item_lifecycle_v1', 'Layer 4', 'Layer 4 review', 'One card''s lifecycle with admission and publication checks', 'active', '{}', '20261104530000'),
- ('function', 'security.layer4_items_lifecycle_v1', 'Layer 4', 'Layer 4 review', 'A page of cards'' lifecycles', 'active', '{}', '20261104530000'),
- ('function', 'security.layer4_action_ack_v1', 'Layer 4', 'Layer 4 review', 'The normalised acknowledgement on every Inbox decision (decision 12:24 §4)', 'active', '{}', '20261104530000'),
- ('function', 'security.layer4_ack_normalise_v1', 'Layer 4', 'Layer 4 review', 'Normalises a Layer 4 action result (reply or audit row)', 'active', '{}', '20261104530000'),
- ('function', 'security.layer4_reread_repeat_v1', 'Layer 4', 'Entry requirements', 'Whether a corrected read would be a deterministic repeat (IQ-00279)', 'active', '{}', '20261104530000'),
- ('function', 'security.layer4_lifecycle_report_v1', 'Layer 4', 'Layer 4 review', 'Layer 4 lifecycle measures (decision 12:24 §10)', 'active', '{}', '20261104530000'),
- ('function', 'security.l4_time_v1', 'Layer 4', 'Layer 4 review', 'A Layer 4 time in Australian format (AEDT/AEST)', 'active', '{}', '20261104530000'),
- ('function', 'public.admin_layer4_lifecycle', 'Layer 4', 'Layer 4 review', 'The screen''s read of card lifecycles', 'active', '{}', '20261104530000')
+ ('function', 'security.layer4_lifecycle_one_v1', 'Layer 4', 'Layer 4 review', 'The action lifecycle of one Layer 4 item from existing records (decision 12:24 §2, §3)', 'active', '{}', '20261104540000'),
+ ('function', 'security.layer4_item_lifecycle_v1', 'Layer 4', 'Layer 4 review', 'One card''s lifecycle with admission and publication checks', 'active', '{}', '20261104540000'),
+ ('function', 'security.layer4_items_lifecycle_v1', 'Layer 4', 'Layer 4 review', 'A page of cards'' lifecycles', 'active', '{}', '20261104540000'),
+ ('function', 'security.layer4_action_ack_v1', 'Layer 4', 'Layer 4 review', 'The normalised acknowledgement on every Inbox decision (decision 12:24 §4)', 'active', '{}', '20261104540000'),
+ ('function', 'security.layer4_ack_normalise_v1', 'Layer 4', 'Layer 4 review', 'Normalises a Layer 4 action result (reply or audit row)', 'active', '{}', '20261104540000'),
+ ('function', 'security.layer4_reread_repeat_v1', 'Layer 4', 'Entry requirements', 'Whether a corrected read would be a deterministic repeat (IQ-00279)', 'active', '{}', '20261104540000'),
+ ('function', 'security.layer4_lifecycle_report_v1', 'Layer 4', 'Layer 4 review', 'Layer 4 lifecycle measures (decision 12:24 §10)', 'active', '{}', '20261104540000'),
+ ('function', 'security.l4_time_v1', 'Layer 4', 'Layer 4 review', 'A Layer 4 time in Australian format (AEDT/AEST)', 'active', '{}', '20261104540000'),
+ ('function', 'public.admin_layer4_lifecycle', 'Layer 4', 'Layer 4 review', 'The screen''s read of card lifecycles', 'active', '{}', '20261104540000')
 on conflict do nothing;
 
 -- 12 post-check -------------------------------------------------------------------------------------------------------------------------------
