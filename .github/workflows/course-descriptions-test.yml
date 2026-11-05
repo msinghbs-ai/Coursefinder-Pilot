@@ -1,0 +1,44 @@
+# Course descriptions: production-parity fixture and validator baseline (Platform Admin direction 6 Nov 2026 08:12; decision 19:14 §8).
+# Rebuilds the course-description path from its production manifest on an isolated PostgreSQL 17.6 (production runs 17.6), proves the fixture
+# equals the manifest and the live md5s, and runs the baseline of today's validator outcomes. Never connects to Supabase.
+name: Course descriptions fixture
+on:
+  pull_request:
+    paths:
+      - 'tests/fixtures/course-description-parity/**'
+      - 'tests/uat/cf-247-s355-course-description-baseline-contract.spec.mjs'
+      - 'scripts/prod-parity*.mjs'
+      - 'supabase/migrations/202611065*.sql'
+      - 'supabase/functions/coverage-sweep/course-text.ts'
+      - '.github/workflows/course-descriptions-test.yml'
+  workflow_dispatch:
+jobs:
+  course-description-baseline:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:17.6-alpine
+        env:
+          POSTGRES_PASSWORD: fixture-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: fixture-only
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: bash tests/fixtures/course-description-parity/run.sh | tee course-description-results.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: course-description-evidence
+          path: course-description-results.log

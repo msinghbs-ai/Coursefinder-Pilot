@@ -1,0 +1,1775 @@
+{
+ "tool": "prod-parity-capture v1",
+ "facts": {
+  "role|anon": "statement_timeout=3s",
+  "role|service_role": "",
+  "role|authenticated": "statement_timeout=8s",
+  "role|authenticator": "lock_timeout=8s,statement_timeout=8s",
+  "session|search_path": "\"\\$user\", public, extensions",
+  "table|ref.study_levels": "referenced|r|rls=true|force=false",
+  "schema|pim|service_role": "USAGE",
+  "schema|ref|service_role": "USAGE",
+  "table|catalogue.courses": "target|r|rls=true|force=false",
+  "table|catalogue.providers": "referenced|r|rls=true|force=false",
+  "table|pim.entity_registry": "referenced|r|rls=true|force=false",
+  "table|pipeline.admin_jobs": "referenced|r|rls=true|force=false",
+  "table|ref.fields_of_study": "referenced|r|rls=true|force=false",
+  "column|ref.study_levels|id": "uuid|notnull=true|default=|identity=|generated=",
+  "column|catalogue.courses|id": "uuid|notnull=true|default=|identity=|generated=",
+  "column|ref.study_levels|code": "text|notnull=true|default=|identity=|generated=",
+  "schema|pipeline|service_role": "USAGE",
+  "schema|security|service_role": "USAGE",
+  "column|catalogue.providers|id": "uuid|notnull=true|default=|identity=|generated=",
+  "column|pim.entity_registry|id": "uuid|notnull=true|default=|identity=|generated=",
+  "column|pipeline.admin_jobs|id": "uuid|notnull=true|default=|identity=|generated=",
+  "column|ref.fields_of_study|id": "uuid|notnull=true|default=|identity=|generated=",
+  "schema|catalogue|service_role": "USAGE",
+  "schema|security|authenticated": "USAGE",
+  "column|ref.fields_of_study|code": "text|notnull=true|default=|identity=|generated=",
+  "table|pipeline.platform_toolsets": "referenced|r|rls=true|force=false",
+  "table|pipeline.evidence_artifacts": "referenced|r|rls=true|force=false",
+  "table|pipeline.field_enrich_items": "target|r|rls=true|force=false",
+  "table|pipeline.layer4_review_items": "target|r|rls=false|force=false",
+  "column|catalogue.courses|course_url": "text|notnull=false|default=|identity=|generated=",
+  "column|catalogue.courses|created_at": "timestamp with time zone|notnull=true|default=now()|identity=|generated=",
+  "column|catalogue.courses|stable_key": "text|notnull=true|default=|identity=|generated=",
+  "column|catalogue.courses|updated_at": "timestamp with time zone|notnull=true|default=now()|identity=|generated=",
+  "column|catalogue.courses|course_code": "text|notnull=false|default=|identity=|generated=",
+  "column|catalogue.courses|description": "text|notnull=false|default=|identity=|generated=",
+  "column|catalogue.courses|provider_id": "uuid|notnull=true|default=|identity=|generated=",
+  "grant|catalogue.courses|service_role": "DELETE,INSERT,MAINTAIN,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE",
+  "column|catalogue.providers|stable_key": "text|notnull=true|default=|identity=|generated=",
+  "column|pim.entity_registry|stable_key": "text|notnull=true|default=|identity=|generated=",
+  "column|pipeline.evidence_artifacts|id": "uuid|notnull=true|default=|identity=|generated=",
+  "column|pipeline.field_enrich_items|id": "bigint|notnull=true|default=nextval('pipeline.field_enrich_items_id_seq'::regclass)|identity=|generated=",
+  "column|pipeline.platform_toolsets|key": "text|notnull=true|default=|identity=|generated=",
+  "execute|security.manual_field_guard()": "",
+  "execute|security.pdesc_words_v1(text)": "PUBLIC",
+  "table|pipeline.layer3_interpretations": "referenced|r|rls=false|force=false",
+  "column|catalogue.courses|delivery_mode": "text|notnull=false|default=|identity=|generated=",
+  "column|catalogue.courses|display_title": "text|notnull=false|default=|identity=|generated=",
+  "column|catalogue.courses|duration_unit": "text|notnull=false|default=|identity=|generated=",
+  "column|pipeline.layer4_review_items|id": "uuid|notnull=true|default=gen_random_uuid()|identity=|generated=",
+  "execute|security.ai_spend_capture_v1()": "",
+  "execute|security.ops_guard_layer4_v1()": "",
+  "function|security.manual_field_guard()": "029fe067f745685306f459419be80c42|trigger",
+  "function|security.pdesc_words_v1(text)": "1a18bd60d2978c1885a25085b688afc7|target",
+  "column|catalogue.courses|duration_value": "numeric(8,2)|notnull=false|default=|identity=|generated=",
+  "column|catalogue.courses|source_version": "text|notnull=false|default=|identity=|generated=",
+  "column|catalogue.courses|study_level_id": "uuid|notnull=false|default=|identity=|generated=",
+  "execute|security.course_title_key(text)": "PUBLIC",
+  "function|security.ai_spend_capture_v1()": "5b78fa074a9480d4f127ecc4fe93dcf3|trigger",
+  "function|security.ops_guard_layer4_v1()": "d8fcb14724141b694e7a32f439d093ac|trigger",
+  "column|catalogue.courses|applicant_basis": "text|notnull=false|default=|identity=|generated=",
+  "column|catalogue.courses|canonical_title": "text|notnull=true|default=|identity=|generated=",
+  "column|pipeline.field_enrich_items|field": "text|notnull=true|default=|identity=|generated=",
+  "column|pipeline.field_enrich_items|quote": "text|notnull=false|default=|identity=|generated=",
+  "column|pipeline.field_enrich_items|state": "text|notnull=true|default='queued'::text|identity=|generated=",
+  "column|pipeline.field_enrich_items|tried": "text[]|notnull=true|default='{}'::text[]|identity=|generated=",
+  "column|pipeline.field_enrich_items|value": "jsonb|notnull=false|default=|identity=|generated=",
+  "execute|security.layer4_reroute_trg_v1()": "PUBLIC",
+  "execute|security.no_page_review_trg_v1()": "PUBLIC",
+  "execute|security.ops_guard_settings_v1()": "",
+  "function|security.course_title_key(text)": "6dbf332766b47f5bdd09032fc78d3707|target",
+  "table|pipeline.platform_toolset_settings": "target|r|rls=true|force=false",
+  "column|catalogue.courses|last_verified_at": "timestamp with time zone|notnull=false|default=|identity=|generated=",
+  "column|catalogue.courses|lifecycle_status": "text|notnull=true|default='active'::text|identity=|generated=",
+  "column|catalogue.courses|open_to_domestic": "boolean|notnull=false|default=|identity=|generated=",
+  "column|catalogue.courses|primary_field_id": "uuid|notnull=false|default=|identity=|generated=",
+  "column|pipeline.field_enrich_items|job_id": "uuid|notnull=true|default=|identity=|generated=",
+  "column|pipeline.field_enrich_items|reason": "text|notnull=false|default=|identity=|generated=",
+  "column|pipeline.field_enrich_items|source": "text|notnull=false|default=|identity=|generated=",
+  "column|pipeline.layer3_interpretations|id": "uuid|notnull=true|default=|identity=|generated=",
+  "constraint|catalogue.courses|courses_pkey": "p|PRIMARY KEY (id)",
+  "function|security.layer4_reroute_trg_v1()": "fd3e6afef1b826533ab124bdcf48dfed|trigger",
+  "function|security.no_page_review_trg_v1()": "165ddb519edad1d75d7b63aaa127b71c|trigger",
+  "function|security.ops_guard_settings_v1()": "a01872253355d8420ba60995d30cb2aa|trigger",
+  "column|pipeline.layer4_review_items|status": "text|notnull=true|default='pending'::text|identity=|generated=",
+  "column|catalogue.courses|publication_status": "text|notnull=true|default='unpublished'::text|identity=|generated=",
+  "column|pipeline.field_enrich_items|attempts": "integer|notnull=true|default=0|identity=|generated=",
+  "column|pipeline.field_enrich_items|cost_usd": "numeric|notnull=false|default=|identity=|generated=",
+  "execute|security.toolset_setting(text,text)": "PUBLIC",
+  "trigger|catalogue.courses|manual_lock_guard": "CREATE TRIGGER manual_lock_guard BEFORE UPDATE ON catalogue.courses FOR EACH ROW EXECUTE FUNCTION security.manual_field_guard()|enabled=O",
+  "column|catalogue.courses|canonical_source_id": "uuid|notnull=false|default=|identity=|generated=",
+  "column|pipeline.field_enrich_items|course_id": "uuid|notnull=false|default=|identity=|generated=",
+  "constraint|catalogue.courses|courses_id_fkey": "f|FOREIGN KEY (id) REFERENCES pim.entity_registry(id) ON DELETE CASCADE",
+  "execute|security.pdesc_support_v1(text,text)": "PUBLIC",
+  "function|security.toolset_setting(text,text)": "678dbbc416c5188ab99b3526e68b0c4d|target",
+  "column|pipeline.field_enrich_items|created_at": "timestamp with time zone|notnull=true|default=now()|identity=|generated=",
+  "column|pipeline.field_enrich_items|updated_at": "timestamp with time zone|notnull=true|default=now()|identity=|generated=",
+  "column|pipeline.layer4_review_items|entity_id": "uuid|notnull=true|default=|identity=|generated=",
+  "column|pipeline.platform_toolset_settings|key": "text|notnull=true|default=|identity=|generated=",
+  "constraint|catalogue.providers|providers_pkey": "p|PRIMARY KEY (id)",
+  "constraint|ref.study_levels|study_levels_pkey": "p|PRIMARY KEY (id)",
+  "execute|security.course_entry_review_trg_v1()": "",
+  "execute|security.entry_matrix_review_trg_v1()": "PUBLIC",
+  "execute|security.field_enrich_items_flag_v1()": "",
+  "execute|security.field_enrich_items_gate_v1()": "",
+  "execute|security.ops_remedy_guard_active_v1()": "",
+  "execute|security.pdesc_has_term_v1(text,text)": "PUBLIC",
+  "function|security.pdesc_support_v1(text,text)": "adedab4f5da6e6fec8a0d840fea15bde|target",
+  "column|catalogue.courses|open_to_international": "boolean|notnull=false|default=|identity=|generated=",
+  "column|pipeline.field_enrich_items|evidence_id": "uuid|notnull=false|default=|identity=|generated=",
+  "column|pipeline.field_enrich_items|provider_id": "uuid|notnull=true|default=|identity=|generated=",
+  "column|pipeline.layer4_review_items|claimed_at": "timestamp with time zone|notnull=false|default=|identity=|generated=",
+  "column|pipeline.layer4_review_items|created_at": "timestamp with time zone|notnull=true|default=now()|identity=|generated=",
+  "column|pipeline.layer4_review_items|decided_at": "timestamp with time zone|notnull=false|default=|identity=|generated=",
+  "column|pipeline.layer4_review_items|field_code": "text|notnull=true|default=|identity=|generated=",
+  "column|pipeline.platform_toolset_settings|help": "text|notnull=true|default=''::text|identity=|generated=",
+  "column|pipeline.platform_toolset_settings|kind": "text|notnull=true|default=|identity=|generated=",
+  "column|pipeline.platform_toolset_settings|sort": "integer|notnull=true|default=100|identity=|generated=",
+  "column|pipeline.platform_toolset_settings|unit": "text|notnull=false|default=|identity=|generated=",
+  "constraint|pipeline.admin_jobs|admin_jobs_pkey": "p|PRIMARY KEY (id)",
+  "execute|security.layer4_arrival_guard_trg_v1()": "",
+  "execute|security.layer4_evidence_link_trg_v1()": "",
+  "execute|security.pipeline_num_v1(text,numeric)": "PUBLIC",
+  "function|security.course_entry_review_trg_v1()": "527980ffd84edffd9e8841a5c4202f72|trigger",
+  "function|security.entry_matrix_review_trg_v1()": "d3cc5abcda5de110137f269b3809965e|trigger",
+  "function|security.field_enrich_items_flag_v1()": "a874a3b37e11a116f39742c80311a50b|trigger",
+  "function|security.field_enrich_items_gate_v1()": "cb871d3da23e3908139cbccff135b889|trigger",
+  "function|security.ops_remedy_guard_active_v1()": "5f2ec6b47ce55213c0e90bb46649c844|dependency",
+  "function|security.pdesc_has_term_v1(text,text)": "b2b8d6499c2ad619b68842258ca7e2e3|target",
+  "index|catalogue.courses|courses_not_active_idx": "CREATE INDEX courses_not_active_idx ON catalogue.courses USING btree (id) WHERE (lifecycle_status IS DISTINCT FROM 'active'::text)",
+  "column|pipeline.field_enrich_items|leased_until": "timestamp with time zone|notnull=false|default=|identity=|generated=",
+  "column|pipeline.field_enrich_items|storage_path": "text|notnull=false|default=|identity=|generated=",
+  "column|pipeline.layer4_review_items|assigned_to": "uuid|notnull=false|default=|identity=|generated=",
+  "column|pipeline.layer4_review_items|entity_type": "text|notnull=true|default=|identity=|generated=",
+  "column|pipeline.layer4_review_items|evidence_id": "uuid|notnull=false|default=|identity=|generated=",
+  "column|pipeline.platform_toolset_settings|label": "text|notnull=true|default=|identity=|generated=",
+  "column|pipeline.platform_toolset_settings|value": "jsonb|notnull=true|default=|identity=|generated=",
+  "execute|security.pdesc_similarity_v1(text,text)": "PUBLIC",
+  "function|security.layer4_arrival_guard_trg_v1()": "a781b46dd9b81761beb7f6a2acf8c4b1|trigger",
+  "function|security.layer4_evidence_link_trg_v1()": "a726fc363c927110d59a2b2baf97f474|trigger",
+  "function|security.pipeline_num_v1(text,numeric)": "09f9b1551daf42b4a0c9795e6f30c6d4|target",
+  "index|catalogue.courses|courses_level_field_idx": "CREATE INDEX courses_level_field_idx ON catalogue.courses USING btree (study_level_id, primary_field_id)",
+  "column|pipeline.layer4_review_items|before_value": "jsonb|notnull=false|default=|identity=|generated=",
+  "column|pipeline.layer4_review_items|layer2_state": "jsonb|notnull=true|default='{}'::jsonb|identity=|generated=",
+  "column|pipeline.layer4_review_items|layer3_state": "jsonb|notnull=true|default='{}'::jsonb|identity=|generated=",
+  "column|pipeline.platform_toolset_settings|reason": "text|notnull=false|default=|identity=|generated=",
+  "function|security.pdesc_similarity_v1(text,text)": "357a9ebfde1c68a286ad4f685445cf9b|target",
+  "index|catalogue.courses|courses_provider_pub_idx": "CREATE INDEX courses_provider_pub_idx ON catalogue.courses USING btree (provider_id, publication_status)",
+  "column|pipeline.platform_toolset_settings|section": "text|notnull=true|default='Notices'::text|identity=|generated=",
+  "column|pipeline.platform_toolset_settings|used_by": "text|notnull=false|default=|identity=|generated=",
+  "constraint|ref.study_levels|study_levels_code_key": "u|UNIQUE (code)",
+  "index|catalogue.courses|courses_primary_field_idx": "CREATE INDEX courses_primary_field_idx ON catalogue.courses USING btree (primary_field_id)",
+  "column|pipeline.layer4_review_items|proposed_value": "jsonb|notnull=false|default=|identity=|generated=",
+  "column|pipeline.platform_toolset_settings|max_value": "numeric|notnull=false|default=|identity=|generated=",
+  "column|pipeline.platform_toolset_settings|min_value": "numeric|notnull=false|default=|identity=|generated=",
+  "constraint|catalogue.courses|courses_stable_key_key": "u|UNIQUE (stable_key)",
+  "constraint|pim.entity_registry|entity_registry_pkey": "p|PRIMARY KEY (id)",
+  "constraint|ref.fields_of_study|fields_of_study_pkey": "p|PRIMARY KEY (id)",
+  "execute|security.course_description_review_trg_v1()": "",
+  "column|pipeline.platform_toolset_settings|updated_at": "timestamp with time zone|notnull=true|default=now()|identity=|generated=",
+  "column|pipeline.platform_toolset_settings|updated_by": "uuid|notnull=false|default=|identity=|generated=",
+  "execute|security.course_description_trusted_v1(uuid)": "",
+  "execute|security.field_enrich_items_absence_trg_v1()": "",
+  "function|security.course_description_review_trg_v1()": "d143eba24f5896f36a3a93e8e5c075aa|target",
+  "trigger|pipeline.field_enrich_items|ai_spend_capture": "CREATE TRIGGER ai_spend_capture AFTER INSERT OR UPDATE OF cost_usd ON pipeline.field_enrich_items FOR EACH ROW EXECUTE FUNCTION security.ai_spend_capture_v1('enrich_fields', 'delta', '{cost_usd}')|enabled=O",
+  "column|pipeline.layer4_review_items|escalation_reason": "text|notnull=false|default=|identity=|generated=",
+  "column|pipeline.platform_toolset_settings|toolset_key": "text|notnull=true|default=|identity=|generated=",
+  "constraint|catalogue.courses|courses_provider_id_fkey": "f|FOREIGN KEY (provider_id) REFERENCES catalogue.providers(id) ON DELETE CASCADE",
+  "execute|security.provider_description_review_trg_v1()": "",
+  "function|security.course_description_trusted_v1(uuid)": "3f056fa4495963ec1d3bca61bfe0642d|target",
+  "function|security.field_enrich_items_absence_trg_v1()": "380b1953d6fa72fcfd8c69ba2f0f3318|trigger",
+  "index|catalogue.courses|courses_course_code_upper_idx": "CREATE INDEX courses_course_code_upper_idx ON catalogue.courses USING btree (upper(course_code)) WHERE (course_code IS NOT NULL)",
+  "index|catalogue.courses|courses_provider_with_url_idx": "CREATE INDEX courses_provider_with_url_idx ON catalogue.courses USING btree (provider_id, id) WHERE ((course_url IS NOT NULL) AND (course_url <> ''::text))",
+  "trigger|pipeline.layer4_review_items|ops_guard_layer4": "CREATE TRIGGER ops_guard_layer4 BEFORE INSERT OR DELETE OR UPDATE ON pipeline.layer4_review_items FOR EACH ROW WHEN (security.ops_remedy_guard_active_v1()) EXECUTE FUNCTION security.ops_guard_layer4_v1()|enabled=O",
+  "column|pipeline.layer4_review_items|change_control_ref": "text|notnull=true|default='CF-CHG-20260825-038'::text|identity=|generated=",
+  "function|security.provider_description_review_trg_v1()": "6bb91a3ab83c215387484c58d5aab281|trigger",
+  "constraint|catalogue.providers|providers_stable_key_key": "u|UNIQUE (stable_key)",
+  "constraint|ref.fields_of_study|fields_of_study_code_key": "u|UNIQUE (code)",
+  "constraint|catalogue.courses|courses_study_level_id_fkey": "f|FOREIGN KEY (study_level_id) REFERENCES ref.study_levels(id)",
+  "execute|security.course_description_check_v1(uuid,jsonb)": "",
+  "execute|security.course_description_release_held_v1(uuid)": "",
+  "function|security.course_description_check_v1(uuid,jsonb)": "ff3d6dd7b0f88c85b1fdff6c8a8cd86b|target",
+  "index|catalogue.courses|courses_open_to_international_idx": "CREATE INDEX courses_open_to_international_idx ON catalogue.courses USING btree (open_to_international)",
+  "index|catalogue.courses|courses_provider_code_version_idx": "CREATE UNIQUE INDEX courses_provider_code_version_idx ON catalogue.courses USING btree (provider_id, COALESCE(course_code, stable_key), COALESCE(source_version, ''::text))",
+  "constraint|catalogue.courses|courses_primary_field_id_fkey": "f|FOREIGN KEY (primary_field_id) REFERENCES ref.fields_of_study(id)",
+  "function|security.course_description_release_held_v1(uuid)": "dd4b178afcd26b696d70710038e34f1c|target",
+  "execute|security.enrich_course_text_record_v1(bigint,jsonb)": "",
+  "trigger|pipeline.field_enrich_items|field_enrich_items_flag": "CREATE TRIGGER field_enrich_items_flag AFTER UPDATE OF state ON pipeline.field_enrich_items FOR EACH ROW EXECUTE FUNCTION security.field_enrich_items_flag_v1()|enabled=O",
+  "trigger|pipeline.field_enrich_items|field_enrich_items_gate": "CREATE TRIGGER field_enrich_items_gate BEFORE INSERT ON pipeline.field_enrich_items FOR EACH ROW EXECUTE FUNCTION security.field_enrich_items_gate_v1()|enabled=O",
+  "column|pipeline.layer4_review_items|layer3_interpretation_id": "uuid|notnull=false|default=|identity=|generated=",
+  "constraint|pipeline.platform_toolsets|platform_toolsets_pkey": "p|PRIMARY KEY (key)",
+  "function|security.enrich_course_text_record_v1(bigint,jsonb)": "b47c00b19bc6eaa36828dbe4d2371501|target",
+  "index|catalogue.courses|courses_canonical_title_lower_id_idx": "CREATE INDEX courses_canonical_title_lower_id_idx ON catalogue.courses USING btree (lower(canonical_title), id)",
+  "constraint|pim.entity_registry|entity_registry_stable_key_key": "u|UNIQUE (stable_key)",
+  "index|catalogue.courses|courses_provider_code_trim_active_idx": "CREATE INDEX courses_provider_code_trim_active_idx ON catalogue.courses USING btree (provider_id, upper(btrim(course_code))) WHERE (lifecycle_status = 'active'::text)",
+  "trigger|pipeline.platform_toolset_settings|ops_guard_settings": "CREATE TRIGGER ops_guard_settings BEFORE INSERT OR DELETE OR UPDATE ON pipeline.platform_toolset_settings FOR EACH ROW WHEN (security.ops_remedy_guard_active_v1()) EXECUTE FUNCTION security.ops_guard_settings_v1()|enabled=O",
+  "constraint|pipeline.evidence_artifacts|evidence_artifacts_pkey": "p|PRIMARY KEY (id)",
+  "constraint|pipeline.field_enrich_items|field_enrich_items_pkey": "p|PRIMARY KEY (id)",
+  "index|catalogue.courses|courses_provider_title_slug_active_idx": "CREATE INDEX courses_provider_title_slug_active_idx ON catalogue.courses USING btree (provider_id, replace(security.course_title_key(canonical_title), ' '::text, '-'::text)) WHERE (lifecycle_status = 'active'::text)",
+  "index|pipeline.field_enrich_items|idx_field_enrich_items_state": "CREATE INDEX idx_field_enrich_items_state ON pipeline.field_enrich_items USING btree (state) WHERE (state = ANY (ARRAY['queued'::text, 'waiting'::text, 'ai'::text, 'leased'::text]))",
+  "trigger|pipeline.field_enrich_items|field_enrich_items_absence": "CREATE TRIGGER field_enrich_items_absence AFTER UPDATE OF state ON pipeline.field_enrich_items FOR EACH ROW EXECUTE FUNCTION security.field_enrich_items_absence_trg_v1()|enabled=O",
+  "constraint|pipeline.layer4_review_items|layer4_review_items_pkey": "p|PRIMARY KEY (id)",
+  "trigger|pipeline.layer4_review_items|layer4_review_items_no_page": "CREATE TRIGGER layer4_review_items_no_page AFTER UPDATE OF status ON pipeline.layer4_review_items FOR EACH ROW WHEN (((old.status = 'pending'::text) AND (new.status <> 'pending'::text) AND (new.field_code = ANY (ARRAY['no_page_first_run'::text, 'conjoint_rule_first_run'::text])))) EXECUTE FUNCTION security.no_page_review_trg_v1()|enabled=O",
+  "trigger|pipeline.layer4_review_items|layer4_review_items_reroute": "CREATE TRIGGER layer4_review_items_reroute BEFORE INSERT ON pipeline.layer4_review_items FOR EACH ROW EXECUTE FUNCTION security.layer4_reroute_trg_v1()|enabled=O",
+  "index|pipeline.field_enrich_items|idx_field_enrich_items_job_state": "CREATE INDEX idx_field_enrich_items_job_state ON pipeline.field_enrich_items USING btree (job_id, state)",
+  "index|pipeline.layer4_review_items|layer4_review_items_evidence_idx": "CREATE INDEX layer4_review_items_evidence_idx ON pipeline.layer4_review_items USING btree (evidence_id) WHERE (evidence_id IS NOT NULL)",
+  "trigger|pipeline.layer4_review_items|layer4_review_items_zz_arrival": "CREATE TRIGGER layer4_review_items_zz_arrival BEFORE INSERT ON pipeline.layer4_review_items FOR EACH ROW EXECUTE FUNCTION security.layer4_arrival_guard_trg_v1()|enabled=O",
+  "trigger|pipeline.layer4_review_items|layer4_review_items_zz_evidence": "CREATE TRIGGER layer4_review_items_zz_evidence BEFORE INSERT ON pipeline.layer4_review_items FOR EACH ROW EXECUTE FUNCTION security.layer4_evidence_link_trg_v1()|enabled=O",
+  "constraint|pipeline.field_enrich_items|field_enrich_items_job_id_fkey": "f|FOREIGN KEY (job_id) REFERENCES pipeline.admin_jobs(id) ON DELETE CASCADE",
+  "constraint|pipeline.field_enrich_items|field_enrich_items_state_check": "c|CHECK ((state = ANY (ARRAY['queued'::text, 'waiting'::text, 'ai'::text, 'leased'::text, 'filled'::text, 'review'::text, 'skipped'::text, 'failed'::text])))",
+  "index|pipeline.field_enrich_items|field_enrich_items_course_field_idx": "CREATE INDEX field_enrich_items_course_field_idx ON pipeline.field_enrich_items USING btree (course_id, field)",
+  "trigger|pipeline.layer4_review_items|layer4_review_items_course_entry": "CREATE TRIGGER layer4_review_items_course_entry AFTER UPDATE OF status ON pipeline.layer4_review_items FOR EACH ROW WHEN (((old.status = 'pending'::text) AND (new.status <> 'pending'::text) AND (new.field_code = 'course_entry_first_read'::text))) EXECUTE FUNCTION security.course_entry_review_trg_v1()|enabled=O",
+  "trigger|pipeline.layer4_review_items|layer4_review_items_entry_matrix": "CREATE TRIGGER layer4_review_items_entry_matrix AFTER UPDATE OF status ON pipeline.layer4_review_items FOR EACH ROW WHEN (((old.status = 'pending'::text) AND (new.status <> 'pending'::text) AND (new.field_code = ANY (ARRAY['entry_matrix_first_run'::text, 'entry_matrix_change'::text])))) EXECUTE FUNCTION security.entry_matrix_review_trg_v1()|enabled=O",
+  "constraint|pipeline.layer3_interpretations|layer3_interpretations_pkey": "p|PRIMARY KEY (id)",
+  "index|pipeline.field_enrich_items|field_enrich_items_course_filled_idx": "CREATE INDEX field_enrich_items_course_filled_idx ON pipeline.field_enrich_items USING btree (course_id, updated_at DESC) WHERE (state = 'filled'::text)",
+  "constraint|pipeline.field_enrich_items|field_enrich_items_course_id_fkey": "f|FOREIGN KEY (course_id) REFERENCES catalogue.courses(id) ON DELETE CASCADE",
+  "constraint|pipeline.layer4_review_items|layer4_review_items_status_check": "c|CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'edited_approved'::text, 'rejected'::text, 'more_evidence'::text, 'returned_layer2'::text, 'returned_layer3'::text, 'superseded'::text])))",
+  "execute|security.layer4_course_description_apply_v1(uuid,uuid,jsonb,text)": "",
+  "index|pipeline.layer4_review_items|layer4_review_items_status_created_idx": "CREATE INDEX layer4_review_items_status_created_idx ON pipeline.layer4_review_items USING btree (status, created_at DESC)",
+  "constraint|pipeline.field_enrich_items|field_enrich_items_provider_id_fkey": "f|FOREIGN KEY (provider_id) REFERENCES catalogue.providers(id) ON DELETE CASCADE",
+  "function|security.layer4_course_description_apply_v1(uuid,uuid,jsonb,text)": "ba97236f3010e248bac44a0a7c09611a|target",
+  "index|pipeline.layer4_review_items|layer4_review_items_entity_field_iq_idx": "CREATE INDEX layer4_review_items_entity_field_iq_idx ON pipeline.layer4_review_items USING btree (entity_id, field_code, status)",
+  "index|pipeline.layer4_review_items|layer4_review_pending_interpretation_uq": "CREATE UNIQUE INDEX layer4_review_pending_interpretation_uq ON pipeline.layer4_review_items USING btree (layer3_interpretation_id) WHERE ((layer3_interpretation_id IS NOT NULL) AND (status = 'pending'::text))",
+  "trigger|pipeline.layer4_review_items|layer4_review_items_course_description": "CREATE TRIGGER layer4_review_items_course_description AFTER UPDATE OF status ON pipeline.layer4_review_items FOR EACH ROW WHEN (((old.status = 'pending'::text) AND (new.status <> 'pending'::text) AND (new.field_code = 'course_description_first_read'::text))) EXECUTE FUNCTION security.course_description_review_trg_v1()|enabled=O",
+  "constraint|pipeline.layer4_review_items|layer4_review_items_evidence_id_fkey": "f|FOREIGN KEY (evidence_id) REFERENCES pipeline.evidence_artifacts(id)",
+  "constraint|pipeline.platform_toolset_settings|platform_toolset_settings_pkey": "p|PRIMARY KEY (toolset_key, key)",
+  "index|pipeline.layer4_review_items|layer4_review_items_layer3_interpretation": "CREATE INDEX layer4_review_items_layer3_interpretation ON pipeline.layer4_review_items USING btree (layer3_interpretation_id) WHERE (layer3_interpretation_id IS NOT NULL)",
+  "trigger|pipeline.layer4_review_items|layer4_review_items_provider_description": "CREATE TRIGGER layer4_review_items_provider_description AFTER UPDATE OF status ON pipeline.layer4_review_items FOR EACH ROW WHEN (((old.status = 'pending'::text) AND (new.status <> 'pending'::text) AND (new.field_code = 'provider_description'::text))) EXECUTE FUNCTION security.provider_description_review_trg_v1()|enabled=O",
+  "index|pipeline.layer4_review_items|layer4_review_items_course_entry_pending_uq": "CREATE UNIQUE INDEX layer4_review_items_course_entry_pending_uq ON pipeline.layer4_review_items USING btree (entity_id) WHERE ((field_code = 'course_entry_first_read'::text) AND (status = 'pending'::text))",
+  "constraint|pipeline.platform_toolset_settings|platform_toolset_settings_kind_check": "c|CHECK ((kind = ANY (ARRAY['number'::text, 'text'::text, 'boolean'::text, 'list'::text])))",
+  "index|pipeline.layer4_review_items|layer4_review_provider_contact_reconciliation_idx": "CREATE INDEX layer4_review_provider_contact_reconciliation_idx ON pipeline.layer4_review_items USING btree (status, created_at DESC) WHERE ((entity_type = 'provider_contact_import_row'::text) AND (field_code = 'provider_contact_reconciliation'::text))",
+  "constraint|pipeline.platform_toolset_settings|platform_toolset_settings_toolset_key_fkey": "f|FOREIGN KEY (toolset_key) REFERENCES pipeline.platform_toolsets(key)",
+  "constraint|pipeline.layer4_review_items|layer4_review_items_layer3_interpretation_id_fkey": "f|FOREIGN KEY (layer3_interpretation_id) REFERENCES pipeline.layer3_interpretations(id)",
+  "constraint|pipeline.field_enrich_items|field_enrich_items_job_id_provider_id_course_id_field_key": "u|UNIQUE NULLS NOT DISTINCT (job_id, provider_id, course_id, field)"
+ },
+ "roles": [
+  {
+   "name": "anon",
+   "settings": "statement_timeout=3s"
+  },
+  {
+   "name": "authenticated",
+   "settings": "statement_timeout=8s"
+  },
+  {
+   "name": "authenticator",
+   "settings": "lock_timeout=8s,statement_timeout=8s"
+  },
+  {
+   "name": "service_role",
+   "settings": null
+  }
+ ],
+ "scope": {
+  "tables": [
+   "catalogue.courses",
+   "pipeline.field_enrich_items",
+   "pipeline.layer4_review_items",
+   "pipeline.platform_toolset_settings"
+  ],
+  "lookups": [],
+  "functions": [
+   "security.course_description_check_v1(uuid,jsonb)",
+   "security.course_description_release_held_v1(uuid)",
+   "security.course_description_review_trg_v1()",
+   "security.course_description_trusted_v1(uuid)",
+   "security.course_title_key(text)",
+   "security.enrich_course_text_record_v1(bigint,jsonb)",
+   "security.layer4_course_description_apply_v1(uuid,uuid,jsonb,text)",
+   "security.pdesc_has_term_v1(text,text)",
+   "security.pdesc_similarity_v1(text,text)",
+   "security.pdesc_support_v1(text,text)",
+   "security.pdesc_words_v1(text)",
+   "security.pipeline_num_v1(text,numeric)",
+   "security.toolset_setting(text,text)"
+  ],
+  "max_lookup_rows": 500
+ },
+ "types": [],
+ "tables": [
+  {
+   "fq": "catalogue.providers",
+   "rls": true,
+   "kind": "referenced",
+   "rows": null,
+   "grants": [],
+   "columns": [
+    {
+     "name": "id",
+     "type": "uuid",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "stable_key",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    }
+   ],
+   "indexes": [],
+   "refused": null,
+   "relkind": "r",
+   "policies": [],
+   "triggers": [],
+   "force_rls": false,
+   "constraints": [
+    {
+     "def": "PRIMARY KEY (id)",
+     "name": "providers_pkey",
+     "type": "p"
+    },
+    {
+     "def": "UNIQUE (stable_key)",
+     "name": "providers_stable_key_key",
+     "type": "u"
+    }
+   ]
+  },
+  {
+   "fq": "pim.entity_registry",
+   "rls": true,
+   "kind": "referenced",
+   "rows": null,
+   "grants": [],
+   "columns": [
+    {
+     "name": "id",
+     "type": "uuid",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "stable_key",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    }
+   ],
+   "indexes": [],
+   "refused": null,
+   "relkind": "r",
+   "policies": [],
+   "triggers": [],
+   "force_rls": false,
+   "constraints": [
+    {
+     "def": "PRIMARY KEY (id)",
+     "name": "entity_registry_pkey",
+     "type": "p"
+    },
+    {
+     "def": "UNIQUE (stable_key)",
+     "name": "entity_registry_stable_key_key",
+     "type": "u"
+    }
+   ]
+  },
+  {
+   "fq": "pipeline.admin_jobs",
+   "rls": true,
+   "kind": "referenced",
+   "rows": null,
+   "grants": [],
+   "columns": [
+    {
+     "name": "id",
+     "type": "uuid",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    }
+   ],
+   "indexes": [],
+   "refused": null,
+   "relkind": "r",
+   "policies": [],
+   "triggers": [],
+   "force_rls": false,
+   "constraints": [
+    {
+     "def": "PRIMARY KEY (id)",
+     "name": "admin_jobs_pkey",
+     "type": "p"
+    }
+   ]
+  },
+  {
+   "fq": "pipeline.evidence_artifacts",
+   "rls": true,
+   "kind": "referenced",
+   "rows": null,
+   "grants": [],
+   "columns": [
+    {
+     "name": "id",
+     "type": "uuid",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    }
+   ],
+   "indexes": [],
+   "refused": null,
+   "relkind": "r",
+   "policies": [],
+   "triggers": [],
+   "force_rls": false,
+   "constraints": [
+    {
+     "def": "PRIMARY KEY (id)",
+     "name": "evidence_artifacts_pkey",
+     "type": "p"
+    }
+   ]
+  },
+  {
+   "fq": "pipeline.layer3_interpretations",
+   "rls": false,
+   "kind": "referenced",
+   "rows": null,
+   "grants": [],
+   "columns": [
+    {
+     "name": "id",
+     "type": "uuid",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    }
+   ],
+   "indexes": [],
+   "refused": null,
+   "relkind": "r",
+   "policies": [],
+   "triggers": [],
+   "force_rls": false,
+   "constraints": [
+    {
+     "def": "PRIMARY KEY (id)",
+     "name": "layer3_interpretations_pkey",
+     "type": "p"
+    }
+   ]
+  },
+  {
+   "fq": "pipeline.platform_toolsets",
+   "rls": true,
+   "kind": "referenced",
+   "rows": null,
+   "grants": [],
+   "columns": [
+    {
+     "name": "key",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    }
+   ],
+   "indexes": [],
+   "refused": null,
+   "relkind": "r",
+   "policies": [],
+   "triggers": [],
+   "force_rls": false,
+   "constraints": [
+    {
+     "def": "PRIMARY KEY (key)",
+     "name": "platform_toolsets_pkey",
+     "type": "p"
+    }
+   ]
+  },
+  {
+   "fq": "ref.fields_of_study",
+   "rls": true,
+   "kind": "referenced",
+   "rows": null,
+   "grants": [],
+   "columns": [
+    {
+     "name": "id",
+     "type": "uuid",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "code",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    }
+   ],
+   "indexes": [],
+   "refused": null,
+   "relkind": "r",
+   "policies": [],
+   "triggers": [],
+   "force_rls": false,
+   "constraints": [
+    {
+     "def": "PRIMARY KEY (id)",
+     "name": "fields_of_study_pkey",
+     "type": "p"
+    },
+    {
+     "def": "UNIQUE (code)",
+     "name": "fields_of_study_code_key",
+     "type": "u"
+    }
+   ]
+  },
+  {
+   "fq": "ref.study_levels",
+   "rls": true,
+   "kind": "referenced",
+   "rows": null,
+   "grants": [],
+   "columns": [
+    {
+     "name": "id",
+     "type": "uuid",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "code",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    }
+   ],
+   "indexes": [],
+   "refused": null,
+   "relkind": "r",
+   "policies": [],
+   "triggers": [],
+   "force_rls": false,
+   "constraints": [
+    {
+     "def": "PRIMARY KEY (id)",
+     "name": "study_levels_pkey",
+     "type": "p"
+    },
+    {
+     "def": "UNIQUE (code)",
+     "name": "study_levels_code_key",
+     "type": "u"
+    }
+   ]
+  },
+  {
+   "fq": "catalogue.courses",
+   "rls": true,
+   "kind": "target",
+   "rows": null,
+   "grants": [
+    {
+     "grantee": "service_role",
+     "privileges": "DELETE,INSERT,MAINTAIN,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    }
+   ],
+   "columns": [
+    {
+     "name": "id",
+     "type": "uuid",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "stable_key",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "provider_id",
+     "type": "uuid",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "canonical_title",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "display_title",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "course_code",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "source_version",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "study_level_id",
+     "type": "uuid",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "primary_field_id",
+     "type": "uuid",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "description",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "course_url",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "duration_value",
+     "type": "numeric(8,2)",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "duration_unit",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "delivery_mode",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "lifecycle_status",
+     "type": "text",
+     "default": "'active'::text",
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "publication_status",
+     "type": "text",
+     "default": "'unpublished'::text",
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "canonical_source_id",
+     "type": "uuid",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "last_verified_at",
+     "type": "timestamp with time zone",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "created_at",
+     "type": "timestamp with time zone",
+     "default": "now()",
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "updated_at",
+     "type": "timestamp with time zone",
+     "default": "now()",
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "open_to_international",
+     "type": "boolean",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "open_to_domestic",
+     "type": "boolean",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "applicant_basis",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    }
+   ],
+   "indexes": [
+    {
+     "def": "CREATE INDEX courses_canonical_title_lower_id_idx ON catalogue.courses USING btree (lower(canonical_title), id)",
+     "name": "courses_canonical_title_lower_id_idx"
+    },
+    {
+     "def": "CREATE INDEX courses_course_code_upper_idx ON catalogue.courses USING btree (upper(course_code)) WHERE (course_code IS NOT NULL)",
+     "name": "courses_course_code_upper_idx"
+    },
+    {
+     "def": "CREATE INDEX courses_level_field_idx ON catalogue.courses USING btree (study_level_id, primary_field_id)",
+     "name": "courses_level_field_idx"
+    },
+    {
+     "def": "CREATE INDEX courses_not_active_idx ON catalogue.courses USING btree (id) WHERE (lifecycle_status IS DISTINCT FROM 'active'::text)",
+     "name": "courses_not_active_idx"
+    },
+    {
+     "def": "CREATE INDEX courses_open_to_international_idx ON catalogue.courses USING btree (open_to_international)",
+     "name": "courses_open_to_international_idx"
+    },
+    {
+     "def": "CREATE INDEX courses_primary_field_idx ON catalogue.courses USING btree (primary_field_id)",
+     "name": "courses_primary_field_idx"
+    },
+    {
+     "def": "CREATE INDEX courses_provider_code_trim_active_idx ON catalogue.courses USING btree (provider_id, upper(btrim(course_code))) WHERE (lifecycle_status = 'active'::text)",
+     "name": "courses_provider_code_trim_active_idx"
+    },
+    {
+     "def": "CREATE UNIQUE INDEX courses_provider_code_version_idx ON catalogue.courses USING btree (provider_id, COALESCE(course_code, stable_key), COALESCE(source_version, ''::text))",
+     "name": "courses_provider_code_version_idx"
+    },
+    {
+     "def": "CREATE INDEX courses_provider_pub_idx ON catalogue.courses USING btree (provider_id, publication_status)",
+     "name": "courses_provider_pub_idx"
+    },
+    {
+     "def": "CREATE INDEX courses_provider_title_slug_active_idx ON catalogue.courses USING btree (provider_id, replace(security.course_title_key(canonical_title), ' '::text, '-'::text)) WHERE (lifecycle_status = 'active'::text)",
+     "name": "courses_provider_title_slug_active_idx"
+    },
+    {
+     "def": "CREATE INDEX courses_provider_with_url_idx ON catalogue.courses USING btree (provider_id, id) WHERE ((course_url IS NOT NULL) AND (course_url <> ''::text))",
+     "name": "courses_provider_with_url_idx"
+    }
+   ],
+   "refused": null,
+   "relkind": "r",
+   "policies": [],
+   "triggers": [
+    {
+     "def": "CREATE TRIGGER manual_lock_guard BEFORE UPDATE ON catalogue.courses FOR EACH ROW EXECUTE FUNCTION security.manual_field_guard()",
+     "name": "manual_lock_guard",
+     "enabled": "O",
+     "function": "security.manual_field_guard()"
+    }
+   ],
+   "force_rls": false,
+   "constraints": [
+    {
+     "def": "FOREIGN KEY (id) REFERENCES pim.entity_registry(id) ON DELETE CASCADE",
+     "name": "courses_id_fkey",
+     "type": "f"
+    },
+    {
+     "def": "FOREIGN KEY (primary_field_id) REFERENCES ref.fields_of_study(id)",
+     "name": "courses_primary_field_id_fkey",
+     "type": "f"
+    },
+    {
+     "def": "FOREIGN KEY (provider_id) REFERENCES catalogue.providers(id) ON DELETE CASCADE",
+     "name": "courses_provider_id_fkey",
+     "type": "f"
+    },
+    {
+     "def": "FOREIGN KEY (study_level_id) REFERENCES ref.study_levels(id)",
+     "name": "courses_study_level_id_fkey",
+     "type": "f"
+    },
+    {
+     "def": "PRIMARY KEY (id)",
+     "name": "courses_pkey",
+     "type": "p"
+    },
+    {
+     "def": "UNIQUE (stable_key)",
+     "name": "courses_stable_key_key",
+     "type": "u"
+    }
+   ]
+  },
+  {
+   "fq": "pipeline.field_enrich_items",
+   "rls": true,
+   "kind": "target",
+   "rows": null,
+   "grants": [],
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "default": "nextval('pipeline.field_enrich_items_id_seq'::regclass)",
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "job_id",
+     "type": "uuid",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "provider_id",
+     "type": "uuid",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "course_id",
+     "type": "uuid",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "field",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "state",
+     "type": "text",
+     "default": "'queued'::text",
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "source",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "tried",
+     "type": "text[]",
+     "default": "'{}'::text[]",
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "value",
+     "type": "jsonb",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "quote",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "reason",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "evidence_id",
+     "type": "uuid",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "storage_path",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "attempts",
+     "type": "integer",
+     "default": "0",
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "leased_until",
+     "type": "timestamp with time zone",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "cost_usd",
+     "type": "numeric",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "created_at",
+     "type": "timestamp with time zone",
+     "default": "now()",
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "updated_at",
+     "type": "timestamp with time zone",
+     "default": "now()",
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    }
+   ],
+   "indexes": [
+    {
+     "def": "CREATE INDEX field_enrich_items_course_field_idx ON pipeline.field_enrich_items USING btree (course_id, field)",
+     "name": "field_enrich_items_course_field_idx"
+    },
+    {
+     "def": "CREATE INDEX field_enrich_items_course_filled_idx ON pipeline.field_enrich_items USING btree (course_id, updated_at DESC) WHERE (state = 'filled'::text)",
+     "name": "field_enrich_items_course_filled_idx"
+    },
+    {
+     "def": "CREATE INDEX idx_field_enrich_items_job_state ON pipeline.field_enrich_items USING btree (job_id, state)",
+     "name": "idx_field_enrich_items_job_state"
+    },
+    {
+     "def": "CREATE INDEX idx_field_enrich_items_state ON pipeline.field_enrich_items USING btree (state) WHERE (state = ANY (ARRAY['queued'::text, 'waiting'::text, 'ai'::text, 'leased'::text]))",
+     "name": "idx_field_enrich_items_state"
+    }
+   ],
+   "refused": null,
+   "relkind": "r",
+   "policies": [],
+   "triggers": [
+    {
+     "def": "CREATE TRIGGER ai_spend_capture AFTER INSERT OR UPDATE OF cost_usd ON pipeline.field_enrich_items FOR EACH ROW EXECUTE FUNCTION security.ai_spend_capture_v1('enrich_fields', 'delta', '{cost_usd}')",
+     "name": "ai_spend_capture",
+     "enabled": "O",
+     "function": "security.ai_spend_capture_v1()"
+    },
+    {
+     "def": "CREATE TRIGGER field_enrich_items_absence AFTER UPDATE OF state ON pipeline.field_enrich_items FOR EACH ROW EXECUTE FUNCTION security.field_enrich_items_absence_trg_v1()",
+     "name": "field_enrich_items_absence",
+     "enabled": "O",
+     "function": "security.field_enrich_items_absence_trg_v1()"
+    },
+    {
+     "def": "CREATE TRIGGER field_enrich_items_flag AFTER UPDATE OF state ON pipeline.field_enrich_items FOR EACH ROW EXECUTE FUNCTION security.field_enrich_items_flag_v1()",
+     "name": "field_enrich_items_flag",
+     "enabled": "O",
+     "function": "security.field_enrich_items_flag_v1()"
+    },
+    {
+     "def": "CREATE TRIGGER field_enrich_items_gate BEFORE INSERT ON pipeline.field_enrich_items FOR EACH ROW EXECUTE FUNCTION security.field_enrich_items_gate_v1()",
+     "name": "field_enrich_items_gate",
+     "enabled": "O",
+     "function": "security.field_enrich_items_gate_v1()"
+    }
+   ],
+   "force_rls": false,
+   "constraints": [
+    {
+     "def": "CHECK ((state = ANY (ARRAY['queued'::text, 'waiting'::text, 'ai'::text, 'leased'::text, 'filled'::text, 'review'::text, 'skipped'::text, 'failed'::text])))",
+     "name": "field_enrich_items_state_check",
+     "type": "c"
+    },
+    {
+     "def": "FOREIGN KEY (course_id) REFERENCES catalogue.courses(id) ON DELETE CASCADE",
+     "name": "field_enrich_items_course_id_fkey",
+     "type": "f"
+    },
+    {
+     "def": "FOREIGN KEY (job_id) REFERENCES pipeline.admin_jobs(id) ON DELETE CASCADE",
+     "name": "field_enrich_items_job_id_fkey",
+     "type": "f"
+    },
+    {
+     "def": "FOREIGN KEY (provider_id) REFERENCES catalogue.providers(id) ON DELETE CASCADE",
+     "name": "field_enrich_items_provider_id_fkey",
+     "type": "f"
+    },
+    {
+     "def": "PRIMARY KEY (id)",
+     "name": "field_enrich_items_pkey",
+     "type": "p"
+    },
+    {
+     "def": "UNIQUE NULLS NOT DISTINCT (job_id, provider_id, course_id, field)",
+     "name": "field_enrich_items_job_id_provider_id_course_id_field_key",
+     "type": "u"
+    }
+   ]
+  },
+  {
+   "fq": "pipeline.layer4_review_items",
+   "rls": false,
+   "kind": "target",
+   "rows": null,
+   "grants": [],
+   "columns": [
+    {
+     "name": "id",
+     "type": "uuid",
+     "default": "gen_random_uuid()",
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "entity_type",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "entity_id",
+     "type": "uuid",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "field_code",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "evidence_id",
+     "type": "uuid",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "layer3_interpretation_id",
+     "type": "uuid",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "before_value",
+     "type": "jsonb",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "proposed_value",
+     "type": "jsonb",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "layer2_state",
+     "type": "jsonb",
+     "default": "'{}'::jsonb",
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "layer3_state",
+     "type": "jsonb",
+     "default": "'{}'::jsonb",
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "status",
+     "type": "text",
+     "default": "'pending'::text",
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "assigned_to",
+     "type": "uuid",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "escalation_reason",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "change_control_ref",
+     "type": "text",
+     "default": "'CF-CHG-20260825-038'::text",
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "created_at",
+     "type": "timestamp with time zone",
+     "default": "now()",
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "decided_at",
+     "type": "timestamp with time zone",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "claimed_at",
+     "type": "timestamp with time zone",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    }
+   ],
+   "indexes": [
+    {
+     "def": "CREATE UNIQUE INDEX layer4_review_items_course_entry_pending_uq ON pipeline.layer4_review_items USING btree (entity_id) WHERE ((field_code = 'course_entry_first_read'::text) AND (status = 'pending'::text))",
+     "name": "layer4_review_items_course_entry_pending_uq"
+    },
+    {
+     "def": "CREATE INDEX layer4_review_items_entity_field_iq_idx ON pipeline.layer4_review_items USING btree (entity_id, field_code, status)",
+     "name": "layer4_review_items_entity_field_iq_idx"
+    },
+    {
+     "def": "CREATE INDEX layer4_review_items_evidence_idx ON pipeline.layer4_review_items USING btree (evidence_id) WHERE (evidence_id IS NOT NULL)",
+     "name": "layer4_review_items_evidence_idx"
+    },
+    {
+     "def": "CREATE INDEX layer4_review_items_layer3_interpretation ON pipeline.layer4_review_items USING btree (layer3_interpretation_id) WHERE (layer3_interpretation_id IS NOT NULL)",
+     "name": "layer4_review_items_layer3_interpretation"
+    },
+    {
+     "def": "CREATE INDEX layer4_review_items_status_created_idx ON pipeline.layer4_review_items USING btree (status, created_at DESC)",
+     "name": "layer4_review_items_status_created_idx"
+    },
+    {
+     "def": "CREATE UNIQUE INDEX layer4_review_pending_interpretation_uq ON pipeline.layer4_review_items USING btree (layer3_interpretation_id) WHERE ((layer3_interpretation_id IS NOT NULL) AND (status = 'pending'::text))",
+     "name": "layer4_review_pending_interpretation_uq"
+    },
+    {
+     "def": "CREATE INDEX layer4_review_provider_contact_reconciliation_idx ON pipeline.layer4_review_items USING btree (status, created_at DESC) WHERE ((entity_type = 'provider_contact_import_row'::text) AND (field_code = 'provider_contact_reconciliation'::text))",
+     "name": "layer4_review_provider_contact_reconciliation_idx"
+    }
+   ],
+   "refused": null,
+   "relkind": "r",
+   "policies": [],
+   "triggers": [
+    {
+     "def": "CREATE TRIGGER layer4_review_items_course_description AFTER UPDATE OF status ON pipeline.layer4_review_items FOR EACH ROW WHEN (((old.status = 'pending'::text) AND (new.status <> 'pending'::text) AND (new.field_code = 'course_description_first_read'::text))) EXECUTE FUNCTION security.course_description_review_trg_v1()",
+     "name": "layer4_review_items_course_description",
+     "enabled": "O",
+     "function": "security.course_description_review_trg_v1()"
+    },
+    {
+     "def": "CREATE TRIGGER layer4_review_items_course_entry AFTER UPDATE OF status ON pipeline.layer4_review_items FOR EACH ROW WHEN (((old.status = 'pending'::text) AND (new.status <> 'pending'::text) AND (new.field_code = 'course_entry_first_read'::text))) EXECUTE FUNCTION security.course_entry_review_trg_v1()",
+     "name": "layer4_review_items_course_entry",
+     "enabled": "O",
+     "function": "security.course_entry_review_trg_v1()"
+    },
+    {
+     "def": "CREATE TRIGGER layer4_review_items_entry_matrix AFTER UPDATE OF status ON pipeline.layer4_review_items FOR EACH ROW WHEN (((old.status = 'pending'::text) AND (new.status <> 'pending'::text) AND (new.field_code = ANY (ARRAY['entry_matrix_first_run'::text, 'entry_matrix_change'::text])))) EXECUTE FUNCTION security.entry_matrix_review_trg_v1()",
+     "name": "layer4_review_items_entry_matrix",
+     "enabled": "O",
+     "function": "security.entry_matrix_review_trg_v1()"
+    },
+    {
+     "def": "CREATE TRIGGER layer4_review_items_no_page AFTER UPDATE OF status ON pipeline.layer4_review_items FOR EACH ROW WHEN (((old.status = 'pending'::text) AND (new.status <> 'pending'::text) AND (new.field_code = ANY (ARRAY['no_page_first_run'::text, 'conjoint_rule_first_run'::text])))) EXECUTE FUNCTION security.no_page_review_trg_v1()",
+     "name": "layer4_review_items_no_page",
+     "enabled": "O",
+     "function": "security.no_page_review_trg_v1()"
+    },
+    {
+     "def": "CREATE TRIGGER layer4_review_items_provider_description AFTER UPDATE OF status ON pipeline.layer4_review_items FOR EACH ROW WHEN (((old.status = 'pending'::text) AND (new.status <> 'pending'::text) AND (new.field_code = 'provider_description'::text))) EXECUTE FUNCTION security.provider_description_review_trg_v1()",
+     "name": "layer4_review_items_provider_description",
+     "enabled": "O",
+     "function": "security.provider_description_review_trg_v1()"
+    },
+    {
+     "def": "CREATE TRIGGER layer4_review_items_reroute BEFORE INSERT ON pipeline.layer4_review_items FOR EACH ROW EXECUTE FUNCTION security.layer4_reroute_trg_v1()",
+     "name": "layer4_review_items_reroute",
+     "enabled": "O",
+     "function": "security.layer4_reroute_trg_v1()"
+    },
+    {
+     "def": "CREATE TRIGGER layer4_review_items_zz_arrival BEFORE INSERT ON pipeline.layer4_review_items FOR EACH ROW EXECUTE FUNCTION security.layer4_arrival_guard_trg_v1()",
+     "name": "layer4_review_items_zz_arrival",
+     "enabled": "O",
+     "function": "security.layer4_arrival_guard_trg_v1()"
+    },
+    {
+     "def": "CREATE TRIGGER layer4_review_items_zz_evidence BEFORE INSERT ON pipeline.layer4_review_items FOR EACH ROW EXECUTE FUNCTION security.layer4_evidence_link_trg_v1()",
+     "name": "layer4_review_items_zz_evidence",
+     "enabled": "O",
+     "function": "security.layer4_evidence_link_trg_v1()"
+    },
+    {
+     "def": "CREATE TRIGGER ops_guard_layer4 BEFORE INSERT OR DELETE OR UPDATE ON pipeline.layer4_review_items FOR EACH ROW WHEN (security.ops_remedy_guard_active_v1()) EXECUTE FUNCTION security.ops_guard_layer4_v1()",
+     "name": "ops_guard_layer4",
+     "enabled": "O",
+     "function": "security.ops_guard_layer4_v1()"
+    }
+   ],
+   "force_rls": false,
+   "constraints": [
+    {
+     "def": "CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'edited_approved'::text, 'rejected'::text, 'more_evidence'::text, 'returned_layer2'::text, 'returned_layer3'::text, 'superseded'::text])))",
+     "name": "layer4_review_items_status_check",
+     "type": "c"
+    },
+    {
+     "def": "FOREIGN KEY (evidence_id) REFERENCES pipeline.evidence_artifacts(id)",
+     "name": "layer4_review_items_evidence_id_fkey",
+     "type": "f"
+    },
+    {
+     "def": "FOREIGN KEY (layer3_interpretation_id) REFERENCES pipeline.layer3_interpretations(id)",
+     "name": "layer4_review_items_layer3_interpretation_id_fkey",
+     "type": "f"
+    },
+    {
+     "def": "PRIMARY KEY (id)",
+     "name": "layer4_review_items_pkey",
+     "type": "p"
+    }
+   ]
+  },
+  {
+   "fq": "pipeline.platform_toolset_settings",
+   "rls": true,
+   "kind": "target",
+   "rows": null,
+   "grants": [],
+   "columns": [
+    {
+     "name": "toolset_key",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "key",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "label",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "help",
+     "type": "text",
+     "default": "''::text",
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "kind",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "value",
+     "type": "jsonb",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "min_value",
+     "type": "numeric",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "max_value",
+     "type": "numeric",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "unit",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "sort",
+     "type": "integer",
+     "default": "100",
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "reason",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "updated_by",
+     "type": "uuid",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "updated_at",
+     "type": "timestamp with time zone",
+     "default": "now()",
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "section",
+     "type": "text",
+     "default": "'Notices'::text",
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "used_by",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    }
+   ],
+   "indexes": [],
+   "refused": null,
+   "relkind": "r",
+   "policies": [],
+   "triggers": [
+    {
+     "def": "CREATE TRIGGER ops_guard_settings BEFORE INSERT OR DELETE OR UPDATE ON pipeline.platform_toolset_settings FOR EACH ROW WHEN (security.ops_remedy_guard_active_v1()) EXECUTE FUNCTION security.ops_guard_settings_v1()",
+     "name": "ops_guard_settings",
+     "enabled": "O",
+     "function": "security.ops_guard_settings_v1()"
+    }
+   ],
+   "force_rls": false,
+   "constraints": [
+    {
+     "def": "CHECK ((kind = ANY (ARRAY['number'::text, 'text'::text, 'boolean'::text, 'list'::text])))",
+     "name": "platform_toolset_settings_kind_check",
+     "type": "c"
+    },
+    {
+     "def": "FOREIGN KEY (toolset_key) REFERENCES pipeline.platform_toolsets(key)",
+     "name": "platform_toolset_settings_toolset_key_fkey",
+     "type": "f"
+    },
+    {
+     "def": "PRIMARY KEY (toolset_key, key)",
+     "name": "platform_toolset_settings_pkey",
+     "type": "p"
+    }
+   ]
+  }
+ ],
+ "missing": [],
+ "schemas": [
+  {
+   "name": "catalogue",
+   "grantee": "service_role",
+   "privileges": "USAGE"
+  },
+  {
+   "name": "pim",
+   "grantee": "service_role",
+   "privileges": "USAGE"
+  },
+  {
+   "name": "pipeline",
+   "grantee": "service_role",
+   "privileges": "USAGE"
+  },
+  {
+   "name": "ref",
+   "grantee": "service_role",
+   "privileges": "USAGE"
+  },
+  {
+   "name": "security",
+   "grantee": "authenticated",
+   "privileges": "USAGE"
+  },
+  {
+   "name": "security",
+   "grantee": "service_role",
+   "privileges": "USAGE"
+  }
+ ],
+ "functions": [
+  {
+   "def": "CREATE OR REPLACE FUNCTION security.ai_spend_capture_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n-- Decision 5 E-7 (2 Nov 2026): records the AI cost a row gains. tg_argv: lane, how ('delta' = the increase of an accumulated cost;\n-- 'decision' = the cost of each decision of a leased item, as svc_coverage_ai_match_record overwrites it), the path of the cost in the row.\ndeclare v_new jsonb := to_jsonb(new); v_old jsonb := case when tg_op = 'UPDATE' then to_jsonb(old) end; v_path text[] := tg_argv[2]::text[];\n        v_add numeric;\nbegin\n  if tg_argv[1] = 'decision' then\n    if tg_op = 'UPDATE' and not (v_old->>'state' = 'leased' and v_new->>'state' <> 'leased'\n                                 and (v_new->>'decided_at') is distinct from (v_old->>'decided_at')) then return null; end if;\n    v_add := coalesce((v_new #>> v_path)::numeric, 0);\n  else\n    v_add := coalesce((v_new #>> v_path)::numeric, 0) - coalesce((v_old #>> v_path)::numeric, 0);\n  end if;\n  if v_add > 0 then\n    insert into pipeline.ai_spend_ledger(lane, source, source_id, cost_usd) values (tg_argv[0], tg_table_name, v_new->>'id', v_add);\n  end if;\n  return null;\nend $function$\n",
+   "md5": "5b78fa074a9480d4f127ecc4fe93dcf3",
+   "sig": "security.ai_spend_capture_v1()",
+   "kind": "trigger",
+   "execute": "",
+   "prokind": "f"
+  },
+  {
+   "def": "CREATE OR REPLACE FUNCTION security.course_entry_review_trg_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nbegin\n  if new.status in ('rejected', 'more_evidence', 'returned_layer2', 'returned_layer3', 'superseded') then\n    perform security.course_entry_review_apply_v1(new.id, new.status, null, 'Layer 4 ' || new.status);\n  end if;\n  return new;\nend $function$\n",
+   "md5": "527980ffd84edffd9e8841a5c4202f72",
+   "sig": "security.course_entry_review_trg_v1()",
+   "kind": "trigger",
+   "execute": "",
+   "prokind": "f"
+  },
+  {
+   "def": "CREATE OR REPLACE FUNCTION security.entry_matrix_review_trg_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nbegin\n  if new.status in ('rejected', 'more_evidence', 'returned_layer2', 'returned_layer3', 'superseded') then\n    perform security.entry_matrix_review_apply_v1(new.id, new.status, null, 'Layer 4 ' || new.status);\n  end if;\n  return new;\nend $function$\n",
+   "md5": "d3cc5abcda5de110137f269b3809965e",
+   "sig": "security.entry_matrix_review_trg_v1()",
+   "kind": "trigger",
+   "execute": "PUBLIC",
+   "prokind": "f"
+  },
+  {
+   "def": "CREATE OR REPLACE FUNCTION security.field_enrich_items_absence_trg_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nbegin\n  if new.course_id is null or new.state is not distinct from old.state then return null; end if;\n  if new.state in ('filled', 'review', 'skipped', 'failed') then perform security.field_absence_classify_v1(new.id); end if;\n  return null;\nend $function$\n",
+   "md5": "380b1953d6fa72fcfd8c69ba2f0f3318",
+   "sig": "security.field_enrich_items_absence_trg_v1()",
+   "kind": "trigger",
+   "execute": "",
+   "prokind": "f"
+  },
+  {
+   "def": "CREATE OR REPLACE FUNCTION security.field_enrich_items_flag_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare f record;\nbegin\n  if new.course_id is null or new.state is not distinct from old.state then return null; end if;\n  if new.state = 'skipped' and coalesce(new.reason, '') ~* '(does not state|names no campus|quote is not on the page|site-wide line|not classified)' then\n    perform security.flag_raise_v1('course', new.course_id::text, new.provider_id, new.field, 'enrich_no_value', 'Enrich fields: ' || new.reason, 'soft', 'enrich-fields', 'auto',\n      jsonb_build_object('job_id', new.job_id, 'item_id', new.id, 'source', new.source, 'tried', new.tried, 'cost_usd', new.cost_usd, 'evidence_id', new.evidence_id),\n      coalesce(new.evidence_id::text, new.storage_path), null);\n  elsif new.state = 'filled' then\n    for f in select id from pipeline.enrichment_flags where entity = 'course' and entity_key = new.course_id::text and field = new.field and reason_code = 'enrich_no_value' and state <> 'released' loop\n      perform security.flag_release_v1(f.id, 'enrich-fields', 'auto', 'Value found by Enrich fields', jsonb_build_object('job_id', new.job_id, 'item_id', new.id), false);\n    end loop;\n  end if;\n  return null;\nend $function$\n",
+   "md5": "a874a3b37e11a116f39742c80311a50b",
+   "sig": "security.field_enrich_items_flag_v1()",
+   "kind": "trigger",
+   "execute": "",
+   "prokind": "f"
+  },
+  {
+   "def": "CREATE OR REPLACE FUNCTION security.field_enrich_items_gate_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nbegin\n  if new.course_id is null then return new; end if;\n  -- held, or tried on the same input less than gaps.recheck_days ago: not queued (CF-247 21 Oct 2026: the hold is security.enrich_item_held_v1)\n  if security.enrich_item_held_v1(new.course_id, new.field) then return null; end if;\n  return new;\nend $function$\n",
+   "md5": "cb871d3da23e3908139cbccff135b889",
+   "sig": "security.field_enrich_items_gate_v1()",
+   "kind": "trigger",
+   "execute": "",
+   "prokind": "f"
+  },
+  {
+   "def": "CREATE OR REPLACE FUNCTION security.layer4_arrival_guard_trg_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n-- Trigger layer4_review_items_zz_arrival (BEFORE INSERT; after layer4_review_items_reroute, before ops_guard_layer4). While layer4.arrival_guard_on\n-- is 1, a new waiting item of a kind in layer4.platform_kinds that the platform can settle (security.layer4_resolution_for_v1) arrives superseded,\n-- with the reason recorded in pipeline.layer4_supersessions. It never approves, rejects or changes any other row. Every generator passes here.\ndeclare v_res jsonb;\nbegin\n  if new.status is distinct from 'pending' or security.pipeline_num_v1('layer4.arrival_guard_on', 0) < 1\n     or not (new.field_code = any (security.pipeline_list_v1('layer4.platform_kinds', '[]'::jsonb))) then\n    return new;\n  end if;\n  new.id := coalesce(new.id, gen_random_uuid());\n  v_res := security.layer4_resolution_for_v1(new.id, new.entity_type, new.entity_id, new.field_code, new.proposed_value, new.layer2_state, new.evidence_id, coalesce(new.created_at, now()));\n  if v_res is null then return new; end if;\n  new.status := 'superseded';\n  new.decided_at := now();\n  new.change_control_ref := coalesce(new.change_control_ref || '; ', '') || 'CF-247 L4 readiness: settled on arrival (' || (v_res->>'reason') || ')';\n  insert into pipeline.layer4_supersessions(item_id, field_code, entity_type, entity_id, reason, covered_by_item, evidence, mode)\n  values (new.id, new.field_code, new.entity_type, new.entity_id, v_res->>'reason', nullif(v_res->>'covered_by_item', '')::uuid, coalesce(v_res->'evidence', '{}'::jsonb), 'arrival');\n  return new;\nend $function$\n",
+   "md5": "a781b46dd9b81761beb7f6a2acf8c4b1",
+   "sig": "security.layer4_arrival_guard_trg_v1()",
+   "kind": "trigger",
+   "execute": "",
+   "prokind": "f"
+  },
+  {
+   "def": "CREATE OR REPLACE FUNCTION security.layer4_evidence_link_trg_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n-- Trigger layer4_review_items_zz_evidence (BEFORE INSERT): a new waiting item of a kind in layer4.evidence_link_kinds that arrives without a\n-- stored copy gets the newest stored copy of its page. No read is made; nothing else changes.\nbegin\n  if new.evidence_id is null and new.status = 'pending' and security.pipeline_num_v1('layer4.evidence_link_on', 1) >= 1\n     and new.field_code = any (security.pipeline_list_v1('layer4.evidence_link_kinds', '[]'::jsonb)) then\n    new.evidence_id := security.layer4_stored_copy_v1(security.layer4_item_page_v1(new.field_code, new.proposed_value, new.layer2_state));\n  end if;\n  return new;\nend $function$\n",
+   "md5": "a726fc363c927110d59a2b2baf97f474",
+   "sig": "security.layer4_evidence_link_trg_v1()",
+   "kind": "trigger",
+   "execute": "",
+   "prokind": "f"
+  },
+  {
+   "def": "CREATE OR REPLACE FUNCTION security.layer4_reroute_trg_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nbegin\n  if new.entity_type = 'course' and new.status = 'pending' and security.layer4_reroute_course_v1(new.entity_id, new.field_code, true) then\n    new.status := 'superseded'; new.decided_at := now();\n    new.change_control_ref := coalesce(new.change_control_ref || '; ', '') || 'CF-247 v2.15.250: rerouted to the university adapter';\n    insert into pipeline.layer4_reroutes(item_id, entity_type, entity_id, field_code, route, note) values (new.id, 'course', new.entity_id, new.field_code, 'adapter', 'on arrival');\n  end if;\n  return new;\nend $function$\n",
+   "md5": "fd3e6afef1b826533ab124bdcf48dfed",
+   "sig": "security.layer4_reroute_trg_v1()",
+   "kind": "trigger",
+   "execute": "PUBLIC",
+   "prokind": "f"
+  },
+  {
+   "def": "CREATE OR REPLACE FUNCTION security.manual_field_guard()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare v_new jsonb; v_old jsonb; f text; v_entity text := case TG_TABLE_NAME when 'courses' then 'course' else 'provider' end;\nbegin\n  if coalesce(current_setting('cf.manual_edit', true), '') = 'on' then return NEW; end if;\n  if not exists (select 1 from pipeline.manual_locks l where l.entity = v_entity and l.entity_id = OLD.id) then return NEW; end if;\n  v_new := to_jsonb(NEW); v_old := to_jsonb(OLD);\n  for f in select l.field from pipeline.manual_locks l where l.entity = v_entity and l.entity_id = OLD.id loop\n    if v_old ? f then v_new := jsonb_set(v_new, array[f], v_old->f); end if;\n  end loop;\n  NEW := jsonb_populate_record(NEW, v_new);\n  return NEW;\nend $function$\n",
+   "md5": "029fe067f745685306f459419be80c42",
+   "sig": "security.manual_field_guard()",
+   "kind": "trigger",
+   "execute": "",
+   "prokind": "f"
+  },
+  {
+   "def": "CREATE OR REPLACE FUNCTION security.no_page_review_trg_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nbegin\n  if new.status in ('rejected', 'more_evidence', 'returned_layer2', 'returned_layer3', 'superseded') then\n    perform security.no_page_review_apply_v1(new.id, new.status, null, 'Layer 4 ' || new.status);\n  end if;\n  return new;\nend $function$\n",
+   "md5": "165ddb519edad1d75d7b63aaa127b71c",
+   "sig": "security.no_page_review_trg_v1()",
+   "kind": "trigger",
+   "execute": "PUBLIC",
+   "prokind": "f"
+  },
+  {
+   "def": "CREATE OR REPLACE FUNCTION security.ops_guard_layer4_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\n-- While a remedy runs a Layer 4 item may only stay pending or be superseded (duplicate reconciliation); approving, rejecting, returning or\n-- deleting is a decision (mandate §10: technical repair authority is not admission authority).\nbegin\n  if TG_OP = 'DELETE' or new.status not in ('pending', 'superseded') or (TG_OP = 'UPDATE' and old.status <> 'pending' and new.status is distinct from old.status) then\n    raise exception 'ops guard: a remedy cannot decide or admit a Layer 4 item' using errcode = '42501';\n  end if;\n  return new;\nend $function$\n",
+   "md5": "d8fcb14724141b694e7a32f439d093ac",
+   "sig": "security.ops_guard_layer4_v1()",
+   "kind": "trigger",
+   "execute": "",
+   "prokind": "f"
+  },
+  {
+   "def": "CREATE OR REPLACE FUNCTION security.ops_guard_settings_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\n-- While a remedy runs a setting may change only within its own range, and never: a range (min_value, max_value), a service toolset (paid\n-- services), a budget, spend, credit, reserve or ceiling, an admission or Layer 4 setting, the controller's own or the alerts' settings.\ndeclare v_num numeric;\nbegin\n  if TG_OP <> 'UPDATE' then raise exception 'ops guard: a remedy cannot add or remove settings' using errcode = '42501'; end if;\n  if new.min_value is distinct from old.min_value or new.max_value is distinct from old.max_value or new.key is distinct from old.key or new.toolset_key is distinct from old.toolset_key then\n    raise exception 'ops guard: a remedy cannot change a setting''s range or identity (%.%)', old.toolset_key, old.key using errcode = '42501';\n  end if;\n  -- fixed: the protected settings are the authority boundary itself; widening or narrowing them is a release, never a setting\n  if old.toolset_key <> 'pipeline' or old.key ~ '^(ops|budgets|layer4|alerts|integration|targets)\\.'\n     or old.key ~* '(budget|_usd|credit|ceiling|reserve|spend|admit|admission|auto_approve|search_per_run|paid)' then\n    raise exception 'ops guard: a remedy cannot change % (budgets, admission and controller settings are changed by a person)', old.key using errcode = '42501';\n  end if;\n  if jsonb_typeof(new.value) = 'number' then\n    v_num := (new.value #>> '{}')::numeric;\n    if (old.min_value is not null and v_num < old.min_value) or (old.max_value is not null and v_num > old.max_value) then\n      raise exception 'ops guard: % must stay within % to %', old.key, old.min_value, old.max_value using errcode = '42501';\n    end if;\n  end if;\n  return new;\nend $function$\n",
+   "md5": "a01872253355d8420ba60995d30cb2aa",
+   "sig": "security.ops_guard_settings_v1()",
+   "kind": "trigger",
+   "execute": "",
+   "prokind": "f"
+  },
+  {
+   "def": "CREATE OR REPLACE FUNCTION security.provider_description_review_trg_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nbegin\n  update pipeline.provider_description_reads set\n         state = case when new.status = 'rejected' then 'rejected' when new.status in ('more_evidence', 'returned_layer2', 'returned_layer3') then 'held' when new.status = 'superseded' then 'superseded' else state end,\n         rule = case when new.status in ('approved', 'edited_approved') then rule else 'layer4_' || new.status end,\n         updated_at = now()\n   where review_item_id = new.id and state = 'proposed' and new.status not in ('approved', 'edited_approved');\n  return new;\nend $function$\n",
+   "md5": "6bb91a3ab83c215387484c58d5aab281",
+   "sig": "security.provider_description_review_trg_v1()",
+   "kind": "trigger",
+   "execute": "",
+   "prokind": "f"
+  },
+  {
+   "def": "CREATE OR REPLACE FUNCTION security.course_description_check_v1(p_course uuid, p_result jsonb)\n RETURNS jsonb\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare v_s jsonb := coalesce(p_result->'sentences', '[]'::jsonb); v_n int; v_text text; s jsonb; t text; v_sup numeric; v_other record; v_pid uuid;\n        v_min_sup numeric := security.pipeline_num_v1('pdesc.support_min_share', 0.6); v_dup numeric := security.pipeline_num_v1('pdesc.duplicate_share', 0.8);\n        v_checks jsonb; v_words text[];\nbegin\n  select c.provider_id into v_pid from catalogue.courses c where c.id = p_course;\n  v_n := jsonb_array_length(v_s);\n  v_text := (select string_agg(btrim(x->>'text'), ' ' order by o) from jsonb_array_elements(v_s) with ordinality e(x, o));\n  v_checks := jsonb_build_object('sentences', v_n, 'chars', length(coalesce(v_text, '')));\n  if coalesce((p_result->>'about_course')::boolean, false) is false or v_n = 0 then\n    return jsonb_build_object('ok', false, 'rule', 'not_stated', 'checks', v_checks, 'reason', 'the page does not state it');\n  end if;\n  if v_n < security.pipeline_num_v1('enrich.course_description_min_sentences', 1) or v_n > security.pipeline_num_v1('enrich.course_description_max_sentences', 4) then\n    return jsonb_build_object('ok', false, 'rule', 'sentence_count', 'checks', v_checks, 'reason', v_n || ' sentence(s), outside the set range');\n  end if;\n  for s in select x from jsonb_array_elements(v_s) x loop\n    t := btrim(coalesce(s->>'text', ''));\n    if coalesce((s->>'on_page')::boolean, false) is false or nullif(btrim(coalesce(s->>'quote', '')), '') is null then\n      return jsonb_build_object('ok', false, 'rule', 'quote_not_on_page', 'checks', v_checks, 'reason', 'a sentence''s words are not on the course page: ' || left(t, 120));\n    end if;\n    if exists (select 1 from jsonb_array_elements_text(coalesce(security.toolset_setting('pipeline', 'pdesc.superlatives'), '[]'::jsonb)) w\n                where security.pdesc_has_term_v1(t, w) and not security.pdesc_has_term_v1(s->>'quote', w)) then\n      return jsonb_build_object('ok', false, 'rule', 'unsupported_marketing', 'checks', v_checks, 'reason', 'a marketing word that is not in the quote: ' || left(t, 120));\n    end if;\n    if exists (select 1 from jsonb_array_elements_text(coalesce(security.toolset_setting('pipeline', 'pdesc.claim_words'), '[]'::jsonb)) w\n                where security.pdesc_has_term_v1(t, w) and not security.pdesc_has_term_v1(s->>'quote', w)) then\n      return jsonb_build_object('ok', false, 'rule', 'unsupported_claim', 'checks', v_checks, 'reason', 'a ranking, outcome or accreditation claim that is not in the quote: ' || left(t, 120));\n    end if;\n    -- a sentence that does not end as a sentence is a fragment: held, never cut or completed (Platform Admin 2 Nov 2026 23:24)\n    if t !~ '[.!?][\"'')\\]’”]*$' or t ~ '(\\.\\.\\.|…)[\"'')\\]’”]*$' then\n      return jsonb_build_object('ok', false, 'rule', 'incomplete_sentence', 'checks', v_checks, 'reason', 'a sentence is not complete (it would be published as a fragment): ' || left(t, 120));\n    end if;\n    v_sup := security.pdesc_support_v1(t, s->>'quote');\n    if v_sup < v_min_sup then\n      return jsonb_build_object('ok', false, 'rule', 'unsupported_sentence', 'checks', v_checks || jsonb_build_object('support', v_sup),\n        'reason', 'a sentence is not supported by its quote (' || v_sup || '): ' || left(t, 120));\n    end if;\n  end loop;\n  if length(v_text) < security.pipeline_num_v1('enrich.course_description_min_chars', 80) or length(v_text) > security.pipeline_num_v1('enrich.course_description_max_chars', 700) then\n    return jsonb_build_object('ok', false, 'rule', 'length', 'checks', v_checks, 'reason', length(v_text) || ' characters, outside the set range (held whole, never cut)');\n  end if;\n  -- boilerplate: the same words as another course of the provider (held, or waiting in Layer 4)\n  -- CF-247 IQ-00053 residual: the new text is split into words once, and each other text inline, by the rule of security.pdesc_words_v1 and\n  -- security.pdesc_similarity_v1 (distinct lower-case words of 3 or more letters or digits; shared words over all words of both)\n  v_words := security.pdesc_words_v1(v_text);\n  select z.course_id, z.sim into v_other from (\n    select x.course_id, case when cardinality(v_words) = 0 or cardinality(x.wb) = 0 then 0\n                             else round(k.n::numeric / (cardinality(v_words) + cardinality(x.wb) - k.n), 4) end sim\n      from (select x0.course_id, array(select distinct w from regexp_split_to_table(lower(coalesce(x0.d, '')), '[^a-z0-9]+') w where length(w) >= 3) wb from (\n      select c.id course_id, c.description d, c.updated_at at from catalogue.courses c\n       where c.provider_id = v_pid and c.id <> p_course and nullif(btrim(c.description), '') is not null\n      union all\n      select r.entity_id, r.proposed_value->>'description', r.created_at from pipeline.layer4_review_items r join catalogue.courses c on c.id = r.entity_id\n       where r.entity_type = 'course' and r.field_code = 'course_description_first_read' and r.status = 'pending' and c.provider_id = v_pid and r.entity_id <> p_course\n      order by 3 desc limit security.pipeline_num_v1('enrich.course_description_duplicate_window', 500)::int) x0) x\n      cross join lateral (select count(*) n from unnest(v_words) w where w = any (x.wb)) k) z\n   where z.sim >= v_dup order by z.sim desc limit 1;\n  if v_other.course_id is not null then\n    return jsonb_build_object('ok', false, 'rule', 'duplicate_other_course', 'checks', v_checks || jsonb_build_object('duplicate_of', v_other.course_id, 'similarity', v_other.sim),\n      'reason', 'the same words as another course''s description (' || v_other.sim || '): text that is not about this course');\n  end if;\n  return jsonb_build_object('ok', true, 'rule', 'ok', 'text', v_text, 'checks', v_checks, 'reason', null);\nend $function$\n",
+   "md5": "ff3d6dd7b0f88c85b1fdff6c8a8cd86b",
+   "sig": "security.course_description_check_v1(uuid,jsonb)",
+   "kind": "target",
+   "execute": "",
+   "prokind": "f"
+  },
+  {
+   "def": "CREATE OR REPLACE FUNCTION security.course_description_release_held_v1(p_provider uuid)\n RETURNS integer\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare r record; v_n int := 0; v_k int;\nbegin\n  if p_provider is null or not security.course_description_trusted_v1(p_provider) then return 0; end if;\n  for r in select e.id, e.course_id, e.value->>'text' txt from pipeline.field_enrich_items e join pipeline.coverage_course_pages g on g.course_id = e.course_id\n            where e.provider_id = p_provider and e.field = 'description' and e.state = 'skipped' and e.reason like 'held_first_admission:%'\n              and nullif(btrim(e.value->>'text'), '') is not null and e.evidence_id is not distinct from g.evidence_id\n            for update of e skip locked loop\n    if exists (select 1 from pipeline.manual_locks l where l.entity = 'course' and l.entity_id = r.course_id and l.field in ('description', 'course_description', 'all')) then continue; end if;\n    -- the checks are run again (another course may have taken the same words since)\n    if not coalesce((security.course_description_check_v1(r.course_id, (select e.value from pipeline.field_enrich_items e where e.id = r.id))->>'ok')::boolean, false) then continue; end if;\n    update catalogue.courses set description = r.txt, updated_at = now() where id = r.course_id and nullif(btrim(description), '') is null;\n    get diagnostics v_k = row_count;\n    update pipeline.field_enrich_items set state = case when v_k > 0 then 'filled' else 'skipped' end, reason = case when v_k > 0 then null else 'already filled' end,\n           value = value || jsonb_build_object('admitted', 'held, admitted once the provider''s first descriptions were approved'), updated_at = now() where id = r.id;\n    v_n := v_n + v_k;\n  end loop;\n  if v_n > 0 then\n    insert into search.refresh_requests(requested_by) select 'AI reader (course description, deadline)'\n     where not exists (select 1 from search.refresh_requests q where q.processed_at is null and q.requested_by = 'AI reader (course description, deadline)');\n  end if;\n  return v_n;\nend $function$\n",
+   "md5": "dd4b178afcd26b696d70710038e34f1c",
+   "sig": "security.course_description_release_held_v1(uuid)",
+   "kind": "target",
+   "execute": "",
+   "prokind": "f"
+  },
+  {
+   "def": "CREATE OR REPLACE FUNCTION security.course_description_review_trg_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare v_item bigint := case when coalesce(new.proposed_value->>'item_id', '') ~ '^\\d+$' then (new.proposed_value->>'item_id')::bigint end; v_pid uuid;\nbegin\n  if v_item is not null then\n    update pipeline.field_enrich_items set state = case when new.status in ('approved', 'edited_approved') then 'filled' else 'skipped' end,\n           reason = case when new.status in ('approved', 'edited_approved') then null else 'not admitted in Layer 4 (' || new.status || ')' end, updated_at = now()\n     where id = v_item and state = 'review';\n  end if;\n  if new.status in ('approved', 'edited_approved') then\n    select c.provider_id into v_pid from catalogue.courses c where c.id = new.entity_id;\n    perform security.course_description_release_held_v1(v_pid);\n    insert into search.refresh_requests(requested_by) select 'AI reader (course description, deadline)'\n     where not exists (select 1 from search.refresh_requests q where q.processed_at is null and q.requested_by = 'AI reader (course description, deadline)');\n  end if;\n  return null;\nend $function$\n",
+   "md5": "d143eba24f5896f36a3a93e8e5c075aa",
+   "sig": "security.course_description_review_trg_v1()",
+   "kind": "target",
+   "execute": "",
+   "prokind": "f"
+  },
+  {
+   "def": "CREATE OR REPLACE FUNCTION security.course_description_trusted_v1(p_provider uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n  with n as (select greatest(1, security.pipeline_num_v1('enrich.course_description_review_first', 5)::int) k),\n  d as (select r.status from pipeline.layer4_review_items r join catalogue.courses c on c.id = r.entity_id\n         where r.entity_type = 'course' and r.field_code = 'course_description_first_read' and c.provider_id = p_provider\n           and r.status in ('approved', 'edited_approved', 'rejected', 'more_evidence', 'returned_layer2', 'returned_layer3')\n         order by r.decided_at desc nulls last limit (select k from n))\n  select count(*) = (select k from n) and bool_and(d.status in ('approved', 'edited_approved')) from d\n$function$\n",
+   "md5": "3f056fa4495963ec1d3bca61bfe0642d",
+   "sig": "security.course_description_trusted_v1(uuid)",
+   "kind": "target",
+   "execute": "",
+   "prokind": "f"
+  },
+  {
+   "def": "CREATE OR REPLACE FUNCTION security.course_title_key(p text)\n RETURNS text\n LANGUAGE sql\n IMMUTABLE\n SET search_path TO ''\nAS $function$\n  select btrim(regexp_replace(replace(lower(coalesce(p, '')), '&', ' and '), '[^a-z0-9]+', ' ', 'g'))\n$function$\n",
+   "md5": "6dbf332766b47f5bdd09032fc78d3707",
+   "sig": "security.course_title_key(text)",
+   "kind": "target",
+   "execute": "PUBLIC",
+   "prokind": "f"
+  },
+  {
+   "def": "CREATE OR REPLACE FUNCTION security.enrich_course_text_record_v1(p_item bigint, p_r jsonb)\n RETURNS text\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare i pipeline.field_enrich_items%rowtype; g record; v_chk jsonb; v_text text; v_review uuid; v_pid uuid; v_n int := 0; x jsonb; it record;\n        v_date date; v_kept jsonb := '[]'::jsonb; v_dl jsonb := '[]'::jsonb; v_why text; v_max_before int := security.pipeline_num_v1('intake_dates.deadline_max_days_before', 366)::int;\n        v_targets uuid[]; v_one uuid; v_kinds text[];\nbegin\n  select * into i from pipeline.field_enrich_items where id = p_item for update;\n  if i.id is null or i.course_id is null or i.field not in ('description', 'deadline') then return 'nothing'; end if;\n  select pg.provider_id, pg.identity_basis, pg.url, pg.evidence_id, e.captured_at into g\n    from pipeline.coverage_course_pages pg left join pipeline.evidence_artifacts e on e.id = pg.evidence_id where pg.course_id = i.course_id;\n  if g.provider_id is null or not security.coverage_identity_allowed(g.provider_id, g.identity_basis, i.field) then\n    update pipeline.field_enrich_items set state = 'skipped', reason = 'the page''s proof (' || coalesce(g.identity_basis, 'none') || ') does not admit ' || i.field || ' for this country',\n           value = p_r->'value', updated_at = now() where id = i.id;\n    return 'not_admitted';\n  end if;\n  -- only the course's own page: the stored copy read is the copy bound to the course now\n  if i.evidence_id is distinct from g.evidence_id then\n    update pipeline.field_enrich_items set state = 'skipped', reason = 'the copy read is no longer the course''s bound page (it is read again with the new copy)', value = p_r->'value', updated_at = now() where id = i.id;\n    return 'not_admitted';\n  end if;\n  if exists (select 1 from pipeline.manual_locks l where l.entity = 'course' and l.entity_id = i.course_id\n               and l.field in (i.field, case i.field when 'deadline' then 'intake' else 'course_description' end, 'all')) then\n    update pipeline.field_enrich_items set state = 'skipped', reason = 'locked by hand', value = p_r->'value', updated_at = now() where id = i.id;\n    return 'locked';\n  end if;\n  select c.provider_id into v_pid from catalogue.courses c where c.id = i.course_id;\n\n  if i.field = 'description' then\n    if exists (select 1 from catalogue.courses c where c.id = i.course_id and nullif(btrim(c.description), '') is not null) then\n      update pipeline.field_enrich_items set state = 'skipped', reason = 'already filled', value = p_r->'value', updated_at = now() where id = i.id; return 'already';\n    end if;\n    v_chk := security.course_description_check_v1(i.course_id, p_r->'value');\n    if not coalesce((v_chk->>'ok')::boolean, false) then\n      update pipeline.field_enrich_items set state = 'skipped', value = coalesce(p_r->'value', '{}'::jsonb) || jsonb_build_object('check', v_chk),\n             reason = left(case when v_chk->>'rule' = 'not_stated' then coalesce(nullif(p_r->>'reason', ''), 'the page does not state it')\n                                else 'held: ' || (v_chk->>'rule') || ': ' || (v_chk->>'reason') end, 300), updated_at = now()\n       where id = i.id;\n      return case when v_chk->>'rule' = 'not_stated' then 'not_stated' else 'held' end;\n    end if;\n    v_text := v_chk->>'text';\n    if security.course_description_trusted_v1(v_pid) then\n      update catalogue.courses set description = v_text, updated_at = now() where id = i.course_id and nullif(btrim(description), '') is null;\n      get diagnostics v_n = row_count;\n      update pipeline.field_enrich_items set state = case when v_n > 0 then 'filled' else 'skipped' end, reason = case when v_n > 0 then null else 'already filled' end,\n             value = p_r->'value' || jsonb_build_object('text', v_text, 'check', v_chk, 'admitted', 'checks (provider''s first descriptions approved in Layer 4)'),\n             quote = left(coalesce(p_r->>'quote', i.quote), 300), updated_at = now() where id = i.id;\n      insert into search.refresh_requests(requested_by) select 'AI reader (course description, deadline)'\n       where v_n > 0 and not exists (select 1 from search.refresh_requests q where q.processed_at is null and q.requested_by = 'AI reader (course description, deadline)');\n      return case when v_n > 0 then 'filled' else 'already' end;\n    end if;\n    -- Layer 4 on first admission: at most enrich.course_description_pending_max of the provider's wait at once; the rest keep their reading\n    if (select count(*) from pipeline.layer4_review_items r join catalogue.courses c on c.id = r.entity_id\n         where r.entity_type = 'course' and r.field_code = 'course_description_first_read' and r.status = 'pending' and c.provider_id = v_pid)\n       >= security.pipeline_num_v1('enrich.course_description_pending_max', 10) then\n      update pipeline.field_enrich_items set state = 'skipped', reason = 'held_first_admission: the provider''s first descriptions wait in Layer 4; admitted once they are approved',\n             value = p_r->'value' || jsonb_build_object('text', v_text, 'check', v_chk), quote = left(coalesce(p_r->>'quote', i.quote), 300), updated_at = now() where id = i.id;\n      return 'held_first_admission';\n    end if;\n    insert into pipeline.layer4_review_items(entity_type, entity_id, field_code, evidence_id, before_value, proposed_value, layer2_state, layer3_state, status, escalation_reason, change_control_ref)\n    values ('course', i.course_id, 'course_description_first_read', g.evidence_id, jsonb_build_object('description', null),\n            jsonb_build_object('description', v_text, 'item_id', i.id, 'source_url', g.url, 'checks', v_chk->'checks',\n                               'sentences', (select jsonb_agg(jsonb_build_object('text', s->>'text', 'quote', s->>'quote') order by o) from jsonb_array_elements(p_r->'value'->'sentences') with ordinality e(s, o))),\n            jsonb_build_object('source', 'course description reader', 'page', g.url, 'identity_basis', g.identity_basis),\n            jsonb_build_object('item_id', i.id, 'model', p_r->>'model', 'prompt', p_r->>'prompt_version', 'worker', p_r->>'worker'),\n            'pending', 'Course description read from the course''s own page. This is one of the provider''s first course descriptions, so a person approves it as read or rejects it.',\n            'CF-CHG-20260915-247')\n    returning id into v_review;\n    update pipeline.field_enrich_items set state = 'review', reason = null, value = p_r->'value' || jsonb_build_object('text', v_text, 'check', v_chk, 'review_item_id', v_review),\n           quote = left(coalesce(p_r->>'quote', i.quote), 300), updated_at = now() where id = i.id;\n    return 'review';\n  end if;\n\n  -- deadline: explicit dates only, tied to an intake the page names (or the course's only active intake)\n  if not exists (select 1 from catalogue.course_intakes x where x.course_id = i.course_id and x.status = 'active') then\n    update pipeline.field_enrich_items set state = 'skipped', reason = 'no active intake to hold a deadline', value = p_r->'value', updated_at = now() where id = i.id; return 'not_admitted';\n  end if;\n  for x in select * from jsonb_array_elements(coalesce(p_r->'value'->'deadlines', '[]'::jsonb)) loop\n    v_why := null; v_targets := '{}'; v_date := null;\n    if x->>'kind' <> 'date' then v_why := coalesce(x->>'kind', 'not_stated');\n    elsif not coalesce((x->>'on_page')::boolean, false) then v_why := 'quote_not_on_page';\n    elsif coalesce(x->>'date', '') !~ '^\\d{4}-\\d{2}-\\d{2}$' then v_why := 'no_full_date';\n    else\n      begin v_date := (x->>'date')::date; exception when others then v_date := null; end;\n      if v_date is null then v_why := 'no_full_date';\n      elsif not security.course_deadline_in_quote_v1(v_date, x->>'quote') then v_why := 'date_not_in_quote';\n      end if;\n    end if;\n    if v_why is null then\n      if nullif(btrim(x->>'intake'), '') is null then\n        select array_agg(ci.id) into v_targets from catalogue.course_intakes ci where ci.course_id = i.course_id and ci.status = 'active';\n        if cardinality(v_targets) <> 1 then v_why := 'not_tied_to_one_intake'; v_targets := '{}'; end if;\n      else\n        select coalesce(array_agg(ci.id), '{}') into v_targets from catalogue.course_intakes ci\n         where ci.course_id = i.course_id and ci.status = 'active' and security.course_deadline_intake_match_v1(ci.intake_label, ci.intake_year, x->>'intake');\n        if cardinality(v_targets) = 0 then v_why := 'intake_not_matched'; end if;\n      end if;\n    end if;\n    v_dl := v_dl || (x || jsonb_build_object('outcome', coalesce(v_why, 'kept'), 'intake_ids', to_jsonb(v_targets)));\n    if v_why is null then\n      foreach v_one in array v_targets loop v_kept := v_kept || jsonb_build_object('intake_id', v_one, 'date', v_date, 'quote', x->>'quote'); end loop;\n    end if;\n  end loop;\n  -- per intake: one date only (two different dates for one intake are held), within the intake's window, never over a deadline held\n  for it in select ci.id, ci.start_date, ci.intake_year, ci.application_deadline, array_agg(distinct (k->>'date')::date) dates, min(k->>'quote') quote\n              from jsonb_array_elements(v_kept) k join catalogue.course_intakes ci on ci.id = (k->>'intake_id')::uuid group by 1, 2, 3, 4 loop\n    if cardinality(it.dates) > 1 then v_dl := v_dl || jsonb_build_object('intake_ids', jsonb_build_array(it.id), 'outcome', 'conflicting_dates'); continue; end if;\n    v_date := it.dates[1];\n    if it.application_deadline is not null then continue; end if;\n    if (it.start_date is not null and (v_date > it.start_date or v_date < it.start_date - v_max_before))\n       or (it.start_date is null and it.intake_year is not null and (v_date < make_date(it.intake_year - 1, 1, 1) or v_date > make_date(it.intake_year, 12, 31))) then\n      v_dl := v_dl || jsonb_build_object('intake_ids', jsonb_build_array(it.id), 'outcome', 'outside_intake_window', 'date', v_date); continue;\n    end if;\n    update catalogue.course_intakes set application_deadline = v_date where id = it.id and application_deadline is null;\n    if found then v_n := v_n + 1; end if;\n  end loop;\n  v_kinds := array(select distinct d->>'outcome' from jsonb_array_elements(v_dl) d);\n  update pipeline.field_enrich_items set state = case when v_n > 0 then 'filled' else 'skipped' end,\n         value = jsonb_build_object('deadlines', v_dl, 'applied', v_n),\n         quote = left(coalesce((select k->>'quote' from jsonb_array_elements(v_kept) k limit 1), p_r->>'quote', i.quote), 300),\n         reason = case when v_n > 0 then null\n                       when cardinality(v_kinds) = 0 or v_kinds <@ array['not_stated'] then coalesce(nullif(p_r->>'reason', ''), 'the page does not state it')\n                       when v_kinds <@ array['rolling', 'not_stated'] then 'the page says applications are rolling (no date to hold)'\n                       when 'kept' = any (v_kinds) then 'already filled or outside the intake''s dates'\n                       else left('held: ' || array_to_string(v_kinds, ', '), 300) end,\n         updated_at = now()\n   where id = i.id;\n  if v_n > 0 then\n    insert into search.refresh_requests(requested_by) select 'AI reader (course description, deadline)'\n     where not exists (select 1 from search.refresh_requests q where q.processed_at is null and q.requested_by = 'AI reader (course description, deadline)');\n  end if;\n  return case when v_n > 0 then 'filled' else 'not_admitted' end;\nend $function$\n",
+   "md5": "b47c00b19bc6eaa36828dbe4d2371501",
+   "sig": "security.enrich_course_text_record_v1(bigint,jsonb)",
+   "kind": "target",
+   "execute": "",
+   "prokind": "f"
+  },
+  {
+   "def": "CREATE OR REPLACE FUNCTION security.layer4_course_description_apply_v1(p_actor uuid, p_item_id uuid, p_value jsonb, p_reason text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare i pipeline.layer4_review_items%rowtype; v_text text; v_now text; v_shown text;\nbegin\n  select * into i from pipeline.layer4_review_items where id = p_item_id;\n  if i.id is null or i.entity_type <> 'course' or i.field_code <> 'course_description_first_read' then raise exception 'not a course description item' using errcode = '22023'; end if;\n  -- approved as read: an edited description has no quote for its new words (reject it; the page is read again later)\n  if p_value is distinct from i.proposed_value then raise exception 'a description is approved as read, with every sentence quoted from the page; reject it instead of editing' using errcode = '22023'; end if;\n  v_text := nullif(btrim(i.proposed_value->>'description'), '');\n  if v_text is null then raise exception 'the proposal has no description' using errcode = '22023'; end if;\n  if i.evidence_id is null then raise exception 'the proposal has no stored page' using errcode = '22023'; end if;\n  if exists (select 1 from pipeline.manual_locks l where l.entity = 'course' and l.entity_id = i.entity_id and l.field in ('description', 'course_description', 'all')) then\n    raise exception 'the description is locked by hand' using errcode = '22023';\n  end if;\n  select nullif(btrim(c.description), '') into v_now from catalogue.courses c where c.id = i.entity_id for update;\n  if v_now is distinct from nullif(btrim(i.before_value->>'description'), '') then raise exception 'the description changed since this was proposed; reject this item' using errcode = '22023'; end if;\n  update catalogue.courses set description = v_text, updated_at = now() where id = i.entity_id;\n  select c.description into v_shown from catalogue.courses c where c.id = i.entity_id;  -- the column public.website_v2_course reads\n  return jsonb_build_object('course_id', i.entity_id, 'description_chars', length(v_text), 'held', v_shown = v_text, 'evidence_id', i.evidence_id, 'actor', p_actor);\nend $function$\n",
+   "md5": "ba97236f3010e248bac44a0a7c09611a",
+   "sig": "security.layer4_course_description_apply_v1(uuid,uuid,jsonb,text)",
+   "kind": "target",
+   "execute": "",
+   "prokind": "f"
+  },
+  {
+   "def": "CREATE OR REPLACE FUNCTION security.pdesc_has_term_v1(p_text text, p_term text)\n RETURNS boolean\n LANGUAGE sql\n IMMUTABLE\n SET search_path TO ''\nAS $function$\n  select nullif(btrim(regexp_replace(lower(coalesce(p_term, '')), '[^a-z0-9#%]+', ' ', 'g')), '') is not null\n     and position(' ' || btrim(regexp_replace(lower(coalesce(p_term, '')), '[^a-z0-9#%]+', ' ', 'g')) || ' '\n                  in ' ' || regexp_replace(lower(coalesce(p_text, '')), '[^a-z0-9#%]+', ' ', 'g') || ' ') > 0\n$function$\n",
+   "md5": "b2b8d6499c2ad619b68842258ca7e2e3",
+   "sig": "security.pdesc_has_term_v1(text,text)",
+   "kind": "target",
+   "execute": "PUBLIC",
+   "prokind": "f"
+  },
+  {
+   "def": "CREATE OR REPLACE FUNCTION security.pdesc_similarity_v1(a text, b text)\n RETURNS numeric\n LANGUAGE sql\n IMMUTABLE\n SET search_path TO ''\nAS $function$\n  with x as (select security.pdesc_words_v1(a) wa, security.pdesc_words_v1(b) wb)\n  select case when cardinality(x.wa) = 0 or cardinality(x.wb) = 0 then 0\n              else round((select count(*) from unnest(x.wa) w where w = any (x.wb))::numeric\n                         / (select count(*) from (select unnest(x.wa) union select unnest(x.wb)) u), 4) end\n    from x\n$function$\n",
+   "md5": "357a9ebfde1c68a286ad4f685445cf9b",
+   "sig": "security.pdesc_similarity_v1(text,text)",
+   "kind": "target",
+   "execute": "PUBLIC",
+   "prokind": "f"
+  },
+  {
+   "def": "CREATE OR REPLACE FUNCTION security.pdesc_support_v1(p_sentence text, p_quote text)\n RETURNS numeric\n LANGUAGE sql\n IMMUTABLE\n SET search_path TO ''\nAS $function$\n  with s as (select distinct left(w, 5) w from regexp_split_to_table(lower(coalesce(p_sentence, '')), '[^a-z0-9]+') w\n              where length(w) >= 4 and w not in ('that', 'this', 'with', 'from', 'into', 'their', 'there', 'which', 'where', 'what', 'have', 'also', 'such', 'they', 'them', 'than', 'more', 'most', 'other', 'offers', 'offer', 'provides', 'provide')),\n       q as (select distinct left(w, 5) w from regexp_split_to_table(lower(coalesce(p_quote, '')), '[^a-z0-9]+') w where length(w) >= 4)\n  select case when (select count(*) from s) = 0 then 1 else round((select count(*) from s where s.w in (select w from q))::numeric / (select count(*) from s), 4) end\n$function$\n",
+   "md5": "adedab4f5da6e6fec8a0d840fea15bde",
+   "sig": "security.pdesc_support_v1(text,text)",
+   "kind": "target",
+   "execute": "PUBLIC",
+   "prokind": "f"
+  },
+  {
+   "def": "CREATE OR REPLACE FUNCTION security.pdesc_words_v1(p text)\n RETURNS text[]\n LANGUAGE sql\n IMMUTABLE\n SET search_path TO ''\nAS $function$\n  select coalesce(array_agg(distinct w), '{}'::text[]) from regexp_split_to_table(lower(coalesce(p, '')), '[^a-z0-9]+') w where length(w) >= 3\n$function$\n",
+   "md5": "1a18bd60d2978c1885a25085b688afc7",
+   "sig": "security.pdesc_words_v1(text)",
+   "kind": "target",
+   "execute": "PUBLIC",
+   "prokind": "f"
+  },
+  {
+   "def": "CREATE OR REPLACE FUNCTION security.pipeline_num_v1(p_key text, p_default numeric)\n RETURNS numeric\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n  select coalesce((select (s.value #>> '{}')::numeric from pipeline.platform_toolset_settings s where s.toolset_key = 'pipeline' and s.key = p_key), p_default)\n$function$\n",
+   "md5": "09f9b1551daf42b4a0c9795e6f30c6d4",
+   "sig": "security.pipeline_num_v1(text,numeric)",
+   "kind": "target",
+   "execute": "PUBLIC",
+   "prokind": "f"
+  },
+  {
+   "def": "CREATE OR REPLACE FUNCTION security.toolset_setting(p_toolset text, p_key text)\n RETURNS jsonb\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n  select s.value from pipeline.platform_toolset_settings s where s.toolset_key = p_toolset and s.key = p_key\n$function$\n",
+   "md5": "678dbbc416c5188ab99b3526e68b0c4d",
+   "sig": "security.toolset_setting(text,text)",
+   "kind": "target",
+   "execute": "PUBLIC",
+   "prokind": "f"
+  },
+  {
+   "def": "CREATE OR REPLACE FUNCTION security.ops_remedy_guard_active_v1()\n RETURNS boolean\n LANGUAGE sql\n STABLE\n SET search_path TO ''\nAS $function$\n  select coalesce(current_setting('cf247.ops_remedy', true), '') = 'on'\n$function$\n",
+   "md5": "5f2ec6b47ce55213c0e90bb46649c844",
+   "sig": "security.ops_remedy_guard_active_v1()",
+   "kind": "dependency",
+   "execute": "",
+   "prokind": "f"
+  }
+ ],
+ "search_path": "\"\\$user\", public, extensions",
+ "server_version_num": 170006,
+ "source": "production fxcwkweaxjtknorudmwp, read only, 6 Nov 2026 08:29 AEDT, agent G (course descriptions); course_title_key added because a courses index calls it"
+}
