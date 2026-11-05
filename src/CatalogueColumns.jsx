@@ -5,7 +5,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowDown, ArrowUp, Columns3, RotateCcw, Search, Undo2, X } from 'lucide-react'
 import { supabase } from './lib/supabase'
-import { StatusChip, fmtDate, fmtDateTime, fmtNumber } from './ui-kit'
+import { StatusChip, fmtDate, fmtDateTime, fmtNumber, fmtTime } from './ui-kit'
 import { ADAPTER_STATES, COURSE_COLUMNS, COURSE_SCREEN, DEFAULT_LIMITS, FIELD_STATES, GROUPS, citySummary, clampWidth, columnOf, defaultLayout, intakeName, intakeSummary, minWidthOf, monthName, moveColumn, normaliseLayout, toggleColumn } from './catalogue-columns'
 import './catalogue-columns.css'
 
@@ -14,7 +14,7 @@ const readLocal = user => { try { return JSON.parse(localStorage.getItem(LOCAL +
 const writeLocal = (user, layout) => { try { localStorage.setItem(LOCAL + user + ':' + COURSE_SCREEN, JSON.stringify(layout)) } catch { /* private window */ } }
 const readOldWidths = () => { try { return JSON.parse(localStorage.getItem('cf-colw:course') || '{}') || {} } catch { return {} } }
 const SAVE_AFTER_MS = 700 // UI debounce while a person drags or ticks: one save for a burst of changes
-const timeOf = v => { try { return new Date(v).toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' }) } catch { return '' } }
+const timeOf = v => fmtTime(v, '') // the shared en-AU format: Melbourne clock time
 
 /** The person's Course catalogue layout: server first, then this browser's copy, then the default. */
 export function useCourseLayout(userId) {
