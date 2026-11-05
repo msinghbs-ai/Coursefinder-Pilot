@@ -101,18 +101,28 @@ select pg_temp.edit('security.calendar_dated_periods_v2(uuid)', '972f5c48e8d13ca
   array['  select d.proposal_id, d.period, d.kind,'],
   array['  select d.proposal_id, security.calendar_period_canonical_v1(d.period), d.kind,'], array[1]);
 
+create or replace function security.intake_period_text_canonical_v1(p_text text) returns text
+language sql immutable as $function$
+  select regexp_replace(regexp_replace(regexp_replace(regexp_replace(lower(coalesce(p_text, '')),
+           '\m(teaching period|study period) ?t ?([1-6])\M', 'term \2', 'g'),
+           '\mt([1-6])\M', 'term \1', 'g'),
+           '\m((teaching period|study period) ?s ?|s|sem\.? ?)([1-3])\M', 'semester \3', 'g'),
+           '\mtri\.? ?([1-3])\M', 'trimester \1', 'g')
+$function$;
+comment on function security.intake_period_text_canonical_v1(text) is 'CF-247 (direction 5 Nov 2026 15:50 §2): the course page''s period wording with the same canonical names as the calendar (security.calendar_period_canonical_v1): Teaching period T1 and T1 -> term 1; S1, Sem 1 -> semester 1; Tri 2 -> trimester 2.';
+
 -- 3 course-specific offering evidence and calendar applicability ------------------------------------------------------------------------------
 create or replace function security.intake_course_applicability_v1(p_raw text, p_month int, p_year int, p_cal jsonb, p_month_only boolean, p_periods text[] default null, p_period_text text default null) returns text
 language plpgsql stable security definer set search_path to '' as $function$
 declare v_names text[] := array['january','february','march','april','may','june','july','august','september','october','november','december'];
         v_cur int := extract(year from (now() at time zone 'Australia/Melbourne'))::int;  -- fixed: the calendar year in Australia
-        v_offered int[] := '{}'; v_missing text[]; f text; k int; v_y int; v_per text;
+        v_offered int[] := '{}'; v_missing text[]; f text; k int; v_y int; v_per text; v_w text;
 begin
   -- a named study period (the course page names the calendar's own period, e.g. "Term 1"): the page must state it as the course's own
   -- offering, never only in a personal account or with a past year ("I commenced in Term 1 2023")
   if not p_month_only and p_periods is not null then
     -- the period text as the plan reads it (security.intake_period_text_v1: "Semester Two" -> semester 2, lists expanded)
-    foreach f in array regexp_split_to_array(lower(coalesce(p_period_text, p_raw, '')), '(\.\s|[;\n]|\|\|)') loop
+    foreach f in array regexp_split_to_array(lower(coalesce(p_period_text, p_raw, '')), '(\.\s|[;\n]|\s\|\s|\|\|)') loop
       continue when f ~ '\m(i|we|my|our)\M (have |had )?(commenced|started|began|joined|enrolled|studied|completed)\M';
       foreach v_per in array p_periods loop
         continue when f !~ ('\m' || regexp_replace(v_per, '[ _-]+', '[ _-]*', 'g') || '\M');
@@ -122,15 +132,19 @@ begin
     end loop;
     return 'the course page does not state ' || array_to_string(p_periods, ', ') || ' as its own intake (offering evidence missing: only a personal account or a past year)';
   end if;
-  -- each statement of the page wording (split at sentence ends, line breaks and list separators) that names a month
-  foreach f in array regexp_split_to_array(lower(coalesce(p_raw, '')), '(\.\s|[;\n]|\|\|)') loop
+  -- each statement of the page wording (split at sentence ends, line breaks, list separators and the ' | ' that joins stored snippets)
+  foreach f in array regexp_split_to_array(lower(coalesce(p_raw, '')), '(\.\s|[;\n]|\s\|\s|\|\|)') loop
     -- an offering: intake, start, entry or study-period wording; never a personal account
     continue when f !~ '\m(intakes?|commenc\w*|starts?|entry|offered|available|admissions?|semesters?|terms?|trimesters?|sessions?|begins?)\M'
                or f ~ '\m(i|we|my|our)\M (have |had )?(commenced|started|began|joined|enrolled|studied|completed)\M';
     for k in 1 .. 12 loop
-      continue when f !~ ('\m' || left(v_names[k], 3) || '[a-z]*\M') or k = any (v_offered);
+      -- the month's full name or its abbreviation only (never "marketing" or "junior"); "may" only where it is a month ("May intake",
+      -- "January, May, August", "May 2027"), never the verb ("students may start")
+      v_w := '(' || v_names[k] || '|' || left(v_names[k], 3) || case when k = 9 then '|sept' else '' end || ')\.?';
+      continue when k = any (v_offered) or f !~ ('\m' || v_w || '\M')
+                 or (k = 5 and f !~ '\mmay\M\s*(,|\)|/|&|$|\d|20\d\d|intakes?|and\M|or\M|start|semester|term|session)' and f !~ '(,|/|&|\mand|\mor|\(|intakes?:?)\s*may\M');
       -- never a month of a past year ("February 2023")
-      v_y := (regexp_match(f, '\m' || left(v_names[k], 3) || '[a-z]*,? (20\d\d)\M'))[1]::int;
+      v_y := (regexp_match(f, '\m' || v_w || ',? (20\d\d)\M'))[1]::int;
       if v_y is null or v_y >= v_cur then v_offered := array_append(v_offered, k); end if;
     end loop;
   end loop;
@@ -156,7 +170,9 @@ select pg_temp.edit('security.intake_dates_plan_v3(uuid[],integer)', '0eb4f9fdec
         $o$    sets as materialized (select prov.provider_id, security.calendar_set_v1(prov.provider_id) s from prov)$o$,
         $o$     order by f.rank nulls last, i.course_id, i.id
      limit v_limit$o$,
-        $o$    start_precision := case when v_start is not null then 'day' else 'year' end;$o$],
+        $o$    start_precision := case when v_start is not null then 'day' else 'year' end;$o$,
+        $o$  v_settings text := 'lists=' || v_lists::text || ';unique=' || v_unique::text;$o$,
+        $o$    v_pq := security.intake_period_text_v1(v_raw, v_lists);$o$],
   array[$n$  v_limit int := coalesce(p_limit, security.pipeline_num_v1('batch.intake_dates_apply', 200)::int);
   -- direction 5 Nov 2026 15:50 §3: rows taken round by round, this many a university a round (focus rank first within a round)
   v_share int := greatest(1, security.pipeline_num_v1('intake_dates.provider_share', 25)::int);$n$,
@@ -172,8 +188,11 @@ select pg_temp.edit('security.intake_dates_plan_v3(uuid[],integer)', '0eb4f9fdec
       next_action := security.intake_next_action_v1(outcome, reason, false); next_revisit_at := security.intake_revisit_at_v1(next_action);
       return next; outcome := null; continue;
     end if;
-    start_precision := case when v_start is not null then 'day' else 'year' end;$n$],
-  array[1, 1, 1, 1]);
+    start_precision := case when v_start is not null then 'day' else 'year' end;$n$,
+        -- the rules are an input: a row held under the earlier rules is looked at once again under these
+        $n$  v_settings text := 'lists=' || v_lists::text || ';unique=' || v_unique::text || ';rules=fair-evidence-1';$n$,
+        $n$    v_pq := security.intake_period_text_canonical_v1(security.intake_period_text_v1(v_raw, v_lists));$n$],
+  array[1, 1, 1, 1, 1, 1]);
 
 -- 5 failure classes for the new reasons (md5-guarded edit) --------------------------------------------------------------------------------
 select pg_temp.edit('security.intake_failure_class_v1(text,text,boolean,text,uuid,integer,integer)', 'e9344ecf77edd58240bf1d73a6073974', 'offering evidence missing',
@@ -188,7 +207,7 @@ create or replace function security.intake_date_withdraw_v1(p_intake uuid, p_rea
 language plpgsql security definer set search_path to '' as $function$
 declare d pipeline.course_intake_dates%rowtype; i catalogue.course_intakes%rowtype; v_before jsonb; v_after jsonb; v_year int; v_start date; v_dl date; v_pub jsonb;
 begin
-  if coalesce(btrim(p_reason), '') = '' or length(btrim(p_reason)) < 8 then raise exception 'give the reason for the withdrawal' using errcode = '22023'; end if;
+  if coalesce(btrim(p_reason), '') = '' or length(btrim(p_reason)) < 8 then raise exception 'give the reason for the withdrawal' using errcode = '22023'; end if;  -- fixed: a reason of a few words, as the other admin writes
   select * into d from pipeline.course_intake_dates where intake_id = p_intake for update;
   if d.intake_id is null or d.outcome <> 'filled' or d.after_value is null then
     return jsonb_build_object('intake_id', p_intake, 'withdrawn', false, 'why', 'no value admitted by the intake-dates process for this intake');
@@ -237,9 +256,13 @@ declare v jsonb := '[]'::jsonb; x uuid; r jsonb;
 begin
   if auth.uid() is null or security.current_role_rank() < 6 then raise exception 'Platform Admin required' using errcode = '42501'; end if;
   if coalesce(array_length(p_intake_ids, 1), 0) = 0 or array_length(p_intake_ids, 1) > 50 then raise exception 'name 1 to 50 intakes' using errcode = '22023'; end if;  -- fixed: a reviewed list, not a bulk tool
+  -- every named intake first, then each course's intakes held once (the hold would otherwise refuse a second intake of the same course)
   foreach x in array p_intake_ids loop
-    r := security.intake_date_withdraw_v1(x, p_reason, auth.uid()::text, true); v := v || r;
+    r := security.intake_date_withdraw_v1(x, p_reason, auth.uid()::text, false); v := v || r;
   end loop;
+  insert into pipeline.manual_locks(entity, entity_id, field, mode, set_by, set_at)
+  select distinct 'course', (e->>'course_id')::uuid, 'intakes', 'value', auth.uid(), now() from jsonb_array_elements(v) e where (e->>'withdrawn')::boolean
+  on conflict (entity, entity_id, field) do nothing;
   insert into pipeline.admin_control_events(area, action, target, detail, actor)
   values ('intake_dates', 'withdraw', 'catalogue.course_intakes', jsonb_build_object('reason', p_reason, 'results', v), auth.uid());
   return jsonb_build_object('results', v, 'withdrawn', (select count(*) from jsonb_array_elements(v) e where (e->>'withdrawn')::boolean));
@@ -253,5 +276,6 @@ insert into pipeline.component_register(kind, name, layer, area, purpose, status
  ('function', 'security.calendar_period_canonical_v1', 'Layer 2', 'Admission', 'One name for equivalent official period labels', 'active', '{}', '20261105060000'),
  ('function', 'security.intake_course_applicability_v1', 'Layer 2', 'Admission', 'Course-specific offering evidence and calendar applicability', 'active', '{}', '20261105060000'),
  ('function', 'security.intake_date_withdraw_v1', 'Layer 2', 'Admission', 'Governed withdrawal of admitted intake values', 'active', '{}', '20261105060000'),
+ ('function', 'security.intake_period_text_canonical_v1', 'Layer 2', 'Admission', 'Course-page period wording in canonical names', 'active', '{}', '20261105060000'),
  ('function', 'public.admin_intake_date_withdraw_v1', 'Layer 2', 'Admission', 'Platform Admin withdrawal of admitted intake values', 'active', '{}', '20261105060000')
 on conflict (kind, name) do nothing;

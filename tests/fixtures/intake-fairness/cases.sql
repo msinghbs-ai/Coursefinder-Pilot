@@ -9,18 +9,21 @@ create temp table k(name text primary key, id uuid);
 
 -- the selector across ten universities (before any admission in this file) ---------------------------------------------------------------
 do $$
-declare n_prov int; n_max int; n_univ1 int; v_share int := security.pipeline_num_v1('intake_dates.provider_share', 25)::int; n_elig int;
+declare v_t0 timestamptz; v_ms numeric; n_prov int; n_max int; n_univ1 int; v_share int := security.pipeline_num_v1('intake_dates.provider_share', 25)::int; n_elig int;
 begin
   select count(distinct c.provider_id) into n_elig from catalogue.course_intakes i join catalogue.courses c on c.id = i.course_id
    where i.status = 'active' and c.lifecycle_status = 'active' and (i.intake_year is null or i.start_date is null or i.application_deadline is null)
      and exists (select 1 from pipeline.provider_policy_proposals p where p.provider_id = c.provider_id and p.kind = 'intake_calendar' and p.status = 'approved');
+  v_t0 := clock_timestamp();
   create temp table sel1 as select * from security.intake_dates_plan_v3(null, 200);
+  v_ms := extract(epoch from clock_timestamp() - v_t0) * 1000;
+  if v_ms > 8000 then raise exception 'the fair plan took % ms for 200 rows (limit 8,000)', v_ms::int; end if;  -- the preview's statement limit
   select count(distinct provider_id), max(n) into n_prov, n_max from (select provider_id, count(*) n from sel1 group by 1) z;
   select count(*) into n_univ1 from sel1 s join jsonb_array_elements(security.intake_ui_scopes_v1()) x on (x->>'id')::uuid = s.provider_id where x->>'name' = 'Fixture Australian University 1';
   if (select count(*) from sel1) <> 200 or n_prov < least(n_elig, 200 / v_share) or n_max > v_share then
     raise exception 'starvation: % rows, % universities (eligible %), most for one %', (select count(*) from sel1), n_prov, n_elig, n_max; end if;
   if n_univ1 > v_share then raise exception 'the 5,200-course university took % rows', n_univ1; end if;
-  raise notice 'PASS starvation: 200 rows over % universities (% eligible), at most % each; the 5,200-course university takes % (before the change one university took all 200)', n_prov, n_elig, n_max, n_univ1;
+  raise notice 'PASS starvation: 200 rows over % universities (% eligible), at most % each; the 5,200-course university takes % (before the change one university took all 200); % ms', n_prov, n_elig, n_max, n_univ1, v_ms::int;
 end $$;
 
 -- a university whose rows were all served is behind one never served in the next run (progress persists) --------------------------------
@@ -35,6 +38,8 @@ begin
   create temp table sel2 as select * from security.intake_dates_plan_v3(null, 200);
   if exists (select 1 from sel2 join sel1 using (intake_id)) then raise exception 'unchanged rows selected again'; end if;
   if v_missing is not null and not exists (select 1 from sel2 where provider_id = any (v_missing)) then raise exception 'a university that waited was not served next: %', v_missing; end if;
+  -- it comes first: the first row of the next run belongs to a university that waited
+  if v_missing is not null and (select provider_id from security.intake_dates_plan_v3(null, 1)) <> all (v_missing) then raise exception 'the waiting university is not first'; end if;
   raise notice 'PASS persistence: the next run takes none of the rows already decided and starts with the universities that waited (%)', coalesce(array_length(v_missing, 1), 0);
 end $$;
 
@@ -61,7 +66,10 @@ begin
     ('college_jan', public.fixture_clone_intake(src, 'January', 'Intakes January, May, August* Weekly class time Approximately 20-25 hours Progression Second year')),
     ('college_may', public.fixture_clone_intake(src, 'May', 'Intakes January, May, August* Weekly class time Approximately 20-25 hours Progression Second year')),
     ('own_date', public.fixture_clone_intake(src, 'February', 'Term 1 intake: classes begin 8 February 2027', 2027)),
-    ('locked', public.fixture_clone_intake(src, 'February', 'Intakes: Term 1 (February)', 2027));
+    ('locked', public.fixture_clone_intake(src, 'February', 'Intakes: Term 1 (February)', 2027)),
+    ('t1_label', public.fixture_clone_intake(src, 'February', 'T1 intake', 2027)),
+    ('snippets', public.fixture_clone_intake(src, 'May', 'Student story: I commenced the program in May 2023 | Intakes: February and May')),
+    ('may_verb', public.fixture_clone_intake(src, 'July', 'Students may start in February or July'));
   insert into pipeline.manual_locks(entity, entity_id, field, mode) select 'course', course_id, 'intakes', 'value' from catalogue.course_intakes where id = (select id from k where name = 'locked');
   -- the Term courses are in the Website API v2 source (as published courses are); the projection refresh keeps their intakes current
   insert into search.course_documents(course_id, provider_id, intake_options)
@@ -82,7 +90,14 @@ begin
   if security.calendar_period_canonical_v1('Teaching period T1') <> 'term 1' or security.calendar_period_canonical_v1('T3') <> 'term 3' or security.calendar_period_canonical_v1('Term one') <> 'term 1'
      or security.calendar_period_canonical_v1('Teaching period S1') <> 'semester 1' or security.calendar_period_canonical_v1('Sem 2') <> 'semester 2' or security.calendar_period_canonical_v1('Tri 2') <> 'trimester 2'
      or security.calendar_period_canonical_v1('Teaching period T1A') <> 'teaching period t1a' then raise exception 'canonical names'; end if;
-  raise notice 'PASS precedence: the 2023 reading is set aside as an obsolete edition (kept, approved); Teaching period T1 and Term 1 are one period; sub-periods keep their names';
+  -- a reading with only null-year starts, and a current-year edition, stay in use
+  perform public.fixture_calendar('https://www.harbour.edu.au/null-year-dates', 'ai:gpt-4.1-mini:calendar-v2.1', '{"scope": "main_teaching", "periods": [{"period": "summer school", "months": [1], "years": [], "quotes": ["Summer school | 5 Jan"], "starts": [{"year": null, "month": 1, "day": 5, "date": null, "quote": "Summer school | 5 Jan", "meaning": "teaching_start"}], "deadlines": []}]}'::jsonb);
+  perform public.fixture_calendar('https://www.harbour.edu.au/current-year-dates', 'ai:gpt-4.1-mini:calendar-v2.1', ('{"scope": "main_teaching", "periods": [{"period": "semester 2", "months": [7], "years": [' || extract(year from now())::int || '], "quotes": ["Semester 2 ' || extract(year from now())::int || ' | 20 July"], "starts": [{"year": ' || extract(year from now())::int || ', "month": 7, "day": 20, "date": "' || extract(year from now())::int || '-07-20", "quote": "Semester 2 ' || extract(year from now())::int || ' | 20 July", "meaning": "teaching_start"}], "deadlines": []}]}')::jsonb);
+  if not (select bool_and(used) from security.calendar_sources_v1('08609bcf-387d-1316-2a52-9fbc0edff508') where url in ('https://www.harbour.edu.au/null-year-dates', 'https://www.harbour.edu.au/current-year-dates')) then
+    raise exception 'a null-year or current-year reading was set aside'; end if;
+  if security.intake_period_text_canonical_v1('Intakes: Teaching period T1, T2 and Sem 2; Tri 3') <> 'intakes: term 1, term 2 and semester 2; trimester 3' then raise exception 'page labels: %', security.intake_period_text_canonical_v1('Intakes: Teaching period T1, T2 and Sem 2; Tri 3'); end if;
+  if security.intake_course_applicability_v1('Start your marketing career in February', 3, 2027, '[]'::jsonb, false) is null then raise exception 'marketing read as March'; end if;
+  raise notice 'PASS precedence: the 2023 reading is set aside as an obsolete edition (kept, approved); Teaching period T1 and Term 1 are one period (on the calendar and on the course page); sub-periods keep their names; null-year and current-year readings stay in use';
 end $$;
 
 -- the plan and the job: admitted with course-specific evidence only; unique-month on for the applicability cases -----------------------------
@@ -97,11 +112,15 @@ begin
     f := f || case
       when r.name = 'term1' and not (r.outcome = 'filled' and r.start_date = '2027-02-15' and r.rule = 'calendar-v3' and r.publication_state = 'published') then ' term1 ' || row_to_json(r)::text
       when r.name = 'term2' and not (r.outcome = 'filled' and r.start_date = '2027-05-31' and r.publication_state = 'published') then ' term2 ' || row_to_json(r)::text
-      when r.name = 'testimonial' and not (r.outcome = 'skipped' and r.start_date is null) then ' testimonial ' || row_to_json(r)::text
+      when r.name = 'testimonial' and not (r.outcome = 'skipped' and r.start_date is null and r.reason in ('several study periods start in this month (month only)')
+                                           or r.reason like 'the course page does not state February as an intake (offering evidence missing%') then ' testimonial ' || row_to_json(r)::text
       when r.name = 'testimonial_term' and not (r.outcome = 'skipped' and r.start_date is null and r.failure_class = 'course_level_exception' and r.reason like 'the course page does not state term 1 as its own intake%') then ' testimonial_term ' || row_to_json(r)::text
       when r.name = 'testimonial_may' and not (r.outcome = 'skipped' and r.start_date is null and r.failure_class = 'course_level_exception' and r.reason like 'the course page does not state % as an intake (offering evidence missing%') then ' ' || r.name || ' ' || row_to_json(r)::text
-      when r.name = 'college_jan' and not (r.outcome = 'skipped' and r.start_date is null) then ' college_jan ' || row_to_json(r)::text
+      when r.name = 'college_jan' and not (r.outcome = 'skipped' and r.start_date is null and (r.reason like 'the calendar has no future start in this month%' or r.reason like 'the calendar does not print the year%' or r.reason like 'the course''s intakes (January, May, August)%')) then ' college_jan ' || row_to_json(r)::text
       when r.name = 'college_may' and not (r.outcome = 'skipped' and r.start_date is null and r.failure_class = 'wrong_institution_or_campus' and r.reason like 'the course''s intakes (January, May, August) do not all start in%') then ' ' || r.name || ' ' || row_to_json(r)::text
+      when r.name = 't1_label' and not (r.outcome = 'filled' and r.start_date = '2027-02-15' and r.rule = 'calendar-v3') then ' t1_label ' || row_to_json(r)::text
+      when r.name = 'snippets' and not (r.outcome = 'filled' and r.start_date = '2027-05-31' and r.rule = 'calendar-v3-unique-month') then ' snippets ' || row_to_json(r)::text
+      when r.name = 'may_verb' and not (r.outcome = 'filled' and r.start_date between '2027-07-01' and '2027-07-31' and r.rule = 'calendar-v3-unique-month') then ' may_verb ' || row_to_json(r)::text
       when r.name = 'own_date' and not (r.outcome = 'skipped' and r.start_date is null and r.failure_class = 'course_level_exception' and r.reason like 'the course page gives its own start date%') then ' own_date ' || row_to_json(r)::text
       when r.name = 'locked' and not (r.outcome = 'skipped' and r.start_date is null and r.failure_class = 'admission_held') then ' locked ' || row_to_json(r)::text
       else '' end;
@@ -111,12 +130,12 @@ begin
   v := security.intake_dates_apply_v1(100, v_courses);
   if (v->>'looked_at')::int <> 0 then raise exception 'unchanged rows looked at again: %', v; end if;
   update pipeline.platform_toolset_settings set value = to_jsonb(0) where toolset_key = 'pipeline' and key = 'intake_dates.month_unique_match';  -- as in production (IQ-00313)
-  raise notice 'PASS admission: Term 1 and Term 2 2027 admitted from the current calendar (named Term on the course page, published); a testimonial, a pathway timetable, a course date and a lock keep the month with their class; unchanged rows not repeated';
+  raise notice 'PASS admission: Term 1 and Term 2 2027 admitted from the current calendar (named Term on the course page, published); a page saying T1 matches Term 1; a real intake beside a testimonial in another snippet is admitted; "may" the verb is never May; a testimonial, a pathway timetable, a course date and a lock keep the month with their class; unchanged rows not repeated';
 end $$;
 
 -- governed withdrawal: only what the process admitted, only while held, never under a lock; the website source follows -------------------
 do $$
-declare v jsonb; t1 uuid := (select id from k where name = 'term1'); ok boolean := false; n_ev int;
+declare v jsonb; t1 uuid := (select id from k where name = 'term1'); ok boolean := false; n_ev int; wf uuid; wm uuid;
 begin
   begin perform public.admin_intake_date_withdraw_v1(array[t1], 'fixture: no sign-in'); exception when others then ok := sqlstate = '42501'; end;
   if not ok then raise exception 'withdrawal without Platform Admin not refused'; end if;
@@ -140,5 +159,21 @@ begin
   insert into pipeline.manual_locks(entity, entity_id, field, mode) select 'course', course_id, 'intakes', 'value' from catalogue.course_intakes where id = (select id from k where name = 'term2');
   v := security.intake_date_withdraw_v1((select id from k where name = 'term2'), 'fixture: locked', 'fixture');
   if (v->>'withdrawn')::boolean or (select start_date from catalogue.course_intakes where id = (select id from k where name = 'term2')) is distinct from '2027-05-31' then raise exception 'lock: %', v; end if;
-  raise notice 'PASS withdrawal: Platform Admin only; the admitted start date reverted, the year held before kept, history appended, Website API v2 source verified; not re-admitted; never twice; a lock is respected';
+  -- the Platform Admin path: several intakes of one course in one call, then one hold for the course; recorded in the admin control log
+  perform set_config('request.jwt.claim.sub', '21232f29-7a57-a5a7-4389-4a0e4a801fc3', true);
+  wf := public.fixture_clone_intake((select id from k where name = 'term1'), 'February', 'Intakes: Term 1 and Term 2');
+  wm := gen_random_uuid();
+  insert into catalogue.course_intakes(id, course_id, intake_label, intake_year, status, evidence_id, source_id, confidence)
+  select wm, course_id, 'May', null, 'active', evidence_id, source_id, confidence from catalogue.course_intakes where id = wf;
+  update catalogue.course_intakes set intake_year = 2027, start_date = case when id = wf then '2027-02-15'::date else '2027-05-31'::date end where id in (wf, wm);
+  insert into pipeline.course_intake_dates(intake_id, course_id, provider_id, outcome, before_value, after_value, applied_at, inputs_fp, next_action)
+  select i.id, i.course_id, '08609bcf-387d-1316-2a52-9fbc0edff508', 'filled', jsonb_build_object('year', null, 'start_date', null, 'application_deadline', null),
+         jsonb_build_object('year', 2027, 'start_date', i.start_date, 'application_deadline', null), now(), 'fixture', 'awaiting_official_calendar'
+    from catalogue.course_intakes i where i.id in (wf, wm);
+  v := public.admin_intake_date_withdraw_v1(array[wf, wm], 'fixture: two intakes of one course');
+  if (v->>'withdrawn')::int <> 2 then raise exception 'admin withdrawal: %', v; end if;
+  if (select count(*) from pipeline.manual_locks where entity = 'course' and field = 'intakes' and entity_id = (select course_id from catalogue.course_intakes where id = wf)) <> 1
+     or (select count(*) from catalogue.course_intakes where id in (wf, wm) and start_date is null and intake_year is null) <> 2
+     or not exists (select 1 from pipeline.admin_control_events where area = 'intake_dates' and action = 'withdraw') then raise exception 'hold or audit missing'; end if;
+  raise notice 'PASS withdrawal: Platform Admin only; the admitted start date reverted, the year held before kept, history appended, Website API v2 source verified; not re-admitted; never twice; a lock is respected; the Platform Admin path withdraws two intakes of one course in one call, holds the course once and records it';
 end $$;
