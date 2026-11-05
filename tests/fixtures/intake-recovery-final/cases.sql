@@ -33,7 +33,7 @@ begin
     ('own', public.fixture_clone_intake(src, 'February', 'Term 1 intake: classes begin 8 February 2027', 2027)),
     ('lock', public.fixture_clone_intake(src, 'February', 'Term 1 intake', 2027)),
     ('feb28', public.fixture_clone_intake(src, 'February', 'February intake', 2029));
-  insert into pipeline.manual_locks(entity, entity_id, field) select 'course', course_id, 'intakes' from catalogue.course_intakes where id = (select id from k where name = 'lock');
+  insert into pipeline.manual_locks(entity, entity_id, field, mode) select 'course', course_id, 'intakes', 'value' from catalogue.course_intakes where id = (select id from k where name = 'lock');
 end $$;
 
 -- the plan and the classes ---------------------------------------------------------------------------------------------------------------
