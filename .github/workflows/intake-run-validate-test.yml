@@ -9,6 +9,7 @@ on:
       - 'tests/fixtures/intake-preview-timeout/**'
       - 'tests/fixtures/intake-calendar-v2/**'
       - 'tests/fixtures/intake-recovery-final/**'
+      - 'tests/fixtures/intake-fairness/**'
       - 'supabase/functions/coverage-sweep/calendar.ts'
       - 'tests/integration/intake-postgres.spec.mjs'
       - 'playwright.intake.config.mjs'
@@ -47,6 +48,8 @@ jobs:
       - run: bash tests/fixtures/intake-calendar-v2/browser.sh | tee intake-calendar-v2-browser.log
       - run: bash tests/fixtures/intake-recovery-final/run.sh | tee intake-recovery-final-results.log
       - run: bash tests/fixtures/intake-recovery-final/browser.sh | tee intake-recovery-final-browser.log
+      - run: bash tests/fixtures/intake-fairness/run.sh | tee intake-fairness-results.log
+      - run: bash tests/fixtures/intake-fairness/browser.sh | tee intake-fairness-browser.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -57,6 +60,8 @@ jobs:
             intake-calendar-v2-browser.log
             intake-recovery-final-results.log
             intake-recovery-final-browser.log
+            intake-fairness-results.log
+            intake-fairness-browser.log
             uat-artifacts/intake-integration.json
             uat-artifacts/intake-benchmark.json
             uat-artifacts/intake-timeout-regression.json
