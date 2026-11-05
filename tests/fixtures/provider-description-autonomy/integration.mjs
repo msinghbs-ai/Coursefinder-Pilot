@@ -106,7 +106,20 @@ ok(stale.totals.website_verified===10&&(stale.totals.zoho_verified??stale.zoho_v
 const admitted=rpc('verify',{cohort_id:prepared.cohort_id})
 ok(admitted.totals.admitted===10&&admitted.totals.website_verified===10,'ten actual authorised Layer 4 decisions write catalogue and exact Website projection verifies all ten')
 ok(admitted.totals.actual_ai_calls===10,'actual started model-call instrumentation distinguishes calls from leases and pre-AI holds')
-ok((admitted.totals.zoho_verified??admitted.zoho_verified)===10&&admitted.providers.every(p=>p.zoho.status==='verified'),'authorised Verify repairs exact existing prepared projection and real Zoho read-back verifies all ten')
+// Integration Controller decision 5 Nov 2026 (item 3): this feature never writes pipeline.website_sync_items. Verify only reads back.
+ok((admitted.totals.zoho_verified??admitted.zoho_verified)===0&&admitted.providers.every(p=>p.zoho.status==='mismatch'),'Verify reads back only: the stale prepared feed item is reported, not rewritten by this feature')
+// The existing website-sync-check scan, copied live and md5-checked, is the only writer of the feed.
+const wsync=JSON.parse(fs.readFileSync(fixtureRoot+'production-website-sync.json','utf8'))
+for(const f of wsync.functions)assert.equal(json(`select to_jsonb(md5(pg_get_functiondef(${quote(f.signature)}::regprocedure)));`),f.md5,'live website sync function in the fixture: '+f.signature)
+const seqBefore=json(`select coalesce(max(seq),0) from pipeline.website_sync_items where entity='provider';`)
+db("update pipeline.website_sync_scan set done=(entity<>'provider'),after_key=null;") // one pass of the provider entity only; the other entities' builders are outside this fixture
+const scan=json(`select ${wsync.job.command.replace(/^select /,'')};`)
+const feed=json(`select jsonb_agg(jsonb_build_object('key',w.item_key,'description',w.item->>'description','expected',p.description,'seq',w.seq,'hash_ok',w.hash=md5((w.item-'generated_at'-'freshness')::text))) from pipeline.website_sync_items w join catalogue.providers p on p.stable_key=w.item_key join pipeline.provider_description_reads r on r.provider_id=p.id and r.state='admitted' where w.entity='provider';`)
+ok(scan.provider.changed>=10&&feed.length===10&&feed.every(f=>f.description===f.expected&&f.seq>seqBefore&&f.hash_ok),'the existing website-sync-check scan (live, md5-checked) writes each approved description into the feed as a changed item')
+const rescan=(db("update pipeline.website_sync_scan set done=(entity<>'provider'),after_key=null;"),json(`select ${wsync.job.command.replace(/^select /,'')};`))
+ok(rescan.provider.changed===0,'a second scan finds nothing to change')
+const published=rpc('verify',{cohort_id:prepared.cohort_id})
+ok((published.totals.zoho_verified??published.zoho_verified)===10&&published.providers.every(p=>p.zoho.status==='verified')&&published.totals.website_verified===10,'after the existing scan, real Zoho and Website read-back verify all ten')
 ok(json('select count(*) from pipeline.layer4_decisions;')===10,'every admission has a real existing Layer 4 decision record')
 db(`update pipeline.platform_toolset_settings set value=${quote(JSON.stringify(allKeys))}::jsonb where toolset_key='pipeline' and key='pdesc.provider_keys';`)
 // Persist results separately from later negative and browser scenarios.

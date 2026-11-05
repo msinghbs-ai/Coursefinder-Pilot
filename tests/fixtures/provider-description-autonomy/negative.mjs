@@ -100,8 +100,13 @@ const wrongIdentity=j(`begin;update pipeline.website_sync_items set item=jsonb_s
 ok(wrongIdentity.providers[0].zoho.status==='mismatch','matching description text under an unrelated consumer provider identity is refused publication verification')
 const validationTicks=Math.max(1,Math.ceil(scalar("select count(*) from pipeline.provider_description_reads where state in ('admitted','verified');")/scalar("select security.pipeline_num_v1('pdesc.queue_per_run',10);")))
 const scheduledChecks=Array.from({length:validationTicks},()=>"select security.provider_description_publication_check_v1();").join('')
-const zohoRecovered=j(`begin;update pipeline.website_sync_items set item=jsonb_set(item,'{description}','"Stale prepared Zoho description"'),hash=md5((jsonb_set(item,'{description}','"Stale prepared Zoho description"')-'generated_at'-'freshness')::text) where entity='provider' and item_key='fixture:provider:11';${scheduledChecks}select public.zoho_v2_provider('fixture:provider:11');rollback;`)
-ok(zohoRecovered.item.description===nzVerified.providers[0].proposed_description,'existing scheduled verifier repairs stale prepared Zoho descriptions and confirms actual read-back')
+// Integration Controller decision 5 Nov 2026 (item 3): the existing website-sync-check scan, not this feature, refreshes the feed.
+const scanJob=JSON.parse(fs.readFileSync('tests/fixtures/provider-description-autonomy/production-website-sync.json','utf8')).job.command
+const staleFeed=`update pipeline.website_sync_items set item=jsonb_set(item,'{description}','"Stale prepared Zoho description"'),hash=md5((jsonb_set(item,'{description}','"Stale prepared Zoho description"')-'generated_at'-'freshness')::text) where entity='provider' and item_key='fixture:provider:11';`
+const verifierOnly=j(`begin;${staleFeed}${scheduledChecks}select public.zoho_v2_provider('fixture:provider:11');rollback;`)
+ok(verifierOnly.item.description==='Stale prepared Zoho description','the scheduled publication verifier never writes the feed')
+const zohoRecovered=j(`begin;${staleFeed}update pipeline.website_sync_scan set done=(entity<>'provider'),after_key=null;${scanJob};${scheduledChecks}select public.zoho_v2_provider('fixture:provider:11');rollback;`)
+ok(zohoRecovered.item.description===nzVerified.providers[0].proposed_description,'the existing website-sync-check scan refreshes a stale prepared Zoho description and the verifier confirms actual read-back')
 // Actual consumer mismatch, followed by the same scheduled publication verifier recovery.
 const nzRead=nzVerified.providers[0].read_id
 const mismatch=j(`begin;update catalogue.providers set publication_status='unpublished' where id=${quote(pid(11))}::uuid;update pipeline.provider_description_reads set published_at=null where id=${quote(nzRead)}::uuid;select jsonb_build_object('check',security.provider_description_publication_check_v1(),'published',(select published_at from pipeline.provider_description_reads where id=${quote(nzRead)}::uuid),'body',public.website_v2_provider('fixture:provider:11'));rollback;`)

@@ -31,6 +31,7 @@ node "$FX/registration-parity.mjs" | "${P[@]}"
 { echo 'set check_function_bodies=off;'; for f in "$FX"/live/*.sql; do cat "$f"; echo ';'; done; } | "${P[@]}"
 # Remaining live helpers/trigger installation and known unrelated table projections.
 "${P[@]}" < "$FX/helpers.sql"
+"${P[@]}" < "$FX/website-sync.sql"
 node "$FX/zoho-parity.mjs" | "${P[@]}"
 "${P[@]}" < "$FX/lineage.sql"
 "${P[@]}" < "$FX/manual-column-guard.sql"

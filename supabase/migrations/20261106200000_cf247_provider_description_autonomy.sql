@@ -322,38 +322,8 @@ exception when others then
 end $function$;
 revoke all on function security.provider_description_consumer_read_v1(text,text) from public,anon,authenticated;
 
--- Rebuild only the admitted provider's existing prepared item, through the existing item builder and sync sequence contract.
-create or replace function security.provider_description_sync_provider_v1(p_provider uuid,p_expected text) returns jsonb
-language plpgsql security definer set search_path to '' as $function$
-declare p catalogue.providers%rowtype; v jsonb; v_changed int:=0; v_error text; h text; it pipeline.website_sync_items%rowtype;
-begin
- select * into p from catalogue.providers where id=p_provider;
- if p.id is null or p.description is distinct from p_expected or not exists(select 1 from pipeline.provider_description_reads r where r.provider_id=p.id and r.state='admitted' and r.proposal->>'description'=p.description) then return jsonb_build_object('refreshed',false,'reason','no_matching_authorised_admission'); end if;
- if not pg_try_advisory_xact_lock(hashtext('website-sync-check')) then return jsonb_build_object('refreshed',false,'reason','projection_sync_in_flight'); end if; -- fixed: existing shared projection lock, tried without waiting.
- v:=security.website_sync_item_v1('provider',p.id,p.stable_key);
- if v is null or v->>'description' is distinct from p_expected or v->>'provider_id' is distinct from p.stable_key then return jsonb_build_object('refreshed',false,'reason','provider_projection_not_ready'); end if;
- -- The same row change security.website_sync_check_v1 (job website-sync-check) makes for this one item: same builder (website_sync_item_v1),
- -- same hash (generated_at and freshness excluded), same sequence and the same shared lock. A later scan finds the hash equal and does nothing.
- h:=md5((v-'generated_at'-'freshness')::text);
- select * into it from pipeline.website_sync_items where entity='provider' and item_key=p.stable_key;
- if it.item_key is null then
-  insert into pipeline.website_sync_items(entity,item_key,ref_id,hash,seq,item) values('provider',p.stable_key,p.id,h,nextval('pipeline.website_sync_seq'),v);
- elsif it.removed_at is not null then
-  update pipeline.website_sync_items set removed_at=null,hash=h,item=v,ref_id=p.id,seq=nextval('pipeline.website_sync_seq'),seq_at=now() where entity='provider' and item_key=p.stable_key;
- elsif it.hash is null then
-  update pipeline.website_sync_items set hash=h,item=v,ref_id=p.id where entity='provider' and item_key=p.stable_key;
- elsif it.hash<>h then
-  update pipeline.website_sync_items set hash=h,item=v,ref_id=p.id,seq=nextval('pipeline.website_sync_seq'),seq_at=now() where entity='provider' and item_key=p.stable_key;
- elsif it.item is null then
-  update pipeline.website_sync_items set item=v where entity='provider' and item_key=p.stable_key;
- end if;
- get diagnostics v_changed=row_count;
- return jsonb_build_object('refreshed',true,'changed',v_changed,'provider_id',p.id,'projection','pipeline.website_sync_items');
-exception when others then
- get stacked diagnostics v_error=message_text;
- return jsonb_build_object('refreshed',false,'reason','projection_error','error',v_error,'sqlstate',sqlstate);
-end $function$;
-revoke all on function security.provider_description_sync_provider_v1(uuid,text) from public,anon,authenticated;
+-- Integration Controller decision 5 Nov 2026 (item 3): no second writer of pipeline.website_sync_items. The existing website-sync-check
+-- scan (security.website_sync_check_v1, every minute) is the only writer; it picks up an approved description like any catalogue change.
 
 create or replace function security.provider_description_run_result_v1(p_cohort uuid) returns jsonb
 language plpgsql stable security definer set search_path to '' as $function$
@@ -667,7 +637,6 @@ language plpgsql security definer set search_path to '' as $function$
 declare r record; v_body jsonb; v_zoho jsonb; v_n int:=0;
 begin
  for r in select d.id,d.provider_id,d.proposal,p.stable_key,p.description from pipeline.provider_description_reads d join catalogue.providers p on p.id=d.provider_id where d.state in ('admitted','verified') and p.description=d.proposal->>'description' and security.provider_description_approved_lineage_v1(p.id,p.description) is not null order by d.consumer_checked_at nulls first,d.id limit security.pipeline_num_v1('pdesc.queue_per_run',10)::int for update of d skip locked loop
-  perform security.provider_description_sync_provider_v1(r.provider_id,r.description);
   begin v_body:=public.website_v2_provider(r.stable_key); exception when others then v_body:=null; end;
   v_zoho:=security.provider_description_consumer_read_v1('zoho',r.stable_key);
   update pipeline.provider_description_reads set consumer_checked_at=now(),consumer_checks=jsonb_build_object('website_verified',coalesce(v_body->'item'->>'provider_id'=r.stable_key and v_body->'item'->>'description'=r.description and r.description=r.proposal->>'description',false),'zoho_verified',coalesce(v_zoho->'item'->>'provider_id'=r.stable_key and v_zoho->'item'->>'description'=r.description and r.description=r.proposal->>'description',false),'website_error',v_body->'error','zoho_error',v_zoho->'error','checked_at',now()),zoho_published_at=case when v_zoho->'item'->>'provider_id'=r.stable_key and v_zoho->'item'->>'description'=r.description and r.description=r.proposal->>'description' then coalesce(zoho_published_at,now()) else zoho_published_at end,published_at=case when v_body->'item'->>'description'=r.description and v_body->'item'->>'provider_id'=r.stable_key and r.description=r.proposal->>'description' then coalesce(published_at,now()) else published_at end,updated_at=now() where id=r.id;
@@ -917,7 +886,7 @@ declare v_actor uuid:=auth.uid(); v_rank int:=security.current_role_rank(); c pi
 begin
  if v_actor is null or v_rank<3 then raise exception 'curator role required' using errcode='42501'; end if;
  select * into v_job from pipeline.automation_catalogue where jobname='provider-description-read';
- if p_action='verify' and v_rank<coalesce(v_job.control_rank,6) then raise exception 'your role cannot repair and verify this job publication' using errcode='42501'; end if;
+ if p_action='verify' and v_rank<coalesce(v_job.control_rank,6) then raise exception 'your role cannot verify this job publication' using errcode='42501'; end if;
  if p_action='capabilities' then
  return jsonb_build_object('contract','provider-description-run-v1','can_run',v_rank>=coalesce(v_job.control_rank,6),'control_rank',coalesce(v_job.control_rank,6),'reason_min_chars',security.pipeline_num_v1('pdesc.reason_min_chars',5)::int,
  'can_explain',v_rank>=coalesce(v_job.control_rank,6),'can_diagnose',security.pipeline_num_v1('ops.ai_diagnosis_on',0)>=1 and security.ai_use_allowed_v1('ops_diagnose') and nullif(security.toolset_setting('pipeline','ops.ai_diagnosis_model')#>>'{}','') is not null,'ai_diagnosis_reason','AI assistance requires the existing approved Operations diagnosis switch, model and spending guards plus an existing open issue linked to this exact provider and evidence. Explain evidence always uses stored checks.',
@@ -1041,9 +1010,6 @@ begin
    return jsonb_build_object('preview',v_preview||jsonb_build_object('token',c.id,'expires_at',c.expires_at),'scope',c.selection,'history',v_history);
  end if;
  if c.id is null then return jsonb_build_object('history',v_history,'providers','[]'::jsonb,'runs','[]'::jsonb); end if;
- if p_action='verify' and v_rank>=coalesce(v_job.control_rank,6) then
-  perform security.provider_description_sync_provider_v1(m.provider_id,p.description) from pipeline.provider_description_cohort_members m join catalogue.providers p on p.id=m.provider_id join pipeline.provider_description_reads r on r.id=m.read_id where m.cohort_id=c.id and r.state='admitted';
- end if;
  v_res:=security.provider_description_run_result_v1(c.id);
  if p_action='verify' then
    update pipeline.provider_description_cohorts set verified_at=now(),verification=v_res-'last_verification' where id=c.id;

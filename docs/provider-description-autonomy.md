@@ -99,26 +99,20 @@ The sentence must still pass the existing `pdesc_support_v1` share, the `pdesc_s
 - **Old worker against the new database.** The old worker leases with `svc_provider_description_next(p_limit)` and never reserves. Since 5 Nov, that call returns `worker_protocol_required` with no items when the caller is a service-role worker that has not declared the reservation protocol. So the old worker gets nothing to read and makes no paid call.
 - **The pause still comes first.** It is the primary control. The lease gate is a second line of defence.
 
-### Website feed refresh after an approval
+### Website feed: the existing scan is the only writer (Integration Controller decision, 5 Nov 2026)
 
-`security.provider_description_sync_provider_v1(provider, expected description)` refreshes **one** row of `pipeline.website_sync_items`: entity `provider`, key = the provider's `stable_key`. It runs only after an authorised Layer 4 approval, and only when the catalogue description equals that approved text. It is called from the scheduled publication check and from Verify.
+This feature does **not** write `pipeline.website_sync_items`. The immediate single-provider refresh (`provider_description_sync_provider_v1`) has been removed, together with its calls from the publication check and from Verify.
 
-It makes exactly the change that the existing job `website-sync-check` (`security.website_sync_check_v1`, every minute) would make for that item:
+**After a Layer 4 approval:**
+1. The approval updates `catalogue.providers.description`. Nothing else changes.
+2. The existing job `website-sync-check` (`security.website_sync_check_v1`, every minute, live md5 `f8095625…`) builds the provider item with `website_sync_item_v1`. It finds the hash changed and writes the item with a new sequence, as it does for any catalogue change. Zoho and the Website then serve it.
+3. **Verify and the scheduled publication check only read back.** Until the scan reaches the provider, Zoho can show the stale prepared item. That is reported as `mismatch`, never as published.
 
-- **Same builder:** `security.website_sync_item_v1('provider', id, stable_key)`.
-- **Same hash:** md5 of the item without `generated_at` and `freshness`.
-- **Same sequence:** `pipeline.website_sync_seq`.
-- **Same lock:** the `website-sync-check` advisory lock. It is tried and never waited on; when the job is running, the refresh is skipped.
-- **Same branches:**
-  - insert when missing;
-  - restore a removed row;
-  - set the hash without a new sequence on first check;
-  - new sequence when the hash differs;
-  - store an unchanged item that was missing.
+**Fixture proof** (`integration.mjs`, `negative.mjs` and the browser spec):
 
-A later scan finds the hash equal and does nothing. Nothing changes in the consumer contract: the row is what the builder makes, and no column, function or API shape changes.
-
-Why it exists: Zoho reads the prepared item. Without this, a newly approved description waits until the scan reaches that provider. The scan's pass order is reference, provider, logo, rankings, scholarship, course.
+- The live `website_sync_check_v1` and `website_sync_candidates_v1` are copied into `live/` and md5-checked against `production-website-sync.json`, together with the production `website_sync_scan` table.
+- After ten approvals, one pass of the scan writes each approved description as a changed item: new sequence, hash correct. A second pass changes nothing. Zoho and Website read-back then verify all ten.
+- The publication verifier alone leaves a stale feed item untouched.
 
 ### Post-deploy Run Now setting (§1), through the existing settings mechanism
 
@@ -165,7 +159,7 @@ The current five provider keys, AU/university scope, US$1 lifetime pilot ceiling
 
 The isolated tests use PostgreSQL 17.6, schema/code metadata captured read-only, fictional providers and controlled stored source documents. The model transport is the simulated external boundary; actual worker request, identity, cost-quote, claim and quote parsing plus database reader, validator, Layer 4 and provider consumer projection execute. Fixture costs are controlled test values, never claimed as vendor expenditure. No production source content or user data is copied into these fixtures.
 
-Zoho has an existing provider route (`public.zoho_v2_provider(text)`). Its prepared provider item can override the fresh Website description, so both actual projections must be read independently and stale-cache mismatches retained until the existing sync mechanism repairs them. The earlier admin statement that Zoho does not carry descriptions is outdated. Website proof never counts as Zoho publication. No consumer function or API shape is changed to manufacture parity.
+Zoho has an existing provider route (`public.zoho_v2_provider(text)`). Its prepared provider item can override the fresh Website description, so both actual projections must be read independently and stale-cache mismatches retained until the existing `website-sync-check` scan refreshes them (this feature never writes the feed). The earlier admin statement that Zoho does not carry descriptions is outdated. Website proof never counts as Zoho publication. No consumer function or API shape is changed to manufacture parity.
 
 The 4 Nov feature-branch Cloudflare build guard (`scripts/guard-provider-description-no-deploy.mjs`, npm prebuild and Wrangler custom build) was removed on 5 Nov: it made the "Workers Builds: coursefinder-pilot" check fail on purpose. A Workers Builds run on a feature branch uploads a preview version only; production deployment stays with the Integration Controller.
 
@@ -195,7 +189,7 @@ Only after Platform Admin release authorisation, Claude:
 3. Within **0–2 minutes**, signs in to Layer 2 → Enrich fields → Provider Descriptions — Run & Validate. Confirms the published/active eligibility denominator, correct country/type and individual selection, current source evidence, exact institutional identity, review status and allowed cost. Confirms read-only roles cannot save/run.
 4. Within **2–5 minutes**, previews a genuinely eligible bounded stored-evidence cohort, records an audit reason, saves it and invokes Run Now once. Records cohort/run/read/evidence references, actual saved outcome, source/model version, charge/reservation and next stage. A short or empty denominator is BLOCKED with evidence; no limit or scope is widened to obtain a green result.
 5. Within **5–10 minutes**, reads the saved result after refresh and verifies actual evidence extraction, validation and proposal/hold progress. Opens the existing Layer 4 decision item. Human decisions remain subject to their actual authority and ownership; no automatic reviewer impersonation is permitted. If capacity is full, confirms parking and continuation of unrelated eligible work.
-6. After an authorised human decision, verifies the active catalogue description and actual Website and Zoho provider read-back separately. Confirms stale prepared items are repaired through existing sync machinery, publication retry and next-provider continuation through the existing schedule, unchanged rejected evidence is not reread, and unknown-response recovery returns the same run. Inspects the saved evidence on phone.
+6. After an authorised human decision, verifies the active catalogue description and actual Website and Zoho provider read-back separately. Confirms stale prepared items are refreshed by the existing `website-sync-check` scan (this feature never writes the feed), publication retry and next-provider continuation through the existing schedule, unchanged rejected evidence is not reread, and unknown-response recovery returns the same run. Inspects the saved evidence on phone.
 7. Records proposal, admission and publication counts separately, source-unavailable/identity/quality/policy exceptions and actual cost. Returns any failed verification to the existing integration queue. Claude alone declares production acceptance.
 
 Forward recovery: pause the existing reader through its governed switch/job controls with a reason if incorrect processing is found; retain all saved evidence, proposals and decisions. Do not drop tables, delete history, override locks or write directly into the consumer projection. Correct the implementation and use the existing authorised review/correction process.

@@ -126,6 +126,9 @@ test('operator runs a fixed cohort, recovers its committed request, then inspect
   // authorised Layer 4 decision function as its controlled reviewer identity.
   const approved = await page.request.post(service + '/fixture/approve', { data: { cohort_id: cohortId } })
   expect(approved.ok(), await approved.text()).toBe(true)
+  // Integration Controller decision 5 Nov 2026 (item 3): the existing website-sync-check job (every minute, live function copied into the
+  // fixture) is the only writer of the Website/Zoho feed. Run one provider pass of it, as production would within a minute of the approval.
+  sql(`update pipeline.website_sync_scan set done=(entity<>'provider'),after_key=null;select security.website_sync_check_v1(security.pipeline_num_v1('batch.website_sync_check', 600)::int);`, { role: 'postgres' })
   await page.getByRole('button', { name: 'Verify catalogue & publication', exact: true }).click()
   saved = await read(page.request, 'saved', { cohort_id: cohortId })
   expect(saved.totals.admitted).toBe(1)
