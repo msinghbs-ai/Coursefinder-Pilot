@@ -75,7 +75,8 @@ const VERSION = "coverage-sweep-v0.5.6"; // extractor version (unchanged by v0.6
 // v0.38.1 (22 Oct 2026, NZ course list pages): a page the AI page match chose from the university's own site addresses (its course list or
 // site map) is listed on the university's own site, so it may be read through the scraper when the direct read is blocked (Otago, Lincoln, AUT).
 const FC_TRUSTED_BASIS = ["cricos_search", "cricos_code", "cricos_code_on_page", "nzqa_code", "adapter_code", "title_match", "cms_path_public", "manual", "firecrawl_upgrade", "ai_match", "programme_list"]; // v0.45.0: a page bound by its NZ or CA code is as trusted as one bound by a CRICOS code
-const WORKER = "coverage-sweep-worker-v0.59.7"; // v0.59.7 (5 Nov 2026, CF-247 intake recovery, migration 20261105020000): academic calendars read by calendar-v2 (dated starts with meaning, deadlines with who they apply to, scope, slices, notes from earlier findings; calendar.ts) and mode calendar_reread (stored calendars again: the dated parser first, the AI queue only when the parser cannot read it safely).
+const WORKER = "coverage-sweep-worker-v0.59.8"; // v0.59.8 (5 Nov 2026, CF-247 final intake recovery, migration 20261105040000): calendar reader calendar-v2.1 (the year of a start from its own section: heading, title or year tabs; a wrong-section year rejected); mode calendar_reread reads again what an earlier reader read (svc_calendar_reread_next_v2 / _record_v2 with the reader version) and hands stale editions to the existing reads within the credit budget (svc_calendar_refresh_v1).
+// was v0.59.7 // v0.59.7 (5 Nov 2026, CF-247 intake recovery, migration 20261105020000): academic calendars read by calendar-v2 (dated starts with meaning, deadlines with who they apply to, scope, slices, notes from earlier findings; calendar.ts) and mode calendar_reread (stored calendars again: the dated parser first, the AI queue only when the parser cannot read it safely).
 // was v0.59.6 // v0.59.6 (3 Nov 2026, CF-247 IQ-00111 P0 fee integrity, migration 20261104140000): fee_ai asks the model for each fee row's units_kind (units or credit points), the page's own full_time_load, course_years and whole_course, and names the kind the country load counts (fee_country_profiles.units_are); the database makes the yearly figure from them and holds an unclear one (security.fee_reader_yearly_v1, fees.units_load_fix_on) and keeps page fees out while a fee hold or fee-check exclusion is active (fees.respect_holds_on); nothing else changes.
 // was v0.59.5 // v0.59.5 (3 Nov 2026, CF-247 P0 autonomous operations, workstream B worker release for the other workstreams' interface requests, Integration Controller 18:20): new mode ops_diagnose (ops-diagnose.ts; workstream A contract ops-diagnose-v1: AI-assisted diagnosis through svc_ops_diagnosis_next and svc_ops_diagnosis_record, pinned model, existing OpenRouter path, each request answered exactly once, {error} on failure); enrich_ai keeps its answers first (svc_enrich_ai_stash_v1, workstream D) and records them as before; the entry matrix reader keeps the model's value, grade and scale in every dropped entry and, each behind a reading.* setting that ships off, reads a printed range as its lower bound, merges subject-equivalence rows into one subject-prerequisite row and stops holding a global-qualification page that says it applies in any country (entry.ts; workstream C); link_search answers each distinct query once and reuses an earlier answer for the same query (link-share.ts, reading.link_search_share_on, ships off; workstream F).
 // was v0.59.4 // v0.59.4 (3 Nov 2026, CF-247 Workstream C, Platform Admin direction 3 Nov 2026 09:32, acceptance report item 1): enrich_ai reads course description and application deadline (Enrich fields fields description and deadline) from the course's stored page in one call per course (course-text.ts, prompt course-text-v1, the central model, answer limit reading.answer_tokens.course_text); every quote is checked against the page; nothing is fetched or cut here; the database admits, holds or sends to Layer 4 (security.enrich_course_text_record_v1); every other read is unchanged.
@@ -2189,7 +2190,8 @@ async function handle(req: Request): Promise<Response> {
     // with no paid page read. The dated parser first (its reading recorded as its own proposal for the existing approval); the existing central-page
     // AI queue only when the parser gives no current or future dated teaching start or the address is not a trusted main teaching calendar.
     if (mode === "calendar_reread") {
-      const docs: { id: string; provider_id: string; url: string; storage_path: string; trusted_address: boolean }[] = await rpc("svc_calendar_reread_next", { p_limit: Math.min(Number(body.limit || 20), 60) });
+      // v0.59.8: documents read by an earlier calendar reader are read again; only those still needed (svc_calendar_reread_next_v2)
+      const docs: { id: string; provider_id: string; url: string; storage_path: string; trusted_address: boolean }[] = await rpc("svc_calendar_reread_next_v2", { p_limit: Math.min(Number(body.limit || 20), 60), p_reader: CALENDAR_READER });
       const tally: Record<string, number> = {};
       await pool(docs, 4, async (d) => {
         try {
@@ -2197,14 +2199,17 @@ async function handle(req: Request): Promise<Response> {
           const md = await storedHtml(d.storage_path);
           const parsed = { ...calendarStarts(md), parser: CALENDAR_PARSER_DATES };
           const safe = calendarSafe(parsed, d.trusted_address);
-          const r = await rpc("svc_calendar_reread_record", { p_id: d.id, p_parsed: parsed, p_send_to_ai: !safe.safe, p_reason: safe.reason, p_error: null });
+          const r = await rpc("svc_calendar_reread_record_v2", { p_id: d.id, p_parsed: parsed, p_send_to_ai: !safe.safe, p_reason: safe.reason, p_error: null, p_reader: CALENDAR_READER });
           const k = safe.safe ? "dated_by_parser" : r?.sent_to_ai ? "sent_to_ai" : "no_dates"; tally[k] = (tally[k] || 0) + 1;
         } catch (e) {
-          await rpc("svc_calendar_reread_record", { p_id: d.id, p_parsed: null, p_send_to_ai: false, p_reason: null, p_error: (e instanceof Error ? e.message : String(e)).slice(0, 400) }).catch(() => null);
+          await rpc("svc_calendar_reread_record_v2", { p_id: d.id, p_parsed: null, p_send_to_ai: false, p_reason: null, p_error: (e instanceof Error ? e.message : String(e)).slice(0, 400), p_reader: CALENDAR_READER }).catch(() => null);
           tally.failed = (tally.failed || 0) + 1;
         }
       });
-      return j({ ok: true, mode, documents: docs.length, tally, paid_reads: 0, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER });
+      // v0.59.8 (mandate 5 Nov 2026 12:44 R2): stale editions of needed calendars are handed to the existing provider-facts reads, within the
+      // database's credit budget (svc_calendar_refresh_v1 decides and records; this mode itself fetches nothing)
+      const refresh = await rpc("svc_calendar_refresh_v1", { p_reader: CALENDAR_READER }).catch((e) => ({ error: (e instanceof Error ? e.message : String(e)).slice(0, 200) }));
+      return j({ ok: true, mode, reader: CALENDAR_READER, documents: docs.length, tally, refresh, paid_reads: 0, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER });
     }
     // v0.47.0 (CF-247 Track C, entry requirements step A): the entry matrix reader. Phase 1 reads entry pages not held yet (stored copies
     // are taken by the database first): direct, robots.txt respected (a disallowed page is never fetched another way); Firecrawl only when

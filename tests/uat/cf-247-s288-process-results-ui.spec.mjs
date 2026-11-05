@@ -45,7 +45,7 @@ test('saved results: what it did, how many, what was missed and why, the next re
   await expect(page.getByText('several study periods start in this month (month only) — 79 rows')).toBeVisible()
   await expect(page.getByRole('link', { name: 'https://www.unswglobal.unsw.edu.au/study/key-dates' })).toBeVisible()
   await expect(page.getByText(/next timed revisit/)).toBeVisible()
-  expect(await page.evaluate(() => window.calls.map(c => c.view))).toEqual(['latest'])
+  expect(await page.evaluate(() => window.calls.map(c => c.view))).toEqual(['latest', 'recovery'])
 })
 
 test('validation from the screen: calendars with quotes, reader findings and recent decisions with before, after and evidence', async ({ page }) => {
@@ -65,7 +65,7 @@ test('Measure now is for Operators and above; a read-only role sees saved result
   await expect(page.getByRole('button', { name: 'Measure now' })).toHaveCount(0)
   await mount(page, 4)
   await page.getByRole('button', { name: 'Measure now' }).click()
-  await expect.poll(() => page.evaluate(() => window.calls.map(c => c.view))).toEqual(['latest', 'measure', 'latest'])
+  await expect.poll(() => page.evaluate(() => window.calls.map(c => c.view))).toEqual(['latest', 'recovery', 'measure', 'latest'])
 })
 
 test('the browser bridge calls only the role-checked saved-results function', async ({ page }) => {

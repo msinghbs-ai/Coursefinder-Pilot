@@ -8,7 +8,13 @@
 //  * Long documents are read in slices (settings reading.calendar_slice_chars, reading.calendar_max_slices).
 //  * calendarSafe: the dated parser's reading may stand without AI only when it gives a current or future dated teaching start and the
 //    address is a trusted main teaching calendar (decision §2: AI only when deterministic extraction cannot interpret the source safely).
-export const CALENDAR_READER = "calendar-v2";
+// calendar-v2.1 (Platform Admin final intake recovery mandate 5 Nov 2026 12:44, R1): a year not printed in the quote is taken only from
+//    the section that encloses the quoted row (sectionYear): the nearest heading above it, an ancestor heading (a higher level, never a
+//    sibling such as "changing in 2028"), the document title, or the calendar's year tabs matched to repeated section headings in order
+//    (UNSW "2026 | 2027" then Term 1 … Term 3 twice). The heading or tab is kept as year_quote with year_basis. A year the reader claims that
+//    the section does not give is rejected (year_from_wrong_section); a quote found in sections of different years is rejected
+//    (year_ambiguous); no section year at all stays "academic year unproven" (year_not_printed). Period names lose their printed year.
+export const CALENDAR_READER = "calendar-v2.1";
 export const CALENDAR_PARSER_DATES = "provider-policy-calendar-dates-v2";
 const MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
 const flat = (s: string) => String(s || "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "");
@@ -19,7 +25,7 @@ const APPLIES = ["international", "domestic", "all", "unstated"];
 export const CALENDAR_PROMPT = [
   "You read one university page or document with academic dates (an academic calendar, key dates or principal dates).",
   "1. scope: which students this calendar is for: main_teaching (the university's main coursework teaching periods at its home campuses), offshore_campus (a campus in another country), college_or_residence (a residential or affiliated college), study_abroad_inbound (exchange or study abroad students), pathway_or_foundation (a foundation, diploma or English pathway provider), research_only, or other. Copy the sentence or heading that shows it (scope_quote).",
-  "2. periods: every study period (Semester 1, Trimester 2, Term 3, Autumn session, Teaching period 1, Summer school and similar). For each, the date it starts, exactly as printed: year, month and day (null when not printed). Copy the exact row or sentence that gives that date (start_quote). If the year is printed only in a heading above the row, give that heading as year_quote; otherwise leave year_quote empty. Give start_meaning: teaching_start when classes or teaching begin, orientation for orientation or O-week, enrolment for enrolment or census, other otherwise. Give the end date the same way when printed (end_quote).",
+  "2. periods: every study period (Semester 1, Trimester 2, Term 3, Autumn session, Teaching period 1, Summer school and similar). For each, the date it starts, exactly as printed: year, month and day (null when not printed). Copy the exact row or sentence that gives that date (start_quote). If the year is not printed in that row, give the year of the section that encloses the row: the heading above it, the page title, or the year tab the section sits under (pages often show one block of identical headings per year, in the order of their year tabs); copy that heading or tab as year_quote. Never take a year from a neighbouring section, a note about future changes or another year's block; leave the year null if the enclosing section shows none. Give the period name without its year. Give start_meaning: teaching_start when classes or teaching begin, orientation for orientation or O-week, enrolment for enrolment or census, other otherwise. Give the end date the same way when printed (end_quote).",
   "3. application_deadlines: for each period, the closing dates for applications printed for it, with year, month, day, who they apply to (international, domestic, all, unstated) and the exact quote.",
   "Never infer, calculate or move a date to another year. Leave out exams, census dates, holidays, results and graduation. Return an empty periods list if the page gives no dates.",
 ].join("\n");
@@ -53,7 +59,7 @@ export function calendarSlices(text: string, chars: number, max: number): { slic
 }
 
 type Finding = { code: string; detail: string; example?: string };
-type Dated = { year: number | null; month: number; day: number | null; date: string | null; quote: string; year_quote?: string; applies_to?: string; meaning?: string; rolling?: false };
+type Dated = { year: number | null; month: number; day: number | null; date: string | null; quote: string; year_quote?: string; year_basis?: string; applies_to?: string; meaning?: string; rolling?: false };
 const iso = (y: number | null, m: number, d: number | null) => {
   if (!y || !d) return null;
   const t = new Date(Date.UTC(y, m - 1, d));
@@ -63,6 +69,58 @@ const monthIn = (m: number, q: string) => { const l = String(q || "").toLowerCas
 const dayIn = (d: number, q: string) => new RegExp(`(^|[^0-9])0?${d}(st|nd|rd|th)?([^0-9]|$)`).test(String(q || ""));
 const yearIn = (y: number, q: string) => new RegExp(`\\b${y}\\b`).test(String(q || ""));
 
+// R1: the year of the section that encloses a quoted row. Headings are markdown "#" lines; a bold-only first line is the document title.
+type SectionYear = { year: number | null; basis: "heading" | "title" | "tabs" | null; quote: string; reason?: "year_ambiguous" | "year_not_printed" };
+const HEAD = /^\s{0,3}(#{1,6})\s+(.*\S)\s*$/;
+const yearsOf = (s: string) => [...new Set((String(s).match(/\b20\d\d\b/g) || []).map(Number))];
+function lineYear(lines: string[], idx: number): SectionYear {
+  // 1. nearest heading, then ancestors only (strictly higher level), then the title line
+  let level = 7;
+  for (let i = idx - 1; i >= 0; i--) {
+    const h = lines[i].match(HEAD); if (!h || h[1].length >= level) continue;
+    level = h[1].length; const ys = yearsOf(h[2]);
+    if (ys.length === 1) return { year: ys[0], basis: "heading", quote: lines[i].trim().slice(0, 200) };
+    if (ys.length > 1) return { year: null, basis: null, quote: lines[i].trim().slice(0, 200), reason: "year_ambiguous" };
+    if (level === 1) break;
+  }
+  const first = lines.findIndex((l) => l.trim()); const title = first >= 0 && first < idx ? lines[first].trim() : "";
+  if (/^\*\*[^*]+\*\*$/.test(title) && !HEAD.test(title)) {
+    const ys = yearsOf(title); if (ys.length === 1) return { year: ys[0], basis: "title", quote: title.slice(0, 200) };
+  }
+  // 2. year tabs ("  - 2026", "  - 2027") above repeated identical section headings: the k-th block of a heading is the k-th tab year
+  const tabLines: number[] = []; const tabs: number[] = [];
+  lines.forEach((l, i) => { const t = l.match(/^\s*[-*]\s*(20\d\d)\s*$/); if (t && i < idx) { tabLines.push(i); if (tabs[tabs.length - 1] !== Number(t[1])) tabs.push(Number(t[1])) } });
+  if (tabs.length >= 2 && new Set(tabs).size === tabs.length) {
+    let hi = -1; for (let i = idx - 1; i > tabLines[tabLines.length - 1]; i--) if (HEAD.test(lines[i])) { hi = i; break }
+    if (hi > 0) {
+      const text = lines[hi].trim(), lvl = (lines[hi].match(HEAD) as RegExpMatchArray)[1].length;
+      const at = lines.map((l, i) => (l.trim() === text && i > tabLines[tabLines.length - 1] ? i : -1)).filter((i) => i >= 0);
+      const k = at.indexOf(hi);
+      if (at.length === tabs.length && k >= 0) {
+        const y = tabs[k];
+        // the block's printed years must agree (the year itself, or the year before for a summer term that starts in December)
+        let end = lines.length; for (let i = hi + 1; i < lines.length; i++) { const h = lines[i].match(HEAD); if (h && h[1].length <= lvl) { end = i; break } }
+        const printed = yearsOf(lines.slice(hi + 1, end).join("\n"));
+        if (printed.every((p) => p === y || p === y - 1))
+          return { year: y, basis: "tabs", quote: `year tabs ${tabs.join(" | ")}: block ${k + 1} of "${text}" is ${y}`.slice(0, 200) };
+      }
+    }
+  }
+  return { year: null, basis: null, quote: "", reason: "year_not_printed" };
+}
+export function sectionYear(page: string, quote: string): SectionYear {
+  const lines = String(page || "").split("\n"), fq = flat(quote);
+  if (fq.length < 6) return { year: null, basis: null, quote: "", reason: "year_not_printed" };
+  const at: number[] = [];
+  lines.forEach((l, i) => { if (flat(l).includes(fq) || (i + 1 < lines.length && !flat(l).includes(fq) && flat(l + "\n" + lines[i + 1]).includes(fq) && !flat(lines[i + 1]).includes(fq))) at.push(i) });
+  if (!at.length) return { year: null, basis: null, quote: "", reason: "year_not_printed" };
+  const ys = at.map((i) => lineYear(lines, i));
+  const known = [...new Set(ys.map((y) => y.year))];
+  if (known.length > 1) return { year: null, basis: null, quote: "", reason: "year_ambiguous" };
+  return ys[0];
+}
+export const periodName = (s: string) => String(s || "").toLowerCase().replace(/\b(19|20)\d\d\b/g, " ").replace(/[()]/g, " ").replace(/\s+/g, " ").trim().slice(0, 60);
+
 // one answer (or several slices' answers) in the shape the approval and calendar_dated_periods read, keeping only what the page proves
 export function calendarAiParsed(answers: any[], page: string, parser: string, cut = false) {
   const P = flat(page), on = (q: string) => flat(q).length >= 6 && P.includes(flat(q));
@@ -70,7 +128,7 @@ export function calendarAiParsed(answers: any[], page: string, parser: string, c
   const found = (msg: Finding) => { if (findings.length < 40 && !findings.some((f) => f.code === msg.code && f.detail === msg.detail)) findings.push({ ...msg, example: msg.example?.slice(0, 300) }) };
   const periods: Record<string, { months: Set<number>; years: Set<number>; quotes: string[]; starts: Dated[]; deadlines: Dated[] }> = {};
   const scopes: Record<string, number> = {}; let scopeQuote = "";
-  const check = (x: any, where: string, period: string, yearQuote: string): Dated | null => {
+  const check = (x: any, where: string, period: string, yearQuote: string, rawPeriod = ""): Dated | null => {
     if (!x) return null;
     const m = Number(x.month), q = String(x.quote || "");
     if (!(m >= 1 && m <= 12)) { found({ code: "no_month", detail: `${where} of ${period}`, example: q }); return null }
@@ -78,12 +136,18 @@ export function calendarAiParsed(answers: any[], page: string, parser: string, c
     if (!monthIn(m, q)) { found({ code: "month_not_in_quote", detail: `${where} of ${period}`, example: q }); return null }
     let day = Number.isInteger(x.day) ? x.day : null;
     if (day && !dayIn(day, q)) { found({ code: "day_not_in_quote", detail: `${where} of ${period}`, example: q }); day = null }
-    let year = Number.isInteger(x.year) ? x.year : null, yq = "";
-    if (year && !yearIn(year, q)) {
-      if (yearQuote && on(yearQuote) && yearIn(year, yearQuote)) yq = yearQuote.slice(0, 200);
-      else { found({ code: "year_not_printed", detail: `${where} of ${period}`, example: q }); year = null }
-    }
-    return { year, month: m, day, date: iso(year, m, day), quote: q.slice(0, 300), ...(yq ? { year_quote: yq } : {}) };
+    // R1: a year printed in the quote stands; otherwise only the enclosing section's year, and the reader's claim must agree with it
+    let year = Number.isInteger(x.year) ? x.year : null, yq = "", basis = "";
+    // the reader's claim: its year, else (for a start) the one year in its year_quote or period name; a deadline may fall in the year before
+    const one = (t: string) => (yearsOf(t).length === 1 ? yearsOf(t)[0] : null);
+    const claimed = year || (where === "start" ? one(yearQuote) || one(rawPeriod) : null);
+    if (!(year && yearIn(year, q))) {
+      const sy = sectionYear(page, q);
+      if (sy.year && claimed && claimed !== sy.year) { found({ code: "year_from_wrong_section", detail: `${where} of ${period}: ${claimed} claimed, the section gives ${sy.year}`, example: q }); year = null }
+      else if (sy.year) { year = sy.year; yq = sy.quote; basis = sy.basis || "" }
+      else { found({ code: sy.reason || "year_not_printed", detail: `${where} of ${period}`, example: q }); year = null }
+    } else basis = "quote";
+    return { year, month: m, day, date: iso(year, m, day), quote: q.slice(0, 300), ...(yq ? { year_quote: yq } : {}), ...(year && basis ? { year_basis: basis } : {}) };
   };
   for (const a of answers) {
     if (!a) continue;
@@ -91,10 +155,10 @@ export function calendarAiParsed(answers: any[], page: string, parser: string, c
     if (a.scope_quote && on(a.scope_quote)) { scopes[sc] = (scopes[sc] || 0) + 1; if (!scopeQuote) scopeQuote = String(a.scope_quote).slice(0, 300) }
     else scopes[sc] = (scopes[sc] || 0) + 0.5;
     for (const x of (a.periods || []) as any[]) {
-      const key = String(x?.period || "").toLowerCase().replace(/\s+/g, " ").trim().slice(0, 60); if (!key) continue;
+      const raw = String(x?.period || ""), key = periodName(raw); if (!key) continue;
       const yq = String(x?.year_quote || "");
       const f = periods[key] ||= { months: new Set(), years: new Set(), quotes: [], starts: [], deadlines: [] };
-      const st = check(x?.start, "start", key, yq);
+      const st = check(x?.start, "start", key, yq, raw);
       if (st) {
         const meaning = MEANINGS.includes(x?.start_meaning) ? x.start_meaning : "other";
         if (meaning !== "teaching_start") found({ code: "not_a_teaching_start", detail: `${meaning} of ${key}`, example: st.quote });
@@ -104,7 +168,7 @@ export function calendarAiParsed(answers: any[], page: string, parser: string, c
         }
       }
       for (const d of (x?.application_deadlines || []) as any[]) {
-        const dl = check(d, "deadline", key, yq); if (!dl) continue;
+        const dl = check(d, "deadline", key, yq, raw); if (!dl) continue;
         const applies = APPLIES.includes(d?.applies_to) ? d.applies_to : "unstated";
         if (!f.deadlines.some((y) => y.date === dl.date && y.applies_to === applies)) f.deadlines.push({ ...dl, applies_to: applies, rolling: false });
       }

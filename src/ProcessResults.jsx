@@ -19,7 +19,51 @@ const ACTIONS = {
   waiting_for_next_academic_year: 'Waiting for next academic year',
   ready_for_scheduled_recovery: 'Ready for scheduled recovery',
 }
+// mandate 5 Nov 2026 12:44 §9: the durable failure classes
+const CLASSES = {
+  complete: 'Complete',
+  no_valid_calendar_source: 'No valid calendar source',
+  stale_calendar_edition: 'Stale calendar edition',
+  wrong_institution_or_campus: 'Wrong institution or campus',
+  course_identity_unresolved: 'Course identity unresolved',
+  calendar_interpretation_failed: 'Calendar interpretation failed',
+  academic_year_unproven: 'Academic year unproven',
+  no_matching_commencement_period: 'No matching commencement period',
+  multiple_periods_match: 'Multiple periods match',
+  course_level_exception: 'Course-level exception',
+  missing_application_deadline_evidence: 'Missing application deadline evidence',
+  admission_held: 'Admission held',
+  consumer_publication_failed: 'Consumer publication failed',
+  waiting_for_next_academic_year: 'Waiting for next academic year',
+  not_classified_yet: 'Not classified yet (decided before the classes)',
+}
 const label = k => ACTIONS[k] || String(k || 'Not classified').replaceAll('_', ' ')
+const classLabel = k => CLASSES[k] || label(k)
+
+// mandate §10, §16: what the recovery admitted and published, what was skipped or failed and why, the calendar refresh and the reader
+function Recovery({ r }) {
+  const ref = r.refresh || {}
+  return <details className="intake-course" data-testid="intake-recovery" open>
+    <summary><strong>Intake recovery</strong> · measured {fmtDateTime(r.measured_at)} · admitted since {fmtDateTime(r.window_since)}</summary>
+    <h4>Admitted and published</h4>
+    {(r.admitted || []).length === 0 ? <p>No value admitted in the window.</p> : <div className="intake-table-scroll"><table className="cf-table">
+      <thead><tr><th>University</th><th>Source</th><th>Year</th><th>Precision</th><th>Admitted</th><th>Start dates</th><th>Deadlines</th><th>Published</th><th>Not published</th></tr></thead>
+      <tbody>{r.admitted.map((a, i) => <tr key={i}><td>{a.university}</td><td>{a.source_type} ({a.rule})</td><td>{a.year ?? 'Not held'}</td><td>{a.precision}</td><td>{n(a.admitted)}</td>
+        <td>{n(a.with_start_date)}</td><td>{n(a.with_deadline)}</td><td>{n(a.published)}</td><td>{n((a.publication_failed || 0) + (a.not_checked || 0))}{a.provider_not_published ? ` (${n(a.provider_not_published)} provider not published)` : ''}</td></tr>)}</tbody></table></div>}
+    <h4>Skipped and failed, with the reason and the next look</h4>
+    <div className="intake-table-scroll"><table className="cf-table">
+      <thead><tr><th>University</th><th>Class</th><th>Rows</th><th>Example reason</th><th>Looked at again</th></tr></thead>
+      <tbody>{(r.classes || []).filter(c => c.class !== 'complete').map((c, i) => <tr key={i}><td>{c.university}</td><td>{classLabel(c.class)}{c.deterministic ? ' · waits for a change' : ''}</td><td>{n(c.rows)}</td><td>{c.reason || ''}</td>
+        <td>{c.next_revisit_at ? fmtDateTime(c.next_revisit_at) : (c.revisit_trigger || 'when its inputs change')}</td></tr>)}</tbody></table></div>
+    <h4>Calendar refresh</h4>
+    <p>Firecrawl credits counted {n(Number(ref.credits_counted || 0))} of {n(Number(ref.budget || 0))} (used {n(Number(ref.credits_used || 0))}).</p>
+    {(ref.requests || []).map((q, i) => <article key={i} className="intake-course"><Link url={q.url}>{q.url}</Link> · {q.university} · {fmtDateTime(q.requested_at)} · {String(q.status).replaceAll('_', ' ')} · yield {q.yield ? String(q.yield).replaceAll('_', ' ') : 'pending'}{q.next_year_starts != null ? ` (${n(q.next_year_starts)} next-year starts)` : ''}<Quote text={q.reason}/></article>)}
+    <h4>Calendar reader</h4>
+    <ul>{(r.reader || []).map((x, i) => <li key={i}>{x.reader || 'earlier reader'} · {String(x.state).replaceAll('_', ' ')} · {n(x.documents)} documents</li>)}</ul>
+    <h4>Jobs</h4>
+    <ul>{(r.jobs || []).map(j => <li key={j.job}>{j.job} · {j.schedule} · last run {j.last_run ? `${fmtDateTime(j.last_run)} (${j.last_status})` : 'none'}</li>)}</ul>
+  </details>
+}
 const n = x => x == null ? 'Not held' : typeof x === 'number' ? fmtNumber(x) : String(x)
 function Link({ url, children }) {
   try { if (!['https:', 'http:'].includes(new URL(url).protocol)) return null } catch { return null }
@@ -84,7 +128,11 @@ export default function ProcessResults({ rank = 0, client = processResultsApi })
     lock.current = true; setBusy(name); setError('')
     try { await fn() } catch (e) { setError(e?.message || 'Request failed. Check access and refresh.') } finally { lock.current = false; setBusy('') }
   }
-  const load = () => execute('Loading saved results', async () => setLatest(await client.read('latest', { process: 'intake-dates' })))
+  const [recovery, setRecovery] = useState(null)
+  const load = () => execute('Loading saved results', async () => {
+    setLatest(await client.read('latest', { process: 'intake-dates' }))
+    try { setRecovery(await client.read('recovery')) } catch { setRecovery(null) }
+  })
   useEffect(() => { load() }, [])
   const s = latest?.summary, t = s?.totals || {}, jobs = s?.jobs || {}
   return <section className="m-panel intake-run" aria-label="Process results">
@@ -97,6 +145,7 @@ export default function ProcessResults({ rank = 0, client = processResultsApi })
       <Button compact disabled={!!busy} onClick={() => execute('Loading earlier measurements', async () => setHistory(await client.read('history', { process: 'intake-dates' })))}>Earlier measurements</Button>
     </div>
     {!busy && !latest && !error && <p role="status">No measurement saved yet. The process-results job records one every hour.</p>}
+    {recovery && <Recovery r={recovery}/>}
     {s && <>
       <p>Measured {fmtDateTime(latest.measured_at)} by {latest.measured_by}. Job intake-dates-apply: {jobs.enabled ? 'on' : 'off'}, {jobs.intake_dates_apply?.schedule}, last run {jobs.intake_dates_apply?.last_run ? `${fmtDateTime(jobs.intake_dates_apply.last_run.at)} (${jobs.intake_dates_apply.last_run.status})` : 'none'}, last success {jobs.intake_dates_apply?.last_success ? fmtDateTime(jobs.intake_dates_apply.last_success) : 'none'}; {n(jobs.batch)} rows a run; unique month {jobs.month_unique_match ? 'on' : 'off'}; waiting rows looked at again after {n(jobs.revisit_days)} days. Calendar re-read: last run {jobs.calendar_reread?.last_run ? `${fmtDateTime(jobs.calendar_reread.last_run.at)} (${jobs.calendar_reread.last_run.status})` : 'none'}.</p>
       <div className="intake-metrics">

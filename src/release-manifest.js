@@ -1,18 +1,20 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.480'
-export const PACKAGE_VERSION='0.1.407'
+export const UI_VERSION='2.15.481'
+export const PACKAGE_VERSION='0.1.408'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'5 Nov 2026',
-  title:'Intake dates from every valid academic calendar, with process results',
+  title:'Intake recovery: the calendar year from its own section, durable failure reasons and publication checks',
   changes:[
-    'Layer 2/3 Operations has a Process results panel: for each of the top Australian universities, the saved measurement of the intake dates process: courses and stored course pages, valid and set-aside calendars, calendar year and freshness, intake values held and in the Website API source, what was missed and why with its next action, when it is looked at again, and the calendars, reader findings and recent decisions with their quotes and documents. Operators can measure on request.',
-    'Intake dates now use every main teaching calendar a university has, not only the latest one. Calendars for another campus, a residential college, exchange or a pathway provider are set aside with the reason and routed to a person.',
-    'A course page that gives only a month ("February intake") takes the calendar\'s date when exactly one teaching start falls in that month and year (Platform Admin decision 5 Nov 2026). Orientation, enrolment and deadlines never count as a start; an ambiguous month keeps its month.',
-    'Academic calendars are read again from their stored copies with dated starts, application deadlines (international first) and the calendar\'s scope; what the reader cannot prove becomes a finding given to its next read. No Firecrawl.'
+    'The calendar reader now takes a start\'s year from the section it sits in: the heading above it, the document title, or the year tabs a page shows above repeated term blocks (as UNSW\'s academic calendar does). A year from a neighbouring section or a note about future changes is rejected, and a start with no provable year is never given one.',
+    'Stored calendars are read again when the reader changes, but only the main teaching calendars of the top Australian universities whose intake rows still miss a date; other calendars are set aside as not needed until they are.',
+    'Every intake row that is not completed carries a durable reason (for example stale calendar edition, academic year unproven, course identity unresolved, admission held) with what will bring it back. A deterministic failure is not looked at again until its inputs change.',
+    'Every admitted intake value is checked against the Website API v2 source; a value admitted but not published is shown as a failure until the source carries it.',
+    'A calendar whose stored copy is an old edition can be read again by the existing source reads, within at most 40 Firecrawl credits in total for the top 10 universities, with the credits and the useful yield recorded.',
+    'Process results shows the intake recovery: values admitted and published by university, source, year and precision; skipped and failed rows by reason with the next look; refresh credits and yield; the reader and the jobs.'
   ],
   bugFixes:[]
 }
