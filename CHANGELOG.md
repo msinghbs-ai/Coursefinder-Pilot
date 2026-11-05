@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.415 — 6 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.488** (Platform Admin conditional authorisation 6 Nov 2026 09:44 section 1; PR #889, agent D; independent validation agent E: ready). Intake Automation Progress in Process results, reusing the generic progress observer (job `first-run-verify`, `progress_read_v1`, `progress_measure_v1`, `progress_zero_reason_v1`; three `intake_*` transitions). Repeat failures are raised only when evidence, reader and settings are unchanged; where history cannot be established the row is `unverified_repeat` (22:46 correction, regression test for the 167 UNSW rechecks). Migration `20261106400000` is md5-guarded on `progress_measure_v1` (40c0c972) and `progress_read_v1` (f11ed22d). Also scopes `playwright.intake.config.mjs` to its own spec. Consumer API unchanged.
+
 ## 0.1.414 — 6 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.487** (Platform Admin authorisation 6 Nov 2026 07:00; PR #891, agent C; independent validation agent E: ready). Fix for the v2.15.486 production acceptance failure: the Columns panel's classes `cc-bar`, `cc-panel` and `cc-count` collided with `src/data-quality.css` (and `.cc-bar` with `admin-pages.css`); all Columns classes now use the `ccol-` prefix. New `scripts/verify-css-class-collisions.mjs` runs in prebuild and fails the build on any repeat. Browser tests now load every stylesheet and hit-test all 40 checkboxes on desktop and phone. No migration, no database change, consumer API unchanged.
