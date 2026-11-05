@@ -8,3 +8,6 @@
 .intake-run summary { cursor: pointer; padding-block: var(--cf-space-2); }
 .intake-run p { overflow-wrap: anywhere; }
 @media (max-width: 600px) { .intake-form, .intake-values { grid-template-columns: minmax(0, 1fr); } .intake-actions > * { width: 100%; } .intake-run button, .intake-run input, .intake-run select { min-height: 44px; } }
+/* CF-247 mandate 5 Nov 2026 §10: the recovery tables scroll inside the panel on a phone, never the page */
+.intake-run .intake-table-scroll { overflow-x: auto; max-width: 100%; }
+.intake-run .intake-table-scroll td, .intake-run .intake-table-scroll th { white-space: nowrap; }

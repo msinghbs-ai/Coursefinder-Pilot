@@ -42,6 +42,11 @@ jobs:
           jq -r '.[0].md' "$RUNNER_TEMP/md.json" > "$RUNNER_TEMP/intake-dates.md"
           if [ "$(head -c 42 "$RUNNER_TEMP/intake-dates.md")" != "# Process record: intake dates (generated)" ]; then echo "::error::No saved measurement, or it is malformed"; exit 1; fi
           head -16 "$RUNNER_TEMP/intake-dates.md" | tee -a "$GITHUB_STEP_SUMMARY"
+          # mandate 5 Nov 2026 12:44 §10, §15: the intake recovery measurement beside it (process intake-recovery), when one is saved
+          jq -n '{query: "select r.markdown as md from pipeline.process_results r where r.process_key = '\''intake-recovery'\'' order by r.measured_at desc limit 1", read_only: true}' > "$RUNNER_TEMP/q2.json"
+          curl -sS -o "$RUNNER_TEMP/md2.json" -X POST "https://api.supabase.com/v1/projects/$REF/database/query" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" --data @"$RUNNER_TEMP/q2.json"
+          jq -r '.[0].md // empty' "$RUNNER_TEMP/md2.json" > "$RUNNER_TEMP/intake-recovery.md" || true
       - name: Commit to the snapshot branch
         if: steps.when.outputs.run == 'true'
         run: |
@@ -49,6 +54,7 @@ jobs:
           git fetch origin process-results-snapshot || true
           if git rev-parse --verify -q origin/process-results-snapshot >/dev/null; then git checkout -B process-results-snapshot origin/process-results-snapshot; else git checkout -B process-results-snapshot; fi
           mkdir -p docs/platform/processes/checkpoints; cp "$RUNNER_TEMP/intake-dates.md" "docs/platform/processes/checkpoints/${{ steps.when.outputs.day }}-intake-dates.md"
+          if [ -s "$RUNNER_TEMP/intake-recovery.md" ]; then cp "$RUNNER_TEMP/intake-recovery.md" "docs/platform/processes/checkpoints/${{ steps.when.outputs.day }}-intake-recovery.md"; fi
           git add docs/platform/processes/checkpoints
           git commit -m "Process results checkpoint ${{ steps.when.outputs.day }}" || echo "No change"
           git push origin process-results-snapshot
@@ -58,5 +64,6 @@ jobs:
           git clone --depth 1 "https://x-access-token:${ADMIN_REPO_TOKEN}@github.com/msinghbs-ai/coursefinder-admin.git" "$RUNNER_TEMP/admin"
           cd "$RUNNER_TEMP/admin"; git config user.name "process-results"; git config user.email "process-results@users.noreply.github.com"
           mkdir -p docs/platform/processes/checkpoints; cp "$RUNNER_TEMP/intake-dates.md" "docs/platform/processes/checkpoints/${{ steps.when.outputs.day }}-intake-dates.md"
+          if [ -s "$RUNNER_TEMP/intake-recovery.md" ]; then cp "$RUNNER_TEMP/intake-recovery.md" "docs/platform/processes/checkpoints/${{ steps.when.outputs.day }}-intake-recovery.md"; fi
           git add docs/platform/processes/checkpoints; git commit -m "Process results checkpoint ${{ steps.when.outputs.day }} (intake dates)" || echo "No change"
           git push origin HEAD:main

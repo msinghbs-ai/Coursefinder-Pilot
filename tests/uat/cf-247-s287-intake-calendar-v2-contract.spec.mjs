@@ -16,19 +16,20 @@ const answer = { scope: 'main_teaching', scope_quote: 'Main campus academic cale
 
 test('every value must be on the page: dated teaching starts kept, orientation never a commencement, unproven values become findings', () => {
   const p = calendarAiParsed([answer], page, `ai:gpt-4.1-mini:${CALENDAR_READER}`)
-  expect(p.parser).toBe('ai:gpt-4.1-mini:calendar-v2'); expect(p.reader).toBe('calendar-v2'); expect(p.scope).toBe('main_teaching')
+  expect(p.parser).toBe('ai:gpt-4.1-mini:calendar-v2.1'); expect(p.reader).toBe('calendar-v2.1'); expect(p.scope).toBe('main_teaching')
   const autumn = p.periods.find(x => x.period === 'autumn session')
-  expect(autumn.starts).toEqual([{ year: Y, month: 2, day: 22, date: `${Y}-02-22`, quote: `22 February ${Y} | Autumn session teaching begins`, meaning: 'teaching_start' }])
-  expect(autumn.deadlines).toEqual([{ year: Y - 1, month: 12, day: 1, date: `${Y - 1}-12-01`, quote: `1 December ${Y - 1} | International applications close for Autumn session`, applies_to: 'international', rolling: false }])
+  expect(autumn.starts).toEqual([{ year: Y, month: 2, day: 22, date: `${Y}-02-22`, quote: `22 February ${Y} | Autumn session teaching begins`, year_basis: 'quote', meaning: 'teaching_start' }])
+  expect(autumn.deadlines).toEqual([{ year: Y - 1, month: 12, day: 1, date: `${Y - 1}-12-01`, quote: `1 December ${Y - 1} | International applications close for Autumn session`, year_basis: 'quote', applies_to: 'international', rolling: false }])
   // the year printed only in the heading: kept with that heading as its evidence
-  expect(p.periods.find(x => x.period === 'spring session').starts[0]).toMatchObject({ year: Y, date: `${Y}-09-06`, year_quote: `# Key dates ${Y}` })
+  expect(p.periods.find(x => x.period === 'spring session').starts[0]).toMatchObject({ year: Y, date: `${Y}-09-06`, year_quote: `# Key dates ${Y}`, year_basis: 'heading' })
   expect(p.periods.find(x => x.period === 'orientation')).toBeUndefined()
   expect(p.periods.find(x => x.period === 'winter school')).toBeUndefined()   // quote not on the page
   expect(p.periods.find(x => x.period === 'summer term')).toBeUndefined()     // month not in its quote
   expect(p.findings.map(f => f.code).sort()).toEqual(['month_not_in_quote', 'not_a_teaching_start', 'quote_not_on_page'])
 })
 
-test('a year in neither the quote nor a quoted heading is never assumed; scope, missing deadlines and next year are findings', () => {
+test('a year in neither the quote nor an enclosing section is never assumed; scope, missing deadlines and next year are findings', () => {
+  const page = ['# Key dates', '| 6 September | Spring session begins |', 'Main campus academic calendar'].join('\n')   // calendar-v2.1: no section year on this page
   const a = { scope: 'offshore_campus', scope_quote: 'Main campus academic calendar', periods: [{ period: 'Term 1', start: { year: Y, month: 9, day: 6, quote: '6 September | Spring session begins' }, start_meaning: 'teaching_start', year_quote: 'not on the page', end: null, application_deadlines: [] }] }
   const p = calendarAiParsed([a], page, 'ai:m:calendar-v2', true)
   expect(p.periods[0].starts[0]).toMatchObject({ year: null, date: null, month: 9 })
@@ -67,9 +68,9 @@ test('the worker: calendars read by calendar-v2 in the existing central_ai mode,
   expect(ai).toContain('wsNum("reading.calendar_slice_chars", 24000), wsNum("reading.calendar_max_slices", 4)')
   expect(ai).toContain('centralAiRequest(it.model, it.kind,')   // English policy unchanged
   const rr = w.slice(w.indexOf('if (mode === "calendar_reread") {'), w.indexOf('// v0.47.0 (CF-247 Track C'))
-  expect(rr).toContain('rpc("svc_calendar_reread_next"'); expect(rr).toContain('{ ...calendarStarts(md), parser: CALENDAR_PARSER_DATES }')
+  expect(rr).toContain('rpc("svc_calendar_reread_next_v2"'); expect(rr).toContain('p_reader: CALENDAR_READER'); expect(rr).toContain('{ ...calendarStarts(md), parser: CALENDAR_PARSER_DATES }')
   expect(rr).toContain('p_send_to_ai: !safe.safe'); expect(rr).not.toMatch(/firecrawl|useFc/i); expect(rr).toContain('paid_reads: 0')
-  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.59\.7"/)
+  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.59\.(7|8|9)"/)
 })
 
 test('the migration: the decided settings, every guarded edit by md5, the jobs, and the fixture runs in CI', () => {
