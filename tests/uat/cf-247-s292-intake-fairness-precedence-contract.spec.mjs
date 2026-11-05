@@ -53,3 +53,13 @@ test('§3 focus priority within a round: focus universities first, longest waiti
   expect(f).toContain('(f.rank is null), sets.served nulls first, f.rank nulls last, c.provider_id, i.course_id, i.id')
   expect(fs.readFileSync('tests/fixtures/intake-fairness/cases.sql', 'utf8')).toContain('PASS focus priority')
 })
+
+test('explicit pilot scope beside fairness and focus (Platform Admin 5 Nov 2026 18:00): a setting, the existing pilot definition, no hard-coded list', () => {
+  const g = fs.readFileSync('supabase/migrations/20261105090000_cf247_intake_pilot_share.sql', 'utf8')
+  expect(g).toMatch(/'intake_dates\.pilot_batch_share'[\s\S]{0,700}'number', to_jsonb\(60\), 0, 100, 'per cent'/)
+  expect(g).toContain("'security.intake_dates_plan_v3(uuid[],integer)', '886876cde3afdd3e55fa04a9459c6f95'")
+  expect(g).toContain('jsonb_array_elements(security.intake_ui_scopes_v1())')     // the pilot is the existing run_now.cohort_top_au_universities scope
+  expect(g).toContain("order by case when q.pilot and q.pilot_seq <= v_pilot_rows then 0 when not q.pilot then 1 else 2 end")
+  expect(g).not.toMatch(/'(UNSW|Monash|Melbourne)/)                                 // no university named in code
+  expect(fs.readFileSync('tests/fixtures/intake-fairness/cases.sql', 'utf8')).toContain('PASS selection: pilot scope takes its share')
+})
