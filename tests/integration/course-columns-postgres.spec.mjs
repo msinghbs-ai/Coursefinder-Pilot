@@ -161,11 +161,13 @@ test('14: every column shown at once, at production volume, stays inside the pag
   while (await unticked.count()) await unticked.first().check()
   await expect(page.locator('[data-columns-count]')).toHaveText('36 of 36')
   await page.keyboard.press('Escape')
+  // the click turns the sort to Last data admitted, or reverses it if it already is (a retry starts from the state the first try left)
+  const wasAsc = (await page.locator('[data-active-sort]').getAttribute('data-active-sort')) === 'admitted:asc'
   const t0 = Date.now()
   const res = page.waitForResponse(r => r.url().endsWith('/rpc/admin_read') && r.request().postDataJSON()?.p_args?.sort === 'admitted')
   await page.locator('th[data-col="last_admitted_at"] button').click()
   await res
-  await expect(firstTitle(page)).toContainText('Kestrel Oldest Admission')
+  await expect(firstTitle(page)).toContainText(wasAsc ? 'Kestrel Newest Admission' : 'Kestrel Oldest Admission')
   const ms = Date.now() - t0
   test.info().annotations.push({ type: 'many-columns-sort-ms', description: String(ms) })
   expect(ms).toBeLessThan(3000)

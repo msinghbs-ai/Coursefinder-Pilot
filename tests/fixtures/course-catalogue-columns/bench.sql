@@ -18,7 +18,8 @@ begin
     {"limit": 50, "offset": 0, "sort": "city", "direction": "asc", "lifecycle_status": "active"},
     {"limit": 50, "offset": 0, "sort": "provider", "direction": "asc", "lifecycle_status": "active"},
     {"limit": 200, "offset": 0, "sort": "admitted", "direction": "desc", "lifecycle_status": "active"},
-    {"limit": 50, "offset": 0, "sort": "admitted", "direction": "desc", "country_code": "AU", "subdivision_code": "AU-VIC"}]'::jsonb) x loop
+    {"limit": 50, "offset": 0, "sort": "admitted", "direction": "desc", "country_code": "AU", "subdivision_code": "AU-VIC"},
+    {"limit": 50, "offset": 0, "sort": "course", "direction": "asc", "country_code": "AU", "subdivision_code": "AU-VIC"}]'::jsonb) x loop
     ms := '{}';
     for i in 1 .. 3 loop t := clock_timestamp(); r := pg_temp.page(a); ms := ms || round(extract(epoch from clock_timestamp() - t) * 1000, 1); end loop;
     select x into m from unnest(ms) x order by x offset 1 limit 1;

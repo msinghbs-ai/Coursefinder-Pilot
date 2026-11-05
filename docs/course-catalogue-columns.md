@@ -106,7 +106,7 @@ Layout validation: an object with only `version`, `columns`, `widths`, `sort`, `
 - New sort keys `admitted` (Last data admitted) and `adapter` (Adapter status) in `fast_base`'s ordered id list, beside the existing ones. `modified` keeps sorting on `updated_at`. Unknown timestamps sort last in both directions. Existing keys and their order are unchanged.
 - Every page (unfiltered, filtered, and the `fee`/`completeness` path) gets its items merged with `security.course_list_extras_v1(uuid[])`: one set-based read over the page's ids (at most the page limit), never per course from the browser.
 - New item fields: `last_modified_at`, `last_admitted` (`at`, `field`, `source`, `evidence_id`, `before`, `after`, `rule`), `last_admitted_at`, `adapter` (`state`, `reason`, `last_read_at`, `result`, `provider_adapter`), `cities` (array of `campus`, `city`, `subdivision_code`, `subdivision_name`, `country_code`), `page` (`stored`, `status`, `read_status`, `identity`, `read_at`, `evidence_id`), `field_states` (attribute → `state`, `raw`, `reason`), `layer4_open`, `enrichment` (filled, review, failed counts), `duration_unit`. Existing fields are unchanged.
-- `security.course_last_admitted_at_v1(uuid)` and `security.course_adapter_state_v1(uuid, uuid)`: inlinable SQL used both for the sort and the shown value, so the order always matches what is shown.
+- One definition each, used by the shown value and by the sort, so the order always matches what is shown: `security.course_admissions_v1()` (every admission row from the ledgers in §1.5) and `security.course_adapter_state_from_v1(...)` (the status rule from its inputs). The page reads them for its own ids; the sort reads them set-based over the whole filtered set (one aggregate of the admission ledgers, one join of the adapter tables), never once per course. This replaced a first per-course version after CI on PostgreSQL 17 measured 2.5 s for that sort.
 
 **Adapter status (course)**, in this order:
 
@@ -121,7 +121,7 @@ Layout validation: an object with only `version`, `columns`, `widths`, `sort`, `
 
 Completed is never inferred from an adapter existing: it needs a result row for the course. Sorting by Adapter orders Failed, Held, Processing, Ready, Completed, Not configured (attention first) ascending.
 
-**Indexes** (pipeline ledgers, for the Last data admitted sort over the whole filtered set): `adapter_overwrite_changes (course_id, at desc)`, `course_intake_date_events (course_id, run_at desc) where outcome = 'filled'`, `layer4_admission_checks (entity_id, decided_at desc) where admitted`, `field_enrich_items (course_id, updated_at desc) where state = 'filled'`.
+**Indexes** (pipeline ledgers, so the page's own admission lookups stay indexed): `adapter_overwrite_changes (course_id, at desc)`, `course_intake_date_events (course_id, run_at desc) where outcome = 'filled'`, `layer4_admission_checks (entity_id, decided_at desc) where admitted`, `field_enrich_items (course_id, updated_at desc) where state = 'filled'`.
 
 ### 2.2 Column registry (screen `courses`)
 
@@ -218,7 +218,7 @@ From `course_attribute_coverage` and `enrichment_flags`, computed in the project
 | Migration applied, then applied again | second run reports both edits already applied; definitions and rows unchanged |
 | Backward compatibility: 13 argument sets the screen sends, before and after (same rows, same order, every existing field equal, same total and metadata) | 13 PASS |
 | Database cases (layouts, roles, refusals, cities, adapter status, timestamps, field states, server-side sort across pages) | 50 PASS |
-| Benchmark, as a signed-in person, three runs each (middle shown) | course 69 ms; Last data admitted 891 ms (offset 17,000: 909 ms; 200 rows: 902 ms); Adapter 627 ms; Last modified 66 ms; Provider 70 ms; City 1,734 ms (existing sort, unchanged); Last data admitted with a state filter 2,015 ms (existing state filter cost). All under the 3,000 ms budget. |
+| Benchmark, as a signed-in person, three runs each (middle shown) | course 77 ms; Last data admitted 124 ms (offset 17,000: 143 ms; 200 rows: 176 ms); Adapter 242 ms; Last modified 68 ms; Provider 72 ms; City 1,881 ms (existing sort, unchanged); with the Victoria state filter: Last data admitted 2,234 ms against 1,927 ms for today's course sort with the same filter (the state filter is today's cost). All under the 3,000 ms budget. The first, per-course version measured 891 ms locally and 2,488 ms in CI (PostgreSQL 17); it was replaced by the set-based sort. |
 
 ### 4.2 Browser to PostgreSQL (`tests/integration/course-columns-postgres.spec.mjs`, real Admin UI, desktop and phone)
 
@@ -244,11 +244,14 @@ Database refusals proven in 4.1: unknown column, hidden course title, width unde
 
 ### 4.4 Production read-only preview (5 Nov 2026, inside the heavy-read window)
 
-The adapter status rule run read-only over production's 35,690 active courses: Completed 18,756, Failed 7,186, Held 4,360, Not configured 3,527, Ready 1,861 (no course processing at that minute). No production object was created or changed.
+Both rules run read-only on production, each a single SELECT in the heavy-read window. No production object or session setting was created or changed.
+
+- Adapter status over 35,690 active courses: Completed 18,756, Failed 7,186, Held 4,360, Not configured 3,527, Ready 1,861 (no course was processing at that minute).
+- Last data admitted (20:06 AEDT): 27,242 active courses have an admission record and 8,448 show Unknown. Admissions run from 4 Oct 2026 to 5 Nov 2026 08:26 UTC. 1,911 courses were admitted after their course record last changed: admissions to fees, intakes or English write the child tables, not `catalogue.courses`. The two timestamps are different facts, as the mandate requires.
 
 ## 5. Open points for the Integration Controller
 
 - `docs/platform/TEST-REGISTER.md` was regenerated from a partial local run (agents do not run the full suite), so statuses outside this change read "not run"; the Controller regenerates it after the full run at integration, as the ownership rules say.
 - At release: re-read the two edited functions' md5s (`2dc6ee8ba523afeec04d862f3a2ced8a`, `afbef16111a09e3680061547bbb1329a`); the migration refuses to apply if either changed.
 - The four indexes are built inside the migration (not concurrently). `field_enrich_items` (171,000 rows) is the largest; a short write lock on the four ledgers while they build.
-- Last modified is `catalogue.courses.updated_at`. There is no change history for the course record, so it shows the record's own persisted stamp: bulk real writes (for example the 3 Nov 2026 description admission on 11,149 courses) show as modifications.
+- Last modified is `catalogue.courses.updated_at`, the course record itself; a value written only to a child table (fee, intake, English) shows in Last data admitted, not in Last modified. There is no change history for the course record, so it shows the record's own persisted stamp: bulk real writes (for example the 3 Nov 2026 description admission on 11,149 courses) show as modifications.

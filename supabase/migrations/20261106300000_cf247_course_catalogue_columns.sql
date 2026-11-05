@@ -11,7 +11,8 @@
 --      before and after), campus cities with state and country, stored page, field states, open Layer 4 items and enrichment counts, read by one
 --      set-based query over the page's ids (security.course_list_extras_v1). Two new sort keys over the whole filtered set: admitted, adapter.
 --      Existing fields, sort keys, filters, paging and totals are unchanged.
---   5. Four partial indexes on pipeline ledgers so the Last data admitted sort is one indexed lookup per filtered course.
+--   5. The two new sorts run set-based over the filtered set (one aggregate of the admission ledgers, one join of the adapter tables), never
+--      per course; four indexes on pipeline ledgers keep the page's own lookups indexed.
 -- Last data admitted comes only from rows that record a value reaching the catalogue (field_enrich_items filled and not retracted; adapter overwrites
 -- that changed the value; Layer 2 admissions that changed the canonical value; Layer 4 approvals confirmed admitted; intake dates filled; manual
 -- official page or tuition set). Scheduled reads, proposals, review items, skipped or failed items, search refreshes and coverage builds are never
@@ -117,48 +118,83 @@ insert into pipeline.admin_table_columns(screen, key, grp, label, sort, sort_key
  ('courses', 'publication_status', 'Lifecycle and timestamps', 'Publication', 360, null, false, 130, 90, false)
 on conflict (screen, key) do nothing;
 
--- the Last data admitted sort: one indexed lookup per ledger and filtered course
+-- the Last data admitted column and detail: one indexed lookup per ledger and page course
 create index if not exists field_enrich_items_course_filled_idx on pipeline.field_enrich_items (course_id, updated_at desc) where state = 'filled';
 create index if not exists adapter_overwrite_changes_course_at_idx on pipeline.adapter_overwrite_changes (course_id, at desc);
 create index if not exists layer4_admission_checks_entity_admitted_idx on pipeline.layer4_admission_checks (entity_id, decided_at desc) where admitted;
 create index if not exists course_intake_date_events_course_filled_idx on pipeline.course_intake_date_events (course_id, run_at desc) where outcome = 'filled';
 
--- Last data admitted: the latest row that records a value reaching the catalogue for this course (null = Unknown)
+-- Every admission of a course value: the one definition Last data admitted is read from (the page column, its detail and the sort).
+-- Only rows that record a value reaching the catalogue; a read, proposal, review item, skip, failure, retraction, refresh or build is never here.
+CREATE OR REPLACE FUNCTION security.course_admissions_v1()
+ RETURNS TABLE(course_id uuid, at timestamp with time zone, field text, source text, evidence_id uuid, before jsonb, after jsonb, rule text)
+ LANGUAGE sql
+ STABLE
+AS $function$
+  select i.course_id, i.updated_at, i.field, coalesce(i.source, 'enrich_fields'), i.evidence_id, null::jsonb,
+         case when jsonb_typeof(i.value) = 'object' then i.value - 'text' - 'check' else i.value end, 'Enrich fields'::text
+    from pipeline.field_enrich_items i
+   where i.state = 'filled' and i.course_id is not null and not exists (select 1 from pipeline.enrich_value_retractions x where x.item_id = i.id)
+  union all
+  select a.course_id, a.at, a.field, 'adapter_overwrite', a.evidence_id, a.before, a.after, 'Adapter overwrite'
+    from pipeline.adapter_overwrite_changes a where a.before is distinct from a.after
+  union all
+  select l.course_id, l.decided_at, l.field_key, 'layer2_admission', l.evidence_id, null, l.candidate_payload, l.change_control_ref
+    from pipeline.layer2_field_admissions l where l.status = 'admitted' and l.canonical_changed
+  union all
+  select k.entity_id, k.decided_at, k.field_code, 'layer4_approval', null, null, null, 'Layer 4 decision ' || k.decision_id::text
+    from pipeline.layer4_admission_checks k where k.entity_type = 'course' and k.admitted
+  union all
+  select e.course_id, e.run_at, 'intakes', 'intake_dates', e.calendar_evidence_id, e.before_value, e.after_value, coalesce(e.rule, 'Intake dates')
+    from pipeline.course_intake_date_events e where e.outcome = 'filled'
+  union all
+  select m.entity_id, m.at, coalesce(m.field, m.action), 'manual', null, m.before, m.after, coalesce(m.reason, 'Set by hand')
+    from pipeline.manual_edit_log m where m.entity = 'course' and m.action in ('set_official_url', 'set_tuition')
+$function$;
+comment on function security.course_admissions_v1() is 'CF-247 Course Catalogue columns (mandate 5 Nov 2026 17:31 §4): every admission of a course value from the admission ledgers (field items filled and not retracted, adapter overwrites that changed the value, Layer 2 admissions that changed the canonical value, Layer 4 approvals confirmed admitted, intake dates filled, official page or tuition set by hand). The one definition of Last data admitted: its column, its detail and its sort.';
+
+-- Last data admitted of one course (null = Unknown)
 CREATE OR REPLACE FUNCTION security.course_last_admitted_at_v1(p_course_id uuid)
  RETURNS timestamp with time zone
  LANGUAGE sql
  STABLE
 AS $function$
-  select greatest(
-    (select max(i.updated_at) from pipeline.field_enrich_items i
-      where i.course_id = p_course_id and i.state = 'filled'
-        and not exists (select 1 from pipeline.enrich_value_retractions r where r.item_id = i.id)),
-    (select max(a.at) from pipeline.adapter_overwrite_changes a where a.course_id = p_course_id and a.before is distinct from a.after),
-    (select max(l.decided_at) from pipeline.layer2_field_admissions l where l.course_id = p_course_id and l.status = 'admitted' and l.canonical_changed),
-    (select max(k.decided_at) from pipeline.layer4_admission_checks k where k.entity_id = p_course_id and k.entity_type = 'course' and k.admitted),
-    (select max(e.run_at) from pipeline.course_intake_date_events e where e.course_id = p_course_id and e.outcome = 'filled'),
-    (select max(m.at) from pipeline.manual_edit_log m where m.entity = 'course' and m.entity_id = p_course_id and m.action in ('set_official_url', 'set_tuition')))
+  select max(a.at) from security.course_admissions_v1() a where a.course_id = p_course_id
 $function$;
-comment on function security.course_last_admitted_at_v1(uuid) is 'CF-247 Course Catalogue columns (mandate 5 Nov 2026 17:31 §4): when a value was last admitted to this course, from the admission ledgers only (never a read, proposal, review item, refresh or build); null = Unknown. Used by the courses_page sort admitted and its Last data admitted column.';
+comment on function security.course_last_admitted_at_v1(uuid) is 'CF-247 Course Catalogue columns (mandate 5 Nov 2026 17:31 §4): when a value was last admitted to this course (security.course_admissions_v1); null = Unknown.';
 
--- Adapter status of a course, from the existing adapter lifecycle and results. Completed needs a result row for the course: never inferred.
+-- Adapter status from its inputs: one rule for the page column and the sort. Completed needs a result row for the course: never inferred.
+CREATE OR REPLACE FUNCTION security.course_adapter_state_from_v1(p_has_adapter boolean, p_enabled boolean, p_admit boolean, p_leased boolean,
+  p_page_status text, p_read_status text, p_last_result text)
+ RETURNS text
+ LANGUAGE sql
+ IMMUTABLE
+AS $function$
+  select case
+    when not coalesce(p_has_adapter, false) then 'not_configured'
+    when coalesce(p_leased, false) then 'processing'
+    when not (coalesce(p_enabled, false) and coalesce(p_admit, false)) then 'held'
+    when p_last_result is not null and p_last_result <> 'read' then 'failed'
+    when p_read_status is not null and p_read_status <> 'read' then 'failed'
+    when p_last_result is not null then 'completed'
+    when p_page_status is distinct from 'bound' then 'held'
+    else 'ready' end
+$function$;
+comment on function security.course_adapter_state_from_v1(boolean, boolean, boolean, boolean, text, text, text) is 'CF-247 Course Catalogue columns (mandate 5 Nov 2026 17:31 §3): a course''s adapter status from the provider adapter (exists, enabled, admitting), its course page (being read, bound, read status) and its latest adapter result: not_configured, processing, held, failed, completed, ready. Completed is never inferred from an adapter existing.';
+
+-- Adapter status of one course
 CREATE OR REPLACE FUNCTION security.course_adapter_state_v1(p_course_id uuid, p_provider_id uuid)
  RETURNS text
  LANGUAGE sql
  STABLE
 AS $function$
-  select case
-    when not exists (select 1 from pipeline.uni_adapters u where u.provider_id = p_provider_id) then 'not_configured'
-    when exists (select 1 from pipeline.coverage_course_pages p where p.course_id = p_course_id and p.leased_until > now()) then 'processing'
-    when exists (select 1 from pipeline.uni_adapters u where u.provider_id = p_provider_id and not (u.enabled and u.admit)) then 'held'
-    when (select r.before_read_status from pipeline.uni_adapter_results r where r.course_id = p_course_id order by r.at desc, r.id desc limit 1) is distinct from 'read'
-         and exists (select 1 from pipeline.uni_adapter_results r where r.course_id = p_course_id) then 'failed'
-    when exists (select 1 from pipeline.coverage_course_pages p where p.course_id = p_course_id and p.read_status is not null and p.read_status <> 'read') then 'failed'
-    when exists (select 1 from pipeline.uni_adapter_results r where r.course_id = p_course_id) then 'completed'
-    when not exists (select 1 from pipeline.coverage_course_pages p where p.course_id = p_course_id and p.status = 'bound') then 'held'
-    else 'ready' end
+  select security.course_adapter_state_from_v1(u.provider_id is not null, u.enabled, u.admit, p.leased_until > now(), p.status, p.read_status,
+           (select r.before_read_status from pipeline.uni_adapter_results r where r.course_id = p_course_id order by r.at desc, r.id desc limit 1))
+    from (select 1) one
+    left join pipeline.uni_adapters u on u.provider_id = p_provider_id
+    left join pipeline.coverage_course_pages p on p.course_id = p_course_id
 $function$;
-comment on function security.course_adapter_state_v1(uuid, uuid) is 'CF-247 Course Catalogue columns (mandate 5 Nov 2026 17:31 §3): a course''s adapter status: not_configured (no adapter for the provider), processing (its page is being read now), held (adapter switched off or testing, or no bound course page), failed (the latest adapter result or page read did not read), completed (an adapter result exists and the read succeeded), ready (waiting for its first read). Completed is never inferred from an adapter existing.';
+comment on function security.course_adapter_state_v1(uuid, uuid) is 'CF-247 Course Catalogue columns (mandate 5 Nov 2026 17:31 §3): a course''s adapter status (security.course_adapter_state_from_v1) read from the adapter tables.';
 
 -- Sort order for Adapter status, attention first
 CREATE OR REPLACE FUNCTION security.course_adapter_rank_v1(p_state text)
@@ -211,21 +247,8 @@ AS $function$
             from catalogue.course_campuses cc join catalogue.campuses ca on ca.id = cc.campus_id
             left join ref.subdivisions sd on sd.id = ca.subdivision_id left join ref.countries co on co.id = ca.country_id
            where cc.course_id = c.id order by ca.id) x) ct on true
-  left join lateral (
-    select * from (
-      select i.updated_at at, i.field, coalesce(i.source, 'enrich_fields') source, i.evidence_id, null::jsonb before, case when jsonb_typeof(i.value) = 'object' then i.value - 'text' - 'check' else i.value end after, 'Enrich fields' rule
-        from pipeline.field_enrich_items i where i.course_id = c.id and i.state = 'filled' and not exists (select 1 from pipeline.enrich_value_retractions x where x.item_id = i.id)
-      union all
-      select a.at, a.field, 'adapter_overwrite', a.evidence_id, a.before, a.after, 'Adapter overwrite' from pipeline.adapter_overwrite_changes a where a.course_id = c.id and a.before is distinct from a.after
-      union all
-      select l.decided_at, l.field_key, 'layer2_admission', l.evidence_id, null, l.candidate_payload, l.change_control_ref from pipeline.layer2_field_admissions l where l.course_id = c.id and l.status = 'admitted' and l.canonical_changed
-      union all
-      select k.decided_at, k.field_code, 'layer4_approval', null, null, null, 'Layer 4 decision ' || k.decision_id::text from pipeline.layer4_admission_checks k where k.entity_id = c.id and k.entity_type = 'course' and k.admitted
-      union all
-      select e.run_at, 'intakes', 'intake_dates', e.calendar_evidence_id, e.before_value, e.after_value, coalesce(e.rule, 'Intake dates') from pipeline.course_intake_date_events e where e.course_id = c.id and e.outcome = 'filled'
-      union all
-      select m.at, coalesce(m.field, m.action), 'manual', null, m.before, m.after, coalesce(m.reason, 'Set by hand') from pipeline.manual_edit_log m where m.entity = 'course' and m.entity_id = c.id and m.action in ('set_official_url', 'set_tuition')
-    ) z order by z.at desc limit 1) la on true
+  left join lateral (select a.at, a.field, a.source, a.evidence_id, a.before, a.after, a.rule from security.course_admissions_v1() a
+     where a.course_id = c.id order by a.at desc limit 1) la on true
   left join lateral (
     select jsonb_object_agg(a.attribute, jsonb_build_object('state', case
         when a.state = 'admitted' then 'populated'
@@ -261,7 +284,8 @@ AS $function$
 $function$;
 comment on function security.course_list_with_extras_v1(jsonb) is 'CF-247 Course Catalogue columns (mandate 5 Nov 2026 17:31): merges security.course_list_extras_v1 into each item of a courses_page result, keeping the items'' order and every existing field.';
 
-revoke all on function security.course_last_admitted_at_v1(uuid), security.course_adapter_state_v1(uuid, uuid), security.course_adapter_rank_v1(text),
+revoke all on function security.course_admissions_v1(), security.course_last_admitted_at_v1(uuid), security.course_adapter_state_from_v1(boolean, boolean, boolean, boolean, text, text, text),
+  security.course_adapter_state_v1(uuid, uuid), security.course_adapter_rank_v1(text),
   security.course_list_extras_v1(uuid[]), security.course_list_with_extras_v1(jsonb) from public, anon, authenticated;
 
 -- The saved layout: read, save, reset, restore. Always the caller's own row.
@@ -377,17 +401,35 @@ select pg_temp.ccol_edit('security.admin_course_page_fast(jsonb)', '2dc6ee8ba523
         '  return security.course_list_with_extras_v1(security.admin_course_page_fast_base(p_args));']
 ], array[1, 1, 1]);
 
-select pg_temp.ccol_edit('security.admin_course_page_fast_base(jsonb)', 'afbef16111a09e3680061547bbb1329a', 'security.course_last_admitted_at_v1(', array[
+select pg_temp.ccol_edit('security.admin_course_page_fast_base(jsonb)', 'afbef16111a09e3680061547bbb1329a', 'security.course_admissions_v1()', array[
   array['    select b.id,b.canonical_title,b.provider_name,b.field_of_study,b.updated_at,b.last_verified_at from base b',
         '    select b.id,b.canonical_title,b.provider_name,b.field_of_study,b.updated_at,b.last_verified_at,b.provider_id from base b'],
+  array[$o$  ), numbered as (
+    -- CF-247 W34$o$,
+        $n$  ), adm as materialized (
+    -- CF-247 Course Catalogue columns (mandate 5 Nov 2026 17:31 §8): the Last data admitted and Adapter status sorts run set-based over the
+    -- whole filtered set (one aggregate of the admission ledgers; one join of the adapter tables). Each is built only for its own sort.
+    select a.course_id,max(a.at) at from security.course_admissions_v1() a where v_sort='admitted' group by a.course_id
+  ), ads as materialized (
+    select m.id course_id,security.course_adapter_rank_v1(security.course_adapter_state_from_v1(u.provider_id is not null,u.enabled,u.admit,
+             p.leased_until>now(),p.status,p.read_status,r.before_read_status)) rank
+    from matched m
+    left join pipeline.uni_adapters u on u.provider_id=m.provider_id
+    left join pipeline.coverage_course_pages p on p.course_id=m.id
+    left join (select distinct on (x.course_id) x.course_id,x.before_read_status from pipeline.uni_adapter_results x
+               where v_sort='adapter' order by x.course_id,x.at desc,x.id desc) r on r.course_id=m.id
+    where v_sort='adapter'
+  ), numbered as (
+    -- CF-247 W34$n$],
+  array['    from unnest(array(select numbered.id from matched numbered order by',
+        '    from unnest(array(select numbered.id from matched numbered left join adm on adm.course_id=numbered.id left join ads on ads.course_id=numbered.id order by'],
   array[$o$      case when v_sort='course' and v_dir='asc' then lower(canonical_title) end asc,$o$,
-        $n$      -- CF-247 Course Catalogue columns (mandate 5 Nov 2026 17:31 §8): Last data admitted and Adapter status sort the whole filtered set; Unknown last
-      case when v_sort='admitted' and v_dir='asc' then security.course_last_admitted_at_v1(numbered.id) end asc nulls last,
-      case when v_sort='admitted' and v_dir='desc' then security.course_last_admitted_at_v1(numbered.id) end desc nulls last,
-      case when v_sort='adapter' and v_dir='asc' then security.course_adapter_rank_v1(security.course_adapter_state_v1(numbered.id,numbered.provider_id)) end asc nulls last,
-      case when v_sort='adapter' and v_dir='desc' then security.course_adapter_rank_v1(security.course_adapter_state_v1(numbered.id,numbered.provider_id)) end desc nulls last,
+        $n$      case when v_sort='admitted' and v_dir='asc' then adm.at end asc nulls last,
+      case when v_sort='admitted' and v_dir='desc' then adm.at end desc nulls last,
+      case when v_sort='adapter' and v_dir='asc' then ads.rank end asc nulls last,
+      case when v_sort='adapter' and v_dir='desc' then ads.rank end desc nulls last,
       case when v_sort='course' and v_dir='asc' then lower(canonical_title) end asc,$n$]
-], array[1, 1]);
+], array[1, 1, 1, 1]);
 
 insert into pipeline.component_register(kind, name, layer, purpose, status, replaces, introduced_in) values
  ('table', 'pipeline.admin_table_columns', 'Platform', 'Course catalogue columns: the column registry saved layouts are checked against', 'active', '{}', '20261106300000'),
@@ -395,7 +437,9 @@ insert into pipeline.component_register(kind, name, layer, purpose, status, repl
  ('function', 'public.admin_table_layout', 'Platform', 'Course catalogue columns: read, save, reset and restore the caller''s own table layout', 'active', '{}', '20261106300000'),
  ('function', 'security.course_list_extras_v1', 'Platform', 'Course catalogue columns: the extra columns of one courses_page page, set-based', 'active', '{}', '20261106300000'),
  ('function', 'security.course_list_with_extras_v1', 'Platform', 'Course catalogue columns: merges the extra columns into a courses_page result', 'active', '{}', '20261106300000'),
- ('function', 'security.course_last_admitted_at_v1', 'Platform', 'Course catalogue columns: Last data admitted from the admission ledgers', 'active', '{}', '20261106300000'),
+ ('function', 'security.course_admissions_v1', 'Platform', 'Course catalogue columns: every admission of a course value (the one definition of Last data admitted)', 'active', '{}', '20261106300000'),
+ ('function', 'security.course_last_admitted_at_v1', 'Platform', 'Course catalogue columns: Last data admitted of one course', 'active', '{}', '20261106300000'),
+ ('function', 'security.course_adapter_state_from_v1', 'Platform', 'Course catalogue columns: the adapter status rule from its inputs', 'active', '{}', '20261106300000'),
  ('function', 'security.course_adapter_state_v1', 'Platform', 'Course catalogue columns: a course''s adapter status from the adapter lifecycle and results', 'active', '{}', '20261106300000'),
  ('function', 'security.course_adapter_rank_v1', 'Platform', 'Course catalogue columns: Adapter status sort order', 'active', '{}', '20261106300000')
 on conflict do nothing;
@@ -407,8 +451,8 @@ begin
   v := pg_get_functiondef('security.admin_course_page_fast(jsonb)'::regprocedure);
   if (length(v) - length(replace(v, 'security.course_list_with_extras_v1(', ''))) / length('security.course_list_with_extras_v1(') <> 3 then raise exception 'Course Catalogue columns post-check: courses_page paths without the extras'; end if;
   v := pg_get_functiondef('security.admin_course_page_fast_base(jsonb)'::regprocedure);
-  if position($p$v_sort='admitted' and v_dir='desc'$p$ in v) = 0 or position($p$v_sort='adapter' and v_dir='asc'$p$ in v) = 0 or position('b.last_verified_at,b.provider_id from base b' in v) = 0 then raise exception 'Course Catalogue columns post-check: sort keys missing'; end if;
-  if position($p$v_sort='modified' and v_dir='desc' then updated_at end desc$p$ in v) = 0 or position('matched as materialized' in v) = 0 then raise exception 'Course Catalogue columns post-check: existing sort or page-first changed'; end if;
+  if position($p$v_sort='admitted' and v_dir='desc' then adm.at$p$ in v) = 0 or position($p$v_sort='adapter' and v_dir='asc'$p$ in v) = 0 or position('b.last_verified_at,b.provider_id from base b' in v) = 0 then raise exception 'Course Catalogue columns post-check: sort keys missing'; end if;
+  if position($p$v_sort='modified' and v_dir='desc' then updated_at end desc$p$ in v) = 0 or position('matched as materialized' in v) = 0 or position('lower(canonical_title),id' in v) = 0 then raise exception 'Course Catalogue columns post-check: existing sort or page-first changed'; end if;
   if (select count(*) from pipeline.admin_table_columns where screen = 'courses') <> 36 then raise exception 'Course Catalogue columns post-check: registry incomplete'; end if;
   if (select count(*) from pipeline.platform_toolset_settings where toolset_key = 'pipeline' and key like 'catalogue_layout.%') <> 4 then raise exception 'Course Catalogue columns post-check: settings missing'; end if;
   if has_table_privilege('authenticated', 'pipeline.admin_table_layouts', 'select') or has_table_privilege('anon', 'pipeline.admin_table_layouts', 'select') then raise exception 'Course Catalogue columns post-check: layouts readable directly'; end if;
