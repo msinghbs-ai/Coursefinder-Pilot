@@ -28,12 +28,16 @@
 --   5 One index on pipeline.course_intake_date_events(run_at) so windows and the latest run are bounded reads (processing does not read it).
 -- No job is added or changed: job process-results and the intake scheduler are untouched.
 -- Settings (G2, Settings › Pipeline settings › Process results): intake_progress.stall_minutes, .runs_listed, .failure_rows, .university_rows,
---   .monopoly_runs, .monopoly_share_pct. The generic observer's own progress.window_hours and progress.stall_hours apply to the intake chain.
+--   .monopoly_runs, .monopoly_share_pct; and progress.intake_chain_on (First-run verification and progress), the narrow off switch of the intake chain. The generic observer's own progress.window_hours and progress.stall_hours apply to the intake chain.
 -- Consumer API: unchanged (G3); search.course_documents is not read here (the publication state written by security.intake_publication_check_v1 is).
 -- Held PR #875 also edits security.progress_measure_v1 (guards 40c0c972, produces 4f10e10e): it must be re-guarded on this change's result.
 -- Replaces: md5-guarded additive edits of security.progress_measure_v1 (40c0c972) and security.progress_read_v1 (f11ed22d); the chain check of pipeline.progress_transitions (widened)
 -- Retires: nothing
 -- Nothing is dropped or deleted (the widened check constraint is replaced in place by a wider one).
+-- Deploy: apply outside :02, :26, :32 and :53 (first-run-verify, intake-dates-apply, process-results); a busy table makes it fail cleanly, apply again.
+-- #875 (held) if this releases first: re-guard its progress_measure_v1 edit on before e758d1c2d36f8f523c3fdbcc1b9dff2f, after b5fc7aae44039565dc85644352f0c719.
+
+set local lock_timeout = '5s'; -- fixed: deploy-time safety, not a pipeline control (a busy minute fails cleanly; apply again in a quiet minute)
 
 create or replace function pg_temp.edit(p_sig text, p_md5 text, p_marker text, p_old text[], p_new text[], p_times int[]) returns text language plpgsql as $e$
 declare v text := pg_get_functiondef(p_sig::regprocedure); i int; n int;
@@ -84,6 +88,10 @@ insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, ki
  ('pipeline', 'intake_progress.monopoly_runs', 'Automation progress: runs checked for one provider monopolising',
   'The most recent scheduled intake runs over which the share of one provider is measured (job first-run-verify, intake checks).',
   'number', to_jsonb(3), 1, 24, 'runs', 1024, 'Process results', 'security.intake_progress_alerts_v1; job first-run-verify', 'Decision 16:36 §6: one university monopolising processing'),
+ ('pipeline', 'progress.intake_chain_on', 'Progress contract: read the intake chain',
+  'The progress observer (job first-run-verify) reads the three intake transitions and runs the intake checks only while this is 1. Set to 0 to stop watching intake without touching the scholarship and AER chains (forward recovery, docs/intake-automation-progress.md §8).',
+  'number', to_jsonb(1), 0, 1, 'switch', 1513, 'First-run verification and progress', 'security.progress_read_v1; security.intake_progress_checks_v1; job first-run-verify',
+  'Platform Admin decision 5 Nov 2026 20:03 and the PR #889 validation: a narrow off switch for the intake chain'),
  ('pipeline', 'intake_progress.monopoly_share_pct', 'Automation progress: one provider monopolising',
   'Over those runs, one provider taking at least this share of the rows while a pilot university still has pending work is raised as monopolising (intake-progress:monopoly).',
   'number', to_jsonb(80), 50, 100, 'per cent', 1025, 'Process results', 'security.intake_progress_alerts_v1; job first-run-verify', 'Decision 16:36 §6: one university monopolising processing')
@@ -160,19 +168,22 @@ select pg_temp.edit('security.progress_read_v1()', 'f11ed22d149eb06aa10387e67467
   array[$o$          'layer', case t.chain when 'aer' then 'AER' else 'Scholarships' end,$o$,
         $o$'severity', 'P2', 'root_cause_class', 'unclassified', 'workstream', 'A7',$o$,
         $o$        v_n int := 0; v_err int := 0; v_st int := 0; v_jobs jsonb;$o$,
+        $o$  for t in select * from pipeline.progress_transitions order by chain, step loop$o$,
         $o$  end loop;
   return jsonb_build_object('read', v_n, 'errors', v_err, 'stalled', v_st, 'since', v_since);$o$],
   array[$n$          'layer', case t.chain when 'aer' then 'AER' when 'intake' then 'Layer 2' else 'Scholarships' end,$n$,
         $n$'severity', 'P2', 'root_cause_class', 'unclassified', 'workstream', case t.chain when 'intake' then 'A8' else 'A7' end,$n$,
         $n$        v_n int := 0; v_err int := 0; v_st int := 0; v_jobs jsonb; v_intake jsonb;$n$,
+        $n$  -- the intake chain is read only while progress.intake_chain_on is 1 (decision 20:03; the other chains are always read)
+  for t in select * from pipeline.progress_transitions x where x.chain <> 'intake' or security.pipeline_num_v1('progress.intake_chain_on', 1) >= 1 order by chain, step loop$n$,
         $n$  end loop;
   -- decision 5 Nov 2026 20:03: the intake conditions the transition contract cannot express (one provider monopolising, a partial publication
   -- mismatch, a deterministic failure repeated unchanged), isolated so a failure never stops the readings above
-  if exists (select 1 from pipeline.progress_transitions x where x.chain = 'intake') then
+  if exists (select 1 from pipeline.progress_transitions x where x.chain = 'intake') and security.pipeline_num_v1('progress.intake_chain_on', 1) >= 1 then
     begin v_intake := security.intake_progress_checks_v1(); exception when others then v_intake := jsonb_build_object('error', left(sqlerrm, 300)); end;
   end if;
   return jsonb_build_object('read', v_n, 'errors', v_err, 'stalled', v_st, 'since', v_since) || case when v_intake is null then '{}'::jsonb else jsonb_build_object('intake', v_intake) end;$n$],
-  array[1, 1, 1, 1]);
+  array[1, 1, 1, 1, 1]);
 -- 4 reads ---------------------------------------------------------------------------------------------------------------------------------------
 create or replace function security.intake_progress_window_v1(p_since timestamptz, p_until timestamptz) returns jsonb
 language sql stable security definer set search_path to '' as $function$

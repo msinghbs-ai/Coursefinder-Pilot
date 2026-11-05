@@ -77,7 +77,9 @@ The screen's own "stalled" job state uses `intake_progress.stall_minutes` (90) f
 
 **Changes**
 - `security.progress_measure_v1`: an md5-guarded additive edit (40c0c972) adds three keys before its final `else`. Every existing branch is byte for byte unchanged.
-- `security.progress_read_v1`: an md5-guarded edit (f11ed22d). Intake issues are filed as layer "Layer 2" and workstream A8, the intake checks run after the loop, and the result gains an `intake` key when that chain exists.
+- `security.progress_read_v1`: an md5-guarded edit (f11ed22d). Intake issues are filed as layer "Layer 2" and workstream A8. The loop reads the intake chain only while `progress.intake_chain_on` is 1 (the other chains are always read). The intake checks run after the loop, and the result gains an `intake` key when that chain is read.
+- **After the migration (fixture):** `progress_measure_v1` = `e758d1c2d36f8f523c3fdbcc1b9dff2f`, `progress_read_v1` = `24460bd898fbbc69a3d4c8db3a0b5c24`.
+- The migration sets `lock_timeout` to 5 s (`-- fixed:` deploy-time safety). A busy table makes it fail cleanly, and it can be applied again.
 - `pipeline.progress_transitions`: the `chain` check is widened to scholarship, aer and intake, and three intake transitions are added.
 - One index, `course_intake_date_events_run_idx` on `run_at`, keeps the window reads bounded. Processing does not read it.
 - `src/ProcessResults.jsx` mounts the section. `src/process-results-api.js` gains `progress` (read) and `control` (Pause/Resume only).
@@ -110,7 +112,7 @@ The screen's own "stalled" job state uses `intake_progress.stall_minutes` (90) f
   - refusal of a non-live `progress_measure_v1`;
   - the migration applied twice with no change;
   - no job added or changed;
-  - 24 SQL cases.
+  - 25 SQL cases, including the off switch.
 - `benchmark.sh`.
 - `tests/integration-progress/intake-progress-postgres.spec.mjs`: browser to PostgreSQL, desktop and phone.
 - `tests/uat/cf-247-s340-intake-automation-progress.spec.mjs`.
@@ -139,6 +141,7 @@ Results:
 | `intake_progress.university_rows` | 60 providers | 10–500 | university table |
 | `intake_progress.monopoly_runs` | 3 runs | 1–24 | monopoly check |
 | `intake_progress.monopoly_share_pct` | 80 per cent | 50–100 | monopoly check |
+| `progress.intake_chain_on` (section First-run verification and progress) | 1 | 0–1 | the observer reads the intake chain and runs the intake checks only while 1 (forward recovery, §8) |
 
 - **Existing settings that now also apply to intake:** `progress.on`, `progress.window_hours` (24) and `progress.stall_hours` (6).
 - **Fixed windows:** latest, 24 hours, 7 days and 30 days are the windows named in 16:36 §3D (`-- fixed:`).
@@ -226,11 +229,104 @@ The benchmark fails above 3 s. The bridge's statement time-out is 20 s. In produ
 
 ## 7. Release and acceptance (for the Integration Controller)
 
-1. Apply `20261106400000`. It refuses if a guarded md5 differs, including `progress_measure_v1` when #875 has landed first.
-2. At the next `:02` or `:32`, job `first-run-verify` reads the intake chain: three new rows in `pipeline.progress_transitions` and their observations.
-3. Its first readings may raise:
-   - `intake-progress:publication-mismatch`, if any admitted value is not in the Website API source;
-   - `stall:intake_admission`, if no value was admitted in the last 6 hours while rows failed for a non-excluded reason.
+### 7.1 Deploy window
 
-   Both are P2, workstream A8. They are evidence, not regressions.
+- **Avoid these minutes:**
+  - :02 and :32 (`first-run-verify` updates every `progress_transitions` row);
+  - :26 (`intake-dates-apply` writes `course_intake_date_events`);
+  - :53 (`process-results`).
+- **Suggested:** :11–:12 or :41–:43.
+- **Production read freeze:** no reads at :35–:42 or :47–:48. After a :41–:43 deploy, the post-deploy check therefore waits until :43 (light reads) or the next :x6–:x8 (heavy reads).
+- **If the table is busy:** the migration's `lock_timeout` (5 s) makes it fail cleanly, with nothing applied. Apply it again in the next quiet minute.
+
+### 7.2 Steps
+
+1. Apply `20261106400000`. It refuses if any guarded md5 differs, including `progress_measure_v1` when #875 has landed first.
+2. Verify in production (read only) that:
+   - `progress_measure_v1` = `e758d1c2…` and `progress_read_v1` = `24460bd8…`;
+   - three `intake_*` rows exist in `pipeline.progress_transitions`;
+   - the chain check includes `intake`.
+3. After the next `:02` or `:32`, confirm that `first-run-verify` has read the intake chain: the three rows have `measured_at`, and there are three new `progress_observations`.
 4. Open Process results and compare the observer table, and the latest-run and 24-hour counts, with `pipeline.progress_transitions` and `pipeline.course_intake_date_events`.
+
+### 7.3 Expected effects of the first reading
+
+**`intake-progress:repeated-deterministic` will be raised** on the first reading: P2, A8, `root_cause_class = code_defect`. Validation counted 167 rows on 5 Nov.
+
+- **It is not a true finding.** Re-read in production on 5 Nov at 21:05 AEDT (read only):
+  - all 167 are UNSW rows: 151 `academic_year_unproven` and 16 `no_matching_commencement_period`;
+  - each was decided at 14:26 and again at 16:26, under the same rule, calendar set and reader.
+- **Why they were looked at again.** Between the two runs, at 15:56, the governed containment changed `intake_dates.month_unique_match` from 1 to 0 (admin control event 28963). That setting is part of the row's inputs fingerprint (`security.intake_inputs_fp_v1`, settings `unique=…`). The rows were therefore correctly looked at again.
+- **Why the check misses it.** It compares the calendar set and reader only, because the decision records do not store the inputs fingerprint.
+- **What the operator does:**
+  - triage the issue as "not a defect: the inputs changed (15:56 settings change)" and close it through the integration queue;
+  - the condition also clears by itself once the 16:26 decisions leave the one-day window (6 Nov 16:26 AEDT), unless a new repeat occurs.
+- **Decision for the Controller (not changed here):**
+  - (a) accept the check as it is, with this triage note; or
+  - (b) a narrow follow-up so the check also ignores repeats that straddle a governed settings change or a release, or demote it to shown only.
+
+  The decision records cannot be given the fingerprint without changing intake processing, which is closed.
+
+**Other expected effects:**
+
+- **No stall.** On 5 Nov data, `stall:intake_*`, `intake-progress:monopoly` and `intake-progress:publication-mismatch` would not be raised. The validation estimate at 20:56 AEDT found:
+  - selection 2,007 decided;
+  - admission 26 admitted (1,313 excluded);
+  - publication 908 found;
+  - top provider share 8.3%;
+  - 0 publication failures.
+- **Scorecard and checkpoints count intake.**
+  - `security.self_sustainability_v1` aggregates every transition. Its `transitions` list, `queue_continuity.stalled_transitions`, `unattended_operation` (created, technical zeros, nothing eligible) and `scheduled_job_reliability.justified_idle_transitions` now include intake.
+  - The source-to-admission and admission-to-publication yields read named scholarship and AER keys and are unchanged.
+  - Its only caller is `security.ops_report_v1`, written hourly and daily to `pipeline.ops_checkpoints` by `security.ops_controller_tick_v1`.
+  - No job command, alert, flag, screen or edge function reads these verdicts. The effect is reporting only.
+- **First-run verification maps the intake jobs.** `security.release_first_run_register_v1` maps a released job to its first transition by producer.
+  - A future release that registers `intake-dates-apply` now resolves to `intake_selection`, and `process-results` to `intake_publication`. Before, neither resolved to any transition.
+  - Scholarship and AER jobs are not producers of an intake transition, so their mapping is unchanged.
+- **`first_run_verify` output.** Its `eligible` count (the transitions it reads) rises from 16 to 19.
+- **Reporting oddity, not a failure.** `intake_publication` can show processed above eligible, because re-checks count as processed.
+
+### 7.4 Held PR #875
+
+#875 edits `security.progress_measure_v1` from 40c0c972 to 4f10e10e.
+
+- **If #889 releases first:** re-guard #875 on before `e758d1c2d36f8f523c3fdbcc1b9dff2f`, after `b5fc7aae44039565dc85644352f0c719`. The validator applied #875's text edits on top of this build, and both applied exactly once. This holds only for this exact #889 build.
+- **If #875 releases first:** this migration refuses (guard 40c0c972). It must be re-guarded on #875's result, with the intake block re-inserted and the regression proof re-run.
+
+## 8. Forward recovery (nothing is dropped)
+
+### 8.1 Stop watching intake without touching the other chains
+
+**Quick lever.** Set `progress.intake_chain_on` to 0 on Settings › Pipeline settings › First-run verification and progress (with a reason).
+
+- From the next `first-run-verify` run, the observer reads only the 16 scholarship and AER transitions and runs no intake check (tested).
+- The three intake rows keep their last reading. `self_sustainability_v1` keeps counting those last values until the rows are removed (see the clean removal below).
+- The Process results screen keeps working: its funnel, history, universities and failures read the decision records, not the observer.
+
+**Emergency only.** `progress.on` = 0 stops every chain.
+
+**Clean removal (two steps):**
+
+1. A migration restores `security.progress_measure_v1` to `40c0c972abc353be8f6eee35c79750e9` and `security.progress_read_v1` to `f11ed22d149eb06aa10387e67467ec6f`. The texts are in `tests/fixtures/intake-progress/progress-live.sql`. Each restore is guarded on the current md5 (`e758d1c2…`, `24460bd8…`), and the regression in `regression.sql` is reversed.
+   - Until step 2, the old measure records "no progress measure for transition" as `measure_error` on each intake row. This is per transition, and it is noisy but harmless.
+2. The three `pipeline.progress_transitions` rows (and their observations) are removed by a **paste file to the Platform Admin**, because a migration never deletes. The widened chain check can stay.
+
+**Can stay.** The read functions, settings and index are read only or unused.
+
+### 8.2 Close the issues the intake chain raised
+
+- **`stall:intake_selection`, `stall:intake_admission`, `stall:intake_publication`.** The existing controller handles them like any other `stall:<transition>`. When the chain is off they are no longer observed (`last_observed_at` stops). The Platform Admin closes them through the Integration queue's existing close action, with the reason.
+- **`intake-progress:monopoly`, `:publication-mismatch`, `:repeated-deterministic`.**
+  - While the chain is on, the intake checks set `condition_cleared_at` when the condition clears, and the controller closes on that evidence.
+  - When the chain is off, they are closed in the Integration queue with the reason "intake chain switched off".
+- **Recurrence.** A recurrence after closing reopens the same row as a regression, as `security.integration_issue_upsert_v1` does. No duplicate is created.
+
+### 8.3 Re-guard
+
+- **Any later change to `progress_measure_v1` or `progress_read_v1`** guards on `e758d1c2…` and `24460bd8…`, or on whatever is then live (read `md5(pg_get_functiondef(...))` first).
+- **To rebuild the fixture on new live definitions:**
+  1. Rebuild `progress-live.sql` from the live text, checking the md5.
+  2. Update the md5 list in `run.sh`.
+  3. Re-run `run.sh`.
+
+  The regression proof then compares the new live definition with the change.

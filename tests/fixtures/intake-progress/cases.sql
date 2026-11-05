@@ -174,6 +174,17 @@ select fx.ok((select condition_cleared_at is not null from pipeline.integration_
   'a cleared condition marks its issue condition_cleared_at (the controller closes it)');
 rollback;
 
+-- forward recovery: the narrow off switch stops the intake readings and checks; the scholarship and AER chains are still read
+begin;
+update pipeline.platform_toolset_settings set value = '0' where toolset_key = 'pipeline' and key = 'progress.intake_chain_on';
+update pipeline.course_intake_dates set publication_state = 'consumer_publication_failed' where outcome = 'filled';
+insert into obs select 7, security.progress_read_v1();
+select fx.ok((select bool_and(measured_at < now()) from pipeline.progress_transitions where chain = 'intake')
+   and (select bool_and(measured_at = now()) from pipeline.progress_transitions where chain in ('scholarship', 'aer'))
+   and not (r ? 'intake') and (r->>'read')::int = 16,
+   'off switch: with progress.intake_chain_on 0 the observer reads the 16 scholarship and AER transitions only and runs no intake check') from obs where n = 7;
+rollback;
+
 -- 9 no job added or changed; the intake scheduler and processing untouched
 select fx.ok((select command from cron.job where jobname = 'process-results') = 'select security.intake_publication_check_v1(); select security.process_results_record_v1(); select security.process_results_recovery_record_v1()'
    and (select command from cron.job where jobname = 'intake-dates-apply') = 'select security.intake_dates_apply_v1(security.pipeline_num_v1(''batch.intake_dates_apply'', 200)::int); select security.intake_publication_check_v1()'
