@@ -271,6 +271,8 @@ Both rules run read-only on production, each a single SELECT in the heavy-read w
 
 ## 5. Open points for the Integration Controller
 
+- CI on PostgreSQL 17 (head 9300131a, a slower runner than earlier runs): Last data admitted 226 ms, Adapter 231 ms, course 172 ms. With the Victoria state filter: today's course sort takes 2,535 ms and Last data admitted 2,856 ms. The state filter is the existing hotspot: it predates this change and is close to the 3,000 ms budget on its own. This change does not alter it; the slow path is recorded for a separate change.
+
 - `docs/platform/TEST-REGISTER.md` was regenerated from a partial local run (agents do not run the full suite), so statuses outside this change read "not run"; the Controller regenerates it after the full run at integration, as the ownership rules say.
 - At release: re-read the two edited functions' md5s (`2dc6ee8ba523afeec04d862f3a2ced8a`, `afbef16111a09e3680061547bbb1329a`); the migration refuses to apply if either changed.
 - Index locks: each build holds its table's write lock only while it runs; measured above at under 30 ms, so `CREATE INDEX CONCURRENTLY` (a separate paste file run before the migration) is not needed. The real risk is waiting for a writer already holding the table, so the migration sets `lock_timeout` to 5 s (marked `-- fixed:`): a busy minute fails the migration cleanly and it is applied again. Deploy window: the writers of these tables run at :00/:05 (enrich-plan-run), :x3 (coverage-admit), :x5 (coverage-admit-intakes), :x9 (adapter-overwrite), :23 (field-gap-queue), :24/:54 (ops-controller), :26 (intake-dates-apply) and :41 (enrich-plan-auto); apply at :11–:12 or :31–:32, never at :26 or the :x6 heavy minutes.
