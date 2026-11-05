@@ -27,13 +27,13 @@ create temp table bench(view text, ms numeric);
 do $$
 declare t timestamptz; v text; a jsonb;
 begin
-  foreach v in array array['status', 'latest', '24h', '7d', '30d', 'runs30d', 'failures', 'measurements'] loop
+  foreach v in array array['status', 'latest', '24h', '7d', '30d', 'runs30d', 'failures', 'observations'] loop
     a := case when v in ('latest', '24h', '7d', '30d') then jsonb_build_object('window', v) when v = 'runs30d' then '{"window":"30d"}' else '{}' end;
     t := clock_timestamp();
     perform fx.v(3, case when v in ('latest', '24h', '7d', '30d') then 'window' when v = 'runs30d' then 'runs' else v end, a);
     insert into bench values (v, round(extract(epoch from clock_timestamp() - t) * 1000, 1));
   end loop;
-  t := clock_timestamp(); perform security.intake_progress_record_v1(); insert into bench values ('observer', round(extract(epoch from clock_timestamp() - t) * 1000, 1));
+  t := clock_timestamp(); perform security.progress_read_v1(); insert into bench values ('observer (progress_read_v1, all chains)', round(extract(epoch from clock_timestamp() - t) * 1000, 1));
 end $$;
 select 'BENCH ' || view || ' ' || ms || ' ms' from bench order by view;
 -- bounded: every read under 3 s at this volume (the bridge's own statement time-out is 20 s)

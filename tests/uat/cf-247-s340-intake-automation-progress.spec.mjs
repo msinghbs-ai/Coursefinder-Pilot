@@ -1,4 +1,4 @@
-// Guards: Platform Admin decision 5 Nov 2026 16:36 §3-§5 (Automation Progress inside the existing Process results, read only, Pause/Resume through the existing job control) and the intake closure of 18:35 (the intake scheduler and processing are not changed). The database-backed acceptance is the isolated track tests/integration-progress.
+// Guards: Platform Admin decision 5 Nov 2026 16:36 §3-§5 (Automation Progress inside the existing Process results, read only, Pause/Resume through the existing job control), decision 20:03 (the generic progress observer reused, no overlapping detection) and the intake closure of 18:35 (the intake scheduler and processing are not changed). The database-backed acceptance is the isolated track tests/integration-progress.
 import fs from 'node:fs'
 import { test, expect } from '@playwright/test'
 
@@ -21,9 +21,13 @@ test('the browser bridge: progress reads one role-checked function; Pause and Re
   ])
 })
 
-test('the migration adds a read layer and one observer call: no new job or scheduler, the intake plan, apply job and applicability rule untouched', () => {
-  const schedules = [...MIG.matchAll(/cron\.schedule\('([^']+)'/g)].map(m => m[1])
-  expect(schedules).toEqual(['process-results'])
+test('the migration adds a read layer and folds intake into the generic progress observer: no job added or changed, the intake plan, apply job and applicability rule untouched', () => {
+  expect(MIG).not.toContain('cron.schedule(')
+  expect(MIG).not.toContain('pipeline.process_results(')
+  // one edit of each generic function, guarded on its live md5; intake transitions in the shared contract
+  expect(MIG).toContain("pg_temp.edit('security.progress_measure_v1(text,timestamp with time zone)', '40c0c972abc353be8f6eee35c79750e9'")
+  expect(MIG).toContain("pg_temp.edit('security.progress_read_v1()', 'f11ed22d149eb06aa10387e67467ec6f'")
+  expect(MIG).toContain("('intake_admission', 'intake', 20, 'Admission', '{intake-dates-apply}', '{}')")
   for (const frozen of ['intake_dates_plan_v3', 'intake_dates_apply_v1(', 'intake_course_applicability_v1', 'intake_date_withdraw', "cron.schedule('intake-dates-apply'", "alter_job("]) expect(MIG).not.toContain(frozen)
   expect(MIG).toMatch(/create or replace function public\.admin_intake_progress_v1[\s\S]*?security definer[\s\S]*?if auth\.uid\(\) is null or v_rank < 3 then raise exception/)
   expect(MIG).toContain('security.integration_issue_upsert_v1(jsonb_build_object(')

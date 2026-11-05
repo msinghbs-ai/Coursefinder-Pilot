@@ -1,4 +1,4 @@
-// Guards: Platform Admin decision 5 Nov 2026 16:36 §3-§8 and 19:14 §10: Process results › Automation progress against isolated PostgreSQL (fixture tests/fixtures/intake-progress): status, funnel and university rows reconcile with the database, Not processed versus zero eligible, the four history windows, the failure list, Pause/Resume through the existing job toggle and its audit, a running job, a read-only role without controls, persistence after refresh, and the phone layout.
+// Guards: Platform Admin decision 5 Nov 2026 16:36 §3-§8, 19:14 §10 and 20:03 (generic progress observer reused): Process results › Automation progress against isolated PostgreSQL (fixture tests/fixtures/intake-progress): status, the observer's intake readings, funnel and university rows reconcile with the database, Not processed versus zero eligible, the four history windows, the failure list, Pause/Resume through the existing job toggle and its audit, a running job, a read-only role without controls, persistence after refresh, and the phone layout.
 import { test, expect } from '@playwright/test'
 const FX = 'http://127.0.0.1:55443'
 const sql = async (page, q) => (await (await page.request.post(`${FX}/fixture/sql`, { data: { sql: q } })).json()).rows
@@ -38,6 +38,14 @@ test('status, the latest run funnel and the university rows match the database; 
   await expect(row(page, 'UNSW Sydney')).toContainText('Zero eligible')
   await expect(row(page, 'Torrens University Australia')).toContainText('Other provider')
   await expect(page.locator('[data-alert="publication_mismatch"]')).toHaveAttribute('data-tripped', 'yes')
+  await expect(page.locator('[data-alert="publication_mismatch"]')).toContainText('raised by the intake checks as intake-progress:publication-mismatch')
+  // decision 20:03: the generic progress observer's readings of the intake chain, as stored by it
+  const observer = page.getByTestId('ap-observer')
+  await expect(observer.locator('tbody tr')).toHaveCount(3)
+  const created = await sql(page, "select output_created from pipeline.progress_transitions where key = 'intake_selection'")
+  await expect(observer.locator('tr[data-transition="intake_selection"] td').nth(3)).toHaveText(created)
+  await page.getByRole('button', { name: 'Observer readings' }).click()
+  await expect(page.getByTestId('ap-observations').locator('li')).toHaveCount(Number(await sql(page, "select count(*) from pipeline.progress_observations where transition_key like 'intake%'")))
 })
 
 test('history windows show gross activity and net gain with withdrawals, and the chosen window survives a refresh', async ({ page }) => {
@@ -61,7 +69,7 @@ test('the failure list: every held row with its reason, next action and issue; d
   const total = await sql(page, "select count(*) from pipeline.course_intake_dates where outcome <> 'filled' or failure_class is not null or publication_state = 'consumer_publication_failed'")
   await expect(page.getByTestId('ap-failures').getByRole('heading')).toContainText(`Failures and holds (${total} intake rows`)
   const pub = page.locator('.ap-failure[data-class="consumer_publication_failed"]')
-  await expect(pub).toContainText('IQ-00001')
+  await expect(pub).toContainText(await sql(page, "select issue_ref from pipeline.integration_issues where fingerprint = 'intake-dates:fixture-publication'"))
   await expect(pub).toContainText('not in the Website API v2 source')
   await expect(page.locator('.ap-failure[data-class="admission_held"]')).toContainText('A person must actYes')
   await row(page, 'UNSW Sydney').getByRole('button', { name: 'Courses' }).click()

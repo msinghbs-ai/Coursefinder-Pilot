@@ -59,3 +59,35 @@ select fx.id('c:' || k || ':' || n), fx.id('p:' || k), 'Course ' || n || ' of ' 
 insert into catalogue.course_intakes(id, course_id, intake_year, intake_label)
 select fx.id('i:' || k || ':' || n || ':' || m), fx.id('c:' || k || ':' || n), 2027, m from fx.provider_keys, generate_series(1, courses) n, unnest(array['February', 'July']) m
 on conflict do nothing;
+
+-- the generic progress contract as in production (decision 20:03): its settings, its job and its sixteen transitions (configuration rows from
+-- migration 20261104460000, as live on 5 Nov 2026 20:05 AEDT)
+insert into pipeline.platform_toolset_settings(toolset_key, key, label, kind, value, min_value, max_value, unit, section, used_by) values
+ ('pipeline', 'progress.on', 'Progress contract: read every pipeline transition', 'number', '1', 0, 1, 'switch', 'First-run verification and progress', 'security.progress_read_v1'),
+ ('pipeline', 'progress.window_hours', 'Progress contract: counting window', 'number', '24', 1, 168, 'hours', 'First-run verification and progress', 'security.progress_measure_v1'),
+ ('pipeline', 'progress.stall_hours', 'Progress contract: a transition with eligible work is stalled after', 'number', '6', 1, 168, 'hours', 'First-run verification and progress', 'security.progress_read_v1')
+on conflict (toolset_key, key) do nothing;
+select cron.schedule('first-run-verify', '2,32 * * * *', 'select security.first_run_verify_tick_v1()');
+insert into pipeline.automation_catalogue(jobname, area, sort, label, description, control_rank, batch_editable) values
+ ('first-run-verify', 'Platform upkeep', 18, 'First-run verification, progress and recovery routing', 'At :02 and :32: first runs of released jobs, the progress contract, links and routes (live label, area, sort and control rank; description shortened).', 6, false)
+on conflict (jobname) do nothing;
+insert into pipeline.progress_transitions(key, chain, step, title, producer_jobs, switch_keys) values
+ ('sch_classification', 'scholarship', 10, 'Coverage classification', '{scholarship-coverage-classify}', '{sch_cov.classify_on}'),
+ ('sch_source_recovery', 'scholarship', 20, 'Source recovery', '{scholarship-coverage-recover}', '{sch_cov.recover_register_pages_on,sch_cov.recover_stored_reads_on,sch_cov.recover_listings_on}'),
+ ('sch_listing_traversal', 'scholarship', 30, 'Listing traversal', '{scholarship-listing}', '{}'),
+ ('sch_candidate_matching', 'scholarship', 40, 'Candidate matching', '{scholarship-discover,scholarship-listing}', '{}'),
+ ('sch_reading', 'scholarship', 50, 'Reading', '{scholarship-read,scholarship-ai-extract}', '{}'),
+ ('sch_eligibility', 'scholarship', 60, 'Eligibility validation', '{scholarship-ai-extract}', '{}'),
+ ('sch_layer4', 'scholarship', 70, 'Layer 4 where required', '{}', '{}'),
+ ('sch_admission', 'scholarship', 80, 'Admission', '{scholarship-ai-extract}', '{}'),
+ ('sch_publication', 'scholarship', 90, 'Publication', '{scholarship-auto-publish}', '{}'),
+ ('aer_source_discovery', 'aer', 10, 'Source discovery', '{coverage-discover,coverage-discover-2}', '{}'),
+ ('aer_extraction', 'aer', 20, 'Extraction', '{aer-scheduled-read,entry-matrix-read}', '{}'),
+ ('aer_completeness', 'aer', 30, 'Completeness validation', '{aer-scheduled-read}', '{}'),
+ ('aer_technical_correction', 'aer', 40, 'Technical correction where needed', '{work-continuity}', '{}'),
+ ('aer_layer4_review', 'aer', 50, 'Layer 4 review', '{}', '{}'),
+ ('aer_active_records', 'aer', 60, 'Active entry records', '{}', '{}'),
+ ('aer_publication', 'aer', 70, 'Consumer publication', '{}', '{}')
+on conflict (key) do nothing;
+update pipeline.progress_transitions t set next_key = n.key from pipeline.progress_transitions n
+ where n.chain = t.chain and n.step = (select min(x.step) from pipeline.progress_transitions x where x.chain = t.chain and x.step > t.step) and t.next_key is null;

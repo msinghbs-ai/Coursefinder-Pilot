@@ -82,6 +82,7 @@ create table if not exists catalogue.providers (
   country_id uuid not null,
   provider_type_id uuid,
   lifecycle_status text not null default 'active'::text,
+  publication_status text not null default 'published'::text,
   constraint providers_country_id_fkey FOREIGN KEY (country_id) REFERENCES ref.countries(id),
   constraint providers_id_fkey FOREIGN KEY (id) REFERENCES pim.entity_registry(id) ON DELETE CASCADE,
   constraint providers_pkey PRIMARY KEY (id),

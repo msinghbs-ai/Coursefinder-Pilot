@@ -6,7 +6,9 @@ import './automation-progress.css'
 // CF-247 Automation Progress (Platform Admin decision 5 Nov 2026 16:36 §3-§8; decision 19:14 §10): a persistent section of Layer 2/3 Operations ›
 // Intake Run & Validate › Process results showing what the intake dates automation is doing, from persisted records only:
 // current state → work processed → data admitted → data published → failures → next action → historical evidence.
-// Server: public.admin_intake_progress_v1 (read only, Operations read and above). Pause/Resume is the existing job on/off control
+// Server: public.admin_intake_progress_v1 (read only, Operations read and above). Throughput conditions of the intake chain (zero yield, a job not
+// deciding rows, publication stalled) are raised by the generic progress observer (job first-run-verify, decision 20:03); the screen shows its
+// readings and issues. Pause/Resume is the existing job on/off control
 // (public.admin_automation_control, audited in pipeline.admin_control_events); no other scheduler or control is created here.
 const STATE = {
   waiting: ['success', 'Waiting for the next run (healthy, idle)'], running: ['info', 'Running'], paused: ['warning', 'Paused'],
@@ -138,7 +140,17 @@ export default function AutomationProgress({ rank = 0, client }) {
         <Metric label="AI use" value={fmtMoney(Number(s.usage?.ai_cost_usd || 0), 'USD', { decimals: 4 })} detail={`calendar reading, last ${n(s.usage?.ai_window_days)} days`}/>
         <Metric label="Firecrawl credits" value={`${n(s.usage?.firecrawl_credits_counted)} of ${n(s.usage?.firecrawl_budget)}`} detail="calendar refresh"/>
       </div>
-      <p className="ap-scope">Pilot scope: {(s.scope || []).join(', ')}. Observer: job {s.observer?.job}, last run {when(s.observer?.last_run)}, last snapshot {when(s.observer?.last_snapshot)}.</p>
+      <p className="ap-scope">Pilot scope: {(s.scope || []).join(', ')}.</p>
+      <section className="ap-block" aria-label="Progress observer">
+        <h4>Progress observer</h4>
+        <p>Job {s.observer?.job}, last run {when(s.observer?.last_run)}{s.observer?.status ? ` (${words(s.observer.status)})` : ''}. It counts each intake stage over the last {n(s.observer?.window_hours)} hours and raises a stage with eligible work and no output for {n(s.observer?.stall_hours)} hours in the integration queue.</p>
+        <div className="intake-table-scroll"><table className="cf-table ap-table" data-testid="ap-observer">
+          <thead><tr><th>Stage</th><th>Eligible</th><th>Processed</th><th>Created</th><th>Why zero</th><th>Stalled</th><th>Issue</th><th>Read</th></tr></thead>
+          <tbody>{(s.observer?.transitions || []).map(t => <tr key={t.key} data-transition={t.key} data-stalled={t.stalled ? 'yes' : 'no'}>
+            <td>{t.title}</td><td>{n(t.eligible)}</td><td>{n(t.processed)}</td><td>{n(t.created)}</td><td>{t.zero_reason ? words(t.zero_reason) : (t.measure_error || '')}</td>
+            <td>{t.stalled ? `Yes, since ${fmtDateTime(t.stalled_since)}` : 'No'}</td><td>{t.issue || 'none'}</td><td>{when(t.measured_at)}</td></tr>)}
+            {!(s.observer?.transitions || []).length && <tr><td colSpan={8}>Not read yet: the observer reads the intake chain at its next run.</td></tr>}</tbody></table></div>
+      </section>
       <div className="intake-actions ap-controls" data-testid="ap-controls">
         <Button compact disabled={!!busy} onClick={() => load()}>Refresh</Button>
         {c.can_pause_resume && (s.active
@@ -153,7 +165,8 @@ export default function AutomationProgress({ rank = 0, client }) {
         <h4>Alerts</h4>
         <ul className="ap-alerts">{alerts.map(a => <li key={a.code} data-alert={a.code} data-tripped={a.tripped ? 'yes' : 'no'}>
           <StatusChip value={a.tripped ? 'raised' : 'clear'} tone={a.tripped ? 'danger' : 'success'} label={a.tripped ? 'Raised' : 'Clear'}/> <strong>{a.label}</strong>
-          {a.tripped && <> · {n(a.affected)} affected · last successful stage: {a.last_success_stage} · next action: {a.next_action}{a.routed ? ' · in the integration queue' : ''}</>}
+          {a.tripped && <> · {n(a.affected)} affected · last successful stage: {a.last_success_stage} · next action: {a.next_action}</>}
+          {a.fingerprint && <small> · raised by the {a.raised_by} as {a.fingerprint}{a.issue ? ` (${a.issue.ref}${a.issue.cleared ? ', condition cleared' : ''})` : ''}</small>}
           {!a.tripped && a.zero_reason && <> · {words(a.zero_reason)}</>}
         </li>)}</ul>
       </section>
@@ -172,7 +185,7 @@ export default function AutomationProgress({ rank = 0, client }) {
         <small> · {(r.by_provider || []).slice(0, 4).map(p => `${p.university}: ${n(p.rows)}`).join(', ')}</small></li>)}</ul></details>}
     </section>
     <div ref={failRef}><Failures data={fails} filter={filter} setFilter={pickFilter} busy={busy}/></div>
-    <div className="intake-actions"><Button compact disabled={!!busy} onClick={() => run('Loading saved snapshots', async () => setSnaps(await client.progress('measurements')))}>Saved progress snapshots</Button></div>
-    {snaps && <ul className="ap-snaps">{snaps.length === 0 ? <li>No snapshot saved yet. The process-results job saves one every hour.</li> : snaps.map(x => <li key={x.id}>{fmtDateTime(x.measured_at)} · {words(x.state)} · latest run admitted {n(x.latest_run?.admitted)} of {n(x.latest_run?.selected)}{x.alerts?.length ? ` · raised: ${x.alerts.map(words).join(', ')}` : ''}</li>)}</ul>}
+    <div className="intake-actions"><Button compact disabled={!!busy} onClick={() => run('Loading observer readings', async () => setSnaps(await client.progress('observations')))}>Observer readings</Button></div>
+    {snaps && <ul className="ap-snaps" data-testid="ap-observations">{snaps.length === 0 ? <li>No reading yet. The progress observer (job first-run-verify) reads the intake chain every 30 minutes.</li> : snaps.map((x, k) => <li key={k}>{fmtDateTime(x.measured_at)} · {words(x.transition)} · eligible {n(x.eligible)} · created {n(x.created)}{x.admitted != null ? ` · admitted ${n(x.admitted)}` : ''}{x.published != null ? ` · published ${n(x.published)}` : ''}{x.zero_reason ? ` · ${words(x.zero_reason)}` : ''}{x.stalled ? ' · stalled' : ''}</li>)}</ul>}
   </section>
 }
