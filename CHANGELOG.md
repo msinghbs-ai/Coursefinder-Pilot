@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.414 — 6 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.487** (Platform Admin authorisation 6 Nov 2026 07:00; PR #891, agent C; independent validation agent E: ready). Fix for the v2.15.486 production acceptance failure: the Columns panel's classes `cc-bar`, `cc-panel` and `cc-count` collided with `src/data-quality.css` (and `.cc-bar` with `admin-pages.css`); all Columns classes now use the `ccol-` prefix. New `scripts/verify-css-class-collisions.mjs` runs in prebuild and fails the build on any repeat. Browser tests now load every stylesheet and hit-test all 40 checkboxes on desktop and phone. No migration, no database change, consumer API unchanged.
+
 ## 0.1.413 — 5 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.486** (Platform Admin 5 Nov 2026 17:31 mandate; release authorised 22:52 at reviewed commit e07a4122; PR #887, agent C; independent validation agent E: ready). Migration `20261106300000_cf247_course_catalogue_columns`: per-user layout table with RLS and an owner-only RPC `admin_table_layout`, a 40-column registry, settings `catalogue_layout.*` (incl. recovery switches `server_layouts_on`, `new_sorts_on`), md5-guarded edits of `security.admin_course_page_fast` (2dc6ee8b) and `admin_course_page_fast_base` (afbef161) adding adapter, campus city, intake, last-admitted and last-published fields and the `admitted` and `adapter` sorts; four ledger indexes; `lock_timeout` 5 s. Consumer API unchanged.
