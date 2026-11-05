@@ -19,7 +19,12 @@ export default function IntakeRunValidate({ rank = 0, client = intakeRunApi }) {
   const execute = async (name, fn) => {
     if (lock.current) return
     lock.current = true; setBusy(name); setError('')
-    try { await fn() } catch (e) { setError(e?.message || 'Request failed. Check access and refresh before continuing.') }
+    try { await fn() } catch (e) {
+      const message = e?.message || 'Request failed. Check access and refresh before continuing.'
+      setError(name === 'Previewing eligible courses' && (e?.code === '57014' || /statement timeout/i.test(message))
+        ? 'Preview timed out before a cohort was fixed. No intake job was started. Ask the operator to check preview performance before trying again.'
+        : message)
+    }
     finally { lock.current = false; setBusy('') }
   }
   const load = () => execute('Loading capabilities', async () => {
@@ -99,7 +104,7 @@ export default function IntakeRunValidate({ rank = 0, client = intakeRunApi }) {
       {preview && <p>{preview.courses?.length || 0} selected of {preview.eligible_courses ?? 'unknown'} eligible courses. {preview.rule} Preview at {fmtDateTime(preview.as_at)}; expires {fmtDateTime(preview.expires_at)}.</p>}
       {preview?.universities && <details open><summary>Eligibility by university (bounded independent scans)</summary>{preview.universities.map(u => <p key={u.id}>{u.name}: {u.active_courses} active courses · {u.eligible_courses} eligible courses in {u.rows_planned} evaluated rows · scan limit {u.scan_limit}</p>)}</details>}
       {preview && <details><summary>Eligibility stops and missing evidence</summary><Evidence data={preview.skipped_by_reason || {}}/></details>}
-      {preview && !preview.courses?.length && <p role="status">Blocked: this scope has no eligible intake values. Next action: inspect the stored course-page evidence and approved calendars through the existing review workflow. The scope has not been widened.</p>}
+      {preview && !preview.courses?.length && <p role="status">Blocked: no eligible intake values were found in this bounded preview. Unexamined rows are not classified as ineligible. Next action: review the evaluated scan limits and stored page/calendar evidence. The scope has not been widened.</p>}
       {cohort && <p>Fixed cohort: {cohort.cohort_id}. Reason: {request.current?.reason}. Saved on the server; results and the same request key are restored after refresh.</p>}
       {run && <div role="status"><StatusChip value={run.state}/>{run.outcome && <StatusChip value={run.outcome}/>}<p>Run: {run.run_id || 'Awaiting confirmed run ID'} · Started {fmtDateTime(run.started_at)} · Finished {fmtDateTime(run.finished_at)}</p>
         <p>{run.state === 'awaiting_response' ? 'Waiting for the synchronous job response; intermediate progress is not exposed.' : unknown ? 'Outcome unknown. Verify this cohort first. Recover same request uses the original idempotency key; it never creates a new run request.' : `Processed ${run.processed ?? 'unknown'} · Admitted ${run.admitted ?? 'unknown'} · Skipped ${run.skipped ?? 'unknown'} · Failed ${run.failed ?? 'unknown'}`}</p>

@@ -1,6 +1,6 @@
 // Guards: Provider Description mandate §3/9. Real worker parsing/identity/quote checks and real SQL recording, controlled model transport only.
 import { sql, quote } from './db.mjs'
-import { descriptionPageText, descriptionSourceIdentity, descriptionClaimCheck, descriptionCostQuote, descriptionRequest, descriptionAnswer, descriptionSentences, DESCRIPTION_PROMPT_VERSION } from '../../../supabase/functions/coverage-sweep/description.ts'
+import { descriptionPageText, descriptionSourceIdentity, descriptionClaimCheck, descriptionCostQuote, descriptionRequest, descriptionAnswer, providerDescriptionSentences, DESCRIPTION_PROMPT_VERSION } from '../../../supabase/functions/coverage-sweep/description.ts'
 export function processNext(limit = 10, cohortId = null) {
   const lease = sql(`select ${cohortId?`public.svc_provider_description_cohort_next(${Number(limit)},${quote(cohortId)}::uuid)`:`public.svc_provider_description_next(${Number(limit)})`};`, { role:'service_role', json:true })
   const processed=recordLease(lease)
@@ -34,7 +34,7 @@ export function recordLease(lease) {
     const parsed=descriptionAnswer(response,maxTokens)
     if(!parsed.ok)throw new Error(parsed.error)
     if(parsed.cost>costQuote.max_cost_usd)throw new Error('Controlled model response exceeds its reserved price bound')
-    const answer=descriptionSentences(parsed.a,page,lease.min_quote_chars)
+    const answer=providerDescriptionSentences(parsed.a,page,lease.min_quote_chars)
     const claims=descriptionClaimCheck(answer,Number(lease.verbatim_span_max_chars))
     results.push({...base,cost:parsed.cost,cost_known:true,ai_call_started:true,answer,...(!claims.ok?{quality_hold:{rule:claims.rule,reason:claims.reason}}:{})})
   }

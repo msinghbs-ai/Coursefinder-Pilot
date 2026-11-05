@@ -4,7 +4,7 @@ import fs from'node:fs'
 import{sql,quote}from'./db.mjs'
 const root='tests/fixtures/provider-description-autonomy/'
 const hashes=JSON.parse(fs.readFileSync(root+'migration-function-hashes.json'))
-const migration=fs.readFileSync('supabase/migrations/20261105010000_provider_description_autonomy.sql','utf8')
+const migration=fs.readFileSync('supabase/migrations/20261106200000_cf247_provider_description_autonomy.sql','utf8')
 const actual=()=>sql(`select jsonb_object_agg(sig,md5(pg_get_functiondef(sig::regprocedure))) from unnest(array[${Object.keys(hashes).map(quote).join(',')}])sig;`,{role:'postgres',json:true})
 assert.deepEqual(actual(),hashes,'exact frozen after hashes')
 sql('begin;'+migration+';commit;',{role:'postgres'})

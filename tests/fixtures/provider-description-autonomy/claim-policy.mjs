@@ -2,15 +2,15 @@
 import assert from'node:assert/strict'
 import fs from'node:fs'
 import{sql,quote}from'./db.mjs'
-import{descriptionPageText,descriptionSentences}from'../../../supabase/functions/coverage-sweep/description.ts'
+import{descriptionPageText,providerDescriptionSentences}from'../../../supabase/functions/coverage-sweep/description.ts'
 const root='tests/fixtures/provider-description-autonomy/'
-const migration=fs.readFileSync('supabase/migrations/20261105010000_provider_description_autonomy.sql','utf8')
+const migration=fs.readFileSync('supabase/migrations/20261106200000_cf247_provider_description_autonomy.sql','utf8')
 const doc=sql("select to_jsonb(d) from fixture.documents d where provider_id='10000000-0000-0000-0000-000000000001';",{role:'postgres',json:true})
 const page=descriptionPageText(doc.html,16000)
 const cases=[]
 for(const term of ['campus-based study','scholarships for applicants','guarantees personal mentoring']){
  const answer=structuredClone(doc.model_answer);answer.sentences[0].text=answer.sentences[0].text.replace(/\.$/,'')+' and offers '+term+'.'
- const checked=descriptionSentences(answer,page,20)
+ const checked=providerDescriptionSentences(answer,page,20)
  const result=sql(`select security.provider_description_validate_v1('10000000-0000-0000-0000-000000000001','https://p1.example.edu/about',now(),${quote(JSON.stringify(checked))}::jsonb);`,{role:'postgres',json:true})
  assert.equal(result.rule,'unsupported_claim',term);assert.equal(result.ok,false,term)
  cases.push({term,rule:result.rule})

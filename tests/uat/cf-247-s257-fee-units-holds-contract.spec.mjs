@@ -103,7 +103,8 @@ test('root causes and remedies are registered through workstream A\'s contract; 
 })
 
 test('the worker asks for the count kind, the page load, the course length and whether the amount is the whole course', () => {
-  expect(index).toContain('const WORKER = "coverage-sweep-worker-v0.59.6";')
+  // the v0.59.6 note stays in the version chain once a later worker is released ("// was v0.59.6 // ..."), as s254 does for v0.59.5
+  expect(index).toMatch(/(?:const WORKER = "coverage-sweep-worker-v0\.59\.6"; |\n\/\/ was v0\.59\.6 )\/\/ v0\.59\.6 \(3 Nov 2026, CF-247 IQ-00111/)
   for (const k of ['units_kind', 'full_time_load', 'course_years', 'whole_course']) {
     expect(fees).toContain(`"${k}"`)
     expect(fees).toContain(`- ${k}: `)

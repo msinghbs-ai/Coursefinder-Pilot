@@ -192,9 +192,25 @@ export function descriptionRequest(model: string, provider: string, url: string,
 }
 
 // every sentence keeps its quote and whether the quote is on the page (at least minQuoteChars letters and digits, found in the page text)
+// Shared with the course-description reader (course-text.ts); its matching is unchanged by the provider-description source guard.
 export function descriptionSentences(a: any, page: string, minQuoteChars = 20): { about_page: boolean; sentences: { text: string; quote: string; on_page: boolean }[] } {
-  // Only canonical Unicode form and layout whitespace may differ. Punctuation, decimal points,
-  // signs, percentages, words and case remain evidence: "1.2%" must never prove "12%".
+  const fp = flatText(page);
+  // v0.58.0 (Platform Admin 2 Nov 2026 23:24, "avoid cutting essential conditions or publishing fragments"): nothing is cut here. Every
+  // sentence and quote is kept whole and every sentence the model gave is passed on; the database holds a description that is too long,
+  // has too many sentences or a sentence that is not complete (rules length, sentence_count, incomplete_sentence). It was cut at 600
+  // characters and 12 sentences.
+  const sentences = ((a?.sentences || []) as any[]).map((s) => {
+    const text = String(s?.text || "").replace(/\s+/g, " ").trim(), quote = String(s?.quote || "").replace(/\s+/g, " ").trim();
+    const fq = flatText(quote);
+    return { text, quote, on_page: fq.length >= minQuoteChars && fp.includes(fq) };
+  }).filter((s) => s.text);
+  return { about_page: a?.about_page === true, sentences };
+}
+
+// Provider descriptions only (provider-description-source-guard-v1): the quote must be on the page exactly.
+// Only canonical Unicode form and layout whitespace may differ. Punctuation, decimal points,
+// signs, percentages, words and case remain evidence: "1.2%" must never prove "12%".
+export function providerDescriptionSentences(a: any, page: string, minQuoteChars = 20): { about_page: boolean; sentences: { text: string; quote: string; on_page: boolean }[] } {
   const sourceText = (value: string) => String(value || "").normalize("NFC").replace(/\s+/g, " ").trim();
   const fp = sourceText(page);
   const onPage = (quote: string) => {
@@ -209,15 +225,12 @@ export function descriptionSentences(a: any, page: string, minQuoteChars = 20): 
     }
     return false;
   };
-  // v0.58.0 (Platform Admin 2 Nov 2026 23:24, "avoid cutting essential conditions or publishing fragments"): nothing is cut here. Every
-  // sentence and quote is kept whole and every sentence the model gave is passed on; the database holds a description that is too long,
-  // has too many sentences or a sentence that is not complete (rules length, sentence_count, incomplete_sentence). It was cut at 600
-  // characters and 12 sentences.
+  // As descriptionSentences: nothing is cut; every sentence and its whole quote is passed on for the database checks.
   const sentences = (Array.isArray(a?.sentences) ? a.sentences : []).map((s: any) => {
     const text = String(s?.text || "").replace(/\s+/g, " ").trim(), quote = String(s?.quote || "");
     const fq = flatText(quote);
     return { text, quote, on_page: fq.length >= minQuoteChars && onPage(quote) };
-  }).filter((s) => s.text);
+  }).filter((s: any) => s.text);
   return { about_page: a?.about_page === true, sentences };
 }
 

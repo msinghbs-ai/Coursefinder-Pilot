@@ -52,7 +52,7 @@ if [ "${PDESC_SETUP_ONLY:-}" = 1 ]; then
   "${P[@]}" < "$FX/seed.sql"
   exit 0
 fi
-MIG=supabase/migrations/20261105010000_provider_description_autonomy.sql
+MIG=supabase/migrations/20261106200000_cf247_provider_description_autonomy.sql
 [ -f "$MIG" ] || { echo 'Provider autonomy migration missing' >&2; exit 1; }
 { echo 'set check_function_bodies=off;'; cat "$MIG"; } | "${P[@]}" -1
 node "$FX/verify-migration.mjs"

@@ -1,6 +1,6 @@
 // Guards: Provider Description autonomy mandate (4 Nov 2026): exact current institution, final official source, factual support and evidence preservation before Layer 4.
 import { test, expect } from '@playwright/test'
-import { aboutPageCheck, descriptionClaimCheck, descriptionCostQuote, descriptionPageText, descriptionRequest, descriptionSentences, descriptionSourceIdentity } from '../../supabase/functions/coverage-sweep/description.ts'
+import { aboutPageCheck, descriptionClaimCheck, descriptionCostQuote, descriptionPageText, descriptionRequest, providerDescriptionSentences, descriptionSentences, descriptionSourceIdentity } from '../../supabase/functions/coverage-sweep/description.ts'
 
 test('current full names prove a source; a bare shared name never substitutes a college for its university', () => {
   const html = '<title>About | Riverstone University</title><h1>About our university</h1><main>Riverstone University teaches health, science and law.</main>'
@@ -43,24 +43,24 @@ test('numerical facts require their own quote and an unsupported answer keeps wh
   const page = 'Riverstone University was established in 1912. It has 2 campuses and teaches science.'
   const answer = { about_page: true, sentences: [{ text: 'Riverstone University was established in 1912.', quote: 'Riverstone University was established in 1912.' }, { text: 'It has 20 campuses and teaches science.', quote: 'It has 2 campuses and teaches science.' }] }
   expect(descriptionClaimCheck(answer)).toEqual({ ok: false, rule: 'unsupported_numeric_claim', reason: 'A numerical fact is absent from its supporting quote.' })
-  const preserved = descriptionSentences(answer, page)
+  const preserved = providerDescriptionSentences(answer, page)
   expect(preserved.sentences[1]).toEqual({ ...answer.sentences[1], on_page: true })
   expect(descriptionClaimCheck({ sentences: [{ text: 'It has 2 campuses.', quote: 'It has 2 campuses and teaches science.' }] })).toEqual({ ok: true })
   expect(descriptionClaimCheck({ sentences: [{ text: 'It has 20% of enrolments.', quote: 'It has 20 enrolments.' }] }).ok).toBe(false)
   expect(descriptionClaimCheck({ sentences: 'invalid model output' }).rule).toBe('invalid_answer')
-  expect(descriptionSentences({ sentences: 'invalid model output' }, page).sentences).toEqual([])
+  expect(providerDescriptionSentences({ sentences: 'invalid model output' }, page).sentences).toEqual([])
   const decimalPage = 'Riverstone University reports 1.2% growth in enrolments, with fees of -$1,200 under the stated adjustment.'
   for (const fakeQuote of ['Riverstone University reports 12% growth in enrolments.', 'Riverstone University reports 1.2 growth in enrolments.', 'with fees of $1,200 under the stated adjustment.']) {
-    const contaminated = descriptionSentences({ sentences: [{ text: fakeQuote, quote: fakeQuote }] }, decimalPage)
+    const contaminated = providerDescriptionSentences({ sentences: [{ text: fakeQuote, quote: fakeQuote }] }, decimalPage)
     expect(contaminated.sentences[0].on_page).toBe(false)
   }
   const rawQuote = '  Riverstone\tUniversity reports\n1.2% growth in enrolments,  '
-  const normalized = descriptionSentences({ sentences: [{ text: 'Riverstone University reports enrolment growth.', quote: rawQuote }] }, decimalPage)
+  const normalized = providerDescriptionSentences({ sentences: [{ text: 'Riverstone University reports enrolment growth.', quote: rawQuote }] }, decimalPage)
   expect(normalized.sentences[0].on_page).toBe(true)
   expect(normalized.sentences[0].quote).toBe(rawQuote)
-  expect(descriptionSentences({ sentences: [{ text: 'A university.', quote: 'L’universite\u0301 Riverstone teaches science.' }] }, 'L’université Riverstone teaches science.').sentences[0].on_page).toBe(true)
-  expect(descriptionSentences({ sentences: [{ text: 'An unsupported percentage.', quote: '2% growth in enrolments across the institution.' }] }, '12% growth in enrolments across the institution.').sentences[0].on_page).toBe(false)
-  expect(descriptionSentences({ sentences: [{ text: 'An unsupported decimal percentage.', quote: '2% growth in enrolments across the institution.' }] }, '1.2% growth in enrolments across the institution.').sentences[0].on_page).toBe(false)
+  expect(providerDescriptionSentences({ sentences: [{ text: 'A university.', quote: 'L’universite\u0301 Riverstone teaches science.' }] }, 'L’université Riverstone teaches science.').sentences[0].on_page).toBe(true)
+  expect(providerDescriptionSentences({ sentences: [{ text: 'An unsupported percentage.', quote: '2% growth in enrolments across the institution.' }] }, '12% growth in enrolments across the institution.').sentences[0].on_page).toBe(false)
+  expect(providerDescriptionSentences({ sentences: [{ text: 'An unsupported decimal percentage.', quote: '2% growth in enrolments across the institution.' }] }, '1.2% growth in enrolments across the institution.').sentences[0].on_page).toBe(false)
 })
 
 test('a conservative quote requires the exact approved model and complete non-negative pricing', () => {
@@ -83,11 +83,20 @@ test('long copied official spans are held without truncating the answer or its e
   const passage = 'Riverstone University provides a comprehensive range of undergraduate and postgraduate programmes across science, health, education and professional disciplines for students from Australia and overseas.'
   const copied = { about_page: true, sentences: [{ text: passage, quote: passage }] }
   expect(descriptionClaimCheck(copied, 120).rule).toBe('verbatim_passage')
-  expect(descriptionSentences(copied, passage).sentences[0].text).toBe(passage)
+  expect(providerDescriptionSentences(copied, passage).sentences[0].text).toBe(passage)
   expect(descriptionClaimCheck({ sentences: [{ text: 'Riverstone University teaches science and health.', quote: passage }] }, 120)).toEqual({ ok: true })
   expect(descriptionClaimCheck(copied, NaN).rule).toBe('invalid_verbatim_limit')
   expect(descriptionClaimCheck({ sentences: [{ text: 'a'.repeat(120), quote: 'a'.repeat(120) }] }, 120).rule).toBe('verbatim_passage')
   expect(descriptionClaimCheck({ sentences: [{ text: 'a'.repeat(119), quote: 'a'.repeat(119) }] }, 120).ok).toBe(true)
   expect(descriptionClaimCheck({ sentences: [{ text: 'Riverstone College is the current institution.', quote: 'Riverstone College became Current University in 2020.' }] }, 120).rule).toBe('historic_claim_context')
   expect(descriptionClaimCheck({ sentences: [{ text: 'Current University was formerly named Former College.', quote: 'Current University was formerly named Former College.' }] }, 120).ok).toBe(true)
+})
+
+test('the course-description reader keeps its shared quote matching; only provider descriptions use the exact-source match', () => {
+  const page = 'Riverstone University — Bachelor of Science. Students study chemistry, physics and biology across three years.'
+  const quote = 'students study Chemistry physics and biology across three years'
+  // course-text.ts uses descriptionSentences: letters and digits only, case and punctuation ignored (unchanged from main)
+  expect(descriptionSentences({ sentences: [{ text: 'Students study three sciences.', quote }] }, page, 20).sentences[0].on_page).toBe(true)
+  // provider descriptions: case and punctuation remain evidence
+  expect(providerDescriptionSentences({ sentences: [{ text: 'Students study three sciences.', quote }] }, page, 20).sentences[0].on_page).toBe(false)
 })

@@ -1,17 +1,15 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.478'
-export const PACKAGE_VERSION='0.1.405'
+export const UI_VERSION='2.15.485'
+export const PACKAGE_VERSION='0.1.412'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'4 Nov 2026',
-  title:'Course Intake Run & Validate',
+  date:'5 Nov 2026',
+  title:'Intake dates: the pilot universities take a share of every run',
   changes:[
-    'Layer 2/3 Operations has a Course Intake Run & Validate screen: choose the approved top Australian universities, preview eligible courses and their official evidence (with every university shown, including those with none and why), fix an audited cohort, run the intake job once through the governed Run Now, and inspect the result, the before and after values and the website and Zoho read-back.',
-    'Each university in the scope is now evaluated separately, so one large university can no longer take the whole preview.',
-    'Run Now records its result with the platform\'s outcome codes, so a run is kept instead of being rolled back.'
+    'The pilot universities (the top Australian universities by active courses, set by Run now: Australian universities a cohort is picked from) now take up to a set share of every intake-dates run (60 per cent, a setting), round by round and longest waiting first. Every other provider takes the rest, focus providers first, so the whole catalogue keeps moving; unused room on either side goes to the other.'
   ],
   bugFixes:[]
 }

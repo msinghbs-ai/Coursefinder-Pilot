@@ -1,4 +1,6 @@
 -- CF-247 Provider Descriptions — Run & Validate and autonomous continuation (Platform Admin mission 4 Nov 2026).
+-- Renumbered 5 Nov 2026 from 20261105010000 (that version is applied in production by v2.15.479, intake_preview_identity_lookup);
+-- ownership transferred to Claude agent B by Platform Admin decision 5 Nov 2026 19:14. Body otherwise as qualified on 4 Nov.
 -- Replaces: security.provider_description_validate_v1, security.provider_description_enqueue_v1, public.svc_provider_description_next, public.svc_provider_description_record, security.provider_description_fire_v1, security.layer4_provider_description_apply_impl (same existing reader and scheduler).
 -- Retires: nothing (extends the existing reader, existing Layer 4 decisions and existing governed task mechanism).
 -- No consumer API shape changes. No activation, country/type/provider scope widening, acquisition switch or budget increase.
@@ -8,10 +10,9 @@ insert into pipeline.platform_toolset_settings(toolset_key,key,label,help,kind,v
 values ('pipeline','pdesc.ui_preview_minutes','Provider descriptions: preview valid for','A saved provider-description preview expires after this long; prepare revalidates identity, description and stored evidence before fixing its members.','number','10'::jsonb,1,60,'minutes',990,'Provider descriptions','public.admin_provider_description_run_v1','Provider Description autonomy mission 4 Nov 2026: bounded reviewable previews')
 on conflict (toolset_key,key) do nothing;
 
--- Mission authority: add the existing reader to governed Run Now only. No reader activation, AI ceiling or eligibility/admission change.
-update pipeline.platform_toolset_settings set value=value||'"provider-description-read"'::jsonb,
- reason='Provider Description autonomy mandate 4 Nov 2026: bounded existing reader Run Now authorised; existing job/scope/spend/admission controls retained'
-where toolset_key='pipeline' and key='run_now.jobs' and jsonb_typeof(value)='array' and not value?'provider-description-read';
+-- Run Now stays off until a person switches it on (CLAUDE.md: a passing qualification never switches anything on by itself).
+-- This migration does NOT add provider-description-read to pipeline.run_now.jobs. Until the Platform Admin adds it on
+-- Settings › Pipeline settings (with a reason), Run & Validate previews and saves cohorts, and Run parks as job_not_allowlisted.
 
 insert into pipeline.platform_toolset_settings(toolset_key,key,label,help,kind,value,min_value,max_value,unit,sort,section,used_by,reason)
 values('pipeline','pdesc.verbatim_span_max_chars','Provider descriptions: longest verbatim span','A description containing this many consecutive characters copied from an official quote is held; write a concise factual paraphrase and retain the exact supporting quote separately.','number','120'::jsonb,40,1000,'characters',991,'Provider descriptions','security.provider_description_validate_v1, public.svc_provider_description_next, worker provider_description','Provider Description autonomy mandate 4 Nov 2026: no long official passages copied verbatim') on conflict(toolset_key,key) do nothing;
@@ -954,10 +955,10 @@ grant execute on function public.admin_provider_description_run_v1(text,jsonb) t
 comment on function public.admin_provider_description_run_v1(text,jsonb) is 'Provider Description autonomy 4 Nov 2026: authorised bounded scope preview, actor-bound saved immutable cohort, idempotent governed Run Now through existing provider-description-read, persisted results and actual Website read-back; existing Layer 4 is the only admission decision. Explain evidence preserves original checks without AI spend.';
 
 insert into pipeline.component_register(kind,name,layer,purpose,status,replaces,introduced_in) values
- ('table','pipeline.provider_description_cohorts','Operations','Provider descriptions: saved bounded cohort and run recovery','active','{}','20261105010000'),
- ('table','pipeline.provider_description_cohort_members','Operations','Provider descriptions: fixed identity/evidence and existing reader references','active','{}','20261105010000'),
- ('function','public.admin_provider_description_run_v1','Operations','Provider descriptions: governed Run & Validate UI bridge','active','{}','20261105010000'),
- ('function','security.provider_description_resume_v1','Layer 3','Provider descriptions: resume validated parked proposals without another AI read','active','{}','20261105010000')
+ ('table','pipeline.provider_description_cohorts','Operations','Provider descriptions: saved bounded cohort and run recovery','active','{}','20261106200000'),
+ ('table','pipeline.provider_description_cohort_members','Operations','Provider descriptions: fixed identity/evidence and existing reader references','active','{}','20261106200000'),
+ ('function','public.admin_provider_description_run_v1','Operations','Provider descriptions: governed Run & Validate UI bridge','active','{}','20261106200000'),
+ ('function','security.provider_description_resume_v1','Layer 3','Provider descriptions: resume validated parked proposals without another AI read','active','{}','20261106200000')
 on conflict do nothing;
 
 -- Refuse partial replacement or edited source: every changed existing reader definition must match the qualified after-body exactly.
