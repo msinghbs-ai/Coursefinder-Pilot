@@ -6,7 +6,7 @@
     {
       "signature": "security.provider_description_validate_v1(uuid,text,timestamptz,jsonb)",
       "before_md5": "528d5a3d2e3780fcb58e2c19db31c199",
-      "after_md5": "b79d85509ab969a90ebcc1d10915755d"
+      "after_md5": "36d3fba160a5845cafc4524f687a6d71"
     },
     {
       "signature": "security.provider_description_enqueue_v1()",

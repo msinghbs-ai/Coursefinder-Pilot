@@ -64,6 +64,39 @@ rollbackRefusal(`update pipeline.evidence_artifacts set content_hash='changed-af
 rollbackRefusal(`update catalogue.providers set website='https://unrelated.example.edu' where id=${quote(pending.provider_id)}::uuid;`,approveSQL,'changed official host prevents admission')
 const lowReviewer='90000000-0000-0000-0000-000000000003'
 rollbackRefusal(`set fx.uid=${quote(lowReviewer)};`,approveSQL,'actual rank-three curator cannot approve provider description','42501')
+// Platform Admin 5 Nov 2026 20:03 §3: rank 4 approves provider descriptions; every route is refused at rank 3; other kinds and read-only roles keep their behaviour.
+// Each psql call is its own session: a statement run after "begin;" without commit is rolled back when the session ends.
+const ids=proposed.providers.slice(0,2).map(p=>p.review_item_id)
+const implSQL=`select security.layer4_review_decide_impl(${quote(pending.review_item_id)}::uuid,'approve','Isolated negative admission authority check',null)`
+rollbackRefusal(`set fx.uid=${quote(lowReviewer)};`,implSQL,'rank three is refused through the direct decision implementation too','42501')
+const inboxSQL=`select public.admin_layer4_inbox('decide',${quote(JSON.stringify({kind:'provider_description',ref:pending.review_item_id,choice:'approve',reason:'Isolated rank check'}))}::jsonb)`
+rollbackRefusal(`set fx.uid=${quote(lowReviewer)};`,inboxSQL,'rank three is refused through the Layer 4 Inbox','42501')
+const batchSQL=`select security.layer4_batch_decide_v1_impl(array[${ids.map(i=>quote(i)+'::uuid').join(',')}],'approve','Isolated batch rank check','APPROVE 2','isolated')`
+rollbackRefusal(`set fx.uid=${quote(lowReviewer)};`,batchSQL,'rank three is refused a batch decision','42501')
+const batch6=json(`begin;set local fx.uid='90000000-0000-0000-0000-0000000000aa';${batchSQL};`)
+ok(batch6.decided===0&&batch6.skipped_description===2,'a batch never admits provider descriptions, even at rank six (decided one at a time)')
+const approvedAt=(uid,extra='')=>json(`begin;${extra}set local fx.uid=${quote(uid)};create temp table rank_result on commit drop as select security.current_role_rank() as rank,${approveSQL.replace(/^select /,'')} as result;select jsonb_build_object('rank',(select rank from rank_result),'result',(select result from rank_result),'description',(select description from catalogue.providers where id=${quote(pending.provider_id)}::uuid),'decision',(select action from pipeline.layer4_decisions where review_item_id=${quote(pending.review_item_id)}::uuid));`)
+const at4=approvedAt('90000000-0000-0000-0000-000000000004')
+ok(at4.rank===4&&at4.result.ok===true&&at4.decision==='approve'&&at4.description===at4.result.final_value.description,'rank four (Pipeline Operator) approves a provider description')
+const productionRoles=`insert into security.roles(code,name,rank,status) values('pim_admin','PIM Admin',5,'active'),('viewer','Viewer',1,'active');
+ insert into auth.users(id,email) values('90000000-0000-0000-0000-000000000015','isolated-role-15@example.invalid'),('90000000-0000-0000-0000-000000000011','isolated-role-11@example.invalid');
+ insert into security.user_roles(user_id,role_code) values('90000000-0000-0000-0000-000000000015','pim_admin'),('90000000-0000-0000-0000-000000000011','viewer');`
+const at5=approvedAt('90000000-0000-0000-0000-000000000015',productionRoles)
+ok(at5.rank===5&&at5.result.ok===true&&at5.decision==='approve','rank five (PIM Admin) approves a provider description')
+ok(json(`select count(*) from pipeline.layer4_decisions where review_item_id=${quote(pending.review_item_id)}::uuid;`)===0&&json(`select to_jsonb(status) from pipeline.layer4_review_items where id=${quote(pending.review_item_id)}::uuid;`)==='pending','refused and rolled-back checks leave the decision waiting for its real reviewer')
+for(const [uid,label] of [['90000000-0000-0000-0000-000000000011','rank one (Viewer)'],['90000000-0000-0000-0000-000000000002','rank two']]){
+ rollbackRefusal(`${productionRoles}set fx.uid=${quote(uid)};`,approveSQL,`${label} keeps no decision right, as before`,'42501')
+ rollbackRefusal(`${productionRoles}set fx.uid=${quote(uid)};`,`select public.admin_layer4_inbox('summary','{}'::jsonb)`,`${label} keeps no Layer 4 Inbox access, as before`,'42501')
+}
+// Other Layer 4 kinds: the functions that set their rank are byte-identical before and after the migration (hashes taken in run.sh before it).
+const before=JSON.parse(fs.readFileSync('uat-artifacts/provider-description-layer4-before.json','utf8'))
+const after=json(`select jsonb_object_agg(sig,md5(pg_get_functiondef(sig::regprocedure))) from unnest(array[${Object.keys(before).map(quote).join(',')}]) sig;`)
+for(const sig of Object.keys(before))assert.equal(after[sig],before[sig],'unchanged by the migration: '+sig)
+ok(Object.keys(before).length>=7,`other Layer 4 kinds keep their rank rules: ${Object.keys(before).length} decision functions (decide, Inbox, batch, other kinds' apply) unchanged by the migration`)
+const otherItem=`insert into pipeline.layer4_review_items(id,entity_type,entity_id,field_code,before_value,proposed_value,status) values('70000000-0000-0000-0000-000000000001','provider',${quote(pending.provider_id)}::uuid,`
+rollbackRefusal(`${otherItem}'entry_matrix_first_run','{}','{}','pending');set fx.uid='90000000-0000-0000-0000-000000000004';`,`select public.layer4_review_decide('70000000-0000-0000-0000-000000000001'::uuid,'approve','Isolated AER rank check',null)`,'an AER kind still needs the Platform Admin: rank four refused, unchanged','42501')
+const otherKind=json(`begin;insert into pipeline.layer4_review_items(id,entity_type,entity_id,field_code,before_value,proposed_value,status) values('70000000-0000-0000-0000-000000000001','scholarship',gen_random_uuid(),'scope_resolution','{}','{}','pending');set local fx.uid=${quote(lowReviewer)};select public.layer4_review_decide('70000000-0000-0000-0000-000000000001'::uuid,'reject','Isolated rank-three decision on another kind',null);`)
+ok(otherKind?.ok===true&&otherKind.status==='rejected','rank three still decides another kind (scholarship scope_resolution) directly, unchanged')
 const full=processNext(1,prepared.cohort_id)
 ok(full.lease.reason==='review_full'&&full.results.length===0,'pending review cap parks further work without another AI call')
 for(const p of proposed.providers)timed('authorised_layer4_decision_and_consumer_readback',()=>decideProvider(p.provider_id))

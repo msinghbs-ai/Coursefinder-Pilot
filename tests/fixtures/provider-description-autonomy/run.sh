@@ -53,6 +53,9 @@ if [ "${PDESC_SETUP_ONLY:-}" = 1 ]; then
   exit 0
 fi
 MIG=supabase/migrations/20261106200000_cf247_provider_description_autonomy.sql
+# Platform Admin 5 Nov 2026 20:03 §3: hashes of the functions that set every other Layer 4 kind's rank, taken before the migration.
+mkdir -p uat-artifacts
+"${P[@]}" -Atc "select jsonb_object_agg(sig,md5(pg_get_functiondef(sig::regprocedure))) from unnest(array['security.layer4_review_decide_impl(uuid,text,text,jsonb)','public.layer4_review_decide(uuid,text,text,jsonb)','public.admin_layer4_inbox(text,jsonb)','security.layer4_batch_decide_v1_impl(uuid[],text,text,text,text)','security.course_entry_review_apply_v1(uuid,text,jsonb,text)','security.entry_matrix_review_apply_v1(uuid,text,jsonb,text,uuid)','security.no_page_review_apply_v1(uuid,text,jsonb,text)','security.aer_review_kinds_v1()','security.current_role_rank()']) sig" > uat-artifacts/provider-description-layer4-before.json
 [ -f "$MIG" ] || { echo 'Provider autonomy migration missing' >&2; exit 1; }
 { echo 'set check_function_bodies=off;'; cat "$MIG"; } | "${P[@]}" -1
 node "$FX/verify-migration.mjs"

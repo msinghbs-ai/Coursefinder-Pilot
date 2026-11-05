@@ -6,7 +6,7 @@ Development branch: `codex/provider-description-autonomy`. Authority: Platform A
 
 The existing `provider-description-read` job and `coverage-sweep` mode remain the reader. The existing evidence artefacts, pinned Enrich fields model, shared AI controls, read ledger and individual Layer 4 description decision remain authoritative. The Admin card stays in Layer 2 → Enrich fields; the old retry-only controls are replaced in place. The new typed Run Now adapter uses the existing `job_run_now` task kind, registered outcome codes, catalogue permissions, shared Run Now allowlist and caps, audit events and existing reader fire function. It does not modify the intake-only shared dispatcher owned by the Integration Controller. The feature is rebased onto current main `9d907cff` (PR #872, v2.15.478); that upstream release number is inherited, not assigned by this branch.
 
-The migration does **not** add the reader to `pipeline.run_now.jobs` (changed 5 Nov: nothing switches itself on). Run & Validate previews and saves cohorts; Run parks with `job_not_allowlisted` until the Platform Admin adds `provider-description-read` to Run now on Settings › Pipeline settings with a reason. It does not alter eligibility, acquisition, spending or admission authority. It adds no scheduler or approval route. The saved cohort binds requester, reason, exact providers, source versions and run reference; repeat requests recover the same task. Source or identity changes invalidate selection before processing. Stored-only cohorts cannot enable acquisition.
+The migration does **not** add the reader to `pipeline.run_now.jobs` (changed 5 Nov: nothing switches itself on). Run & Validate previews and saves cohorts; Run parks with `job_not_allowlisted` until `provider-description-read` is added to Run now after deployment and role verification (Platform Admin decision 5 Nov 2026 20:03 §1; exact change in "Release readiness" below). It does not alter eligibility, acquisition, spending or admission authority. It adds no scheduler or approval route. The saved cohort binds requester, reason, exact providers, source versions and run reference; repeat requests recover the same task. Source or identity changes invalidate selection before processing. Stored-only cohorts cannot enable acquisition.
 
 Every new description still requires its applicable individual human Layer 4 decision. Bulk approval and AI authorisation remain unavailable. Apply-time guards recheck scope, lifecycle, identity, evidence lineage, factual validation, unchanged catalogue value and manual locks. Review-capacity work is parked and resumed through the existing scheduled reader without paying to read unchanged evidence again. Publication is checked separately from admission against the existing consumer projection.
 
@@ -25,7 +25,76 @@ Codex Cloud is discontinued; this PR is owned by Claude agent B and integrated, 
 - **Run Now allowlist** is no longer written by the migration (see above).
 - **Live re-read (5 Nov, read-only):** all six replaced functions still have their 4 Nov before-hashes; every captured live fixture function matches production. `security.job_run_now_v1` is `2640319b…` live, which is the hash the fixture reaches after applying main's `20261104640000` correction. Production is PostgreSQL 17.6, the qualified version.
 - **Live settings differ from the 4 Nov narrative:** `pdesc.enabled` 1, `pdesc.acquire_direct` 1, `pdesc.acquire_firecrawl` 1 (`pdesc.firecrawl_reads_max` 20). The scheduled reader therefore runs in the existing approved-acquisition mode; this PR adds no acquisition authority and saved Run & Validate cohorts default to stored-only.
-- **Layer 4 ownership:** `layer4_provider_description_apply_impl` now requires an active rank-4 role (Pipeline Operator). This matches the existing Layer 4 Inbox (`admin_layer4_inbox` requires rank 4 for a choice unless the choice names a higher one) and closes the rank-3 route through `layer4_review_decide`.
+- **Layer 4 ownership:** `layer4_provider_description_apply_impl` now requires an active rank-4 role (Pipeline Operator). This matches the existing Layer 4 Inbox (`admin_layer4_inbox` requires rank 4 for a choice unless the choice names a higher one) and closes the rank-3 route through `layer4_review_decide`. Approved by the Platform Admin 5 Nov 2026 20:03 §3.
+
+## Release readiness (Platform Admin decisions 5 Nov 2026 20:03)
+
+Recorded verbatim in admin `docs/platform/2026-11-05-intake-milestone-pr877-pr889-decisions-2003.md`.
+
+### §2 Evidence-aware campus, scholarship and guarantee validation
+
+"Do not reject legitimate supported claims solely by keyword." The words have their own provider-only list, `pipeline.pdesc.evidence_claim_words` (`["campus","scholarship","guarantee"]`, label, unit and `used_by` on Settings). **`pdesc.claim_words` is not changed**: `security.course_description_check_v1` (course descriptions; live md5 `ff3d6dd7…`) also reads it, so course descriptions keep their behaviour.
+
+A word in the list never holds a sentence on its own. It triggers `security.pdesc_claim_check_v1(sentence, quote, word)`, a bounded extension of `pdesc_has_term_v1`:
+
+- The sentence does not use the word or a form of it (plural or tense: campus/campuses, scholarship/scholarships, guarantee/guarantees/guaranteed) → no effect.
+- The sentence's own quote uses the same word or a form of it → supported. That quote has already been proved, character for character, to be on the stored official page.
+- The quote does not contain it → held `unsupported_claim`.
+- The quote negates it ("does not guarantee", "no guarantee", "can't guarantee") and the sentence does not → held `claim_negated_in_source`.
+
+The sentence must still pass the existing `pdesc_support_v1` share, the `pdesc_similarity_v1` duplicate checks and every other rule. Tested in `tests/fixtures/provider-description-autonomy/claim-policy.mjs` against the real validator:
+
+- supported campus claim: passes;
+- unsupported campus claim: held;
+- supported scholarship mention: passes;
+- unsupported guarantee: held;
+- non-claim use ("advances maritime scholarship"): passes;
+- negated guarantee: held;
+- negation kept as stated: passes.
+
+### §3 Rank 4 for provider-description approval: regression tests (`integration.mjs`)
+
+- **Rank 3 refused on every approval route:** `layer4_review_decide`, `layer4_review_decide_impl`, `admin_layer4_inbox('decide')` and batch. Batches never admit provider descriptions at any rank (`one_at_a_time`).
+- **Ranks 4 and 5 approve:** rank 4 (Pipeline Operator) and rank 5 (`pim_admin`, the production code) approve, inside a rolled-back transaction.
+- **Read-only roles unchanged:** rank 1 (`viewer`) and rank 2 keep no decision right and no Inbox access, as before.
+- **Other kinds unchanged:** the nine functions that set their rank are byte-identical before and after the migration (decide, decide_impl, Inbox, batch, the entry-matrix, course-entry and no-page apply functions, AER kinds, `current_role_rank`). AER still needs rank 6, and rank 3 still decides `scholarship scope_resolution`.
+- **Unchanged nuance:** a rank-3 curator can still **reject** a provider description through the direct `layer4_review_decide` RPC, because rejection never runs `apply_impl`. The Inbox needs rank 4 for both choices.
+
+### No automatic admission
+
+`catalogue.providers.description` is written in this feature only by `security.layer4_provider_description_apply_impl`. That function is executable only by `postgres` and is reached only from an individual `layer4_review_decide_impl` approval; batches skip provider descriptions. Live check, 5 Nov: the auto-admit functions (`no_page_auto_admit_v1`, `no_page_sample_check_v1`) do not touch provider descriptions. The scope (5 AU university keys) and the US$1 lifetime and US$1 daily limits are unchanged and are not written by the migration.
+
+### Deploy order (Integration Controller)
+
+1. Re-check the six before-hashes on production. Pause `provider-description-read` with a reason, through the existing job control, and let any lease finish.
+2. Apply `20261106200000_cf247_provider_description_autonomy.sql`. Its after-hash check refuses a partial apply.
+3. Deploy the complete `supabase/functions/coverage-sweep/` folder. A worker deployed without the migration fails closed: every item is held before any AI call.
+4. Deploy the UI (Workers) through the normal release.
+5. Resume `provider-description-read` with its previous state.
+6. Verify roles on production: a rank-4 user can open the item, and a rank-3 user is refused approval.
+7. Then turn on Run Now, as below.
+
+### Post-deploy Run Now setting (§1), through the existing settings mechanism
+
+Screen: Settings › Pipeline settings, register section "Run now" (`SettingsRegister.jsx` → `public.admin_toolsets_write`, rank 6, reason required, audited in `pipeline.admin_control_events`).
+
+- Toolset `pipeline`, key `run_now.jobs`.
+- Value: the current list plus `"provider-description-read"`. Today that is `["intake-dates-apply","provider-description-read"]`.
+- Reason: `Platform Admin 5 Nov 2026 20:03 §1 (PR #877): governed Run Now for provider-description-read, activated after deployment of <release> and role verification (rank 4 approves, rank 3 refused)`
+
+RPC form, when signed in as the Platform Admin:
+
+```
+admin_toolsets_write('setting', {"toolset":"pipeline","key":"run_now.jobs","value":["intake-dates-apply","provider-description-read"],"reason":"…"})
+```
+
+### Forward recovery
+
+- **Stop new work:** remove `provider-description-read` from `run_now.jobs` with a reason, and/or pause the `provider-description-read` job, and/or set `pdesc.enabled` to 0.
+- **Keep the record:** retain saved cohorts, evidence, proposals, reservations and decisions. Drop nothing.
+- **Bad proposal:** reject it in Layer 4. Unchanged rejected evidence is never read again.
+- **Worker fault:** redeploy the previous `coverage-sweep` from release history. The new database functions fail closed for an old worker: no reservation means no paid call.
+- **Database fault:** forward-fix with a new migration that is guarded on the after-hashes. Never edit the consumer projection directly.
 
 ## Verified production baseline
 

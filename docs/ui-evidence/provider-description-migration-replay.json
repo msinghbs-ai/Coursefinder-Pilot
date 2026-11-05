@@ -8,7 +8,7 @@
     "public.svc_provider_description_next(integer)": "9da6a77b2a0ef512de7c3e45d3ecd966",
     "public.svc_provider_description_record(jsonb)": "d95f0bafc894b662468a309254544444",
     "security.layer4_provider_description_apply_impl(uuid,uuid,jsonb,text)": "97685b737007410288297dea9d650d2a",
-    "security.provider_description_validate_v1(uuid,text,timestamptz,jsonb)": "b79d85509ab969a90ebcc1d10915755d"
+    "security.provider_description_validate_v1(uuid,text,timestamptz,jsonb)": "36d3fba160a5845cafc4524f687a6d71"
   },
   "grants": {
     "admin_anon": false,

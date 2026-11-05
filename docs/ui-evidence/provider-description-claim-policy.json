@@ -1,19 +1,49 @@
 {
+  "decision": "Platform Admin 5 Nov 2026 20:03 §2",
   "cases": [
     {
-      "term": "campus-based study",
+      "case": "supported campus claim",
+      "ok": true,
+      "outcome": "propose",
+      "rule": "changed"
+    },
+    {
+      "case": "unsupported campus claim",
+      "ok": false,
+      "outcome": "held",
       "rule": "unsupported_claim"
     },
     {
-      "term": "scholarships for applicants",
+      "case": "supported scholarship mention",
+      "ok": true,
+      "outcome": "propose",
+      "rule": "changed"
+    },
+    {
+      "case": "unsupported guarantee",
+      "ok": false,
+      "outcome": "held",
       "rule": "unsupported_claim"
     },
     {
-      "term": "guarantees personal mentoring",
-      "rule": "unsupported_claim"
+      "case": "word in a non-claim sense",
+      "ok": true,
+      "outcome": "propose",
+      "rule": "changed"
+    },
+    {
+      "case": "guarantee negated by the official quote",
+      "ok": false,
+      "outcome": "held",
+      "rule": "claim_negated_in_source"
+    },
+    {
+      "case": "negation kept as stated",
+      "ok": true,
+      "outcome": "propose",
+      "rule": "changed"
     }
   ],
-  "custom_words_preserved": true,
-  "replay_duplicates": 0,
+  "course_description_claim_words_unchanged": true,
   "actual_vendor_calls": 0
 }

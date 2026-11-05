@@ -20,13 +20,34 @@ values('pipeline','pdesc.verbatim_span_max_chars','Provider descriptions: longes
 insert into pipeline.platform_toolset_settings(toolset_key,key,label,help,kind,value,min_value,max_value,unit,sort,section,used_by,reason)
 values('pipeline','pdesc.reason_min_chars','Provider descriptions: audit reason at least','An operator must supply a reason at least this long before fixing a cohort or explaining its evidence.','number','5'::jsonb,1,200,'characters',992,'Provider descriptions','public.admin_provider_description_run_v1, Provider Descriptions Run & Validate','Provider Description autonomy mandate 4 Nov 2026: governed audit reasons') on conflict(toolset_key,key) do nothing;
 
--- The mandate requires explicit support for campus, scholarship and guarantee claims. Keep every existing custom claim word.
-update pipeline.platform_toolset_settings s set value=s.value||coalesce((
- select jsonb_agg(to_jsonb(w)) from unnest(array['campus','campuses','scholarship','scholarships','guarantee','guaranteed','guarantees']) w
- where not exists(select 1 from jsonb_array_elements_text(s.value) existing where lower(existing)=w)
-),'[]'::jsonb),reason='Provider Description autonomy mandate 4 Nov 2026: campus, scholarship and guarantee claims require their exact terms in official supporting quotes; existing custom words preserved, no spending or admission authority widened'
-where s.toolset_key='pipeline' and s.key='pdesc.claim_words' and jsonb_typeof(s.value)='array'
- and exists(select 1 from unnest(array['campus','campuses','scholarship','scholarships','guarantee','guaranteed','guarantees']) w where not exists(select 1 from jsonb_array_elements_text(s.value) existing where lower(existing)=w));
+-- Platform Admin 5 Nov 2026 20:03 §2: "Approve stronger evidence-aware claim validation for campus, scholarship and guarantee
+-- statements. Do not reject legitimate supported claims solely by keyword." These words get their own list, read only by
+-- security.provider_description_validate_v1. pdesc.claim_words is NOT changed: security.course_description_check_v1 (course
+-- descriptions) also reads it, and course descriptions keep their own behaviour. A word in this list never holds a sentence by
+-- itself; it only triggers the evidence check in security.pdesc_claim_check_v1.
+insert into pipeline.platform_toolset_settings(toolset_key,key,label,help,kind,value,min_value,max_value,unit,sort,section,used_by,reason)
+values('pipeline','pdesc.evidence_claim_words','Provider descriptions: evidence-checked statements',
+ 'Campus, scholarship and guarantee words. A sentence that uses one (or its plural or tense: campuses, scholarships, guaranteed) is checked against its exact quote from the stored official page. It passes when the quote states the same thing; it is held only when the quote does not contain it, or the quote negates it ("no guarantee") and the sentence does not. Provider descriptions only; course descriptions keep pdesc.claim_words.',
+ 'list','["campus","scholarship","guarantee"]'::jsonb,null,null,'words',993,'Provider descriptions','security.provider_description_validate_v1 (provider descriptions only) via security.pdesc_claim_check_v1',
+ 'Platform Admin 5 Nov 2026 20:03 §2: evidence-aware campus, scholarship and guarantee validation; never a keyword-only rejection') on conflict(toolset_key,key) do nothing;
+
+-- The evidence check for one word: null when the sentence does not use the word or its official quote supports it; otherwise the rule.
+-- The quote is the sentence's own passage, already proved to be on the stored official page (on_page, exact-source match).
+create or replace function security.pdesc_claim_check_v1(p_sentence text, p_quote text, p_term text) returns text
+language sql immutable set search_path to '' as $function$
+  with t as (select btrim(regexp_replace(lower(coalesce(p_term,'')),'[^a-z0-9#%]+',' ','g')) term),
+  f as (select case when t.term ~ ' ' then array[t.term] else array[t.term, t.term||'s', t.term||'es', t.term||'d', t.term||'ed'] end forms from t where t.term<>''),
+  hit as (select exists(select 1 from f, unnest(f.forms) x where security.pdesc_has_term_v1(p_sentence,x)) in_sentence,
+                 exists(select 1 from f, unnest(f.forms) x where security.pdesc_has_term_v1(p_quote,x)) in_quote,
+                 exists(select 1 from f, unnest(f.forms) x where lower(coalesce(p_quote,'')) ~ ('(\m(no|not|never|cannot|without|nor)\M|n''t)(\W+\w+){0,2}\W+'||x||'\M')) negated_quote,
+                 exists(select 1 from f, unnest(f.forms) x where lower(coalesce(p_sentence,'')) ~ ('(\m(no|not|never|cannot|without|nor)\M|n''t)(\W+\w+){0,2}\W+'||x||'\M')) negated_sentence)
+  select case when not hit.in_sentence then null
+              when not hit.in_quote then 'unsupported_claim'
+              when hit.negated_quote and not hit.negated_sentence then 'claim_negated_in_source'
+              end from hit
+$function$;
+revoke all on function security.pdesc_claim_check_v1(text,text,text) from public,anon,authenticated;
+comment on function security.pdesc_claim_check_v1(text,text,text) is 'Provider descriptions (Platform Admin 5 Nov 2026 20:03 §2): evidence-aware check of one pdesc.evidence_claim_words word. Null = not used or supported by the sentence''s own official quote (same word, plural or tense); unsupported_claim = the quote does not state it; claim_negated_in_source = the quote negates it and the sentence does not. Never a keyword-only rejection.';
 
 create table if not exists pipeline.provider_description_cohorts (
  id uuid primary key default gen_random_uuid(),
@@ -149,7 +170,7 @@ values('provider_description:official_about','platform','Provider description: g
 
 create or replace function security.provider_description_signature_v1(p_hash text,p_model text,p_prompt text) returns text
 language sql stable security definer set search_path to '' as $function$
- select md5(coalesce(p_hash,'')||'|'||coalesce(p_model,'')||'|'||coalesce(p_prompt,'provider-description-v2')||'|'||md5(pg_get_functiondef('security.provider_description_validate_v1(uuid,text,timestamptz,jsonb)'::regprocedure))||'|'||coalesce((select jsonb_object_agg(key,value order by key)::text from pipeline.platform_toolset_settings where toolset_key='pipeline' and key in ('pdesc.min_quote_chars','pdesc.min_sentences','pdesc.max_sentences','pdesc.min_chars','pdesc.max_chars','pdesc.support_min_share','pdesc.duplicate_share','pdesc.source_max_age_days','pdesc.verbatim_span_max_chars','pdesc.claim_words','pdesc.superlatives')),''))
+ select md5(coalesce(p_hash,'')||'|'||coalesce(p_model,'')||'|'||coalesce(p_prompt,'provider-description-v2')||'|'||md5(pg_get_functiondef('security.provider_description_validate_v1(uuid,text,timestamptz,jsonb)'::regprocedure))||'|'||coalesce((select jsonb_object_agg(key,value order by key)::text from pipeline.platform_toolset_settings where toolset_key='pipeline' and key in ('pdesc.min_quote_chars','pdesc.min_sentences','pdesc.max_sentences','pdesc.min_chars','pdesc.max_chars','pdesc.support_min_share','pdesc.duplicate_share','pdesc.source_max_age_days','pdesc.verbatim_span_max_chars','pdesc.claim_words','pdesc.evidence_claim_words','pdesc.superlatives')),''))
 $function$;
 revoke all on function security.provider_description_signature_v1(text,text,text) from public,anon,authenticated;
 
@@ -323,7 +344,7 @@ do $guard$
 declare x record;
 begin
  for x in select * from (values
- ('security.provider_description_validate_v1(uuid,text,timestamptz,jsonb)','528d5a3d2e3780fcb58e2c19db31c199','b79d85509ab969a90ebcc1d10915755d'),
+ ('security.provider_description_validate_v1(uuid,text,timestamptz,jsonb)','528d5a3d2e3780fcb58e2c19db31c199','36d3fba160a5845cafc4524f687a6d71'),
  ('security.provider_description_enqueue_v1()','97e6b926a545c4032159f9dbf52e3cf3','0a1897bb7f56697a9f01d4ec3e8befc0'),
  ('public.svc_provider_description_next(integer)','5342ae3f9279f6c2ec0849ec4fe0fffd','9da6a77b2a0ef512de7c3e45d3ecd966'),
  ('public.svc_provider_description_record(jsonb)','d5aec36ddd55c4a0bdc823fb8a02fec0','d95f0bafc894b662468a309254544444'),
@@ -723,7 +744,7 @@ declare v_host text := security.provider_page_host_v1(p_provider, p_url);
         v_s jsonb := coalesce(p_result->'sentences', '[]'::jsonb); v_n int; v_text text; s jsonb; t text;
         v_sup numeric; v_min_sup numeric := security.pipeline_num_v1('pdesc.support_min_share', 0.6);
         v_dup numeric := security.pipeline_num_v1('pdesc.duplicate_share', 0.8);
-        v_current text; v_other record; v_checks jsonb := '{}'::jsonb;
+        v_current text; v_other record; v_checks jsonb := '{}'::jsonb; v_claim text;
 begin
   v_n := jsonb_array_length(v_s);
   v_text := (select string_agg(btrim(x->>'text'), ' ' order by o) from jsonb_array_elements(v_s) with ordinality e(x, o));
@@ -755,6 +776,11 @@ begin
     if exists (select 1 from jsonb_array_elements_text(coalesce(security.toolset_setting('pipeline', 'pdesc.claim_words'), '[]'::jsonb)) w
                 where security.pdesc_has_term_v1(t, w) and not security.pdesc_has_term_v1(s->>'quote', w)) then
       return jsonb_build_object('ok', false, 'outcome', 'held', 'rule', 'unsupported_claim', 'checks', v_checks, 'reason', 'a ranking, facility, outcome or accreditation claim that is not in the quote: ' || left(t, 120));
+    end if;
+    -- Platform Admin 5 Nov 2026 20:03 §2: campus, scholarship and guarantee statements are checked against their official quote, never held by keyword alone
+    select r into v_claim from (select security.pdesc_claim_check_v1(t, s->>'quote', w) r from jsonb_array_elements_text(coalesce(security.toolset_setting('pipeline', 'pdesc.evidence_claim_words'), '[]'::jsonb)) w) z where r is not null limit 1;
+    if v_claim is not null then
+      return jsonb_build_object('ok', false, 'outcome', 'held', 'rule', v_claim, 'checks', v_checks, 'reason', case v_claim when 'claim_negated_in_source' then 'the official quote negates a campus, scholarship or guarantee statement that the sentence makes: ' else 'a campus, scholarship or guarantee statement that its official quote does not support: ' end || left(t, 120));
     end if;
     -- Platform Admin 2 Nov 2026 23:24 ("avoid cutting essential conditions or publishing fragments as complete descriptions"): a sentence
     -- that does not end as a sentence (no closing full stop, question or exclamation mark, or an ellipsis) is a fragment; the description is
@@ -971,7 +997,7 @@ begin
  ('public.svc_provider_description_next(integer)','9da6a77b2a0ef512de7c3e45d3ecd966'),
  ('public.svc_provider_description_record(jsonb)','d95f0bafc894b662468a309254544444'),
  ('security.layer4_provider_description_apply_impl(uuid,uuid,jsonb,text)','97685b737007410288297dea9d650d2a'),
- ('security.provider_description_validate_v1(uuid,text,timestamptz,jsonb)','b79d85509ab969a90ebcc1d10915755d')) v(sig,hash) loop
+ ('security.provider_description_validate_v1(uuid,text,timestamptz,jsonb)','36d3fba160a5845cafc4524f687a6d71')) v(sig,hash) loop
    if md5(pg_get_functiondef(x.sig::regprocedure))<>x.hash then raise exception 'provider description after-definition differs: %',x.sig; end if;
  end loop;
 end $after$;
