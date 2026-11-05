@@ -51,6 +51,14 @@ test('title and ancestor headings: RMIT, Swinburne and Newcastle 2027 editions; 
   expect(r.findings.map((f) => f.code)).toContain('year_from_wrong_section')
 })
 
+test('a deadline is a date only when its own row prints the year; a quote across a heading and its row takes the year under that heading', () => {
+  const p = ['  - 2026', '  - 2027', '### Term 1', '| Applications close | 30 Nov |', '### Term 1', '| Applications close | 29 Nov |', '| Teaching period T1 | 15 Feb |'].join('\n')
+  const r = read(p, [{ ...start('Term 1', 2027, 2, 15, 'Teaching period T1 | 15 Feb'), application_deadlines: [{ year: 2026, month: 11, day: 29, quote: 'Applications close | 29 Nov', applies_to: 'all' }] }])
+  expect(r.periods[0].starts[0]).toMatchObject({ date: '2027-02-15', year_basis: 'tabs' })
+  expect(r.periods[0].deadlines[0]).toMatchObject({ year: null, date: null })          // never given the section's year (it may be the year before)
+  expect(sectionYear('# Dates\n## 2026\n| a | 1 Feb |\n## 2027\n| Semester 1 begins | 1 March |', '2027 Semester 1 begins')).toMatchObject({ year: 2027 })
+})
+
 test('the prompt asks for the enclosing section year and the period name without its year', () => {
   expect(CALENDAR_PROMPT).toContain('Never take a year from a neighbouring section')
   expect(periodName('Term 1 (2027)')).toBe('term 1')

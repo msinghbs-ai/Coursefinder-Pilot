@@ -112,7 +112,11 @@ export function sectionYear(page: string, quote: string): SectionYear {
   const lines = String(page || "").split("\n"), fq = flat(quote);
   if (fq.length < 6) return { year: null, basis: null, quote: "", reason: "year_not_printed" };
   const at: number[] = [];
-  lines.forEach((l, i) => { if (flat(l).includes(fq) || (i + 1 < lines.length && !flat(l).includes(fq) && flat(l + "\n" + lines[i + 1]).includes(fq) && !flat(lines[i + 1]).includes(fq))) at.push(i) });
+  // the quoted row; a quote across two lines counts from its second line when the first is a heading (the row sits under that heading)
+  lines.forEach((l, i) => {
+    if (flat(l).includes(fq)) at.push(i);
+    else if (i + 1 < lines.length && !flat(lines[i + 1]).includes(fq) && flat(l + "\n" + lines[i + 1]).includes(fq)) at.push(HEAD.test(l) ? i + 1 : i);
+  });
   if (!at.length) return { year: null, basis: null, quote: "", reason: "year_not_printed" };
   const ys = at.map((i) => lineYear(lines, i));
   const known = [...new Set(ys.map((y) => y.year))];
@@ -138,10 +142,13 @@ export function calendarAiParsed(answers: any[], page: string, parser: string, c
     if (day && !dayIn(day, q)) { found({ code: "day_not_in_quote", detail: `${where} of ${period}`, example: q }); day = null }
     // R1: a year printed in the quote stands; otherwise only the enclosing section's year, and the reader's claim must agree with it
     let year = Number.isInteger(x.year) ? x.year : null, yq = "", basis = "";
-    // the reader's claim: its year, else (for a start) the one year in its year_quote or period name; a deadline may fall in the year before
+    // the reader's claim: its year, else (for a start) the one year in its year_quote or period name
     const one = (t: string) => (yearsOf(t).length === 1 ? yearsOf(t)[0] : null);
     const claimed = year || (where === "start" ? one(yearQuote) || one(rawPeriod) : null);
-    if (!(year && yearIn(year, q))) {
+    if (!(year && yearIn(year, q)) && where === "deadline") {
+      // a closing date often falls in the year before its section's year: it is a date only when its own row prints the year
+      found({ code: "year_not_printed", detail: `${where} of ${period}`, example: q }); year = null;
+    } else if (!(year && yearIn(year, q))) {
       const sy = sectionYear(page, q);
       if (sy.year && claimed && claimed !== sy.year) { found({ code: "year_from_wrong_section", detail: `${where} of ${period}: ${claimed} claimed, the section gives ${sy.year}`, example: q }); year = null }
       else if (sy.year) { year = sy.year; yq = sy.quote; basis = sy.basis || "" }

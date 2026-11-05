@@ -5,9 +5,12 @@ import fs from 'node:fs'
 const m = fs.readFileSync('supabase/migrations/20261105040000_cf247_intake_recovery_final.sql', 'utf8')
 
 test('R2: the refresh credit budget is 40 in total, bounded per run, and the existing provider-facts reads do the fetching', () => {
-  expect(m).toMatch(/'central\.calendar_refresh_credit_budget'[\s\S]{0,400}'number', to_jsonb\(40\), 0, 200, 'credits'/)
-  expect(m).toMatch(/'batch\.calendar_refresh'[\s\S]{0,300}'number', to_jsonb\(2\), 0, 10, 'documents'/)
-  expect(m).toContain('exit when v_spent + v_each > v_budget;')
+  expect(m).toMatch(/'central\.calendar_refresh_credit_budget'[\s\S]{0,400}'number', to_jsonb\(40\), 0, 40, 'credits'/)
+  expect(m).toMatch(/'batch\.calendar_refresh'[\s\S]{0,300}'number', to_jsonb\(1\), 0, 5, 'documents'/)
+  expect(m).toContain('exit when v_spent + v_res > v_budget;')
+  expect(m).toContain("v_res := greatest(v_each, coalesce((select max(c.credits_used) from pipeline.firecrawl_calls c where c.url = r.url), 0));")
+  expect(m).toContain("and not exists (select 1 from pipeline.calendar_refresh_requests q where q.status = 'requested')")   // one open request at a time
+  expect(m).toContain("pg_try_advisory_xact_lock(hashtext('cf247.calendar_refresh'))")                                   // one run at a time
   expect(m).toContain('greatest(q.credit_estimate, coalesce(q.credits_used, 0))')
   expect(m).toContain("update pipeline.provider_fact_sources set status = 'found', attempts = 0, updated_at = now() where id = r.id;")
   expect(m).toContain('and not exists (select 1 from pipeline.calendar_refresh_requests q where q.url = f.url)')   // deduplicated
@@ -32,7 +35,8 @@ test('§9 and §6: every mandated class is named; deterministic failures lose th
   for (const c of ['no_valid_calendar_source', 'stale_calendar_edition', 'wrong_institution_or_campus', 'course_identity_unresolved', 'calendar_interpretation_failed',
     'academic_year_unproven', 'no_matching_commencement_period', 'multiple_periods_match', 'course_level_exception', 'missing_application_deadline_evidence',
     'admission_held', 'consumer_publication_failed', 'waiting_for_next_academic_year']) expect(m).toContain(`'${c}'`)
-  expect(m).toContain('if c.deterministic then new.next_revisit_at := null; end if;')
+  expect(m).toContain('if c.deterministic then new.next_revisit_at := null;')
+  expect(m).toContain("'course_identity_unresolved', 'waiting_for_next_academic_year', 'consumer_publication_failed', 'admission_held', 'course_level_exception');")   // timer kept: a removed lock is seen
   expect(m).toContain("select cron.schedule('intake-dates-apply', '26 * * * *', $c$select security.intake_dates_apply_v1(security.pipeline_num_v1('batch.intake_dates_apply', 200)::int); select security.intake_publication_check_v1()$c$);")
   expect(m).toContain("select security.intake_publication_check_v1(); select security.process_results_record_v1(); select security.process_results_recovery_record_v1()")
   expect(m).not.toMatch(/select cron\.schedule\('calendar-refresh'/)   // no new scheduler

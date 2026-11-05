@@ -21,8 +21,9 @@
 --     public.svc_calendar_refresh_v1, called by the existing calendar-reread run after its reads. A stored main teaching calendar of a top
 --     university is asked to be read again by the existing provider-facts job (status found) only when its reading by the current reader
 --     shows no next-year start, the university holds no equivalent next-year edition, the copy is older than the setting, it is not a
---     person's decision, and it was not asked before. Credits are taken from pipeline.firecrawl_calls; the budget counts the larger of the
---     estimate and the use. The old edition stays (a new evidence artifact is registered; nothing replaced or deleted). Yield is recorded.
+--     person's decision, and it was not asked before; one request open at a time, one run at a time. Credits are taken from
+--     pipeline.firecrawl_calls (counted high); the budget counts the larger of the reservation and the use, and the reservation is the
+--     larger of the setting and the most an earlier read of that address used. The old edition stays (a new evidence artifact is registered; nothing replaced or deleted). Yield is recorded.
 --   5 Process results: security.process_results_recovery_v1 (admitted and published by university, source type, year and precision; classes;
 --     skipped and failed with reason and next revisit; refresh credits and yield; reader progress) recorded as process intake-recovery by job
 --     process-results, and view recovery of public.admin_process_results_v1 (md5-guarded edit 1eadf705).
@@ -50,17 +51,20 @@ end $e$;
 insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, section, used_by, reason) values
  ('pipeline', 'central.calendar_refresh_credit_budget', 'Calendar refresh: Firecrawl credits in total',
   'Most Firecrawl credits that calendar refresh may ever use (counted as the larger of each request''s estimate and its recorded use). When reached, no further refresh is asked.',
-  'number', to_jsonb(40), 0, 200, 'credits', 1005, 'Intake dates', 'public.svc_calendar_refresh_v1; job calendar-reread',
+  'number', to_jsonb(40), 0, 40, 'credits', 1005, 'Intake dates', 'public.svc_calendar_refresh_v1; job calendar-reread',
   'Platform Admin mandate 5 Nov 2026 12:44 R2: up to 40 Firecrawl credits in total, top 10 only'),
  ('pipeline', 'central.calendar_refresh_credits_per_read', 'Calendar refresh: credits counted for a request',
-  'Credits reserved for one refresh request before its use is recorded (a PDF read may use more than a page).',
-  'number', to_jsonb(2), 1, 20, 'credits', 1006, 'Intake dates', 'public.svc_calendar_refresh_v1', 'Mandate 5 Nov 2026 R2: record credit use'),
+  'Credits reserved for one refresh request before its use is recorded, unless an earlier Firecrawl read of the same address used more (a PDF can use one credit a page). Only one request is open at a time, so the budget is never passed by more than one read using more than reserved.',
+  'number', to_jsonb(5), 1, 40, 'credits', 1006, 'Intake dates', 'public.svc_calendar_refresh_v1', 'Mandate 5 Nov 2026 R2: record credit use'),
  ('pipeline', 'batch.calendar_refresh', 'Calendar refresh: requests a run',
-  'Stored calendars asked to be read again in one calendar-reread run.', 'number', to_jsonb(2), 0, 10, 'documents', 1007, 'Job sizes',
+  'Stored calendars asked to be read again in one calendar-reread run (and only when no earlier request is still open).', 'number', to_jsonb(1), 0, 5, 'documents', 1007, 'Job sizes',
   'public.svc_calendar_refresh_v1; job calendar-reread', 'Mandate 5 Nov 2026 R2: bounded'),
  ('pipeline', 'central.calendar_refresh_min_age_days', 'Calendar refresh: stored copy at least this old',
   'A stored calendar is asked to be read again only when its copy is older than this.', 'number', to_jsonb(7), 1, 90, 'days', 1008, 'Intake dates',
   'public.svc_calendar_refresh_v1', 'Mandate 5 Nov 2026 R2: refresh stale editions only'),
+ ('pipeline', 'retry.intake_publication_checks', 'Publication check: tries for a value not published',
+  'A value admitted but not in the Website API v2 source is checked again at most this many times, then waits for its next admission.',
+  'number', to_jsonb(3), 1, 10, 'checks', 1010, 'Intake dates', 'security.intake_publication_check_v1', 'Mandate 5 Nov 2026 §9: limited retries for transient failures'),
  ('pipeline', 'batch.intake_publication_check', 'Publication check: rows a run',
   'Admitted intake values compared with the Website API v2 source in one check (after intake-dates-apply and before process-results).',
   'number', to_jsonb(500), 50, 5000, 'rows', 1009, 'Job sizes', 'security.intake_publication_check_v1; jobs intake-dates-apply, process-results',
@@ -71,7 +75,8 @@ on conflict (toolset_key, key) do nothing;
 alter table pipeline.calendar_reread_state add column if not exists reader_version text;
 alter table pipeline.course_intake_dates add column if not exists failure_class text, add column if not exists deterministic boolean,
   add column if not exists revisit_trigger text, add column if not exists evidence_year int, add column if not exists reader text,
-  add column if not exists related_case text, add column if not exists publication_state text, add column if not exists publication_checked_at timestamptz;
+  add column if not exists related_case text, add column if not exists publication_state text, add column if not exists publication_checked_at timestamptz,
+  add column if not exists publication_attempts int not null default 0;
 alter table pipeline.course_intake_date_events add column if not exists failure_class text, add column if not exists deterministic boolean,
   add column if not exists revisit_trigger text, add column if not exists evidence_year int, add column if not exists reader text,
   add column if not exists related_case text, add column if not exists publication_state text, add column if not exists publication_checked_at timestamptz;
@@ -90,12 +95,6 @@ create index if not exists calendar_refresh_requests_url_idx on pipeline.calenda
 alter table pipeline.calendar_refresh_requests enable row level security;
 
 -- 2 failure classes (mandate §9) -----------------------------------------------------------------------------------------------------------
-create or replace function security.calendar_latest_year_v1(p_provider uuid) returns int
-language sql stable security definer set search_path to '' as $function$
-  select max(p.year) from security.calendar_dated_periods_v2(p_provider) p where p.kind = 'start' and p.year_ok
-$function$;
-comment on function security.calendar_latest_year_v1(uuid) is 'CF-247 (mandate 5 Nov 2026 §9): the latest academic year a university''s main teaching calendars prove (a start whose year is printed in its quote or its section); null when none is proved.';
-
 create or replace function security.intake_failure_class_v1(p_outcome text, p_reason text, p_complete boolean, p_deadline_kind text, p_provider uuid, p_intake_year int, p_month int)
 returns table(failure_class text, deterministic boolean, revisit_trigger text)
 language plpgsql stable security definer set search_path to '' as $function$
@@ -139,9 +138,10 @@ begin
       failure_class := case when v_latest is null then 'academic_year_unproven' when v_latest < v_target then 'stale_calendar_edition' else 'waiting_for_next_academic_year' end;
     end if;
   end if;
-  deterministic := failure_class not in ('course_identity_unresolved', 'waiting_for_next_academic_year', 'consumer_publication_failed');
+  -- a lock, a hold or a person's decision is not an input of the fingerprint, so those rows are looked at again on the revisit timer
+  deterministic := failure_class not in ('course_identity_unresolved', 'waiting_for_next_academic_year', 'consumer_publication_failed', 'admission_held', 'course_level_exception');
   revisit_trigger := case failure_class
-    when 'admission_held' then 'the lock or hold is removed'
+    when 'admission_held' then 'the revisit date (a removed lock or hold is seen then)'
     when 'wrong_institution_or_campus' then 'the main campus teaching calendar is approved'
     when 'no_valid_calendar_source' then 'an official main teaching calendar is approved'
     when 'course_identity_unresolved' then 'the course page is proved (Course Link) or the revisit date'
@@ -149,7 +149,7 @@ begin
     when 'academic_year_unproven' then 'the calendar reader or the stored calendar changes'
     when 'stale_calendar_edition' then 'a newer calendar edition is stored (calendar refresh or provider facts)'
     when 'multiple_periods_match' then 'the course page names its period, or the calendar changes'
-    when 'course_level_exception' then 'a person decides, or the course page changes'
+    when 'course_level_exception' then 'the course page changes, or the revisit date (a person''s decision is seen then)'
     when 'no_matching_commencement_period' then 'the course page or the calendar changes'
     when 'waiting_for_next_academic_year' then 'the revisit date (intake_dates.revisit_days)' end;
   return next;
@@ -170,7 +170,10 @@ begin
                              then 'calendar:' || coalesce(new.calendar_evidence_id::text, new.provider_id::text)
                            when c.failure_class = 'course_identity_unresolved' then 'course:' || new.course_id end;
   -- mandate §9: an unchanged deterministic failure is never repeated on a timer; only a change of its inputs brings it back
-  if c.deterministic then new.next_revisit_at := null; end if;
+  if c.deterministic then new.next_revisit_at := null;
+  elsif c.failure_class in ('admission_held', 'course_level_exception') and new.next_revisit_at is null then
+    new.next_revisit_at := now() + make_interval(days => security.pipeline_num_v1('intake_dates.revisit_days', 14)::int);
+  end if;
   return new;
 end $function$;
 comment on function security.intake_failure_class_trg_v1() is 'CF-247 (mandate 5 Nov 2026 §9): sets the failure class, deterministic flag, revisit trigger, evidence year, reader and related case of an intake date decision; clears the timer revisit of a deterministic failure.';
@@ -188,28 +191,31 @@ begin
     select d.intake_id, d.course_id, d.provider_id, i.intake_label, i.intake_year, i.start_date, i.application_deadline
       from pipeline.course_intake_dates d join catalogue.course_intakes i on i.id = d.intake_id
      where d.outcome = 'filled' and d.applied_at is not null
-       and (d.publication_checked_at is null or d.publication_checked_at < d.applied_at or d.publication_state = 'consumer_publication_failed')
+       and (d.publication_checked_at is null or d.publication_checked_at < d.applied_at
+            or (d.publication_state = 'consumer_publication_failed' and d.publication_attempts < security.pipeline_num_v1('retry.intake_publication_checks', 3)))
      order by d.publication_checked_at nulls first, d.applied_at
      limit security.pipeline_num_v1('batch.intake_publication_check', 500)::int
   loop
     v_state := case
       when exists (select 1 from security.provider_hidden_v1 h where h.provider_id = r.provider_id) then 'provider_not_published'
-      when exists (select 1 from search.course_documents cd, jsonb_array_elements(coalesce(cd.intake_options, '[]'::jsonb)) e
+      when not exists (select 1 from search.course_documents cd where cd.course_id = r.course_id) then 'course_not_in_consumer_source'
+      when exists (select 1 from search.course_documents cd, jsonb_array_elements(case when jsonb_typeof(cd.intake_options) = 'array' then cd.intake_options else '[]'::jsonb end) e
                     where cd.course_id = r.course_id and e->>'label' = r.intake_label
-                      and (e->>'year')::int is not distinct from r.intake_year
-                      and (e->>'start_date')::date is not distinct from r.start_date
-                      and (e->>'application_deadline')::date is not distinct from r.application_deadline) then 'published'
+                      and e->>'year' is not distinct from r.intake_year::text
+                      and e->>'start_date' is not distinct from r.start_date::text
+                      and e->>'application_deadline' is not distinct from r.application_deadline::text) then 'published'
       else 'consumer_publication_failed' end;
     update pipeline.course_intake_dates set publication_state = v_state, publication_checked_at = now(),
+           publication_attempts = case when v_state = 'consumer_publication_failed' then publication_attempts + 1 else 0 end,
            failure_class = case when v_state = 'consumer_publication_failed' then 'consumer_publication_failed' else failure_class end,
            deterministic = case when v_state = 'consumer_publication_failed' then false else deterministic end,
            revisit_trigger = case when v_state = 'consumer_publication_failed' then 'the next publication check (after the next projection refresh)' else revisit_trigger end
      where intake_id = r.intake_id;
     update pipeline.course_intake_date_events e set publication_state = v_state, publication_checked_at = now()
      where e.id = (select max(x.id) from pipeline.course_intake_date_events x where x.intake_id = r.intake_id and x.outcome = 'filled');
-    if v_state = 'published' then n_pub := n_pub + 1; elsif v_state = 'provider_not_published' then n_off := n_off + 1; else n_fail := n_fail + 1; end if;
+    if v_state = 'published' then n_pub := n_pub + 1; elsif v_state in ('provider_not_published', 'course_not_in_consumer_source') then n_off := n_off + 1; else n_fail := n_fail + 1; end if;
   end loop;
-  return jsonb_build_object('published', n_pub, 'consumer_publication_failed', n_fail, 'provider_not_published', n_off);
+  return jsonb_build_object('published', n_pub, 'consumer_publication_failed', n_fail, 'not_in_consumer_source', n_off);
 end $function$;
 comment on function security.intake_publication_check_v1() is 'CF-247 (mandate 5 Nov 2026 §6): every admitted intake value compared with the Website API v2 source (search.course_documents.intake_options, read only): published, provider not published (the Published switch decides), or consumer publication failed (a durable class, checked again next run). Run by jobs intake-dates-apply and process-results.';
 
@@ -283,13 +289,15 @@ revoke all on function public.svc_calendar_reread_next_v2(integer, text), public
 create or replace function public.svc_calendar_refresh_v1(p_reader text) returns jsonb
 language plpgsql security definer set search_path to '' as $function$
 declare v_budget numeric := security.pipeline_num_v1('central.calendar_refresh_credit_budget', 40);
-        v_each numeric := security.pipeline_num_v1('central.calendar_refresh_credits_per_read', 2);
-        v_batch int := security.pipeline_num_v1('batch.calendar_refresh', 2)::int;
+        v_each numeric := security.pipeline_num_v1('central.calendar_refresh_credits_per_read', 5); v_res numeric;
+        v_batch int := security.pipeline_num_v1('batch.calendar_refresh', 1)::int;
         v_age int := security.pipeline_num_v1('central.calendar_refresh_min_age_days', 7)::int;
         v_next int := extract(year from (now() at time zone 'Australia/Melbourne'))::int + 1;  -- fixed: the next academic year in Australia
         v_spent numeric; v_asked int := 0; r record; v_prop uuid;
 begin
   if current_user <> 'postgres' and coalesce(auth.role(), '') <> 'service_role' then raise exception 'service_role required'; end if;
+  -- one run at a time (a scheduled run and a manual one never both ask)
+  if not pg_try_advisory_xact_lock(hashtext('cf247.calendar_refresh')) then return jsonb_build_object('asked', 0, 'skipped', 'another refresh run is in progress'); end if;
   -- outcomes of earlier requests: the provider-facts job has read the document again (or given up)
   update pipeline.calendar_refresh_requests q set
          status = case when f.status in ('failed', 'error') then 'failed' when f.content_hash is distinct from q.old_content_hash then 'new_edition_stored' else 'unchanged' end,
@@ -297,13 +305,15 @@ begin
          yield = case when f.content_hash is distinct from q.old_content_hash then 'pending' else 'no_next_year' end
     from pipeline.provider_fact_sources f
    where f.id = q.fact_source_id and q.status = 'requested' and f.status not in ('found', 'reading') and f.updated_at > q.requested_at;
-  update pipeline.calendar_refresh_requests q set credits_used = (select coalesce(sum(c.credits_used), 0) from pipeline.firecrawl_calls c where c.url = q.url and c.at >= q.requested_at
-                                                                     and c.at < coalesce(q.resolved_at, now()) + interval '1 hour')  -- fixed: the read follows the request
+  update pipeline.calendar_refresh_requests q set credits_used = (select coalesce(sum(c.credits_used), 0) from pipeline.firecrawl_calls c where c.at >= q.requested_at
+                                                                     and c.at < coalesce(q.resolved_at, now()) + interval '1 hour'  -- fixed: the read follows the request
+                                                                     -- the address, or any read for that university without a course while the request was open (counted high, never low)
+                                                                     and (c.url = q.url or (c.provider_id = q.provider_id and c.course_id is null and c.at <= coalesce(q.resolved_at, now()))))
    where q.requested_at > now() - interval '7 days';  -- fixed: credits of recent requests are refreshed; older ones are settled
   -- useful yield: the new edition, read by the current reader, gives a next-year start
   for r in select q.id, q.fact_source_id from pipeline.calendar_refresh_requests q where q.yield = 'pending' loop
     select p.id into v_prop from pipeline.provider_policy_proposals p
-     where p.fact_source_id = r.fact_source_id and p.kind = 'intake_calendar' and p.status = 'approved' and p.parser like '%' || p_reader
+     where p.fact_source_id = r.fact_source_id and p.kind = 'intake_calendar' and p.status = 'approved' and (p.parser like '%' || p_reader or p.parser = 'provider-policy-calendar-dates-v2')
        and p.content_hash = (select f.content_hash from pipeline.provider_fact_sources f where f.id = r.fact_source_id)
      order by p.decided_at desc nulls last limit 1;
     if v_prop is not null then
@@ -313,7 +323,7 @@ begin
     end if;
   end loop;
   select coalesce(sum(greatest(q.credit_estimate, coalesce(q.credits_used, 0))), 0) into v_spent from pipeline.calendar_refresh_requests q;
-  if v_batch > 0 then
+  if v_batch > 0 and not exists (select 1 from pipeline.calendar_refresh_requests q where q.status = 'requested') then
     for r in
       with rel as (select * from security.calendar_reread_relevant_v1()),
       held as (select rel.provider_id from rel where exists (select 1 from security.calendar_dated_periods_v2(rel.provider_id) p where p.kind = 'start' and p.year_ok and p.year >= v_next))
@@ -334,13 +344,15 @@ begin
        order by rel.missing desc, f.rank nulls last
        limit v_batch
     loop
-      exit when v_spent + v_each > v_budget;
+      -- the reservation: the larger of the setting and what an earlier Firecrawl read of this address used
+      v_res := greatest(v_each, coalesce((select max(c.credits_used) from pipeline.firecrawl_calls c where c.url = r.url), 0));
+      exit when v_spent + v_res > v_budget;
       insert into pipeline.calendar_refresh_requests(fact_source_id, provider_id, url, reader_version, reason, old_evidence_id, old_content_hash, old_read_at, credit_estimate)
       values (r.id, r.provider_id, r.url, p_reader, format('no %s start in the stored copy read by %s; no equivalent %s edition held; %s intake rows miss a date', v_next, p_reader, v_next, r.missing),
-              r.evidence_id, r.content_hash, r.read_at, v_each)
+              r.evidence_id, r.content_hash, r.read_at, v_res)
       on conflict do nothing;
       update pipeline.provider_fact_sources set status = 'found', attempts = 0, updated_at = now() where id = r.id;
-      v_spent := v_spent + v_each; v_asked := v_asked + 1;
+      v_spent := v_spent + v_res; v_asked := v_asked + 1;
     end loop;
   end if;
   return jsonb_build_object('asked', v_asked, 'credits_counted', v_spent, 'budget', v_budget,
@@ -363,7 +375,7 @@ language sql stable security definer set search_path to '' as $function$
                 'precision', ev.start_precision, 'admitted', count(*), 'with_start_date', count(*) filter (where ev.after_value->>'start_date' is not null),
                 'with_deadline', count(*) filter (where ev.after_value->>'application_deadline' is not null),
                 'published', count(*) filter (where ev.publication_state = 'published'), 'publication_failed', count(*) filter (where ev.publication_state = 'consumer_publication_failed'),
-                'provider_not_published', count(*) filter (where ev.publication_state = 'provider_not_published'), 'not_checked', count(*) filter (where ev.publication_state is null)) x
+                'provider_not_published', count(*) filter (where ev.publication_state in ('provider_not_published', 'course_not_in_consumer_source')), 'not_checked', count(*) filter (where ev.publication_state is null)) x
          from ev join u on u.id = ev.provider_id where ev.outcome = 'filled'
         group by u.name, ev.rule, coalesce((ev.after_value->>'year')::int, (ev.before_value->>'year')::int), ev.start_precision) z),
     'classes', (select coalesce(jsonb_agg(x order by (x->>'rows')::int desc), '[]'::jsonb) from (

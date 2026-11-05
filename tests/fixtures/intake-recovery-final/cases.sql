@@ -53,9 +53,9 @@ begin
       -- year from the wrong section: a 2028 start with no year evidence on its row is never used
       when r.name = 's1' and not (r.outcome = 'skipped' and r.cat_start is null and r.failure_class = 'academic_year_unproven') then ' s1 ' || row_to_json(r)::text
       -- explicit course date overrides the calendar: the calendar date is not admitted
-      when r.name = 'own' and not (r.outcome = 'skipped' and r.cat_start is null and r.failure_class = 'course_level_exception' and r.reason like 'the course page gives its own start date%') then ' own ' || row_to_json(r)::text
+      when r.name = 'own' and not (r.outcome = 'skipped' and r.cat_start is null and r.failure_class = 'course_level_exception' and r.reason like 'the course page gives its own start date%' and r.next_revisit_at > now()) then ' own ' || row_to_json(r)::text
       -- held data protected
-      when r.name = 'lock' and not (r.outcome = 'skipped' and r.cat_start is null and r.failure_class = 'admission_held' and r.deterministic) then ' lock ' || row_to_json(r)::text
+      when r.name = 'lock' and not (r.outcome = 'skipped' and r.cat_start is null and r.failure_class = 'admission_held' and not r.deterministic and r.next_revisit_at > now()) then ' lock ' || row_to_json(r)::text
       -- old edition not used: no calendar proves the intake's year
       when r.name = 'feb28' and not (r.outcome = 'skipped' and r.cat_start is null and r.failure_class = 'stale_calendar_edition' and r.revisit_trigger like 'a newer calendar edition%') then ' feb28 ' || row_to_json(r)::text
       else '' end;
@@ -75,10 +75,15 @@ end $$;
 do $$
 declare v jsonb; v_courses uuid[] := (select array_agg(course_id) from catalogue.course_intakes where id in (select id from k));
 begin
-  update pipeline.course_intake_dates set next_revisit_at = null where intake_id in (select id from k);  -- as the trigger left them
+  -- time passes beyond every revisit: deterministic failures stay (no timer); the held row and the course-level exception come back (a lock
+  -- or a person's decision is not an input, so the timer is how a removed lock is seen)
+  update pipeline.course_intake_dates set next_revisit_at = now() - interval '1 minute' where intake_id in (select id from k where name in ('lock', 'own'));
+  update pipeline.manual_locks set field = 'intakes_removed_by_fixture' where entity = 'course' and entity_id = (select course_id from catalogue.course_intakes where id = (select id from k where name = 'lock'));
   v := security.intake_dates_apply_v1(100, v_courses);
-  if (v->>'looked_at')::int <> 0 then raise exception 'unchanged deterministic failures looked at again: %', v; end if;
-  raise notice 'PASS §9: an unchanged deterministic failure is never repeated without a change';
+  if (v->>'looked_at')::int <> 2 then raise exception 'expected only the held row and the course exception again: %', v; end if;
+  if (select start_date from catalogue.course_intakes where id = (select id from k where name = 'lock')) is distinct from '2027-02-15' then raise exception 'lock removed but not admitted'; end if;
+  if exists (select 1 from pipeline.course_intake_dates d where d.intake_id in (select id from k where name in ('t3', 's1', 'feb28')) and d.next_revisit_at is not null) then raise exception 'deterministic failure has a timer'; end if;
+  raise notice 'PASS §9: an unchanged deterministic failure is never repeated without a change; a held row comes back on its revisit and is admitted once the lock is removed';
 end $$;
 
 -- publication matches the catalogue -------------------------------------------------------------------------------------------------------
@@ -148,10 +153,13 @@ begin
   begin
     update pipeline.provider_policy_proposals set status = 'superseded' where provider_id = '08609bcf-387d-1316-2a52-9fbc0edff508' and kind = 'intake_calendar' and status = 'approved'
        and exists (select 1 from security.calendar_proposal_dates_v1(id) d where d.kind = 'start' and d.year >= 2027);
-    update pipeline.platform_toolset_settings set value = to_jsonb(3) where toolset_key = 'pipeline' and key = 'central.calendar_refresh_credit_budget';
+    update pipeline.platform_toolset_settings set value = to_jsonb(7) where toolset_key = 'pipeline' and key = 'central.calendar_refresh_credit_budget';
     update pipeline.platform_toolset_settings set value = to_jsonb(5) where toolset_key = 'pipeline' and key = 'batch.calendar_refresh';
     v := public.svc_calendar_refresh_v1('calendar-v2.1');
-    r_asked := (v->>'asked')::int; r_spent := (v->>'credits_counted')::numeric;
+    if (v->>'asked')::int <> 1 then raise exception 'first ask: %', v; end if;
+    -- one request open: a second run asks nothing more
+    v := public.svc_calendar_refresh_v1('calendar-v2.1');
+    r_asked := 1 + (v->>'asked')::int; r_spent := (v->>'credits_counted')::numeric;
     r_found := (select string_agg(f.url, ',') from pipeline.calendar_refresh_requests q join pipeline.provider_fact_sources f on f.id = q.fact_source_id where f.status = 'found');
     if exists (select 1 from pipeline.calendar_refresh_requests where fact_source_id = v_off) then raise exception 'offshore calendar asked'; end if;
     -- the read happens (a new edition, 5 credits used): outcome, credits and the old edition recorded; budget spent; never asked twice
@@ -163,14 +171,14 @@ begin
     select string_agg(status || ':' || coalesce(credits_used::text, '-') || ':' || coalesce(yield, '-'), ',') into r_status from pipeline.calendar_refresh_requests;
     r_old_kept := exists (select 1 from pipeline.evidence_artifacts where id = r_old);
     r_budget := (v->>'asked')::int;
-    update pipeline.platform_toolset_settings set value = to_jsonb(400) where toolset_key = 'pipeline' and key = 'central.calendar_refresh_credit_budget';
+    update pipeline.platform_toolset_settings set value = to_jsonb(40) where toolset_key = 'pipeline' and key = 'central.calendar_refresh_credit_budget';
     update pipeline.provider_fact_sources f set status = 'read', updated_at = now() - interval '1 second' where f.id in (select fact_source_id from pipeline.calendar_refresh_requests);
     v := public.svc_calendar_refresh_v1('calendar-v2.1');
     r_again := (select count(*) from pipeline.calendar_refresh_requests q group by q.url order by 1 desc limit 1);
     raise exception 'rollback' using errcode = 'P0099';
   exception when sqlstate 'P0099' then null;
   end;
-  if r_asked <> 1 or r_spent <> 2 then raise exception 'budget 3 with 2 credits a request should ask once: asked %, counted %', r_asked, r_spent; end if;
+  if r_asked <> 1 or r_spent <> 5 then raise exception 'one open request at a time, 5 credits reserved: asked %, counted %', r_asked, r_spent; end if;
   if r_status <> 'new_edition_stored:5:pending' or not r_old_kept then raise exception 'outcome: % (old kept %)', r_status, r_old_kept; end if;
   if r_budget <> 0 then raise exception 'asked beyond the budget after 5 credits were used'; end if;
   if r_again <> 1 then raise exception 'the same address asked twice'; end if;
