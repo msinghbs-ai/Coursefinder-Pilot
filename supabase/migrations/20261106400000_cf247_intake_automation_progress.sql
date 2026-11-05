@@ -386,9 +386,11 @@ language sql stable security definer set search_path to '' as $function$
   --   excluded_source_update   the calendar set, calendar document, approved reading, periods, evidence year or course page wording differ between the two decisions;
   --   excluded_reader_revision the reader or rule differ, or a release that changed an intake or calendar function was deployed between them
   --                            (pipeline.integration_deploy_checks.result->functions);
-  --   excluded_setting_change  a governed intake_dates.* or run_now.* setting was changed between them (pipeline.admin_control_events, Settings audit);
-  --   unverified_repeat        the earlier inputs cannot be established: no calendar set, no page wording or no rule on either decision, or a release
-  --                            between them whose changed functions are not recorded;
+  --   excluded_setting_change  an intake_dates.* or run_now.* setting was changed between them: the Settings audit (pipeline.admin_control_events)
+  --                            or, for a change written without an audit row, the setting's last-changed time (platform_toolset_settings.updated_at);
+  --   unverified_repeat        the inputs of the later decision cannot be established and the earlier one shows no difference (no calendar set, page
+  --                            wording or rule on both), or a release between them does not record the functions it changed; a gap on only one
+  --                            of the two decisions is a difference and counts as a source update (also never raised);
   --   confirmed                otherwise: evidence, reader and settings demonstrably unchanged.
   with ev as (select e.intake_id, e.run_at, e.failure_class, e.calendar_set, e.calendar_evidence_id, e.proposal_id, e.periods, e.evidence_year, e.page_quote, e.reader, e.rule,
                      p.run_at p_at, p.calendar_set p_set, p.calendar_evidence_id p_doc, p.proposal_id p_prop, p.periods p_periods, p.evidence_year p_year, p.page_quote p_quote,
@@ -399,7 +401,11 @@ language sql stable security definer set search_path to '' as $function$
                where e.run_at >= now() - make_interval(days => 1) and e.deterministic and e.outcome = 'skipped'),  -- fixed: the one-day check named by decision 16:36 §6
   st as (select a.created_at at from pipeline.admin_control_events a
           where a.area in ('toolsets', 'settings') and a.action in ('setting', 'change') and a.target ~ '^(pipeline\.)?(intake_dates|run_now)\.'
-            and a.created_at >= (select min(ev.p_at) from ev)),
+            and a.created_at >= (select min(ev.p_at) from ev)
+         -- a change written without an audit row (for example by a release) is still seen through the setting's own last-changed time
+         union all
+         select s.updated_at from pipeline.platform_toolset_settings s
+          where s.toolset_key = 'pipeline' and s.key ~ '^(intake_dates|run_now)\.' and s.updated_at >= (select min(ev.p_at) from ev)),
   rel as (select r.since at, exists (select 1 from jsonb_array_elements(case when jsonb_typeof(r.result->'functions') = 'array' then r.result->'functions' else '[]'::jsonb end) f
                                       where f->>'function' ~ '^security\.(intake_|calendar_)') intake_fn,
                  coalesce(jsonb_typeof(r.result->'functions') = 'array', false) known
@@ -422,7 +428,7 @@ language sql stable security definer set search_path to '' as $function$
     'examples', (select coalesce(jsonb_agg(jsonb_build_object('status', z.status, 'intake_id', z.intake_id, 'class', z.failure_class, 'decided', z.run_at, 'earlier', z.p_at)), '[]'::jsonb)
                    from (select distinct on (k.status) k.* from k order by k.status, k.run_at desc) z))
 $function$;
-comment on function security.intake_progress_repeats_v1() is 'CF-247 Automation Progress (Platform Admin 5 Nov 2026 22:46): the deterministic refusals of the last day that repeat an earlier refusal of the same intake row, classified from existing records (decision history, reader and rule, Settings audit in pipeline.admin_control_events, release records in pipeline.integration_deploy_checks) as confirmed, excluded (source update, reader revision, setting change) or unverified_repeat. Only confirmed repeats are raised. Read only.';
+comment on function security.intake_progress_repeats_v1() is 'CF-247 Automation Progress (Platform Admin 5 Nov 2026 22:46): the deterministic refusals of the last day that repeat an earlier refusal of the same intake row, classified from existing records (decision history, reader and rule, Settings audit in pipeline.admin_control_events and each setting''s updated_at, release records in pipeline.integration_deploy_checks) as confirmed, excluded (source update, reader revision, setting change) or unverified_repeat. Only confirmed repeats are raised. Read only.';
 
 create or replace function security.intake_progress_alerts_v1(p_status jsonb) returns jsonb
 language plpgsql stable security definer set search_path to '' as $function$

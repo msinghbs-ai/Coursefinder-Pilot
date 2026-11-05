@@ -180,35 +180,83 @@ begin
   perform fx.decide('swinburne', p_n, 'February', 'skipped', 'the course page names no study period of the calendar (month only)', p_at1);
   perform fx.decide('swinburne', p_n, 'February', 'skipped', 'the course page names no study period of the calendar (month only)', p_at2);
 end $$;
--- (a) the 167 UNSW rechecks: decided at 14:26 and 16:26 under the same rule, calendar set and reader, with the governed 15:56 change of
---     intake_dates.month_unique_match 1 -> 0 (as admin control event 28963) between them: a legitimate recheck, not confirmed, no issue
+-- the 167 UNSW rechecks of 5 Nov 2026, at production scale: 151 academic_year_unproven and 16 no_matching_commencement_period rows, null reader, decided
+-- at 14:26 and again at 16:26 (Sydney; the most recent 16:26 within a day) under the same rule and calendar set
+create or replace function fx.unsw167() returns void language plpgsql as $$
+declare t2 timestamptz := ((date_trunc('day', now() at time zone 'Australia/Sydney') + interval '16 hours 26 minutes') at time zone 'Australia/Sydney');
+        t1 timestamptz; k int; n int := 0; c int; m text;
+begin
+  if t2 > now() then t2 := t2 - interval '1 day'; end if;
+  t1 := t2 - interval '2 hours';
+  -- the seeded intake settings were written when the fixture was built; date them before both decisions so only the case's own change is seen
+  update pipeline.platform_toolset_settings set updated_at = least(updated_at, t1 - interval '1 hour') where toolset_key = 'pipeline' and key ~ '^(intake_dates|run_now)\.';
+  insert into pim.entity_registry(id) select fx.id('c:unsw:' || g) from generate_series(31, 100) g on conflict do nothing;
+  insert into catalogue.courses(id, provider_id, canonical_title, course_url)
+  select fx.id('c:unsw:' || g), fx.id('p:unsw'), 'Course ' || g || ' of unsw', 'https://example.edu.au/unsw/course-' || g from generate_series(31, 100) g on conflict do nothing;
+  insert into catalogue.course_intakes(id, course_id, intake_year, intake_label)
+  select fx.id('i:unsw:' || g || ':' || mm), fx.id('c:unsw:' || g), 2027, mm from generate_series(31, 100) g, unnest(array['February', 'July']) mm on conflict do nothing;
+  for c in 16 .. 100 loop foreach m in array array['February', 'July'] loop
+    exit when n >= 167;
+    -- courses 1 to 15 are already decided in the base run history
+    n := n + 1;
+    perform fx.decide('unsw', c, m, 'skipped', case when n <= 151 then 'the calendar does not print the year of its start in this month (month only)'
+                                                     else 'the course page names no study period of the calendar (month only)' end, t1);
+    perform fx.decide('unsw', c, m, 'skipped', case when n <= 151 then 'the calendar does not print the year of its start in this month (month only)'
+                                                     else 'the course page names no study period of the calendar (month only)' end, t2);
+  end loop; end loop;
+  create temp table if not exists rep_t(k text primary key, at timestamptz);
+  delete from rep_t; insert into rep_t values ('t1', t1), ('t2', t2), ('t_1556', t2 - interval '30 minutes');
+end $$;
+-- (a) with the governed 15:56 change of intake_dates.month_unique_match 1 -> 0 between them (as admin control event 28963): 167 excluded, none confirmed, no issue
 begin;
-do $$ declare k int; begin for k in 1 .. 5 loop perform fx.repeat_pair(k, now() - interval '150 minutes', now() - interval '30 minutes'); end loop; end $$;
+select fx.unsw167();
 insert into pipeline.admin_control_events(area, action, target, detail, actor, created_at)
-values ('toolsets', 'setting', 'pipeline.intake_dates.month_unique_match', '{"after": 0, "before": 1, "reason": "P0 IQ-00313 containment"}', fx.id('user:6'), now() - interval '60 minutes');
+select 'toolsets', 'setting', 'pipeline.intake_dates.month_unique_match', '{"after": 0, "before": 1, "reason": "P0 IQ-00313 containment"}', fx.id('user:6'), at from rep_t where k = 't_1556';
 insert into obs select 10, security.progress_read_v1();
-select fx.ok((x->>'confirmed')::int = 0 and (x->>'excluded_setting_change')::int = 5 and not exists (select 1 from pipeline.integration_issues where fingerprint = 'intake-progress:repeated-deterministic'),
-  'repeats: the UNSW pattern (same rule, calendar set and reader; the governed setting change between) is excluded_setting_change, no issue')
+select fx.ok((x->>'excluded_setting_change')::int = 167 and (x->>'confirmed')::int = 0
+   and (select count(*) from pipeline.course_intake_date_events e where e.provider_id = fx.id('p:unsw') and e.run_at = (select at from rep_t where k = 't2') and e.failure_class = 'academic_year_unproven' and e.reader is null) = 151
+   and (select count(*) from pipeline.course_intake_date_events e where e.provider_id = fx.id('p:unsw') and e.run_at = (select at from rep_t where k = 't2') and e.failure_class = 'no_matching_commencement_period') = 16
+   and not exists (select 1 from pipeline.integration_issues where fingerprint = 'intake-progress:repeated-deterministic'),
+  'repeats: the 167 UNSW rechecks (151 academic_year_unproven, 16 no_matching_commencement_period, null reader, 14:26 and 16:26, the 15:56 setting audit between) are 167 excluded_setting_change, 0 confirmed, no issue')
   from (select security.intake_progress_repeats_v1() x) y;
 rollback;
--- (b) the same pattern with no change at all: confirmed, one issue; a re-run updates it; it clears when the repeats leave the window
+-- (a2) the same change written without an audit row (seen through platform_toolset_settings.updated_at): still excluded
 begin;
-do $$ declare k int; begin for k in 1 .. 5 loop perform fx.repeat_pair(k, now() - interval '150 minutes', now() - interval '30 minutes'); end loop; end $$;
+select fx.unsw167();
+update pipeline.platform_toolset_settings set value = '0', updated_at = (select at from rep_t where k = 't_1556') where toolset_key = 'pipeline' and key = 'intake_dates.month_unique_match';
+insert into pipeline.platform_toolset_settings(toolset_key, key, label, kind, value, section, used_by, updated_at)
+select 'pipeline', 'intake_dates.month_unique_match', 'Intake dates: unique month', 'number', '0', 'Intake dates', 'security.intake_dates_plan_v3', at from rep_t where k = 't_1556'
+on conflict (toolset_key, key) do nothing;
+select fx.ok((x->>'excluded_setting_change')::int = 167 and (x->>'confirmed')::int = 0,
+  'repeats: an unaudited change of an intake_dates.* setting between the decisions (its updated_at) also excludes the 167 rechecks') from (select security.intake_progress_repeats_v1() x) y;
+rollback;
+-- (b) the same 167 with no change at all: confirmed, one issue; a re-run updates it; it clears when the repeats leave the window
+begin;
+select fx.unsw167();
 insert into obs select 11, security.progress_read_v1();
-select fx.ok((select (x->>'confirmed')::int from (select security.intake_progress_repeats_v1() x) y) = 5
+select fx.ok((select (x->>'confirmed')::int from (select security.intake_progress_repeats_v1() x) y) = 167
    and (select count(*) from pipeline.integration_issues where fingerprint = 'intake-progress:repeated-deterministic') = 1
-   and r->'intake'->>'repeated_deterministic' is not null, 'repeats: unchanged evidence, reader and settings are confirmed; one issue intake-progress:repeated-deterministic')
+   and r->'intake'->>'repeated_deterministic' is not null, 'repeats: the same 167 with nothing changed are 167 confirmed and one issue intake-progress:repeated-deterministic')
   from obs where n = 11;
 insert into obs select 12, security.progress_read_v1();
 select fx.ok((select count(*) from pipeline.integration_issues where fingerprint = 'intake-progress:repeated-deterministic') = 1
    and (select retry_count from pipeline.integration_issues where fingerprint = 'intake-progress:repeated-deterministic') = 1,
    'repeats: a re-run updates the same issue (stable fingerprint, no duplicate)');
-update pipeline.course_intake_date_events set run_at = run_at - interval '2 days' where provider_id = fx.id('p:swinburne');
+update pipeline.course_intake_date_events set run_at = run_at - interval '2 days' where run_at in (select at from rep_t where k in ('t1', 't2'));
 insert into obs select 13, security.progress_read_v1();
 select fx.ok((select condition_cleared_at is not null from pipeline.integration_issues where fingerprint = 'intake-progress:repeated-deterministic'),
   'repeats: when the condition clears, the issue is marked cleared');
 rollback;
--- (c) inputs that cannot be established (no stored page wording on either decision): unverified_repeat, shown, no issue
+-- (b2) an unrelated setting changed between them (audited and unaudited): the 167 stay confirmed
+begin;
+select fx.unsw167();
+insert into pipeline.admin_control_events(area, action, target, detail, actor, created_at)
+select 'toolsets', 'setting', 'pipeline.process_results.window_days', '{"after": 14, "before": 7}', fx.id('user:6'), at from rep_t where k = 't_1556';
+update pipeline.platform_toolset_settings set updated_at = (select at from rep_t where k = 't_1556') where toolset_key = 'pipeline' and key = 'process_results.window_days';
+select fx.ok((x->>'confirmed')::int = 167 and (x->>'excluded_setting_change')::int = 0,
+  'repeats: a change of an unrelated setting between the decisions does not excuse them: 167 confirmed') from (select security.intake_progress_repeats_v1() x) y;
+rollback;
+-- (c) inputs that cannot be established (no stored page wording on the later decision, nor on the earlier one): unverified_repeat, shown, no issue
 begin;
 do $$ declare k int; begin for k in 1 .. 3 loop perform fx.repeat_pair(k, now() - interval '150 minutes', now() - interval '30 minutes'); end loop; end $$;
 update pipeline.course_intake_date_events set page_quote = null where provider_id = fx.id('p:swinburne');

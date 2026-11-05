@@ -62,8 +62,8 @@ So runs whose rows only lack evidence raise nothing. A row that validated but is
 |---|---|---|
 | `excluded_source_update` | The calendar set, calendar document, approved reading, periods, evidence year or stored course page wording differ between the two decisions (`pipeline.course_intake_date_events`). | no |
 | `excluded_reader_revision` | The reader or rule differ, or a release deployed between the two decisions changed an intake or calendar function (`pipeline.integration_deploy_checks.result->functions`). | no |
-| `excluded_setting_change` | A governed `intake_dates.*` or `run_now.*` setting was changed between them (`pipeline.admin_control_events`, area `toolsets`/`settings`, the Settings audit). An example is event 28963, `intake_dates.month_unique_match` 1 → 0 at 15:56. | no |
-| `unverified_repeat` | The earlier inputs cannot be established: no calendar set, no page wording or no rule on either decision, or a release between them whose changed functions are not recorded. | no. Shown as a diagnostic count on the screen. |
+| `excluded_setting_change` | An `intake_dates.*` or `run_now.*` setting was changed between them. Two sources are read. The first is the Settings audit (`pipeline.admin_control_events`, area `toolsets`/`settings`); an example is event 28963, `intake_dates.month_unique_match` 1 → 0 at 15:56. The second, for a change written without an audit row (for example by a release), is the setting's own `pipeline.platform_toolset_settings.updated_at`. That column is maintained (`month_unique_match` reads 04:56:00Z, the same as event 28963), but it holds only the latest change of each key. | no |
+| `unverified_repeat` | The inputs of the later decision cannot be established (no calendar set, no page wording or no rule) and the earlier decision lacks them too, so no difference can be seen. It also applies when a release between them does not record the functions it changed. A gap on the earlier decision only is a difference, classified as a source update, which is also not raised. | no. Shown as a diagnostic count on the screen. |
 | `confirmed` | Otherwise: evidence, reader and settings are demonstrably unchanged. | yes, one issue `intake-progress:repeated-deterministic` |
 
 The classification uses no new table, column, setting or tracking. It reads the decision history, the Settings audit and the release records that already exist. A re-run updates the same issue, and when no confirmed repeat remains, the issue is marked `condition_cleared_at`.
@@ -125,7 +125,13 @@ The screen's own "stalled" job state uses `intake_progress.stall_minutes` (90) f
   - refusal of a non-live `progress_measure_v1`;
   - the migration applied twice with no change;
   - no job added or changed;
-  - 31 SQL cases, including the off switch and the six repeat-classification cases (the 167 UNSW rechecks reproduced and not confirmed; an unchanged repeat confirmed, deduplicated and cleared; an unverified repeat not raised; a reader revision and a source update excluded).
+  - 33 SQL cases, including the off switch and eight repeat-classification cases:
+    - the 167 UNSW rechecks reproduced at production scale (151 `academic_year_unproven`, 16 `no_matching_commencement_period`, null reader, 14:26 and 16:26, the 15:56 audit event between): 167 excluded, 0 confirmed, no issue;
+    - the same change written without an audit row (seen through `updated_at`): still excluded;
+    - no change: 167 confirmed and one issue, deduplicated on a re-run and cleared when the repeats leave the window;
+    - an unrelated setting changed in between: still 167 confirmed;
+    - an unverified repeat: shown, not raised;
+    - a reader revision and a source update: both excluded.
 - `benchmark.sh`.
 - `tests/integration-progress/intake-progress-postgres.spec.mjs`: browser to PostgreSQL, desktop and phone.
 - `tests/uat/cf-247-s340-intake-automation-progress.spec.mjs`.
