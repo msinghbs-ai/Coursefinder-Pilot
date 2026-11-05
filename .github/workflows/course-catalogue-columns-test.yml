@@ -1,0 +1,54 @@
+# Guards: Platform Admin mandate 5 Nov 2026 17:31, Course Catalogue columns: production-representative isolated PostgreSQL and the real Admin UI.
+# Never targets a Supabase project. Builds the fixture (39 tables at production parity, the live page functions md5-checked, 35,700 courses),
+# applies the migration twice, runs the compatibility, database and benchmark cases, then the browser-to-PostgreSQL tests (desktop and phone).
+name: Course Catalogue columns integration
+on:
+  pull_request:
+    paths:
+      - 'src/mature-main.jsx'
+      - 'src/DataTable.jsx'
+      - 'src/CatalogueColumns.jsx'
+      - 'src/catalogue-columns.js'
+      - 'src/catalogue-columns.css'
+      - 'supabase/migrations/*course_catalogue_columns*'
+      - 'tests/fixtures/course-catalogue-columns/**'
+      - 'tests/integration/course-columns-postgres.spec.mjs'
+      - 'playwright.course-columns.config.mjs'
+      - '.github/workflows/course-catalogue-columns-test.yml'
+  workflow_dispatch:
+jobs:
+  course-columns-isolated-postgres:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:17.6-alpine
+        env:
+          POSTGRES_PASSWORD: fixture-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: fixture-only
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --package-lock=false --ignore-scripts
+      - run: npx playwright install --with-deps chromium
+      - run: CCOL_KEEP=1 bash tests/fixtures/course-catalogue-columns/run.sh | tee course-columns-sql-results.log
+      - run: npx playwright test --config=playwright.course-columns.config.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: course-columns-database-evidence
+          path: |
+            course-columns-sql-results.log
+            uat-artifacts/course-columns-integration.json
+            uat-artifacts/course-columns-db-results/

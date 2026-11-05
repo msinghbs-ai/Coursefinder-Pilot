@@ -1,0 +1,10 @@
+api.website_v2_label_month(text) {postgres=X/postgres}
+public.admin_read(text,jsonb) {postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+security.admin_course_page_fast(jsonb) {postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+security.admin_course_page_fast_base(jsonb) {postgres=X/postgres,service_role=X/postgres}
+security.admin_course_page_search_state(jsonb) {postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+security.admin_course_page_unfiltered_fast(jsonb) {postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+security.current_role_rank() {postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+security.pipeline_num_v1(text,numeric) default
+security.provider_university_groups(uuid) default
+security.university_group_provider_ids(text) {postgres=X/postgres,service_role=X/postgres}

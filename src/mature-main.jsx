@@ -49,6 +49,9 @@ import'./styles.css'
 import'./mature.css'
 import'./admin-pages.css'
 import{DataTable as SharedDataTable,FilterSelect}from'./DataTable'
+// CF-247 Course Catalogue columns (mandate 5 Nov 2026 17:31): the Columns control, the person's saved layout and the new columns
+import{useCourseLayout,ColumnsControl,useCourseTableColumns}from'./CatalogueColumns'
+import{sortSentence}from'./catalogue-columns'
 // v2.15.217 (code split): screens used only inside one page load on demand. If a screen's file is gone because a newer release was deployed
 // while this tab was open, the page reloads once to pick up the new release instead of showing an error.
 function lazyPage(load,name='default'){return React.lazy(()=>load().then(m=>({default:m[name]})).catch(e=>{let again=false;try{again=sessionStorage.getItem('cf-chunk-reload')!==String(location.pathname+location.hash)}catch{}if(again&&/dynamically imported module|Importing a module script failed|Failed to fetch/i.test(String(e?.message||e))){try{sessionStorage.setItem('cf-chunk-reload',String(location.pathname+location.hash))}catch{}location.reload();return new Promise(()=>{})}throw e}))}
@@ -675,7 +678,17 @@ function Catalogue({type,onError,navigate,initialId='',completenessMode=false,ra
   const rows=rowsOf(data),total=Number(data?.total??rows.length??0),active=activeFilters(filters).filter(([k])=>type!=='scholarship'||!['status','lifecycle','publication'].includes(k))
   async function open(row){const id=row.id??row.course_id;setSelected(id);setDetailBusy(true);try{setDetail(await adminRead(cfg.detail,{id}))}catch(e){onError(e.message)}finally{setDetailBusy(false)}}
   function patch(k,v,label=''){setFilters(f=>{const n={...f,[k]:v};if(k==='country'){n.subdivision='';if(['course','scholarship','campus'].includes(type))n.provider=''}if(k==='subdivision'&&['course','campus'].includes(type))n.provider='';return n});setFilterLabels(l=>{const n={...l,[k]:label||''};if(k==='country'){delete n.subdivision;if(['course','scholarship','campus'].includes(type))delete n.provider}if(k==='subdivision'&&['course','campus'].includes(type))delete n.provider;return n})}
-  function changeSort(k){if(!k)return;if(sort===k)setDirection(d=>d==='asc'?'desc':'asc');else{setSort(k);setDirection('asc')}}
+  // Course catalogue (not the readiness workspace): columns, order, widths, sort and direction are the person's saved layout (server first, this
+  // browser as the fallback). The server layout's sort is applied once when it arrives; each later sort change is saved with the layout.
+  const courseLayoutOn=type==='course'&&!completenessMode
+  const cl=useCourseLayout(courseLayoutOn?catalogueUser:null)
+  const appliedServerSort=useRef(false)
+  useEffect(()=>{if(!courseLayoutOn||appliedServerSort.current||cl.source!=='server')return;appliedServerSort.current=true;if(cl.layout.sort&&cl.layout.sort!==sort&&(cl.newSorts||!['admitted','adapter'].includes(cl.layout.sort)))setSort(cl.layout.sort);if(cl.layout.direction&&cl.layout.direction!==direction)setDirection(cl.layout.direction)},[courseLayoutOn,cl.source])
+  function changeSort(k){if(!k)return;const next=sort===k?{sort:k,direction:direction==='asc'?'desc':'asc'}:{sort:k,direction:'asc'};if(sort===k)setDirection(next.direction);else{setSort(k);setDirection('asc')}if(courseLayoutOn){appliedServerSort.current=true;cl.update(next)}}
+  const hideCourseCol=k=>k==='fee_amount'&&filters.country&&String(filters.country).toUpperCase()!=='AU'
+  const courseCols=useCourseTableColumns(cl.layout,cl.limits,{navigate,hide:hideCourseCol,newSorts:cl.newSorts})
+  // recovery switch: with the two new sorts off, a list sorted on either goes back to Course
+  useEffect(()=>{if(courseLayoutOn&&!cl.newSorts&&['admitted','adapter'].includes(sort)){setSort('course');setDirection('asc')}},[courseLayoutOn,cl.newSorts,sort])
   // v2.15.215 (Platform Admin, 7 Oct 2026 20:28): an Adapter column beside the provider name, Platform Admin only. Opens Layer 2 › Adapter builder
   // with the provider loaded; providers without an adapter show Create adapter (the builder then offers Build automatically).
   const adapterCol=type==='provider'&&!completenessMode&&Number(rank)>=6
@@ -703,7 +716,7 @@ function Catalogue({type,onError,navigate,initialId='',completenessMode=false,ra
   useEffect(()=>{if(!schCol||!rowIds)return;let live=true;supabase.rpc('admin_provider_sch_search',{p_action:'states',p_args:{provider_ids:rowIds.split(',')}}).then(({data,error})=>{if(error)throw error;if(live)setSchStates(data||{})}).catch(e=>onError(e.message));return()=>{live=false}},[schCol,rowIds])
   const schCell={key:'_sch_search',label:'Scholarship search',width:150,render:r=>{const s=schStates[String(r.id)];if(!s)return'—';return s.on?<span className="sch-muted" data-sch-flag="on">On</span>:<span data-sch-flag="off"><StatusChip tone="warning" label={s.directory_only&&s.auto?'Off · directory site':'Off'} title={s.reason||undefined}/></span>}}
   const withSch=schCol?[...baseCols.slice(0,-1),schCell,baseCols[baseCols.length-1]]:baseCols
-  const cols=adapterCol?[withSch[0],{key:'_adapter',label:'Adapter',width:150,sortKey:'adapter',render:r=><AdapterCell state={adapterStates[String(r.id)]} noCourses={r.adapter_status==='no_courses'} onOpen={()=>navigate?.('layer2',{tab:'builder',provider:r.id})}/>},...withSch.slice(1)]:withSch
+  const cols=courseLayoutOn?courseCols:adapterCol?[withSch[0],{key:'_adapter',label:'Adapter',width:150,sortKey:'adapter',render:r=><AdapterCell state={adapterStates[String(r.id)]} noCourses={r.adapter_status==='no_courses'} onOpen={()=>navigate?.('layer2',{tab:'builder',provider:r.id})}/>},...withSch.slice(1)]:withSch
   return <div className="m-page-stack">
     
     <section className="m-panel m-catalogue-panel">
@@ -712,7 +725,7 @@ function Catalogue({type,onError,navigate,initialId='',completenessMode=false,ra
       <FilterBar rank={rank} type={type} filters={filters} filterLabels={filterLabels} patch={patch} data={filterData} busy={filterBusy} advanced={advanced}/>
       {(query||active.length>0)&&<div className="m-chip-row">{query&&<FilterChip label={`Search: ${query}`} onRemove={()=>setQuery('')}/>} {active.map(([k,v])=><FilterChip key={k} label={`${k==='subdivision'?regionLabel(filters.country):filterLabel(k)}: ${filterLabels[k]||filterValueLabel(k,v,filterData)}`} onRemove={()=>patch(k,'')}/>)}</div>}
       {/* v2.15.172 (Platform Admin, 4 Oct 2026 00:11): the module lists published scholarships only; status is handled in Layers 1 to 4 */}
-      {listEdit&&!busy&&rows.length?<ListEdit type={type} rows={rows} onError={onError}/>:<DataTable rows={rows} columns={cols} loading={busy} sort={sort} direction={direction} onSort={changeSort} onRow={open} selected={selected} tableId={completenessMode?'completeness':type} rowClass={type==='provider'?(r=>isPub(r)?'':'m-row-muted'):undefined}/>}
+      {listEdit&&!busy&&rows.length?<ListEdit type={type} rows={rows} onError={onError}/>:<>{courseLayoutOn&&<div className="cc-bar" data-course-columns><ColumnsControl layout={cl.layout} limits={cl.limits} hasPrevious={cl.hasPrevious} onChange={cl.update} onReset={cl.reset} onRestore={cl.restore}/><span className="cc-sort" data-active-sort={`${sort}:${direction}`}>Sorted by <strong>{sortSentence(sort,direction)}</strong></span>{cl.ack&&<span role="status" className={`cc-ack tone-${cl.ack.tone}`} data-layout-ack={cl.ack.tone}>{cl.ack.text}</span>}</div>}<DataTable rows={rows} columns={cols} loading={busy} sort={sort} direction={direction} onSort={changeSort} onRow={open} selected={selected} tableId={completenessMode?'completeness':type} rowClass={type==='provider'?(r=>isPub(r)?'':'m-row-muted'):undefined} widths={courseLayoutOn?cl.layout.widths:undefined} onWidths={courseLayoutOn?(w=>cl.update({widths:w})):undefined} wrapClassName={courseLayoutOn?'cc-frame':''}/></>}
       <Pager offset={offset} limit={PAGE_SIZE} total={total} onOffset={setOffset}/>
     </section>
     {selected&&<DetailDrawer type={type} data={detail} busy={detailBusy} rank={rank} navigate={navigate} onError={onError} onChanged={()=>adminRead(cfg.detail,{id:selected}).then(setDetail).catch(e=>onError(e.message))} onClose={()=>{setSelected(null);setDetail(null)}}/>}
