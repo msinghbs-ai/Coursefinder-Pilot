@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.412 — 5 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.485** (Platform Admin 5 Nov 2026 18:00: reconcile the enrichment focus list with the approved top-10 pilot; keep the global scheduler; no hard-coded top 10). Migration `20261105090000_cf247_intake_pilot_share`: setting `intake_dates.pilot_batch_share` (60%); md5-guarded edit of `security.intake_dates_plan_v3` (886876cd): pilot rows (security.intake_ui_scopes_v1) up to the share, then all other providers (focus first, longest waiting first), then any further pilot rows; rounds and the per-provider share unchanged; the preview path (course ids given) unchanged. Fixture 'selection' tests fairness, focus priority and pilot scope independently (4-university pilot, focus providers outside the pilot, a pilot university with no eligible work, share 0).
+
 ## 0.1.411 — 5 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.484** (direction 5 Nov 2026 15:50 §3 'Retain approved focus priority'; production finding at the 17:26 run of v2.15.482: 200 rows over 12 providers, none of the top 10, because never-served providers outside the focus list came first). Migration `20261105080000_cf247_intake_focus_rounds`: md5-guarded edit of `security.intake_dates_plan_v3` (67e93081): order within a round by focus first, then least recently served, then focus rank. Fixture case 'focus priority'; s292 extended.

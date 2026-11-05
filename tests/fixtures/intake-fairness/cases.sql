@@ -68,6 +68,68 @@ begin
   raise notice 'PASS focus priority: a focus university served a moment ago still comes first in its round (% rows) ahead of universities outside the focus list that were never served', n_focus;
 end $$;
 
+-- selection, three properties tested independently (Platform Admin 5 Nov 2026 18:00): provider fairness, focus priority, explicit pilot scope.
+-- Production shape: a 4-university pilot (run_now.cohort_top_au_universities), focus providers outside the pilot served longest ago,
+-- providers outside both, and one pilot university with no eligible work.
+do $$
+declare v_pilot uuid[]; v_focus_np uuid[]; n_pilot int; n_np int; n_focus_np int; n_nonfocus int; v_max int; v_first_np uuid; v_share int := security.pipeline_num_v1('intake_dates.provider_share', 25)::int;
+        v_zero uuid; n_prov int;
+begin
+  update pipeline.platform_toolset_settings set value = to_jsonb(4) where toolset_key = 'pipeline' and key = 'run_now.cohort_top_au_universities';
+  if not found then insert into pipeline.platform_toolset_settings(toolset_key, key, label, kind, value, unit, section, used_by, reason)
+    values ('pipeline', 'run_now.cohort_top_au_universities', 'fixture', 'number', to_jsonb(4), 'universities', 'fixture', 'fixture', 'fixture'); end if;
+  select array_agg((e->>'id')::uuid) into v_pilot from jsonb_array_elements(security.intake_ui_scopes_v1()) e;
+  if array_length(v_pilot, 1) <> 4 then raise exception 'pilot size %', array_length(v_pilot, 1); end if;
+  -- two universities outside the pilot are in focus and were served long ago; the pilot was served a moment ago
+  select array_agg(id) into v_focus_np from (select (e->>'id')::uuid id from jsonb_array_elements((select jsonb_agg(x) from (select jsonb_build_object('id', p.id) x from catalogue.providers p
+      where p.id in (select distinct c.provider_id from catalogue.courses c join catalogue.course_intakes i on i.course_id = c.id where i.status = 'active') and p.id <> all (v_pilot)
+      and exists (select 1 from pipeline.provider_policy_proposals pp where pp.provider_id = p.id and pp.kind = 'intake_calendar' and pp.status = 'approved') order by p.id limit 2) z)) e) y;
+  update pipeline.enrich_focus_providers set in_focus = false;
+  insert into pipeline.enrich_focus_providers(provider_id, rank, gaps, in_focus) select x, 50 + row_number() over (), 1, true from unnest(v_focus_np) x
+  on conflict (provider_id) do update set in_focus = true, rank = excluded.rank;
+  insert into pipeline.enrich_focus_providers(provider_id, rank, gaps, in_focus) select x, row_number() over (), 1, true from unnest(v_pilot) x
+  on conflict (provider_id) do update set in_focus = true, rank = excluded.rank;
+  insert into pipeline.course_intake_dates(intake_id, course_id, provider_id, outcome, reason, applied_at, inputs_fp, next_action)
+  select distinct on (c.provider_id) i.id, i.course_id, c.provider_id, 'skipped', 'fixture: pilot served', now(), 'fixture-pilot', 'evidence_ambiguous'
+    from catalogue.course_intakes i join catalogue.courses c on c.id = i.course_id where c.provider_id = any (v_pilot) order by c.provider_id, i.id
+  on conflict (intake_id) do nothing;
+  insert into pipeline.course_intake_dates(intake_id, course_id, provider_id, outcome, reason, applied_at, inputs_fp, next_action)
+  select distinct on (c.provider_id) i.id, i.course_id, c.provider_id, 'skipped', 'fixture: focus served long ago', now() - interval '1 day', 'fixture-focus-np', 'evidence_ambiguous'
+    from catalogue.course_intakes i join catalogue.courses c on c.id = i.course_id where c.provider_id = any (v_focus_np) order by c.provider_id, i.id
+  on conflict (intake_id) do nothing;
+  create temp table sel_p as select p.*, row_number() over () rn from security.intake_dates_plan_v3(null, 200) p;
+  select count(*) filter (where provider_id = any (v_pilot)), count(*) filter (where provider_id <> all (v_pilot)),
+         count(*) filter (where provider_id = any (v_focus_np)), count(distinct provider_id) into n_pilot, n_np, n_focus_np, n_prov from sel_p;
+  select max(n) into v_max from (select provider_id, count(*) n from sel_p group by 1) z;
+  -- pilot scope: the pilot takes its share (60% of 200) although it was served a moment ago, every pilot university with eligible rows is in it
+  if n_pilot <> 120 or (select count(distinct provider_id) from sel_p where provider_id = any (v_pilot)) <> (select count(distinct c.provider_id) from security.intake_dates_plan_v3(null, 5000) x join catalogue.courses c on c.id = x.course_id where c.provider_id = any (v_pilot)) then
+    raise exception 'pilot scope: % pilot rows', n_pilot; end if;
+  -- global: the rest goes outside the pilot, at least three providers, focus providers outside the pilot first
+  select provider_id into v_first_np from sel_p where provider_id <> all (v_pilot) order by rn limit 1;
+  if n_np <> 80 or v_first_np <> all (v_focus_np) or n_focus_np = 0 then raise exception 'global share: % rows, first %, focus %', n_np, v_first_np, n_focus_np; end if;
+  -- fairness: no provider takes more than two rounds (pilot round 2 fills its share) and at least five providers are served
+  if v_max > 2 * v_share or n_prov < 5 then raise exception 'fairness: max % over % providers', v_max, n_prov; end if;
+  -- share 0: the pilot gets no reserved rows (v2.15.484 order: focus first, longest waiting first)
+  update pipeline.platform_toolset_settings set value = to_jsonb(0) where toolset_key = 'pipeline' and key = 'intake_dates.pilot_batch_share';
+  if (select provider_id from security.intake_dates_plan_v3(null, 1)) <> all (v_focus_np) then raise exception 'share 0 did not restore focus-first order'; end if;
+  update pipeline.platform_toolset_settings set value = to_jsonb(60) where toolset_key = 'pipeline' and key = 'intake_dates.pilot_batch_share';
+  -- a pilot with no eligible rows blocks nobody: the batch is filled by the others
+  update pipeline.platform_toolset_settings set value = to_jsonb(1) where toolset_key = 'pipeline' and key = 'run_now.cohort_top_au_universities';
+  select (e->>'id')::uuid into v_zero from jsonb_array_elements(security.intake_ui_scopes_v1()) e;
+  -- every eligible row of the one-university pilot is already decided with its current inputs: it has no eligible work now
+  insert into pipeline.course_intake_dates(intake_id, course_id, provider_id, outcome, reason, applied_at, inputs_fp, next_action)
+  select x.intake_id, x.course_id, x.provider_id, 'skipped', 'fixture: decided', now(), x.inputs_fp, 'evidence_ambiguous'
+    from security.intake_dates_plan_v3((select array_agg(c.id) from catalogue.courses c where c.provider_id = v_zero), 100000) x
+  on conflict (intake_id) do update set inputs_fp = excluded.inputs_fp, next_revisit_at = null;
+  if exists (select 1 from security.intake_dates_plan_v3(null, 200) where provider_id = v_zero)
+     or (select count(*) from security.intake_dates_plan_v3(null, 200)) <> 200 then raise exception 'a pilot with no eligible work blocked the batch'; end if;
+  update pipeline.platform_toolset_settings set value = to_jsonb(10) where toolset_key = 'pipeline' and key = 'run_now.cohort_top_au_universities';
+  update pipeline.enrich_focus_providers set in_focus = true;
+  -- the preview path (course ids given) is unchanged: no pilot reservation applies
+  if (select count(*) from security.intake_dates_plan_v3((select array_agg(distinct course_id) from sel_p where provider_id = any (v_pilot)), 50)) = 0 then raise exception 'preview path'; end if;
+  raise notice 'PASS selection: pilot scope takes its share (% rows, every pilot university with eligible work) though served a moment ago; the rest goes to % rows outside the pilot, focus providers first; at most % rows a provider over % providers; share 0 restores focus order; the preview path is unchanged', n_pilot, n_np, v_max, n_prov;
+end $$;
+
 -- calendars: an obsolete 2023 reading ("term 1") and the current 2027 reading ("teaching period t1/t2") ------------------------------------
 do $$
 declare src uuid; v_prov uuid := '08609bcf-387d-1316-2a52-9fbc0edff508';

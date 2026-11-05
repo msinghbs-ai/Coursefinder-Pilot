@@ -1,15 +1,15 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.484'
-export const PACKAGE_VERSION='0.1.411'
+export const UI_VERSION='2.15.485'
+export const PACKAGE_VERSION='0.1.412'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'5 Nov 2026',
-  title:'Intake dates: focus universities first in every round',
+  title:'Intake dates: the pilot universities take a share of every run',
   changes:[
-    'Within each round of the intake-dates job, the focus universities (the approved priority list, including the top 10 Australian universities) now come first, the one waiting longest first, before universities outside the focus list. Each university still takes at most its share a round.'
+    'The pilot universities (the top Australian universities by active courses, set by Run now: Australian universities a cohort is picked from) now take up to a set share of every intake-dates run (60 per cent, a setting), round by round and longest waiting first. Every other provider takes the rest, focus providers first, so the whole catalogue keeps moving; unused room on either side goes to the other.'
   ],
   bugFixes:[]
 }
