@@ -38,3 +38,11 @@ test('§6: the pre-production regressions run in CI on the production-equivalent
     'Real admission and consumer publication']) expect(c.toLowerCase()).toContain(k.toLowerCase())
   expect(fs.readFileSync('tests/fixtures/intake-fairness/run.sh', 'utf8')).toContain('Refusing a remote database')
 })
+
+test('P0 IQ-00313 provenance: a withdrawal takes the admission from its own event, so a re-decided row is still corrected', () => {
+  const h = fs.readFileSync('supabase/migrations/20261105070000_cf247_intake_withdraw_provenance.sql', 'utf8')
+  expect(h).toContain("'security.intake_date_withdraw_v1(uuid,text,text,boolean)', '746b5c1a4141d4b5d022c1bfa0fa25f3'")
+  expect(h).toContain("where e.intake_id = p_intake and e.outcome = 'filled'")
+  expect(h).toContain("and not exists (select 1 from pipeline.course_intake_date_events w where w.intake_id = p_intake and w.outcome = 'withdrawn' and w.id > e.id)")
+  expect(fs.readFileSync('tests/fixtures/intake-fairness/cases.sql', 'utf8')).toContain('PASS provenance')
+})

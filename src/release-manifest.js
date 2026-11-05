@@ -1,18 +1,15 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.482'
-export const PACKAGE_VERSION='0.1.409'
+export const UI_VERSION='2.15.483'
+export const PACKAGE_VERSION='0.1.410'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'5 Nov 2026',
-  title:'Intake dates: fair turns for every university, current calendars only, and course evidence before a date',
+  title:'Intake dates: a withdrawal finds the admission even after a later run',
   changes:[
-    'The intake-dates job now gives every university with eligible rows a turn: rows are taken round by round (25 a university a round, a setting), the university waiting longest first, so one large university no longer takes the whole hourly batch. The batch size is unchanged.',
-    'An old calendar edition (its latest proved teaching start is in an earlier year) is set aside with the reason and no longer supplies period names or dates; equivalent official labels such as Term 1 and Teaching period T1 are matched as one period.',
-    'A date is admitted only when the course page states the intake as the course\'s own offering (never a personal account or a past year), and a month-only match needs the course\'s intake months to follow the university\'s main calendar; otherwise the row is held with its reason.',
-    'The Platform Admin can withdraw an intake value the process admitted, with a reason: only the fields it set are reverted, the history is kept, the course\'s intakes are held by the existing lock, and the Website API v2 source is checked.'
+    'The Platform Admin\'s withdrawal of an intake value now finds the admission from its own record, so a value the process admitted is still withdrawn after a later run has looked at the row again without changing it.'
   ],
   bugFixes:[]
 }

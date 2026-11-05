@@ -170,10 +170,35 @@ begin
   select i.id, i.course_id, '08609bcf-387d-1316-2a52-9fbc0edff508', 'filled', jsonb_build_object('year', null, 'start_date', null, 'application_deadline', null),
          jsonb_build_object('year', 2027, 'start_date', i.start_date, 'application_deadline', null), now(), 'fixture', 'awaiting_official_calendar'
     from catalogue.course_intakes i where i.id in (wf, wm);
+  -- every admission is also an event (as intake_dates_apply_v1 appends one per decision)
+  insert into pipeline.course_intake_date_events(intake_id, course_id, provider_id, run_at, rule, outcome, before_value, after_value)
+  select intake_id, course_id, provider_id, applied_at, 'calendar-v3', 'filled', before_value, after_value from pipeline.course_intake_dates where intake_id in (wf, wm);
   v := public.admin_intake_date_withdraw_v1(array[wf, wm], 'fixture: two intakes of one course');
   if (v->>'withdrawn')::int <> 2 then raise exception 'admin withdrawal: %', v; end if;
   if (select count(*) from pipeline.manual_locks where entity = 'course' and field = 'intakes' and entity_id = (select course_id from catalogue.course_intakes where id = wf)) <> 1
      or (select count(*) from catalogue.course_intakes where id in (wf, wm) and start_date is null and intake_year is null) <> 2
      or not exists (select 1 from pipeline.admin_control_events where area = 'intake_dates' and action = 'withdraw') then raise exception 'hold or audit missing'; end if;
   raise notice 'PASS withdrawal: Platform Admin only; the admitted start date reverted, the year held before kept, history appended, Website API v2 source verified; not re-admitted; never twice; a lock is respected; the Platform Admin path withdraws two intakes of one course in one call, holds the course once and records it';
+end $$;
+
+-- IQ-00313 provenance (5 Nov 2026 16:47): an admission later re-decided by another run is still withdrawn from its own record ---------------
+do $$
+declare v jsonb; t uuid;
+begin
+  t := public.fixture_clone_intake((select id from k where name = 'term1'), 'February', 'Industry Partner: I commenced the program in February 2023', 2027);
+  update catalogue.course_intakes set start_date = '2027-02-15' where id = t;
+  insert into pipeline.course_intake_date_events(intake_id, course_id, provider_id, run_at, rule, outcome, before_value, after_value)
+  select t, course_id, '08609bcf-387d-1316-2a52-9fbc0edff508', now() - interval '2 hours', 'calendar-v3-unique-month', 'filled',
+         '{"year": 2027, "start_date": null, "application_deadline": null}'::jsonb, '{"year": 2027, "start_date": "2027-02-15", "application_deadline": null}'::jsonb from catalogue.course_intakes where id = t;
+  -- a later run re-decided it (the value unchanged): the decision row no longer shows the admission
+  insert into pipeline.course_intake_dates(intake_id, course_id, provider_id, outcome, reason, before_value, after_value, applied_at, inputs_fp, next_action)
+  select t, course_id, '08609bcf-387d-1316-2a52-9fbc0edff508', 'skipped', 'the course page names no study period of the calendar (month only)',
+         '{"year": 2027, "start_date": "2027-02-15", "application_deadline": null}'::jsonb, '{"year": 2027, "start_date": "2027-02-15", "application_deadline": null}'::jsonb, now(), 'fixture-redecided', 'reader_correction_needed'
+    from catalogue.course_intakes where id = t;
+  v := security.intake_date_withdraw_v1(t, 'fixture: re-decided admission (IQ-00313 Master of Industrial Research case)', 'fixture', true);
+  if not (v->>'withdrawn')::boolean or (select start_date from catalogue.course_intakes where id = t) is not null or (select intake_year from catalogue.course_intakes where id = t) <> 2027 then
+    raise exception 're-decided admission: %', v; end if;
+  v := security.intake_date_withdraw_v1(t, 'fixture: second time after the withdrawal', 'fixture', true);
+  if (v->>'withdrawn')::boolean then raise exception 'withdrawn twice'; end if;
+  raise notice 'PASS provenance: an admission re-decided by a later run is withdrawn from its own record (start date reverted, the year held before kept); never twice';
 end $$;

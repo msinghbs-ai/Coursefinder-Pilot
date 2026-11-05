@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.410 — 5 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.483** (P0 IQ-00313; Platform Admin decision 5 Nov 2026 16:36 §2). Migration `20261105070000_cf247_intake_withdraw_provenance`: md5-guarded edit of `security.intake_date_withdraw_v1` (746b5c1a) — the admission is taken from the latest 'filled' event no later withdrawal undid, not from the current decision row (the 16:26 run re-decided the two Master of Industrial Research intakes after containment, so v2.15.482 would refuse them). Fixture case 'provenance'; s292 extended. Nothing else changes.
+
 ## 0.1.409 — 5 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.482** (Platform Admin direction 5 Nov 2026 15:50, UNSW blockage and cross-university fairness; P0 IQ-00313). Migration `20261105060000_cf247_intake_fairness_precedence`: md5-guarded edits of `security.intake_dates_plan_v3` (0eb4f9fd: provider rounds by `intake_dates.provider_share`, least recently served first, then focus rank; the course-applicability gate before admission), `security.calendar_sources_v1` (3064e209: obsolete editions set aside), `security.calendar_dated_periods_v2` (972f5c48: canonical period names) and `security.intake_failure_class_v1` (e9344ecf); new `security.calendar_period_canonical_v1`, `security.intake_course_applicability_v1`, `security.intake_date_withdraw_v1` and `public.admin_intake_date_withdraw_v1` (Platform Admin; reverts only admitted fields; existing manual lock as the hold; Website API v2 read-back). No job, scheduler, batch size or consumer object changed. Spec s292; fixtures tests/fixtures/intake-fairness (ten universities, §6 regressions; the v2.15.480 and v2.15.481 cases re-run on the new migration; #872 browser workflow with all three migrations). Unique-month matching stays off (IQ-00313 containment) until validated in production.

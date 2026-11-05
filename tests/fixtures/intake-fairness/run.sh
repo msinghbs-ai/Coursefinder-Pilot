@@ -7,6 +7,7 @@ cd "$(dirname "$0")/../../.."
 case "${PGHOST:-127.0.0.1}" in 127.0.0.1|localhost|/tmp|/var/run/postgresql) ;; *) echo 'Refusing a remote database: use isolated local PostgreSQL' >&2; exit 1;; esac
 BASE=intake_recovery_final_fixtures; DB=intake_fairness_fixtures; F=tests/fixtures/intake-fairness
 MIG=supabase/migrations/20261105060000_cf247_intake_fairness_precedence.sql
+MIG2=supabase/migrations/20261105070000_cf247_intake_withdraw_provenance.sql
 P=(psql -X -q -v ON_ERROR_STOP=1)
 if [ -z "${INTAKE_FAIR_REUSE:-}" ] || ! "${P[@]}" -d postgres -Atc "select 1 from pg_database where datname = '$BASE'" | grep -q 1; then
   INTAKE_RF_KEEP=1 bash tests/fixtures/intake-recovery-final/run.sh > /dev/null
@@ -23,10 +24,12 @@ done
 "${P[@]}" -d $DB -f $F/parity-tables.sql
 echo 'PASS parity: the six live definitions this change edits or calls (md5 = live); ten universities, one with 5,200 courses; production shape of pipeline.manual_locks'
 "${P[@]}" -d $DB -1 -o /dev/null -f $MIG
-AFTER=$(md5of 'security.intake_dates_plan_v3(uuid[],integer)')
+"${P[@]}" -d $DB -1 -o /dev/null -f $MIG2
+AFTER=$(md5of 'security.intake_dates_plan_v3(uuid[],integer)')$(md5of 'security.intake_date_withdraw_v1(uuid,text,text,boolean)')
 "${P[@]}" -d $DB -1 -o /dev/null -f $MIG
-[ "$(md5of 'security.intake_dates_plan_v3(uuid[],integer)')" = "$AFTER" ] || { echo 'second application changed a definition'; exit 1; }
-echo "PASS migration applied twice without change"
+"${P[@]}" -d $DB -1 -o /dev/null -f $MIG2
+[ "$(md5of 'security.intake_dates_plan_v3(uuid[],integer)')$(md5of 'security.intake_date_withdraw_v1(uuid,text,text,boolean)')" = "$AFTER" ] || { echo 'second application changed a definition'; exit 1; }
+echo "PASS migrations 20261105060000 and 20261105070000 applied twice without change"
 OUT=$("${P[@]}" -d $DB -f $F/cases.sql 2>&1) || { echo "$OUT" | grep -E 'ERROR|CONTEXT|DETAIL' | cut -c1-3000; echo "FAIL cases"; exit 1; }
 echo "$OUT" | grep -o 'PASS.*'
 "${P[@]}" -d $DB -Atc "select p.oid::regprocedure || ' ' || md5(pg_get_functiondef(p.oid)) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
