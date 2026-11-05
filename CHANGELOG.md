@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.411 — 5 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.484** (direction 5 Nov 2026 15:50 §3 'Retain approved focus priority'; production finding at the 17:26 run of v2.15.482: 200 rows over 12 providers, none of the top 10, because never-served providers outside the focus list came first). Migration `20261105080000_cf247_intake_focus_rounds`: md5-guarded edit of `security.intake_dates_plan_v3` (67e93081): order within a round by focus first, then least recently served, then focus rank. Fixture case 'focus priority'; s292 extended.
+
 ## 0.1.410 — 5 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.483** (P0 IQ-00313; Platform Admin decision 5 Nov 2026 16:36 §2). Migration `20261105070000_cf247_intake_withdraw_provenance`: md5-guarded edit of `security.intake_date_withdraw_v1` (746b5c1a) — the admission is taken from the latest 'filled' event no later withdrawal undid, not from the current decision row (the 16:26 run re-decided the two Master of Industrial Research intakes after containment, so v2.15.482 would refuse them). Fixture case 'provenance'; s292 extended. Nothing else changes.

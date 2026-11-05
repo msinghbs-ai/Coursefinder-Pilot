@@ -46,3 +46,10 @@ test('P0 IQ-00313 provenance: a withdrawal takes the admission from its own even
   expect(h).toContain("and not exists (select 1 from pipeline.course_intake_date_events w where w.intake_id = p_intake and w.outcome = 'withdrawn' and w.id > e.id)")
   expect(fs.readFileSync('tests/fixtures/intake-fairness/cases.sql', 'utf8')).toContain('PASS provenance')
 })
+
+test('§3 focus priority within a round: focus universities first, longest waiting first among them (production finding 17:26)', () => {
+  const f = fs.readFileSync('supabase/migrations/20261105080000_cf247_intake_focus_rounds.sql', 'utf8')
+  expect(f).toContain("'security.intake_dates_plan_v3(uuid[],integer)', '67e930818ee190f9124af45093be2ff0'")
+  expect(f).toContain('(f.rank is null), sets.served nulls first, f.rank nulls last, c.provider_id, i.course_id, i.id')
+  expect(fs.readFileSync('tests/fixtures/intake-fairness/cases.sql', 'utf8')).toContain('PASS focus priority')
+})
