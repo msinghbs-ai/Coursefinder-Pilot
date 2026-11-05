@@ -79,3 +79,19 @@ select c.id, 'AU', c.provider_id from catalogue.courses c where not exists (sele
 -- approved course_intake publication gate): the fixture's sourceless intake rows take the fixture's gated adapter source
 update catalogue.course_intakes i set source_id = (select g.source_id from search.enrichment_source_gates g where g.projection_code = 'courses' and g.domain_code = 'course_intake' and g.gate_status = 'approved' order by g.source_id limit 1)
  where i.source_id is null;
+
+-- pipeline.component_register as production holds it (read 5 Nov 2026 11:10): replaces text[] default '{}' not null, usage jsonb default '{}' not null,
+-- status default 'active' not null, kind and status checks. The intake fixture's stand-in allowed a null "replaces", which let a migration that
+-- production refuses pass (deploy of v2.15.480, 5 Nov 2026 11:05: 23502 on component_register.replaces).
+update pipeline.component_register set replaces = '{}' where replaces is null;
+alter table pipeline.component_register alter column replaces set default '{}', alter column replaces set not null;
+alter table pipeline.component_register add column if not exists usage jsonb default '{}'::jsonb not null;
+alter table pipeline.component_register alter column status set default 'active', alter column status set not null;
+do $c$ begin
+  if not exists (select 1 from pg_constraint where conrelid = 'pipeline.component_register'::regclass and pg_get_constraintdef(oid) like '%kind = ANY%') then
+    alter table pipeline.component_register add constraint component_register_kind_check check (kind = any (array['job','table','view','edge_function','screen','function']));
+  end if;
+  if not exists (select 1 from pg_constraint where conrelid = 'pipeline.component_register'::regclass and pg_get_constraintdef(oid) like '%status = ANY%') then
+    alter table pipeline.component_register add constraint component_register_status_check check (status = any (array['active','retiring','retired']));
+  end if;
+end $c$;
