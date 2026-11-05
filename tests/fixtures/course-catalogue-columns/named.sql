@@ -71,6 +71,16 @@ insert into pipeline.course_intake_date_events(intake_id, course_id, provider_id
  (pg_temp.u('i1'), pg_temp.u('k_completed'), pg_temp.u('pk'), '2026-10-20 10:00+11', 'calendar_v2', 'filled', '{"start": "2027-02-24"}'),
  (pg_temp.u('i2'), pg_temp.u('k_completed'), pg_temp.u('pk'), '2026-10-21 10:00+11', 'calendar_v2', 'skipped', null);
 
+-- intakes of k_completed (one dated by the intake-dates job, one a label only) and its website feed item; k_failed withdrawn from the feed
+insert into catalogue.course_intakes(id, course_id, intake_year, intake_label, start_date, application_deadline, status) values
+ (pg_temp.u('ki1'), pg_temp.u('k_completed'), 2027, 'Semester 1 (February)', '2027-02-24', '2026-12-15', 'active'),
+ (pg_temp.u('ki2'), pg_temp.u('k_completed'), 2027, 'July', null, null, 'active'),
+ (pg_temp.u('ki3'), pg_temp.u('k_completed'), 2025, 'March', null, null, 'inactive');
+insert into pipeline.course_intake_dates(intake_id, course_id, provider_id, outcome, start_precision, deadline_kind) values
+ (pg_temp.u('ki1'), pg_temp.u('k_completed'), pg_temp.u('pk'), 'filled', 'day', 'date');
+insert into pipeline.website_sync_items(entity, item_key, ref_id, hash, seq, seq_at, removed_at) values
+ ('course', 'course:k_completed', pg_temp.u('k_completed'), 'h1', 1, '2026-11-02 10:00+11', null),
+ ('course', 'course:k_failed', pg_temp.u('k_failed'), null, 2, '2026-11-03 10:00+11', '2026-11-03 10:00+11');
 -- field states of k_fresh, one of each kind
 insert into pipeline.course_attribute_coverage(course_id, provider_id, attribute, state, tier, absence_class) values
  (pg_temp.u('k_fresh'), pg_temp.u('pk'), 'english', 'admitted', 'core', null),

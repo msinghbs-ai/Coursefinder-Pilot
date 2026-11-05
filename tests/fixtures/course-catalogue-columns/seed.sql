@@ -105,3 +105,13 @@ select pg_temp.u('c' || g), pg_temp.u('p' || (1 + g % 1200)), a, (array['admitte
   from generate_series(1, 35700) g, unnest(array['official_url', 'provider_tuition', 'english', 'intakes', 'deadline', 'description']) a;
 insert into pipeline.enrichment_flags(entity, entity_key, provider_id, field, reason_code, reason, source, state)
 select 'course', pg_temp.u('c' || g)::text, pg_temp.u('p' || (1 + g % 1200)), 'deadline', 'no_deadline_on_page', 'fixture', 'fixture', 'raised' from generate_series(1, 35700) g where g % 7 = 3;
+-- intake-date events at production volume (1,612; a few filled, most skipped)
+insert into pipeline.course_intake_date_events(intake_id, course_id, provider_id, run_at, rule, outcome)
+select pg_temp.u('ie' || g), pg_temp.u('c' || (g * 13 % 35700 + 1)), pg_temp.u('p' || (1 + (g * 13 % 35700 + 1) % 1200)), timestamptz '2026-10-25' + (g % 10) * interval '1 day', 'calendar_v2',
+       case when g % 180 = 0 then 'filled' when g % 300 = 1 then 'withdrawn' else 'skipped' end from generate_series(1, 1612) g;
+-- the website and Zoho feeds at production volume: one item a published course, a share withdrawn; Zoho for a fifth
+insert into pipeline.website_sync_items(entity, item_key, ref_id, hash, seq, seq_at, removed_at)
+select 'course', 'course:' || g, pg_temp.u('c' || g), md5(g::text), g, timestamptz '2026-10-16' + (g % 20) * interval '1 day', case when g % 10 = 0 then timestamptz '2026-10-16' + (g % 20) * interval '1 day' end
+  from generate_series(1, 35700) g;
+insert into pipeline.zoho_sync_items(entity, item_key, ref_id, hash, seq, seq_at)
+select 'course', 'course:' || g, pg_temp.u('c' || g), md5(g::text), g, timestamptz '2026-10-17' + (g % 20) * interval '1 day' from generate_series(1, 35700) g where g % 5 = 0;

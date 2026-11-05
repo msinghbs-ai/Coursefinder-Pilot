@@ -6,7 +6,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowDown, ArrowUp, Columns3, RotateCcw, Search, Undo2, X } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import { StatusChip, fmtDate, fmtDateTime, fmtNumber } from './ui-kit'
-import { ADAPTER_STATES, COURSE_COLUMNS, COURSE_SCREEN, DEFAULT_LIMITS, FIELD_STATES, GROUPS, citySummary, clampWidth, columnOf, defaultLayout, minWidthOf, moveColumn, normaliseLayout, toggleColumn } from './catalogue-columns'
+import { ADAPTER_STATES, COURSE_COLUMNS, COURSE_SCREEN, DEFAULT_LIMITS, FIELD_STATES, GROUPS, citySummary, clampWidth, columnOf, defaultLayout, intakeName, intakeSummary, minWidthOf, monthName, moveColumn, normaliseLayout, toggleColumn } from './catalogue-columns'
 import './catalogue-columns.css'
 
 const LOCAL = 'coursefinder:pim:catalogue-layout:v1:'
@@ -116,7 +116,6 @@ export function FieldState({ fs }) {
   return <span data-field-state={fs.state}><StatusChip tone={tone} label={label} title={[fs.reason && `Reason: ${fs.reason}`, fs.flag && `Flag: ${fs.flag}`].filter(Boolean).join(' · ') || undefined} /></span>
 }
 const Unknown = ({ title }) => <span className="cc-unknown" title={title || 'No trustworthy record of this'}>Unknown</span>
-const when = (v, title) => v ? <span title={fmtDateTime(v)}>{fmtDateTime(v)}</span> : <Unknown title={title} />
 
 function Cities({ row }) {
   const [open, setOpen] = useState(false)
@@ -124,6 +123,37 @@ function Cities({ row }) {
   if (!s.names.length) return row.city_names ? <span>{row.city_names}</span> : <span className="cc-unknown" title="No campus city held for this course">No campus city</span>
   if (s.names.length === 1) return <span data-cities="1">{s.names[0]}</span>
   return <span className="cc-cities" data-cities={s.names.length}><button type="button" className="cc-link" aria-expanded={open} onClick={e => { e.stopPropagation(); setOpen(x => !x) }}>{s.short}</button>{open && <ul onClick={e => e.stopPropagation()}>{s.names.map(n => <li key={n}>{n}</li>)}</ul>}</span>
+}
+// Intakes as the website builds them (active intakes; month from the label by the website's rule). Nothing is filled in: an intake with no
+// month, year or date says so; a course with no intake shows its field state.
+function Expand({ short, items, attr }) {
+  const [open, setOpen] = useState(false)
+  if (items.length <= 1) return <span {...attr}>{short}</span>
+  return <span className="cc-cities" {...attr}><button type="button" className="cc-link" aria-expanded={open} onClick={e => { e.stopPropagation(); setOpen(x => !x) }}>{short}</button>{open && <ul onClick={e => e.stopPropagation()}>{items.map((n, i) => <li key={i}>{n}</li>)}</ul>}</span>
+}
+const intakeLine = i => [intakeName(i), i.start_date ? `starts ${fmtDate(i.start_date)}` : null, i.application_deadline ? `apply by ${fmtDate(i.application_deadline)}` : i.deadline_kind === 'rolling' ? 'rolling applications' : null].filter(Boolean).join(' · ')
+function intakeCell(key, row) {
+  const list = Array.isArray(row.intakes) ? row.intakes : []
+  const fs = row.field_states || {}
+  if (!list.length) return key === 'deadline' ? <FieldState fs={fs.deadline} /> : <FieldState fs={fs.intakes} />
+  const many = (vals, attr) => { const u = [...new Set(vals)]; return u.length ? <Expand short={u.length > 1 ? `${u[0]} +${u.length - 1}` : u[0]} items={u} attr={attr} /> : null }
+  if (key === 'intakes') { const s = intakeSummary(list); return <Expand short={s.short} items={list.map(intakeLine)} attr={{ 'data-intakes': list.length }} /> }
+  if (key === 'intake_month') return many(list.map(i => monthName(i.month)).filter(Boolean), { 'data-intake-month': '' }) || <span className="cc-unknown" title="The intakes held name no month">Not held</span>
+  if (key === 'intake_year') return many(list.map(i => i.year).filter(Boolean).map(String), { 'data-intake-year': '' }) || <span className="cc-unknown" title="The intakes held name no year">Not held</span>
+  if (key === 'commencement_date') return many(list.filter(i => i.start_date).sort((a, b) => String(a.start_date).localeCompare(String(b.start_date))).map(i => fmtDate(i.start_date)), { 'data-commencement': '' }) || <span className="cc-unknown" title="No exact start date is held: only the intake month or label">Not held</span>
+  if (key === 'deadline') {
+    const dated = list.filter(i => i.application_deadline).sort((a, b) => String(a.application_deadline).localeCompare(String(b.application_deadline))).map(i => fmtDate(i.application_deadline))
+    if (dated.length) return many(dated, { 'data-deadline': '' })
+    if (list.some(i => i.deadline_kind === 'rolling')) return <span title={list.find(i => i.deadline_text)?.deadline_text || 'Applications are rolling'}>Rolling</span>
+    return <FieldState fs={fs.deadline} />
+  }
+  return undefined
+}
+function Published({ row }) {
+  const p = row.published
+  if (!p || !p.website_at) return <span className="cc-unknown" title="This course has no item in the website feed">Not in the website feed</span>
+  const z = p.zoho_at ? `Zoho feed: ${p.zoho_removed ? 'withdrawn' : 'last changed'} ${fmtDateTime(p.zoho_at)}` : 'Zoho feed: no item'
+  return <span title={`Website feed: the course's item was ${p.website_removed ? 'withdrawn' : 'last added or changed'} at ${fmtDateTime(p.website_at)} (an unchanged re-check is not counted).\n${z}`} data-published={p.website_removed ? 'withdrawn' : 'published'}>{p.website_removed ? 'Withdrawn ' : ''}{fmtDateTime(p.website_at)}</span>
 }
 function Campuses({ row }) {
   const [open, setOpen] = useState(false)
@@ -145,7 +175,7 @@ function admissionTitle(la) {
   const s = v => v == null ? '—' : (typeof v === 'string' ? v : JSON.stringify(v)).slice(0, 160)
   return [`Field: ${la.field}`, `Admitted: ${fmtDateTime(la.at)}`, `Source: ${SOURCE_WORDS[la.source] || la.source}`, la.rule && `Rule: ${la.rule}`, `Previous value: ${s(la.before)}`, `New value: ${s(la.after)}`, la.evidence_id && `Evidence: ${la.evidence_id}`].filter(Boolean).join('\n')
 }
-const FS = { duration: 'duration', delivery_mode: 'delivery', intakes: 'intakes', deadline: 'deadline', english: 'english', academic_entry: 'academic_entry', description: 'description', official_url: 'official_url', intl_fee_year: 'provider_tuition' }
+const FS = { duration: 'duration', delivery_mode: 'delivery', english: 'english', academic_entry: 'academic_entry', description: 'description', official_url: 'official_url', intl_fee_year: 'provider_tuition' }
 
 /** Cells of the columns this change adds. Existing columns keep their own cells. */
 export function renderCourseCell(key, row, { navigate } = {}) {
@@ -157,7 +187,9 @@ export function renderCourseCell(key, row, { navigate } = {}) {
     case 'duration': return row.duration_value != null ? `${Number(row.duration_value)} ${row.duration_unit || ''}`.trim() : <FieldState fs={fs.duration} />
     case 'delivery_mode': return row.delivery_mode ? String(row.delivery_mode).replaceAll('_', ' ') : <FieldState fs={fs.delivery} />
     case 'intl_fee_year': return row.intl_fee_year ? String(row.intl_fee_year) : <FieldState fs={fs.provider_tuition} />
-    case 'intakes': case 'deadline': case 'english': case 'academic_entry': case 'description': return <FieldState fs={fs[FS[key]]} />
+    case 'intakes': case 'intake_month': case 'intake_year': case 'commencement_date': case 'deadline': return intakeCell(key, row)
+    case 'english': case 'academic_entry': case 'description': return <FieldState fs={fs[FS[key]]} />
+    case 'last_published_at': return <Published row={row} />
     case 'official_url': return row.course_url ? <a className="cc-link" href={row.course_url} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} title={row.course_url}>Open page</a> : <FieldState fs={fs.official_url} />
     case 'has_scholarship': return row.has_scholarship == null ? <Unknown /> : row.has_scholarship ? 'Linked' : 'None linked'
     case 'adapter_state': return <Adapter row={row} navigate={navigate} />
@@ -169,14 +201,14 @@ export function renderCourseCell(key, row, { navigate } = {}) {
     case 'enrichment_status': { const e = row.enrichment; if (!e) return <Unknown />; return <span title="Field items: filled, waiting for review, failed, pending">{fmtNumber(e.filled)} filled · {fmtNumber(e.review)} review · {fmtNumber(e.failed)} failed{e.pending ? ` · ${fmtNumber(e.pending)} pending` : ''}</span> }
     case 'last_admitted_field': return row.last_admitted ? <span title={admissionTitle(row.last_admitted)}>{String(row.last_admitted.field).replaceAll('_', ' ')} · {SOURCE_WORDS[row.last_admitted.source] || row.last_admitted.source}</span> : <Unknown title={admissionTitle(null)} />
     case 'created_at': return row.created_at ? fmtDate(row.created_at) : <Unknown />
-    case 'last_modified_at': return when(row.last_modified_at ?? row.updated_at, 'No persisted change recorded')
+    case 'last_modified_at': { const v = row.last_modified_at ?? row.updated_at; return v ? <span data-modified title={`The course record itself, as its writers recorded it: ${fmtDateTime(v)}. Values held in other tables (fees, intakes, English requirements) change Last data admitted, not this.`}>{fmtDateTime(v)}</span> : <Unknown title="No change of the course record is recorded" /> }
     case 'last_admitted_at': return row.last_admitted_at ? <span data-admitted data-at={row.last_admitted_at} title={admissionTitle(row.last_admitted)}>{fmtDateTime(row.last_admitted_at)}</span> : <span data-admitted="unknown"><Unknown title={admissionTitle(null)} /></span>
     case 'lifecycle_status': return row.lifecycle_status ? <StatusChip value={row.lifecycle_status} /> : '—'
     case 'publication_status': return row.publication_status ? <StatusChip value={row.publication_status} /> : '—'
     default: return undefined
   }
 }
-export const NEW_CELL_KEYS = new Set(['country_name', 'city_names', 'campus_count', 'duration', 'delivery_mode', 'intl_fee_year', 'intakes', 'deadline', 'english', 'academic_entry', 'description', 'official_url', 'has_scholarship',
+export const NEW_CELL_KEYS = new Set(['country_name', 'city_names', 'campus_count', 'duration', 'delivery_mode', 'intl_fee_year', 'intakes', 'intake_month', 'intake_year', 'commencement_date', 'last_published_at', 'deadline', 'english', 'academic_entry', 'description', 'official_url', 'has_scholarship',
   'adapter_state', 'adapter_last_read_at', 'adapter_result', 'page_stored', 'source_identity', 'layer4_status', 'enrichment_status', 'last_admitted_field', 'created_at', 'last_modified_at', 'last_admitted_at', 'lifecycle_status', 'publication_status'])
 
 /** The table columns for the person's layout, in their order, with their widths' limits. */

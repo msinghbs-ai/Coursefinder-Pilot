@@ -3,13 +3,15 @@
 -- Platform Admin decision 5 Nov 2026 19:14 §3. Contract and compatibility record: docs/course-catalogue-columns.md (this repository).
 -- What:
 --   1. Four settings (toolset pipeline, section "Course catalogue") bound a saved table layout: size, columns, narrowest and widest column.
---   2. pipeline.admin_table_columns: the column registry a saved layout is checked against (the Course catalogue's 36 columns).
+--   2. pipeline.admin_table_columns: the column registry a saved layout is checked against (the Course catalogue's 40 columns).
 --   3. pipeline.admin_table_layouts: one saved layout per person and screen (visible columns, order, widths, sort, direction), with the layout
 --      before the last save or reset kept for "Restore last saved". RLS on, no grants: read and written only by public.admin_table_layout, which
 --      always acts on the caller's own row (user_id = auth.uid()); any assigned role (Viewer and above) may save its own layout.
 --   4. courses_page, additive: every page gets the course's Adapter status, Last modified, Last data admitted (with the field, source, evidence,
 --      before and after), campus cities with state and country, stored page, field states, open Layer 4 items and enrichment counts, read by one
---      set-based query over the page's ids (security.course_list_extras_v1). Two new sort keys over the whole filtered set: admitted, adapter.
+--      set-based query over the page's ids (security.course_list_extras_v1), the course's intakes as the website builds them (month, year,
+--      start date, deadline), and when its item last changed in the website and Zoho feeds (pipeline.website_sync_items, zoho_sync_items;
+--      read only). Two new sort keys over the whole filtered set: admitted, adapter.
 --      Existing fields, sort keys, filters, paging and totals are unchanged.
 --   5. The two new sorts run set-based over the filtered set (one aggregate of the admission ledgers, one join of the adapter tables), never
 --      per course; four indexes on pipeline ledgers keep the page's own lookups indexed.
@@ -94,7 +96,10 @@ insert into pipeline.admin_table_columns(screen, key, grp, label, sort, sort_key
  ('courses', 'intl_fee_amount', 'Course information', 'International fee', 120, 'intl_fee', true, 190, 110, false),
  ('courses', 'fee_amount', 'Course information', 'Tuition (registered, CRICOS)', 130, 'fee', true, 150, 100, false),
  ('courses', 'intl_fee_year', 'Course information', 'Fee year', 140, null, false, 100, 80, false),
- ('courses', 'intakes', 'Course information', 'Intakes', 150, null, false, 150, 100, false),
+ ('courses', 'intakes', 'Course information', 'Intakes', 150, null, false, 160, 100, false),
+ ('courses', 'intake_month', 'Course information', 'Intake month', 152, null, false, 130, 90, false),
+ ('courses', 'intake_year', 'Course information', 'Intake year', 154, null, false, 110, 80, false),
+ ('courses', 'commencement_date', 'Course information', 'Exact commencement date', 156, null, false, 170, 110, false),
  ('courses', 'deadline', 'Course information', 'Application deadline', 160, null, false, 160, 100, false),
  ('courses', 'english', 'Course information', 'English requirements', 170, null, false, 160, 100, false),
  ('courses', 'academic_entry', 'Course information', 'Academic entry requirements', 180, null, false, 170, 100, false),
@@ -112,13 +117,17 @@ insert into pipeline.admin_table_columns(screen, key, grp, label, sort, sort_key
  ('courses', 'enrichment_status', 'Pipeline and enrichment', 'Enrichment', 300, null, false, 170, 110, false),
  ('courses', 'last_admitted_field', 'Pipeline and enrichment', 'Last successful field admission', 310, null, false, 220, 130, false),
  ('courses', 'created_at', 'Lifecycle and timestamps', 'Created', 320, null, false, 140, 100, false),
- ('courses', 'last_modified_at', 'Lifecycle and timestamps', 'Last modified', 330, 'modified', true, 150, 110, false),
+ ('courses', 'last_modified_at', 'Lifecycle and timestamps', 'Course record updated (as recorded)', 330, 'modified', true, 150, 110, false),
  ('courses', 'last_admitted_at', 'Lifecycle and timestamps', 'Last data admitted', 340, 'admitted', true, 160, 110, false),
+ ('courses', 'last_published_at', 'Lifecycle and timestamps', 'Last published (website feed)', 345, null, false, 170, 110, false),
  ('courses', 'lifecycle_status', 'Lifecycle and timestamps', 'Lifecycle status', 350, null, false, 130, 90, false),
  ('courses', 'publication_status', 'Lifecycle and timestamps', 'Publication', 360, null, false, 130, 90, false)
 on conflict (screen, key) do nothing;
 
--- the Last data admitted column and detail: one indexed lookup per ledger and page course
+-- the Last data admitted column and detail: one indexed lookup per ledger and page course. Each build holds its table's write lock while it runs
+-- (measured on production-volume fixtures: 24 ms for field_enrich_items, 171,004 rows; under 25 ms for the others). The builds wait for writers
+-- already holding the table; the lock wait is bounded so a busy minute fails the migration cleanly instead of queueing the pipeline behind it.
+set local lock_timeout = '5s'; -- fixed: deploy-time safety, not a pipeline control (a busy minute fails cleanly; apply again in a quiet minute)
 create index if not exists field_enrich_items_course_filled_idx on pipeline.field_enrich_items (course_id, updated_at desc) where state = 'filled';
 create index if not exists adapter_overwrite_changes_course_at_idx on pipeline.adapter_overwrite_changes (course_id, at desc);
 create index if not exists layer4_admission_checks_entity_admitted_idx on pipeline.layer4_admission_checks (entity_id, decided_at desc) where admitted;
@@ -233,7 +242,9 @@ AS $function$
       'identity', p.identity_basis, 'read_at', p.read_at, 'evidence_id', p.evidence_id) end,
     'field_states', coalesce(fs.states, '{}'::jsonb),
     'layer4_open', l4.n,
-    'enrichment', en.counts)
+    'enrichment', en.counts,
+    'intakes', coalesce(ik.intakes, '[]'::jsonb),
+    'published', pb.published)
   from unnest(p_ids) ids(id)
   join catalogue.courses c on c.id = ids.id
   left join pipeline.uni_adapters u on u.provider_id = c.provider_id
@@ -263,6 +274,25 @@ AS $function$
       left join lateral (select fl.reason_code from pipeline.enrichment_flags fl where fl.entity = 'course' and fl.entity_key = c.id::text and fl.field = a.attribute and fl.state = 'raised' order by fl.id limit 1) f on true
      where a.course_id = c.id) fs on true
   left join lateral (select count(*)::int n from pipeline.layer4_interventions li where li.course_id = c.id and li.status in ('ai_pending', 'awaiting_input', 'resuming')) l4 on true
+  -- intakes as the website builds them (active course_intakes; month read from the label with the website's own rule), with how precise the
+  -- start is and the deadline kind where the intake-dates job recorded them; nothing is filled in
+  left join lateral (
+    select jsonb_agg(jsonb_build_object('label', i.intake_label, 'year', i.intake_year,
+             'month', coalesce(extract(month from i.start_date)::int, api.website_v2_label_month(i.intake_label)),
+             'start_date', i.start_date, 'application_deadline', i.application_deadline,
+             'start_precision', d.start_precision, 'deadline_kind', d.deadline_kind, 'deadline_text', d.deadline_text)
+           order by i.intake_year nulls last, coalesce(extract(month from i.start_date)::int, api.website_v2_label_month(i.intake_label)) nulls last, i.start_date nulls last, i.intake_label) intakes
+      from catalogue.course_intakes i left join pipeline.course_intake_dates d on d.intake_id = i.id
+     where i.course_id = c.id and i.status = 'active') ik on true
+  left join (
+    -- the last change of the course's item in the website and Zoho feeds (a new, changed or removed item; an unchanged re-check is not a change)
+    select x.ref_id, jsonb_build_object(
+             'website_at', max(x.seq_at) filter (where x.feed = 'website'), 'website_removed', bool_or(x.removed_at is not null) filter (where x.feed = 'website'),
+             'zoho_at', max(x.seq_at) filter (where x.feed = 'zoho'), 'zoho_removed', bool_or(x.removed_at is not null) filter (where x.feed = 'zoho')) published
+      from (select 'website' feed, w.ref_id, w.seq_at, w.removed_at from pipeline.website_sync_items w where w.entity = 'course' and w.ref_id = any(p_ids)
+            union all
+            select 'zoho', z.ref_id, z.seq_at, z.removed_at from pipeline.zoho_sync_items z where z.entity = 'course' and z.ref_id = any(p_ids)) x
+     group by x.ref_id) pb on pb.ref_id = c.id
   left join lateral (select jsonb_build_object('filled', count(*) filter (where e.state = 'filled'), 'review', count(*) filter (where e.state = 'review'),
       'failed', count(*) filter (where e.state = 'failed'), 'pending', count(*) filter (where e.state in ('queued', 'waiting', 'ai', 'leased'))) counts
       from pipeline.field_enrich_items e where e.course_id = c.id) en on true
@@ -453,7 +483,7 @@ begin
   v := pg_get_functiondef('security.admin_course_page_fast_base(jsonb)'::regprocedure);
   if position($p$v_sort='admitted' and v_dir='desc' then adm.at$p$ in v) = 0 or position($p$v_sort='adapter' and v_dir='asc'$p$ in v) = 0 or position('b.last_verified_at,b.provider_id from base b' in v) = 0 then raise exception 'Course Catalogue columns post-check: sort keys missing'; end if;
   if position($p$v_sort='modified' and v_dir='desc' then updated_at end desc$p$ in v) = 0 or position('matched as materialized' in v) = 0 or position('lower(canonical_title),id' in v) = 0 then raise exception 'Course Catalogue columns post-check: existing sort or page-first changed'; end if;
-  if (select count(*) from pipeline.admin_table_columns where screen = 'courses') <> 36 then raise exception 'Course Catalogue columns post-check: registry incomplete'; end if;
+  if (select count(*) from pipeline.admin_table_columns where screen = 'courses') <> 40 then raise exception 'Course Catalogue columns post-check: registry incomplete'; end if;
   if (select count(*) from pipeline.platform_toolset_settings where toolset_key = 'pipeline' and key like 'catalogue_layout.%') <> 4 then raise exception 'Course Catalogue columns post-check: settings missing'; end if;
   if has_table_privilege('authenticated', 'pipeline.admin_table_layouts', 'select') or has_table_privilege('anon', 'pipeline.admin_table_layouts', 'select') then raise exception 'Course Catalogue columns post-check: layouts readable directly'; end if;
   if has_function_privilege('anon', 'public.admin_table_layout(text,jsonb)', 'execute') then raise exception 'Course Catalogue columns post-check: anon can call the layout RPC'; end if;

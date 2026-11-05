@@ -20,7 +20,7 @@ begin execute p_sql; return false; exception when others then return sqlstate = 
 begin;
 -- 1, 4, 5: show and hide, reset, reorder and resize are a saved layout; 2: persisted; 12: any assigned role, own row only
 select pg_temp.ok((pg_temp.layout('viewer', 'read', '{"screen": "courses"}') -> 'layout') = 'null'::jsonb, 'a person with no saved layout reads none (default applies)');
-select pg_temp.ok(jsonb_array_length(pg_temp.layout('viewer', 'read', '{"screen": "courses"}') -> 'registry') = 36, 'the registry lists the 36 Course catalogue columns');
+select pg_temp.ok(jsonb_array_length(pg_temp.layout('viewer', 'read', '{"screen": "courses"}') -> 'registry') = 40, 'the registry lists the 40 Course catalogue columns');
 select pg_temp.ok((pg_temp.layout('viewer', 'read', '{"screen": "courses"}') -> 'limits' ->> 'max_columns')::int = 60, 'limits come from the catalogue_layout settings');
 select pg_temp.ok((pg_temp.layout('viewer', 'save', '{"screen": "courses", "layout": {"version": 1, "columns": ["canonical_title", "last_admitted_at", "adapter_state", "city_names"], "widths": {"canonical_title": 280, "city_names": 200}, "sort": "admitted", "direction": "desc"}}') ->> 'saved')::boolean,
   'a Viewer (read-only role) saves its own layout: hidden columns, new order, widths, sort');
@@ -71,6 +71,15 @@ select pg_temp.ok((pg_temp.item(pg_temp.page('viewer', '{"query": "Modified Afte
 select pg_temp.ok(pg_temp.item(pg_temp.page('viewer', '{"query": "Modified After"}'), pg_temp.u('k_fresh')) -> 'last_admitted' ->> 'field' = 'english', 'the admission names its field and source');
 select pg_temp.ok(pg_temp.item(pg_temp.page('viewer', '{"query": "Never Admitted"}'), pg_temp.u('k_unknown')) -> 'last_admitted_at' = 'null'::jsonb, 'with no admission record the value is null (shown as Unknown), never a guessed date');
 select pg_temp.ok((pg_temp.item(pg_temp.page('viewer', '{"query": "Kestrel Completed"}'), pg_temp.u('k_completed')) ->> 'last_admitted_at')::timestamptz = '2026-10-20 10:00+11', 'an intake date filled counts; the skipped one after it does not');
+-- intakes as the website builds them, and the feeds
+select pg_temp.ok((select string_agg(coalesce(x ->> 'month', '-') || '/' || coalesce(x ->> 'year', '-') || '/' || coalesce(x ->> 'start_date', '-') || '/' || coalesce(x ->> 'application_deadline', '-'), ' ') from jsonb_array_elements(pg_temp.item(pg_temp.page('viewer', '{"query": "Kestrel Completed"}'), pg_temp.u('k_completed')) -> 'intakes') x)
+  = '2/2027/2027-02-24/2026-12-15 7/2027/-/-', 'intakes: month from the start date or the label, year, start and deadline as held; nothing filled in');
+select pg_temp.ok(pg_temp.item(pg_temp.page('viewer', '{"query": "Kestrel Completed"}'), pg_temp.u('k_completed')) -> 'intakes' -> 0 ->> 'start_precision' = 'day', 'the start''s precision comes from the intake-dates record');
+select pg_temp.ok(pg_temp.item(pg_temp.page('viewer', '{"query": "Never Admitted"}'), pg_temp.u('k_unknown')) -> 'intakes' = '[]'::jsonb, 'a course with no intake has none (never a made-up one)');
+select pg_temp.ok((pg_temp.item(pg_temp.page('viewer', '{"query": "Kestrel Completed"}'), pg_temp.u('k_completed')) -> 'published' ->> 'website_at')::timestamptz = '2026-11-02 10:00+11'
+  and pg_temp.item(pg_temp.page('viewer', '{"query": "Kestrel Completed"}'), pg_temp.u('k_completed')) -> 'published' ->> 'zoho_at' is null, 'Last published is the website feed''s last change of the item; no Zoho item, none shown');
+select pg_temp.ok((pg_temp.item(pg_temp.page('viewer', '{"query": "Kestrel Failed"}'), pg_temp.u('k_failed')) -> 'published' ->> 'website_removed')::boolean, 'a withdrawn feed item says so');
+select pg_temp.ok(pg_temp.item(pg_temp.page('viewer', '{"query": "Never Admitted"}'), pg_temp.u('k_unknown')) -> 'published' = 'null'::jsonb, 'a course with no feed item has no published time');
 -- field states
 select pg_temp.ok((select string_agg(k || '=' || (v ->> 'state'), ' ' order by k) from jsonb_each(pg_temp.item(pg_temp.page('viewer', '{"query": "Modified After"}'), pg_temp.u('k_fresh')) -> 'field_states') x(k, v))
   = 'deadline=review description=pending english=populated intakes=held official_url=failed provider_tuition=not_applicable', 'field states: populated, pending, review, held, failed, not applicable');

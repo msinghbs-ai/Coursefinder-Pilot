@@ -4,7 +4,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
-import { COURSE_COLUMNS, GROUPS, defaultLayout, normaliseLayout, moveColumn, toggleColumn, citySummary, sortSentence } from '../../src/catalogue-columns.js'
+import { COURSE_COLUMNS, GROUPS, defaultLayout, normaliseLayout, moveColumn, toggleColumn, citySummary, sortSentence, intakeSummary, intakeName } from '../../src/catalogue-columns.js'
 
 const MIG = fs.readFileSync('supabase/migrations/20261106300000_cf247_course_catalogue_columns.sql', 'utf8')
 const UI = fs.readFileSync('src/mature-main.jsx', 'utf8')
@@ -12,7 +12,7 @@ const UI = fs.readFileSync('src/mature-main.jsx', 'utf8')
 test('the screen registry equals the database registry the server checks a layout against', () => {
   const rows = [...MIG.matchAll(/\('courses', '([a-z0-9_]+)', '([^']+)', '([^']+)', (\d+), (?:'([a-z_]+)'|null), (true|false), (\d+), (\d+), (true|false)\)/g)]
     .map(m => ({ key: m[1], group: m[2], label: m[3], sortKey: m[5] || null, defaultVisible: m[6] === 'true', width: +m[7], minWidth: +m[8], alwaysVisible: m[9] === 'true' }))
-  expect(rows).toHaveLength(36)
+  expect(rows).toHaveLength(40)
   expect(COURSE_COLUMNS.map(({ header, ...c }) => ({ ...c, sortKey: c.sortKey || null }))).toEqual(rows)
   expect(new Set(COURSE_COLUMNS.map(c => c.group))).toEqual(new Set(GROUPS))
 })
@@ -34,6 +34,8 @@ test('a saved layout is made safe before use; show, hide and move keep the cours
   expect(moveColumn(['a', 'b', 'c'], 'c', -1)).toEqual(['a', 'c', 'b'])
   expect(citySummary([{ city: 'Richmond', subdivision_code: 'AU-VIC' }, { city: 'Richmond', subdivision_code: 'AU-NSW' }]).short).toBe('Richmond (VIC) +1')
   expect(sortSentence('admitted', 'desc')).toBe('Last data admitted, newest first (Unknown last)')
+  expect(intakeSummary([{ month: 2, year: 2027 }, { label: 'July', month: 7, year: 2027 }, { label: 'Rolling' }]).short).toBe('Feb 2027 +2')
+  expect(intakeName({ label: 'Summer school' })).toBe('Summer school')
 })
 
 test.describe('mocked browser', () => {
@@ -60,7 +62,7 @@ test.describe('mocked browser', () => {
     await expect(page.locator('[data-admitted="unknown"]').first()).toHaveText('Unknown')
     await page.locator('[data-columns-toggle]').click()
     for (const g of GROUPS) await expect(page.locator(`[data-columns-group="${g}"]`)).toBeVisible()
-    await expect(page.locator('[data-columns-count]')).toHaveText('14 of 36')
+    await expect(page.locator('[data-columns-count]')).toHaveText('14 of 40')
     await expect(page.locator('[data-col-toggle="canonical_title"]')).toBeDisabled()
     await page.getByLabel('Search columns').fill('adapter')
     await expect(page.locator('[data-col-toggle]')).toHaveCount(3)

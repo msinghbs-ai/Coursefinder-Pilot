@@ -59,9 +59,22 @@ Each is written only when a value actually reached the catalogue (read from the 
 
 Not used: scheduled reads (`coverage_course_pages.read_at`, `uni_adapter_results.at`), proposals and review items, `skipped`/`failed`/`review` items, retracted values, search projection refreshes (`search.course_documents.updated_at`), and the hourly coverage build (`computed_at`).
 
-### 1.6 Last modified
+### 1.6 Last modified ("Course record updated (as recorded)")
 
-`catalogue.courses.updated_at`. There is no trigger on `catalogue.courses` that stamps it; every writer read sets `updated_at = now()` in the same `update … where <value empty or different>` that writes the value, so an unchanged update does not move it. Limitation recorded: the largest single minute is 3 Nov 2026 02:23 UTC (11,149 courses), the course-description admission (`20261103110000`, a real write of empty descriptions). The record carries no history table, so Last modified is the record's own persisted stamp and nothing is inferred beyond it.
+`catalogue.courses.updated_at`, shown as "Course record updated (as recorded)" with a tooltip saying it is the course record itself as its writers recorded it. There is no trigger on `catalogue.courses` that stamps it (only `manual_lock_guard`), so it depends on each writer setting it. None is added: Zoho and website consumers may filter on `updated_at`, and changing its meaning would touch the frozen consumer API (Integration Controller, CC-3 review).
+
+Measured read-only on production (5 Nov 2026 20:16 AEDT). For every course whose fields held on the course record itself were admitted, the latest admission per course and field was compared with `updated_at`:
+
+| Admitted field (writer) | Courses | `updated_at` at or after the admission | Older than the admission |
+|---|---|---|---|
+| Delivery (adapter overwrite) | 12,170 | 12,170 | 0 |
+| Field of study (Enrich fields) | 11,218 | 11,218 | 0 |
+| Delivery (Enrich fields) | 10,922 | 10,922 | 0 |
+| International (Enrich fields) | 7,964 | 7,964 | 0 |
+| Duration (Enrich fields) | 4,071 | 4,071 | 0 |
+| Level (Enrich fields) | 400 | 400 | 0 |
+
+46,745 of 46,745 (100%): every recorded writer of the course record stamps it. Limits that stay: a write with no admission record cannot be checked this way; bulk real writes count (for example the 3 Nov 2026 description admission, 11,149 courses in one minute); values held in other tables (fees, intakes, English) never move it. 1,911 active courses have an admission after their record's last update for that reason, so Last data admitted is the column for "what changed recently".
 
 ### 1.7 Mobile and performance constraints
 
@@ -143,8 +156,11 @@ Default layout = the 11 columns shown today, in today's order, keys and headings
 | Course information | `intl_fee_amount` | International fee | intl_fee | yes |
 | Course information | `fee_amount` | Tuition (registered, CRICOS) (heading: Tuition Only; Australian lists only, as today) | fee | yes |
 | Course information | `intl_fee_year` | Fee year | – | |
-| Course information | `intakes` | Intakes | – | |
-| Course information | `deadline` | Application deadline | – | |
+| Course information | `intakes` | Intakes ("Feb 2027 +1", expands to every intake with its start and deadline) | – | |
+| Course information | `intake_month` | Intake month | – | |
+| Course information | `intake_year` | Intake year | – | |
+| Course information | `commencement_date` | Exact commencement date | – | |
+| Course information | `deadline` | Application deadline (dates held, else Rolling, else the field state) | – | |
 | Course information | `english` | English requirements | – | |
 | Course information | `academic_entry` | Academic entry requirements | – | |
 | Course information | `has_scholarship` | Scholarships | – | |
@@ -161,16 +177,19 @@ Default layout = the 11 columns shown today, in today's order, keys and headings
 | Pipeline and enrichment | `enrichment_status` | Enrichment | – | |
 | Pipeline and enrichment | `last_admitted_field` | Last successful field admission | – | |
 | Lifecycle and timestamps | `created_at` | Created | – | |
-| Lifecycle and timestamps | `last_modified_at` | Last modified | modified | yes |
+| Lifecycle and timestamps | `last_modified_at` | Course record updated (as recorded) | modified | yes |
 | Lifecycle and timestamps | `last_admitted_at` | Last data admitted | admitted | yes |
+| Lifecycle and timestamps | `last_published_at` | Last published (website feed) | – | |
 | Lifecycle and timestamps | `lifecycle_status` | Lifecycle status | – | |
 | Lifecycle and timestamps | `publication_status` | Publication | – | |
 
+Intakes (Integration Controller CC-3 review, 5 Nov 2026): the four intake columns read the active `catalogue.course_intakes` rows, which are the rows the website's `intake_options` are built from (`api.website_v2_course_item` returns label, month, year, start date and deadline). The month is taken from the start date, else from the label by the website's own rule (`api.website_v2_label_month`, read only), so the screen and the website name the same month. Start dates are held only where the intake-dates job read an exact day (`pipeline.course_intake_dates.start_precision = 'day'` for every filled start in production: 523 of 31,828 active intakes). A rolling deadline shows "Rolling" from that job's record. Nothing is filled in: no month, year or date shows "Not held"; a course with no intake shows its field state. Production, read only: 31,828 active intakes; 1,185 with a year, 523 with a start date, 782 with a deadline.
+
+Last published: `pipeline.website_sync_items` (and `zoho_sync_items`) keep one item per course in each feed, and `seq_at` moves only when the item is new, its content hash changed or it was withdrawn (`security.website_sync_check_v1`; an unchanged re-check and the freshness timestamps do not count). That is a truthful "last published change", so the column shows the website feed's time and the tooltip the Zoho feed's; "Withdrawn" when the item was removed; "Not in the website feed" when there is none. Read only, by one aggregate over the page's ids. `pipeline.course_intake_date_events.publication_state` was considered and not used: it records whether one intake value reached the search projection, not when the course was published.
+
 Not offered (mandate §2 "expose only fields supported by existing verified data contracts"):
 
-- **Intake month, Intake year, Exact commencement date.** The list projection has no verified per-course month, year or date contract. The Intakes column shows the field state; the dates stay on the course blade.
 - **Last source update.** No record says when a source page's content changed: a read time is not a source update.
-- **Last published.** `search.course_documents` is rewritten by every search refresh, so its time would show a catalogue refresh as a publication.
 
 ### 2.3 Field-state display (mandate §7)
 
@@ -203,7 +222,7 @@ From `course_attribute_coverage` and `enrichment_flags`, computed in the project
 | **Replaces** | Nothing. The browser-only layout stays as the fallback. |
 | **Retires** | Nothing. |
 | **Conflicts** | None found. No other agent owns these functions or files (ownership table 19:14). No scheduler, reader, controller or dashboard is added. |
-| **Protects** | Course lifecycle processing, adapters and enrichment (read only: nothing written to their tables); search and index refresh (not touched); manual locks and admission controls (not read for writing, never changed); filters and paging (same arguments, same rows, same order for existing sort keys); existing personal settings (localStorage never removed or overwritten); the consumer API (no `website_*`, `zoho_*`, `api.*` function, edge function or consumer table column is touched; the new objects are admin-only). Background automation plans and admission authority are unchanged. |
+| **Protects** | Course lifecycle processing, adapters and enrichment (read only: nothing written to their tables); search and index refresh (not touched); manual locks and admission controls (not read for writing, never changed); filters and paging (same arguments, same rows, same order for existing sort keys); existing personal settings (localStorage never removed or overwritten); the consumer API (no `website_*`, `zoho_*`, `api.*` function, edge function or consumer table column is touched; the new objects are admin-only; `api.website_v2_label_month`, `pipeline.website_sync_items` and `zoho_sync_items` are only read, and no index is added to them; `catalogue.courses.updated_at` keeps its meaning, no trigger is added). Background automation plans and admission authority are unchanged. |
 | **Validates** | §4 below. |
 
 ## 4. Tests and evidence (CC-2)
@@ -212,12 +231,13 @@ From `course_attribute_coverage` and `enrichment_flags`, computed in the project
 
 | Step | Result (local run 5 Nov 2026, PostgreSQL 16) |
 |---|---|
-| Production-schema parity: 39 tables (columns and types, not-null, constraints, every foreign key, indexes, triggers, RLS, policies, grants) fingerprinted with `parity.sql` and compared with `production-parity.txt` (read from production 19:30 AEDT) | identical, table by table |
-| The 8 live definitions the change reads or edits rebuilt byte for byte | md5 = production for all 8 |
+| Production-schema parity: 42 tables (columns and types, not-null, constraints, every foreign key, indexes, triggers, RLS, policies, grants) fingerprinted with `parity.sql` and compared with `production-parity.txt` (read from production 19:30 AEDT) | identical, table by table |
+| The 9 live definitions the change reads or edits rebuilt byte for byte (with the website's month rule) | md5 = production for all 9 |
 | Production-volume data through the production constraints | 35,712 courses, 1,203 providers, 171,004 field items, 34,000 overwrites, 214,206 field states |
 | Migration applied, then applied again | second run reports both edits already applied; definitions and rows unchanged |
 | Backward compatibility: 13 argument sets the screen sends, before and after (same rows, same order, every existing field equal, same total and metadata) | 13 PASS |
-| Database cases (layouts, roles, refusals, cities, adapter status, timestamps, field states, server-side sort across pages) | 50 PASS |
+| Database cases (layouts, roles, refusals, cities, adapter status, timestamps, intakes, feeds, field states, server-side sort across pages) | 56 PASS |
+| Index builds, each timed and rolled back before the migration, at production volume | `field_enrich_items` (171,004 rows) 24–28 ms; `adapter_overwrite_changes` (34,001) 17–23 ms; `layer4_admission_checks` 3 ms; `course_intake_date_events` 2 ms |
 | Benchmark, as a signed-in person, three runs each (middle shown) | course 77 ms; Last data admitted 124 ms (offset 17,000: 143 ms; 200 rows: 176 ms); Adapter 242 ms; Last modified 68 ms; Provider 72 ms; City 1,881 ms (existing sort, unchanged); with the Victoria state filter: Last data admitted 2,234 ms against 1,927 ms for today's course sort with the same filter (the state filter is today's cost). All under the 3,000 ms budget. The first, per-course version measured 891 ms locally and 2,488 ms in CI (PostgreSQL 17); it was replaced by the set-based sort. |
 
 ### 4.2 Browser to PostgreSQL (`tests/integration/course-columns-postgres.spec.mjs`, real Admin UI, desktop and phone)
@@ -227,7 +247,7 @@ From `course_attribute_coverage` and `enrichment_flags`, computed in the project
 | 1 show and hide, 2 persist, 3 restore after sign-out and sign-in, 5 reorder and resize | show, hide, keyboard reorder and keyboard resize saved; a new browser context (no local storage) for the same person gets the same layout and width back | PASS |
 | 4 reset to default | Reset, then Restore last saved | PASS |
 | 6 server-side sort across pages, 9, 10 | Last data admitted oldest first and newest first over 34,832 active courses; page 2 continues page 1; sort kept with the layout | PASS |
-| 7 multiple cities, 8 adapter status, 9 modified versus admitted, 10 no fabricated timestamps | Melbourne (VIC) +2 expanding to Richmond (NSW) and Richmond (VIC), no Geelong; Processing, Completed, Failed, Ready, Held, Not configured; 4 Nov modified against 1 Oct admitted; Unknown | PASS |
+| 7 multiple cities, 8 adapter status, 9 modified versus admitted, 10 no fabricated timestamps | Melbourne (VIC) +2 expanding to Richmond (NSW) and Richmond (VIC), no Geelong; Processing, Completed, Failed, Ready, Held, Not configured; 4 Nov record update against 1 Oct admitted; Unknown; intakes "Feb 2027 +1" expanding with start and deadline, month, year, exact start, deadline; Last published from the website feed, Withdrawn, Not in the website feed | PASS |
 | 12 read-only roles and permission boundaries | a Viewer saves its own layout; the Platform Admin's layout is untouched and the other way round | PASS |
 | 11 search, filters, paging, 15 backward compatibility | 697 pages, Next and Previous, CRICOS code search, provider sort, row click opens the course | PASS |
 | 14 performance with many columns | all 36 columns shown, Last data admitted sort round trip under 3,000 ms, 50 rows | PASS |
@@ -253,5 +273,5 @@ Both rules run read-only on production, each a single SELECT in the heavy-read w
 
 - `docs/platform/TEST-REGISTER.md` was regenerated from a partial local run (agents do not run the full suite), so statuses outside this change read "not run"; the Controller regenerates it after the full run at integration, as the ownership rules say.
 - At release: re-read the two edited functions' md5s (`2dc6ee8ba523afeec04d862f3a2ced8a`, `afbef16111a09e3680061547bbb1329a`); the migration refuses to apply if either changed.
-- The four indexes are built inside the migration (not concurrently). `field_enrich_items` (171,000 rows) is the largest; a short write lock on the four ledgers while they build.
+- Index locks: each build holds its table's write lock only while it runs; measured above at under 30 ms, so `CREATE INDEX CONCURRENTLY` (a separate paste file run before the migration) is not needed. The real risk is waiting for a writer already holding the table, so the migration sets `lock_timeout` to 5 s (marked `-- fixed:`): a busy minute fails the migration cleanly and it is applied again. Deploy window: the writers of these tables run at :00/:05 (enrich-plan-run), :x3 (coverage-admit), :x5 (coverage-admit-intakes), :x9 (adapter-overwrite), :23 (field-gap-queue), :24/:54 (ops-controller), :26 (intake-dates-apply) and :41 (enrich-plan-auto); apply at :11–:12 or :31–:32, never at :26 or the :x6 heavy minutes.
 - Last modified is `catalogue.courses.updated_at`, the course record itself; a value written only to a child table (fee, intake, English) shows in Last data admitted, not in Last modified. There is no change history for the course record, so it shows the record's own persisted stamp: bulk real writes (for example the 3 Nov 2026 description admission on 11,149 courses) show as modifications.

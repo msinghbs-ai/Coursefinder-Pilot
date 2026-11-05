@@ -26,7 +26,7 @@ insert into public.ccol_baseline(n, args) values
 update public.ccol_baseline set result = pg_temp.page(args);
 \else
 do $$
-declare b record; a jsonb; n_new text[] := array['last_modified_at', 'last_admitted_at', 'last_admitted', 'duration_unit', 'cities', 'adapter', 'page', 'field_states', 'layer4_open', 'enrichment'];
+declare b record; a jsonb; n_new text[] := array['last_modified_at', 'last_admitted_at', 'last_admitted', 'duration_unit', 'cities', 'adapter', 'page', 'field_states', 'layer4_open', 'enrichment', 'intakes', 'published'];
   bad int; begin
   for b in select * from public.ccol_baseline order by n loop
     a := pg_temp.page(b.args);

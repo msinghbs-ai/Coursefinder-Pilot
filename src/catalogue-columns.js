@@ -22,7 +22,10 @@ export const COURSE_COLUMNS = [
   C('intl_fee_amount', 'Course information', 'International fee', 'intl_fee', true, 190, 110),
   C('fee_amount', 'Course information', 'Tuition (registered, CRICOS)', 'fee', true, 150, 100),
   C('intl_fee_year', 'Course information', 'Fee year', null, false, 100, 80),
-  C('intakes', 'Course information', 'Intakes', null, false, 150, 100),
+  C('intakes', 'Course information', 'Intakes', null, false, 160, 100),
+  C('intake_month', 'Course information', 'Intake month', null, false, 130, 90),
+  C('intake_year', 'Course information', 'Intake year', null, false, 110, 80),
+  C('commencement_date', 'Course information', 'Exact commencement date', null, false, 170, 110),
   C('deadline', 'Course information', 'Application deadline', null, false, 160, 100),
   C('english', 'Course information', 'English requirements', null, false, 160, 100),
   C('academic_entry', 'Course information', 'Academic entry requirements', null, false, 170, 100),
@@ -40,8 +43,9 @@ export const COURSE_COLUMNS = [
   C('enrichment_status', 'Pipeline and enrichment', 'Enrichment', null, false, 170, 110),
   C('last_admitted_field', 'Pipeline and enrichment', 'Last successful field admission', null, false, 220, 130),
   C('created_at', 'Lifecycle and timestamps', 'Created', null, false, 140, 100),
-  C('last_modified_at', 'Lifecycle and timestamps', 'Last modified', 'modified', true, 150, 110),
+  C('last_modified_at', 'Lifecycle and timestamps', 'Course record updated (as recorded)', 'modified', true, 150, 110),
   C('last_admitted_at', 'Lifecycle and timestamps', 'Last data admitted', 'admitted', true, 160, 110),
+  C('last_published_at', 'Lifecycle and timestamps', 'Last published (website feed)', null, false, 170, 110),
   C('lifecycle_status', 'Lifecycle and timestamps', 'Lifecycle status', null, false, 130, 90),
   C('publication_status', 'Lifecycle and timestamps', 'Publication', null, false, 130, 90),
 ]
@@ -90,7 +94,7 @@ export const ADAPTER_STATES = {
   ready: ['Ready', 'info'], processing: ['Processing', 'info'], completed: ['Completed', 'success'], held: ['Held', 'warning'], failed: ['Failed', 'danger'], not_configured: ['Not configured', 'neutral'],
 }
 export const SORT_WORDS = { course: 'Course', provider: 'Provider', city: 'City', field: 'Field', intl_fee: 'International fee', fee: 'Tuition Only', completeness: 'Completeness',
-  verified: 'Verified', modified: 'Last modified', admitted: 'Last data admitted', adapter: 'Adapter status' }
+  verified: 'Verified', modified: 'Course record updated', admitted: 'Last data admitted', adapter: 'Adapter status' }
 const TIME_SORTS = new Set(['modified', 'admitted', 'verified'])
 export function sortSentence(sort, direction) {
   const w = SORT_WORDS[sort] || sort
@@ -105,3 +109,18 @@ export function citySummary(cities) {
   const names = [...new Set(list.map(label))]
   return { names, short: names.length ? (names.length > 1 ? `${names[0]} +${names.length - 1}` : names[0]) : '' }
 }
+
+const MONTH = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+/** One intake as the website names it: "Feb 2027", the label when no month is held, never a guessed month or year. */
+export function intakeName(i) {
+  if (!i) return ''
+  const m = Number(i.month) >= 1 && Number(i.month) <= 12 ? MONTH[Number(i.month) - 1] : null
+  return [m || i.label || '', i.year || ''].filter(Boolean).join(' ').trim()
+}
+/** "Feb 2027 +1" over a course's intakes; list holds every intake's full line. */
+export function intakeSummary(intakes) {
+  const list = (Array.isArray(intakes) ? intakes : []).map(intakeName).filter(Boolean)
+  const names = [...new Set(list)]
+  return { names, short: names.length ? (names.length > 1 ? `${names[0]} +${names.length - 1}` : names[0]) : '' }
+}
+export const monthName = n => (Number(n) >= 1 && Number(n) <= 12 ? MONTH[Number(n) - 1] : null)

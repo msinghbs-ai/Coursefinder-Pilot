@@ -11,7 +11,7 @@ do $$ begin
   if not exists (select 1 from pg_roles where rolname = 'service_role') then create role service_role nologin bypassrls; end if;
 end $$;
 create schema auth; create schema extensions; create schema ref; create schema catalogue; create schema scholarship; create schema search;
-create schema security; create schema pipeline; create schema pim;
+create schema security; create schema pipeline; create schema pim; create schema api;
 grant usage on schema public, auth, security, pipeline, catalogue, ref, search, scholarship to authenticated, anon;
 create function extensions.gen_random_uuid() returns uuid language sql volatile as 'select pg_catalog.gen_random_uuid()';
 -- Supabase auth: the JWT subject, as PostgREST sets it
@@ -455,3 +455,26 @@ CREATE TRIGGER fee_admitted_recheck_settle AFTER UPDATE OF state ON pipeline.enr
 CREATE TRIGGER coverage_page_refused_host_zz_cricos BEFORE INSERT OR UPDATE OF url, status, identity_basis ON pipeline.coverage_course_pages FOR EACH ROW EXECUTE FUNCTION security.cricos_identity_guard_trg_v1();
 CREATE TRIGGER enrichment_flags_first BEFORE INSERT OR UPDATE ON pipeline.enrichment_flags FOR EACH ROW EXECUTE FUNCTION security.enrichment_flags_first_v1();
 CREATE TRIGGER intake_failure_class BEFORE INSERT ON pipeline.course_intake_date_events FOR EACH ROW EXECUTE FUNCTION security.intake_failure_class_trg_v1();
+
+-- the intake-dates job's record per intake, and the website and Zoho feeds (read only by this change)
+create table pipeline.course_intake_dates (intake_id uuid not null, course_id uuid not null, provider_id uuid not null, proposal_id uuid, outcome text not null, reason text, periods text[], start_precision text, deadline_kind text, deadline_text text, start_quote text, deadline_quote text, before_value jsonb, after_value jsonb, applied_at timestamp with time zone default now() not null, page_quote text, calendar_evidence_id uuid, calendar_url text, rule text, calendar_set text, inputs_fp text, next_action text, next_revisit_at timestamp with time zone, failure_class text, deterministic boolean, revisit_trigger text, evidence_year integer, reader text, related_case text, publication_state text, publication_checked_at timestamp with time zone, publication_attempts integer default 0 not null);
+alter table pipeline.course_intake_dates add constraint course_intake_dates_pkey PRIMARY KEY (intake_id);
+alter table pipeline.course_intake_dates add constraint course_intake_dates_start_precision_check CHECK ((start_precision = ANY (ARRAY['day'::text, 'year'::text, 'month'::text])));
+alter table pipeline.course_intake_dates add constraint course_intake_dates_deadline_kind_check CHECK ((deadline_kind = ANY (ARRAY['date'::text, 'rolling'::text, 'not_stated'::text])));
+alter table pipeline.course_intake_dates add constraint course_intake_dates_intake_id_fkey FOREIGN KEY (intake_id) REFERENCES catalogue.course_intakes(id);
+alter table pipeline.course_intake_dates add constraint course_intake_dates_outcome_check CHECK ((outcome = ANY (ARRAY['filled'::text, 'nothing_new'::text, 'skipped'::text])));
+CREATE INDEX course_intake_dates_course_idx ON pipeline.course_intake_dates USING btree (course_id);
+CREATE INDEX course_intake_dates_publication_idx ON pipeline.course_intake_dates USING btree (publication_checked_at) WHERE (outcome = 'filled'::text);
+CREATE INDEX course_intake_dates_provider_idx ON pipeline.course_intake_dates USING btree (provider_id, next_action);
+CREATE TRIGGER intake_failure_class BEFORE INSERT OR UPDATE OF outcome, reason, next_action, deadline_kind ON pipeline.course_intake_dates FOR EACH ROW EXECUTE FUNCTION security.intake_failure_class_trg_v1();
+create table pipeline.website_sync_items (entity text not null, item_key text not null, ref_id uuid, hash text, seq bigint not null, seq_at timestamp with time zone default now() not null, removed_at timestamp with time zone, item jsonb);
+alter table pipeline.website_sync_items add constraint website_sync_items_entity_check CHECK ((entity = ANY (ARRAY['reference'::text, 'provider'::text, 'logo'::text, 'rankings'::text, 'scholarship'::text, 'course'::text])));
+alter table pipeline.website_sync_items add constraint website_sync_items_pkey PRIMARY KEY (entity, item_key);
+CREATE INDEX idx_website_sync_items_seq ON pipeline.website_sync_items USING btree (seq);
+create table pipeline.zoho_sync_items (entity text not null, item_key text not null, ref_id uuid, hash text, seq bigint not null, seq_at timestamp with time zone default now() not null, removed_at timestamp with time zone, item jsonb);
+alter table pipeline.zoho_sync_items add constraint zoho_sync_items_entity_check CHECK ((entity = ANY (ARRAY['provider'::text, 'campus'::text, 'contact'::text, 'course'::text])));
+alter table pipeline.zoho_sync_items add constraint zoho_sync_items_pkey PRIMARY KEY (entity, item_key);
+CREATE INDEX zoho_sync_items_seq ON pipeline.zoho_sync_items USING btree (seq);
+alter table pipeline.course_intake_dates enable row level security;
+alter table pipeline.website_sync_items enable row level security;
+alter table pipeline.zoho_sync_items enable row level security;
