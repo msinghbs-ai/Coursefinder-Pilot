@@ -24,6 +24,12 @@ const docs=j(`select to_jsonb(d) from fixture.documents d where provider_id=${qu
 // Real source version drift between Run Now and lease must not produce a replacement source read.
 const changed=j(`begin;update pipeline.evidence_artifacts set content_hash='changed-before-lease' where id=${quote(docs.evidence_id)}::uuid;select public.svc_provider_description_cohort_next(1,${quote(ca.cohort_id)}::uuid);rollback;`)
 ok(changed.items.length===0,'pinned source hash drift between saved Run Now and lease refuses changed evidence')
+// Validation 5 Nov 2026: a worker from before this release leases with svc_provider_description_next directly and never reserves.
+// It must receive no item, so it cannot make an unreserved paid AI call against the new database.
+const readingBefore=j(`select count(*) from pipeline.provider_description_reads where state='reading';`)
+const oldWorker=sql(`select public.svc_provider_description_next(5);`,{role:'service_role',json:true})
+const noProtocol=sql(`select public.svc_provider_description_lease_v1(5,null,'provider-description-v0');`,{role:'service_role',json:true})
+ok(oldWorker.reason==='worker_protocol_required'&&oldWorker.items.length===0&&noProtocol.reason==='worker_protocol_required'&&noProtocol.items.length===0&&j(`select count(*) from pipeline.provider_description_reads where state='reading';`)===readingBefore,'a pre-release worker (no reservation protocol) is leased nothing, so it cannot make a paid AI call')
 // A completely exhausted existing budget blocks work; it is never reset or raised.
 const exhausted=j(`begin;insert into pipeline.ai_spend_ledger(lane,source,source_id,cost_usd) values('provider_description','fixture-budget','isolated',1);select public.svc_provider_description_cohort_next(1,${quote(ca.cohort_id)}::uuid);rollback;`)
 ok(exhausted.items.length===0&&['ai_refused','ai_ceiling'].includes(exhausted.reason),'lifetime or daily AI budget exhausted refuses reader lease')

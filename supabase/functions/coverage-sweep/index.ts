@@ -30,7 +30,7 @@ import { admissionCheck, awardScope, baseHost, keepScholarshipUrl, onSite, mainT
 import { imageSize, logoCandidates, sniffMime, svgSafe } from "./logo.ts";
 import { awardSections, mapOutcome, nextPage, pagingState, redirectOutcome, sectionCode, sectionHtml, statedTotal } from "./catalogue.ts";
 import { COURSE_TEXT_FIELDS, courseTextAnswer, courseTextAnswerLimit, courseTextLength, courseTextPage, courseTextRequest, courseTextResults, courseTextUser } from "./course-text.ts";
-import { DESCRIPTION_ANSWER_KEY, DESCRIPTION_PROMPT_VERSION, aboutLinks, aboutPageCheck, descriptionAnswer, descriptionClaimCheck, descriptionCostQuote, descriptionPageText, descriptionRequest, descriptionSourceIdentity, ownHost, providerDescriptionSentences } from "./description.ts";
+import { DESCRIPTION_ANSWER_KEY, DESCRIPTION_PROMPT_VERSION, DESCRIPTION_WORKER_PROTOCOL, aboutLinks, aboutPageCheck, descriptionAnswer, descriptionClaimCheck, descriptionCostQuote, descriptionPageText, descriptionRequest, descriptionSourceIdentity, ownHost, providerDescriptionSentences } from "./description.ts";
 const SCH_VERSION = "scholarship-sweep-v0.7.3"; // v0.7.3 (11 Oct 2026, Platform Admin bugs 11/10-6): a "while places last" condition is not an ended scholarship; an amount the student pays (deposit, bond, fee) is never the award and a "valued at" amount counts; courses listed after "one of the following courses" are read. v0.7.2 (11 Oct 2026): course titles end at bullets (•, ⦁) and at the next capitalised word or sentence. v0.7.1 (11 Oct 2026): courses named after "excluding" are exclusions; course titles keep their bracketed specialisation; numeric dates read in the provider country's day/month order; date proofs start at their label. v0.7.0 (11 Oct 2026): application open and close dates (with rounds), study start, courses the page names, and the sentence behind each level and field. v0.6.3 (11 Oct 2026): academic-result percentages (CWA, WAM, ATAR) are not award values; the value text is a whole sentence. v0.6.2: Firecrawl cap and reserve read from Layer 2 settings; v0.6.1: // v0.6.1: numeric character references in titles decoded; // v0.6.0 (Decision 250): amounts in the provider country's currency; NZ and Canadian domestic wording
 // v0.5.4 (2 Oct 2026, Decision 212 check): a listed value ("Residency Australian Citizen, New Zealand Citizen, International
 // Student") includes international students.
@@ -2478,9 +2478,8 @@ async function handle(req: Request): Promise<Response> {
       if (!key) { const prof = await rpc("layer3_routing_profile_service", { p_code: AI_MATCH_PROFILE }); const { data } = await c.rpc("layer3_provider_credential_resolve_service", { p_profile_id: prof?.id }); key = typeof data === "string" ? data : "" }
       if (!key) return j({ ok: false, mode, error: "OpenRouter credential unavailable", worker: WORKER }, 503);
       const descriptionLimit = Math.min(Number(body.limit || 3), 10);  // fixed: the setting's upper bound (batch.provider_description)
-      const w: any = body.cohort_id
-        ? await rpc("svc_provider_description_cohort_next", { p_limit: descriptionLimit, p_cohort: String(body.cohort_id) })
-        : await rpc("svc_provider_description_next", { p_limit: descriptionLimit });
+      // The lease names the reservation protocol this worker follows; the database gives no item to a worker that does not.
+      const w: any = await rpc("svc_provider_description_lease_v1", { p_limit: descriptionLimit, p_cohort: body.cohort_id ? String(body.cohort_id) : null, p_protocol: DESCRIPTION_WORKER_PROTOCOL });
       const items: any[] = w?.items || [];
       if (!items.length) return j({ ok: true, mode, idle: true, reason: w?.reason || "nothing due", items: 0, worker: WORKER });
       const model = String(w.model || ""), pageChars = Number(w.page_chars) || 16000, minQuote = Number(w.min_quote_chars) || 20;

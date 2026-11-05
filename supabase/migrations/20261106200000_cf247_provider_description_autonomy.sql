@@ -39,8 +39,8 @@ language sql immutable set search_path to '' as $function$
   f as (select case when t.term ~ ' ' then array[t.term] else array[t.term, t.term||'s', t.term||'es', t.term||'d', t.term||'ed'] end forms from t where t.term<>''),
   hit as (select exists(select 1 from f, unnest(f.forms) x where security.pdesc_has_term_v1(p_sentence,x)) in_sentence,
                  exists(select 1 from f, unnest(f.forms) x where security.pdesc_has_term_v1(p_quote,x)) in_quote,
-                 exists(select 1 from f, unnest(f.forms) x where lower(coalesce(p_quote,'')) ~ ('(\m(no|not|never|cannot|without|nor)\M|n''t)(\W+\w+){0,2}\W+'||x||'\M')) negated_quote,
-                 exists(select 1 from f, unnest(f.forms) x where lower(coalesce(p_sentence,'')) ~ ('(\m(no|not|never|cannot|without|nor)\M|n''t)(\W+\w+){0,2}\W+'||x||'\M')) negated_sentence)
+                 exists(select 1 from f, unnest(f.forms) x where lower(coalesce(p_quote,'')) ~ ('(\m(no(?!\s+matter)|not(?!\s+(only|just))|never|cannot|without|nor|none|neither)\M|n''t)(\W+\w+){0,2}\W+'||x||'\M')) negated_quote,
+                 exists(select 1 from f, unnest(f.forms) x where lower(coalesce(p_sentence,'')) ~ ('(\m(no(?!\s+matter)|not(?!\s+(only|just))|never|cannot|without|nor|none|neither)\M|n''t)(\W+\w+){0,2}\W+'||x||'\M')) negated_sentence)
   select case when not hit.in_sentence then null
               when not hit.in_quote then 'unsupported_claim'
               when hit.negated_quote and not hit.negated_sentence then 'claim_negated_in_source'
@@ -48,6 +48,46 @@ language sql immutable set search_path to '' as $function$
 $function$;
 revoke all on function security.pdesc_claim_check_v1(text,text,text) from public,anon,authenticated;
 comment on function security.pdesc_claim_check_v1(text,text,text) is 'Provider descriptions (Platform Admin 5 Nov 2026 20:03 §2): evidence-aware check of one pdesc.evidence_claim_words word. Null = not used or supported by the sentence''s own official quote (same word, plural or tense); unsupported_claim = the quote does not state it; claim_negated_in_source = the quote negates it and the sentence does not. Never a keyword-only rejection.';
+
+-- Validation 5 Nov 2026 (decision 20:03 §2): number formats are normalised before a sentence's numbers are compared with its quote's.
+-- Thousands separators (comma, space, no-break or thin space, apostrophe) are removed and "per cent"/"percent" is "%". On the quote side
+-- number words zero to ninety-nine become digits ("four campuses" supports "4 campuses"); on the sentence side words are left alone, so
+-- "one of the oldest" never becomes a numeric claim.
+create or replace function security.pdesc_number_norm_v1(p text, p_words boolean) returns text
+language plpgsql immutable set search_path to '' as $function$
+declare v text := lower(coalesce(p,'')); u text[] := array['one','two','three','four','five','six','seven','eight','nine'];
+ teens text[] := array['ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen'];
+ tens text[] := array['twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety']; i int; k int;
+begin
+ v := regexp_replace(v, '\m(per\s?cent|percent)\M', '%', 'g');
+ v := regexp_replace(v, '([0-9])[,\s   ''](?=[0-9]{3}([^0-9]|$))', '\1', 'g');
+ if p_words then
+  for i in 1..array_length(tens,1) loop
+   for k in 1..array_length(u,1) loop
+    v := regexp_replace(v, '\m'||tens[i]||'[-\s]'||u[k]||'\M', ((i+1)*10+k)::text, 'g');
+   end loop;
+   v := regexp_replace(v, '\m'||tens[i]||'\M', ((i+1)*10)::text, 'g');
+  end loop;
+  for i in 1..array_length(teens,1) loop v := regexp_replace(v, '\m'||teens[i]||'\M', (i+9)::text, 'g'); end loop;
+  for i in 1..array_length(u,1) loop v := regexp_replace(v, '\m'||u[i]||'\M', i::text, 'g'); end loop;
+  v := regexp_replace(v, '\mzero\M', '0', 'g');
+ end if;
+ return v;
+end $function$;
+revoke all on function security.pdesc_number_norm_v1(text,boolean) from public,anon,authenticated;
+comment on function security.pdesc_number_norm_v1(text,boolean) is 'Provider descriptions (validation 5 Nov 2026, decision 20:03 §2): number format normalisation for unsupported_numeric_claim. Never a keyword-only or format-only rejection.';
+
+-- Validation 5 Nov 2026 (decision 20:03 §2): support of a sentence by the present-tense part of its quote. Clauses are split at punctuation and at
+-- today/now/currently/but/while/whereas; clauses with a historic marker are left out. Generic institution nouns are not counted as the claim.
+create or replace function security.pdesc_present_support_v1(p_sentence text, p_quote text) returns numeric
+language sql immutable set search_path to '' as $function$
+  select security.pdesc_support_v1(
+    regexp_replace(coalesce(p_sentence,''), '\m(university|universities|college|colleges|institute|institution|polytechnic|school)\M', ' ', 'gi'),
+    coalesce((select string_agg(c, ' ') from regexp_split_to_table(lower(coalesce(p_quote,'')), '[;:.!?,]|\m(today|now|currently|nowadays|but|while|whereas)\M') c
+              where c !~ '\m(former|formerly|previously|renamed|closed|merged|ceased|became)\M' and c !~ 'was known as'), ''))
+$function$;
+revoke all on function security.pdesc_present_support_v1(text,text) from public,anon,authenticated;
+comment on function security.pdesc_present_support_v1(text,text) is 'Provider descriptions (validation 5 Nov 2026, decision 20:03 §2): pdesc_support_v1 of the sentence against the non-historic clauses of its quote; historic_claim_context holds only when this is below pdesc.support_min_share.';
 
 create table if not exists pipeline.provider_description_cohorts (
  id uuid primary key default gen_random_uuid(),
@@ -285,17 +325,28 @@ revoke all on function security.provider_description_consumer_read_v1(text,text)
 -- Rebuild only the admitted provider's existing prepared item, through the existing item builder and sync sequence contract.
 create or replace function security.provider_description_sync_provider_v1(p_provider uuid,p_expected text) returns jsonb
 language plpgsql security definer set search_path to '' as $function$
-declare p catalogue.providers%rowtype; v jsonb; v_changed int:=0; v_error text;
+declare p catalogue.providers%rowtype; v jsonb; v_changed int:=0; v_error text; h text; it pipeline.website_sync_items%rowtype;
 begin
  select * into p from catalogue.providers where id=p_provider;
  if p.id is null or p.description is distinct from p_expected or not exists(select 1 from pipeline.provider_description_reads r where r.provider_id=p.id and r.state='admitted' and r.proposal->>'description'=p.description) then return jsonb_build_object('refreshed',false,'reason','no_matching_authorised_admission'); end if;
  if not pg_try_advisory_xact_lock(hashtext('website-sync-check')) then return jsonb_build_object('refreshed',false,'reason','projection_sync_in_flight'); end if; -- fixed: existing shared projection lock, tried without waiting.
  v:=security.website_sync_item_v1('provider',p.id,p.stable_key);
  if v is null or v->>'description' is distinct from p_expected or v->>'provider_id' is distinct from p.stable_key then return jsonb_build_object('refreshed',false,'reason','provider_projection_not_ready'); end if;
- insert into pipeline.website_sync_items(entity,item_key,ref_id,hash,seq,item)
- values('provider',p.stable_key,p.id,md5((v-'generated_at'-'freshness')::text),nextval('pipeline.website_sync_seq'),v)
- on conflict(entity,item_key) do update set ref_id=excluded.ref_id,hash=excluded.hash,seq=excluded.seq,item=excluded.item,seq_at=now(),removed_at=null
- where pipeline.website_sync_items.hash is distinct from excluded.hash or pipeline.website_sync_items.item is null or pipeline.website_sync_items.removed_at is not null or pipeline.website_sync_items.ref_id is distinct from excluded.ref_id;
+ -- The same row change security.website_sync_check_v1 (job website-sync-check) makes for this one item: same builder (website_sync_item_v1),
+ -- same hash (generated_at and freshness excluded), same sequence and the same shared lock. A later scan finds the hash equal and does nothing.
+ h:=md5((v-'generated_at'-'freshness')::text);
+ select * into it from pipeline.website_sync_items where entity='provider' and item_key=p.stable_key;
+ if it.item_key is null then
+  insert into pipeline.website_sync_items(entity,item_key,ref_id,hash,seq,item) values('provider',p.stable_key,p.id,h,nextval('pipeline.website_sync_seq'),v);
+ elsif it.removed_at is not null then
+  update pipeline.website_sync_items set removed_at=null,hash=h,item=v,ref_id=p.id,seq=nextval('pipeline.website_sync_seq'),seq_at=now() where entity='provider' and item_key=p.stable_key;
+ elsif it.hash is null then
+  update pipeline.website_sync_items set hash=h,item=v,ref_id=p.id where entity='provider' and item_key=p.stable_key;
+ elsif it.hash<>h then
+  update pipeline.website_sync_items set hash=h,item=v,ref_id=p.id,seq=nextval('pipeline.website_sync_seq'),seq_at=now() where entity='provider' and item_key=p.stable_key;
+ elsif it.item is null then
+  update pipeline.website_sync_items set item=v where entity='provider' and item_key=p.stable_key;
+ end if;
  get diagnostics v_changed=row_count;
  return jsonb_build_object('refreshed',true,'changed',v_changed,'provider_id',p.id,'projection','pipeline.website_sync_items');
 exception when others then
@@ -344,9 +395,9 @@ do $guard$
 declare x record;
 begin
  for x in select * from (values
- ('security.provider_description_validate_v1(uuid,text,timestamptz,jsonb)','528d5a3d2e3780fcb58e2c19db31c199','36d3fba160a5845cafc4524f687a6d71'),
+ ('security.provider_description_validate_v1(uuid,text,timestamptz,jsonb)','528d5a3d2e3780fcb58e2c19db31c199','b4959fe6f0daad62b93c83c1feeea7e4'),
  ('security.provider_description_enqueue_v1()','97e6b926a545c4032159f9dbf52e3cf3','0a1897bb7f56697a9f01d4ec3e8befc0'),
- ('public.svc_provider_description_next(integer)','5342ae3f9279f6c2ec0849ec4fe0fffd','9da6a77b2a0ef512de7c3e45d3ecd966'),
+ ('public.svc_provider_description_next(integer)','5342ae3f9279f6c2ec0849ec4fe0fffd','559407dc479753698b858231b2e7eb93'),
  ('public.svc_provider_description_record(jsonb)','d5aec36ddd55c4a0bdc823fb8a02fec0','d95f0bafc894b662468a309254544444'),
  ('security.provider_description_fire_v1()','8f5918c9c26445d9347988d850aba6f5','b334fbefe8a7fb2b8cfd2feda570a616'),
  ('security.layer4_provider_description_apply_impl(uuid,uuid,jsonb,text)','875b25c4f35568cb9ac6379812546d42','97685b737007410288297dea9d650d2a')) v(sig,before_hash,after_hash) loop
@@ -380,6 +431,12 @@ declare v jsonb; v_model text; v_pending int; v_spent numeric; v_fc_used int;
 begin
   if current_user <> 'postgres' and coalesce(auth.role(), '') <> 'service_role' then raise exception 'service_role required'; end if;
   if security.pipeline_num_v1('pdesc.enabled', 0) < 1 then return jsonb_build_object('idle', true, 'reason', 'off', 'items', '[]'::jsonb); end if;
+  -- Validation 5 Nov 2026: a worker leases only through public.svc_provider_description_lease_v1 or _cohort_next, which declare the
+  -- reservation protocol. A worker from before this release (it calls this function directly and never reserves) gets no item, so it cannot
+  -- make an unreserved paid AI call against this database.
+  if coalesce(auth.role(), '') = 'service_role' and coalesce(current_setting('cf.pdesc_worker_protocol', true), '') <> 'provider-description-reserve-v1' then
+    return jsonb_build_object('idle', true, 'reason', 'worker_protocol_required', 'items', '[]'::jsonb);
+  end if;
   -- fixed: serialize reservation of review slots across all reader callers; no waiting behind another worker.
   if not pg_try_advisory_xact_lock(hashtext('cf247 provider description capacity')) then return jsonb_build_object('idle',true,'reason','capacity_in_flight','items','[]'::jsonb); end if;
   select (select count(*) from pipeline.layer4_review_items i where i.field_code='provider_description' and i.status='pending')
@@ -460,10 +517,26 @@ begin
  if current_user<>'postgres' and coalesce(auth.role(),'')<>'service_role' then raise exception 'service_role required' using errcode='42501'; end if;
  if not exists(select 1 from pipeline.provider_description_cohorts c where c.id=p_cohort and c.state='started') then raise exception 'unknown started cohort'; end if;
  perform set_config('cf.pdesc_cohort',p_cohort::text,true);
+ perform set_config('cf.pdesc_worker_protocol','provider-description-reserve-v1',true); -- only the reservation-capable worker calls this (new in this release)
  return public.svc_provider_description_next(p_limit);
 end $function$;
 revoke all on function public.svc_provider_description_cohort_next(integer,uuid) from public,anon,authenticated;
 grant execute on function public.svc_provider_description_cohort_next(integer,uuid) to service_role;
+
+-- The reservation-capable worker's lease (validation 5 Nov 2026). It must name the protocol it follows: reserve with
+-- svc_provider_description_reserve_v1 before every paid AI call.
+create or replace function public.svc_provider_description_lease_v1(p_limit integer,p_cohort uuid default null,p_protocol text default null) returns jsonb
+language plpgsql security definer set search_path to '' as $function$
+begin
+ if current_user<>'postgres' and coalesce(auth.role(),'')<>'service_role' then raise exception 'service_role required' using errcode='42501'; end if;
+ if p_protocol is distinct from 'provider-description-reserve-v1' then return jsonb_build_object('idle',true,'reason','worker_protocol_required','items','[]'::jsonb); end if;
+ if p_cohort is not null then return public.svc_provider_description_cohort_next(p_limit,p_cohort); end if;
+ perform set_config('cf.pdesc_worker_protocol',p_protocol,true);
+ return public.svc_provider_description_next(p_limit);
+end $function$;
+revoke all on function public.svc_provider_description_lease_v1(integer,uuid,text) from public,anon,authenticated;
+grant execute on function public.svc_provider_description_lease_v1(integer,uuid,text) to service_role;
+comment on function public.svc_provider_description_lease_v1(integer,uuid,text) is 'Provider descriptions (validation 5 Nov 2026): the only lease for the reservation-capable coverage-sweep worker; a worker that does not declare provider-description-reserve-v1 receives no item.';
 
 CREATE OR REPLACE FUNCTION public.svc_provider_description_record(p_results jsonb)
  RETURNS jsonb
@@ -789,7 +862,8 @@ begin
       return jsonb_build_object('ok', false, 'outcome', 'held', 'rule', 'incomplete_sentence', 'checks', v_checks,
         'reason', 'a sentence is not complete (it would be published as a fragment): ' || left(t, 120));
     end if;
-    if exists(select 1 from regexp_matches(t,'[0-9]+(?:[.,][0-9]+)*','g') n where not exists(select 1 from regexp_matches(s->>'quote','[0-9]+(?:[.,][0-9]+)*','g') q where q[1]=n[1])) then
+    -- Validation 5 Nov 2026 (decision 20:03 §2): numbers are compared after normalising format (80,000 = 80 000; per cent = %), and the quote's number words count (four = 4).
+    if exists(select 1 from regexp_matches(security.pdesc_number_norm_v1(t,false),'[0-9]+(?:[.,][0-9]+)*','g') n where not exists(select 1 from regexp_matches(security.pdesc_number_norm_v1(s->>'quote',true),'[0-9]+(?:[.,][0-9]+)*','g') q where q[1]=n[1])) then
       return jsonb_build_object('ok',false,'outcome','held','rule','unsupported_numeric_claim','reason','A number in a factual claim does not occur in its supporting quote.','checks',v_checks);
     end if;
     -- Quote provenance is retained separately; long verbatim spans fail the existing factual description path.
@@ -797,7 +871,10 @@ begin
       return jsonb_build_object('ok',false,'outcome','held','rule','verbatim_passage','reason','A long official passage was copied; a concise source-grounded paraphrase is required.','checks',v_checks);
     end if;
     if coalesce(s->>'quote','')~* '\m(former|formerly|previously|renamed|closed|merged|ceased)\M|was known as|became'
-      and t~* '\m(is|are|operates|offers)\M' and t!~* '\m(former|formerly|previously|was|were|became|renamed|closed|merged|ceased|history|founded|established|origin|since)\M' then
+      and t~* '\m(is|are|operates|offers)\M' and t!~* '\m(former|formerly|previously|was|were|became|renamed|closed|merged|ceased|history|founded|established|origin|since)\M'
+      -- Validation 5 Nov 2026 (decision 20:03 §2): evidence-aware. Held only when the quote's present-tense part does not support the sentence,
+      -- i.e. the sentence's claim is the one the quote places in the past; a historic word elsewhere in the quote never holds a supported claim.
+      and security.pdesc_present_support_v1(t, s->>'quote') < v_min_sup then
       return jsonb_build_object('ok',false,'outcome','held','rule','historic_claim_context','reason','Historical source context cannot establish a present institutional identity or operation.','checks',v_checks);
     end if;
     v_sup := security.pdesc_support_v1(t, s->>'quote');
@@ -994,10 +1071,10 @@ begin
  for x in select * from (values
  ('security.provider_description_fire_v1()','b334fbefe8a7fb2b8cfd2feda570a616'),
  ('security.provider_description_enqueue_v1()','0a1897bb7f56697a9f01d4ec3e8befc0'),
- ('public.svc_provider_description_next(integer)','9da6a77b2a0ef512de7c3e45d3ecd966'),
+ ('public.svc_provider_description_next(integer)','559407dc479753698b858231b2e7eb93'),
  ('public.svc_provider_description_record(jsonb)','d95f0bafc894b662468a309254544444'),
  ('security.layer4_provider_description_apply_impl(uuid,uuid,jsonb,text)','97685b737007410288297dea9d650d2a'),
- ('security.provider_description_validate_v1(uuid,text,timestamptz,jsonb)','36d3fba160a5845cafc4524f687a6d71')) v(sig,hash) loop
+ ('security.provider_description_validate_v1(uuid,text,timestamptz,jsonb)','b4959fe6f0daad62b93c83c1feeea7e4')) v(sig,hash) loop
    if md5(pg_get_functiondef(x.sig::regprocedure))<>x.hash then raise exception 'provider description after-definition differs: %',x.sig; end if;
  end loop;
 end $after$;

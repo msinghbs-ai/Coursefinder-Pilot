@@ -39,14 +39,16 @@ test('the final redirect must still be an approved official institutional page',
   }
 })
 
-test('numerical facts require their own quote and an unsupported answer keeps whole text and evidence', () => {
+test('numbers are decided by the database validator; an answer keeps its whole text and evidence', () => {
   const page = 'Riverstone University was established in 1912. It has 2 campuses and teaches science.'
   const answer = { about_page: true, sentences: [{ text: 'Riverstone University was established in 1912.', quote: 'Riverstone University was established in 1912.' }, { text: 'It has 20 campuses and teaches science.', quote: 'It has 2 campuses and teaches science.' }] }
-  expect(descriptionClaimCheck(answer)).toEqual({ ok: false, rule: 'unsupported_numeric_claim', reason: 'A numerical fact is absent from its supporting quote.' })
+  // Validation 5 Nov 2026 (decision 20:03 §2): the worker no longer holds on number format; provider_description_validate_v1 decides it once,
+  // after normalising (claim-policy.mjs runs those cases against the real validator).
+  expect(descriptionClaimCheck(answer)).toEqual({ ok: true })
   const preserved = providerDescriptionSentences(answer, page)
   expect(preserved.sentences[1]).toEqual({ ...answer.sentences[1], on_page: true })
   expect(descriptionClaimCheck({ sentences: [{ text: 'It has 2 campuses.', quote: 'It has 2 campuses and teaches science.' }] })).toEqual({ ok: true })
-  expect(descriptionClaimCheck({ sentences: [{ text: 'It has 20% of enrolments.', quote: 'It has 20 enrolments.' }] }).ok).toBe(false)
+  expect(descriptionClaimCheck({ sentences: [{ text: 'It has 80,000 students.', quote: 'Over 80 000 students study here.' }] }).ok).toBe(true)
   expect(descriptionClaimCheck({ sentences: 'invalid model output' }).rule).toBe('invalid_answer')
   expect(providerDescriptionSentences({ sentences: 'invalid model output' }, page).sentences).toEqual([])
   const decimalPage = 'Riverstone University reports 1.2% growth in enrolments, with fees of -$1,200 under the stated adjustment.'
@@ -88,7 +90,8 @@ test('long copied official spans are held without truncating the answer or its e
   expect(descriptionClaimCheck(copied, NaN).rule).toBe('invalid_verbatim_limit')
   expect(descriptionClaimCheck({ sentences: [{ text: 'a'.repeat(120), quote: 'a'.repeat(120) }] }, 120).rule).toBe('verbatim_passage')
   expect(descriptionClaimCheck({ sentences: [{ text: 'a'.repeat(119), quote: 'a'.repeat(119) }] }, 120).ok).toBe(true)
-  expect(descriptionClaimCheck({ sentences: [{ text: 'Riverstone College is the current institution.', quote: 'Riverstone College became Current University in 2020.' }] }, 120).rule).toBe('historic_claim_context')
+  // historic context is decided evidence-aware by the database validator, never by a keyword in the worker
+  expect(descriptionClaimCheck({ sentences: [{ text: 'Riverstone College is the current institution.', quote: 'Riverstone College became Current University in 2020.' }] }, 120)).toEqual({ ok: true })
   expect(descriptionClaimCheck({ sentences: [{ text: 'Current University was formerly named Former College.', quote: 'Current University was formerly named Former College.' }] }, 120).ok).toBe(true)
 })
 

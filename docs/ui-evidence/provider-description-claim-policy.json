@@ -42,6 +42,78 @@
       "ok": true,
       "outcome": "propose",
       "rule": "changed"
+    },
+    {
+      "case": "historic word in the quote, present claim supported (became; today offers)",
+      "ok": true,
+      "outcome": "propose",
+      "rule": "changed"
+    },
+    {
+      "case": "historic word in the quote, present claim supported (merged; is)",
+      "ok": true,
+      "outcome": "propose",
+      "rule": "changed"
+    },
+    {
+      "case": "present claim that the quote places in the past (formerly operated; closed)",
+      "ok": false,
+      "outcome": "held",
+      "rule": "historic_claim_context"
+    },
+    {
+      "case": "80,000 supported by 80 000",
+      "ok": true,
+      "outcome": "propose",
+      "rule": "changed"
+    },
+    {
+      "case": "90,000 not supported by 80 000",
+      "ok": false,
+      "outcome": "held",
+      "rule": "unsupported_numeric_claim"
+    },
+    {
+      "case": "4 supported by four",
+      "ok": true,
+      "outcome": "propose",
+      "rule": "changed"
+    },
+    {
+      "case": "5 not supported by four",
+      "ok": false,
+      "outcome": "held",
+      "rule": "unsupported_numeric_claim"
+    },
+    {
+      "case": "25% supported by twenty-five per cent",
+      "ok": true,
+      "outcome": "propose",
+      "rule": "changed"
+    },
+    {
+      "case": "35% not supported by twenty-five per cent",
+      "ok": false,
+      "outcome": "held",
+      "rule": "unsupported_numeric_claim"
+    },
+    {
+      "case": "\"no matter which campus\" is not a negation",
+      "ok": true,
+      "outcome": "propose",
+      "rule": "changed"
+    },
+    {
+      "case": "\"none of our campuses\" negates a campus claim",
+      "ok": false,
+      "outcome": "held",
+      "rule": "claim_negated_in_source"
+    },
+    {
+      "case": "\"not only on its campus\" is not a negation",
+      "ok": true,
+      "outcome": "propose",
+      "rule": "changed"
     }
   ],
   "course_description_claim_words_unchanged": true,

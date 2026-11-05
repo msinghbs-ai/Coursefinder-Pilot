@@ -1,8 +1,9 @@
 // Guards: Provider Description mandate §3/9. Real worker parsing/identity/quote checks and real SQL recording, controlled model transport only.
 import { sql, quote } from './db.mjs'
-import { descriptionPageText, descriptionSourceIdentity, descriptionClaimCheck, descriptionCostQuote, descriptionRequest, descriptionAnswer, providerDescriptionSentences, DESCRIPTION_PROMPT_VERSION } from '../../../supabase/functions/coverage-sweep/description.ts'
+import { descriptionPageText, descriptionSourceIdentity, descriptionClaimCheck, descriptionCostQuote, descriptionRequest, descriptionAnswer, providerDescriptionSentences, DESCRIPTION_PROMPT_VERSION, DESCRIPTION_WORKER_PROTOCOL } from '../../../supabase/functions/coverage-sweep/description.ts'
 export function processNext(limit = 10, cohortId = null) {
-  const lease = sql(`select ${cohortId?`public.svc_provider_description_cohort_next(${Number(limit)},${quote(cohortId)}::uuid)`:`public.svc_provider_description_next(${Number(limit)})`};`, { role:'service_role', json:true })
+  // The real worker's lease (index.ts): svc_provider_description_lease_v1 with the reservation protocol it follows.
+  const lease = sql(`select public.svc_provider_description_lease_v1(${Number(limit)},${cohortId?quote(cohortId)+'::uuid':'null'},${quote(DESCRIPTION_WORKER_PROTOCOL)});`, { role:'service_role', json:true })
   const processed=recordLease(lease)
   // Complete the controlled HTTP transport only after actual worker/record SQL has completed.
   if(cohortId)sql(`insert into net._http_response(id) select request_id from fixture.worker_dispatches where body->>'cohort_id'=${quote(cohortId)} and completed_at is null on conflict do nothing;update fixture.worker_dispatches set completed_at=now() where body->>'cohort_id'=${quote(cohortId)} and completed_at is null;`,{role:'postgres'})

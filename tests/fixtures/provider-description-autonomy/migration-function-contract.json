@@ -6,7 +6,7 @@
     {
       "signature": "security.provider_description_validate_v1(uuid,text,timestamptz,jsonb)",
       "before_md5": "528d5a3d2e3780fcb58e2c19db31c199",
-      "after_md5": "36d3fba160a5845cafc4524f687a6d71"
+      "after_md5": "b4959fe6f0daad62b93c83c1feeea7e4"
     },
     {
       "signature": "security.provider_description_enqueue_v1()",
@@ -16,7 +16,7 @@
     {
       "signature": "public.svc_provider_description_next(integer)",
       "before_md5": "5342ae3f9279f6c2ec0849ec4fe0fffd",
-      "after_md5": "9da6a77b2a0ef512de7c3e45d3ecd966"
+      "after_md5": "559407dc479753698b858231b2e7eb93"
     },
     {
       "signature": "public.svc_provider_description_record(jsonb)",

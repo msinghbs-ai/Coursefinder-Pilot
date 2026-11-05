@@ -52,6 +52,18 @@ The sentence must still pass the existing `pdesc_support_v1` share, the `pdesc_s
 - negated guarantee: held;
 - negation kept as stated: passes.
 
+**Independent validation, 5 Nov 2026** (admin `docs/platform/validation/2026-11-05-pr877-provider-descriptions-validation.md`). Three more rules were made evidence-aware, with every case in `claim-policy.mjs`:
+
+- **`historic_claim_context`** holds only when the present-tense part of the quote does not support the sentence (`security.pdesc_present_support_v1`; clauses with became, merged, formerly and similar words are left out).
+  - Passes: "became …; today offers more than 300 courses" and "formed when two colleges merged, it is a public research university".
+  - Held: "formerly operated a campus in Gippsland, which closed".
+- **`unsupported_numeric_claim`** compares numbers after `security.pdesc_number_norm_v1`: thousands separators, "per cent" and the quote's number words up to ninety-nine.
+  - Passes: 80,000 against 80 000; 4 against four; 25% against twenty-five per cent.
+  - Held: 90,000, 5 and 35% against the same quotes.
+- **Negation:** "no matter which" and "not only" are not negations. "none" and "neither" are.
+  - Held: "none of our campuses" against a campus claim.
+- **The worker** (`descriptionClaimCheck`) now checks only long copied passages. Numbers and historic context are decided once, by the database validator.
+
 ### §3 Rank 4 for provider-description approval: regression tests (`integration.mjs`)
 
 - **Rank 3 refused on every approval route:** `layer4_review_decide`, `layer4_review_decide_impl`, `admin_layer4_inbox('decide')` and batch. Batches never admit provider descriptions at any rank (`one_at_a_time`).
@@ -66,13 +78,47 @@ The sentence must still pass the existing `pdesc_support_v1` share, the `pdesc_s
 
 ### Deploy order (Integration Controller)
 
-1. Re-check the six before-hashes on production. Pause `provider-description-read` with a reason, through the existing job control, and let any lease finish.
-2. Apply `20261106200000_cf247_provider_description_autonomy.sql`. Its after-hash check refuses a partial apply.
-3. Deploy the complete `supabase/functions/coverage-sweep/` folder. A worker deployed without the migration fails closed: every item is held before any AI call.
-4. Deploy the UI (Workers) through the normal release.
-5. Resume `provider-description-read` with its previous state.
-6. Verify roles on production: a rank-4 user can open the item, and a rank-3 user is refused approval.
-7. Then turn on Run Now, as below.
+`deploy-on-merge` applies the migration and then deploys the edge functions automatically when the PR merges. So the pause in step 1 comes **before the merge**.
+
+1. **Before merging:**
+   - Re-check the six before-hashes on production.
+   - Pause `provider-description-read` with a reason, through the existing job control. Or set `pdesc.enabled` to 0 with a reason.
+   - Let any open lease finish or expire (20-minute claim timer).
+2. Merge. `deploy-on-merge` then:
+   - applies `20261106200000_cf247_provider_description_autonomy.sql` (its after-hash check refuses a partial apply);
+   - deploys the complete `supabase/functions/coverage-sweep/` folder;
+   - releases the UI.
+3. Confirm the deployed worker leases with `svc_provider_description_lease_v1`.
+4. Resume `provider-description-read`, or restore `pdesc.enabled`, to its previous state.
+5. Verify roles on production: a rank-4 user can approve, and a rank-3 user is refused.
+6. Then turn on Run Now, as below.
+
+**Mismatch windows.**
+
+- **New worker against the old database.** The worker asks for `svc_provider_description_lease_v1`, which does not exist yet. It gets an error, takes no item and makes no AI call.
+- **Old worker against the new database.** The old worker leases with `svc_provider_description_next(p_limit)` and never reserves. Since 5 Nov, that call returns `worker_protocol_required` with no items when the caller is a service-role worker that has not declared the reservation protocol. So the old worker gets nothing to read and makes no paid call.
+- **The pause still comes first.** It is the primary control. The lease gate is a second line of defence.
+
+### Website feed refresh after an approval
+
+`security.provider_description_sync_provider_v1(provider, expected description)` refreshes **one** row of `pipeline.website_sync_items`: entity `provider`, key = the provider's `stable_key`. It runs only after an authorised Layer 4 approval, and only when the catalogue description equals that approved text. It is called from the scheduled publication check and from Verify.
+
+It makes exactly the change that the existing job `website-sync-check` (`security.website_sync_check_v1`, every minute) would make for that item:
+
+- **Same builder:** `security.website_sync_item_v1('provider', id, stable_key)`.
+- **Same hash:** md5 of the item without `generated_at` and `freshness`.
+- **Same sequence:** `pipeline.website_sync_seq`.
+- **Same lock:** the `website-sync-check` advisory lock. It is tried and never waited on; when the job is running, the refresh is skipped.
+- **Same branches:**
+  - insert when missing;
+  - restore a removed row;
+  - set the hash without a new sequence on first check;
+  - new sequence when the hash differs;
+  - store an unchanged item that was missing.
+
+A later scan finds the hash equal and does nothing. Nothing changes in the consumer contract: the row is what the builder makes, and no column, function or API shape changes.
+
+Why it exists: Zoho reads the prepared item. Without this, a newly approved description waits until the scan reaches that provider. The scan's pass order is reference, provider, logo, rankings, scholarship, course.
 
 ### Post-deploy Run Now setting (§1), through the existing settings mechanism
 
@@ -90,10 +136,13 @@ admin_toolsets_write('setting', {"toolset":"pipeline","key":"run_now.jobs","valu
 
 ### Forward recovery
 
-- **Stop new work:** remove `provider-description-read` from `run_now.jobs` with a reason, and/or pause the `provider-description-read` job, and/or set `pdesc.enabled` to 0.
+- **Stop new work first, before any rollback:** pause the `provider-description-read` job with a reason, or set `pdesc.enabled` to 0. Also take `provider-description-read` out of `run_now.jobs` if it was added.
 - **Keep the record:** retain saved cohorts, evidence, proposals, reservations and decisions. Drop nothing.
 - **Bad proposal:** reject it in Layer 4. Unchanged rejected evidence is never read again.
-- **Worker fault:** redeploy the previous `coverage-sweep` from release history. The new database functions fail closed for an old worker: no reservation means no paid call.
+- **Worker fault:**
+  - Pause the job, or set `pdesc.enabled` to 0, **before** redeploying a previous `coverage-sweep`.
+  - A worker from before this release would call the model without a reservation if it were given an item. The new lease refuses it (`worker_protocol_required`), but the pause is the procedure, and the gate is only a safeguard.
+  - Resume only after a reservation-capable worker is deployed again.
 - **Database fault:** forward-fix with a new migration that is guarded on the after-hashes. Never edit the consumer projection directly.
 
 ## Verified production baseline

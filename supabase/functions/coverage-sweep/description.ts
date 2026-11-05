@@ -104,20 +104,16 @@ export function descriptionSourceIdentity(html: string, page: string, names: str
   return { ok: true, rule: "current_provider_name", matched_name: matched };
 }
 
-// Word-overlap support must never turn an unquoted numerical fact into a supported claim.
+// The lease protocol this worker follows: reserve a conservative price with svc_provider_description_reserve_v1 before every paid call.
+export const DESCRIPTION_WORKER_PROTOCOL = "provider-description-reserve-v1";
+
+// Worker-side check: only long copied official passages. Numbers and historic context are decided once, evidence-aware, by
+// security.provider_description_validate_v1 (validation 5 Nov 2026, decision 20:03 §2: no keyword- or format-only rejection).
 // Keep the whole answer and quotes; hold it rather than rewriting any sentence to make it pass.
 export function descriptionClaimCheck(answer: any, maxVerbatimChars?: number): { ok: boolean; rule?: string; reason?: string } {
   if (!Array.isArray(answer?.sentences)) return { ok: false, rule: "invalid_answer", reason: "The answer has no sentence array." };
-  const numbers = (s: unknown) => String(s || "").match(/\b\d+(?:[,.]\d+)*%?/g) || [];
   if (maxVerbatimChars !== undefined && (!Number.isInteger(maxVerbatimChars) || maxVerbatimChars < 1)) return { ok: false, rule: "invalid_verbatim_limit", reason: "The governed quotation-copy limit is unavailable." };
   for (const s of answer.sentences) {
-    const quoted = new Set(numbers(s?.quote));
-    if (numbers(s?.text).some((n) => !quoted.has(n))) return { ok: false, rule: "unsupported_numeric_claim", reason: "A numerical fact is absent from its supporting quote." };
-    if (/\b(former|formerly|previously|was known as|became|renamed|closed|merged|ceased)\b/i.test(String(s?.quote || ""))
-      && /\b(is|are|operates|offers)\b/i.test(String(s?.text || ""))
-      && !/\b(former|formerly|previously|was|were|became|renamed|closed|merged|ceased|history|founded|established|origin|since)\b/i.test(String(s?.text || ""))) {
-      return { ok: false, rule: "historic_claim_context", reason: "A historical institutional statement was presented as current without its source conditions." };
-    }
     if (maxVerbatimChars !== undefined) {
       const normalized = (value: unknown) => String(value || "").replace(/\s+/g, " ").trim().toLowerCase();
       const text = Array.from(normalized(s?.text)), quote = normalized(s?.quote), span = maxVerbatimChars;
