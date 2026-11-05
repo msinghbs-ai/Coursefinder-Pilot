@@ -1,0 +1,1083 @@
+{
+ "tool": "prod-parity-capture v1",
+ "server_version_num": 170006,
+ "search_path": "\"\\$user\", public, extensions",
+ "scope": {
+  "tables": [
+   "pipeline.admin_jobs",
+   "pipeline.manual_locks",
+   "pipeline.progress_transitions"
+  ],
+  "functions": [],
+  "lookups": [
+   "pipeline.admin_job_kinds",
+   "pipeline.ops_outcome_codes"
+  ],
+  "max_lookup_rows": 500
+ },
+ "facts": {
+  "role|anon": "statement_timeout=3s",
+  "role|service_role": "",
+  "role|authenticated": "statement_timeout=8s",
+  "role|authenticator": "lock_timeout=8s,statement_timeout=8s",
+  "session|search_path": "\"\\$user\", public, extensions",
+  "table|pipeline.admin_jobs": "target|r|rls=true|force=false",
+  "table|pipeline.manual_locks": "target|r|rls=true|force=false",
+  "schema|pipeline|service_role": "USAGE",
+  "schema|security|service_role": "USAGE",
+  "column|pipeline.admin_jobs|id": "uuid|notnull=true|default=gen_random_uuid()|identity=|generated=",
+  "schema|security|authenticated": "USAGE",
+  "table|pipeline.admin_job_kinds": "lookup|r|rls=true|force=false",
+  "column|pipeline.admin_jobs|args": "jsonb|notnull=true|default='{}'::jsonb|identity=|generated=",
+  "column|pipeline.admin_jobs|kind": "text|notnull=true|default=|identity=|generated=",
+  "column|pipeline.admin_jobs|lane": "text|notnull=true|default='adapters'::text|identity=|generated=",
+  "column|pipeline.admin_jobs|error": "text|notnull=false|default=|identity=|generated=",
+  "column|pipeline.admin_jobs|scope": "text|notnull=false|default=|identity=|generated=",
+  "column|pipeline.admin_jobs|state": "text|notnull=true|default='queued'::text|identity=|generated=",
+  "column|pipeline.admin_jobs|title": "text|notnull=true|default=|identity=|generated=",
+  "table|pipeline.ops_outcome_codes": "lookup|r|rls=true|force=false",
+  "column|pipeline.admin_jobs|cursor": "jsonb|notnull=true|default='{}'::jsonb|identity=|generated=",
+  "column|pipeline.admin_jobs|reason": "text|notnull=true|default=|identity=|generated=",
+  "column|pipeline.admin_jobs|result": "jsonb|notnull=true|default='{}'::jsonb|identity=|generated=",
+  "column|pipeline.manual_locks|mode": "text|notnull=true|default=|identity=|generated=",
+  "table|pipeline.integration_issues": "referenced|r|rls=true|force=false",
+  "column|pipeline.admin_jobs|outcome": "text|notnull=false|default=|identity=|generated=",
+  "column|pipeline.manual_locks|field": "text|notnull=true|default=|identity=|generated=",
+  "column|pipeline.admin_jobs|progress": "jsonb|notnull=true|default='{}'::jsonb|identity=|generated=",
+  "column|pipeline.manual_locks|entity": "text|notnull=true|default=|identity=|generated=",
+  "column|pipeline.manual_locks|set_at": "timestamp with time zone|notnull=true|default=now()|identity=|generated=",
+  "column|pipeline.manual_locks|set_by": "uuid|notnull=false|default=|identity=|generated=",
+  "table|pipeline.progress_transitions": "target|r|rls=true|force=false",
+  "column|pipeline.admin_job_kinds|kind": "text|notnull=true|default=|identity=|generated=",
+  "column|pipeline.admin_job_kinds|what": "text|notnull=true|default=|identity=|generated=",
+  "lookup_rows|pipeline.admin_job_kinds": "16|aff1d29dc096f27e92e93a84ac0a7a46",
+  "column|pipeline.admin_job_kinds|label": "text|notnull=true|default=|identity=|generated=",
+  "column|pipeline.admin_jobs|created_at": "timestamp with time zone|notnull=true|default=now()|identity=|generated=",
+  "column|pipeline.admin_jobs|started_at": "timestamp with time zone|notnull=false|default=|identity=|generated=",
+  "column|pipeline.admin_jobs|updated_at": "timestamp with time zone|notnull=true|default=now()|identity=|generated=",
+  "column|pipeline.integration_issues|id": "bigint|notnull=true|default=|identity=|generated=",
+  "column|pipeline.admin_jobs|finished_at": "timestamp with time zone|notnull=false|default=|identity=|generated=",
+  "column|pipeline.manual_locks|entity_id": "uuid|notnull=true|default=|identity=|generated=",
+  "column|pipeline.ops_outcome_codes|code": "text|notnull=true|default=|identity=|generated=",
+  "execute|security.ops_guard_refuse_v1()": "",
+  "lookup_rows|pipeline.ops_outcome_codes": "8|02f8f8ff52aed7501a0799031f9eacc2",
+  "column|pipeline.admin_jobs|requested_by": "uuid|notnull=true|default=|identity=|generated=",
+  "column|pipeline.ops_outcome_codes|title": "text|notnull=true|default=|identity=|generated=",
+  "function|security.ops_guard_refuse_v1()": "21b88e034e08a6eee7431c4eb1631f47|trigger",
+  "function|security.ops_remedy_guard_active_v1()": "5f2ec6b47ce55213c0e90bb46649c844|dependency",
+  "execute|security.ops_remedy_guard_active_v1()": "",
+  "column|pipeline.admin_job_kinds|added_at": "timestamp with time zone|notnull=true|default=|identity=|generated=",
+  "column|pipeline.admin_job_kinds|added_in": "text|notnull=true|default=|identity=|generated=",
+  "column|pipeline.progress_transitions|key": "text|notnull=true|default=|identity=|generated=",
+  "column|pipeline.admin_job_kinds|can_pause": "boolean|notnull=true|default=|identity=|generated=",
+  "column|pipeline.admin_jobs|outcome_detail": "jsonb|notnull=false|default=|identity=|generated=",
+  "column|pipeline.progress_transitions|step": "integer|notnull=true|default=|identity=|generated=",
+  "column|pipeline.admin_jobs|pause_requested": "boolean|notnull=true|default=false|identity=|generated=",
+  "column|pipeline.progress_transitions|chain": "text|notnull=true|default=|identity=|generated=",
+  "column|pipeline.progress_transitions|title": "text|notnull=true|default=|identity=|generated=",
+  "column|pipeline.admin_jobs|cancel_requested": "boolean|notnull=true|default=false|identity=|generated=",
+  "column|pipeline.progress_transitions|stalled": "boolean|notnull=true|default=false|identity=|generated=",
+  "column|pipeline.progress_transitions|issue_id": "bigint|notnull=false|default=|identity=|generated=",
+  "column|pipeline.progress_transitions|next_key": "text|notnull=false|default=|identity=|generated=",
+  "trigger|pipeline.manual_locks|ops_guard_locks": "CREATE TRIGGER ops_guard_locks BEFORE INSERT OR DELETE OR UPDATE ON pipeline.manual_locks FOR EACH ROW WHEN (security.ops_remedy_guard_active_v1()) EXECUTE FUNCTION security.ops_guard_refuse_v1('manual locks')|enabled=O",
+  "column|pipeline.integration_issues|fingerprint": "text|notnull=true|default=|identity=|generated=",
+  "constraint|pipeline.admin_jobs|admin_jobs_pkey": "p|PRIMARY KEY (id)",
+  "column|pipeline.progress_transitions|measured_at": "timestamp with time zone|notnull=false|default=|identity=|generated=",
+  "column|pipeline.progress_transitions|switch_keys": "text[]|notnull=true|default='{}'::text[]|identity=|generated=",
+  "column|pipeline.progress_transitions|zero_detail": "text|notnull=false|default=|identity=|generated=",
+  "column|pipeline.progress_transitions|zero_reason": "text|notnull=false|default=|identity=|generated=",
+  "column|pipeline.progress_transitions|window_start": "timestamp with time zone|notnull=false|default=|identity=|generated=",
+  "constraint|pipeline.admin_jobs|admin_jobs_kind_fk": "f|FOREIGN KEY (kind) REFERENCES pipeline.admin_job_kinds(kind)",
+  "column|pipeline.progress_transitions|measure_error": "text|notnull=false|default=|identity=|generated=",
+  "column|pipeline.progress_transitions|output_parked": "numeric|notnull=false|default=|identity=|generated=",
+  "column|pipeline.progress_transitions|producer_jobs": "text[]|notnull=true|default='{}'::text[]|identity=|generated=",
+  "column|pipeline.progress_transitions|stalled_since": "timestamp with time zone|notnull=false|default=|identity=|generated=",
+  "constraint|pipeline.manual_locks|manual_locks_pkey": "p|PRIMARY KEY (entity, entity_id, field)",
+  "column|pipeline.progress_transitions|input_eligible": "numeric|notnull=false|default=|identity=|generated=",
+  "column|pipeline.progress_transitions|output_created": "numeric|notnull=false|default=|identity=|generated=",
+  "index|pipeline.admin_jobs|admin_jobs_kind_scope_idx": "CREATE INDEX admin_jobs_kind_scope_idx ON pipeline.admin_jobs USING btree (kind, scope, state)",
+  "index|pipeline.admin_jobs|admin_jobs_lane_state_idx": "CREATE INDEX admin_jobs_lane_state_idx ON pipeline.admin_jobs USING btree (lane, state, created_at)",
+  "column|pipeline.ops_outcome_codes|counts_as_movement": "boolean|notnull=true|default=|identity=|generated=",
+  "column|pipeline.progress_transitions|input_processed": "numeric|notnull=false|default=|identity=|generated=",
+  "column|pipeline.progress_transitions|output_admitted": "numeric|notnull=false|default=|identity=|generated=",
+  "column|pipeline.progress_transitions|output_rejected": "numeric|notnull=false|default=|identity=|generated=",
+  "column|pipeline.progress_transitions|last_advanced_at": "timestamp with time zone|notnull=false|default=|identity=|generated=",
+  "column|pipeline.progress_transitions|output_published": "numeric|notnull=false|default=|identity=|generated=",
+  "column|pipeline.progress_transitions|rejected_reasons": "jsonb|notnull=false|default=|identity=|generated=",
+  "constraint|pipeline.admin_jobs|admin_jobs_state_check": "c|CHECK ((state = ANY (ARRAY['queued'::text, 'running'::text, 'paused'::text, 'done'::text, 'failed'::text, 'cancelled'::text])))",
+  "column|pipeline.progress_transitions|downstream_queued": "numeric|notnull=false|default=|identity=|generated=",
+  "constraint|pipeline.admin_jobs|admin_jobs_outcome_fkey": "f|FOREIGN KEY (outcome) REFERENCES pipeline.ops_outcome_codes(code)",
+  "column|pipeline.progress_transitions|parked_next_actions": "jsonb|notnull=false|default=|identity=|generated=",
+  "constraint|pipeline.admin_job_kinds|admin_job_kinds_pkey": "p|PRIMARY KEY (kind)",
+  "constraint|pipeline.manual_locks|manual_locks_mode_check": "c|CHECK ((mode = ANY (ARRAY['value'::text, 'removed'::text])))",
+  "constraint|pipeline.manual_locks|manual_locks_entity_check": "c|CHECK ((entity = ANY (ARRAY['course'::text, 'provider'::text, 'campus'::text, 'scholarship'::text])))",
+  "index|pipeline.admin_jobs|admin_jobs_run_now_idempotency_uq": "CREATE UNIQUE INDEX admin_jobs_run_now_idempotency_uq ON pipeline.admin_jobs USING btree (((args ->> 'idempotency_key'::text))) WHERE ((kind = 'job_run_now'::text) AND (args ? 'idempotency_key'::text))",
+  "constraint|pipeline.ops_outcome_codes|ops_outcome_codes_pkey": "p|PRIMARY KEY (code)",
+  "index|pipeline.admin_jobs|admin_jobs_governed_idempotency_uq": "CREATE UNIQUE INDEX admin_jobs_governed_idempotency_uq ON pipeline.admin_jobs USING btree (((args ->> 'idempotency_key'::text))) WHERE (kind = 'governed_action'::text)",
+  "constraint|pipeline.integration_issues|integration_issues_pkey": "p|PRIMARY KEY (id)",
+  "constraint|pipeline.progress_transitions|progress_transitions_pkey": "p|PRIMARY KEY (key)",
+  "constraint|pipeline.progress_transitions|progress_transitions_key_check": "c|CHECK ((key ~ '^[a-z][a-z0-9_]*$'::text))",
+  "constraint|pipeline.integration_issues|integration_issues_fingerprint_key": "u|UNIQUE (fingerprint)",
+  "constraint|pipeline.progress_transitions|progress_transitions_chain_check": "c|CHECK ((chain = ANY (ARRAY['scholarship'::text, 'aer'::text])))",
+  "constraint|pipeline.progress_transitions|progress_transitions_issue_id_fkey": "f|FOREIGN KEY (issue_id) REFERENCES pipeline.integration_issues(id)",
+  "constraint|pipeline.progress_transitions|progress_transitions_next_key_fkey": "f|FOREIGN KEY (next_key) REFERENCES pipeline.progress_transitions(key)",
+  "constraint|pipeline.progress_transitions|progress_transitions_chain_step_key": "u|UNIQUE (chain, step)",
+  "constraint|pipeline.progress_transitions|progress_transitions_zero_reason_check": "c|CHECK (((zero_reason IS NULL) OR (zero_reason = ANY (ARRAY['no_eligible_work'::text, 'cap_reached'::text, 'blocked_authority'::text, 'correctly_excluded'::text, 'technical_failure'::text]))))"
+ },
+ "roles": [
+  {
+   "name": "anon",
+   "settings": "statement_timeout=3s"
+  },
+  {
+   "name": "authenticated",
+   "settings": "statement_timeout=8s"
+  },
+  {
+   "name": "authenticator",
+   "settings": "lock_timeout=8s,statement_timeout=8s"
+  },
+  {
+   "name": "service_role",
+   "settings": null
+  }
+ ],
+ "types": [],
+ "tables": [
+  {
+   "fq": "pipeline.admin_job_kinds",
+   "rls": true,
+   "kind": "lookup",
+   "relkind": "r",
+   "force_rls": false,
+   "refused": null,
+   "grants": [],
+   "indexes": [],
+   "policies": [],
+   "triggers": [],
+   "columns": [
+    {
+     "name": "kind",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "label",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "what",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "can_pause",
+     "type": "boolean",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "added_at",
+     "type": "timestamp with time zone",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "added_in",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    }
+   ],
+   "constraints": [
+    {
+     "def": "PRIMARY KEY (kind)",
+     "name": "admin_job_kinds_pkey",
+     "type": "p"
+    }
+   ],
+   "rows": [
+    {
+     "kind": "adapter_apply",
+     "what": "Reads a university's stored pages again with its adapter.",
+     "label": "Apply an adapter",
+     "added_at": "2026-10-11T02:07:09.150479+00:00",
+     "added_in": "Decision 254",
+     "can_pause": false
+    },
+    {
+     "kind": "admit_qualified",
+     "what": "Admits the fields that passed a finished Qualify task.",
+     "label": "Admit passing fields",
+     "added_at": "2026-10-11T02:07:09.150479+00:00",
+     "added_in": "Decision 254",
+     "can_pause": true
+    },
+    {
+     "kind": "central_page_read",
+     "what": "Reads a university's fee, English or dates page.",
+     "label": "Read a central page",
+     "added_at": "2026-10-11T02:07:09.150479+00:00",
+     "added_in": "Decision 254",
+     "can_pause": false
+    },
+    {
+     "kind": "course_page_find",
+     "what": "Searches the provider's own site for the official page of each chosen course (by CRICOS code, or by title), first in line.",
+     "label": "Find course pages with Firecrawl",
+     "added_at": "2026-10-11T03:01:43.670476+00:00",
+     "added_in": "v2.15.245",
+     "can_pause": false
+    },
+    {
+     "kind": "enrich_fields",
+     "what": "Fills chosen missing fields for chosen countries or universities: values the university adapters already read, the institution rule, the AI reading stored pages or classifying titles, and (only when allowed) one new read through the scraper. Values entered or locked by hand are never changed.",
+     "label": "Enrich fields",
+     "added_at": "2026-10-14T00:16:12.80387+00:00",
+     "added_in": "v2.15.273",
+     "can_pause": false
+    },
+    {
+     "kind": "firecrawl_run",
+     "what": "A Firecrawl run with its own credit allowance.",
+     "label": "Firecrawl run",
+     "added_at": "2026-10-11T02:07:09.150479+00:00",
+     "added_in": "Decision 254",
+     "can_pause": true
+    },
+    {
+     "kind": "governed_action",
+     "what": "One allowlisted Platform Admin action approved in the admin UI: checked live, dry-run, run once under an idempotency key, post-checked and audited (Decision 268). Written when it has run or been refused; never queued.",
+     "label": "Governed action",
+     "added_at": "2026-10-27T11:41:41.220234+00:00",
+     "added_in": "Decision 268",
+     "can_pause": false
+    },
+    {
+     "kind": "job_run_now",
+     "what": "A catalogued job run at once on a fixed cohort by a Platform Admin, through the job's own function and rules: allowlisted, not paused, one at a time, with a reason. Written when it has run or been refused; never queued.",
+     "label": "Run now",
+     "added_at": "2026-11-04T09:46:42.512041+00:00",
+     "added_in": "CF-247 4 Nov 2026 20:05",
+     "can_pause": false
+    },
+    {
+     "kind": "provider_fill",
+     "what": "Finds the provider's own website by search (verified by its register code or its name on the home page) when none is recorded, then reads its public contacts and finds its central pages (key dates, international fees, English requirements) with Firecrawl.",
+     "label": "Fill in a provider from its website",
+     "added_at": "2026-10-11T03:01:43.670476+00:00",
+     "added_in": "v2.15.245",
+     "can_pause": false
+    },
+    {
+     "kind": "qualify_adapters",
+     "what": "Measures adapters against the admission rules; admits nothing.",
+     "label": "Qualify adapters",
+     "added_at": "2026-10-11T02:07:09.150479+00:00",
+     "added_in": "Decision 254",
+     "can_pause": true
+    },
+    {
+     "kind": "reread_pages",
+     "what": "Sends universities' course pages to be read again.",
+     "label": "Read pages again",
+     "added_at": "2026-10-11T02:07:09.150479+00:00",
+     "added_in": "Decision 254",
+     "can_pause": false
+    },
+    {
+     "kind": "scholarship_ai_backfill",
+     "what": "Reads chosen universities' refused and known scholarship pages with the active AI model; admits under the publish checks when AI admission is on.",
+     "label": "Re-check scholarship pages with AI",
+     "added_at": "2026-10-11T11:24:47.173365+00:00",
+     "added_in": "v2.15.249",
+     "can_pause": false
+    },
+    {
+     "kind": "scholarship_ai_qualify",
+     "what": "Runs the hand-checked sample through one AI model and scores it; admits nothing.",
+     "label": "Qualify the scholarship AI",
+     "added_at": "2026-10-11T11:24:47.173365+00:00",
+     "added_in": "v2.15.249",
+     "can_pause": false
+    },
+    {
+     "kind": "scholarship_course_check",
+     "what": "Reads the provider's scholarship pages again through the scraper and applies the course-link rules; lists what was added or removed for the course.",
+     "label": "Check scholarships for a course",
+     "added_at": "2026-10-11T02:07:09.150479+00:00",
+     "added_in": "CF-247 11 Oct 2026",
+     "can_pause": false
+    },
+    {
+     "kind": "scholarship_provider_scan",
+     "what": "Maps the university's site through the scraper, screens its candidate pages, admits new scholarships and reads every scholarship page; links courses from the evidence.",
+     "label": "Find scholarships now",
+     "added_at": "2026-10-11T02:07:09.150479+00:00",
+     "added_in": "CF-247 11 Oct 2026",
+     "can_pause": false
+    },
+    {
+     "kind": "scholarship_reread",
+     "what": "Reads the scholarship's page again through the scraper now and applies what it states.",
+     "label": "Read a scholarship again",
+     "added_at": "2026-10-11T02:07:09.150479+00:00",
+     "added_in": "CF-247 11 Oct 2026",
+     "can_pause": false
+    }
+   ]
+  },
+  {
+   "fq": "pipeline.ops_outcome_codes",
+   "rls": true,
+   "kind": "lookup",
+   "relkind": "r",
+   "force_rls": false,
+   "refused": null,
+   "grants": [],
+   "indexes": [],
+   "policies": [],
+   "triggers": [],
+   "columns": [
+    {
+     "name": "code",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "title",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "counts_as_movement",
+     "type": "boolean",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    }
+   ],
+   "constraints": [
+    {
+     "def": "PRIMARY KEY (code)",
+     "name": "ops_outcome_codes_pkey",
+     "type": "p"
+    }
+   ],
+   "rows": [
+    {
+     "code": "blocked_evidence",
+     "title": "Blocked by evidence",
+     "counts_as_movement": false
+    },
+    {
+     "code": "blocked_policy",
+     "title": "Blocked by policy",
+     "counts_as_movement": false
+    },
+    {
+     "code": "deferred_dependency",
+     "title": "Deferred for a dependency",
+     "counts_as_movement": false
+    },
+    {
+     "code": "failed_remediation",
+     "title": "Failed and requiring remediation",
+     "counts_as_movement": false
+    },
+    {
+     "code": "failed_retryable",
+     "title": "Failed and retryable",
+     "counts_as_movement": false
+    },
+    {
+     "code": "not_needed",
+     "title": "Not needed",
+     "counts_as_movement": false
+    },
+    {
+     "code": "succeeded_no_movement",
+     "title": "Succeeded without data movement",
+     "counts_as_movement": false
+    },
+    {
+     "code": "succeeded_with_result",
+     "title": "Succeeded with a measurable result",
+     "counts_as_movement": true
+    }
+   ]
+  },
+  {
+   "fq": "pipeline.integration_issues",
+   "rls": true,
+   "kind": "referenced",
+   "relkind": "r",
+   "force_rls": false,
+   "refused": null,
+   "rows": null,
+   "grants": [],
+   "indexes": [],
+   "policies": [],
+   "triggers": [],
+   "columns": [
+    {
+     "name": "id",
+     "type": "bigint",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "fingerprint",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    }
+   ],
+   "constraints": [
+    {
+     "def": "PRIMARY KEY (id)",
+     "name": "integration_issues_pkey",
+     "type": "p"
+    },
+    {
+     "def": "UNIQUE (fingerprint)",
+     "name": "integration_issues_fingerprint_key",
+     "type": "u"
+    }
+   ]
+  },
+  {
+   "fq": "pipeline.admin_jobs",
+   "rls": true,
+   "kind": "target",
+   "relkind": "r",
+   "force_rls": false,
+   "refused": null,
+   "rows": null,
+   "grants": [],
+   "policies": [],
+   "triggers": [],
+   "columns": [
+    {
+     "name": "id",
+     "type": "uuid",
+     "default": "gen_random_uuid()",
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "kind",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "lane",
+     "type": "text",
+     "default": "'adapters'::text",
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "state",
+     "type": "text",
+     "default": "'queued'::text",
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "title",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "args",
+     "type": "jsonb",
+     "default": "'{}'::jsonb",
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "cursor",
+     "type": "jsonb",
+     "default": "'{}'::jsonb",
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "progress",
+     "type": "jsonb",
+     "default": "'{}'::jsonb",
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "result",
+     "type": "jsonb",
+     "default": "'{}'::jsonb",
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "error",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "cancel_requested",
+     "type": "boolean",
+     "default": "false",
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "pause_requested",
+     "type": "boolean",
+     "default": "false",
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "requested_by",
+     "type": "uuid",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "reason",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "created_at",
+     "type": "timestamp with time zone",
+     "default": "now()",
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "started_at",
+     "type": "timestamp with time zone",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "updated_at",
+     "type": "timestamp with time zone",
+     "default": "now()",
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "finished_at",
+     "type": "timestamp with time zone",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "scope",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "outcome",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "outcome_detail",
+     "type": "jsonb",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    }
+   ],
+   "indexes": [
+    {
+     "def": "CREATE UNIQUE INDEX admin_jobs_governed_idempotency_uq ON pipeline.admin_jobs USING btree (((args ->> 'idempotency_key'::text))) WHERE (kind = 'governed_action'::text)",
+     "name": "admin_jobs_governed_idempotency_uq"
+    },
+    {
+     "def": "CREATE INDEX admin_jobs_kind_scope_idx ON pipeline.admin_jobs USING btree (kind, scope, state)",
+     "name": "admin_jobs_kind_scope_idx"
+    },
+    {
+     "def": "CREATE INDEX admin_jobs_lane_state_idx ON pipeline.admin_jobs USING btree (lane, state, created_at)",
+     "name": "admin_jobs_lane_state_idx"
+    },
+    {
+     "def": "CREATE UNIQUE INDEX admin_jobs_run_now_idempotency_uq ON pipeline.admin_jobs USING btree (((args ->> 'idempotency_key'::text))) WHERE ((kind = 'job_run_now'::text) AND (args ? 'idempotency_key'::text))",
+     "name": "admin_jobs_run_now_idempotency_uq"
+    }
+   ],
+   "constraints": [
+    {
+     "def": "CHECK ((state = ANY (ARRAY['queued'::text, 'running'::text, 'paused'::text, 'done'::text, 'failed'::text, 'cancelled'::text])))",
+     "name": "admin_jobs_state_check",
+     "type": "c"
+    },
+    {
+     "def": "FOREIGN KEY (kind) REFERENCES pipeline.admin_job_kinds(kind)",
+     "name": "admin_jobs_kind_fk",
+     "type": "f"
+    },
+    {
+     "def": "FOREIGN KEY (outcome) REFERENCES pipeline.ops_outcome_codes(code)",
+     "name": "admin_jobs_outcome_fkey",
+     "type": "f"
+    },
+    {
+     "def": "PRIMARY KEY (id)",
+     "name": "admin_jobs_pkey",
+     "type": "p"
+    }
+   ]
+  },
+  {
+   "fq": "pipeline.manual_locks",
+   "rls": true,
+   "kind": "target",
+   "relkind": "r",
+   "force_rls": false,
+   "refused": null,
+   "rows": null,
+   "grants": [],
+   "indexes": [],
+   "policies": [],
+   "columns": [
+    {
+     "name": "entity",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "entity_id",
+     "type": "uuid",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "field",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "mode",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "set_by",
+     "type": "uuid",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "set_at",
+     "type": "timestamp with time zone",
+     "default": "now()",
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    }
+   ],
+   "triggers": [
+    {
+     "def": "CREATE TRIGGER ops_guard_locks BEFORE INSERT OR DELETE OR UPDATE ON pipeline.manual_locks FOR EACH ROW WHEN (security.ops_remedy_guard_active_v1()) EXECUTE FUNCTION security.ops_guard_refuse_v1('manual locks')",
+     "name": "ops_guard_locks",
+     "enabled": "O",
+     "function": "security.ops_guard_refuse_v1()"
+    }
+   ],
+   "constraints": [
+    {
+     "def": "CHECK ((entity = ANY (ARRAY['course'::text, 'provider'::text, 'campus'::text, 'scholarship'::text])))",
+     "name": "manual_locks_entity_check",
+     "type": "c"
+    },
+    {
+     "def": "CHECK ((mode = ANY (ARRAY['value'::text, 'removed'::text])))",
+     "name": "manual_locks_mode_check",
+     "type": "c"
+    },
+    {
+     "def": "PRIMARY KEY (entity, entity_id, field)",
+     "name": "manual_locks_pkey",
+     "type": "p"
+    }
+   ]
+  },
+  {
+   "fq": "pipeline.progress_transitions",
+   "rls": true,
+   "kind": "target",
+   "relkind": "r",
+   "force_rls": false,
+   "refused": null,
+   "rows": null,
+   "grants": [],
+   "indexes": [],
+   "policies": [],
+   "triggers": [],
+   "columns": [
+    {
+     "name": "key",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "chain",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "step",
+     "type": "integer",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "title",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "producer_jobs",
+     "type": "text[]",
+     "default": "'{}'::text[]",
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "next_key",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "switch_keys",
+     "type": "text[]",
+     "default": "'{}'::text[]",
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "measured_at",
+     "type": "timestamp with time zone",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "window_start",
+     "type": "timestamp with time zone",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "input_eligible",
+     "type": "numeric",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "input_processed",
+     "type": "numeric",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "output_created",
+     "type": "numeric",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "output_rejected",
+     "type": "numeric",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "rejected_reasons",
+     "type": "jsonb",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "output_parked",
+     "type": "numeric",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "parked_next_actions",
+     "type": "jsonb",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "downstream_queued",
+     "type": "numeric",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "output_admitted",
+     "type": "numeric",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "output_published",
+     "type": "numeric",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "last_advanced_at",
+     "type": "timestamp with time zone",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "zero_reason",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "zero_detail",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "stalled",
+     "type": "boolean",
+     "default": "false",
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "stalled_since",
+     "type": "timestamp with time zone",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "issue_id",
+     "type": "bigint",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "measure_error",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    }
+   ],
+   "constraints": [
+    {
+     "def": "CHECK ((chain = ANY (ARRAY['scholarship'::text, 'aer'::text])))",
+     "name": "progress_transitions_chain_check",
+     "type": "c"
+    },
+    {
+     "def": "CHECK ((key ~ '^[a-z][a-z0-9_]*$'::text))",
+     "name": "progress_transitions_key_check",
+     "type": "c"
+    },
+    {
+     "def": "CHECK (((zero_reason IS NULL) OR (zero_reason = ANY (ARRAY['no_eligible_work'::text, 'cap_reached'::text, 'blocked_authority'::text, 'correctly_excluded'::text, 'technical_failure'::text]))))",
+     "name": "progress_transitions_zero_reason_check",
+     "type": "c"
+    },
+    {
+     "def": "FOREIGN KEY (issue_id) REFERENCES pipeline.integration_issues(id)",
+     "name": "progress_transitions_issue_id_fkey",
+     "type": "f"
+    },
+    {
+     "def": "FOREIGN KEY (next_key) REFERENCES pipeline.progress_transitions(key)",
+     "name": "progress_transitions_next_key_fkey",
+     "type": "f"
+    },
+    {
+     "def": "PRIMARY KEY (key)",
+     "name": "progress_transitions_pkey",
+     "type": "p"
+    },
+    {
+     "def": "UNIQUE (chain, step)",
+     "name": "progress_transitions_chain_step_key",
+     "type": "u"
+    }
+   ]
+  }
+ ],
+ "missing": [],
+ "schemas": [
+  {
+   "name": "pipeline",
+   "grantee": "service_role",
+   "privileges": "USAGE"
+  },
+  {
+   "name": "security",
+   "grantee": "authenticated",
+   "privileges": "USAGE"
+  },
+  {
+   "name": "security",
+   "grantee": "service_role",
+   "privileges": "USAGE"
+  }
+ ],
+ "functions": [
+  {
+   "sig": "security.ops_guard_refuse_v1()",
+   "kind": "trigger",
+   "prokind": "f",
+   "md5": "21b88e034e08a6eee7431c4eb1631f47",
+   "execute": "",
+   "def": "CREATE OR REPLACE FUNCTION security.ops_guard_refuse_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\n-- Fires only while a remedy or verification runs (trigger WHEN security.ops_remedy_guard_active_v1()). TG_ARGV[0] names what is protected.\nbegin\n  raise exception 'ops guard: a remedy cannot change % (%.%; that is a release or a Platform Admin decision)', TG_ARGV[0], TG_TABLE_SCHEMA, TG_TABLE_NAME using errcode = '42501';\nend $function$\n"
+  },
+  {
+   "sig": "security.ops_remedy_guard_active_v1()",
+   "kind": "dependency",
+   "prokind": "f",
+   "md5": "5f2ec6b47ce55213c0e90bb46649c844",
+   "execute": "",
+   "def": "CREATE OR REPLACE FUNCTION security.ops_remedy_guard_active_v1()\n RETURNS boolean\n LANGUAGE sql\n STABLE\n SET search_path TO ''\nAS $function$\n  select coalesce(current_setting('cf247.ops_remedy', true), '') = 'on'\n$function$\n"
+  }
+ ],
+ "source": "Production fxcwkweaxjtknorudmwp (PostgreSQL 17.6), read-only pg_catalog plus two code tables, 5 Nov 2026 19:28 AEDT, agent E; no user data"
+}
