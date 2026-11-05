@@ -1,0 +1,23 @@
+/* CF-247 Automation Progress (decision 5 Nov 2026 16:36 §3, §4: usable on a phone): the section stays inside the panel; tables scroll inside it */
+.ap { min-width: 0; border-bottom: 1px solid var(--cf-border); padding-bottom: var(--cf-space-4); margin-bottom: var(--cf-space-4); }
+.ap-state { display: flex; flex-wrap: wrap; gap: var(--cf-space-2); align-items: center; margin-block: var(--cf-space-3); }
+.ap-state > span, .ap p, .ap li, .ap dd { overflow-wrap: anywhere; }
+.ap-block { margin-top: var(--cf-space-4); min-width: 0; }
+.ap-windows, .ap-chips { display: flex; flex-wrap: wrap; gap: var(--cf-space-2); margin-block: var(--cf-space-2); }
+.ap-funnel { list-style: none; padding: 0; margin: var(--cf-space-3) 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--cf-space-2); }
+.ap-funnel li { display: grid; grid-template-columns: auto 1fr auto; gap: var(--cf-space-2); align-items: baseline; border: 1px solid var(--cf-border); border-radius: 6px; padding: var(--cf-space-2) var(--cf-space-3); min-width: 0; }
+.ap-funnel li small { grid-column: 1 / -1; color: var(--cf-muted, inherit); }
+.ap-step { font-variant-numeric: tabular-nums; opacity: .7; }
+.ap .intake-table-scroll { overflow-x: auto; max-width: 100%; }
+.ap-table td, .ap-table th { white-space: nowrap; }
+.ap-failure { border-top: 1px solid var(--cf-border); padding-block: var(--cf-space-3); min-width: 0; }
+.ap-facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--cf-space-2); margin: var(--cf-space-2) 0; }
+.ap-facts dt { font-weight: 600; } .ap-facts dd { margin: 0; }
+.ap-alerts, .ap-runs ul, .ap-snaps { padding-left: var(--cf-space-4); }
+.ap-alerts li { margin-block: var(--cf-space-1, 4px); }
+.ap-note { opacity: .85; }
+@media (max-width: 600px) {
+  .ap-funnel { grid-template-columns: minmax(0, 1fr); }
+  .ap-controls > * { width: 100%; }
+  .ap button { min-height: 44px; }
+}
