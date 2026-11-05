@@ -1,0 +1,39 @@
+/* CF-247 Course Catalogue columns (mandate 5 Nov 2026 17:31 §6): the Columns control, the saved acknowledgement, the active sort and a bounded
+   table frame so the header stays in view while the rows scroll; a wide table scrolls sideways inside its own frame, never the page. */
+.cc-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:6px 16px 8px}
+.cc-sort{font-size:var(--cf-fs-xs);color:var(--cf-slate-600)}
+.cc-sort strong{color:var(--cf-slate-800)}
+.cc-ack{font-size:var(--cf-fs-2xs);border-radius:var(--cf-radius-pill);padding:3px 8px;background:var(--cf-slate-100);color:var(--cf-slate-600)}
+.cc-ack.tone-success{background:var(--cf-green-75);color:var(--cf-green-700)}
+.cc-ack.tone-warning{background:var(--cf-amber-50,#fff7e6);color:var(--cf-amber-800,#7a4b00)}
+.cc-columns{position:relative}
+.cc-count{margin-left:4px;font-weight:600;color:var(--cf-slate-500)}
+.cc-panel{position:absolute;z-index:40;top:calc(100% + 6px);left:0;width:min(380px,calc(100vw - 32px));max-height:min(70vh,640px);overflow:auto;background:var(--cf-white);border:1px solid var(--cf-slate-200);border-radius:var(--cf-radius-lg);box-shadow:0 12px 32px rgba(15,23,42,.16);padding:10px 12px;display:grid;gap:10px}
+.cc-panel-head{display:flex;align-items:center;gap:8px}
+.cc-panel-head span{flex:1;font-size:var(--cf-fs-2xs);color:var(--cf-slate-500)}
+.cc-search{display:flex;align-items:center;gap:6px;border:1px solid var(--cf-slate-200);border-radius:var(--cf-radius-sm);padding:6px 8px}
+.cc-search input{border:0;outline:none;font:inherit;width:100%;background:transparent}
+.cc-order small,.cc-group legend small{color:var(--cf-slate-450);font-weight:600}
+.cc-order ol{list-style:none;margin:4px 0 0;padding:0;display:grid;gap:2px}
+.cc-order li{display:flex;align-items:center;gap:4px;font-size:var(--cf-fs-xs);padding:2px 4px;border-radius:var(--cf-radius-xs)}
+.cc-order li:hover{background:var(--cf-slate-50)}
+.cc-order li span{flex:1}
+.cc-icon{border:1px solid var(--cf-slate-200);background:var(--cf-white);border-radius:var(--cf-radius-xs);min-width:26px;min-height:26px;display:inline-grid;place-items:center;cursor:pointer;color:var(--cf-slate-600)}
+.cc-icon:disabled{opacity:.35;cursor:default}
+.cc-group{border:0;padding:0;margin:0;display:grid;gap:2px}
+.cc-group legend{font-size:var(--cf-fs-2xs);font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--cf-slate-600);margin-bottom:4px}
+.cc-option{display:flex;align-items:center;gap:8px;font-size:var(--cf-fs-xs);min-height:28px;cursor:pointer}
+.cc-option small{color:var(--cf-slate-450)}
+.cc-actions{display:flex;flex-wrap:wrap;gap:6px;border-top:1px solid var(--cf-slate-150);padding-top:8px}
+.cc-empty{font-size:var(--cf-fs-xs);color:var(--cf-slate-500);margin:0}
+.cc-unknown{color:var(--cf-slate-450);font-style:italic}
+.cc-link{border:0;background:transparent;padding:0;color:var(--cf-indigo-600);font:inherit;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.cc-cities ul{margin:4px 0 0;padding-left:16px;font-size:var(--cf-fs-2xs);white-space:normal}
+.cc-adapter{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px}
+.m-table-wrap.cc-frame{max-height:calc(100vh - 240px);min-height:320px;overflow:auto;overscroll-behavior:contain}
+.m-table-wrap.cc-frame td{white-space:normal;overflow-wrap:anywhere}
+.m-col-resize:focus-visible{outline:2px solid var(--cf-indigo-500);outline-offset:-2px}
+@media (max-width:640px){
+  .cc-panel{position:fixed;left:16px;right:16px;top:72px;width:auto;max-height:calc(100vh - 96px)}
+  .m-table-wrap.cc-frame{max-height:calc(100vh - 180px)}
+}

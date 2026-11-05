@@ -125,23 +125,23 @@ Completed is never inferred from an adapter existing: it needs a result row for 
 
 ### 2.2 Column registry (screen `courses`)
 
-Default layout = the 11 columns shown today, in today's order, then Adapter status, Last modified and Last data admitted.
+Default layout = the 11 columns shown today, in today's order, keys and headings (so widths a person set in this browser still apply and existing tests keep passing), with Adapter status before Verified, then Last modified and Last data admitted. The picker shows the mandate's names; the table keeps today's headings where they differ.
 
 | Group | Key | Label | Server sort | Default |
 |---|---|---|---|---|
 | Identity | `canonical_title` | Course (always shown) | course | yes |
-| Identity | `display_code` | Course code / CRICOS | – | yes |
+| Identity | `course_code` | Course code / CRICOS (heading: Course code) | – | yes |
 | Identity | `provider_name` | Provider | provider | yes |
 | Identity | `country_name` | Country | – | |
 | Identity | `subdivision_name` | State / Region | – | yes |
 | Identity | `city_names` | City | city | yes |
 | Identity | `campus_count` | Campus | – | |
 | Identity | `level_name` | Study level | – | yes |
-| Identity | `field_of_study` | Study area | field | yes |
+| Identity | `field_of_study` | Study area (heading: Field) | field | yes |
 | Course information | `duration` | Duration | – | |
 | Course information | `delivery_mode` | Delivery mode | – | |
 | Course information | `intl_fee_amount` | International fee | intl_fee | yes |
-| Course information | `fee_amount` | Tuition (registered) | fee | yes |
+| Course information | `fee_amount` | Tuition (registered, CRICOS) (heading: Tuition Only; Australian lists only, as today) | fee | yes |
 | Course information | `intl_fee_year` | Fee year | – | |
 | Course information | `intakes` | Intakes | – | |
 | Course information | `deadline` | Application deadline | – | |
@@ -156,7 +156,7 @@ Default layout = the 11 columns shown today, in today's order, then Adapter stat
 | Pipeline and enrichment | `adapter_result` | Adapter result | – | |
 | Pipeline and enrichment | `page_stored` | Stored course page | – | |
 | Pipeline and enrichment | `source_identity` | Source identity | – | |
-| Pipeline and enrichment | `last_verified_at` | Evidence last verified | verified | yes |
+| Pipeline and enrichment | `last_verified_at` | Evidence last verified (heading: Verified) | verified | yes |
 | Pipeline and enrichment | `layer4_status` | Layer 4 | – | |
 | Pipeline and enrichment | `enrichment_status` | Enrichment | – | |
 | Pipeline and enrichment | `last_admitted_field` | Last successful field admission | – | |
@@ -189,7 +189,7 @@ From `course_attribute_coverage` and `enrichment_flags`, computed in the project
 
 ### 2.4 Frontend
 
-- A Columns control above the table: search, the four groups with a count ("14 of 36 shown"), tick to show and untick to hide, move up/down buttons (keyboard) for order, Reset to default, Restore last saved, and a "Saved" acknowledgement with the time.
+- A Columns control above the table: search, the four groups with a count ("14 of 36"), tick to show and untick to hide, Move left / Move right buttons for order (keyboard: Tab and Enter; focus stays on the moved column), Reset to default, Restore last saved, and an acknowledgement ("Layout saved to your account at 19:45", or "Saved in this browser only" when the server cannot be reached).
 - `DataTable` gains optional, backward-compatible props: an external widths source, a per-column minimum width, keyboard resizing (arrow keys on the resize handle), a sticky header and a visible active-sort indicator. Other lists are unchanged (the defaults keep today's behaviour).
 - Layout source order: the server layout when it loads; otherwise the existing localStorage (`cf-colw:course`, `useRememberedState`) as the offline fallback. localStorage is read and still written, never cleared or overwritten with a server value of another person.
 - Row click, search, filters, paging and the CRICOS fee rule are unchanged.
@@ -206,6 +206,49 @@ From `course_attribute_coverage` and `enrichment_flags`, computed in the project
 | **Protects** | Course lifecycle processing, adapters and enrichment (read only: nothing written to their tables); search and index refresh (not touched); manual locks and admission controls (not read for writing, never changed); filters and paging (same arguments, same rows, same order for existing sort keys); existing personal settings (localStorage never removed or overwritten); the consumer API (no `website_*`, `zoho_*`, `api.*` function, edge function or consumer table column is touched; the new objects are admin-only). Background automation plans and admission authority are unchanged. |
 | **Validates** | §4 below. |
 
-## 4. Tests
+## 4. Tests and evidence (CC-2)
 
-Recorded as each milestone lands (CC-2).
+### 4.1 Isolated PostgreSQL fixture (`tests/fixtures/course-catalogue-columns/run.sh`, workflow `course-catalogue-columns-test.yml`)
+
+| Step | Result (local run 5 Nov 2026, PostgreSQL 16) |
+|---|---|
+| Production-schema parity: 39 tables (columns and types, not-null, constraints, every foreign key, indexes, triggers, RLS, policies, grants) fingerprinted with `parity.sql` and compared with `production-parity.txt` (read from production 19:30 AEDT) | identical, table by table |
+| The 8 live definitions the change reads or edits rebuilt byte for byte | md5 = production for all 8 |
+| Production-volume data through the production constraints | 35,712 courses, 1,203 providers, 171,004 field items, 34,000 overwrites, 214,206 field states |
+| Migration applied, then applied again | second run reports both edits already applied; definitions and rows unchanged |
+| Backward compatibility: 13 argument sets the screen sends, before and after (same rows, same order, every existing field equal, same total and metadata) | 13 PASS |
+| Database cases (layouts, roles, refusals, cities, adapter status, timestamps, field states, server-side sort across pages) | 50 PASS |
+| Benchmark, as a signed-in person, three runs each (middle shown) | course 69 ms; Last data admitted 891 ms (offset 17,000: 909 ms; 200 rows: 902 ms); Adapter 627 ms; Last modified 66 ms; Provider 70 ms; City 1,734 ms (existing sort, unchanged); Last data admitted with a state filter 2,015 ms (existing state filter cost). All under the 3,000 ms budget. |
+
+### 4.2 Browser to PostgreSQL (`tests/integration/course-columns-postgres.spec.mjs`, real Admin UI, desktop and phone)
+
+| Mandate §10 case | Test | Result |
+|---|---|---|
+| 1 show and hide, 2 persist, 3 restore after sign-out and sign-in, 5 reorder and resize | show, hide, keyboard reorder and keyboard resize saved; a new browser context (no local storage) for the same person gets the same layout and width back | PASS |
+| 4 reset to default | Reset, then Restore last saved | PASS |
+| 6 server-side sort across pages, 9, 10 | Last data admitted oldest first and newest first over 34,832 active courses; page 2 continues page 1; sort kept with the layout | PASS |
+| 7 multiple cities, 8 adapter status, 9 modified versus admitted, 10 no fabricated timestamps | Melbourne (VIC) +2 expanding to Richmond (NSW) and Richmond (VIC), no Geelong; Processing, Completed, Failed, Ready, Held, Not configured; 4 Nov modified against 1 Oct admitted; Unknown | PASS |
+| 12 read-only roles and permission boundaries | a Viewer saves its own layout; the Platform Admin's layout is untouched and the other way round | PASS |
+| 11 search, filters, paging, 15 backward compatibility | 697 pages, Next and Previous, CRICOS code search, provider sort, row click opens the course | PASS |
+| 14 performance with many columns | all 36 columns shown, Last data admitted sort round trip under 3,000 ms, 50 rows | PASS |
+| 13 desktop and phone | phone (412 px): Columns panel inside the screen, the table scrolls in its own frame, no sideways page scroll, course title at least 160 px | PASS |
+
+Database refusals proven in 4.1: unknown column, hidden course title, width under the column minimum, duplicate column, unknown sort, layout over the size setting, extra keys, unknown screen, no role (42501), no session (42501), anon cannot execute, the table cannot be read directly.
+
+### 4.3 Repository specs (local, `pw-5291.config.mjs`)
+
+- New `tests/uat/cf-247-course-catalogue-columns-contract.spec.mjs` (Guards: the mandate): registry equals the migration's, default layout, layout normalising, Columns control, saved acknowledgement, server-unavailable fallback, and an `@responsive` phone test. 7 PASS.
+- Governance: `s32`, `s42`, `s57`, `s120`, `s121` PASS.
+- Course-list specs that could be affected (`s87`, `s91`, `s96`, `s103`, record editing, NZ coverage, fee views, UI standard stage 1 and contract, `s121`): 93 PASS.
+- `vite build` passes.
+
+### 4.4 Production read-only preview (5 Nov 2026, inside the heavy-read window)
+
+The adapter status rule run read-only over production's 35,690 active courses: Completed 18,756, Failed 7,186, Held 4,360, Not configured 3,527, Ready 1,861 (no course processing at that minute). No production object was created or changed.
+
+## 5. Open points for the Integration Controller
+
+- `docs/platform/TEST-REGISTER.md` was regenerated from a partial local run (agents do not run the full suite), so statuses outside this change read "not run"; the Controller regenerates it after the full run at integration, as the ownership rules say.
+- At release: re-read the two edited functions' md5s (`2dc6ee8ba523afeec04d862f3a2ced8a`, `afbef16111a09e3680061547bbb1329a`); the migration refuses to apply if either changed.
+- The four indexes are built inside the migration (not concurrently). `field_enrich_items` (171,000 rows) is the largest; a short write lock on the four ledgers while they build.
+- Last modified is `catalogue.courses.updated_at`. There is no change history for the course record, so it shows the record's own persisted stamp: bulk real writes (for example the 3 Nov 2026 description admission on 11,149 courses) show as modifications.

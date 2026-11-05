@@ -91,7 +91,7 @@ insert into pipeline.admin_table_columns(screen, key, grp, label, sort, sort_key
  ('courses', 'duration', 'Course information', 'Duration', 100, null, false, 130, 90, false),
  ('courses', 'delivery_mode', 'Course information', 'Delivery mode', 110, null, false, 140, 90, false),
  ('courses', 'intl_fee_amount', 'Course information', 'International fee', 120, 'intl_fee', true, 190, 110, false),
- ('courses', 'fee_amount', 'Course information', 'Tuition (registered)', 130, 'fee', true, 150, 100, false),
+ ('courses', 'fee_amount', 'Course information', 'Tuition (registered, CRICOS)', 130, 'fee', true, 150, 100, false),
  ('courses', 'intl_fee_year', 'Course information', 'Fee year', 140, null, false, 100, 80, false),
  ('courses', 'intakes', 'Course information', 'Intakes', 150, null, false, 150, 100, false),
  ('courses', 'deadline', 'Course information', 'Application deadline', 160, null, false, 160, 100, false),
