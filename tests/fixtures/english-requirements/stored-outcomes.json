@@ -1,0 +1,1913 @@
+{
+ "source": "production fxcwkweaxjtknorudmwp, read only (SELECT), agent H",
+ "captured": "2026-11-05T21:43:17.727064+00:00",
+ "providers": [
+  {
+   "type": "university",
+   "country": "NZ",
+   "provider": "Massey University",
+   "provider_id": "229dc07d-c573-44a3-b5dc-cc423cc2c300",
+   "central_search": {
+    "state": "done",
+    "searched_at": "2026-10-11T23:49:16.112343+00:00",
+    "english_candidates": [
+     {
+      "url": "https://www.massey.ac.nz/study/international-students/qualifications-and-courses-for-international-students/english-language-courses",
+      "why": "English requirements",
+      "kind": "english_policy",
+      "score": 3.7,
+      "title": null
+     }
+    ]
+   },
+   "english_sources": []
+  },
+  {
+   "type": "university",
+   "country": "NZ",
+   "provider": "University of Auckland",
+   "provider_id": "e096aba7-e1eb-4903-9a63-2bfb71e9a8b8",
+   "central_search": {
+    "state": "done",
+    "searched_at": "2026-10-11T22:42:35.2474+00:00",
+    "english_candidates": [
+     {
+      "url": "https://www.auckland.ac.nz/en/study/applications-and-admissions/entry-requirements/english-language-requirements.html",
+      "why": "English requirements",
+      "kind": "english_policy",
+      "score": 6,
+      "title": null
+     },
+     {
+      "url": "https://www.auckland.ac.nz/en/study/applications-and-admissions/how-to-apply/supporting-documents/proof-of-english-language-proficiency.html",
+      "why": "English requirements",
+      "kind": "english_policy",
+      "score": 6,
+      "title": null
+     },
+     {
+      "url": "https://www.auckland.ac.nz/en/study/applications-and-admissions/entry-requirements/english-language-requirements/pearson-test-of-english.html",
+      "why": "English requirements",
+      "kind": "english_policy",
+      "score": 6,
+      "title": null
+     }
+    ]
+   },
+   "english_sources": [
+    {
+     "url": "https://www.auckland.ac.nz/en/study/applications-and-admissions/entry-requirements/english-language-requirements.html",
+     "status": "read",
+     "read_at": "2026-10-23T02:00:21.05822+00:00",
+     "ai_queue": [
+      {
+       "error": null,
+       "state": "done",
+       "status": "no_values",
+       "done_at": "2026-10-23T03:00:19.5665+00:00",
+       "attempts": 1,
+       "content_hash": "65b27c5b4101baebaf85769d193a2e3a379dd5d8d5198b3da59bfadf981e7836"
+      }
+     ],
+     "found_via": "search",
+     "proposals": [
+      {
+       "id": "598f34f8-8f30-48a0-8644-47bd63a47229",
+       "style": "none",
+       "parser": "provider-policy-v0.2.5",
+       "status": "superseded",
+       "proposal": {
+        "named": [],
+        "style": "none",
+        "parser": "provider-policy-v0.2.5",
+        "caveats": [],
+        "signals": [],
+        "defaults": {},
+        "conflicts": [],
+        "exceptions": []
+       },
+       "created_at": "2026-10-23T02:00:21.360191+00:00",
+       "decision_note": null
+      },
+      {
+       "id": "228af837-4c0a-424e-abb5-1ef52d7ca2ba",
+       "style": "course_specific",
+       "parser": "ai:gpt-4.1-mini",
+       "status": "no_values",
+       "proposal": {
+        "named": [],
+        "style": "course_specific",
+        "parser": "ai:gpt-4.1-mini",
+        "caveats": [
+         "read_by_ai"
+        ],
+        "signals": [
+         "course_specific"
+        ],
+        "defaults": {},
+        "conflicts": [],
+        "exceptions": []
+       },
+       "created_at": "2026-10-23T03:00:19.5665+00:00",
+       "decision_note": null
+      }
+     ],
+     "content_hash": "65b27c5b4101baebaf85769d193a2e3a379dd5d8d5198b3da59bfadf981e7836",
+     "storage_path": "layer2/NZ/provider-facts/e096aba7-e1eb-4903-9a63-2bfb71e9a8b8/1214c1b4-8f19-4b55-b4a6-08a098bbaac4/65b27c5b4101baebaf85769d193a2e3a379dd5d8d5198b3da59bfadf981e7836.md.gz",
+     "fact_source_id": "1214c1b4-8f19-4b55-b4a6-08a098bbaac4"
+    },
+    {
+     "url": "https://www.auckland.ac.nz/en/study/applications-and-admissions/entry-requirements/english-language-requirements/pearson-test-of-english.html",
+     "status": "read",
+     "read_at": "2026-10-23T03:50:20.989203+00:00",
+     "ai_queue": [
+      {
+       "error": null,
+       "state": "done",
+       "status": "no_values",
+       "done_at": "2026-10-23T04:50:21.373224+00:00",
+       "attempts": 1,
+       "content_hash": "c829a256b45a3bd280d2bfadd7fbd4022cb7cdafe4aa6ea56704499762e15117"
+      }
+     ],
+     "found_via": "search",
+     "proposals": [
+      {
+       "id": "147322b6-5f61-4fde-999e-93a579825910",
+       "style": "none",
+       "parser": "provider-policy-v0.2.5",
+       "status": "superseded",
+       "proposal": {
+        "named": [],
+        "style": "none",
+        "parser": "provider-policy-v0.2.5",
+        "caveats": [],
+        "signals": [],
+        "defaults": {},
+        "conflicts": [],
+        "exceptions": []
+       },
+       "created_at": "2026-10-23T03:50:21.416503+00:00",
+       "decision_note": null
+      },
+      {
+       "id": "c7d25fac-830c-4be5-b425-ffc26ae99e87",
+       "style": "course_specific",
+       "parser": "ai:gpt-4.1-mini",
+       "status": "no_values",
+       "proposal": {
+        "named": [],
+        "style": "course_specific",
+        "parser": "ai:gpt-4.1-mini",
+        "caveats": [
+         "read_by_ai"
+        ],
+        "signals": [
+         "course_specific"
+        ],
+        "defaults": {},
+        "conflicts": [],
+        "exceptions": []
+       },
+       "created_at": "2026-10-23T04:50:21.373224+00:00",
+       "decision_note": null
+      }
+     ],
+     "content_hash": "c829a256b45a3bd280d2bfadd7fbd4022cb7cdafe4aa6ea56704499762e15117",
+     "storage_path": "layer2/NZ/provider-facts/e096aba7-e1eb-4903-9a63-2bfb71e9a8b8/55d9b299-d974-4db5-8ec1-ec0af352f67f/c829a256b45a3bd280d2bfadd7fbd4022cb7cdafe4aa6ea56704499762e15117.md.gz",
+     "fact_source_id": "55d9b299-d974-4db5-8ec1-ec0af352f67f"
+    },
+    {
+     "url": "https://www.auckland.ac.nz/en/study/applications-and-admissions/how-to-apply/supporting-documents/proof-of-english-language-proficiency.html",
+     "status": "read",
+     "read_at": "2026-10-23T02:50:16.469191+00:00",
+     "ai_queue": [
+      {
+       "error": null,
+       "state": "done",
+       "status": "no_values",
+       "done_at": "2026-10-23T03:55:11.489188+00:00",
+       "attempts": 1,
+       "content_hash": "9205df735622c83b1d974d8ea7cec5e6c6e108bc0b8cce5173667791b4248b6c"
+      }
+     ],
+     "found_via": "search",
+     "proposals": [
+      {
+       "id": "714b715c-5d27-465b-8fa7-3599880d4909",
+       "style": "none",
+       "parser": "provider-policy-v0.2.5",
+       "status": "superseded",
+       "proposal": {
+        "named": [],
+        "style": "none",
+        "parser": "provider-policy-v0.2.5",
+        "caveats": [],
+        "signals": [],
+        "defaults": {},
+        "conflicts": [],
+        "exceptions": []
+       },
+       "created_at": "2026-10-23T02:50:16.709621+00:00",
+       "decision_note": null
+      },
+      {
+       "id": "811b9c42-b84e-458f-8d89-3411eeb492c7",
+       "style": "course_specific",
+       "parser": "ai:gpt-4.1-mini",
+       "status": "no_values",
+       "proposal": {
+        "named": [],
+        "style": "course_specific",
+        "parser": "ai:gpt-4.1-mini",
+        "caveats": [
+         "read_by_ai"
+        ],
+        "signals": [
+         "course_specific"
+        ],
+        "defaults": {},
+        "conflicts": [],
+        "exceptions": []
+       },
+       "created_at": "2026-10-23T03:55:11.489188+00:00",
+       "decision_note": null
+      }
+     ],
+     "content_hash": "9205df735622c83b1d974d8ea7cec5e6c6e108bc0b8cce5173667791b4248b6c",
+     "storage_path": "layer2/NZ/provider-facts/e096aba7-e1eb-4903-9a63-2bfb71e9a8b8/a65734e6-d5f8-487b-9979-8b7708de4ccd/9205df735622c83b1d974d8ea7cec5e6c6e108bc0b8cce5173667791b4248b6c.md.gz",
+     "fact_source_id": "a65734e6-d5f8-487b-9979-8b7708de4ccd"
+    }
+   ]
+  },
+  {
+   "type": "university",
+   "country": "NZ",
+   "provider": "University of Canterbury",
+   "provider_id": "db910e88-67d1-4d2b-a65c-cea290aa0692",
+   "central_search": {
+    "state": "done",
+    "searched_at": "2026-10-11T23:37:27.31039+00:00",
+    "english_candidates": [
+     {
+      "url": "https://www.canterbury.ac.nz/about-uc/our-structure/faculties/education-faculty/centre-for-assessment-and-monitoring/ielts",
+      "why": "English requirements",
+      "kind": "english_policy",
+      "score": 6,
+      "title": null
+     },
+     {
+      "url": "https://www.canterbury.ac.nz/study/other-study-options/transition-programmes/pathways-for-international-students/english-for-academic-purposes",
+      "why": "English requirements",
+      "kind": "english_policy",
+      "score": 3.5,
+      "title": "English for Academic Purposes (EAP)"
+     }
+    ]
+   },
+   "english_sources": [
+    {
+     "url": "https://www.canterbury.ac.nz/about-uc/our-structure/faculties/education-faculty/centre-for-assessment-and-monitoring/ielts",
+     "status": "read",
+     "read_at": "2026-10-23T02:00:20.247303+00:00",
+     "ai_queue": [
+      {
+       "error": null,
+       "state": "done",
+       "status": "no_values",
+       "done_at": "2026-10-23T02:55:10.1883+00:00",
+       "attempts": 1,
+       "content_hash": "a3ae5ee7a933354b1a5e390de9a9403576f3baff4ecf322ca1ec623267829f58"
+      }
+     ],
+     "found_via": "search",
+     "proposals": [
+      {
+       "id": "984fc651-5a99-46fd-b546-c3ecb652002b",
+       "style": "none",
+       "parser": "provider-policy-v0.2.5",
+       "status": "superseded",
+       "proposal": {
+        "named": [],
+        "style": "none",
+        "parser": "provider-policy-v0.2.5",
+        "caveats": [],
+        "signals": [],
+        "defaults": {},
+        "conflicts": [],
+        "exceptions": []
+       },
+       "created_at": "2026-10-23T02:00:20.940202+00:00",
+       "decision_note": null
+      },
+      {
+       "id": "03fcc1ff-c935-4531-a63a-b80079e8067d",
+       "style": "course_specific",
+       "parser": "ai:gpt-4.1-mini",
+       "status": "no_values",
+       "proposal": {
+        "named": [],
+        "style": "course_specific",
+        "parser": "ai:gpt-4.1-mini",
+        "caveats": [
+         "read_by_ai"
+        ],
+        "signals": [
+         "course_specific"
+        ],
+        "defaults": {},
+        "conflicts": [],
+        "exceptions": []
+       },
+       "created_at": "2026-10-23T02:55:10.1883+00:00",
+       "decision_note": null
+      }
+     ],
+     "content_hash": "a3ae5ee7a933354b1a5e390de9a9403576f3baff4ecf322ca1ec623267829f58",
+     "storage_path": "layer2/NZ/provider-facts/db910e88-67d1-4d2b-a65c-cea290aa0692/8e0fc6c9-9d45-4d16-87cc-12b13513dc29/a3ae5ee7a933354b1a5e390de9a9403576f3baff4ecf322ca1ec623267829f58.md.gz",
+     "fact_source_id": "8e0fc6c9-9d45-4d16-87cc-12b13513dc29"
+    }
+   ]
+  },
+  {
+   "type": "university",
+   "country": "AU",
+   "provider": "UNSW Sydney",
+   "provider_id": "22657140-1cb0-4fa7-91df-90518ea8b35b",
+   "central_search": {
+    "state": "queued",
+    "searched_at": "2026-10-11T22:17:41.111534+00:00",
+    "english_candidates": [
+     {
+      "url": "https://www.unsw.edu.au/study/how-to-apply/english-language-requirements",
+      "why": "English requirements",
+      "kind": "english_policy",
+      "score": 6.4,
+      "title": "English language requirements | UNSW Sydney"
+     }
+    ]
+   },
+   "english_sources": [
+    {
+     "url": "https://www.unsw.edu.au/bengaluru/study-with-us/english-language-requirements",
+     "status": "read",
+     "read_at": "2026-10-02T11:10:15.519984+00:00",
+     "ai_queue": [
+      {
+       "error": null,
+       "state": "done",
+       "status": "proposed",
+       "done_at": "2026-10-15T00:45:10.724505+00:00",
+       "attempts": 1,
+       "content_hash": "41a27eaa9c63569bcc541ed6e92d75173e8c80ce23773308d2f2f6bd853a62c4"
+      }
+     ],
+     "found_via": "search",
+     "proposals": [
+      {
+       "id": "b75bcad5-8dd0-4263-9134-f8b4ab7defc9",
+       "style": "level_default",
+       "parser": "provider-policy-v0.2.1",
+       "status": "superseded",
+       "proposal": {
+        "named": [
+         "Diploma of Secondary Education (HKDSE)",
+         "Diploma of Secondary Education (HKDSE)Minimum RequirementLevel"
+        ],
+        "style": "level_default",
+        "parser": "provider-policy-v0.2.1",
+        "caveats": [
+         "exceptions_unlisted",
+         "course_groups"
+        ],
+        "signals": [
+         "by_faculty"
+        ],
+        "defaults": {
+         "postgraduate": [
+          {
+           "quote": "All programs except where specified below | IELTS - Academic version only: 6.0 overall (min. 5.5 in each subtest)",
+           "test_code": "IELTS",
+           "overall_score": 6,
+           "component_scores": {
+            "reading": 5.5,
+            "writing": 5.5,
+            "speaking": 5.5,
+            "listening": 5.5
+           }
+          },
+          {
+           "quote": "All programs except where specified below | TOEFL IBT: 79 overall (min. 21 in writing, 12 in reading, 11 in listening, 17 in speaking)",
+           "test_code": "TOEFL_IBT",
+           "overall_score": 79,
+           "component_scores": {
+            "reading": 12,
+            "writing": 21,
+            "speaking": 17,
+            "listening": 11
+           }
+          },
+          {
+           "quote": "All programs except where specified below | PTE Academic: 50 overall (min. 42 in each subtest)",
+           "test_code": "PTE",
+           "overall_score": 50,
+           "component_scores": {
+            "reading": 42,
+            "writing": 42,
+            "speaking": 42,
+            "listening": 42
+           }
+          },
+          {
+           "quote": "All programs except where specified below | C1 Advanced Cambridge: 169 overall (min.162 in each subtest)",
+           "test_code": "CAE",
+           "overall_score": 169,
+           "component_scores": {
+            "reading": 162,
+            "writing": 162,
+            "speaking": 162,
+            "listening": 162
+           }
+          }
+         ],
+         "undergraduate": [
+          {
+           "quote": "All programs except where specified below | IELTS - Academic version only: 6.0 overall (min. 5.5 in each subtest)",
+           "test_code": "IELTS",
+           "overall_score": 6,
+           "component_scores": {
+            "reading": 5.5,
+            "writing": 5.5,
+            "speaking": 5.5,
+            "listening": 5.5
+           }
+          },
+          {
+           "quote": "All programs except where specified below | TOEFL IBT: 79 overall (min. 21 in writing, 12 in reading, 11 in listening, 17 in speaking)",
+           "test_code": "TOEFL_IBT",
+           "overall_score": 79,
+           "component_scores": {
+            "reading": 12,
+            "writing": 21,
+            "speaking": 17,
+            "listening": 11
+           }
+          },
+          {
+           "quote": "All programs except where specified below | PTE Academic: 50 overall (min. 42 in each subtest)",
+           "test_code": "PTE",
+           "overall_score": 50,
+           "component_scores": {
+            "reading": 42,
+            "writing": 42,
+            "speaking": 42,
+            "listening": 42
+           }
+          },
+          {
+           "quote": "All programs except where specified below | C1 Advanced Cambridge: 169 overall (min.162 in each subtest)",
+           "test_code": "CAE",
+           "overall_score": 169,
+           "component_scores": {
+            "reading": 162,
+            "writing": 162,
+            "speaking": 162,
+            "listening": 162
+           }
+          }
+         ]
+        },
+        "conflicts": [],
+        "exceptions": [],
+        "added_tests": {
+         "added": [],
+         "error": null,
+         "parser": "provider-policy-v0.2.5",
+         "skipped": [],
+         "checked_at": "2026-10-17T04:55:40.996219+00:00",
+         "withdrawn_rows": 0
+        }
+       },
+       "created_at": "2026-10-02T11:10:15.601323+00:00",
+       "decision_note": "Contained 27 Oct 2026 by the agent under the Platform Admin mandate of 27 Oct 08:15 (item 6): the UNSW Bengaluru (India campus) page must not be used as UNSW Australia English-policy evidence. The 2 Oct approval stands in the record (decided_at/decided_by kept); the Platform Admin rejected a later reading of this same page (same URL and content hash) on 17 Oct as \"India campus page, not the Sydney policy\". Superseded so it supports no new admissions; the 422 values it wrote are untouched until the separate remediation paste is authorised."
+      },
+      {
+       "id": "032db5f6-7da2-4145-bf57-c27511c9f0a0",
+       "style": "level_default",
+       "parser": "ai:gpt-4.1-mini",
+       "status": "rejected",
+       "proposal": {
+        "named": [],
+        "style": "level_default",
+        "parser": "ai:gpt-4.1-mini",
+        "caveats": [
+         "read_by_ai",
+         "unproven_postgraduate"
+        ],
+        "signals": [
+         "course_specific"
+        ],
+        "defaults": {
+         "undergraduate": [
+          {
+           "quote": "Arts, Design & Architecture Undergraduate 6.5 overall (min. 6.0 in each subtest)",
+           "test_code": "IELTS",
+           "overall_score": 6.5,
+           "component_scores": {
+            "reading": 6,
+            "writing": 6,
+            "speaking": 6,
+            "listening": 6
+           }
+          }
+         ]
+        },
+        "conflicts": [],
+        "exceptions": []
+       },
+       "created_at": "2026-10-15T00:45:10.724505+00:00",
+       "decision_note": "Platform Admin 17 Oct 2026 15:01, recorded by Claude: India campus page, not the Sydney policy"
+      }
+     ],
+     "content_hash": "41a27eaa9c63569bcc541ed6e92d75173e8c80ce23773308d2f2f6bd853a62c4",
+     "storage_path": "layer2/AU/provider-facts/22657140-1cb0-4fa7-91df-90518ea8b35b/182d30af-0ad5-411f-b033-7a9557565e55/41a27eaa9c63569bcc541ed6e92d75173e8c80ce23773308d2f2f6bd853a62c4.md.gz",
+     "fact_source_id": "182d30af-0ad5-411f-b033-7a9557565e55"
+    },
+    {
+     "url": "https://www.unsw.edu.au/study/how-to-apply/english-language-requirements",
+     "status": "read",
+     "read_at": "2026-10-06T00:10:15.507848+00:00",
+     "ai_queue": [
+      {
+       "error": null,
+       "state": "done",
+       "status": "proposed",
+       "done_at": "2026-10-14T23:35:11.864958+00:00",
+       "attempts": 1,
+       "content_hash": "1896907dc286e70309f8fcd4c0369fa6b99edcead772d817712f364cfd2ba36d"
+      }
+     ],
+     "found_via": "manual",
+     "proposals": [
+      {
+       "id": "d69ac02a-35a9-4fc5-a62c-46d24c996fd4",
+       "style": "level_default",
+       "parser": "provider-policy-v0.1.0",
+       "status": "superseded",
+       "proposal": {
+        "named": [
+         "Bachelor of Education (Secondary) (Honours)",
+         "Bachelor of Education (Primary) (Honours)",
+         "Bachelor of Social Work (Honours)",
+         "Master of Teaching (Primary & Secondary)",
+         "Bachelor of Criminology & Criminal Justice",
+         "Bachelor of Social Work (Honours)/Bachelor of Laws",
+         "Bachelor of Nutrition/Master of Dietetics & Food Innovation",
+         "Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree",
+         "Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physiology",
+         "Bachelor of Pharmaceutical Medicine/Master of Pharmacy",
+         "Bachelor of Applied Exercise Science/Master of Clinical Exercise Physiology",
+         "Master of Psychology (Clinical & Forensic) including combined PhD/Master",
+         "Master of Clinical Neuropsychology",
+         "Master of Physiotherapy & Exercise Physiology",
+         "Bachelor of Applied Exercise Science/Master of Clinical Exercise Physiology Postgraduate coursework6",
+         "Bachelor of Education (Secondary)",
+         "Bachelor of Social Work",
+         "Bachelor of Social Work/Social Sciences",
+         "Bachelor of Social Work/Arts",
+         "Bachelor of Social Work/Criminology & Criminal Justice",
+         "Bachelor of Education (Primary & Secondary)",
+         "Master of Dietetics & Food Innovation",
+         "Bachelor of Social Work (Honours) and its related double degrees",
+         "Bachelor of Education (Secondary) The following program",
+         "Bachelor of Education (Primary) (Honours) The following programs",
+         "Bachelor of Nutrition/Master of Dietetics & Food Innovation The following programs",
+         "Doctor of Medicine",
+         "Bachelor of Criminology & Criminal Justice)",
+         "Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree programs",
+         "Diploma of Secondary Education (HKDSE)",
+         "Diploma of Secondary Education (HKDSE)Minimum Requirement Level",
+         "Master of Teaching (Primary and Secondary) programs",
+         "Master of Psychology (Clinical and Forensic) including combined PhD/Master programs",
+         "Master of Pharmacy",
+         "Master of Clinical Neuropsychology and Master of Psychology (Clinical & Forensic) including combined",
+         "Doctor of Philosophy, Professional Doctorates, Master by Research or Master of Philosophy",
+         "Master of Teaching (Primary and Secondary))",
+         "Bachelor of Aviation (Flying)",
+         "Master of Teaching (Primary and Secondary) and Bachelor of Education (all programs)",
+         "Master of Psychology (including combined PhD/Master)",
+         "Master of Clinical Neuro-psychology",
+         "Graduate Diploma in Psychology",
+         "Bachelor of Education (any program), Graduate Diploma in Psychology, Master of Psychology",
+         "Master of Teaching (Primary and Secondary)"
+        ],
+        "style": "level_default",
+        "parser": "provider-policy-v0.1.0",
+        "signals": [
+         "by_faculty"
+        ],
+        "defaults": {
+         "postgraduate": [
+          {
+           "quote": "All programs except where specified below Successful completion with a minimum overall grade of C and a minimum grade of C- in the writing component. | IELTS - Academic version only: 6.0 overall (min. 5.5 in each subtest)",
+           "test_code": "IELTS",
+           "overall_score": 6,
+           "component_scores": {
+            "reading": 5.5,
+            "writing": 5.5,
+            "speaking": 5.5,
+            "listening": 5.5
+           }
+          },
+          {
+           "quote": "All programs except where specified below Successful completion with a minimum overall grade of C and a minimum grade of C- in the writing component. | TOEFL IBT: 79 overall (min. 21 in writing, 12 in reading, 11 in listening, 17 in speaking)",
+           "test_code": "TOEFL_IBT",
+           "overall_score": 79,
+           "component_scores": {
+            "reading": 12,
+            "writing": 21,
+            "speaking": 17,
+            "listening": 11
+           }
+          },
+          {
+           "quote": "All programs except where specified below Successful completion with a minimum overall grade of C and a minimum grade of C- in the writing component. | PTE Academic: 50 overall (min. 42 in each subtest)",
+           "test_code": "PTE",
+           "overall_score": 50,
+           "component_scores": {
+            "reading": 42,
+            "writing": 42,
+            "speaking": 42,
+            "listening": 42
+           }
+          },
+          {
+           "quote": "All programs except where specified below Successful completion with a minimum overall grade of C and a minimum grade of C- in the writing component. | C1 Advanced Cambridge: 169 overall (min.162 in each subtest)",
+           "test_code": "CAE",
+           "overall_score": 169,
+           "component_scores": {
+            "reading": 162,
+            "writing": 162,
+            "speaking": 162,
+            "listening": 162
+           }
+          }
+         ],
+         "undergraduate": [
+          {
+           "quote": "All programs except where specified below Successful completion with a minimum overall grade of C and a minimum grade of C- in the writing component. | IELTS - Academic version only: 6.0 overall (min. 5.5 in each subtest)",
+           "test_code": "IELTS",
+           "overall_score": 6,
+           "component_scores": {
+            "reading": 5.5,
+            "writing": 5.5,
+            "speaking": 5.5,
+            "listening": 5.5
+           }
+          },
+          {
+           "quote": "All programs except where specified below Successful completion with a minimum overall grade of C and a minimum grade of C- in the writing component. | TOEFL IBT: 79 overall (min. 21 in writing, 12 in reading, 11 in listening, 17 in speaking)",
+           "test_code": "TOEFL_IBT",
+           "overall_score": 79,
+           "component_scores": {
+            "reading": 12,
+            "writing": 21,
+            "speaking": 17,
+            "listening": 11
+           }
+          },
+          {
+           "quote": "All programs except where specified below Successful completion with a minimum overall grade of C and a minimum grade of C- in the writing component. | PTE Academic: 50 overall (min. 42 in each subtest)",
+           "test_code": "PTE",
+           "overall_score": 50,
+           "component_scores": {
+            "reading": 42,
+            "writing": 42,
+            "speaking": 42,
+            "listening": 42
+           }
+          },
+          {
+           "quote": "All programs except where specified below Successful completion with a minimum overall grade of C and a minimum grade of C- in the writing component. | C1 Advanced Cambridge: 169 overall (min.162 in each subtest)",
+           "test_code": "CAE",
+           "overall_score": 169,
+           "component_scores": {
+            "reading": 162,
+            "writing": 162,
+            "speaking": 162,
+            "listening": 162
+           }
+          }
+         ]
+        },
+        "conflicts": [],
+        "exceptions": [
+         {
+          "name": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and",
+          "reqs": [
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "IELTS",
+            "overall_score": 6.5,
+            "component_scores": {
+             "reading": 6,
+             "writing": 6,
+             "speaking": 6,
+             "listening": 6
+            }
+           },
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "TOEFL_IBT",
+            "overall_score": 90,
+            "component_scores": {
+             "reading": 22,
+             "writing": 23,
+             "speaking": 22,
+             "listening": 22
+            }
+           },
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "PTE",
+            "overall_score": 58,
+            "component_scores": {
+             "reading": 50,
+             "writing": 50,
+             "speaking": 50,
+             "listening": 50
+            }
+           },
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "CAE",
+            "overall_score": 176,
+            "component_scores": {
+             "reading": 169,
+             "writing": 169,
+             "speaking": 169,
+             "listening": 169
+            }
+           },
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "CAE",
+            "overall_score": 180,
+            "component_scores": {
+             "reading": 180,
+             "writing": 180,
+             "speaking": 180,
+             "listening": 180
+            }
+           }
+          ],
+          "level": "both"
+         },
+         {
+          "name": "Bachelor of Criminology & Criminal Justice)",
+          "reqs": [
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "IELTS",
+            "overall_score": 6.5,
+            "component_scores": {
+             "reading": 6,
+             "writing": 6,
+             "speaking": 6,
+             "listening": 6
+            }
+           },
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "TOEFL_IBT",
+            "overall_score": 90,
+            "component_scores": {
+             "reading": 22,
+             "writing": 23,
+             "speaking": 22,
+             "listening": 22
+            }
+           },
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "PTE",
+            "overall_score": 58,
+            "component_scores": {
+             "reading": 50,
+             "writing": 50,
+             "speaking": 50,
+             "listening": 50
+            }
+           },
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "CAE",
+            "overall_score": 176,
+            "component_scores": {
+             "reading": 169,
+             "writing": 169,
+             "speaking": 169,
+             "listening": 169
+            }
+           },
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "CAE",
+            "overall_score": 180,
+            "component_scores": {
+             "reading": 180,
+             "writing": 180,
+             "speaking": 180,
+             "listening": 180
+            }
+           }
+          ],
+          "level": "both"
+         },
+         {
+          "name": "Bachelor of Medical Studies (BMed)/",
+          "reqs": [
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "IELTS",
+            "overall_score": 6.5,
+            "component_scores": {
+             "reading": 6,
+             "writing": 6,
+             "speaking": 6,
+             "listening": 6
+            }
+           },
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "TOEFL_IBT",
+            "overall_score": 90,
+            "component_scores": {
+             "reading": 22,
+             "writing": 23,
+             "speaking": 22,
+             "listening": 22
+            }
+           },
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "PTE",
+            "overall_score": 58,
+            "component_scores": {
+             "reading": 50,
+             "writing": 50,
+             "speaking": 50,
+             "listening": 50
+            }
+           },
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "CAE",
+            "overall_score": 176,
+            "component_scores": {
+             "reading": 169,
+             "writing": 169,
+             "speaking": 169,
+             "listening": 169
+            }
+           },
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "CAE",
+            "overall_score": 180,
+            "component_scores": {
+             "reading": 180,
+             "writing": 180,
+             "speaking": 180,
+             "listening": 180
+            }
+           }
+          ],
+          "level": "both"
+         },
+         {
+          "name": "Doctor of Medicine (MD) including double degree",
+          "reqs": [
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "IELTS",
+            "overall_score": 6.5,
+            "component_scores": {
+             "reading": 6,
+             "writing": 6,
+             "speaking": 6,
+             "listening": 6
+            }
+           },
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "TOEFL_IBT",
+            "overall_score": 90,
+            "component_scores": {
+             "reading": 22,
+             "writing": 23,
+             "speaking": 22,
+             "listening": 22
+            }
+           },
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "PTE",
+            "overall_score": 58,
+            "component_scores": {
+             "reading": 50,
+             "writing": 50,
+             "speaking": 50,
+             "listening": 50
+            }
+           },
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "CAE",
+            "overall_score": 176,
+            "component_scores": {
+             "reading": 169,
+             "writing": 169,
+             "speaking": 169,
+             "listening": 169
+            }
+           },
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "CAE",
+            "overall_score": 180,
+            "component_scores": {
+             "reading": 180,
+             "writing": 180,
+             "speaking": 180,
+             "listening": 180
+            }
+           }
+          ],
+          "level": "both"
+         },
+         {
+          "name": "Bachelor of Exercise Science/",
+          "reqs": [
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "IELTS",
+            "overall_score": 6.5,
+            "component_scores": {
+             "reading": 6,
+             "writing": 6,
+             "speaking": 6,
+             "listening": 6
+            }
+           },
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "TOEFL_IBT",
+            "overall_score": 90,
+            "component_scores": {
+             "reading": 22,
+             "writing": 23,
+             "speaking": 22,
+             "listening": 22
+            }
+           },
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "PTE",
+            "overall_score": 58,
+            "component_scores": {
+             "reading": 50,
+             "writing": 50,
+             "speaking": 50,
+             "listening": 50
+            }
+           },
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "CAE",
+            "overall_score": 176,
+            "component_scores": {
+             "reading": 169,
+             "writing": 169,
+             "speaking": 169,
+             "listening": 169
+            }
+           },
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "CAE",
+            "overall_score": 180,
+            "component_scores": {
+             "reading": 180,
+             "writing": 180,
+             "speaking": 180,
+             "listening": 180
+            }
+           }
+          ],
+          "level": "both"
+         },
+         {
+          "name": "Master of Physiotherapy & Exercise Physiology",
+          "reqs": [
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "IELTS",
+            "overall_score": 6.5,
+            "component_scores": {
+             "reading": 6,
+             "writing": 6,
+             "speaking": 6,
+             "listening": 6
+            }
+           },
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "TOEFL_IBT",
+            "overall_score": 90,
+            "component_scores": {
+             "reading": 22,
+             "writing": 23,
+             "speaking": 22,
+             "listening": 22
+            }
+           },
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "PTE",
+            "overall_score": 58,
+            "component_scores": {
+             "reading": 50,
+             "writing": 50,
+             "speaking": 50,
+             "listening": 50
+            }
+           },
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "CAE",
+            "overall_score": 176,
+            "component_scores": {
+             "reading": 169,
+             "writing": 169,
+             "speaking": 169,
+             "listening": 169
+            }
+           },
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "CAE",
+            "overall_score": 180,
+            "component_scores": {
+             "reading": 180,
+             "writing": 180,
+             "speaking": 180,
+             "listening": 180
+            }
+           }
+          ],
+          "level": "both"
+         },
+         {
+          "name": "Bachelor of Pharmaceutical Medicine/",
+          "reqs": [
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "IELTS",
+            "overall_score": 6.5,
+            "component_scores": {
+             "reading": 6,
+             "writing": 6,
+             "speaking": 6,
+             "listening": 6
+            }
+           },
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "TOEFL_IBT",
+            "overall_score": 90,
+            "component_scores": {
+             "reading": 22,
+             "writing": 23,
+             "speaking": 22,
+             "listening": 22
+            }
+           },
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "PTE",
+            "overall_score": 58,
+            "component_scores": {
+             "reading": 50,
+             "writing": 50,
+             "speaking": 50,
+             "listening": 50
+            }
+           },
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "CAE",
+            "overall_score": 176,
+            "component_scores": {
+             "reading": 169,
+             "writing": 169,
+             "speaking": 169,
+             "listening": 169
+            }
+           },
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "CAE",
+            "overall_score": 180,
+            "component_scores": {
+             "reading": 180,
+             "writing": 180,
+             "speaking": 180,
+             "listening": 180
+            }
+           }
+          ],
+          "level": "both"
+         },
+         {
+          "name": "Master of Pharmacy",
+          "reqs": [
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "IELTS",
+            "overall_score": 6.5,
+            "component_scores": {
+             "reading": 6,
+             "writing": 6,
+             "speaking": 6,
+             "listening": 6
+            }
+           },
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "TOEFL_IBT",
+            "overall_score": 90,
+            "component_scores": {
+             "reading": 22,
+             "writing": 23,
+             "speaking": 22,
+             "listening": 22
+            }
+           },
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "PTE",
+            "overall_score": 58,
+            "component_scores": {
+             "reading": 50,
+             "writing": 50,
+             "speaking": 50,
+             "listening": 50
+            }
+           },
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "CAE",
+            "overall_score": 176,
+            "component_scores": {
+             "reading": 169,
+             "writing": 169,
+             "speaking": 169,
+             "listening": 169
+            }
+           },
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "CAE",
+            "overall_score": 180,
+            "component_scores": {
+             "reading": 180,
+             "writing": 180,
+             "speaking": 180,
+             "listening": 180
+            }
+           }
+          ],
+          "level": "both"
+         },
+         {
+          "name": "Bachelor of Applied Exercise Science/",
+          "reqs": [
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "IELTS",
+            "overall_score": 6.5,
+            "component_scores": {
+             "reading": 6,
+             "writing": 6,
+             "speaking": 6,
+             "listening": 6
+            }
+           },
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "TOEFL_IBT",
+            "overall_score": 90,
+            "component_scores": {
+             "reading": 22,
+             "writing": 23,
+             "speaking": 22,
+             "listening": 22
+            }
+           },
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "PTE",
+            "overall_score": 58,
+            "component_scores": {
+             "reading": 50,
+             "writing": 50,
+             "speaking": 50,
+             "listening": 50
+            }
+           },
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "CAE",
+            "overall_score": 176,
+            "component_scores": {
+             "reading": 169,
+             "writing": 169,
+             "speaking": 169,
+             "listening": 169
+            }
+           },
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "CAE",
+            "overall_score": 180,
+            "component_scores": {
+             "reading": 180,
+             "writing": 180,
+             "speaking": 180,
+             "listening": 180
+            }
+           }
+          ],
+          "level": "both"
+         },
+         {
+          "name": "Master of Clinical Exercise Physiology Successful completion with a minimum overall grade of C+ and a minimum grade of C in the writing component",
+          "reqs": [
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "IELTS",
+            "overall_score": 6.5,
+            "component_scores": {
+             "reading": 6,
+             "writing": 6,
+             "speaking": 6,
+             "listening": 6
+            }
+           },
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "TOEFL_IBT",
+            "overall_score": 90,
+            "component_scores": {
+             "reading": 22,
+             "writing": 23,
+             "speaking": 22,
+             "listening": 22
+            }
+           },
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "PTE",
+            "overall_score": 58,
+            "component_scores": {
+             "reading": 50,
+             "writing": 50,
+             "speaking": 50,
+             "listening": 50
+            }
+           },
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "CAE",
+            "overall_score": 176,
+            "component_scores": {
+             "reading": 169,
+             "writing": 169,
+             "speaking": 169,
+             "listening": 169
+            }
+           },
+           {
+            "quote": "All Law and Business undergraduate & postgraduate coursework programs (excluding UNSW Canberra and Bachelor of Criminology & Criminal Justice) ; Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree ; Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physio",
+            "test_code": "CAE",
+            "overall_score": 180,
+            "component_scores": {
+             "reading": 180,
+             "writing": 180,
+             "speaking": 180,
+             "listening": 180
+            }
+           }
+          ],
+          "level": "both"
+         },
+         {
+          "name": "All Arts, Design & Architecture postgraduate coursework and research programs (excluding UNSW Canberra, Art & Design postgraduate coursework programs and",
+          "reqs": [
+           {
+            "quote": "All Arts, Design & Architecture postgraduate coursework and research programs (excluding UNSW Canberra, Art & Design postgraduate coursework programs and Master of Teaching (Primary and Secondary)) Successful completion with a minimum overall grade of C+ and a minimum grade of C in the writing compo",
+            "test_code": "IELTS",
+            "overall_score": 6.5,
+            "component_scores": {
+             "reading": 6,
+             "writing": 6,
+             "speaking": 6,
+             "listening": 6
+            }
+           },
+           {
+            "quote": "All Arts, Design & Architecture postgraduate coursework and research programs (excluding UNSW Canberra, Art & Design postgraduate coursework programs and Master of Teaching (Primary and Secondary)) Successful completion with a minimum overall grade of C+ and a minimum grade of C in the writing compo",
+            "test_code": "TOEFL_IBT",
+            "overall_score": 90,
+            "component_scores": {
+             "reading": 22,
+             "writing": 23,
+             "speaking": 22,
+             "listening": 22
+            }
+           },
+           {
+            "quote": "All Arts, Design & Architecture postgraduate coursework and research programs (excluding UNSW Canberra, Art & Design postgraduate coursework programs and Master of Teaching (Primary and Secondary)) Successful completion with a minimum overall grade of C+ and a minimum grade of C in the writing compo",
+            "test_code": "PTE",
+            "overall_score": 58,
+            "component_scores": {
+             "reading": 50,
+             "writing": 50,
+             "speaking": 50,
+             "listening": 50
+            }
+           },
+           {
+            "quote": "All Arts, Design & Architecture postgraduate coursework and research programs (excluding UNSW Canberra, Art & Design postgraduate coursework programs and Master of Teaching (Primary and Secondary)) Successful completion with a minimum overall grade of C+ and a minimum grade of C in the writing compo",
+            "test_code": "CAE",
+            "overall_score": 176,
+            "component_scores": {
+             "reading": 169,
+             "writing": 169,
+             "speaking": 169,
+             "listening": 169
+            }
+           },
+           {
+            "quote": "All Arts, Design & Architecture postgraduate coursework and research programs (excluding UNSW Canberra, Art & Design postgraduate coursework programs and Master of Teaching (Primary and Secondary)) Successful completion with a minimum overall grade of C+ and a minimum grade of C in the writing compo",
+            "test_code": "CAE",
+            "overall_score": 180,
+            "component_scores": {
+             "reading": 180,
+             "writing": 180,
+             "speaking": 180,
+             "listening": 180
+            }
+           }
+          ],
+          "level": "postgraduate"
+         },
+         {
+          "name": "Master of Teaching (Primary and Secondary)) Successful completion with a minimum overall grade of C+ and a minimum grade of C in the writing component",
+          "reqs": [
+           {
+            "quote": "All Arts, Design & Architecture postgraduate coursework and research programs (excluding UNSW Canberra, Art & Design postgraduate coursework programs and Master of Teaching (Primary and Secondary)) Successful completion with a minimum overall grade of C+ and a minimum grade of C in the writing compo",
+            "test_code": "IELTS",
+            "overall_score": 6.5,
+            "component_scores": {
+             "reading": 6,
+             "writing": 6,
+             "speaking": 6,
+             "listening": 6
+            }
+           },
+           {
+            "quote": "All Arts, Design & Architecture postgraduate coursework and research programs (excluding UNSW Canberra, Art & Design postgraduate coursework programs and Master of Teaching (Primary and Secondary)) Successful completion with a minimum overall grade of C+ and a minimum grade of C in the writing compo",
+            "test_code": "TOEFL_IBT",
+            "overall_score": 90,
+            "component_scores": {
+             "reading": 22,
+             "writing": 23,
+             "speaking": 22,
+             "listening": 22
+            }
+           },
+           {
+            "quote": "All Arts, Design & Architecture postgraduate coursework and research programs (excluding UNSW Canberra, Art & Design postgraduate coursework programs and Master of Teaching (Primary and Secondary)) Successful completion with a minimum overall grade of C+ and a minimum grade of C in the writing compo",
+            "test_code": "PTE",
+            "overall_score": 58,
+            "component_scores": {
+             "reading": 50,
+             "writing": 50,
+             "speaking": 50,
+             "listening": 50
+            }
+           },
+           {
+            "quote": "All Arts, Design & Architecture postgraduate coursework and research programs (excluding UNSW Canberra, Art & Design postgraduate coursework programs and Master of Teaching (Primary and Secondary)) Successful completion with a minimum overall grade of C+ and a minimum grade of C in the writing compo",
+            "test_code": "CAE",
+            "overall_score": 176,
+            "component_scores": {
+             "reading": 169,
+             "writing": 169,
+             "speaking": 169,
+             "listening": 169
+            }
+           },
+           {
+            "quote": "All Arts, Design & Architecture postgraduate coursework and research programs (excluding UNSW Canberra, Art & Design postgraduate coursework programs and Master of Teaching (Primary and Secondary)) Successful completion with a minimum overall grade of C+ and a minimum grade of C in the writing compo",
+            "test_code": "CAE",
+            "overall_score": 180,
+            "component_scores": {
+             "reading": 180,
+             "writing": 180,
+             "speaking": 180,
+             "listening": 180
+            }
+           }
+          ],
+          "level": "postgraduate"
+         }
+        ]
+       },
+       "created_at": "2026-10-02T07:17:27.745572+00:00",
+       "decision_note": null
+      },
+      {
+       "id": "1b8f1913-73df-437c-b29b-259d01f35502",
+       "style": "by_faculty",
+       "parser": "provider-policy-v0.2.0",
+       "status": "superseded",
+       "proposal": {
+        "named": [
+         "Bachelor of Education (Secondary) (Honours)",
+         "Bachelor of Education (Primary) (Honours)",
+         "Bachelor of Social Work (Honours)",
+         "Master of Teaching (Primary & Secondary)",
+         "Bachelor of Criminology & Criminal Justice",
+         "Bachelor of Social Work (Honours)/Bachelor of Laws",
+         "Bachelor of Nutrition/Master of Dietetics & Food Innovation",
+         "Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree",
+         "Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physiology",
+         "Bachelor of Pharmaceutical Medicine/Master of Pharmacy",
+         "Bachelor of Applied Exercise Science/Master of Clinical Exercise Physiology",
+         "Master of Psychology (Clinical & Forensic) including combined PhD/Master",
+         "Master of Clinical Neuropsychology",
+         "Master of Physiotherapy & Exercise Physiology",
+         "Bachelor of Applied Exercise Science/Master of Clinical Exercise Physiology Postgraduate coursework6",
+         "Bachelor of Education (Secondary)",
+         "Bachelor of Social Work",
+         "Bachelor of Social Work/Social Sciences",
+         "Bachelor of Social Work/Arts",
+         "Bachelor of Social Work/Criminology & Criminal Justice",
+         "Bachelor of Education (Primary & Secondary)",
+         "Master of Dietetics & Food Innovation",
+         "Bachelor of Social Work (Honours) and its related double degrees",
+         "Bachelor of Education (Secondary) The following program",
+         "Bachelor of Education (Primary) (Honours) The following programs",
+         "Bachelor of Nutrition/Master of Dietetics & Food Innovation The following programs",
+         "Doctor of Medicine",
+         "Bachelor of Criminology & Criminal Justice)",
+         "Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree programs",
+         "Diploma of Secondary Education (HKDSE)",
+         "Diploma of Secondary Education (HKDSE)Minimum Requirement Level",
+         "Master of Teaching (Primary and Secondary) programs",
+         "Master of Psychology (Clinical and Forensic) including combined PhD/Master programs",
+         "Master of Pharmacy",
+         "Master of Clinical Neuropsychology and Master of Psychology (Clinical & Forensic) including combined",
+         "Doctor of Philosophy, Professional Doctorates, Master by Research or Master of Philosophy",
+         "Master of Teaching (Primary and Secondary))",
+         "Bachelor of Aviation (Flying)",
+         "Master of Teaching (Primary and Secondary) and Bachelor of Education (all programs)",
+         "Master of Psychology (including combined PhD/Master)",
+         "Master of Clinical Neuro-psychology",
+         "Graduate Diploma in Psychology",
+         "Bachelor of Education (any program), Graduate Diploma in Psychology, Master of Psychology",
+         "Master of Teaching (Primary and Secondary)"
+        ],
+        "style": "by_faculty",
+        "parser": "provider-policy-v0.2.0",
+        "caveats": [
+         "course_groups"
+        ],
+        "signals": [
+         "by_faculty"
+        ],
+        "defaults": {},
+        "conflicts": [
+         "undergraduate IELTS: 6 / 6.5",
+         "undergraduate TOEFL_IBT: 79 / 90",
+         "undergraduate PTE: 50 / 58",
+         "undergraduate CAE: 169 / 176 / 180",
+         "postgraduate IELTS: 6 / 6.5",
+         "postgraduate TOEFL_IBT: 79 / 90",
+         "postgraduate PTE: 50 / 58",
+         "postgraduate CAE: 169 / 176 / 180"
+        ],
+        "exceptions": [
+         {
+          "name": "UNSW Canberra",
+          "reqs": [],
+          "level": "both"
+         },
+         {
+          "name": "Bachelor of Criminology",
+          "reqs": [],
+          "level": "both"
+         },
+         {
+          "name": "UNSW Canberra",
+          "reqs": [],
+          "level": "postgraduate"
+         },
+         {
+          "name": "Design postgraduate coursework programs",
+          "reqs": [],
+          "level": "postgraduate"
+         },
+         {
+          "name": "Master of Teaching  Primary",
+          "reqs": [],
+          "level": "postgraduate"
+         },
+         {
+          "name": "Secondary",
+          "reqs": [],
+          "level": "postgraduate"
+         },
+         {
+          "name": "UNSW Canberra",
+          "reqs": [],
+          "level": null
+         }
+        ]
+       },
+       "created_at": "2026-10-02T07:23:21.9132+00:00",
+       "decision_note": null
+      },
+      {
+       "id": "d0a1189a-de08-4463-8786-54b86f7bb688",
+       "style": "by_faculty",
+       "parser": "provider-policy-v0.2.1",
+       "status": "superseded",
+       "proposal": {
+        "named": [
+         "Bachelor of Education (Secondary) (Honours)",
+         "Bachelor of Education (Primary) (Honours)",
+         "Bachelor of Social Work (Honours)",
+         "Master of Teaching (Primary & Secondary)",
+         "Bachelor of Criminology & Criminal Justice",
+         "Bachelor of Social Work (Honours)/Bachelor of Laws",
+         "Bachelor of Nutrition/Master of Dietetics & Food Innovation",
+         "Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree",
+         "Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physiology",
+         "Bachelor of Pharmaceutical Medicine/Master of Pharmacy",
+         "Bachelor of Applied Exercise Science/Master of Clinical Exercise Physiology",
+         "Master of Psychology (Clinical & Forensic) including combined PhD/Master",
+         "Master of Clinical Neuropsychology",
+         "Master of Physiotherapy & Exercise Physiology",
+         "Bachelor of Applied Exercise Science/Master of Clinical Exercise Physiology Postgraduate coursework6",
+         "Bachelor of Education (Secondary)",
+         "Bachelor of Social Work",
+         "Bachelor of Social Work/Social Sciences",
+         "Bachelor of Social Work/Arts",
+         "Bachelor of Social Work/Criminology & Criminal Justice",
+         "Bachelor of Education (Primary & Secondary)",
+         "Master of Dietetics & Food Innovation",
+         "Bachelor of Social Work (Honours) and its related double degrees",
+         "Bachelor of Education (Secondary) The following program",
+         "Bachelor of Education (Primary) (Honours) The following programs",
+         "Bachelor of Nutrition/Master of Dietetics & Food Innovation The following programs",
+         "Doctor of Medicine",
+         "Bachelor of Criminology & Criminal Justice)",
+         "Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree programs",
+         "Diploma of Secondary Education (HKDSE)",
+         "Diploma of Secondary Education (HKDSE)Minimum Requirement Level",
+         "Master of Teaching (Primary and Secondary) programs",
+         "Master of Psychology (Clinical and Forensic) including combined PhD/Master programs",
+         "Master of Pharmacy",
+         "Master of Clinical Neuropsychology and Master of Psychology (Clinical & Forensic) including combined",
+         "Doctor of Philosophy, Professional Doctorates, Master by Research or Master of Philosophy",
+         "Master of Teaching (Primary and Secondary))",
+         "Bachelor of Aviation (Flying)",
+         "Master of Teaching (Primary and Secondary) and Bachelor of Education (all programs)",
+         "Master of Psychology (including combined PhD/Master)",
+         "Master of Clinical Neuro-psychology",
+         "Graduate Diploma in Psychology",
+         "Bachelor of Education (any program), Graduate Diploma in Psychology, Master of Psychology",
+         "Master of Teaching (Primary and Secondary)"
+        ],
+        "style": "by_faculty",
+        "parser": "provider-policy-v0.2.1",
+        "caveats": [
+         "course_groups"
+        ],
+        "signals": [
+         "by_faculty"
+        ],
+        "defaults": {},
+        "conflicts": [
+         "undergraduate IELTS: 6 / 6.5",
+         "undergraduate TOEFL_IBT: 79 / 90",
+         "undergraduate PTE: 50 / 58",
+         "undergraduate CAE: 169 / 176 / 180",
+         "postgraduate IELTS: 6 / 6.5",
+         "postgraduate TOEFL_IBT: 79 / 90",
+         "postgraduate PTE: 50 / 58",
+         "postgraduate CAE: 169 / 176 / 180"
+        ],
+        "exceptions": [
+         {
+          "name": "UNSW Canberra",
+          "reqs": [],
+          "level": "both"
+         },
+         {
+          "name": "Bachelor of Criminology",
+          "reqs": [],
+          "level": "both"
+         },
+         {
+          "name": "UNSW Canberra",
+          "reqs": [],
+          "level": "postgraduate"
+         },
+         {
+          "name": "Design postgraduate coursework programs",
+          "reqs": [],
+          "level": "postgraduate"
+         },
+         {
+          "name": "Master of Teaching  Primary",
+          "reqs": [],
+          "level": "postgraduate"
+         },
+         {
+          "name": "Secondary",
+          "reqs": [],
+          "level": "postgraduate"
+         },
+         {
+          "name": "UNSW Canberra",
+          "reqs": [],
+          "level": null
+         }
+        ]
+       },
+       "created_at": "2026-10-02T07:29:47.884841+00:00",
+       "decision_note": null
+      },
+      {
+       "id": "13d4fea4-26ea-4168-8c6f-ef95233f9a78",
+       "style": "by_faculty",
+       "parser": "provider-policy-v0.2.2",
+       "status": "superseded",
+       "proposal": {
+        "named": [
+         "Bachelor of Education (Secondary) (Honours)",
+         "Bachelor of Education (Primary) (Honours)",
+         "Bachelor of Social Work (Honours)",
+         "Master of Teaching (Primary & Secondary)",
+         "Bachelor of Criminology & Criminal Justice",
+         "Bachelor of Social Work (Honours)/Bachelor of Laws",
+         "Bachelor of Nutrition/Master of Dietetics & Food Innovation",
+         "Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree",
+         "Bachelor of Exercise Science/Master of Physiotherapy & Exercise Physiology",
+         "Bachelor of Pharmaceutical Medicine/Master of Pharmacy",
+         "Bachelor of Applied Exercise Science/Master of Clinical Exercise Physiology",
+         "Master of Psychology (Clinical & Forensic) including combined PhD/Master",
+         "Master of Clinical Neuropsychology",
+         "Master of Physiotherapy & Exercise Physiology",
+         "Bachelor of Applied Exercise Science/Master of Clinical Exercise Physiology Postgraduate coursework6",
+         "Bachelor of Education (Secondary)",
+         "Bachelor of Social Work",
+         "Bachelor of Social Work/Social Sciences",
+         "Bachelor of Social Work/Arts",
+         "Bachelor of Social Work/Criminology & Criminal Justice",
+         "Bachelor of Education (Primary & Secondary)",
+         "Master of Dietetics & Food Innovation",
+         "Bachelor of Social Work (Honours) and its related double degrees",
+         "Bachelor of Education (Secondary) The following program",
+         "Bachelor of Education (Primary) (Honours) The following programs",
+         "Bachelor of Nutrition/Master of Dietetics & Food Innovation The following programs",
+         "Doctor of Medicine",
+         "Bachelor of Criminology & Criminal Justice)",
+         "Bachelor of Medical Studies (BMed)/Doctor of Medicine (MD) including double degree programs",
+         "Diploma of Secondary Education (HKDSE)",
+         "Diploma of Secondary Education (HKDSE)Minimum Requirement Level",
+         "Master of Teaching (Primary and Secondary) programs",
+         "Master of Psychology (Clinical and Forensic) including combined PhD/Master programs",
+         "Master of Pharmacy",
+         "Master of Clinical Neuropsychology and Master of Psychology (Clinical & Forensic) including combined",
+         "Doctor of Philosophy, Professional Doctorates, Master by Research or Master of Philosophy",
+         "Master of Teaching (Primary and Secondary))",
+         "Bachelor of Aviation (Flying)",
+         "Master of Teaching (Primary and Secondary) and Bachelor of Education (all programs)",
+         "Master of Psychology (including combined PhD/Master)",
+         "Master of Clinical Neuro-psychology",
+         "Graduate Diploma in Psychology",
+         "Bachelor of Education (any program), Graduate Diploma in Psychology, Master of Psychology",
+         "Master of Teaching (Primary and Secondary)"
+        ],
+        "style": "by_faculty",
+        "parser": "provider-policy-v0.2.2",
+        "caveats": [
+         "course_groups"
+        ],
+        "signals": [
+         "by_faculty"
+        ],
+        "defaults": {},
+        "conflicts": [
+         "undergraduate IELTS: 6 / 6.5",
+         "undergraduate TOEFL_IBT: 79 / 90",
+         "undergraduate PTE: 50 / 58",
+         "undergraduate CAE: 169 / 176 / 180",
+         "postgraduate IELTS: 6 / 6.5",
+         "postgraduate TOEFL_IBT: 79 / 90",
+         "postgraduate PTE: 50 / 58",
+         "postgraduate CAE: 169 / 176 / 180"
+        ],
+        "exceptions": [
+         {
+          "name": "UNSW Canberra",
+          "reqs": [],
+          "level": "both"
+         },
+         {
+          "name": "Bachelor of Criminology",
+          "reqs": [],
+          "level": "both"
+         },
+         {
+          "name": "UNSW Canberra",
+          "reqs": [],
+          "level": "postgraduate"
+         },
+         {
+          "name": "Design postgraduate coursework programs",
+          "reqs": [],
+          "level": "postgraduate"
+         },
+         {
+          "name": "Master of Teaching  Primary",
+          "reqs": [],
+          "level": "postgraduate"
+         },
+         {
+          "name": "Secondary",
+          "reqs": [],
+          "level": "postgraduate"
+         },
+         {
+          "name": "UNSW Canberra",
+          "reqs": [],
+          "level": null
+         }
+        ]
+       },
+       "created_at": "2026-10-06T00:10:16.368214+00:00",
+       "decision_note": null
+      },
+      {
+       "id": "46f58c9d-8407-44f7-b786-6156845fd906",
+       "style": "level_default",
+       "parser": "ai:gpt-4.1-mini",
+       "status": "rejected",
+       "proposal": {
+        "named": [],
+        "style": "level_default",
+        "parser": "ai:gpt-4.1-mini",
+        "caveats": [
+         "read_by_ai"
+        ],
+        "signals": [
+         "course_specific"
+        ],
+        "defaults": {
+         "research": [
+          {
+           "quote": "Engineering | 6.5 overall (min 6.0 in each subtest)",
+           "test_code": "IELTS",
+           "overall_score": 6.5,
+           "component_scores": {
+            "reading": 6,
+            "writing": 6,
+            "speaking": 6,
+            "listening": 6
+           }
+          }
+         ],
+         "postgraduate": [
+          {
+           "quote": "Arts, Design & Architecture | 6.5 overall (min 6.0 in each subtest)",
+           "test_code": "IELTS",
+           "overall_score": 6.5,
+           "component_scores": {
+            "reading": 6,
+            "writing": 6,
+            "speaking": 6,
+            "listening": 6
+           }
+          }
+         ],
+         "undergraduate": [
+          {
+           "quote": "Arts, Design & Architecture | 6.5 overall (min. 6.0 in each subtest)",
+           "test_code": "IELTS",
+           "overall_score": 6.5,
+           "component_scores": {
+            "reading": 6,
+            "writing": 6,
+            "speaking": 6,
+            "listening": 6
+           }
+          }
+         ]
+        },
+        "conflicts": [],
+        "exceptions": []
+       },
+       "created_at": "2026-10-14T23:35:11.864958+00:00",
+       "decision_note": "Platform Admin 17 Oct 2026 15:01, recorded by Claude: the quote is one faculty row (Arts, Design & Architecture), not a university default; 429 course pages differ"
+      }
+     ],
+     "content_hash": "1896907dc286e70309f8fcd4c0369fa6b99edcead772d817712f364cfd2ba36d",
+     "storage_path": "layer2/AU/provider-facts/22657140-1cb0-4fa7-91df-90518ea8b35b/a1a0f40d-001a-4df2-848e-0a49812a0ac8/1896907dc286e70309f8fcd4c0369fa6b99edcead772d817712f364cfd2ba36d.md.gz",
+     "fact_source_id": "a1a0f40d-001a-4df2-848e-0a49812a0ac8"
+    },
+    {
+     "url": "https://www.unsw.edu.au/study/how-to-apply/international/entry-requirements",
+     "status": "read",
+     "read_at": "2026-10-02T08:30:11.325735+00:00",
+     "ai_queue": [
+      {
+       "error": null,
+       "state": "done",
+       "status": "no_values",
+       "done_at": "2026-10-14T23:35:10.132741+00:00",
+       "attempts": 1,
+       "content_hash": "516f44b042d7d80d221a3b342f69124c3677a1bcc9d4d7a47a749e51b708ce65"
+      }
+     ],
+     "found_via": "search",
+     "proposals": [
+      {
+       "id": "44561a8f-1dd2-4610-af33-cc583c104da9",
+       "style": "course_specific",
+       "parser": "provider-policy-v0.2.1",
+       "status": "superseded",
+       "proposal": {
+        "named": [],
+        "style": "course_specific",
+        "parser": "provider-policy-v0.2.1",
+        "caveats": [
+         "higher_unlisted"
+        ],
+        "signals": [
+         "course_specific"
+        ],
+        "defaults": {},
+        "conflicts": [],
+        "exceptions": []
+       },
+       "created_at": "2026-10-02T08:30:11.428769+00:00",
+       "decision_note": null
+      },
+      {
+       "id": "27113157-618b-4ed8-8f8f-e8cbe2ecaa05",
+       "style": "course_specific",
+       "parser": "ai:gpt-4.1-mini",
+       "status": "no_values",
+       "proposal": {
+        "named": [],
+        "style": "course_specific",
+        "parser": "ai:gpt-4.1-mini",
+        "caveats": [
+         "read_by_ai"
+        ],
+        "signals": [
+         "course_specific"
+        ],
+        "defaults": {},
+        "conflicts": [],
+        "exceptions": []
+       },
+       "created_at": "2026-10-14T23:35:10.132741+00:00",
+       "decision_note": null
+      }
+     ],
+     "content_hash": "516f44b042d7d80d221a3b342f69124c3677a1bcc9d4d7a47a749e51b708ce65",
+     "storage_path": "layer2/AU/provider-facts/22657140-1cb0-4fa7-91df-90518ea8b35b/002ff3bb-4106-4844-b682-b2b6b0b90a27/516f44b042d7d80d221a3b342f69124c3677a1bcc9d4d7a47a749e51b708ce65.md.gz",
+     "fact_source_id": "002ff3bb-4106-4844-b682-b2b6b0b90a27"
+    }
+   ]
+  }
+ ]
+}
