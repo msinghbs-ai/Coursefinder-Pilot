@@ -823,10 +823,10 @@ update pipeline.component_register set status = 'retiring', replaced_by = 'secur
  where kind = 'function' and name = 'security.intake_dates_plan_v2';
 insert into pipeline.component_register(kind, name, layer, area, purpose, status, replaces, introduced_in) values
  ('function', 'security.intake_dates_plan_v3', 'Layer 2', 'Admission', 'Intake dates plan: every main teaching calendar, unique-month rule, next action and revisit', 'active', array['security.intake_dates_plan_v2'], '20261105020000'),
- ('table', 'pipeline.course_intake_date_events', 'Layer 2', 'Admission', 'Every intake date decision, appended', 'active', null, '20261105020000'),
- ('table', 'pipeline.calendar_reread_state', 'Layer 2', 'Admission', 'Stored calendar documents read again by the current reader', 'active', null, '20261105020000'),
- ('table', 'pipeline.calendar_reader_findings', 'Layer 2', 'Admission', 'What the calendar reader could not take; notes for the next read', 'active', null, '20261105020000'),
- ('table', 'pipeline.process_results', 'Platform', 'Operations', 'Dated measurements of production processes', 'active', null, '20261105020000'),
- ('job', 'calendar-reread', 'Layer 2', 'Admission', 'Re-read stored calendars with the current reader', 'active', null, '20261105020000'),
- ('job', 'process-results', 'Platform', 'Operations', 'Measure and record the intake dates process', 'active', null, '20261105020000')
+ ('table', 'pipeline.course_intake_date_events', 'Layer 2', 'Admission', 'Every intake date decision, appended', 'active', '{}', '20261105020000'),
+ ('table', 'pipeline.calendar_reread_state', 'Layer 2', 'Admission', 'Stored calendar documents read again by the current reader', 'active', '{}', '20261105020000'),
+ ('table', 'pipeline.calendar_reader_findings', 'Layer 2', 'Admission', 'What the calendar reader could not take; notes for the next read', 'active', '{}', '20261105020000'),
+ ('table', 'pipeline.process_results', 'Platform', 'Operations', 'Dated measurements of production processes', 'active', '{}', '20261105020000'),
+ ('job', 'calendar-reread', 'Layer 2', 'Admission', 'Re-read stored calendars with the current reader', 'active', '{}', '20261105020000'),
+ ('job', 'process-results', 'Platform', 'Operations', 'Measure and record the intake dates process', 'active', '{}', '20261105020000')
 on conflict (kind, name) do nothing;
