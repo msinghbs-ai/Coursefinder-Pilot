@@ -22,7 +22,7 @@ test('the capture and check queries are one read-only SELECT each: no write, no 
   expect(words("with x as (select set_config('search_path', '', false)) select 1")).toMatch(WRITES)
   expect(words("with x as (select 'insert' v) select v from x")).not.toMatch(WRITES)
   const scope = { tables: ['pipeline.admin_jobs', 'pipeline.manual_locks'], functions: ['security.ops_guard_refuse_v1()', 'security.aer_schedule_held_v1'], lookups: ['pipeline.ops_outcome_codes'] }
-  for (const [name, sql] of [['capture', captureSql(scope)], ['check', checkSql(prod())], ['digest', digestSql(prod())]]) {
+  for (const [name, sql] of [['capture', captureSql(scope)], ['check', checkSql(prod())], ['digest', digestSql(prod())], ['compact', checkSql(prod(), { compact: true })]]) {
     const w = words(sql)
     expect(/^(with|select) /.test(w.trim().toLowerCase()), `${name} is a query`).toBe(true)
     expect(w, `${name} has one statement`).not.toContain(';')

@@ -18,6 +18,7 @@ Agents cannot connect to production directly. They can only use `mcp__Supabase__
 | 4 | `node scripts/prod-parity-capture.mjs fixture manifests/<name>.json \| psql -d e_x` | Builds the fixture in an isolated local database. It refuses a non-local server and a Supabase database. |
 | 5 | `node scripts/prod-parity-capture.mjs check-sql ... \| psql -d <fixture db>` | Shows how far a fixture, yours or someone else's, is from production. |
 | – | `subset <manifest> --tables a.b` | Keeps only part of a manifest. Use it to check a fixture that holds only some of the tables. |
+| – | `check-sql <manifest> --compact` | The same check with the expected values sent as md5s: a shorter query for the MCP tool. A difference shows both md5s; the local manifest holds the text. |
 | – | `diff a.json b.json` | Compares the facts of two manifests. |
 
 ## What a manifest holds

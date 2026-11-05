@@ -55,6 +55,9 @@ echo 'PASS the check against the source lists no difference'
 node $TOOL check-sql $T/manifest.json --digest > $T/digest.sql
 [ "$($P -At -d $DST -f $T/digest.sql | cut -d'|' -f3)" = t ] || fail 'digest check on the fixture'
 echo 'PASS the one-row digest check matches the manifest on the fixture'
+node $TOOL check-sql $T/manifest.json --compact > $T/compact.sql
+[ "$(rows $DST $T/compact.sql)" = 0 ] || fail 'compact check on the fixture'
+echo 'PASS the compact (md5) check lists no difference on the fixture'
 
 # 3 production behaviour reproduced
 refuses $DST "insert into pipeline.admin_jobs(kind, outcome) values ('x', 'not_a_code')" 'admin_jobs outcome outside the code table (admin_jobs_outcome_fkey)'
@@ -87,6 +90,8 @@ done
 echo "PASS a simplified fixture is caught: $(grep -c . $T/simple.txt) differences, including admin_jobs_outcome_fkey and manual_locks_pkey"
 [ "$($P -At -d $SIMPLE -f $T/digest.sql | cut -d'|' -f3)" = f ] || fail 'digest check did not flag the simplified fixture'
 echo 'PASS the digest check flags the simplified fixture'
+[ "$(rows $SIMPLE $T/compact.sql)" = "$(grep -c . $T/simple.txt)" ] || fail 'compact check does not list the same differences as the full check'
+echo 'PASS the compact check lists the same differences as the full check'
 
 # 6 committed production manifests
 for m in $FX/manifests/*.json; do

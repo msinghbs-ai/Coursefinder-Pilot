@@ -193,10 +193,13 @@ export function fixtureSql(m) {
   return o.join('\n') + '\n'
 }
 
-export function checkSql(m) {
+// compact: the expected values travel as md5s (a shorter query for the MCP tool); a difference is listed with both md5s, and the local manifest
+// holds the expected text.
+export function checkSql(m, { compact = false } = {}) {
   const capture = captureSql(m.scope).trimEnd()
-  return `with expected(k, v) as (select key, value from jsonb_each_text(${dollar(JSON.stringify(m.facts), 'facts')}::jsonb)),
-actual(k, v) as (select key, value from jsonb_each_text((select q.manifest from (
+  const facts = compact ? Object.fromEntries(Object.entries(m.facts).map(([k, v]) => [k, md5(v)])) : m.facts
+  return `with expected(k, v) as (select key, value from jsonb_each_text(${dollar(JSON.stringify(facts), 'facts')}::jsonb)),
+actual(k, v) as (select key, ${compact ? 'md5(value)' : 'value'} from jsonb_each_text((select q.manifest from (
 ${capture}
 ) q)->'facts'))
 select coalesce(e.k, a.k) as fact, case when a.k is null then 'missing' when e.k is null then 'unexpected' else 'different' end as diff,
@@ -263,7 +266,7 @@ function args(argv) {
   const o = { _: [] }
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]
-    if (a === '--digest') o.digest = true
+    if (a === '--digest' || a === '--compact') o[a.slice(2)] = true
     else if (a.startsWith('--')) { const k = a.slice(2); o[k] = argv[i + 1]; i++ } else o._.push(a)
   }
   return o
@@ -295,7 +298,7 @@ function main() {
     process.stdout.write(fixtureSql(m))
   } else if (cmd === 'check-sql') {
     const m = read(a._[0])
-    process.stdout.write(a.digest ? digestSql(m) : checkSql(m))
+    process.stdout.write(a.digest ? digestSql(m) : checkSql(m, { compact: !!a.compact }))
   } else if (cmd === 'subset') {
     const out = subsetManifest(read(a._[0]), list(a.tables), list(a.functions))
     process.stdout.write(JSON.stringify(out, null, 1) + '\n')
@@ -313,6 +316,7 @@ function main() {
   node scripts/prod-parity-capture.mjs fixture <manifest.json> > fixture.sql
   node scripts/prod-parity-capture.mjs check-sql <manifest.json> > check.sql      (no rows = parity)
   node scripts/prod-parity-capture.mjs check-sql <manifest.json> --digest           (one row: matches_manifest)
+  node scripts/prod-parity-capture.mjs check-sql <manifest.json> --compact          (differences by md5: a shorter query)
   node scripts/prod-parity-capture.mjs subset <manifest.json> --tables pipeline.x[,..] [--functions ...] > part.json
   node scripts/prod-parity-capture.mjs diff <expected.json> <actual.json>`)
     process.exit(2)
