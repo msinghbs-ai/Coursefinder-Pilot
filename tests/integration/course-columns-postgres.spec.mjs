@@ -201,7 +201,7 @@ test.describe('phone @responsive', () => {
     const box = await page.locator('[data-columns-panel]').boundingBox()
     expect(box.x).toBeGreaterThanOrEqual(0); expect(box.x + box.width).toBeLessThanOrEqual(412 + 1)
     await page.keyboard.press('Escape')
-    const frame = await page.locator('.m-table-wrap.cc-frame').evaluate(el => ({ client: el.clientWidth, scroll: el.scrollWidth, overflowX: getComputedStyle(el).overflowX }))
+    const frame = await page.locator('.m-table-wrap.ccol-frame').evaluate(el => ({ client: el.clientWidth, scroll: el.scrollWidth, overflowX: getComputedStyle(el).overflowX }))
     expect(frame.scroll).toBeGreaterThan(frame.client)
     expect(['auto', 'scroll']).toContain(frame.overflowX)
     expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1)
