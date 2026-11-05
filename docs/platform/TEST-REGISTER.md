@@ -480,4 +480,4 @@ Run by the PR workflow `provider-description-integration.yml` (`playwright.provi
 
 | Spec | Guards | Tests | Viewports | Acts on production | Status |
 |---|---|---|---|---|---|
-| tests/integration/provider-description-postgres.spec.mjs | Provider description autonomy mandate (4 November 2026): real PostgreSQL evidence, governed run recovery, Layer 4 admission and mobile publication inspection. | 3 | desktop + phone | no | PR CI |
+| tests/integration-provider-description/provider-description-postgres.spec.mjs | Provider description autonomy mandate (4 November 2026): real PostgreSQL evidence, governed run recovery, Layer 4 admission and mobile publication inspection. | 3 | desktop + phone | no | PR CI |

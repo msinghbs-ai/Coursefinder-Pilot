@@ -5,7 +5,7 @@ if (process.env.UAT_BASE_URL) throw new Error('Provider description integration 
 
 export default {
   ...base,
-  testDir: './tests/integration',
+  testDir: './tests/integration-provider-description', // own folder: playwright.intake.config.mjs collects every spec in tests/integration
   testMatch: 'provider-description-postgres.spec.mjs',
   outputDir: 'uat-artifacts/provider-description-db-results',
   reporter: [['list'], ['json', { outputFile: 'uat-artifacts/provider-description-integration.json' }]],
