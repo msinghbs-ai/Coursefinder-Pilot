@@ -89,54 +89,56 @@ export function useCourseLayout(userId) {
 }
 
 /** Columns control: search, four groups, a count, show and hide, move up and down, Reset to default, Restore last saved. */
-export function ColumnsControl({ layout, limits, hasPrevious, onChange, onReset, onRestore }) {
+export function ColumnsControl({ layout, limits, hasPrevious, onChange, onReset, onRestore, ack }) {
   const [open, setOpen] = useState(false), [q, setQ] = useState('')
   const ref = useRef(null), searchRef = useRef(null)
   useEffect(() => { if (!open) return; const close = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }; const esc = e => { if (e.key === 'Escape') setOpen(false) }; addEventListener('mousedown', close); addEventListener('keydown', esc); setTimeout(() => searchRef.current?.focus(), 0); return () => { removeEventListener('mousedown', close); removeEventListener('keydown', esc) } }, [open])
   const shown = layout.columns, full = shown.length >= (limits.max_columns || DEFAULT_LIMITS.max_columns)
   const match = c => !q || `${c.label} ${c.group}`.toLowerCase().includes(q.toLowerCase())
   const move = (key, by) => { onChange({ columns: moveColumn(shown, key, by) }); requestAnimationFrame(() => document.querySelector(`[data-col-move="${key}:${by}"]`)?.focus()) }
-  return <div className="cc-columns" ref={ref}>
-    <button type="button" className="m-secondary compact" aria-expanded={open} aria-haspopup="dialog" data-columns-toggle onClick={() => setOpen(x => !x)}><Columns3 size={14} />Columns <span className="cc-count" data-columns-count>{shown.length} of {COURSE_COLUMNS.length}</span></button>
-    {open && <div className="cc-panel" role="dialog" aria-label="Choose columns" data-columns-panel>
-      <div className="cc-panel-head"><strong>Columns</strong><span>{shown.length} of {COURSE_COLUMNS.length} shown{full ? ' (the most a layout can show)' : ''}</span><button type="button" className="cc-icon" aria-label="Close columns" onClick={() => setOpen(false)}><X size={14} /></button></div>
-      <label className="cc-search"><Search size={14} /><input ref={searchRef} value={q} onChange={e => setQ(e.target.value)} placeholder="Search columns…" aria-label="Search columns" /></label>
-      <div className="cc-order" aria-label="Shown columns, in order">
+  return <div className="ccol-columns" ref={ref}>
+    <button type="button" className="m-secondary compact" aria-expanded={open} aria-haspopup="dialog" data-columns-toggle onClick={() => setOpen(x => !x)}><Columns3 size={14} />Columns <span className="ccol-count" data-columns-count>{shown.length} of {COURSE_COLUMNS.length}</span></button>
+    {open && <div className="ccol-panel" role="dialog" aria-label="Choose columns" data-columns-panel>
+      <div className="ccol-panel-head"><strong>Columns</strong><span>{shown.length} of {COURSE_COLUMNS.length} shown{full ? ' (the most a layout can show)' : ''}</span><button type="button" className="ccol-icon" aria-label="Close columns" onClick={() => setOpen(false)}><X size={14} /></button></div>
+      {/* the acknowledgement also inside the panel: on a phone the panel covers the bar while it is open (v2.15.486 acceptance) */}
+      {ack && <span className={`ccol-ack tone-${ack.tone}`} data-layout-ack-panel={ack.tone} aria-hidden="true">{ack.text}</span>}
+      <label className="ccol-search"><Search size={14} /><input ref={searchRef} value={q} onChange={e => setQ(e.target.value)} placeholder="Search columns…" aria-label="Search columns" /></label>
+      <div className="ccol-order" aria-label="Shown columns, in order">
         <small>Shown, in order</small>
         <ol>{shown.filter(k => match(columnOf(k))).map(k => { const c = columnOf(k), i = shown.indexOf(k); return <li key={k} data-col-order={k}><span>{c.label}</span>
-          <button type="button" className="cc-icon" data-col-move={`${k}:-1`} aria-label={`Move ${c.label} left`} disabled={i === 0} onClick={() => move(k, -1)}><ArrowUp size={13} /></button>
-          <button type="button" className="cc-icon" data-col-move={`${k}:1`} aria-label={`Move ${c.label} right`} disabled={i === shown.length - 1} onClick={() => move(k, 1)}><ArrowDown size={13} /></button></li> })}</ol>
+          <button type="button" className="ccol-icon" data-col-move={`${k}:-1`} aria-label={`Move ${c.label} left`} disabled={i === 0} onClick={() => move(k, -1)}><ArrowUp size={13} /></button>
+          <button type="button" className="ccol-icon" data-col-move={`${k}:1`} aria-label={`Move ${c.label} right`} disabled={i === shown.length - 1} onClick={() => move(k, 1)}><ArrowDown size={13} /></button></li> })}</ol>
       </div>
-      {GROUPS.map(g => { const cols = COURSE_COLUMNS.filter(c => c.group === g && match(c)); if (!cols.length) return null; return <fieldset key={g} className="cc-group" data-columns-group={g}>
+      {GROUPS.map(g => { const cols = COURSE_COLUMNS.filter(c => c.group === g && match(c)); if (!cols.length) return null; return <fieldset key={g} className="ccol-group" data-columns-group={g}>
         <legend>{g} <small>{cols.filter(c => shown.includes(c.key)).length} of {COURSE_COLUMNS.filter(c => c.group === g).length}</small></legend>
-        {cols.map(c => <label key={c.key} className="cc-option"><input type="checkbox" checked={shown.includes(c.key)} disabled={c.alwaysVisible || (!shown.includes(c.key) && full)} onChange={e => onChange({ columns: toggleColumn(shown, c.key, e.target.checked, limits) })} data-col-toggle={c.key} />{c.label}{c.alwaysVisible && <small> (always shown)</small>}{c.sortKey && <small> · sorts</small>}</label>)}
+        {cols.map(c => <label key={c.key} className="ccol-option"><input type="checkbox" checked={shown.includes(c.key)} disabled={c.alwaysVisible || (!shown.includes(c.key) && full)} onChange={e => onChange({ columns: toggleColumn(shown, c.key, e.target.checked, limits) })} data-col-toggle={c.key} />{c.label}{c.alwaysVisible && <small> (always shown)</small>}{c.sortKey && <small> · sorts</small>}</label>)}
       </fieldset> })}
-      {!COURSE_COLUMNS.some(match) && <p className="cc-empty">No column matches “{q}”.</p>}
-      <div className="cc-actions"><button type="button" className="m-secondary compact" onClick={onReset} data-columns-reset><RotateCcw size={13} />Reset to default</button><button type="button" className="m-secondary compact" onClick={onRestore} disabled={!hasPrevious} data-columns-restore><Undo2 size={13} />Restore last saved</button></div>
+      {!COURSE_COLUMNS.some(match) && <p className="ccol-empty">No column matches “{q}”.</p>}
+      <div className="ccol-actions"><button type="button" className="m-secondary compact" onClick={onReset} data-columns-reset><RotateCcw size={13} />Reset to default</button><button type="button" className="m-secondary compact" onClick={onRestore} disabled={!hasPrevious} data-columns-restore><Undo2 size={13} />Restore last saved</button></div>
     </div>}
   </div>
 }
 
 export function FieldState({ fs }) {
-  if (!fs) return <span className="cc-unknown" data-field-state="unknown" title="No field state is held for this course">Unknown</span>
+  if (!fs) return <span className="ccol-unknown" data-field-state="unknown" title="No field state is held for this course">Unknown</span>
   const [label, tone] = FIELD_STATES[fs.state] || ['Unknown', 'neutral']
   return <span data-field-state={fs.state}><StatusChip tone={tone} label={label} title={[fs.reason && `Reason: ${fs.reason}`, fs.flag && `Flag: ${fs.flag}`].filter(Boolean).join(' · ') || undefined} /></span>
 }
-const Unknown = ({ title }) => <span className="cc-unknown" title={title || 'No trustworthy record of this'}>Unknown</span>
+const Unknown = ({ title }) => <span className="ccol-unknown" title={title || 'No trustworthy record of this'}>Unknown</span>
 
 function Cities({ row }) {
   const [open, setOpen] = useState(false)
   const s = citySummary(row.cities)
-  if (!s.names.length) return row.city_names ? <span>{row.city_names}</span> : <span className="cc-unknown" title="No campus city held for this course">No campus city</span>
+  if (!s.names.length) return row.city_names ? <span>{row.city_names}</span> : <span className="ccol-unknown" title="No campus city held for this course">No campus city</span>
   if (s.names.length === 1) return <span data-cities="1">{s.names[0]}</span>
-  return <span className="cc-cities" data-cities={s.names.length}><button type="button" className="cc-link" aria-expanded={open} onClick={e => { e.stopPropagation(); setOpen(x => !x) }}>{s.short}</button>{open && <ul onClick={e => e.stopPropagation()}>{s.names.map(n => <li key={n}>{n}</li>)}</ul>}</span>
+  return <span className="ccol-cities" data-cities={s.names.length}><button type="button" className="ccol-link" aria-expanded={open} onClick={e => { e.stopPropagation(); setOpen(x => !x) }}>{s.short}</button>{open && <ul onClick={e => e.stopPropagation()}>{s.names.map(n => <li key={n}>{n}</li>)}</ul>}</span>
 }
 // Intakes as the website builds them (active intakes; month from the label by the website's rule). Nothing is filled in: an intake with no
 // month, year or date says so; a course with no intake shows its field state.
 function Expand({ short, items, attr }) {
   const [open, setOpen] = useState(false)
   if (items.length <= 1) return <span {...attr}>{short}</span>
-  return <span className="cc-cities" {...attr}><button type="button" className="cc-link" aria-expanded={open} onClick={e => { e.stopPropagation(); setOpen(x => !x) }}>{short}</button>{open && <ul onClick={e => e.stopPropagation()}>{items.map((n, i) => <li key={i}>{n}</li>)}</ul>}</span>
+  return <span className="ccol-cities" {...attr}><button type="button" className="ccol-link" aria-expanded={open} onClick={e => { e.stopPropagation(); setOpen(x => !x) }}>{short}</button>{open && <ul onClick={e => e.stopPropagation()}>{items.map((n, i) => <li key={i}>{n}</li>)}</ul>}</span>
 }
 const intakeLine = i => [intakeName(i), i.start_date ? `starts ${fmtDate(i.start_date)}` : null, i.application_deadline ? `apply by ${fmtDate(i.application_deadline)}` : i.deadline_kind === 'rolling' ? 'rolling applications' : null].filter(Boolean).join(' · ')
 function intakeCell(key, row) {
@@ -145,9 +147,9 @@ function intakeCell(key, row) {
   if (!list.length) return key === 'deadline' ? <FieldState fs={fs.deadline} /> : <FieldState fs={fs.intakes} />
   const many = (vals, attr) => { const u = [...new Set(vals)]; return u.length ? <Expand short={u.length > 1 ? `${u[0]} +${u.length - 1}` : u[0]} items={u} attr={attr} /> : null }
   if (key === 'intakes') { const s = intakeSummary(list); return <Expand short={s.short} items={list.map(intakeLine)} attr={{ 'data-intakes': list.length }} /> }
-  if (key === 'intake_month') return many(list.map(i => monthName(i.month)).filter(Boolean), { 'data-intake-month': '' }) || <span className="cc-unknown" title="The intakes held name no month">Not held</span>
-  if (key === 'intake_year') return many(list.map(i => i.year).filter(Boolean).map(String), { 'data-intake-year': '' }) || <span className="cc-unknown" title="The intakes held name no year">Not held</span>
-  if (key === 'commencement_date') return many(list.filter(i => i.start_date).sort((a, b) => String(a.start_date).localeCompare(String(b.start_date))).map(i => fmtDate(i.start_date)), { 'data-commencement': '' }) || <span className="cc-unknown" title="No exact start date is held: only the intake month or label">Not held</span>
+  if (key === 'intake_month') return many(list.map(i => monthName(i.month)).filter(Boolean), { 'data-intake-month': '' }) || <span className="ccol-unknown" title="The intakes held name no month">Not held</span>
+  if (key === 'intake_year') return many(list.map(i => i.year).filter(Boolean).map(String), { 'data-intake-year': '' }) || <span className="ccol-unknown" title="The intakes held name no year">Not held</span>
+  if (key === 'commencement_date') return many(list.filter(i => i.start_date).sort((a, b) => String(a.start_date).localeCompare(String(b.start_date))).map(i => fmtDate(i.start_date)), { 'data-commencement': '' }) || <span className="ccol-unknown" title="No exact start date is held: only the intake month or label">Not held</span>
   if (key === 'deadline') {
     const dated = list.filter(i => i.application_deadline).sort((a, b) => String(a.application_deadline).localeCompare(String(b.application_deadline))).map(i => fmtDate(i.application_deadline))
     if (dated.length) return many(dated, { 'data-deadline': '' })
@@ -158,7 +160,7 @@ function intakeCell(key, row) {
 }
 function Published({ row }) {
   const p = row.published
-  if (!p || !p.website_at) return <span className="cc-unknown" title="This course has no item in the website feed">Not in the website feed</span>
+  if (!p || !p.website_at) return <span className="ccol-unknown" title="This course has no item in the website feed">Not in the website feed</span>
   const z = p.zoho_at ? `Zoho feed: ${p.zoho_removed ? 'withdrawn' : 'last changed'} ${fmtDateTime(p.zoho_at)}` : 'Zoho feed: no item'
   return <span title={`Website feed: the course's item was ${p.website_removed ? 'withdrawn' : 'last added or changed'} at ${fmtDateTime(p.website_at)} (an unchanged re-check is not counted).\n${z}`} data-published={p.website_removed ? 'withdrawn' : 'published'}>{p.website_removed ? 'Withdrawn ' : ''}{fmtDateTime(p.website_at)}</span>
 }
@@ -166,14 +168,14 @@ function Campuses({ row }) {
   const [open, setOpen] = useState(false)
   const list = Array.isArray(row.cities) ? row.cities : []
   const n = Number(row.campus_count ?? list.length) || 0
-  if (!n) return <span className="cc-unknown">No campus linked</span>
-  return <span className="cc-cities"><button type="button" className="cc-link" aria-expanded={open} onClick={e => { e.stopPropagation(); setOpen(x => !x) }}>{n === 1 ? (list[0]?.campus || '1 campus') : `${n} campuses`}</button>{open && <ul onClick={e => e.stopPropagation()}>{list.map((c, i) => <li key={i}>{c.campus}{c.city ? ` · ${c.city}` : ''}{c.subdivision_code ? ` (${c.subdivision_code})` : ''}</li>)}</ul>}</span>
+  if (!n) return <span className="ccol-unknown">No campus linked</span>
+  return <span className="ccol-cities"><button type="button" className="ccol-link" aria-expanded={open} onClick={e => { e.stopPropagation(); setOpen(x => !x) }}>{n === 1 ? (list[0]?.campus || '1 campus') : `${n} campuses`}</button>{open && <ul onClick={e => e.stopPropagation()}>{list.map((c, i) => <li key={i}>{c.campus}{c.city ? ` · ${c.city}` : ''}{c.subdivision_code ? ` (${c.subdivision_code})` : ''}</li>)}</ul>}</span>
 }
 function Adapter({ row, navigate }) {
   const a = row.adapter
   if (!a) return <Unknown title="Adapter status not loaded" />
   const [label, tone] = ADAPTER_STATES[a.state] || ['Unknown', 'neutral']
-  return <span className="cc-adapter" data-adapter-state={a.state}><StatusChip tone={tone} label={label} title={a.reason} />{a.state !== 'not_configured' && navigate && <button type="button" className="cc-link" onClick={e => { e.stopPropagation(); navigate('layer2', { tab: 'builder', provider: row.provider_id }) }}>Open adapter</button>}</span>
+  return <span className="ccol-adapter" data-adapter-state={a.state}><StatusChip tone={tone} label={label} title={a.reason} />{a.state !== 'not_configured' && navigate && <button type="button" className="ccol-link" onClick={e => { e.stopPropagation(); navigate('layer2', { tab: 'builder', provider: row.provider_id }) }}>Open adapter</button>}</span>
 }
 const SOURCE_WORDS = { ai_stored: 'AI reader (stored page)', ai_title: 'AI reader (title)', adapter: 'Adapter', institution_rule: 'Institution rule', provider_facts: 'Provider facts', scraper: 'Page reader',
   adapter_overwrite: 'Adapter overwrite', layer2_admission: 'Layer 2 admission', layer4_approval: 'Layer 4 approval', intake_dates: 'Intake dates', manual: 'Set by hand', enrich_fields: 'Enrich fields' }
@@ -197,12 +199,12 @@ export function renderCourseCell(key, row, { navigate } = {}) {
     case 'intakes': case 'intake_month': case 'intake_year': case 'commencement_date': case 'deadline': return intakeCell(key, row)
     case 'english': case 'academic_entry': case 'description': return <FieldState fs={fs[FS[key]]} />
     case 'last_published_at': return <Published row={row} />
-    case 'official_url': return row.course_url ? <a className="cc-link" href={row.course_url} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} title={row.course_url}>Open page</a> : <FieldState fs={fs.official_url} />
+    case 'official_url': return row.course_url ? <a className="ccol-link" href={row.course_url} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} title={row.course_url}>Open page</a> : <FieldState fs={fs.official_url} />
     case 'has_scholarship': return row.has_scholarship == null ? <Unknown /> : row.has_scholarship ? 'Linked' : 'None linked'
     case 'adapter_state': return <Adapter row={row} navigate={navigate} />
-    case 'adapter_last_read_at': return row.adapter?.last_read_at ? fmtDateTime(row.adapter.last_read_at) : <span className="cc-unknown">Not read by an adapter</span>
+    case 'adapter_last_read_at': return row.adapter?.last_read_at ? fmtDateTime(row.adapter.last_read_at) : <span className="ccol-unknown">Not read by an adapter</span>
     case 'adapter_result': return row.adapter?.result ? <span className="m-cell-clip" title={row.adapter.result}>{row.adapter.result}</span> : '—'
-    case 'page_stored': return !row.page ? <span className="cc-unknown">No course page</span> : row.page.stored ? <StatusChip tone="success" label="Stored" /> : <StatusChip tone="warning" label="Not stored" title={row.page.read_status || undefined} />
+    case 'page_stored': return !row.page ? <span className="ccol-unknown">No course page</span> : row.page.stored ? <StatusChip tone="success" label="Stored" /> : <StatusChip tone="warning" label="Not stored" title={row.page.read_status || undefined} />
     case 'source_identity': return !row.page ? '—' : <span title={`Page ${row.page.status || ''} · read ${row.page.read_status || 'not yet'}`}>{String(row.page.identity || row.page.status || '—').replaceAll('_', ' ')}</span>
     case 'layer4_status': return row.layer4_open == null ? <Unknown /> : row.layer4_open ? <StatusChip tone="violet" label={`${fmtNumber(row.layer4_open)} open`} /> : 'None open'
     case 'enrichment_status': { const e = row.enrichment; if (!e) return <Unknown />; return <span title="Field items: filled, waiting for review, failed, pending">{fmtNumber(e.filled)} filled · {fmtNumber(e.review)} review · {fmtNumber(e.failed)} failed{e.pending ? ` · ${fmtNumber(e.pending)} pending` : ''}</span> }
