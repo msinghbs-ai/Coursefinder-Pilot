@@ -12,12 +12,18 @@ do $$ begin
 end $$;
 create schema auth; create schema extensions; create schema ref; create schema catalogue; create schema scholarship; create schema search;
 create schema security; create schema pipeline; create schema pim; create schema api;
-grant usage on schema public, auth, security, pipeline, catalogue, ref, search, scholarship to authenticated, anon;
+-- schema usage and the public schema's default privileges as production has them (read 5 Nov 2026 20:50 AEDT): authenticated may use public,
+-- auth, security and api only; catalogue, ref, pim, scholarship, pipeline and search are service_role's
+grant usage on schema auth to anon, authenticated, service_role;
+grant usage on schema security, api to authenticated;
+grant usage on schema catalogue, ref, pim, scholarship, pipeline, search, security, api to service_role;
+alter default privileges for role postgres in schema public grant execute on functions to authenticated, service_role;
+alter default privileges for role postgres in schema public grant all on tables to authenticated, service_role;
+alter default privileges for role postgres in schema public grant usage, select, update on sequences to authenticated, service_role;
 create function extensions.gen_random_uuid() returns uuid language sql volatile as 'select pg_catalog.gen_random_uuid()';
 -- Supabase auth: the JWT subject, as PostgREST sets it
 create table auth.users (id uuid primary key, email text);
 create function auth.uid() returns uuid language sql stable as $f$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $f$;
-grant execute on function auth.uid() to authenticated, anon;
 
 -- key-only stand-ins for foreign-key targets outside the change
 create table ref.currencies (code character(3) primary key);

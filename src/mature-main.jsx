@@ -683,10 +683,12 @@ function Catalogue({type,onError,navigate,initialId='',completenessMode=false,ra
   const courseLayoutOn=type==='course'&&!completenessMode
   const cl=useCourseLayout(courseLayoutOn?catalogueUser:null)
   const appliedServerSort=useRef(false)
-  useEffect(()=>{if(!courseLayoutOn||appliedServerSort.current||cl.source!=='server')return;appliedServerSort.current=true;if(cl.layout.sort&&cl.layout.sort!==sort)setSort(cl.layout.sort);if(cl.layout.direction&&cl.layout.direction!==direction)setDirection(cl.layout.direction)},[courseLayoutOn,cl.source])
+  useEffect(()=>{if(!courseLayoutOn||appliedServerSort.current||cl.source!=='server')return;appliedServerSort.current=true;if(cl.layout.sort&&cl.layout.sort!==sort&&(cl.newSorts||!['admitted','adapter'].includes(cl.layout.sort)))setSort(cl.layout.sort);if(cl.layout.direction&&cl.layout.direction!==direction)setDirection(cl.layout.direction)},[courseLayoutOn,cl.source])
   function changeSort(k){if(!k)return;const next=sort===k?{sort:k,direction:direction==='asc'?'desc':'asc'}:{sort:k,direction:'asc'};if(sort===k)setDirection(next.direction);else{setSort(k);setDirection('asc')}if(courseLayoutOn){appliedServerSort.current=true;cl.update(next)}}
   const hideCourseCol=k=>k==='fee_amount'&&filters.country&&String(filters.country).toUpperCase()!=='AU'
-  const courseCols=useCourseTableColumns(cl.layout,cl.limits,{navigate,hide:hideCourseCol})
+  const courseCols=useCourseTableColumns(cl.layout,cl.limits,{navigate,hide:hideCourseCol,newSorts:cl.newSorts})
+  // recovery switch: with the two new sorts off, a list sorted on either goes back to Course
+  useEffect(()=>{if(courseLayoutOn&&!cl.newSorts&&['admitted','adapter'].includes(sort)){setSort('course');setDirection('asc')}},[courseLayoutOn,cl.newSorts,sort])
   // v2.15.215 (Platform Admin, 7 Oct 2026 20:28): an Adapter column beside the provider name, Platform Admin only. Opens Layer 2 › Adapter builder
   // with the provider loaded; providers without an adapter show Create adapter (the builder then offers Build automatically).
   const adapterCol=type==='provider'&&!completenessMode&&Number(rank)>=6

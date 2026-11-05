@@ -2,7 +2,8 @@
 -- Platform Admin mandate 5 Nov 2026 17:31 (admin docs/platform/2026-11-05-course-catalogue-columns-freshness-1731.md); allocated to agent C by the
 -- Platform Admin decision 5 Nov 2026 19:14 §3. Contract and compatibility record: docs/course-catalogue-columns.md (this repository).
 -- What:
---   1. Four settings (toolset pipeline, section "Course catalogue") bound a saved table layout: size, columns, narrowest and widest column.
+--   1. Six settings (toolset pipeline, section "Course catalogue"): four bound a saved table layout (size, columns, narrowest and widest column);
+--      two are recovery switches (server layouts on or off; the two new sorts offered or not). Both start on; switching off deletes nothing.
 --   2. pipeline.admin_table_columns: the column registry a saved layout is checked against (the Course catalogue's 40 columns).
 --   3. pipeline.admin_table_layouts: one saved layout per person and screen (visible columns, order, widths, sort, direction), with the layout
 --      before the last save or reset kept for "Restore last saved". RLS on, no grants: read and written only by public.admin_table_layout, which
@@ -46,7 +47,15 @@ insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, ki
  ('pipeline', 'catalogue_layout.width_max_px', 'Saved table layout: widest column',
   'No column can be made wider than this.', 'number',
   to_jsonb(1200), 300, 2400, 'pixels', 1503, 'Course catalogue', 'public.admin_table_layout (save, read); Course catalogue table resizing',
-  'CF-247 Course Catalogue columns (Platform Admin mandate 5 Nov 2026 17:31 §6)')
+  'CF-247 Course Catalogue columns (Platform Admin mandate 5 Nov 2026 17:31 §6)'),
+ ('pipeline', 'catalogue_layout.server_layouts_on', 'Saved table layouts: keep layouts on the server',
+  '1 = each person''s Course catalogue layout is saved to their account and follows them to other devices. 0 = recovery switch: the server neither reads nor saves layouts (nothing is deleted) and the screen keeps each layout in that browser only.', 'number',
+  to_jsonb(1), 0, 1, 'on (1) / off (0)', 1504, 'Course catalogue', 'public.admin_table_layout (read, save, reset, restore); Course catalogue › Columns',
+  'CF-247 Course Catalogue columns forward recovery (independent validation 5 Nov 2026)'),
+ ('pipeline', 'catalogue_layout.new_sorts_on', 'Course catalogue: offer the Last data admitted and Adapter status sorts',
+  '1 = the two sorts added with the customisable columns are offered. 0 = recovery switch: the screen stops offering them (the columns stay; a saved sort on either falls back to Course).', 'number',
+  to_jsonb(1), 0, 1, 'on (1) / off (0)', 1505, 'Course catalogue', 'public.admin_table_layout (read); Course catalogue sort headings',
+  'CF-247 Course Catalogue columns forward recovery (independent validation 5 Nov 2026)')
 on conflict (toolset_key, key) do nothing;
 
 create table if not exists pipeline.admin_table_columns (
@@ -333,6 +342,8 @@ declare
   v_max_cols integer := security.pipeline_num_v1('catalogue_layout.max_columns', 60)::integer;
   v_wmin integer := security.pipeline_num_v1('catalogue_layout.width_min_px', 64)::integer;
   v_wmax integer := security.pipeline_num_v1('catalogue_layout.width_max_px', 1200)::integer;
+  v_server boolean := security.pipeline_num_v1('catalogue_layout.server_layouts_on', 1) >= 1;
+  v_sorts boolean := security.pipeline_num_v1('catalogue_layout.new_sorts_on', 1) >= 1;
   v_row pipeline.admin_table_layouts%rowtype;
   v_cols text[];
   v_bad text;
@@ -342,6 +353,10 @@ begin
   if security.current_role_rank() < 1 then raise exception 'assigned StudySearch role required' using errcode = '42501'; end if;
   if v_screen is null or not exists (select 1 from pipeline.admin_table_columns c where c.screen = v_screen and c.active) then
     raise exception 'unknown screen: %', coalesce(v_screen, '(none)') using errcode = '22023';
+  end if;
+  -- recovery switch off: nothing is read or written on the server (rows are kept); the screen keeps the layout in its browser
+  if not v_server and p_action in ('save', 'reset', 'restore') then
+    return jsonb_build_object('saved', false, 'reset', false, 'restored', false, 'screen', v_screen, 'server_layouts', false);
   end if;
   if p_action = 'save' then
     if v_layout is null or jsonb_typeof(v_layout) <> 'object' then raise exception 'layout must be an object' using errcode = '22023'; end if;
@@ -393,8 +408,8 @@ begin
     if not found then raise exception 'there is no earlier saved layout to restore' using errcode = '22023'; end if;
     return jsonb_build_object('restored', true, 'screen', v_screen, 'layout', v_row.layout, 'saved_at', v_row.saved_at, 'has_previous', v_row.previous is not null);
   elsif p_action = 'read' then
-    select * into v_row from pipeline.admin_table_layouts t where t.user_id = v_uid and t.screen = v_screen;
-    return jsonb_build_object('screen', v_screen, 'layout', v_row.layout, 'saved_at', v_row.saved_at, 'reset_at', v_row.reset_at,
+    if v_server then select * into v_row from pipeline.admin_table_layouts t where t.user_id = v_uid and t.screen = v_screen; end if;
+    return jsonb_build_object('screen', v_screen, 'server_layouts', v_server, 'new_sorts', v_sorts, 'layout', v_row.layout, 'saved_at', v_row.saved_at, 'reset_at', v_row.reset_at,
       'has_previous', v_row.previous is not null, 'save_count', coalesce(v_row.save_count, 0),
       'limits', jsonb_build_object('max_bytes', v_max_bytes, 'max_columns', v_max_cols, 'width_min_px', v_wmin, 'width_max_px', v_wmax),
       'registry', (select jsonb_agg(jsonb_build_object('key', c.key, 'group', c.grp, 'label', c.label, 'sort_key', c.sort_key, 'default_visible', c.default_visible,
@@ -484,7 +499,7 @@ begin
   if position($p$v_sort='admitted' and v_dir='desc' then adm.at$p$ in v) = 0 or position($p$v_sort='adapter' and v_dir='asc'$p$ in v) = 0 or position('b.last_verified_at,b.provider_id from base b' in v) = 0 then raise exception 'Course Catalogue columns post-check: sort keys missing'; end if;
   if position($p$v_sort='modified' and v_dir='desc' then updated_at end desc$p$ in v) = 0 or position('matched as materialized' in v) = 0 or position('lower(canonical_title),id' in v) = 0 then raise exception 'Course Catalogue columns post-check: existing sort or page-first changed'; end if;
   if (select count(*) from pipeline.admin_table_columns where screen = 'courses') <> 40 then raise exception 'Course Catalogue columns post-check: registry incomplete'; end if;
-  if (select count(*) from pipeline.platform_toolset_settings where toolset_key = 'pipeline' and key like 'catalogue_layout.%') <> 4 then raise exception 'Course Catalogue columns post-check: settings missing'; end if;
+  if (select count(*) from pipeline.platform_toolset_settings where toolset_key = 'pipeline' and key like 'catalogue_layout.%') <> 6 then raise exception 'Course Catalogue columns post-check: settings missing'; end if;
   if has_table_privilege('authenticated', 'pipeline.admin_table_layouts', 'select') or has_table_privilege('anon', 'pipeline.admin_table_layouts', 'select') then raise exception 'Course Catalogue columns post-check: layouts readable directly'; end if;
   if has_function_privilege('anon', 'public.admin_table_layout(text,jsonb)', 'execute') then raise exception 'Course Catalogue columns post-check: anon can call the layout RPC'; end if;
 end $$;

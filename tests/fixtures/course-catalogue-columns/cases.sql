@@ -49,6 +49,15 @@ begin perform set_config('request.jwt.claim.sub', md5('viewer')::uuid::text, tru
   perform count(*) from pipeline.admin_table_layouts; reset role; return false;
 exception when insufficient_privilege then reset role; return true; end $$;
 select pg_temp.ok(pg_temp.direct_read(), 'the layouts table cannot be read directly, even by a signed-in person');
+-- forward recovery: the server-layouts switch off reads and writes nothing (rows kept); on again, the layout is back; the new-sorts switch is reported
+update pipeline.platform_toolset_settings set value = to_jsonb(0) where toolset_key = 'pipeline' and key = 'catalogue_layout.server_layouts_on';
+select pg_temp.ok(pg_temp.layout('viewer', 'read', '{"screen": "courses"}') -> 'layout' = 'null'::jsonb and (pg_temp.layout('viewer', 'read', '{"screen": "courses"}') ->> 'server_layouts')::boolean = false, 'recovery switch off: no server layout is read');
+select pg_temp.ok(not (pg_temp.layout('viewer', 'save', '{"screen": "courses", "layout": {"columns": ["canonical_title"]}}') ->> 'saved')::boolean, 'recovery switch off: a save writes nothing');
+update pipeline.platform_toolset_settings set value = to_jsonb(1) where toolset_key = 'pipeline' and key = 'catalogue_layout.server_layouts_on';
+select pg_temp.ok(pg_temp.layout('viewer', 'read', '{"screen": "courses"}') -> 'layout' ->> 'sort' = 'admitted', 'recovery switch on again: the saved layout is unchanged and back');
+update pipeline.platform_toolset_settings set value = to_jsonb(0) where toolset_key = 'pipeline' and key = 'catalogue_layout.new_sorts_on';
+select pg_temp.ok((pg_temp.layout('viewer', 'read', '{"screen": "courses"}') ->> 'new_sorts')::boolean = false, 'the new-sorts switch is reported to the screen');
+update pipeline.platform_toolset_settings set value = to_jsonb(1) where toolset_key = 'pipeline' and key = 'catalogue_layout.new_sorts_on';
 select pg_temp.ok((select count(*) from pipeline.admin_table_layouts) = 2 and (select count(*) from pipeline.admin_table_layouts where user_id = pg_temp.u('viewer')) = 1, 'one row a person and screen; every row is the caller''s own');
 commit;
 

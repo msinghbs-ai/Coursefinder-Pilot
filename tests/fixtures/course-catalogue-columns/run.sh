@@ -30,8 +30,11 @@ LIVE="array['public.admin_read(text,jsonb)','security.admin_course_page_fast(jso
 WANT="6b1bb9d569bd13390f76803f9a710053 2dc6ee8ba523afeec04d862f3a2ced8a afbef16111a09e3680061547bbb1329a 5db669272a3fa612b1268ef8502a9b7c d709d92dbd7a648ccf78e594d68ca980 09f9b1551daf42b4a0c9795e6f30c6d4 6debe54efc9feaf959c68d9fbb2cf644 180e86128f2fa29d36ff01e7d7fd5847 4263b5ad2369e87c99674f9159d672f8"
 [ "$(md5of "$LIVE")" = "$WANT" ] || { echo "FAIL live definitions differ: $(md5of "$LIVE")"; exit 1; }
 echo 'PASS the 9 live definitions rebuilt byte for byte (md5 = production)'
-$P -c "grant execute on all functions in schema public, security to authenticated" >/dev/null
 $P -f $FX/stubs.sql >/dev/null
+$P -f $FX/grants.sql >/dev/null
+ACL="select string_agg(f || ' ' || coalesce((select proacl::text from pg_proc where oid = f::regprocedure), 'default'), E'\\n' order by f collate \"C\") from unnest(array['public.admin_read(text,jsonb)','security.admin_course_page_fast(jsonb)','security.admin_course_page_fast_base(jsonb)','security.admin_course_page_unfiltered_fast(jsonb)','security.admin_course_page_search_state(jsonb)','security.current_role_rank()','security.pipeline_num_v1(text,numeric)','security.provider_university_groups(uuid)','security.university_group_provider_ids(text)','api.website_v2_label_month(text)']) f"
+diff -u $FX/production-grants.txt <($P -At -c "$ACL") || { echo 'FAIL function grants differ from production'; exit 1; }
+echo "PASS function grants equal production's for the 10 live functions (no blanket grant)"
 $P -f $FX/seed.sql >/dev/null
 $P -f $FX/named.sql >/dev/null
 echo "PASS data: $($P -At -c "select count(*) from catalogue.courses") courses, $($P -At -c "select count(*) from pipeline.field_enrich_items") field items, $($P -At -c "select count(*) from pipeline.course_attribute_coverage") field states"
@@ -49,7 +52,11 @@ $P -1 -o /dev/null -f $MIG 2>/tmp/ccol-second.$$
 grep -c 'already applied' /tmp/ccol-second.$$ | grep -qx 2 || { cat /tmp/ccol-second.$$; echo 'FAIL second run did not find the edits applied'; exit 1; }
 rm -f /tmp/ccol-second.$$
 [ "$(md5of "array['security.admin_course_page_fast(jsonb)','security.admin_course_page_fast_base(jsonb)','public.admin_read(text,jsonb)']")" = "$AFTER" ] || { echo 'FAIL a second run changed a definition'; exit 1; }
-[ "$($P -At -c "select count(*) from pipeline.admin_table_columns")" = 40 ] && [ "$($P -At -c "select count(*) from pipeline.platform_toolset_settings where key like 'catalogue_layout.%'")" = 4 ] || { echo 'FAIL rows added twice'; exit 1; }
+[ "$($P -At -c "select count(*) from pipeline.admin_table_columns")" = 40 ] && [ "$($P -At -c "select count(*) from pipeline.platform_toolset_settings where key like 'catalogue_layout.%'")" = 6 ] || { echo 'FAIL rows added twice'; exit 1; }
+NEWACL=$($P -At -c "select coalesce(proacl::text, 'default') from pg_proc where oid = 'public.admin_table_layout(text,jsonb)'::regprocedure")
+[ "$NEWACL" = "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}" ] || { echo "FAIL admin_table_layout grants: $NEWACL"; exit 1; }
+[ "$($P -At -c "select count(*) from information_schema.role_table_grants where table_schema = 'pipeline' and table_name like 'admin_table_%' and grantee in ('anon', 'authenticated')")" = 0 ] || { echo 'FAIL layout tables granted'; exit 1; }
+echo "PASS new objects: admin_table_layout executable by authenticated and service_role only (public schema defaults as production), layout tables granted to no API role"
 echo "PASS migration applied, then applied again unchanged (after: $AFTER; admin_read unchanged)"
 # 5 backward compatibility
 $P -f $FX/compat.sql -v phase=after 2>&1 | sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'

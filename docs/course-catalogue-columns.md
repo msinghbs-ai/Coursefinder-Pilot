@@ -95,6 +95,8 @@ Additive only, beside the consumer API (G3): new tables and functions in `pipeli
 | `catalogue_layout.max_columns` | Saved table layout: most columns shown | 60 | 5–100 | columns |
 | `catalogue_layout.width_min_px` | Saved table layout: narrowest column | 64 | 40–200 | pixels |
 | `catalogue_layout.width_max_px` | Saved table layout: widest column | 1200 | 300–2400 | pixels |
+| `catalogue_layout.server_layouts_on` | Saved table layouts: keep layouts on the server (recovery switch) | 1 | 0–1 | on (1) / off (0) |
+| `catalogue_layout.new_sorts_on` | Course catalogue: offer the Last data admitted and Adapter status sorts (recovery switch) | 1 | 0–1 | on (1) / off (0) |
 
 **Tables**
 
@@ -227,6 +229,10 @@ From `course_attribute_coverage` and `enrichment_flags`, computed in the project
 
 ## 4. Tests and evidence (CC-2)
 
+### 4.0 Grants in the fixture
+
+The fixture grants exactly what production grants, read 5 Nov 2026 20:50 AEDT; there is no blanket grant. That covers schema usage (authenticated may use public, auth, security and api only), the public schema's default privileges, and each of the 10 live functions' ACLs (`grants.sql`; `run.sh` compares every ACL with `production-grants.txt`). After the migration it checks that `public.admin_table_layout` is executable by authenticated and service_role only, and that the layout tables are granted to no API role. All cases and browser tests pass under these grants.
+
 ### 4.1 Isolated PostgreSQL fixture (`tests/fixtures/course-catalogue-columns/run.sh`, workflow `course-catalogue-columns-test.yml`)
 
 | Step | Result (local run 5 Nov 2026, PostgreSQL 16) |
@@ -269,11 +275,33 @@ Both rules run read-only on production, each a single SELECT in the heavy-read w
 - Adapter status over 35,690 active courses: Completed 18,756, Failed 7,186, Held 4,360, Not configured 3,527, Ready 1,861 (no course was processing at that minute).
 - Last data admitted (20:06 AEDT): 27,242 active courses have an admission record and 8,448 show Unknown. Admissions run from 4 Oct 2026 to 5 Nov 2026 08:26 UTC. 1,911 courses were admitted after their course record last changed: admissions to fees, intakes or English write the child tables, not `catalogue.courses`. The two timestamps are different facts, as the mandate requires.
 
-## 5. Open points for the Integration Controller
+## 5. Deploy window and forward recovery
+
+### 5.1 Deploy window (confirmed by the independent validation, 5 Nov 2026)
+
+Apply the migration at **:11–:12** past the hour. That is away from :26 (intake-dates-apply), the :x6 heavy-read minutes, :02 and :32 (first-run-verify), and every writer of the four indexed tables: :00/:05 (enrich-plan-run), :x3 (coverage-admit), :x5 (coverage-admit-intakes), :x9 (adapter-overwrite), :23 (field-gap-queue), :24/:54 (ops-controller) and :41 (enrich-plan-auto). `lock_timeout` is 5 s, so if a writer still holds a table the migration stops cleanly with nothing applied; apply it again at the next :11.
+
+### 5.2 Forward recovery (nothing is dropped)
+
+Every step below is a setting change or a forward migration. Nothing is dropped or deleted by a migration. Drops go to the Platform Admin as a paste file after `hygiene.retire_after_days`, once nothing uses the object.
+
+| Situation | Action | Effect |
+|---|---|---|
+| A person's layout is wrong or unreadable | That person presses **Reset to default** (Columns). | Their default columns come back. The old layout is kept for Restore last saved. No one else is affected. |
+| The layout RPC misbehaves (errors, slow, wrong saves) | Set **`catalogue_layout.server_layouts_on` = 0** on Settings › Pipeline settings › Course catalogue, with a reason. | The server neither reads nor writes layouts; no row is deleted. The screen keeps each person's layout in their browser (the existing fallback) and says "Saved in this browser only: server layouts are switched off". Set it back to 1 and every saved layout returns unchanged. Proved by database cases and a screen test. |
+| Last data admitted or Adapter status sorting misbehaves | Set **`catalogue_layout.new_sorts_on` = 0**. | The screen stops offering the two sorts (their headings are no longer buttons). A list sorted on either goes back to Course. The columns stay. Every other sort, filter and paging is unchanged. |
+| A column cell misbehaves | Each person can untick it in Columns, or press Reset to default. | The column is hidden; the page read is unchanged. |
+| The courses_page extras or the new sort code must go | A **fix-forward migration** puts back the two edited functions. It is guarded on the after-md5s (`security.admin_course_page_fast` `3ba78b0e5dcc09c9eda5753304c32ace`, `security.admin_course_page_fast_base` `7203f7c62678618154c65ef4ada0e5be`) and restores the before definitions (md5 `2dc6ee8ba523afeec04d862f3a2ced8a`, `afbef16111a09e3680061547bbb1329a`, kept byte for byte in `tests/fixtures/course-catalogue-columns/live-functions.sql` and `live-page-base.sql`). Set `new_sorts_on` = 0 in the same change. | The page returns exactly today's fields; the new columns show Unknown; the layouts keep working. The layout tables, RPC, settings, helper functions and indexes stay (unused helpers retire under housekeeping). Prove it in the fixture (`run.sh` already rebuilds the before definitions and compares 13 argument sets) before it goes to production. |
+| A defect inside a new helper (`security.course_list_extras_v1`, `course_admissions_v1`, `course_adapter_state_from_v1`) | A fix-forward migration with `create or replace` of that helper, guarded on its live md5, then `run.sh` and the browser tests. | Same signature, so the callers are unchanged. |
+| The new indexes are unwanted | Leave them (they only speed up reads). If they must go, use a paste file of `drop index concurrently` for the Platform Admin. | No lock on the ledgers' writers. |
+
+The localStorage copy is never removed. It is what the screen falls back to whenever the server layouts are off or unreachable.
+
+## 6. Open points for the Integration Controller
 
 - CI on PostgreSQL 17 (head 9300131a, a slower runner than earlier runs): Last data admitted 226 ms, Adapter 231 ms, course 172 ms. With the Victoria state filter: today's course sort takes 2,535 ms and Last data admitted 2,856 ms. The state filter is the existing hotspot: it predates this change and is close to the 3,000 ms budget on its own. This change does not alter it; the slow path is recorded for a separate change.
 
 - `docs/platform/TEST-REGISTER.md` was regenerated from a partial local run (agents do not run the full suite), so statuses outside this change read "not run"; the Controller regenerates it after the full run at integration, as the ownership rules say.
 - At release: re-read the two edited functions' md5s (`2dc6ee8ba523afeec04d862f3a2ced8a`, `afbef16111a09e3680061547bbb1329a`); the migration refuses to apply if either changed.
-- Index locks: each build holds its table's write lock only while it runs; measured above at under 30 ms, so `CREATE INDEX CONCURRENTLY` (a separate paste file run before the migration) is not needed. The real risk is waiting for a writer already holding the table, so the migration sets `lock_timeout` to 5 s (marked `-- fixed:`): a busy minute fails the migration cleanly and it is applied again. Deploy window: the writers of these tables run at :00/:05 (enrich-plan-run), :x3 (coverage-admit), :x5 (coverage-admit-intakes), :x9 (adapter-overwrite), :23 (field-gap-queue), :24/:54 (ops-controller), :26 (intake-dates-apply) and :41 (enrich-plan-auto); apply at :11–:12 or :31–:32, never at :26 or the :x6 heavy minutes.
+- Index locks: each build holds its table's write lock only while it runs; measured above at under 30 ms, so `CREATE INDEX CONCURRENTLY` (a separate paste file run before the migration) is not needed. The real risk is waiting for a writer already holding the table, so the migration sets `lock_timeout` to 5 s (marked `-- fixed:`): a busy minute fails the migration cleanly and it is applied again. Deploy window: the writers of these tables run at :00/:05 (enrich-plan-run), :x3 (coverage-admit), :x5 (coverage-admit-intakes), :x9 (adapter-overwrite), :23 (field-gap-queue), :24/:54 (ops-controller), :26 (intake-dates-apply) and :41 (enrich-plan-auto); apply at :11–:12 (§5.1), never at :02, :26, :32 or the :x6 heavy minutes.
 - Last modified is `catalogue.courses.updated_at`, the course record itself; a value written only to a child table (fee, intake, English) shows in Last data admitted, not in Last modified. There is no change history for the course record, so it shows the record's own persisted stamp: bulk real writes (for example the 3 Nov 2026 description admission on 11,149 courses) show as modifications.

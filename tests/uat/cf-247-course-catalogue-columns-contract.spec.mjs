@@ -83,6 +83,21 @@ test.describe('mocked browser', () => {
     await expect(page.locator('[data-layout-ack="success"]')).toContainText('Default layout restored')
     expect(await keys(page)).toEqual(defaultLayout().columns)
   })
+  test('forward recovery: with server layouts switched off nothing is saved to the server; with the new sorts off they are not offered', async ({ page }) => {
+    await mockAdmin(page)
+    const calls = []
+    await page.route('https://example.supabase.co/rest/v1/rpc/admin_table_layout', route => { const b = route.request().postDataJSON(); calls.push(b)
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(b.p_action === 'read' ? { screen: 'courses', layout: null, server_layouts: false, new_sorts: false, limits: { max_columns: 60, width_min_px: 64, width_max_px: 1200 } } : { saved: false, server_layouts: false }) }) })
+    await page.goto('/#courses')
+    await expect(page.locator('th[data-col="last_admitted_at"] button')).toBeDisabled()
+    await expect(page.locator('th[data-col="adapter_state"] button')).toBeDisabled()
+    await expect(page.locator('th[data-col="provider_name"] button')).toBeEnabled()
+    await page.locator('[data-columns-toggle]').click()
+    await page.locator('[data-col-toggle="country_name"]').check()
+    await expect(page.locator('[data-layout-ack="warning"]')).toContainText('server layouts are switched off')
+    expect(calls.filter(c => c.p_action !== 'read')).toEqual([])
+    await expect(page.locator('[data-columns-restore]')).toBeDisabled()
+  })
   test('without the server the layout still works from this browser and says it is saved here only', async ({ page }) => {
     await mockAdmin(page)
     await page.route('https://example.supabase.co/rest/v1/rpc/admin_table_layout', route => route.fulfill({ status: 503, contentType: 'application/json', body: '{"message":"unavailable"}' }))

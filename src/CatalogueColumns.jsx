@@ -24,6 +24,9 @@ export function useCourseLayout(userId) {
   const [ack, setAck] = useState(null) // { tone, text }
   const [hasPrevious, setHasPrevious] = useState(false)
   const [loaded, setLoaded] = useState(false)
+  // recovery switches (Settings › Pipeline settings › Course catalogue): server layouts off keeps layouts in this browser; new sorts off hides two sorts
+  const [serverOn, setServerOn] = useState(true), [newSorts, setNewSorts] = useState(true)
+  const serverRef = useRef(true)
   const timer = useRef(0), latest = useRef(layout)
   useEffect(() => { latest.current = layout }, [layout])
   useEffect(() => {
@@ -37,6 +40,8 @@ export function useCourseLayout(userId) {
       if (error || !data || typeof data !== 'object' || Array.isArray(data)) { setLoaded(true); return }
       const lim = { ...DEFAULT_LIMITS, ...(data.limits || {}) }
       setLimits(lim); setHasPrevious(Boolean(data.has_previous))
+      if (data.server_layouts === false) { serverRef.current = false; setServerOn(false) }
+      if (data.new_sorts === false) setNewSorts(false)
       if (data.layout) { setLayout(normaliseLayout(data.layout, lim)); setSource('server') }
       setLoaded(true)
     }).catch(() => live && setLoaded(true))
@@ -45,6 +50,7 @@ export function useCourseLayout(userId) {
   const persist = next => {
     clearTimeout(timer.current)
     timer.current = setTimeout(async () => {
+      if (!serverRef.current) { setAck({ tone: 'warning', text: 'Saved in this browser only: server layouts are switched off (Settings › Pipeline settings › Course catalogue)' }); return }
       try {
         const { data, error } = await supabase.rpc('admin_table_layout', { p_action: 'save', p_args: { screen: COURSE_SCREEN, layout: next } })
         if (error || !data?.saved) throw error || new Error('not saved')
@@ -63,6 +69,7 @@ export function useCourseLayout(userId) {
     clearTimeout(timer.current)
     const next = defaultLayout(); setLayout(next); latest.current = next
     if (userId) writeLocal(userId, next)
+    if (!serverRef.current) { setAck({ tone: 'warning', text: 'Default layout restored in this browser (server layouts are switched off)' }); return }
     try {
       const { data, error } = await supabase.rpc('admin_table_layout', { p_action: 'reset', p_args: { screen: COURSE_SCREEN } })
       if (error || !data?.reset) throw error || new Error('not reset')
@@ -78,7 +85,7 @@ export function useCourseLayout(userId) {
       setHasPrevious(Boolean(data.has_previous)); setSource('server'); setAck({ tone: 'success', text: `Last saved layout restored at ${timeOf(data.saved_at)}` })
     } catch (e) { setAck({ tone: 'warning', text: `Could not restore: ${e?.message || 'the server did not answer'}` }) }
   }
-  return { layout, limits, source, ack, hasPrevious, loaded, update, reset, restore }
+  return { layout, limits, source, ack, hasPrevious: hasPrevious && serverOn, loaded, update, reset, restore, serverOn, newSorts }
 }
 
 /** Columns control: search, four groups, a count, show and hide, move up and down, Reset to default, Restore last saved. */
@@ -212,7 +219,8 @@ export const NEW_CELL_KEYS = new Set(['country_name', 'city_names', 'campus_coun
   'adapter_state', 'adapter_last_read_at', 'adapter_result', 'page_stored', 'source_identity', 'layer4_status', 'enrichment_status', 'last_admitted_field', 'created_at', 'last_modified_at', 'last_admitted_at', 'lifecycle_status', 'publication_status'])
 
 /** The table columns for the person's layout, in their order, with their widths' limits. */
-export function useCourseTableColumns(layout, limits, { navigate, hide = () => false } = {}) {
-  return useMemo(() => layout.columns.filter(k => !hide(k)).map(k => { const c = columnOf(k); return { key: k, label: c.header, width: c.width, sortKey: c.sortKey || undefined, minWidth: minWidthOf(k, limits), ...(NEW_CELL_KEYS.has(k) ? { render: r => renderCourseCell(k, r, { navigate }) } : {}) } }), [layout.columns.join(','), limits, navigate, hide])
+export const NEW_SORTS = new Set(['admitted', 'adapter'])
+export function useCourseTableColumns(layout, limits, { navigate, hide = () => false, newSorts = true } = {}) {
+  return useMemo(() => layout.columns.filter(k => !hide(k)).map(k => { const c = columnOf(k); return { key: k, label: c.header, width: c.width, sortKey: (c.sortKey && (newSorts || !NEW_SORTS.has(c.sortKey)) ? c.sortKey : undefined), minWidth: minWidthOf(k, limits), ...(NEW_CELL_KEYS.has(k) ? { render: r => renderCourseCell(k, r, { navigate }) } : {}) } }), [layout.columns.join(','), limits, navigate, hide, newSorts])
 }
 export { clampWidth }
