@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.413 — 5 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.486** (Platform Admin 5 Nov 2026 17:31 mandate; release authorised 22:52 at reviewed commit e07a4122; PR #887, agent C; independent validation agent E: ready). Migration `20261106300000_cf247_course_catalogue_columns`: per-user layout table with RLS and an owner-only RPC `admin_table_layout`, a 40-column registry, settings `catalogue_layout.*` (incl. recovery switches `server_layouts_on`, `new_sorts_on`), md5-guarded edits of `security.admin_course_page_fast` (2dc6ee8b) and `admin_course_page_fast_base` (afbef161) adding adapter, campus city, intake, last-admitted and last-published fields and the `admitted` and `adapter` sorts; four ledger indexes; `lock_timeout` 5 s. Consumer API unchanged.
+
 ## 0.1.412 — 5 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.485** (Platform Admin 5 Nov 2026 18:00: reconcile the enrichment focus list with the approved top-10 pilot; keep the global scheduler; no hard-coded top 10). Migration `20261105090000_cf247_intake_pilot_share`: setting `intake_dates.pilot_batch_share` (60%); md5-guarded edit of `security.intake_dates_plan_v3` (886876cd): pilot rows (security.intake_ui_scopes_v1) up to the share, then all other providers (focus first, longest waiting first), then any further pilot rows; rounds and the per-provider share unchanged; the preview path (course ids given) unchanged. Fixture 'selection' tests fairness, focus priority and pilot scope independently (4-university pilot, focus providers outside the pilot, a pilot university with no eligible work, share 0).

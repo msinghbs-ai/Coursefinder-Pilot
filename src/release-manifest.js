@@ -1,15 +1,16 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.485'
-export const PACKAGE_VERSION='0.1.412'
+export const UI_VERSION='2.15.486'
+export const PACKAGE_VERSION='0.1.413'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'5 Nov 2026',
-  title:'Intake dates: the pilot universities take a share of every run',
+  title:'Course catalogue: choose your columns and see how fresh each course\'s data is',
   changes:[
-    'The pilot universities (the top Australian universities by active courses, set by Run now: Australian universities a cohort is picked from) now take up to a set share of every intake-dates run (60 per cent, a setting), round by round and longest waiting first. Every other provider takes the rest, focus providers first, so the whole catalogue keeps moving; unused room on either side goes to the other.'
+    'The course catalogue has a Columns control: search the list of columns, show or hide them, put them in order and resize them. Your layout, widths and sort are saved to your account, so they follow you to another browser or device; Reset to default and Restore last saved are always there.',
+    'New columns: Adapter (Ready, Processing, Completed, Held, Failed or Not configured, with a link to the adapter), City (the cities of the course\'s own campuses, with the state), Intake month, Intake year, Commencement date and Application deadline (from the course\'s intakes), Course record updated (as recorded), Last data admitted (the last value actually admitted, or Unknown) and Last published (website feed). Sort by Last data admitted or Adapter across the whole filtered list.'
   ],
   bugFixes:[]
 }
