@@ -38,9 +38,34 @@ begin
   create temp table sel2 as select * from security.intake_dates_plan_v3(null, 200);
   if exists (select 1 from sel2 join sel1 using (intake_id)) then raise exception 'unchanged rows selected again'; end if;
   if v_missing is not null and not exists (select 1 from sel2 where provider_id = any (v_missing)) then raise exception 'a university that waited was not served next: %', v_missing; end if;
-  -- it comes first: the first row of the next run belongs to a university that waited
-  if v_missing is not null and (select provider_id from security.intake_dates_plan_v3(null, 1)) <> all (v_missing) then raise exception 'the waiting university is not first'; end if;
+  -- it comes first among universities of its focus standing (focus universities first in every round, then the rest)
+  if v_missing is not null and (select s.provider_id from (select p.*, row_number() over () rn from security.intake_dates_plan_v3(null, 200) p) s
+                                  left join pipeline.enrich_focus_providers f on f.provider_id = s.provider_id and f.in_focus
+                                 where (f.provider_id is null) = (select bool_and(f2.provider_id is null) from unnest(v_missing) m
+                                                                    left join pipeline.enrich_focus_providers f2 on f2.provider_id = m and f2.in_focus)
+                                 order by s.rn limit 1) <> all (v_missing) then raise exception 'the waiting university is not first among its peers'; end if;
   raise notice 'PASS persistence: the next run takes none of the rows already decided and starts with the universities that waited (%)', coalesce(array_length(v_missing, 1), 0);
+end $$;
+
+-- focus priority within a round (17:26 production finding): a focus university served before comes ahead of universities outside the focus list
+do $$
+declare v_focus uuid; v_first uuid; n_focus int;
+begin
+  select (x->>'id')::uuid into v_focus from jsonb_array_elements(security.intake_ui_scopes_v1()) x where x->>'name' = 'Fixture Australian University 4';
+  insert into pipeline.enrich_focus_providers(provider_id, rank, gaps, in_focus) values (v_focus, 1, 1, true)
+  on conflict (provider_id) do update set rank = 1, in_focus = true;
+  update pipeline.enrich_focus_providers set in_focus = false where provider_id <> v_focus;
+  -- it was served a moment ago; every other university waited longer or was never served
+  insert into pipeline.course_intake_dates(intake_id, course_id, provider_id, outcome, reason, applied_at, inputs_fp, next_action)
+  select i.id, i.course_id, c.provider_id, 'skipped', 'fixture: focus served', now(), 'fixture-focus', 'evidence_ambiguous'
+    from catalogue.course_intakes i join catalogue.courses c on c.id = i.course_id where c.provider_id = v_focus limit 1
+  on conflict (intake_id) do nothing;
+  select provider_id into v_first from security.intake_dates_plan_v3(null, 1);
+  select count(*) into n_focus from security.intake_dates_plan_v3(null, 200) where provider_id = v_focus;
+  if v_first <> v_focus or n_focus <> security.pipeline_num_v1('intake_dates.provider_share', 25)::int then
+    raise exception 'focus priority: first %, focus rows %', v_first, n_focus; end if;
+  update pipeline.enrich_focus_providers set in_focus = true where provider_id <> v_focus;  -- restore the fixture's focus list
+  raise notice 'PASS focus priority: a focus university served a moment ago still comes first in its round (% rows) ahead of universities outside the focus list that were never served', n_focus;
 end $$;
 
 -- calendars: an obsolete 2023 reading ("term 1") and the current 2027 reading ("teaching period t1/t2") ------------------------------------

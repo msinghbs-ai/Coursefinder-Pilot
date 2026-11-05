@@ -1,15 +1,15 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.483'
-export const PACKAGE_VERSION='0.1.410'
+export const UI_VERSION='2.15.484'
+export const PACKAGE_VERSION='0.1.411'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'5 Nov 2026',
-  title:'Intake dates: a withdrawal finds the admission even after a later run',
+  title:'Intake dates: focus universities first in every round',
   changes:[
-    'The Platform Admin\'s withdrawal of an intake value now finds the admission from its own record, so a value the process admitted is still withdrawn after a later run has looked at the row again without changing it.'
+    'Within each round of the intake-dates job, the focus universities (the approved priority list, including the top 10 Australian universities) now come first, the one waiting longest first, before universities outside the focus list. Each university still takes at most its share a round.'
   ],
   bugFixes:[]
 }
