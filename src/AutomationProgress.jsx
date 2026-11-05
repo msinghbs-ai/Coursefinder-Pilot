@@ -166,6 +166,7 @@ export default function AutomationProgress({ rank = 0, client }) {
         <ul className="ap-alerts">{alerts.map(a => <li key={a.code} data-alert={a.code} data-tripped={a.tripped ? 'yes' : 'no'}>
           <StatusChip value={a.tripped ? 'raised' : 'clear'} tone={a.tripped ? 'danger' : 'success'} label={a.tripped ? 'Raised' : 'Clear'}/> <strong>{a.label}</strong>
           {a.tripped && <> · {n(a.affected)} affected · last successful stage: {a.last_success_stage} · next action: {a.next_action}</>}
+          {a.code === 'repeated_deterministic' && a.evidence && <small data-testid="ap-repeats"> · confirmed {n(a.evidence.confirmed)} · excluded: setting change {n(a.evidence.excluded_setting_change)}, reader revision {n(a.evidence.excluded_reader_revision)}, source update {n(a.evidence.excluded_source_update)} · unverified repeats {n(a.evidence.unverified_repeat)} (diagnostic, not raised)</small>}
           {a.fingerprint && <small> · raised by the {a.raised_by} as {a.fingerprint}{a.issue ? ` (${a.issue.ref}${a.issue.cleared ? ', condition cleared' : ''})` : ''}</small>}
           {!a.tripped && a.zero_reason && <> · {words(a.zero_reason)}</>}
         </li>)}</ul>

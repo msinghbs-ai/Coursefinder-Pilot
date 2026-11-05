@@ -54,7 +54,19 @@ So runs whose rows only lack evidence raise nothing. A row that validated but is
 |---|---|
 | `intake-progress:monopoly` | It needs a per-provider share of recent scheduled runs. The contract has no provider dimension. |
 | `intake-progress:publication-mismatch` | Some admitted values are not published while others are, so the publication transition still advances and never stalls. It is raised only while `intake_publication` is not stalled. When nothing publishes, the condition is `stall:intake_publication` and this issue is marked cleared, so one condition never carries two fingerprints. |
-| `intake-progress:repeated-deterministic` | A per-row invariant: a deterministic failure must not be decided again under unchanged inputs (mandate 12:44 §9). It is not a throughput measure. |
+| `intake-progress:repeated-deterministic` | A per-row invariant: a deterministic failure must not be decided again under unchanged inputs (mandate 12:44 §9). It is not a throughput measure. Only **confirmed** repeats are raised (see below). |
+
+**Repeat classification** (Platform Admin 5 Nov 2026 22:46, `security.intake_progress_repeats_v1`). Each deterministic refusal of the last day that repeats an earlier refusal of the same class for the same intake row is classified from existing records only. The checks run in this order:
+
+| Status | When | Raised |
+|---|---|---|
+| `excluded_source_update` | The calendar set, calendar document, approved reading, periods, evidence year or stored course page wording differ between the two decisions (`pipeline.course_intake_date_events`). | no |
+| `excluded_reader_revision` | The reader or rule differ, or a release deployed between the two decisions changed an intake or calendar function (`pipeline.integration_deploy_checks.result->functions`). | no |
+| `excluded_setting_change` | A governed `intake_dates.*` or `run_now.*` setting was changed between them (`pipeline.admin_control_events`, area `toolsets`/`settings`, the Settings audit). An example is event 28963, `intake_dates.month_unique_match` 1 → 0 at 15:56. | no |
+| `unverified_repeat` | The earlier inputs cannot be established: no calendar set, no page wording or no rule on either decision, or a release between them whose changed functions are not recorded. | no. Shown as a diagnostic count on the screen. |
+| `confirmed` | Otherwise: evidence, reader and settings are demonstrably unchanged. | yes, one issue `intake-progress:repeated-deterministic` |
+
+The classification uses no new table, column, setting or tracking. It reads the decision history, the Settings audit and the release records that already exist. A re-run updates the same issue, and when no confirmed repeat remains, the issue is marked `condition_cleared_at`.
 
 **Shown only**, because existing mechanisms route them:
 - stale calendar editions (process-results calendar flags);
@@ -77,6 +89,7 @@ The screen's own "stalled" job state uses `intake_progress.stall_minutes` (90) f
 
 **Changes**
 - `security.progress_measure_v1`: an md5-guarded additive edit (40c0c972) adds three keys before its final `else`. Every existing branch is byte for byte unchanged.
+- `pipeline.integration_deploy_checks` and `pipeline.admin_control_events` are read (not changed) by the repeat classification; their production shapes are in the fixture.
 - `security.progress_read_v1`: an md5-guarded edit (f11ed22d). Intake issues are filed as layer "Layer 2" and workstream A8. The loop reads the intake chain only while `progress.intake_chain_on` is 1 (the other chains are always read). The intake checks run after the loop, and the result gains an `intake` key when that chain is read.
 - **After the migration (fixture):** `progress_measure_v1` = `e758d1c2d36f8f523c3fdbcc1b9dff2f`, `progress_read_v1` = `24460bd898fbbc69a3d4c8db3a0b5c24`.
 - The migration sets `lock_timeout` to 5 s (`-- fixed:` deploy-time safety). A busy table makes it fail cleanly, and it can be applied again.
@@ -112,7 +125,7 @@ The screen's own "stalled" job state uses `intake_progress.stall_minutes` (90) f
   - refusal of a non-live `progress_measure_v1`;
   - the migration applied twice with no change;
   - no job added or changed;
-  - 25 SQL cases, including the off switch.
+  - 31 SQL cases, including the off switch and the six repeat-classification cases (the 167 UNSW rechecks reproduced and not confirmed; an unchanged repeat confirmed, deduplicated and cleared; an unverified repeat not raised; a reader revision and a source update excluded).
 - `benchmark.sh`.
 - `tests/integration-progress/intake-progress-postgres.spec.mjs`: browser to PostgreSQL, desktop and phone.
 - `tests/uat/cf-247-s340-intake-automation-progress.spec.mjs`.
@@ -251,21 +264,18 @@ The benchmark fails above 3 s. The bridge's statement time-out is 20 s. In produ
 
 ### 7.3 Expected effects of the first reading
 
-**`intake-progress:repeated-deterministic` will be raised** on the first reading: P2, A8, `root_cause_class = code_defect`. Validation counted 167 rows on 5 Nov.
+**`intake-progress:repeated-deterministic` will not be raised on today's data.** This is the corrected check (Platform Admin 22:46). Production was re-read on 5 Nov 2026 at 22:56 AEDT (read only), with the classification as plain SELECTs:
 
-- **It is not a true finding.** Re-read in production on 5 Nov at 21:05 AEDT (read only):
-  - all 167 are UNSW rows: 151 `academic_year_unproven` and 16 `no_matching_commencement_period`;
-  - each was decided at 14:26 and again at 16:26, under the same rule, calendar set and reader.
-- **Why they were looked at again.** Between the two runs, at 15:56, the governed containment changed `intake_dates.month_unique_match` from 1 to 0 (admin control event 28963). That setting is part of the row's inputs fingerprint (`security.intake_inputs_fp_v1`, settings `unique=…`). The rows were therefore correctly looked at again.
-- **Why the check misses it.** It compares the calendar set and reader only, because the decision records do not store the inputs fingerprint.
-- **What the operator does:**
-  - triage the issue as "not a defect: the inputs changed (15:56 settings change)" and close it through the integration queue;
-  - the condition also clears by itself once the 16:26 decisions leave the one-day window (6 Nov 16:26 AEDT), unless a new repeat occurs.
-- **Decision for the Controller (not changed here):**
-  - (a) accept the check as it is, with this triage note; or
-  - (b) a narrow follow-up so the check also ignores repeats that straddle a governed settings change or a release, or demote it to shown only.
+| Status | Intake rows | What they are |
+|---|---|---|
+| confirmed | **0** | none |
+| excluded_setting_change | **167** | UNSW: 151 `academic_year_unproven` and 16 `no_matching_commencement_period`, decided at 14:26 and again at 16:26. The governed 15:56 change of `intake_dates.month_unique_match` (event 28963) falls between the two decisions. |
+| excluded_source_update | 18 | UNSW, re-decided at 17:01, 20:26 and 22:26 with a different calendar set, reading, period or page wording. Releases v2.15.482–485 fall between 16:26 and these decisions. |
+| excluded_reader_revision | 0 | none, because the source update matched first |
+| unverified_repeat | 0 | none |
 
-  The decision records cannot be given the fingerprint without changing intake processing, which is closed.
+- **Earlier finding withdrawn.** The earlier note in this section said the 167 rows would trip the alert as a false positive. That no longer applies: the corrected check classifies them as legitimate rechecks.
+- **What the operator does.** A **confirmed** repeat means the platform decided a row again with nothing changed, which is a P0 rule breach. Report the confirmed rows to the intake owner. **Unverified repeats** are a diagnostic count on the screen. They raise nothing, and need no action unless the count keeps growing.
 
 **Other expected effects:**
 

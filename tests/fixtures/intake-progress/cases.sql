@@ -174,6 +174,59 @@ select fx.ok((select condition_cleared_at is not null from pipeline.integration_
   'a cleared condition marks its issue condition_cleared_at (the controller closes it)');
 rollback;
 
+-- repeated deterministic failures (Platform Admin 5 Nov 2026 22:46): only a repeat with demonstrably unchanged evidence, reader and settings is raised
+create or replace function fx.repeat_pair(p_n int, p_at1 timestamptz, p_at2 timestamptz) returns void language plpgsql as $$
+begin
+  perform fx.decide('swinburne', p_n, 'February', 'skipped', 'the course page names no study period of the calendar (month only)', p_at1);
+  perform fx.decide('swinburne', p_n, 'February', 'skipped', 'the course page names no study period of the calendar (month only)', p_at2);
+end $$;
+-- (a) the 167 UNSW rechecks: decided at 14:26 and 16:26 under the same rule, calendar set and reader, with the governed 15:56 change of
+--     intake_dates.month_unique_match 1 -> 0 (as admin control event 28963) between them: a legitimate recheck, not confirmed, no issue
+begin;
+do $$ declare k int; begin for k in 1 .. 5 loop perform fx.repeat_pair(k, now() - interval '150 minutes', now() - interval '30 minutes'); end loop; end $$;
+insert into pipeline.admin_control_events(area, action, target, detail, actor, created_at)
+values ('toolsets', 'setting', 'pipeline.intake_dates.month_unique_match', '{"after": 0, "before": 1, "reason": "P0 IQ-00313 containment"}', fx.id('user:6'), now() - interval '60 minutes');
+insert into obs select 10, security.progress_read_v1();
+select fx.ok((x->>'confirmed')::int = 0 and (x->>'excluded_setting_change')::int = 5 and not exists (select 1 from pipeline.integration_issues where fingerprint = 'intake-progress:repeated-deterministic'),
+  'repeats: the UNSW pattern (same rule, calendar set and reader; the governed setting change between) is excluded_setting_change, no issue')
+  from (select security.intake_progress_repeats_v1() x) y;
+rollback;
+-- (b) the same pattern with no change at all: confirmed, one issue; a re-run updates it; it clears when the repeats leave the window
+begin;
+do $$ declare k int; begin for k in 1 .. 5 loop perform fx.repeat_pair(k, now() - interval '150 minutes', now() - interval '30 minutes'); end loop; end $$;
+insert into obs select 11, security.progress_read_v1();
+select fx.ok((select (x->>'confirmed')::int from (select security.intake_progress_repeats_v1() x) y) = 5
+   and (select count(*) from pipeline.integration_issues where fingerprint = 'intake-progress:repeated-deterministic') = 1
+   and r->'intake'->>'repeated_deterministic' is not null, 'repeats: unchanged evidence, reader and settings are confirmed; one issue intake-progress:repeated-deterministic')
+  from obs where n = 11;
+insert into obs select 12, security.progress_read_v1();
+select fx.ok((select count(*) from pipeline.integration_issues where fingerprint = 'intake-progress:repeated-deterministic') = 1
+   and (select retry_count from pipeline.integration_issues where fingerprint = 'intake-progress:repeated-deterministic') = 1,
+   'repeats: a re-run updates the same issue (stable fingerprint, no duplicate)');
+update pipeline.course_intake_date_events set run_at = run_at - interval '2 days' where provider_id = fx.id('p:swinburne');
+insert into obs select 13, security.progress_read_v1();
+select fx.ok((select condition_cleared_at is not null from pipeline.integration_issues where fingerprint = 'intake-progress:repeated-deterministic'),
+  'repeats: when the condition clears, the issue is marked cleared');
+rollback;
+-- (c) inputs that cannot be established (no stored page wording on either decision): unverified_repeat, shown, no issue
+begin;
+do $$ declare k int; begin for k in 1 .. 3 loop perform fx.repeat_pair(k, now() - interval '150 minutes', now() - interval '30 minutes'); end loop; end $$;
+update pipeline.course_intake_date_events set page_quote = null where provider_id = fx.id('p:swinburne');
+insert into obs select 14, security.progress_read_v1();
+select fx.ok((x->>'unverified_repeat')::int = 3 and (x->>'confirmed')::int = 0 and not exists (select 1 from pipeline.integration_issues where fingerprint = 'intake-progress:repeated-deterministic')
+   and (select (a->'evidence'->>'unverified_repeat')::int from jsonb_array_elements(fx.v(3, 'status')->'alerts') a where a->>'code' = 'repeated_deterministic') = 3,
+  'repeats: inputs that cannot be established are unverified_repeat, shown on the screen, no issue') from (select security.intake_progress_repeats_v1() x) y;
+rollback;
+-- (d) a reader revision (a release that changed an intake function between the decisions) and (e) a source update (another calendar set) are excluded
+begin;
+do $$ declare k int; begin for k in 1 .. 2 loop perform fx.repeat_pair(k, now() - interval '150 minutes', now() - interval '30 minutes'); end loop; end $$;
+insert into pipeline.integration_deploy_checks(release, since, ok, result)
+values ('v2.15.482', now() - interval '60 minutes', true, '{"functions": [{"ok": true, "function": "security.intake_dates_plan_v3(uuid[],integer)"}]}');
+update pipeline.course_intake_date_events set calendar_set = 'set:swinburne:v2.2' where provider_id = fx.id('p:swinburne') and course_id = fx.id('c:swinburne:2') and run_at > now() - interval '60 minutes';
+select fx.ok((x->>'excluded_reader_revision')::int = 1 and (x->>'excluded_source_update')::int = 1 and (x->>'confirmed')::int = 0,
+  'repeats: a release changing an intake function is a reader revision; a changed calendar set is a source update; neither is confirmed') from (select security.intake_progress_repeats_v1() x) y;
+rollback;
+
 -- forward recovery: the narrow off switch stops the intake readings and checks; the scholarship and AER chains are still read
 begin;
 update pipeline.platform_toolset_settings set value = '0' where toolset_key = 'pipeline' and key = 'progress.intake_chain_on';

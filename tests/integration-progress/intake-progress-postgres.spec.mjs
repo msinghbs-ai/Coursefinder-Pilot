@@ -39,6 +39,10 @@ test('status, the latest run funnel and the university rows match the database; 
   await expect(row(page, 'Torrens University Australia')).toContainText('Other provider')
   await expect(page.locator('[data-alert="publication_mismatch"]')).toHaveAttribute('data-tripped', 'yes')
   await expect(page.locator('[data-alert="publication_mismatch"]')).toContainText('raised by the intake checks as intake-progress:publication-mismatch')
+  // Platform Admin 22:46: the repeat classification is shown, unverified repeats as a diagnostic
+  const rep = JSON.parse(await sql(page, "select security.intake_progress_repeats_v1()::text"))
+  await expect(page.getByTestId('ap-repeats')).toContainText(`confirmed ${rep.confirmed}`)
+  await expect(page.getByTestId('ap-repeats')).toContainText(`unverified repeats ${rep.unverified_repeat} (diagnostic, not raised)`)
   // decision 20:03: the generic progress observer's readings of the intake chain, as stored by it
   const observer = page.getByTestId('ap-observer')
   await expect(observer.locator('tbody tr')).toHaveCount(3)

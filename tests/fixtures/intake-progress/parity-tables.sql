@@ -174,6 +174,7 @@ create table if not exists pipeline.admin_control_events (
   actor uuid,
   created_at timestamp with time zone not null default now(),
   constraint admin_control_events_pkey PRIMARY KEY (id));
+create index if not exists admin_control_events_layer4_target_idx on pipeline.admin_control_events USING btree (target, id DESC) WHERE (area = 'layer4'::text);
 create table if not exists pipeline.component_register (
   kind text not null,
   name text not null,
@@ -357,6 +358,22 @@ create table if not exists pipeline.integration_issues (
   constraint integration_issues_fingerprint_key UNIQUE (fingerprint));
 create index if not exists integration_issues_open_idx on pipeline.integration_issues USING btree (status, severity) WHERE (status <> 'closed'::text);
 create index if not exists integration_issues_observed_idx on pipeline.integration_issues USING btree (last_observed_at DESC);
+create unique index if not exists integration_issues_aer_ref_uq on pipeline.integration_issues USING btree (aer_root_cause_ref) WHERE (aer_root_cause_ref IS NOT NULL);
+create index if not exists integration_issues_correlation_idx on pipeline.integration_issues USING btree (correlation_key) WHERE (status <> 'closed'::text);
+create index if not exists integration_issues_next_action_idx on pipeline.integration_issues USING btree (next_action_at) WHERE (status <> 'closed'::text);
+-- the release record (read by the repeat classification, Platform Admin 22:46): live columns, defaults, check and key (read 5 Nov 2026 22:50 AEDT)
+create table if not exists pipeline.integration_deploy_checks (
+  id bigserial not null,
+  release text not null,
+  checked_at timestamp with time zone not null default now(),
+  since timestamp with time zone not null,
+  ok boolean not null,
+  result jsonb not null,
+  issues text[] not null default '{}'::text[],
+  operational_status text,
+  operational_checked_at timestamp with time zone,
+  constraint integration_deploy_checks_operational_status_check CHECK (((operational_status IS NULL) OR (operational_status = ANY (ARRAY['not_applicable'::text, 'awaiting_first_run'::text, 'operationally_verified'::text, 'failed_first_run'::text])))),
+  constraint integration_deploy_checks_pkey PRIMARY KEY (id));
 create table if not exists pipeline.integration_issue_events (
   id bigserial not null,
   issue_id bigint not null,
@@ -372,7 +389,7 @@ create table if not exists pipeline.integration_issue_events (
   constraint integration_issue_events_pkey PRIMARY KEY (id));
 do $$ declare t text; begin
   foreach t in array array['pipeline.platform_toolset_settings','pipeline.automation_catalogue','pipeline.admin_control_events','pipeline.component_register','pipeline.course_intake_dates',
-                           'pipeline.course_intake_date_events','pipeline.process_results','pipeline.integration_issues','pipeline.integration_issue_events'] loop
+                           'pipeline.course_intake_date_events','pipeline.process_results','pipeline.integration_issues','pipeline.integration_issue_events','pipeline.integration_deploy_checks'] loop
     execute format('alter table %s enable row level security', t);
     execute format('revoke all on %s from authenticated, anon', t);  -- live: no grants to authenticated or anon, no policies
   end loop;

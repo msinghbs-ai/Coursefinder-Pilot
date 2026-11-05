@@ -18,7 +18,9 @@
 --     (stall:intake_publication) are raised by the generic observer with its own zero reasons and history (pipeline.progress_observations).
 --   2 Intake checks the contract cannot express (security.intake_progress_checks_v1, called by progress_read_v1): one provider monopolising the
 --     recent scheduled runs (a per-provider share), a partial publication mismatch (some admitted values not published while others are, so the
---     transition still advances), and a deterministic failure repeated under unchanged inputs (a per-row invariant). Each raises one fingerprint
+--     transition still advances), and a deterministic failure repeated under demonstrably unchanged inputs (a per-row invariant;
+--     security.intake_progress_repeats_v1, Platform Admin 22:46: rechecks after a governed setting change, a reader revision or a source update are
+--     excluded; a repeat whose earlier inputs cannot be established is unverified_repeat, shown and never raised). Each raises one fingerprint
 --     (intake-progress:<code>) through security.integration_issue_upsert_v1; a cleared condition sets condition_cleared_at.
 --   3 Reads (SECURITY DEFINER, Operations read rank 3, as public.admin_process_results_v1): public.admin_intake_progress_v1(view, args), views status,
 --     window (latest run, 24 hours, 7 days or 30 days: funnel, gross activity and net gain with withdrawals, one row per university), runs, failures
@@ -377,6 +379,51 @@ begin
 end $function$;
 comment on function security.intake_progress_status_v1(integer) is 'CF-247 Automation Progress (decision 16:36 §3A, §4): the intake-dates-apply job now: enabled, paused, switched off, running, waiting, failed or stalled (last start older than intake_progress.stall_minutes), last and running run id, last success, next run, batch, provider and pilot shares, scope, latest run funnel (and whether it admitted nothing), rate, pending work, held work, AI and Firecrawl use from the saved measurements, the generic progress observer''s readings of the intake chain, and which existing controls the caller''s role may use. Read only.';
 
+create or replace function security.intake_progress_repeats_v1() returns jsonb
+language sql stable security definer set search_path to '' as $function$
+  -- Platform Admin 5 Nov 2026 22:46: each deterministic refusal of the last day that repeats the same failure class of the same intake row is classified
+  -- from existing records only, in this order:
+  --   excluded_source_update   the calendar set, calendar document, approved reading, periods, evidence year or course page wording differ between the two decisions;
+  --   excluded_reader_revision the reader or rule differ, or a release that changed an intake or calendar function was deployed between them
+  --                            (pipeline.integration_deploy_checks.result->functions);
+  --   excluded_setting_change  a governed intake_dates.* or run_now.* setting was changed between them (pipeline.admin_control_events, Settings audit);
+  --   unverified_repeat        the earlier inputs cannot be established: no calendar set, no page wording or no rule on either decision, or a release
+  --                            between them whose changed functions are not recorded;
+  --   confirmed                otherwise: evidence, reader and settings demonstrably unchanged.
+  with ev as (select e.intake_id, e.run_at, e.failure_class, e.calendar_set, e.calendar_evidence_id, e.proposal_id, e.periods, e.evidence_year, e.page_quote, e.reader, e.rule,
+                     p.run_at p_at, p.calendar_set p_set, p.calendar_evidence_id p_doc, p.proposal_id p_prop, p.periods p_periods, p.evidence_year p_year, p.page_quote p_quote,
+                     p.reader p_reader, p.rule p_rule
+                from pipeline.course_intake_date_events e
+                cross join lateral (select x.* from pipeline.course_intake_date_events x
+                                     where x.intake_id = e.intake_id and x.run_at < e.run_at and x.failure_class = e.failure_class order by x.run_at desc limit 1) p
+               where e.run_at >= now() - make_interval(days => 1) and e.deterministic and e.outcome = 'skipped'),  -- fixed: the one-day check named by decision 16:36 §6
+  st as (select a.created_at at from pipeline.admin_control_events a
+          where a.area in ('toolsets', 'settings') and a.action in ('setting', 'change') and a.target ~ '^(pipeline\.)?(intake_dates|run_now)\.'
+            and a.created_at >= (select min(ev.p_at) from ev)),
+  rel as (select r.since at, exists (select 1 from jsonb_array_elements(case when jsonb_typeof(r.result->'functions') = 'array' then r.result->'functions' else '[]'::jsonb end) f
+                                      where f->>'function' ~ '^security\.(intake_|calendar_)') intake_fn,
+                 coalesce(jsonb_typeof(r.result->'functions') = 'array', false) known
+            from pipeline.integration_deploy_checks r where r.since >= (select min(ev.p_at) from ev)),
+  k as (select ev.*, case
+          when ev.calendar_set is distinct from ev.p_set or ev.calendar_evidence_id is distinct from ev.p_doc or ev.proposal_id is distinct from ev.p_prop
+               or ev.periods is distinct from ev.p_periods or ev.evidence_year is distinct from ev.p_year or ev.page_quote is distinct from ev.p_quote then 'excluded_source_update'
+          when ev.reader is distinct from ev.p_reader or ev.rule is distinct from ev.p_rule
+               or exists (select 1 from rel where rel.at > ev.p_at and rel.at < ev.run_at and rel.intake_fn) then 'excluded_reader_revision'
+          when exists (select 1 from st where st.at > ev.p_at and st.at < ev.run_at) then 'excluded_setting_change'
+          when ev.calendar_set is null or ev.page_quote is null or ev.rule is null
+               or exists (select 1 from rel where rel.at > ev.p_at and rel.at < ev.run_at and not rel.known) then 'unverified_repeat'
+          else 'confirmed' end status from ev)
+  select jsonb_build_object(
+    'confirmed', (select count(distinct k.intake_id) from k where k.status = 'confirmed'),
+    'excluded_source_update', (select count(distinct k.intake_id) from k where k.status = 'excluded_source_update'),
+    'excluded_reader_revision', (select count(distinct k.intake_id) from k where k.status = 'excluded_reader_revision'),
+    'excluded_setting_change', (select count(distinct k.intake_id) from k where k.status = 'excluded_setting_change'),
+    'unverified_repeat', (select count(distinct k.intake_id) from k where k.status = 'unverified_repeat'),
+    'examples', (select coalesce(jsonb_agg(jsonb_build_object('status', z.status, 'intake_id', z.intake_id, 'class', z.failure_class, 'decided', z.run_at, 'earlier', z.p_at)), '[]'::jsonb)
+                   from (select distinct on (k.status) k.* from k order by k.status, k.run_at desc) z))
+$function$;
+comment on function security.intake_progress_repeats_v1() is 'CF-247 Automation Progress (Platform Admin 5 Nov 2026 22:46): the deterministic refusals of the last day that repeat an earlier refusal of the same intake row, classified from existing records (decision history, reader and rule, Settings audit in pipeline.admin_control_events, release records in pipeline.integration_deploy_checks) as confirmed, excluded (source update, reader revision, setting change) or unverified_repeat. Only confirmed repeats are raised. Read only.';
+
 create or replace function security.intake_progress_alerts_v1(p_status jsonb) returns jsonb
 language plpgsql stable security definer set search_path to '' as $function$
 -- decision 16:36 §5, §6 with 20:03: one condition, one fingerprint. The generic progress observer (job first-run-verify) raises the throughput conditions
@@ -384,7 +431,7 @@ language plpgsql stable security definer set search_path to '' as $function$
 -- transition contract cannot express (intake-progress:monopoly, intake-progress:publication-mismatch while values still publish,
 -- intake-progress:repeated-deterministic); the rest is shown and routed by its existing mechanism.
 declare v_n int := security.pipeline_num_v1('intake_progress.monopoly_runs', 3)::int; v_pct numeric := security.pipeline_num_v1('intake_progress.monopoly_share_pct', 80);
-        v_runs timestamptz[]; v_rows int; v_top record; v_pending_other int; v_pub int; v_rep int; v_out jsonb := '[]'::jsonb; v_cal jsonb;
+        v_runs timestamptz[]; v_rows int; v_top record; v_pending_other int; v_pub int; v_rep jsonb; v_out jsonb := '[]'::jsonb; v_cal jsonb;
         sel pipeline.progress_transitions; adm pipeline.progress_transitions; pub pipeline.progress_transitions; v_last_ok timestamptz;
 begin
   select * into sel from pipeline.progress_transitions where key = 'intake_selection';
@@ -431,14 +478,13 @@ begin
     'evidence', jsonb_build_object('provider_id', v_top.provider_id, 'university', v_top.name, 'share_pct', case when v_rows > 0 then round(v_top.n * 100.0 / v_rows, 1) end,
                                    'pilot_universities_waiting', v_pending_other, 'runs', to_jsonb(v_runs)),
     'last_success_stage', 'selection (the intake plan)', 'next_action', 'Check the provider and pilot shares (Settings › Pipeline settings › Intake dates); the scheduler itself is not changed here.');
-  -- intake checks: a deterministic failure repeated under unchanged inputs (a per-row invariant, mandate 12:44 §9)
-  select count(distinct e.intake_id) into v_rep from pipeline.course_intake_date_events e
-   where e.run_at >= now() - make_interval(days => 1) and e.deterministic and e.outcome = 'skipped'  -- fixed: the one-day check named by decision 16:36 §6
-     and exists (select 1 from pipeline.course_intake_date_events p where p.intake_id = e.intake_id and p.run_at < e.run_at and p.failure_class = e.failure_class
-                   and p.calendar_set is not distinct from e.calendar_set and p.reader is not distinct from e.reader);
-  v_out := v_out || jsonb_build_object('code', 'repeated_deterministic', 'label', 'Deterministic failures repeated without a change', 'raised_by', 'intake checks', 'fingerprint', 'intake-progress:repeated-deterministic',
-    'tripped', v_rep > 0, 'affected', v_rep, 'evidence', jsonb_build_object('intake_rows', v_rep), 'last_success_stage', 'classification',
-    'next_action', 'An unchanged deterministic failure should wait for its input to change: report the rows to the intake owner (P0 rule).');
+  -- intake checks: a deterministic failure decided again although its evidence, reader and settings are demonstrably unchanged (mandate 12:44 §9;
+  -- Platform Admin 5 Nov 2026 22:46: legitimate rechecks after a governed setting change, a reader revision or a source update are excluded, and a
+  -- repeat whose earlier inputs cannot be established is unverified_repeat, shown but never raised)
+  v_rep := security.intake_progress_repeats_v1();
+  v_out := v_out || jsonb_build_object('code', 'repeated_deterministic', 'label', 'Deterministic failures repeated with unchanged inputs', 'raised_by', 'intake checks', 'fingerprint', 'intake-progress:repeated-deterministic',
+    'tripped', (v_rep->>'confirmed')::int > 0, 'affected', (v_rep->>'confirmed')::int, 'evidence', v_rep, 'last_success_stage', 'classification',
+    'next_action', 'An unchanged deterministic failure should wait for its input to change: report the confirmed rows to the intake owner (P0 rule). Unverified repeats are a diagnostic only.');
   -- shown only (routed by their existing mechanisms)
   v_out := v_out || jsonb_build_object('code', 'stale_calendar', 'label', 'Calendar editions stale', 'raised_by', 'shown only',
     'affected', (select count(*) from pipeline.course_intake_dates d where d.failure_class = 'stale_calendar_edition'),
@@ -532,7 +578,7 @@ revoke all on function public.admin_intake_progress_v1(text, jsonb) from public,
 grant execute on function public.admin_intake_progress_v1(text, jsonb) to authenticated;
 revoke all on function security.intake_progress_window_v1(timestamptz, timestamptz), security.intake_progress_universities_v1(timestamptz, timestamptz),
   security.intake_progress_runs_v1(timestamptz, timestamptz, integer), security.intake_progress_failures_v1(text, uuid, integer), security.intake_progress_status_v1(integer),
-  security.intake_progress_alerts_v1(jsonb), security.intake_progress_checks_v1() from public, anon, authenticated;
+  security.intake_progress_alerts_v1(jsonb), security.intake_progress_checks_v1(), security.intake_progress_repeats_v1() from public, anon, authenticated;
 
 
 -- 7 component register (housekeeping); no job is added or changed (G1) ---------------------------------------------------------------------------
