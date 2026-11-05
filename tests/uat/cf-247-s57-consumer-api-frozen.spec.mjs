@@ -5,7 +5,8 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import crypto from 'node:crypto'
 
-const APPROVED = /^-- Consumer API change approved: .{10,}$/m
+// A line that says PENDING records that approval is still awaited (agent A, R23/R24, 5 Nov 2026 19:14 §5): it is not an approval
+const APPROVED = /^-- Consumer API change approved: (?!.*\bPENDING\b).{10,}$/m
 const base = JSON.parse(fs.readFileSync('tests/uat/consumer-api-baseline.json', 'utf8'))
 const FROM = '20261018050000'
 const migs = fs.readdirSync('supabase/migrations').filter(f => f.endsWith('.sql') && f.slice(0, 14) > FROM).sort()
@@ -27,6 +28,11 @@ test('no migration after the baseline changes a consumer API function or the tab
     expect(CONSUMER_TABLES.test(sql), `${f} drops, renames or retypes something the consumer API reads`).toBe(false)
     expect(/consumer_api_rebaseline_v1\(/.test(sql), `${f} re-takes the baseline without approval`).toBe(false)
   }
+})
+
+test('a "Consumer API change approved: PENDING" placeholder is not an approval', () => {
+  expect(APPROVED.test('-- Consumer API change approved: PENDING Platform Admin G3 approval (R23/R24)')).toBe(false)
+  expect(APPROVED.test('-- Consumer API change approved: Platform Admin, 31 Oct 2026 13:30 (decision D4)')).toBe(true)
 })
 
 const mig = fs.readFileSync('supabase/migrations/20261018050000_cf247_consumer_api_guard.sql', 'utf8')

@@ -1,0 +1,41 @@
+name: Website API v2 R23/R24 isolated PostgreSQL
+# CF-247 R23/R24 (agent A, decision 5 Nov 2026 19:14 §5): runs the production-parity fixture on a throwaway PostgreSQL 17.6 (the live
+# server version). Touches no Supabase project.
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/20261106100000_cf247_website_api_v2_r23_r24.sql'
+      - 'tests/fixtures/website-api-v2-r23-r24/**'
+      - 'tests/uat/cf-247-website-api-v2-r23-r24-contract.spec.mjs'
+      - '.github/workflows/website-api-v2-r23-r24-fixture.yml'
+  workflow_dispatch:
+jobs:
+  isolated-postgres:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:17.6-alpine
+        env:
+          POSTGRES_PASSWORD: fixture-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: fixture-only
+      A_BENCH_OUT: r23-r24-bench.txt
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash tests/fixtures/website-api-v2-r23-r24/run.sh | tee r23-r24-fixture.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: r23-r24-fixture-evidence
+          path: |
+            r23-r24-fixture.log
+            tests/fixtures/website-api-v2-r23-r24/r23-r24-bench.txt
