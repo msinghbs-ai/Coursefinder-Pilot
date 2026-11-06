@@ -74,3 +74,11 @@
 .l4i-dl-nested{margin:0}
 .l4i-aer-sum{margin:4px 0 0;overflow-wrap:anywhere}
 [data-l4-hook-detail] dd{overflow-wrap:anywhere;min-width:0}
+
+/* CF-247 course descriptions (6 Nov 2026): the reconciliation line, quick reasons and the operator view wrap at phone width */
+.l4i-cd{margin:4px 0 0;overflow-wrap:anywhere}
+.l4i-cd-chips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0}
+.l4i-cd-chips button{border:1px solid var(--cf-slate-300);background:var(--cf-white);border-radius:var(--cf-radius-pill);padding:4px 10px;font-size:var(--cf-fs-sm);cursor:pointer}
+.ef-cd{overflow-wrap:anywhere}
+.ef-cd-h{margin:12px 0 4px}
+.ef-cd-word{border-top:1px solid var(--cf-slate-200);padding-top:6px;margin-top:6px}

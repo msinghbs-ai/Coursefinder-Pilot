@@ -25,7 +25,7 @@ test('the manifest is a verified production capture of the course-description pa
   expect(verifyManifest(m)).toEqual([])
   expect(m.missing).toEqual([])
   const targets = m.tables.filter((t) => t.kind === 'target').map((t) => t.fq).sort()
-  expect(targets).toEqual(['catalogue.courses', 'pipeline.field_enrich_items', 'pipeline.layer4_review_items', 'pipeline.platform_toolset_settings'])
+  expect(targets).toEqual(['catalogue.courses', 'catalogue.providers', 'pipeline.coverage_course_pages', 'pipeline.evidence_artifacts', 'pipeline.field_enrich_items', 'pipeline.layer4_decisions', 'pipeline.layer4_review_items', 'pipeline.manual_locks', 'pipeline.platform_toolset_settings', 'search.course_documents'])
   const fns = Object.fromEntries(m.functions.map((f) => [f.sig, f.md5]))
   for (const [sig, md5] of Object.entries(LIVE)) expect(fns[sig], sig).toBe(md5)
   // the index courses_provider_title_slug_active_idx calls it; without it the fixture cannot be built

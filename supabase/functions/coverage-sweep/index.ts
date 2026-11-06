@@ -29,7 +29,7 @@ import * as caRef from "../_shared/cf247-register-ca-ref.ts";
 import { admissionCheck, awardScope, baseHost, keepScholarshipUrl, onSite, mainText, matchScholarshipPage, nameOnPage, normUrl, pageHeadings, providerTokens, scholarshipCriteria, scholarshipFacts, scholarshipListing } from "./scholarship.ts";
 import { imageSize, logoCandidates, sniffMime, svgSafe } from "./logo.ts";
 import { awardSections, mapOutcome, nextPage, pagingState, redirectOutcome, sectionCode, sectionHtml, statedTotal } from "./catalogue.ts";
-import { COURSE_TEXT_FIELDS, courseTextAnswer, courseTextAnswerLimit, courseTextLength, courseTextPage, courseTextRequest, courseTextResults, courseTextUser } from "./course-text.ts";
+import { COURSE_TEXT_FIELDS, courseTextAnswer, courseTextAnswerLimit, courseTextBreach, courseTextLength, courseTextMergeReask, courseTextPage, courseTextReaskNote, courseTextReaskUser, courseTextRequest, courseTextResults, courseTextUser } from "./course-text.ts";
 import { DESCRIPTION_ANSWER_KEY, DESCRIPTION_PROMPT_VERSION, DESCRIPTION_WORKER_PROTOCOL, aboutLinks, aboutPageCheck, descriptionAnswer, descriptionClaimCheck, descriptionCostQuote, descriptionPageText, descriptionRequest, descriptionSourceIdentity, ownHost, providerDescriptionSentences } from "./description.ts";
 const SCH_VERSION = "scholarship-sweep-v0.7.3"; // v0.7.3 (11 Oct 2026, Platform Admin bugs 11/10-6): a "while places last" condition is not an ended scholarship; an amount the student pays (deposit, bond, fee) is never the award and a "valued at" amount counts; courses listed after "one of the following courses" are read. v0.7.2 (11 Oct 2026): course titles end at bullets (•, ⦁) and at the next capitalised word or sentence. v0.7.1 (11 Oct 2026): courses named after "excluding" are exclusions; course titles keep their bracketed specialisation; numeric dates read in the provider country's day/month order; date proofs start at their label. v0.7.0 (11 Oct 2026): application open and close dates (with rounds), study start, courses the page names, and the sentence behind each level and field. v0.6.3 (11 Oct 2026): academic-result percentages (CWA, WAM, ATAR) are not award values; the value text is a whole sentence. v0.6.2: Firecrawl cap and reserve read from Layer 2 settings; v0.6.1: // v0.6.1: numeric character references in titles decoded; // v0.6.0 (Decision 250): amounts in the provider country's currency; NZ and Canadian domestic wording
 // v0.5.4 (2 Oct 2026, Decision 212 check): a listed value ("Residency Australian Citizen, New Zealand Citizen, International
@@ -75,7 +75,8 @@ const VERSION = "coverage-sweep-v0.5.6"; // extractor version (unchanged by v0.6
 // v0.38.1 (22 Oct 2026, NZ course list pages): a page the AI page match chose from the university's own site addresses (its course list or
 // site map) is listed on the university's own site, so it may be read through the scraper when the direct read is blocked (Otago, Lincoln, AUT).
 const FC_TRUSTED_BASIS = ["cricos_search", "cricos_code", "cricos_code_on_page", "nzqa_code", "adapter_code", "title_match", "cms_path_public", "manual", "firecrawl_upgrade", "ai_match", "programme_list"]; // v0.45.0: a page bound by its NZ or CA code is as trusted as one bound by a CRICOS code
-const WORKER = "coverage-sweep-worker-v0.59.8"; // v0.59.8 (5 Nov 2026, CF-247 final intake recovery, migration 20261105040000): calendar reader calendar-v2.1 (the year of a start from its own section: heading, title or year tabs; a wrong-section year rejected); mode calendar_reread reads again what an earlier reader read (svc_calendar_reread_next_v2 / _record_v2 with the reader version) and hands stale editions to the existing reads within the credit budget (svc_calendar_refresh_v1).
+const WORKER = "coverage-sweep-worker-v0.59.9"; // v0.59.9 (6 Nov 2026, CF-247 course descriptions, migration 20261106500000, Platform Admin 6 Nov 2026 D4): enrich_ai course-text-v2 may ask ONCE more (setting enrich.course_description_reask_max, ships 0 = off) when a description breaks the sentence or length limit, on the same stored page with the same pinned model; the second answer is checked in full by the database and nothing is cut here; a failed re-ask keeps the first answer; every other read is unchanged.
+// was v0.59.8 // v0.59.8 (5 Nov 2026, CF-247 final intake recovery, migration 20261105040000): calendar reader calendar-v2.1 (the year of a start from its own section: heading, title or year tabs; a wrong-section year rejected); mode calendar_reread reads again what an earlier reader read (svc_calendar_reread_next_v2 / _record_v2 with the reader version) and hands stale editions to the existing reads within the credit budget (svc_calendar_refresh_v1).
 // was v0.59.7 // v0.59.7 (5 Nov 2026, CF-247 intake recovery, migration 20261105020000): academic calendars read by calendar-v2 (dated starts with meaning, deadlines with who they apply to, scope, slices, notes from earlier findings; calendar.ts) and mode calendar_reread (stored calendars again: the dated parser first, the AI queue only when the parser cannot read it safely).
 // was v0.59.6 // v0.59.6 (3 Nov 2026, CF-247 IQ-00111 P0 fee integrity, migration 20261104140000): fee_ai asks the model for each fee row's units_kind (units or credit points), the page's own full_time_load, course_years and whole_course, and names the kind the country load counts (fee_country_profiles.units_are); the database makes the yearly figure from them and holds an unclear one (security.fee_reader_yearly_v1, fees.units_load_fix_on) and keeps page fees out while a fee hold or fee-check exclusion is active (fees.respect_holds_on); nothing else changes.
 // was v0.59.5 // v0.59.5 (3 Nov 2026, CF-247 P0 autonomous operations, workstream B worker release for the other workstreams' interface requests, Integration Controller 18:20): new mode ops_diagnose (ops-diagnose.ts; workstream A contract ops-diagnose-v1: AI-assisted diagnosis through svc_ops_diagnosis_next and svc_ops_diagnosis_record, pinned model, existing OpenRouter path, each request answered exactly once, {error} on failure); enrich_ai keeps its answers first (svc_enrich_ai_stash_v1, workstream D) and records them as before; the entry matrix reader keeps the model's value, grade and scale in every dropped entry and, each behind a reading.* setting that ships off, reads a printed range as its lower bound, merges subject-equivalence rows into one subject-prerequisite row and stops holding a global-qualification page that says it applies in any country (entry.ts; workstream C); link_search answers each distinct query once and reuses an earlier answer for the same query (link-share.ts, reading.link_search_share_on, ships off; workstream F).
@@ -2635,14 +2636,35 @@ async function handle(req: Request): Promise<Response> {
       // v0.59.4 (CF-247 Workstream C): a course's description and application deadline, one call for both, on the stored page only
       const textRead = async (pg: any, raw: string, items: any[]) => {
         const want = [...new Set(items.map((x: any) => String(x.field)))], page = courseTextPage(raw, PAGE_CHARS), maxTokens = courseTextAnswerLimit(ws);
-        const r = await ors.fetch("https://openrouter.ai/api/v1/chat/completions", { method: "POST", headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
-          body: JSON.stringify(courseTextRequest(model, courseTextUser(pg.provider, pg.title, want, page, courseTextLength(ws)), want, maxTokens)), signal: AbortSignal.timeout(60000) });  // fixed: API time-out of one call
-        const d = await r.json().catch((e) => ({ unreadable: e instanceof Error ? e.message : String(e) }));
-        const ans = courseTextAnswer(d, maxTokens); cost += ans.cost;
-        if (!r.ok) throw readError(`HTTP ${r.status}: ${JSON.stringify(d?.error || d).slice(0, 200)}`, ans.cost);
-        if (d?.model && !String(d.model).startsWith(model)) throw readError(`returned model ${d.model}, not ${model}`, ans.cost);  // pinned: no other model's answer is used
-        if (!ans.ok) throw readError(ans.error, ans.cost);
-        out.push(...courseTextResults(ans.a, page, items, { model, worker: WORKER.slice(0, 40), cost: ans.cost, minQuoteChars: wsNum("enrich.course_description_min_quote_chars", 20) }));
+        const askText = async (user: string, w: string[]) => {
+          const r = await ors.fetch("https://openrouter.ai/api/v1/chat/completions", { method: "POST", headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
+            body: JSON.stringify(courseTextRequest(model, user, w, maxTokens)), signal: AbortSignal.timeout(60000) });  // fixed: API time-out of one call
+          const d = await r.json().catch((e) => ({ unreadable: e instanceof Error ? e.message : String(e) }));
+          const a = courseTextAnswer(d, maxTokens); cost += a.cost;
+          if (!r.ok) throw readError(`HTTP ${r.status}: ${JSON.stringify(d?.error || d).slice(0, 200)}`, a.cost);
+          if (d?.model && !String(d.model).startsWith(model)) throw readError(`returned model ${d.model}, not ${model}`, a.cost);  // pinned: no other model's answer is used
+          if (!a.ok) throw readError(a.error, a.cost);
+          return a;
+        };
+        const length = courseTextLength(ws), minQuote = wsNum("enrich.course_description_min_quote_chars", 20);
+        const ans = await askText(courseTextUser(pg.provider, pg.title, want, page, length), want);
+        let final = ans.a, spent = ans.cost, reask: ReturnType<typeof courseTextReaskNote> | null = null;
+        // D4: ONE re-ask (the setting is the most; 0 = off) when the description breaks the sentence or length limit; the answer is checked in full afterwards
+        const reaskMax = Math.floor(Number(ws["enrich.course_description_reask_max"]) || 0);
+        const breach = want.includes("description") && reaskMax > 0 ? courseTextBreach(ans.a, page, length, minQuote) : null;
+        if (breach) {
+          let made = 0, last = ans.a;
+          try {
+            while (made < reaskMax) {
+              const b = made === 0 ? breach : courseTextBreach(last, page, length, minQuote);
+              if (!b) break;
+              const again = await askText(courseTextReaskUser(pg.provider, pg.title, page, last, b, length), ["description"]);
+              made++; spent += again.cost; last = courseTextMergeReask(last, again.a);
+            }
+            final = last; reask = courseTextReaskNote(breach, made);
+          } catch (e) { reask = courseTextReaskNote(breach, made, e instanceof Error ? e.message : String(e)); spent += errorCost(e); }  // a failed re-ask keeps the first answer
+        }
+        out.push(...courseTextResults(final, page, items, { model, worker: WORKER.slice(0, 40), cost: spent, minQuoteChars: minQuote, reask }));
         tally.course_text = (tally.course_text || 0) + items.length;
       };
       const entryCall = async (user: string, mdl: string, maxTokens: number) => {
