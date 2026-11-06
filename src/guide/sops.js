@@ -9,7 +9,7 @@
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 // Check the admin copy with `node scripts/export-sops.mjs --check-mirror <coursefinder-admin/docs/sops>` (SS-016 UR-03): it exits 1 on drift.
 
-export const SOP_REVIEWED_FOR = '2.15.489'
+export const SOP_REVIEWED_FOR = '2.15.490'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -45,7 +45,7 @@ const step = (o) => o
 
 export const SOPS = [
   {
-    id: 'admin-sop', title: 'Platform Admin SOP', version: '2.31', audience: 'Platform Admin (role rank 6)',
+    id: 'admin-sop', title: 'Platform Admin SOP', version: '2.32', audience: 'Platform Admin (role rank 6)',
     purpose: 'How the Platform Admin runs StudySearch day to day: the approvals only you can give, the budgets and models you own, and the checks that keep automatic admission trustworthy.',
     owns: ['Admitting university adapters (Layer 2/3 › Universities)', 'Approving central pages: fee schedules, English policies, academic calendars', 'AI models, their order, AI admission and the AI allowances', 'Firecrawl and OpenRouter budgets and service keys', 'Onboarding settings, Retry and Stop', 'Users and roles; new countries; go-live'],
     schedule: [
@@ -102,6 +102,7 @@ export const SOPS = [
       { trigger: 'Break-glass only: a change that drops or deletes, or an operation no governed action covers (Decision 268)', action: 'Run SQL in the Supabase SQL editor for project fxcwkweaxjtknorudmwp only when the change control names it as break-glass; check the expected counts it states. Routine operations are governed actions, not SQL.', where: 'Supabase SQL editor (break-glass)' },
     ],
     watch: [
+      'A held or uncertain production release: confirm the Integration Controller and operation evidence before recovery; keep read-only health checks available.',
       'The credit and limit bar on every page.',
       'Universities stopped or needing a person on Layer 2/3 › Universities, and how long they have waited; the pace of the queue.',
       'OpenRouter balance against the credit floor, and any AI use past its daily guard.',
@@ -111,7 +112,7 @@ export const SOPS = [
       'Scholarships withdrawn by the nightly review: a jump means a rule changed or a site moved its pages.',
     ],
     escalate: ['A job that fails the same way after a fix, a worker refusing work ("invalid key", "nonce"), or data written where it should not be: pause the job, note what you saw, raise it with the platform engineer with the change-control reference (CF-247).'],
-    changes: [{ version: '1.0', date: '12 Oct 2026', release: '2.15.257', change: 'First issue: daily, weekly and as-needed duties; automation and where a person decides; what to watch; escalation.' },
+    changes: [{ version: '2.32', date: '6 Nov 2026', release: '2.15.490', change: 'Production releases and recovery remain with the verified Integration Controller; operators escalate a held or uncertain release through the existing execution register and retain read-only checks.' }, { version: '1.0', date: '12 Oct 2026', release: '2.15.257', change: 'First issue: daily, weekly and as-needed duties; automation and where a person decides; what to watch; escalation.' },
       { version: '1.1', date: '12 Oct 2026', release: '2.15.258', change: 'Onboarding moved to Layer 2 › Onboarding with seven journey stages (scholarships are found only after admitting and enriching); OpenRouter balance, daily guards and credit floor on Models & services (Observe); 100 universities at once.' },
       { version: '1.2', date: '12 Oct 2026', release: '2.15.259', change: 'Admit automatically (platform-wide, switched on 12 Oct 2026): the daily step becomes a spot-check of automatic admits, undone on Layer 2 › Adapters when wrong; the onboarding pilot (60 AU / 25 NZ / 15 CA) is followed on its Pilot panel.' },
       { version: '1.3', date: '12 Oct 2026', release: '2.15.260', change: 'Found course pages are read through Firecrawl; "Too few course pages" and "AI allowance used" carry on by themselves, so Retry is needed only for other stops.' },

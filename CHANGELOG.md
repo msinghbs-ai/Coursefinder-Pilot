@@ -2,7 +2,7 @@
 
 ## 0.1.417 — 6 Nov 2026
 
-- Prepared visible release candidate **v2.15.490** (Complete Integration and Production Delivery mandate; Admin #382, Pilot #895). Existing controller reservations are checked at production execution entry points. Manual recovery uses a trusted protected-workflow verifier against the selected candidate revision. Production credential relocation must preserve reviewed read-only jobs. Account controls, predecessor disposition and guarded cutover remain external release gates; no transfer or deployment is asserted by this candidate. Reuses the existing phone source-link wrapping fix. No migration, no admission-policy or consumer API change; retires nothing.
+- Prepared visible release candidate **v2.15.490** (Complete Integration and Production Delivery mandate; Admin #382, Pilot #895). Existing controller reservations are checked at production execution entry points. Manual recovery uses a trusted protected-workflow verifier against the selected candidate revision. Production credential relocation must preserve reviewed read-only jobs. Account controls, predecessor disposition and guarded cutover remain external release gates; no transfer or deployment is asserted by this candidate. Reuses the existing phone source-link wrapping fix. Includes the existing #892 authoritative evidence tooling and safe metadata reuse; retires the temporary duplicate controller full-suite wrapper. No migration, admission-policy or consumer API change.
 
 ## 0.1.416 — 6 Nov 2026
 

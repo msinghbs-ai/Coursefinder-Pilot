@@ -1,0 +1,174 @@
+# Guards: Platform Admin mandate 6 Nov 2026 11:00, authoritative test evidence and faster PR release gates.
+# One immutable evidence bundle per validated commit (artifact test-evidence-<sha>), the test register generated from that same run, reuse of the
+# full-suite result only when the dependency fingerprint is unchanged (release notes, changelog and docs only), and one readiness report for the
+# Integration Controller (artifact release-readiness-<sha>). Adds a check; it changes no existing workflow and no required check name.
+# The full suite runs when the pull request is ready for review, carries the label full-suite-evidence, or is started by hand; drafts get the
+# lightweight path (reuse where valid, otherwise "deferred" in the report).
+name: Test evidence
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, labeled]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: "Pull request number to validate at its current head"
+        required: true
+concurrency:
+  group: test-evidence-${{ github.event.pull_request.number || inputs.pr }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+  actions: read
+  checks: read
+  pull-requests: read
+jobs:
+  test-evidence:
+    if: github.event_name != 'pull_request' || github.event.action != 'labeled' || github.event.label.name == 'full-suite-evidence'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+    steps:
+      - name: Resolve the pull request and its head revision
+        id: ctx
+        run: |
+          if [ "${{ github.event_name }}" = pull_request ]; then
+            PR=${{ github.event.pull_request.number }}
+          else PR=${{ inputs.pr }}; fi
+          J=$(gh api repos/$REPO/pulls/$PR)
+          echo "pr=$PR" >> $GITHUB_OUTPUT
+          echo "sha=$(echo "$J" | jq -r .head.sha)" >> $GITHUB_OUTPUT
+          echo "base=$(echo "$J" | jq -r .base.sha)" >> $GITHUB_OUTPUT
+          echo "draft=$(echo "$J" | jq -r .draft)" >> $GITHUB_OUTPUT
+          echo "labelled=$(echo "$J" | jq -r '[.labels[].name] | index("full-suite-evidence") != null')" >> $GITHUB_OUTPUT
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.ctx.outputs.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --package-lock=false --ignore-scripts --no-audit --no-fund
+      - name: Look for earlier evidence on this pull request and decide
+        id: plan
+        run: |
+          SHA=${{ steps.ctx.outputs.sha }}
+          LINEAGE=$(gh api repos/$REPO/pulls/${{ steps.ctx.outputs.pr }}/commits --paginate --jq '.[].sha' | tac | tr '\n' ' ')
+          LINEAGE="$LINEAGE ${{ steps.ctx.outputs.base }}"
+          mkdir -p prior
+          FOUND=
+          for C in $LINEAGE; do
+            [ "$C" = "$SHA" ] && continue
+            ART=$(gh api "repos/$REPO/actions/artifacts?name=test-evidence-$C&per_page=100" --jq "[.artifacts[] | select(.expired==false and .workflow_run.head_sha==\"$C\")] | sort_by(.created_at) | last | .workflow_run.id // empty")
+            [ -z "$ART" ] && continue
+            rm -rf prior/*; gh run download "$ART" -n "test-evidence-$C" -D prior || continue
+            if [ "$(jq -r .kind prior/evidence.json)" = executed ] && node scripts/test-evidence.mjs verify prior >/dev/null 2>&1; then FOUND=$C; break; fi
+          done
+          echo "lineage=$(echo $LINEAGE | tr ' ' ',')" >> $GITHUB_OUTPUT
+          [ -z "$FOUND" ] && rm -rf prior && mkdir prior
+          node scripts/test-evidence.mjs plan --candidate $SHA --lineage "$(echo $LINEAGE | tr ' ' ',')" --prior prior --out plan.json | tee plan.log
+          echo "reuse=$(jq -r .reuse plan.json)" >> $GITHUB_OUTPUT
+          echo "changed=$(jq -r '(.changedSincePriorEvidence // []) | join(",")' plan.json)" >> $GITHUB_OUTPUT
+      - name: Decide whether the full suite runs
+        id: mode
+        run: |
+          if [ "${{ steps.plan.outputs.reuse }}" = true ]; then M=reuse
+          elif [ "${{ steps.ctx.outputs.draft }}" != true ] || [ "${{ steps.ctx.outputs.labelled }}" = true ] || [ "${{ github.event_name }}" = workflow_dispatch ]; then M=full
+          else M=deferred; fi
+          echo "mode=$M" >> $GITHUB_OUTPUT
+          echo "::notice::Test evidence mode: $M"
+      - name: Install Chromium
+        if: steps.mode.outputs.mode != 'deferred'
+        run: npx playwright install --with-deps chromium
+      - name: Full suite, one run, structured results part of the same execution
+        if: steps.mode.outputs.mode == 'full'
+        id: suite
+        continue-on-error: true
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: uat-artifacts/results.json
+          PLAYWRIGHT_JUNIT_OUTPUT_NAME: uat-artifacts/junit.xml
+        run: npx playwright test --grep-invert @deployed --reporter=list,json,junit
+      - name: Final-candidate release-contract and governance checks (reuse path)
+        if: steps.mode.outputs.mode == 'reuse'
+        id: final
+        continue-on-error: true
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: uat-artifacts/final-results.json
+        run: |
+          set -o pipefail
+          SPECS=$(jq -r '.finalCandidateChecks.specs[] | "tests/uat/" + . + ".spec.mjs"' scripts/test-evidence-classes.json | tr '\n' ' ')
+          npx playwright test $SPECS --project=chromium-desktop --reporter=list,json
+      - name: Release contract
+        if: steps.mode.outputs.mode != 'deferred'
+        id: contract
+        continue-on-error: true
+        run: node scripts/verify-release-contract.mjs
+      - name: Build
+        if: steps.mode.outputs.mode != 'deferred'
+        id: build
+        continue-on-error: true
+        run: npm run build
+      - name: Production-parity outcome of the sibling isolated-PostgreSQL workflows
+        if: steps.mode.outputs.mode != 'deferred'
+        run: node scripts/test-evidence-readiness.mjs parity --repo $REPO --sha ${{ steps.ctx.outputs.sha }} --base ${{ steps.ctx.outputs.base }} --wait --out parity.json
+      - name: Assemble the evidence bundle
+        if: steps.mode.outputs.mode != 'deferred'
+        id: bundle
+        continue-on-error: true
+        run: |
+          SHA=${{ steps.ctx.outputs.sha }}
+          DIST=$( [ -d dist ] && (cd dist && find . -type f | sort | xargs sha256sum | sha256sum | cut -d' ' -f1) || echo none)
+          B=$( [ "${{ steps.build.outcome }}" = success ] && echo pass || echo fail )
+          C=$( [ "${{ steps.contract.outcome }}" = success ] && echo pass || echo fail )
+          if [ "${{ steps.mode.outputs.mode }}" = full ]; then
+            KIND=executed; SRC=same-run
+            if node scripts/test-evidence.mjs final-from-results --results uat-artifacts/results.json; then F=pass; else F=fail; fi
+            EXTRA="--results uat-artifacts/results.json --junit uat-artifacts/junit.xml"
+          else
+            KIND=reused; SRC=final-candidate-run
+            if [ "${{ steps.final.outcome }}" = success ] && node scripts/test-evidence.mjs final-from-results --results uat-artifacts/final-results.json; then F=pass; else F=fail; fi
+            EXTRA="--reuse-dir prior --changed ${{ steps.plan.outputs.changed }}"
+          fi
+          node scripts/test-evidence.mjs bundle --out evidence-bundle --kind $KIND --sha $SHA --pr ${{ steps.ctx.outputs.pr }} --base ${{ steps.ctx.outputs.base }} \
+            --repo $REPO --build $B --dist-sha $DIST --release-contract $C --final-checks $F --final-source $SRC --parity parity.json \
+            --workflow "Test evidence" --run-id ${{ github.run_id }} --attempt ${{ github.run_attempt }} \
+            --run-url "${{ github.server_url }}/$REPO/actions/runs/${{ github.run_id }}" $EXTRA
+      - name: Upload the evidence bundle (immutable, named by commit)
+        if: steps.mode.outputs.mode != 'deferred' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-evidence-${{ steps.ctx.outputs.sha }}
+          if-no-files-found: error
+          retention-days: 90
+          path: evidence-bundle/
+      - name: Upload Playwright detail for failures
+        if: failure() || steps.suite.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-evidence-detail-${{ steps.ctx.outputs.sha }}-${{ github.run_attempt }}
+          if-no-files-found: ignore
+          retention-days: 14
+          path: |
+            test-results/
+            uat-artifacts/
+      - name: Readiness report for the Integration Controller
+        id: report
+        run: |
+          mkdir -p readiness
+          if [ "${{ steps.mode.outputs.mode }}" = deferred ]; then
+            node scripts/test-evidence-readiness.mjs report --repo $REPO --sha ${{ steps.ctx.outputs.sha }} --out readiness || true
+            echo "::notice::Full suite deferred for this draft; mark ready for review, add the label full-suite-evidence or run the workflow by hand."
+          else
+            node scripts/test-evidence-readiness.mjs report --repo $REPO --sha ${{ steps.ctx.outputs.sha }} --dir evidence-bundle --out readiness
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-readiness-${{ steps.ctx.outputs.sha }}
+          if-no-files-found: ignore
+          retention-days: 90
+          path: readiness/
+      - name: Fail closed
+        if: steps.mode.outputs.mode != 'deferred' && (steps.bundle.outcome != 'success' || steps.suite.outcome == 'failure')
+        run: echo "::error::Test evidence is incomplete or the suite failed; see the readiness report"; exit 1
