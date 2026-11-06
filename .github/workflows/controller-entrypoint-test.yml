@@ -1,0 +1,71 @@
+# Guards: Admin #382, existing controller reservation at production entry points; no production writes.
+name: Controller entry-point validation
+on:
+  pull_request:
+    paths:
+      - 'scripts/ci/controller-guard.py'
+      - '.github/workflows/deploy-on-merge.yml'
+      - '.github/workflows/db-apply-migration.yml'
+      - '.github/workflows/deploy-edge-functions.yml'
+      - '.github/workflows/deployed-uat.yml'
+      - '.github/workflows/deployed-weekly.yml'
+      - '.github/workflows/controller-entrypoint-test.yml'
+      - 'tests/uat/cf-247-s69-phase3-ci-deploys.spec.mjs'
+permissions:
+  contents: read
+jobs:
+  full-governed-suite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install governed dependencies and browser
+        run: |
+          npm install --package-lock=false --ignore-scripts --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Verify release contract and build
+        run: npm run build
+      - name: Full governed suite, one execution with structured results
+        id: suite
+        continue-on-error: true
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: uat-artifacts/results.json
+          PLAYWRIGHT_JUNIT_OUTPUT_NAME: uat-artifacts/junit.xml
+        run: npx playwright test --grep-invert @deployed --reporter=list,json,junit
+      - name: Generate existing register from that same run
+        if: always()
+        run: |
+          test -s uat-artifacts/results.json
+          node scripts/test-register.mjs > uat-artifacts/TEST-REGISTER.md
+          node --input-type=module - <<'JS'
+          import fs from 'node:fs'; import {execFileSync} from 'node:child_process';
+          const report=JSON.parse(fs.readFileSync('uat-artifacts/results.json','utf8'));
+          const sha=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
+          const tree=execFileSync('git',['rev-parse','HEAD^{tree}'],{encoding:'utf8'}).trim();
+          fs.writeFileSync('uat-artifacts/controller-gate-suite.json',JSON.stringify({sha,tree,run_id:process.env.GITHUB_RUN_ID,stats:report.stats,errors:report.errors},null,2));
+          if(!report.stats || !(report.stats.expected+report.stats.unexpected+report.stats.skipped+report.stats.flaky>0) || report.stats.unexpected || report.stats.skipped || report.errors?.length) process.exit(1);
+          JS
+      - name: Retain full-suite and register evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: controller-gate-full-suite-${{ github.event.pull_request.head.sha || github.sha }}
+          retention-days: 30
+          if-no-files-found: error
+          path: |
+            uat-artifacts/results.json
+            uat-artifacts/junit.xml
+            uat-artifacts/TEST-REGISTER.md
+            uat-artifacts/controller-gate-suite.json
+            test-results/
+      - name: Fail closed if full suite failed
+        if: always() && steps.suite.outcome != 'success'
+        run: exit 1
