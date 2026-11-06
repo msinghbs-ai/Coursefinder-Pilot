@@ -23,13 +23,30 @@ on:
       project_ref:
         description: "Type the target project ref to confirm"
         required: true
+      controller_execution:
+        description: "Active controller execution ID (must match the canonical reservation)"
+        required: true
+      controller_generation:
+        description: "Active controller generation (non-secret fencing identifier)"
+        required: true
+      controller_operation:
+        description: "Immutable operation ID already reserved by the active controller"
+        required: true
+concurrency:
+  group: studysearch-controller-production
+  cancel-in-progress: false
 jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
+      CONTROLLER_EXECUTION_ID: ${{ inputs.controller_execution }}
+      CONTROLLER_GENERATION: ${{ inputs.controller_generation }}
+      CONTROLLER_OPERATION_ID: ${{ inputs.controller_operation }}
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Confirm target project
         run: |
           if [ -z "${{ vars.SUPABASE_PROJECT_REF }}" ]; then echo "Repository variable SUPABASE_PROJECT_REF is not set"; exit 1; fi
@@ -48,6 +65,7 @@ jobs:
           for raw in "${FNS[@]}"; do
             fn="$(echo "$raw" | xargs)"
             [ -z "$fn" ] && continue
+            python3 scripts/ci/controller-guard.py --entry-point deploy-edge-functions --resource "edge_function:$fn"
             scripts/ci/deploy-function.sh "$fn"
           done
       - name: Deployed versions
@@ -69,5 +87,7 @@ jobs:
             case "$RETIRED" in *" $fn "*) ;; *) echo "Refused: $fn is not on the retired list"; exit 1;; esac
             if [ -e "supabase/functions/$fn" ]; then echo "Refused: supabase/functions/$fn still exists"; exit 1; fi
             echo "Deleting retired function $fn"
+            python3 scripts/ci/controller-guard.py --entry-point deploy-edge-functions --resource "retired_function:$fn"
             supabase functions delete "$fn" --project-ref "${{ inputs.project_ref }}"
           done
+

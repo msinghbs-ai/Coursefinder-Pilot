@@ -1,6 +1,6 @@
-// Guards: CF-247 (S69) Phase 3, 19 Oct 2026 (Platform Admin 09:29 "every function and database change deploys through the workflow";
+// Guards: CF-247 (S69) Phase 3 CI deployment; Admin #382 exclusive controller ownership and production entry-point gate (6 Nov 2026).
 // CF-247 (S69) Phase 3, 19 Oct 2026 (Platform Admin 09:29 "every function and database change deploys through the workflow"; the
-// consumer API is not affected).
+// consumer API is not affected); Admin #382 controller ownership and production-entry-point adoption.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { execFileSync } from 'node:child_process'
@@ -67,3 +67,9 @@ test('deploy-function.sh reads verify_jwt false as false, not as missing (19 Oct
     expect(got, f).toBe(want)
   }
 })
+
+test('Admin #382 controller adapter refuses stale, unreserved or changed-code production writes', () => {
+  // Behavioural negative/positive cases execute the same pure gate called by production.
+  expect(() => execFileSync('python3', ['scripts/ci/controller-guard.py', '--self-test'], { stdio: 'pipe' })).not.toThrow()
+})
+

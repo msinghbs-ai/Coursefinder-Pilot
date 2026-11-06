@@ -22,11 +22,21 @@ on:
         type: choice
         options: ["off", "on"]
 
+      controller_execution:
+        description: "Active controller execution ID (must match the canonical reservation)"
+        required: false
+      controller_generation:
+        description: "Active controller generation (non-secret fencing identifier)"
+        required: false
+      controller_operation:
+        description: "Immutable operation ID already reserved by the active controller"
+        required: false
+
 permissions:
   contents: write
 
 concurrency:
-  group: coursefinder-deployed-weekly
+  group: ${{ (inputs.live_acting || vars.DEPLOYED_WEEKLY_LIVE_ACTING || 'off') == 'on' && 'studysearch-controller-production' || 'coursefinder-deployed-weekly' }}
   cancel-in-progress: false
 
 jobs:
@@ -34,12 +44,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
+      CONTROLLER_EXECUTION_ID: ${{ inputs.controller_execution }}
+      CONTROLLER_GENERATION: ${{ inputs.controller_generation }}
+      CONTROLLER_OPERATION_ID: ${{ inputs.controller_operation }}
       UAT_BASE_URL: ${{ inputs.base_url || 'https://coursefinder-pilot.techm.workers.dev' }}
       UAT_EMAIL: ${{ secrets.COURSEFINDER_UAT_EMAIL }}
       UAT_PASSWORD: ${{ secrets.COURSEFINDER_UAT_PASSWORD }}
       LIVE_ACTING: ${{ inputs.live_acting || vars.DEPLOYED_WEEKLY_LIVE_ACTING || 'off' }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -61,7 +76,9 @@ jobs:
         env:
           PLAYWRIGHT_JSON_OUTPUT_NAME: ${{ runner.temp }}/desktop.json
         run: |
-          if [ "$LIVE_ACTING" = on ]; then npx playwright test --grep @deployed --project=chromium-desktop --reporter=list,json
+          if [ "$LIVE_ACTING" = on ]; then
+            python3 scripts/ci/controller-guard.py --entry-point deployed-weekly
+            npx playwright test --grep @deployed --project=chromium-desktop --reporter=list,json
           else npx playwright test --grep @deployed --grep-invert @live-acting --project=chromium-desktop --reporter=list,json; fi
       - name: Run deployed specs — phone
         id: phone
@@ -70,7 +87,9 @@ jobs:
         env:
           PLAYWRIGHT_JSON_OUTPUT_NAME: ${{ runner.temp }}/phone.json
         run: |
-          if [ "$LIVE_ACTING" = on ]; then npx playwright test --grep @deployed --project=chromium-mobile --reporter=list,json
+          if [ "$LIVE_ACTING" = on ]; then
+            python3 scripts/ci/controller-guard.py --entry-point deployed-weekly
+            npx playwright test --grep @deployed --project=chromium-mobile --reporter=list,json
           else npx playwright test --grep @deployed --grep-invert @live-acting --project=chromium-mobile --reporter=list,json; fi
       - name: Summarise for the Monday line
         shell: bash
@@ -103,3 +122,4 @@ jobs:
         run: |
           echo "::error::Deployed weekly run had failures (desktop ${{ steps.desktop.outcome }}, phone ${{ steps.phone.outcome }})"
           exit 1
+
