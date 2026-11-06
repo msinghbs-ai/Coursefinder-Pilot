@@ -48,6 +48,10 @@ jobs:
       CONTROLLER_GENERATION: ${{ inputs.controller_generation }}
       CONTROLLER_OPERATION_ID: ${{ inputs.controller_operation }}
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      REF: ${{ inputs.project_ref }}
+      EXPECTED_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+      FUNCTIONS: ${{ inputs.functions }}
+      DELETE_FUNCTIONS: ${{ inputs.delete_functions }}
     steps:
       # Always run this protected workflow's verifier, including a rollback to
       # source which predates the controller adapter. Never dispatch old code.
@@ -69,19 +73,28 @@ jobs:
           fetch-depth: 0
       - name: Confirm target project
         run: |
-          if [ -z "${{ vars.SUPABASE_PROJECT_REF }}" ]; then echo "Repository variable SUPABASE_PROJECT_REF is not set"; exit 1; fi
-          if [ "${{ inputs.project_ref }}" != "${{ vars.SUPABASE_PROJECT_REF }}" ]; then echo "Typed project ref does not match SUPABASE_PROJECT_REF"; exit 1; fi
+          # Dispatch values are data, never shell source. Validate both lists
+          # completely before a deployment or a retired-function deletion starts.
+          if ! [[ "$REF" =~ ^[a-z]{20}$ && "$EXPECTED_REF" =~ ^[a-z]{20}$ ]]; then echo "Refused: invalid project ref"; exit 1; fi
+          if [ "$REF" != "$EXPECTED_REF" ]; then echo "Typed project ref does not match SUPABASE_PROJECT_REF"; exit 1; fi
           if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then echo "Secret SUPABASE_ACCESS_TOKEN is not set"; exit 1; fi
+          for list in "$FUNCTIONS" "$DELETE_FUNCTIONS"; do
+            if [[ "$list" == *$'\n'* || "$list" == *$'\r'* ]]; then echo "Refused: function lists must be on one line"; exit 1; fi
+            IFS=',' read -r -a entries <<< "$list"
+            for raw in "${entries[@]}"; do
+              fn="${raw#"${raw%%[![:space:]]*}"}"; fn="${fn%"${fn##*[![:space:]]}"}"
+              [ -z "$fn" ] && continue
+              if ! [[ "$fn" =~ ^[a-z0-9-]+$ ]]; then echo "Refused function name: $fn"; exit 1; fi
+            done
+          done
       - uses: supabase/setup-cli@v1
         with:
           version: 2.120.0  # CF-247 Phase 5 (19 Oct 2026): pinned; "latest" failed on a GitHub API rate limit
       - name: Deploy
         # CF-247 Phase 3 (19 Oct 2026): the allow-list and each verify_jwt live in .github/edge-functions.json (shared with deploy-on-merge
         # and the daily drift check); the deploy itself is scripts/ci/deploy-function.sh.
-        env:
-          REF: ${{ inputs.project_ref }}
         run: |
-          IFS=',' read -ra FNS <<< "${{ inputs.functions }}"
+          IFS=',' read -r -a FNS <<< "$FUNCTIONS"
           for raw in "${FNS[@]}"; do
             fn="$(echo "$raw" | xargs)"
             [ -z "$fn" ] && continue
@@ -90,7 +103,7 @@ jobs:
           done
       - name: Deployed versions
         if: ${{ inputs.functions != '' }}
-        run: supabase functions list --project-ref "${{ inputs.project_ref }}" | grep -E "$(echo '${{ inputs.functions }}' | sed 's/ //g;s/,/|/g')" || true
+        run: supabase functions list --project-ref "$REF" | grep -E "$(printf '%s' "$FUNCTIONS" | tr -d '[:space:]' | tr ',' '|')" || true
       - name: Delete retired functions
         if: ${{ inputs.delete_functions != '' }}
         run: |
@@ -101,12 +114,12 @@ jobs:
           # CF-247 Phase 5 (19 Oct 2026): 12 Canadian probe and audit stubs (410 only since CF-CHG-20260823-027) and 6 Layer 3 functions with no
           # source in git and no call since 11 Oct (Layer 3 retired in v2.15.252; their live source is kept on an edge-live-snapshot branch).
           RETIRED=" ranking-publisher-url-import ranking-qs-url-import ranking-the-url-import toolset-trial cf212-qs-endpoint-verify cf212-qs-evidence-upload cf212-qs-page-probe cf213-qs-meta-probe cf231-qs2026-revalidate-once cricos-depth-inspect layer1-au-full-gate layer1-depth-uat layer1-nz-gate-uat layer1-nz-source-inspect layer1-runtime-uat layer2-course-discover layer2-trial-control layer3-benchmark-go5 layer4-course-resolve ranking-qs-2027-binary-recovery ranking-qs-2027-publish-recovery ranking-qs-backfill-once ranking-qs-backfill-trigger-once ranking-qs-source-recovery ranking-qs-static-backfill-year ranking-qs-upload-recovery scholarship-course-fill-control search-vector-gate layer2-extract layer2-course-fact-extract layer3-interpret layer2-v2-diagnostic layer2-sync-control layer2-config-control layer2-acquire layer2-batch-runner layer2-scholarship-extract-v2 scholarship-scope-job-execute scholarship-runtime-control layer2-extract-v2 layer2-course-fact-extract-v2 layer2-scholarship-extract layer2-scholarship-catalogue-enumerate layer2-provider-page-fanout layer2-provider-asset-promote layer2-hotcourses-directory-parse layer2-acquire-v2 layer2-scope-discover-scheduled coursefacts-au-qut coursefacts-au-rmit coursefacts-au-uq layer2-scale-qualify-scheduled layer2-screenshot-backfill-scheduled layer3-source-pattern-benchmark layer1-au-completeness pilot-reset scholarships-au-etl scholarship-ai-control layer1-ca-ab-alis-probe layer1-ca-cpic-probe layer1-ca-ircc-nvit-probe layer1-ca-mb-designation-probe layer1-ca-qc-pdf-probe layer1-ca-qc-pdf-probe2 layer1-ca-sk-sitemap-probe layer1-ca-qc-audit layer1-ca-qc-parse-audit layer1-ca-qc-prefix-audit layer1-ca-qc-strict-audit layer1-ca-northern-code-audit layer3-cf245-tuition-benchmark layer3-contact-benchmark layer3-intake-benchmark layer3-model-routing layer3-work-dispatch layer3-work-interpret "
-          IFS=',' read -ra FNS <<< "${{ inputs.delete_functions }}"
+          IFS=',' read -r -a FNS <<< "$DELETE_FUNCTIONS"
           for raw in "${FNS[@]}"; do
             fn="$(echo "$raw" | xargs)"
             case "$RETIRED" in *" $fn "*) ;; *) echo "Refused: $fn is not on the retired list"; exit 1;; esac
             if [ -e "supabase/functions/$fn" ]; then echo "Refused: supabase/functions/$fn still exists"; exit 1; fi
             echo "Deleting retired function $fn"
             python3 "$RUNNER_TEMP/studysearch-controller-guard.py" --entry-point deploy-edge-functions --resource "retired_function:$fn"
-            supabase functions delete "$fn" --project-ref "${{ inputs.project_ref }}"
+            supabase functions delete "$fn" --project-ref "$REF"
           done

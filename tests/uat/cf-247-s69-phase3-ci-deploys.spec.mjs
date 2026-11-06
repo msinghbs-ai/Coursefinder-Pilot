@@ -5,6 +5,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+import { createHash } from 'node:crypto'
 import { execFileSync, spawnSync } from 'node:child_process'
 const list = JSON.parse(fs.readFileSync('.github/edge-functions.json', 'utf8')).functions
 const onMerge = fs.readFileSync('.github/workflows/deploy-on-merge.yml', 'utf8')
@@ -87,7 +88,8 @@ test('Admin #382 controller adapter refuses stale, unreserved or changed-code pr
   }
   const component = fs.readFileSync('.github/workflows/component-register.yml', 'utf8')
   const archive = fs.readFileSync('.github/workflows/db-archive-export.yml', 'utf8')
-  for (const workflow of [component, archive]) {
+  const screenshots = fs.readFileSync('.github/workflows/ui-review-screenshots.yml', 'utf8')
+  for (const workflow of [component, archive, screenshots]) {
     expect(workflow).toContain('studysearch-controller-production')
     expect(workflow).toContain('cancel-in-progress: false')
     for (const name of ['CONTROLLER_EXECUTION_ID', 'CONTROLLER_GENERATION', 'CONTROLLER_OPERATION_ID']) expect(workflow).toContain(name + ':')
@@ -104,6 +106,9 @@ test('Admin #382 controller adapter refuses stale, unreserved or changed-code pr
   const update = stepRun(component, 'Update the register')
   const exporting = stepRun(archive, 'Export, read back and check')
   const showing = stepRun(archive, 'Show an earlier manifest without creating a bucket or exporting')
+  const capture = stepRun(screenshots, 'Verify controller authority for the fixed capture inputs') + '\n' + stepRun(screenshots, 'Capture screens')
+  expect(screenshots).toContain("if: always() && steps.controller_gate.outcome == 'success'")
+  expect(screenshots.indexOf('Verify controller authority')).toBeLessThan(screenshots.indexOf('      - name: Capture screens'))
   const outputs = new Map(['export.log', 'manifest.json'].map(file => [file, fs.existsSync(file) ? fs.readFileSync(file) : null]))
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'controller-workflow-gates-'))
   try {
@@ -123,6 +128,7 @@ if [[ "$1" == scripts/archive_export.py ]]; then
 fi
 exec "$GUARD_TEST_PYTHON" "$@"
 `)
+    script('npx', 'echo CAPTURE >> "$GUARD_TEST_EVENTS"\n')
     script('curl', `
 if [[ "$*" == *"-X POST"* ]]; then
   echo WRITE >> "$GUARD_TEST_EVENTS"
@@ -142,14 +148,138 @@ fi
     const env = { ...process.env, PATH: `${bin}${path.delimiter}${process.env.PATH}`, RUNNER_TEMP: tmp,
       GITHUB_STEP_SUMMARY: path.join(tmp, 'summary'), GUARD_TEST_EVENTS: events, GUARD_TEST_PYTHON: realPython,
       REF: 'isolated-fixture', PROJECT_REF: 'isolated-fixture', SUPABASE_ACCESS_TOKEN: 'isolated-test-token',
-      DEFINITION: path.join(tmp, 'fixture.json'), SHOW_RUN: '123' }
-    for (const shell of [update, exporting]) for (const status of ['1', '0']) {
+      DEFINITION: path.join(tmp, 'fixture.json'), SHOW_RUN: '123',
+      UAT_BASE_URL: 'https://coursefinder-pilot.techm.workers.dev', SCREENS: 'jobs', ADAPTER_FILTERS: '' }
+    const fixed = { ...process.env, UAT_BASE_URL: env.UAT_BASE_URL, SCREENS: env.SCREENS, ADAPTER_FILTERS: env.ADAPTER_FILTERS, STUDYSEARCH_UAT_ALLOWED_ORIGIN: env.UAT_BASE_URL }
+    // Pure readers validate the independent credential target without a lease;
+    // all five browser entrypoints run the same check before browser execution.
+    const credentialWorkflows = ['m2-4-ux-audit.yml', 'release-currentness-deployed.yml',
+      'deployed-uat.yml', 'deployed-weekly.yml', 'ui-review-screenshots.yml']
+    for (const file of credentialWorkflows) {
+      const workflow = fs.readFileSync(`.github/workflows/${file}`, 'utf8')
+      expect(workflow, file).toContain("STUDYSEARCH_UAT_ALLOWED_ORIGIN: ${{ vars.STUDYSEARCH_UAT_ALLOWED_ORIGIN || 'https://coursefinder-pilot.techm.workers.dev' }}")
+      expect(workflow.indexOf('--validate-uat-target'), file).toBeGreaterThan(-1)
+      expect(workflow.indexOf('--validate-uat-target'), file).toBeLessThan(workflow.indexOf('npx playwright test'))
+    }
+    const trusted = execFileSync(realPython, ['scripts/ci/controller-guard.py', '--validate-uat-target'], { env: fixed, encoding: 'utf8' })
+    expect(JSON.parse(trusted).validation).toBe('pass')
+    for (const target of ['http://coursefinder-pilot.techm.workers.dev', 'https://coursefinder-pilot.techm.workers.dev.evil.example',
+      'https://evil-coursefinder-pilot.techm.workers.dev', 'https://coursefinder-pilot.techm.workers.dev@evil.example',
+      'https://user:password@coursefinder-pilot.techm.workers.dev', 'https://coursefinder-pilot.techm.workers.dev:443',
+      'https://coursefinder-pilot.techm.workers.dev\\@evil.example', 'https://coursefinder-pilot.techm.workers.dev/other']) {
+      const denied = spawnSync(realPython, ['scripts/ci/controller-guard.py', '--validate-uat-target'], {
+        env: { ...fixed, UAT_BASE_URL: target }, encoding: 'utf8', timeout: 15000,
+      })
+      expect(denied.error).toBeUndefined()
+      expect(denied.status, target).toBe(1)
+      expect(denied.stderr, target).toContain('UAT target origin does not match')
+    }
+    // A choice input is still untrusted shell data when dispatched through API.
+    const deployed = fs.readFileSync('.github/workflows/deployed-uat.yml', 'utf8')
+    const tierRun = stepRun(deployed, 'Resolve validation tier').replaceAll('${{ github.event_name }}', 'workflow_dispatch')
+    expect(tierRun).not.toContain('${{ inputs.')
+    for (const tier of ['targeted', 'integration', 'acceptance', `targeted'; touch ${path.join(tmp, 'injected-tier')}; #`]) {
+      const result = spawnSync('bash', ['-eo', 'pipefail', '-c', tierRun], {
+        env: { ...env, REQUESTED_UAT_TIER: tier, GITHUB_OUTPUT: path.join(tmp, 'tier-output') }, encoding: 'utf8', timeout: 15000,
+      })
+      expect(result.error).toBeUndefined()
+      expect(result.status, tier).toBe(['targeted', 'integration', 'acceptance'].includes(tier) ? 0 : 1)
+      expect(fs.existsSync(path.join(tmp, 'injected-tier'))).toBe(false)
+    }
+    const resource = execFileSync(realPython, ['scripts/ci/controller-guard.py', '--print-ui-review-resource'], { env: fixed, encoding: 'utf8' }).trim()
+    expect(resource).toBe('ui_review_sha256:' + createHash('sha256').update('ui-review-inputs-v1\n' + JSON.stringify([fixed.UAT_BASE_URL, fixed.SCREENS, fixed.ADAPTER_FILTERS])).digest('hex'))
+    const repurposed = spawnSync(realPython, ['scripts/ci/controller-guard.py', '--entry-point', 'ui-review-screenshots', '--resource', resource], {
+      env: { ...fixed, UAT_BASE_URL: fixed.UAT_BASE_URL + '/' }, encoding: 'utf8', timeout: 15000,
+    })
+    expect(repurposed.error).toBeUndefined()
+    expect(repurposed.status).toBe(1)
+    expect(repurposed.stderr).toContain('UI review input resource differs')
+    for (const [shell, action] of [[update, 'WRITE'], [exporting, 'WRITE'], [capture, 'CAPTURE']]) for (const status of ['1', '0']) {
       fs.rmSync(events, { force: true })
       const result = spawnSync('bash', ['-eo', 'pipefail', '-c', shell], { env: { ...env, GUARD_TEST_STATUS: status }, encoding: 'utf8', timeout: 15000 })
       expect(result.error).toBeUndefined()
       expect(result.status, result.stderr).toBe(Number(status))
-      expect(fs.readFileSync(events, 'utf8').trim().split('\n')).toEqual(status === '0' ? ['GUARD', 'WRITE'] : ['GUARD'])
+      expect(fs.readFileSync(events, 'utf8').trim().split('\n')).toEqual(status === '0' ? ['GUARD', action] : ['GUARD'])
     }
+    // The two privileged throwaway-project writers are deliberately outside
+    // production reservations: prove both reject the Pilot before any request.
+    const pilot = 'a'.repeat(20)
+    for (const file of ['db-baseline-rebuild-test.yml', 'db-migration-test.yml']) {
+      fs.rmSync(events, { force: true })
+      const workflow = fs.readFileSync(`.github/workflows/${file}`, 'utf8')
+      const preflight = stepRun(workflow, 'Confirm the target is the throwaway test project').replaceAll('${{ vars.SUPABASE_PROJECT_REF }}', pilot)
+      const refused = spawnSync('bash', ['-eo', 'pipefail', '-c', preflight], { env: { ...env, REF: pilot }, encoding: 'utf8', timeout: 15000 })
+      expect(refused.error, file).toBeUndefined()
+      expect(refused.status, file).toBe(1)
+      expect(refused.stdout, file).toContain('Refused: that is the Pilot project')
+      expect(fs.existsSync(events), file).toBe(false)
+    }
+    // Dispatch data is validated before requests and never interpolated into
+    // shell source, including the evidence workflow's PR and filename inputs.
+    const privilegedInputs = ['deploy-edge-functions.yml', 'db-function-snapshot.yml', 'db-schema-dump.yml', 'edge-drift-check.yml', 'test-evidence.yml']
+    for (const file of privilegedInputs) {
+      const workflow = fs.readFileSync(`.github/workflows/${file}`, 'utf8')
+      const blocks = [...workflow.matchAll(/^        run: (?:\|[^\n]*\n((?:          [^\n]*\n|\n)*)|([^\n]+))/gm)]
+      expect(blocks.length, file).toBeGreaterThan(0)
+      for (const block of blocks) expect(block[1] || block[2], file).not.toMatch(/\$\{\{\s*inputs\./)
+    }
+    const dispatch = { ...env, REF: pilot, TARGET_REF: pilot, EXPECTED_REF: pilot, FUNCTIONS: 'coverage-sweep, coverage-admit', DELETE_FUNCTIONS: '', PATTERN: '.*' }
+    const runProbe = (body, values, pass, label) => {
+      fs.rmSync(events, { force: true })
+      const result = spawnSync('bash', ['-eo', 'pipefail', '-c', body], { env: { ...dispatch, ...values }, encoding: 'utf8', timeout: 15000 })
+      expect(result.error, label).toBeUndefined()
+      expect(result.status, `${label}: ${result.stderr}`).toBe(pass ? 0 : 1)
+      return fs.existsSync(events) ? fs.readFileSync(events, 'utf8').trim().split('\n') : []
+    }
+    const injected = `$(touch ${path.join(tmp, 'injected-dispatch')})`
+    for (const file of privilegedInputs.slice(0, 4)) {
+      const workflow = fs.readFileSync(`.github/workflows/${file}`, 'utf8')
+      const preflight = stepRun(workflow, 'Confirm target project')
+      expect(runProbe(preflight, {}, true, file)).toEqual([])
+      for (const ref of [injected, pilot + '\nwhoami', 'b'.repeat(20)]) {
+        expect(runProbe(preflight, { REF: ref, TARGET_REF: ref }, false, `${file} project`)).toEqual([])
+      }
+      if (['deploy-edge-functions.yml', 'edge-drift-check.yml'].includes(file)) {
+        for (const list of [injected, 'coverage-sweep;whoami', 'coverage-sweep\ncoverage-admit']) {
+          expect(runProbe(preflight, { FUNCTIONS: list }, false, `${file} functions`)).toEqual([])
+        }
+      }
+      if (file === 'deploy-edge-functions.yml') {
+        expect(runProbe(preflight, { DELETE_FUNCTIONS: injected }, false, 'retired list')).toEqual([])
+        for (const name of ['Deploy', 'Delete retired functions']) {
+          expect(runProbe(stepRun(workflow, name), { DELETE_FUNCTIONS: 'layer3-model-routing', GUARD_TEST_STATUS: '1' }, false, name)).toEqual(['GUARD'])
+        }
+      }
+      if (file === 'db-function-snapshot.yml') expect(runProbe(preflight, { PATTERN: injected }, false, 'definition pattern')).toEqual([])
+    }
+    const evidenceWorkflow = fs.readFileSync('.github/workflows/test-evidence.yml', 'utf8')
+    const resolvePr = stepRun(evidenceWorkflow, 'Resolve the pull request and its head revision')
+    script('gh', 'echo GET >> "$GUARD_TEST_EVENTS"\necho \'{"head":{"sha":"fixture"},"base":{"sha":"fixture"},"draft":true,"labels":[]}\'\n')
+    const evidenceEnv = { GITHUB_EVENT_NAME: 'workflow_dispatch', REPO: 'isolated/repository', GITHUB_OUTPUT: path.join(tmp, 'pr-output') }
+    expect(runProbe(resolvePr, { ...evidenceEnv, REQUESTED_PR: '895' }, true, 'valid PR')).toEqual(['GET'])
+    for (const pr of [injected, '895;whoami', '-1', '0', '895\nwhoami']) {
+      expect(runProbe(resolvePr, { ...evidenceEnv, REQUESTED_PR: pr }, false, 'invalid PR')).toEqual([])
+    }
+    // A changed metadata filename remains one literal --changed argument.
+    script('node', `
+if [[ "$1" == scripts/test-evidence.mjs ]]; then
+  prev=''
+  for arg in "$@"; do
+    if [[ "$prev" == --changed ]]; then printf '%s' "$arg" > "$RUNNER_TEMP/changed-argument"; fi
+    prev="$arg"
+  done
+  exit 0
+fi
+exec "$GUARD_TEST_NODE" "$@"
+`)
+    const bundle = stepRun(evidenceWorkflow, 'Assemble the evidence bundle')
+      .replaceAll("${{ steps.mode.outputs.mode }}", 'reuse')
+      .replace(/\$\{\{\s*steps\.[^.]+\.outcome\s*\}\}/g, 'success')
+      .replace(/\$\{\{[^}]+\}\}/g, 'fixture')
+    const filename = `docs/platform/${injected}.md`
+    expect(runProbe(bundle, { CHANGED_SINCE_EVIDENCE: filename, GUARD_TEST_NODE: process.execPath }, true, 'literal changed argument')).toEqual([])
+    expect(fs.readFileSync(path.join(tmp, 'changed-argument'), 'utf8')).toBe(filename)
+    expect(fs.existsSync(path.join(tmp, 'injected-dispatch'))).toBe(false)
     // SHOW_RUN must bypass the bucket-creating exporter and use GETs only.
     fs.rmSync(events, { force: true })
     const reader = spawnSync('bash', ['-eo', 'pipefail', '-c', showing], { env: { ...env, GUARD_TEST_STATUS: '1' }, encoding: 'utf8', timeout: 15000 })

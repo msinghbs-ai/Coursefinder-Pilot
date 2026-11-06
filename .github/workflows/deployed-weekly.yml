@@ -48,6 +48,8 @@ jobs:
       CONTROLLER_EXECUTION_ID: ${{ inputs.controller_execution }}
       CONTROLLER_GENERATION: ${{ inputs.controller_generation }}
       CONTROLLER_OPERATION_ID: ${{ inputs.controller_operation }}
+      # Reviewed repository configuration; never sourced from a dispatch input.
+      STUDYSEARCH_UAT_ALLOWED_ORIGIN: ${{ vars.STUDYSEARCH_UAT_ALLOWED_ORIGIN || 'https://coursefinder-pilot.techm.workers.dev' }}
       UAT_BASE_URL: ${{ inputs.base_url || 'https://coursefinder-pilot.techm.workers.dev' }}
       UAT_EMAIL: ${{ secrets.COURSEFINDER_UAT_EMAIL }}
       UAT_PASSWORD: ${{ secrets.COURSEFINDER_UAT_PASSWORD }}
@@ -56,6 +58,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Validate trusted UAT credential target
+        run: |
+          python3 scripts/ci/controller-guard.py --validate-uat-target
       - uses: actions/setup-node@v4
         with:
           node-version: 22

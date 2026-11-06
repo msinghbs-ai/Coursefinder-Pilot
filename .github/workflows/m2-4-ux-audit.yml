@@ -28,11 +28,16 @@ jobs:
       matrix:
         project: [chromium-desktop, chromium-mobile]
     env:
+      # Reviewed repository configuration; never sourced from a dispatch input.
+      STUDYSEARCH_UAT_ALLOWED_ORIGIN: ${{ vars.STUDYSEARCH_UAT_ALLOWED_ORIGIN || 'https://coursefinder-pilot.techm.workers.dev' }}
       UAT_BASE_URL: ${{ inputs.base_url }}
       UAT_EMAIL: ${{ secrets.COURSEFINDER_UAT_EMAIL }}
       UAT_PASSWORD: ${{ secrets.COURSEFINDER_UAT_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
+      - name: Validate trusted UAT credential target
+        run: |
+          python3 scripts/ci/controller-guard.py --validate-uat-target
       - uses: actions/setup-node@v4
         with:
           node-version: 22
