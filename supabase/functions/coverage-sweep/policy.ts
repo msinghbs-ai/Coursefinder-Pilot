@@ -119,6 +119,8 @@ function namesFrom(label: string): string[] {
 
 type Block = { kind: "table"; heading: string; rows: string[][]; alt?: boolean; hint?: string } | { kind: "text"; heading: string; text: string; alt?: boolean };
 // v0.3.0: exceptions inside one faculty cell (cells hold <br> as " ; "): "- Name: 7.5 overall (...)" under "Exceptions:", and "The following programs require 7.0 overall (...)" followed by "- Name" items
+// v0.3.0: the faculty's own score is the part of its cell before the exceptions ("Exceptions: ..." or "The following programs ...")
+function facultyLead(cell: string): string { return cell.split(/\s;\s(?=exceptions?\b|the following (?:programs?|courses?)\b)/i)[0].trim() }
 function facultyExceptions(cell: string, code: TestCode): { name: string; reqs: Req[] }[] {
   const parts = cell.split(/\s;\s/).map((x) => x.trim()).filter(Boolean);
   const out: { name: string; reqs: Req[] }[] = [];
@@ -295,12 +297,12 @@ export function englishPolicy(md: string) {
           if (!code) continue;
           levelCol.forEach((lv, i) => {
             if (!lv || i === 0) return;
-            const cells = rows.map((r) => r[i] || "").filter(Boolean);
+            const cells = rows.map((r) => facultyLead(r[i] || "")).filter(Boolean);
             const parsed = cells.map((c) => parseScore(code, c));
             if (parsed.length >= 2 && parsed[0] && new Set(parsed.map((p) => JSON.stringify(p))).size === 1)
               statements.push({ level: lv, isDefault: true, names: [], reqs: [{ test_code: code, overall_score: parsed[0].overall, component_scores: parsed[0].comps, quote: quoteOf(`${head[i]}: ${cells[0]} (every faculty)`) }], except: false, exceptNames: [] });
             // v0.3.0: where the faculties differ, each faculty row is a group rule for this level (a cell that gives no score is not a group)
-            else for (const r of rows) { const p = parseScore(code, r[i] || ""); if (p && r[0]) addGroup(r[0], lv === "both" ? null : lv, { test_code: code, overall_score: p.overall, component_scores: p.comps, quote: quoteOf(`${r[0]} | ${head[i]}: ${r[i]}`) }) }
+            else for (const r of rows) { const p = parseScore(code, facultyLead(r[i] || "")); if (p && r[0]) addGroup(r[0], lv === "both" ? null : lv, { test_code: code, overall_score: p.overall, component_scores: p.comps, quote: quoteOf(`${r[0]} | ${head[i]}: ${r[i]}`) }) }
             // v0.3.0: the courses a faculty cell lists as exceptions ("Exceptions: - Bachelor of Education (Secondary): 7.5 overall ...", or "The following programs require 7.0 overall")
             // are named courses with their own score: they are never given the faculty's score
             for (const r of rows) for (const e of facultyExceptions(r[i] || "", code)) statements.push({ level: lv === "both" ? null : lv, isDefault: false, names: [e.name], reqs: e.reqs, except: false, exceptNames: [] });

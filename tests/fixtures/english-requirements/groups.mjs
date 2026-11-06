@@ -12,6 +12,7 @@ const FACULTY_TABLE = `## IELTS Academic
 if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop())) {
   const { englishPolicy } = await loadParser()
   if (process.argv[2] === 'parsed-faculty-table') process.stdout.write(JSON.stringify(englishPolicy(FACULTY_TABLE)))
-  else { console.error('usage: groups.mjs parsed-faculty-table'); process.exit(2) }
+  else if (process.argv[2] === 'parsed-page') process.stdout.write(JSON.stringify(englishPolicy((await import('node:fs')).readFileSync(process.argv[3], 'utf8'))))
+  else { console.error('usage: groups.mjs parsed-faculty-table | parsed-page <file>'); process.exit(2) }
 }
 export { FACULTY_TABLE }

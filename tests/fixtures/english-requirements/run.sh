@@ -81,5 +81,7 @@ $P -q -v ON_ERROR_STOP=1 -d "$DB" -f $FX/groups-harness.sql >/dev/null 2>&1 || f
 $P -q -v ON_ERROR_STOP=1 -d "$DB" -f supabase/migrations/20261106550000_cf247_english_requirements_complete.sql >/dev/null 2>$T/mig.err || { cat $T/mig.err; fail 'the migration did not apply on the production-shaped fixture'; }
 echo 'PASS the migration applies on the production-shaped fixture (every live md5 guard held)'
 $P -X -v ON_ERROR_STOP=1 -d "$DB" -f $FX/groups-tests.sql > $T/groups.out 2>&1 || { grep -E 'PASS|FAIL|ERROR' $T/groups.out; fail 'a group scenario failed'; }
+$P -X -v ON_ERROR_STOP=1 -d "$DB" -f $FX/exceptions-tests.sql > $T/exceptions.out 2>&1 || { grep -E 'PASS|FAIL|ERROR' $T/exceptions.out; fail 'an exception scenario failed'; }
+grep -c 'PASS' $T/exceptions.out | xargs -I{} echo 'PASS {} named-exception, own-reading and manual-lock scenarios on the real UNSW page reading'
 grep -c 'PASS' $T/groups.out | xargs -I{} echo 'PASS {} group, scope, search-switch, reparse and status scenarios'
 echo 'english-requirements fixture round trip: passed'

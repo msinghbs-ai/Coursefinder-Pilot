@@ -36,3 +36,28 @@ test('UNSW main English page: faculty rows are course groups and never a univers
   expect(r.groups.length, 'the faculty table is read as groups').toBeGreaterThan(0)
   expect(r.defaults, 'a faculty score is not the university default').toEqual({})
 })
+
+test('UNSW main English page, full text: 7 faculties x 2 levels with IELTS, TOEFL iBT, PTE and Cambridge scores, and the courses the cells list as exceptions keep their own score', async () => {
+  const { englishPolicy } = await loadParser()
+  const r = englishPolicy(fs.readFileSync(`${DIR}/a1a0f40d-001a-4df2-848e-0a49812a0ac8.md`, 'utf8'))
+  expect(r.style).toBe('course_groups')
+  expect(r.defaults).toEqual({})
+  expect(r.groups.length).toBe(14)
+  const score = (name, level, code) => r.groups.find((g) => g.group_name === name && g.level === level).reqs.find((q) => q.test_code === code).overall_score
+  const FAC = { 'Arts, Design & Architecture': [6.5, 90, 64, 176], Business: [7, 94, 65, 185], Engineering: [6.5, 90, 64, 176], 'Law & Justice': [7, 94, 65, 185], 'Medicine & Health': [6.5, 90, 64, 176], Science: [6.5, 90, 64, 176], 'UNSW Canberra': [6.5, 90, 64, 176] }
+  for (const [name, want] of Object.entries(FAC)) for (const level of ['undergraduate', 'postgraduate'])
+    expect(['IELTS', 'TOEFL_IBT', 'PTE', 'CAE'].map((c) => score(name, level, c)), `${name} ${level}`).toEqual(want)
+  const ex = (name, level, code) => r.exceptions.find((e) => e.name === name && e.level === level && e.reqs[0]?.test_code === code)?.reqs[0].overall_score
+  expect(ex('Bachelor of Education (Secondary) (Honours)', 'undergraduate', 'IELTS')).toBe(7.5)
+  expect(ex('Bachelor of Criminology & Criminal Justice', 'undergraduate', 'IELTS')).toBe(6.5)
+  expect(ex('Master of Teaching (Primary & Secondary)', 'postgraduate', 'IELTS')).toBe(7.5)
+  expect(ex('Bachelor of Pharmaceutical Medicine/Master of Pharmacy', 'undergraduate', 'IELTS')).toBe(7)
+})
+
+test('UNSW international entry-requirements page: it sends the reader to each course page, so it gives no rule', async () => {
+  const { englishPolicy } = await loadParser()
+  const r = englishPolicy(fs.readFileSync(`${DIR}/002ff3bb-4106-4844-b682-b2b6b0b90a27.md`, 'utf8'))
+  expect(r.defaults).toEqual({})
+  expect(r.groups ?? []).toEqual([])
+  expect(r.style).toBe('course_specific')
+})
