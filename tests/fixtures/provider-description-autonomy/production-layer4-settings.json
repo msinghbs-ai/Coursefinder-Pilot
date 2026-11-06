@@ -1,0 +1,41 @@
+[
+  {
+    "toolset_key": "pipeline",
+    "key": "layer4.arrival_guard_on",
+    "kind": "number",
+    "value": 0
+  },
+  {
+    "toolset_key": "pipeline",
+    "key": "layer4.auto_admit_sample_rate",
+    "kind": "number",
+    "value": 10
+  },
+  {
+    "toolset_key": "pipeline",
+    "key": "layer4.evidence_link_kinds",
+    "kind": "list",
+    "value": [
+      "official_course_url",
+      "provider_current_tuition_validation",
+      "provider_current_tuition"
+    ]
+  },
+  {
+    "toolset_key": "pipeline",
+    "key": "layer4.evidence_link_on",
+    "kind": "number",
+    "value": 1
+  },
+  {
+    "toolset_key": "pipeline",
+    "key": "layer4.platform_kinds",
+    "kind": "list",
+    "value": [
+      "official_course_url",
+      "provider_current_tuition_validation",
+      "provider_current_tuition",
+      "course_english"
+    ]
+  }
+]

@@ -1,0 +1,114 @@
+{
+  "captured_at": "2026-11-04",
+  "schema_only": true,
+  "functions": [
+    {
+      "signature": "zoho_v2_provider(text)",
+      "schema": "public",
+      "name": "zoho_v2_provider",
+      "security_definer": true,
+      "config": [
+        "search_path=\"\""
+      ],
+      "grants": [
+        {
+          "grantee": "postgres",
+          "grantor": "postgres",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        },
+        {
+          "grantee": "service_role",
+          "grantor": "postgres",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        }
+      ]
+    },
+    {
+      "signature": "security.zoho_v2_provider_cricos_v1(uuid)",
+      "schema": "security",
+      "name": "zoho_v2_provider_cricos_v1",
+      "security_definer": true,
+      "config": [
+        "search_path=\"\""
+      ],
+      "grants": [
+        {
+          "grantee": "postgres",
+          "grantor": "postgres",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        }
+      ]
+    },
+    {
+      "signature": "security.zoho_v2_provider_item_v1(uuid)",
+      "schema": "security",
+      "name": "zoho_v2_provider_item_v1",
+      "security_definer": true,
+      "config": [
+        "search_path=\"\""
+      ],
+      "grants": [
+        {
+          "grantee": "postgres",
+          "grantor": "postgres",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        }
+      ]
+    },
+    {
+      "signature": "security.zoho_v2_campus_item_v1(uuid)",
+      "schema": "security",
+      "name": "zoho_v2_campus_item_v1",
+      "security_definer": true,
+      "config": [
+        "search_path=\"\""
+      ],
+      "grants": [
+        {
+          "grantee": "postgres",
+          "grantor": "postgres",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        }
+      ]
+    },
+    {
+      "signature": "security.zoho_v2_contact_item_v1(text)",
+      "schema": "security",
+      "name": "zoho_v2_contact_item_v1",
+      "security_definer": true,
+      "config": [
+        "search_path=\"\""
+      ],
+      "grants": [
+        {
+          "grantee": "postgres",
+          "grantor": "postgres",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        }
+      ]
+    },
+    {
+      "signature": "security.website_sync_item_v1(text,uuid,text)",
+      "schema": "security",
+      "name": "website_sync_item_v1",
+      "security_definer": true,
+      "config": [
+        "search_path=\"\""
+      ],
+      "grants": [
+        {
+          "grantee": "postgres",
+          "grantor": "postgres",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        }
+      ]
+    }
+  ]
+}

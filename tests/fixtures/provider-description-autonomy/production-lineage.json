@@ -1,0 +1,267 @@
+{
+  "columns": [
+    {
+      "name": "evidence_id",
+      "type": "uuid",
+      "default": null,
+      "notnull": true,
+      "position": 1,
+      "relation": "pipeline.evidence_entity_links"
+    },
+    {
+      "name": "entity_type",
+      "type": "text",
+      "default": null,
+      "notnull": true,
+      "position": 2,
+      "relation": "pipeline.evidence_entity_links"
+    },
+    {
+      "name": "entity_id",
+      "type": "uuid",
+      "default": null,
+      "notnull": true,
+      "position": 3,
+      "relation": "pipeline.evidence_entity_links"
+    },
+    {
+      "name": "provider_id",
+      "type": "uuid",
+      "default": null,
+      "notnull": false,
+      "position": 4,
+      "relation": "pipeline.evidence_entity_links"
+    },
+    {
+      "name": "link_count",
+      "type": "bigint",
+      "default": "0",
+      "notnull": true,
+      "position": 5,
+      "relation": "pipeline.evidence_entity_links"
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "default": "now()",
+      "notnull": true,
+      "position": 6,
+      "relation": "pipeline.evidence_entity_links"
+    },
+    {
+      "name": "evidence_id",
+      "type": "uuid",
+      "default": null,
+      "notnull": true,
+      "position": 1,
+      "relation": "pipeline.evidence_lineage_stats"
+    },
+    {
+      "name": "observation_count",
+      "type": "bigint",
+      "default": "0",
+      "notnull": true,
+      "position": 2,
+      "relation": "pipeline.evidence_lineage_stats"
+    },
+    {
+      "name": "source_null_count",
+      "type": "bigint",
+      "default": "0",
+      "notnull": true,
+      "position": 3,
+      "relation": "pipeline.evidence_lineage_stats"
+    },
+    {
+      "name": "rejected_count",
+      "type": "bigint",
+      "default": "0",
+      "notnull": true,
+      "position": 4,
+      "relation": "pipeline.evidence_lineage_stats"
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "default": "now()",
+      "notnull": true,
+      "position": 5,
+      "relation": "pipeline.evidence_lineage_stats"
+    }
+  ],
+  "indexes": [
+    {
+      "name": "evidence_entity_links_pkey",
+      "table": "pipeline.evidence_entity_links",
+      "definition": "CREATE UNIQUE INDEX evidence_entity_links_pkey ON pipeline.evidence_entity_links USING btree (evidence_id, entity_type, entity_id)"
+    },
+    {
+      "name": "evidence_entity_links_entity_idx",
+      "table": "pipeline.evidence_entity_links",
+      "definition": "CREATE INDEX evidence_entity_links_entity_idx ON pipeline.evidence_entity_links USING btree (entity_type, entity_id, evidence_id)"
+    },
+    {
+      "name": "evidence_lineage_stats_pkey",
+      "table": "pipeline.evidence_lineage_stats",
+      "definition": "CREATE UNIQUE INDEX evidence_lineage_stats_pkey ON pipeline.evidence_lineage_stats USING btree (evidence_id)"
+    }
+  ],
+  "policies": null,
+  "triggers": null,
+  "functions": [
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "md5": "5f6c5c43a4c026e5c3fa55d8ed534781",
+      "owner": "postgres",
+      "config": [
+        "search_path=pg_catalog, security"
+      ],
+      "signature": "security.sync_evidence_lineage_stats()",
+      "definition": "CREATE OR REPLACE FUNCTION security.sync_evidence_lineage_stats()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'security'\nAS $function$\ndeclare\n  v_old jsonb;\n  v_new jsonb;\n  v_old_evidence uuid;\n  v_new_evidence uuid;\n  v_table text:=tg_table_schema||'.'||tg_table_name;\nbegin\n  if tg_op in ('UPDATE','DELETE') then\n    v_old:=to_jsonb(old);\n    v_old_evidence:=nullif(v_old->>'evidence_id','')::uuid;\n    perform security.adjust_evidence_lineage_stats(\n      v_old_evidence,\n      -1,\n      case when security.evidence_row_source_null(v_table,v_old) then -1 else 0 end,\n      case when security.evidence_row_rejected(v_old) then -1 else 0 end\n    );\n  end if;\n  if tg_op in ('INSERT','UPDATE') then\n    v_new:=to_jsonb(new);\n    v_new_evidence:=nullif(v_new->>'evidence_id','')::uuid;\n    perform security.adjust_evidence_lineage_stats(\n      v_new_evidence,\n      1,\n      case when security.evidence_row_source_null(v_table,v_new) then 1 else 0 end,\n      case when security.evidence_row_rejected(v_new) then 1 else 0 end\n    );\n  end if;\n  return case when tg_op='DELETE' then old else new end;\nend\n$function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "md5": "8fee2acc17efbaaf27a70fdf74c2ae80",
+      "owner": "postgres",
+      "config": [
+        "search_path=pg_catalog, security"
+      ],
+      "signature": "security.sync_evidence_entity_links()",
+      "definition": "CREATE OR REPLACE FUNCTION security.sync_evidence_entity_links()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'security'\nAS $function$\ndeclare v_old jsonb; v_new jsonb; v_evidence uuid; r record; v_table text:=tg_table_schema||'.'||tg_table_name;\nbegin\n  if tg_op in ('UPDATE','DELETE') then v_old:=to_jsonb(old); v_evidence:=nullif(v_old->>'evidence_id','')::uuid; if v_evidence is not null then for r in select * from security.evidence_row_entity_links(v_table,v_old) loop perform security.adjust_evidence_entity_link(v_evidence,r.entity_type,r.entity_id,r.provider_id,-1); end loop; end if; end if;\n  if tg_op in ('INSERT','UPDATE') then v_new:=to_jsonb(new); v_evidence:=nullif(v_new->>'evidence_id','')::uuid; if v_evidence is not null then for r in select * from security.evidence_row_entity_links(v_table,v_new) loop perform security.adjust_evidence_entity_link(v_evidence,r.entity_type,r.entity_id,r.provider_id,1); end loop; end if; end if;\n  return case when tg_op='DELETE' then old else new end;\nend $function$\n"
+    },
+    {
+      "acl": null,
+      "md5": "162b9b64df74486278975b9aecf23bd9",
+      "owner": "postgres",
+      "config": [
+        "search_path=pg_catalog"
+      ],
+      "signature": "security.evidence_row_source_null(text,jsonb)",
+      "definition": "CREATE OR REPLACE FUNCTION security.evidence_row_source_null(p_table text, p_row jsonb)\n RETURNS boolean\n LANGUAGE plpgsql\n IMMUTABLE\n SET search_path TO 'pg_catalog'\nAS $function$\nbegin\n  return case p_table\n    when 'catalogue.course_fees' then (p_row->'amount') is null or jsonb_typeof(p_row->'amount')='null'\n    when 'catalogue.course_intakes' then coalesce(p_row->>'intake_label','')='' and (p_row->'intake_year' is null or jsonb_typeof(p_row->'intake_year')='null') and (p_row->'start_date' is null or jsonb_typeof(p_row->'start_date')='null')\n    when 'catalogue.course_english_requirements' then (p_row->'overall_score' is null or jsonb_typeof(p_row->'overall_score')='null') and coalesce(p_row->'component_scores','{}'::jsonb)='{}'::jsonb\n    when 'catalogue.course_links' then coalesce(p_row->>'url','')=''\n    when 'catalogue.course_registrations' then coalesce(p_row->>'registration_code','')=''\n    when 'catalogue.course_study_level_observations' then coalesce(p_row->>'source_value','')=''\n    when 'catalogue.course_field_observations' then coalesce(p_row->>'source_field_code','')='' and coalesce(p_row->>'source_field_name','')=''\n    when 'catalogue.provider_outcomes' then (p_row->'metric_value' is null or jsonb_typeof(p_row->'metric_value')='null')\n    when 'catalogue.student_flow_observations' then (p_row->'metric_value' is null or jsonb_typeof(p_row->'metric_value')='null') and coalesce((p_row->>'is_suppressed')::boolean,false)=false\n    when 'scholarship.criteria' then (p_row->'value_text' is null or jsonb_typeof(p_row->'value_text')='null') and (p_row->'value_number' is null or jsonb_typeof(p_row->'value_number')='null') and (p_row->'value_codes' is null or jsonb_typeof(p_row->'value_codes')='null') and (p_row->'value_json' is null or jsonb_typeof(p_row->'value_json')='null')\n    when 'scholarship.award_tiers' then (p_row->'amount' is null or jsonb_typeof(p_row->'amount')='null') and (p_row->'percentage' is null or jsonb_typeof(p_row->'percentage')='null') and (p_row->'maximum_amount' is null or jsonb_typeof(p_row->'maximum_amount')='null')\n    else false\n  end;\nend\n$function$\n"
+    },
+    {
+      "acl": null,
+      "md5": "5e22e54aef18d13c96a7d2e350f8edd0",
+      "owner": "postgres",
+      "config": [
+        "search_path=pg_catalog"
+      ],
+      "signature": "security.evidence_row_rejected(jsonb)",
+      "definition": "CREATE OR REPLACE FUNCTION security.evidence_row_rejected(p_row jsonb)\n RETURNS boolean\n LANGUAGE sql\n IMMUTABLE\n SET search_path TO 'pg_catalog'\nAS $function$\n  select lower(coalesce(p_row->>'status',p_row->>'lifecycle_status',''))='rejected'\n$function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "md5": "fa2b1f9c285f54912787612cbf574eb7",
+      "owner": "postgres",
+      "config": [
+        "search_path=pg_catalog, catalogue, scholarship"
+      ],
+      "signature": "security.evidence_row_entity_links(text,jsonb)",
+      "definition": "CREATE OR REPLACE FUNCTION security.evidence_row_entity_links(p_table text, p_row jsonb)\n RETURNS TABLE(entity_type text, entity_id uuid, provider_id uuid)\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'catalogue', 'scholarship'\nAS $function$\ndeclare v_course uuid; v_provider uuid; v_campus uuid; v_scholarship uuid;\nbegin\n  v_course:=nullif(p_row->>'course_id','')::uuid; v_provider:=nullif(p_row->>'provider_id','')::uuid; v_campus:=nullif(p_row->>'campus_id','')::uuid; v_scholarship:=nullif(p_row->>'scholarship_id','')::uuid;\n  if p_table='catalogue.campuses' then return query select 'campus'::text,nullif(p_row->>'id','')::uuid,v_provider; return;\n  elsif p_table='catalogue.provider_associations' then return query select 'provider'::text,nullif(p_row->>'from_provider_id','')::uuid,nullif(p_row->>'from_provider_id','')::uuid; return query select 'provider'::text,nullif(p_row->>'to_provider_id','')::uuid,nullif(p_row->>'to_provider_id','')::uuid; return;\n  elsif p_table like 'catalogue.provider_%' then if v_provider is not null then return query select 'provider'::text,v_provider,v_provider; end if; return;\n  elsif p_table='catalogue.student_flow_observations' then if v_course is not null then select c.provider_id into v_provider from catalogue.courses c where c.id=v_course; return query select 'course'::text,v_course,v_provider; elsif v_provider is not null then return query select 'provider'::text,v_provider,v_provider; end if; return;\n  elsif p_table like 'catalogue.course_%' then if v_course is not null then if v_provider is null then select c.provider_id into v_provider from catalogue.courses c where c.id=v_course; end if; return query select 'course'::text,v_course,v_provider; end if; if v_campus is not null then return query select 'campus'::text,v_campus,v_provider; end if; return;\n  elsif p_table='scholarship.scholarships' then v_scholarship:=nullif(p_row->>'id','')::uuid; if v_scholarship is not null then return query select 'scholarship'::text,v_scholarship,v_provider; end if; return;\n  elsif p_table='scholarship.scopes' then if v_scholarship is not null then if v_provider is null then select s.provider_id into v_provider from scholarship.scholarships s where s.id=v_scholarship; end if; return query select 'scholarship'::text,v_scholarship,v_provider; end if; if v_course is not null then select c.provider_id into v_provider from catalogue.courses c where c.id=v_course; return query select 'course'::text,v_course,v_provider; end if; if v_campus is not null then return query select 'campus'::text,v_campus,v_provider; end if; if nullif(p_row->>'provider_id','') is not null then return query select 'provider'::text,nullif(p_row->>'provider_id','')::uuid,nullif(p_row->>'provider_id','')::uuid; end if; return;\n  elsif p_table like 'scholarship.%' then if v_scholarship is not null then if v_provider is null then select s.provider_id into v_provider from scholarship.scholarships s where s.id=v_scholarship; end if; return query select 'scholarship'::text,v_scholarship,v_provider; end if; return;\n  end if; return;\nend $function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "md5": "4c6390df0b1d121f76e6f1049453f164",
+      "owner": "postgres",
+      "config": [
+        "search_path=pg_catalog, pipeline"
+      ],
+      "signature": "security.adjust_evidence_lineage_stats(uuid,bigint,bigint,bigint)",
+      "definition": "CREATE OR REPLACE FUNCTION security.adjust_evidence_lineage_stats(p_evidence_id uuid, p_observation_delta bigint, p_source_null_delta bigint, p_rejected_delta bigint)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'pipeline'\nAS $function$\nbegin\n  if p_evidence_id is null then return; end if;\n  insert into pipeline.evidence_lineage_stats(evidence_id,observation_count,source_null_count,rejected_count,updated_at)\n  values(p_evidence_id,greatest(p_observation_delta,0),greatest(p_source_null_delta,0),greatest(p_rejected_delta,0),now())\n  on conflict(evidence_id) do update set\n    observation_count=greatest(0,pipeline.evidence_lineage_stats.observation_count+p_observation_delta),\n    source_null_count=greatest(0,pipeline.evidence_lineage_stats.source_null_count+p_source_null_delta),\n    rejected_count=greatest(0,pipeline.evidence_lineage_stats.rejected_count+p_rejected_delta),\n    updated_at=now();\nend\n$function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "md5": "22632c7e2dee49ac2ffca3af48908284",
+      "owner": "postgres",
+      "config": [
+        "search_path=pg_catalog, pipeline"
+      ],
+      "signature": "security.adjust_evidence_entity_link(uuid,text,uuid,uuid,bigint)",
+      "definition": "CREATE OR REPLACE FUNCTION security.adjust_evidence_entity_link(p_evidence_id uuid, p_entity_type text, p_entity_id uuid, p_provider_id uuid, p_delta bigint)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'pipeline'\nAS $function$\nbegin\n  if p_evidence_id is null or p_entity_id is null or p_entity_type is null then return; end if;\n  insert into pipeline.evidence_entity_links(evidence_id,entity_type,entity_id,provider_id,link_count,updated_at)\n  values(p_evidence_id,p_entity_type,p_entity_id,p_provider_id,greatest(p_delta,0),now())\n  on conflict(evidence_id,entity_type,entity_id) do update set provider_id=coalesce(excluded.provider_id,pipeline.evidence_entity_links.provider_id),link_count=greatest(0,pipeline.evidence_entity_links.link_count+p_delta),updated_at=now();\n  delete from pipeline.evidence_entity_links where evidence_id=p_evidence_id and entity_type=p_entity_type and entity_id=p_entity_id and link_count=0;\nend $function$\n"
+    }
+  ],
+  "captured_at": "2026-11-04T12:43:12.217997+00:00",
+  "constraints": [
+    {
+      "name": "evidence_lineage_stats_evidence_id_fkey",
+      "relation": "pipeline.evidence_lineage_stats",
+      "definition": "FOREIGN KEY (evidence_id) REFERENCES pipeline.evidence_artifacts(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "evidence_lineage_stats_observation_count_check",
+      "relation": "pipeline.evidence_lineage_stats",
+      "definition": "CHECK ((observation_count >= 0))"
+    },
+    {
+      "name": "evidence_lineage_stats_pkey",
+      "relation": "pipeline.evidence_lineage_stats",
+      "definition": "PRIMARY KEY (evidence_id)"
+    },
+    {
+      "name": "evidence_lineage_stats_rejected_count_check",
+      "relation": "pipeline.evidence_lineage_stats",
+      "definition": "CHECK ((rejected_count >= 0))"
+    },
+    {
+      "name": "evidence_lineage_stats_source_null_count_check",
+      "relation": "pipeline.evidence_lineage_stats",
+      "definition": "CHECK ((source_null_count >= 0))"
+    },
+    {
+      "name": "evidence_entity_links_entity_type_check",
+      "relation": "pipeline.evidence_entity_links",
+      "definition": "CHECK ((entity_type = ANY (ARRAY['provider'::text, 'course'::text, 'campus'::text, 'scholarship'::text])))"
+    },
+    {
+      "name": "evidence_entity_links_evidence_id_fkey",
+      "relation": "pipeline.evidence_entity_links",
+      "definition": "FOREIGN KEY (evidence_id) REFERENCES pipeline.evidence_artifacts(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "evidence_entity_links_link_count_check",
+      "relation": "pipeline.evidence_entity_links",
+      "definition": "CHECK ((link_count >= 0))"
+    },
+    {
+      "name": "evidence_entity_links_pkey",
+      "relation": "pipeline.evidence_entity_links",
+      "definition": "PRIMARY KEY (evidence_id, entity_type, entity_id)"
+    }
+  ],
+  "tables": [
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres"
+      ],
+      "rls": false,
+      "kind": "r",
+      "name": "evidence_entity_links",
+      "owner": "postgres",
+      "schema": "pipeline",
+      "force_rls": false
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres"
+      ],
+      "rls": false,
+      "kind": "r",
+      "name": "evidence_lineage_stats",
+      "owner": "postgres",
+      "schema": "pipeline",
+      "force_rls": false
+    }
+  ]
+}

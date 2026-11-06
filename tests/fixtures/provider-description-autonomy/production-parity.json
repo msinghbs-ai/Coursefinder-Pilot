@@ -1,0 +1,503 @@
+{
+  "rls": [
+    {
+      "relation": "catalogue.providers",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false
+    },
+    {
+      "relation": "pipeline.evidence_artifacts",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false
+    },
+    {
+      "relation": "pipeline.layer4_review_items",
+      "relrowsecurity": false,
+      "relforcerowsecurity": false
+    },
+    {
+      "relation": "pipeline.layer4_decisions",
+      "relrowsecurity": false,
+      "relforcerowsecurity": false
+    },
+    {
+      "relation": "pipeline.admin_jobs",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false
+    },
+    {
+      "relation": "pipeline.provider_description_reads",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false
+    }
+  ],
+  "grants": [
+    {
+      "grantee": "postgres",
+      "routine_name": "provider_description_validate_v1",
+      "privilege_type": "EXECUTE",
+      "routine_schema": "security"
+    },
+    {
+      "grantee": "postgres",
+      "routine_name": "svc_provider_description_next",
+      "privilege_type": "EXECUTE",
+      "routine_schema": "public"
+    },
+    {
+      "grantee": "service_role",
+      "routine_name": "svc_provider_description_next",
+      "privilege_type": "EXECUTE",
+      "routine_schema": "public"
+    },
+    {
+      "grantee": "postgres",
+      "routine_name": "svc_provider_description_record",
+      "privilege_type": "EXECUTE",
+      "routine_schema": "public"
+    },
+    {
+      "grantee": "service_role",
+      "routine_name": "svc_provider_description_record",
+      "privilege_type": "EXECUTE",
+      "routine_schema": "public"
+    },
+    {
+      "grantee": "postgres",
+      "routine_name": "layer4_provider_description_apply_impl",
+      "privilege_type": "EXECUTE",
+      "routine_schema": "security"
+    },
+    {
+      "grantee": "postgres",
+      "routine_name": "admin_provider_descriptions",
+      "privilege_type": "EXECUTE",
+      "routine_schema": "public"
+    },
+    {
+      "grantee": "authenticated",
+      "routine_name": "admin_provider_descriptions",
+      "privilege_type": "EXECUTE",
+      "routine_schema": "public"
+    },
+    {
+      "grantee": "service_role",
+      "routine_name": "admin_provider_descriptions",
+      "privilege_type": "EXECUTE",
+      "routine_schema": "public"
+    },
+    {
+      "grantee": "postgres",
+      "routine_name": "provider_description_scope_v1",
+      "privilege_type": "EXECUTE",
+      "routine_schema": "security"
+    },
+    {
+      "grantee": "postgres",
+      "routine_name": "provider_description_enqueue_v1",
+      "privilege_type": "EXECUTE",
+      "routine_schema": "security"
+    },
+    {
+      "grantee": "postgres",
+      "routine_name": "provider_description_fire_v1",
+      "privilege_type": "EXECUTE",
+      "routine_schema": "security"
+    },
+    {
+      "grantee": "postgres",
+      "routine_name": "provider_description_review_trg_v1",
+      "privilege_type": "EXECUTE",
+      "routine_schema": "security"
+    },
+    {
+      "grantee": "postgres",
+      "routine_name": "provider_description_page_v1",
+      "privilege_type": "EXECUTE",
+      "routine_schema": "security"
+    },
+    {
+      "grantee": "postgres",
+      "routine_name": "provider_description_stored_v1",
+      "privilege_type": "EXECUTE",
+      "routine_schema": "security"
+    },
+    {
+      "grantee": "postgres",
+      "routine_name": "job_run_now_v1",
+      "privilege_type": "EXECUTE",
+      "routine_schema": "security"
+    },
+    {
+      "grantee": "postgres",
+      "routine_name": "admin_job_run_now_v1",
+      "privilege_type": "EXECUTE",
+      "routine_schema": "public"
+    },
+    {
+      "grantee": "authenticated",
+      "routine_name": "admin_job_run_now_v1",
+      "privilege_type": "EXECUTE",
+      "routine_schema": "public"
+    },
+    {
+      "grantee": "service_role",
+      "routine_name": "admin_job_run_now_v1",
+      "privilege_type": "EXECUTE",
+      "routine_schema": "public"
+    }
+  ],
+  "policies": null,
+  "triggers": [
+    {
+      "tgname": "manual_lock_guard",
+      "relation": "catalogue.providers",
+      "definition": "CREATE TRIGGER manual_lock_guard BEFORE UPDATE ON catalogue.providers FOR EACH ROW EXECUTE FUNCTION security.manual_field_guard()",
+      "function_signature": "security.manual_field_guard()",
+      "function_definition": "CREATE OR REPLACE FUNCTION security.manual_field_guard()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare v_new jsonb; v_old jsonb; f text; v_entity text := case TG_TABLE_NAME when 'courses' then 'course' else 'provider' end;\nbegin\n  if coalesce(current_setting('cf.manual_edit', true), '') = 'on' then return NEW; end if;\n  if not exists (select 1 from pipeline.manual_locks l where l.entity = v_entity and l.entity_id = OLD.id) then return NEW; end if;\n  v_new := to_jsonb(NEW); v_old := to_jsonb(OLD);\n  for f in select l.field from pipeline.manual_locks l where l.entity = v_entity and l.entity_id = OLD.id loop\n    if v_old ? f then v_new := jsonb_set(v_new, array[f], v_old->f); end if;\n  end loop;\n  NEW := jsonb_populate_record(NEW, v_new);\n  return NEW;\nend $function$\n"
+    },
+    {
+      "tgname": "provider_publish_by_default",
+      "relation": "catalogue.providers",
+      "definition": "CREATE TRIGGER provider_publish_by_default BEFORE INSERT ON catalogue.providers FOR EACH ROW EXECUTE FUNCTION security.provider_publish_by_default()",
+      "function_signature": "security.provider_publish_by_default()",
+      "function_definition": "CREATE OR REPLACE FUNCTION security.provider_publish_by_default()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\nbegin\r\n  if new.lifecycle_status = 'active' then new.publication_status := 'published'; end if;\r\n  return new;\r\nend $function$\n"
+    },
+    {
+      "tgname": "provider_site_followups",
+      "relation": "catalogue.providers",
+      "definition": "CREATE TRIGGER provider_site_followups AFTER INSERT OR UPDATE OF website ON catalogue.providers FOR EACH ROW EXECUTE FUNCTION security.provider_site_followups_tg()",
+      "function_signature": "security.provider_site_followups_tg()",
+      "function_definition": "CREATE OR REPLACE FUNCTION security.provider_site_followups_tg()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nbegin\n  if nullif(btrim(NEW.website), '') is null then\n    if TG_OP = 'INSERT' then\n      insert into pipeline.coverage_provider_discovery(provider_id, status, requested_at, updated_at) values (NEW.id, 'no_website', now(), now())\n      on conflict (provider_id) do nothing;\n    end if;\n  elsif TG_OP = 'INSERT' or nullif(btrim(OLD.website), '') is distinct from nullif(btrim(NEW.website), '') then\n    insert into pipeline.provider_central_search(provider_id, state, requested_at) values (NEW.id, 'queued', now())\n    on conflict (provider_id) do update set state = 'queued', requested_at = now(), leased_until = null, updated_at = now() where pipeline.provider_central_search.state <> 'leased';\n  end if;\n  return null;\nend $function$\n"
+    },
+    {
+      "tgname": "providers_onboarding_new",
+      "relation": "catalogue.providers",
+      "definition": "CREATE TRIGGER providers_onboarding_new AFTER INSERT ON catalogue.providers FOR EACH ROW EXECUTE FUNCTION security.provider_onboarding_new_tg()",
+      "function_signature": "security.provider_onboarding_new_tg()",
+      "function_definition": "CREATE OR REPLACE FUNCTION security.provider_onboarding_new_tg()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nbegin\n  if new.lifecycle_status = 'active' and coalesce((select s.auto_start_new from pipeline.provider_onboarding_settings s where s.id = 1), false) then\n    insert into pipeline.provider_onboarding(provider_id, source, reason, priority) values (new.id, 'new_provider', 'Added to the catalogue', 100)\n    on conflict do nothing;\n  end if;\n  return new;\nend $function$\n"
+    },
+    {
+      "tgname": "layer2_evidence_version_guard",
+      "relation": "pipeline.evidence_artifacts",
+      "definition": "CREATE TRIGGER layer2_evidence_version_guard BEFORE INSERT OR UPDATE OF job_id, source_profile_version_id ON pipeline.evidence_artifacts FOR EACH ROW EXECUTE FUNCTION pipeline.layer2_evidence_version_guard()",
+      "function_signature": "pipeline.layer2_evidence_version_guard()",
+      "function_definition": "CREATE OR REPLACE FUNCTION pipeline.layer2_evidence_version_guard()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'pg_catalog', 'pipeline'\nAS $function$\ndeclare v_job_version uuid;\nbegin\n  if new.job_id is not null then\n    select source_profile_version_id into v_job_version from pipeline.jobs where id=new.job_id;\n    if v_job_version is not null then\n      if new.source_profile_version_id is null then new.source_profile_version_id:=v_job_version;\n      elsif new.source_profile_version_id<>v_job_version then raise exception 'Evidence configuration version does not match Job configuration version' using errcode='23514';\n      end if;\n    end if;\n  end if;\n  return new;\nend\n$function$\n"
+    },
+    {
+      "tgname": "trg_layer2_evidence_lineage_stamp",
+      "relation": "pipeline.evidence_artifacts",
+      "definition": "CREATE TRIGGER trg_layer2_evidence_lineage_stamp BEFORE INSERT ON pipeline.evidence_artifacts FOR EACH ROW EXECUTE FUNCTION security.layer2_evidence_lineage_stamp()",
+      "function_signature": "security.layer2_evidence_lineage_stamp()",
+      "function_definition": "CREATE OR REPLACE FUNCTION security.layer2_evidence_lineage_stamp()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'pipeline', 'security'\nAS $function$\ndeclare v_lineage jsonb;\nbegin\n  if new.job_id is null then return new; end if;\n  v_lineage:=security.layer2_lineage_for_job(new.job_id);\n  if v_lineage is not null then\n    new.metadata:=coalesce(new.metadata,'{}'::jsonb)||jsonb_build_object('layer2_lineage',v_lineage);\n  end if;\n  return new;\nend $function$\n"
+    },
+    {
+      "tgname": "layer4_review_items_course_description",
+      "relation": "pipeline.layer4_review_items",
+      "definition": "CREATE TRIGGER layer4_review_items_course_description AFTER UPDATE OF status ON pipeline.layer4_review_items FOR EACH ROW WHEN (old.status = 'pending'::text AND new.status <> 'pending'::text AND new.field_code = 'course_description_first_read'::text) EXECUTE FUNCTION security.course_description_review_trg_v1()",
+      "function_signature": "security.course_description_review_trg_v1()",
+      "function_definition": "CREATE OR REPLACE FUNCTION security.course_description_review_trg_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare v_item bigint := case when coalesce(new.proposed_value->>'item_id', '') ~ '^\\d+$' then (new.proposed_value->>'item_id')::bigint end; v_pid uuid;\nbegin\n  if v_item is not null then\n    update pipeline.field_enrich_items set state = case when new.status in ('approved', 'edited_approved') then 'filled' else 'skipped' end,\n           reason = case when new.status in ('approved', 'edited_approved') then null else 'not admitted in Layer 4 (' || new.status || ')' end, updated_at = now()\n     where id = v_item and state = 'review';\n  end if;\n  if new.status in ('approved', 'edited_approved') then\n    select c.provider_id into v_pid from catalogue.courses c where c.id = new.entity_id;\n    perform security.course_description_release_held_v1(v_pid);\n    insert into search.refresh_requests(requested_by) select 'AI reader (course description, deadline)'\n     where not exists (select 1 from search.refresh_requests q where q.processed_at is null and q.requested_by = 'AI reader (course description, deadline)');\n  end if;\n  return null;\nend $function$\n"
+    },
+    {
+      "tgname": "layer4_review_items_course_entry",
+      "relation": "pipeline.layer4_review_items",
+      "definition": "CREATE TRIGGER layer4_review_items_course_entry AFTER UPDATE OF status ON pipeline.layer4_review_items FOR EACH ROW WHEN (old.status = 'pending'::text AND new.status <> 'pending'::text AND new.field_code = 'course_entry_first_read'::text) EXECUTE FUNCTION security.course_entry_review_trg_v1()",
+      "function_signature": "security.course_entry_review_trg_v1()",
+      "function_definition": "CREATE OR REPLACE FUNCTION security.course_entry_review_trg_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nbegin\n  if new.status in ('rejected', 'more_evidence', 'returned_layer2', 'returned_layer3', 'superseded') then\n    perform security.course_entry_review_apply_v1(new.id, new.status, null, 'Layer 4 ' || new.status);\n  end if;\n  return new;\nend $function$\n"
+    },
+    {
+      "tgname": "layer4_review_items_entry_matrix",
+      "relation": "pipeline.layer4_review_items",
+      "definition": "CREATE TRIGGER layer4_review_items_entry_matrix AFTER UPDATE OF status ON pipeline.layer4_review_items FOR EACH ROW WHEN (old.status = 'pending'::text AND new.status <> 'pending'::text AND (new.field_code = ANY (ARRAY['entry_matrix_first_run'::text, 'entry_matrix_change'::text]))) EXECUTE FUNCTION security.entry_matrix_review_trg_v1()",
+      "function_signature": "security.entry_matrix_review_trg_v1()",
+      "function_definition": "CREATE OR REPLACE FUNCTION security.entry_matrix_review_trg_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nbegin\n  if new.status in ('rejected', 'more_evidence', 'returned_layer2', 'returned_layer3', 'superseded') then\n    perform security.entry_matrix_review_apply_v1(new.id, new.status, null, 'Layer 4 ' || new.status);\n  end if;\n  return new;\nend $function$\n"
+    },
+    {
+      "tgname": "layer4_review_items_no_page",
+      "relation": "pipeline.layer4_review_items",
+      "definition": "CREATE TRIGGER layer4_review_items_no_page AFTER UPDATE OF status ON pipeline.layer4_review_items FOR EACH ROW WHEN (old.status = 'pending'::text AND new.status <> 'pending'::text AND (new.field_code = ANY (ARRAY['no_page_first_run'::text, 'conjoint_rule_first_run'::text]))) EXECUTE FUNCTION security.no_page_review_trg_v1()",
+      "function_signature": "security.no_page_review_trg_v1()",
+      "function_definition": "CREATE OR REPLACE FUNCTION security.no_page_review_trg_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nbegin\n  if new.status in ('rejected', 'more_evidence', 'returned_layer2', 'returned_layer3', 'superseded') then\n    perform security.no_page_review_apply_v1(new.id, new.status, null, 'Layer 4 ' || new.status);\n  end if;\n  return new;\nend $function$\n"
+    },
+    {
+      "tgname": "layer4_review_items_provider_description",
+      "relation": "pipeline.layer4_review_items",
+      "definition": "CREATE TRIGGER layer4_review_items_provider_description AFTER UPDATE OF status ON pipeline.layer4_review_items FOR EACH ROW WHEN (old.status = 'pending'::text AND new.status <> 'pending'::text AND new.field_code = 'provider_description'::text) EXECUTE FUNCTION security.provider_description_review_trg_v1()",
+      "function_signature": "security.provider_description_review_trg_v1()",
+      "function_definition": "CREATE OR REPLACE FUNCTION security.provider_description_review_trg_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nbegin\n  update pipeline.provider_description_reads set\n         state = case when new.status = 'rejected' then 'rejected' when new.status in ('more_evidence', 'returned_layer2', 'returned_layer3') then 'held' when new.status = 'superseded' then 'superseded' else state end,\n         rule = case when new.status in ('approved', 'edited_approved') then rule else 'layer4_' || new.status end,\n         updated_at = now()\n   where review_item_id = new.id and state = 'proposed' and new.status not in ('approved', 'edited_approved');\n  return new;\nend $function$\n"
+    },
+    {
+      "tgname": "layer4_review_items_reroute",
+      "relation": "pipeline.layer4_review_items",
+      "definition": "CREATE TRIGGER layer4_review_items_reroute BEFORE INSERT ON pipeline.layer4_review_items FOR EACH ROW EXECUTE FUNCTION security.layer4_reroute_trg_v1()",
+      "function_signature": "security.layer4_reroute_trg_v1()",
+      "function_definition": "CREATE OR REPLACE FUNCTION security.layer4_reroute_trg_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nbegin\n  if new.entity_type = 'course' and new.status = 'pending' and security.layer4_reroute_course_v1(new.entity_id, new.field_code, true) then\n    new.status := 'superseded'; new.decided_at := now();\n    new.change_control_ref := coalesce(new.change_control_ref || '; ', '') || 'CF-247 v2.15.250: rerouted to the university adapter';\n    insert into pipeline.layer4_reroutes(item_id, entity_type, entity_id, field_code, route, note) values (new.id, 'course', new.entity_id, new.field_code, 'adapter', 'on arrival');\n  end if;\n  return new;\nend $function$\n"
+    },
+    {
+      "tgname": "layer4_review_items_zz_arrival",
+      "relation": "pipeline.layer4_review_items",
+      "definition": "CREATE TRIGGER layer4_review_items_zz_arrival BEFORE INSERT ON pipeline.layer4_review_items FOR EACH ROW EXECUTE FUNCTION security.layer4_arrival_guard_trg_v1()",
+      "function_signature": "security.layer4_arrival_guard_trg_v1()",
+      "function_definition": "CREATE OR REPLACE FUNCTION security.layer4_arrival_guard_trg_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n-- Trigger layer4_review_items_zz_arrival (BEFORE INSERT; after layer4_review_items_reroute, before ops_guard_layer4). While layer4.arrival_guard_on\n-- is 1, a new waiting item of a kind in layer4.platform_kinds that the platform can settle (security.layer4_resolution_for_v1) arrives superseded,\n-- with the reason recorded in pipeline.layer4_supersessions. It never approves, rejects or changes any other row. Every generator passes here.\ndeclare v_res jsonb;\nbegin\n  if new.status is distinct from 'pending' or security.pipeline_num_v1('layer4.arrival_guard_on', 0) < 1\n     or not (new.field_code = any (security.pipeline_list_v1('layer4.platform_kinds', '[]'::jsonb))) then\n    return new;\n  end if;\n  new.id := coalesce(new.id, gen_random_uuid());\n  v_res := security.layer4_resolution_for_v1(new.id, new.entity_type, new.entity_id, new.field_code, new.proposed_value, new.layer2_state, new.evidence_id, coalesce(new.created_at, now()));\n  if v_res is null then return new; end if;\n  new.status := 'superseded';\n  new.decided_at := now();\n  new.change_control_ref := coalesce(new.change_control_ref || '; ', '') || 'CF-247 L4 readiness: settled on arrival (' || (v_res->>'reason') || ')';\n  insert into pipeline.layer4_supersessions(item_id, field_code, entity_type, entity_id, reason, covered_by_item, evidence, mode)\n  values (new.id, new.field_code, new.entity_type, new.entity_id, v_res->>'reason', nullif(v_res->>'covered_by_item', '')::uuid, coalesce(v_res->'evidence', '{}'::jsonb), 'arrival');\n  return new;\nend $function$\n"
+    },
+    {
+      "tgname": "layer4_review_items_zz_evidence",
+      "relation": "pipeline.layer4_review_items",
+      "definition": "CREATE TRIGGER layer4_review_items_zz_evidence BEFORE INSERT ON pipeline.layer4_review_items FOR EACH ROW EXECUTE FUNCTION security.layer4_evidence_link_trg_v1()",
+      "function_signature": "security.layer4_evidence_link_trg_v1()",
+      "function_definition": "CREATE OR REPLACE FUNCTION security.layer4_evidence_link_trg_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n-- Trigger layer4_review_items_zz_evidence (BEFORE INSERT): a new waiting item of a kind in layer4.evidence_link_kinds that arrives without a\n-- stored copy gets the newest stored copy of its page. No read is made; nothing else changes.\nbegin\n  if new.evidence_id is null and new.status = 'pending' and security.pipeline_num_v1('layer4.evidence_link_on', 1) >= 1\n     and new.field_code = any (security.pipeline_list_v1('layer4.evidence_link_kinds', '[]'::jsonb)) then\n    new.evidence_id := security.layer4_stored_copy_v1(security.layer4_item_page_v1(new.field_code, new.proposed_value, new.layer2_state));\n  end if;\n  return new;\nend $function$\n"
+    },
+    {
+      "tgname": "ops_guard_layer4",
+      "relation": "pipeline.layer4_review_items",
+      "definition": "CREATE TRIGGER ops_guard_layer4 BEFORE INSERT OR DELETE OR UPDATE ON pipeline.layer4_review_items FOR EACH ROW WHEN (security.ops_remedy_guard_active_v1()) EXECUTE FUNCTION security.ops_guard_layer4_v1()",
+      "function_signature": "security.ops_guard_layer4_v1()",
+      "function_definition": "CREATE OR REPLACE FUNCTION security.ops_guard_layer4_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\n-- While a remedy runs a Layer 4 item may only stay pending or be superseded (duplicate reconciliation); approving, rejecting, returning or\n-- deleting is a decision (mandate §10: technical repair authority is not admission authority).\nbegin\n  if TG_OP = 'DELETE' or new.status not in ('pending', 'superseded') or (TG_OP = 'UPDATE' and old.status <> 'pending' and new.status is distinct from old.status) then\n    raise exception 'ops guard: a remedy cannot decide or admit a Layer 4 item' using errcode = '42501';\n  end if;\n  return new;\nend $function$\n"
+    },
+    {
+      "tgname": "layer4_return_layer3_requeue",
+      "relation": "pipeline.layer4_decisions",
+      "definition": "CREATE TRIGGER layer4_return_layer3_requeue AFTER INSERT ON pipeline.layer4_decisions FOR EACH ROW EXECUTE FUNCTION security.layer4_return_layer3_requeue_trg()",
+      "function_signature": "security.layer4_return_layer3_requeue_trg()",
+      "function_definition": "CREATE OR REPLACE FUNCTION security.layer4_return_layer3_requeue_trg()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'security', 'pipeline'\nAS $function$\ndeclare v_item pipeline.layer4_review_items%rowtype;\nbegin\n  if new.action<>'return_layer3' then return new; end if;\n  select * into v_item from pipeline.layer4_review_items where id=new.review_item_id;\n  if v_item.field_code<>'provider_current_tuition_validation' or v_item.layer3_interpretation_id is null then return new; end if;\n  update pipeline.layer3_work_items w\n  set status='pending', available_at=now(), completed_at=null, reserved_at=null, reserved_by=null,\n      last_error='Returned by a Layer 4 reviewer for another AI check',\n      corrective_retry_reason=left('Layer 4 send-back: '||coalesce(new.reason,''),2000),\n      corrective_retry_count=w.corrective_retry_count + case when w.attempt_count>=5 then 1 else 0 end,\n      corrective_retry_authorized_at=case when w.attempt_count>=5 then now() else w.corrective_retry_authorized_at end,\n      updated_at=now()\n  where w.interpretation_id=v_item.layer3_interpretation_id and w.status in ('layer4_required','parked','no_candidate','rejected');\n  return new;\nend $function$\n"
+    },
+    {
+      "tgname": "ops_guard_layer4",
+      "relation": "pipeline.layer4_decisions",
+      "definition": "CREATE TRIGGER ops_guard_layer4 BEFORE INSERT OR DELETE OR UPDATE ON pipeline.layer4_decisions FOR EACH ROW WHEN (security.ops_remedy_guard_active_v1()) EXECUTE FUNCTION security.ops_guard_refuse_v1('Layer 4 decisions')",
+      "function_signature": "security.ops_guard_refuse_v1()",
+      "function_definition": "CREATE OR REPLACE FUNCTION security.ops_guard_refuse_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\n-- Fires only while a remedy or verification runs (trigger WHEN security.ops_remedy_guard_active_v1()). TG_ARGV[0] names what is protected.\nbegin\n  raise exception 'ops guard: a remedy cannot change % (%.%; that is a release or a Platform Admin decision)', TG_ARGV[0], TG_TABLE_SCHEMA, TG_TABLE_NAME using errcode = '42501';\nend $function$\n"
+    },
+    {
+      "tgname": "ai_spend_capture",
+      "relation": "pipeline.provider_description_reads",
+      "definition": "CREATE TRIGGER ai_spend_capture AFTER INSERT OR UPDATE OF cost_usd ON pipeline.provider_description_reads FOR EACH ROW EXECUTE FUNCTION security.ai_spend_capture_v1('provider_description', 'delta', '{cost_usd}')",
+      "function_signature": "security.ai_spend_capture_v1()",
+      "function_definition": "CREATE OR REPLACE FUNCTION security.ai_spend_capture_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n-- Decision 5 E-7 (2 Nov 2026): records the AI cost a row gains. tg_argv: lane, how ('delta' = the increase of an accumulated cost;\n-- 'decision' = the cost of each decision of a leased item, as svc_coverage_ai_match_record overwrites it), the path of the cost in the row.\ndeclare v_new jsonb := to_jsonb(new); v_old jsonb := case when tg_op = 'UPDATE' then to_jsonb(old) end; v_path text[] := tg_argv[2]::text[];\n        v_add numeric;\nbegin\n  if tg_argv[1] = 'decision' then\n    if tg_op = 'UPDATE' and not (v_old->>'state' = 'leased' and v_new->>'state' <> 'leased'\n                                 and (v_new->>'decided_at') is distinct from (v_old->>'decided_at')) then return null; end if;\n    v_add := coalesce((v_new #>> v_path)::numeric, 0);\n  else\n    v_add := coalesce((v_new #>> v_path)::numeric, 0) - coalesce((v_old #>> v_path)::numeric, 0);\n  end if;\n  if v_add > 0 then\n    insert into pipeline.ai_spend_ledger(lane, source, source_id, cost_usd) values (tg_argv[0], tg_table_name, v_new->>'id', v_add);\n  end if;\n  return null;\nend $function$\n"
+    }
+  ],
+  "constraints": [
+    {
+      "conname": "providers_country_id_fkey",
+      "contype": "f",
+      "relation": "catalogue.providers",
+      "definition": "FOREIGN KEY (country_id) REFERENCES ref.countries(id)"
+    },
+    {
+      "conname": "providers_id_fkey",
+      "contype": "f",
+      "relation": "catalogue.providers",
+      "definition": "FOREIGN KEY (id) REFERENCES pim.entity_registry(id) ON DELETE CASCADE"
+    },
+    {
+      "conname": "providers_pkey",
+      "contype": "p",
+      "relation": "catalogue.providers",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "conname": "providers_provider_type_id_fkey",
+      "contype": "f",
+      "relation": "catalogue.providers",
+      "definition": "FOREIGN KEY (provider_type_id) REFERENCES ref.provider_types(id)"
+    },
+    {
+      "conname": "providers_stable_key_key",
+      "contype": "u",
+      "relation": "catalogue.providers",
+      "definition": "UNIQUE (stable_key)"
+    },
+    {
+      "conname": "providers_subdivision_id_fkey",
+      "contype": "f",
+      "relation": "catalogue.providers",
+      "definition": "FOREIGN KEY (subdivision_id) REFERENCES ref.subdivisions(id)"
+    },
+    {
+      "conname": "admin_jobs_kind_fk",
+      "contype": "f",
+      "relation": "pipeline.admin_jobs",
+      "definition": "FOREIGN KEY (kind) REFERENCES pipeline.admin_job_kinds(kind)"
+    },
+    {
+      "conname": "admin_jobs_outcome_fkey",
+      "contype": "f",
+      "relation": "pipeline.admin_jobs",
+      "definition": "FOREIGN KEY (outcome) REFERENCES pipeline.ops_outcome_codes(code)"
+    },
+    {
+      "conname": "admin_jobs_pkey",
+      "contype": "p",
+      "relation": "pipeline.admin_jobs",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "conname": "admin_jobs_state_check",
+      "contype": "c",
+      "relation": "pipeline.admin_jobs",
+      "definition": "CHECK (state = ANY (ARRAY['queued'::text, 'running'::text, 'paused'::text, 'done'::text, 'failed'::text, 'cancelled'::text]))"
+    },
+    {
+      "conname": "ai_spend_ledger_cost_usd_check",
+      "contype": "c",
+      "relation": "pipeline.ai_spend_ledger",
+      "definition": "CHECK (cost_usd > 0::numeric)"
+    },
+    {
+      "conname": "ai_spend_ledger_pkey",
+      "contype": "p",
+      "relation": "pipeline.ai_spend_ledger",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "conname": "evidence_artifacts_entity_id_fkey",
+      "contype": "f",
+      "relation": "pipeline.evidence_artifacts",
+      "definition": "FOREIGN KEY (entity_id) REFERENCES pim.entity_registry(id)"
+    },
+    {
+      "conname": "evidence_artifacts_job_id_fkey",
+      "contype": "f",
+      "relation": "pipeline.evidence_artifacts",
+      "definition": "FOREIGN KEY (job_id) REFERENCES pipeline.jobs(id)"
+    },
+    {
+      "conname": "evidence_artifacts_pkey",
+      "contype": "p",
+      "relation": "pipeline.evidence_artifacts",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "conname": "evidence_artifacts_source_id_fkey",
+      "contype": "f",
+      "relation": "pipeline.evidence_artifacts",
+      "definition": "FOREIGN KEY (source_id) REFERENCES pipeline.sources(id)"
+    },
+    {
+      "conname": "evidence_artifacts_source_profile_version_id_fkey",
+      "contype": "f",
+      "relation": "pipeline.evidence_artifacts",
+      "definition": "FOREIGN KEY (source_profile_version_id) REFERENCES pipeline.layer2_source_profile_versions(id) ON DELETE RESTRICT"
+    },
+    {
+      "conname": "evidence_artifacts_supersedes_evidence_id_fkey",
+      "contype": "f",
+      "relation": "pipeline.evidence_artifacts",
+      "definition": "FOREIGN KEY (supersedes_evidence_id) REFERENCES pipeline.evidence_artifacts(id)"
+    },
+    {
+      "conname": "layer4_decisions_action_check",
+      "contype": "c",
+      "relation": "pipeline.layer4_decisions",
+      "definition": "CHECK (action = ANY (ARRAY['approve'::text, 'edit_and_approve'::text, 'reject'::text, 'request_more_evidence'::text, 'return_layer2'::text, 'return_layer3'::text, 'merge_existing'::text, 'accept_incoming'::text, 'keep_existing'::text, 'keep_separate'::text, 'map_provider_apply'::text, 'reject_import'::text]))"
+    },
+    {
+      "conname": "layer4_decisions_evidence_id_fkey",
+      "contype": "f",
+      "relation": "pipeline.layer4_decisions",
+      "definition": "FOREIGN KEY (evidence_id) REFERENCES pipeline.evidence_artifacts(id)"
+    },
+    {
+      "conname": "layer4_decisions_pkey",
+      "contype": "p",
+      "relation": "pipeline.layer4_decisions",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "conname": "layer4_decisions_review_item_id_fkey",
+      "contype": "f",
+      "relation": "pipeline.layer4_decisions",
+      "definition": "FOREIGN KEY (review_item_id) REFERENCES pipeline.layer4_review_items(id)"
+    },
+    {
+      "conname": "layer4_decisions_scalar_resolution_id_fkey",
+      "contype": "f",
+      "relation": "pipeline.layer4_decisions",
+      "definition": "FOREIGN KEY (scalar_resolution_id) REFERENCES pipeline.layer4_course_field_resolutions(id)"
+    },
+    {
+      "conname": "layer4_review_items_evidence_id_fkey",
+      "contype": "f",
+      "relation": "pipeline.layer4_review_items",
+      "definition": "FOREIGN KEY (evidence_id) REFERENCES pipeline.evidence_artifacts(id)"
+    },
+    {
+      "conname": "layer4_review_items_layer3_interpretation_id_fkey",
+      "contype": "f",
+      "relation": "pipeline.layer4_review_items",
+      "definition": "FOREIGN KEY (layer3_interpretation_id) REFERENCES pipeline.layer3_interpretations(id)"
+    },
+    {
+      "conname": "layer4_review_items_pkey",
+      "contype": "p",
+      "relation": "pipeline.layer4_review_items",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "conname": "layer4_review_items_status_check",
+      "contype": "c",
+      "relation": "pipeline.layer4_review_items",
+      "definition": "CHECK (status = ANY (ARRAY['pending'::text, 'approved'::text, 'edited_approved'::text, 'rejected'::text, 'more_evidence'::text, 'returned_layer2'::text, 'returned_layer3'::text, 'superseded'::text]))"
+    },
+    {
+      "conname": "provider_description_reads_evidence_id_fkey",
+      "contype": "f",
+      "relation": "pipeline.provider_description_reads",
+      "definition": "FOREIGN KEY (evidence_id) REFERENCES pipeline.evidence_artifacts(id)"
+    },
+    {
+      "conname": "provider_description_reads_pkey",
+      "contype": "p",
+      "relation": "pipeline.provider_description_reads",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "conname": "provider_description_reads_provider_id_fkey",
+      "contype": "f",
+      "relation": "pipeline.provider_description_reads",
+      "definition": "FOREIGN KEY (provider_id) REFERENCES catalogue.providers(id)"
+    },
+    {
+      "conname": "provider_description_reads_read_via_check",
+      "contype": "c",
+      "relation": "pipeline.provider_description_reads",
+      "definition": "CHECK (read_via = ANY (ARRAY['stored'::text, 'direct'::text, 'firecrawl'::text]))"
+    },
+    {
+      "conname": "provider_description_reads_review_item_id_fkey",
+      "contype": "f",
+      "relation": "pipeline.provider_description_reads",
+      "definition": "FOREIGN KEY (review_item_id) REFERENCES pipeline.layer4_review_items(id)"
+    },
+    {
+      "conname": "provider_description_reads_state_check",
+      "contype": "c",
+      "relation": "pipeline.provider_description_reads",
+      "definition": "CHECK (state = ANY (ARRAY['queued'::text, 'reading'::text, 'proposed'::text, 'held'::text, 'dead_letter'::text, 'admitted'::text, 'rejected'::text, 'verified'::text, 'superseded'::text]))"
+    },
+    {
+      "conname": "sources_country_id_fkey",
+      "contype": "f",
+      "relation": "pipeline.sources",
+      "definition": "FOREIGN KEY (country_id) REFERENCES ref.countries(id)"
+    },
+    {
+      "conname": "sources_pkey",
+      "contype": "p",
+      "relation": "pipeline.sources",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "conname": "sources_provider_id_fkey",
+      "contype": "f",
+      "relation": "pipeline.sources",
+      "definition": "FOREIGN KEY (provider_id) REFERENCES catalogue.providers(id)"
+    },
+    {
+      "conname": "sources_system_id_fkey",
+      "contype": "f",
+      "relation": "pipeline.sources",
+      "definition": "FOREIGN KEY (system_id) REFERENCES integration.systems(id)"
+    }
+  ]
+}

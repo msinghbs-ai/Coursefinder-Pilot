@@ -1,0 +1,83 @@
+{
+  "captured_at": "2026-11-05T21:31+11:00",
+  "source": "fxcwkweaxjtknorudmwp read-only",
+  "purpose": "Integration Controller decision 5 Nov 2026: the existing website-sync-check scan is the only writer of pipeline.website_sync_items; the fixture runs the live scan",
+  "functions": [
+    {
+      "signature": "security.website_sync_check_v1(integer)",
+      "md5": "f8095625ca8c09526900c78c73a21a91"
+    },
+    {
+      "signature": "security.website_sync_candidates_v1(text)",
+      "md5": "7ec06b8f3d039acc243a23c1db755864"
+    }
+  ],
+  "table": {
+    "name": "pipeline.website_sync_scan",
+    "columns": [
+      [
+        "entity",
+        "text",
+        "NO",
+        null
+      ],
+      [
+        "after_key",
+        "text",
+        "YES",
+        null
+      ],
+      [
+        "done",
+        "boolean",
+        "NO",
+        "false"
+      ],
+      [
+        "cycles",
+        "integer",
+        "NO",
+        "0"
+      ],
+      [
+        "last_cycle_at",
+        "timestamp with time zone",
+        "YES",
+        null
+      ],
+      [
+        "last_run_at",
+        "timestamp with time zone",
+        "YES",
+        null
+      ],
+      [
+        "last_result",
+        "jsonb",
+        "YES",
+        null
+      ]
+    ],
+    "constraints": [
+      "PRIMARY KEY (entity) website_sync_scan_pkey"
+    ],
+    "rows": [
+      "course",
+      "logo",
+      "provider",
+      "rankings",
+      "reference",
+      "scholarship"
+    ]
+  },
+  "job": {
+    "jobname": "website-sync-check",
+    "schedule": "* * * * *",
+    "command": "select security.website_sync_check_v1(security.pipeline_num_v1('batch.website_sync_check', 600)::int)"
+  },
+  "settings": {
+    "batch.website_sync_check": 600,
+    "website.logo_link_days": 365,
+    "website.logo_renew_before_days": 30
+  }
+}

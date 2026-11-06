@@ -1,0 +1,106 @@
+{
+  "captured_at": "2026-11-04T13:55:33.013587+00:00",
+  "branch": "codex/provider-description-autonomy",
+  "development_base": "9d907cff3097bb4b5c7cbdbec9612886a8ead627",
+  "code_commit": "df198d61e69b9d1900307830b0303d31d8c4c239",
+  "production_schema_captured_read_only": "2026-11-04",
+  "postgres": "17.6",
+  "current_main_outcome_fix": {
+    "migration": "20261104640000_cf247_run_now_outcome_code.sql",
+    "actual_function_md5": "2640319be221ab00f39e6e767b78a7b3"
+  },
+  "feature_migration": {
+    "path": "supabase/migrations/20261106200000_cf247_provider_description_autonomy.sql",
+    "sha256": "28549291a38098658dec106bededb69320cc4f5c2071554b2406a14b75e598e3",
+    "strict_function_contract": "tests/fixtures/provider-description-autonomy/migration-function-contract.json",
+    "reconciled": {
+      "at": "2026-11-05",
+      "by": "Claude agent B (Platform Admin decision 19:14)",
+      "previous_path": "supabase/migrations/20261105010000_provider_description_autonomy.sql",
+      "previous_sha256": "b719c6023ff0e5c19ba18aa2fd6b587aabc0d84d6ebb786b0f9b0a37b4d6748f",
+      "change": "renumbered into the reserved range; Run Now allowlist update removed (stays off until the Platform Admin switches it on); component_register introduced_in follows the new version; guarded function bodies unchanged",
+      "note": "isolated_workflow figures below are the 4 Nov run; PR CI re-runs the isolated PostgreSQL acceptance on every push"
+    }
+  },
+  "isolated_workflow": {
+    "assertions_passed": 32,
+    "negative_assertions_passed": 29,
+    "providers_selected": 10,
+    "evidence_backed_proposals": 10,
+    "admitted_before_review": 0,
+    "test_authorised_individual_admissions": 10,
+    "website_exact_matches": 10,
+    "zoho_exact_matches": 10,
+    "simulated_model_cost_usd": 0.001,
+    "actual_vendor_calls": 0
+  },
+  "supplemental_proofs": [
+    "migration replay and partial/retained-marker drift refusal",
+    "actual foreign keys reject invalid Run Now outcomes",
+    "authorised Operations diagnosis request bound to exact existing issue/evidence",
+    "claim words preserve custom policy values on replay",
+    "dispatch failure saves one failed_retryable task and scheduler continuation",
+    "cap lowered after prepare refuses before any queued writes",
+    "actual Layer 4 cursor reaches row 601 with same timestamps",
+    "saved cohort recovery after committed response lost"
+  ],
+  "benchmark": {
+    "providers": 2825,
+    "countries": [
+      "AU",
+      "NZ",
+      "CA"
+    ],
+    "source_noise_copies": 9256,
+    "statement_timeout_ms": 8000,
+    "captured_lock_timeout_ms": 0,
+    "stages": [
+      {
+        "name": "Authenticated AU provider preview",
+        "median_ms": 1118.756,
+        "max_ms": 4085.112
+      },
+      {
+        "name": "Authenticated NZ provider preview",
+        "median_ms": 271.457,
+        "max_ms": 348.281
+      },
+      {
+        "name": "Authenticated CA provider preview",
+        "median_ms": 30.948,
+        "max_ms": 122.222
+      },
+      {
+        "name": "Stored official source lookup, institution 1",
+        "median_ms": 26.452,
+        "max_ms": 29.031
+      },
+      {
+        "name": "Stored official source lookup, institution 2",
+        "median_ms": 12.027,
+        "max_ms": 19.164
+      },
+      {
+        "name": "Stored official source lookup, institution 10",
+        "median_ms": 14.456,
+        "max_ms": 23.969
+      }
+    ]
+  },
+  "build": {
+    "ui": "PASS",
+    "ui_tokens": "PASS",
+    "edge_bundle_syntax": "PASS",
+    "release_contract": "PASS: inherited upstream v2.15.478; no release assigned"
+  },
+  "boundaries": {
+    "model_transport": "controlled external boundary; actual worker parsing/pricing/reservation/validation and database admission execute",
+    "auth": "test-authorised fixture identities only",
+    "production_user_or_source_content_in_fixture": false,
+    "production_writes": 0,
+    "merge": false,
+    "deployment": false,
+    "release_assignment": false,
+    "production_acceptance_owner": "Claude after Platform Admin release authorisation"
+  }
+}

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Button, Loading, Metric, SectionTitle, StatusChip, fmtDateTime, fmtMoney, fmtNumber } from './ui-kit'
 import { processResultsApi } from './process-results-api'
+import AutomationProgress from './AutomationProgress'
 import './intake-run-validate.css'
 
 // CF-247 process accountability (Platform Admin decision 5 Nov 2026 §6, §8, §10): Layer 2/3 Operations › Process results. Shows the saved
@@ -144,6 +145,8 @@ export default function ProcessResults({ rank = 0, client = processResultsApi })
       {rank >= 4 && <Button compact disabled={!!busy} onClick={() => execute('Measuring now', async () => { await client.read('measure'); setLatest(await client.read('latest', { process: 'intake-dates' })) })}>Measure now</Button>}
       <Button compact disabled={!!busy} onClick={() => execute('Loading earlier measurements', async () => setHistory(await client.read('history', { process: 'intake-dates' })))}>Earlier measurements</Button>
     </div>
+    {/* CF-247 decision 5 Nov 2026 16:36 §3: the persistent Automation progress section (renders only with the progress bridge) */}
+    <AutomationProgress rank={rank} client={client}/>
     {!busy && !latest && !error && <p role="status">No measurement saved yet. The process-results job records one every hour.</p>}
     {recovery && <Recovery r={recovery}/>}
     {s && <>

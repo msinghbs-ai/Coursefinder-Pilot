@@ -1,0 +1,32 @@
+[
+  {
+    "toolset_key": "openrouter",
+    "key": "credit_floor_usd",
+    "kind": "number",
+    "value": 5
+  },
+  {
+    "toolset_key": "pipeline",
+    "key": "budgets.ai_daily_ceiling_usd",
+    "kind": "number",
+    "value": 14
+  },
+  {
+    "toolset_key": "pipeline",
+    "key": "batch.provider_description",
+    "kind": "number",
+    "value": 3
+  },
+  {
+    "toolset_key": "pipeline",
+    "key": "reading.answer_tokens.provider_description",
+    "kind": "number",
+    "value": 1500
+  },
+  {
+    "toolset_key": "openrouter",
+    "key": "guard_provider_description",
+    "kind": "number",
+    "value": 1
+  }
+]

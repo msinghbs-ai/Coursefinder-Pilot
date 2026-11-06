@@ -1,0 +1,11 @@
+{
+  "state": "prepared",
+  "new_reads": 0,
+  "new_tasks": 0,
+  "current_cap": 1,
+  "reason_code": "current_cap_changed",
+  "fixed_members": 2,
+  "refused_sqlstate": "22023",
+  "membership_unchanged": true,
+  "all_fault_rows_rolled_back": true
+}
