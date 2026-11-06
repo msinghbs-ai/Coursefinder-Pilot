@@ -96,3 +96,18 @@ test('operator visibility: the English policies screen shows group binding, grou
   for (const stage of ['approved', 'group_proposed', 'rule_proposed', 'rejected', 'page_read_no_rule', 'page_not_stored', 'weak_candidates_only', 'mapped_no_page', 'not_mapped'])
     expect(MIG, stage).toContain(`'${stage}'`)
 })
+
+// The layout of UNSW's page as the platform stored it (inspected 6 Nov 2026): one bullet per test ("- IELTS (...) - Academic version"), then a four-column table whose cells carry
+// "<br>Exceptions:<br> - Course: score" lines. Invented rows in that layout; the verbatim page is in the verbatim-pages spec.
+test('UNSW layout: the test is named by the bullet above the table, the research column is ignored, and a course a cell lists as an exception never takes the faculty score', async () => {
+  const { englishPolicy } = await loadParser()
+  const md = `###### List of test we accept:\n\n  - IELTS (International English Language Testing System) – Academic version only\n\n    Note: When applying for a cross-faculty double degree, the higher English requirements apply.\n\n    | Faculty | Undergraduate | Postgraduate coursework | Postgraduate research |\n    | --- | --- | --- | --- |\n    | Arts and Design | 6.5 overall (min. 6.0 in each subtest)<br>Exceptions:<br>    - Bachelor of Education (Secondary) (Honours): 7.5 overall (min 7.0 in writing & reading, 8.0 in speaking & listening) | 6.5 overall (min 6.0 in each subtest)<br>Exceptions:<br>    - Master of Teaching (Primary & Secondary): 7.5 overall (min 7.0 in writing & reading) | 7.0 overall (min 6.0 in each subtest) |\n    | Business | 7.0 overall (min 6.0 in each subtest) | 7.0 overall (min 6.0 in each subtest) | 7.0 overall (min 7.0 in writing, 6.5 in other subtests) |\n    | Medicine | 6.5 overall (min. 6.0 in each subtest)<br>The following programs require 7.0 overall (min 6.0 in each subtest)<br>    - Bachelor of Pharmaceutical Medicine/Master of Pharmacy | 6.5 overall (min. 6.0 in each subtest) | 6.5 overall (min 6.0 in each subtest) |\n`
+  const r = englishPolicy(md)
+  expect(r.style).toBe('course_groups')
+  expect(r.defaults).toEqual({})
+  expect(r.groups.map((g) => `${g.group_name}|${g.level}|${g.reqs[0].test_code}${g.reqs[0].overall_score}`).sort()).toEqual([
+    'Arts and Design|postgraduate|IELTS6.5', 'Arts and Design|undergraduate|IELTS6.5', 'Business|postgraduate|IELTS7', 'Business|undergraduate|IELTS7',
+    'Medicine|postgraduate|IELTS6.5', 'Medicine|undergraduate|IELTS6.5'])  // no group for the research column
+  expect(r.exceptions.map((e) => `${e.name}|${e.level}|${e.reqs[0].overall_score}`).sort()).toEqual([
+    'Bachelor of Education (Secondary) (Honours)|undergraduate|7.5', 'Bachelor of Pharmaceutical Medicine/Master of Pharmacy|undergraduate|7', 'Master of Teaching (Primary & Secondary)|postgraduate|7.5'])
+})
