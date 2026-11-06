@@ -68,3 +68,10 @@ Parity is the outcome of the isolated-PostgreSQL workflows (every workflow with 
 - The bundle proves development and release readiness only. Live version, guarded function hashes, Worker and UI behaviour, admission and publication results are recorded after deployment against the same evidence reference (mandate section 7).
 - The existing integration workflows do not upload their JSON reports, so the register's integration appendices still come from the committed appendix scripts; the evidence carries their run outcome instead.
 - `README.md` and any other file a spec names are inputs, by design.
+
+
+## Execution recovery, 6 November 2026
+
+The existing s288 phone repair from #894 was reconciled into this PR before a justified new run. Run [42208692348](https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/42208692348), exact head `d4c3e37568960b6214b4db65cdc10e5ee39b8c43`, executed the full governed suite once: **1,950 passed, 0 failed, 0 skipped, 0 flaky** (6.0 minutes). Build, release contract and readiness passed; applicable skipped/neutral required checks now fail closed. Artifact `13498452408` was downloaded, ZIP SHA-256 verified and every bundle file digest validated; the bundle reports `complete=true`, `result=pass`, `READY`. The existing test register is regenerated from that retained run, not a second suite execution.
+
+This PR's database parity outcome is `not-applicable`: its changed files do not trigger an isolated PostgreSQL track. It does not claim SQL acceptance for #893/#894. Their repaired fixtures must execute and pass at their own exact heads. No production release or admission is inferred; controller ownership remains unresolved under Admin #382.
