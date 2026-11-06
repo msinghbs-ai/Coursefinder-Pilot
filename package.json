@@ -1,14 +1,15 @@
 {
   "name": "coursefinder-pilot",
   "private": true,
-  "version": "0.1.412",
+  "version": "0.1.415",
   "type": "module",
   "scripts": {
     "release:verify": "node scripts/verify-release-contract.mjs",
     "ui:tokens": "node scripts/verify-ui-tokens.mjs",
+    "ui:classes": "node scripts/verify-css-class-collisions.mjs",
     "predev": "npm run release:verify",
     "dev": "vite",
-    "prebuild": "npm run release:verify && node scripts/build-release-history.mjs",
+    "prebuild": "npm run release:verify && node scripts/verify-css-class-collisions.mjs && node scripts/build-release-history.mjs",
     "build": "vite build",
     "preview": "vite preview",
     "worker:dev": "wrangler dev",

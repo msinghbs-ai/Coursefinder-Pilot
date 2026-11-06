@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.415 — 6 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.488** (Platform Admin conditional authorisation 6 Nov 2026 09:44 section 1; PR #889, agent D; independent validation agent E: ready). Intake Automation Progress in Process results, reusing the generic progress observer (job `first-run-verify`, `progress_read_v1`, `progress_measure_v1`, `progress_zero_reason_v1`; three `intake_*` transitions). Repeat failures are raised only when evidence, reader and settings are unchanged; where history cannot be established the row is `unverified_repeat` (22:46 correction, regression test for the 167 UNSW rechecks). Migration `20261106400000` is md5-guarded on `progress_measure_v1` (40c0c972) and `progress_read_v1` (f11ed22d). Also scopes `playwright.intake.config.mjs` to its own spec. Consumer API unchanged.
+
+## 0.1.414 — 6 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.487** (Platform Admin authorisation 6 Nov 2026 07:00; PR #891, agent C; independent validation agent E: ready). Fix for the v2.15.486 production acceptance failure: the Columns panel's classes `cc-bar`, `cc-panel` and `cc-count` collided with `src/data-quality.css` (and `.cc-bar` with `admin-pages.css`); all Columns classes now use the `ccol-` prefix. New `scripts/verify-css-class-collisions.mjs` runs in prebuild and fails the build on any repeat. Browser tests now load every stylesheet and hit-test all 40 checkboxes on desktop and phone. No migration, no database change, consumer API unchanged.
+
+## 0.1.413 — 5 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.486** (Platform Admin 5 Nov 2026 17:31 mandate; release authorised 22:52 at reviewed commit e07a4122; PR #887, agent C; independent validation agent E: ready). Migration `20261106300000_cf247_course_catalogue_columns`: per-user layout table with RLS and an owner-only RPC `admin_table_layout`, a 40-column registry, settings `catalogue_layout.*` (incl. recovery switches `server_layouts_on`, `new_sorts_on`), md5-guarded edits of `security.admin_course_page_fast` (2dc6ee8b) and `admin_course_page_fast_base` (afbef161) adding adapter, campus city, intake, last-admitted and last-published fields and the `admitted` and `adapter` sorts; four ledger indexes; `lock_timeout` 5 s. Consumer API unchanged.
+
 ## 0.1.412 — 5 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.485** (Platform Admin 5 Nov 2026 18:00: reconcile the enrichment focus list with the approved top-10 pilot; keep the global scheduler; no hard-coded top 10). Migration `20261105090000_cf247_intake_pilot_share`: setting `intake_dates.pilot_batch_share` (60%); md5-guarded edit of `security.intake_dates_plan_v3` (886876cd): pilot rows (security.intake_ui_scopes_v1) up to the share, then all other providers (focus first, longest waiting first), then any further pilot rows; rounds and the per-provider share unchanged; the preview path (course ids given) unchanged. Fixture 'selection' tests fairness, focus priority and pilot scope independently (4-university pilot, focus providers outside the pilot, a pilot university with no eligible work, share 0).

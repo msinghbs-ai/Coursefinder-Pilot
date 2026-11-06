@@ -1,15 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.485'
-export const PACKAGE_VERSION='0.1.412'
+export const UI_VERSION='2.15.488'
+export const PACKAGE_VERSION='0.1.415'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'5 Nov 2026',
-  title:'Intake dates: the pilot universities take a share of every run',
+  date:'6 Nov 2026',
+  title:'Intake automation progress in Process results',
   changes:[
-    'The pilot universities (the top Australian universities by active courses, set by Run now: Australian universities a cohort is picked from) now take up to a set share of every intake-dates run (60 per cent, a setting), round by round and longest waiting first. Every other provider takes the rest, focus providers first, so the whole catalogue keeps moving; unused room on either side goes to the other.'
+    'Process results now opens with an Automation progress section for intake dates. It shows whether the job is running, waiting, paused or failed, and the last and next runs.',
+    'The section follows each course through selection, admission and publication, with a funnel, one row per university, and run history (latest run, 24 hours, 7 days, 30 days).',
+    'Every failure shows its class, the exact reason, the next action and the next revisit. Rows that only wait for a changed setting or source are shown as rechecks, not failures.',
+    'Progress uses the platform\'s existing progress observer, so there is no second monitor. Pause and Resume use the existing job control.'
   ],
   bugFixes:[]
 }
