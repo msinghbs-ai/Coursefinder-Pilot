@@ -31,10 +31,12 @@ async function policyParser() {
 }
 
 test('the parser keeps the printed day, year and deadline; months, years and quotes are exactly as before', async () => {
-  const { calendarStarts, CALENDAR_DATES, POLICY_PARSER } = await policyParser()
+  const { calendarStarts, CALENDAR_DATES, POLICY_PARSER, ADD_TESTS_PARSER } = await policyParser()
   expect(CALENDAR_DATES).toBe('calendar-dates-v1')
-  expect(POLICY_PARSER).toBe('provider-policy-v0.2.5')  // the approved proposals keep their parser key
+  expect(POLICY_PARSER).toBe('provider-policy-v0.3.0')  // faculty/group proposals use the new English parser
+  expect(ADD_TESTS_PARSER).toBe('provider-policy-v0.2.5')  // approved policies keep their augmentation key
   const cal = calendarStarts('## 2027 key dates\n| Date | Event |\n|---|---|\n| 1 March 2027 | Semester 1 starts |\n| 30 November 2026 | Applications close for Semester 1 |\n| 26 July 2027 | Semester 2 begins |\n| 10 June 2027 | Semester 1 exams |\n| Semester 2 applications close | Rolling, until places are filled |\n| 13 July 2027 | Semester 1 supplementary exams start |')
+  expect(cal.parser).toBe('provider-policy-v0.2.5')  // the separate legacy calendar parser key is unchanged
   const s1 = cal.periods.find((p) => p.period === 'semester 1'), s2 = cal.periods.find((p) => p.period === 'semester 2')
   expect(cal.dates).toBe('calendar-dates-v1')
   // exact date and year kept
@@ -143,3 +145,4 @@ test('the fixtures cover every case, from the stored reading to the consumer API
   expect(fixtures).toContain("'API: the same five keys'")
   expect(fs.readFileSync(`${FX}/calendar.md`, 'utf8')).toContain('| Semester 2 applications close | Rolling, until places are filled |')
 })
+

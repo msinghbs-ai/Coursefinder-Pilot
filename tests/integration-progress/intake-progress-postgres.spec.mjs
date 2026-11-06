@@ -52,20 +52,29 @@ test('status, the latest run funnel and the university rows match the database; 
   await expect(page.getByTestId('ap-observations').locator('li')).toHaveCount(Number(await sql(page, "select count(*) from pipeline.progress_observations where transition_key like 'intake%'")))
 })
 
+
+// Net gain, admitted and withdrawn are three separate measures (Platform Admin 6 Nov 2026), shown in the measures block, not the window summary.
+async function expectMeasures(page, { net, admitted, withdrawn }) {
+  const m = page.getByTestId('ap-measures')
+  await expect(m.locator('[data-measure="net_published_gain"] dd')).toContainText(String(net))
+  if (admitted != null) await expect(m.locator('[data-measure="newly_admitted"] dd')).toContainText(String(admitted))
+  if (withdrawn != null) await expect(m.locator('[data-measure="withdrawn"] dd')).toContainText(String(withdrawn))
+}
+
 test('history windows show gross activity and net gain with withdrawals, and the chosen window survives a refresh', async ({ page }) => {
   await mount(page)
   await page.getByRole('button', { name: 'Last 24 hours' }).click()
-  await expect(page.getByTestId('ap-window-summary')).toContainText('net data gain 3 (admitted 4, withdrawn 1)')
+  await expectMeasures(page, { net: 3, admitted: 4, withdrawn: 1 })
   await expect(row(page, 'The University of Newcastle')).toHaveAttribute('data-state', 'admitted')
   await page.getByRole('button', { name: 'Last 30 days' }).click()
   const db = await sql(page, "select count(*) filter (where outcome <> 'withdrawn') from pipeline.course_intake_date_events where run_at >= now() - interval '30 days'")
   await expect(page.getByTestId('ap-window-summary')).toContainText(`gross activity ${db} rows`)
-  await expect(page.getByTestId('ap-window-summary')).toContainText('net data gain 5 (admitted 6, withdrawn 1)')
+  await expectMeasures(page, { net: 5, admitted: 6, withdrawn: 1 })
   await page.reload(); await mount(page)
   await expect(page.getByRole('button', { name: 'Last 30 days' })).toHaveAttribute('aria-pressed', 'true')
-  await expect(page.getByTestId('ap-window-summary')).toContainText('net data gain 5')
+  await expectMeasures(page, { net: 5 })
   await page.getByRole('button', { name: 'Latest run' }).click()
-  await expect(page.getByTestId('ap-window-summary')).toContainText('net data gain 2')
+  await expectMeasures(page, { net: 2 })
 })
 
 test('the failure list: every held row with its reason, next action and issue; drill-down by university', async ({ page }) => {
@@ -123,6 +132,6 @@ test('phone: Automation progress is usable without page overflow @responsive', a
   await row(page, 'UNSW Sydney').getByRole('button', { name: 'Courses' }).click()
   await expect(page.getByTestId('ap-failures').getByRole('heading')).toContainText('UNSW Sydney')
   await page.getByRole('button', { name: 'Last 7 days' }).click()
-  await expect(page.getByTestId('ap-window-summary')).toContainText('net data gain 4')
+  await expectMeasures(page, { net: 4 })
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
 })

@@ -1,19 +1,23 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.490'
-export const PACKAGE_VERSION='0.1.417'
+export const UI_VERSION='2.15.493'
+export const PACKAGE_VERSION='0.1.420'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'6 Nov 2026',
-  title:'Controlled releases and authorised recovery',
+  title:'English requirements: course groups and a clear next step',
   changes:[
-    'Production migrations, function deployments and live validation require the current authorised controller and a reserved operation.',
-    'Recovery uses the protected workflow verifier with the selected earlier source revision; uncertainty keeps the operation held.',
-    'Read-only operational checks remain available under the protected production environment.'
+    'Coverage > Attributes > English policies shows faculty and course-group scores. A Platform Admin must approve the policy and bind each group to fields of education or a course-title pattern before it can supply a course.',
+    'No rule yet shows each provider\'s stage, why no rule is available, courses still missing English, the next try and recent jobs. Run now reads stored English pages again without fetching pages or using credits.',
+    'A course\'s own reading, a value set by hand, a named-course rule and held cases keep their precedence. Courses reached by groups with different scores wait for a person.',
+    'Search for new non-university English pages remains switched off; releasing this capability does not authorise paid discovery.'
   ],
-  bugFixes:['Long official-source links wrap on the phone Process results screen.']
+  bugFixes:[
+    'Reading a policy again with the same parser keeps the group bindings a person saved.',
+    'Approving a group policy closes waiting group policies only; a waiting default policy stays available, and the same protection applies in the other direction.'
+  ]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

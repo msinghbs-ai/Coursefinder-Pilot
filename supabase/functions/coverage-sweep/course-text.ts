@@ -7,11 +7,15 @@
 //     description that is too long, has too many sentences or a fragment, and sends a provider's first descriptions to Layer 4.
 //   deadline: each application deadline the page states, as an explicit date with its words, or rolling, or not stated, with the intake the
 //     page ties it to in the page's own words. Never inferred; the database matches the intake and checks the date is in the quote.
+// v0.59.9 (6 Nov 2026, Platform Admin 6 Nov 2026 09:44 §2 D4): ONE AI re-ask for a description that breaks the sentence or length limit, activated by the
+//   setting enrich.course_description_reask_max (ships 0 = off). The re-ask is on the same stored page with the same pinned model and answer limit; it states
+//   the previous answer, its measured size and the limits. The second answer replaces the first only as an answer: it goes through EVERY database check again,
+//   and nothing is ever cut, joined or completed here. A failed re-ask keeps the first answer (held as before).
 // Pure functions only (no network), so the contract spec can read them.
 import { callCost } from "./answer.ts";
 import { descriptionPageText, descriptionSentences } from "./description.ts";
 
-export const COURSE_TEXT_PROMPT_VERSION = "course-text-v1";
+export const COURSE_TEXT_PROMPT_VERSION = "course-text-v2"; // v2 (6 Nov 2026): the same prompt and schema; a description that breaks a length limit may be asked for once more (courseTextReaskUser)
 export const COURSE_TEXT_FIELDS = ["description", "deadline"] as const;
 // the setting that limits the answer (pipeline toolset, returned by svc_worker_settings_v1 like every reading.answer_tokens.* limit)
 export const COURSE_TEXT_ANSWER_KEY = "reading.answer_tokens.course_text";
@@ -43,6 +47,48 @@ export function courseTextLength(ws: Record<string, unknown> | null | undefined)
   const g = (k: string) => Number((ws || {})[k]);
   return { min_sentences: g("enrich.course_description_min_sentences"), max_sentences: g("enrich.course_description_max_sentences"),
            min_chars: g("enrich.course_description_min_chars"), max_chars: g("enrich.course_description_max_chars") };
+}
+
+// fixed: D4 authorises exactly one re-ask. A malformed/out-of-policy setting
+// must not expand paid-call authority; the operational setting still ships off.
+export function courseTextReaskMax(ws: Record<string, unknown> | null | undefined): number {
+  return ws?.["enrich.course_description_reask_max"] === 1 ? 1 : 0;
+}
+
+export type CourseTextBreach = { rule: "sentence_count" | "length"; sentences: number; chars: number };
+
+// The size of a description as the database measures it (security.course_description_check_with_v1): sentences = the stored sentences,
+// characters = the trimmed sentence texts joined by one space. Only a sentence count above the most, or a length above the most, is a breach worth a
+// re-ask: below a minimum, a missing quote, a claim word or a fragment is never re-asked (a shorter or longer rewrite would not cure it).
+export function courseTextBreach(a: any, page: string, length: CourseTextLength | null | undefined, minQuoteChars = 20): CourseTextBreach | null {
+  const d = descriptionSentences({ about_page: a?.description?.about_course === true, sentences: a?.description?.sentences || [] }, page, minQuoteChars);
+  const n = d.sentences.length;
+  if (!d.about_page || n === 0) return null;
+  const chars = d.sentences.map((s) => String(s.text ?? "").trim()).join(" ").length;
+  const maxS = Number(length?.max_sentences), maxC = Number(length?.max_chars);
+  if (Number.isFinite(maxS) && maxS > 0 && n > maxS) return { rule: "sentence_count", sentences: n, chars };
+  if (Number.isFinite(maxC) && maxC > 0 && chars > maxC) return { rule: "length", sentences: n, chars };
+  return null;
+}
+
+// The re-ask: the same stored page, description only. It never asks the model to cut; it asks for a rewrite within the limits that keeps an exact quote
+// for every sentence.
+export function courseTextReaskUser(provider: string, title: string, page: string, a: any, breach: CourseTextBreach, length?: CourseTextLength): string {
+  const prev = ((a?.description?.sentences || []) as any[]).map((s, i) => `${i + 1}. ${String(s?.text ?? "").trim()}`).join("\n");
+  return `Provider: ${provider}\nCourse: ${title}\nFields: description\n${courseTextLengthNote(length)}` +
+    `Your previous description had ${breach.sentences} sentence(s) and ${breach.chars} characters, which breaks the limit (${breach.rule === "sentence_count" ? "too many sentences" : "too long"}).\n` +
+    `Previous description:\n${prev}\n` +
+    `Write the description again within the limits, using only facts the page states about this course. Every sentence keeps an exact quote copied character for character from the page text. Do not shorten by cutting a sentence in half or by dropping its quote.\n\nPage text:\n${page}`;
+}
+
+// the re-asked description replaces the first; the other fields (deadlines) stay from the first answer
+export function courseTextMergeReask(first: any, second: any): any {
+  return { ...(first || {}), description: second?.description ?? first?.description };
+}
+
+// what is recorded with the description reading: how many re-asks were made and what the first answer measured (or why the re-ask failed)
+export function courseTextReaskNote(breach: CourseTextBreach, n: number, error?: string) {
+  return { n, first: { rule: breach.rule, sentences: breach.sentences, chars: breach.chars }, ...(error ? { error: error.slice(0, 160) } : {}) };
 }
 
 export function courseTextAnswerLimit(ws: Record<string, unknown> | null | undefined): number {
@@ -105,14 +151,14 @@ export function courseTextDeadlines(a: any, page: string, minQuoteChars = 8): { 
 }
 
 // the results recorded for the course's items (svc_enrich_ai_record -> security.enrich_course_text_record_v1)
-export function courseTextResults(a: any, page: string, items: { item_id: number; field: string }[], meta: { model: string; worker: string; cost: number; minQuoteChars?: number }) {
+export function courseTextResults(a: any, page: string, items: { item_id: number; field: string }[], meta: { model: string; worker: string; cost: number; minQuoteChars?: number; reask?: ReturnType<typeof courseTextReaskNote> | null }) {
   const share = meta.cost / Math.max(1, items.length), out: any[] = [];
   for (const x of items) {
     const base = { item_id: Number(x.item_id), model: meta.model, worker: meta.worker, prompt_version: COURSE_TEXT_PROMPT_VERSION, cost: share };
     if (x.field === "description") {
       const d = descriptionSentences({ about_page: a?.description?.about_course === true, sentences: a?.description?.sentences || [] }, page, meta.minQuoteChars ?? 20);
       const off = d.sentences.filter((s) => !s.on_page).length;
-      out.push({ ...base, value: { about_course: d.about_page, sentences: d.sentences }, quote: d.sentences[0]?.quote?.slice(0, 300) ?? null,
+      out.push({ ...base, value: { about_course: d.about_page, sentences: d.sentences, ...(meta.reask ? { reask: meta.reask } : {}) }, quote: d.sentences[0]?.quote?.slice(0, 300) ?? null,
         reason: !d.about_page || !d.sentences.length ? "the page does not state it" : off ? "a sentence's quote is not on the page" : null });
     } else {
       const dl = courseTextDeadlines(a, page);
@@ -122,3 +168,4 @@ export function courseTextResults(a: any, page: string, items: { item_id: number
   }
   return out;
 }
+

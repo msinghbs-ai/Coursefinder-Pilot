@@ -13,13 +13,24 @@
 // v0.2.5 (17 Oct 2026, Decision 262): a section headed for courses with alternative, higher, additional or different English
 // requirements lists exceptions, never a default (UTas: a bullet under "Postgraduate courses with alternative English language
 // requirements" was read as the postgraduate default).
-export const POLICY_PARSER = "provider-policy-v0.2.5";
+// v0.3.0 (6 Nov 2026, Platform Admin 6 Nov 09:44 §3, English requirements): a faculty or course-group table (columns are levels and rows are
+// faculties, or columns are tests and rows are course groups) is also returned as `groups`: the group name as printed, its level when the
+// column or row names one, and every test with the cell quoted. Groups are proposals only: a person approves them and binds each group to
+// courses (admin_provider_english_groups_set_v1); nothing here is a default. `defaults`, `exceptions`, `named`, `caveats` and `signals` keep
+// their v0.2.5 meaning, so the add-tests job and the policy in force are unaffected, and a table is never read as a default where v0.2.5
+// did not.
+export const POLICY_PARSER = "provider-policy-v0.3.0";
+// The reading the add-tests job (policy-add-tests) is keyed on. Its rules did not change in v0.3.0, so approved policies are not read again for it.
+export const ADD_TESTS_PARSER = "provider-policy-v0.2.5";
+// The legacy calendar reader keeps its own parser string: the intake workstream owns the calendar side of the proposals.
+const CALENDAR_PARSER = "provider-policy-v0.2.5";
 // Tests the parser learnt after English policies were first approved: only these are added to an approved policy (job policy-add-tests).
 export const ADDED_TESTS: TestCode[] = ["DET"];
 
 export type TestCode = "IELTS" | "PTE" | "TOEFL_IBT" | "CAE" | "DET";
 export type Req = { test_code: TestCode; overall_score: number; component_scores: Record<string, number>; quote: string };
 type Level = "undergraduate" | "postgraduate";
+export type Group = { group_name: string; level: Level | null; reqs: Req[] };
 
 const clean = (s: string) => String(s ?? "").replace(/<br\s*\/?>/gi, " ").replace(/\*\*|__|`/g, "").replace(/\\([*_|])/g, "$1").replace(/\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/\s+/g, " ").trim();
 
@@ -106,10 +117,31 @@ function namesFrom(label: string): string[] {
   return parts.map((p) => p.replace(/[:;,.\s]+$/, "").replace(/\s*\((?:including|incl\.?)[^)]*\)\s*$/i, "").trim()).filter((p) => p.length >= 4 && p.length <= 160 && !/^(and|or|the|all|other)$/i.test(p));
 }
 
-type Block = { kind: "table"; heading: string; rows: string[][]; alt?: boolean } | { kind: "text"; heading: string; text: string; alt?: boolean };
+type Block = { kind: "table"; heading: string; rows: string[][]; alt?: boolean; hint?: string } | { kind: "text"; heading: string; text: string; alt?: boolean };
+// v0.3.0: exceptions inside one faculty cell (cells hold <br> as " ; "): "- Name: 7.5 overall (...)" under "Exceptions:", and "The following programs require 7.0 overall (...)" followed by "- Name" items
+// v0.3.0: the faculty's own score is the part of its cell before the exceptions ("Exceptions: ..." or "The following programs ...")
+function facultyLead(cell: string): string { return cell.split(/\s;\s(?=exceptions?\b|the following (?:programs?|courses?)\b)/i)[0].trim() }
+function facultyExceptions(cell: string, code: TestCode): { name: string; reqs: Req[] }[] {
+  const parts = cell.split(/\s;\s/).map((x) => x.trim()).filter(Boolean);
+  const out: { name: string; reqs: Req[] }[] = [];
+  let shared: Req[] | null = null, seen = false;
+  for (const part of parts) {
+    if (/^exceptions?\b/i.test(part)) { seen = true; shared = null; continue }
+    if (/^the following (?:programs?|courses?)\b/i.test(part)) { seen = true; const p = parseScore(code, part); shared = p ? [{ test_code: code, overall_score: p.overall, component_scores: p.comps, quote: quoteOf(part) }] : null; continue }
+    const m = part.match(/^[-*]\s*([^:]{4,160}?)\s*:\s*(.+)$/);
+    if (seen && m) { const p = parseScore(code, m[2]); if (p) out.push({ name: m[1], reqs: [{ test_code: code, overall_score: p.overall, component_scores: p.comps, quote: quoteOf(part) }] }); continue }
+    const n = part.match(/^[-*]\s*(.{4,160})$/);
+    if (seen && shared && n) out.push({ name: n[1].trim(), reqs: shared });
+  }
+  return out.slice(0, 40);
+}
+
 function blocks(md: string): Block[] {
   const out: Block[] = [];
   let heading = "", table: string[][] | null = null;
+  // v0.3.0: a bullet that opens with a test name ("- IELTS (International English Language Testing System) - Academic version ...") names the test of the table that follows it,
+  // the layout of UNSW's page (one accordion item per test); a heading ends it
+  let hint = "";
   // v0.2.5: a section for courses with alternative or higher requirements (a heading, or a short heading-like line) runs until the next
   // ordinary heading; bold course names inside it do not end it
   let alt = false;
@@ -119,15 +151,16 @@ function blocks(md: string): Block[] {
     if (line.startsWith("|")) {
       const cells = line.replace(/^\||\|$/g, "").split("|").map((c) => clean(c.replace(/<br\s*\/?>/gi, " ; ")));
       if (cells.every((c) => /^:?-{2,}:?$/.test(c) || c === "")) continue;
-      if (!table) { table = []; out.push({ kind: "table", heading, rows: table, alt }) }
+      if (!table) { table = []; out.push({ kind: "table", heading, rows: table, alt, hint }) }
       table.push(cells);
       continue;
     }
     table = null;
     if (!line) continue;
     const h = line.match(/^#{1,6}\s+(.*)$/) || line.match(/^\*\*([^*]{2,120})\*\*:?$/);
-    if (h) { heading = clean(h[1]); if (line.startsWith("#")) alt = ALT_HEAD.test(heading); else if (ALT_HEAD.test(heading)) alt = true; continue }
+    if (h) { hint = ""; heading = clean(h[1]); if (line.startsWith("#")) alt = ALT_HEAD.test(heading); else if (ALT_HEAD.test(heading)) alt = true; continue }
     if (!/^[-*+]\s+/.test(line) && !/\d/.test(line) && !/[.!?]$/.test(line) && clean(line).length <= 140) { alt = ALT_HEAD.test(line); if (alt) continue }
+    if (/^[-*+]\s+(?:IELTS|TOEFL|PTE|C1 Advanced|C2 Proficiency|Cambridge|Duolingo)\b/i.test(line)) hint = clean(line.replace(/^[-*+]\s+/, ""));
     out.push({ kind: "text", heading, text: clean(line.replace(/^[-*+]\s+/, "")), alt });
   }
   return out;
@@ -197,6 +230,16 @@ function exceptNamesOf(text: string): string[] {
 export function englishPolicy(md: string) {
   const statements: Statement[] = [];
   const signals = new Set<string>();
+  // v0.3.0: faculty and course-group rows, one group per printed name and level; a test seen twice for a group keeps its first cell
+  const groupMap = new Map<string, Group>();
+  const addGroup = (name: string, level: Level | null, req: Req) => {
+    const nm = clean(name).replace(/[:;,.\s]+$/, "");
+    if (nm.length < 3 || nm.length > 160 || NOT_ADMISSION.test(nm) || DEFAULT_CUE.test(nm) || BAND_LABEL.test(nm) || /^\d+(?:\.\d)?$/.test(nm) || TESTS.some((t) => t.re.test(nm))) return;
+    const key = `${nm.toLowerCase()}|${level || ""}`;
+    const g = groupMap.get(key) || { group_name: nm, level, reqs: [] };
+    if (!g.reqs.some((q) => q.test_code === req.test_code)) g.reqs.push(req);
+    groupMap.set(key, g);
+  };
   const flat = clean(md);
   if (COURSE_SPECIFIC.test(flat)) signals.add("course_specific");
   if (HIGHER_UNLISTED.test(flat)) signals.add("higher_unlisted");
@@ -221,6 +264,8 @@ export function englishPolicy(md: string) {
           r.forEach((cell, i) => { const code = testCol[i]; if (!code) return; const p = parseScore(code, cell); if (p) reqs.push({ test_code: code, overall_score: p.overall, component_scores: p.comps, quote: quoteOf(`${label ? label + " | " : ""}${head[i]}: ${cell}`) }) });
           if (!reqs.length) return;
           const lv = levelOf(label) || levelOf(b.heading);
+          // v0.3.0: a row labelled with a faculty or course group (not an award and not a plain level) is also a group rule
+          if (label && !AWARD.test(label) && !PLAIN_LEVEL.test(label)) for (const q of reqs) addGroup(label, lv === "undergraduate" || lv === "postgraduate" ? lv : null, q);
           const named = AWARD.test(generic(label).replace(EXCEPT, "|").split("|")[0]) || (!!label && !PLAIN_LEVEL.test(label) && !DEFAULT_CUE.test(label) && lv !== "both" && !levelOf(label));
           statements.push({ level: lv === "research" ? null : lv, isDefault: !named && (PLAIN_LEVEL.test(label) || DEFAULT_CUE.test(label) || label === ""), names: named ? namesFrom(label) : [], reqs, except: EXCEPT.test(label), exceptNames: exceptNamesOf(label) });
         });
@@ -248,14 +293,19 @@ export function englishPolicy(md: string) {
           });
         } else {
           signals.add("by_faculty");
-          const code = TESTS.find((t) => t.re.test(b.heading))?.code || TESTS.find((t) => t.re.test(head[0]))?.code;
+          const code = TESTS.find((t) => t.re.test(b.heading))?.code || TESTS.find((t) => t.re.test(head[0]))?.code || TESTS.find((t) => t.re.test((b as { hint?: string }).hint || ""))?.code;
           if (!code) continue;
           levelCol.forEach((lv, i) => {
             if (!lv || i === 0) return;
-            const cells = rows.map((r) => r[i] || "").filter(Boolean);
+            const cells = rows.map((r) => facultyLead(r[i] || "")).filter(Boolean);
             const parsed = cells.map((c) => parseScore(code, c));
             if (parsed.length >= 2 && parsed[0] && new Set(parsed.map((p) => JSON.stringify(p))).size === 1)
               statements.push({ level: lv, isDefault: true, names: [], reqs: [{ test_code: code, overall_score: parsed[0].overall, component_scores: parsed[0].comps, quote: quoteOf(`${head[i]}: ${cells[0]} (every faculty)`) }], except: false, exceptNames: [] });
+            // v0.3.0: where the faculties differ, each faculty row is a group rule for this level (a cell that gives no score is not a group)
+            else for (const r of rows) { const p = parseScore(code, facultyLead(r[i] || "")); if (p && r[0]) addGroup(r[0], lv === "both" ? null : lv, { test_code: code, overall_score: p.overall, component_scores: p.comps, quote: quoteOf(`${r[0]} | ${head[i]}: ${r[i]}`) }) }
+            // v0.3.0: the courses a faculty cell lists as exceptions ("Exceptions: - Bachelor of Education (Secondary): 7.5 overall ...", or "The following programs require 7.0 overall")
+            // are named courses with their own score: they are never given the faculty's score
+            for (const r of rows) for (const e of facultyExceptions(r[i] || "", code)) statements.push({ level: lv === "both" ? null : lv, isDefault: false, names: [e.name], reqs: e.reqs, except: false, exceptNames: [] });
           });
         }
       }
@@ -308,10 +358,12 @@ export function englishPolicy(md: string) {
   }
   const exceptions = statements.filter((x) => x.names.length).flatMap((x) => x.names.map((name) => ({ name, level: x.level, reqs: x.reqs })))
     .concat(statements.flatMap((x) => x.exceptNames.map((name) => ({ name, level: x.level, reqs: [] as Req[] }))));
+  const groups = [...groupMap.values()].slice(0, 200);
   const style = out.undergraduate || out.postgraduate ? "level_default"
+    : groups.length ? "course_groups"
     : signals.has("bands") ? "bands" : signals.has("by_faculty") ? "by_faculty" : signals.has("course_specific") ? "course_specific"
     : exceptions.length ? "named_courses" : "none";
-  return { parser: POLICY_PARSER, style, defaults: out, exceptions: exceptions.slice(0, 300), named: namedCourses(md), caveats: [...caveats], signals: [...signals], conflicts };
+  return { parser: POLICY_PARSER, style, defaults: out, groups, exceptions: exceptions.slice(0, 300), named: namedCourses(md), caveats: [...caveats], signals: [...signals], conflicts };
 }
 
 // Academic calendar: the month each Semester/Trimester/Term N starts (first date in the row or sentence that names it
@@ -394,5 +446,5 @@ export function calendarStarts(md: string) {
     period, months: [...f.months].sort((a, b) => a - b), years: [...f.years].sort(), quotes: f.quotes,
     starts: f.starts, deadlines: f.deadlines.map(({ year, month, day, date, quote }) => ({ year, month, day, date, quote, rolling: false })),
     ...(f.rolling.length ? { deadline_rolling: f.rolling } : {}) }));
-  return { parser: POLICY_PARSER, dates: CALENDAR_DATES, periods };
+  return { parser: CALENDAR_PARSER, dates: CALENDAR_DATES, periods };
 }

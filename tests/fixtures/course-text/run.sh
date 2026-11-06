@@ -9,6 +9,15 @@ cd "$(dirname "$0")"
 DB=${COURSETEXT_DB:-course_text_fixtures}
 MIG=../../../supabase/migrations/20261103110000_cf247_course_description_deadline_fields.sql
 P="psql -v ON_ERROR_STOP=1 -q -X"
+# Admin #382: the fixture is destructive only to its local throwaway database.
+# Refuse a remote transport or a Supabase role before creating/dropping anything.
+case "${PGHOST:-127.0.0.1}" in 127.0.0.1|localhost|/tmp|/var/run/postgresql) ;; *) echo 'Refusing a remote database' >&2; exit 1;; esac
+$P -d postgres -c "do \$local\$ begin
+  if inet_server_addr() is not null and host(inet_server_addr()) not in ('127.0.0.1','::1') then raise exception 'local fixture transport required'; end if;
+  if exists (select 1 from pg_roles where rolname='supabase_admin') then raise exception 'refusing a Supabase project'; end if;
+end \$local\$;"
+$P -At -d postgres -c "select 'ISOLATED_POSTGRES version=' || current_setting('server_version') || ' transport=' || coalesce(host(inet_server_addr()),'unix-socket')"
+
 $P -d postgres -c "drop database if exists $DB" -c "create database $DB" >/dev/null
 [ -n "${COURSETEXT_KEEP:-}" ] || trap '$P -d postgres -c "drop database if exists $DB" >/dev/null' EXIT
 md5of() { $P -d $DB -Atc "select md5(pg_get_functiondef('$1'::regprocedure))"; }
@@ -52,5 +61,29 @@ for s in "${!AFTER[@]}"; do [ "$(md5of "$s")" = "${AFTER[$s]}" ] || { echo "seco
 [ "$REG1" = "$($P -d $DB -Atc "select md5(string_agg(t::text, '|' order by t::text)) from (select * from pipeline.field_register) t")" ] || { echo "second run changed the register"; exit 1; }
 [ "$($P -d $DB -Atc "select count(*) from pg_trigger where tgname = 'layer4_review_items_course_description'")" = 1 ] || { echo "trigger count"; exit 1; }
 echo "second run: nothing changed"
-$P -d $DB -f fixtures.sql 2>&1 | sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'
+# P0 Admin #382: exercise the actual CLI-created pure guard migration twice on
+# the existing admission path. This is isolated fixture execution, not production.
+P0=../../../supabase/migrations/20261106450000_cf247_deadline_closing_semantics.sql
+$P -d "$DB" -1 -f "$P0"
+$P -d "$DB" -1 -f "$P0"
+
+# Exercise the ACTUAL review DO body, enabled only in a temporary local fixture
+# copy with a conspicuously synthetic actor/approval. Never alter the source file.
+REVIEW=../../../docs/paste/REVIEW-20261106-p0-deadline-three-values.sql
+grep -qF 'v_approved boolean := false;' "$REVIEW"
+grep -qF 'v_actor uuid := null;' "$REVIEW"
+grep -qF 'v_decision text := null;' "$REVIEW"
+T_REVIEW=$(mktemp -d)
+trap 'rm -rf "$T_REVIEW"; if [ -z "${COURSETEXT_KEEP:-}" ]; then $P -d postgres -c "drop database if exists $DB" >/dev/null; fi' EXIT
+{
+  echo 'create function pg_temp.review_apply() returns void language plpgsql as $enabled_fixture$ begin execute $actual_review_body$'
+  sed -n '/^do \$review_only\$/,/^end \$review_only\$;/p' "$REVIEW" | sed \
+    -e 's/v_approved boolean := false;/v_approved boolean := true;/' \
+    -e "s/v_actor uuid := null;/v_actor uuid := 'f0000000-0000-4000-8000-000000000001'::uuid;/" \
+    -e "s/v_decision text := null;/v_decision text := 'ISOLATED FIXTURE ONLY - NOT A PRODUCTION APPROVAL';/"
+  echo '$actual_review_body$; end $enabled_fixture$;'
+} > "$T_REVIEW/enabled-review-fixture.sql"
+echo 'ISOLATED REVIEW TEST: synthetic approval only; production proposal stays disabled'
+$P -d "$DB" -f fixtures.sql -f "$T_REVIEW/enabled-review-fixture.sql" -f review-withdrawal.sql 2>&1 | sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'
+
 echo "fixtures: all passed"

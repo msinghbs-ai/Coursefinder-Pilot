@@ -1,7 +1,7 @@
-<!-- sop-export: id=admin-sop; version=2.32; reviewed-release=2.15.490; source-commit=4f59746631cb+local; content-sha256=521ffe5a90381519da0fdea8d40fee8e4b6f2ee2018c11ead5d40b3e10b9f80a -->
+<!-- sop-export: id=admin-sop; version=2.35; reviewed-release=2.15.493; source-commit=85a657df3e8d+local; content-sha256=5fa4bd372488c92aa3d3754d51402248221f983dfe0d05f051511e2cf42ac2d2 -->
 # StudySearch – Platform Admin SOP
 
-**Version:** 2.32 (reviewed for platform release v2.15.490)  
+**Version:** 2.35 (reviewed for platform release v2.15.493)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -108,6 +108,9 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 
 ## 8. What to pay attention to
 
+- English faculty and course-group scores wait for Platform Admin approval and explicit binding; No rule yet and held course-specific cases remain visible without invented coverage.
+- Course descriptions: distinguish proposed, human-admitted and actually published counts. Review held evidence and use Previous on the final reviewer page.
+- An application deadline must quote an actual closing date; commencement and intake dates are not closing dates. Escalate incorrect records without removing human locks.
 - A held or uncertain production release: confirm the Integration Controller and operation evidence before recovery; keep read-only health checks available.
 - The credit and limit bar on every page.
 - Universities stopped or needing a person on Layer 2/3 › Universities, and how long they have waited; the pace of the queue.
@@ -125,6 +128,9 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.35 | 6 Nov 2026 | v2.15.493 | English course-group approval and binding, same-family supersession and coverage holds; no automatic group admission or paid discovery activation. |
+| 2.34 | 6 Nov 2026 | v2.15.492 | Course description reviewer navigation, held-source evidence and separate proposal/admission/publication measures; human admission authority remains. |
+| 2.33 | 6 Nov 2026 | v2.15.491 | Deadline review distinguishes application closing evidence from commencement dates; corrections retain audit and human-lock authority. |
 | 2.32 | 6 Nov 2026 | v2.15.490 | Production releases and recovery remain with the verified Integration Controller; operators escalate a held or uncertain release through the existing execution register and retain read-only checks. |
 | 1.0 | 12 Oct 2026 | v2.15.257 | First issue: daily, weekly and as-needed duties; automation and where a person decides; what to watch; escalation. |
 | 1.1 | 12 Oct 2026 | v2.15.258 | Onboarding moved to Layer 2 › Onboarding with seven journey stages (scholarships are found only after admitting and enriching); OpenRouter balance, daily guards and credit floor on Models & services (Observe); 100 universities at once. |

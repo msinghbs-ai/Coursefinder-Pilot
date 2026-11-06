@@ -9,7 +9,7 @@
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 // Check the admin copy with `node scripts/export-sops.mjs --check-mirror <coursefinder-admin/docs/sops>` (SS-016 UR-03): it exits 1 on drift.
 
-export const SOP_REVIEWED_FOR = '2.15.490'
+export const SOP_REVIEWED_FOR = '2.15.493'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -45,7 +45,7 @@ const step = (o) => o
 
 export const SOPS = [
   {
-    id: 'admin-sop', title: 'Platform Admin SOP', version: '2.32', audience: 'Platform Admin (role rank 6)',
+    id: 'admin-sop', title: 'Platform Admin SOP', version: '2.35', audience: 'Platform Admin (role rank 6)',
     purpose: 'How the Platform Admin runs StudySearch day to day: the approvals only you can give, the budgets and models you own, and the checks that keep automatic admission trustworthy.',
     owns: ['Admitting university adapters (Layer 2/3 › Universities)', 'Approving central pages: fee schedules, English policies, academic calendars', 'AI models, their order, AI admission and the AI allowances', 'Firecrawl and OpenRouter budgets and service keys', 'Onboarding settings, Retry and Stop', 'Users and roles; new countries; go-live'],
     schedule: [
@@ -102,6 +102,9 @@ export const SOPS = [
       { trigger: 'Break-glass only: a change that drops or deletes, or an operation no governed action covers (Decision 268)', action: 'Run SQL in the Supabase SQL editor for project fxcwkweaxjtknorudmwp only when the change control names it as break-glass; check the expected counts it states. Routine operations are governed actions, not SQL.', where: 'Supabase SQL editor (break-glass)' },
     ],
     watch: [
+      'English faculty and course-group scores wait for Platform Admin approval and explicit binding; No rule yet and held course-specific cases remain visible without invented coverage.',
+      'Course descriptions: distinguish proposed, human-admitted and actually published counts. Review held evidence and use Previous on the final reviewer page.',
+      'An application deadline must quote an actual closing date; commencement and intake dates are not closing dates. Escalate incorrect records without removing human locks.',
       'A held or uncertain production release: confirm the Integration Controller and operation evidence before recovery; keep read-only health checks available.',
       'The credit and limit bar on every page.',
       'Universities stopped or needing a person on Layer 2/3 › Universities, and how long they have waited; the pace of the queue.',
@@ -112,7 +115,7 @@ export const SOPS = [
       'Scholarships withdrawn by the nightly review: a jump means a rule changed or a site moved its pages.',
     ],
     escalate: ['A job that fails the same way after a fix, a worker refusing work ("invalid key", "nonce"), or data written where it should not be: pause the job, note what you saw, raise it with the platform engineer with the change-control reference (CF-247).'],
-    changes: [{ version: '2.32', date: '6 Nov 2026', release: '2.15.490', change: 'Production releases and recovery remain with the verified Integration Controller; operators escalate a held or uncertain release through the existing execution register and retain read-only checks.' }, { version: '1.0', date: '12 Oct 2026', release: '2.15.257', change: 'First issue: daily, weekly and as-needed duties; automation and where a person decides; what to watch; escalation.' },
+    changes: [{ version: '2.35', date: '6 Nov 2026', release: '2.15.493', change: 'English course-group approval and binding, same-family supersession and coverage holds; no automatic group admission or paid discovery activation.' }, { version: '2.34', date: '6 Nov 2026', release: '2.15.492', change: 'Course description reviewer navigation, held-source evidence and separate proposal/admission/publication measures; human admission authority remains.' }, { version: '2.33', date: '6 Nov 2026', release: '2.15.491', change: 'Deadline review distinguishes application closing evidence from commencement dates; corrections retain audit and human-lock authority.' }, { version: '2.32', date: '6 Nov 2026', release: '2.15.490', change: 'Production releases and recovery remain with the verified Integration Controller; operators escalate a held or uncertain release through the existing execution register and retain read-only checks.' }, { version: '1.0', date: '12 Oct 2026', release: '2.15.257', change: 'First issue: daily, weekly and as-needed duties; automation and where a person decides; what to watch; escalation.' },
       { version: '1.1', date: '12 Oct 2026', release: '2.15.258', change: 'Onboarding moved to Layer 2 › Onboarding with seven journey stages (scholarships are found only after admitting and enriching); OpenRouter balance, daily guards and credit floor on Models & services (Observe); 100 universities at once.' },
       { version: '1.2', date: '12 Oct 2026', release: '2.15.259', change: 'Admit automatically (platform-wide, switched on 12 Oct 2026): the daily step becomes a spot-check of automatic admits, undone on Layer 2 › Adapters when wrong; the onboarding pilot (60 AU / 25 NZ / 15 CA) is followed on its Pilot panel.' },
       { version: '1.3', date: '12 Oct 2026', release: '2.15.260', change: 'Found course pages are read through Firecrawl; "Too few course pages" and "AI allowance used" carry on by themselves, so Retry is needed only for other stops.' },
@@ -246,7 +249,7 @@ export const SOPS = [
       { version: '2.03', date: '29 Oct 2026', release: '2.15.362', change: 'Academic entry requirements (AER programme): the Provider drawer lists each source with its latest read, so a held PDF, a refused page or a page with no row is visible with its reason; first reads of new providers wait in Layer 4 as Entry matrix (first run).' }],
   },
   {
-    id: 'operator-sop', title: 'Operator SOP', version: '2.15', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
+    id: 'operator-sop', title: 'Operator SOP', version: '2.18', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
     purpose: 'How operators keep the data flowing and decide what automation cannot: the review queues, stuck or failing work, and the records that need a person. Each step names the lowest role that does it.',
     owns: ['Curator: reading Layer 4 › Inbox items and correcting the records they point to, key dates and reference links, course and provider details, ranking links', 'Pipeline Operator: Layer 4 › Inbox decisions (except entry requirement items: Platform Admin), Task manager › Background jobs, failed jobs and worker errors (diagnose, record, escalate), onboarding follow-up, scholarship links, counsellor reports', 'PIM Admin: pacing, pausing, resuming and running again the automations marked PIM Admin, testing adapters in the Adapter builder'],
     schedule: [
@@ -288,6 +291,9 @@ export const SOPS = [
       { trigger: 'Onboarding stopped: no website, too few course pages', action: 'Enter the website, or add course pages in the Adapter builder (2.1); onboarding carries on or the Platform Admin retries.', where: 'Layer 2/3 › Universities; Layer 2/3 › Universities › Builder' },
     ],
     watch: [
+      'English faculty and course-group scores wait for Platform Admin approval and explicit binding; No rule yet and held course-specific cases remain visible without invented coverage.',
+      'Course descriptions: distinguish proposed, human-admitted and actually published counts. Review held evidence and use Previous on the final reviewer page.',
+      'An application deadline must quote an actual closing date; commencement and intake dates are not closing dates. Escalate incorrect records without removing human locks.',
       'Task manager › Background jobs: a job Failing, or a worker repeating the same error.',
       'Layer 4 waiting counts rising two days running: find out why before working harder (reviewers behind, a burst of new arrivals, evidence that cannot be opened, the same defect repeating, or work waiting on another step).',
       'A coverage count flat for a day.',
@@ -295,7 +301,7 @@ export const SOPS = [
       'Values marked as estimates (savings from CRICOS cost): quote them to students as estimates.',
     ],
     escalate: ['Tell the Platform Admin about anything needing approval, admitting, budgets, models, keys, users, or a fault that repeats after your fix. Write what you saw, where, and when.', 'Pace, pause, resume or run again: Pipeline Operator diagnoses, records and escalates; the PIM Admin (or a higher role) changes pace or pauses; automations marked Platform Admin go to the Platform Admin.', 'A StudySearch alert by push or e-mail: open Platform health and tell the Platform Admin you received it; the Platform Admin acknowledges it.'],
-    changes: [{ version: '1.0', date: '12 Oct 2026', release: '2.15.257', change: 'First issue: daily routine by role, review queues, follow-up, weekly checks, interventions and escalation.' },
+    changes: [{ version: '2.18', date: '6 Nov 2026', release: '2.15.493', change: 'English course-group approval and binding, same-family supersession and coverage holds; no automatic group admission or paid discovery activation.' }, { version: '2.17', date: '6 Nov 2026', release: '2.15.492', change: 'Course description reviewer navigation, held-source evidence and separate proposal/admission/publication measures; human admission authority remains.' }, { version: '2.16', date: '6 Nov 2026', release: '2.15.491', change: 'Deadline review distinguishes application closing evidence from commencement dates; corrections retain audit and human-lock authority.' }, { version: '1.0', date: '12 Oct 2026', release: '2.15.257', change: 'First issue: daily routine by role, review queues, follow-up, weekly checks, interventions and escalation.' },
       { version: '1.1', date: '12 Oct 2026', release: '2.15.258', change: 'Onboarding moved to Layer 2 › Onboarding with seven journey stages; scholarships are found only after a university is admitted and its courses enriched.' },
       { version: '1.2', date: '12 Oct 2026', release: '2.15.259', change: 'Admit is automatic for the fields that pass; universities move on to enriching and scholarships by themselves. Tell the Platform Admin about any admitted value that looks wrong.' },
       { version: '1.3', date: '12 Oct 2026', release: '2.15.260', change: 'Too few course pages and AI allowance used carry on by themselves; work stopped rows with other reasons.' },
