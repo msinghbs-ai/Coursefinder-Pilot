@@ -35,6 +35,21 @@ function Link({ url, children }) {
   return <a className="cf-link" href={url} target="_blank" rel="noreferrer">{children}</a>
 }
 
+// Three different measures that read alike (Platform Admin, 6 Nov 2026): values newly admitted, the net gain once withdrawals are taken off, and
+// the publication checks that passed, which include older admissions checked again. Only the window the observer reads (24 hours) can split the
+// checks into new and older admissions, so the split is shown for that window only.
+function Measures({ f, s, win }) {
+  const t = (s?.observer?.transitions || []).find(x => x.key === 'intake_publication')
+  const checks = t?.created ?? t?.published ?? null, hours = s?.observer?.window_hours
+  const older = checks != null && win === '24h' && Number(hours) === 24 && f.net_gain != null ? checks - f.net_gain : null
+  return <dl className="ap-facts ap-measures" data-testid="ap-measures" aria-label="Admitted, published and checked">
+    <div data-measure="newly_admitted"><dt>Newly admitted</dt><dd>{n(f.admitted)}<small> values admitted in this window</small></dd></div>
+    <div data-measure="withdrawn"><dt>Withdrawn</dt><dd>{n(f.withdrawn)}<small> taken back in this window</small></dd></div>
+    <div data-measure="net_published_gain"><dt>Net published gain after withdrawals</dt><dd>{n(f.net_gain)}<small> newly admitted less withdrawn</small></dd></div>
+    <div data-measure="publication_checks_passed"><dt>Publication checks passed</dt><dd>{checks == null ? 'Not read yet' : n(checks)}<small>{checks == null ? '' : older != null ? ` last ${n(hours)} hours: ${n(f.net_gain)} new plus ${n(older)} older admissions checked again, all found in the Website API source` : ` last ${n(hours)} hours: includes older admissions checked again, so not a count of new publications`}</small></dd></div>
+  </dl>
+}
+
 function Funnel({ f, pending }) {
   const steps = [
     ['Eligible (pending work now)', pending, 'never examined at the latest measurement plus revisits due'],
@@ -145,7 +160,7 @@ export default function AutomationProgress({ rank = 0, client }) {
         <h4>Progress observer</h4>
         <p>Job {s.observer?.job}, last run {when(s.observer?.last_run)}{s.observer?.status ? ` (${words(s.observer.status)})` : ''}. It counts each intake stage over the last {n(s.observer?.window_hours)} hours and raises a stage with eligible work and no output for {n(s.observer?.stall_hours)} hours in the integration queue.</p>
         <div className="intake-table-scroll"><table className="cf-table ap-table" data-testid="ap-observer">
-          <thead><tr><th>Stage</th><th>Eligible</th><th>Processed</th><th>Created</th><th>Why zero</th><th>Stalled</th><th>Issue</th><th>Read</th></tr></thead>
+          <thead><tr><th>Stage</th><th>Eligible</th><th>Processed or checked</th><th>Created or passed</th><th>Why zero</th><th>Stalled</th><th>Issue</th><th>Read</th></tr></thead>
           <tbody>{(s.observer?.transitions || []).map(t => <tr key={t.key} data-transition={t.key} data-stalled={t.stalled ? 'yes' : 'no'}>
             <td>{t.title}</td><td>{n(t.eligible)}</td><td>{n(t.processed)}</td><td>{n(t.created)}</td><td>{t.zero_reason ? words(t.zero_reason) : (t.measure_error || '')}</td>
             <td>{t.stalled ? `Yes, since ${fmtDateTime(t.stalled_since)}` : 'No'}</td><td>{t.issue || 'none'}</td><td>{when(t.measured_at)}</td></tr>)}
@@ -177,7 +192,8 @@ export default function AutomationProgress({ rank = 0, client }) {
         <Button key={k} compact variant={win === k ? 'primary' : undefined} aria-pressed={win === k} disabled={!!busy} onClick={() => pickWindow(k)}>{label}</Button>)}</div>
       {data?.empty && <p role="status">No intake run is recorded yet.</p>}
       {f && <>
-        <p data-testid="ap-window-summary">{WINDOWS.find(([k]) => k === win)?.[1]}: {data.since === data.until ? fmtDateTime(data.since) : `${fmtDateTime(data.since)} to ${fmtDateTime(data.until)}`} · gross activity {plural(f.selected, 'row', 'rows')} in {plural(f.runs, 'run', 'runs')} ({n(f.scheduled_runs)} scheduled, {n(f.run_now_runs)} Run Now) · net data gain {n(f.net_gain)} (admitted {n(f.admitted)}, withdrawn {n(f.withdrawn)})</p>
+        <p data-testid="ap-window-summary">{WINDOWS.find(([k]) => k === win)?.[1]}: {data.since === data.until ? fmtDateTime(data.since) : `${fmtDateTime(data.since)} to ${fmtDateTime(data.until)}`} · gross activity {plural(f.selected, 'row', 'rows')} in {plural(f.runs, 'run', 'runs')} ({n(f.scheduled_runs)} scheduled, {n(f.run_now_runs)} Run Now)</p>
+        <Measures f={f} s={status} win={win}/>
         <Funnel f={f} pending={pending}/>
       </>}
       {data?.universities && <><h4>Universities</h4><Universities rows={data.universities} onDrill={drill} busy={busy}/></>}

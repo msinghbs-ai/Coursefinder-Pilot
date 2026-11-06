@@ -21,3 +21,4 @@
   .ap-controls > * { width: 100%; }
   .ap button { min-height: 44px; }
 }
+.ap-measures small { display: block; font-weight: 400; color: var(--cf-text-muted, inherit); }
