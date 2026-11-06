@@ -147,7 +147,9 @@ export function buildReadiness({ pr, sha, evidence, evidenceProblems = [], evide
   if (!parityValid) blockers.push(`Production-parity outcome is ${parity?.outcome || 'missing'}${parity?.problems?.length ? `: ${parity.problems.join('; ')}` : ''}`)
   const reqRows = requiredChecks.map((r) => {
     const c = checks.find((x) => x.name === r.name)
-    let state = !c ? (r.applicable === false ? 'not-applicable' : 'not-reported') : c.status !== 'completed' ? 'pending' : c.conclusion === 'success' || c.conclusion === 'skipped' || c.conclusion === 'neutral' ? 'pass' : 'fail'
+    // An applicable required check must actually pass. A skipped/neutral check
+    // is not execution evidence; only an inapplicable track may be omitted.
+    let state = !c ? (r.applicable === false ? 'not-applicable' : 'not-reported') : c.status !== 'completed' ? 'pending' : c.conclusion === 'success' ? 'pass' : r.applicable === false && ['skipped', 'neutral'].includes(c.conclusion) ? 'not-applicable' : 'fail'
     if (state === 'fail' || state === 'not-reported') blockers.push(`Required check ${r.name}: ${state}`)
     if (state === 'pending') pending.push(`Required check ${r.name}: pending`)
     return { name: r.name, state, url: c?.html_url || null }
@@ -198,3 +200,4 @@ export function loadBundle(dir) {
   const f = path.join(dir, 'evidence.json')
   return { evidence: fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : null, files: digestsOf(dir) }
 }
+

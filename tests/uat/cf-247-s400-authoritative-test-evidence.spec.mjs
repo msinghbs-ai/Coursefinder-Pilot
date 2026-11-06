@@ -154,6 +154,11 @@ test('readiness report: one verdict with PR, revision, evidence, parity, require
   expect(wrongSha.verdict).toBe('BLOCKED')
   const failedCheck = buildReadiness({ pr: 7, sha: SHA_B, evidence: ev, parity: ev.parity, checks: [{ name: 'build-and-smoke', status: 'completed', conclusion: 'failure' }], requiredChecks: [{ name: 'build-and-smoke' }] })
   expect(failedCheck.blockers.join()).toMatch(/build-and-smoke: fail/)
+  for (const conclusion of ['skipped', 'neutral']) {
+    const held = buildReadiness({ pr: 7, sha: SHA_B, evidence: ev, parity: ev.parity,
+      checks: [{ name: 'build-and-smoke', status: 'completed', conclusion }], requiredChecks: [{ name: 'build-and-smoke' }] })
+    expect(held.verdict, conclusion).toBe('BLOCKED')
+  }
   const noParity = buildReadiness({ pr: 7, sha: SHA_B, evidence: ev, parity: { outcome: 'missing', problems: ['x'] }, checks, requiredChecks: [] })
   expect(noParity.parityValid).toBe(false)
 })
@@ -198,3 +203,4 @@ test('workflow: normal artifact with retention, no competing register or ledger,
   expect(workflowApplies(rh, ['CHANGELOG.md'])).toBe(true)
   expect(workflowPaths(read('.github/workflows/pim-build.yml'))).toBe(null)
 })
+

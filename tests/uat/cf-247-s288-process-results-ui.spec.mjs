@@ -83,4 +83,7 @@ test("phone: process results and a university's evidence without page overflow @
   await page.getByRole('button', { name: 'Show calendars and recent decisions' }).click()
   await expect(page.getByText('Bachelor of Actuarial Studies')).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+  // on a phone a too-wide child (a long address) widens the layout viewport, so innerWidth alone cannot show it: compare with the screen
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= screen.width)).toBe(true)
 })
+
