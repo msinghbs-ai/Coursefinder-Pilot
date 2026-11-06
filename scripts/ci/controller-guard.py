@@ -17,10 +17,12 @@ import subprocess
 import sys
 import unittest
 import urllib.request
+from urllib.parse import urlsplit
 
 ADMIN = 'msinghbs-ai/coursefinder-admin'
 PILOT = 'msinghbs-ai/Coursefinder-Pilot'
 COORDINATION_REF = 'refs/heads/studysearch-controller'
+UAT_ORIGIN = 'https://coursefinder-pilot.techm.workers.dev'
 ALLOWED_KINDS = {
     'deploy-on-merge': {'release'},
     'db-apply-migration': {'release', 'migration'},
@@ -31,6 +33,7 @@ ALLOWED_KINDS = {
     'governed-sql': {'write', 'migration'},
     'component-register': {'write'},
     'archive-export': {'write'},
+    'ui-review-screenshots': {'validation'},
 }
 
 
@@ -56,7 +59,7 @@ def checked_out_tree(commit=None):
     if git('status', '--porcelain', '--untracked-files=no'):
         raise ValueError('tracked source differs from the reserved commit; restore or revalidate it')
     if git('ls-files', '--others', '--exclude-standard', '--',
-           'supabase/migrations', 'supabase/functions', 'supabase/archive', 'scripts/ci'):
+           'supabase/migrations', 'supabase/functions', 'supabase/archive', 'scripts/ci', 'tools/ui-review'):
         raise ValueError('untracked executable source is outside the reserved Git tree; remove or revalidate it')
     return target, git('rev-parse', target + '^{tree}')
 
@@ -64,7 +67,7 @@ def checked_out_tree(commit=None):
 def require_resource_source(entry_point, resource):
     """Bind file-based mutation resources to blobs in the checked-out commit."""
     if entry_point not in ('deploy-on-merge', 'db-apply-migration', 'deploy-edge-functions',
-                           'component-register', 'archive-export'):
+                           'component-register', 'archive-export', 'ui-review-screenshots'):
         return
     require_text(resource, 'mutation resource')
     if (entry_point == 'db-apply-migration' and not resource.startswith('migration:')) or (
@@ -74,6 +77,10 @@ def require_resource_source(entry_point, resource):
         if resource != 'component_register:ingest-sync':
             raise ValueError('invalid component register mutation resource')
         path = 'scripts/component-register-collect.mjs'
+    elif entry_point == 'ui-review-screenshots':
+        if not re.fullmatch(r'ui_review_sha256:[a-f0-9]{64}', resource):
+            raise ValueError('invalid UI review input resource')
+        path = 'tools/ui-review/capture.spec.mjs'
     elif entry_point == 'archive-export':
         if not re.fullmatch(r'archive_definition:[a-z0-9-]+\.json', resource):
             raise ValueError('invalid archive export mutation resource')
@@ -93,6 +100,54 @@ def require_resource_source(entry_point, resource):
             raise ValueError('not a blob')
     except ValueError:
         raise ValueError('selected mutation source is not tracked at HEAD')
+
+
+def validate_uat_target(base_url, allowed_origin=UAT_ORIGIN):
+    """Fence credential submission to an independently configured trusted origin.
+
+    Workflows source STUDYSEARCH_UAT_ALLOWED_ORIGIN from reviewed repository
+    configuration, never from dispatch inputs. Only the origin or its root slash
+    is accepted: no userinfo, ports, paths, redirects via query or URL ambiguity.
+    This is read-only validation and does not acquire controller authority.
+    """
+    require_text(base_url, 'UAT base URL')
+    require_text(allowed_origin, 'trusted UAT origin')
+    allowed = urlsplit(allowed_origin)
+    if (not re.fullmatch(r'https://[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?', allowed_origin)
+            or allowed.username is not None or allowed.password is not None
+            or allowed.port is not None or allowed.path or allowed.query or allowed.fragment
+            or not allowed.hostname or '..' in allowed.hostname):
+        raise ValueError('trusted UAT origin configuration is invalid')
+    if base_url not in (allowed_origin, allowed_origin + '/'):
+        raise ValueError('UAT target origin does not match the independently trusted deployment')
+    return allowed_origin
+
+
+def uat_environment_target():
+    return validate_uat_target(os.environ.get('UAT_BASE_URL'),
+        os.environ.get('STUDYSEARCH_UAT_ALLOWED_ORIGIN', UAT_ORIGIN))
+
+
+def ui_review_resource(base_url, screens, adapter_filters, allowed_origin=UAT_ORIGIN):
+    """Stable reservation identity for the actual credential target and UI actions.
+
+    UTF-8 SHA256 of 'ui-review-inputs-v1\\n' plus compact, ordered JSON array
+    [base_url, screens, adapter_filters], with non-ASCII characters unescaped.
+    This fences execution; it never authorises human admission or other holds.
+    """
+    validate_uat_target(base_url, allowed_origin)
+    require_text(screens, 'UI review screens')
+    if not isinstance(adapter_filters, str):
+        raise ValueError('UI review adapter filters must be a string')
+    payload = 'ui-review-inputs-v1\n' + json.dumps(
+        [base_url, screens, adapter_filters], ensure_ascii=False, separators=(',', ':'))
+    return 'ui_review_sha256:' + hashlib.sha256(payload.encode('utf-8')).hexdigest()
+
+
+def ui_review_environment():
+    return ui_review_resource(os.environ.get('UAT_BASE_URL'), os.environ.get('SCREENS'),
+                              os.environ.get('ADAPTER_FILTERS', ''),
+                              os.environ.get('STUDYSEARCH_UAT_ALLOWED_ORIGIN', UAT_ORIGIN))
 
 
 def read_live_state():
@@ -161,7 +216,7 @@ def validate(state, execution, generation, operation, entry_point, target_tree, 
         raise ValueError('one exact tested Pilot commit must be reserved')
     if reserved_trees.get(commits[0]) != target_tree or not re.fullmatch('[a-f0-9]{40}', target_tree or ''):
         raise ValueError('target Git tree differs from the reserved/tested code')
-    if entry_point in ('component-register', 'archive-export'):
+    if entry_point in ('component-register', 'archive-export', 'ui-review-screenshots'):
         require_text(resource, 'mutation resource')
     if resource and resource not in refs:
         raise ValueError('resource is outside this operation reservation')
@@ -215,9 +270,10 @@ def self_test():
                             self.tree, {self.commit: self.tree}, now=self.now, **kwargs)
         def test_matching_reservation_allows_same_tested_tree(self):
             self.assertEqual(self.check(resource='migration:20261106500000_feature.sql'), self.commit)
-            for entry, resource in [('component-register', 'component_register:ingest-sync'),
-                                    ('archive-export', 'archive_definition:approved-export.json')]:
-                self.state['in_flight'].update(kind='write', evidence_refs=[
+            for entry, kind, resource in [('component-register', 'write', 'component_register:ingest-sync'),
+                                    ('archive-export', 'write', 'archive_definition:approved-export.json'),
+                                    ('ui-review-screenshots', 'validation', ui_review_resource(UAT_ORIGIN, 'jobs', ''))]:
+                self.state['in_flight'].update(kind=kind, evidence_refs=[
                     'entry_point:' + entry, 'pilot_commit:' + self.commit, resource])
                 self.assertEqual(validate(self.state, 'test-execution', 2, 'release-one', entry,
                     self.tree, {self.commit:self.tree}, resource=resource, now=self.now), self.commit)
@@ -225,6 +281,23 @@ def self_test():
                     with self.assertRaises(ValueError):
                         validate(self.state, 'test-execution', 2, 'release-one', entry,
                             self.tree, {self.commit:self.tree}, resource=wrong, now=self.now)
+            review = ui_review_resource(UAT_ORIGIN, 'jobs', '')
+            for changed in [(UAT_ORIGIN, 'jobs>Run now', ''), (UAT_ORIGIN, 'jobs', '1')]:
+                self.assertNotEqual(review, ui_review_resource(*changed))
+            alternate = 'https://reviewed.example'
+            self.assertNotEqual(review, ui_review_resource(alternate, 'jobs', '', alternate))
+            self.assertEqual(validate_uat_target(UAT_ORIGIN), UAT_ORIGIN)
+            self.assertEqual(validate_uat_target(UAT_ORIGIN + '/'), UAT_ORIGIN)
+            host = UAT_ORIGIN.removeprefix('https://')
+            for unsafe in ('http://' + host, 'https://user:password@' + host, 'https://' + host + '.evil.example',
+                    'https://evil-' + host, UAT_ORIGIN + ':443', UAT_ORIGIN + ':8443', UAT_ORIGIN + '.',
+                    UAT_ORIGIN + '/other', UAT_ORIGIN + '?next=https://evil.example', UAT_ORIGIN + '#evil',
+                    UAT_ORIGIN + '@evil.example', UAT_ORIGIN + '\\@evil.example', ' ' + UAT_ORIGIN,
+                    UAT_ORIGIN + '\n', 'https://' + host.replace('.', '%2e')):
+                with self.subTest(target=unsafe), self.assertRaises(ValueError):
+                    validate_uat_target(unsafe)
+                with self.assertRaises(ValueError):
+                    ui_review_resource(unsafe, 'jobs', '')
         def test_each_authority_failure_refuses(self):
             for key, value in [('status', 'reconciliation'), ('generation', 1), ('owner', None),
                 ('lease_expires_at', '2026-11-06T12:00:00Z'), ('heartbeat_at', '2026-11-06T14:00:00Z'),
@@ -236,9 +309,10 @@ def self_test():
                         self.check()
                     self.state = original
             # The operational SQL/Storage writers use the identical authority gate.
-            for entry, resource in [('component-register', 'component_register:ingest-sync'),
-                                    ('archive-export', 'archive_definition:approved-export.json')]:
-                self.state['in_flight'].update(kind='write', evidence_refs=[
+            for entry, kind, resource in [('component-register', 'write', 'component_register:ingest-sync'),
+                                    ('archive-export', 'write', 'archive_definition:approved-export.json'),
+                                    ('ui-review-screenshots', 'validation', ui_review_resource(UAT_ORIGIN, 'jobs', ''))]:
+                self.state['in_flight'].update(kind=kind, evidence_refs=[
                     'entry_point:' + entry, 'pilot_commit:' + self.commit, resource])
                 for key, value in [('status', 'released'), ('owner', None), ('generation', 1),
                         ('lease_expires_at', '2026-11-06T12:00:00Z'), ('adoption', {'status':'pending'})]:
@@ -303,6 +377,9 @@ def self_test():
                     collector = candidate / 'scripts/component-register-collect.mjs'
                     collector.parent.mkdir(parents=True)
                     collector.write_text('export default () => null;\n')
+                    harness = candidate / 'tools/ui-review/capture.spec.mjs'
+                    harness.parent.mkdir(parents=True)
+                    harness.write_text('export default () => null;\n')
                     (candidate / '.gitignore').write_text('node_modules/\ndist/\nuat-artifacts/\n')
                     git('add', '.')
                     git('commit', '--quiet', '-m', 'Recovery candidate predating the guard')
@@ -319,6 +396,8 @@ def self_test():
                     protected.require_resource_source('db-apply-migration', 'migration:20261106500000_feature.sql')
                     protected.require_resource_source('deploy-edge-functions', 'edge_function:test-reader')
                     protected.require_resource_source('component-register', 'component_register:ingest-sync')
+                    protected.require_resource_source('ui-review-screenshots',
+                        ui_review_resource(UAT_ORIGIN, 'jobs', ''))
                     protected.require_resource_source('archive-export', 'archive_definition:approved-export.json')
                     with self.assertRaisesRegex(ValueError, 'not tracked at HEAD'):
                         protected.require_resource_source('archive-export', 'archive_definition:not-tracked.json')
@@ -336,7 +415,7 @@ def self_test():
                     source.write_text('select 1;\n')
                     for relative in ('supabase/migrations/20261106500001_untracked.sql',
                                      'supabase/functions/untracked/index.ts', 'scripts/ci/untracked.py',
-                                     'supabase/archive/untracked.json'):
+                                     'supabase/archive/untracked.json', 'tools/ui-review/untracked.mjs'):
                         extra = candidate / relative
                         extra.parent.mkdir(parents=True, exist_ok=True)
                         extra.write_text('unreserved executable source\n')
@@ -369,6 +448,10 @@ def self_test():
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--self-test', action='store_true')
+    parser.add_argument('--validate-uat-target', action='store_true',
+                        help='read-only trusted credential target check; no controller lease needed')
+    parser.add_argument('--print-ui-review-resource', action='store_true',
+                        help='print the fixed UI input resource for pre-reservation; no authority acquired')
     parser.add_argument('--entry-point', choices=ALLOWED_KINDS)
     parser.add_argument('--execution-id')
     parser.add_argument('--generation')
@@ -379,12 +462,24 @@ def main():
     args = parser.parse_args()
     if args.self_test:
         return self_test()
+    if args.validate_uat_target:
+        print(json.dumps({'trusted_uat_origin': uat_environment_target(), 'validation': 'pass'}))
+        return 0
+    if args.print_ui_review_resource:
+        print(ui_review_environment())
+        return 0
     if not args.entry_point:
         parser.error('--entry-point is required')
+    resource = args.resource
+    if args.entry_point == 'ui-review-screenshots':
+        actual = ui_review_environment()
+        if resource is not None and resource != actual:
+            raise ValueError('UI review input resource differs from the actual capture inputs')
+        resource = actual
     values = context(args)
     head, state = read_live_state()
     target, target_tree = checked_out_tree(args.commit)
-    require_resource_source(args.entry_point, args.resource)
+    require_resource_source(args.entry_point, resource)
     refs = (state.get('in_flight') or {}).get('evidence_refs') or []
     reserved_trees = {}
     for ref in refs:
@@ -396,11 +491,11 @@ def main():
     digest = hashlib.sha256(Path(args.sql_file).read_bytes()).hexdigest() if args.sql_file else None
     approved = validate(state, values['execution_id'], values['generation'], values['operation_id'],
                         args.entry_point, target_tree, reserved_trees,
-                        resource=args.resource, sql_digest=digest)
+                        resource=resource, sql_digest=digest)
     print(json.dumps({'controller_head': head, 'generation': values['generation'],
         'execution_id': values['execution_id'], 'operation_id': values['operation_id'],
         'entry_point': args.entry_point, 'target_commit': target, 'tested_commit': approved,
-        'resource': args.resource,
+        'resource': resource,
         'verifier_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         'verified_at': datetime.now(timezone.utc).isoformat().replace('+00:00','Z')}))
     return 0

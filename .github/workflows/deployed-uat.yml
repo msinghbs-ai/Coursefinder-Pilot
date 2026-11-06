@@ -51,11 +51,14 @@ jobs:
       CONTROLLER_EXECUTION_ID: ${{ inputs.controller_execution }}
       CONTROLLER_GENERATION: ${{ inputs.controller_generation }}
       CONTROLLER_OPERATION_ID: ${{ inputs.controller_operation }}
+      # Reviewed repository configuration; never sourced from a dispatch input.
+      STUDYSEARCH_UAT_ALLOWED_ORIGIN: ${{ vars.STUDYSEARCH_UAT_ALLOWED_ORIGIN || 'https://coursefinder-pilot.techm.workers.dev' }}
       UAT_BASE_URL: ${{ inputs.base_url || 'https://coursefinder-pilot.techm.workers.dev' }}
       UAT_EMAIL: ${{ secrets.COURSEFINDER_UAT_EMAIL }}
       UAT_PASSWORD: ${{ secrets.COURSEFINDER_UAT_PASSWORD }}
       # specs tagged @live-acting change live data or the UAT user's saved settings; they run only when switched on
       LIVE_GREP: ${{ inputs.live_acting == 'on' && '.*' || '@live-acting' }}
+      REQUESTED_UAT_TIER: ${{ inputs.tier || 'targeted' }}
       GH_TOKEN: ${{ github.token }}
     steps:
       - name: Checkout
@@ -63,11 +66,14 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Validate trusted UAT credential target
+        run: |
+          python3 scripts/ci/controller-guard.py --validate-uat-target
       - name: Resolve validation tier
         id: tier
         shell: bash
         run: |
-          tier='${{ inputs.tier || 'targeted' }}'
+          tier="$REQUESTED_UAT_TIER"
           if [ "${{ github.event_name }}" = "push" ] && git rev-parse HEAD^ >/dev/null 2>&1; then
             changed="$(git diff --name-only HEAD^ HEAD)"
             if printf '%s\n' "$changed" | grep -qx '.github/m2-4-integration-candidate'; then tier='integration'; fi
