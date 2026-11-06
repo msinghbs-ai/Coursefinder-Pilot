@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.417 — 6 Nov 2026
+
+- Prepared visible release candidate **v2.15.490** (Complete Integration and Production Delivery mandate; Admin #382, Pilot #895). Existing controller reservations are checked at production execution entry points. Manual recovery uses a trusted protected-workflow verifier against the selected candidate revision. Production credential relocation must preserve reviewed read-only jobs. Account controls, predecessor disposition and guarded cutover remain external release gates; no transfer or deployment is asserted by this candidate. Reuses the existing phone source-link wrapping fix. No migration, no admission-policy or consumer API change; retires nothing.
+
 ## 0.1.416 — 6 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.489** (Platform Admin authorisation 6 Nov 2026 12:55; PR #877, agent B; independent validation agent E; main v2.15.488 merged in). Provider Description Run & Validate on the existing `provider-description-read` job and `coverage-sweep` mode: exact-source identity, evidence-aware campus/scholarship/guarantee validation (`pdesc.evidence_claim_words`, `security.pdesc_claim_check_v1`; `pdesc.claim_words` unchanged), review-capacity parking and resume, rank-4 Layer 4 ownership (`layer4_provider_description_apply_impl`), no direct website-sync writer. Migration `20261106200000` replaces six md5-guarded functions (before 528d5a3d, 97e6b926, 5342ae3f, d5aec36d, 8f5918c9, 875b25c4). The reader is not added to `run_now.jobs` (a settings change after deployment). Consumer API unchanged (G3).

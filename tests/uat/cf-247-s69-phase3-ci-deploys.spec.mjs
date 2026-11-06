@@ -71,5 +71,32 @@ test('deploy-function.sh reads verify_jwt false as false, not as missing (19 Oct
 test('Admin #382 controller adapter refuses stale, unreserved or changed-code production writes', () => {
   // Behavioural negative/positive cases execute the same pure gate called by production.
   expect(() => execFileSync('python3', ['scripts/ci/controller-guard.py', '--self-test'], { stdio: 'pipe' })).not.toThrow()
+  // A recovery candidate may predate the guard. Run the protected workflow's
+  // staged verifier, never a missing/replaced file from that candidate.
+  for (const file of ['db-apply-migration.yml', 'deploy-edge-functions.yml']) {
+    const workflow = fs.readFileSync(`.github/workflows/${file}`, 'utf8')
+    const trusted = workflow.indexOf('ref: ${{ github.workflow_sha }}')
+    const staged = workflow.indexOf('install -m 0500 scripts/ci/controller-guard.py')
+    const candidate = workflow.indexOf('ref: ${{ inputs.git_ref }}')
+    expect(trusted, file).toBeGreaterThanOrEqual(0)
+    expect(staged, file).toBeGreaterThan(trusted)
+    expect(candidate, file).toBeGreaterThan(staged)
+    expect(workflow, file).toContain('python3 "$RUNNER_TEMP/studysearch-controller-guard.py" --entry-point')
+  }
+  // Production credentials are moving out of repository scope. Keep reviewed
+  // readers as well as writers attached to the existing environment so that
+  // old, unscoped workflow revisions lose access without stranding reporting.
+  // This proves wiring only; the account's protection policy is a live gate.
+  const privileged = /secrets\.(SUPABASE_ACCESS_TOKEN|SUPABASE_DB_PASSWORD|COURSEFINDER_UAT_EMAIL|COURSEFINDER_UAT_PASSWORD|ADMIN_REPO_TOKEN)/
+  for (const file of fs.readdirSync('.github/workflows')) {
+    const workflow = fs.readFileSync(`.github/workflows/${file}`, 'utf8')
+    const [header, jobs = ''] = workflow.split(/\njobs:\s*\n/)
+    const globalCredential = privileged.test(header)
+    for (const block of jobs.matchAll(/^  ([A-Za-z0-9_-]+):\s*\n([\s\S]*?)(?=^  [A-Za-z0-9_-]+:\s*\n|(?![\s\S]))/gm)) {
+      if (globalCredential || privileged.test(block[2])) {
+        expect(block[2], `${file}:${block[1]}`).toMatch(/^    environment: pilot\s*$/m)
+      }
+    }
+  }
 })
 

@@ -25,6 +25,7 @@ on:
 jobs:
   export:
     runs-on: ubuntu-latest
+    environment: pilot
     permissions:
       contents: read
     env:

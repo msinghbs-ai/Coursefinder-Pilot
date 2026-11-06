@@ -23,6 +23,7 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: pilot
     permissions:
       contents: read
     env:
@@ -70,4 +71,3 @@ jobs:
             python3 scripts/ci/controller-guard.py --entry-point deploy-on-merge --resource "edge_function:$fn"
             scripts/ci/deploy-function.sh "$fn"
           done
-

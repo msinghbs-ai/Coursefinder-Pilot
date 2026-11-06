@@ -45,6 +45,45 @@ def git(*args):
     return result.stdout.strip()
 
 
+def checked_out_tree(commit=None):
+    """Check real tracked bytes as well as HEAD, including a recovery checkout."""
+    target = git('rev-parse', commit or 'HEAD')
+    actual_head = git('rev-parse', 'HEAD')
+    if target != actual_head or not re.fullmatch('[a-f0-9]{40}', target):
+        raise ValueError('the guarded commit must be the actual checked-out HEAD')
+    if git('status', '--porcelain', '--untracked-files=no'):
+        raise ValueError('tracked source differs from the reserved commit; restore or revalidate it')
+    if git('ls-files', '--others', '--exclude-standard', '--',
+           'supabase/migrations', 'supabase/functions', 'scripts/ci'):
+        raise ValueError('untracked executable source is outside the reserved Git tree; remove or revalidate it')
+    return target, git('rev-parse', target + '^{tree}')
+
+
+def require_resource_source(entry_point, resource):
+    """Bind file-based mutation resources to blobs in the checked-out commit."""
+    if entry_point not in ('deploy-on-merge', 'db-apply-migration', 'deploy-edge-functions'):
+        return
+    require_text(resource, 'mutation resource')
+    if (entry_point == 'db-apply-migration' and not resource.startswith('migration:')) or (
+            entry_point == 'deploy-edge-functions' and not resource.startswith(('edge_function:', 'retired_function:'))):
+        raise ValueError('invalid file-based mutation resource for this entry point')
+    if re.fullmatch(r'migration:[0-9]{14}_[a-z0-9_]+\.sql', resource):
+        path = 'supabase/migrations/' + resource.removeprefix('migration:')
+    elif re.fullmatch(r'edge_function:[a-z0-9-]+', resource):
+        path = 'supabase/functions/' + resource.removeprefix('edge_function:') + '/index.ts'
+    elif entry_point == 'deploy-edge-functions' and re.fullmatch(r'retired_function:[a-z0-9-]+', resource):
+        # Deletion targets are absent by design; the workflow's retired list,
+        # missing-source check and separate destructive approval still apply.
+        return
+    else:
+        raise ValueError('invalid file-based mutation resource')
+    try:
+        if git('cat-file', '-t', 'HEAD:' + path) != 'blob':
+            raise ValueError('not a blob')
+    except ValueError:
+        raise ValueError('selected mutation source is not tracked at HEAD')
+
+
 def read_live_state():
     def head():
         result = git('ls-remote', 'https://github.com/' + ADMIN + '.git', COORDINATION_REF)
@@ -198,6 +237,80 @@ def self_test():
             refs.append('destructive_approval_ref:https://github.com/' + ADMIN + '/issues/382')
             validate(self.state, 'test-execution', 2, 'release-one', 'deploy-edge-functions', self.tree,
                      {self.commit:self.tree}, resource='retired_function:retired-probe', now=self.now)
+        def test_protected_verifier_checks_a_pre_guard_recovery_checkout_and_rejects_drift(self):
+            import importlib.util
+            import shutil
+            import tempfile
+            original_cwd = os.getcwd()
+            with tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                candidate = root / 'candidate'
+                candidate.mkdir()
+                # Equivalent to staging from github.workflow_sha into RUNNER_TEMP
+                # before actions/checkout selects the authorised older candidate.
+                staged = root / 'studysearch-controller-guard.py'
+                shutil.copyfile(Path(__file__).resolve(), staged)
+                os.chdir(candidate)
+                try:
+                    git('init', '--quiet')
+                    git('config', 'user.name', 'Controller gate test')
+                    git('config', 'user.email', 'controller-gate@example.invalid')
+                    source = candidate / 'supabase/migrations/20261106500000_feature.sql'
+                    source.parent.mkdir(parents=True)
+                    source.write_text('select 1;\n')
+                    function = candidate / 'supabase/functions/test-reader/index.ts'
+                    function.parent.mkdir(parents=True)
+                    function.write_text('export default () => null;\n')
+                    (candidate / '.gitignore').write_text('node_modules/\ndist/\nuat-artifacts/\n')
+                    git('add', '.')
+                    git('commit', '--quiet', '-m', 'Recovery candidate predating the guard')
+                    self.assertFalse((candidate / 'scripts/ci/controller-guard.py').exists())
+                    spec = importlib.util.spec_from_file_location('staged_controller_gate', staged)
+                    protected = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(protected)
+                    commit, tree = protected.checked_out_tree()
+                    self.state['in_flight']['evidence_refs'] = ['entry_point:db-apply-migration',
+                        'pilot_commit:' + commit, 'migration:20261106500000_feature.sql']
+                    protected.validate(self.state, 'test-execution', 2, 'release-one',
+                        'db-apply-migration', tree, {commit:tree},
+                        resource='migration:20261106500000_feature.sql', now=self.now)
+                    protected.require_resource_source('db-apply-migration', 'migration:20261106500000_feature.sql')
+                    protected.require_resource_source('deploy-edge-functions', 'edge_function:test-reader')
+                    with self.assertRaisesRegex(ValueError, 'invalid file-based mutation resource'):
+                        protected.require_resource_source('db-apply-migration', 'edge_function:test-reader')
+                    with self.assertRaisesRegex(ValueError, 'not tracked at HEAD'):
+                        protected.require_resource_source('deploy-edge-functions', 'edge_function:not-tracked')
+                    source.write_text('select 2;\n')
+                    with self.assertRaisesRegex(ValueError, 'tracked source differs'):
+                        protected.checked_out_tree()
+                    source.write_text('select 1;\n')
+                    for relative in ('supabase/migrations/20261106500001_untracked.sql',
+                                     'supabase/functions/untracked/index.ts', 'scripts/ci/untracked.py'):
+                        extra = candidate / relative
+                        extra.parent.mkdir(parents=True, exist_ok=True)
+                        extra.write_text('unreserved executable source\n')
+                        with self.assertRaisesRegex(ValueError, 'untracked executable source'):
+                            protected.checked_out_tree()
+                        extra.unlink()
+                    for relative in ('node_modules/package/index.js', 'dist/assets/index.js',
+                                     'uat-artifacts/generated/results.json'):
+                        output = candidate / relative
+                        output.parent.mkdir(parents=True, exist_ok=True)
+                        output.write_text('generated output\n')
+                    # Restore/clean succeeds; dependencies and reports remain allowed.
+                    self.assertEqual(protected.checked_out_tree(), (commit, tree))
+                    # A separately governed SQL file may be outside the source
+                    # tree: its exact bytes are bound by the existing digest gate.
+                    sql_file = root / 'approved-recovery.sql'
+                    sql_file.write_text('select 3;\n')
+                    digest = hashlib.sha256(sql_file.read_bytes()).hexdigest()
+                    self.state['in_flight'].update(kind='write', evidence_refs=[
+                        'entry_point:governed-sql', 'pilot_commit:' + commit, 'sql_sha256:' + digest])
+                    protected.require_resource_source('governed-sql', None)
+                    protected.validate(self.state, 'test-execution', 2, 'release-one',
+                        'governed-sql', tree, {commit:tree}, sql_digest=digest, now=self.now)
+                finally:
+                    os.chdir(original_cwd)
     result = unittest.TextTestRunner(verbosity=2).run(unittest.defaultTestLoader.loadTestsFromTestCase(GateTests))
     return 0 if result.wasSuccessful() else 1
 
@@ -219,10 +332,8 @@ def main():
         parser.error('--entry-point is required')
     values = context(args)
     head, state = read_live_state()
-    target = git('rev-parse', args.commit or 'HEAD')
-    actual_head = git('rev-parse', 'HEAD')
-    if target != actual_head or not re.fullmatch('[a-f0-9]{40}', target):
-        raise ValueError('the guarded commit must be the actual checked-out HEAD')
+    target, target_tree = checked_out_tree(args.commit)
+    require_resource_source(args.entry_point, args.resource)
     refs = (state.get('in_flight') or {}).get('evidence_refs') or []
     reserved_trees = {}
     for ref in refs:
@@ -233,11 +344,13 @@ def main():
             reserved_trees[commit] = git('rev-parse', commit + '^{tree}')
     digest = hashlib.sha256(Path(args.sql_file).read_bytes()).hexdigest() if args.sql_file else None
     approved = validate(state, values['execution_id'], values['generation'], values['operation_id'],
-                        args.entry_point, git('rev-parse', target + '^{tree}'), reserved_trees,
+                        args.entry_point, target_tree, reserved_trees,
                         resource=args.resource, sql_digest=digest)
     print(json.dumps({'controller_head': head, 'generation': values['generation'],
         'execution_id': values['execution_id'], 'operation_id': values['operation_id'],
         'entry_point': args.entry_point, 'target_commit': target, 'tested_commit': approved,
+        'resource': args.resource,
+        'verifier_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         'verified_at': datetime.now(timezone.utc).isoformat().replace('+00:00','Z')}))
     return 0
 

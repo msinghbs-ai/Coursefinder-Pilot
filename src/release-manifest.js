@@ -1,20 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.489'
-export const PACKAGE_VERSION='0.1.416'
+export const UI_VERSION='2.15.490'
+export const PACKAGE_VERSION='0.1.417'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'6 Nov 2026',
-  title:'Provider descriptions: Run & Validate with evidence-checked claims',
+  title:'Controlled releases and authorised recovery',
   changes:[
-    'Enrich fields has a Provider descriptions Run & Validate card: preview a small set of providers, save the set, and see for each one the official source, what was read, what was proposed, what was held and why.',
-    'Every description still needs an individual Layer 4 decision from a Pipeline Operator or higher. Nothing is approved, admitted or published automatically, and AI text is never counted as published.',
-    'A sentence that mentions a campus, scholarship or guarantee is checked against its quoted source instead of being held on the word alone. Other claim words still hold the sentence.',
-    'Proposals that wait because the review queue is full resume without another AI read once there is room. A manual lock or a changed catalogue value still stops an admission.'
+    'Production migrations, function deployments and live validation require the current authorised controller and a reserved operation.',
+    'Recovery uses the protected workflow verifier with the selected earlier source revision; uncertainty keeps the operation held.',
+    'Read-only operational checks remain available under the protected production environment.'
   ],
-  bugFixes:[]
+  bugFixes:['Long official-source links wrap on the phone Process results screen.']
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

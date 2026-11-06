@@ -20,6 +20,7 @@ jobs:
   audit:
     name: UX audit (${{ matrix.project }})
     runs-on: ubuntu-latest
+    environment: pilot
     timeout-minutes: 20
     strategy:
       fail-fast: false
