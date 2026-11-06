@@ -46,6 +46,7 @@ concurrency:
 jobs:
   export:
     runs-on: ubuntu-latest
+    environment: pilot
     timeout-minutes: 90
     permissions:
       contents: read

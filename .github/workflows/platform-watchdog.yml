@@ -19,6 +19,7 @@ concurrency:
 jobs:
   watchdog:
     runs-on: ubuntu-latest
+    environment: pilot
     timeout-minutes: 5
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}

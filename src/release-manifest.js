@@ -1,20 +1,24 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.489'
-export const PACKAGE_VERSION='0.1.416'
+export const UI_VERSION='2.15.492'
+export const PACKAGE_VERSION='0.1.419'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'6 Nov 2026',
-  title:'Provider descriptions: Run & Validate with evidence-checked claims',
+  title:'Course descriptions: source-backed review and accurate publication',
   changes:[
-    'Enrich fields has a Provider descriptions Run & Validate card: preview a small set of providers, save the set, and see for each one the official source, what was read, what was proposed, what was held and why.',
-    'Every description still needs an individual Layer 4 decision from a Pipeline Operator or higher. Nothing is approved, admitted or published automatically, and AI text is never counted as published.',
-    'A sentence that mentions a campus, scholarship or guarantee is checked against its quoted source instead of being held on the word alone. Other claim words still hold the sentence.',
-    'Proposals that wait because the review queue is full resume without another AI read once there is room. A manual lock or a changed catalogue value still stops an admission.'
+    'Enrich fields shows course descriptions ready for review, stale proposals and held readings, with source checks, held reasons, claim-word examples and the stratified trust-policy sample.',
+    'Layer 4 opens the ready descriptions or sample in the existing Inbox, with sentence and character checks, source evidence and quick reasons. Every admission still needs an individual human decision.',
+    'Proposed, admitted by a person and published to the website stay separate. Publication requires the matching published search document and the existing provider, course and Layer 4 visibility rules.',
+    'One AI re-ask for a length or sentence-count breach ships off. After verification it can be enabled by a recorded setting change within existing spending limits; the same source and pinned model are used and every rule is checked again.'
   ],
-  bugFixes:[]
+  bugFixes:[
+    'Previous and the item range remain available on the final reviewer page.',
+    'The re-ask setting permits only zero or one, and unsupported values fail closed without another AI call.',
+    'Course descriptions have separate claim and marketing word settings, initially identical to the provider lists; the limits and human admission policy are unchanged.'
+  ]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

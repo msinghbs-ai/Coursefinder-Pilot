@@ -291,11 +291,44 @@ select pg_temp.rec(public.svc_enrich_ai_record(pg_temp.dl_read(pg_temp.item('03'
 select pg_temp.ok('6j not stated: skipped as not stated',
   pg_temp.last() = '{"not_admitted": 1}'
   and (select reason = 'the page does not state it' from pipeline.field_enrich_items where course_id = '20000000-0000-0000-0000-000000000003' and field = 'deadline' and job_id = '50000000-0000-0000-0000-000000000001'));
-select pg_temp.rec(public.svc_enrich_ai_record(pg_temp.dl_read(pg_temp.item('21', 'deadline'), '[{"intake":"February 2027","kind":"date","date":"2026-11-30","quote":"February 2027: close 30 November 2026","on_page":true},
-                                                                               {"intake":"February 2027","kind":"date","date":"2026-12-07","quote":"February 2027 late applications: 7 December 2026","on_page":true}]')));
+select pg_temp.rec(public.svc_enrich_ai_record(pg_temp.dl_read(pg_temp.item('21', 'deadline'), '[{"intake":"February 2027","kind":"date","date":"2026-11-30","quote":"February 2027 applications close 30 November 2026","on_page":true},
+                                                                               {"intake":"February 2027","kind":"date","date":"2026-12-07","quote":"February 2027 late applications close 7 December 2026","on_page":true}]')));
 select pg_temp.ok('6k two different dates for one intake: held (conflicting_dates)',
   pg_temp.last() = '{"not_admitted": 1}'
   and (select application_deadline is null from catalogue.course_intakes where id = '40000000-0000-0000-0000-000000000211'));
+-- Admin #382 P0, 6 Nov 2026: these exact quotes were incorrectly admitted in
+-- production items 273361/273381/273383. The AI's kind/on_page flags are not
+-- authority for the event meaning. Use a matching fixture intake so only the
+-- semantic guard prevents a write; keep the stored quote and the refusal reason.
+do $p0$ declare x record; begin
+  for x in select * from (values
+    ('2026-11-02'::date, 'Start date 02 Nov 2026'),
+    ('2027-02-15'::date, 'Intakes 15 February 2027'),
+    ('2026-10-12'::date, 'Start Dates 12 October 2026')
+  ) q(d, quote) loop
+    perform pg_temp.rec(public.svc_enrich_ai_record(pg_temp.dl_read(pg_temp.item('03', 'deadline'),
+      jsonb_build_array(jsonb_build_object('intake', 'February 2027', 'kind', 'date', 'date', x.d::text, 'quote', x.quote, 'on_page', true)))));
+    perform pg_temp.ok('6p commencement quote is not a deadline: ' || x.quote,
+      pg_temp.last() = '{"not_admitted": 1}'::jsonb
+      and not exists (select 1 from catalogue.course_intakes where course_id = '20000000-0000-0000-0000-000000000003' and application_deadline is not null)
+      and exists (select 1 from pipeline.field_enrich_items where course_id = '20000000-0000-0000-0000-000000000003' and field = 'deadline'
+                    and job_id = '50000000-0000-0000-0000-000000000001' and state = 'skipped' and reason = 'held: date_not_in_quote'
+                    and value->'deadlines'->0->>'quote' = x.quote));
+  end loop;
+end $p0$;
+select pg_temp.ok('6q a closing cue cannot support another date or another event',
+  not security.course_deadline_in_quote_v1('2027-02-15', 'Applications close 30 November 2026; classes start 15 February 2027')
+  and not security.course_deadline_in_quote_v1('2026-11-30', 'Applications close in November 2026, classes start 30 November 2026')
+  and not security.course_deadline_in_quote_v1('2026-11-30', 'Applications close in November 2026, Intake: 30 November 2026')
+  and not security.course_deadline_in_quote_v1('2027-02-15', 'Applications close 30 November 2026 for classes starting 15 February 2027')
+  and not security.course_deadline_in_quote_v1('2026-11-30', 'Fee payment closing date 30 November 2026')
+  and not security.course_deadline_in_quote_v1('2026-11-30', 'Applications do not close 30 November 2026')
+  and not security.course_deadline_in_quote_v1('2026-11-30', 'Applications open 30 November 2026')
+  and not security.course_deadline_in_quote_v1('2026-11-30', '2026-11-30'));
+select pg_temp.ok('6r explicit closing evidence remains admissible, including a separate start-date clause',
+  security.course_deadline_in_quote_v1('2026-11-30', 'Applications close 30 November 2026; classes start 15 February 2027')
+  and security.course_deadline_in_quote_v1('2026-11-30', 'Applications close on November 30, 2026')
+  and security.course_deadline_in_quote_v1('2026-11-30', 'Applications close 30 Nov. 2026'));
 insert into pipeline.manual_locks values ('course', '20000000-0000-0000-0000-000000000003', 'intake');
 select pg_temp.rec(public.svc_enrich_ai_record(pg_temp.dl_read(pg_temp.item('03', 'deadline'), '[{"intake":"February","kind":"date","date":"2026-11-30","quote":"February 2027 intake closes 30 November 2026","on_page":true}]')));
 select pg_temp.ok('6l an intake locked by hand: skipped',
@@ -303,8 +336,8 @@ select pg_temp.ok('6l an intake locked by hand: skipped',
 select pg_temp.ok('6m the intake match: month, period words, year', security.course_deadline_intake_match_v1('February', 2027, 'February 2027 intake')
   and not security.course_deadline_intake_match_v1('February', 2027, 'February 2028 intake') and security.course_deadline_intake_match_v1('Semester 1', 2027, 'semester one')
   and not security.course_deadline_intake_match_v1('Semester 1', 2027, 'Semester 2') and not security.course_deadline_intake_match_v1('July', null, 'February'));
-select pg_temp.ok('6n the date in the quote: name, numeric and ISO forms; a missing year or day is refused', security.course_deadline_in_quote_v1('2026-11-30', 'closes 30th November 2026')
-  and security.course_deadline_in_quote_v1('2026-11-30', 'by 30/11/2026') and security.course_deadline_in_quote_v1('2026-11-30', '2026-11-30')
+select pg_temp.ok('6n the date in the quote: name, numeric and ISO forms; a missing year or day is refused', security.course_deadline_in_quote_v1('2026-11-30', 'Applications close 30th November 2026')
+  and security.course_deadline_in_quote_v1('2026-11-30', 'Apply by 30/11/2026') and security.course_deadline_in_quote_v1('2026-11-30', 'Application deadline: 2026-11-30')
   and not security.course_deadline_in_quote_v1('2026-11-30', 'closes 30 November') and not security.course_deadline_in_quote_v1('2026-11-30', 'closes November 2026'));
 
 -- 7 errors and retries are the existing paths ------------------------------------------------------------------------------------------

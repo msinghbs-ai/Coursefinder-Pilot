@@ -12,17 +12,44 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 case "${PGHOST:-127.0.0.1}" in 127.0.0.1|localhost|/tmp|/var/run/postgresql) ;; *) echo 'Refusing a remote database: use isolated local PostgreSQL' >&2; exit 1;; esac
 PFX=${PP_PREFIX:-e_pp}
+[[ "$PFX" =~ ^e_pp[a-z0-9_]*$ && ${#PFX} -le 50 ]] || { echo 'Refusing an unsafe fixture database prefix' >&2; exit 1; }
+P="psql -X -q -v ON_ERROR_STOP=1"
+# Verify the actual server before installing a cleanup trap or dropping any database.
+# A loopback client hostname alone does not prove the server is local (CI service NAT).
+$P -d postgres <<'SQL'
+do $local$ begin
+  if inet_server_addr() is not null and host(inet_server_addr()) not in ('127.0.0.1', '::1') then
+    raise exception 'local fixture transport required';
+  end if;
+  if exists (select 1 from pg_roles where rolname = 'supabase_admin') then
+    raise exception 'refusing a Supabase project';
+  end if;
+end $local$;
+select 'ISOLATED_POSTGRES version=' || current_setting('server_version') || ' transport=' || coalesce(host(inet_server_addr()), 'unix-socket');
+SQL
 SRC=${PFX}_src DST=${PFX}_dst SIMPLE=${PFX}_simple PRODFX=${PFX}_prodfx
 T=$(mktemp -d); TOOL=scripts/prod-parity-capture.mjs FX=tests/fixtures/prod-parity
-P="psql -X -q -v ON_ERROR_STOP=1"
-cleanup() { [ -n "${PP_KEEP:-}" ] || for d in $SRC $DST $SIMPLE $PRODFX; do dropdb --if-exists "$d" 2>/dev/null || true; done; rm -rf "$T"; }
+cleanup() {
+  local status=$?
+  if [ -z "${PP_KEEP:-}" ]; then
+    for d in "$SRC" "$DST" "$SIMPLE" "$PRODFX"; do dropdb --if-exists "$d" || status=1; done
+  fi
+  rm -rf "$T"
+  return "$status"
+}
 trap cleanup EXIT
-for d in $SRC $DST $SIMPLE $PRODFX; do dropdb --if-exists "$d" 2>/dev/null || true; createdb "$d"; done
+for d in $SRC $DST $SIMPLE $PRODFX; do dropdb --if-exists "$d"; createdb "$d"; done
 fail() { echo "FAIL $*"; exit 1; }
-rows() { $P -At -d "$1" -f "$2" | grep -c . || true; }
+rows() {
+  $P -At -d "$1" -f "$2" > "$T/rows.txt" || return $?
+  awk 'NF { n++ } END { print n+0 }' "$T/rows.txt"
+}
 refuses() { local db=$1 sql=$2 what=$3; if $P -d "$db" -c "$sql" >/dev/null 2>&1; then fail "$what was accepted"; fi; echo "PASS refuses: $what"; }
 
 # 1 capture from the stand-in
+# fixtureSql creates authenticator as a cluster role. Seed it before capture too;
+# otherwise a fresh cluster reports that later-created role as an unexpected fact.
+$P -d $SRC -c 'do $r$ begin create role authenticator nologin; exception when duplicate_object then null; end $r$;' >/dev/null
 $P -d $SRC -f $FX/sample-source.sql >/dev/null
 SCOPE=(--tables pipeline.admin_jobs,pipeline.manual_locks --functions 'security.pp_job_count(text)' --lookups pipeline.ops_outcome_codes,pipeline.pp_operators)
 node $TOOL capture-sql "${SCOPE[@]}" > $T/capture.sql
@@ -43,17 +70,21 @@ echo 'PASS a definition that differs from its captured md5 is refused'
 
 # 2 fixture -> check clean (read only)
 node $TOOL fixture $T/manifest.json > $T/fixture.sql
-$P -d $DST -f $T/fixture.sql 2>&1 | grep -v '^NOTICE' || true
+$P -d $DST -f $T/fixture.sql > $T/fixture.log 2>&1 || { cat $T/fixture.log >&2; exit 1; }
+awk '!/^NOTICE/' $T/fixture.log
 node $TOOL check-sql $T/manifest.json > $T/check.sql
 { echo 'begin transaction read only;'; cat $T/check.sql | sed '$ s/$/;/'; echo 'commit;'; } > $T/check-ro.sql
-N=$($P -At -d $DST -f $T/check-ro.sql | grep -vc '^\(BEGIN\|COMMIT\)$' || true)
+$P -At -d $DST -f $T/check-ro.sql > $T/check-ro.txt
+N=$(awk 'NF && $0 != "BEGIN" && $0 != "COMMIT" { n++ } END { print n+0 }' $T/check-ro.txt)
 [ "$N" = 0 ] || { $P -d $DST -f $T/check.sql; fail "fixture differs from the manifest in $N fact(s)"; }
 echo 'PASS fixture reproduces every captured fact; the check runs in a read-only transaction and lists no difference'
 # the stand-in itself checks clean too (the same query is what runs on production)
-[ "$(rows $SRC $T/check.sql)" = 0 ] || fail 'source differs from its own manifest'
+source_rows=$(rows $SRC $T/check.sql)
+[ "$source_rows" = 0 ] || fail 'source differs from its own manifest'
 echo 'PASS the check against the source lists no difference'
 node $TOOL check-sql $T/manifest.json --digest > $T/digest.sql
-[ "$($P -At -d $DST -f $T/digest.sql | cut -d'|' -f3)" = t ] || fail 'digest check on the fixture'
+$P -At -d $DST -f $T/digest.sql > $T/digest.txt
+[ "$(cut -d'|' -f3 $T/digest.txt)" = t ] || fail 'digest check on the fixture'
 echo 'PASS the one-row digest check matches the manifest on the fixture'
 
 # 3 production behaviour reproduced
@@ -64,9 +95,12 @@ refuses $DST "insert into pipeline.manual_locks(entity, entity_id, field, mode) 
 $P -d $DST -c "insert into pipeline.manual_locks(entity, entity_id, field) values ('course', '00000000-0000-0000-0000-000000000009', 'year')" >/dev/null
 refuses $DST "insert into pipeline.manual_locks(entity, entity_id, field) values ('course', '00000000-0000-0000-0000-000000000009', 'year')" 'a second manual lock on the same key (manual_locks_pkey)'
 refuses $DST "set role anon; select count(*) from pipeline.admin_jobs" 'anon reading admin_jobs (grants)'
-[ "$($P -At -d $DST -c "set role authenticated; select count(*) from pipeline.admin_jobs")" = 1 ] || fail 'authenticated read under RLS'
+authenticated_rows=$($P -At -d $DST -c "set role authenticated; select count(*) from pipeline.admin_jobs")
+[ "$authenticated_rows" = 1 ] || fail 'authenticated read under RLS'
 refuses $DST "set role anon; select security.pp_job_count('x')" 'anon executing security.pp_job_count (function grant)'
-[ "$($P -At -d $DST -c "select md5(pg_get_functiondef('security.pp_job_count(text)'::regprocedure))")" = "$(node -e "console.log(require('$T/manifest.json').functions.find(f=>f.sig==='security.pp_job_count(text)').md5)")" ] || fail 'function md5'
+actual_md5=$($P -At -d $DST -c "select md5(pg_get_functiondef('security.pp_job_count(text)'::regprocedure))")
+expected_md5=$(node -e "console.log(require('$T/manifest.json').functions.find(f=>f.sig==='security.pp_job_count(text)').md5)")
+[ "$actual_md5" = "$expected_md5" ] || fail 'function md5'
 echo 'PASS function definition md5 identical to the captured one'
 
 # 4 the simplified fixture the intake releases used is caught
@@ -78,14 +112,15 @@ create table pipeline.admin_jobs (id bigint primary key, kind text not null, out
 create table pipeline.manual_locks (entity text, entity_id uuid, field text, mode text, value jsonb, locked_at timestamptz default now());
 create function security.pp_job_count(p_kind text) returns bigint language sql as $f$ select 0::bigint $f$;
 SQL
-$P -At -d $SIMPLE -f $T/check.sql > $T/simple.txt || true
+$P -At -d $SIMPLE -f $T/check.sql > $T/simple.txt
 for want in 'constraint|pipeline.admin_jobs|admin_jobs_outcome_fkey|missing' 'constraint|pipeline.manual_locks|manual_locks_pkey|missing' 'column|pipeline.manual_locks|mode|different' \
             'trigger|pipeline.manual_locks|manual_locks_touch|missing' 'policy|pipeline.admin_jobs|admin_jobs_read|missing' 'function|security.pp_job_count(text)|different' \
             'execute|security.pp_job_count(text)|different' 'table|pipeline.admin_jobs|different' 'lookup_rows|pipeline.ops_outcome_codes|different'; do
   grep -qF "$want" $T/simple.txt || { cat $T/simple.txt; fail "simplified fixture: $want not reported"; }
 done
-echo "PASS a simplified fixture is caught: $(grep -c . $T/simple.txt) differences, including admin_jobs_outcome_fkey and manual_locks_pkey"
-[ "$($P -At -d $SIMPLE -f $T/digest.sql | cut -d'|' -f3)" = f ] || fail 'digest check did not flag the simplified fixture'
+echo "PASS a simplified fixture is caught: $(awk 'NF { n++ } END { print n+0 }' $T/simple.txt) differences, including admin_jobs_outcome_fkey and manual_locks_pkey"
+$P -At -d $SIMPLE -f $T/digest.sql > $T/simple-digest.txt
+[ "$(cut -d'|' -f3 $T/simple-digest.txt)" = f ] || fail 'digest check did not flag the simplified fixture'
 echo 'PASS the digest check flags the simplified fixture'
 
 # 6 committed production manifests
@@ -94,14 +129,15 @@ for m in $FX/manifests/*.json; do
   node $TOOL verify "$m" >/dev/null || fail "$m does not verify"
   db=${PRODFX}; dropdb --if-exists $db; createdb $db
   node $TOOL fixture "$m" > $T/prod-fixture.sql
-  $P -d $db -f $T/prod-fixture.sql 2>&1 | grep -v '^NOTICE' || true
+  $P -d $db -f $T/prod-fixture.sql > $T/prod-fixture.log 2>&1 || { cat $T/prod-fixture.log >&2; exit 1; }
+  awk '!/^NOTICE/' $T/prod-fixture.log
   node $TOOL check-sql "$m" > $T/prod-check.sql
   $P -At -d $db -f $T/prod-check.sql > $T/prod-diff.txt
   # the local server cannot hold what only production has (PostgreSQL 17 MAINTAIN on 16, role-wide settings of other databases): listed as allowed
-  allowed=$(node -e "const m=require('./$m'); console.log((m.local_allowed_differences||[]).join('\n'))")
-  bad=$(grep -v -F -f <(printf '%s\n' "$allowed" | sed '/^$/d'; echo '__none__') $T/prod-diff.txt || true)
+  node -e "const m=require('./$m'); console.log((m.local_allowed_differences||[]).join('\n'))" > $T/allowed.txt
+  bad=$(awk 'NR==FNR { if (NF) allowed[++n]=$0; next } { for (i=1;i<=n;i++) if (index($0,allowed[i])) next; print }' $T/allowed.txt $T/prod-diff.txt)
   [ -z "$bad" ] || { echo "$bad"; fail "$(basename $m): fixture differs from production"; }
-  echo "PASS $(basename $m): verified, fixture built, check lists no unexpected difference ($(grep -c . $T/prod-diff.txt || true) allowed)"
+  echo "PASS $(basename $m): verified, fixture built, check lists no unexpected difference ($(awk 'NF { n++ } END { print n+0 }' $T/prod-diff.txt) allowed)"
   if [ "$(basename $m)" = intake-lessons-admin-jobs-manual-locks.json ]; then
     # the two operations production rejected in the intake releases are rejected here too
     refuses $db "insert into pipeline.admin_jobs(kind, title, requested_by, reason, outcome) values ('job_run_now', 't', gen_random_uuid(), 'r', 'run_now_queued')" \
