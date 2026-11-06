@@ -29,6 +29,8 @@ ALLOWED_KINDS = {
     'deployed-weekly': {'release', 'validation'},
     'cloudflare-frontend': {'release'},
     'governed-sql': {'write', 'migration'},
+    'component-register': {'write'},
+    'archive-export': {'write'},
 }
 
 
@@ -54,20 +56,29 @@ def checked_out_tree(commit=None):
     if git('status', '--porcelain', '--untracked-files=no'):
         raise ValueError('tracked source differs from the reserved commit; restore or revalidate it')
     if git('ls-files', '--others', '--exclude-standard', '--',
-           'supabase/migrations', 'supabase/functions', 'scripts/ci'):
+           'supabase/migrations', 'supabase/functions', 'supabase/archive', 'scripts/ci'):
         raise ValueError('untracked executable source is outside the reserved Git tree; remove or revalidate it')
     return target, git('rev-parse', target + '^{tree}')
 
 
 def require_resource_source(entry_point, resource):
     """Bind file-based mutation resources to blobs in the checked-out commit."""
-    if entry_point not in ('deploy-on-merge', 'db-apply-migration', 'deploy-edge-functions'):
+    if entry_point not in ('deploy-on-merge', 'db-apply-migration', 'deploy-edge-functions',
+                           'component-register', 'archive-export'):
         return
     require_text(resource, 'mutation resource')
     if (entry_point == 'db-apply-migration' and not resource.startswith('migration:')) or (
             entry_point == 'deploy-edge-functions' and not resource.startswith(('edge_function:', 'retired_function:'))):
         raise ValueError('invalid file-based mutation resource for this entry point')
-    if re.fullmatch(r'migration:[0-9]{14}_[a-z0-9_]+\.sql', resource):
+    if entry_point == 'component-register':
+        if resource != 'component_register:ingest-sync':
+            raise ValueError('invalid component register mutation resource')
+        path = 'scripts/component-register-collect.mjs'
+    elif entry_point == 'archive-export':
+        if not re.fullmatch(r'archive_definition:[a-z0-9-]+\.json', resource):
+            raise ValueError('invalid archive export mutation resource')
+        path = 'supabase/archive/' + resource.removeprefix('archive_definition:')
+    elif re.fullmatch(r'migration:[0-9]{14}_[a-z0-9_]+\.sql', resource):
         path = 'supabase/migrations/' + resource.removeprefix('migration:')
     elif re.fullmatch(r'edge_function:[a-z0-9-]+', resource):
         path = 'supabase/functions/' + resource.removeprefix('edge_function:') + '/index.ts'
@@ -150,6 +161,8 @@ def validate(state, execution, generation, operation, entry_point, target_tree, 
         raise ValueError('one exact tested Pilot commit must be reserved')
     if reserved_trees.get(commits[0]) != target_tree or not re.fullmatch('[a-f0-9]{40}', target_tree or ''):
         raise ValueError('target Git tree differs from the reserved/tested code')
+    if entry_point in ('component-register', 'archive-export'):
+        require_text(resource, 'mutation resource')
     if resource and resource not in refs:
         raise ValueError('resource is outside this operation reservation')
     if resource and resource.startswith('retired_function:') and not any(
@@ -202,6 +215,16 @@ def self_test():
                             self.tree, {self.commit: self.tree}, now=self.now, **kwargs)
         def test_matching_reservation_allows_same_tested_tree(self):
             self.assertEqual(self.check(resource='migration:20261106500000_feature.sql'), self.commit)
+            for entry, resource in [('component-register', 'component_register:ingest-sync'),
+                                    ('archive-export', 'archive_definition:approved-export.json')]:
+                self.state['in_flight'].update(kind='write', evidence_refs=[
+                    'entry_point:' + entry, 'pilot_commit:' + self.commit, resource])
+                self.assertEqual(validate(self.state, 'test-execution', 2, 'release-one', entry,
+                    self.tree, {self.commit:self.tree}, resource=resource, now=self.now), self.commit)
+                for wrong in (None, 'unreserved:resource'):
+                    with self.assertRaises(ValueError):
+                        validate(self.state, 'test-execution', 2, 'release-one', entry,
+                            self.tree, {self.commit:self.tree}, resource=wrong, now=self.now)
         def test_each_authority_failure_refuses(self):
             for key, value in [('status', 'reconciliation'), ('generation', 1), ('owner', None),
                 ('lease_expires_at', '2026-11-06T12:00:00Z'), ('heartbeat_at', '2026-11-06T14:00:00Z'),
@@ -211,6 +234,19 @@ def self_test():
                     self.state[key] = value
                     with self.assertRaises((ValueError, TypeError)):
                         self.check()
+                    self.state = original
+            # The operational SQL/Storage writers use the identical authority gate.
+            for entry, resource in [('component-register', 'component_register:ingest-sync'),
+                                    ('archive-export', 'archive_definition:approved-export.json')]:
+                self.state['in_flight'].update(kind='write', evidence_refs=[
+                    'entry_point:' + entry, 'pilot_commit:' + self.commit, resource])
+                for key, value in [('status', 'released'), ('owner', None), ('generation', 1),
+                        ('lease_expires_at', '2026-11-06T12:00:00Z'), ('adoption', {'status':'pending'})]:
+                    original = copy.deepcopy(self.state)
+                    self.state[key] = value
+                    with self.subTest(entry=entry, key=key), self.assertRaises((ValueError, TypeError)):
+                        validate(self.state, 'test-execution', 2, 'release-one', entry,
+                            self.tree, {self.commit:self.tree}, resource=resource, now=self.now)
                     self.state = original
         def test_code_resource_and_operation_cannot_be_repurposed(self):
             with self.assertRaises(ValueError): self.check(resource='edge_function:unreserved')
@@ -261,6 +297,12 @@ def self_test():
                     function = candidate / 'supabase/functions/test-reader/index.ts'
                     function.parent.mkdir(parents=True)
                     function.write_text('export default () => null;\n')
+                    definition = candidate / 'supabase/archive/approved-export.json'
+                    definition.parent.mkdir(parents=True)
+                    definition.write_text('{"bucket":"approved-archive","prefix":"fixture","sets":[]}\n')
+                    collector = candidate / 'scripts/component-register-collect.mjs'
+                    collector.parent.mkdir(parents=True)
+                    collector.write_text('export default () => null;\n')
                     (candidate / '.gitignore').write_text('node_modules/\ndist/\nuat-artifacts/\n')
                     git('add', '.')
                     git('commit', '--quiet', '-m', 'Recovery candidate predating the guard')
@@ -276,6 +318,14 @@ def self_test():
                         resource='migration:20261106500000_feature.sql', now=self.now)
                     protected.require_resource_source('db-apply-migration', 'migration:20261106500000_feature.sql')
                     protected.require_resource_source('deploy-edge-functions', 'edge_function:test-reader')
+                    protected.require_resource_source('component-register', 'component_register:ingest-sync')
+                    protected.require_resource_source('archive-export', 'archive_definition:approved-export.json')
+                    with self.assertRaisesRegex(ValueError, 'not tracked at HEAD'):
+                        protected.require_resource_source('archive-export', 'archive_definition:not-tracked.json')
+                    with self.assertRaisesRegex(ValueError, 'invalid archive export'):
+                        protected.require_resource_source('archive-export', 'archive_definition:../escape.json')
+                    with self.assertRaisesRegex(ValueError, 'invalid component register'):
+                        protected.require_resource_source('component-register', 'component_register:other')
                     with self.assertRaisesRegex(ValueError, 'invalid file-based mutation resource'):
                         protected.require_resource_source('db-apply-migration', 'edge_function:test-reader')
                     with self.assertRaisesRegex(ValueError, 'not tracked at HEAD'):
@@ -285,7 +335,8 @@ def self_test():
                         protected.checked_out_tree()
                     source.write_text('select 1;\n')
                     for relative in ('supabase/migrations/20261106500001_untracked.sql',
-                                     'supabase/functions/untracked/index.ts', 'scripts/ci/untracked.py'):
+                                     'supabase/functions/untracked/index.ts', 'scripts/ci/untracked.py',
+                                     'supabase/archive/untracked.json'):
                         extra = candidate / relative
                         extra.parent.mkdir(parents=True, exist_ok=True)
                         extra.write_text('unreserved executable source\n')

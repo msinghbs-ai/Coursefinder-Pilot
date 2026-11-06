@@ -22,6 +22,18 @@ on:
         description: "Optional: the run id of an earlier export whose manifest to show (nothing is exported)"
         required: false
         default: ""
+      controller_execution:
+        description: "Active controller execution ID matching the existing operation reservation (required for export)"
+        required: false
+      controller_generation:
+        description: "Active controller generation (required for export)"
+        required: false
+      controller_operation:
+        description: "Immutable operation ID already reserved by the active controller (required for export)"
+        required: false
+concurrency:
+  group: ${{ inputs.show_run != '' && format('archive-manifest-read-{0}', github.run_id) || 'studysearch-controller-production' }}
+  cancel-in-progress: false
 jobs:
   export:
     runs-on: ubuntu-latest
@@ -29,22 +41,57 @@ jobs:
     permissions:
       contents: read
     env:
+      CONTROLLER_EXECUTION_ID: ${{ inputs.controller_execution }}
+      CONTROLLER_GENERATION: ${{ inputs.controller_generation }}
+      CONTROLLER_OPERATION_ID: ${{ inputs.controller_operation }}
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       PROJECT_REF: ${{ inputs.project_ref }}
+      DEFINITION_NAME: ${{ inputs.definition }}
       DEFINITION: supabase/archive/${{ inputs.definition }}
       RUN_ID: ${{ github.run_id }}
       SHOW_RUN: ${{ inputs.show_run }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout the trusted controller verifier
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.workflow_sha }}
+      - name: Preserve the trusted verifier outside the candidate checkout
+        run: install -m 0500 scripts/ci/controller-guard.py "$RUNNER_TEMP/studysearch-controller-guard.py"
+      - name: Checkout the authorised archive source
+        uses: actions/checkout@v4
         with:
           ref: ${{ inputs.git_ref }}
+          fetch-depth: 0
       - name: Confirm target and definition
         run: |
           if [ -z "${{ vars.SUPABASE_PROJECT_REF }}" ] || [ "$PROJECT_REF" != "${{ vars.SUPABASE_PROJECT_REF }}" ]; then echo "::error::Typed project ref does not match SUPABASE_PROJECT_REF"; exit 1; fi
-          if ! [[ "${{ inputs.definition }}" =~ ^[a-z0-9-]+\.json$ ]] || [ ! -f "$DEFINITION" ]; then echo "::error::Refused definition: ${{ inputs.definition }}"; exit 1; fi
+          if ! [[ "$DEFINITION_NAME" =~ ^[a-z0-9-]+\.json$ ]] || [ ! -f "$DEFINITION" ]; then echo "::error::Refused definition: $DEFINITION_NAME"; exit 1; fi
+      - name: Show an earlier manifest without creating a bucket or exporting
+        if: env.SHOW_RUN != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$SHOW_RUN" =~ ^[0-9]+$ ]] || { echo "::error::show_run must be a run id"; exit 1; }
+          bucket=$(jq -er '.bucket | select(type == "string" and length > 0)' "$DEFINITION")
+          prefix=$(jq -er '.prefix | select(type == "string" and length > 0)' "$DEFINITION")
+          if ! [[ "$bucket" =~ ^[a-zA-Z0-9_-]+$ && "$prefix" =~ ^[a-zA-Z0-9_-]+(/[a-zA-Z0-9_-]+)*$ ]]; then
+            echo "::error::Refused unsafe archive bucket or prefix"; exit 1
+          fi
+          curl --fail-with-body -sS -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            "https://api.supabase.com/v1/projects/$PROJECT_REF/api-keys?reveal=true" > "$RUNNER_TEMP/archive-keys.json"
+          svc=$(jq -er '.[] | select(.name == "service_role" and .api_key != null) | .api_key' "$RUNNER_TEMP/archive-keys.json")
+          echo "::add-mask::$svc"
+          curl --fail-with-body -sS -H "Authorization: Bearer $svc" -H "apikey: $svc" \
+            "https://$PROJECT_REF.supabase.co/storage/v1/object/$bucket/$prefix/$SHOW_RUN/manifest.json" > manifest.json
+          jq -e . manifest.json > /dev/null
+          echo "## Earlier archive manifest (read only)" >> "$GITHUB_STEP_SUMMARY"
+          jq '{definition, git_sha, sets: [.sets[] | {name, rows, key_hash}]}' manifest.json >> "$GITHUB_STEP_SUMMARY"
       - name: Export, read back and check
+        if: env.SHOW_RUN == ''
         shell: bash  # -eo pipefail: a failed export fails the step (tee would hide it)
         run: |
+          set -euo pipefail
+          python3 "$RUNNER_TEMP/studysearch-controller-guard.py" --entry-point archive-export --resource "archive_definition:$(basename "$DEFINITION")"
           GIT_SHA=$(git rev-parse HEAD) python3 scripts/archive_export.py | tee export.log
           grep '^MANIFEST ' export.log | cut -c10- > manifest.json
           { echo "## Archive export"; grep -v '^MANIFEST ' export.log; } >> "$GITHUB_STEP_SUMMARY"
