@@ -276,3 +276,186 @@ begin
   update fx.caller set uid = null, rank = null;
   perform fx.ok(fx.raises($q$select public.admin_integration_queue('summary', '{}')$q$) like 'PIM Admin role or above required', 'no session refused');
 end $t$;
+
+-- 11. IQ-00112 collector protocol (6 Nov 2026 mandate; Admin ff7ef0a2e63ca68b6333cfc4ab0fabb311b4f559) --------------------------
+-- Synthetic events only. A local transport acceptance and a local recipient receipt are deliberately separate evidence;
+-- neither is a real push/e-mail delivery. Production acceptance still requires the configured destination and an independent watchdog PASS.
+-- Reuses the existing add/evaluate/take/confirm functions. Existing budget-enforcement fixtures guard the read-only watchdog.
+select fx.reset();
+create table fx.alert_transport_acceptances(alert_id bigint primary key references pipeline.platform_alerts(id), receipt_id text not null unique);
+create table fx.alert_recipient_receipts(alert_id bigint primary key references fx.alert_transport_acceptances(alert_id), received_at timestamptz not null);
+create table fx.alert_original_events(id bigint primary key, event jsonb not null);
+
+do $t$
+declare
+  v_issue uuid; v_ids bigint[]; v_claimed bigint[]; v_deferred bigint; v_retry bigint; v_sent bigint; v_expired bigint; v_exhausted bigint; v_confirm_exhausted bigint; v_recovery bigint;
+  r jsonb; v_before jsonb; v_added boolean; v_n int;
+  v_mutable text[] := array['status','attempts','next_attempt_at','lease_until','sent_via','sent_at','net_request_id','last_error'];
+begin
+  insert into pipeline.platform_toolset_settings(toolset_key, key, kind, value) values
+    ('pipeline', 'alerts.max_attempts', 'number', '5'), ('pipeline', 'alerts.retry_minutes', 'number', '10')
+    on conflict (toolset_key,key) do update set value = excluded.value;
+  update pipeline.platform_toolset_settings set value = 'true' where toolset_key = 'pipeline' and key = 'alerts.delivery_enabled';
+  update pipeline.platform_toolset_settings set value = 'false' where toolset_key = 'pipeline' and key = 'alerts.webhook_enabled';
+  insert into pipeline.platform_issues(check_key, severity, area, title, first_seen)
+    values ('fixture:collector', 'critical', 'scheduled jobs', 'Synthetic collector protocol', now() - interval '4 hours') returning id into v_issue;
+  for v_n in 1..79 loop
+    v_added := security.platform_alerts_add_v1(v_issue, 'fixture:collector', case when v_n = 1 then 'raised' else 'reminder' end,
+      'critical', 'Synthetic alert ' || v_n, 'Fixture-only event ' || v_n, 'fixture:original:' || v_n);
+    if not v_added then raise exception 'synthetic original event was not created: %', v_n; end if;
+    update pipeline.platform_alerts set created_at = now() - interval '3 hours' + v_n * interval '1 second'
+      where dedupe_key = 'fixture:original:' || v_n;
+  end loop;
+  select array_agg(id order by id) into v_ids from pipeline.platform_alerts;
+  insert into fx.alert_original_events select a.id, to_jsonb(a) - v_mutable from pipeline.platform_alerts a;
+  perform fx.ok(cardinality(v_ids) = 79 and (select count(*) from fx.alert_original_events) = 79,
+    'collector: 79 synthetic original event IDs captured before collection');
+  v_added := security.platform_alerts_add_v1(v_issue, 'fixture:collector', 'raised', 'critical', 'Duplicate input', 'Not a second event', 'fixture:original:1');
+  perform fx.ok(not v_added and (select count(*) from pipeline.platform_alerts) = 79,
+    'collector: generation dedupe preserves all original IDs without copying events');
+
+  -- The route switches stop collection; they do not relabel or discard the existing backlog.
+  update pipeline.platform_toolset_settings set value = 'false' where toolset_key = 'pipeline' and key = 'alerts.delivery_enabled';
+  r := security.platform_alerts_take_v1('fixture transport');
+  perform fx.ok((r->>'count')::int = 0 and (select count(*) from pipeline.platform_alerts where status = 'pending' and attempts = 0) = 79,
+    'collector: delivery off leaves 79 pending events unattempted');
+  update pipeline.platform_toolset_settings set value = 'true' where toolset_key = 'pipeline' and key in ('alerts.delivery_enabled','alerts.webhook_enabled');
+  r := security.platform_alerts_take_v1('fixture transport');
+  perform fx.ok((r->>'count')::int = 0 and (select count(*) from pipeline.platform_alerts where status = 'pending' and attempts = 0) = 79,
+    'collector: webhook route excludes scheduled-task collection without changing events');
+  update pipeline.platform_toolset_settings set value = 'false' where toolset_key = 'pipeline' and key = 'alerts.webhook_enabled';
+
+  v_deferred := v_ids[79]; v_retry := v_ids[1]; v_sent := v_ids[2]; v_expired := v_ids[3]; v_exhausted := v_ids[4]; v_confirm_exhausted := v_ids[5];
+  update pipeline.platform_alerts set next_attempt_at = now() + interval '1 hour' where id = v_deferred;
+  r := security.platform_alerts_take_v1('fixture transport');
+  select array_agg((a->>'id')::bigint order by (a->>'id')::bigint) into v_claimed from jsonb_array_elements(r->'alerts') a;
+  perform fx.ok((r->>'count')::int = 78 and v_claimed = v_ids[1:78],
+    'collector: takes only due pending events and returns their original IDs');
+  perform fx.ok((select count(*) from pipeline.platform_alerts where status = 'sending' and attempts = 1 and sent_via = 'fixture transport'
+    and lease_until = now() + interval '15 minutes' and sent_at is null) = 78,
+    'collector: claims increment attempts and establish leases without claiming delivery');
+  perform fx.ok((select status = 'pending' and attempts = 0 and lease_until is null from pipeline.platform_alerts where id = v_deferred),
+    'collector: a future retry is not claimed early');
+  r := security.platform_alerts_take_v1('fixture transport');
+  perform fx.ok((r->>'count')::int = 0 and (select sum(attempts) from pipeline.platform_alerts) = 78,
+    'collector: a second take cannot reclaim active leases or consume another attempt');
+  perform fx.ok(not exists (select 1 from pipeline.platform_alerts where sent_at is not null)
+    and not exists (select 1 from fx.alert_transport_acceptances) and not exists (select 1 from fx.alert_recipient_receipts),
+    'collector: collection alone is neither transport acceptance nor recipient receipt');
+  perform fx.ok((select acknowledged_at is null from pipeline.platform_issues where id = v_issue),
+    'collector: collection does not acknowledge the operator issue');
+
+  r := security.platform_alerts_confirm_v1(array[v_retry], false, 'fixture transport refused');
+  perform fx.ok((r->>'updated')::int = 1 and not (r->>'delivered')::boolean,
+    'collector: a refused transport confirms failure for the exact claimed ID');
+  perform fx.ok((select status = 'pending' and attempts = 1 and lease_until is null and sent_at is null
+    and last_error = 'fixture transport refused' and next_attempt_at = now() + interval '10 minutes'
+    from pipeline.platform_alerts where id = v_retry),
+    'collector: first failure keeps the event and schedules the configured first backoff');
+  r := security.platform_alerts_take_v1('fixture transport');
+  perform fx.ok((r->>'count')::int = 0, 'collector: retry backoff cannot be bypassed by another take');
+  update pipeline.platform_alerts set next_attempt_at = now() - interval '1 second' where id = v_retry; -- fixture clock advance, never production retry reset
+  r := security.platform_alerts_take_v1('fixture transport');
+  perform fx.ok((r->>'count')::int = 1 and (r->'alerts'->0->>'id')::bigint = v_retry
+    and (select attempts = 2 from pipeline.platform_alerts where id = v_retry),
+    'collector: due retry reuses the original event ID and increments its attempt once');
+  r := security.platform_alerts_confirm_v1(array[v_retry], false, 'fixture transport refused again');
+  perform fx.ok((select status = 'pending' and attempts = 2 and next_attempt_at = now() + interval '20 minutes'
+    from pipeline.platform_alerts where id = v_retry),
+    'collector: repeated failure doubles backoff without changing event identity');
+
+  -- A collector may confirm only after its transport accepted this exact event; this local table stands for that evidence.
+  insert into fx.alert_transport_acceptances values (v_sent, 'fixture-transport:' || v_sent);
+  perform fx.ok(not exists (select 1 from fx.alert_recipient_receipts) and (select sent_at is null from pipeline.platform_alerts where id = v_sent),
+    'collector: transport acceptance precedes confirmation and is not recipient receipt');
+  r := security.platform_alerts_confirm_v1(array[v_sent], true);
+  perform fx.ok((r->>'updated')::int = 1 and (r->>'delivered')::boolean
+    and (select status = 'sent' and sent_at = now() and lease_until is null and attempts = 1 from pipeline.platform_alerts where id = v_sent),
+    'collector: exact-ID success records caller-reported transport delivery and clears its lease');
+  perform fx.ok((select count(*) from pipeline.platform_alerts where status = 'sent') = 1
+    and not exists (select 1 from fx.alert_recipient_receipts)
+    and (select acknowledged_at is null from pipeline.platform_issues where id = v_issue),
+    'collector: confirmation neither delivers other IDs nor proves receipt or operator acknowledgement');
+  r := security.platform_alerts_confirm_v1(array[v_sent], true);
+  perform fx.ok((r->>'updated')::int = 0, 'collector: repeated successful confirmation is idempotent');
+  r := security.platform_alerts_confirm_v1(array[v_deferred], true);
+  perform fx.ok((r->>'updated')::int = 0 and (select status = 'pending' and sent_at is null from pipeline.platform_alerts where id = v_deferred),
+    'collector: confirming an unclaimed pending ID cannot mark it delivered');
+  insert into fx.alert_recipient_receipts values (v_sent, now());
+  perform fx.ok((select count(*) from fx.alert_recipient_receipts) = 1
+    and (select acknowledged_at is null from pipeline.platform_issues where id = v_issue),
+    'collector: independently modeled recipient receipt remains separate from operator acknowledgement');
+
+  -- Use the real rank-6 acknowledgement branch; the existing fixture caller/auth helpers supply the local operator.
+  select jsonb_agg(to_jsonb(a) order by id) into v_before from pipeline.platform_alerts a;
+  update fx.caller set uid = '00000000-0000-0000-0000-000000000066', rank = 6;
+  r := public.admin_platform_alerts('acknowledge', jsonb_build_object('id', v_issue, 'reason', 'Fixture recipient receipt reviewed'));
+  perform fx.ok((r->>'ok')::boolean and (select acknowledged_at = now() and acknowledged_by = auth.uid()
+    and acknowledged_note = 'Fixture recipient receipt reviewed' from pipeline.platform_issues where id = v_issue),
+    'collector: actual operator acknowledgement records its separate identity and reason');
+  perform fx.ok(exists (select 1 from pipeline.admin_control_events where area = 'platform health' and action = 'acknowledge'
+    and target = v_issue::text and actor = auth.uid()),
+    'collector: actual operator acknowledgement is audited');
+  perform fx.ok(v_before = (select jsonb_agg(to_jsonb(a) order by id) from pipeline.platform_alerts a),
+    'collector: operator acknowledgement cannot mark the backlog delivered or discard an event');
+  update pipeline.platform_toolset_settings set value = '2' where toolset_key = 'pipeline' and key = 'alerts.reminder_hours';
+  r := security.platform_alerts_evaluate_v1();
+  perform fx.ok((r->>'reminders')::int = 0 and (select count(*) from pipeline.platform_alerts) = 79,
+    'collector: acknowledged operator issue suppresses otherwise-due reminders without draining its alerts');
+  update pipeline.platform_toolset_settings set value = '12' where toolset_key = 'pipeline' and key = 'alerts.reminder_hours';
+
+  update pipeline.platform_alerts set attempts = 5 where id = v_confirm_exhausted;
+  r := security.platform_alerts_confirm_v1(array[v_confirm_exhausted], false, 'fixture final transport refusal');
+  perform fx.ok((r->>'updated')::int = 1 and (select status = 'failed' and attempts = 5 and sent_at is null
+    and last_error = 'fixture final transport refusal' from pipeline.platform_alerts where id = v_confirm_exhausted),
+    'collector: final refused transport attempt becomes failed while retaining its event');
+  r := security.platform_alerts_confirm_v1(array[v_confirm_exhausted], true);
+  perform fx.ok((r->>'updated')::int = 0 and (select status = 'failed' from pipeline.platform_alerts where id = v_confirm_exhausted),
+    'collector: an exhausted unclaimed event cannot be changed to sent by confirmation');
+
+  update pipeline.platform_alerts set lease_until = now() - interval '1 second' where id = v_expired;
+  r := security.platform_alerts_evaluate_v1();
+  perform fx.ok((r->>'lease_expired')::int = 1 and (select status = 'pending' and attempts = 1 and lease_until is null
+    and next_attempt_at = now() + interval '10 minutes' and last_error = 'delivery not confirmed before the lease ended'
+    from pipeline.platform_alerts where id = v_expired),
+    'collector: an unconfirmed expired lease requeues the same ID with backoff');
+  update pipeline.platform_alerts set attempts = 5, lease_until = now() - interval '1 second' where id = v_exhausted;
+  r := security.platform_alerts_evaluate_v1();
+  perform fx.ok((r->>'lease_expired')::int = 1 and (select status = 'failed' and attempts = 5 and lease_until is null and sent_at is null
+    from pipeline.platform_alerts where id = v_exhausted),
+    'collector: exhausting configured attempts fails visibly without deletion or false delivery');
+  perform fx.ok((select count(*) from pipeline.platform_alerts) = 79
+    and (select array_agg(id order by id) from pipeline.platform_alerts) = v_ids,
+    'collector: retries and lease recovery preserve all 79 original event IDs');
+
+  -- Resolution creates a new recovery event; it does not rewrite the historical alerts or imply they reached the destination.
+  update pipeline.platform_issues set resolved_at = now() where id = v_issue;
+  r := security.platform_alerts_evaluate_v1();
+  perform fx.ok((r->>'recovered')::int = 1 and (select count(*) from pipeline.platform_alerts where kind = 'recovered') = 1,
+    'collector: issue resolution generates one separate recovery alert');
+  select id into v_recovery from pipeline.platform_alerts where kind = 'recovered';
+  perform fx.ok(not (v_recovery = any(v_ids)) and (select status = 'pending' and attempts = 0 and sent_at is null
+    from pipeline.platform_alerts where id = v_recovery),
+    'collector: the new recovery alert starts pending and unattempted');
+  r := security.platform_alerts_evaluate_v1();
+  perform fx.ok((r->>'recovered')::int = 0 and (select count(*) from pipeline.platform_alerts where kind = 'recovered') = 1,
+    'collector: repeated evaluation does not duplicate the recovery alert');
+  r := security.platform_alerts_take_v1('fixture transport');
+  perform fx.ok((r->>'count')::int = 1 and (r->'alerts'->0->>'id')::bigint = v_recovery,
+    'collector: recovery uses the same due-pending collection protocol');
+  insert into fx.alert_transport_acceptances values (v_recovery, 'fixture-transport:' || v_recovery);
+  r := security.platform_alerts_confirm_v1(array[v_recovery], true);
+  perform fx.ok((r->>'updated')::int = 1 and (select status = 'sent' and attempts = 1 from pipeline.platform_alerts where id = v_recovery)
+    and not exists (select 1 from fx.alert_recipient_receipts where alert_id = v_recovery),
+    'collector: recovery confirmation still requires separate recipient receipt evidence');
+  perform fx.ok((select count(*) from pipeline.platform_alerts) = 80 and (select count(*) from fx.alert_original_events) = 79,
+    'collector: one recovery event is additive to the preserved original backlog');
+  perform fx.ok((select count(*) = 79 and bool_and(o.event = to_jsonb(a) - v_mutable)
+    from fx.alert_original_events o join pipeline.platform_alerts a on a.id = o.id),
+    'collector: original timestamps, content, dedupe keys and event identities are unchanged');
+  perform fx.ok((select count(*) from pipeline.platform_alerts where status = 'sent') = 2
+    and (select count(*) from fx.alert_transport_acceptances) = 2
+    and (select count(*) from fx.alert_recipient_receipts) = 1,
+    'collector: collection, caller-reported delivery and modeled receipt have independently measured totals');
+  raise notice 'PASS alert collector protocol: 79 original IDs preserved; fixture transport acceptance is not recipient receipt';
+end $t$;

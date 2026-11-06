@@ -1,4 +1,4 @@
-// Guards: CF-247 continuous validation and integration feedback mandate (Platform Admin 2 Nov 2026 16:58) §3 queue, §4 V3/V4, §5 loop, §13 modes
+// Guards: CF-247 continuous validation and integration feedback mandate (Platform Admin 2 Nov 2026 16:58) §3 queue, §4 V3/V4, §5 loop, §13 modes; IQ-00112 alert collector recovery (6 Nov 2026), Admin ff7ef0a2e63ca68b6333cfc4ab0fabb311b4f559
 // The persistent integration feedback queue (pipeline.integration_issues, by deterministic fingerprint: no duplicate for an unchanged problem,
 // a recurrence after Closed reopens as a regression, Closed only with production verification evidence), the operating mode (changed only by
 // the Integration Controller, audited), the V4 job integration-validate (created inactive) and the V3 deploy check. Reuses Platform health,
@@ -114,8 +114,19 @@ test('V3: migration md5 against the file, function md5s, job compatibility and e
 })
 
 test('the fixtures: live table definitions, the alert path checked against live, the migration twice, and every case', () => {
-  expect(run).toContain('LIVE="6880db9e624650116a722853bdea974b c44b2ba7626e74fa46cf19a2561b3499"')
+  expect(run).toContain('LIVE="6880db9e624650116a722853bdea974b c44b2ba7626e74fa46cf19a2561b3499 7e9b0cdf3ad4b7f211c6c1d18e9666c1 5122e79787610eafec2ee328bfd90617 d5dd97f1bdb0b718d99b220f6404f1ac"')
   expect(run).toContain('applied twice: one job, one mode row, alert path unchanged')
+  expect(run).toContain('collector scenario completion evidence missing')
+  expect(run).toContain('Collector assertions executed:')
+  for (const c of ['collector: 79 synthetic original event IDs captured before collection',
+    'collector: a second take cannot reclaim active leases or consume another attempt',
+    'collector: collection alone is neither transport acceptance nor recipient receipt',
+    'collector: due retry reuses the original event ID and increments its attempt once',
+    'collector: confirmation neither delivers other IDs nor proves receipt or operator acknowledgement',
+    'collector: actual operator acknowledgement is audited',
+    'collector: an unconfirmed expired lease requeues the same ID with backoff',
+    'collector: repeated evaluation does not duplicate the recovery alert',
+    'collector: original timestamps, content, dedupe keys and event identities are unchanged']) expect(fixtures).toContain(`'${c}`)
   expect(stubs).toContain('read from information_schema on production, read-only, 2 Nov 2026 17:06-17:08 AEDT')
   for (const c of ['dedupe: the same problem twice is one issue', 'dedupe: an unchanged repeat adds no history line', 'close refused: no verification', 'close refused: verification failed',
     'close refused: evidence too thin', 'closes with verification evidence', 'a recurrence after Closed reopens the same issue', 'recorded as a regression',

@@ -7,6 +7,8 @@ on:
     paths:
       - 'scripts/prod-parity*.mjs'
       - 'tests/fixtures/prod-parity/**'
+      - 'tests/fixtures/integration-queue/**'
+      - 'tests/uat/cf-247-s223-integration-queue-contract.spec.mjs'
       - 'tests/uat/cf-247-s310-prod-parity-tool-contract.spec.mjs'
       - '.github/workflows/prod-parity.yml'
   workflow_dispatch:
@@ -34,9 +36,21 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: bash tests/fixtures/prod-parity/run.sh | tee prod-parity-results.log
+      - name: Production parity round trip
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash tests/fixtures/prod-parity/run.sh | tee prod-parity-results.log
+      # Guards: IQ-00112 collector recovery, Admin ff7ef0a2e63ca68b6333cfc4ab0fabb311b4f559. Simulated transport only; never production delivery.
+      - name: Alert collector protocol on isolated PostgreSQL
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash tests/fixtures/integration-queue/run.sh | tee integration-queue-results.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: prod-parity-evidence
-          path: prod-parity-results.log
+          path: |
+            prod-parity-results.log
+            integration-queue-results.log
