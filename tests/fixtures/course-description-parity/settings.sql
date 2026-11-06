@@ -2,6 +2,12 @@
 -- The pipeline settings course_description_check_v1 and course_description_trusted_v1 read, exactly as held in production
 -- (read only, fxcwkweaxjtknorudmwp, 6 Nov 2026 08:27 AEDT; all updated_at 3 Nov 2026). Configuration values only: no user data.
 -- updated_by is left null (it is an actor column).
+-- Fixture seeding only (after the parity check): three catalogue.providers triggers write to onboarding and follow-up tables this fixture does
+-- not carry (they are not part of the course-description path). They are switched off in this local database so providers can be seeded; every
+-- trigger on the tables under test (courses, field_enrich_items, layer4_review_items, layer4_decisions, manual_locks, settings) stays on.
+alter table catalogue.providers disable trigger provider_site_followups;
+alter table catalogue.providers disable trigger providers_onboarding_new;
+alter table catalogue.providers disable trigger provider_publish_by_default;
 insert into pipeline.platform_toolsets(key) values ('pipeline') on conflict do nothing;
 
 insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, section, used_by, reason) values

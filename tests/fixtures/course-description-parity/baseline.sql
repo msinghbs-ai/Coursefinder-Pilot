@@ -12,14 +12,20 @@
 -- Fixture rows are invented (fresh ids); the sentence shapes follow held readings in production (field_enrich_items, field description,
 -- 3-5 Nov 2026). No user data.
 \set ON_ERROR_STOP 1
+-- :after = 1 runs the same cases against the database AFTER migration 20261106500000 (run.sh does both): every outcome must be identical.
+\if :{?after}
+\else
+\set after 0
+\endif
 set search_path to "$user", public, extensions;
 
 insert into pim.entity_registry(id, stable_key) values
   ('00000000-0000-4000-8000-0000000000a1', 'g-fx-provider-a'), ('00000000-0000-4000-8000-0000000000b1', 'g-fx-provider-b'),
   ('00000000-0000-4000-8000-000000000c01', 'g-fx-course-1'), ('00000000-0000-4000-8000-000000000c02', 'g-fx-course-2'),
   ('00000000-0000-4000-8000-000000000c03', 'g-fx-course-3');
-insert into catalogue.providers(id, stable_key) values
-  ('00000000-0000-4000-8000-0000000000a1', 'g-fx-provider-a'), ('00000000-0000-4000-8000-0000000000b1', 'g-fx-provider-b');
+insert into catalogue.providers(id, stable_key, canonical_name, country_id) values
+  ('00000000-0000-4000-8000-0000000000a1', 'g-fx-provider-a', 'Fixture University A', (select id from ref.countries where iso_alpha2 = 'AU')),
+  ('00000000-0000-4000-8000-0000000000b1', 'g-fx-provider-b', 'Fixture University B', (select id from ref.countries where iso_alpha2 = 'NZ'));
 insert into catalogue.courses(id, stable_key, provider_id, canonical_title, description) values
   ('00000000-0000-4000-8000-000000000c01', 'g-fx-course-1', '00000000-0000-4000-8000-0000000000a1', 'Bachelor of Environmental Science', null),
   ('00000000-0000-4000-8000-000000000c02', 'g-fx-course-2', '00000000-0000-4000-8000-0000000000a1', 'Bachelor of Marine Science',
@@ -112,9 +118,19 @@ do $$ begin
   raise notice 'trust [pass]: no provider trusted while enrich.course_description_review_first = %', security.pipeline_num_v1('enrich.course_description_review_first', 5);
 end $$;
 
+\if :after
+-- After the migration: the check is a wrapper of check_with_v1, which reads the course lists, and the lists equal the provider lists (D2, D5).
+do $$ begin
+  if position('course_description_check_with_v1' in pg_get_functiondef('security.course_description_check_v1(uuid,jsonb)'::regprocedure)) = 0 then raise exception 'check_v1 is not the wrapper'; end if;
+  if position('enrich.course_description_claim_words' in pg_get_functiondef('security.course_description_check_with_v1(uuid,jsonb,jsonb,jsonb)'::regprocedure)) = 0 then raise exception 'the course claim list is not read'; end if;
+  if position('enrich.course_description_marketing_words' in pg_get_functiondef('security.course_description_check_with_v1(uuid,jsonb,jsonb,jsonb)'::regprocedure)) = 0 then raise exception 'the course marketing list is not read'; end if;
+  raise notice 'claim list [pass]: the check reads the course lists, seeded identical to the provider lists';
+end $$;
+\else
 -- The shared claim list is the one the check reads today (PR #877 adds pdesc.evidence_claim_words for providers only).
 do $$ begin
   if position('pdesc.claim_words' in pg_get_functiondef('security.course_description_check_v1(uuid,jsonb)'::regprocedure)) = 0 then raise exception 'the check no longer reads pdesc.claim_words'; end if;
   if position('enrich.course_description_claim_words' in pg_get_functiondef('security.course_description_check_v1(uuid,jsonb)'::regprocedure)) > 0 then raise exception 'the course claim list already exists: re-baseline'; end if;
   raise notice 'claim list [pass]: course_description_check_v1 reads pipeline / pdesc.claim_words (shared with provider descriptions)';
 end $$;
+\endif
