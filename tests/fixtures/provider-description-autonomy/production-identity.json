@@ -1,0 +1,334 @@
+{
+  "columns": [
+    {
+      "udt_name": "uuid",
+      "table_name": "provider_identity_findings",
+      "column_name": "provider_id",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "provider_identity_findings",
+      "column_name": "check_code",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "provider_identity_findings",
+      "column_name": "state",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": "'open'::text"
+    },
+    {
+      "udt_name": "text",
+      "table_name": "provider_identity_findings",
+      "column_name": "reason",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": null
+    },
+    {
+      "udt_name": "jsonb",
+      "table_name": "provider_identity_findings",
+      "column_name": "detail",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": "'{}'::jsonb"
+    },
+    {
+      "udt_name": "timestamptz",
+      "table_name": "provider_identity_findings",
+      "column_name": "first_seen_at",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": "now()"
+    },
+    {
+      "udt_name": "timestamptz",
+      "table_name": "provider_identity_findings",
+      "column_name": "last_seen_at",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": "now()"
+    },
+    {
+      "udt_name": "timestamptz",
+      "table_name": "provider_identity_findings",
+      "column_name": "cleared_at",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null
+    },
+    {
+      "udt_name": "int4",
+      "table_name": "provider_identity_findings",
+      "column_name": "observations",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": "1"
+    },
+    {
+      "udt_name": "int8",
+      "table_name": "provider_lifecycle_events",
+      "column_name": "id",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "provider_lifecycle_events",
+      "column_name": "scope",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": null
+    },
+    {
+      "udt_name": "uuid",
+      "table_name": "provider_lifecycle_events",
+      "column_name": "provider_id",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null
+    },
+    {
+      "udt_name": "uuid",
+      "table_name": "provider_lifecycle_events",
+      "column_name": "country_id",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "provider_lifecycle_events",
+      "column_name": "transition",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": null
+    },
+    {
+      "udt_name": "uuid",
+      "table_name": "provider_lifecycle_events",
+      "column_name": "successor_provider_id",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null
+    },
+    {
+      "udt_name": "date",
+      "table_name": "provider_lifecycle_events",
+      "column_name": "effective_date",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": null
+    },
+    {
+      "udt_name": "jsonb",
+      "table_name": "provider_lifecycle_events",
+      "column_name": "evidence",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": "'[]'::jsonb"
+    },
+    {
+      "udt_name": "text",
+      "table_name": "provider_lifecycle_events",
+      "column_name": "source",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "provider_lifecycle_events",
+      "column_name": "state",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": "'proposed'::text"
+    },
+    {
+      "udt_name": "jsonb",
+      "table_name": "provider_lifecycle_events",
+      "column_name": "plan",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null
+    },
+    {
+      "udt_name": "timestamptz",
+      "table_name": "provider_lifecycle_events",
+      "column_name": "planned_at",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null
+    },
+    {
+      "udt_name": "uuid",
+      "table_name": "provider_lifecycle_events",
+      "column_name": "decided_by",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null
+    },
+    {
+      "udt_name": "timestamptz",
+      "table_name": "provider_lifecycle_events",
+      "column_name": "decided_at",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "provider_lifecycle_events",
+      "column_name": "decision_note",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null
+    },
+    {
+      "udt_name": "timestamptz",
+      "table_name": "provider_lifecycle_events",
+      "column_name": "executed_at",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null
+    },
+    {
+      "udt_name": "uuid",
+      "table_name": "provider_lifecycle_events",
+      "column_name": "executed_by",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null
+    },
+    {
+      "udt_name": "jsonb",
+      "table_name": "provider_lifecycle_events",
+      "column_name": "execution",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null
+    },
+    {
+      "udt_name": "timestamptz",
+      "table_name": "provider_lifecycle_events",
+      "column_name": "reversed_at",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null
+    },
+    {
+      "udt_name": "uuid",
+      "table_name": "provider_lifecycle_events",
+      "column_name": "reversed_by",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "provider_lifecycle_events",
+      "column_name": "reverse_note",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null
+    },
+    {
+      "udt_name": "timestamptz",
+      "table_name": "provider_lifecycle_events",
+      "column_name": "created_at",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": "now()"
+    },
+    {
+      "udt_name": "timestamptz",
+      "table_name": "provider_lifecycle_events",
+      "column_name": "updated_at",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": "now()"
+    }
+  ],
+  "constraints": [
+    {
+      "conname": "provider_identity_findings_check_code_check",
+      "contype": "c",
+      "relation": "pipeline.provider_identity_findings",
+      "definition": "CHECK (check_code = ANY (ARRAY['website_malformed'::text, 'identity_unconfirmed'::text, 'domain_shared'::text, 'redirected_or_parked'::text, 'register_changed'::text]))"
+    },
+    {
+      "conname": "provider_identity_findings_pkey",
+      "contype": "p",
+      "relation": "pipeline.provider_identity_findings",
+      "definition": "PRIMARY KEY (provider_id, check_code)"
+    },
+    {
+      "conname": "provider_identity_findings_provider_id_fkey",
+      "contype": "f",
+      "relation": "pipeline.provider_identity_findings",
+      "definition": "FOREIGN KEY (provider_id) REFERENCES catalogue.providers(id)"
+    },
+    {
+      "conname": "provider_identity_findings_state_check",
+      "contype": "c",
+      "relation": "pipeline.provider_identity_findings",
+      "definition": "CHECK (state = ANY (ARRAY['open'::text, 'cleared'::text]))"
+    },
+    {
+      "conname": "provider_lifecycle_events_check",
+      "contype": "c",
+      "relation": "pipeline.provider_lifecycle_events",
+      "definition": "CHECK (scope = 'provider'::text AND provider_id IS NOT NULL AND transition <> 'retired'::text OR scope = 'country'::text AND country_id IS NOT NULL AND transition = 'retired'::text)"
+    },
+    {
+      "conname": "provider_lifecycle_events_check1",
+      "contype": "c",
+      "relation": "pipeline.provider_lifecycle_events",
+      "definition": "CHECK (transition <> 'merged'::text OR successor_provider_id IS NOT NULL)"
+    },
+    {
+      "conname": "provider_lifecycle_events_pkey",
+      "contype": "p",
+      "relation": "pipeline.provider_lifecycle_events",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "conname": "provider_lifecycle_events_provider_id_fkey",
+      "contype": "f",
+      "relation": "pipeline.provider_lifecycle_events",
+      "definition": "FOREIGN KEY (provider_id) REFERENCES catalogue.providers(id)"
+    },
+    {
+      "conname": "provider_lifecycle_events_scope_check",
+      "contype": "c",
+      "relation": "pipeline.provider_lifecycle_events",
+      "definition": "CHECK (scope = ANY (ARRAY['provider'::text, 'country'::text]))"
+    },
+    {
+      "conname": "provider_lifecycle_events_state_check",
+      "contype": "c",
+      "relation": "pipeline.provider_lifecycle_events",
+      "definition": "CHECK (state = ANY (ARRAY['proposed'::text, 'planned'::text, 'approved'::text, 'executed'::text, 'reversed'::text, 'rejected'::text]))"
+    },
+    {
+      "conname": "provider_lifecycle_events_successor_provider_id_fkey",
+      "contype": "f",
+      "relation": "pipeline.provider_lifecycle_events",
+      "definition": "FOREIGN KEY (successor_provider_id) REFERENCES catalogue.providers(id)"
+    },
+    {
+      "conname": "provider_lifecycle_events_transition_check",
+      "contype": "c",
+      "relation": "pipeline.provider_lifecycle_events",
+      "definition": "CHECK (transition = ANY (ARRAY['deregistered'::text, 'closed'::text, 'merged'::text, 'temporarily_unavailable'::text, 'retired'::text]))"
+    }
+  ]
+}

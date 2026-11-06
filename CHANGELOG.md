@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.416 — 6 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.489** (Platform Admin authorisation 6 Nov 2026 12:55; PR #877, agent B; independent validation agent E; main v2.15.488 merged in). Provider Description Run & Validate on the existing `provider-description-read` job and `coverage-sweep` mode: exact-source identity, evidence-aware campus/scholarship/guarantee validation (`pdesc.evidence_claim_words`, `security.pdesc_claim_check_v1`; `pdesc.claim_words` unchanged), review-capacity parking and resume, rank-4 Layer 4 ownership (`layer4_provider_description_apply_impl`), no direct website-sync writer. Migration `20261106200000` replaces six md5-guarded functions (before 528d5a3d, 97e6b926, 5342ae3f, d5aec36d, 8f5918c9, 875b25c4). The reader is not added to `run_now.jobs` (a settings change after deployment). Consumer API unchanged (G3).
+
+## 0.1.415 — 6 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.488** (Platform Admin conditional authorisation 6 Nov 2026 09:44 section 1; PR #889, agent D; independent validation agent E: ready). Intake Automation Progress in Process results, reusing the generic progress observer (job `first-run-verify`, `progress_read_v1`, `progress_measure_v1`, `progress_zero_reason_v1`; three `intake_*` transitions). Repeat failures are raised only when evidence, reader and settings are unchanged; where history cannot be established the row is `unverified_repeat` (22:46 correction, regression test for the 167 UNSW rechecks). Migration `20261106400000` is md5-guarded on `progress_measure_v1` (40c0c972) and `progress_read_v1` (f11ed22d). Also scopes `playwright.intake.config.mjs` to its own spec. Consumer API unchanged.
+
 ## 0.1.414 — 6 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.487** (Platform Admin authorisation 6 Nov 2026 07:00; PR #891, agent C; independent validation agent E: ready). Fix for the v2.15.486 production acceptance failure: the Columns panel's classes `cc-bar`, `cc-panel` and `cc-count` collided with `src/data-quality.css` (and `.cc-bar` with `admin-pages.css`); all Columns classes now use the `ccol-` prefix. New `scripts/verify-css-class-collisions.mjs` runs in prebuild and fails the build on any repeat. Browser tests now load every stylesheet and hit-test all 40 checkboxes on desktop and phone. No migration, no database change, consumer API unchanged.

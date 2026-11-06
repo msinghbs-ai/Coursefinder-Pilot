@@ -1,0 +1,54 @@
+{
+  "captured_production": "2026-11-04",
+  "schema_only": true,
+  "columns_checked": 189,
+  "constraints_checked": 37,
+  "triggers_checked": 18,
+  "functions_checked": 44,
+  "zoho_functions_checked": 6,
+  "postgres_settings": [
+    {
+      "name": "default_statistics_target",
+      "setting": "100",
+      "unit": null,
+      "source": "configuration file"
+    },
+    {
+      "name": "jit",
+      "setting": "off",
+      "unit": null,
+      "source": "configuration file"
+    },
+    {
+      "name": "jit_above_cost",
+      "setting": "100000",
+      "unit": null,
+      "source": "default"
+    },
+    {
+      "name": "lock_timeout",
+      "setting": "0",
+      "unit": "ms",
+      "source": "default"
+    },
+    {
+      "name": "max_parallel_workers_per_gather",
+      "setting": "1",
+      "unit": null,
+      "source": "configuration file"
+    },
+    {
+      "name": "statement_timeout",
+      "setting": "120000",
+      "unit": "ms",
+      "source": "configuration file"
+    },
+    {
+      "name": "work_mem",
+      "setting": "7168",
+      "unit": "kB",
+      "source": "configuration file"
+    }
+  ],
+  "parity": "PASS"
+}

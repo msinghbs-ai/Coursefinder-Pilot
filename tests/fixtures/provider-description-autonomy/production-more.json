@@ -1,0 +1,155 @@
+{
+  "views": [
+    {
+      "name": "security.layer4_search_blocked_providers",
+      "definition": " SELECT layer4_active_blocks.entity_id AS provider_id\n   FROM security.layer4_active_blocks\n  WHERE layer4_active_blocks.block_scope = 'search'::text AND layer4_active_blocks.entity_type = 'provider'::text\nUNION\n SELECT h.provider_id\n   FROM security.provider_hidden_v1 h;"
+    },
+    {
+      "name": "security.provider_hidden_v1",
+      "definition": " SELECT id AS provider_id\n   FROM catalogue.providers p\n  WHERE publication_status IS DISTINCT FROM 'published'::text OR lifecycle_status IS DISTINCT FROM 'active'::text;"
+    }
+  ],
+  "indexes": [
+    {
+      "indexdef": "CREATE UNIQUE INDEX admin_jobs_governed_idempotency_uq ON pipeline.admin_jobs USING btree (((args ->> 'idempotency_key'::text))) WHERE (kind = 'governed_action'::text)",
+      "indexname": "admin_jobs_governed_idempotency_uq",
+      "tablename": "admin_jobs"
+    },
+    {
+      "indexdef": "CREATE INDEX admin_jobs_kind_scope_idx ON pipeline.admin_jobs USING btree (kind, scope, state)",
+      "indexname": "admin_jobs_kind_scope_idx",
+      "tablename": "admin_jobs"
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX admin_jobs_pkey ON pipeline.admin_jobs USING btree (id)",
+      "indexname": "admin_jobs_pkey",
+      "tablename": "admin_jobs"
+    },
+    {
+      "indexdef": "CREATE INDEX admin_jobs_lane_state_idx ON pipeline.admin_jobs USING btree (lane, state, created_at)",
+      "indexname": "admin_jobs_lane_state_idx",
+      "tablename": "admin_jobs"
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX admin_jobs_run_now_idempotency_uq ON pipeline.admin_jobs USING btree (((args ->> 'idempotency_key'::text))) WHERE ((kind = 'job_run_now'::text) AND (args ? 'idempotency_key'::text))",
+      "indexname": "admin_jobs_run_now_idempotency_uq",
+      "tablename": "admin_jobs"
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX provider_description_reads_pkey ON pipeline.provider_description_reads USING btree (id)",
+      "indexname": "provider_description_reads_pkey",
+      "tablename": "provider_description_reads"
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX provider_description_reads_open_uq ON pipeline.provider_description_reads USING btree (provider_id) WHERE (state = ANY (ARRAY['queued'::text, 'reading'::text, 'proposed'::text]))",
+      "indexname": "provider_description_reads_open_uq",
+      "tablename": "provider_description_reads"
+    },
+    {
+      "indexdef": "CREATE INDEX provider_description_reads_state_idx ON pipeline.provider_description_reads USING btree (state, next_try_at)",
+      "indexname": "provider_description_reads_state_idx",
+      "tablename": "provider_description_reads"
+    },
+    {
+      "indexdef": "CREATE INDEX provider_description_reads_provider_idx ON pipeline.provider_description_reads USING btree (provider_id, created_at DESC)",
+      "indexname": "provider_description_reads_provider_idx",
+      "tablename": "provider_description_reads"
+    },
+    {
+      "indexdef": "CREATE INDEX provider_description_reads_review_idx ON pipeline.provider_description_reads USING btree (review_item_id)",
+      "indexname": "provider_description_reads_review_idx",
+      "tablename": "provider_description_reads"
+    },
+    {
+      "indexdef": "CREATE INDEX provider_description_reads_evidence_idx ON pipeline.provider_description_reads USING btree (evidence_id)",
+      "indexname": "provider_description_reads_evidence_idx",
+      "tablename": "provider_description_reads"
+    }
+  ],
+  "table_grants": [
+    {
+      "grantee": "service_role",
+      "table_name": "evidence_artifacts",
+      "table_schema": "pipeline",
+      "privilege_type": "INSERT"
+    },
+    {
+      "grantee": "service_role",
+      "table_name": "evidence_artifacts",
+      "table_schema": "pipeline",
+      "privilege_type": "SELECT"
+    },
+    {
+      "grantee": "service_role",
+      "table_name": "evidence_artifacts",
+      "table_schema": "pipeline",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "grantee": "service_role",
+      "table_name": "evidence_artifacts",
+      "table_schema": "pipeline",
+      "privilege_type": "DELETE"
+    },
+    {
+      "grantee": "service_role",
+      "table_name": "evidence_artifacts",
+      "table_schema": "pipeline",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "grantee": "service_role",
+      "table_name": "evidence_artifacts",
+      "table_schema": "pipeline",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "grantee": "service_role",
+      "table_name": "evidence_artifacts",
+      "table_schema": "pipeline",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "grantee": "service_role",
+      "table_name": "providers",
+      "table_schema": "catalogue",
+      "privilege_type": "INSERT"
+    },
+    {
+      "grantee": "service_role",
+      "table_name": "providers",
+      "table_schema": "catalogue",
+      "privilege_type": "SELECT"
+    },
+    {
+      "grantee": "service_role",
+      "table_name": "providers",
+      "table_schema": "catalogue",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "grantee": "service_role",
+      "table_name": "providers",
+      "table_schema": "catalogue",
+      "privilege_type": "DELETE"
+    },
+    {
+      "grantee": "service_role",
+      "table_name": "providers",
+      "table_schema": "catalogue",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "grantee": "service_role",
+      "table_name": "providers",
+      "table_schema": "catalogue",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "grantee": "service_role",
+      "table_name": "providers",
+      "table_schema": "catalogue",
+      "privilege_type": "TRIGGER"
+    }
+  ]
+}

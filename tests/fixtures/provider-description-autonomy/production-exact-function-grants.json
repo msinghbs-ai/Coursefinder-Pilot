@@ -1,0 +1,488 @@
+[
+  {
+    "signature": "public.admin_job_run_now_v1(text, text, jsonb)",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "public.admin_job_run_now_v1(text, text, jsonb)",
+    "grantee": "authenticated",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "public.admin_job_run_now_v1(text, text, jsonb)",
+    "grantee": "service_role",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "public.admin_provider_descriptions(text, jsonb)",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "public.admin_provider_descriptions(text, jsonb)",
+    "grantee": "authenticated",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "public.admin_provider_descriptions(text, jsonb)",
+    "grantee": "service_role",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.ai_spend_capture_v1()",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.ai_spend_today_v1()",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.ai_use_allowed_v1(text)",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.ai_use_refusal_v1(text)",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.course_entry_review_apply_v1(uuid, text, jsonb, text)",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.current_role_rank()",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.current_role_rank()",
+    "grantee": "authenticated",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.current_role_rank()",
+    "grantee": "service_role",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.entry_matrix_review_apply_v1(uuid, text, jsonb, text, uuid)",
+    "grantee": "PUBLIC",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.entry_matrix_review_apply_v1(uuid, text, jsonb, text, uuid)",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.job_run_now_v1(text, text, jsonb, uuid)",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.layer2_evidence_lineage_stamp()",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "pipeline.layer2_evidence_version_guard()",
+    "grantee": "PUBLIC",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "pipeline.layer2_evidence_version_guard()",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.layer2_lineage_for_job(uuid)",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.layer2_lineage_for_job(uuid)",
+    "grantee": "service_role",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.layer4_arrival_guard_trg_v1()",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.layer4_evidence_link_trg_v1()",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.layer4_item_page_v1(text, jsonb, jsonb)",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.layer4_provider_description_apply_impl(uuid, uuid, jsonb, text)",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.layer4_reroute_course_v1(uuid, text, boolean)",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.layer4_reroute_trg_v1()",
+    "grantee": "PUBLIC",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.layer4_reroute_trg_v1()",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.layer4_resolution_for_v1(uuid, text, uuid, text, jsonb, jsonb, uuid, timestamp with time zone)",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "public.layer4_review_decide(uuid, text, text, jsonb)",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "public.layer4_review_decide(uuid, text, text, jsonb)",
+    "grantee": "service_role",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "public.layer4_review_decide(uuid, text, text, jsonb)",
+    "grantee": "authenticated",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.layer4_review_decide_impl(uuid, text, text, jsonb)",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.layer4_review_decide_impl(uuid, text, text, jsonb)",
+    "grantee": "service_role",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.layer4_review_decide_impl(uuid, text, text, jsonb)",
+    "grantee": "authenticated",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.layer4_stored_copy_v1(text)",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.manual_field_guard()",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.no_page_review_apply_v1(uuid, text, jsonb, text)",
+    "grantee": "PUBLIC",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.no_page_review_apply_v1(uuid, text, jsonb, text)",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.ops_guard_layer4_v1()",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.ops_guard_refuse_v1()",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.ops_learning_record_v1(jsonb)",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.ops_learning_signature_v1(bigint)",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.ops_remedy_guard_active_v1()",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.pdesc_has_term_v1(text, text)",
+    "grantee": "PUBLIC",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.pdesc_has_term_v1(text, text)",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.pdesc_similarity_v1(text, text)",
+    "grantee": "PUBLIC",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.pdesc_similarity_v1(text, text)",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.pdesc_support_v1(text, text)",
+    "grantee": "PUBLIC",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.pdesc_support_v1(text, text)",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.pdesc_words_v1(text)",
+    "grantee": "PUBLIC",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.pdesc_words_v1(text)",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.pipeline_list_v1(text, jsonb)",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.provider_description_enqueue_v1()",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.provider_description_fire_v1()",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.provider_description_page_v1(uuid, text)",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.provider_description_review_trg_v1()",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.provider_description_scope_v1(uuid)",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.provider_description_stored_v1(uuid)",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.provider_description_validate_v1(uuid, text, timestamp with time zone, jsonb)",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.provider_hosts_v1(uuid)",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.provider_lifecycle_held_v1(uuid)",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.provider_onboarding_new_tg()",
+    "grantee": "PUBLIC",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.provider_onboarding_new_tg()",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.provider_page_host_v1(uuid, text)",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.provider_publish_by_default()",
+    "grantee": "PUBLIC",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.provider_publish_by_default()",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.provider_site_followups_tg()",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.site_host_v1(text)",
+    "grantee": "PUBLIC",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "security.site_host_v1(text)",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "public.svc_provider_description_next(integer)",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "public.svc_provider_description_next(integer)",
+    "grantee": "service_role",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "public.svc_provider_description_record(jsonb)",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "public.svc_provider_description_record(jsonb)",
+    "grantee": "service_role",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "public.website_v2_provider(text)",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "public.website_v2_provider(text)",
+    "grantee": "service_role",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "public.website_v2_provider(text, text)",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "public.website_v2_provider(text, text)",
+    "grantee": "service_role",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "public.website_v2_providers(jsonb, integer, integer, text)",
+    "grantee": "postgres",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  },
+  {
+    "signature": "public.website_v2_providers(jsonb, integer, integer, text)",
+    "grantee": "service_role",
+    "privilege_type": "EXECUTE",
+    "is_grantable": false
+  }
+]

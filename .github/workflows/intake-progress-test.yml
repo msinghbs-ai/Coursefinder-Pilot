@@ -1,0 +1,57 @@
+# Guards: Platform Admin decision 5 Nov 2026 16:36 §8 (database-backed UI tests): the Automation Progress fixture (production shapes, live
+# definitions md5-checked), its SQL cases, the bounded-performance benchmark and the browser-to-PostgreSQL test on desktop and phone. Isolated only.
+name: Intake Automation Progress integration
+on:
+  pull_request:
+    paths:
+      - 'src/AutomationProgress.jsx'
+      - 'src/automation-progress.css'
+      - 'src/ProcessResults.jsx'
+      - 'src/process-results-api.js'
+      - 'supabase/migrations/20261106400000_cf247_intake_automation_progress.sql'
+      - 'tests/fixtures/intake-progress/**'
+      - 'tests/integration-progress/**'
+      - 'playwright.intake-progress.config.mjs'
+      - '.github/workflows/intake-progress-test.yml'
+  workflow_dispatch:
+jobs:
+  isolated-postgres:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:17.6-alpine
+        env:
+          POSTGRES_PASSWORD: fixture-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: fixture-only
+      UAT_ARTIFACTS: uat-artifacts
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --package-lock=false --ignore-scripts
+      - run: npx playwright install --with-deps chromium
+      - run: mkdir -p uat-artifacts
+      - run: bash tests/fixtures/intake-progress/run.sh | tee uat-artifacts/intake-progress-results.log
+      - run: bash tests/fixtures/intake-progress/benchmark.sh
+      - run: npx playwright test --config=playwright.intake-progress.config.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: intake-progress-database-evidence
+          path: |
+            uat-artifacts/intake-progress-results.log
+            uat-artifacts/intake-progress-benchmark.txt
+            uat-artifacts/intake-progress-md5.txt
+            uat-artifacts/intake-progress-integration.json
+            uat-artifacts/intake-progress-results/

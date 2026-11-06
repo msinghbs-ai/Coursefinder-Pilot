@@ -30,7 +30,7 @@ import { admissionCheck, awardScope, baseHost, keepScholarshipUrl, onSite, mainT
 import { imageSize, logoCandidates, sniffMime, svgSafe } from "./logo.ts";
 import { awardSections, mapOutcome, nextPage, pagingState, redirectOutcome, sectionCode, sectionHtml, statedTotal } from "./catalogue.ts";
 import { COURSE_TEXT_FIELDS, courseTextAnswer, courseTextAnswerLimit, courseTextLength, courseTextPage, courseTextRequest, courseTextResults, courseTextUser } from "./course-text.ts";
-import { DESCRIPTION_ANSWER_KEY, DESCRIPTION_PROMPT_VERSION, aboutLinks, aboutPageCheck, descriptionAnswer, descriptionPageText, descriptionRequest, descriptionSentences, ownHost } from "./description.ts";
+import { DESCRIPTION_ANSWER_KEY, DESCRIPTION_PROMPT_VERSION, DESCRIPTION_WORKER_PROTOCOL, aboutLinks, aboutPageCheck, descriptionAnswer, descriptionClaimCheck, descriptionCostQuote, descriptionPageText, descriptionRequest, descriptionSourceIdentity, ownHost, providerDescriptionSentences } from "./description.ts";
 const SCH_VERSION = "scholarship-sweep-v0.7.3"; // v0.7.3 (11 Oct 2026, Platform Admin bugs 11/10-6): a "while places last" condition is not an ended scholarship; an amount the student pays (deposit, bond, fee) is never the award and a "valued at" amount counts; courses listed after "one of the following courses" are read. v0.7.2 (11 Oct 2026): course titles end at bullets (•, ⦁) and at the next capitalised word or sentence. v0.7.1 (11 Oct 2026): courses named after "excluding" are exclusions; course titles keep their bracketed specialisation; numeric dates read in the provider country's day/month order; date proofs start at their label. v0.7.0 (11 Oct 2026): application open and close dates (with rounds), study start, courses the page names, and the sentence behind each level and field. v0.6.3 (11 Oct 2026): academic-result percentages (CWA, WAM, ATAR) are not award values; the value text is a whole sentence. v0.6.2: Firecrawl cap and reserve read from Layer 2 settings; v0.6.1: // v0.6.1: numeric character references in titles decoded; // v0.6.0 (Decision 250): amounts in the provider country's currency; NZ and Canadian domestic wording
 // v0.5.4 (2 Oct 2026, Decision 212 check): a listed value ("Residency Australian Citizen, New Zealand Citizen, International
 // Student") includes international students.
@@ -2477,7 +2477,9 @@ async function handle(req: Request): Promise<Response> {
       let key = Deno.env.get("OPENROUTER_API_KEY") || "";
       if (!key) { const prof = await rpc("layer3_routing_profile_service", { p_code: AI_MATCH_PROFILE }); const { data } = await c.rpc("layer3_provider_credential_resolve_service", { p_profile_id: prof?.id }); key = typeof data === "string" ? data : "" }
       if (!key) return j({ ok: false, mode, error: "OpenRouter credential unavailable", worker: WORKER }, 503);
-      const w: any = await rpc("svc_provider_description_next", { p_limit: Math.min(Number(body.limit || 3), 10) });  // fixed: the setting's upper bound (batch.provider_description)
+      const descriptionLimit = Math.min(Number(body.limit || 3), 10);  // fixed: the setting's upper bound (batch.provider_description)
+      // The lease names the reservation protocol this worker follows; the database gives no item to a worker that does not.
+      const w: any = await rpc("svc_provider_description_lease_v1", { p_limit: descriptionLimit, p_cohort: body.cohort_id ? String(body.cohort_id) : null, p_protocol: DESCRIPTION_WORKER_PROTOCOL });
       const items: any[] = w?.items || [];
       if (!items.length) return j({ ok: true, mode, idle: true, reason: w?.reason || "nothing due", items: 0, worker: WORKER });
       const model = String(w.model || ""), pageChars = Number(w.page_chars) || 16000, minQuote = Number(w.min_quote_chars) || 20;
@@ -2485,6 +2487,14 @@ async function handle(req: Request): Promise<Response> {
       const maxTokens = wsNum(DESCRIPTION_ANSWER_KEY, 1500), ors = orStats(), out: any[] = [], tally: Record<string, number> = {};
       let cost = 0;
       const late = () => Date.now() - t0 > BUDGET_MS - 25000;
+      let pricingLookup: Promise<any> | null = null;
+      const modelPrices = () => pricingLookup ||= (async () => {
+        tally.pricing_lookups = (tally.pricing_lookups || 0) + 1;
+        try {
+          const response = await ors.fetch("https://openrouter.ai/api/v1/models", { method: "GET", headers: { authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(15000) }); // fixed: read-only pricing API time-out.
+          return response.ok ? await response.json().catch(() => null) : null;
+        } catch { return null }
+      })();
       const readStoredCopy = async (path: string) => {
         const { data, error } = await c.storage.from("evidence").download(path); if (error || !data) throw Error(error?.message || "stored copy missing");
         const buf = new Uint8Array(await data.arrayBuffer());
@@ -2510,7 +2520,7 @@ async function handle(req: Request): Promise<Response> {
         const extra = Math.max(0, Number(d?.data?.metadata?.creditsUsed ?? d?.creditsUsed ?? 1) - 1);
         if (extra > 0) await rpc("svc_coverage_usage", { p_units: extra, p_purpose: "provider_description", p_provider_id: it.provider_id, p_url: url });
         const html = pageHtml(d), http = Number(d?.data?.metadata?.statusCode ?? r.status);
-        return r.ok && html.length >= 200 ? { ok: true, html, via: "firecrawl", http, url: String(d?.data?.metadata?.sourceURL || url) } : { ok: false, why: String(d?.error || "no content"), http, retry: true };
+        return r.ok && html.length >= 200 ? { ok: true, html, via: "firecrawl", http, url: String(d?.data?.metadata?.url || d?.data?.metadata?.sourceURL || url) } : { ok: false, why: String(d?.error || "no content"), http, retry: true };
       };
       await pool(items, 2, async (it: any) => {
         const base = { item_id: it.item_id, model, prompt_version: DESCRIPTION_PROMPT_VERSION, worker: WORKER.slice(0, 60) };
@@ -2535,6 +2545,7 @@ async function handle(req: Request): Promise<Response> {
               let home: string; try { home = new URL(/^https?:/i.test(it.website) ? String(it.website) : "https://" + it.website).origin + "/" } catch { out.push({ ...base, rule: "no_website", reason: "the website address cannot be read" }); return }
               const h = await readPage(home, it);
               if (!h.ok) { out.push(h.retry ? { ...base, retry: true, reason: `home page not read: ${h.why}` } : { ...base, rule: h.why === "robots_disallowed" ? "robots_disallowed" : "home_not_read", reason: `home page not read: ${h.why}` }); return }
+              if (!ownHost(new URL(h.url || home).hostname, hosts)) { out.push({ ...base, rule: "wrong_host", reason: "The home page redirected away from the approved provider hosts." }); return }
               const links = aboutLinks(h.html, h.url || home, hosts, patterns, pageRule);
               if (!links.length) { out.push({ ...base, rule: "no_about_page", reason: "no About or Overview link on the home page" }); return }
               target = links[0].url;
@@ -2544,25 +2555,45 @@ async function handle(req: Request): Promise<Response> {
             // 3 acquire: the About page, stored gzipped as evidence
             const a = await readPage(target, it);
             if (!a.ok) { out.push(a.retry ? { ...base, retry: true, reason: `About page not read: ${a.why}` } : { ...base, rule: a.why === "robots_disallowed" ? "robots_disallowed" : "about_not_read", reason: `About page not read: ${a.why}` }); return }
+            const finalUrl = String(a.url || target), finalCheck = aboutPageCheck(finalUrl, hosts, patterns, pageRule);
+            if (!finalCheck.ok) { out.push({ ...base, rule: finalCheck.rule, reason: "The final About-page address after redirects is not an approved institutional source.", fetch: { status: "refused", url: finalUrl } }); return }
             html = a.html;
             const sha = await sha256(new TextEncoder().encode(html));
             const path = `layer2/${it.country || "XX"}/provider-description/${it.provider_id}/${sha}.html.gz`;
             const up = await c.storage.from("evidence").upload(path, await gzip(html), { contentType: "application/gzip", upsert: true });
             if (up.error) { out.push({ ...base, retry: true, reason: "storage: " + up.error.message }); return }
-            rec = { fetch: { status: "read", via: a.via, url: target, http: a.http, storage_path: path, sha256: sha, mime: "text/html" }, url: target };
+            rec = { fetch: { status: "read", via: a.via, url: finalUrl, http: a.http, storage_path: path, sha256: sha, mime: "text/html" }, url: finalUrl };
             tally[a.via] = (tally[a.via] || 0) + 1;
           }
           // 4 extract: the pinned model; every sentence with the page's exact words
           const page = descriptionPageText(html, pageChars);
+          const sourceCheck = aboutPageCheck(String(rec.url || ""), hosts, patterns, w.page_rule || {});
+          if (!sourceCheck.ok) { out.push({ ...base, ...rec, rule: sourceCheck.rule, reason: "The stored source is not an approved About or Overview page." }); return }
+          const identity = descriptionSourceIdentity(html, page, Array.isArray(it.identity_names) ? it.identity_names.map(String) : [String(it.provider || "")]);
+          rec.identity_check = { ...identity, reader_behavior_version: "provider-description-source-guard-v1" };
+          if (!identity.ok) { out.push({ ...base, ...rec, rule: identity.rule, reason: "The page does not prove the provider's current full institutional identity; no AI call was made." }); return }
+          if (!Number.isInteger(Number(w.verbatim_span_max_chars)) || Number(w.verbatim_span_max_chars) < 1) { out.push({ ...base, ...rec, rule: "invalid_verbatim_limit", reason: "The governed quotation-copy limit is unavailable; no AI call was made." }); return }
+          const request = descriptionRequest(model, String(it.provider || ""), String(rec.url || ""), page, maxTokens, w.length);
+          const quote = descriptionCostQuote(request, await modelPrices());
+          if (!quote.ok) { out.push({ ...base, ...rec, rule: quote.reason, reason: "The exact approved model has no verified non-negative pricing bound; no AI call was made." }); return }
+          const reservation = await rpc("svc_provider_description_reserve_v1", { p_item: String(it.item_id), p_model: model, p_max_cost: quote.max_cost_usd, p_source_hash: String(rec.fetch?.sha256 || it.stored?.content_hash || "") || null });
+          rec.ai_reservation = { ...quote, quote_source: "https://openrouter.ai/api/v1/models", quoted_at: new Date().toISOString(), reservation };
+          if (reservation?.ok !== true) { out.push({ ...base, ...rec, rule: String(reservation?.reason || "ai_budget_refused"), reason: "The existing governed AI budget refused the conservative per-call reservation; no AI call was made." }); return }
+          rec.cost_known = false; // Unknown charges retain their reservation until reconciled; a timeout is never assumed free.
+          rec.ai_call_started = true;
+          tally.ai_calls = (tally.ai_calls || 0) + 1;
           const r = await ors.fetch("https://openrouter.ai/api/v1/chat/completions", { method: "POST", headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
-            body: JSON.stringify(descriptionRequest(model, String(it.provider || ""), String(rec.url || ""), page, maxTokens, w.length)), signal: AbortSignal.timeout(60000) });  // fixed: API time-out of one call
+            body: JSON.stringify({ ...request, provider: { ...request.provider, max_price: quote.provider_max_price } }), signal: AbortSignal.timeout(60000) });  // fixed: API time-out of one call
           const d = await r.json().catch(() => ({}));
+          rec.cost_known = d?.usage?.cost != null && String(d.usage.cost).trim() !== "" && Number.isFinite(Number(d.usage.cost)) && Number(d.usage.cost) >= 0;
           const ans = descriptionAnswer(d, maxTokens); cost += ans.cost;
           if (!r.ok) { out.push({ ...base, ...rec, error: `HTTP ${r.status}: ${JSON.stringify(d?.error || d).slice(0, 200)}`, cost: ans.cost }); return }
           if (d?.model && !String(d.model).startsWith(model)) { out.push({ ...base, ...rec, error: `returned model ${d.model}, not ${model}`, cost: ans.cost }); return }  // pinned: no other model's answer is used
           if (!ans.ok) { out.push({ ...base, ...rec, error: ans.error, cost: ans.cost }); return }
+          const claimCheck = descriptionClaimCheck(ans.a, Number(w.verbatim_span_max_chars));
+          if (!claimCheck.ok) { out.push({ ...base, ...rec, answer: providerDescriptionSentences(ans.a, page, minQuote), quality_hold: claimCheck, cost: ans.cost }); return }
           // 5 the quotes are checked against the page here; the database repeats every other check
-          out.push({ ...base, ...rec, answer: descriptionSentences(ans.a, page, minQuote), cost: ans.cost });
+          out.push({ ...base, ...rec, answer: providerDescriptionSentences(ans.a, page, minQuote), cost: ans.cost });
           tally.read = (tally.read || 0) + 1;
         } catch (e) { out.push({ ...base, ...rec, error: (e instanceof Error ? e.message : String(e)).slice(0, 300), cost: errorCost(e) }); tally.error = (tally.error || 0) + 1 }
       });

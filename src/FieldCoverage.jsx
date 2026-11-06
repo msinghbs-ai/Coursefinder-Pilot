@@ -23,6 +23,7 @@ import{Button,Empty,Loading,StatusChip}from'./ui-kit'
 import{fmtNumber,fmtDateTime}from'./lib/format.js'
 import{plainError}from'./lib/errors'
 import{hrefFor}from'./nav-map'
+import ProviderDescriptionRunValidate from'./ProviderDescriptionRunValidate'
 import SnapshotStamp from'./SnapshotStamp' // CF-247 W35: every country's figures come from a cached snapshot; one university's are read live
 
 const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
@@ -194,33 +195,15 @@ function DeliveryWording({onError}){
   </Card>
 }
 
-// CF-247 P1 provider descriptions (Platform Admin 2 Nov 2026 10:28, mandate §8)
-const PD_STATE={queued:'Waiting',reading:'Being read',proposed:'In Layer 4',held:'Held',dead_letter:'Dead letter',admitted:'Admitted',verified:'Verified',rejected:'Rejected',superseded:'Replaced'}
-function ProviderDescriptions({country,rank,onError}){
-  const[d,setD]=useState(null),[reason,setReason]=useState(''),[busy,setBusy]=useState(false)
+// CF-247 Provider Description autonomy (4 Nov 2026): the Run & Validate workflow replaces
+// the retry-only card in this same Enrich fields workspace. The original metrics remain authoritative.
+export function ProviderDescriptions({country,rank,onError}){
+  const[d,setD]=useState(null)
   const load=()=>supabase.rpc('admin_provider_descriptions',{p_action:'metrics',p_args:country?{country}:{}}).then(({data,error})=>{if(error)throw error;setD(data)}).catch(e=>onError?.(errText(e)))
   useEffect(()=>{load()},[country])
-  const retry=async ids=>{setBusy(true);try{const{error}=await supabase.rpc('admin_provider_descriptions',{p_action:'retry',p_args:{provider_ids:ids,reason:reason.trim()}});if(error)throw error;setReason('');await load()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
-  const stuck=(d?.providers||[]).filter(p=>p.state==='dead_letter'||p.state==='held')
-  const n=k=>fmtNumber(d?.[k]??0)
-  return <Card id="coverage.provider-descriptions" title="Provider descriptions" icon={ListChecks}
-    subtitle="Descriptions read from each university's own About page, stored copy first. Every sentence quotes the page; a person approves each one in Layer 4 before the website shows it."
+  return <Card id="coverage.provider-descriptions" title="Provider Descriptions — Run & Validate" icon={ListChecks}
+    subtitle="Preview official evidence, save a bounded cohort, run the governed reader and verify admission and publication. Decisions remain in Layer 4."
     meta={<span className="cf-chip tone-neutral" data-pdesc-switch>{d?.enabled&&d?.job_active?'Reader on':'Reader off'}</span>} data-provider-descriptions>
-    {!d?<Loading compact/>:<>
-    <dl className="l4i-dl" data-pdesc-metrics>
-      <dt>Eligible</dt><dd>{n('eligible')}</dd><dt>Description present</dt><dd>{n('present')}</dd><dt>Missing</dt><dd>{n('missing')}</dd>
-      <dt>In Layer 4</dt><dd>{n('proposed')}</dd><dt>Held</dt><dd>{n('held')}</dd><dt>Admitted</dt><dd>{n('admitted')} ({n('published')} shown by the website)</dd>
-      <dt>Dead letters</dt><dd>{n('dead_letter')}</dd><dt>Stored About pages</dt><dd>{n('stored_pages_available')}</dd>
-      <dt>Pages read</dt><dd>{n('pages_acquired')} new, {n('pages_reused')} reused</dd><dt>AI reads</dt><dd>{n('ai_reads')} (US${d.cost_usd??0} of a US${d.ai_usd_max??0} ceiling; {d.cost_per_admitted_usd==null?'no admitted description yet':`US$${d.cost_per_admitted_usd} a description admitted`})</dd>
-      <dt>Firecrawl reads</dt><dd>{n('firecrawl_reads')} of {n('firecrawl_reads_max')} allowed</dd>
-      <dt>Remaining</dt><dd>{n('backlog')}</dd><dt>Last run</dt><dd>{d.last_run?fmtDateTime(d.last_run):'never'}</dd>
-    </dl>
-    {(d.rejections||[]).length>0&&<p className="sd-desc" data-pdesc-rejections>Held or rejected: {d.rejections.map(r=>`${String(r.rule||'other').replace(/_/g,' ')} ${r.n}`).join(' · ')}</p>}
-    {stuck.length>0&&<div className="dq-table-wrap"><table className="dq-table" data-pdesc-stuck><thead><tr><th>University</th><th>State</th><th>Why</th></tr></thead>
-      <tbody>{stuck.map(p=><tr key={p.provider_id}><td>{p.provider}</td><td>{PD_STATE[p.state]||p.state}</td><td><small>{String(p.rule||'').replace(/_/g,' ')}</small></td></tr>)}</tbody></table></div>}
-    {rank>=5&&stuck.length>0&&<div className="fc-actions" data-pdesc-retry>
-      <input value={reason} onChange={e=>setReason(e.target.value)} placeholder="Reason" aria-label="Reason"/>
-      <Button compact disabled={busy||reason.trim().length<5} onClick={()=>retry(stuck.map(p=>p.provider_id))}>Read these again</Button>
-    </div>}</>}
+    <ProviderDescriptionRunValidate country={country} rank={rank} onError={onError} metrics={d} onReloadMetrics={load}/>
   </Card>
 }
