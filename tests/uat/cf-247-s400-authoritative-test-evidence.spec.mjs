@@ -47,8 +47,11 @@ test('case 1: a change to application, Worker, edge function, test, dependency, 
   expect(fingerprint(head, cfg, { nodeMajor: '20', os: 'linux' }, read).value).not.toBe(base.value)
 })
 
+// a docs file no spec names (naming a real doc here would itself make it a test input)
+const plainDoc = Object.keys(head).find((p) => /^docs\/[^/]+\.md$/.test(p) && !base.promotedMetadata.includes(p))
+
 test('case 2: release notes, changelog text and docs reuse the full-suite evidence; the final-candidate checks remain required', () => {
-  const entries = { ...head, 'CHANGELOG.md': '1'.repeat(40), 'docs/release-notes/v2.15.999.md': '2'.repeat(40), 'docs/platform/TEST-REGISTER.md': '3'.repeat(40), 'docs/intake-run-validate.md': '4'.repeat(40) }
+  const entries = { ...head, 'CHANGELOG.md': '1'.repeat(40), 'docs/release-notes/v2.15.999.md': '2'.repeat(40), 'docs/platform/TEST-REGISTER.md': '3'.repeat(40), [plainDoc]: '4'.repeat(40) }
   expect(fpOf(entries).value).toBe(base.value)
   const d = reuse(entries)
   expect(d.reuse).toBe(true)
