@@ -19,6 +19,10 @@ defaults:
 jobs:
   prod-parity-round-trip:
     runs-on: ubuntu-latest
+    container:
+      image: node:22-bookworm
+      volumes:
+        - prod-parity-fixture-socket:/var/run/postgresql
     permissions:
       contents: read
     services:
@@ -26,12 +30,12 @@ jobs:
         image: postgres:17.6-alpine
         env:
           POSTGRES_PASSWORD: fixture-only
-        ports:
-          - 5432:5432
+        volumes:
+          - prod-parity-fixture-socket:/var/run/postgresql
         options: >-
           --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
     env:
-      PGHOST: 127.0.0.1
+      PGHOST: /var/run/postgresql
       PGPORT: 5432
       PGUSER: postgres
       PGPASSWORD: fixture-only
@@ -40,7 +44,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: bash tests/fixtures/prod-parity/run.sh | tee prod-parity-results.log
+      - name: Install the isolated PostgreSQL client
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends postgresql-client
+      - name: Execute the complete production parity round trip
+        run: |
+          set -euo pipefail
+          bash tests/fixtures/prod-parity/run.sh 2>&1 | tee prod-parity-results.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
