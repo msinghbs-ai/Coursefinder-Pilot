@@ -6,6 +6,7 @@
 #   2 production constraints refuse what production refuses (status, found_via, the proposal key, one row per course and test);
 #   3 today's behaviour: svc_provider_policy_record files a faculty-table reading as no_values, and an AI reading with quoted defaults as
 #     proposed (UNSW 17 Oct, then rejected by the Platform Admin as one faculty row), from the stored outcomes in stored-outcomes.json.
+#   4 the migration 20261106550000 on the same fixture: the harness (labelled stand-ins), the migration, then groups-tests.sql (course groups, D1 scope, D2 approval and binding, D3 switch, D5 reparse, status).
 # Databases use agent H's prefix (h_) and are dropped at the end (EN_KEEP=1 keeps them).
 set -euo pipefail
 cd "$(dirname "$0")/../../.."
@@ -75,4 +76,10 @@ i.forEach((x,k)=>{ const fs='00000000-0000-0000-0000-0000000f1'+String(k).padSta
 require('fs').writeFileSync('$T/record.sql', sql)"
 $P -At -d "$DB" -f $T/record.sql | grep '|' > $T/record.txt
 node $FX/baseline.mjs check-recorded $T/record.txt
+# 4 the migration on top: the harness (labelled stand-ins), the migration itself, then the group scenarios (each prints PASS or raises)
+$P -q -v ON_ERROR_STOP=1 -d "$DB" -f $FX/groups-harness.sql >/dev/null 2>&1 || fail 'groups-harness.sql did not apply'
+$P -q -v ON_ERROR_STOP=1 -d "$DB" -f supabase/migrations/20261106550000_cf247_english_requirements_complete.sql >/dev/null 2>$T/mig.err || { cat $T/mig.err; fail 'the migration did not apply on the production-shaped fixture'; }
+echo 'PASS the migration applies on the production-shaped fixture (every live md5 guard held)'
+$P -X -v ON_ERROR_STOP=1 -d "$DB" -f $FX/groups-tests.sql > $T/groups.out 2>&1 || { grep -E 'PASS|FAIL|ERROR' $T/groups.out; fail 'a group scenario failed'; }
+grep -c 'PASS' $T/groups.out | xargs -I{} echo 'PASS {} group, scope, search-switch, reparse and status scenarios'
 echo 'english-requirements fixture round trip: passed'

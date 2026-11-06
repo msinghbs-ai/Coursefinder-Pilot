@@ -1,0 +1,217 @@
+{
+ "parser": "provider-policy-v0.2.5",
+ "note": "Output of provider-policy-v0.2.5 (git a9c735d7) on compat-pages.mjs; v0.3.0 must read these pages the same, except that a page with groups adds groups.",
+ "outputs": {
+  "level-default-prose": {
+   "style": "level_default",
+   "defaults": {
+    "undergraduate": [
+     {
+      "test_code": "IELTS",
+      "overall_score": 6.5,
+      "component_scores": {
+       "listening": 6,
+       "reading": 6,
+       "writing": 6,
+       "speaking": 6
+      },
+      "quote": "IELTS Academic: undergraduate programs require an overall score of 6.5 with no band less than 6.0."
+     },
+     {
+      "test_code": "PTE",
+      "overall_score": 58,
+      "component_scores": {},
+      "quote": "PTE Academic: 58 overall for undergraduate, 64 overall for postgraduate coursework."
+     }
+    ]
+   },
+   "exceptions": [],
+   "named": [],
+   "caveats": [],
+   "signals": [],
+   "conflicts": []
+  },
+  "level-default-table": {
+   "style": "level_default",
+   "defaults": {
+    "undergraduate": [
+     {
+      "test_code": "IELTS",
+      "overall_score": 6.5,
+      "component_scores": {
+       "listening": 6,
+       "reading": 6,
+       "writing": 6,
+       "speaking": 6
+      },
+      "quote": "Undergraduate | IELTS Academic: 6.5 (no band less than 6.0)"
+     },
+     {
+      "test_code": "TOEFL_IBT",
+      "overall_score": 79,
+      "component_scores": {},
+      "quote": "Undergraduate | TOEFL iBT: 79"
+     },
+     {
+      "test_code": "PTE",
+      "overall_score": 58,
+      "component_scores": {},
+      "quote": "Undergraduate | PTE Academic: 58"
+     }
+    ],
+    "postgraduate": [
+     {
+      "test_code": "IELTS",
+      "overall_score": 7,
+      "component_scores": {
+       "listening": 6.5,
+       "reading": 6.5,
+       "writing": 6.5,
+       "speaking": 6.5
+      },
+      "quote": "Postgraduate coursework | IELTS Academic: 7.0 (no band less than 6.5)"
+     },
+     {
+      "test_code": "TOEFL_IBT",
+      "overall_score": 94,
+      "component_scores": {},
+      "quote": "Postgraduate coursework | TOEFL iBT: 94"
+     },
+     {
+      "test_code": "PTE",
+      "overall_score": 65,
+      "component_scores": {},
+      "quote": "Postgraduate coursework | PTE Academic: 65"
+     }
+    ]
+   },
+   "exceptions": [],
+   "named": [],
+   "caveats": [],
+   "signals": [],
+   "conflicts": []
+  },
+  "exceptions-named": {
+   "style": "level_default",
+   "defaults": {
+    "undergraduate": [
+     {
+      "test_code": "IELTS",
+      "overall_score": 6.5,
+      "component_scores": {
+       "listening": 6,
+       "reading": 6,
+       "writing": 6,
+       "speaking": 6
+      },
+      "quote": "Undergraduate: IELTS Academic overall 6.5, no band less than 6.0."
+     }
+    ],
+    "postgraduate": [
+     {
+      "test_code": "IELTS",
+      "overall_score": 6.5,
+      "component_scores": {
+       "listening": 6,
+       "reading": 6,
+       "writing": 6,
+       "speaking": 6
+      },
+      "quote": "Postgraduate coursework: IELTS Academic overall 6.5, no band less than 6.0."
+     }
+    ]
+   },
+   "exceptions": [
+    {
+     "name": "Higher requirements apply to the",
+     "level": "postgraduate",
+     "reqs": [
+      {
+       "test_code": "IELTS",
+       "overall_score": 7.5,
+       "component_scores": {
+        "listening": 7,
+        "reading": 7,
+        "writing": 7,
+        "speaking": 7
+       },
+       "quote": "Higher requirements apply to the Master of Teaching: IELTS Academic overall 7.5 with 7.0 in each band."
+      }
+     ]
+    },
+    {
+     "name": "Master of Teaching",
+     "level": "postgraduate",
+     "reqs": [
+      {
+       "test_code": "IELTS",
+       "overall_score": 7.5,
+       "component_scores": {
+        "listening": 7,
+        "reading": 7,
+        "writing": 7,
+        "speaking": 7
+       },
+       "quote": "Higher requirements apply to the Master of Teaching: IELTS Academic overall 7.5 with 7.0 in each band."
+      }
+     ]
+    }
+   ],
+   "named": [
+    "Master of Teaching"
+   ],
+   "caveats": [],
+   "signals": [],
+   "conflicts": []
+  },
+  "faculties-all-agree": {
+   "style": "level_default",
+   "defaults": {
+    "undergraduate": [
+     {
+      "test_code": "IELTS",
+      "overall_score": 6.5,
+      "component_scores": {
+       "listening": 6,
+       "reading": 6,
+       "writing": 6,
+       "speaking": 6
+      },
+      "quote": "Undergraduate: Overall 6.5 (no band less than 6.0) (every faculty)"
+     }
+    ],
+    "postgraduate": [
+     {
+      "test_code": "IELTS",
+      "overall_score": 7,
+      "component_scores": {
+       "listening": 6.5,
+       "reading": 6.5,
+       "writing": 6.5,
+       "speaking": 6.5
+      },
+      "quote": "Postgraduate coursework: Overall 7.0 (no band less than 6.5) (every faculty)"
+     }
+    ]
+   },
+   "exceptions": [],
+   "named": [],
+   "caveats": [
+    "course_groups"
+   ],
+   "signals": [
+    "by_faculty"
+   ],
+   "conflicts": []
+  },
+  "no-english": {
+   "style": "none",
+   "defaults": {},
+   "exceptions": [],
+   "named": [],
+   "caveats": [],
+   "signals": [],
+   "conflicts": []
+  }
+ }
+}

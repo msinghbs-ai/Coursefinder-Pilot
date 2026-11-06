@@ -16,6 +16,7 @@ import{Button,Loading,SectionTitle,StatusChip}from'./ui-kit'
 import{fmtDateTime,fmtNumber}from'./lib/format.js'
 import{MONTHS}from'./RecordEditor'
 import{plainError}from'./lib/errors'
+import{GroupBinding,EnglishStatus}from'./EnglishGroups'
 
 const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 export const POLICY_OUTCOME={write:'Will be added',agrees:'Already the same',differs:'Different score on record (not changed)',other_value:'Other tests on record (not changed)',
@@ -120,13 +121,14 @@ export default function ProviderPolicies({country='',provider=null}={}){
   const bulk=Boolean(data.can_decide)&&waitingShown.length>0
   return <section className="m-panel fs-panel" data-provider-policies>
     <SectionTitle icon={english?Languages:CalendarDays} title={english?'English policies':'Academic calendars'}
-      subtitle={english?'Each university\'s English language policy, read from its own site and parsed without AI. A Platform Admin approves each one; approval gives its default score to undergraduate and postgraduate coursework courses that have none, and holds back research degrees, double degrees and courses the policy names.':'When each study period (Semester 1, Trimester 2, Term 3) starts at each university, read from its academic calendar. It is used for one thing only: a course page that gives its start as a study period ("starts in Semester 1") rather than a month is turned into that month. A course\'s start months still come from its own page; a calendar never adds a start to a course whose page does not name one. A Platform Admin approves each calendar. A university whose calendar page gave no months is listed too, with its intakes to enter by hand.'}
+      subtitle={english?'Each university\'s English language policy, read from its own site and parsed by rule first, with an AI check for pages the rules cannot read. A Platform Admin approves each one; approval gives its default score to undergraduate and postgraduate coursework courses that have none, and holds back research degrees, double degrees and courses the policy names. A policy that gives scores by faculty or course group reaches courses only after a Platform Admin also binds each group.':'When each study period (Semester 1, Trimester 2, Term 3) starts at each university, read from its academic calendar. It is used for one thing only: a course page that gives its start as a study period ("starts in Semester 1") rather than a month is turned into that month. A course\'s start months still come from its own page; a calendar never adds a start to a course whose page does not name one. A Platform Admin approves each calendar. A university whose calendar page gave no months is listed too, with its intakes to enter by hand.'}
       action={<Button compact onClick={()=>load()} disabled={busy}><RefreshCw size={14}/>Refresh</Button>}/>
     <div className="pp-kind" role="group" aria-label="Document type">
       <Button compact variant={english?'primary':undefined} aria-pressed={english} onClick={()=>setKind('english_policy')}><Languages size={13}/>English policies</Button>
       <Button compact variant={!english?'primary':undefined} aria-pressed={!english} onClick={()=>setKind('intake_calendar')}><CalendarDays size={13}/>Academic calendars</Button>
     </div>
     {err&&<p className="fr-error" role="alert">{err}</p>}
+    {english&&<EnglishStatus can={Boolean(data.can_decide)}/>}
     {where&&<p className="sd-desc fs-scope" data-policy-scope>Showing {fmtNumber(all.length)} for <strong>{where}</strong>, as chosen above.</p>}
     <dl className="fs-totals">
       <div><dt>Universities with a document found</dt><dd>{fmtNumber(t.providers_found||0)}</dd></div>
@@ -157,6 +159,7 @@ export default function ProviderPolicies({country='',provider=null}={}){
           {english&&<button type="button" className="m-link-button fs-review" onClick={()=>setOpen(open===x.id?null:x.id)}>{open===x.id?'Hide courses':'Review courses'}</button>}</td>
         {english&&<td>{Object.entries(x.defaults||{}).map(([lv,reqs])=><div key={lv} data-policy-default={lv}><strong>{LEVEL[lv]||lv}:</strong> {(reqs||[]).filter(r=>r.test_code==='IELTS').map(describeReq).join('; ')}</div>)}
             {Number(x.named_requirements||0)>0&&<div className="sd-desc">{fmtNumber(x.named_requirements)} courses named with their own score</div>}
+            {Number(x.group_count||0)>0&&<div className="sd-desc" data-group-count>{fmtNumber(x.group_count)} course groups · {fmtNumber(x.bound_groups||0)} bound to courses</div>}
             {(x.caveats||[]).map(c=><div key={c} className="pp-caveat" data-caveat={c}>{POLICY_CAVEAT[c]||c}</div>)}</td>}
         {!english&&[1,2].map(i=><td key={i} data-intake={i}>{x.status==='proposed'&&can?<select className="fv-input" aria-label={`${x.provider} intake ${i} month`} value={intakeOf(x,i)} onChange={e=>setMonths(m=>({...m,[x.id]:{...(m[x.id]||{}),[i]:e.target.value}}))} disabled={busy}><option value="">Not an intake</option>{MONTHS.map((m,j)=><option key={m} value={j+1}>{m}</option>)}</select>:(intakeOf(x,i)?MONTHS[Number(intakeOf(x,i))-1]:'—')}</td>)}
         {!english&&<td data-raw>{x.byhand?<small className="sd-desc">On its course pages: {(x.periods||[]).map(q=>periodName(q.period)).join(', ')||'—'}</small>:(x.periods||[]).map(q=><div key={q.period}><small className="sd-desc">{periodName(q.period)}: {(q.months||[]).map(m=>MONTHS[m-1]).join(', ')||'—'}{q.months?.length>1?' (several dates found)':''}</small></div>)||'—'}</td>}
@@ -165,6 +168,6 @@ export default function ProviderPolicies({country='',provider=null}={}){
         <td>{x.status!=='proposed'?<><StatusChip value={x.status} tone={x.status==='approved'?'success':'neutral'} label={x.status==='approved'?'Approved':'Rejected'}/>{x.decided_at&&<small className="sd-desc">{fmtDateTime(x.decided_at)}</small>}</>
           :can?<div className="sd-actions"><Button compact variant="primary" disabled={english&&ag.blocked} title={english&&ag.blocked?'Most course pages give a different score, so this document cannot be approved. Reject it, or approve another document of this university.':undefined} onClick={()=>english?decide(x,'approve'):approveCalendar(x)}><Check size={13}/>{x.byhand?'Save months':!english&&edited(x)?'Approve as edited':'Approve'}</Button>{!x.byhand&&<Button compact onClick={()=>decide(x,'reject')}><X size={13}/>Reject</Button>}</div>
           :<StatusChip value="pending" tone="warning" label="Waiting for a Platform Admin"/>}</td>
-      </tr>{open===x.id&&<tr className="fs-detail"><td colSpan={bulk?6:5}><PlanRows id={x.id}/></td></tr>}</React.Fragment>})}</tbody></table></div>}
+      </tr>{open===x.id&&<tr className="fs-detail"><td colSpan={bulk?6:5}>{english&&Number(x.group_count||0)>0&&<GroupBinding id={x.id} canBind={Boolean(data.can_decide)&&x.status!=='rejected'} onDone={()=>load()}/>}<PlanRows id={x.id}/></td></tr>}</React.Fragment>})}</tbody></table></div>}
   </section>
 }

@@ -54,19 +54,20 @@ test('today: the policy route has no provider-type scope, and deterministic read
   expect(lv).toContain("and coalesce(e.source_requirement_key, '') not like 'policy:%'))::int;")
 })
 
-test('today: UNSW faculty rows are dropped by the parser (by_faculty, no default, no rows kept) on the stored cells', async () => {
+test('UNSW faculty rows: the stored cells are read as course groups by v0.3.0 (v0.2.5 dropped them), with no university default', async () => {
   const { englishPolicy, POLICY_PARSER } = await loadParser()
-  expect(POLICY_PARSER).toBe('provider-policy-v0.2.5')
+  expect(POLICY_PARSER).toBe('provider-policy-v0.3.0')
   const cells = unswStoredCells()
   expect(cells.faculty).toBe('Arts, Design & Architecture')
   expect(cells.ugCell).toBe('6.5 overall (min. 6.0 in each subtest)')
   const r = englishPolicy(cells.md)
-  expect(r.style).toBe('by_faculty')
+  expect(r.style).toBe('course_groups')
   expect(r.signals).toEqual(['by_faculty'])
   expect(r.caveats).toEqual(['course_groups'])
-  expect(r.defaults).toEqual({})
+  expect(r.defaults).toEqual({})  // a faculty's requirement is never a university default
   expect(r.exceptions).toEqual([])
-  expect(JSON.stringify(r)).not.toContain('Arts, Design')  // the faculty's requirement is not kept anywhere
+  expect(r.groups.map((g) => [g.group_name, g.level, g.reqs[0].test_code, g.reqs[0].overall_score])).toEqual([
+    ['Arts, Design & Architecture', 'undergraduate', 'IELTS', 6.5], ['Arts, Design & Architecture', 'postgraduate', 'IELTS', 6.5]])
 })
 
 test('today, recorded in production: UNSW, Auckland, Canterbury and Massey have no English rule, for four different reasons', () => {
