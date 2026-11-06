@@ -1,4 +1,4 @@
-// Guards: Platform Admin direction 3 Nov 2026 09:32 (platform-led enrichment): course description and application deadline enriched by the platform
+// Guards: Platform Admin direction 3 Nov 2026 09:32 (platform-led enrichment) and Admin #382 P0 deadline semantics, 6 Nov 2026: course description and application deadline enriched by the platform
 // Acceptance report item 1 (admin docs/platform/nz-enrichment-brief/2026-11-03-platform-enrichment-control-autonomy-acceptance-report.md): course
 // description and application deadline are fields of the existing Enrich fields engine (enrich_fields_v1, field_enrich_items, worker mode
 // enrich_ai, the standing gap queue, enrichment plans): the stored course page first, quote-backed, Layer 4 for a provider's first descriptions,
@@ -87,6 +87,18 @@ test('deadline admission: explicit dates in the quote, tied to an intake, never 
   expect(rec).toContain("update catalogue.course_intakes set application_deadline = v_date where id = it.id and application_deadline is null;")
   expect(rec).toContain("security.pipeline_num_v1('intake_dates.deadline_max_days_before', 366)")
   expect(rec).toContain("'the page says applications are rolling (no date to hold)'")
+  // Admin #382 P0 (6 Nov 2026): extend the existing deadline guard, never a
+  // second admissions mechanism or a duplicate spec. Real cases run through
+  // svc_enrich_ai_record in the existing PostgreSQL fixture.
+  const semantics = fs.readFileSync('supabase/migrations/20261106450000_cf247_deadline_closing_semantics.sql', 'utf8')
+  expect(semantics).toContain('f01e9be83e58c9c48c33e5fde4de05d9')
+  expect(semantics).toContain('2357306ca969fb7b299021bac3b6f3fa')
+  expect(semantics).toContain('regexp_split_to_table')
+  expect(semantics).toContain('regexp_matches(c.t, p.full_date')
+  for (const quote of ['Start date 02 Nov 2026', 'Intakes 15 February 2027', 'Start Dates 12 October 2026']) expect(fixtures).toContain(quote)
+  expect(fixtures).toContain("reason = 'held: date_not_in_quote'")
+  expect(run).toContain('20261106450000_cf247_deadline_closing_semantics.sql')
+
 })
 
 test('worker v0.59.4: one call per course on the stored page, the central model, quotes checked, nothing fetched', () => {
@@ -140,7 +152,7 @@ test('fixtures cover every case, on the live definitions, with the migration app
   expect(run).toContain("grep -c ': applied' <<<\"$OUT\")\" = 8")
   expect(run).toContain("grep -c 'already applied' <<<\"$OUT2\")\" = 8")
   for (const c of ['1a', '1e', '2a', '2c', '3b', '3d', '4a', '4b', '4c', '4d', '4e', '4f', '4g', '4h', '4i', '5a', '5c', '5d', '5e', '5f', '5g', '5h', '5i', '5j', '5l', '5m',
-                   '6a', '6b', '6c', '6d', '6e', '6f', '6g', '6h', '6i', '6k', '6l', '7a', '8a', '8b']) expect(fixtures).toContain(`pg_temp.ok('${c} `)
+                   '6a', '6b', '6c', '6d', '6e', '6f', '6g', '6h', '6i', '6k', '6l', '6q', '6r', '7a', '8a', '8b']) expect(fixtures).toContain(`pg_temp.ok('${c} `)
   for (const f of fs.readdirSync(`${FX}/live`)) expect(fs.readFileSync(`${FX}/live/${f}`, 'utf8')).toMatch(/^CREATE OR REPLACE FUNCTION /)
 })
 

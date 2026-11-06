@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.418 — 6 Nov 2026
+
+- Prepared release candidate **v2.15.491** for the confirmed deadline-semantic P0 in Admin #382. New unapplied migration `20261106450000` replaces only `course_deadline_in_quote_v1(date,text)`, before MD5 f01e9be83e58c9c48c33e5fde4de05d9 / after2357306ca969fb7b299021bac3b6f3fa. Requires an application-closing cue and one matching full date in its own clause; refuses commencement, conflicting event and ambiguous evidence. Existing fixture exercises actual admission and reviewed-correction rollback/idempotency. The three-record correction proposal remains disabled pending exact approval; no data correction, Worker, API or trust-policy change is included in the migration. Controller cutover #895 precedes this release; no operational closure claimed.
+
 ## 0.1.417 — 6 Nov 2026
 
 - Prepared visible release candidate **v2.15.490** (Complete Integration and Production Delivery mandate; Admin #382, Pilot #895). Existing controller reservations are checked at production execution entry points. Manual recovery uses a trusted protected-workflow verifier against the selected candidate revision. Production credential relocation must preserve reviewed read-only jobs. Account controls, predecessor disposition and guarded cutover remain external release gates; no transfer or deployment is asserted by this candidate. Reuses the existing phone source-link wrapping fix. Includes the existing #892 authoritative evidence tooling and safe metadata reuse; retires the temporary duplicate controller full-suite wrapper. No migration, admission-policy or consumer API change.
