@@ -11,3 +11,5 @@
 /* CF-247 mandate 5 Nov 2026 §10: the recovery tables scroll inside the panel on a phone, never the page */
 .intake-run .intake-table-scroll { overflow-x: auto; max-width: 100%; }
 .intake-run .intake-table-scroll td, .intake-run .intake-table-scroll th { white-space: nowrap; }
+/* Phone width: a long official address (calendar and course links) wraps inside the university panel instead of widening the page; the widened page made the mobile layout viewport larger than the screen and the Show calendars button unclickable in CI (fonts without the local Inter face). */
+.intake-course a.cf-link, .intake-course li, .intake-course p, .intake-course blockquote { overflow-wrap: anywhere; min-width: 0; }
