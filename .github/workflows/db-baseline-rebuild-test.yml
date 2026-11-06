@@ -20,6 +20,7 @@ on:
 jobs:
   rebuild:
     runs-on: ubuntu-latest
+    environment: pilot
     permissions:
       contents: write
     env:

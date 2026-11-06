@@ -8,7 +8,7 @@
 // (Platform Admin).
 // v2.15.155 (3 Oct 2026, Platform Admin 00:57): tick several and Approve selected or Reject selected
 // (public.admin_provider_policy_decide_bulk); approving one document closes the university's other waiting documents of the
-// same kind, so a university never shows an approved document beside a greyed Approve button.
+// same family: English groups and defaults are separate, and calendars close other waiting calendars.
 import React,{useEffect,useState}from'react'
 import{CalendarDays,Check,ExternalLink,Languages,RefreshCw,X}from'lucide-react'
 import{supabase}from'./lib/supabase'
@@ -98,7 +98,7 @@ export default function ProviderPolicies({country='',provider=null}={}){
     const ids=rows.map(x=>x.id);if(!ids.length)return
     const add=rows.reduce((a,x)=>a+Number(x.plan?.write||0),0),unis=new Set(rows.map(x=>x.provider_id)).size
     const what=kind==='english_policy'?'English policies':'academic calendars'
-    const text=action==='approve'?`Approve ${fmtNumber(ids.length)} ${what} for ${fmtNumber(unis)} universities?${kind==='english_policy'?` Up to ${fmtNumber(add)} courses with no English requirement get one within 10 minutes; courses that already have one are not changed.`:''} Where two documents of one university are chosen, the first is approved and the other is closed.`:`Reject ${fmtNumber(ids.length)} ${what}? Nothing is written.`
+    const text=action==='approve'?`Approve ${fmtNumber(ids.length)} ${what} for ${fmtNumber(unis)} universities?${kind==='english_policy'?` Up to ${fmtNumber(add)} courses with no English requirement get one within 10 minutes; courses that already have one are not changed.`:''} Approval closes other waiting documents for the same university only within the same family: English group policies, English default policies or academic calendars.`:`Reject ${fmtNumber(ids.length)} ${what}? Nothing is written.`
     if(!window.confirm(text))return
     setBusy(true);setErr('');setNote('')
     try{const{data:r,error}=await supabase.rpc('admin_provider_policy_decide_bulk',{p_ids:ids,p_action:action,p_note:null});if(error)throw error

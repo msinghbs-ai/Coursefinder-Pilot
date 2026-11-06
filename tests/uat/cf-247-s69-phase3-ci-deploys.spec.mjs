@@ -1,6 +1,6 @@
-// Guards: CF-247 (S69) Phase 3, 19 Oct 2026 (Platform Admin 09:29 "every function and database change deploys through the workflow";
+// Guards: CF-247 (S69) Phase 3 CI deployment; Admin #382 exclusive controller ownership and production entry-point gate (6 Nov 2026).
 // CF-247 (S69) Phase 3, 19 Oct 2026 (Platform Admin 09:29 "every function and database change deploys through the workflow"; the
-// consumer API is not affected).
+// consumer API is not affected); Admin #382 controller ownership and production-entry-point adoption.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { execFileSync } from 'node:child_process'
@@ -67,3 +67,36 @@ test('deploy-function.sh reads verify_jwt false as false, not as missing (19 Oct
     expect(got, f).toBe(want)
   }
 })
+
+test('Admin #382 controller adapter refuses stale, unreserved or changed-code production writes', () => {
+  // Behavioural negative/positive cases execute the same pure gate called by production.
+  expect(() => execFileSync('python3', ['scripts/ci/controller-guard.py', '--self-test'], { stdio: 'pipe' })).not.toThrow()
+  // A recovery candidate may predate the guard. Run the protected workflow's
+  // staged verifier, never a missing/replaced file from that candidate.
+  for (const file of ['db-apply-migration.yml', 'deploy-edge-functions.yml']) {
+    const workflow = fs.readFileSync(`.github/workflows/${file}`, 'utf8')
+    const trusted = workflow.indexOf('ref: ${{ github.workflow_sha }}')
+    const staged = workflow.indexOf('install -m 0500 scripts/ci/controller-guard.py')
+    const candidate = workflow.indexOf('ref: ${{ inputs.git_ref }}')
+    expect(trusted, file).toBeGreaterThanOrEqual(0)
+    expect(staged, file).toBeGreaterThan(trusted)
+    expect(candidate, file).toBeGreaterThan(staged)
+    expect(workflow, file).toContain('python3 "$RUNNER_TEMP/studysearch-controller-guard.py" --entry-point')
+  }
+  // Production credentials are moving out of repository scope. Keep reviewed
+  // readers as well as writers attached to the existing environment so that
+  // old, unscoped workflow revisions lose access without stranding reporting.
+  // This proves wiring only; the account's protection policy is a live gate.
+  const privileged = /secrets\.(SUPABASE_ACCESS_TOKEN|SUPABASE_DB_PASSWORD|COURSEFINDER_UAT_EMAIL|COURSEFINDER_UAT_PASSWORD|ADMIN_REPO_TOKEN)/
+  for (const file of fs.readdirSync('.github/workflows')) {
+    const workflow = fs.readFileSync(`.github/workflows/${file}`, 'utf8')
+    const [header, jobs = ''] = workflow.split(/\njobs:\s*\n/)
+    const globalCredential = privileged.test(header)
+    for (const block of jobs.matchAll(/^  ([A-Za-z0-9_-]+):\s*\n([\s\S]*?)(?=^  [A-Za-z0-9_-]+:\s*\n|(?![\s\S]))/gm)) {
+      if (globalCredential || privileged.test(block[2])) {
+        expect(block[2], `${file}:${block[1]}`).toMatch(/^    environment: pilot\s*$/m)
+      }
+    }
+  }
+})
+

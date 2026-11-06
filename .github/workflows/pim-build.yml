@@ -40,7 +40,7 @@ jobs:
       - name: Validate UAT suite discovery
         run: npx playwright test --list
       - name: Targeted static contracts (CF-245, CF-085)
-        run: npx playwright test tests/uat/cf-245-observed-replay-contract.spec.mjs tests/uat/cf-085-firecrawl-scraper-config-contract.spec.mjs --project=chromium-desktop
+        run: npx playwright test tests/uat/cf-245-observed-replay-contract.spec.mjs tests/uat/cf-085-firecrawl-scraper-config-contract.spec.mjs tests/uat/cf-247-s69-phase3-ci-deploys.spec.mjs --project=chromium-desktop
       - name: Restore Playwright browser cache
         id: playwright-cache
         uses: actions/cache@v4
@@ -68,3 +68,4 @@ jobs:
             playwright-report/
             test-results/
             uat-artifacts/
+

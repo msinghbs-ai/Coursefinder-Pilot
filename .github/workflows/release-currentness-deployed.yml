@@ -32,6 +32,7 @@ concurrency:
 jobs:
   deployed-release-currentness:
     runs-on: ubuntu-latest
+    environment: pilot
     timeout-minutes: 35
     env:
       UAT_BASE_URL: ${{ inputs.base_url || 'https://coursefinder-pilot.techm.workers.dev' }}

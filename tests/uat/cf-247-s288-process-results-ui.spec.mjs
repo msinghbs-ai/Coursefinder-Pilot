@@ -86,3 +86,4 @@ test("phone: process results and a university's evidence without page overflow @
   // on a phone a too-wide child (a long address) widens the layout viewport, so innerWidth alone cannot show it: compare with the screen
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= screen.width)).toBe(true)
 })
+

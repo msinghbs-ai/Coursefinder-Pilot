@@ -28,7 +28,8 @@
 -- Retires: nothing. (fee-schedule-etl's D162 English modes and the public.svc_english_table_* functions are not touched here: a separate housekeeping item once the live check is repeated.)
 -- Nothing is dropped or deleted by this migration.
 -- Deploy: apply outside :17 (policy-add-tests), :48 (central-attach) and the 10-minute marks of provider-english-defaults (3-59/10) and policy-auto-approve (5-59/10); a lock on
---   provider_policy_proposals makes it fail cleanly, apply again. Release after the coverage-sweep worker (v0.59.9, parser provider-policy-v0.3.0) so the parser ships with it.
+--   provider_policy_proposals makes it fail cleanly; reconcile the transaction and migration history before retrying. The governed deployment applies this migration
+--   before deploying coverage-sweep v0.59.10 (parser provider-policy-v0.3.0), after the separately validated #894 release (Worker v0.59.9). Verify both live before acceptance.
 
 -- 0 guards: every function this change replaces or relies on is the one the plan was written against ----------------------------------------------------
 do $guard$

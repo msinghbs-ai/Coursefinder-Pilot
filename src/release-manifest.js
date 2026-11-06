@@ -1,20 +1,23 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.489'
-export const PACKAGE_VERSION='0.1.416'
+export const UI_VERSION='2.15.493'
+export const PACKAGE_VERSION='0.1.420'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'6 Nov 2026',
-  title:'Provider descriptions: Run & Validate with evidence-checked claims',
+  title:'English requirements: course groups and a clear next step',
   changes:[
-    'Enrich fields has a Provider descriptions Run & Validate card: preview a small set of providers, save the set, and see for each one the official source, what was read, what was proposed, what was held and why.',
-    'Every description still needs an individual Layer 4 decision from a Pipeline Operator or higher. Nothing is approved, admitted or published automatically, and AI text is never counted as published.',
-    'A sentence that mentions a campus, scholarship or guarantee is checked against its quoted source instead of being held on the word alone. Other claim words still hold the sentence.',
-    'Proposals that wait because the review queue is full resume without another AI read once there is room. A manual lock or a changed catalogue value still stops an admission.'
+    'Coverage > Attributes > English policies shows faculty and course-group scores. A Platform Admin must approve the policy and bind each group to fields of education or a course-title pattern before it can supply a course.',
+    'No rule yet shows each provider\'s stage, why no rule is available, courses still missing English, the next try and recent jobs. Run now reads stored English pages again without fetching pages or using credits.',
+    'A course\'s own reading, a value set by hand, a named-course rule and held cases keep their precedence. Courses reached by groups with different scores wait for a person.',
+    'Search for new non-university English pages remains switched off; releasing this capability does not authorise paid discovery.'
   ],
-  bugFixes:[]
+  bugFixes:[
+    'Reading a policy again with the same parser keeps the group bindings a person saved.',
+    'Approving a group policy closes waiting group policies only; a waiting default policy stays available, and the same protection applies in the other direction.'
+  ]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

@@ -23,20 +23,34 @@ on:
         type: choice
         options: ["off", "on"]
 
+      controller_execution:
+        description: "Active controller execution ID (must match the canonical reservation)"
+        required: false
+      controller_generation:
+        description: "Active controller generation (non-secret fencing identifier)"
+        required: false
+      controller_operation:
+        description: "Immutable operation ID already reserved by the active controller"
+        required: false
+
 permissions:
   contents: read
   statuses: write
 
 concurrency:
-  group: coursefinder-deployed-uat-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ inputs.live_acting == 'on' && 'studysearch-controller-production' || format('coursefinder-deployed-uat-{0}', github.ref) }}
+  cancel-in-progress: ${{ inputs.live_acting != 'on' }}
 
 jobs:
   deployed-uat:
     name: Deployed UAT (${{ inputs.tier || 'targeted' }})
     runs-on: ubuntu-latest
+    environment: pilot
     timeout-minutes: 30
     env:
+      CONTROLLER_EXECUTION_ID: ${{ inputs.controller_execution }}
+      CONTROLLER_GENERATION: ${{ inputs.controller_generation }}
+      CONTROLLER_OPERATION_ID: ${{ inputs.controller_operation }}
       UAT_BASE_URL: ${{ inputs.base_url || 'https://coursefinder-pilot.techm.workers.dev' }}
       UAT_EMAIL: ${{ secrets.COURSEFINDER_UAT_EMAIL }}
       UAT_PASSWORD: ${{ secrets.COURSEFINDER_UAT_PASSWORD }}
@@ -47,7 +61,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0
 
       - name: Resolve validation tier
         id: tier
@@ -387,7 +401,9 @@ jobs:
         shell: bash
         run: |
           mapfile -t specs < /tmp/uat-specs.txt
-          if [ "$LIVE_GREP" = ".*" ]; then npx playwright test "${specs[@]}" --project=chromium-desktop --reporter=list,github; else npx playwright test "${specs[@]}" --grep-invert @live-acting --pass-with-no-tests --project=chromium-desktop --reporter=list,github; fi
+          if [ "$LIVE_GREP" = ".*" ]; then
+            python3 scripts/ci/controller-guard.py --entry-point deployed-uat
+            npx playwright test "${specs[@]}" --project=chromium-desktop --reporter=list,github; else npx playwright test "${specs[@]}" --grep-invert @live-acting --pass-with-no-tests --project=chromium-desktop --reporter=list,github; fi
 
       - name: Run deployed governed validation — mobile gate
         id: mobile_uat
@@ -395,7 +411,9 @@ jobs:
         shell: bash
         run: |
           mapfile -t specs < /tmp/uat-specs.txt
-          if [ "$LIVE_GREP" = ".*" ]; then npx playwright test "${specs[@]}" --project=chromium-mobile --reporter=list,github; else npx playwright test "${specs[@]}" --grep-invert @live-acting --pass-with-no-tests --project=chromium-mobile --reporter=list,github; fi
+          if [ "$LIVE_GREP" = ".*" ]; then
+            python3 scripts/ci/controller-guard.py --entry-point deployed-uat
+            npx playwright test "${specs[@]}" --project=chromium-mobile --reporter=list,github; else npx playwright test "${specs[@]}" --grep-invert @live-acting --pass-with-no-tests --project=chromium-mobile --reporter=list,github; fi
 
       - name: Save npm and Playwright cache after run
         if: always() && steps.uat_cache.outputs.cache-hit != 'true'
