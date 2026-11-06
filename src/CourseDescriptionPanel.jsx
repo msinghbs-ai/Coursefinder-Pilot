@@ -70,9 +70,9 @@ export function CdList({q,sum,render}){
   const items=l.items||[],step=Number(l.limit||25)
   return <div data-l4-cd-list>
     {items.length===0?<Empty text={q.mode==='sample'?'No description of the sample is waiting for a person.':'Nothing is ready to decide here.'}/>:items.map(render)}
-    {Number(l.total)>items.length+q.off&&q.off>=0&&<div className="l4i-pager" data-l4-cd-pager>
+    {(q.off>0||Number(l.total)>items.length)&&q.off>=0&&<div className="l4i-pager" data-l4-cd-pager>
       <Button compact disabled={q.off===0} onClick={()=>{const o=Math.max(0,q.off-step);q.setOff(o);q.loadList(o)}}>Previous</Button>
-      <small>{fmtNumber(q.off+1)}–{fmtNumber(q.off+items.length)} of {fmtNumber(l.total)}{q.mode==='sample'?' in the sample':' ready'}, oldest first</small>
+      <small>{fmtNumber(items.length?q.off+1:q.off)}–{fmtNumber(q.off+items.length)} of {fmtNumber(l.total)}{q.mode==='sample'?' in the sample':' ready'}, oldest first</small>
       <Button compact disabled={q.off+items.length>=Number(l.total)} onClick={()=>{const o=q.off+step;q.setOff(o);q.loadList(o)}}>Next</Button></div>}
   </div>
 }
@@ -117,3 +117,4 @@ export function CourseDescriptionsView(){
     {err&&<small className="fr-error" role="alert">{err}</small>}
   </div>
 }
+

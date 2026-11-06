@@ -5,7 +5,7 @@
 // migration, reconciliation, sample, read-only proof). This spec holds the source contracts, the worker's pure functions and the screens (mocked admin).
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-import { COURSE_TEXT_PROMPT_VERSION, courseTextBreach, courseTextMergeReask, courseTextReaskNote, courseTextReaskUser, courseTextResults } from '../../supabase/functions/coverage-sweep/course-text.ts'
+import { COURSE_TEXT_PROMPT_VERSION, courseTextBreach, courseTextMergeReask, courseTextReaskMax, courseTextReaskNote, courseTextReaskUser, courseTextResults } from '../../supabase/functions/coverage-sweep/course-text.ts'
 import { mockAdmin } from './support/admin-mock.mjs'
 
 const MIG = fs.readFileSync('supabase/migrations/20261106500000_cf247_course_descriptions_complete.sql', 'utf8')
@@ -24,7 +24,7 @@ test('migration: replaces only the check (md5-guarded), seeds the course lists i
   expect(code).toMatch(/'enrich\.course_description_marketing_words'[\s\S]*?where s\.toolset_key = 'pipeline' and s\.key = 'pdesc\.superlatives'/)
   expect(MIG).toContain('post-check: the course claim-word list differs from the provider list')
   // D4: off; D3: the limits are not touched
-  expect(code).toMatch(/'enrich\.course_description_reask_max'[\s\S]*?'number', '0'::jsonb, 0, 2, 're-asks'/)
+  expect(code).toMatch(/'enrich\.course_description_reask_max'[\s\S]*?'number', '0'::jsonb, 0, 1, 're-asks'/)
   expect(code).not.toMatch(/enrich\.course_description_(max_chars|max_sentences|min_chars|min_sentences)'\s*,\s*'/)
   // D1: the trust rule is not touched and nothing is admitted
   expect(code).not.toMatch(/update\s+pipeline\.platform_toolset_settings[^;]*review_first/i)
@@ -84,6 +84,11 @@ test('course-text.ts: the breach is measured as the database measures it, and on
   expect(courseTextBreach({ description: { about_course: false, sentences: [S('x')] } }, page, L)).toBeNull()
   expect(courseTextBreach(answer(), page, L)).toBeNull()
   expect(courseTextBreach(five, page, {})).toBeNull()
+  // D4 is an authority ceiling, not permission for a second paid re-ask if
+  // an out-of-policy or malformed setting leaks through an older control.
+  for (const [value, expected] of [[1, 1], [0, 0], [2, 0], [-1, 0], [1.5, 0], ['1', 0], [true, 0], [Infinity, 0], [NaN, 0], [null, 0], [undefined, 0]]) {
+    expect(courseTextReaskMax({ 'enrich.course_description_reask_max': value }), String(value)).toBe(expected)
+  }
 })
 
 test('course-text.ts: the re-ask states the limits and the previous text, asks for a rewrite (never a cut) and keeps the deadlines; the note records the first answer', () => {
@@ -113,7 +118,7 @@ test('worker v0.59.9: the re-ask is gated by the setting (ships 0), uses the sam
   expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.59\.9";/)
   expect(worker).toContain('// was v0.59.8 // v0.59.8')
   const t = worker.slice(worker.indexOf('const textRead = async'), worker.indexOf('const entryCall = async'))
-  expect(t).toContain('ws["enrich.course_description_reask_max"]')          // read through svc_worker_settings_v1 (G2)
+  expect(t).toContain('courseTextReaskMax(ws)')                             // one-authorised-call guard; setting from svc_worker_settings_v1 (G2)
   expect(t).toContain('reaskMax > 0 ?')                                      // 0 = off: no second call
   expect(t).toContain('courseTextReaskUser(pg.provider, pg.title, page, last, b, length)')
   expect(t).toContain('courseTextRequest(model, user, w, maxTokens)')        // the same pinned central model and answer limit
@@ -190,6 +195,32 @@ test.describe('course descriptions in the Layer 4 Inbox', () => {
     await checkFlow(page, calls, null)
   })
 
+  test('reviewer can return from the final course-description page without leaving the queue', async ({ page }) => {
+    const calls = { inbox: [], cd: [] }
+    await openCourseDescriptions(page, calls)
+    await page.route('https://example.supabase.co/rest/v1/rpc/admin_course_description_queue', async (route) => {
+      const b = route.request().postDataJSON(); calls.cd.push(b)
+      if (b.p_action === 'items') {
+        const offset = Number(b.p_args?.offset || 0)
+        return route.fulfill({ json: { total: 3, offset, limit: 2, items: [ITEM(1), ITEM(2), ITEM(3)].slice(offset, offset + 2) } })
+      }
+      return route.fallback()
+    })
+    await page.locator('[data-l4-cd-summary] [data-l4-cd-ready]').click()
+    const pager = page.locator('[data-l4-cd-pager]')
+    await expect(pager).toContainText('1–2 of 3')
+    await expect(pager.getByRole('button', { name: 'Previous' })).toBeDisabled()
+    await pager.getByRole('button', { name: 'Next' }).click()
+    await expect(page.locator('[data-l4-cd-list] [data-l4-item="provider_description"]')).toHaveCount(1)
+    await expect(pager).toContainText('3–3 of 3')
+    await expect(pager.getByRole('button', { name: 'Next' })).toBeDisabled()
+    await expect(pager.getByRole('button', { name: 'Previous' })).toBeEnabled()
+    await pager.getByRole('button', { name: 'Previous' }).click()
+    await expect(page.locator('[data-l4-cd-list] [data-l4-item="provider_description"]')).toHaveCount(2)
+    await expect(pager).toContainText('1–2 of 3')
+    expect(calls.cd.filter(c => c.p_action === 'items').map(c => c.p_args.offset)).toEqual([0, 2, 0])
+  })
+
   test('Enrich fields › Course descriptions: the four measures apart, held reasons, claim words and the sample report (read only)', async ({ page }) => {
     await mockAdmin(page, { rank: 4 })
     const calls = []
@@ -232,3 +263,4 @@ test.describe('course descriptions at phone width @responsive', () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1)
   })
 })
+

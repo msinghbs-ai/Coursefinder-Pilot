@@ -1,27 +1,54 @@
 #!/usr/bin/env bash
-# Guards: Platform Admin direction 6 Nov 2026 08:12 (course descriptions: safe parallel planning and independent validation); decision 19:14 §8
-# (production-representative validation). Builds the course-description path from the production-parity manifest (captured read-only
-# 6 Nov 2026 08:29 AEDT with scripts/prod-parity-capture.mjs: catalogue.courses, pipeline.field_enrich_items, pipeline.layer4_review_items,
-# pipeline.platform_toolset_settings with their constraints, triggers, grants and RLS, and the live course_description_check_v1 and related
-# functions, each md5-checked), proves the fixture equals the manifest, seeds the live settings, and runs the validator baseline
-# (synthetic shapes, then real held readings from production with the rule production recorded).
-# Needs a scratch PostgreSQL (never a Supabase project): PGHOST/PGPORT/PGUSER. Databases use the prefix g_.
+# Guards: Platform Admin 6 Nov 2026 08:12, 09:44 sections 2/4 and decision 19:14 section 8.
+# Real isolated PostgreSQL only. Every producer, fixture, parity and scenario error
+# must fail the execution. No successful tee/grep may hide a failed SQL command.
 set -euo pipefail
 cd "$(dirname "$0")"
 ROOT=../../..
 DB=${CDESC_DB:-g_cdesc_baseline}
+DB2=${CDESC_DB2:-g_cdesc_after}
+[[ "$DB" =~ ^g_[a-z0-9_]+$ && "$DB2" =~ ^g_[a-z0-9_]+$ && "$DB" != "$DB2" ]] || { echo 'refused: distinct scratch database names beginning g_ required' >&2; exit 1; }
 P="psql -v ON_ERROR_STOP=1 -q -X"
+# Check the server before any scratch DDL; the generated fixtures repeat this guard.
+$P -d postgres <<'SQL'
+do $g$ begin
+  if inet_server_addr() is not null and host(inet_server_addr()) not in ('127.0.0.1', '::1') then
+    raise exception 'prod-parity fixtures are for a local database only'; end if;
+  if exists (select 1 from pg_namespace where nspname = 'supabase_migrations')
+     and exists (select 1 from pg_roles where rolname = 'supabase_admin') then
+    raise exception 'refusing a Supabase project database'; end if;
+end $g$;
+SQL
+WORK=$(mktemp -d)
+cleanup() {
+  local code=$?
+  trap - EXIT
+  if [ -z "${CDESC_KEEP:-}" ]; then
+    $P -d postgres -c "drop database if exists $DB" -c "drop database if exists $DB2" >/dev/null || code=1
+  fi
+  rm -rf "$WORK"
+  exit "$code"
+}
+trap cleanup EXIT
+# Separate production of SQL from execution: neither failure can be hidden by a
+# downstream consumer. A bad manifest never progresses to a parity PASS message.
+node "$ROOT/scripts/prod-parity-capture.mjs" fixture manifest-register.json >"$WORK/register.sql"
+node "$ROOT/scripts/prod-parity-capture.mjs" fixture manifest.json >"$WORK/fixture.sql"
+node "$ROOT/scripts/prod-parity-capture.mjs" check-sql manifest.json >"$WORK/check.sql"
 $P -d postgres -c "drop database if exists $DB" -c "create database $DB" >/dev/null
-[ -n "${CDESC_KEEP:-}" ] || trap '$P -d postgres -c "drop database if exists $DB" >/dev/null' EXIT
-# Supabase keeps gen_random_uuid in schema "extensions" (a column default of pipeline.evidence_artifacts calls it); PostgreSQL 16 has it in core
 EXT="create schema if not exists extensions; create or replace function extensions.gen_random_uuid() returns uuid language sql as 'select pg_catalog.gen_random_uuid()'"
-$P -d $DB -c "$EXT" >/dev/null
-node $ROOT/scripts/prod-parity-capture.mjs fixture manifest-register.json | $P -d $DB >/dev/null 2>&1
-node $ROOT/scripts/prod-parity-capture.mjs fixture manifest.json | $P -d $DB 2>&1 | grep -v -e 'does not exist, skipping' -e '^$' || true
-# Parity: only the PostgreSQL 17 MAINTAIN privilege may differ on a PostgreSQL 16 server (tests/fixtures/prod-parity/README.md, Limits).
-DIFF=$(node $ROOT/scripts/prod-parity-capture.mjs check-sql manifest.json | $P -d $DB -At | grep -v '^grant|.*MAINTAIN' || true)
-[ -z "$DIFF" ] || { echo "fixture differs from the production manifest:"; echo "$DIFF"; exit 1; }
-# The live definitions the plan guards on (6 Nov 2026 08:25-08:29 AEDT)
+$P -d "$DB" -c "$EXT" >/dev/null
+$P -d "$DB" -f "$WORK/register.sql"
+$P -d "$DB" -f "$WORK/fixture.sql"
+$P -d "$DB" -At -f "$WORK/check.sql" >"$WORK/diff"
+SERVER_VERSION=$($P -d "$DB" -Atc 'show server_version_num')
+# Only PG16 lacks the PG17 MAINTAIN privilege. All other differences fail closed.
+if (( SERVER_VERSION < 170000 )); then
+  DIFF=$(awk '!/^grant[|].*MAINTAIN/' "$WORK/diff")
+else
+  DIFF=$(cat "$WORK/diff")
+fi
+[ -z "$DIFF" ] || { echo 'fixture differs from the production manifest:'; echo "$DIFF"; exit 1; }
 declare -A LIVE=(
   ["security.course_description_check_v1(uuid,jsonb)"]=ff3d6dd7b0f88c85b1fdff6c8a8cd86b
   ["security.enrich_course_text_record_v1(bigint,jsonb)"]=b47c00b19bc6eaa36828dbe4d2371501
@@ -31,32 +58,30 @@ declare -A LIVE=(
   ["security.course_description_review_trg_v1()"]=d143eba24f5896f36a3a93e8e5c075aa
 )
 for s in "${!LIVE[@]}"; do
-  got=$($P -d $DB -Atc "select md5(pg_get_functiondef('$s'::regprocedure))")
+  got=$($P -d "$DB" -Atc "select md5(pg_get_functiondef('$s'::regprocedure))")
   [ "$got" = "${LIVE[$s]}" ] || { echo "loaded $s is $got, not live ${LIVE[$s]}"; exit 1; }
 done
 echo "parity: fixture equals the production manifest; ${#LIVE[@]} live md5s confirmed"
-$P -d $DB -f settings.sql
+$P -d "$DB" -f settings.sql
 for f in baseline.sql held-real.sql; do
   [ -f "$f" ] || { echo "missing $f"; exit 1; }
-  $P -d $DB -1 -f "$f" 2>&1 | sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'
+  $P -d "$DB" -1 -f "$f" 2>&1 | sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'
 done
-echo "course-description baseline (before the migration): all passed"
-# After the migration: a second database gets the same live settings, then migration 20261106500000 (twice: it must be re-run safe), then the SAME
-# baseline cases and real held readings must give identical outcomes, then the queue/reconciliation/sample tests.
-DB2=${CDESC_DB2:-g_cdesc_after}
+echo 'course-description baseline (before the migration): all passed'
 $P -d postgres -c "drop database if exists $DB2" -c "create database $DB2" >/dev/null
-[ -n "${CDESC_KEEP:-}" ] || trap '$P -d postgres -c "drop database if exists $DB" -c "drop database if exists $DB2" >/dev/null' EXIT
-$P -d $DB2 -c "$EXT" >/dev/null
-node $ROOT/scripts/prod-parity-capture.mjs fixture manifest-register.json | $P -d $DB2 >/dev/null 2>&1
-node $ROOT/scripts/prod-parity-capture.mjs fixture manifest.json | $P -d $DB2 >/dev/null 2>&1 || true
-$P -d $DB2 -f settings.sql
+$P -d "$DB2" -c "$EXT" >/dev/null
+$P -d "$DB2" -f "$WORK/register.sql"
+$P -d "$DB2" -f "$WORK/fixture.sql"
+$P -d "$DB2" -f settings.sql
+# Reproduce the existing consumer visibility view before the new metric is created.
+$P -d "$DB2" -f publication.sql
 MIG=$ROOT/supabase/migrations/20261106500000_cf247_course_descriptions_complete.sql
-$P -d $DB2 -1 -f $MIG 2>&1 | sed -n 's/^.*\(WARNING\|ERROR\):  /\1 /p'
-$P -d $DB2 -1 -f $MIG 2>&1 | sed -n 's/^.*\(WARNING\|ERROR\):  /\1 /p'
-echo "migration 20261106500000 applied twice without error"
+$P -d "$DB2" -1 -f $MIG 2>&1 | sed -n 's/^.*\(WARNING\|ERROR\):  /\1 /p'
+$P -d "$DB2" -1 -f $MIG 2>&1 | sed -n 's/^.*\(WARNING\|ERROR\):  /\1 /p'
+echo 'migration 20261106500000 applied twice without error'
 for f in baseline.sql held-real.sql; do
-  $P -d $DB2 -1 -v after=1 -f "$f" 2>&1 | sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'
+  $P -d "$DB2" -1 -v after=1 -f "$f" 2>&1 | sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'
 done
-echo "course-description baseline (after the migration): identical outcomes"
-$P -d $DB2 -f queue.sql 2>&1 | sed -n 's/^.*\(NOTICE\|ERROR\|WARNING\):  /\1 /p'
-echo "course-description queue, reconciliation and sample tests: all passed"
+echo 'course-description baseline (after the migration): identical outcomes'
+$P -d "$DB2" -f queue.sql 2>&1 | sed -n 's/^.*\(NOTICE\|ERROR\|WARNING\):  /\1 /p'
+echo 'course-description queue, reconciliation and sample tests: all passed'

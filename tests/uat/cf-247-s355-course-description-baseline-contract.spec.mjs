@@ -5,6 +5,9 @@
 // unsupported claims) with today's outcomes. The database round trip is run.sh, run by .github/workflows/course-descriptions-test.yml.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
+import { spawnSync } from 'node:child_process'
 import { verifyManifest } from '../../scripts/prod-parity-capture.mjs'
 
 const FX = 'tests/fixtures/course-description-parity'
@@ -48,6 +51,24 @@ test('the runner pins the same live md5s and requires parity before the baseline
   expect(run).toMatch(/DB=\$\{CDESC_DB:-g_/)
 })
 
+test('a producer or SQL execution error cannot be hidden as a passing parity fixture', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'cdesc-failure-'))
+  try {
+    // No real database is reached: the mock SQL client consumes the guard and
+    // reproduces a fixture SQL error; the node mock can fail the SQL producer.
+    fs.writeFileSync(path.join(tmp, 'node'), '#!/usr/bin/env bash\nif [ "$FAIL_STAGE" = producer ]; then echo "producer failed" >&2; exit 41; fi\nprintf "fixture SQL\\n"\n')
+    fs.writeFileSync(path.join(tmp, 'psql'), '#!/usr/bin/env bash\nfor arg in "$@"; do\n if [ "$arg" = -f ] && [ "$FAIL_STAGE" = sql ]; then echo "ERROR: fixture failed" >&2; exit 42; fi\ndone\nif [[ " $* " != *" -c "* ]]; then cat >/dev/null; fi\n')
+    fs.chmodSync(path.join(tmp, 'node'), 0o755)
+    fs.chmodSync(path.join(tmp, 'psql'), 0o755)
+    for (const stage of ['producer', 'sql']) {
+      const r = spawnSync('bash', [`${FX}/run.sh`], { encoding: 'utf8', env: { ...process.env, PATH: `${tmp}:${process.env.PATH}`, FAIL_STAGE: stage } })
+      expect(r.status, stage).not.toBe(0)
+      expect(r.stdout, stage).not.toContain('parity: fixture equals')
+      expect(r.stdout, stage).not.toContain('course-description queue, reconciliation and sample tests: all passed')
+    }
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }) }
+})
+
 test('the baseline covers the held cases the plan changes, with today\'s first-failing rule', () => {
   const b = fs.readFileSync(`${FX}/baseline.sql`, 'utf8')
   for (const rule of ['ok', 'not_stated', 'sentence_count', 'length', 'unsupported_claim', 'unsupported_marketing', 'quote_not_on_page',
@@ -69,3 +90,4 @@ test('the real held readings carry the rule production recorded, and no personal
   expect(h).not.toMatch(/@[a-z0-9-]+\.[a-z]{2,}/i)
   expect(h).not.toMatch(/\b(updated_by|assigned_to|actor)\b\s*[:=]/)
 })
+

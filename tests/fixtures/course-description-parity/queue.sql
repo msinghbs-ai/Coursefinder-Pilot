@@ -151,6 +151,36 @@ insert into pipeline.layer4_decisions(review_item_id, action, actor_id, reason, 
 insert into search.course_documents(course_id, provider_id, country_id, provider_name, course_title, search_text, search_tsv, publication_status, description)
 select c.id, c.provider_id, p.country_id, 'Queue University AU One', 'Queue Course 41', 'x', to_tsvector('x'), 'published', c.description
   from catalogue.courses c join catalogue.providers p on p.id = c.provider_id where c.id = pg_temp.cid(41);
+-- A matching projected description is not proof that the document is published.
+insert into search.course_documents(course_id, provider_id, country_id, provider_name, course_title, search_text, search_tsv, publication_status, description)
+select c.id, c.provider_id, p.country_id, 'Queue University NZ One', 'Queue Course 44', 'x', to_tsvector('x'), 'unpublished', c.description
+  from catalogue.courses c join catalogue.providers p on p.id = c.provider_id where c.id = pg_temp.cid(44);
+
+-- Exercise current provider/lifecycle and explicit course/provider blocks, including
+-- a stale published projection. These are invented fixture-only changes, undone
+-- before the read-only sample assertions; admission/review data never changes.
+do $$ declare v jsonb; begin
+  v := security.course_description_summary_v1();
+  if (v->>'published_to_the_website')::int <> 1 then raise exception 'matching unpublished document counted as published: %', v; end if;
+  update catalogue.providers set publication_status = 'unpublished' where id = pg_temp.id('prov_au1');
+  if (security.course_description_summary_v1()->>'published_to_the_website')::int <> 0 then raise exception 'unpublished provider still counted through a stale search document'; end if;
+  update catalogue.providers set publication_status = 'published', lifecycle_status = 'inactive' where id = pg_temp.id('prov_au1');
+  if (security.course_description_summary_v1()->>'published_to_the_website')::int <> 0 then raise exception 'inactive provider still counted as published'; end if;
+  update catalogue.providers set lifecycle_status = 'active' where id = pg_temp.id('prov_au1');
+  update catalogue.courses set lifecycle_status = 'inactive' where id = pg_temp.cid(41);
+  if (security.course_description_summary_v1()->>'published_to_the_website')::int <> 0 then raise exception 'inactive course still counted as published'; end if;
+  update catalogue.courses set lifecycle_status = 'active' where id = pg_temp.cid(41);
+  insert into pipeline.layer4_block_decisions(id,entity_type,entity_id,block_scope,event_type,created_at)
+    values ('00000000-0000-4000-a400-000000000001','course',pg_temp.cid(41),'search','block',now());
+  if (security.course_description_summary_v1()->>'published_to_the_website')::int <> 0 then raise exception 'Layer 4 blocked course counted as published'; end if;
+  update pipeline.layer4_block_decisions set event_type = 'unblock' where id = '00000000-0000-4000-a400-000000000001';
+  insert into pipeline.layer4_block_decisions(id,entity_type,entity_id,block_scope,event_type,created_at)
+    values ('00000000-0000-4000-a400-000000000002','provider',pg_temp.id('prov_au1'),'search','block',now());
+  if (security.course_description_summary_v1()->>'published_to_the_website')::int <> 0 then raise exception 'Layer 4 blocked provider counted as published'; end if;
+  update pipeline.layer4_block_decisions set event_type = 'unblock' where id = '00000000-0000-4000-a400-000000000002';
+  if (security.course_description_summary_v1()->>'published_to_the_website')::int <> 1 then raise exception 'restored consumer visibility did not restore publication measure'; end if;
+  raise notice 'publication [pass]: unpublished document/provider, inactive course/provider and Layer 4 course/provider blocks excluded; published admission retained';
+end $$;
 
 -- ===== tests (all inside a READ ONLY transaction: the reports cannot write) ==================================================================
 create temporary table g_before as select
@@ -252,3 +282,4 @@ do $$ declare v jsonb; begin
   if v->>'rule' <> 'length' then raise exception 'removing students must leave the length rule in force, got %', v->>'rule'; end if;
   raise notice 'validate-all [pass]: without "students" the long reading is still held by %', v->>'rule';
 end $$;
+

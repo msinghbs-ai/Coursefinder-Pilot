@@ -46,7 +46,7 @@ on conflict (toolset_key, key) do nothing;
 insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, section, used_by, reason) values
 ('pipeline', 'enrich.course_description_reask_max', 'Course description: re-asks for a length breach',
  'When the AI answer has too many sentences or is too long, the worker asks once more on the same stored page (same pinned model, same answer limit) for a version within the limits. The second answer goes through every check again; nothing is ever cut. 0 = off (ships off; the Controller switches it to 1 as a recorded setting change after the feature is verified, within the existing AI spend limits).',
- 'number', '0'::jsonb, 0, 2, 're-asks', 1110, 'Course description and deadline', 'worker coverage-sweep enrich_ai (course-text.ts)',
+ 'number', '0'::jsonb, 0, 1, 're-asks', 1110, 'Course description and deadline', 'worker coverage-sweep enrich_ai (course-text.ts)',
  'CF-247 Platform Admin 6 Nov 2026 D4: one AI re-ask for length or sentence-count breaches, shipped off'),
 ('pipeline', 'enrich.course_description_held_days', 'Course description: held reasons window',
  'How many days back the held-reasons report on Enrich fields looks.',
@@ -265,8 +265,10 @@ language sql stable security definer set search_path to '' as $function$
     'waiting_behind_provider_cap', (select count(*) from fe where fe.state = 'skipped' and fe.reason like 'held\_first\_admission:%'),
     'admitted_by_person', (select count(*) from l4 where l4.status in ('approved', 'edited_approved') and l4.cur is not distinct from nullif(btrim(l4.d), '')),
     'admitted_without_a_person', (select count(*) from fe where fe.state = 'filled' and coalesce(fe.value->>'admitted', '') <> ''),
-    'published_to_the_website', (select count(*) from l4 join search.course_documents sd on sd.course_id = l4.course_id
-                                   where l4.status in ('approved', 'edited_approved') and l4.cur is not distinct from nullif(btrim(l4.d), '') and nullif(btrim(sd.description), '') = l4.cur),
+    'published_to_the_website', (select count(distinct l4.course_id) from l4 join search.course_documents sd on sd.course_id = l4.course_id
+                                   where l4.status in ('approved', 'edited_approved') and l4.cur is not distinct from nullif(btrim(l4.d), '') and nullif(btrim(sd.description), '') = l4.cur
+                                     and sd.publication_status = 'published'
+                                     and not exists (select 1 from security.layer4_search_blocked_courses b where b.course_id = l4.course_id)),
     'decided', (select jsonb_object_agg(z.status, z.n) from (select l4.status, count(*) n from l4 group by 1) z),
     'limits', jsonb_build_object('min_sentences', security.pipeline_num_v1('enrich.course_description_min_sentences', 1), 'max_sentences', security.pipeline_num_v1('enrich.course_description_max_sentences', 4),
                                  'min_chars', security.pipeline_num_v1('enrich.course_description_min_chars', 80), 'max_chars', security.pipeline_num_v1('enrich.course_description_max_chars', 700)),
@@ -469,3 +471,4 @@ begin
   if security.pipeline_num_v1('enrich.course_description_reask_max', 99) <> 0 then raise exception 'post-check: the re-ask must ship off (D4)'; end if;
   if security.pipeline_num_v1('enrich.course_description_review_first', 0) < 1 then raise exception 'post-check: review_first must be untouched (D1)'; end if;
 end $post$;
+

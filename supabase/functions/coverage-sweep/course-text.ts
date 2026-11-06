@@ -49,6 +49,12 @@ export function courseTextLength(ws: Record<string, unknown> | null | undefined)
            min_chars: g("enrich.course_description_min_chars"), max_chars: g("enrich.course_description_max_chars") };
 }
 
+// fixed: D4 authorises exactly one re-ask. A malformed/out-of-policy setting
+// must not expand paid-call authority; the operational setting still ships off.
+export function courseTextReaskMax(ws: Record<string, unknown> | null | undefined): number {
+  return ws?.["enrich.course_description_reask_max"] === 1 ? 1 : 0;
+}
+
 export type CourseTextBreach = { rule: "sentence_count" | "length"; sentences: number; chars: number };
 
 // The size of a description as the database measures it (security.course_description_check_with_v1): sentences = the stored sentences,
@@ -162,3 +168,4 @@ export function courseTextResults(a: any, page: string, items: { item_id: number
   }
   return out;
 }
+

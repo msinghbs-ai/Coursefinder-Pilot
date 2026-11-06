@@ -29,7 +29,7 @@ import * as caRef from "../_shared/cf247-register-ca-ref.ts";
 import { admissionCheck, awardScope, baseHost, keepScholarshipUrl, onSite, mainText, matchScholarshipPage, nameOnPage, normUrl, pageHeadings, providerTokens, scholarshipCriteria, scholarshipFacts, scholarshipListing } from "./scholarship.ts";
 import { imageSize, logoCandidates, sniffMime, svgSafe } from "./logo.ts";
 import { awardSections, mapOutcome, nextPage, pagingState, redirectOutcome, sectionCode, sectionHtml, statedTotal } from "./catalogue.ts";
-import { COURSE_TEXT_FIELDS, courseTextAnswer, courseTextAnswerLimit, courseTextBreach, courseTextLength, courseTextMergeReask, courseTextPage, courseTextReaskNote, courseTextReaskUser, courseTextRequest, courseTextResults, courseTextUser } from "./course-text.ts";
+import { COURSE_TEXT_FIELDS, courseTextAnswer, courseTextAnswerLimit, courseTextBreach, courseTextLength, courseTextMergeReask, courseTextPage, courseTextReaskMax, courseTextReaskNote, courseTextReaskUser, courseTextRequest, courseTextResults, courseTextUser } from "./course-text.ts";
 import { DESCRIPTION_ANSWER_KEY, DESCRIPTION_PROMPT_VERSION, DESCRIPTION_WORKER_PROTOCOL, aboutLinks, aboutPageCheck, descriptionAnswer, descriptionClaimCheck, descriptionCostQuote, descriptionPageText, descriptionRequest, descriptionSourceIdentity, ownHost, providerDescriptionSentences } from "./description.ts";
 const SCH_VERSION = "scholarship-sweep-v0.7.3"; // v0.7.3 (11 Oct 2026, Platform Admin bugs 11/10-6): a "while places last" condition is not an ended scholarship; an amount the student pays (deposit, bond, fee) is never the award and a "valued at" amount counts; courses listed after "one of the following courses" are read. v0.7.2 (11 Oct 2026): course titles end at bullets (•, ⦁) and at the next capitalised word or sentence. v0.7.1 (11 Oct 2026): courses named after "excluding" are exclusions; course titles keep their bracketed specialisation; numeric dates read in the provider country's day/month order; date proofs start at their label. v0.7.0 (11 Oct 2026): application open and close dates (with rounds), study start, courses the page names, and the sentence behind each level and field. v0.6.3 (11 Oct 2026): academic-result percentages (CWA, WAM, ATAR) are not award values; the value text is a whole sentence. v0.6.2: Firecrawl cap and reserve read from Layer 2 settings; v0.6.1: // v0.6.1: numeric character references in titles decoded; // v0.6.0 (Decision 250): amounts in the provider country's currency; NZ and Canadian domestic wording
 // v0.5.4 (2 Oct 2026, Decision 212 check): a listed value ("Residency Australian Citizen, New Zealand Citizen, International
@@ -2650,7 +2650,7 @@ async function handle(req: Request): Promise<Response> {
         const ans = await askText(courseTextUser(pg.provider, pg.title, want, page, length), want);
         let final = ans.a, spent = ans.cost, reask: ReturnType<typeof courseTextReaskNote> | null = null;
         // D4: ONE re-ask (the setting is the most; 0 = off) when the description breaks the sentence or length limit; the answer is checked in full afterwards
-        const reaskMax = Math.floor(Number(ws["enrich.course_description_reask_max"]) || 0);
+        const reaskMax = courseTextReaskMax(ws);
         const breach = want.includes("description") && reaskMax > 0 ? courseTextBreach(ans.a, page, length, minQuote) : null;
         if (breach) {
           let made = 0, last = ans.a;
@@ -3445,3 +3445,4 @@ async function handle(req: Request): Promise<Response> {
     return j({ ok: false, error: e instanceof Error ? e.message : String(e), workerVersion: VERSION }, 500);
   }
 }
+
