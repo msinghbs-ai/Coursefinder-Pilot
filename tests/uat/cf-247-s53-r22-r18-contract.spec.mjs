@@ -24,8 +24,9 @@ test('R22: sync pages up to 600 units by setting (range to 1000); only the value
 })
 
 test('R18 parser: Duolingo read as DET, overall only, 10 to 160 in steps of 5', async () => {
-  const { englishPolicy, parseScore, POLICY_PARSER } = await parser()
-  expect(['provider-policy-v0.2.4','provider-policy-v0.2.5']).toContain(POLICY_PARSER)
+  const { englishPolicy, parseScore, POLICY_PARSER, ADD_TESTS_PARSER } = await parser()
+  expect(POLICY_PARSER).toBe('provider-policy-v0.3.0')
+  expect(ADD_TESTS_PARSER).toBe('provider-policy-v0.2.5')  // adding DET to approved policies keeps its existing key
   expect(parseScore('DET', '110 (no band less than 95)')).toEqual({ overall: 110, comps: {} })
   expect(parseScore('DET', 'Minimum score of 115')).toEqual({ overall: 115, comps: {} })
   expect(parseScore('DET', '92')).toBeNull()       // not a DET score (steps of 5)
@@ -52,7 +53,8 @@ test('R18: DET added to approved policies only where the IELTS matches, only to 
   expect(r18.indexOf("('policy-add-tests', 'Enrichment'")).toBeLessThan(r18.indexOf("select cron.schedule('policy-add-tests'"))
   expect(r18).toContain("security.pipeline_num_v1('batch.policy_add_tests', 40)")
   expect(worker).toContain('if (mode === "provider_facts_add_tests") {')
-  expect(worker).toContain('rpc("svc_provider_english_add_tests_v1", { p_proposal_id: it.id, p_parser: POLICY_PARSER, p_parsed: parsed, p_error: err })')
+  expect(worker).toContain('rpc("svc_provider_policy_add_tests_next", { p_parser: ADD_TESTS_PARSER,')
+  expect(worker).toContain('rpc("svc_provider_english_add_tests_v1", { p_proposal_id: it.id, p_parser: ADD_TESTS_PARSER, p_parsed: parsed, p_error: err })')
 })
 
 const fix = fs.readFileSync('supabase/migrations/20261017030000_cf247_r18_add_tests_fix.sql', 'utf8')
@@ -79,8 +81,9 @@ test('Decision 262: one English policy in force per university and level; rows m
   expect(inforce).toContain("command := $$select security.english_policy_in_force_all_v1(true); select security.provider_policy_refresh_plans_v1(")
   expect(inforce).not.toMatch(/^\s*(delete|drop)\b/im)
   const { englishPolicy, POLICY_PARSER } = await parser()
-  expect(POLICY_PARSER).toBe('provider-policy-v0.2.5')
+  expect(POLICY_PARSER).toBe('provider-policy-v0.3.0')
   const utas = englishPolicy('| Approved English Language Tests | Minimum English Language Test Score Requirements for Undergraduate Courses | Minimum English Language Test Score Requirements Postgraduate coursework programs |\n| --- | --- | --- |\n| IELTS (Academic) | 6.0 (no individual band less than 5.5) | 6.0 (no individual band less than 6.0) |\n\nPostgraduate courses with alternative English language requirements\n\n**Master of Nursing**\n\n- IELTS Academic - 7.0 (no band less than 7.0)\n\nPostgraduate level\n\n- IELTS (Academic) - 6.0 (no individual band less than 6.0)\n')
   expect(utas.defaults.postgraduate.find((r) => r.test_code === 'IELTS').overall_score).toBe(6)
   expect(utas.conflicts).toEqual([])
 })
+
