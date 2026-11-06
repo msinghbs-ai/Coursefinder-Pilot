@@ -1,7 +1,7 @@
 # English requirements: faculty and course-group rules, provider scope, "why no rule"
 
 CF-247, Platform Admin direction of 6 Nov 2026 09:44 (section 3 and the permanent compatibility gate, section 4). Migration `20261106550000_cf247_english_requirements_complete.sql`,
-coverage-sweep Worker version assigned uniquely by the Integration Controller after the course-description version (parser `provider-policy-v0.3.0`). Plan: admin repo `docs/platform/work-packages/2026-11-06-english-requirements-implementation-plan.md`.
+coverage-sweep Worker v0.59.10 (after course descriptions v0.59.9) (parser `provider-policy-v0.3.0`). Plan: admin repo `docs/platform/work-packages/2026-11-06-english-requirements-implementation-plan.md`.
 
 ## What it does
 
@@ -56,3 +56,9 @@ CI uses PostgreSQL 17.6 with a Unix socket shared only between the isolated job 
 
 Existing specs `cf-247-english-baseline-contract`, `cf-247-english-groups-contract`, `cf-247-english-verbatim-pages-contract`, and the central governance specs s32, s42, s57, s120 remain applicable. Actual run IDs and results belong in the canonical Admin checkpoint; scenario definitions alone do not establish that they executed.
 
+
+## Integration recovery, 6 November 2026
+
+False-green execution fixed at `9b54c741`: genuine isolated PostgreSQL17.6 over Unix socket, no parity differences, live function md5 guards, migration applied and **71/71 group +17/17 exception scenarios** passed in run [42209417333](https://github.com/msinghbs-ai/Coursefinder-Pilot/actions/runs/42209417333).
+
+This branch now incorporates repaired #894 head `12216778` as an explicit development dependency. A real three-way Worker merge retained both the strict one-reask path and stored English reparse; only the Worker version/comment line conflicted. English uses unique worker **v0.59.10**; #894 remains **v0.59.9**. The course-description currentness assertion is updated to this combined worker version. The full governed suite will validate the combined tree. No production merge, release, admission or paid search is implied. Human group approval/binding and review-first descriptions remain in force. Release #894 before this dependent English capability, subject to ownership and all documented gates.

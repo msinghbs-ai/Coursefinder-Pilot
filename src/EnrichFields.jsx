@@ -14,6 +14,7 @@ import Card from'./Card'
 import{Button,Empty,Loading,StatusChip,fmtDateTime}from'./ui-kit'
 import{fmtNumber}from'./lib/format.js'
 import{plainError}from'./lib/errors'
+import{CourseDescriptionsView}from'./CourseDescriptionPanel' // CF-247 course descriptions (6 Nov 2026): reconciliation, held reasons, claim words, sample
 
 const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const call=async(action,args)=>{const{data,error}=await supabase.rpc('admin_enrich_fields',{p_action:action,p_args:args||{}});if(error)throw error;return data}
@@ -36,6 +37,10 @@ export default function EnrichFields({rank=0,onError}){
     <Card id="layer2.enrich.tasks" title="Enrich fields tasks" subtitle="The last 20 tasks. Each value keeps its source and the words it was read from." icon={ListChecks}
       meta={<span className="cf-chip tone-neutral">{fmtNumber(jobs.length)} task{jobs.length===1?'':'s'}</span>}>
       {jobs.length===0?<Empty text="No Enrich fields task yet."/>:<div className="ef-jobs">{jobs.map(j=><JobRow key={j.id} j={j} label={label} open={open===j.id} onOpen={()=>setOpen(o=>o===j.id?'':j.id)} canRetry={!!meta.can_start} onRetried={()=>load()} onError={onError}/>)}</div>}
+    </Card>
+    {/* Platform Admin 6 Nov 2026 §5: the course description lane through its existing workspace (read only): measures kept apart, held reasons, claim words, the sample */}
+    <Card id="layer2.enrich.descriptions" title="Course descriptions" subtitle="What is proposed, held, admitted and published, why readings are held, and the trust-policy sample. Read only: a person admits every description in Layer 4." icon={ListChecks} data-enrich-descriptions>
+      <CourseDescriptionsView/>
     </Card>
     <FieldSources meta={meta} label={label} onSaved={m=>setMeta(m)} onError={onError}/>
   </div>

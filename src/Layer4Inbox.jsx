@@ -22,6 +22,7 @@ import{ReviewReadinessLine}from'./AerCoverage'
 import{GroupBar,GroupList,recordNavigation}from'./Layer4Groups' // CF-247 mandate 16:32 §7: the three choices
 import{ItemLifecycle}from'./Layer4ItemLifecycle' // CF-247 decision 12:24: action lifecycle, times and acknowledgement on every card
 import{layer4DeepLinkCursor}from'./layer4-deep-link'
+import{CdList,CdPanel,ChecksLine,ReasonChips,isCourseDescription,useCdQueue}from'./CourseDescriptionPanel' // CF-247 course descriptions (6 Nov 2026): reconcile, ready first, the sample
 
 const rpc=async(action,args)=>{const{data,error}=await supabase.rpc('admin_layer4_inbox',{p_action:action,p_args:args||{}});if(error)throw new Error(error.message);return data||{}}
 // SS-016 role simulation (1 Nov 2026): the rank a choice needs, as public.admin_layer4_inbox decides it: its own rank, else rank 4
@@ -107,7 +108,11 @@ export default function Layer4Inbox({onError,routeParams}){
   const showReady=uk==='aer_review'&&readyFirst&&Number(aerSum?.review_ready)>0
   const loadReady=(o=readyOff)=>{if(!showReady)return;setReady(null);aerQueue({provider_id:aerPid,offset:o}).then(d=>setReady(Array.isArray(d?.items)?d:{items:[]})).catch(e=>onError?.(e.message))}
   useEffect(()=>{setReadyOff(0);if(showReady)loadReady(0)},[showReady,aerPid])
-  const decided=r=>{setNote(outcomeText(r));loadSum();loadItems(cur);loadAer();if(showReady)loadReady();if(view==='university')rpc('universities',{kind,q,limit:UPAGE,offset}).then(setUnis).catch(()=>{})}
+  // CF-247 course descriptions (Platform Admin 6 Nov 2026 §2): the pending course descriptions reconciled, ready ones first and the trust-policy sample,
+  // decided one at a time through this Inbox's own decide action (read only here; a person admits every description)
+  const cdOn=(view==='university'&&!!pick&&uk==='provider_description')||(view==='kind'&&kind==='provider_description')
+  const cdq=useCdQueue(cdOn,view==='university'&&pick&&uk==='provider_description'?pick.provider_id:null),showCd=cdOn&&!!cdq.mode
+  const decided=r=>{setNote(outcomeText(r));loadSum();loadItems(cur);loadAer();if(cdOn){cdq.loadSum();if(cdq.mode)cdq.loadList()}if(showReady)loadReady();if(view==='university')rpc('universities',{kind,q,limit:UPAGE,offset}).then(setUnis).catch(()=>{})}
   if(!sum)return <Loading label="Reading what needs a person…"/>
   const bk=sum.by_kind||{}
   return <div className="l4i" data-l4-inbox>
@@ -151,15 +156,18 @@ export default function Layer4Inbox({onError,routeParams}){
             {uk!=='aer_review'&&Number(pick.by_kind?.aer_review)>0&&<> <button type="button" className="l4i-linkish" onClick={()=>choose(pick,'aer_review')} data-l4-aer-summary-open>Show the AER items</button></>}</p>}
           {uk==='aer_review'&&Number(aerSum?.review_ready)>0&&<div className="l4i-view" role="group" aria-label="Order" data-l4-aer-order>
             <button type="button" className={readyFirst?'on':''} aria-pressed={readyFirst} onClick={()=>setReadyFirst(true)} data-l4-aer-ready-first>Ready to decide ({fmtNumber(aerSum.review_ready)})</button>
-            <button type="button" className={!readyFirst?'on':''} aria-pressed={!readyFirst} onClick={()=>setReadyFirst(false)} data-l4-aer-all>All waiting</button></div>}</header>}
-        {showReady?<div data-l4-aer-ready>{!ready?<Loading compact/>:(ready.items||[]).length===0?<Empty text="Nothing is ready to decide here."/>:
+            <button type="button" className={!readyFirst?'on':''} aria-pressed={!readyFirst} onClick={()=>setReadyFirst(false)} data-l4-aer-all>All waiting</button></div>}
+          {cdOn&&<CdPanel q={cdq}/>}</header>}
+        {view==='kind'&&cdOn&&<CdPanel q={cdq}/>}
+        {showCd?<CdList q={cdq} render={it=><Item key={`${it.kind}:${it.ref}`} it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider={!cdq.sum?.provider_id} rank={sum.rank} onDone={decided} onError={onError} onRefresh={()=>{loadSum();cdq.loadSum();cdq.loadList()}}/>}/>:
+        showReady?<div data-l4-aer-ready>{!ready?<Loading compact/>:(ready.items||[]).length===0?<Empty text="Nothing is ready to decide here."/>:
           ready.items.map(it=><Item key={`${it.kind}:${it.ref}`} it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider={false} rank={sum.rank} onDone={decided} onError={onError} onRefresh={()=>{loadSum();loadReady(readyOff)}}/>)}
           {ready&&Number(aerSum?.review_ready)>(ready.items||[]).length&&<div className="l4i-pager" data-l4-ready-pager><Button compact disabled={readyOff===0} onClick={()=>{const o=Math.max(0,readyOff-Number(ready.limit||25));setReadyOff(o);loadReady(o)}}>Previous</Button>
             <small>{fmtNumber(readyOff+1)}–{fmtNumber(readyOff+(ready.items||[]).length)} of {fmtNumber(aerSum.review_ready)} ready, oldest first</small>
             <Button compact disabled={readyOff+(ready.items||[]).length>=Number(aerSum.review_ready)} onClick={()=>{const o=readyOff+Number(ready.limit||25);setReadyOff(o);loadReady(o)}}>Next</Button></div>}</div>:
         !items?<Loading compact/>:(items.items||[]).length===0?<Empty text="Nothing left here."/>:
           items.items.map(it=><Item key={`${it.kind}:${it.ref}`} it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider={view==='kind'} rank={sum.rank} onDone={decided} onError={onError} onRefresh={()=>{loadSum();loadItems(cur)}}/>)}
-        {!showReady&&items&&view!=='decided'&&(cur||items.more===true||Number(items.total)>(items.items||[]).length)&&(()=>{const b=Number(items.before||0),n=(items.items||[]).length,t=Number(items.total||0)
+        {!showReady&&!showCd&&items&&view!=='decided'&&(cur||items.more===true||Number(items.total)>(items.items||[]).length)&&(()=>{const b=Number(items.before||0),n=(items.items||[]).length,t=Number(items.total||0)
           return <div className="l4i-pager" data-l4-pager><Button compact disabled={!cur} onClick={prev} data-l4-prev>Previous</Button>
             <small data-l4-range>{n?`${fmtNumber(b+1)}–${fmtNumber(b+n)}`:'0'} of {fmtNumber(t)}, oldest first</small>
             <Button compact disabled={items.more===undefined?b+n>=t:!items.more} onClick={next} data-l4-next>Next</Button></div>})()}
@@ -233,6 +241,7 @@ function Item({it,k,showProvider,rank,onDone,onError,onRefresh}){
       <ol className="l4i-sample">{(Array.isArray(d.proposed?.sentences)?d.proposed.sentences:[]).map((x,i)=><li key={i}>{x.text}<br/><small>Page: <q>{x.quote}</q></small></li>)}</ol>
       {d.proposed?.source_url&&<p><small>Official page: <a href={d.proposed.source_url} target="_blank" rel="noreferrer">{d.proposed.source_url} <ExternalLink size={11}/></a></small></p>}
     </div>}
+    {it.kind==='provider_description'&&isCourseDescription(d)&&<ChecksLine d={d}/>}
     {it.kind==='provider_departure'&&d.note&&<p className="l4i-why" data-l4-departure><small>{d.note}</small></p>}
     {it.kind==='held_scholarship'&&<dl className="l4i-dl">{d.url&&<><dt>Page</dt><dd><a href={d.url} target="_blank" rel="noreferrer">{d.url} <ExternalLink size={11}/></a></dd></>}{it.suggestion&&<><dt>AI re-check</dt><dd>{it.suggestion}</dd></>}{d.audience_quote&&<><dt>Who</dt><dd><q>{d.audience_quote}</q></dd></>}{d.value_quote&&<><dt>Value</dt><dd><q>{d.value_quote}</q></dd></>}</dl>}
     <div className="l4i-choices">{choices.map(c=>{const low=rank<needs(c),stop=gated(c);return <button key={c.key} type="button" className={`${open?.key===c.key?'on':''}${c.link?' link':''}`} disabled={low||stop} title={low?`Needs ${roleName(needs(c))} (rank ${needs(c)}) or above`:stop?'Held: this read is incomplete (see above)':c.returns} onClick={()=>choose(c)} data-l4-choice={c.key}>{c.label}{c.link&&<ArrowRight size={12}/>}</button>})}</div>
@@ -247,6 +256,7 @@ function Item({it,k,showProvider,rank,onDone,onError,onRefresh}){
       {open.input==='rows'&&exceptOpen&&flagIds.length>0&&<p className="l4i-next" data-l4-aer-flag-needed>{flagIds.every(id=>ticked.includes(id))?'Every row that cannot be admitted as read is ticked.':`Tick the ${flagIds.length===1?'row':`${flagIds.length} rows`} marked "cannot be admitted as read" to leave ${flagIds.length===1?'it':'them'} out.`}</p>}
       {open.input==='rows'&&exceptOnly&&otherIds.length>0&&<p className="l4i-next" data-l4-aer-other-needed>{otherIds.every(id=>ticked.includes(id))?'Every row about another programme is ticked.':`Tick the ${otherIds.length===1?'row':`${otherIds.length} rows`} about another programme to leave ${otherIds.length===1?'it':'them'} out.`}</p>}
       {open.input==='rows'&&<p className="l4i-next" data-l4-aer-except-count>{ticked.length===0?'Tick the rows to leave out.':ticked.length>=aerWaiting.length?'Every row is ticked: use Reject the read instead.':`Leaving out ${ticked.length} of ${aerWaiting.length} rows; the other ${aerWaiting.length-ticked.length} become active once the checks pass.`}</p>}
+      {isCourseDescription(d)&&<ReasonChips choice={open.key} onPick={setReason}/>}
       <input value={reason} onChange={e=>setReason(e.target.value)} placeholder="Why (kept with the decision)" aria-label="Reason"/>
       <Button compact variant="primary" disabled={busy||reason.trim().length<(aerItem?5:4)||(open.input==='rows'&&(ticked.length===0||ticked.length>=aerWaiting.length||(exceptOnly&&!otherIds.every(id=>ticked.includes(id)))||(exceptOpen&&!flagIds.every(id=>ticked.includes(id)))))||(open.input==='url'&&!urlOk(value,fee))||(open.input==='provider'&&value.trim().length<3)||(open.input==='courses'&&ticked.length===0)} onClick={go} data-l4-confirm>{busy?'Saving…':open.label}</Button>
       <Button compact onClick={()=>{setOpen(null);setFollow('')}}>Cancel</Button>
