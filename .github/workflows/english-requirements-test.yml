@@ -13,6 +13,16 @@ on:
 jobs:
   isolated-postgres:
     runs-on: ubuntu-latest
+    # Both clients and server share a real Unix socket. A host TCP connection to
+    # a Docker-published port reaches the server on its bridge address and must
+    # be rejected by the unchanged production-fixture local-only guard.
+    container:
+      image: node:22-bookworm
+      volumes:
+        - english-fixture-socket:/var/run/postgresql
+    defaults:
+      run:
+        shell: bash
     permissions:
       contents: read
     services:
@@ -20,12 +30,12 @@ jobs:
         image: postgres:17.6-alpine
         env:
           POSTGRES_PASSWORD: fixture-only
-        ports:
-          - 5432:5432
+        volumes:
+          - english-fixture-socket:/var/run/postgresql
         options: >-
           --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
     env:
-      PGHOST: 127.0.0.1
+      PGHOST: /var/run/postgresql
       PGPORT: 5432
       PGUSER: postgres
       PGPASSWORD: fixture-only
@@ -34,11 +44,19 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install --package-lock=false --ignore-scripts
+      - name: Install local PostgreSQL client
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends postgresql-client
+      - run: npm install --package-lock=false --ignore-scripts --no-audit --no-fund
       - run: mkdir -p uat-artifacts
-      - run: bash tests/fixtures/english-requirements/run.sh | tee uat-artifacts/english-requirements-results.log
+      - name: Execute real Postgres fixture, migration and scenarios
+        run: |
+          set -euo pipefail
+          bash tests/fixtures/english-requirements/run.sh 2>&1 | tee uat-artifacts/english-requirements-results.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: english-requirements-database-evidence
           path: uat-artifacts/english-requirements-results.log
+

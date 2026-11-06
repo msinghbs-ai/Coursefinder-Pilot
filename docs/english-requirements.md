@@ -1,7 +1,7 @@
 # English requirements: faculty and course-group rules, provider scope, "why no rule"
 
 CF-247, Platform Admin direction of 6 Nov 2026 09:44 (section 3 and the permanent compatibility gate, section 4). Migration `20261106550000_cf247_english_requirements_complete.sql`,
-coverage-sweep worker v0.59.9 (parser `provider-policy-v0.3.0`). Plan: admin repo `docs/platform/work-packages/2026-11-06-english-requirements-implementation-plan.md`.
+coverage-sweep Worker version assigned uniquely by the Integration Controller after the course-description version (parser `provider-policy-v0.3.0`). Plan: admin repo `docs/platform/work-packages/2026-11-06-english-requirements-implementation-plan.md`.
 
 ## What it does
 
@@ -48,5 +48,11 @@ Nothing. The older `svc_english_table_*` functions and fee-schedule-etl English 
 
 ## Validates
 
-`tests/fixtures/english-requirements/run.sh` (production-parity fixture from the captured manifest, the migration, 71 scenarios), specs `cf-247-english-baseline-contract`, `cf-247-english-groups-contract`,
-`cf-247-english-verbatim-pages-contract` (fails until the six governed page extracts are added), and the central governance specs s32, s42, s57, s120.
+`tests/fixtures/english-requirements/run.sh` executes the production-parity fixture, its function-hash checks and the migration, then requires all 71 group/scope/search/reparse/status assertions and all 17 named-exception/own-reading/manual-lock assertions to emit their actual Postgres PASS notices. Producer, fixture, parity SQL and scenario errors stop the run; a green shell pipeline alone is not evidence.
+
+The six governed verbatim stored pages are now present under `tests/fixtures/english-requirements/pages/`. Their hashes and real UNSW faculty/exception parsing are checked by `cf-247-english-verbatim-pages-contract`; missing or altered evidence still fails. Do not repeat the source inspection merely because an older PR description says the pages are absent.
+
+CI uses PostgreSQL 17.6 with a Unix socket shared only between the isolated job and service containers. The generated local-only and Supabase-project refusal guards remain unchanged. The workflow propagates SQL failures through `tee`; the baseline contract also injects producer/SQL errors into the real shell entry point and requires failure before any parity PASS.
+
+Existing specs `cf-247-english-baseline-contract`, `cf-247-english-groups-contract`, `cf-247-english-verbatim-pages-contract`, and the central governance specs s32, s42, s57, s120 remain applicable. Actual run IDs and results belong in the canonical Admin checkpoint; scenario definitions alone do not establish that they executed.
+

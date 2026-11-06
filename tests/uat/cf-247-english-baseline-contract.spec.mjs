@@ -5,11 +5,57 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import crypto from 'node:crypto'
+import os from 'node:os'
+import path from 'node:path'
+import { spawnSync } from 'node:child_process'
 import { STORED, provider, source, UNSW_MAIN, unswStoredCells, loadParser, recordInputs } from '../fixtures/english-requirements/baseline.mjs'
 
 const M = JSON.parse(fs.readFileSync('tests/fixtures/english-requirements/manifests/english-path.json', 'utf8'))
 const md5 = (s) => crypto.createHash('md5').update(s, 'utf8').digest('hex')
 const fn = (sig) => M.functions.find((f) => f.sig === sig)
+
+test('the English round trip fails before any parity PASS on a fixture producer or SQL execution error', () => {
+  // Exercise the actual shell entry point with failing local executables. This
+  // reproduces the masked-pipeline defect without connecting to any database.
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'english-fail-closed-'))
+  const bin = path.join(dir, 'bin')
+  fs.mkdirSync(bin)
+  const executable = (name, source) => fs.writeFileSync(path.join(bin, name), source, { mode: 0o755 })
+  executable('dropdb', '#!/bin/sh\nexit 0\n')
+  executable('createdb', '#!/bin/sh\nexit 0\n')
+  executable('node', `#!/bin/sh
+case "$2" in
+  fixture|check-sql)
+    if [ "$EN_TEST_FAILURE" = "$2-generator" ]; then echo "INJECTED $EN_TEST_FAILURE" >&2; exit 39; fi
+    echo 'select 1;';;
+esac
+exit 0
+`)
+  executable('psql', `#!/bin/sh
+case "$*" in
+  *'/fixture.sql'*) if [ "$EN_TEST_FAILURE" = fixture-sql ]; then echo 'INJECTED fixture-sql' >&2; exit 37; fi;;
+  *'/check.sql'*) if [ "$EN_TEST_FAILURE" = parity-sql ]; then echo 'INJECTED parity-sql' >&2; exit 38; fi;;
+esac
+exit 0
+`)
+  try {
+    for (const phase of ['fixture-generator', 'check-sql-generator', 'fixture-sql', 'parity-sql']) {
+      const result = spawnSync('bash', ['tests/fixtures/english-requirements/run.sh'], {
+        encoding: 'utf8', timeout: 10000,
+        env: { ...process.env, PATH: `${bin}:${process.env.PATH}`, PGHOST: '/tmp', EN_TEST_FAILURE: phase },
+      })
+      expect(result.status, phase).not.toBe(0)
+      expect(result.stdout + result.stderr, phase).toContain(`INJECTED ${phase}`)
+      expect(result.stdout, phase).not.toContain('PASS fixture built from the production manifest')
+      expect(result.stdout, phase).not.toContain('english-requirements fixture round trip: passed')
+    }
+    const workflow = fs.readFileSync('.github/workflows/english-requirements-test.yml', 'utf8')
+    expect(workflow).toMatch(/shell: bash/)
+    expect(workflow).toMatch(/set -euo pipefail\s+bash tests\/fixtures\/english-requirements\/run\.sh 2>&1 \| tee/)
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true })
+  }
+})
 
 // The live definitions the English requirements PR will replace or read (6 Nov 2026 08:31 AEDT). The PR's migration guards each on this md5.
 const GUARDED = {
@@ -104,3 +150,4 @@ test('today, through the live copy of svc_provider_policy_record: the stored cas
   expect(rec).toContain("else 'no_values' end;")
   expect(STORED.source).toContain('read only')
 })
+

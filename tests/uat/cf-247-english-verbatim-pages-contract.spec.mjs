@@ -1,6 +1,6 @@
 // Guards: Platform Admin 6 Nov 2026 09:44 §3 (verbatim stored source pages for regression testing) and §4 (realistic source fixtures) for English requirements: each of the six stored pages is
 // present, is byte-for-byte the page the platform stored (sha256 = content_hash), and the v0.3.0 parser reads it without inventing a requirement.
-// FAILS CLEARLY, never skips, while a page is absent: the governed read-only call that fills them is in the PR (provider_facts_inspect, no write, no paid read).
+// All six extracts are present. The missing/changed-file guard still fails clearly, never skips; their original acquisition was governed read-only provider_facts_inspect (no write or paid read).
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import crypto from 'node:crypto'
@@ -61,3 +61,4 @@ test('UNSW international entry-requirements page: it sends the reader to each co
   expect(r.groups ?? []).toEqual([])
   expect(r.style).toBe('course_specific')
 })
+

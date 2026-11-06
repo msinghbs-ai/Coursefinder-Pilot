@@ -23,17 +23,30 @@ refuses() { local e; if e=$($P -d "$DB" -c "$1" 2>&1 >/dev/null); then fail "$2 
 
 # 1 fixture from the production manifest
 node $TOOL verify $M
-dropdb --if-exists "$DB" 2>/dev/null || true; createdb "$DB"
+dropdb --if-exists "$DB"
+createdb "$DB"
+$P -At -d "$DB" -c "select 'ISOLATED_POSTGRES version=' || current_setting('server_version') || ' transport=' || coalesce(host(inet_server_addr()), 'unix-socket')"
 # Supabase built-ins the captured definitions name (not part of the capture): the extensions schema (gen_random_uuid default) and auth.role()/auth.uid()
 $P -d "$DB" -f $FX/prelude.sql >/dev/null
 node $TOOL fixture $M > $T/fixture.sql
-$P -d "$DB" -f $T/fixture.sql 2>&1 | grep -v -e '^NOTICE' -e 'MAINTAIN' || true
+if ! $P -d "$DB" -f $T/fixture.sql > "$T/fixture.out" 2>&1; then
+  cat "$T/fixture.out" >&2
+  fail 'the production-manifest fixture SQL did not apply'
+fi
+# Output filtering happens only after successful SQL execution; it cannot turn
+# a producer/SQL failure into an empty successful result.
+sed -e '/^NOTICE/d' -e '/MAINTAIN/d' "$T/fixture.out"
 node $TOOL check-sql $M > $T/check.sql
 $P -At -d "$DB" -f $T/check.sql > $T/diff.txt
-allowed=$(node -e "console.log((require('./$M').local_allowed_differences||[]).join('\n'))")
-bad=$(grep -v -F -f <(printf '%s\n' "$allowed" | sed '/^$/d'; echo '__none__') $T/diff.txt || true)
-[ -z "$bad" ] || { echo "$bad"; fail 'the fixture differs from the production manifest'; }
-echo "PASS fixture built from the production manifest; check lists no unexpected difference ($(grep -c . $T/diff.txt || true) allowed: PostgreSQL 17 MAINTAIN on 16)"
+node --input-type=module - "$M" "$T/diff.txt" <<'JS'
+import fs from 'node:fs'
+const [manifest, differences] = process.argv.slice(2)
+const allowed = (JSON.parse(fs.readFileSync(manifest, 'utf8')).local_allowed_differences || []).filter(Boolean)
+const actual = fs.readFileSync(differences, 'utf8').split(/\r?\n/).filter(Boolean)
+const bad = actual.filter((line) => !allowed.some((difference) => line.includes(difference)))
+if (bad.length) throw Error(`the fixture differs from the production manifest:\n${bad.join('\n')}`)
+console.log(`PASS fixture built from the production manifest; check lists no unexpected difference (${actual.length} explicitly allowed)`)
+JS
 for sig in 'public.svc_provider_policy_record(uuid,jsonb)' 'security.policy_auto_approve_v1()' 'security.central_pages_attach_v1()' 'security.english_level_apply_v1(uuid,boolean)' 'security.provider_english_plan_v1(uuid)'; do
   want=$(node -e "const m=require('./$M');const s=process.argv[1].replace(/^public\./,'');console.log(m.functions.find(f=>f.sig===s||f.sig==='public.'+s).md5)" "$sig")
   got=$($P -At -d "$DB" -c "select md5(pg_get_functiondef('$sig'::regprocedure))")
@@ -80,8 +93,22 @@ node $FX/baseline.mjs check-recorded $T/record.txt
 $P -q -v ON_ERROR_STOP=1 -d "$DB" -f $FX/groups-harness.sql >/dev/null 2>&1 || fail 'groups-harness.sql did not apply'
 $P -q -v ON_ERROR_STOP=1 -d "$DB" -f supabase/migrations/20261106550000_cf247_english_requirements_complete.sql >/dev/null 2>$T/mig.err || { cat $T/mig.err; fail 'the migration did not apply on the production-shaped fixture'; }
 echo 'PASS the migration applies on the production-shaped fixture (every live md5 guard held)'
-$P -X -v ON_ERROR_STOP=1 -d "$DB" -f $FX/groups-tests.sql > $T/groups.out 2>&1 || { grep -E 'PASS|FAIL|ERROR' $T/groups.out; fail 'a group scenario failed'; }
-$P -X -v ON_ERROR_STOP=1 -d "$DB" -f $FX/exceptions-tests.sql > $T/exceptions.out 2>&1 || { grep -E 'PASS|FAIL|ERROR' $T/exceptions.out; fail 'an exception scenario failed'; }
-grep -c 'PASS' $T/exceptions.out | xargs -I{} echo 'PASS {} named-exception, own-reading and manual-lock scenarios on the real UNSW page reading'
-grep -c 'PASS' $T/groups.out | xargs -I{} echo 'PASS {} group, scope, search-switch, reparse and status scenarios'
+$P -X -v ON_ERROR_STOP=1 -d "$DB" -f $FX/groups-tests.sql > $T/groups.out 2>&1 || { cat "$T/groups.out" >&2; fail 'a group scenario failed'; }
+$P -X -v ON_ERROR_STOP=1 -d "$DB" -f $FX/exceptions-tests.sql > $T/exceptions.out 2>&1 || { cat "$T/exceptions.out" >&2; fail 'an exception scenario failed'; }
+# Require every existing assertion to have executed. An empty/truncated log, an
+# omitted scenario file or successful psql with no assertions is not a pass.
+node --input-type=module - "$FX" "$T" <<'JS'
+import fs from 'node:fs'
+const [fixture, output] = process.argv.slice(2)
+for (const [file, log] of [['groups-tests.sql', 'groups.out'], ['exceptions-tests.sql', 'exceptions.out']]) {
+  const sql = fs.readFileSync(`${fixture}/${file}`, 'utf8')
+  const text = fs.readFileSync(`${output}/${log}`, 'utf8')
+  const expected = (sql.match(/\b(?:select|perform)\s+pg_temp\.ok\s*\(/gi) || []).length
+  const passed = (text.match(/\bNOTICE:\s+PASS\b/g) || []).length
+  if (!expected || passed !== expected) throw Error(`${file}: ${passed} scenario assertions passed, expected ${expected}`)
+  for (const line of text.split('\n').filter((line) => /\bNOTICE:\s+PASS\b/.test(line))) console.log(line)
+  console.log(`PASS scenario-count ${file}: ${passed}/${expected}`)
+}
+JS
 echo 'english-requirements fixture round trip: passed'
+

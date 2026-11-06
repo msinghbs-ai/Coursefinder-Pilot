@@ -83,7 +83,7 @@ test('D5: the worker reads stored pages again inside the existing mode, with no 
   expect(block).toContain('svc_provider_policy_reparse_next')
   expect(block).toContain('svc_provider_policy_record')
   expect(block).not.toMatch(/firecrawl|openrouter|fetch\(|useFcWhy|ai:/i)
-  expect(WORKER).toContain('const WORKER = "coverage-sweep-worker-v0.59.9"')
+  expect(WORKER).toContain('const WORKER = "coverage-sweep-worker-v0.59.10"')
 })
 
 test('operator visibility: the English policies screen shows group binding, group counts and No rule yet from the existing reads and the existing job control', () => {
@@ -111,3 +111,4 @@ test('UNSW layout: the test is named by the bullet above the table, the research
   expect(r.exceptions.map((e) => `${e.name}|${e.level}|${e.reqs[0].overall_score}`).sort()).toEqual([
     'Bachelor of Education (Secondary) (Honours)|undergraduate|7.5', 'Bachelor of Pharmaceutical Medicine/Master of Pharmacy|undergraduate|7', 'Master of Teaching (Primary & Secondary)|postgraduate|7.5'])
 })
+
