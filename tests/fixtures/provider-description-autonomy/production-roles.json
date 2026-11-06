@@ -1,0 +1,131 @@
+{
+  "columns": [
+    {
+      "udt_name": "text",
+      "table_name": "roles",
+      "column_name": "code",
+      "is_nullable": "NO",
+      "table_schema": "security",
+      "column_default": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "roles",
+      "column_name": "name",
+      "is_nullable": "NO",
+      "table_schema": "security",
+      "column_default": null
+    },
+    {
+      "udt_name": "int2",
+      "table_name": "roles",
+      "column_name": "rank",
+      "is_nullable": "NO",
+      "table_schema": "security",
+      "column_default": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "roles",
+      "column_name": "description",
+      "is_nullable": "YES",
+      "table_schema": "security",
+      "column_default": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "roles",
+      "column_name": "status",
+      "is_nullable": "NO",
+      "table_schema": "security",
+      "column_default": "'active'::text"
+    },
+    {
+      "udt_name": "uuid",
+      "table_name": "user_roles",
+      "column_name": "user_id",
+      "is_nullable": "NO",
+      "table_schema": "security",
+      "column_default": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "user_roles",
+      "column_name": "role_code",
+      "is_nullable": "NO",
+      "table_schema": "security",
+      "column_default": null
+    },
+    {
+      "udt_name": "timestamptz",
+      "table_name": "user_roles",
+      "column_name": "granted_at",
+      "is_nullable": "NO",
+      "table_schema": "security",
+      "column_default": "now()"
+    },
+    {
+      "udt_name": "uuid",
+      "table_name": "user_roles",
+      "column_name": "granted_by",
+      "is_nullable": "YES",
+      "table_schema": "security",
+      "column_default": null
+    },
+    {
+      "udt_name": "timestamptz",
+      "table_name": "user_roles",
+      "column_name": "expires_at",
+      "is_nullable": "YES",
+      "table_schema": "security",
+      "column_default": null
+    }
+  ],
+  "functions": [
+    {
+      "md5": "d709d92dbd7a648ccf78e594d68ca980",
+      "args": "",
+      "nspname": "security",
+      "proname": "current_role_rank",
+      "definition": "CREATE OR REPLACE FUNCTION security.current_role_rank()\n RETURNS smallint\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'security', 'auth'\nAS $function$\nselect coalesce(max(r.rank),0)::smallint\nfrom security.user_roles ur join security.roles r on r.code=ur.role_code\nwhere ur.user_id=auth.uid() and (ur.expires_at is null or ur.expires_at>now()) and r.status='active'\n$function$\n"
+    }
+  ],
+  "constraints": [
+    {
+      "conname": "roles_pkey",
+      "contype": "p",
+      "relation": "security.roles",
+      "definition": "PRIMARY KEY (code)"
+    },
+    {
+      "conname": "roles_rank_key",
+      "contype": "u",
+      "relation": "security.roles",
+      "definition": "UNIQUE (rank)"
+    },
+    {
+      "conname": "user_roles_granted_by_fkey",
+      "contype": "f",
+      "relation": "security.user_roles",
+      "definition": "FOREIGN KEY (granted_by) REFERENCES auth.users(id)"
+    },
+    {
+      "conname": "user_roles_pkey",
+      "contype": "p",
+      "relation": "security.user_roles",
+      "definition": "PRIMARY KEY (user_id, role_code)"
+    },
+    {
+      "conname": "user_roles_role_code_fkey",
+      "contype": "f",
+      "relation": "security.user_roles",
+      "definition": "FOREIGN KEY (role_code) REFERENCES security.roles(code)"
+    },
+    {
+      "conname": "user_roles_user_id_fkey",
+      "contype": "f",
+      "relation": "security.user_roles",
+      "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "schema_only": true,
+  "captured_at": "2026-11-04",
+  "qualified_postgres": "17.6",
+  "functions": [
+    {
+      "signature": "security.provider_description_validate_v1(uuid,text,timestamptz,jsonb)",
+      "before_md5": "528d5a3d2e3780fcb58e2c19db31c199",
+      "after_md5": "b4959fe6f0daad62b93c83c1feeea7e4"
+    },
+    {
+      "signature": "security.provider_description_enqueue_v1()",
+      "before_md5": "97e6b926a545c4032159f9dbf52e3cf3",
+      "after_md5": "0a1897bb7f56697a9f01d4ec3e8befc0"
+    },
+    {
+      "signature": "public.svc_provider_description_next(integer)",
+      "before_md5": "5342ae3f9279f6c2ec0849ec4fe0fffd",
+      "after_md5": "559407dc479753698b858231b2e7eb93"
+    },
+    {
+      "signature": "public.svc_provider_description_record(jsonb)",
+      "before_md5": "d5aec36ddd55c4a0bdc823fb8a02fec0",
+      "after_md5": "d95f0bafc894b662468a309254544444"
+    },
+    {
+      "signature": "security.provider_description_fire_v1()",
+      "before_md5": "8f5918c9c26445d9347988d850aba6f5",
+      "after_md5": "b334fbefe8a7fb2b8cfd2feda570a616"
+    },
+    {
+      "signature": "security.layer4_provider_description_apply_impl(uuid,uuid,jsonb,text)",
+      "before_md5": "875b25c4f35568cb9ac6379812546d42",
+      "after_md5": "97685b737007410288297dea9d650d2a"
+    }
+  ]
+}

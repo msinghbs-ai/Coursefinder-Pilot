@@ -1,0 +1,46 @@
+{
+  "roles": [
+    {
+      "rolname": "anon",
+      "rolconfig": [
+        "statement_timeout=3s"
+      ],
+      "rolinherit": true,
+      "rolcanlogin": false,
+      "rolbypassrls": false
+    },
+    {
+      "rolname": "authenticated",
+      "rolconfig": [
+        "statement_timeout=8s"
+      ],
+      "rolinherit": true,
+      "rolcanlogin": false,
+      "rolbypassrls": false
+    },
+    {
+      "rolname": "service_role",
+      "rolconfig": null,
+      "rolinherit": true,
+      "rolcanlogin": false,
+      "rolbypassrls": true
+    }
+  ],
+  "locks_constraints": [
+    {
+      "conname": "manual_locks_entity_check",
+      "relation": "pipeline.manual_locks",
+      "definition": "CHECK (entity = ANY (ARRAY['course'::text, 'provider'::text, 'campus'::text, 'scholarship'::text]))"
+    },
+    {
+      "conname": "manual_locks_mode_check",
+      "relation": "pipeline.manual_locks",
+      "definition": "CHECK (mode = ANY (ARRAY['value'::text, 'removed'::text]))"
+    },
+    {
+      "conname": "manual_locks_pkey",
+      "relation": "pipeline.manual_locks",
+      "definition": "PRIMARY KEY (entity, entity_id, field)"
+    }
+  ]
+}

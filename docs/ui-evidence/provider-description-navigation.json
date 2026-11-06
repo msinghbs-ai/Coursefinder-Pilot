@@ -1,0 +1,20 @@
+{
+  "boundary": "Navigation-order regression on real constrained PostgreSQL review rows, not full Inbox end-to-end execution. All 601 temporary review rows and 600 course rows rolled back; no decision submitted.",
+  "captured_contract_at": "2026-11-04T12:44:23.941202+00:00",
+  "items_md5": "1895ed9870fdbcb332639befffd5a6ec",
+  "source_md5": "1e3af24861d931c1d63d30bb87ffa0d6",
+  "cursor": {
+    "after_o": 18,
+    "after_kind": "provider_description",
+    "after_at": "2026-11-04T12:34:56.123456+00:00",
+    "after_ref": "ffffffff-ffff-ffff-ffff-fffffeffffff"
+  },
+  "result": {
+    "total": 601,
+    "before": 600,
+    "first_ref": "ffffffff-ffff-ffff-ffff-ffffff000000",
+    "seek_count": 1,
+    "naive_count": 500,
+    "naive_has_target": false
+  }
+}

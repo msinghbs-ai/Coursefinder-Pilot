@@ -1,0 +1,3 @@
+-- Guards: Provider Description mandate §8: exact captured recovery knowledge registry guards.
+CREATE TRIGGER ops_guard_registry BEFORE INSERT OR DELETE OR UPDATE ON pipeline.ops_remedies FOR EACH ROW WHEN (security.ops_remedy_guard_active_v1()) EXECUTE FUNCTION security.ops_guard_refuse_v1('the remedy register');
+CREATE TRIGGER ops_guard_registry BEFORE INSERT OR DELETE OR UPDATE ON pipeline.ops_remedy_runs FOR EACH ROW WHEN (security.ops_remedy_guard_active_v1()) EXECUTE FUNCTION security.ops_guard_refuse_v1('the record of remedy runs');

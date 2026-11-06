@@ -1,18 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.488'
-export const PACKAGE_VERSION='0.1.415'
+export const UI_VERSION='2.15.489'
+export const PACKAGE_VERSION='0.1.416'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'6 Nov 2026',
-  title:'Intake automation progress in Process results',
+  title:'Provider descriptions: Run & Validate with evidence-checked claims',
   changes:[
-    'Process results now opens with an Automation progress section for intake dates. It shows whether the job is running, waiting, paused or failed, and the last and next runs.',
-    'The section follows each course through selection, admission and publication, with a funnel, one row per university, and run history (latest run, 24 hours, 7 days, 30 days).',
-    'Every failure shows its class, the exact reason, the next action and the next revisit. Rows that only wait for a changed setting or source are shown as rechecks, not failures.',
-    'Progress uses the platform\'s existing progress observer, so there is no second monitor. Pause and Resume use the existing job control.'
+    'Enrich fields has a Provider descriptions Run & Validate card: preview a small set of providers, save the set, and see for each one the official source, what was read, what was proposed, what was held and why.',
+    'Every description still needs an individual Layer 4 decision from a Pipeline Operator or higher. Nothing is approved, admitted or published automatically, and AI text is never counted as published.',
+    'A sentence that mentions a campus, scholarship or guarantee is checked against its quoted source instead of being held on the word alone. Other claim words still hold the sentence.',
+    'Proposals that wait because the review queue is full resume without another AI read once there is room. A manual lock or a changed catalogue value still stops an admission.'
   ],
   bugFixes:[]
 }

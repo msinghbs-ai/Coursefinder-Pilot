@@ -1,0 +1,11 @@
+{
+  "state": "failed",
+  "tasks": 1,
+  "outcome": "failed_retryable",
+  "saved_error": "Controlled isolated worker dispatch failure",
+  "same_task_on_retry": true,
+  "same_task_after_refresh": true,
+  "queued_for_existing_scheduler": 1,
+  "all_fault_rows_rolled_back": true,
+  "actual_vendor_calls": 0
+}

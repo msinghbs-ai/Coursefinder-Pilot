@@ -1,0 +1,178 @@
+[
+  {
+    "signature": "public.svc_provider_description_next(integer)",
+    "md5": "5342ae3f9279f6c2ec0849ec4fe0fffd"
+  },
+  {
+    "signature": "public.svc_provider_description_record(jsonb)",
+    "md5": "d5aec36ddd55c4a0bdc823fb8a02fec0"
+  },
+  {
+    "signature": "public.admin_provider_descriptions(text,jsonb)",
+    "md5": "a73db2493c28cca28c09898a1ea91b4d"
+  },
+  {
+    "signature": "public.admin_job_run_now_v1(text,text,jsonb)",
+    "md5": "2a5ccb9fe52041696582a8b524bc8ae2"
+  },
+  {
+    "signature": "security.provider_description_validate_v1(uuid,text,timestamp with time zone,jsonb)",
+    "md5": "528d5a3d2e3780fcb58e2c19db31c199"
+  },
+  {
+    "signature": "security.layer4_provider_description_apply_impl(uuid,uuid,jsonb,text)",
+    "md5": "875b25c4f35568cb9ac6379812546d42"
+  },
+  {
+    "signature": "security.provider_description_scope_v1(uuid)",
+    "md5": "3f16959316449464576f5d77a951460a"
+  },
+  {
+    "signature": "security.provider_description_enqueue_v1()",
+    "md5": "97e6b926a545c4032159f9dbf52e3cf3"
+  },
+  {
+    "signature": "security.provider_description_fire_v1()",
+    "md5": "8f5918c9c26445d9347988d850aba6f5"
+  },
+  {
+    "signature": "security.provider_description_review_trg_v1()",
+    "md5": "6bb91a3ab83c215387484c58d5aab281"
+  },
+  {
+    "signature": "security.provider_description_page_v1(uuid,text)",
+    "md5": "f68e0130757c71ec8d8de24eb730da96"
+  },
+  {
+    "signature": "security.provider_description_stored_v1(uuid)",
+    "md5": "b4bef5671c9b2125b530df3abc9c502a"
+  },
+  {
+    "signature": "security.job_run_now_v1(text,text,jsonb,uuid)",
+    "md5": "cabacd4094ed138a57f6b102183eeacc"
+  },
+  {
+    "signature": "security.ai_spend_capture_v1()",
+    "md5": "5b78fa074a9480d4f127ecc4fe93dcf3"
+  },
+  {
+    "signature": "security.ai_spend_today_v1()",
+    "md5": "0a8e30c2d38c37071474fdd23fa31cfc"
+  },
+  {
+    "signature": "security.ai_use_allowed_v1(text)",
+    "md5": "07b6387d6a30be8a0f86b90b602b6d08"
+  },
+  {
+    "signature": "security.ai_use_refusal_v1(text)",
+    "md5": "60c782e5aec7eb218c1149a3ad85dde2"
+  },
+  {
+    "signature": "security.layer2_evidence_lineage_stamp()",
+    "md5": "05504adabcdfc06b5e5b114dc3087a3c"
+  },
+  {
+    "signature": "pipeline.layer2_evidence_version_guard()",
+    "md5": "be400f877670d5db6129e9810242237f"
+  },
+  {
+    "signature": "security.layer4_arrival_guard_trg_v1()",
+    "md5": "a781b46dd9b81761beb7f6a2acf8c4b1"
+  },
+  {
+    "signature": "security.layer4_evidence_link_trg_v1()",
+    "md5": "a726fc363c927110d59a2b2baf97f474"
+  },
+  {
+    "signature": "security.layer4_reroute_trg_v1()",
+    "md5": "fd3e6afef1b826533ab124bdcf48dfed"
+  },
+  {
+    "signature": "security.layer4_review_decide_impl(uuid,text,text,jsonb)",
+    "md5": "55353f1903c97b268255c8c1e4f5ca6f"
+  },
+  {
+    "signature": "security.manual_field_guard()",
+    "md5": "029fe067f745685306f459419be80c42"
+  },
+  {
+    "signature": "security.ops_guard_layer4_v1()",
+    "md5": "d8fcb14724141b694e7a32f439d093ac"
+  },
+  {
+    "signature": "security.ops_guard_refuse_v1()",
+    "md5": "21b88e034e08a6eee7431c4eb1631f47"
+  },
+  {
+    "signature": "security.pdesc_has_term_v1(text,text)",
+    "md5": "b2b8d6499c2ad619b68842258ca7e2e3"
+  },
+  {
+    "signature": "security.pdesc_similarity_v1(text,text)",
+    "md5": "357a9ebfde1c68a286ad4f685445cf9b"
+  },
+  {
+    "signature": "security.pdesc_support_v1(text,text)",
+    "md5": "adedab4f5da6e6fec8a0d840fea15bde"
+  },
+  {
+    "signature": "security.pdesc_words_v1(text)",
+    "md5": "1a18bd60d2978c1885a25085b688afc7"
+  },
+  {
+    "signature": "security.provider_hosts_v1(uuid)",
+    "md5": "000b9c49c899c6d33ec99501ae6194d4"
+  },
+  {
+    "signature": "security.provider_onboarding_new_tg()",
+    "md5": "4ba77f69bab698d36e8c5d6d01a8514a"
+  },
+  {
+    "signature": "security.provider_page_host_v1(uuid,text)",
+    "md5": "2af79164c5f92d0e6e5aeceb7783e7ee"
+  },
+  {
+    "signature": "security.provider_publish_by_default()",
+    "md5": "28d748cea8622a399612679eb05c1b36"
+  },
+  {
+    "signature": "security.provider_site_followups_tg()",
+    "md5": "5121b25b2f653a2365afecc0fcb65602"
+  },
+  {
+    "signature": "public.website_v2_provider(text)",
+    "md5": "0894cdb1d4b14ac8af2f5aa07c9f7ebb"
+  },
+  {
+    "signature": "public.website_v2_provider(text,text)",
+    "md5": "3f622be6721d89289866c459cf178079"
+  },
+  {
+    "signature": "security.layer2_lineage_for_job(uuid)",
+    "md5": "eb1385cb96173a721d7a6ee4f47e6ca8"
+  },
+  {
+    "signature": "public.website_v2_providers(jsonb,integer,integer,text)",
+    "md5": "73ba533ee2f4c20b840c4cf172c17912"
+  },
+  {
+    "signature": "security.pipeline_list_v1(text,jsonb)",
+    "md5": "c33c2152bbadc8d01625ced9bf2c9bda"
+  },
+  {
+    "signature": "security.ops_remedy_guard_active_v1()",
+    "md5": "5f2ec6b47ce55213c0e90bb46649c844"
+  },
+  {
+    "signature": "security.current_role_rank()",
+    "md5": "d709d92dbd7a648ccf78e594d68ca980"
+  },
+  {
+    "signature": "security.provider_lifecycle_held_v1(uuid)",
+    "md5": "09176f6c3657ed7793e74da6b2cfdca7"
+  },
+  {
+    "signature": "security.site_host_v1(text)",
+    "md5": "04938c208412f46735c7a3f99348612c"
+  }
+]

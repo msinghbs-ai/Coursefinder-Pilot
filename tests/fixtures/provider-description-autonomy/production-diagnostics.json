@@ -1,0 +1,916 @@
+{
+  "columns": [
+    {
+      "udt_name": "int8",
+      "table_name": "integration_issues",
+      "column_name": "id",
+      "is_identity": "NO",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": "nextval('pipeline.integration_issues_id_seq'::regclass)",
+      "identity_generation": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "integration_issues",
+      "column_name": "issue_ref",
+      "is_identity": "NO",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "integration_issues",
+      "column_name": "fingerprint",
+      "is_identity": "NO",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "integration_issues",
+      "column_name": "title",
+      "is_identity": "NO",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "integration_issues",
+      "column_name": "layer",
+      "is_identity": "NO",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "integration_issues",
+      "column_name": "subsystem",
+      "is_identity": "NO",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "_uuid",
+      "table_name": "integration_issues",
+      "column_name": "provider_ids",
+      "is_identity": "NO",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": "'{}'::uuid[]",
+      "identity_generation": null
+    },
+    {
+      "udt_name": "_uuid",
+      "table_name": "integration_issues",
+      "column_name": "course_ids",
+      "is_identity": "NO",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": "'{}'::uuid[]",
+      "identity_generation": null
+    },
+    {
+      "udt_name": "_text",
+      "table_name": "integration_issues",
+      "column_name": "country_codes",
+      "is_identity": "NO",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": "'{}'::text[]",
+      "identity_generation": null
+    },
+    {
+      "udt_name": "bool",
+      "table_name": "integration_issues",
+      "column_name": "entities_truncated",
+      "is_identity": "NO",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": "false",
+      "identity_generation": null
+    },
+    {
+      "udt_name": "timestamptz",
+      "table_name": "integration_issues",
+      "column_name": "detected_at",
+      "is_identity": "NO",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": "now()",
+      "identity_generation": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "integration_issues",
+      "column_name": "failure",
+      "is_identity": "NO",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "integration_issues",
+      "column_name": "expected",
+      "is_identity": "NO",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "integration_issues",
+      "column_name": "detection_source",
+      "is_identity": "NO",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "integration_issues",
+      "column_name": "validation_layer",
+      "is_identity": "NO",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": "'manual'::text",
+      "identity_generation": null
+    },
+    {
+      "udt_name": "jsonb",
+      "table_name": "integration_issues",
+      "column_name": "evidence",
+      "is_identity": "NO",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": "'{}'::jsonb",
+      "identity_generation": null
+    },
+    {
+      "udt_name": "_text",
+      "table_name": "integration_issues",
+      "column_name": "evidence_refs",
+      "is_identity": "NO",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": "'{}'::text[]",
+      "identity_generation": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "integration_issues",
+      "column_name": "root_cause_class",
+      "is_identity": "NO",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": "'unclassified'::text",
+      "identity_generation": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "integration_issues",
+      "column_name": "severity",
+      "is_identity": "NO",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "integration_issues",
+      "column_name": "impact",
+      "is_identity": "NO",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "integration_issues",
+      "column_name": "workstream",
+      "is_identity": "NO",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "_int8",
+      "table_name": "integration_issues",
+      "column_name": "blocked_by",
+      "is_identity": "NO",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": "'{}'::bigint[]",
+      "identity_generation": null
+    },
+    {
+      "udt_name": "_text",
+      "table_name": "integration_issues",
+      "column_name": "depends_on",
+      "is_identity": "NO",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": "'{}'::text[]",
+      "identity_generation": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "integration_issues",
+      "column_name": "fix_commit",
+      "is_identity": "NO",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "integration_issues",
+      "column_name": "fix_migration",
+      "is_identity": "NO",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "integration_issues",
+      "column_name": "deployed_version",
+      "is_identity": "NO",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "integration_issues",
+      "column_name": "verification_outcome",
+      "is_identity": "NO",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "jsonb",
+      "table_name": "integration_issues",
+      "column_name": "verification_evidence",
+      "is_identity": "NO",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "timestamptz",
+      "table_name": "integration_issues",
+      "column_name": "verified_at",
+      "is_identity": "NO",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "integration_issues",
+      "column_name": "verified_by",
+      "is_identity": "NO",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "int4",
+      "table_name": "integration_issues",
+      "column_name": "retry_count",
+      "is_identity": "NO",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": "0",
+      "identity_generation": null
+    },
+    {
+      "udt_name": "timestamptz",
+      "table_name": "integration_issues",
+      "column_name": "last_observed_at",
+      "is_identity": "NO",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": "now()",
+      "identity_generation": null
+    },
+    {
+      "udt_name": "timestamptz",
+      "table_name": "integration_issues",
+      "column_name": "condition_cleared_at",
+      "is_identity": "NO",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "integration_issues",
+      "column_name": "status",
+      "is_identity": "NO",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": "'detected'::text",
+      "identity_generation": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "integration_issues",
+      "column_name": "assignee",
+      "is_identity": "NO",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "int4",
+      "table_name": "integration_issues",
+      "column_name": "regression_count",
+      "is_identity": "NO",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": "0",
+      "identity_generation": null
+    },
+    {
+      "udt_name": "timestamptz",
+      "table_name": "integration_issues",
+      "column_name": "reopened_at",
+      "is_identity": "NO",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "timestamptz",
+      "table_name": "integration_issues",
+      "column_name": "closed_at",
+      "is_identity": "NO",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "integration_issues",
+      "column_name": "aer_root_cause_ref",
+      "is_identity": "NO",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "integration_issues",
+      "column_name": "alert_check_key",
+      "is_identity": "NO",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "timestamptz",
+      "table_name": "integration_issues",
+      "column_name": "created_at",
+      "is_identity": "NO",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": "now()",
+      "identity_generation": null
+    },
+    {
+      "udt_name": "timestamptz",
+      "table_name": "integration_issues",
+      "column_name": "updated_at",
+      "is_identity": "NO",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": "now()",
+      "identity_generation": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "integration_issues",
+      "column_name": "correlation_key",
+      "is_identity": "NO",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "jsonb",
+      "table_name": "integration_issues",
+      "column_name": "diagnosis",
+      "is_identity": "NO",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "integration_issues",
+      "column_name": "remedy_code",
+      "is_identity": "NO",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "int4",
+      "table_name": "integration_issues",
+      "column_name": "remedy_attempts",
+      "is_identity": "NO",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": "0",
+      "identity_generation": null
+    },
+    {
+      "udt_name": "timestamptz",
+      "table_name": "integration_issues",
+      "column_name": "next_action_at",
+      "is_identity": "NO",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "integration_issues",
+      "column_name": "ops_state",
+      "is_identity": "NO",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "int8",
+      "table_name": "integration_issues",
+      "column_name": "superseded_by",
+      "is_identity": "NO",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "_int8",
+      "table_name": "integration_issues",
+      "column_name": "supersedes",
+      "is_identity": "NO",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": "'{}'::bigint[]",
+      "identity_generation": null
+    },
+    {
+      "udt_name": "jsonb",
+      "table_name": "integration_issues",
+      "column_name": "blocker",
+      "is_identity": "NO",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "jsonb",
+      "table_name": "integration_issues",
+      "column_name": "ops_plan",
+      "is_identity": "NO",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "integration_issues",
+      "column_name": "remediation_owner",
+      "is_identity": "NO",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "integration_issues",
+      "column_name": "remediation_status",
+      "is_identity": "NO",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "timestamptz",
+      "table_name": "integration_issues",
+      "column_name": "remediation_checkpoint_at",
+      "is_identity": "NO",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "jsonb",
+      "table_name": "integration_issues",
+      "column_name": "remediation_evidence",
+      "is_identity": "NO",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "timestamptz",
+      "table_name": "integration_issues",
+      "column_name": "severity_decided_at",
+      "is_identity": "NO",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "integration_issues",
+      "column_name": "severity_decided_by",
+      "is_identity": "NO",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "jsonb",
+      "table_name": "integration_issues",
+      "column_name": "severity_decision",
+      "is_identity": "NO",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "int8",
+      "table_name": "ops_ai_diagnosis_requests",
+      "column_name": "id",
+      "is_identity": "NO",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": "nextval('pipeline.ops_ai_diagnosis_requests_id_seq'::regclass)",
+      "identity_generation": null
+    },
+    {
+      "udt_name": "int8",
+      "table_name": "ops_ai_diagnosis_requests",
+      "column_name": "issue_id",
+      "is_identity": "NO",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "timestamptz",
+      "table_name": "ops_ai_diagnosis_requests",
+      "column_name": "requested_at",
+      "is_identity": "NO",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": "now()",
+      "identity_generation": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "ops_ai_diagnosis_requests",
+      "column_name": "state",
+      "is_identity": "NO",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": "'queued'::text",
+      "identity_generation": null
+    },
+    {
+      "udt_name": "timestamptz",
+      "table_name": "ops_ai_diagnosis_requests",
+      "column_name": "leased_until",
+      "is_identity": "NO",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "jsonb",
+      "table_name": "ops_ai_diagnosis_requests",
+      "column_name": "context",
+      "is_identity": "NO",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "jsonb",
+      "table_name": "ops_ai_diagnosis_requests",
+      "column_name": "answer",
+      "is_identity": "NO",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "ops_ai_diagnosis_requests",
+      "column_name": "model",
+      "is_identity": "NO",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "numeric",
+      "table_name": "ops_ai_diagnosis_requests",
+      "column_name": "cost_usd",
+      "is_identity": "NO",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "timestamptz",
+      "table_name": "ops_ai_diagnosis_requests",
+      "column_name": "answered_at",
+      "is_identity": "NO",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "ops_ai_diagnosis_requests",
+      "column_name": "note",
+      "is_identity": "NO",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "ops_root_causes",
+      "column_name": "code",
+      "is_identity": "NO",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "ops_root_causes",
+      "column_name": "class",
+      "is_identity": "NO",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "ops_root_causes",
+      "column_name": "title",
+      "is_identity": "NO",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "text",
+      "table_name": "ops_root_causes",
+      "column_name": "description",
+      "is_identity": "NO",
+      "is_nullable": "YES",
+      "table_schema": "pipeline",
+      "column_default": null,
+      "identity_generation": null
+    },
+    {
+      "udt_name": "jsonb",
+      "table_name": "ops_root_causes",
+      "column_name": "detect",
+      "is_identity": "NO",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": "'{}'::jsonb",
+      "identity_generation": null
+    },
+    {
+      "udt_name": "timestamptz",
+      "table_name": "ops_root_causes",
+      "column_name": "created_at",
+      "is_identity": "NO",
+      "is_nullable": "NO",
+      "table_schema": "pipeline",
+      "column_default": "now()",
+      "identity_generation": null
+    }
+  ],
+  "indexes": [
+    {
+      "indexdef": "CREATE UNIQUE INDEX integration_issues_pkey ON pipeline.integration_issues USING btree (id)",
+      "indexname": "integration_issues_pkey"
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX integration_issues_fingerprint_key ON pipeline.integration_issues USING btree (fingerprint)",
+      "indexname": "integration_issues_fingerprint_key"
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX integration_issues_aer_ref_uq ON pipeline.integration_issues USING btree (aer_root_cause_ref) WHERE (aer_root_cause_ref IS NOT NULL)",
+      "indexname": "integration_issues_aer_ref_uq"
+    },
+    {
+      "indexdef": "CREATE INDEX integration_issues_open_idx ON pipeline.integration_issues USING btree (status, severity) WHERE (status <> 'closed'::text)",
+      "indexname": "integration_issues_open_idx"
+    },
+    {
+      "indexdef": "CREATE INDEX integration_issues_observed_idx ON pipeline.integration_issues USING btree (last_observed_at DESC)",
+      "indexname": "integration_issues_observed_idx"
+    },
+    {
+      "indexdef": "CREATE INDEX integration_issues_next_action_idx ON pipeline.integration_issues USING btree (next_action_at) WHERE (status <> 'closed'::text)",
+      "indexname": "integration_issues_next_action_idx"
+    },
+    {
+      "indexdef": "CREATE INDEX integration_issues_correlation_idx ON pipeline.integration_issues USING btree (correlation_key) WHERE (status <> 'closed'::text)",
+      "indexname": "integration_issues_correlation_idx"
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX ops_ai_diagnosis_requests_pkey ON pipeline.ops_ai_diagnosis_requests USING btree (id)",
+      "indexname": "ops_ai_diagnosis_requests_pkey"
+    },
+    {
+      "indexdef": "CREATE INDEX ops_ai_diagnosis_requests_open_idx ON pipeline.ops_ai_diagnosis_requests USING btree (state, requested_at) WHERE (state = ANY (ARRAY['queued'::text, 'leased'::text]))",
+      "indexname": "ops_ai_diagnosis_requests_open_idx"
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX ops_root_causes_pkey ON pipeline.ops_root_causes USING btree (code)",
+      "indexname": "ops_root_causes_pkey"
+    }
+  ],
+  "constraints": [
+    {
+      "conname": "integration_issues_fingerprint_check",
+      "contype": "c",
+      "relation": "pipeline.integration_issues",
+      "definition": "CHECK (length(btrim(fingerprint)) > 0)"
+    },
+    {
+      "conname": "integration_issues_fingerprint_key",
+      "contype": "u",
+      "relation": "pipeline.integration_issues",
+      "definition": "UNIQUE (fingerprint)"
+    },
+    {
+      "conname": "integration_issues_ops_state_check",
+      "contype": "c",
+      "relation": "pipeline.integration_issues",
+      "definition": "CHECK (ops_state IS NULL OR (ops_state = ANY (ARRAY['diagnosed'::text, 'remedying'::text, 'verifying'::text, 'verified'::text, 'superseded'::text, 'needs_release'::text, 'needs_decision'::text])))"
+    },
+    {
+      "conname": "integration_issues_pkey",
+      "contype": "p",
+      "relation": "pipeline.integration_issues",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "conname": "integration_issues_remediation_status_check",
+      "contype": "c",
+      "relation": "pipeline.integration_issues",
+      "definition": "CHECK (remediation_status IS NULL OR (remediation_status = ANY (ARRAY['engineering_open'::text, 'fix_released'::text, 'awaiting_first_run'::text, 'verified'::text, 'returned'::text])))"
+    },
+    {
+      "conname": "integration_issues_root_cause_class_check",
+      "contype": "c",
+      "relation": "pipeline.integration_issues",
+      "definition": "CHECK (root_cause_class = ANY (ARRAY['unclassified'::text, 'code_defect'::text, 'data_drift'::text, 'job_config'::text, 'lifecycle_leak'::text, 'queue_or_lease'::text, 'missing_dependency'::text, 'governance_gap'::text, 'external'::text, 'budget'::text, 'human_decision'::text, 'deployment_drift'::text]))"
+    },
+    {
+      "conname": "integration_issues_severity_check",
+      "contype": "c",
+      "relation": "pipeline.integration_issues",
+      "definition": "CHECK (severity = ANY (ARRAY['P0'::text, 'P1'::text, 'P2'::text]))"
+    },
+    {
+      "conname": "integration_issues_status_check",
+      "contype": "c",
+      "relation": "pipeline.integration_issues",
+      "definition": "CHECK (status = ANY (ARRAY['detected'::text, 'triaged'::text, 'assigned'::text, 'in_progress'::text, 'code_ready'::text, 'integration_testing'::text, 'deployed'::text, 'production_verification'::text, 'closed'::text, 'reopened'::text]))"
+    },
+    {
+      "conname": "integration_issues_superseded_by_fkey",
+      "contype": "f",
+      "relation": "pipeline.integration_issues",
+      "definition": "FOREIGN KEY (superseded_by) REFERENCES pipeline.integration_issues(id)"
+    },
+    {
+      "conname": "integration_issues_validation_layer_check",
+      "contype": "c",
+      "relation": "pipeline.integration_issues",
+      "definition": "CHECK (validation_layer = ANY (ARRAY['V1'::text, 'V2'::text, 'V3'::text, 'V4'::text, 'manual'::text]))"
+    },
+    {
+      "conname": "integration_issues_verification_outcome_check",
+      "contype": "c",
+      "relation": "pipeline.integration_issues",
+      "definition": "CHECK (verification_outcome = ANY (ARRAY['passed'::text, 'failed'::text, 'regressed'::text]))"
+    },
+    {
+      "conname": "integration_issues_workstream_check",
+      "contype": "c",
+      "relation": "pipeline.integration_issues",
+      "definition": "CHECK (workstream = ANY (ARRAY['A1'::text, 'A2'::text, 'A3'::text, 'A4'::text, 'A5'::text, 'A6'::text, 'A7'::text, 'A8'::text, 'A9'::text, 'A10'::text]))"
+    },
+    {
+      "conname": "ops_root_causes_class_check",
+      "contype": "c",
+      "relation": "pipeline.ops_root_causes",
+      "definition": "CHECK (class = ANY (ARRAY['transient'::text, 'data'::text, 'rule'::text, 'policy'::text, 'dependency'::text, 'capacity'::text]))"
+    },
+    {
+      "conname": "ops_root_causes_code_check",
+      "contype": "c",
+      "relation": "pipeline.ops_root_causes",
+      "definition": "CHECK (code ~ '^[a-z][a-z0-9_]*$'::text)"
+    },
+    {
+      "conname": "ops_root_causes_pkey",
+      "contype": "p",
+      "relation": "pipeline.ops_root_causes",
+      "definition": "PRIMARY KEY (code)"
+    },
+    {
+      "conname": "ops_ai_diagnosis_requests_issue_id_fkey",
+      "contype": "f",
+      "relation": "pipeline.ops_ai_diagnosis_requests",
+      "definition": "FOREIGN KEY (issue_id) REFERENCES pipeline.integration_issues(id)"
+    },
+    {
+      "conname": "ops_ai_diagnosis_requests_pkey",
+      "contype": "p",
+      "relation": "pipeline.ops_ai_diagnosis_requests",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "conname": "ops_ai_diagnosis_requests_state_check",
+      "contype": "c",
+      "relation": "pipeline.ops_ai_diagnosis_requests",
+      "definition": "CHECK (state = ANY (ARRAY['queued'::text, 'leased'::text, 'answered'::text, 'refused'::text]))"
+    }
+  ]
+}
