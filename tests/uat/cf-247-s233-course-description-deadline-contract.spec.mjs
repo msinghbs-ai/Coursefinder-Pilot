@@ -106,7 +106,9 @@ test('worker v0.59.4: one call per course on the stored page, the central model,
   expect(worker).toMatch(/(?:const WORKER = "coverage-sweep-worker-v0\.59\.4"; |\n\/\/ was v0\.59\.4 )\/\/ v0\.59\.4 \(3 Nov 2026, CF-247 Workstream C/)
   expect(worker).toContain('// was v0.59.3 // v0.59.3 (3 Nov 2026, CF-247 Workstream F, hidden failures')
   const t = worker.slice(worker.indexOf('const textRead = async'), worker.indexOf('const entryCall = async'))
-  expect(t).toContain('courseTextRequest(model, courseTextUser(pg.provider, pg.title, want, page, courseTextLength(ws)), want, maxTokens)')
+  // v0.59.9: the one call is askText(user, fields); the first user message is unchanged
+  expect(t).toContain('courseTextRequest(model, user, w, maxTokens)')
+  expect(t).toContain('courseTextUser(pg.provider, pg.title, want, page, length)')
   expect(t).toContain('courseTextPage(raw, PAGE_CHARS)')
   expect(t).toContain('returned model ${d.model}, not ${model}')
   expect(t).not.toMatch(/firecrawl|useFc|readSch|fetch\(p\.|fetch\(u/i)

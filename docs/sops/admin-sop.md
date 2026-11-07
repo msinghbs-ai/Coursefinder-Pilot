@@ -1,7 +1,7 @@
-<!-- sop-export: id=admin-sop; version=2.33; reviewed-release=2.15.491; source-commit=a20e7f319663+local; content-sha256=246f774829d97b76283a2bc535c88b28056bdc7a9b63655dee22c2a9f019205f -->
+<!-- sop-export: id=admin-sop; version=2.34; reviewed-release=2.15.492; source-commit=b2eebf8c8ce0+local; content-sha256=032713002fd1c0ccf061bd6b9939f3874b3863d863b921a755dca140c25e107c -->
 # StudySearch – Platform Admin SOP
 
-**Version:** 2.33 (reviewed for platform release v2.15.491)  
+**Version:** 2.34 (reviewed for platform release v2.15.492)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -108,6 +108,7 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 
 ## 8. What to pay attention to
 
+- Course descriptions: distinguish proposed, human-admitted and actually published counts. Review held evidence and use Previous on the final reviewer page.
 - An application deadline must quote an actual closing date; commencement and intake dates are not closing dates. Escalate incorrect records without removing human locks.
 - A held or uncertain production release: confirm the Integration Controller and operation evidence before recovery; keep read-only health checks available.
 - The credit and limit bar on every page.
@@ -126,6 +127,7 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.34 | 6 Nov 2026 | v2.15.492 | Course description reviewer navigation, held-source evidence and separate proposal/admission/publication measures; human admission authority remains. |
 | 2.33 | 6 Nov 2026 | v2.15.491 | Deadline review distinguishes application closing evidence from commencement dates; corrections retain audit and human-lock authority. |
 | 2.32 | 6 Nov 2026 | v2.15.490 | Production releases and recovery remain with the verified Integration Controller; operators escalate a held or uncertain release through the existing execution register and retain read-only checks. |
 | 1.0 | 12 Oct 2026 | v2.15.257 | First issue: daily, weekly and as-needed duties; automation and where a person decides; what to watch; escalation. |

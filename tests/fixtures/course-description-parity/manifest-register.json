@@ -1,0 +1,232 @@
+{
+ "tool": "prod-parity-capture v1",
+ "facts": {
+  "role|anon": "statement_timeout=3s",
+  "role|service_role": "",
+  "role|authenticated": "statement_timeout=8s",
+  "role|authenticator": "lock_timeout=8s,statement_timeout=8s",
+  "session|search_path": "\"$user\", public, extensions",
+  "schema|pipeline|service_role": "USAGE",
+  "table|pipeline.component_register": "target|r|rls=true|force=false",
+  "column|pipeline.component_register|kind": "text|notnull=true|default=|identity=|generated=",
+  "column|pipeline.component_register|name": "text|notnull=true|default=|identity=|generated=",
+  "column|pipeline.component_register|layer": "text|notnull=true|default=|identity=|generated=",
+  "column|pipeline.component_register|area": "text|notnull=false|default=|identity=|generated=",
+  "column|pipeline.component_register|purpose": "text|notnull=false|default=|identity=|generated=",
+  "column|pipeline.component_register|status": "text|notnull=true|default='active'::text|identity=|generated=",
+  "column|pipeline.component_register|replaces": "text[]|notnull=true|default='{}'::text[]|identity=|generated=",
+  "column|pipeline.component_register|replaced_by": "text|notnull=false|default=|identity=|generated=",
+  "column|pipeline.component_register|introduced_in": "text|notnull=false|default=|identity=|generated=",
+  "column|pipeline.component_register|retire_after": "date|notnull=false|default=|identity=|generated=",
+  "column|pipeline.component_register|last_used_at": "timestamp with time zone|notnull=false|default=|identity=|generated=",
+  "column|pipeline.component_register|usage": "jsonb|notnull=true|default='{}'::jsonb|identity=|generated=",
+  "column|pipeline.component_register|size_bytes": "bigint|notnull=false|default=|identity=|generated=",
+  "column|pipeline.component_register|note": "text|notnull=false|default=|identity=|generated=",
+  "column|pipeline.component_register|registered_at": "timestamp with time zone|notnull=true|default=now()|identity=|generated=",
+  "column|pipeline.component_register|updated_at": "timestamp with time zone|notnull=true|default=now()|identity=|generated=",
+  "constraint|pipeline.component_register|component_register_kind_check": "c|CHECK ((kind = ANY (ARRAY['job'::text, 'table'::text, 'view'::text, 'edge_function'::text, 'screen'::text, 'function'::text])))",
+  "constraint|pipeline.component_register|component_register_status_check": "c|CHECK ((status = ANY (ARRAY['active'::text, 'retiring'::text, 'retired'::text])))",
+  "constraint|pipeline.component_register|component_register_pkey": "p|PRIMARY KEY (kind, name)"
+ },
+ "roles": [
+  {
+   "name": "anon",
+   "settings": "statement_timeout=3s"
+  },
+  {
+   "name": "authenticated",
+   "settings": "statement_timeout=8s"
+  },
+  {
+   "name": "authenticator",
+   "settings": "lock_timeout=8s,statement_timeout=8s"
+  },
+  {
+   "name": "service_role",
+   "settings": null
+  }
+ ],
+ "scope": {
+  "tables": [
+   "pipeline.component_register"
+  ],
+  "lookups": [],
+  "functions": [],
+  "max_lookup_rows": 500
+ },
+ "types": [],
+ "tables": [
+  {
+   "fq": "pipeline.component_register",
+   "rls": true,
+   "kind": "target",
+   "rows": null,
+   "grants": [],
+   "columns": [
+    {
+     "name": "kind",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "name",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "layer",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "area",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "purpose",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "status",
+     "type": "text",
+     "default": "'active'::text",
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "replaces",
+     "type": "text[]",
+     "default": "'{}'::text[]",
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "replaced_by",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "introduced_in",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "retire_after",
+     "type": "date",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "last_used_at",
+     "type": "timestamp with time zone",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "usage",
+     "type": "jsonb",
+     "default": "'{}'::jsonb",
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "size_bytes",
+     "type": "bigint",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "note",
+     "type": "text",
+     "default": null,
+     "identity": null,
+     "not_null": false,
+     "generated": null
+    },
+    {
+     "name": "registered_at",
+     "type": "timestamp with time zone",
+     "default": "now()",
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    },
+    {
+     "name": "updated_at",
+     "type": "timestamp with time zone",
+     "default": "now()",
+     "identity": null,
+     "not_null": true,
+     "generated": null
+    }
+   ],
+   "indexes": [],
+   "refused": null,
+   "relkind": "r",
+   "policies": [],
+   "triggers": [],
+   "force_rls": false,
+   "constraints": [
+    {
+     "def": "CHECK ((kind = ANY (ARRAY['job'::text, 'table'::text, 'view'::text, 'edge_function'::text, 'screen'::text, 'function'::text])))",
+     "name": "component_register_kind_check",
+     "type": "c"
+    },
+    {
+     "def": "CHECK ((status = ANY (ARRAY['active'::text, 'retiring'::text, 'retired'::text])))",
+     "name": "component_register_status_check",
+     "type": "c"
+    },
+    {
+     "def": "PRIMARY KEY (kind, name)",
+     "name": "component_register_pkey",
+     "type": "p"
+    }
+   ]
+  }
+ ],
+ "missing": [],
+ "schemas": [
+  {
+   "name": "pipeline",
+   "grantee": "service_role",
+   "privileges": "USAGE"
+  }
+ ],
+ "functions": [],
+ "search_path": "\"$user\", public, extensions",
+ "server_version_num": 170006,
+ "source": "production fxcwkweaxjtknorudmwp, read only, 6 Nov 2026 14:12 AEDT, agent G; transcribed from the capture-sql output (pipeline.component_register only)"
+}
