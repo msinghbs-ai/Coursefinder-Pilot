@@ -30,6 +30,9 @@ echo "$OUT" | grep -E "PASS" ; echo "$OUT" | grep -qE "FAIL|ERROR" && { echo "$O
 AGAIN=$($P -d $DB -At -f supabase/migrations/20261107130000_cf247_aer_stored_read_recovery.sql 2>&1)
 echo "$AGAIN" | grep -q "already applied" || { echo "a second run did not report already applied: $AGAIN"; exit 1; }
 echo "PASS migration applied twice: already applied"
+# fix 1 (7 Nov 2026, the first live aer-replay run could not write its job record): applied after part 1 in fixtures.sql, and a second time changes nothing
+bash -c "$P -d $DB -At -f supabase/migrations/20261107170000_cf247_aer_replay_job_actor.sql >/dev/null && $P -d $DB -At -f supabase/migrations/20261107170000_cf247_aer_replay_job_actor.sql >/dev/null"
+echo "PASS actor-fix migration applied twice"
 
 # suite B: the shared recovery rule on the AER selector database (live rule b194475a loaded by that fixture), with E13's row-limit function from suite A
 DB2=${AERTH_DB_B:-aer_technical_holds_b}

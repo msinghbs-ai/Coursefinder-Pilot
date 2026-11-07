@@ -76,3 +76,16 @@ test('governance: job catalogued with no number in its command, tables commented
     expect(m).not.toMatch(/website_v2_|website_edge_|zoho_edge_|api\.website/)
   }
 })
+
+test('fix 1 (20261107170000): the replay job record is requested by the system identity, never null (live admin_jobs.requested_by is NOT NULL), and a read that is not applied keeps its reason', () => {
+  const sql = fs.readFileSync('supabase/migrations/20261107170000_cf247_aer_replay_job_actor.sql', 'utf8')
+  const body = sql.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
+  expect(body).toContain("'total', 1), security.system_actor_id(), 'Replay of stored read")
+  expect(body).not.toMatch(/'total', 1\), null,/)
+  expect(body).toContain("coalesce(v_out->-1->>'result', 'not applied: ' || (v_out->-1->>'why'))")
+  expect(body).not.toMatch(/net\.http|http_|firecrawl|openrouter|pg_net/i)
+  expect(sql).toMatch(/^-- Replaces: security\.aer_replay_apply_v1/m)
+  expect(sql).toMatch(/^-- Retires: nothing/m)
+  const fx = fs.readFileSync('tests/fixtures/aer-technical-holds/stubs-extra.sql', 'utf8')
+  expect(fx).toContain('alter column requested_by set not null')   // the fixture mirrors the live constraint that the first fixture missed
+})
