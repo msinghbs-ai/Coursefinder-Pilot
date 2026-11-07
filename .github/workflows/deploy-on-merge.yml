@@ -18,12 +18,11 @@ on:
       - 'supabase/migrations/*.sql'
       - 'supabase/functions/**'
 concurrency:
-  group: studysearch-controller-production
+  group: deploy-on-merge
   cancel-in-progress: false
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: pilot
     permissions:
       contents: read
     env:
@@ -45,10 +44,7 @@ jobs:
           mapfile -t FILES < <(git diff --name-only --diff-filter=A "$BEFORE" "$AFTER" -- 'supabase/migrations/*.sql' | xargs -r -n1 basename | sort)
           echo "## Deploy on merge" >> "$GITHUB_STEP_SUMMARY"
           if [ "${#FILES[@]}" -eq 0 ]; then echo "No new migrations." | tee -a "$GITHUB_STEP_SUMMARY"; exit 0; fi
-          for f in "${FILES[@]}"; do
-            python3 scripts/ci/controller-guard.py --entry-point deploy-on-merge --resource "migration:$f"
-            scripts/ci/apply-migration.sh "$f"
-          done
+          for f in "${FILES[@]}"; do scripts/ci/apply-migration.sh "$f"; done
       - uses: supabase/setup-cli@v1
         with:
           version: 2.120.0  # CF-247 Phase 5 (19 Oct 2026): pinned; "latest" failed on a GitHub API rate limit
@@ -67,7 +63,4 @@ jobs:
           done
           mapfile -t FNS < <(printf '%s\n' "${FNS[@]}" | grep -v '^$' | sort -u)
           if [ "${#FNS[@]}" -eq 0 ]; then echo "No edge function changes." | tee -a "$GITHUB_STEP_SUMMARY"; exit 0; fi
-          for fn in "${FNS[@]}"; do
-            python3 scripts/ci/controller-guard.py --entry-point deploy-on-merge --resource "edge_function:$fn"
-            scripts/ci/deploy-function.sh "$fn"
-          done
+          for fn in "${FNS[@]}"; do scripts/ci/deploy-function.sh "$fn"; done

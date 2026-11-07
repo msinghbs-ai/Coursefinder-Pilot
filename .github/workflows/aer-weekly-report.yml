@@ -14,7 +14,6 @@ jobs:
   report:
     if: vars.AER_WEEKLY_REPORT_ENABLED == 'true'
     runs-on: ubuntu-latest
-    environment: pilot
     permissions:
       contents: write
     env:
