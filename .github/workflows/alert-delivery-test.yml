@@ -1,0 +1,39 @@
+# Guards: StudySearch P1 (Platform Admin 7 Nov 2026 15:19): the alert delivery lifecycle migration run in genuine PostgreSQL — concurrent collectors, expired leases, missing receipt,
+# recovery, deduplication and bounded retries. Isolated only: fixture-only schema, no production access.
+name: Alert delivery lifecycle integration
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/20261107030000_cf247_alert_delivery_lifecycle.sql'
+      - 'tests/fixtures/alert-delivery/**'
+      - '.github/workflows/alert-delivery-test.yml'
+  workflow_dispatch:
+jobs:
+  isolated-postgres:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:17.6-alpine
+        env:
+          POSTGRES_PASSWORD: fixture-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: fixture-only
+    steps:
+      - uses: actions/checkout@v4
+      - run: mkdir -p uat-artifacts
+      - run: bash tests/fixtures/alert-delivery/run.sh 2>&1 | tee uat-artifacts/alert-delivery-results.log
+        shell: bash
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: alert-delivery-database-evidence
+          path: uat-artifacts
