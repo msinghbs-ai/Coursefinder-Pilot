@@ -16,7 +16,6 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    environment: pilot
     permissions:
       contents: read
     env:

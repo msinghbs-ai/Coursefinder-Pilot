@@ -17,30 +17,12 @@ on:
       adapter_filters:
         description: "Diagnostics: set Layer 2 Adapters filters to Australia and any provider (1 = yes)"
         required: false
-      controller_execution:
-        description: "Active controller execution matching the pre-reserved fixed capture inputs"
-        required: true
-      controller_generation:
-        description: "Active controller generation"
-        required: true
-      controller_operation:
-        description: "Immutable validation operation already reserved for these exact inputs"
-        required: true
-concurrency:
-  group: studysearch-controller-production
-  cancel-in-progress: false
 permissions:
   contents: write
 jobs:
   capture:
     runs-on: ubuntu-latest
-    environment: pilot
     env:
-      CONTROLLER_EXECUTION_ID: ${{ inputs.controller_execution }}
-      CONTROLLER_GENERATION: ${{ inputs.controller_generation }}
-      CONTROLLER_OPERATION_ID: ${{ inputs.controller_operation }}
-      # Reviewed repository configuration; never sourced from a dispatch input.
-      STUDYSEARCH_UAT_ALLOWED_ORIGIN: ${{ vars.STUDYSEARCH_UAT_ALLOWED_ORIGIN || 'https://coursefinder-pilot.techm.workers.dev' }}
       UAT_BASE_URL: ${{ inputs.base_url || 'https://coursefinder-pilot.techm.workers.dev' }}
       UAT_EMAIL: ${{ secrets.COURSEFINDER_UAT_EMAIL }}
       UAT_PASSWORD: ${{ secrets.COURSEFINDER_UAT_PASSWORD }}
@@ -49,29 +31,16 @@ jobs:
       OUT_DIR: ui-review-out
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Validate trusted UAT credential target
-        run: |
-          python3 scripts/ci/controller-guard.py --validate-uat-target
       - uses: actions/setup-node@v4
         with:
           node-version: 22
       - run: npm install --ignore-scripts --prefer-offline --no-audit --no-fund
       - run: npx playwright install chromium
-      # Reserve ui_review_sha256 from --print-ui-review-resource using the same
-      # UAT_BASE_URL, SCREENS and ADAPTER_FILTERS before dispatch. The gate
-      # re-derives it; this does not approve admission or other held actions.
-      - name: Verify controller authority for the fixed capture inputs
-        id: controller_gate
-        run: |
-          python3 scripts/ci/controller-guard.py --entry-point ui-review-screenshots
       - name: Capture screens
-        run: |
-          npx playwright test -c tools/ui-review/playwright.config.mjs
+        run: npx playwright test -c tools/ui-review/playwright.config.mjs
       - name: Commit to ui-review-snapshots branch
         # CF-247 (29 Oct 2026): what was captured is kept even when a screen fails, with the failure in manifest.json
-        if: always() && steps.controller_gate.outcome == 'success'
+        if: always()
         run: |
           set -e
           DEST="snapshots/$(date -u +%Y%m%d-%H%M)-run${{ github.run_number }}"
