@@ -82,10 +82,24 @@ test('housekeeping rows: the five components and the job are registered; the rec
 test('fixture runner: checks the live md5s, reproduces the circular gate, applies the migration twice and fails on any scenario error', () => {
   const run = fs.readFileSync(`${FX}/run.sh`, 'utf8'), sc = fs.readFileSync(`${FX}/scenarios.sql`, 'utf8')
   expect(run).toContain('set -euo pipefail')
-  expect(run.match(/-f \$MIG/g).length).toBe(2)
+  expect(run.match(/-f \$MIG(?!2)/g).length).toBe(2)
+  expect(run.match(/-f \$MIG2/g).length).toBe(2)   // the speed fix 20261107160000, applied twice
   expect(run).toContain('refusing a Supabase project database')
   expect(fs.readFileSync(`${FX}/before.sql`, 'utf8')).toContain('B2 the attach cannot give it a suggested first page')
   for (const s of ['S1', 'S2', 'S3', 'S4', 'S5', 'S6']) expect(sc, s).toContain(`-- ${s} `)
   expect(sc).toContain('S3 the measurement wrote nothing')
   expect(sc).toContain('S4 two providers on one website: recorded host_shared')
+})
+
+test('speed fix 20261107160000: the eligibility rule is judged one provider at a time, each stored link is scored once, and the step still only reads stored links', () => {
+  const sql = fs.readFileSync('supabase/migrations/20261107160000_cf247_aer_stored_find_speed.sql', 'utf8')
+  const body = sql.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
+  // the rule is no longer a per-row filter of the selection (it rebuilt the eligible set 1,476 times); it is judged in the loop, only as far as the run needs
+  expect(body).not.toMatch(/where security\.entry_matrix_attach_allowed_v1\(p\.id\)/)
+  expect(body).toMatch(/if not security\.entry_matrix_attach_allowed_v1\(r\.provider_id\) then continue; end if;/)
+  expect(body).toMatch(/if v_looked >= v_limit then exit; end if;/)
+  expect(body.match(/entry_source_score_v1\(/g).length).toBe(1)   // each link is scored once
+  expect(body).not.toMatch(/net\.http|http_|firecrawl|openrouter|pg_net/i)
+  expect(sql).toMatch(/^-- Replaces: security\.entry_source_stored_find_v1/m)
+  expect(sql).toMatch(/^-- Retires: nothing/m)
 })
