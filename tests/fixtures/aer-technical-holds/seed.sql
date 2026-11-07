@@ -6,7 +6,7 @@ create function pg_temp.r(p_kind text, p_quote text, p_score numeric default nul
 create function pg_temp.read(p_course uuid, p_rows jsonb, p_dropped jsonb default '[]') returns uuid language plpgsql as $f$
 declare v_id bigint; v_job uuid := gen_random_uuid();
 begin
-  insert into pipeline.admin_jobs(id, kind, lane, state) values (v_job, 'enrich_fields', 'enrich', 'done');
+  insert into pipeline.admin_jobs(id, kind, lane, state, requested_by) values (v_job, 'enrich_fields', 'enrich', 'done', 'c0ffee00-0000-4000-8000-000000000150');
   insert into pipeline.field_enrich_items(job_id, provider_id, course_id, field, state) select v_job, c.provider_id, c.id, 'entry_requirements', 'ai' from catalogue.courses c where c.id = p_course returning id into v_id;
   perform security.enrich_entry_record_v1(v_id, jsonb_build_object('value', jsonb_build_object('rows', p_rows, 'dropped', p_dropped), 'model', 'fixture'));
   return (select (value->>'review_item_id')::uuid from pipeline.field_enrich_items where id = v_id);
@@ -51,7 +51,7 @@ begin
     insert into catalogue.course_entry_requirements(course_id, kind, audience, description, quote, confidence, status, provenance)
     values ('c1000000-0000-4000-8000-000000000002', case when i = 6 then 'subject_prerequisite' else 'prior_qualification' end, 'all', q[i], q[i], 0.95, 'proposed', jsonb_build_object('review_item_id', v_item));
   end loop;
-  insert into pipeline.admin_jobs(id, kind, lane, state) values (v_job, 'enrich_fields', 'enrich', 'done');
+  insert into pipeline.admin_jobs(id, kind, lane, state, requested_by) values (v_job, 'enrich_fields', 'enrich', 'done', 'c0ffee00-0000-4000-8000-000000000150');
   -- the corrected read refused at the row limit kept all 9 rows it read
   insert into pipeline.field_enrich_items(job_id, provider_id, course_id, field, state, reason, value)
   values (v_job, 'd1000000-0000-4000-8000-000000000000', 'c1000000-0000-4000-8000-000000000002', 'entry_requirements', 'skipped', 'held_partial: over_row_limit: the page has 9 requirements and the limit is 6',

@@ -18,13 +18,14 @@ end $t$;
 
 \echo apply migrations
 \i supabase/migrations/20261107130000_cf247_aer_stored_read_recovery.sql
+\i supabase/migrations/20261107170000_cf247_aer_replay_job_actor.sql
 
 -- 1 the reader: a requirement is never lost to its score field; a repeated requirement is one row
 do $t$ declare v_course uuid := 'c1000000-0000-4000-8000-000000000001'; v_id bigint; v_job uuid := gen_random_uuid(); v_res text; v_item uuid; v_sc numeric; v_notes jsonb; v_n int; v_drop jsonb;
 begin
   insert into catalogue.courses(id, provider_id, canonical_title) values ('c1000000-0000-4000-8000-0000000000b1', 'd3000000-0000-4000-8000-000000000000', 'Reader Test');
   insert into pipeline.coverage_course_pages(course_id, provider_id, url) values ('c1000000-0000-4000-8000-0000000000b1', 'd3000000-0000-4000-8000-000000000000', 'https://uni.example/reader');
-  insert into pipeline.admin_jobs(id, kind, lane, state) values (v_job, 'enrich_fields', 'enrich', 'done');
+  insert into pipeline.admin_jobs(id, kind, lane, state, requested_by) values (v_job, 'enrich_fields', 'enrich', 'done', 'c0ffee00-0000-4000-8000-000000000150');
   insert into pipeline.field_enrich_items(job_id, provider_id, course_id, field, state) values (v_job, 'd3000000-0000-4000-8000-000000000000', 'c1000000-0000-4000-8000-0000000000b1', 'entry_requirements', 'ai') returning id into v_id;
   v_res := security.enrich_entry_record_v1(v_id, jsonb_build_object('model', 'fixture', 'value', jsonb_build_object('rows', jsonb_build_array(
      jsonb_build_object('kind', 'minimum_grade', 'description', 'GPA 2.5', 'confidence', 0.95, 'quote', 'a grade point average of at least 2.5 (out of 4.0)', 'min_entry_score', 2.5, 'min_entry_score_basis', 'GPA 2.5 out of 4.0'),

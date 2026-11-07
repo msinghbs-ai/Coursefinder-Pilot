@@ -8,3 +8,8 @@ alter table pipeline.admin_jobs add column if not exists kind text, add column i
 alter table pipeline.layer4_review_items alter column id set default gen_random_uuid();
 create table if not exists pipeline.layer4_item_readiness (item_id uuid primary key, gate jsonb, gate_checked_at timestamptz, readiness text);
 alter table catalogue.courses add column if not exists lifecycle_status text default 'active';
+
+-- live: pipeline.admin_jobs.requested_by is NOT NULL with no default (found live 7 Nov 2026 when the first aer-replay run failed); the platform's system identity is security.system_actor_id()
+update pipeline.admin_jobs set requested_by = 'c0ffee00-0000-4000-8000-000000000150' where requested_by is null;
+alter table pipeline.admin_jobs alter column requested_by set not null;
+create or replace function security.system_actor_id() returns uuid language sql stable as $$ select 'c0ffee00-0000-4000-8000-000000000150'::uuid $$;
