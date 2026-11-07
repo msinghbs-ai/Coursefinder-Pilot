@@ -3,8 +3,8 @@ name: Pilot Frontend Build
 on:
   push:
     branches: [main]
+  # Build/smoke is required for stacked PRs too; production push/deploy gates stay on main.
   pull_request:
-    branches: [main]
 
 permissions:
   contents: read
