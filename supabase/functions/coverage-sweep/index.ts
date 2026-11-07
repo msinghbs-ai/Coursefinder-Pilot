@@ -5,7 +5,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import { clean, currencyFor, domainFitsName, english, fee, h1Of, htmlToText, identity, intakeEvidence, intakes, keepUrl, pageDataItems, robotsAllows, siteNameMatch, staleCalendarUrl, titleOf } from "./extract.ts";
 // v0.17.32: same normalising as extract.ts siteNorm (kept here so the shared extract.ts, used by other functions, is unchanged)
 const siteNorm = (s: string) => clean(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/&/g, " and ").replace(/[\u2019']/g, "").replace(/[^a-z0-9]+/g, " ").replace(/\bthe\b/g, " ").replace(/\s+/g, " ").trim();
-import { ADDED_TESTS, calendarStarts, englishPolicy, POLICY_PARSER } from "./policy.ts";
+import { ADD_TESTS_PARSER, ADDED_TESTS, calendarStarts, englishPolicy, POLICY_PARSER } from "./policy.ts";
 import { CALENDAR_PARSER_DATES, CALENDAR_READER, calendarAiParsed, calendarAiRequest, calendarSafe, calendarSlices } from "./calendar.ts";
 import { PAGE_ID_CONTRACT, pageIdChecks, pageIdInput, pageIdRequest } from "./pageid.ts";
 import { callRecord, pageHtml, readOutcome, scrapeBody, searchBody, searchCandidates, searchResults } from "./firecrawl.ts";
@@ -75,7 +75,8 @@ const VERSION = "coverage-sweep-v0.5.6"; // extractor version (unchanged by v0.6
 // v0.38.1 (22 Oct 2026, NZ course list pages): a page the AI page match chose from the university's own site addresses (its course list or
 // site map) is listed on the university's own site, so it may be read through the scraper when the direct read is blocked (Otago, Lincoln, AUT).
 const FC_TRUSTED_BASIS = ["cricos_search", "cricos_code", "cricos_code_on_page", "nzqa_code", "adapter_code", "title_match", "cms_path_public", "manual", "firecrawl_upgrade", "ai_match", "programme_list"]; // v0.45.0: a page bound by its NZ or CA code is as trusted as one bound by a CRICOS code
-const WORKER = "coverage-sweep-worker-v0.59.9"; // v0.59.9 (6 Nov 2026, CF-247 course descriptions, migration 20261106500000, Platform Admin 6 Nov 2026 D4): enrich_ai course-text-v2 may ask ONCE more (setting enrich.course_description_reask_max, ships 0 = off) when a description breaks the sentence or length limit, on the same stored page with the same pinned model; the second answer is checked in full by the database and nothing is cut here; a failed re-ask keeps the first answer; every other read is unchanged.
+const WORKER = "coverage-sweep-worker-v0.59.10"; // v0.59.10 (6 Nov 2026, CF-247 English requirements, Platform Admin 6 Nov 09:44 §3 D5): mode provider_facts_add_tests also reads stored English pages again with the current policy parser (provider-policy-v0.3.0: faculty and course-group tables returned as group rules) for the documents svc_provider_policy_reparse_next lists, no Firecrawl and no AI, sized by reparse_limit (batch.policy_reparse); the add-tests reading stays keyed on provider-policy-v0.2.5 (ADD_TESTS_PARSER) because its rules did not change.
+// Previous feature worker v0.59.9: approved one-reask course descriptions retained in this combined English worker.
 // was v0.59.8 // v0.59.8 (5 Nov 2026, CF-247 final intake recovery, migration 20261105040000): calendar reader calendar-v2.1 (the year of a start from its own section: heading, title or year tabs; a wrong-section year rejected); mode calendar_reread reads again what an earlier reader read (svc_calendar_reread_next_v2 / _record_v2 with the reader version) and hands stale editions to the existing reads within the credit budget (svc_calendar_refresh_v1).
 // was v0.59.7 // v0.59.7 (5 Nov 2026, CF-247 intake recovery, migration 20261105020000): academic calendars read by calendar-v2 (dated starts with meaning, deadlines with who they apply to, scope, slices, notes from earlier findings; calendar.ts) and mode calendar_reread (stored calendars again: the dated parser first, the AI queue only when the parser cannot read it safely).
 // was v0.59.6 // v0.59.6 (3 Nov 2026, CF-247 IQ-00111 P0 fee integrity, migration 20261104140000): fee_ai asks the model for each fee row's units_kind (units or credit points), the page's own full_time_load, course_years and whole_course, and names the kind the country load counts (fee_country_profiles.units_are); the database makes the yearly figure from them and holds an unclear one (security.fee_reader_yearly_v1, fees.units_load_fix_on) and keeps page fees out while a fee hold or fee-check exclusion is active (fees.respect_holds_on); nothing else changes.
@@ -1737,7 +1738,7 @@ async function handle(req: Request): Promise<Response> {
       return j({ ok: true, mode, workerVersion: WORKER, pages: items.length, tally, ms: Date.now() - t0 });
     }
     if (mode === "provider_facts_add_tests") {
-      const items: { id: string; provider: string; url: string; storage_path: string }[] = await rpc("svc_provider_policy_add_tests_next", { p_parser: POLICY_PARSER, p_limit: Math.min(Number(body.limit || 40), 200) }) || [];
+      const items: { id: string; provider: string; url: string; storage_path: string }[] = await rpc("svc_provider_policy_add_tests_next", { p_parser: ADD_TESTS_PARSER, p_limit: Math.min(Number(body.limit || 40), 200) }) || [];
       const tally: Record<string, number> = { checked: 0, added: 0, rows: 0, skipped: 0, failed: 0 };
       await pool(items, 3, async (it) => {
         if (Date.now() - t0 > BUDGET_MS) return;
@@ -1749,11 +1750,28 @@ async function handle(req: Request): Promise<Response> {
           parsed = { ...englishPolicy(md), add_only: ADDED_TESTS };
         } catch (e) { err = (e instanceof Error ? e.message : String(e)).slice(0, 200); tally.failed++ }
         try {
-          const r = await rpc("svc_provider_english_add_tests_v1", { p_proposal_id: it.id, p_parser: POLICY_PARSER, p_parsed: parsed, p_error: err });
+          const r = await rpc("svc_provider_english_add_tests_v1", { p_proposal_id: it.id, p_parser: ADD_TESTS_PARSER, p_parsed: parsed, p_error: err });
           tally.checked++; tally.added += Number(r?.added || 0); tally.rows += Number(r?.rows || 0); tally.skipped += Number(r?.skipped || 0);
         } catch { tally.failed++ }
       });
-      return j({ ok: true, mode, workerVersion: WORKER, parser: POLICY_PARSER, policies: items.length, tally, ms: Date.now() - t0 });
+      // CF-247 English requirements (6 Nov 2026, D5): stored pages read again with the current parser. The database lists only documents whose latest
+      // reading gave no values, or was rejected as one faculty row, and that no reading by this parser exists for. Nothing is fetched and no model is asked;
+      // the result is a proposal (group rules are never approved here).
+      // fixed: the cap in the next call is the upper bound of the batch.policy_reparse setting range (0-200); the size itself comes from the setting
+      const reparseItems: { id: string; provider: string; url: string; storage_path: string }[] = Number(body.reparse_limit || 0) > 0
+        ? await rpc("svc_provider_policy_reparse_next", { p_parser: POLICY_PARSER, p_limit: Math.min(Number(body.reparse_limit), 200) }) || [] : [];
+      const reparse: Record<string, number> = { checked: 0, proposed: 0, no_values: 0, failed: 0 };
+      await pool(reparseItems, 3, async (it) => {
+        if (Date.now() - t0 > BUDGET_MS) return;
+        try {
+          const { data, error } = await c.storage.from("evidence").download(it.storage_path); if (error || !data) throw Error(error?.message || "missing");
+          const buf = new Uint8Array(await data.arrayBuffer());
+          const md = buf[0] === 0x1f && buf[1] === 0x8b ? await new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream("gzip"))).text() : new TextDecoder().decode(buf);
+          const r = await rpc("svc_provider_policy_record", { p_source_id: it.id, p_parsed: englishPolicy(md) });
+          reparse.checked++; reparse[String(r?.status) === "proposed" ? "proposed" : "no_values"]++;
+        } catch { reparse.failed++ }
+      });
+      return j({ ok: true, mode, workerVersion: WORKER, parser: ADD_TESTS_PARSER, policies: items.length, tally, reparse_parser: POLICY_PARSER, reparse, ms: Date.now() - t0 });
     }
 
     if (mode === "provider_facts_inspect" || mode === "provider_facts_parse") {

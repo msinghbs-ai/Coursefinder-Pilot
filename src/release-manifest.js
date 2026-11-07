@@ -1,23 +1,22 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.492'
-export const PACKAGE_VERSION='0.1.419'
+export const UI_VERSION='2.15.493'
+export const PACKAGE_VERSION='0.1.420'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'6 Nov 2026',
-  title:'Course descriptions: source-backed review and accurate publication',
+  title:'English requirements: course groups and a clear next step',
   changes:[
-    'Enrich fields shows course descriptions ready for review, stale proposals and held readings, with source checks, held reasons, claim-word examples and the stratified trust-policy sample.',
-    'Layer 4 opens the ready descriptions or sample in the existing Inbox, with sentence and character checks, source evidence and quick reasons. Every admission still needs an individual human decision.',
-    'Proposed, admitted by a person and published to the website stay separate. Publication requires the matching published search document and the existing provider, course and Layer 4 visibility rules.',
-    'One AI re-ask for a length or sentence-count breach ships off. After verification it can be enabled by a recorded setting change within existing spending limits; the same source and pinned model are used and every rule is checked again.'
+    'Coverage > Attributes > English policies shows faculty and course-group scores. A Platform Admin must approve the policy and bind each group to fields of education or a course-title pattern before it can supply a course.',
+    'No rule yet shows each provider\'s stage, why no rule is available, courses still missing English, the next try and recent jobs. Run now reads stored English pages again without fetching pages or using credits.',
+    'A course\'s own reading, a value set by hand, a named-course rule and held cases keep their precedence. Courses reached by groups with different scores wait for a person.',
+    'Search for new non-university English pages remains switched off; releasing this capability does not authorise paid discovery.'
   ],
   bugFixes:[
-    'Previous and the item range remain available on the final reviewer page.',
-    'The re-ask setting permits only zero or one, and unsupported values fail closed without another AI call.',
-    'Course descriptions have separate claim and marketing word settings, initially identical to the provider lists; the limits and human admission policy are unchanged.'
+    'Reading a policy again with the same parser keeps the group bindings a person saved.',
+    'Approving a group policy closes waiting group policies only; a waiting default policy stays available, and the same protection applies in the other direction.'
   ]
 }
 

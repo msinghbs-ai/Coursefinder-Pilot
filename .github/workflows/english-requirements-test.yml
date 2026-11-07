@@ -1,0 +1,62 @@
+# Guards: Platform Admin decision 6 Nov 2026 09:44 §3 and §4 (English requirements, production-equivalent fixtures): the English path fixture built from the production manifest,
+# the migration applied on it and the course-group, scope, search-switch, reparse and status scenarios. Isolated only: no production access.
+name: English requirements integration
+on:
+  pull_request:
+    paths:
+      - 'supabase/functions/coverage-sweep/policy.ts'
+      - 'supabase/migrations/20261106550000_cf247_english_requirements_complete.sql'
+      - 'tests/fixtures/english-requirements/**'
+      - 'scripts/prod-parity-capture.mjs'
+      - '.github/workflows/english-requirements-test.yml'
+  workflow_dispatch:
+jobs:
+  isolated-postgres:
+    runs-on: ubuntu-latest
+    # Both clients and server share a real Unix socket. A host TCP connection to
+    # a Docker-published port reaches the server on its bridge address and must
+    # be rejected by the unchanged production-fixture local-only guard.
+    container:
+      image: node:22-bookworm
+      volumes:
+        - english-fixture-socket:/var/run/postgresql
+    defaults:
+      run:
+        shell: bash
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:17.6-alpine
+        env:
+          POSTGRES_PASSWORD: fixture-only
+        volumes:
+          - english-fixture-socket:/var/run/postgresql
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: /var/run/postgresql
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: fixture-only
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install local PostgreSQL client
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends postgresql-client
+      - run: npm install --package-lock=false --ignore-scripts --no-audit --no-fund
+      - run: mkdir -p uat-artifacts
+      - name: Execute real Postgres fixture, migration and scenarios
+        run: |
+          set -euo pipefail
+          bash tests/fixtures/english-requirements/run.sh 2>&1 | tee uat-artifacts/english-requirements-results.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: english-requirements-database-evidence
+          path: uat-artifacts/english-requirements-results.log
+

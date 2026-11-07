@@ -114,8 +114,8 @@ test('course-text.ts: the re-ask states the limits and the previous text, asks f
   expect(courseTextResults(answer(S('You complete a capstone project in the final year with guidance from teaching staff in your area of study.')), page, [{ item_id: 7, field: 'description' }], { model: 'm', worker: 'w', cost: 0 })[0].value).not.toHaveProperty('reask')
 })
 
-test('worker v0.59.9: the re-ask is gated by the setting (ships 0), uses the same pinned model and page, keeps the first answer on failure and never cuts', () => {
-  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.59\.9";/)
+test('worker v0.59.10: the re-ask is gated by the setting (ships 0), uses the same pinned model and page, keeps the first answer on failure and never cuts', () => {
+  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.59\.10";/)
   expect(worker).toContain('// was v0.59.8 // v0.59.8')
   const t = worker.slice(worker.indexOf('const textRead = async'), worker.indexOf('const entryCall = async'))
   expect(t).toContain('courseTextReaskMax(ws)')                             // one-authorised-call guard; setting from svc_worker_settings_v1 (G2)

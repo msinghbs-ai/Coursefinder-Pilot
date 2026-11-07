@@ -1,7 +1,7 @@
-<!-- sop-export: id=operator-sop; version=2.17; reviewed-release=2.15.492; source-commit=b2eebf8c8ce0+local; content-sha256=3b84e96d7ef8b6012fdecf63506a1fb266b35b9bbf74cd596b93501b03a6ca0a -->
+<!-- sop-export: id=operator-sop; version=2.18; reviewed-release=2.15.493; source-commit=85a657df3e8d+local; content-sha256=05e399bbd711c1e0867a094c0372ea8456f39babe75ce86dadb97f34c3af7a35 -->
 # StudySearch – Operator SOP
 
-**Version:** 2.17 (reviewed for platform release v2.15.492)  
+**Version:** 2.18 (reviewed for platform release v2.15.493)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -92,6 +92,7 @@ How operators keep the data flowing and decide what automation cannot: the revie
 
 ## 8. What to pay attention to
 
+- English faculty and course-group scores wait for Platform Admin approval and explicit binding; No rule yet and held course-specific cases remain visible without invented coverage.
 - Course descriptions: distinguish proposed, human-admitted and actually published counts. Review held evidence and use Previous on the final reviewer page.
 - An application deadline must quote an actual closing date; commencement and intake dates are not closing dates. Escalate incorrect records without removing human locks.
 - Task manager › Background jobs: a job Failing, or a worker repeating the same error.
@@ -110,6 +111,7 @@ How operators keep the data flowing and decide what automation cannot: the revie
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.18 | 6 Nov 2026 | v2.15.493 | English course-group approval and binding, same-family supersession and coverage holds; no automatic group admission or paid discovery activation. |
 | 2.17 | 6 Nov 2026 | v2.15.492 | Course description reviewer navigation, held-source evidence and separate proposal/admission/publication measures; human admission authority remains. |
 | 2.16 | 6 Nov 2026 | v2.15.491 | Deadline review distinguishes application closing evidence from commencement dates; corrections retain audit and human-lock authority. |
 | 1.0 | 12 Oct 2026 | v2.15.257 | First issue: daily routine by role, review queues, follow-up, weekly checks, interventions and escalation. |

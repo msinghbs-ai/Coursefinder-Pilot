@@ -70,7 +70,7 @@ test('the worker: calendars read by calendar-v2 in the existing central_ai mode,
   const rr = w.slice(w.indexOf('if (mode === "calendar_reread") {'), w.indexOf('// v0.47.0 (CF-247 Track C'))
   expect(rr).toContain('rpc("svc_calendar_reread_next_v2"'); expect(rr).toContain('p_reader: CALENDAR_READER'); expect(rr).toContain('{ ...calendarStarts(md), parser: CALENDAR_PARSER_DATES }')
   expect(rr).toContain('p_send_to_ai: !safe.safe'); expect(rr).not.toMatch(/firecrawl|useFc/i); expect(rr).toContain('paid_reads: 0')
-  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.59\.(7|8|9)"/)
+  expect(w).toContain('const WORKER = "coverage-sweep-worker-v0.59.10";')  // the combined English/course-description candidate's unique Worker
 })
 
 test('the migration: the decided settings, every guarded edit by md5, the jobs, and the fixture runs in CI', () => {
@@ -87,3 +87,4 @@ test('the migration: the decided settings, every guarded edit by md5, the jobs, 
   expect(wf).toContain('bash tests/fixtures/intake-calendar-v2/browser.sh')   // the #872 browser workflow again on plan v3
   expect(fs.readFileSync('tests/fixtures/intake-calendar-v2/run.sh', 'utf8')).toContain('Refusing a remote database')
 })
+
