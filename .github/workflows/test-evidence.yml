@@ -32,15 +32,11 @@ jobs:
     steps:
       - name: Resolve the pull request and its head revision
         id: ctx
-        env:
-          REQUESTED_PR: ${{ inputs.pr }}
-          EVENT_PR: ${{ github.event.pull_request.number }}
         run: |
-          if [ "$GITHUB_EVENT_NAME" = pull_request ]; then
-            PR="$EVENT_PR"
-          else PR="$REQUESTED_PR"; fi
-          if ! [[ "$PR" =~ ^[1-9][0-9]*$ ]]; then echo "Refused: PR must be a positive integer"; exit 1; fi
-          J=$(gh api "repos/$REPO/pulls/$PR")
+          if [ "${{ github.event_name }}" = pull_request ]; then
+            PR=${{ github.event.pull_request.number }}
+          else PR=${{ inputs.pr }}; fi
+          J=$(gh api repos/$REPO/pulls/$PR)
           echo "pr=$PR" >> $GITHUB_OUTPUT
           echo "sha=$(echo "$J" | jq -r .head.sha)" >> $GITHUB_OUTPUT
           echo "base=$(echo "$J" | jq -r .base.sha)" >> $GITHUB_OUTPUT
@@ -120,8 +116,6 @@ jobs:
         if: steps.mode.outputs.mode != 'deferred'
         id: bundle
         continue-on-error: true
-        env:
-          CHANGED_SINCE_EVIDENCE: ${{ steps.plan.outputs.changed }}
         run: |
           SHA=${{ steps.ctx.outputs.sha }}
           DIST=$( [ -d dist ] && (cd dist && find . -type f | sort | xargs sha256sum | sha256sum | cut -d' ' -f1) || echo none)
@@ -130,16 +124,16 @@ jobs:
           if [ "${{ steps.mode.outputs.mode }}" = full ]; then
             KIND=executed; SRC=same-run
             if node scripts/test-evidence.mjs final-from-results --results uat-artifacts/results.json; then F=pass; else F=fail; fi
-            EXTRA=(--results uat-artifacts/results.json --junit uat-artifacts/junit.xml)
+            EXTRA="--results uat-artifacts/results.json --junit uat-artifacts/junit.xml"
           else
             KIND=reused; SRC=final-candidate-run
             if [ "${{ steps.final.outcome }}" = success ] && node scripts/test-evidence.mjs final-from-results --results uat-artifacts/final-results.json; then F=pass; else F=fail; fi
-            EXTRA=(--reuse-dir prior --changed "$CHANGED_SINCE_EVIDENCE")
+            EXTRA="--reuse-dir prior --changed ${{ steps.plan.outputs.changed }}"
           fi
           node scripts/test-evidence.mjs bundle --out evidence-bundle --kind $KIND --sha $SHA --pr ${{ steps.ctx.outputs.pr }} --base ${{ steps.ctx.outputs.base }} \
             --repo $REPO --build $B --dist-sha $DIST --release-contract $C --final-checks $F --final-source $SRC --parity parity.json \
             --workflow "Test evidence" --run-id ${{ github.run_id }} --attempt ${{ github.run_attempt }} \
-            --run-url "${{ github.server_url }}/$REPO/actions/runs/${{ github.run_id }}" "${EXTRA[@]}"
+            --run-url "${{ github.server_url }}/$REPO/actions/runs/${{ github.run_id }}" $EXTRA
       - name: Upload the evidence bundle (immutable, named by commit)
         if: steps.mode.outputs.mode != 'deferred' && always()
         uses: actions/upload-artifact@v4

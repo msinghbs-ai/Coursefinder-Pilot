@@ -24,12 +24,9 @@ on:
         required: true
 env:
   TARGET_REF: ${{ inputs.project_ref || vars.SUPABASE_PROJECT_REF }}
-  EXPECTED_REF: ${{ vars.SUPABASE_PROJECT_REF }}
-  FUNCTIONS: ${{ inputs.functions }}
 jobs:
   check:
     runs-on: ubuntu-latest
-    environment: pilot
     permissions:
       contents: write
     env:
@@ -37,25 +34,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Confirm target project
-        id: target_preflight
         run: |
-          if ! [[ "$TARGET_REF" =~ ^[a-z]{20}$ && "$EXPECTED_REF" =~ ^[a-z]{20}$ ]]; then echo "Refused: invalid project ref"; exit 1; fi
-          if [ "$TARGET_REF" != "$EXPECTED_REF" ]; then echo "Typed project ref does not match SUPABASE_PROJECT_REF"; exit 1; fi
+          if [ -z "${{ vars.SUPABASE_PROJECT_REF }}" ]; then echo "Repository variable SUPABASE_PROJECT_REF is not set"; exit 1; fi
+          if [ "$TARGET_REF" != "${{ vars.SUPABASE_PROJECT_REF }}" ]; then echo "Typed project ref does not match SUPABASE_PROJECT_REF"; exit 1; fi
           if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then echo "Secret SUPABASE_ACCESS_TOKEN is not set"; exit 1; fi
-          if [[ "$FUNCTIONS" == *$'\n'* || "$FUNCTIONS" == *$'\r'* ]]; then echo "Refused: function list must be on one line"; exit 1; fi
-          IFS=',' read -r -a entries <<< "$FUNCTIONS"
-          for raw in "${entries[@]}"; do
-            fn="${raw#"${raw%%[![:space:]]*}"}"; fn="${fn%"${fn##*[![:space:]]}"}"
-            [ -z "$fn" ] && continue
-            if ! [[ "$fn" =~ ^[a-z0-9-]+$ ]]; then echo "Refused function name: $fn"; exit 1; fi
-          done
       - uses: supabase/setup-cli@v1
         with:
           version: 2.120.0  # CF-247 Phase 5 (19 Oct 2026): pinned; "latest" failed on a GitHub API rate limit
       - name: Download live source over the checked-out tree
         run: |
-          if [ -n "$FUNCTIONS" ]; then
-            IFS=',' read -r -a FNS <<< "$FUNCTIONS"
+          if [ -n "${{ inputs.functions }}" ]; then
+            IFS=',' read -ra FNS <<< "${{ inputs.functions }}"
           else
             mapfile -t FNS < <(jq -r '.functions | keys[]' .github/edge-functions.json)
           fi
@@ -88,14 +77,14 @@ jobs:
           drift="$(git diff --name-only -- supabase/functions | paste -sd, -)"
           if [ -n "$drift" ] || [ -n "$extra" ] || [ -s "$RUNNER_TEMP/failed.txt" ]; then echo "::error::Live differs from git (files: ${drift:-none}; unlisted live: ${extra:-none})"; echo "DRIFT=1" >> "$GITHUB_ENV"; fi
       - name: Commit live source to a snapshot branch
-        if: ${{ always() && steps.target_preflight.outcome == 'success' && github.event_name == 'workflow_dispatch' }}
+        if: ${{ always() && github.event_name == 'workflow_dispatch' }}
         run: |
           branch="edge-live-snapshot/${{ github.run_id }}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -q -b "$branch"
           git add -A supabase/functions
-          git commit -q --allow-empty -m "Live edge function source snapshot (run $GITHUB_RUN_ID; functions: ${FUNCTIONS:-all})"
+          git commit -q --allow-empty -m "Live edge function source snapshot (run ${{ github.run_id }}; functions: ${{ inputs.functions || 'all' }})"
           git push -q origin "$branch"
           echo "Snapshot branch: $branch" | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Fail on drift
