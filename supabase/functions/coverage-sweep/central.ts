@@ -38,6 +38,7 @@ const RULES: Record<CentralKind, { strong: RegExp; weak?: RegExp; why: string }>
   },
 };
 const NOISE = /\/(news|events?|blog|stories|media|staff|people|profiles?|search|login|signin|tags?|category|careers?|jobs|research|alumni|giving|donate|library|shop|cart|wp-admin|feed|residence|housing|accommodation|insurance|medical|parking|workshops?|pubs|publications)(\/|$)|refund|extension|request[-_ ]?form|meals?|events[-_ ]?calendar|\.(jpe?g|png|gif|svg|zip|docx?|xlsx?|pptx?)$|[?&](page|s|q)=/;
+const NOT_ADMISSION_ENGLISH = /(^|\/)(news|stories)([-_][a-z]+)*(\/|$)|(test|testing|exam|assessment)[-_ ]?(cent(re|er)s?|services?|bookings?|dates)|cent(re|er)[-_ ]for[-_ ](assessment|testing)|\b(sample|practice|mock|past)[-_ ](english[-_ ])?(tests?|papers?|exams?)\b|\b(book|booking|register)[-_ ](an?[-_ ])?(ielts|english|test)|english[-_ ]language[-_ ]courses?|years[-_ ]of[-_ ]ielts/;
 const INTERNATIONAL = /international|overseas|\bintl\b/;
 
 function hostOk(u: URL, siteHost: string): boolean {
@@ -60,6 +61,10 @@ export function centralCandidates(links: { url: string; title?: string | null }[
       const r = RULES[kind];
       // an English language course (General English, ELICOS, IELTS preparation) is not the English requirements page
       if (kind === "english_policy" && /\/(courses?|programs?)\/|general[-_ ]?english|elicos|tesol|ielts[-_ ]?prep|english[-_ ]?(course|class|learning)/.test(path)) continue;
+      // CF-247 7 Nov 2026: a test centre, a news story, a sample test or an English language course page is not the admission rule. Live examples taken as the
+      // provider's English page: University of Canterbury "centre-for-assessment-and-monitoring/ielts" (an IELTS test centre), Manukau "news-stories/...-25-years-of-ielts-testing",
+      // Conestoga "testing-services/mature-student-assessment-sample-english-test.pdf", Massey "english-language-courses".
+      if (kind === "english_policy" && NOT_ADMISSION_ENGLISH.test(path)) continue;
       // an English-language requirements page is the English rule, not the academic entry matrix
       if (kind === "entry_requirements" && /english|ielts|language[-_ ]?requirements?/.test(path + " " + title)) continue;
       let score = r.strong.test(path) ? 6 : r.strong.test(title) ? 4 : (r.weak && (r.weak.test(path) || r.weak.test(title))) ? 1.5 : 0;
