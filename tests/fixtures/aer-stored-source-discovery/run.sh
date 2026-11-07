@@ -37,6 +37,10 @@ OUT=$($P -d $DB -1 -f $MIG 2>&1) || { echo "$OUT" | tail -5; exit 1; }
 echo "$OUT" | grep -q 'already applied' || { echo 'the second run did not report already applied'; exit 1; }
 [ "$($P -d $DB -Atc "$SNAP")" = "$S1" ] || { echo 'a second run added rows'; exit 1; }
 echo 'migration 20261107150000 applied twice; the second run changed nothing'
+# 7 Nov 2026 speed fix (the first live measure: 33 s for three providers): same behaviour, applied twice, the scenarios below run on it
+MIG2=$ROOT/supabase/migrations/20261107160000_cf247_aer_stored_find_speed.sql
+$P -d $DB -1 -f $MIG2 && $P -d $DB -1 -f $MIG2
+echo 'migration 20261107160000 (speed) applied twice'
 [ "$(md5of 'security.entry_matrix_enabled_v1(uuid)')" = 582a5024ffeca0ac3c5446a903b39b3f ] || { echo 'enabled_v1 was changed'; exit 1; }
 $P -d $DB -f scenarios.sql 2>&1 | sed -n 's/^.*\(NOTICE\|ERROR\|WARNING\):  /\1 /p' | tee "$WORK/out"
 ! grep -q 'FAIL\|ERROR' "$WORK/out" || { echo 'stored-source scenarios FAILED'; exit 1; }
