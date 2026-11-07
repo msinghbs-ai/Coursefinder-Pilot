@@ -1,20 +1,15 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.489'
-export const PACKAGE_VERSION='0.1.416'
+export const UI_VERSION='2.15.491'
+export const PACKAGE_VERSION='0.1.418'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'6 Nov 2026',
-  title:'Provider descriptions: Run & Validate with evidence-checked claims',
-  changes:[
-    'Enrich fields has a Provider descriptions Run & Validate card: preview a small set of providers, save the set, and see for each one the official source, what was read, what was proposed, what was held and why.',
-    'Every description still needs an individual Layer 4 decision from a Pipeline Operator or higher. Nothing is approved, admitted or published automatically, and AI text is never counted as published.',
-    'A sentence that mentions a campus, scholarship or guarantee is checked against its quoted source instead of being held on the word alone. Other claim words still hold the sentence.',
-    'Proposals that wait because the review queue is full resume without another AI read once there is room. A manual lock or a changed catalogue value still stops an admission.'
-  ],
-  bugFixes:[]
+  title:'Application deadlines require closing-date evidence',
+  changes:['A commencement or intake date is refused as an application deadline. The quoted closing event must name the same full date without conflicting start-date wording.'],
+  bugFixes:['Keeps existing course identity, intake matching, date windows, manual locks and admission checks. Previously admitted values require a separately approved correction.']
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

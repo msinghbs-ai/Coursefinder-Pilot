@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "_about": "Platform Admin mandate 6 Nov 2026 11:00. Classification of tracked files for the authoritative test evidence. A file is an EXECUTION input (changing it invalidates evidence) unless it matches reusableMetadata. Unknown files are execution inputs (fail closed).",
+  "reusableMetadata": ["CHANGELOG.md", "README.md", "docs/release-notes/*.md", "docs/platform/*.md", "docs/*.md"],
+  "executionOverrides": ["docs/sops/**", "docs/paste/**"],
+  "coveredByFinalChecks": ["CHANGELOG.md", "docs/release-notes/*.md", "docs/platform/TEST-REGISTER.md"],
+  "finalCandidateChecks": {
+    "commands": ["node scripts/verify-release-contract.mjs"],
+    "specs": [
+      "cf-247-s32-controls-in-settings-contract",
+      "cf-247-s42-housekeeping-contract",
+      "cf-247-s57-consumer-api-frozen",
+      "cf-247-s120-test-governance-contract",
+      "cf-247-s70-patch-scripts-retired",
+      "m245-release-history-v21575-persistence-contract"
+    ]
+  },
+  "suiteCommand": "npx playwright test --grep-invert @deployed",
+  "requiredChecks": [
+    { "name": "Workers Builds: coursefinder-pilot", "workflow": null },
+    { "name": "build-and-smoke", "workflow": "pim-build.yml" },
+    { "name": "release-history-contract", "workflow": "release-history-contract.yml" },
+    { "name": "isolated-postgres", "workflow": "intake-run-validate-test.yml" }
+  ],
+  "siblingWaitMinutes": 25,
+  "retentionDays": 90
+}

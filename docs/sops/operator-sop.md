@@ -1,7 +1,7 @@
-<!-- sop-export: id=operator-sop; version=2.15; reviewed-release=2.15.489; source-commit=446b0247d485+local; content-sha256=c35bcca42af1bc3f723386baf189b8b9b7f774f04241af4b749ce16cc13ffc76 -->
+<!-- sop-export: id=operator-sop; version=2.16; reviewed-release=2.15.491; source-commit=a20e7f319663+local; content-sha256=7bbc1897979d93475a67d2d9bc77484d1ed1e3a80bc90273ba4eee8f3f0388b9 -->
 # StudySearch – Operator SOP
 
-**Version:** 2.15 (reviewed for platform release v2.15.489)  
+**Version:** 2.16 (reviewed for platform release v2.15.491)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -92,6 +92,7 @@ How operators keep the data flowing and decide what automation cannot: the revie
 
 ## 8. What to pay attention to
 
+- An application deadline must quote an actual closing date; commencement and intake dates are not closing dates. Escalate incorrect records without removing human locks.
 - Task manager › Background jobs: a job Failing, or a worker repeating the same error.
 - Layer 4 waiting counts rising two days running: find out why before working harder (reviewers behind, a burst of new arrivals, evidence that cannot be opened, the same defect repeating, or work waiting on another step).
 - A coverage count flat for a day.
@@ -108,6 +109,7 @@ How operators keep the data flowing and decide what automation cannot: the revie
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.16 | 6 Nov 2026 | v2.15.491 | Deadline review distinguishes application closing evidence from commencement dates; corrections retain audit and human-lock authority. |
 | 1.0 | 12 Oct 2026 | v2.15.257 | First issue: daily routine by role, review queues, follow-up, weekly checks, interventions and escalation. |
 | 1.1 | 12 Oct 2026 | v2.15.258 | Onboarding moved to Layer 2 › Onboarding with seven journey stages; scholarships are found only after a university is admitted and its courses enriched. |
 | 1.2 | 12 Oct 2026 | v2.15.259 | Admit is automatic for the fields that pass; universities move on to enriching and scholarships by themselves. Tell the Platform Admin about any admitted value that looks wrong. |

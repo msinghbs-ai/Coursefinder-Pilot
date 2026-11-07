@@ -3,6 +3,9 @@
 // fixture caught, the intake releases' rejections reproduced) is tests/fixtures/prod-parity/run.sh, run by .github/workflows/prod-parity.yml.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
+import { spawnSync } from 'node:child_process'
 import {
   captureSql, checkSql, digestSql, factsDigest, fixtureSql, verifyManifest, normaliseScope, subsetManifest, diffFacts, parseCaptured, PERSONAL,
 } from '../../scripts/prod-parity-capture.mjs'
@@ -98,9 +101,64 @@ test('the database round trip runs in its own workflow on PostgreSQL 17 (product
   const wf = fs.readFileSync('.github/workflows/prod-parity.yml', 'utf8')
   expect(wf).toContain('image: postgres:17.6-alpine')
   expect(wf).toContain('bash tests/fixtures/prod-parity/run.sh')
+  expect(wf).toContain('image: node:22-bookworm')
+  expect(wf).toContain('prod-parity-fixture-socket:/var/run/postgresql')
+  expect(wf).toContain('PGHOST: /var/run/postgresql')
   const run = fs.readFileSync('tests/fixtures/prod-parity/run.sh', 'utf8')
   expect(run.startsWith('#!/usr/bin/env bash\n# Guards: ')).toBe(true)
   expect(run).toContain("Refusing a remote database")
+  // Exercise real subprocess failure statuses, rather than just recognising source strings.
+  // The SQL transport is replaced with isolated executables; the actual manifest producer
+  // still runs. The genuine PostgreSQL round trip remains the workflow's separate gate.
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'prod-parity-failure-'))
+  try {
+    const bin = path.join(tmp, 'bin'); fs.mkdirSync(bin)
+    const captured = prod()
+    for (const k of ['constraint|pipeline.manual_locks|manual_locks_mode_ck', 'trigger|pipeline.manual_locks|manual_locks_touch',
+      'policy|pipeline.admin_jobs|admin_jobs_read', 'execute|security.pp_job_count(text)', 'function|security.pp_guard_active()',
+      'type|pipeline.pp_lock_mode', 'grant|pipeline.manual_locks|service_role']) captured.facts[k] = 'injected transport fixture'
+    captured.facts['lookup_rows|pipeline.pp_operators'] = 'refused: a column looks like personal data'
+    fs.writeFileSync(path.join(tmp, 'capture.json'), JSON.stringify(captured))
+    const script = (name, body) => fs.writeFileSync(path.join(bin, name), '#!/usr/bin/env bash\nset -euo pipefail\n' + body, { mode: 0o700 })
+    script('psql', `
+if [[ "$*" == *"-d postgres"* ]]; then
+  cat > "$PP_INJECT_TMP/preflight.sql"
+  if [[ "$PP_INJECT_FAILURE" == preflight ]]; then echo INJECTED_SERVER_REFUSAL >&2; exit 35; fi
+  exit 0
+fi
+for ((i=1;i<=$#;i++)); do
+  if [[ "\${!i}" == -f ]]; then j=$((i+1)); file="\${!j}"; break; fi
+done
+case "\${file:-}" in
+  */capture.sql) cat "$PP_INJECT_TMP/capture.json" ;;
+  */fixture.sql) echo INJECTED_SQL_FAILURE >&2; exit 37 ;;
+esac
+`)
+    for (const name of ['createdb', 'dropdb']) script(name, 'echo "$0 $*" >> "$PP_INJECT_TMP/database-actions"\n')
+    script('node', `
+if [[ "$*" == *"prod-parity-capture.mjs fixture "* && "$PP_INJECT_FAILURE" == producer ]]; then
+  echo INJECTED_PRODUCER_FAILURE >&2; exit 36
+fi
+exec "$PP_REAL_NODE" "$@"
+`)
+    for (const [failure, marker] of [['preflight', 'INJECTED_SERVER_REFUSAL'], ['producer', 'INJECTED_PRODUCER_FAILURE'], ['sql', 'INJECTED_SQL_FAILURE']]) {
+      fs.rmSync(path.join(tmp, 'database-actions'), { force: true })
+      const result = spawnSync('bash', ['tests/fixtures/prod-parity/run.sh'], {
+        encoding: 'utf8', timeout: 15000,
+        env: { ...process.env, PATH: `${bin}${path.delimiter}${process.env.PATH}`, PGHOST: '/var/run/postgresql',
+          PP_PREFIX: 'e_pp_injected', PP_INJECT_FAILURE: failure, PP_INJECT_TMP: tmp, PP_REAL_NODE: process.execPath },
+      })
+      expect(result.error, failure).toBeUndefined()
+      expect(result.status, failure).not.toBe(0)
+      expect(result.stderr, failure).toContain(marker)
+      expect(result.stdout, failure).not.toContain('PASS fixture reproduces')
+      expect(result.stdout, failure).not.toContain('prod-parity round trip: passed')
+      const preflight = fs.readFileSync(path.join(tmp, 'preflight.sql'), 'utf8')
+      expect(preflight).toContain('inet_server_addr()')
+      expect(preflight).toContain("rolname = 'supabase_admin'")
+      if (failure === 'preflight') expect(fs.existsSync(path.join(tmp, 'database-actions'))).toBe(false)
+    }
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }) }
   for (const f of [wf, run, fs.readFileSync('scripts/prod-parity-capture.mjs', 'utf8')]) {
     expect(f).not.toMatch(/supabase\s+db\s+push|apply_migration|SUPABASE_ACCESS_TOKEN|supabase\.co/)
   }

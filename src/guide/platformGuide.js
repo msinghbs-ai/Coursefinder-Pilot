@@ -8,7 +8,7 @@
 //     entry below in the same pull request.
 // Plain Australian English; no numbers that go stale (counts and amounts live on the screens themselves).
 
-export const GUIDE_REVIEWED_FOR = '2.15.489'
+export const GUIDE_REVIEWED_FOR = '2.15.491'
 
 export const ROLES = [
   { role: 'Viewer', rank: 1, who: 'Stakeholder, auditor', can: 'Read every screen they can open; change nothing.',
@@ -32,6 +32,7 @@ export const ROLES = [
 ]
 
 export const RULES = [
+  'An application deadline needs explicit closing-date evidence; a commencement or intake date is not a deadline. Escalate an incorrect value through Platform health.',
   'A value entered by hand is never overwritten by automation; release it on the record to let automation update it again.',
   'A passing test never switches anything on by itself. A Platform Admin switches it on as a separate step.',
   'AI models are pinned to models that passed their test for that task; nothing routes to an unqualified model.',

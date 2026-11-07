@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.418 — 6 Nov 2026
+
+- Prepared release candidate **v2.15.491** for the confirmed deadline-semantic P0 in Admin #382. New unapplied migration `20261106450000` replaces only `course_deadline_in_quote_v1(date,text)`, before MD5 f01e9be83e58c9c48c33e5fde4de05d9 / after2357306ca969fb7b299021bac3b6f3fa. Requires an application-closing cue and one matching full date in its own clause; refuses commencement, conflicting event and ambiguous evidence. Existing fixture exercises actual admission and reviewed-correction rollback/idempotency. The three-record correction proposal remains disabled pending exact approval; no data correction, Worker, API or trust-policy change is included in the migration. Controller cutover #895 precedes this release; no operational closure claimed.
+
+## 0.1.417 — 6 Nov 2026
+
+- Package step before **v2.15.491** (Platform Admin decision 7 Nov 2026 11:29, Admin #382: standard GitHub-to-Cloudflare deployment is unchanged; the custom controller-fencing work is retired from the release path). Carries the existing #892 authoritative evidence tooling and safe metadata reuse, and the existing phone source-link wrapping fix. No UI version of its own, no migration, admission-policy or consumer API change.
+
 ## 0.1.416 — 6 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.489** (Platform Admin authorisation 6 Nov 2026 12:55; PR #877, agent B; independent validation agent E; main v2.15.488 merged in). Provider Description Run & Validate on the existing `provider-description-read` job and `coverage-sweep` mode: exact-source identity, evidence-aware campus/scholarship/guarantee validation (`pdesc.evidence_claim_words`, `security.pdesc_claim_check_v1`; `pdesc.claim_words` unchanged), review-capacity parking and resume, rank-4 Layer 4 ownership (`layer4_provider_description_apply_impl`), no direct website-sync writer. Migration `20261106200000` replaces six md5-guarded functions (before 528d5a3d, 97e6b926, 5342ae3f, d5aec36d, 8f5918c9, 875b25c4). The reader is not added to `run_now.jobs` (a settings change after deployment). Consumer API unchanged (G3).
