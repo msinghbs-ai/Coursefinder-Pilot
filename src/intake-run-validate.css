@@ -13,3 +13,8 @@
 .intake-run .intake-table-scroll td, .intake-run .intake-table-scroll th { white-space: nowrap; }
 /* Phone width: a long official address (calendar and course links) wraps inside the university panel instead of widening the page; the widened page made the mobile layout viewport larger than the screen and the Show calendars button unclickable in CI (fonts without the local Inter face). */
 .intake-course a.cf-link, .intake-course li, .intake-course p, .intake-course blockquote { overflow-wrap: anywhere; min-width: 0; }
+
+.intake-evidence-summary { display: grid; gap: 4px; margin: 8px 0; }
+.intake-evidence-summary div { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.intake-evidence-summary dt { font-weight: 600; min-width: 11em; }
+.intake-evidence-summary dd { margin: 0; overflow-wrap: anywhere; }

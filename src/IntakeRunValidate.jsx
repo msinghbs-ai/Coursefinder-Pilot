@@ -1,10 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Button, Loading, Metric, SectionTitle, StatusChip, fmtDateTime } from './ui-kit'
 import { intakeRunApi } from './intake-run-api'
+import { summariseEvidence } from './intake-evidence-view'
 import './intake-run-validate.css'
 
 const value = x => x == null ? 'Not held' : typeof x === 'object' ? JSON.stringify(x, null, 2) : String(x)
 function Evidence({ data }) { return <pre className="intake-evidence">{value(data)}</pre> }
+function EvidenceSummary({ data }) {
+  return <dl className="intake-evidence-summary">{summariseEvidence(data).map(r => <div key={r.label}><dt>{r.label}</dt><dd>{r.value}</dd></div>)}</dl>
+}
 function Source({ url }) {
   try { if (!['https:', 'http:'].includes(new URL(url).protocol)) return null } catch { return null }
   return <a className="cf-link" href={url} target="_blank" rel="noreferrer">Official source</a>
@@ -120,7 +124,7 @@ export default function IntakeRunValidate({ rank = 0, client = intakeRunApi }) {
       </>}
       {courses.map(c => <article key={c.course_id} className="intake-course">
         <h3>{c.course_title || c.course_id}</h3><p>{c.provider_name || c.provider_id} · {c.pattern} · {(c.fills || []).join(', ')}</p><p>{c.eligibility_reason}</p><Source url={c.course_url}/>
-        <details><summary>Source evidence and values at selection</summary>{(c.at_selection || c.evidence || []).map((e, i) => <div key={e.intake_id || i}><Source url={e.page_url}/><Source url={e.calendar_url}/><Evidence data={e}/></div>)}</details>
+        <details><summary>Source evidence and values at selection</summary>{(c.at_selection || c.evidence || []).map((e, i) => <div key={e.intake_id || i}><Source url={e.page_url}/><Source url={e.calendar_url}/><EvidenceSummary data={e}/><Evidence data={e}/></div>)}</details>
         {report && <><details open><summary>Before / after intake values</summary>{(c.added || []).map((a, i) => <div key={a.intake_id || i} className="intake-values"><div><strong>Before</strong><Evidence data={a.before}/></div><div><strong>After</strong><Evidence data={a.after}/></div></div>)}{!c.added?.length && <p>No newly admitted values recorded.</p>}<strong>Current catalogue</strong><Evidence data={c.now}/></details>
           <details><summary>Website / Zoho read-back</summary><p>Website matches: {c.published ?? 'unknown'}. Zoho response alone does not prove value consistency.</p>{c.publication && <p>Catalogue: {c.publication.catalogue} · Website: {c.publication.website} · Zoho: {c.publication.zoho}</p>}<strong>Website intakes</strong><Evidence data={c.website_intakes}/><strong>Zoho intakes</strong><Evidence data={c.zoho_intakes}/></details></>}
       </article>)}
