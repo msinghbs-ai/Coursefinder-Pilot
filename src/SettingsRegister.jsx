@@ -13,6 +13,7 @@ import Card from'./Card'
 import{Button,Empty,Loading,fmtDateTime}from'./ui-kit'
 import{fmtNumber}from'./lib/format.js'
 import{plainError}from'./lib/errors'
+import{parseSettingList,validSettingList,settingListReadout}from'./settings-list-validation'
 
 const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const slug=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')
@@ -35,9 +36,9 @@ function SettingRow({s,can,onSave}){
   useEffect(()=>{setV(shown(s.value))},[s.value])
   // v2.15.277: a yes/no setting (kind boolean) is chosen from Yes or No; numbers as before
   const yn=s.kind==='boolean',ls=s.kind==='list',n=Number(v)
-  const list=v.split(',').map(x=>x.trim()).filter(Boolean)
+  const list=parseSettingList(v)
   const changed=yn?v!==String(s.value):ls?v.trim()!==shown(s.value):v!==''&&n!==Number(s.value)
-  const valid=yn||(ls?list.length>0:(Number.isFinite(n)&&(s.min==null||n>=Number(s.min))&&(s.max==null||n<=Number(s.max))))
+  const valid=yn||(ls?validSettingList(s.key,list):(Number.isFinite(n)&&(s.min==null||n>=Number(s.min))&&(s.max==null||n<=Number(s.max))))
   const save=async()=>{setBusy(true);setErr('');try{await onSave(s.key,yn?v==='true':ls?list:n,reason.trim());setReason('')}catch(e){setErr(errText(e))}finally{setBusy(false)}}
   return <div className="sr-row" data-register-setting={s.key}>
     <div className="sr-text"><strong>{s.label}</strong>{s.help&&<small>{s.help}</small>}<small className="sr-used">Used by: {s.used_by||'—'}</small>
@@ -49,9 +50,10 @@ function SettingRow({s,can,onSave}){
           :<input className="fv-input" type="number" inputMode="numeric" min={s.min??undefined} max={s.max??undefined} value={v} onChange={e=>setV(e.target.value)}/>}{!yn&&!ls&&<span>{s.unit}</span>}</label>
         {changed&&<label className="sr-reason"><span className="sr-hide">Reason</span><input className="fv-input" placeholder="Reason (kept in the log)" value={reason} onChange={e=>setReason(e.target.value)}/></label>}
         {changed&&<Button compact variant="primary" disabled={busy||!valid||reason.trim().length<4} onClick={save}><Save size={13}/>Save</Button>}
+        {ls&&s.key==='pdesc.provider_keys'&&<small className="sr-range">Clear this list for all eligible providers; country and type limits still apply.</small>}
         {changed&&!valid&&<small className="fr-error">{ls?'At least one value.':<>Between {fmtNumber(Number(s.min))} and {fmtNumber(Number(s.max))}.</>}</small>}
         {err&&<small className="fr-error" role="alert">{err}</small>}
-      </>:<strong>{yn?(String(s.value)==='true'?'Yes':'No'):ls?shown(s.value):<>{fmtNumber(Number(s.value))} {s.unit}</>}</strong>}
+      </>:<strong>{yn?(String(s.value)==='true'?'Yes':'No'):ls?settingListReadout(s.key,s.value):<>{fmtNumber(Number(s.value))} {s.unit}</>}</strong>}
       <small className="sr-range">{!yn&&!ls&&s.min!=null?`${fmtNumber(Number(s.min))} to ${fmtNumber(Number(s.max))}`:''}</small>
     </div>
   </div>
