@@ -5,6 +5,7 @@
 # 20261108140000 and 20261109010000), adds the production-shaped columns and the live admin_toolsets_write definition, then applies the two migrations, each twice. Drops the database at the end (PDM_KEEP=1 keeps it).
 set -euo pipefail
 cd "$(dirname "$0")/../../.."
+export LC_ALL=C # fixed: one byte order for sort and comm, whatever the runner's locale
 DB=${PDM_DB:-g_pdesc_machine}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"
@@ -22,7 +23,7 @@ echo "loaded: production-shaped columns; admin_toolsets_write = live 1e511b25277
 
 FNS="select p.oid::regprocedure::text || ' ' || md5(pg_get_functiondef(p.oid)) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname in ('security', 'public', 'api') and p.prokind = 'f' order by 1"
 SET="select key || '=' || value::text from pipeline.platform_toolset_settings order by 1"
-snap() { q "$FNS" > "$1.fn"; q "$SET" > "$1.set"; q "select count(*) from pipeline.layer4_review_items" > "$1.l4"; q "select count(*) from pipeline.provider_description_reads" > "$1.rd"; q "select count(*) from catalogue.providers where nullif(btrim(description), '') is not null" > "$1.desc"; (q "select count(*) from cron.job" 2>/dev/null || echo none) > "$1.cron"; }
+snap() { q "$FNS" | sort > "$1.fn"; q "$SET" | sort > "$1.set"; q "select count(*) from pipeline.layer4_review_items" > "$1.l4"; q "select count(*) from pipeline.provider_description_reads" > "$1.rd"; q "select count(*) from catalogue.providers where nullif(btrim(description), '') is not null" > "$1.desc"; (q "select count(*) from cron.job" 2>/dev/null || echo none) > "$1.cron"; }
 W=$(mktemp -d); trap 'rm -rf "$W"; [ -n "${PDM_KEEP:-}" ] || dropdb --if-exists '$DB' >/dev/null 2>&1' EXIT
 
 # apply one migration: the edited functions are the live ones before, at their recorded md5 after; nothing else changes; a second run is a no-op
