@@ -29,24 +29,28 @@ export function ReasonChips({choice,onPick}){
 }
 
 // "2 sentences, 183 characters (limits 1 to 4 sentences, 80 to 700 characters)", the rewrite note and any change in the rules since it was proposed
+// objective review-pack flags (C-DESC, 8 Nov 2026): they say what to look at first; none of them decides anything
+const PACK_FLAG={same_words_elsewhere:'same words as another course',claim_word:'uses a claim word (the page quote has it)',marketing_word:'uses a marketing word (the page quote has it)',money_or_year:'names a price or a year'}
 export function ChecksLine({d}){
-  const c=d?.proposed?.checks,L=cdLimits(),re=d?.reask,now=d?.rules_now
-  if(!c&&!re&&!now)return null
+  const c=d?.proposed?.checks,L=cdLimits(),re=d?.reask,now=d?.rules_now,pk=d?.pack
+  if(!c&&!re&&!now&&!pk)return null
   return <p className="l4i-why" data-l4-cd-checks><small>
     {c&&<>Checks: {fmtNumber(c.sentences)} sentence{Number(c.sentences)===1?'':'s'}, {fmtNumber(c.chars)} characters{L?` (limits ${L.min_sentences} to ${L.max_sentences} sentences, ${L.min_chars} to ${L.max_chars} characters)`:''}. Every sentence is supported by its quote from the page.</>}
     {re&&<> The AI was asked once more because the first answer broke the {re.first?.rule==='sentence_count'?'sentence':'length'} limit ({fmtNumber(re.first?.sentences)} sentences, {fmtNumber(re.first?.chars)} characters); this is the rewrite{re.error?' (the re-ask failed, so this is the first answer)':''}.</>}
     {now&&now.ok===false&&<strong> Since it was proposed, it no longer passes: {String(now.rule||'').replace(/_/g,' ')}.</strong>}
+    {pk&&<span data-l4-cd-flags> {(pk.flags||[]).length?<>Look at first: {(pk.flags||[]).map(f=>PACK_FLAG[f]||f).join('; ')}{Number(pk.same_words_on_other_courses)>0?` (${fmtNumber(pk.same_words_on_other_courses)} other)`:''}.</>:'No flag: nothing here asks for extra care, still check it against the page.'}{Number(pk.held_readings_this_decision_can_free)>0?` Deciding this lets up to ${fmtNumber(pk.held_readings_this_decision_can_free)} held readings of this university join the queue.`:''}</span>}
   </small></p>
 }
 
 // state for the Inbox: the summary of the pending course descriptions and the ready-first queue (the AER queue's pattern)
 export function useCdQueue(on,pid){
-  const[sum,setSum]=useState(null),[mode,setMode]=useState(''),[list,setList]=useState(null),[off,setOff]=useState(0),[err,setErr]=useState('')
-  const loadSum=()=>{if(!on){setSum(null);return}cdQueue('summary',{provider_id:pid||undefined,recheck:!!pid}).then(d=>{setCdLimits(d?.limits);setSum(d);setErr('')}).catch(e=>{setSum(null);setErr(plainError(e))})}
-  const loadList=(o=off)=>{if(!on||!mode){setList(null);return}setList(null);cdQueue('items',{provider_id:pid||undefined,offset:o,sample:mode==='sample'}).then(setList).catch(e=>{setList({items:[],total:0});setErr(plainError(e))})}
+  const[sum,setSum]=useState(null),[mode,setMode]=useState(''),[list,setList]=useState(null),[off,setOff]=useState(0),[err,setErr]=useState(''),[cap,setCap]=useState(null)
+  const loadSum=()=>{if(!on){setSum(null);setCap(null);return}
+    cdQueue('capacity').then(setCap).catch(()=>setCap(null));cdQueue('summary',{provider_id:pid||undefined,recheck:!!pid}).then(d=>{setCdLimits(d?.limits);setSum(d);setErr('')}).catch(e=>{setSum(null);setErr(plainError(e))})}
+  const loadList=(o=off)=>{if(!on||!mode){setList(null);return}setList(null);(mode==='pack'?cdQueue('pack',{provider_id:pid||undefined,offset:o}):cdQueue('items',{provider_id:pid||undefined,offset:o,sample:mode==='sample'})).then(setList).catch(e=>{setList({items:[],total:0});setErr(plainError(e))})}
   useEffect(()=>{setMode('');setOff(0);loadSum()},[on,pid])
   useEffect(()=>{setOff(0);loadList(0)},[mode,on,pid])
-  return{sum,mode,setMode,list,off,setOff,loadSum,loadList,err}
+  return{sum,cap,mode,setMode,list,off,setOff,loadSum,loadList,err}
 }
 
 export function CdPanel({q,showProvider}){
@@ -57,8 +61,10 @@ export function CdPanel({q,showProvider}){
   return <div className="l4i-cd" data-l4-cd-summary>
     <p className="l4i-aer-sum"><small><strong>Course descriptions:</strong> {fmtNumber(s.pending)} waiting for a person · <strong>{fmtNumber(ready)} ready to decide</strong>{fails?` · ${fmtNumber(fails)} no longer pass the checks`:''}{stale>0?` · ${fmtNumber(stale)} stale (the course or its page changed)`:''}
       {s.provider_id?'':' (checks re-run for the oldest only)'} · admitted by a person {fmtNumber(s.admitted_by_person)} · published to the website {fmtNumber(s.published_to_the_website)}{Number(s.waiting_behind_provider_cap)?` · ${fmtNumber(s.waiting_behind_provider_cap)} more wait behind the first ten of their university`:''}. A reading waiting here is not admitted and not published.</small></p>
+    {q.cap&&q.cap.pending!=null&&<p className="l4i-aer-sum" data-l4-cd-capacity><small><strong>Review capacity:</strong> about {fmtNumber(q.cap.minutes_an_item)} minute{Number(q.cap.minutes_an_item)===1?'':'s'} an item ({q.cap.pace_basis==='measured'?'measured':'Layer 4 default, not yet measured for descriptions'}) · {fmtNumber(q.cap.hours_to_clear_waiting)} reviewer hours for the {fmtNumber(q.cap.pending)} waiting{Number(q.cap.held_first_readings_behind_the_provider_cap)>0?`, ${fmtNumber(q.cap.hours_to_clear_waiting_and_held)} once the ${fmtNumber(q.cap.held_first_readings_behind_the_provider_cap)} held readings join`:''} · to clear within {fmtNumber(q.cap.target_days)} days: {fmtNumber(q.cap.items_a_day_needed_incl_arrivals)} decisions a day (about {fmtNumber(q.cap.reviewer_hours_a_day_needed)} hours), with {fmtNumber(q.cap.arriving_a_day)} arriving a day · decided in the last {fmtNumber(q.cap.window_days)} days: {fmtNumber(q.cap.decided_in_window)}{q.cap.back_pressure?.on?` · new readings ${q.cap.back_pressure.new_readings_paused?'paused':'run'} (limit ${fmtNumber(q.cap.back_pressure.global_max)})`:''}.</small></p>}
     {(ready>0||Number(s.pending)>0)&&<div className="l4i-view" role="group" aria-label="Order" data-l4-cd-order>
       <button type="button" className={q.mode==='ready'?'on':''} aria-pressed={q.mode==='ready'} onClick={()=>q.setMode(q.mode==='ready'?'':'ready')} data-l4-cd-ready>Ready to decide ({fmtNumber(ready)})</button>
+      <button type="button" className={q.mode==='pack'?'on':''} aria-pressed={q.mode==='pack'} onClick={()=>q.setMode(q.mode==='pack'?'':'pack')} data-l4-cd-pack>Review pack (by university)</button>
       <button type="button" className={q.mode==='sample'?'on':''} aria-pressed={q.mode==='sample'} onClick={()=>q.setMode(q.mode==='sample'?'':'sample')} data-l4-cd-sample>Trust-policy sample</button>
       {q.mode&&<button type="button" onClick={()=>q.setMode('')} data-l4-cd-all>All waiting</button>}</div>}
   </div>
@@ -72,7 +78,7 @@ export function CdList({q,sum,render}){
     {items.length===0?<Empty text={q.mode==='sample'?'No description of the sample is waiting for a person.':'Nothing is ready to decide here.'}/>:items.map(render)}
     {(q.off>0||Number(l.total)>items.length)&&q.off>=0&&<div className="l4i-pager" data-l4-cd-pager>
       <Button compact disabled={q.off===0} onClick={()=>{const o=Math.max(0,q.off-step);q.setOff(o);q.loadList(o)}}>Previous</Button>
-      <small>{fmtNumber(items.length?q.off+1:q.off)}–{fmtNumber(q.off+items.length)} of {fmtNumber(l.total)}{q.mode==='sample'?' in the sample':' ready'}, oldest first</small>
+      <small>{fmtNumber(items.length?q.off+1:q.off)}–{fmtNumber(q.off+items.length)} of {fmtNumber(l.total)}{q.mode==='sample'?' in the sample':q.mode==='pack'?' in the pack':' ready'}{q.mode==='pack'?', university by university':', oldest first'}</small>
       <Button compact disabled={q.off+items.length>=Number(l.total)} onClick={()=>{const o=q.off+step;q.setOff(o);q.loadList(o)}}>Next</Button></div>}
   </div>
 }

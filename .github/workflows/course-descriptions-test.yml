@@ -9,6 +9,10 @@ on:
       - 'tests/uat/cf-247-s355-course-description-baseline-contract.spec.mjs'
       - 'scripts/prod-parity*.mjs'
       - 'supabase/migrations/202611065*.sql'
+      - 'supabase/migrations/20261107120000_cf247_course_description_promote_held.sql'
+      - 'supabase/migrations/20261108130*.sql'
+      - 'tests/fixtures/course-description-backpressure/**'
+      - 'tests/uat/cf-247-s450-course-description-review-pack-contract.spec.mjs'
       - 'supabase/functions/coverage-sweep/course-text.ts'
       - '.github/workflows/course-descriptions-test.yml'
   workflow_dispatch:
@@ -58,6 +62,7 @@ jobs:
         run: |
           set -euo pipefail
           bash tests/fixtures/course-description-parity/run.sh 2>&1 | tee course-description-results.log
+          bash tests/fixtures/course-description-backpressure/run.sh 2>&1 | tee -a course-description-results.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
