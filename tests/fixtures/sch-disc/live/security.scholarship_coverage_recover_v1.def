@@ -1,0 +1,70 @@
+CREATE OR REPLACE FUNCTION security.scholarship_coverage_recover_v1()
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+-- CF-247 (mandate 4 Nov 2026 05:08 §5, §9): at most batch.sch_coverage_recover actions a run and sch_cov.recover_per_provider_max per provider, each
+-- at most once per case (pipeline.scholarship_coverage_recoveries is unique on case and action), only for admission-eligible providers that are not
+-- hidden or held. Nothing admits, decides or publishes: the pages go back to the normal readers and the normal AI admission or Layer 4 route.
+declare v_max int := security.pipeline_num_v1('batch.sch_coverage_recover', 10)::int; v_pp int := security.pipeline_num_v1('sch_cov.recover_per_provider_max', 3)::int;
+        v_on jsonb := jsonb_build_object('reopen_read', security.pipeline_num_v1('sch_cov.recover_register_pages_on', 0) >= 1,
+                                         'reread_stored', security.pipeline_num_v1('sch_cov.recover_stored_reads_on', 0) >= 1,
+                                         'promote_listing', security.pipeline_num_v1('sch_cov.recover_listings_on', 0) >= 1,
+                                         'refresh_listing', security.pipeline_num_v1('sch_cov.recover_listings_on', 0) >= 1);
+        r record; v_cid bigint; v_lid bigint; v_done int := 0; v_skip int := 0; v_per jsonb := '{}'::jsonb; v_by jsonb := '{}'::jsonb; a record; v_k int;
+begin
+  if not exists (select 1 from jsonb_each(v_on) e where e.value = 'true'::jsonb) then return jsonb_build_object('ran', false, 'reason', 'every recovery switch is 0', 'switches', v_on); end if;
+  for r in select i.* from pipeline.scholarship_coverage_items i
+            where i.present and i.recovery is not null and i.state in ('rejected_incorrectly', 'traversal_incomplete')
+              and coalesce((v_on->>i.recovery)::boolean, false)
+              and not exists (select 1 from pipeline.scholarship_coverage_recoveries x where x.item_key = i.item_key and x.action = i.recovery)
+            order by i.first_seen, i.provider_id, i.item_key loop
+    exit when v_done >= v_max;
+    if coalesce((v_per->>r.provider_id::text)::int, 0) >= v_pp then continue; end if;
+    if not security.scholarship_admission_provider_ok_v1(r.provider_id) or security.fc_sch_held_v1(r.provider_id, true)
+       or exists (select 1 from security.provider_hidden_v1 h where h.provider_id = r.provider_id) then v_skip := v_skip + 1; continue; end if;
+    v_cid := nullif(r.evidence->>'candidate_id', '')::bigint; v_lid := nullif(r.evidence->>'listing_id', '')::bigint; v_k := 0;
+    if r.recovery = 'reopen_read' then
+      -- one read of a page never read: back to the candidate reader (Firecrawl through svc_fc_spend, then the AI on the normal admission route)
+      update pipeline.scholarship_page_candidates c set admit_status = null, admit_reasons = null, next_read_at = now(), attempts = 0, leased_until = null
+       where c.id = v_cid and c.admit_status = 'rejected' and c.read_status is null and c.matched_scholarship_id is null and c.admitted_scholarship_id is null;
+      get diagnostics v_k = row_count;
+    elsif r.recovery = 'reread_stored' then
+      -- one AI read from the stored copy (no Firecrawl: next_read_at keeps the candidate reader away); the answer takes the normal admission route
+      select * into a from security.scholarship_ai_active_v1();
+      if a.model_code is not null then
+        update pipeline.scholarship_page_candidates c set admit_status = null, admit_reasons = null, next_read_at = 'infinity'
+         where c.id = v_cid and c.admit_status = 'rejected' and c.storage_path is not null and c.matched_scholarship_id is null and c.admitted_scholarship_id is null
+           and not exists (select 1 from pipeline.scholarship_ai_queue q where q.candidate_id = c.id and q.state in ('queued', 'leased'));
+        get diagnostics v_k = row_count;
+        if v_k > 0 then
+          insert into pipeline.scholarship_ai_queue(model_code, prompt_version, run_kind, candidate_id, provider_id, url, storage_path)
+          select a.model_code, a.prompt_version, 'admit', c.id, c.provider_id, coalesce(c.final_url, c.url), c.storage_path from pipeline.scholarship_page_candidates c where c.id = v_cid;
+        end if;
+      end if;
+    elsif r.recovery = 'promote_listing' then
+      -- the AI said: a listing of international scholarships on the provider's own site; it becomes a listing source (read once now, then weekly)
+      insert into pipeline.scholarship_listing_pages as l(provider_id, url, url_norm, source, active, status, next_read_at, added_at)
+      select c.provider_id, coalesce(c.final_url, c.url), security.scholarship_url_norm(coalesce(c.final_url, c.url)), 'auto', true, 'waiting', now(), now()
+        from pipeline.scholarship_page_candidates c where c.id = v_cid and not security.third_party_host_v1(coalesce(c.final_url, c.url))
+      on conflict (provider_id, url_norm) do update set source = 'auto', active = true, status = 'waiting', next_read_at = now() where l.source = 'suggested';
+      get diagnostics v_k = row_count;
+    elsif r.recovery = 'refresh_listing' then
+      -- a listing read before its items became candidates: read once now (the recorder fans its items out)
+      if not exists (select 1 from pipeline.scholarship_coverage_recoveries x where x.action = 'refresh_listing' and (x.detail->>'listing_id')::bigint = v_lid) then
+        update pipeline.scholarship_listing_pages l set next_read_at = now() where l.id = v_lid and l.active and l.page_state is null and l.next_read_at > now();
+        get diagnostics v_k = row_count;
+      end if;
+    end if;
+    -- recorded whatever happened, so the same case is never tried twice
+    insert into pipeline.scholarship_coverage_recoveries(provider_id, item_key, action, state_before, detail)
+    values (r.provider_id, r.item_key, r.recovery, r.state, jsonb_build_object('candidate_id', v_cid, 'listing_id', v_lid, 'changed', v_k, 'reason', r.reason))
+    on conflict (item_key, action) do nothing;
+    if v_k > 0 then
+      v_done := v_done + 1; v_per := v_per || jsonb_build_object(r.provider_id::text, coalesce((v_per->>r.provider_id::text)::int, 0) + 1);
+      v_by := v_by || jsonb_build_object(r.recovery, coalesce((v_by->>r.recovery)::int, 0) + 1);
+    else v_skip := v_skip + 1; end if;
+  end loop;
+  return jsonb_build_object('ran', true, 'actions', v_done, 'by_action', v_by, 'skipped', v_skip, 'providers', (select count(*) from jsonb_object_keys(v_per)), 'switches', v_on);
+end $function$

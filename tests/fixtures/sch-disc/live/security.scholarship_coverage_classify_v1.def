@@ -1,0 +1,132 @@
+CREATE OR REPLACE FUNCTION security.scholarship_coverage_classify_v1(p_providers uuid[] DEFAULT NULL::uuid[])
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+-- CF-247 (mandate 4 Nov 2026 05:08 §5, §9): classifies the next providers (or those given), keeps their cases, verifies recoveries, records the provider
+-- state and reports each unresolved state into the work-continuity record (lane sch_coverage) only when its signature changes.
+declare v_ids uuid[]; v_now timestamptz := now(); v_esc numeric := security.pipeline_num_v1('sch_cov.escalate_after_hours', 72);
+        v_re numeric := security.pipeline_num_v1('sch_cov.recheck_hours', 24); v_ver numeric := security.pipeline_num_v1('sch_cov.verify_after_hours', 48);
+        r record; p record; v_sig text; v_rep jsonb; v_ev text; v_n int := 0; v_items int := 0; v_reports int := 0; v_ok int := 0; v_fail int := 0;
+        v_dup int := 0; v_rerr int := 0; v_rlast text;
+begin
+  if p_providers is null and security.pipeline_num_v1('sch_cov.classify_on', 1) < 1 then return jsonb_build_object('ran', false, 'reason', 'sch_cov.classify_on is 0'); end if;
+  if p_providers is not null then v_ids := p_providers;
+  else
+    select coalesce(array_agg(x.provider_id), '{}') into v_ids from (
+      select l.provider_id from pipeline.coverage_provider_reconciliation l
+        left join pipeline.scholarship_coverage_providers c on c.provider_id = l.provider_id
+       where l.domain = 'scholarship' and l.disposition not in ('not_applicable', 'out_of_scope')
+         and (c.provider_id is null or c.classified_at < v_now - make_interval(hours => security.pipeline_num_v1('sch_cov.reclassify_hours', 6)::int))
+       order by (c.provider_id is null) desc, (l.issue_fingerprint is not null) desc, c.classified_at nulls first, l.provider_id
+       limit security.pipeline_num_v1('batch.sch_coverage_classify', 40)::int) x;
+  end if;
+  if cardinality(v_ids) = 0 then return jsonb_build_object('ran', true, 'providers', 0); end if;
+
+  create temp table if not exists sch_cov_now(provider_id uuid, item_key text, state text, reason text, evidence jsonb, recovery text) on commit drop;
+  truncate sch_cov_now;
+  insert into sch_cov_now select * from security.scholarship_coverage_items_v1(v_ids);
+  get diagnostics v_items = row_count;
+  v_dup := v_items - (select count(*) from (select distinct n.provider_id, n.item_key from sch_cov_now n) d);
+
+  insert into pipeline.scholarship_coverage_items as i(provider_id, item_key, state, reason, evidence, recovery, owner, next_recovery_at, escalation, present, first_seen, state_since, classified_at)
+  -- CF-247 fix (4 Nov 2026): a listing can list the same address twice; one row per (provider_id, item_key), the most pressing state first
+  select distinct on (n.provider_id, n.item_key) n.provider_id, n.item_key, n.state, n.reason, n.evidence, case when n.state in ('rejected_incorrectly', 'traversal_incomplete') then n.recovery end, k.owner,
+         case when k.resolved then null else v_now + make_interval(hours => v_re::int) end, null, true, v_now, v_now, v_now
+    from sch_cov_now n join pipeline.scholarship_coverage_state_codes k on k.code = n.state
+   order by n.provider_id, n.item_key, k.sort, md5(n.evidence::text)
+  on conflict (provider_id, item_key) do update set
+     state_since = case when i.state is distinct from excluded.state or not i.present then v_now else i.state_since end,
+     state = excluded.state, reason = excluded.reason, evidence = excluded.evidence, recovery = excluded.recovery, owner = excluded.owner,
+     next_recovery_at = excluded.next_recovery_at, present = true, classified_at = v_now;
+  update pipeline.scholarship_coverage_items i set present = false, classified_at = v_now, next_recovery_at = null
+   where i.provider_id = any (v_ids) and i.present and not exists (select 1 from sch_cov_now n where n.provider_id = i.provider_id and n.item_key = i.item_key);
+
+  -- §9 steps 7-8: a recovery succeeded when its case moved; it failed when the case has not moved after sch_cov.verify_after_hours
+  update pipeline.scholarship_coverage_recoveries x set outcome = 'succeeded', outcome_at = v_now
+    from pipeline.scholarship_coverage_items i
+   where x.outcome is null and i.provider_id = x.provider_id and i.item_key = x.item_key and x.provider_id = any (v_ids) and (not i.present or i.state <> x.state_before);
+  get diagnostics v_ok = row_count;
+  update pipeline.scholarship_coverage_recoveries x set outcome = 'failed', outcome_at = v_now
+    from pipeline.scholarship_coverage_items i
+   where x.outcome is null and i.provider_id = x.provider_id and i.item_key = x.item_key and x.provider_id = any (v_ids) and i.present and i.state = x.state_before
+     and x.at < v_now - make_interval(hours => v_ver::int);
+  get diagnostics v_fail = row_count;
+
+  -- the escalation condition of each unresolved case
+  update pipeline.scholarship_coverage_items i set escalation = jsonb_build_object('condition', k.escalate_when,
+           'due_at', case k.escalate_when when 'always' then i.first_seen when 'after_hours' then i.first_seen + make_interval(hours => v_esc::int)
+                                          when 'recovery_failed' then (select min(x.outcome_at) from pipeline.scholarship_coverage_recoveries x where x.item_key = i.item_key and x.outcome = 'failed') end,
+           'due', case k.escalate_when when 'always' then true when 'after_hours' then i.first_seen < v_now - make_interval(hours => v_esc::int)
+                                       when 'recovery_failed' then exists (select 1 from pipeline.scholarship_coverage_recoveries x where x.item_key = i.item_key and x.outcome = 'failed')
+                                       else false end)
+    from pipeline.scholarship_coverage_state_codes k
+   where k.code = i.state and i.provider_id = any (v_ids) and i.present and not k.resolved;
+  update pipeline.scholarship_coverage_items i set escalation = null
+    from pipeline.scholarship_coverage_state_codes k where k.code = i.state and i.provider_id = any (v_ids) and (k.resolved or not i.present) and i.escalation is not null;
+
+  -- the provider state and the work-continuity record
+  for p in select x.id, coalesce(c.reported, '{}'::jsonb) reported,
+                  (select coalesce(jsonb_object_agg(s.state, s.n), '{}'::jsonb) from (select i.state, count(*) n from pipeline.scholarship_coverage_items i
+                     where i.provider_id = x.id and i.present group by 1) s) states
+             from unnest(v_ids) x(id) left join pipeline.scholarship_coverage_providers c on c.provider_id = x.id loop
+    v_rep := '{}'::jsonb;
+    for r in select k.code, k.resolved, k.work_event, k.owner, count(i.item_key) n, bool_or(coalesce((i.escalation->>'due')::boolean, false)) due,
+                    min(i.next_recovery_at) next_at, (array_agg(i.evidence order by i.first_seen))[1:3] sample, (array_agg(i.reason order by i.first_seen))[1] reason,
+                    string_agg(i.item_key, ',' order by i.item_key) keys
+               from pipeline.scholarship_coverage_state_codes k
+               join pipeline.scholarship_coverage_items i on i.state = k.code and i.provider_id = p.id and i.present
+              where not k.resolved group by k.code, k.resolved, k.work_event, k.owner loop
+      v_sig := md5(r.n || '|' || r.due || '|' || r.keys);
+      v_rep := v_rep || jsonb_build_object(r.code, v_sig);
+      continue when p.reported->>r.code = v_sig;
+      v_ev := case when r.due and r.work_event in ('dependency', 'ambiguity') then 'failed'
+                   when r.work_event = 'review' then 'review' when r.work_event = 'identity' then 'failed' when r.work_event = 'ambiguity' then 'failed' else 'dependency' end;
+      begin
+      perform security.work_item_report_v1('sch_coverage', p.id::text, 'state:' || r.code, v_ev,
+        jsonb_build_object('provider_id', p.id, 'owner', r.owner, 'field', r.code,
+                           'class', case when r.work_event = 'identity' then 'identity_conflict' when r.work_event = 'ambiguity' then 'ambiguity' when r.due then 'authority' end,
+                           'reason', r.code || ': ' || r.n || ' case(s); ' || coalesce(r.reason, ''), 'review_ref', 'sch_coverage:' || p.id || ':' || r.code,
+                           'ref', jsonb_build_object('state', r.code, 'next_recovery_at', r.next_at, 'owner', r.owner),
+                           'evidence', jsonb_build_object('cases', r.n, 'sample', to_jsonb(r.sample), 'escalation_due', r.due)));
+      v_reports := v_reports + 1;
+      exception when others then
+        -- not recorded as reported, so the next run tries again; the cases are kept
+        v_rerr := v_rerr + 1; v_rlast := left(r.code || ': ' || sqlerrm, 300); v_rep := v_rep - r.code;
+      end;
+    end loop;
+    -- a state reported before and now resolved or gone: the work item is done
+    for r in select e.key code from jsonb_each_text(p.reported) e where not v_rep ? e.key loop
+      begin
+        perform security.work_item_report_v1('sch_coverage', p.id::text, 'state:' || r.code, 'succeeded', jsonb_build_object('provider_id', p.id, 'outcome', 'succeeded_with_result'));
+        v_reports := v_reports + 1;
+      exception when others then
+        v_rerr := v_rerr + 1; v_rlast := left(r.code || ': ' || sqlerrm, 300); v_rep := v_rep || jsonb_build_object(r.code, p.reported->>r.code);
+      end;
+    end loop;
+    insert into pipeline.scholarship_coverage_providers as c(provider_id, provider_state, states, unresolved, published_verified, reported, classified_at)
+    select p.id,
+           coalesce((select k.code from pipeline.scholarship_coverage_state_codes k where not k.resolved and p.states ? k.code order by k.sort limit 1),
+                    case when coalesce((p.states->>'published_verified')::int, 0) > 0 then 'published_verified'
+                         when exists (select 1 from pipeline.scholarship_listing_pages l where l.provider_id = p.id and l.active and l.source in ('manual', 'auto')
+                                                                                       and l.status = 'read' and l.page_state in ('complete', 'single')) then 'evidence_backed_none'
+                         else 'source_not_discovered' end),
+           p.states, (select coalesce(sum(e.value::int), 0) from jsonb_each_text(p.states) e join pipeline.scholarship_coverage_state_codes k on k.code = e.key and not k.resolved),
+           coalesce((p.states->>'published_verified')::int, 0), v_rep, v_now
+    on conflict (provider_id) do update set provider_state = excluded.provider_state, states = excluded.states, unresolved = excluded.unresolved,
+       published_verified = excluded.published_verified, reported = excluded.reported, classified_at = v_now;
+    v_n := v_n + 1;
+  end loop;
+  -- direction 4 Nov 2026 10:00 §6: the run's answer is kept (pg_cron discards it); a ledger write never fails the run
+  begin
+    insert into pipeline.scholarship_coverage_classify_runs(manual, providers, cases, work_reports, recoveries_succeeded, recoveries_failed, duplicate_cases, report_errors,
+           report_error_last, result)
+    values (p_providers is not null, v_n, v_items, v_reports, v_ok, v_fail, v_dup, v_rerr, v_rlast,
+            jsonb_build_object('ran', true, 'providers', v_n, 'cases', v_items, 'work_reports', v_reports, 'recoveries_succeeded', v_ok, 'recoveries_failed', v_fail,
+                               'duplicate_cases', v_dup, 'report_errors', v_rerr, 'report_error_last', v_rlast));
+  exception when others then null;
+  end;
+  return jsonb_build_object('ran', true, 'providers', v_n, 'cases', v_items, 'work_reports', v_reports, 'recoveries_succeeded', v_ok, 'recoveries_failed', v_fail,
+                            'duplicate_cases', v_dup, 'report_errors', v_rerr, 'report_error_last', v_rlast);
+end $function$
