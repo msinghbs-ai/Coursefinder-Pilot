@@ -1,0 +1,930 @@
+{
+"source": "live, project fxcwkweaxjtknorudmwp, read only 8 Nov 2026 about 03:20 UTC: waiting course reads (course_entry_first_read, pending), dropped rows with reason quote_not_on_page whose quote holds an ellipsis",
+"what": "only the shape of each dropped quote (letters-and-digits length of each fragment, trailing ellipsis); the quote text is not copied. Item ids are the first 8 characters of the review item id",
+"drops": [
+{
+"item": "044cf1e5",
+"fragment_letters": [
+157,
+63
+],
+"trailing_ellipsis": false
+},
+{
+"item": "044cf1e5",
+"fragment_letters": [
+205,
+39
+],
+"trailing_ellipsis": false
+},
+{
+"item": "0c37caf1",
+"fragment_letters": [
+41,
+137
+],
+"trailing_ellipsis": false
+},
+{
+"item": "14cac700",
+"fragment_letters": [
+133,
+115
+],
+"trailing_ellipsis": false
+},
+{
+"item": "165f91b4",
+"fragment_letters": [
+108,
+87
+],
+"trailing_ellipsis": false
+},
+{
+"item": "183696af",
+"fragment_letters": [
+41,
+137
+],
+"trailing_ellipsis": false
+},
+{
+"item": "183696af",
+"fragment_letters": [
+96,
+68
+],
+"trailing_ellipsis": false
+},
+{
+"item": "1deabf11",
+"fragment_letters": [
+65,
+144
+],
+"trailing_ellipsis": false
+},
+{
+"item": "1deabf11",
+"fragment_letters": [
+146,
+91
+],
+"trailing_ellipsis": false
+},
+{
+"item": "1deabf11",
+"fragment_letters": [
+65,
+165
+],
+"trailing_ellipsis": false
+},
+{
+"item": "1e44961e",
+"fragment_letters": [
+69,
+16,
+41,
+40
+],
+"trailing_ellipsis": false
+},
+{
+"item": "205176b5",
+"fragment_letters": [
+111,
+93
+],
+"trailing_ellipsis": false
+},
+{
+"item": "253469ea",
+"fragment_letters": [
+64,
+137
+],
+"trailing_ellipsis": false
+},
+{
+"item": "2c051fe2",
+"fragment_letters": [
+180,
+58
+],
+"trailing_ellipsis": true
+},
+{
+"item": "3434cb86",
+"fragment_letters": [
+31,
+104,
+29
+],
+"trailing_ellipsis": false
+},
+{
+"item": "3434cb86",
+"fragment_letters": [
+55,
+67
+],
+"trailing_ellipsis": false
+},
+{
+"item": "3434cb86",
+"fragment_letters": [
+110,
+43
+],
+"trailing_ellipsis": false
+},
+{
+"item": "38ce8550",
+"fragment_letters": [
+133,
+115
+],
+"trailing_ellipsis": false
+},
+{
+"item": "3add09ef",
+"fragment_letters": [
+111,
+29
+],
+"trailing_ellipsis": false
+},
+{
+"item": "3add09ef",
+"fragment_letters": [
+105,
+29
+],
+"trailing_ellipsis": false
+},
+{
+"item": "4239722e",
+"fragment_letters": [
+64,
+137
+],
+"trailing_ellipsis": false
+},
+{
+"item": "435d4c9d",
+"fragment_letters": [
+63,
+61
+],
+"trailing_ellipsis": false
+},
+{
+"item": "435d4c9d",
+"fragment_letters": [
+133,
+115
+],
+"trailing_ellipsis": false
+},
+{
+"item": "477cbf56",
+"fragment_letters": [
+66,
+122
+],
+"trailing_ellipsis": false
+},
+{
+"item": "477cbf56",
+"fragment_letters": [
+65,
+55
+],
+"trailing_ellipsis": false
+},
+{
+"item": "477cbf56",
+"fragment_letters": [
+36,
+55
+],
+"trailing_ellipsis": false
+},
+{
+"item": "477cbf56",
+"fragment_letters": [
+36,
+44
+],
+"trailing_ellipsis": false
+},
+{
+"item": "4a344ec4",
+"fragment_letters": [
+89,
+66
+],
+"trailing_ellipsis": false
+},
+{
+"item": "4e2afa46",
+"fragment_letters": [
+24,
+111
+],
+"trailing_ellipsis": false
+},
+{
+"item": "5203a097",
+"fragment_letters": [
+143
+],
+"trailing_ellipsis": true
+},
+{
+"item": "5265ad72",
+"fragment_letters": [
+197,
+50
+],
+"trailing_ellipsis": false
+},
+{
+"item": "5265ad72",
+"fragment_letters": [
+64,
+137
+],
+"trailing_ellipsis": false
+},
+{
+"item": "53da6144",
+"fragment_letters": [
+70,
+34,
+30,
+23,
+67
+],
+"trailing_ellipsis": false
+},
+{
+"item": "53da6144",
+"fragment_letters": [
+155,
+40
+],
+"trailing_ellipsis": false
+},
+{
+"item": "54381d1c",
+"fragment_letters": [
+133,
+115
+],
+"trailing_ellipsis": false
+},
+{
+"item": "54381d1c",
+"fragment_letters": [
+197,
+50
+],
+"trailing_ellipsis": false
+},
+{
+"item": "592bdeff",
+"fragment_letters": [
+105,
+29
+],
+"trailing_ellipsis": false
+},
+{
+"item": "592bdeff",
+"fragment_letters": [
+111,
+29
+],
+"trailing_ellipsis": false
+},
+{
+"item": "5a3a91fc",
+"fragment_letters": [
+44,
+146
+],
+"trailing_ellipsis": false
+},
+{
+"item": "5de15f84",
+"fragment_letters": [
+58,
+82
+],
+"trailing_ellipsis": false
+},
+{
+"item": "607788ef",
+"fragment_letters": [
+145,
+64
+],
+"trailing_ellipsis": false
+},
+{
+"item": "607788ef",
+"fragment_letters": [
+81,
+49
+],
+"trailing_ellipsis": false
+},
+{
+"item": "607788ef",
+"fragment_letters": [
+36,
+60
+],
+"trailing_ellipsis": false
+},
+{
+"item": "689f5082",
+"fragment_letters": [
+60,
+18,
+19,
+19
+],
+"trailing_ellipsis": false
+},
+{
+"item": "692f0c5d",
+"fragment_letters": [
+41,
+137
+],
+"trailing_ellipsis": false
+},
+{
+"item": "692f0c5d",
+"fragment_letters": [
+96,
+68
+],
+"trailing_ellipsis": false
+},
+{
+"item": "6a3f6866",
+"fragment_letters": [
+133,
+115
+],
+"trailing_ellipsis": false
+},
+{
+"item": "6a8aa2f7",
+"fragment_letters": [
+113,
+57
+],
+"trailing_ellipsis": false
+},
+{
+"item": "6ca78879",
+"fragment_letters": [
+64,
+137
+],
+"trailing_ellipsis": false
+},
+{
+"item": "700e2cba",
+"fragment_letters": [
+96,
+68
+],
+"trailing_ellipsis": false
+},
+{
+"item": "7193e131",
+"fragment_letters": [
+64,
+137
+],
+"trailing_ellipsis": false
+},
+{
+"item": "74968688",
+"fragment_letters": [
+137,
+90
+],
+"trailing_ellipsis": false
+},
+{
+"item": "74968688",
+"fragment_letters": [
+57,
+49,
+58,
+69
+],
+"trailing_ellipsis": false
+},
+{
+"item": "82d990ec",
+"fragment_letters": [
+133,
+115
+],
+"trailing_ellipsis": false
+},
+{
+"item": "8cf8ef55",
+"fragment_letters": [
+39,
+27,
+38,
+23
+],
+"trailing_ellipsis": false
+},
+{
+"item": "8d51e01d",
+"fragment_letters": [
+133,
+115
+],
+"trailing_ellipsis": false
+},
+{
+"item": "8ea3d62c",
+"fragment_letters": [
+64,
+137
+],
+"trailing_ellipsis": false
+},
+{
+"item": "916436c1",
+"fragment_letters": [
+166,
+27,
+49
+],
+"trailing_ellipsis": false
+},
+{
+"item": "9359c568",
+"fragment_letters": [
+64,
+137
+],
+"trailing_ellipsis": false
+},
+{
+"item": "94e1696d",
+"fragment_letters": [
+64,
+137
+],
+"trailing_ellipsis": false
+},
+{
+"item": "95565a05",
+"fragment_letters": [
+55,
+61
+],
+"trailing_ellipsis": false
+},
+{
+"item": "95565a05",
+"fragment_letters": [
+180,
+40
+],
+"trailing_ellipsis": false
+},
+{
+"item": "97228f4e",
+"fragment_letters": [
+180,
+67
+],
+"trailing_ellipsis": false
+},
+{
+"item": "9bb877bc",
+"fragment_letters": [
+133,
+115
+],
+"trailing_ellipsis": false
+},
+{
+"item": "9ddddd58",
+"fragment_letters": [
+64,
+137
+],
+"trailing_ellipsis": false
+},
+{
+"item": "a208b715",
+"fragment_letters": [
+64,
+137
+],
+"trailing_ellipsis": false
+},
+{
+"item": "a2e7984d",
+"fragment_letters": [
+164,
+46
+],
+"trailing_ellipsis": false
+},
+{
+"item": "a4476b34",
+"fragment_letters": [
+157,
+63,
+20
+],
+"trailing_ellipsis": false
+},
+{
+"item": "a46ea3df",
+"fragment_letters": [
+11,
+30
+],
+"trailing_ellipsis": false
+},
+{
+"item": "a56f1fc5",
+"fragment_letters": [
+111,
+29
+],
+"trailing_ellipsis": false
+},
+{
+"item": "a56f1fc5",
+"fragment_letters": [
+105,
+29
+],
+"trailing_ellipsis": false
+},
+{
+"item": "a9cf74ce",
+"fragment_letters": [
+64,
+137
+],
+"trailing_ellipsis": false
+},
+{
+"item": "b4ca2b80",
+"fragment_letters": [
+198,
+48
+],
+"trailing_ellipsis": false
+},
+{
+"item": "b7c67bf8",
+"fragment_letters": [
+73,
+71
+],
+"trailing_ellipsis": false
+},
+{
+"item": "baffea95",
+"fragment_letters": [
+133,
+115
+],
+"trailing_ellipsis": false
+},
+{
+"item": "bc5d08f0",
+"fragment_letters": [
+157,
+63
+],
+"trailing_ellipsis": false
+},
+{
+"item": "c5165aaa",
+"fragment_letters": [
+36,
+54
+],
+"trailing_ellipsis": false
+},
+{
+"item": "c5756082",
+"fragment_letters": [
+64,
+137
+],
+"trailing_ellipsis": false
+},
+{
+"item": "c5ebc88f",
+"fragment_letters": [
+64,
+137
+],
+"trailing_ellipsis": false
+},
+{
+"item": "c5f64b80",
+"fragment_letters": [
+96,
+68
+],
+"trailing_ellipsis": false
+},
+{
+"item": "c5f64b80",
+"fragment_letters": [
+87,
+31
+],
+"trailing_ellipsis": false
+},
+{
+"item": "c5f64b80",
+"fragment_letters": [
+41,
+137
+],
+"trailing_ellipsis": false
+},
+{
+"item": "c8b0bbd4",
+"fragment_letters": [
+39,
+27,
+72,
+67
+],
+"trailing_ellipsis": false
+},
+{
+"item": "c8c4c4f6",
+"fragment_letters": [
+111,
+29
+],
+"trailing_ellipsis": false
+},
+{
+"item": "c8c4c4f6",
+"fragment_letters": [
+105,
+29
+],
+"trailing_ellipsis": false
+},
+{
+"item": "c935775f",
+"fragment_letters": [
+224,
+22
+],
+"trailing_ellipsis": false
+},
+{
+"item": "c935775f",
+"fragment_letters": [
+51,
+175
+],
+"trailing_ellipsis": false
+},
+{
+"item": "cac88a1f",
+"fragment_letters": [
+52,
+45,
+29,
+61
+],
+"trailing_ellipsis": false
+},
+{
+"item": "cce26f50",
+"fragment_letters": [
+87,
+31
+],
+"trailing_ellipsis": false
+},
+{
+"item": "cce26f50",
+"fragment_letters": [
+96,
+68
+],
+"trailing_ellipsis": false
+},
+{
+"item": "cce26f50",
+"fragment_letters": [
+41,
+137
+],
+"trailing_ellipsis": false
+},
+{
+"item": "d08f6f77",
+"fragment_letters": [
+133,
+115
+],
+"trailing_ellipsis": false
+},
+{
+"item": "d29c6711",
+"fragment_letters": [
+164,
+46
+],
+"trailing_ellipsis": false
+},
+{
+"item": "d92b87b8",
+"fragment_letters": [
+64,
+137
+],
+"trailing_ellipsis": false
+},
+{
+"item": "dad00bcc",
+"fragment_letters": [
+88,
+73
+],
+"trailing_ellipsis": false
+},
+{
+"item": "dad00bcc",
+"fragment_letters": [
+64,
+137
+],
+"trailing_ellipsis": false
+},
+{
+"item": "ddb56dd4",
+"fragment_letters": [
+96,
+68
+],
+"trailing_ellipsis": false
+},
+{
+"item": "e1cd6e6b",
+"fragment_letters": [
+41,
+137
+],
+"trailing_ellipsis": false
+},
+{
+"item": "e1cd6e6b",
+"fragment_letters": [
+96,
+68
+],
+"trailing_ellipsis": false
+},
+{
+"item": "e4183c49",
+"fragment_letters": [
+111,
+29
+],
+"trailing_ellipsis": false
+},
+{
+"item": "e4183c49",
+"fragment_letters": [
+105,
+29
+],
+"trailing_ellipsis": false
+},
+{
+"item": "e6219a28",
+"fragment_letters": [
+77,
+89
+],
+"trailing_ellipsis": false
+},
+{
+"item": "e886bd65",
+"fragment_letters": [
+114,
+83
+],
+"trailing_ellipsis": false
+},
+{
+"item": "eac6d2d4",
+"fragment_letters": [
+224,
+15
+],
+"trailing_ellipsis": false
+},
+{
+"item": "f074eb3b",
+"fragment_letters": [
+44,
+11,
+120
+],
+"trailing_ellipsis": false
+},
+{
+"item": "f074eb3b",
+"fragment_letters": [
+53,
+114
+],
+"trailing_ellipsis": false
+},
+{
+"item": "f0ae5022",
+"fragment_letters": [
+123,
+61
+],
+"trailing_ellipsis": false
+},
+{
+"item": "f193c4c5",
+"fragment_letters": [
+42,
+57,
+50,
+90
+],
+"trailing_ellipsis": false
+},
+{
+"item": "f1fb6106",
+"fragment_letters": [
+62,
+105
+],
+"trailing_ellipsis": false
+},
+{
+"item": "f3c934e8",
+"fragment_letters": [
+96,
+68
+],
+"trailing_ellipsis": false
+},
+{
+"item": "f3c934e8",
+"fragment_letters": [
+133,
+115
+],
+"trailing_ellipsis": false
+},
+{
+"item": "f6578465",
+"fragment_letters": [
+108,
+103
+],
+"trailing_ellipsis": false
+},
+{
+"item": "f9df8dba",
+"fragment_letters": [
+89,
+63
+],
+"trailing_ellipsis": false
+}
+]
+}
