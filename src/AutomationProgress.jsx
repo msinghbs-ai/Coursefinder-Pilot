@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Button, Loading, Metric, SectionTitle, StatusChip, fmtDateTime, fmtMoney, fmtNumber } from './ui-kit'
 import { hrefFor } from './nav-map'
+import { runHealth, stateConflict } from './intake-job-health'
 import './automation-progress.css'
 
 // CF-247 Automation Progress (Platform Admin decision 5 Nov 2026 16:36 §3-§8; decision 19:14 §10): a persistent section of Layer 2/3 Operations ›
@@ -143,6 +144,7 @@ export default function AutomationProgress({ rank = 0, client }) {
       <div className="ap-state" data-state={s.state}>
         <StatusChip value={s.state} tone={tone} label={stateLabel}/>
         {s.latest_run_admitted_nothing && <StatusChip value="no_values_admitted" tone="warning" label="The last run completed but admitted no value"/>}
+        {stateConflict(s) && <StatusChip value="state_conflict" tone="warning" label={stateConflict(s).text}/>}
         <span>Job {s.job} · {every(s.schedule)} · last success {when(s.last_success)} · next run {s.next_run ? fmtDateTime(s.next_run) : 'not scheduled'}</span>
       </div>
       <div className="intake-metrics">
@@ -199,7 +201,8 @@ export default function AutomationProgress({ rank = 0, client }) {
       {data?.universities && <><h4>Universities</h4><Universities rows={data.universities} onDrill={drill} busy={busy}/></>}
       {(data?.runs || []).length > 0 && <details className="ap-runs"><summary>Runs in this window ({n(data.runs.length)})</summary><ul>{data.runs.map(r => <li key={r.run_at} data-kind={r.kind}>
         <strong>{fmtDateTime(r.run_at)}</strong> · {KIND[r.kind] || r.kind}{r.cron_run ? ` · run ${r.cron_run.runid} ${words(r.cron_run.status)}` : ''} · selected {n(r.selected)} · validated {n(r.validated)} · admitted {n(r.admitted)} · published {n(r.published)} · held {n(r.held)}{r.withdrawn ? ` · withdrawn ${n(r.withdrawn)}` : ''}
-        <small> · {(r.by_provider || []).slice(0, 4).map(p => `${p.university}: ${n(p.rows)}`).join(', ')}</small></li>)}</ul></details>}
+        <small> · {(r.by_provider || []).slice(0, 4).map(p => `${p.university}: ${n(p.rows)}`).join(', ')}</small>
+        {runHealth(r) && <> <StatusChip value="run_flag" tone={runHealth(r).tone} label={runHealth(r).text}/></>}</li>)}</ul></details>}
     </section>
     <div ref={failRef}><Failures data={fails} filter={filter} setFilter={pickFilter} busy={busy}/></div>
     <div className="intake-actions"><Button compact disabled={!!busy} onClick={() => run('Loading observer readings', async () => setSnaps(await client.progress('observations')))}>Observer readings</Button></div>
