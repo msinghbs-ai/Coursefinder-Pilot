@@ -15,7 +15,7 @@ test('worker v0.50.2 uses it where the entry read finds no text; nothing else in
   const ai = w.slice(w.indexOf('if (mode === "entry_ai") {'), w.indexOf('if (mode === "fee_ai") {'))
   expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(50\.([2-9]|\d{2,})|5[1-9]\.\d+)"/)
   expect(ai).toContain('if (!content.trim()) throw Error(`the model returned no answer${entryNoAnswerWhy(d, i + 1, slices.length)}`);')
-  expect(ai).toContain('const parsed = entryMatrixParsed(JSON.parse(content), page, stored.lines);')
+  expect(ai).toContain('const parsed = entryMatrixParsed(JSON.parse(content), page, stored.lines, parseOpts);')
   expect(ai).toContain('if (it.completeness_required === true && completeness.status !== "complete") {')
 })
 

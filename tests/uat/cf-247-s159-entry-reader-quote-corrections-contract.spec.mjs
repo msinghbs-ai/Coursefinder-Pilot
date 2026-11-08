@@ -164,7 +164,7 @@ test('worker v0.52.0 passes the structure with the band lines, read only outside
   const t = entryTables(html('uow-country-matrix'), htmlToText, true)
   expect([t.lines.forms.length, t.lines.heads.length]).toEqual([t.forms.length, t.heads.length])  // the band lines carry the structure to the gate
   expect(ai).toContain('const stored = await storedText(it.storage_path, it.mime, Number(it.pdf_max_pages) || 40, it.completeness_required !== true), page = stored.text;')
-  expect(ai).toContain('const parsed = entryMatrixParsed(JSON.parse(content), page, stored.lines);')
+  expect(ai).toContain('const parsed = entryMatrixParsed(JSON.parse(content), page, stored.lines, parseOpts);')
   for (const r of ['quote_too_short', 'quote_not_on_page', 'value_without_scale', 'value_not_in_quote', 'grade_not_in_quote', 'band_ambiguous', 'band_missing', 'band_not_in_quote', 'band_mismatch']) expect(fs.readFileSync('supabase/functions/coverage-sweep/entry.ts', 'utf8')).toContain(`d("${r}")`)
 })
 

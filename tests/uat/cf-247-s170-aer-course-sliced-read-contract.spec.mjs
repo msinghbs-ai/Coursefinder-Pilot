@@ -96,14 +96,14 @@ test('complete read: every published minimum once, in page order, the rows read 
   expect(m.coverage.ranges).toEqual(slices.map((s) => [s.start, s.end]))
   for (const r of m.rows) expect(page).toContain(r.quote)
   expect(m.cost).toBeCloseTo(0.003, 6)
-  // de-duplication compares as the quote gate does (case and spacing ignored); the same quote with another grade is another row
+  // de-duplication compares as the quote gate does (case and spacing ignored); since v0.59.11 the same kind and quote is one requirement whatever its grade or score, as the database counts it
   const two = [{ index: 0, start: 0, end: 30, text: '' }, { index: 1, start: 20, end: 50, text: '' }]
   const g = (quote, min_grade) => ({ kind: 'minimum_grade', audience: 'all', quote, min_grade })
   const d = courseEntryMerge(two, [{ index: 0, ok: true, rows: [g('China Gaokao 65%', '65%')], dropped: [], cost: 0 },
     { index: 1, ok: true, rows: [g('china  Gaokao 65%', '65 %'), g('China Gaokao 65%', '60%')], dropped: [], cost: 0 }], 50)
   expect(d.complete).toBe(true)
-  expect(d.rows.map((r) => r.min_grade)).toEqual(['65%', '60%'])
-  expect(d.coverage.duplicates).toBe(1)
+  expect(d.rows.map((r) => r.min_grade)).toEqual(['65%'])
+  expect(d.coverage.duplicates).toBe(2)
   // two slices that do not reach the page's end are not the whole page
   expect(courseEntryMerge(two, [{ index: 0, ok: true, rows: [], dropped: [], cost: 0 }, { index: 1, ok: true, rows: [], dropped: [], cost: 0 }], 60).reason).toBe('1 of 2 slice(s) not read whole: slices leave 1 part(s) of the page unread')
 })
