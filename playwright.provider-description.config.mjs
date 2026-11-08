@@ -14,5 +14,6 @@ export default {
     url: 'http://127.0.0.1:55435/health',
     reuseExistingServer: false,
     timeout: 30_000,
+    stdout: 'pipe', // the transport logs every request and socket error; a failed run then shows them in the job log
   }],
 }

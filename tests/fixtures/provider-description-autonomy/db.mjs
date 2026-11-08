@@ -10,3 +10,10 @@ export function sql(statement, { rank = 6, role = 'authenticated', json = false 
   const out = execFileSync('docker', ['--host=unix:///var/run/docker.sock','exec','-i','pdesc-autonomy-pg','psql','-U','postgres','-X','-q','-A','-t','-v','ON_ERROR_STOP=1','-d','pdesc_autonomy'], { input:cmd, encoding:'utf8', env, maxBuffer:8*1024*1024 }).trim()
   return json ? (out ? JSON.parse(out.split('\n').at(-1)) : null) : out
 }
+
+// Cluster-level statements (create/drop database) for the retry baseline. Fixed local container only; same transport as sql().
+export function admin(statement) {
+  const env = { ...process.env }
+  for (const k of ['DOCKER_HOST','DOCKER_CONTEXT','DOCKER_TLS','DOCKER_TLS_VERIFY','DOCKER_CERT_PATH']) delete env[k]
+  return execFileSync('docker', ['--host=unix:///var/run/docker.sock','exec','-i','pdesc-autonomy-pg','psql','-U','postgres','-X','-q','-A','-t','-v','ON_ERROR_STOP=1','-d','postgres'], { input:statement, encoding:'utf8', env, maxBuffer:1024*1024 }).trim()
+}

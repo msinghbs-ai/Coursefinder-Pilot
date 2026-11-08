@@ -18,6 +18,14 @@ async function read(request, action, args = {}, rank = 6) {
   return response.json()
 }
 
+// A retry must start where the first attempt started. The first attempt saves the one eligible cohort, so without this the retry meets a
+// disabled Save button and reports that, not the failure that made it a retry (PR #916, 8 Nov 2026). Failures are still reported.
+test.beforeEach(async ({ request }, testInfo) => {
+  if (testInfo.retry === 0) return
+  const response = await request.post(service + '/fixture/reset', { data: {} })
+  expect(response.ok(), await response.text()).toBe(true)
+})
+
 async function mount(page, { rank = 6, interrupt } = {}) {
   // Avoid loading unrelated application workspaces. The actual production card,
   // shared styles and its unmodified RPC adapter are imported below.
