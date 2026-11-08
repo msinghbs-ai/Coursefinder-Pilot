@@ -94,6 +94,7 @@ if [ "$OUT" != "$(cat $F/expected.txt)" ]; then echo "the scenarios differ from 
 echo "scenarios: $(echo "$OUT" | wc -l) results match $F/expected.txt"
 
 # performance at the live catalogue size (QA B2): 3,103 providers, 766 stored About pages, all three countries, automatic admission on. The budgets are seconds on this scratch database, against the live limits: 8 s for a screen (authenticated) and 120 s for a job (server).
+# The budgets allow for the CI runner, which measured about twice as slow as the development machine (first CI run: funnel 1.29 s against 0.66 s); the earlier unbounded evaluation took 10 to 12 s here, so any return of the O(N) work fails them.
 # Calibration (read only on the live project, 9 Nov 2026): the live database is NOT faster than this one. scope_v1 over all 3,103 providers took 0.25 s here and 1.4 s on live at a quiet moment and 7.4 s on live straight after (a busy moment), so the live cost of a per-provider check varies 5 to 30 times with load. The budgets are therefore set well under the limits and the number of per-provider calls (stored page, identity, scope) is bounded below as well: the call counts, not the seconds, are what carry over to live.
 SC=${DB}_scale
 dropdb --if-exists $SC >/dev/null 2>&1; createdb -T $DB $SC
@@ -106,17 +107,17 @@ within() { # $1 step, $2 budget seconds
   local v; v=$(secs "$1"); [ -n "$v" ] || { echo "no timing for $1"; exit 1; }
   awk -v v="$v" -v b="$2" 'BEGIN { exit !(v + 0 <= b + 0) }' || { echo "scale: $1 took $v s, over the budget of $2 s"; exit 1; }
 }
-within 'selection_v1 default list, size 60' 2.0
-within 'throughput_v1' 1.0
-within 'funnel (rank 6 caller, 3,000 in scope)' 1.2
-within 'enqueue_v1, stored mode, run 1' 2.0
-within 'enqueue_v1, stored mode, run 2' 1.5
-within 'enqueue_v1, stored mode, run 3' 2.0
-within 'enqueue_v1, direct mode' 2.0
-within 'lease: svc_provider_description_next' 1.0
-within 'registry tier run' 4.0
-within 'machine report' 1.0
-within 'fire_v1 (whole run)' 6.0
+within 'selection_v1 default list, size 60' 3.5
+within 'throughput_v1' 2.0
+within 'funnel (rank 6 caller, 3,000 in scope)' 3.0
+within 'enqueue_v1, stored mode, run 1' 3.5
+within 'enqueue_v1, stored mode, run 2' 3.0
+within 'enqueue_v1, stored mode, run 3' 3.5
+within 'enqueue_v1, direct mode' 3.5
+within 'lease: svc_provider_description_next' 2.5
+within 'registry tier run' 8.0
+within 'machine report' 2.5
+within 'fire_v1 (whole run)' 12.0
 # bounded work: the page and identity checks run for a slice, not for the 766 providers with a stored page or the 3,000 in scope
 [ "$(calls 'enqueue_v1, stored mode, run 1' provider_description_stored_v1)" -le 200 ] || { echo "scale: enqueue ran the stored page check for too many providers"; exit 1; }
 [ "$(calls 'funnel (rank 6 caller, 3,000 in scope)' provider_description_stored_v1)" -le 60 ] || { echo "scale: the funnel ran the stored page check for too many providers"; exit 1; }
