@@ -12,6 +12,7 @@ on:
       - 'tests/fixtures/intake-fairness/**'
       - 'tests/fixtures/deakin-intake-calendar/**'
       - 'tests/fixtures/intake-self-driving/**'
+      - 'tests/fixtures/intake-calendar-qualify/**'
       - 'docs/paste/PASTE-20261108-iq00313-deakin-intake-withdrawal.sql'
       - 'supabase/functions/coverage-sweep/calendar.ts'
       - 'tests/integration/intake-postgres.spec.mjs'
@@ -54,7 +55,8 @@ jobs:
       - run: bash tests/fixtures/intake-fairness/run.sh | tee intake-fairness-results.log
       - run: bash tests/fixtures/intake-fairness/browser.sh | tee intake-fairness-browser.log
       - run: DK_KEEP=1 bash tests/fixtures/deakin-intake-calendar/run.sh | tee intake-deakin-calendar-results.log
-      - run: SD_REUSE=1 bash tests/fixtures/intake-self-driving/run.sh | tee intake-self-driving-results.log
+      - run: SD_REUSE=1 SD_KEEP=1 bash tests/fixtures/intake-self-driving/run.sh | tee intake-self-driving-results.log
+      - run: CQ_REUSE=1 bash tests/fixtures/intake-calendar-qualify/run.sh | tee intake-calendar-qualify-results.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -69,6 +71,7 @@ jobs:
             intake-fairness-browser.log
             intake-deakin-calendar-results.log
             intake-self-driving-results.log
+            intake-calendar-qualify-results.log
             uat-artifacts/intake-integration.json
             uat-artifacts/intake-benchmark.json
             uat-artifacts/intake-timeout-regression.json
