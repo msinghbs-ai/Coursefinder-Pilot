@@ -1,0 +1,99 @@
+off_proposal_waits|1|(none)|0
+off_selection_size_limit|cohort size must be between 1 and 10
+off_fire_sends_one|1
+on_admitted_tally|{"admitted": 1}
+on_description|true
+on_item_approved_no_wait|1|0
+on_decision_actor|c0ffee00-0000-4000-8000-000000000150|pdesc-machine-v1|machine|true
+on_read_admitted|admitted|machine
+on_audit|stored|admitted|true|true|true|true
+on_refresh_signal|1
+on_control_event|1
+on_second_admit_refused|not_a_waiting_provider_description
+withdraw_no_reason|give a reason (kept in the log)
+withdraw|true|null
+withdraw_result|(none)|fixture rollback check|true
+withdraw_again|no_live_machine_admission
+withdrawn_gate|withdrawn_awaiting_review
+withdraw_event|1
+withdraw_person_edit|description_changed_since_admission|A person rewrote this description by hand.
+decline_tally|{"machine_declined": 3}
+decline_campus|held|machine_declined_machine_text_refused_word|0|(none)
+decline_figure|held|machine_declined_machine_text_figure|0
+decline_extra_word|held|machine_declined_machine_text_refused_word|0
+decline_proposal_kept|true
+year_ok|clean
+own_name_ok|refused_word:premier
+own_name_premier|clean|refused_word:premier
+gate_lock|manual_lock
+gate_has_description|description_already_held
+gate_human_rejection|prior_human_rejection
+gate_identity_finding|identity_identity_unconfirmed
+gate_unpublished|provider_not_live
+gate_clean|pdesc-machine-v1
+gate_off|machine_admission_off
+waiting_before|1|1
+settle|{"on": true, "errors": 0, "admitted": 1, "left_for_a_person": 1}
+settle_13|1|true|c0ffee00-0000-4000-8000-000000000150
+settle_9|1|(none)|Machine rule pdesc-machine-v1 did not admit this: validation|declined|pdesc-machine-v1
+settle_again|{"on": true, "errors": 0, "admitted": 0, "left_for_a_person": 0}|1
+reg_profile|true|registry_factual|Aurora Maritime University is a university in Melbourne, Victoria, Australia. It is listed on the Commonwealth Register of Institutions and Courses for Overseas Students (CRICOS) with provider code FX000001. Its listed courses are at Bachelor and Masters levels, in fields including Business and Engineering.
+reg_profile_sources|catalogue,provider_record,register|3|true
+reg_thin|false|insufficient_verified_facts|2 verified fact(s) held (register, type); 3 needed for a useful, truthful profile.
+reg_thin_min2|true|Kiwi Lake University is a university in New Zealand. It appears in the New Zealand Qualifications Authority (NZQA) provider listing with provider number FX000011.
+reg_ca_untyped|false|insufficient_verified_facts|2 verified fact(s) held (register, location); 3 needed for a useful, truthful profile.
+reg_ca_untyped_min2|true|Maple Snow University is located in Toronto, Ontario, Canada. It appears on the Immigration, Refugees and Citizenship Canada list of designated learning institutions with DLI number FX000012.
+reg_junk_city|true|Maple Snow University is located in Ontario, Canada. It appears on the Immigration, Refugees and Citizenship Canada list of designated learning institutions with DLI number FX000012.
+reg_no_wording|There is no profile wording for register scheme fixture_ca.
+reg_no_listing|The provider has no active register listing with stored evidence.
+tier_off|{"on": false}
+tier_off_registry_switch|{"on": false}
+tier_run|{"on": true, "held": 1, "errors": 0, "admitted": 1}
+tier_admitted|No Source University is a university in Melbourne, Victoria, Australia. It is listed on the Commonwealth Register of Institutions and Courses for Overseas Students (CRICOS) with provider code FX000014.|1
+tier_audit|registry_factual|pdesc-machine-v1|admitted|true|true
+tier_decision|pdesc-machine-v1|registry_factual|true
+tier_thin_held|held/insufficient_verified_facts,held/no_about_page|(none)|0
+tier_not_touched|(none)|0
+tier_again|{"on": true, "held": 0, "errors": 0, "admitted": 0}
+tier_withdraw|true|(none)
+scope_default|true|false
+scope_unclassified|false|true
+scope_both|true|true
+scope_empty_all|true|true|true|true
+scope_empty_keys_all|17|17
+scope_country|1
+set_empty_keys|ok
+set_empty_keys_now|[]
+set_empty_types|ok
+set_empty_types_now|[]
+set_empty_countries|give at least 1 value(s)
+set_countries_ok|ok
+set_not_a_person|Platform Admin required
+set_other_list|ok
+set_audit|4
+tp_shape|15|AU=13,CA=1,NZ=1|15|1
+enqueue_on|14
+queued_by_country|AU=12,CA=1,NZ=1
+enqueue_again|0
+tp_spread|12|2|18
+tp_cap|1
+enqueue_off|2
+lease_concurrency|1
+lease_concurrency_full|review_full
+lease_spend|ai_spend_committed
+lease_fair|NZ
+lease_off_waiting_cap|review_full
+fire_on_7_max2|7|2|2
+fire_on_7_max3|7|3|3
+fire_on_2_max3|2|1|1
+fire_off_7_max3|7|1|1
+fire_first|4|2|2
+fire_second|0
+parity_before|not checked
+parity_check_ran|1
+parity_after|true|true|true|true
+parity_website_text|true
+report_parity|1|1|1|0|0
+report_tiers|{"stored": 1}|1|2
+parity_withdrawn|null|0
+report_mismatch|1

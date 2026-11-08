@@ -12,6 +12,7 @@ import{supabase}from'./lib/supabase'
 import Card from'./Card'
 import{Button,Empty,Loading,fmtDateTime}from'./ui-kit'
 import{fmtNumber}from'./lib/format.js'
+import{listShown,parseList,listValid,listError,listPlaceholder}from'./lib/settings-list.js'
 import{plainError}from'./lib/errors'
 
 const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
@@ -30,14 +31,14 @@ const SECTION_HELP={'Alerts':'How platform health issues become alerts (StudySea
 // One setting: value, range and unit, what uses it, the last change; Save asks for a reason inline.
 function SettingRow({s,can,onSave}){
   // CF-247 16 Oct 2026: a list setting (for example the Zoho countries) is edited as comma-separated values
-  const shown=x=>Array.isArray(x)?x.join(', '):String(x??'')
+  const shown=listShown
   const[v,setV]=useState(shown(s.value)),[reason,setReason]=useState(''),[busy,setBusy]=useState(false),[err,setErr]=useState('')
   useEffect(()=>{setV(shown(s.value))},[s.value])
   // v2.15.277: a yes/no setting (kind boolean) is chosen from Yes or No; numbers as before
   const yn=s.kind==='boolean',ls=s.kind==='list',n=Number(v)
-  const list=v.split(',').map(x=>x.trim()).filter(Boolean)
+  const list=parseList(v)
   const changed=yn?v!==String(s.value):ls?v.trim()!==shown(s.value):v!==''&&n!==Number(s.value)
-  const valid=yn||(ls?list.length>0:(Number.isFinite(n)&&(s.min==null||n>=Number(s.min))&&(s.max==null||n<=Number(s.max))))
+  const valid=yn||(ls?listValid(s,v):(Number.isFinite(n)&&(s.min==null||n>=Number(s.min))&&(s.max==null||n<=Number(s.max))))
   const save=async()=>{setBusy(true);setErr('');try{await onSave(s.key,yn?v==='true':ls?list:n,reason.trim());setReason('')}catch(e){setErr(errText(e))}finally{setBusy(false)}}
   return <div className="sr-row" data-register-setting={s.key}>
     <div className="sr-text"><strong>{s.label}</strong>{s.help&&<small>{s.help}</small>}<small className="sr-used">Used by: {s.used_by||'—'}</small>
@@ -45,11 +46,11 @@ function SettingRow({s,can,onSave}){
     <div className="sr-edit">
       {can?<>
         <label className="sr-value"><span className="sr-hide">{s.label}</span>{yn?<select className="fv-input" value={v} onChange={e=>setV(e.target.value)}><option value="true">Yes</option><option value="false">No</option></select>
-          :ls?<input className="fv-input" type="text" value={v} onChange={e=>setV(e.target.value)}/>
+          :ls?<input className="fv-input" type="text" placeholder={listPlaceholder(s)||undefined} value={v} onChange={e=>setV(e.target.value)}/>
           :<input className="fv-input" type="number" inputMode="numeric" min={s.min??undefined} max={s.max??undefined} value={v} onChange={e=>setV(e.target.value)}/>}{!yn&&!ls&&<span>{s.unit}</span>}</label>
         {changed&&<label className="sr-reason"><span className="sr-hide">Reason</span><input className="fv-input" placeholder="Reason (kept in the log)" value={reason} onChange={e=>setReason(e.target.value)}/></label>}
         {changed&&<Button compact variant="primary" disabled={busy||!valid||reason.trim().length<4} onClick={save}><Save size={13}/>Save</Button>}
-        {changed&&!valid&&<small className="fr-error">{ls?'At least one value.':<>Between {fmtNumber(Number(s.min))} and {fmtNumber(Number(s.max))}.</>}</small>}
+        {changed&&!valid&&<small className="fr-error">{ls?listError(s):<>Between {fmtNumber(Number(s.min))} and {fmtNumber(Number(s.max))}.</>}</small>}
         {err&&<small className="fr-error" role="alert">{err}</small>}
       </>:<strong>{yn?(String(s.value)==='true'?'Yes':'No'):ls?shown(s.value):<>{fmtNumber(Number(s.value))} {s.unit}</>}</strong>}
       <small className="sr-range">{!yn&&!ls&&s.min!=null?`${fmtNumber(Number(s.min))} to ${fmtNumber(Number(s.max))}`:''}</small>
