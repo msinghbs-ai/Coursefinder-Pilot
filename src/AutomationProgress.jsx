@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Button, Loading, Metric, SectionTitle, StatusChip, fmtDateTime, fmtMoney, fmtNumber } from './ui-kit'
 import { hrefFor } from './nav-map'
+import { summariseControls } from './intake-controls-view'
 import './automation-progress.css'
 
 // CF-247 Automation Progress (Platform Admin decision 5 Nov 2026 16:36 §3-§8; decision 19:14 §10): a persistent section of Layer 2/3 Operations ›
@@ -175,6 +176,11 @@ export default function AutomationProgress({ rank = 0, client }) {
         <a className="cf-link" href={hrefFor('layer4')}>Review blockers in Layer 4</a>
         {rank >= 5 && <a className="cf-link" href={hrefFor('health', 'integration')}>Integration queue</a>}
       </div>
+      <section className="ap-block" data-testid="ap-controls-settings" aria-label="Controls and settings">
+        <h4>Controls and settings</h4>
+        <dl className="ap-facts">{summariseControls(s).map(r => <div key={r.label} data-held={r.held ? 'yes' : 'no'}><dt>{r.label}</dt><dd>{r.value}</dd></div>)}</dl>
+        <p className="ap-note">These values are set in Settings with a reason and shown here as read; nothing on this screen changes them. <a className="cf-link" href={hrefFor('environment')}>Open Settings</a></p>
+      </section>
       {!c.can_pause_resume && <p className="ap-note">Read only: Pause and Resume are for the {c.control_rank >= 6 ? 'Platform Admin' : 'PIM Admin'} and above, through the existing Automations control.</p>}
       <section className="ap-block" aria-label="Alerts">
         <h4>Alerts</h4>
