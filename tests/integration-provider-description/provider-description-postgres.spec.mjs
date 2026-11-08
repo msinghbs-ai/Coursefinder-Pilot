@@ -141,6 +141,7 @@ test('operator runs a fixed cohort, recovers its committed request, then inspect
   saved = await read(page.request, 'saved', { cohort_id: cohortId })
   expect(saved.totals.admitted).toBe(1)
   expect(saved.totals.website_verified).toBe(1)
+  expect(testInfo.retry, 'PROOF ONLY (never merged): fail the first attempt after the cohort is saved, to show the retry starts clean').toBeGreaterThan(0)
   expect(saved.totals.zoho_verified ?? saved.zoho_verified).toBe(1)
   expect(saved.totals.cost_usd).toBeGreaterThan(0)
   expect(Number(sql(`select sum(tries) from pipeline.provider_description_reads where provider_id=${quote(provider.provider_id)}::uuid;`, { role: 'postgres' }))).toBe(1)
