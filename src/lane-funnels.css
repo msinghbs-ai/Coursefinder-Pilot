@@ -1,0 +1,43 @@
+/* CF-247 OPS/UI lane funnels (Layer 2/3 > Operations). Desktop: one summary row per lane on a nine-column grid. Phone (<= 640 px): each lane is a card, its
+   summary cells stack with their label beside the value, and every wide table scrolls inside its own frame (the page never scrolls sideways). */
+.lf .lf-head,.lf .lf-lane>summary{display:grid;grid-template-columns:minmax(150px,1.5fr) minmax(130px,1fr) minmax(110px,1fr) minmax(150px,1.2fr) 90px 90px 110px 100px minmax(100px,1fr);gap:8px;align-items:center}
+.lf .lf-head{font-size:var(--cf-fs-xs);color:var(--cf-muted);padding:4px 12px;border-bottom:1px solid var(--cf-border)}
+.lf .lf-lanes{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.lf .lf-lane{border:1px solid var(--cf-border);border-radius:8px;background:var(--cf-surface)}
+.lf .lf-lane>summary{list-style:none;cursor:pointer;padding:10px 12px;min-height:44px}
+.lf .lf-lane>summary::-webkit-details-marker{display:none}
+.lf .lf-lane[open]>summary{border-bottom:1px solid var(--cf-border)}
+.lf .lf-cell small,.lf .lf-kind,.lf .lf-zero{color:var(--cf-muted)}
+.lf .lf-body{padding:10px 12px 14px}
+.lf .lf-frame{overflow-x:auto;max-width:100%}
+.lf .lf-three{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:8px 0}
+.lf .lf-three>div{border:1px solid var(--cf-border);border-radius:6px;padding:8px;display:flex;flex-direction:column;gap:2px}
+.lf .lf-unknown{font-style:italic;color:var(--cf-muted)}
+.lf .lf-error{color:var(--cf-danger);font-size:var(--cf-fs-xs)}
+.lf .lf-reasons{margin:4px 0 0;padding-left:16px;font-size:var(--cf-fs-xs)}
+.lf .lf-switches{list-style:none;margin:0 0 8px;padding:0;display:flex;flex-wrap:wrap;gap:8px 16px}
+.lf .lf-actions{white-space:nowrap}
+.lf .lf-actions .cf-btn{min-height:32px;margin-right:4px}
+.lf tr.is-stalled{background:color-mix(in srgb,var(--cf-danger) 8%,transparent)}
+@media (max-width:640px){
+  .lf .lf-head{display:none}
+  .lf .lf-lane>summary{grid-template-columns:1fr;gap:4px}
+  .lf .lf-lane>summary .lf-name{font-size:1rem}
+  .lf .lf-lane>summary .lf-cell{display:flex;justify-content:space-between;gap:12px;align-items:baseline}
+  .lf .lf-lane>summary .lf-cell::before{content:attr(data-label);color:var(--cf-muted);font-size:var(--cf-fs-xs)}
+  .lf .lf-three{grid-template-columns:minmax(0,1fr)}
+  .lf .lf-three>div{min-width:0;overflow-wrap:anywhere}
+  /* stage, job and setting tables become stacked rows: label beside value, no sideways page scroll */
+  .lf table.cf-table,.lf table.cf-table tbody,.lf table.cf-table tr,.lf table.cf-table td{display:block;width:100%}
+  .lf table.cf-table thead{display:none}
+  .lf table.cf-table tr{border:1px solid var(--cf-border);border-radius:6px;margin-bottom:8px;padding:6px 8px}
+  .lf table.cf-table td{display:flex;justify-content:space-between;gap:12px;border:0;padding:3px 0;text-align:right}
+  .lf table.cf-table td::before{content:attr(data-label);color:var(--cf-muted);font-size:var(--cf-fs-xs);text-align:left;flex:0 0 38%}
+  .lf .lf-actions{justify-content:flex-start}
+  .lf .lf-actions .cf-btn{min-height:44px;min-width:44px}
+}
+/* Services > Firecrawl sits inside a grid card whose single column grew to the widest existing table (794 px on a phone); let the column shrink so every
+   table scrolls inside its own frame and the page does not scroll sideways. Added with the Firecrawl allowance card; no other rule of the card changes. */
+.svc-card{grid-template-columns:minmax(0,1fr)}
+.svc-card>.m-page-stack{min-width:0}
+[data-fc-acceptance]{min-width:0;max-width:100%}

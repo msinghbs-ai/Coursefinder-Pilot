@@ -18,6 +18,7 @@ import{supabase}from'./lib/supabase'
 import{Button,Empty,Loading,fmtDateTime,fmtNumber}from'./ui-kit'
 import FirecrawlWork from'./FirecrawlWork'
 import FirecrawlCredits from'./FirecrawlCredits'
+import FirecrawlAcceptance from'./FirecrawlAcceptance'
 import Card,{rememberOpen}from'./Card'
 import{hrefFor}from'./nav-map'
 import{plainError}from'./lib/errors'
@@ -162,7 +163,7 @@ export default function Toolsets({onError,only=null}){
       <SnapshotStamp meta={n?.snapshot} label="Notices checked" what="toolset-notices"/>
       <div className="tn-all" data-toolset-notices>{notices.length?notices.map(x=><Notice key={x.key} n={x} onDone={load}/>):<p className="sl-sub">No notices on any layer.</p>}</div>
     </Card>}
-    {(d.toolsets||[]).filter(t=>!RETIRED_TOOLSETS.has(t.key)&&want(t.key)).map(t=><React.Fragment key={t.key}><Toolset t={t} d={d} can={can} write={write}/>{t.key==='firecrawl'&&<><FirecrawlCredits onError={onError}/><FirecrawlWork onError={onError}/></>}</React.Fragment>)}
+    {(d.toolsets||[]).filter(t=>!RETIRED_TOOLSETS.has(t.key)&&want(t.key)).map(t=><React.Fragment key={t.key}><Toolset t={t} d={d} can={can} write={write}/>{t.key==='firecrawl'&&<><FirecrawlAcceptance onError={onError}/><FirecrawlCredits onError={onError}/><FirecrawlWork onError={onError}/></>}</React.Fragment>)}
   </div>
 }
 
