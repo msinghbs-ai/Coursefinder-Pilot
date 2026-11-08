@@ -95,7 +95,7 @@ test('governance: nothing is dropped or deleted, no consumer API object is touch
   expect(body).not.toMatch(/create table|cron\.schedule/i)
   const wf = fs.readFileSync('.github/workflows/intake-run-validate-test.yml', 'utf8')
   expect(wf).toContain("'tests/fixtures/intake-self-driving/**'")
-  expect(wf).toContain('SD_REUSE=1 bash tests/fixtures/intake-self-driving/run.sh | tee intake-self-driving-results.log')
+  expect(wf).toContain('SD_REUSE=1 SD_KEEP=1 bash tests/fixtures/intake-self-driving/run.sh | tee intake-self-driving-results.log')
   const run = read('run.sh')
   expect(run).toContain('PASS consumer API frozen')
   expect(run).toContain('PASS migrations 20261109040000 and 20261109041000 applied twice without change')
