@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Button, Loading, Metric, SectionTitle, StatusChip, fmtDateTime } from './ui-kit'
 import { intakeRunApi } from './intake-run-api'
+import { runOutcomeNotice } from './intake-run-outcome'
 import './intake-run-validate.css'
 
 const value = x => x == null ? 'Not held' : typeof x === 'object' ? JSON.stringify(x, null, 2) : String(x)
@@ -109,6 +110,7 @@ export default function IntakeRunValidate({ rank = 0, client = intakeRunApi }) {
       {run && <div role="status"><StatusChip value={run.state}/>{run.outcome && <StatusChip value={run.outcome}/>}<p>Run: {run.run_id || 'Awaiting confirmed run ID'} · Started {fmtDateTime(run.started_at)} · Finished {fmtDateTime(run.finished_at)}</p>
         <p>{run.state === 'awaiting_response' ? 'Waiting for the synchronous job response; intermediate progress is not exposed.' : unknown ? 'Outcome unknown. Verify this cohort first. Recover same request uses the original idempotency key; it never creates a new run request.' : `Processed ${run.processed ?? 'unknown'} · Admitted ${run.admitted ?? 'unknown'} · Skipped ${run.skipped ?? 'unknown'} · Failed ${run.failed ?? 'unknown'}`}</p>
         {run.next_action && <p>{run.next_action}</p>}
+        {runOutcomeNotice(run) && <p role="alert" className="intake-outcome-notice">{runOutcomeNotice(run).text}</p>}
         {(run.refused || run.error || run.result?.refused || run.result?.error) && <><p>{run.refused || run.error || run.result?.refused || run.result?.error}</p><p>Next action: verify the cohort and review the recorded refusal with an authorised operator. Resume only through existing job controls after resolving the cause.</p></>}
       </div>}
       {caps.recent?.length > 0 && <label>Saved cohorts<select value="" disabled={!!busy} onChange={e => { if (e.target.value) verify(e.target.value) }}><option value="">Open a saved cohort</option>{caps.recent.map(r => <option key={r.cohort_id} value={r.cohort_id}>{fmtDateTime(r.created_at)} · {r.reason}</option>)}</select></label>}

@@ -26,6 +26,7 @@ async function mount(page, options = {}) {
       async run(id, reason, key) {
         window.intakeCalls.push({ method: 'run', id, reason, key }); window.runAttempts++
         if (options.unknown && window.runAttempts === 1) throw new Error('Network interrupted')
+        if (options.noAdmission) return { run_id: 'run-1', state: 'done', processed: 3, admitted: 0, skipped: 3, failed: 0, started_at: '2026-11-04T10:01:00Z', finished_at: '2026-11-04T10:02:00Z' }
         if (options.refused) return { run_id: 'run-1', state: 'refused', refused: 'job is paused' }
         return { run_id: 'run-1', state: 'done', processed: 1, admitted: 1, skipped: 0, failed: 0, started_at: '2026-11-04T10:01:00Z', finished_at: '2026-11-04T10:02:00Z' }
       },
@@ -135,4 +136,14 @@ test('preview timeout identifies the failed stage and never prepares or dispatch
   await expect(page.getByRole('button', { name: 'Fix previewed cohort' })).toBeDisabled()
   await expect(page.getByRole('button', { name: 'Run Now', exact: true })).toBeDisabled()
   expect(await page.evaluate(() => window.intakeCalls.every(c => c.method === 'read'))).toBe(true)
+})
+
+test('a done job that admitted nothing is flagged and a clean run is not (F-INT.05)', async ({ page }) => {
+  await mount(page, { noAdmission: true }); await fix(page)
+  await page.getByRole('button', { name: 'Run Now', exact: true }).click()
+  await expect(page.getByText('A finished job is not data gain')).toBeVisible()
+  await mount(page); await fix(page)
+  await page.getByRole('button', { name: 'Run Now', exact: true }).click()
+  await expect(page.getByText('Admitted 1')).toBeVisible()
+  await expect(page.getByText('A finished job is not data gain')).toHaveCount(0)
 })
