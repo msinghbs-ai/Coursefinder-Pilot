@@ -1,10 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Button, Loading, Metric, SectionTitle, StatusChip, fmtDateTime } from './ui-kit'
 import { intakeRunApi } from './intake-run-api'
+import { intakeParity, parityByProvider, PARITY_LABEL } from './intake-parity'
+import { runOutcomeNotice } from './intake-run-outcome'
+import { intakeStageTimeline } from './intake-stage-timeline'
+import { summariseEvidence } from './intake-evidence-view'
 import './intake-run-validate.css'
 
 const value = x => x == null ? 'Not held' : typeof x === 'object' ? JSON.stringify(x, null, 2) : String(x)
 function Evidence({ data }) { return <pre className="intake-evidence">{value(data)}</pre> }
+function EvidenceSummary({ data }) {
+  return <dl className="intake-evidence-summary">{summariseEvidence(data).map(r => <div key={r.label}><dt>{r.label}</dt><dd>{r.value}</dd></div>)}</dl>
+}
 function Source({ url }) {
   try { if (!['https:', 'http:'].includes(new URL(url).protocol)) return null } catch { return null }
   return <a className="cf-link" href={url} target="_blank" rel="noreferrer">Official source</a>
@@ -109,20 +116,23 @@ export default function IntakeRunValidate({ rank = 0, client = intakeRunApi }) {
       {run && <div role="status"><StatusChip value={run.state}/>{run.outcome && <StatusChip value={run.outcome}/>}<p>Run: {run.run_id || 'Awaiting confirmed run ID'} · Started {fmtDateTime(run.started_at)} · Finished {fmtDateTime(run.finished_at)}</p>
         <p>{run.state === 'awaiting_response' ? 'Waiting for the synchronous job response; intermediate progress is not exposed.' : unknown ? 'Outcome unknown. Verify this cohort first. Recover same request uses the original idempotency key; it never creates a new run request.' : `Processed ${run.processed ?? 'unknown'} · Admitted ${run.admitted ?? 'unknown'} · Skipped ${run.skipped ?? 'unknown'} · Failed ${run.failed ?? 'unknown'}`}</p>
         {run.next_action && <p>{run.next_action}</p>}
+        {runOutcomeNotice(run) && <p role="alert" className="intake-outcome-notice">{runOutcomeNotice(run).text}</p>}
         {(run.refused || run.error || run.result?.refused || run.result?.error) && <><p>{run.refused || run.error || run.result?.refused || run.result?.error}</p><p>Next action: verify the cohort and review the recorded refusal with an authorised operator. Resume only through existing job controls after resolving the cause.</p></>}
       </div>}
+      {(cohort || report) && <details open className="intake-stages"><summary>Run stages</summary><ol>{intakeStageTimeline({ cohort, preview, run, report }).map(s => <li key={s.key} data-stage={s.key} data-state={s.state}><strong>{s.label}</strong> · {s.state.replaceAll('_', ' ')}{s.at ? ` · ${fmtDateTime(s.at)}` : ''}<br/><small>{s.detail}</small></li>)}</ol></details>}
       {caps.recent?.length > 0 && <label>Saved cohorts<select value="" disabled={!!busy} onChange={e => { if (e.target.value) verify(e.target.value) }}><option value="">Open a saved cohort</option>{caps.recent.map(r => <option key={r.cohort_id} value={r.cohort_id}>{fmtDateTime(r.created_at)} · {r.reason}</option>)}</select></label>}
       <div className="intake-actions"><label>Existing cohort ID<input value={lookup} onChange={e => setLookup(e.target.value)} placeholder="UUID"/></label><Button disabled={!!busy || (!!cohort && lookup !== cohort.cohort_id) || !/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(lookup)} onClick={() => verify(lookup)}>Read existing cohort</Button></div>
       {report && <>
         <p>Verification at {fmtDateTime(report.as_at)} · Cohort {report.cohort_id}. {report.verdict || 'Verdict not supplied by backend'} {report.next_action}</p>
         <div className="intake-metrics">{Object.entries(report.totals || {}).filter(([, v]) => typeof v === 'number').map(([k, v]) => <Metric key={k} label={k.replaceAll('_', ' ')} value={v}/>)}</div>
+        {courses.length > 0 && <details open><summary>Catalogue, Website and Zoho agreement by university</summary><div className="intake-table-scroll"><table><thead><tr><th>University</th><th>Courses</th><th>Website matches</th><th>Website differs</th><th>Website not read</th><th>Zoho matches</th><th>Zoho differs</th><th>Zoho not read</th></tr></thead><tbody>{parityByProvider(courses).map(r => <tr key={r.provider}><td>{r.provider}</td><td>{r.courses}</td><td>{r.website.match}</td><td>{r.website.differs}</td><td>{r.website.not_read + r.website.cannot_compare}</td><td>{r.zoho.match}</td><td>{r.zoho.differs}</td><td>{r.zoho.not_read + r.zoho.cannot_compare}</td></tr>)}</tbody></table></div><p>Read-only comparison of the values shown below. A side that was not read is counted as not read, never as a match.</p></details>}
         <details><summary>Audited runs and failure reasons</summary><Evidence data={report.runs}/><Evidence data={report.totals?.skipped_or_failed}/></details>
       </>}
       {courses.map(c => <article key={c.course_id} className="intake-course">
         <h3>{c.course_title || c.course_id}</h3><p>{c.provider_name || c.provider_id} · {c.pattern} · {(c.fills || []).join(', ')}</p><p>{c.eligibility_reason}</p><Source url={c.course_url}/>
-        <details><summary>Source evidence and values at selection</summary>{(c.at_selection || c.evidence || []).map((e, i) => <div key={e.intake_id || i}><Source url={e.page_url}/><Source url={e.calendar_url}/><Evidence data={e}/></div>)}</details>
+        <details><summary>Source evidence and values at selection</summary>{(c.at_selection || c.evidence || []).map((e, i) => <div key={e.intake_id || i}><Source url={e.page_url}/><Source url={e.calendar_url}/><EvidenceSummary data={e}/><Evidence data={e}/></div>)}</details>
         {report && <><details open><summary>Before / after intake values</summary>{(c.added || []).map((a, i) => <div key={a.intake_id || i} className="intake-values"><div><strong>Before</strong><Evidence data={a.before}/></div><div><strong>After</strong><Evidence data={a.after}/></div></div>)}{!c.added?.length && <p>No newly admitted values recorded.</p>}<strong>Current catalogue</strong><Evidence data={c.now}/></details>
-          <details><summary>Website / Zoho read-back</summary><p>Website matches: {c.published ?? 'unknown'}. Zoho response alone does not prove value consistency.</p>{c.publication && <p>Catalogue: {c.publication.catalogue} · Website: {c.publication.website} · Zoho: {c.publication.zoho}</p>}<strong>Website intakes</strong><Evidence data={c.website_intakes}/><strong>Zoho intakes</strong><Evidence data={c.zoho_intakes}/></details></>}
+          <details><summary>Website / Zoho read-back</summary><p>Website matches: {c.published ?? 'unknown'}. Zoho response alone does not prove value consistency.</p>{(() => { const p = intakeParity(c); return <p data-testid="intake-parity">Website: {PARITY_LABEL[p.website.state]} ({p.website.note}) · Zoho: {PARITY_LABEL[p.zoho.state]} ({p.zoho.note})</p> })()}{c.publication && <p>Catalogue: {c.publication.catalogue} · Website: {c.publication.website} · Zoho: {c.publication.zoho}</p>}<strong>Website intakes</strong><Evidence data={c.website_intakes}/><strong>Zoho intakes</strong><Evidence data={c.zoho_intakes}/></details></>}
       </article>)}
       {caps.diagnostic?.approved === true && caps.diagnostic?.read_only === true && caps.diagnostic?.model && <><Button disabled={!!busy || !report?.cohort_id} onClick={() => execute('Reading AI diagnostic', async () => setDiagnostic(await client.read('diagnostic', { cohort_id: report.cohort_id })))}>AI diagnostic ({caps.diagnostic.model})</Button>{diagnostic && <Evidence data={diagnostic}/>}</>}
       {!caps.diagnostic?.approved && <p>AI diagnostic unavailable: no approved read-only diagnostic capability is advertised.</p>}

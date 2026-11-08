@@ -19,6 +19,7 @@
 @media (max-width: 600px) {
   .ap-funnel { grid-template-columns: minmax(0, 1fr); }
   .ap-controls > * { width: 100%; }
-  .ap button { min-height: 44px; }
+  /* .cf-btn.compact (min-height 26px) outranks a bare ".ap button", so the 44px target never applied; name the same classes */
+  .ap button, .ap .cf-btn.compact { min-height: 44px; }
 }
 .ap-measures small { display: block; font-weight: 400; color: var(--cf-text-muted, inherit); }
