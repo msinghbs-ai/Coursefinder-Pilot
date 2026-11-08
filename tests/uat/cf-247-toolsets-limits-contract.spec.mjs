@@ -73,7 +73,7 @@ test('browser: notices on the layer page, acknowledged with a reason', async ({ 
   await expect.poll(() => page.l3calls.find(c => c.toolsets === 'ack')?.args).toMatchObject({ notice_key: 'scheduled_jobs:2:timeout:scholarship-nationality', reason: 'Seen; reviewing the batch size' })
   // v2.15.252: Layer 3 retired; its old address opens Layer 2/3 › Universities, which (SS-020 step 2) no longer repeats the Layer 2 notices
   await page.goto('/#layer-3-ai')
-  await expect(page.locator('[data-adapters-list]').or(page.locator('main h1'))).toBeVisible()
+  await expect(page.locator('[data-adapters-list]').or(page.locator('main h1')).first()).toBeVisible()
   await expect(page.locator('[data-layer-notices="2"]')).toHaveCount(0)
   await expect(page.locator('[data-layer-notices="3"]')).toHaveCount(0)
 })
