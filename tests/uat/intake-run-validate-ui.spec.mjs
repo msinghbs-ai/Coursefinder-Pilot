@@ -52,6 +52,8 @@ test('preview, fix, run and verify retain evidence and distinguish publication f
   await expect(page.getByLabel('University scope')).toBeDisabled()
   await page.getByRole('button', { name: 'Run Now', exact: true }).click()
   await expect(page.getByText('Processed 1 · Admitted 1 · Skipped 0 · Failed 0')).toBeVisible()
+  await expect(page.locator('[data-stage="validated"]')).toHaveAttribute('data-state', 'done')
+  await expect(page.locator('[data-stage="http"]')).toHaveAttribute('data-state', 'not_recorded')
   await expect(page.getByRole('button', { name: 'Run Now', exact: true })).toBeDisabled()
   await page.getByRole('button', { name: 'Verify catalogue & publication' }).click()
   await expect(page.getByText('Before', { exact: true })).toBeVisible()
