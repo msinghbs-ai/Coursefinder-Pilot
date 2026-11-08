@@ -84,3 +84,7 @@
 .aer-cov-provider ul{margin:6px 0;padding-left:18px}
 .aer-cov-provider li{margin:4px 0;overflow-wrap:anywhere}
 [data-aer-coverage] h3{margin:16px 0 6px;font-size:14px}
+/* CF-247 F-AER.05 (phone acceptance, 9 Nov 2026): the university name that opens the drill-down measured 14 px high on a phone (Pixel 7, 412 px) and the opened drill-down was 1,073 px wide (the table min-width); WCAG 2.2 AA target size (2.5.8) needs 24 px, the lane funnels use 44 px */
+@media (max-width:720px){[data-aer-coverage] [data-aer-providers] .dq-entity-link{min-height:44px;align-content:center}
+/* the opened drill-down is wider than the screen (the table is 1,080 px); keep it at the left edge at screen width so it reads without sideways scrolling */
+[data-aer-coverage] .aer-cov-detail .aer-cov-provider{position:sticky;left:0;box-sizing:border-box;width:calc(100vw - 32px);max-width:100%}}
