@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Button, Loading, Metric, SectionTitle, StatusChip, fmtDateTime } from './ui-kit'
 import { intakeRunApi } from './intake-run-api'
+import { intakeStageTimeline } from './intake-stage-timeline'
 import './intake-run-validate.css'
 
 const value = x => x == null ? 'Not held' : typeof x === 'object' ? JSON.stringify(x, null, 2) : String(x)
@@ -111,6 +112,7 @@ export default function IntakeRunValidate({ rank = 0, client = intakeRunApi }) {
         {run.next_action && <p>{run.next_action}</p>}
         {(run.refused || run.error || run.result?.refused || run.result?.error) && <><p>{run.refused || run.error || run.result?.refused || run.result?.error}</p><p>Next action: verify the cohort and review the recorded refusal with an authorised operator. Resume only through existing job controls after resolving the cause.</p></>}
       </div>}
+      {(cohort || report) && <details open className="intake-stages"><summary>Run stages</summary><ol>{intakeStageTimeline({ cohort, preview, run, report }).map(s => <li key={s.key} data-stage={s.key} data-state={s.state}><strong>{s.label}</strong> · {s.state.replaceAll('_', ' ')}{s.at ? ` · ${fmtDateTime(s.at)}` : ''}<br/><small>{s.detail}</small></li>)}</ol></details>}
       {caps.recent?.length > 0 && <label>Saved cohorts<select value="" disabled={!!busy} onChange={e => { if (e.target.value) verify(e.target.value) }}><option value="">Open a saved cohort</option>{caps.recent.map(r => <option key={r.cohort_id} value={r.cohort_id}>{fmtDateTime(r.created_at)} · {r.reason}</option>)}</select></label>}
       <div className="intake-actions"><label>Existing cohort ID<input value={lookup} onChange={e => setLookup(e.target.value)} placeholder="UUID"/></label><Button disabled={!!busy || (!!cohort && lookup !== cohort.cohort_id) || !/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(lookup)} onClick={() => verify(lookup)}>Read existing cohort</Button></div>
       {report && <>
