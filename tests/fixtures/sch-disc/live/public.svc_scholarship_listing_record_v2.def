@@ -1,0 +1,64 @@
+CREATE OR REPLACE FUNCTION public.svc_scholarship_listing_record_v2(p_id bigint, p_status text, p_http_status integer, p_items jsonb, p_error text, p_paging jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare l record; v_items jsonb := case when jsonb_typeof(p_items) = 'array' then p_items else '[]'::jsonb end; v_hash text; v_state text; v_keys text[] := '{}';
+        e jsonb; v_url text; v_norm text; v_key text; v_code text; v_kind text; v_cid bigint; v_held uuid; v_new int := 0; v_members int := 0;
+        v_fan boolean := security.scholarship_flag_v1('scholarship.listing_fanout_on', true); v_sec boolean := security.scholarship_flag_v1('scholarship.umbrella_sections_on', true);
+begin
+  if current_user <> 'postgres' and coalesce(auth.role(), '') <> 'service_role' then raise exception 'service_role required'; end if;
+  select * into l from pipeline.scholarship_listing_pages where id = p_id;
+  if l.id is null then return jsonb_build_object('ok', false, 'error', 'no listing source'); end if;
+  v_state := case when p_status <> 'read' then 'failed' when coalesce(p_paging->>'state', '') in ('complete', 'partial') then p_paging->>'state' else 'single' end;
+  select md5(coalesce(string_agg(lower(btrim(x->>'name')), '|' order by lower(btrim(x->>'name'))), '')) into v_hash from jsonb_array_elements(v_items) x;
+  update pipeline.scholarship_listing_pages
+     set status = case when p_status = 'read' then 'read' else 'failed' end, http_status = p_http_status, read_at = now(), error = left(p_error, 300),
+         items = case when p_status = 'read' then v_items else items end, item_hash = case when p_status = 'read' then v_hash else item_hash end,
+         page_state = v_state, pages_read = nullif(p_paging->>'pages_read', '')::int, total_stated = nullif(p_paging->>'total_stated', '')::int,
+         next_url = case when v_state = 'partial' then nullif(p_paging->>'next_url', '') end, paging = p_paging,
+         completed_at = case when v_state = 'complete' then now() else completed_at end,
+         next_read_at = case when v_state = 'partial' then now() + make_interval(hours => security.pipeline_num_v1('retry.scholarship_listing_partial_hours', 1)::int)
+                             when p_status = 'read' then now() + make_interval(days => security.pipeline_num_v1('reread.scholarship_listing_days', 7)::int)
+                             else now() + make_interval(days => security.pipeline_num_v1('retry.scholarship_listing_failed_days', 1)::int) end
+   where id = p_id;
+  if p_status = 'read' then
+    for e in select * from jsonb_array_elements(v_items) loop
+      v_url := nullif(btrim(coalesce(e->>'url', '')), ''); v_code := upper(coalesce(e->>'code', '')); v_cid := null; v_held := null;
+      if v_url is not null and v_url ~* '^https?://' then
+        if not coalesce(security.url_on_provider_sites(v_url, l.provider_id) or security.url_on_provider_site(v_url, l.url), false) then continue; end if;
+        v_norm := security.scholarship_url_norm(v_url); v_key := 'url:' || v_norm; v_kind := 'link';
+        if v_norm = l.url_norm then continue; end if;
+      elsif v_code ~ '^[A-Z]{4}[0-9]{4}$' then
+        v_url := l.url || '#award-' || lower(v_code); v_norm := l.url_norm || '#award-' || lower(v_code); v_key := 'award:' || v_code; v_kind := 'award_section';
+      else continue;
+      end if;
+      -- already held: a record whose page or identifier is this address, or (a section) a record of the provider with the same name
+      select s.id into v_held from scholarship.scholarships s
+       where s.provider_id = l.provider_id and s.lifecycle_status = 'active'
+         and (security.scholarship_url_norm(s.source_url) = v_norm
+              or exists (select 1 from pipeline.scholarship_pages sp where sp.scholarship_id = s.id and security.scholarship_url_norm(sp.url) = v_norm)
+              or (v_kind = 'award_section' and scholarship.normalise_title(s.name) in (scholarship.normalise_title(coalesce(e->>'name', '')), scholarship.normalise_title(coalesce(e->>'name', '') || ' (' || v_code || ')'))))
+       limit 1;
+      select c.id into v_cid from pipeline.scholarship_page_candidates c where c.provider_id = l.provider_id and c.url_norm = v_norm;
+      if v_cid is null and v_held is null and v_fan and (v_kind = 'link' or v_sec) then
+        insert into pipeline.scholarship_page_candidates(provider_id, url, url_norm, title, source)
+        values (l.provider_id, v_url, v_norm, nullif(left(coalesce(e->>'name', ''), 300), ''), 'map')
+        on conflict (provider_id, url_norm) do nothing returning id into v_cid;
+        if v_cid is not null then v_new := v_new + 1; end if;
+      end if;
+      insert into pipeline.scholarship_listing_members as m (listing_id, provider_id, item_key, name, url, code, kind, candidate_id, held_scholarship_id)
+      values (p_id, l.provider_id, v_key, left(e->>'name', 300), v_url, nullif(v_code, ''), v_kind, v_cid, v_held)
+      on conflict (listing_id, item_key) do update set name = excluded.name, last_seen = now(), present = true,
+         candidate_id = coalesce(excluded.candidate_id, m.candidate_id), held_scholarship_id = coalesce(excluded.held_scholarship_id, m.held_scholarship_id);
+      v_members := v_members + 1; v_keys := v_keys || v_key;
+    end loop;
+    -- only a read that saw the whole catalogue says an item is no longer listed
+    if v_state in ('complete', 'single') then
+      update pipeline.scholarship_listing_members set present = false where listing_id = p_id and present and item_key <> all (v_keys);
+    end if;
+    if v_new > 0 then perform security.scholarship_candidate_skip_v1(l.provider_id, v_new); end if;
+  end if;
+  return jsonb_build_object('ok', true, 'items', jsonb_array_length(v_items), 'members', v_members, 'new_candidates', v_new, 'page_state', v_state);
+end $function$

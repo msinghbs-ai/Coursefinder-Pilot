@@ -136,7 +136,7 @@ const ITEM = (n, extra = {}) => ({ kind: 'provider_description', ref: `0000000${
     checks: { sentences: 2, chars: 183 }, sentences: [{ text: 'This degree covers planning.', quote: 'This degree covers planning.' }] }, ...extra } })
 const KINDS = { provider_description: { label: 'University description', order: 1, choices: [{ key: 'approve', label: 'Approve as read', rank: 4, returns: 'The description is published.' }, { key: 'reject', label: 'Reject', rank: 4, returns: 'It is read again later.' }] } }
 
-async function openCourseDescriptions(page, calls) {
+async function openCourseDescriptions(page, calls, cdExtra) {
   await mockAdmin(page, { rank: 4 })
   await page.route('https://example.supabase.co/rest/v1/rpc/admin_layer4_inbox', async (route) => {
     const b = route.request().postDataJSON(); calls.inbox.push(b)
@@ -148,6 +148,8 @@ async function openCourseDescriptions(page, calls) {
   })
   await page.route('https://example.supabase.co/rest/v1/rpc/admin_course_description_queue', async (route) => {
     const b = route.request().postDataJSON(); calls.cd.push(b)
+    const extra = cdExtra && cdExtra(b)
+    if (extra) return route.fulfill({ json: extra })
     if (b.p_action === 'summary') return route.fulfill({ json: SUMMARY })
     if (b.p_action === 'items') return route.fulfill({ json: { total: 2, offset: 0, limit: 25, items: [ITEM(1), ITEM(2, { reask: { n: 1, first: { rule: 'length', sentences: 2, chars: 910 } }, rules_now: { ok: false, rule: 'unsupported_claim' } })] } })
     return route.fulfill({ json: {} })
@@ -219,6 +221,31 @@ test.describe('course descriptions in the Layer 4 Inbox', () => {
     await expect(page.locator('[data-l4-cd-list] [data-l4-item="provider_description"]')).toHaveCount(2)
     await expect(pager).toContainText('1–2 of 3')
     expect(calls.cd.filter(c => c.p_action === 'items').map(c => c.p_args.offset)).toEqual([0, 2, 0])
+  })
+
+  test('review pack (C-DESC 8 Nov 2026): capacity line, by-university pack and the flags; a read-only view that decides nothing', async ({ page }) => {
+    const calls = { inbox: [], cd: [] }
+    await openCourseDescriptions(page, calls, (b) => {
+      if (b.p_action === 'capacity') return { pending: 3, minutes_an_item: 3, pace_basis: 'default', hours_to_clear_waiting: 0.2, held_first_readings_behind_the_provider_cap: 5, hours_to_clear_waiting_and_held: 0.4,
+        target_days: 7, items_a_day_needed_incl_arrivals: 4, reviewer_hours_a_day_needed: 0.2, arriving_a_day: 1.5, window_days: 7, decided_in_window: 0, back_pressure: { on: true, global_max: 1500, new_readings_paused: false } }
+      if (b.p_action === 'pack') return { total: 2, offset: 0, limit: 25, items: [
+        ITEM(1, { pack: { flags: [], flag_count: 0, same_words_on_other_courses: 0, held_readings_this_decision_can_free: 4, waiting_in_university: 2, university_rank: 1 } }),
+        ITEM(2, { pack: { flags: ['same_words_elsewhere', 'money_or_year'], flag_count: 2, same_words_on_other_courses: 3, held_readings_this_decision_can_free: 4, waiting_in_university: 2, university_rank: 1 } })] }
+      return null
+    })
+    const cap = page.locator('[data-l4-cd-capacity]')
+    await expect(cap).toContainText('about 3 minutes an item (Layer 4 default, not yet measured for descriptions)')
+    await expect(cap).toContainText('4 decisions a day')
+    await expect(cap).toContainText('new readings run (limit 1,500)')
+    await page.locator('[data-l4-cd-pack]').click()
+    await expect.poll(() => calls.cd.some((c) => c.p_action === 'pack' && c.p_args.offset === 0)).toBe(true)
+    const cards = page.locator('[data-l4-cd-list] [data-l4-item="provider_description"]')
+    await expect(cards).toHaveCount(2)
+    await expect(cards.nth(0).locator('[data-l4-cd-flags]')).toContainText('No flag')
+    await expect(cards.nth(0).locator('[data-l4-cd-flags]')).toContainText('lets up to 4 held readings')
+    await expect(cards.nth(1).locator('[data-l4-cd-flags]')).toContainText('same words as another course; names a price or a year (3 other)')
+    // reading the pack decided nothing
+    expect(calls.inbox.filter((c) => c.p_action === 'decide')).toHaveLength(0)
   })
 
   test('Enrich fields › Course descriptions: the four measures apart, held reasons, claim words and the sample report (read only)', async ({ page }) => {
