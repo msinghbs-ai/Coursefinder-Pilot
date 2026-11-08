@@ -9,3 +9,19 @@ create table if not exists pipeline.platform_toolsets(key text primary key, enfo
 create table if not exists pipeline.platform_job_layers(jobname text primary key, layer int, updated_at timestamptz);
 create table if not exists pipeline.platform_notice_acks(notice_key text primary key, acknowledged_at timestamptz, acknowledged_by uuid, reason text);
 update ref.countries set name = case iso_alpha2 when 'AU' then 'Australia' when 'NZ' then 'New Zealand' when 'CA' then 'Canada' end where name is null;
+
+-- production shape of the manual-lock guard on providers (read 9 Nov 2026): a locked field is silently put back to its old value by the trigger, the update itself succeeds
+create or replace function security.manual_field_guard() returns trigger language plpgsql security definer set search_path to '' as $f$
+declare v_new jsonb; v_old jsonb; f text; v_entity text := case TG_TABLE_NAME when 'courses' then 'course' else 'provider' end;
+begin
+  if coalesce(current_setting('cf.manual_edit', true), '') = 'on' then return NEW; end if;
+  if not exists (select 1 from pipeline.manual_locks l where l.entity = v_entity and l.entity_id = OLD.id) then return NEW; end if;
+  v_new := to_jsonb(NEW); v_old := to_jsonb(OLD);
+  for f in select l.field from pipeline.manual_locks l where l.entity = v_entity and l.entity_id = OLD.id loop
+    if v_old ? f then v_new := jsonb_set(v_new, array[f], v_old->f); end if;
+  end loop;
+  NEW := jsonb_populate_record(NEW, v_new);
+  return NEW;
+end $f$;
+drop trigger if exists manual_lock_guard on catalogue.providers;
+create trigger manual_lock_guard before update on catalogue.providers for each row execute function security.manual_field_guard();

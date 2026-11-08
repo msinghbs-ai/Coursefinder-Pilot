@@ -11,16 +11,17 @@ on_refresh_signal|1
 on_control_event|1
 on_second_admit_refused|not_a_waiting_provider_description
 withdraw_no_reason|give a reason (kept in the log)
+withdraw_system_refused|the person who withdraws must be named
 withdraw|true|null
 withdraw_result|(none)|fixture rollback check|true
 withdraw_again|no_live_machine_admission
 withdrawn_gate|withdrawn_awaiting_review
 withdraw_event|1
 withdraw_person_edit|description_changed_since_admission|A person rewrote this description by hand.
-decline_tally|{"machine_declined": 3}
-decline_campus|held|machine_declined_machine_text_refused_word|0|(none)
-decline_figure|held|machine_declined_machine_text_figure|0
-decline_extra_word|held|machine_declined_machine_text_refused_word|0
+decline_tally|{"proposed": 3}
+decline_campus|proposed|missing|1|(none)
+decline_figure|proposed|missing|1
+decline_extra_word|proposed|missing|1
 decline_proposal_kept|true
 year_ok|clean
 own_name_ok|refused_word:premier
@@ -97,3 +98,51 @@ report_parity|1|1|1|0|0
 report_tiers|{"stored": 1}|1|2
 parity_withdrawn|null|0
 report_mismatch|1
+b1_signal_before|1|completed
+b1_withdraw|true|(none)
+b1_signal_after|1|queued|true|true
+b1_actor|true|true
+b1_signal_processing|1|processing
+b1_lock|manual_lock|true|true|0|1
+b1_other_lock|true|(none)
+b1_guard|withdraw_not_applied: the catalogue kept the description; nothing was changed|true|true|0
+b1_admit_guard|1|(none)|0|proposed
+b1_wrapper_not_admin|Platform Admin (rank 6) is needed to withdraw a machine description
+b1_wrapper_anon|Platform Admin (rank 6) is needed to withdraw a machine description
+b1_wrapper|ok|(none)|true
+b1_grants|false|true|false|false
+n6_tally|{"proposed": 2}
+n6_waits|proposed|missing|1|(none)
+n6_item_reason|Machine rule pdesc-machine-v1 did not admit this: machine_text_refused_word. Pro
+n6_audit|declined|pdesc-machine-v1|true
+n6_both_wait|1
+n3_cap|1|held/machine_declined_machine_text_figure,proposed/missing|1
+n3_old_cap_ignored|1
+n6_lease|1
+n6_held|2=held/machine_declined_description_cleared_after_admission,7=held/machine_declined_manual_lock,8=held/machine_declined_description_already_held,9=held/machine_declined_prior_human_rejection
+n6_no_ai|0
+n6_selection|machine_manual_lock
+n11_prefilter|0|2
+n8_names|name_not_clean|name_not_clean|name_not_clean|name_not_clean|pdesc-machine-v1
+n8_clean_name|null|null|Nanyang Institute|null|null
+n8_text_markup|entity_encoded:page markup
+n8_french_claim|refused_word:meilleures
+n8_french_accent|refused_word:étudiants|refused_word:etudiants
+n8_french_clean|clean
+n8_french_fees|refused_word:frais
+n1_year|figure:1700|clean
+n1_year_setting|clean
+n10_default|true|162
+n10_min_chars|false|insufficient_verified_facts|The profile (162 characters, 2 sentences) is outside the description limits (pdesc.min_chars, min_sentences, max_sentences).
+n10_min_sentences|false|The profile (162 characters, 2 sentences) is outside the description limits (pdesc.min_chars, min_sentences, max_sentences).
+n10_max_sentences|false|The profile (162 characters, 2 sentences) is outside the description limits (pdesc.min_chars, min_sentences, max_sentences).
+n10_no_name|false|The provider has no usable name (a placeholder or page markup).
+n4_grants|5,3,0
+n4_reserved|8
+n4_off|8,8
+b2_slice_one|1|1
+b2_enqueue|15
+b2_marks|true
+b2_rotation|true
+b2_funnel_exact|identity_clear=16,policy_scope=16,run_scope=16,stored_page=15
+b2_funnel_counted|identity_clear=16,policy_scope=16,run_scope=16,stored_page=15

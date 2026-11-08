@@ -27,6 +27,8 @@ begin
   insert into pipeline.provider_description_reads(provider_id, state) select pg_temp.pid(n), 'queued' on conflict do nothing;
 end $f$;
 create or replace function pg_temp.desc_of(n int) returns text language sql as $f$ select coalesce(description, '(none)') from catalogue.providers where id = pg_temp.pid(n) $f$;
+-- the person who withdraws (the fixture's Platform Admin)
+create or replace function pg_temp.wd(p uuid, r text) returns jsonb language sql as $f$ select security.provider_description_machine_withdraw_v1(p, r, '90000000-0000-0000-0000-000000000005'::uuid) $f$;
 create or replace function pg_temp.items(n int, st text) returns bigint language sql as $f$ select count(*) from pipeline.layer4_review_items where entity_id = pg_temp.pid(n) and field_code = 'provider_description' and status = st $f$;
 
 create or replace function pg_temp.try(q text) returns text language plpgsql as $f$
@@ -66,10 +68,11 @@ select 'on_control_event|' || (select count(*) from pipeline.admin_control_event
 -- admitted again: nothing (the description is held, one live admission per provider)
 select 'on_second_admit_refused|' || (select (security.provider_description_machine_admit_v1(li.id))->>'rule' from pipeline.layer4_review_items li where li.entity_id = pg_temp.pid(2) limit 1);
 -- withdrawal restores the empty description, keeps the audit and holds the provider out
-select 'withdraw_no_reason|' || pg_temp.try($$select security.provider_description_machine_withdraw_v1(pg_temp.pid(2), 'x')$$);
-select 'withdraw|' || (r->>'ok') || '|' || coalesce(r->>'restored', 'null') from (select security.provider_description_machine_withdraw_v1(pg_temp.pid(2), 'fixture rollback check') r) x;
+select 'withdraw_no_reason|' || pg_temp.try($$select pg_temp.wd(pg_temp.pid(2), '  ')$$);
+select 'withdraw_system_refused|' || pg_temp.try($$select security.provider_description_machine_withdraw_v1(pg_temp.pid(2), 'fixture', 'c0ffee00-0000-4000-8000-000000000150'::uuid)$$);
+select 'withdraw|' || (r->>'ok') || '|' || coalesce(r->>'restored', 'null') from (select pg_temp.wd(pg_temp.pid(2), 'fixture rollback check') r) x;
 select 'withdraw_result|' || pg_temp.desc_of(2) || '|' || (select withdrawn_reason || '|' || (withdrawn_at is not null)::text from pipeline.provider_description_machine_admissions where provider_id = pg_temp.pid(2));
-select 'withdraw_again|' || (security.provider_description_machine_withdraw_v1(pg_temp.pid(2), 'fixture twice')->>'rule');
+select 'withdraw_again|' || (pg_temp.wd(pg_temp.pid(2), 'fixture twice')->>'rule');
 select 'withdrawn_gate|' || (security.provider_description_machine_gate_v1(pg_temp.pid(2), 'A harmless sentence about study.', '{}')->>'rule');
 select 'withdraw_event|' || (select count(*) from pipeline.admin_control_events where action = 'pdesc_machine_withdraw');
 rollback;
@@ -80,10 +83,10 @@ select pg_temp.set_s('pdesc.machine_admit_on', '1');
 select pg_temp.queue(3);
 select pg_temp.run_worker(3) is not null;
 update catalogue.providers set description = 'A person rewrote this description by hand.' where id = pg_temp.pid(3);
-select 'withdraw_person_edit|' || (security.provider_description_machine_withdraw_v1(pg_temp.pid(3), 'fixture person edit')->>'rule') || '|' || pg_temp.desc_of(3);
+select 'withdraw_person_edit|' || (pg_temp.wd(pg_temp.pid(3), 'fixture person edit')->>'rule') || '|' || pg_temp.desc_of(3);
 rollback;
 
--- ---------------------------------------------------------------------------------------------------------------- 3. on: what the machine rule does not admit is held with its reason, no Layer 4 item
+-- ---------------------------------------------------------------------------------------------------------------- 3. on: what the machine rule does not admit waits for a person in Layer 4 with the exact reason on the item (while there is room); nothing is published
 begin;
 select pg_temp.set_s('pdesc.machine_admit_on', '1');
 select pg_temp.queue(4); select pg_temp.queue(5); select pg_temp.queue(6);
@@ -200,7 +203,7 @@ select 'tier_not_touched|' || pg_temp.desc_of(2) || '|' || (select count(*) from
 -- idempotent: a second run finds nothing to do (14 has its description, 10 was held for the recheck window)
 select 'tier_again|' || (security.provider_description_registry_tier_v1())::text;
 -- the withdrawal of a registry description works the same way
-select 'tier_withdraw|' || (security.provider_description_machine_withdraw_v1(pg_temp.pid(14), 'fixture withdraw registry')->>'ok') || '|' || pg_temp.desc_of(14);
+select 'tier_withdraw|' || (pg_temp.wd(pg_temp.pid(14), 'fixture withdraw registry')->>'ok') || '|' || pg_temp.desc_of(14);
 rollback;
 
 -- ---------------------------------------------------------------------------------------------------------------- 6. scope: an empty type list is every type, a provider with no type is "unclassified"
@@ -321,7 +324,7 @@ select 'report_parity|' || (r->'parity'->>'admitted') || '|' || (r->'parity'->>'
   from (select security.provider_description_machine_report_v1() r) x;
 select 'report_tiers|' || (r->'tiers')::text || '|' || (r->'providers'->'AU'->>'machine_admitted') || '|' || (r->'providers'->'AU'->>'described') from (select security.provider_description_machine_report_v1() r) x;
 -- withdrawn: the description leaves the Website read and the parity count
-select security.provider_description_machine_withdraw_v1(pg_temp.pid(2), 'fixture parity withdraw') is not null;
+select pg_temp.wd(pg_temp.pid(2), 'fixture parity withdraw') is not null;
 select 'parity_withdrawn|' || coalesce(public.website_v2_provider('fixture:provider:2')->'item'->>'description', 'null') || '|' || (security.provider_description_machine_report_v1()->'parity'->>'admitted');
 rollback;
 begin;
@@ -331,4 +334,206 @@ select pg_temp.queue(3); select pg_temp.run_worker(3) is not null;
 select security.provider_description_publication_check_v1() is not null;
 update pipeline.provider_description_reads set consumer_checks = jsonb_set(consumer_checks, '{website_verified}', 'false') where provider_id = pg_temp.pid(3);
 select 'report_mismatch|' || jsonb_array_length(security.provider_description_machine_report_v1()->'parity'->'mismatched');
+rollback;
+
+-- ---------------------------------------------------------------------------------------------------------------- 12. QA B1: withdrawal against the production constraints (one refresh signal for each decision, hand locks, guards)
+begin;
+select pg_temp.set_s('pdesc.machine_admit_on', '1');
+select pg_temp.queue(2); select pg_temp.run_worker(3) is not null;
+-- the signal the admission queued has been worked off; production allows ONE signal for each decision, so the withdrawal queues that same signal again
+update pipeline.search_refresh_signals set status = 'completed', completed_at = now() where entity_id = pg_temp.pid(2);
+select 'b1_signal_before|' || (select count(*) || '|' || min(status) from pipeline.search_refresh_signals where entity_id = pg_temp.pid(2));
+select 'b1_withdraw|' || (pg_temp.wd(pg_temp.pid(2), 'fixture production shape')->>'ok') || '|' || pg_temp.desc_of(2);
+select 'b1_signal_after|' || (select count(*) || '|' || min(status) || '|' || (min(completed_at) is null)::text || '|' || (min(reason) like 'Machine description withdrawn:%')::text from pipeline.search_refresh_signals where entity_id = pg_temp.pid(2));
+select 'b1_actor|' || (select (withdrawn_by = '90000000-0000-0000-0000-000000000005'::uuid)::text from pipeline.provider_description_machine_admissions where provider_id = pg_temp.pid(2))
+   || '|' || (select (actor = '90000000-0000-0000-0000-000000000005'::uuid)::text from pipeline.admin_control_events where action = 'pdesc_machine_withdraw');
+-- a signal a worker is processing stays processing
+rollback;
+begin;
+select pg_temp.set_s('pdesc.machine_admit_on', '1');
+select pg_temp.queue(2); select pg_temp.run_worker(3) is not null;
+update pipeline.search_refresh_signals set status = 'processing' where entity_id = pg_temp.pid(2);
+select pg_temp.wd(pg_temp.pid(2), 'fixture processing') is not null;
+select 'b1_signal_processing|' || (select count(*) || '|' || min(status) from pipeline.search_refresh_signals where entity_id = pg_temp.pid(2));
+rollback;
+-- a hand lock added after the admission: refused, nothing logged as restored
+begin;
+select pg_temp.set_s('pdesc.machine_admit_on', '1');
+select pg_temp.queue(2); select pg_temp.run_worker(3) is not null;
+insert into pipeline.manual_locks(entity, entity_id, field, mode) values ('provider', pg_temp.pid(2), 'description', 'value');
+select 'b1_lock|' || (pg_temp.wd(pg_temp.pid(2), 'fixture lock after admission')->>'rule') || '|' || (pg_temp.desc_of(2) like 'Birch Valley University offers education%')::text
+   || '|' || (select (withdrawn_at is null)::text from pipeline.provider_description_machine_admissions where provider_id = pg_temp.pid(2))
+   || '|' || (select count(*) from pipeline.admin_control_events where action = 'pdesc_machine_withdraw')
+   || '|' || (select count(*) from pipeline.search_refresh_signals where entity_id = pg_temp.pid(2));
+rollback;
+-- a lock on another field does not stop the withdrawal
+begin;
+select pg_temp.set_s('pdesc.machine_admit_on', '1');
+select pg_temp.queue(2); select pg_temp.run_worker(3) is not null;
+insert into pipeline.manual_locks(entity, entity_id, field, mode) values ('provider', pg_temp.pid(2), 'website', 'value');
+select 'b1_other_lock|' || (pg_temp.wd(pg_temp.pid(2), 'fixture other lock')->>'ok') || '|' || pg_temp.desc_of(2);
+rollback;
+-- a guard (a trigger) that puts the earlier text back without a lock: the withdrawal stops and changes nothing, it does not log "restored"
+begin;
+select pg_temp.set_s('pdesc.machine_admit_on', '1');
+select pg_temp.queue(2); select pg_temp.run_worker(3) is not null;
+create function pg_temp.keep_desc() returns trigger language plpgsql as $f$ begin NEW.description := OLD.description; return NEW; end $f$;
+create trigger zz_keep_desc before update on catalogue.providers for each row execute function pg_temp.keep_desc();
+select 'b1_guard|' || pg_temp.try($$select pg_temp.wd(pg_temp.pid(2), 'fixture guard')$$) || '|' || (pg_temp.desc_of(2) like 'Birch Valley University offers education%')::text
+   || '|' || (select (withdrawn_at is null)::text from pipeline.provider_description_machine_admissions where provider_id = pg_temp.pid(2))
+   || '|' || (select count(*) from pipeline.admin_control_events where action = 'pdesc_machine_withdraw');
+rollback;
+-- the same guard on admission: the item waits, no audit row says it was published
+begin;
+select pg_temp.set_s('pdesc.machine_admit_on', '1');
+create function pg_temp.keep_desc() returns trigger language plpgsql as $f$ begin NEW.description := OLD.description; return NEW; end $f$;
+create trigger zz_keep_desc before update on catalogue.providers for each row execute function pg_temp.keep_desc();
+select pg_temp.queue(2); select pg_temp.run_worker(3) is not null;
+select 'b1_admit_guard|' || pg_temp.items(2, 'pending') || '|' || pg_temp.desc_of(2) || '|' || (select count(*) from pipeline.provider_description_machine_admissions where provider_id = pg_temp.pid(2) and outcome = 'admitted')
+   || '|' || (select state from pipeline.provider_description_reads where provider_id = pg_temp.pid(2));
+rollback;
+-- the app function: Platform Admin only, the person is recorded
+begin;
+select pg_temp.set_s('pdesc.machine_admit_on', '1');
+select pg_temp.queue(2); select pg_temp.run_worker(3) is not null;
+select 'b1_wrapper_not_admin|' || pg_temp.try_as('90000000-0000-0000-0000-000000000003', $$select public.admin_provider_description_machine_withdraw_v1(pg_temp.pid(2), 'fixture not admin')$$);
+select 'b1_wrapper_anon|' || pg_temp.try_as(null, $$select public.admin_provider_description_machine_withdraw_v1(pg_temp.pid(2), 'fixture anon')$$);
+create temp table wrap_res as select pg_temp.try_as('90000000-0000-0000-0000-000000000005', $$select public.admin_provider_description_machine_withdraw_v1(pg_temp.pid(2), 'fixture admin')$$) as r; -- its own statement: the read-back below must see the withdrawal
+select 'b1_wrapper|' || (select r from wrap_res) || '|' || pg_temp.desc_of(2)
+   || '|' || coalesce((select (withdrawn_by = '90000000-0000-0000-0000-000000000005'::uuid)::text from pipeline.provider_description_machine_admissions where provider_id = pg_temp.pid(2)), '(no row)');
+drop table wrap_res;
+rollback;
+select 'b1_grants|' || has_function_privilege('anon', 'public.admin_provider_description_machine_withdraw_v1(uuid,text)', 'execute')::text || '|' || has_function_privilege('authenticated', 'public.admin_provider_description_machine_withdraw_v1(uuid,text)', 'execute')::text
+   || '|' || has_function_privilege('authenticated', 'security.provider_description_machine_withdraw_v1(uuid,text,uuid)', 'execute')::text || '|' || has_function_privilege('anon', 'security.provider_description_machine_withdraw_v1(uuid,text,uuid)', 'execute')::text;
+
+-- ---------------------------------------------------------------------------------------------------------------- 13. QA N6/N3: what the text rule refuses waits for a person (bounded); anything else is held with the proposal
+begin;
+select pg_temp.set_s('pdesc.machine_admit_on', '1');
+select pg_temp.queue(4); select pg_temp.queue(5);
+select 'n6_tally|' || ((pg_temp.run_worker(3, jsonb_build_object(
+    pg_temp.pid(4)::text, pg_temp.answer('Dune Plains University has a campus in the desert region that teaches botany.', 'Its teaching and learning focus on arid landscapes and ecological restoration for study.'),
+    pg_temp.pid(5)::text, pg_temp.answer('Elm Arts University offers music composition and theatre performance to its community.', 'Its programs include more than 40 courses in creative production and dramatic interpretation.'))))->'recorded')::text;
+select 'n6_waits|' || (select r.state || '|' || r.rule from pipeline.provider_description_reads r where r.provider_id = pg_temp.pid(4)) || '|' || pg_temp.items(4, 'pending') || '|' || pg_temp.desc_of(4);
+select 'n6_item_reason|' || (select left(escalation_reason, 80) from pipeline.layer4_review_items where entity_id = pg_temp.pid(4) and status = 'pending');
+select 'n6_audit|' || (select a.outcome || '|' || a.rule || '|' || (a.reason like '%word, figure or markup%')::text from pipeline.provider_description_machine_admissions a where a.provider_id = pg_temp.pid(4));
+select 'n6_both_wait|' || pg_temp.items(5, 'pending');
+rollback;
+begin;
+-- N3: the waiting places are bounded; beyond them the proposal is held whole, with the reason, and nothing is dropped
+select pg_temp.set_s('pdesc.machine_admit_on', '1'); select pg_temp.set_s('pdesc.machine_pending_max', '1');
+select pg_temp.queue(4); select pg_temp.queue(5);
+select pg_temp.run_worker(3, jsonb_build_object(
+    pg_temp.pid(4)::text, pg_temp.answer('Dune Plains University has a campus in the desert region that teaches botany.', 'Its teaching and learning focus on arid landscapes and ecological restoration for study.'),
+    pg_temp.pid(5)::text, pg_temp.answer('Elm Arts University offers music composition and theatre performance to its community.', 'Its programs include more than 40 courses in creative production and dramatic interpretation.'))) is not null;
+select 'n3_cap|' || (select count(*) from pipeline.layer4_review_items where field_code = 'provider_description' and status = 'pending' and entity_id in (pg_temp.pid(4), pg_temp.pid(5)))
+   || '|' || (select string_agg(r.state || '/' || r.rule, ',' order by r.state) from pipeline.provider_description_reads r where r.provider_id in (pg_temp.pid(4), pg_temp.pid(5)))
+   || '|' || (select count(*) from pipeline.provider_description_reads r where r.provider_id in (pg_temp.pid(4), pg_temp.pid(5)) and r.state = 'held' and r.proposal->>'description' is not null and r.reason like '%pdesc.machine_pending_max%');
+rollback;
+begin;
+-- the old waiting cap (pdesc.pending_max = 10) does not stop an automatic run once more than ten wait
+select pg_temp.set_s('pdesc.machine_admit_on', '1'); select pg_temp.set_s('pdesc.pending_max', '1');
+insert into pipeline.layer4_review_items(entity_type, entity_id, field_code, status, proposed_value, before_value)
+  select 'provider', pg_temp.pid(n), 'provider_description', 'pending', '{"description":"x"}', '{"description":null}' from generate_series(5, 8) n;
+select pg_temp.queue(2);
+select 'n3_old_cap_ignored|' || jsonb_array_length(public.svc_provider_description_lease_v1(3, null, 'provider-description-reserve-v1')->'items');
+rollback;
+
+-- ---------------------------------------------------------------------------------------------------------------- 14. QA N6/N7/N11: a provider the rule must not describe is held before any AI call
+begin;
+select pg_temp.set_s('pdesc.machine_admit_on', '1');
+-- locked by hand; an earlier human rejection; a description already held; a description cleared by hand after a machine admission
+insert into pipeline.manual_locks(entity, entity_id, field, mode) values ('provider', pg_temp.pid(7), 'description', 'value');
+insert into pipeline.layer4_review_items(entity_type, entity_id, field_code, status, proposed_value, before_value) values ('provider', pg_temp.pid(9), 'provider_description', 'rejected', '{"description":"x"}', '{"description":null}');
+update catalogue.providers set description = 'A person wrote this description.' where id = pg_temp.pid(8);
+select pg_temp.queue(2); select pg_temp.run_worker(3) is not null;
+update catalogue.providers set description = null where id = pg_temp.pid(2);
+select pg_temp.queue(2); select pg_temp.queue(7); select pg_temp.queue(8); select pg_temp.queue(9); select pg_temp.queue(12);
+select 'n6_lease|' || jsonb_array_length(public.svc_provider_description_lease_v1(5, null, 'provider-description-reserve-v1')->'items');
+select 'n6_held|' || (select string_agg(pg_temp_n.n || '=' || r.state || '/' || r.rule, ',' order by pg_temp_n.n) from (values (2), (7), (8), (9), (12)) pg_temp_n(n)
+   join pipeline.provider_description_reads r on r.provider_id = pg_temp.pid(pg_temp_n.n) and r.state = 'held');
+select 'n6_no_ai|' || (select coalesce(sum(ai_calls), 0) from pipeline.provider_description_reads where provider_id in (pg_temp.pid(7), pg_temp.pid(8), pg_temp.pid(9)));
+-- the same providers are listed with the reason by the reader's selection and are never queued
+select 'n6_selection|' || (select string_agg(x->>'eligibility_reason', ',' order by x->>'name') from jsonb_array_elements(security.provider_description_selection_v1(jsonb_build_object('filter', 'all', 'size', 50, 'prefilter', true, 'provider_id', pg_temp.pid(7)))->'providers') x);
+rollback;
+begin;
+-- a described provider is not selected for a read again (N11) once the reader is automatic, though the older rule re-read it after pdesc.recheck_days
+update catalogue.providers set description = 'A person wrote this description.' where id = pg_temp.pid(8);
+select pg_temp.set_s('pdesc.machine_admit_on', '1');
+select 'n11_prefilter|' || (select count(*) from jsonb_array_elements(security.provider_description_selection_v1('{"filter":"all","size":60,"prefilter":true}')->'providers') x where x->>'current_description' is not null)
+   || '|' || (select count(*) from jsonb_array_elements(security.provider_description_selection_v1('{"filter":"all","size":60,"prefilter":false}')->'providers') x where x->>'current_description' is not null);
+rollback;
+
+-- ---------------------------------------------------------------------------------------------------------------- 15. QA N8/N1: names, markup, French pages, the year limits
+begin;
+select pg_temp.set_s('pdesc.machine_admit_on', '1');
+update catalogue.providers set canonical_name = 'N/A', display_name = null where id = pg_temp.pid(4);
+update catalogue.providers set canonical_name = 'NA' where id = pg_temp.pid(5);
+update catalogue.providers set canonical_name = 'St Mary&#039;s College' where id = pg_temp.pid(6);
+update catalogue.providers set display_name = 'TBC' where id = pg_temp.pid(8);
+select 'n8_names|' || (security.provider_description_machine_gate_v1(pg_temp.pid(4), 'Study here with us.', '{}')->>'rule') || '|' || (security.provider_description_machine_gate_v1(pg_temp.pid(5), 'Study here with us.', '{}')->>'rule')
+   || '|' || (security.provider_description_machine_gate_v1(pg_temp.pid(6), 'Study here with us.', '{}')->>'rule') || '|' || (security.provider_description_machine_gate_v1(pg_temp.pid(8), 'Study here with us.', '{}')->>'rule')
+   || '|' || (security.provider_description_machine_gate_v1(pg_temp.pid(12), 'Study here with us.', '{}')->>'rule');
+select 'n8_clean_name|' || coalesce(security.pdesc_clean_name_v1('N/A'), 'null') || '|' || coalesce(security.pdesc_clean_name_v1('Na'), 'null') || '|' || coalesce(security.pdesc_clean_name_v1('Nanyang Institute'), 'null') || '|' || coalesce(security.pdesc_clean_name_v1('A&amp;B College'), 'null') || '|' || coalesce(security.pdesc_clean_name_v1('Ab'), 'null');
+select 'n8_text_markup|' || coalesce(security.pdesc_machine_text_check_v1(pg_temp.pid(12), 'The college teaches carpentry and it was founded by St Mary&#039;s Trust.'), 'clean');
+select 'n8_french_claim|' || coalesce(security.pdesc_machine_text_check_v1(pg_temp.pid(12), 'Ce collège est classé parmi les meilleures écoles de la région.'), 'clean');
+select 'n8_french_accent|' || coalesce(security.pdesc_machine_text_check_v1(pg_temp.pid(12), 'Les étudiants y apprennent la menuiserie et la plomberie.'), 'clean') || '|' || coalesce(security.pdesc_machine_text_check_v1(pg_temp.pid(12), 'Les etudiants y apprennent la menuiserie.'), 'clean');
+select 'n8_french_clean|' || coalesce(security.pdesc_machine_text_check_v1(pg_temp.pid(12), 'Le collège enseigne la menuiserie et la plomberie à Toronto.'), 'clean');
+select 'n8_french_fees|' || coalesce(security.pdesc_machine_text_check_v1(pg_temp.pid(12), 'Les frais de scolarité sont publiés sur le site du collège.'), 'clean');
+select 'n1_year|' || coalesce(security.pdesc_machine_text_check_v1(pg_temp.pid(12), 'The school opened in 1700 and teaches carpentry.'), 'clean') || '|' || coalesce(security.pdesc_machine_text_check_v1(pg_temp.pid(12), 'The school opened in 1987 and teaches carpentry.'), 'clean')
+;
+select pg_temp.set_s('pdesc.founded_year_min', '1600');
+select 'n1_year_setting|' || coalesce(security.pdesc_machine_text_check_v1(pg_temp.pid(12), 'The school opened in 1700 and teaches carpentry.'), 'clean');
+rollback;
+
+-- ---------------------------------------------------------------------------------------------------------------- 16. QA N10: a register-fact profile obeys the description limits
+begin;
+select pg_temp.reg_setup();
+select pg_temp.set_s('pdesc.registry_min_facts', '2');
+select 'n10_default|' || (p->>'ok') || '|' || length(p->>'text') from (select security.provider_description_registry_profile_v1(pg_temp.pid(11)) p) x;
+select pg_temp.set_s('pdesc.min_chars', '200');
+select 'n10_min_chars|' || (p->>'ok') || '|' || (p->>'rule') || '|' || (p->>'reason') from (select security.provider_description_registry_profile_v1(pg_temp.pid(11)) p) x;
+select pg_temp.set_s('pdesc.min_chars', '100');
+select pg_temp.set_s('pdesc.min_sentences', '3');
+select 'n10_min_sentences|' || (p->>'ok') || '|' || (p->>'reason') from (select security.provider_description_registry_profile_v1(pg_temp.pid(11)) p) x;
+select pg_temp.set_s('pdesc.min_sentences', '2'); select pg_temp.set_s('pdesc.max_sentences', '1');
+select 'n10_max_sentences|' || (p->>'ok') || '|' || (p->>'reason') from (select security.provider_description_registry_profile_v1(pg_temp.pid(11)) p) x;
+-- a placeholder name leaves no profile
+select pg_temp.set_s('pdesc.max_sentences', '5');
+update catalogue.providers set canonical_name = 'N/A', display_name = 'TBC' where id = pg_temp.pid(11);
+select 'n10_no_name|' || (p->>'ok') || '|' || (p->>'reason') from (select security.provider_description_registry_profile_v1(pg_temp.pid(11)) p) x;
+rollback;
+
+-- ---------------------------------------------------------------------------------------------------------------- 17. QA N4: Firecrawl reads held by calls in flight are not granted again
+begin;
+select pg_temp.set_s('pdesc.machine_admit_on', '1'); select pg_temp.set_s('pdesc.acquire_direct', '1'); select pg_temp.set_s('pdesc.acquire_firecrawl', '1');
+select pg_temp.set_s('pdesc.firecrawl_reads_max', '8'); select pg_temp.set_s('pdesc.firecrawl_per_call', '5');
+select pg_temp.queue(1); select pg_temp.queue(2); select pg_temp.queue(3); select pg_temp.queue(11); select pg_temp.queue(12); select pg_temp.queue(14);
+select 'n4_grants|' || (public.svc_provider_description_lease_v1(2, null, 'provider-description-reserve-v1')->>'firecrawl_left') || ',' || (public.svc_provider_description_lease_v1(2, null, 'provider-description-reserve-v1')->>'firecrawl_left')
+   || ',' || (public.svc_provider_description_lease_v1(2, null, 'provider-description-reserve-v1')->>'firecrawl_left');
+select 'n4_reserved|' || (select coalesce(sum((checks->>'firecrawl_reserved')::int), 0) from pipeline.provider_description_reads where state = 'reading');
+rollback;
+begin;
+-- off: the older rule, every call is told what the ceiling still allows
+select pg_temp.set_s('pdesc.acquire_direct', '1'); select pg_temp.set_s('pdesc.acquire_firecrawl', '1'); select pg_temp.set_s('pdesc.firecrawl_reads_max', '8');
+select pg_temp.queue(1); select pg_temp.queue(2);
+select 'n4_off|' || (public.svc_provider_description_lease_v1(1, null, 'provider-description-reserve-v1')->>'firecrawl_left') || ',' || (public.svc_provider_description_lease_v1(1, null, 'provider-description-reserve-v1')->>'firecrawl_left');
+rollback;
+
+-- ---------------------------------------------------------------------------------------------------------------- 18. QA B2: the reader looks at a bounded slice and rotates
+begin;
+select pg_temp.set_s('pdesc.machine_admit_on', '1'); select pg_temp.set_s('pdesc.provider_keys', '[]'); select pg_temp.set_s('pdesc.target_hours', '1'); select pg_temp.set_s('pdesc.scan_factor', '1'); select pg_temp.set_s('pdesc.acquire_direct', '1');
+select 'b2_slice_one|' || (security.provider_description_selection_v1('{"filter":"all","size":1,"prefilter":true,"mode":"approved","country":"AU"}')->>'size') || '|'
+   || coalesce(jsonb_array_length(security.provider_description_selection_v1('{"filter":"all","size":1,"prefilter":true,"mode":"approved","country":"AU"}')->'providers')::text, 'null');
+select 'b2_enqueue|' || security.provider_description_enqueue_v1();
+select 'b2_marks|' || (select (count(*) > 0)::text from pipeline.provider_description_scan_marks);
+-- the providers just looked at go to the back: a second slice starts with providers not yet looked at
+select 'b2_rotation|' || (select (min(m.scanned_at) is null)::text from (select (x->>'provider_id')::uuid pid from jsonb_array_elements(security.provider_description_selection_v1('{"filter":"all","size":1,"prefilter":true,"mode":"approved","country":"AU"}')->'providers') x) s left join pipeline.provider_description_scan_marks m on m.provider_id = s.pid);
+rollback;
+begin;
+-- the funnel counts from the register in one pass above pdesc.funnel_detail_max, with the same answer here
+select pg_temp.set_s('pdesc.provider_keys', '[]');
+select set_config('fx.uid', '90000000-0000-0000-0000-000000000005', true) is not null;
+select 'b2_funnel_exact|' || (select string_agg((s->>'key') || '=' || (s->>'n'), ',' order by s->>'key') from jsonb_array_elements(public.admin_provider_description_funnel_v1()->'stages') s where s->>'key' in ('identity_clear', 'stored_page', 'run_scope', 'policy_scope'));
+select pg_temp.set_s('pdesc.funnel_detail_max', '10');
+select 'b2_funnel_counted|' || (select string_agg((s->>'key') || '=' || (s->>'n'), ',' order by s->>'key') from jsonb_array_elements(public.admin_provider_description_funnel_v1()->'stages') s where s->>'key' in ('identity_clear', 'stored_page', 'run_scope', 'policy_scope'));
 rollback;
