@@ -1,0 +1,39 @@
+# Guards: CF-247 OPS/UI mandate (Platform Admin 8 Nov 2026 14:06) and G4 database-backed tests: the lane funnel read, its refresh and the Firecrawl acceptance read run against the migration on an isolated PostgreSQL image (fixtures only, never a Supabase project).
+name: Lane funnels integration
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/20261108170000_cf247_lane_funnels.sql'
+      - 'tests/fixtures/lane-funnels/**'
+      - 'src/LaneFunnels.jsx'
+      - 'src/FirecrawlAcceptance.jsx'
+      - 'src/lane-funnels.css'
+      - '.github/workflows/lane-funnels-test.yml'
+  workflow_dispatch:
+jobs:
+  isolated-postgres:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:17.6-alpine
+        env:
+          POSTGRES_PASSWORD: fixture-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: fixture-only
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash tests/fixtures/lane-funnels/run.sh | tee lane-funnels-results.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lane-funnels-database-evidence
+          path: lane-funnels-results.log
