@@ -1,22 +1,26 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.493'
-export const PACKAGE_VERSION='0.1.420'
+export const UI_VERSION='2.15.494'
+export const PACKAGE_VERSION='0.1.421'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'6 Nov 2026',
-  title:'English requirements: course groups and a clear next step',
+  date:'8 Nov 2026',
+  title:'Operations by lane, Firecrawl allowance and course description review capacity',
   changes:[
-    'Coverage > Attributes > English policies shows faculty and course-group scores. A Platform Admin must approve the policy and bind each group to fields of education or a course-title pattern before it can supply a course.',
-    'No rule yet shows each provider\'s stage, why no rule is available, courses still missing English, the next try and recent jobs. Run now reads stored English pages again without fetching pages or using credits.',
-    'A course\'s own reading, a value set by hand, a named-course rule and held cases keep their precedence. Courses reached by groups with different scores wait for a person.',
-    'Search for new non-university English pages remains switched off; releasing this capability does not authorise paid discovery.'
+    'Layer 2/3 Operations now shows every automated lane stage by stage: what moved in the last 24 hours, what waits for a person, and what each job did. A green job, a stage transfer and published data are kept apart.',
+    'Models & services > Firecrawl shows the plan allowance, live remaining credits, the last sync, the reserved floor and the room above it, and daily use by group. It is read only and shows credits only.',
+    'Layer 4 Inbox, Course description pill: shows review capacity and a review pack ordered by university, with objective flags on each item. Nothing is decided for you.',
+    'The course search queue no longer says tomorrow\'s share when the cause is a hold on course-link work.',
+    'Firecrawl: the 100,000-credit monthly plan size and the reserved floor for course-link work are now settings, changed with a reason.'
   ],
   bugFixes:[
-    'Reading a policy again with the same parser keeps the group bindings a person saved.',
-    'Approving a group policy closes waiting group policies only; a waiting default policy stays available, and the same protection applies in the other direction.'
+    'Intake dates are read correctly across a year change and are not admitted again after a withdrawal.',
+    'Fee figures that look implausible are held for a person, and a decided fee is not asked about again (ships off).',
+    'A provider description that was held is read again when the stored copy of the page changes.',
+    'English requirements show where courses are still missing English, and repeat planning pauses for an onboarding that has stalled.',
+    'Scholarship coverage states are clearer and retries are limited. New spend paths ship switched off; the consumer API is unchanged.'
   ]
 }
 

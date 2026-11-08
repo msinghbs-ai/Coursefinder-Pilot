@@ -1,7 +1,7 @@
-<!-- sop-export: id=operator-sop; version=2.18; reviewed-release=2.15.493; source-commit=85a657df3e8d+local; content-sha256=05e399bbd711c1e0867a094c0372ea8456f39babe75ce86dadb97f34c3af7a35 -->
+<!-- sop-export: id=operator-sop; version=2.19; reviewed-release=2.15.494; source-commit=3822a416144a+local; content-sha256=d5cd2d9e8bebd44395df3289612accf6c9f63d64ef920609306fe85a0d68418a -->
 # StudySearch – Operator SOP
 
-**Version:** 2.18 (reviewed for platform release v2.15.493)  
+**Version:** 2.19 (reviewed for platform release v2.15.494)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -92,6 +92,7 @@ How operators keep the data flowing and decide what automation cannot: the revie
 
 ## 8. What to pay attention to
 
+- Operations lane funnels: read each lane stage by stage. A green job, a stage transfer and published data are different things; a lane with items waiting for a person needs a decision from a person. Firecrawl allowance and remaining credits are read only; check the room above the reserved floor before asking for more course-link work.
 - English faculty and course-group scores wait for Platform Admin approval and explicit binding; No rule yet and held course-specific cases remain visible without invented coverage.
 - Course descriptions: distinguish proposed, human-admitted and actually published counts. Review held evidence and use Previous on the final reviewer page.
 - An application deadline must quote an actual closing date; commencement and intake dates are not closing dates. Escalate incorrect records without removing human locks.
@@ -111,6 +112,7 @@ How operators keep the data flowing and decide what automation cannot: the revie
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.19 | 8 Nov 2026 | v2.15.494 | Operations shows each automated lane stage by stage; the Firecrawl card shows allowance, remaining credits and floor; Course description review shows capacity and a university-ordered pack. New spend paths ship switched off; no data gain, admission or publication is claimed. |
 | 2.18 | 6 Nov 2026 | v2.15.493 | English course-group approval and binding, same-family supersession and coverage holds; no automatic group admission or paid discovery activation. |
 | 2.17 | 6 Nov 2026 | v2.15.492 | Course description reviewer navigation, held-source evidence and separate proposal/admission/publication measures; human admission authority remains. |
 | 2.16 | 6 Nov 2026 | v2.15.491 | Deadline review distinguishes application closing evidence from commencement dates; corrections retain audit and human-lock authority. |
