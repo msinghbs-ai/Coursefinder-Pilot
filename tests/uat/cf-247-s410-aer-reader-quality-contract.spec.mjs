@@ -204,7 +204,7 @@ test('the migration adds settings only, each with a label, range, unit and used_
 })
 
 test('the worker reads the settings through svc_worker_settings_v1 and passes them to the readers; the version records the change', () => {
-  expect(W).toMatch(/const WORKER = "coverage-sweep-worker-v0\.59\.11"; \/\/ v0\.59\.11 \(8 Nov 2026, CF-247 AER reader quality/)
+  expect(W).toMatch(/(?:const WORKER = "coverage-sweep-worker-v0\.59\.11"; |\/\/ was v0\.59\.11 )\/\/ v0\.59\.11 \(8 Nov 2026, CF-247 AER reader quality/)
   expect(W).toContain('// was v0.59.10 // v0.59.10 (6 Nov 2026')
   expect(W).toContain('const ws: Record<string, unknown> = (await rpc("svc_worker_settings_v1", {}).catch(() => ({}))) || {};')
   expect(W).toContain('wsNum("enrich.course_entry_quote_chars", 300)')

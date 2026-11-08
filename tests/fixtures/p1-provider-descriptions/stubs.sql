@@ -66,7 +66,11 @@ create table pipeline.layer4_review_items(id uuid primary key default gen_random
   created_at timestamptz not null default now(), decided_at timestamptz, claimed_at timestamptz);
 create table pipeline.layer4_decisions(id uuid primary key default gen_random_uuid(), review_item_id uuid, action text, actor_id uuid, reason text, before_value jsonb, proposed_value jsonb,
   final_value jsonb, evidence_id uuid, layer2_state jsonb, layer3_state jsonb, scalar_resolution_id uuid, change_control_ref text, created_at timestamptz default now());
-create table pipeline.search_refresh_signals(id uuid primary key default gen_random_uuid(), entity_type text, entity_id uuid, review_decision_id uuid, reason text, change_control_ref text);
+-- production shape (read 9 Nov 2026): one signal for each decision (UNIQUE review_decision_id, search_refresh_signals_review_decision_id_key), a foreign key to the decision, the status list
+create table pipeline.search_refresh_signals(id uuid primary key default gen_random_uuid(), entity_type text not null, entity_id uuid not null,
+  review_decision_id uuid not null constraint search_refresh_signals_review_decision_id_key unique constraint search_refresh_signals_review_decision_id_fkey references pipeline.layer4_decisions(id),
+  reason text not null, status text not null default 'queued' constraint search_refresh_signals_status_check check (status in ('queued', 'processing', 'completed', 'cancelled', 'blocked')),
+  change_control_ref text not null default 'CF-CHG-20260825-038', created_at timestamptz not null default now(), completed_at timestamptz);
 create table pipeline.refresh_requests(id uuid primary key default gen_random_uuid(), requested_layer int, source_id uuid, entity_type text, entity_id uuid, evidence_id uuid,
   layer3_profile_id uuid, revalidation_ref text, reason text, trigger_type text, requested_by uuid, change_control_ref text);
 
