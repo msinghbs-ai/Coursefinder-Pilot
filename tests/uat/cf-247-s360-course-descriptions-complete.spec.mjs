@@ -115,7 +115,7 @@ test('course-text.ts: the re-ask states the limits and the previous text, asks f
 })
 
 test('worker v0.59.10: the re-ask is gated by the setting (ships 0), uses the same pinned model and page, keeps the first answer on failure and never cuts', () => {
-  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.59\.10";/)
+  expect(worker).toMatch(/(?:const WORKER = "coverage-sweep-worker-v0\.59\.10"; |\/\/ was v0\.59\.10 )\/\/ v0\.59\.10 \(6 Nov 2026/)
   expect(worker).toContain('// was v0.59.8 // v0.59.8')
   const t = worker.slice(worker.indexOf('const textRead = async'), worker.indexOf('const entryCall = async'))
   expect(t).toContain('courseTextReaskMax(ws)')                             // one-authorised-call guard; setting from svc_worker_settings_v1 (G2)

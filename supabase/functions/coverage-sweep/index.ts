@@ -11,7 +11,7 @@ import { PAGE_ID_CONTRACT, pageIdChecks, pageIdInput, pageIdRequest } from "./pa
 import { callRecord, pageHtml, readOutcome, scrapeBody, searchBody, searchCandidates, searchResults } from "./firecrawl.ts";
 import { applyAdapter, inspectPage, jsonAt, jsonFind, jsonShape, pageJson, patternValues, viewApplies, withView } from "./adapters.ts";
 import { CENTRAL_SEARCH, centralCandidates, weakKinds } from "./central.ts";
-import { ENTRY_PROMPT_VERSION, ENTRY_TABLE_BASIS, NAMED_NOTE, PDF_NOTE, entryCellList, entryCompleteness, entryDropNoMinimum, entryGlobalQualification, entrySubjectRows, entryManifestDetail, entryMatrixParsed, entryMatrixRequest, entryNoAnswerWhy, entryNonCountryShape, entrySlices, entryTables, entryUnscaledColumns } from "./entry.ts";
+import { ENTRY_PROMPT_VERSION, ENTRY_TABLE_BASIS, NAMED_NOTE, PDF_NOTE, entryCellList, entryCompleteness, entryCountryAliases, entryDropNoMinimum, entryGlobalQualification, entrySubjectRows, entryManifestDetail, entryMatrixParsed, entryMatrixRequest, entryNoAnswerWhy, entryNonCountryShape, entrySlices, entryTables, entryUnscaledColumns } from "./entry.ts";
 import { OPS_DIAGNOSE_CONTRACT, opsDiagnoseAnswer, opsDiagnoseLimit, opsDiagnoseRequest, opsDiagnoseUsable } from "./ops-diagnose.ts";
 import { linkSearchGroups, linkSearchShareOn } from "./link-share.ts";
 import type { EntryBandLine, EntryCountryRef, EntryLineSet, EntryManifest } from "./entry.ts";
@@ -75,7 +75,7 @@ const VERSION = "coverage-sweep-v0.5.6"; // extractor version (unchanged by v0.6
 // v0.38.1 (22 Oct 2026, NZ course list pages): a page the AI page match chose from the university's own site addresses (its course list or
 // site map) is listed on the university's own site, so it may be read through the scraper when the direct read is blocked (Otago, Lincoln, AUT).
 const FC_TRUSTED_BASIS = ["cricos_search", "cricos_code", "cricos_code_on_page", "nzqa_code", "adapter_code", "title_match", "cms_path_public", "manual", "firecrawl_upgrade", "ai_match", "programme_list"]; // v0.45.0: a page bound by its NZ or CA code is as trusted as one bound by a CRICOS code
-const WORKER = "coverage-sweep-worker-v0.59.10"; // v0.59.10 (6 Nov 2026, CF-247 English requirements, Platform Admin 6 Nov 09:44 §3 D5): mode provider_facts_add_tests also reads stored English pages again with the current policy parser (provider-policy-v0.3.0: faculty and course-group tables returned as group rules) for the documents svc_provider_policy_reparse_next lists, no Firecrawl and no AI, sized by reparse_limit (batch.policy_reparse); the add-tests reading stays keyed on provider-policy-v0.2.5 (ADD_TESTS_PARSER) because its rules did not change.
+const WORKER = "coverage-sweep-worker-v0.59.11"; // v0.59.11 (8 Nov 2026, CF-247 AER reader quality, Platform Admin directive 8 Nov 2026): a course quote the model joined from separate passages with an ellipsis is proven fragment by fragment (each on the page, in order; switch reading.course_quote_fragments_on, ships off), its stored length is the setting enrich.course_entry_quote_chars and a quote kept short of what the model gave is recorded on the row and counted in the read's coverage (quotes_cut), a requirement read twice is one row (as the database counts it), the entry matrix reader resolves governed country aliases (reading.entry_country_aliases, switch reading.entry_country_aliases_on, ships off) and can keep a row whose grade is printed when only its number has no printed basis (reading.entry_value_null_on, ships off). Every other check unchanged; no AI, no Firecrawl. // was v0.59.10 // v0.59.10 (6 Nov 2026, CF-247 English requirements, Platform Admin 6 Nov 09:44 §3 D5): mode provider_facts_add_tests also reads stored English pages again with the current policy parser (provider-policy-v0.3.0: faculty and course-group tables returned as group rules) for the documents svc_provider_policy_reparse_next lists, no Firecrawl and no AI, sized by reparse_limit (batch.policy_reparse); the add-tests reading stays keyed on provider-policy-v0.2.5 (ADD_TESTS_PARSER) because its rules did not change.
 // Previous feature worker v0.59.9: approved one-reask course descriptions retained in this combined English worker.
 // was v0.59.8 // v0.59.8 (5 Nov 2026, CF-247 final intake recovery, migration 20261105040000): calendar reader calendar-v2.1 (the year of a start from its own section: heading, title or year tabs; a wrong-section year rejected); mode calendar_reread reads again what an earlier reader read (svc_calendar_reread_next_v2 / _record_v2 with the reader version) and hands stale editions to the existing reads within the credit budget (svc_calendar_refresh_v1).
 // was v0.59.7 // v0.59.7 (5 Nov 2026, CF-247 intake recovery, migration 20261105020000): academic calendars read by calendar-v2 (dated starts with meaning, deadlines with who they apply to, scope, slices, notes from earlier findings; calendar.ts) and mode calendar_reread (stored calendars again: the dated parser first, the AI queue only when the parser cannot read it safely).
@@ -2399,6 +2399,10 @@ async function handle(req: Request): Promise<Response> {
           // v0.59.5 (workstream C, UWA China ranges; reading.entry_range_lower_bound_on, ships off): a value within one printed range is its lower
           // bound (entry.ts entryRangeLower), carried to the parser with the page's line structure
           stored.lines.rangeLower = Number(ws["reading.entry_range_lower_bound_on"]) >= 1;
+          // v0.59.11 (8 Nov 2026, CF-247 AER reader quality): governed country aliases (reading.entry_country_aliases, switch reading.entry_country_aliases_on)
+          // and a number with no printed basis left out of a row whose grade text is printed (switch reading.entry_value_null_on); both ship off
+          const parseOpts = { countryAliases: Number(ws["reading.entry_country_aliases_on"]) >= 1 ? entryCountryAliases(ws["reading.entry_country_aliases"]) : {},
+                              nullValue: Number(ws["reading.entry_value_null_on"]) >= 1 };
           // v0.49.2: slice size and answer length from settings (entry.matrix_slice_chars, entry.matrix_max_tokens)
           const slices = entrySlices(page, Number(it.max_rows) || 400, Number(it.slice_chars) || 24000);
           const rows: any[] = [], dropped: any[] = []; let edition: string | null = null, intake_year: number | null = null;
@@ -2423,7 +2427,7 @@ async function handle(req: Request): Promise<Response> {
             // v0.49.2: an answer cut off at its length limit is named (not a JSON error); smaller slices or a larger limit are settings
             if (d?.choices?.[0]?.finish_reason === "length") throw Error(`output_truncated: slice ${i + 1} of ${slices.length} reached entry.matrix_max_tokens`);
             // v0.52.0: stored.lines carries the page's structure forms and header rows (EntryLineSet), so a printed cell quoted with its structure is found
-            const parsed = entryMatrixParsed(JSON.parse(content), page, stored.lines);  // quotes are checked against the whole stored page
+            const parsed = entryMatrixParsed(JSON.parse(content), page, stored.lines, parseOpts);  // quotes are checked against the whole stored page
             const nm = entryDropNoMinimum(stored.manifest, stored.emptyLines, parsed.rows);  // v0.48.7 (D4): rows for lines that publish no minimum
             parts[i] = { parsed, nm };
            } catch (e) { failed ??= e }
@@ -2707,6 +2711,10 @@ async function handle(req: Request): Promise<Response> {
           tally.entry_held = (tally.entry_held || 0) + items.length; return;
         }
         const n = plan.slices.length, maxTokens = wsNum("enrich.course_entry_max_tokens", 8000);
+        // v0.59.11 (8 Nov 2026, CF-247 AER reader quality): the longest quote kept (enrich.course_entry_quote_chars, never above the 300-character column), a quote joined
+        // from fragments proven fragment by fragment (switch reading.course_quote_fragments_on, ships off; each at least reading.course_entry_fragment_min_chars)
+        const quoteOpts = { quoteChars: Math.min(300, wsNum("enrich.course_entry_quote_chars", 300)), fragments: Number(ws["reading.course_quote_fragments_on"]) >= 1,  // fixed: catalogue.course_entry_requirements.quote is at most 300 characters
+                            minFragment: wsNum("reading.course_entry_fragment_min_chars", 6) };
         const outcomes: (CourseSliceOutcome | undefined)[] = new Array(n);
         let stop = false;  // a failed slice stops the slices not yet started (the read is held whole anyway)
         await pool(plan.slices, Math.max(1, Math.min(wsNum("enrich.course_entry_slice_concurrency", 4), 12)), async (s) => {  // fixed: the setting's upper bound (enrich.course_entry_slice_concurrency)
@@ -2715,7 +2723,7 @@ async function handle(req: Request): Promise<Response> {
           try {
             const { d, cost: c1 } = await entryCall(courseEntryUser(pg.provider, pg.title, s, n, plan.page_chars), em, maxTokens);
             const ans = courseEntryAnswer(d, s.index, n);
-            outcomes[s.index] = ans.ok ? { index: s.index, ok: true, ...courseEntrySliceRows(ans.a, s.text), cost: c1 } : { index: s.index, ok: false, error: ans.error, cost: c1 };
+            outcomes[s.index] = ans.ok ? { index: s.index, ok: true, ...courseEntrySliceRows(ans.a, s.text, quoteOpts), cost: c1 } : { index: s.index, ok: false, error: ans.error, cost: c1 };
           } catch (e) { outcomes[s.index] = { index: s.index, ok: false, error: `slice ${s.index + 1} of ${n}: ${e instanceof Error ? e.message : String(e)}`.slice(0, 200), cost: Number((e as any)?.cost || 0) } }
           if (!outcomes[s.index]?.ok) stop = true;
         });

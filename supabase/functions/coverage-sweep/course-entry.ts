@@ -129,19 +129,64 @@ export function courseEntryAnswer(d: any, index: number, slices: number): { ok: 
   try { return { ok: true, a: JSON.parse(content) } } catch (e) { return { ok: false, error: `unreadable_answer: ${where} (${e instanceof Error ? e.message : String(e)})`.slice(0, 300) } }
 }
 
+// v0.59.11 (8 Nov 2026, CF-247 AER reader quality, Platform Admin directive 8 Nov 2026): a quote the model joined from separate passages with an
+// ellipsis ("...", ".." or the single character) is proven fragment by fragment. A quote that is whole on the page is accepted as before; only
+// when it is not, and the switch reading.course_quote_fragments_on is on, each fragment must be on the slice (at least
+// reading.course_entry_fragment_min_chars letters and digits each) and the fragments must follow each other in the page's order. A fragment
+// that is missing, too short or out of order drops the row as quote_not_on_page, with the fragment named in detail.
+const ELLIPSIS = /\s*(?:\.{2,}|\u2026)\s*/;
+export const quoteFragments = (q: string): string[] => String(q || "").split(ELLIPSIS).map((x) => x.trim()).filter((x) => flat(x).length > 0);
+export type QuoteProof = { ok: true; fragments: number } | { ok: false; detail: string };
+export function proveQuote(q: string, flatPage: string, o: { fragments: boolean; minFragment: number }): QuoteProof {
+  const fq = flat(q);
+  if (fq.length >= 4 && flatPage.includes(fq)) return { ok: true, fragments: 1 };  // fixed: the existing floor for a whole quote
+  if (!o.fragments) return { ok: false, detail: "quote is not on the page" };
+  const frags = quoteFragments(q);
+  if (frags.length < 2) return { ok: false, detail: "quote is not on the page" };
+  let at = 0;
+  for (let i = 0; i < frags.length; i++) {
+    const f = flat(frags[i]);
+    if (f.length < o.minFragment) return { ok: false, detail: `fragment ${i + 1} of ${frags.length} is shorter than reading.course_entry_fragment_min_chars (${o.minFragment})` };
+    const k = flatPage.indexOf(f, at);
+    if (k < 0) return { ok: false, detail: flatPage.includes(f) ? `fragment ${i + 1} of ${frags.length} is not after fragment ${i} on the page` : `fragment ${i + 1} of ${frags.length} is not on the page` };
+    at = k + f.length;
+  }
+  return { ok: true, fragments: frags.length };
+}
+// the quote as stored: whole up to the limit (enrich.course_entry_quote_chars); over it, whole fragments that fit, or the start of the first
+// one, and the cut is recorded on the row (quote_cut) and counted in the read's coverage, never silent
+export function storeQuote(q: string, limit: number): { quote: string; cut: { chars: number; kept: number } | null } {
+  const t = String(q || "").trim(), max = Math.max(1, Math.floor(limit));
+  if (t.length <= max) return { quote: t, cut: null };
+  const frags = quoteFragments(t);
+  let out = "";
+  if (frags.length > 1) for (const f of frags) { const next = out ? `${out} ... ${f}` : f; if (next.length > max) break; out = next }
+  if (!out) out = t.slice(0, max);
+  return { quote: out, cut: { chars: t.length, kept: out.length } };
+}
+export type CourseQuoteOptions = { quoteChars?: number; fragments?: boolean; minFragment?: number };
+
 // one slice's rows: a row is kept only when its quote is on that slice (so on the page)
-export function courseEntrySliceRows(a: any, sliceText: string): { rows: any[]; dropped: any[] } {
+export function courseEntrySliceRows(a: any, sliceText: string, o: CourseQuoteOptions = {}): { rows: any[]; dropped: any[] } {
   const P = flat(sliceText), rows: any[] = [], dropped: any[] = [];
+  const limit = o.quoteChars ?? 300, frag = o.fragments ?? false, minF = o.minFragment ?? 6;  // fixed: the defaults when a setting cannot be read (today's behaviour)
   for (const r of (Array.isArray(a?.rows) ? a.rows : []) as any[]) {
-    const q = String(r?.quote || ""), fq = flat(q);
-    if (!(fq.length >= 4 && P.includes(fq))) { dropped.push({ reason: "quote_not_on_page", kind: r?.kind, quote: q.slice(0, 300) }); continue }
-    rows.push({ ...r, quote: q.slice(0, 300), description: String(r?.description || "").slice(0, 500) });
+    const q = String(r?.quote || ""), proof = proveQuote(q, P, { fragments: frag, minFragment: minF });
+    if (!proof.ok) {
+      const s = storeQuote(q, limit);
+      dropped.push({ reason: "quote_not_on_page", kind: r?.kind, quote: s.quote, ...(proof.detail !== "quote is not on the page" ? { detail: proof.detail } : {}), ...(s.cut ? { quote_cut: s.cut } : {}) });
+      continue;
+    }
+    const s = storeQuote(q, limit);
+    rows.push({ ...r, quote: s.quote, description: String(r?.description || "").slice(0, 500), ...(proof.fragments > 1 ? { quote_fragments: proof.fragments } : {}), ...(s.cut ? { quote_cut: s.cut } : {}) });
   }
   return { rows, dropped };
 }
 
 export type CourseSliceOutcome = { index: number; ok: true; rows: any[]; dropped: any[]; cost: number } | { index: number; ok: false; error: string; cost: number };
-const rowKey = (r: any) => [r?.kind, r?.audience, flat(r?.quote), r?.min_entry_score ?? "", flat(r?.min_entry_score_basis), flat(r?.benchmark_band), flat(r?.min_grade)].join("|");
+// v0.59.11: a requirement is one row (same kind, same quote in letters and digits), as security.enrich_entry_record_v1 counts it (7 Nov 2026); a requirement
+// read twice with different score fields counted twice towards the row limit before
+const rowKey = (r: any) => [r?.kind, flat(r?.quote)].join("|");
 
 // the slices' answers joined: complete only when every planned slice was read and answered whole; rows in page order, a repeated row once
 export function courseEntryMerge(slices: CourseSlice[], outcomes: (CourseSliceOutcome | undefined)[], pageChars: number) {
@@ -155,7 +200,7 @@ export function courseEntryMerge(slices: CourseSlice[], outcomes: (CourseSliceOu
   const ranges = slices.map((s) => [s.start, s.end] as [number, number]);
   const cov = courseEntryCoverage(slices, pageChars);
   if (!cov.complete) failed.push(`slices leave ${cov.gaps.length} part(s) of the page unread`);
-  const coverage = { basis: COURSE_ENTRY_SLICE_BASIS, page_chars: pageChars, slices: n, ranges, answered: outcomes.filter((o) => o?.ok).length, duplicates: 0, complete: failed.length === 0 };
+  const coverage: Record<string, unknown> & { duplicates: number } = { basis: COURSE_ENTRY_SLICE_BASIS, page_chars: pageChars, slices: n, ranges, answered: outcomes.filter((o) => o?.ok).length, duplicates: 0, complete: failed.length === 0 };
   if (failed.length) return { complete: false as const, reason: `${failed.length} of ${n} slice(s) not read whole: ${failed.join("; ")}`.slice(0, 300), rows: [] as any[], dropped: [] as any[], coverage, cost };
   const rows: any[] = [], dropped: any[] = [], seen = new Set<string>(), seenDrop = new Set<string>();
   for (const s of slices) {
@@ -163,5 +208,9 @@ export function courseEntryMerge(slices: CourseSlice[], outcomes: (CourseSliceOu
     for (const r of o.rows) { const k = rowKey(r); if (seen.has(k)) { coverage.duplicates++; continue } seen.add(k); rows.push(r) }
     for (const d of o.dropped) { const k = `${d.reason}|${d.kind}|${flat(d.quote)}`; if (seenDrop.has(k)) continue; seenDrop.add(k); dropped.push(d) }
   }
+  // v0.59.11: a quote joined from fragments, or kept short of what the model gave, is counted in the read (never silent)
+  const fq = rows.filter((r) => r.quote_fragments > 1).length, cut = rows.filter((r) => r.quote_cut).length;
+  if (fq) coverage.quotes_fragmented = fq;
+  if (cut) coverage.quotes_cut = cut;
   return { complete: true as const, reason: null, rows, dropped, coverage, cost };
 }

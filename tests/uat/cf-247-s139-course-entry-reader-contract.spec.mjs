@@ -25,7 +25,9 @@ test('worker: own call with the pinned entry model; every row quoted on the page
   expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(49\.[1-9]\d*|5\d\.\d+)";/)
   expect(entry).toContain('htmlToText(raw.replace(/<(nav|header|footer)\\b[\\s\\S]*?<\\/\\1>/gi, " "))')  // v0.49.1: the whole page, not only <main>
   expect(entry).toContain('const em = String(w?.entry?.model || ""), chars = Number(w?.entry?.page_chars || 0);')
-  expect(entry).toContain('if (!(fq.length >= 4 && P.includes(fq))) { dropped.push({ reason: "quote_not_on_page"')
+  // v0.59.11: the whole quote on the slice is still the first proof; a joined quote is proven by fragments only behind a switch (course-entry.ts proveQuote)
+  expect(entry).toContain('if (fq.length >= 4 && flatPage.includes(fq)) return { ok: true, fragments: 1 }')
+  expect(entry).toContain('dropped.push({ reason: "quote_not_on_page"')
   expect(entry).toContain('never derive a band from an ATAR, rank or score')
   expect(entry).toContain('Do not list English language tests or English proficiency requirements.')
   expect(code).toContain("'entry', jsonb_build_object('model', coalesce(security.toolset_setting('pipeline', 'entry.matrix_model') #>> '{}', 'openai/gpt-4.1-mini'),")

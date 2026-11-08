@@ -216,7 +216,20 @@ export function entryRangeLower(value: number | null, quote: string): number | n
   }
   return new Set(hits).size === 1 ? hits[0] : null;
 }
-export type EntryParseOptions = { rangeLower?: boolean };
+// v0.59.11 (8 Nov 2026, CF-247 AER reader quality): countryAliases maps a non-ISO country token the page or the model prints to the ISO code it
+// unambiguously means (setting reading.entry_country_aliases, switch reading.entry_country_aliases_on); nullValue keeps a row whose verified
+// grade text is on the page when only its number has no printed basis (switch reading.entry_value_null_on), the number being the only thing left out
+export type EntryParseOptions = { rangeLower?: boolean; countryAliases?: Record<string, string>; nullValue?: boolean };
+// "UK=GB" entries of the aliases setting as a map; an entry that is not TOKEN=ISO2, or whose token is already an ISO code of the same letters, is ignored
+export function entryCountryAliases(list: unknown): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (!Array.isArray(list)) return out;
+  for (const e of list) {
+    const m = /^\s*([A-Za-z][A-Za-z0-9-]{1,11})\s*=\s*([A-Za-z]{2})\s*$/.exec(String(e));
+    if (m && m[1].toUpperCase() !== m[2].toUpperCase()) out[m[1].toUpperCase()] = m[2].toUpperCase();
+  }
+  return out;
+}
 // v0.48.2: bandLines (from entryTables) are the page's table lines with the band each publishes. A row whose quote is such a line and shows
 // its band must give that band (band_missing otherwise); a band given must be in the quote (band_not_in_quote) and be the one the line
 // publishes (band_mismatch); lines that match the quote with different bands leave it unproven (band_ambiguous). The band kept is the one
@@ -231,7 +244,8 @@ export function entryMatrixParsed(a: any, page: string, bandLines: EntryLineSet 
   const numIn = (n: number, q: string) => [String(n), String(n).replace(/\.0$/, ""), n.toFixed(1), n.toFixed(2)].some((d) => String(q || "").includes(d));
   const rows: any[] = [], dropped: EntryDrop[] = [];
   for (const x of (Array.isArray(a?.rows) ? a.rows : []) as any[]) {
-    const quote = String(x?.quote || "").trim(), cc = String(x?.country_code || "").toUpperCase().trim();
+    const quote = String(x?.quote || "").trim(), cc0 = String(x?.country_code || "").toUpperCase().trim();
+    const cc = opts.countryAliases?.[cc0] ?? cc0, aliased = cc !== cc0;  // v0.59.11: a governed alias (UK -> GB), recorded on the row
     const d = (reason: string) => dropped.push({ reason, country: cc || String(x?.country_name || ""), quote: quote.slice(0, 120),
       value: typeof x?.min_value === "number" && Number.isFinite(x.min_value) ? x.min_value : null, grade: x?.min_grade == null ? null : String(x.min_grade).slice(0, 120),
       scale: x?.grade_scale == null ? null : String(x.grade_scale) });
@@ -241,9 +255,14 @@ export function entryMatrixParsed(a: any, page: string, bandLines: EntryLineSet 
     if (ENGLISH_TEST.test(quote) && ENGLISH_TEST.test(String(x?.qualification_name || ""))) { d("english_test_row"); continue }
     const scale = ENTRY_SCALES.includes(x?.grade_scale) ? x.grade_scale : "none";
     const asked = typeof x?.min_value === "number" && Number.isFinite(x.min_value) ? x.min_value : null;
-    const value = asked != null && !numIn(asked, quote) && (opts.rangeLower ?? bandLines.rangeLower) ? (entryRangeLower(asked, quote) ?? asked) : asked;
-    if (value != null && scale === "none") { d("value_without_scale"); continue }
-    if (value != null && !numIn(value, quote)) { d("value_not_in_quote"); continue }
+    let value = asked != null && !numIn(asked, quote) && (opts.rangeLower ?? bandLines.rangeLower) ? (entryRangeLower(asked, quote) ?? asked) : asked;
+    // v0.59.11: with reading.entry_value_null_on, a number with no printed scale or not printed in the quote is left out and the row is kept when its grade
+    // text is printed in the quote (the requirement is verified; only the number has no basis, the same rule as a course score). The row records it.
+    const gradeText = x?.min_grade == null ? null : String(x.min_grade).trim() || null;
+    const keepWithoutValue = !!opts.nullValue && !!gradeText && flat(quote).includes(flat(gradeText));
+    let valueRemoved: { reason: string; value: number } | null = null;
+    if (value != null && scale === "none") { if (!keepWithoutValue) { d("value_without_scale"); continue } valueRemoved = { reason: "value_without_scale", value }; value = null }
+    if (value != null && !numIn(value, quote)) { if (!keepWithoutValue) { d("value_not_in_quote"); continue } valueRemoved = { reason: "value_not_in_quote", value }; value = null }
     const grade = x?.min_grade == null ? null : String(x.min_grade).trim() || null;
     if (grade && !flat(quote).includes(flat(grade))) { d("grade_not_in_quote"); continue }
     const Q = flat(quote), given0 = x?.benchmark_band == null ? null : String(x.benchmark_band).trim() || null;
@@ -260,7 +279,8 @@ export function entryMatrixParsed(a: any, page: string, bandLines: EntryLineSet 
     const band = published.length === 1 ? published[0] : (givenNA ? null : given);
     rows.push({ country_code: cc, country_name: String(x?.country_name || ""), study_level: x?.study_level ?? null, qualification_name: String(x?.qualification_name || "").trim(),
       min_grade: grade, min_value: value, grade_scale: scale, benchmark_band: band, course_name: x?.course_name ?? null,
-      conditions: x?.conditions ?? {}, confidence: Number(x?.confidence ?? 0), quote: quote.slice(0, 300) });
+      conditions: { ...(x?.conditions && typeof x.conditions === "object" && !Array.isArray(x.conditions) ? x.conditions : {}), ...(aliased ? { country_token: cc0 } : {}), ...(valueRemoved ? { value_removed: valueRemoved } : {}) },
+      confidence: Number(x?.confidence ?? 0), quote: quote.slice(0, 300) });
   }
   return { rows, dropped, edition: a?.edition ?? null, intake_year: Number.isInteger(a?.intake_year) ? a.intake_year : null };
 }

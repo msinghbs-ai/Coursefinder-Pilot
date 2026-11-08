@@ -83,7 +83,7 @@ test('D5: the worker reads stored pages again inside the existing mode, with no 
   expect(block).toContain('svc_provider_policy_reparse_next')
   expect(block).toContain('svc_provider_policy_record')
   expect(block).not.toMatch(/firecrawl|openrouter|fetch\(|useFcWhy|ai:/i)
-  expect(WORKER).toContain('const WORKER = "coverage-sweep-worker-v0.59.10"')
+  expect(WORKER).toMatch(/(?:const WORKER = "coverage-sweep-worker-v0\.59\.10"; |\/\/ was v0\.59\.10 )\/\/ v0\.59\.10 \(6 Nov 2026/)  // later versions keep the note ("was v0.59.10")
 })
 
 test('operator visibility: the English policies screen shows group binding, group counts and No rule yet from the existing reads and the existing job control', () => {

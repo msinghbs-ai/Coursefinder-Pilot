@@ -33,7 +33,7 @@ test('worker v0.51.0: slices read at the set concurrency, joined in slice order;
   expect(ai).toContain('await pool([...slices.keys()], Math.max(1, Math.min(Number(it.slice_concurrency) || 1, 12)), async (i) => {  // fixed: the setting\'s upper bound (entry.matrix_slice_concurrency)')
   expect(ai).toContain('if (failed) throw failed;')
   expect(ai).toContain('for (const { parsed, nm } of parts) { rows.push(...nm.rows); dropped.push(...parsed.dropped, ...nm.dropped); edition ??= parsed.edition; intake_year ??= parsed.intake_year }')
-  expect(ai).toContain('const parsed = entryMatrixParsed(JSON.parse(content), page, stored.lines);')
+  expect(ai).toContain('const parsed = entryMatrixParsed(JSON.parse(content), page, stored.lines, parseOpts);')
   expect(ai).toContain('if (it.completeness_required === true && completeness.status !== "complete") {')
   expect(entryNoAnswerWhy({ unreadable: 'TimeoutError: The signal has been aborted' }, 2, 5)).toBe(' (reply unreadable: TimeoutError: The signal has been aborted; slice 2 of 5)')
 })
