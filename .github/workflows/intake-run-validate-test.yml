@@ -10,6 +10,8 @@ on:
       - 'tests/fixtures/intake-calendar-v2/**'
       - 'tests/fixtures/intake-recovery-final/**'
       - 'tests/fixtures/intake-fairness/**'
+      - 'tests/fixtures/deakin-intake-calendar/**'
+      - 'docs/paste/PASTE-20261108-iq00313-deakin-intake-withdrawal.sql'
       - 'supabase/functions/coverage-sweep/calendar.ts'
       - 'tests/integration/intake-postgres.spec.mjs'
       - 'playwright.intake.config.mjs'
@@ -50,6 +52,7 @@ jobs:
       - run: bash tests/fixtures/intake-recovery-final/browser.sh | tee intake-recovery-final-browser.log
       - run: bash tests/fixtures/intake-fairness/run.sh | tee intake-fairness-results.log
       - run: bash tests/fixtures/intake-fairness/browser.sh | tee intake-fairness-browser.log
+      - run: bash tests/fixtures/deakin-intake-calendar/run.sh | tee intake-deakin-calendar-results.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -62,6 +65,7 @@ jobs:
             intake-recovery-final-browser.log
             intake-fairness-results.log
             intake-fairness-browser.log
+            intake-deakin-calendar-results.log
             uat-artifacts/intake-integration.json
             uat-artifacts/intake-benchmark.json
             uat-artifacts/intake-timeout-regression.json
