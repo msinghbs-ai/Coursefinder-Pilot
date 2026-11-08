@@ -72,10 +72,46 @@ export function descriptionPageText(html: string, pageChars: number): string {
 // The official host alone does not prove which institution a page describes. Use the current
 // catalogue names, never a shortened shared label such as "Monash" for Monash University.
 // A missing proof is held before any paid AI call; it does not change the catalogue identity.
+// v0.59.12 (CF-247 F-PDESC, Platform Admin data population mandate 9 Nov 2026 \u00a72): the catalogue holds some names with a trailing abbreviation or a list of
+// entities ("University of Technology Sydney (UTS)", "The University of Newcastle (UoN), The University of Newcastle Language Centre, Sydney",
+// "Torrens University Australia; Torrens University Language Centre; ..."). No official page prints those whole strings, so the whole-string label could
+// never be proved. Two more labels are derived from the same catalogue name, never from the page and never from a shorter shared name:
+//   1 the name without a parenthetical that is only an abbreviation of it (its letters occur in order in the name: UTS, UniMelb, UoN, Deakin, UTas, RMIT;
+//     a parenthetical that qualifies the name, such as "(Belfast)", is kept, so "Queen's University (Belfast)" is not widened to "Queen's University");
+//   2 the first entity of a ';' or ',' list, when it is still a full institution name (two or more words with university, college, polytechnic or institute).
+// Every other check below is unchanged: the label must still be the whole of a title or h1 (plus framing words), a different institution's heading
+// is still a conflict, and a sub-unit heading is still refused.
+export function descriptionIdentityLabels(names: string[]): string[] {
+  const inOrder = (abbr: string, name: string) => {
+    const a = abbr.toLowerCase().replace(/[^a-z0-9]/g, ""), n = name.toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (a.length < 2) return false;
+    let at = 0;
+    for (const ch of n) if (ch === a[at] && ++at === a.length) return true;
+    return false;
+  };
+  const institution = /\b(university|college|polytechnic|institute)\b/i;
+  const out: string[] = [];
+  for (const raw of names || []) {
+    const name = String(raw || "").replace(/\s+/g, " ").trim();
+    if (!name) continue;
+    out.push(name);
+    // 1 abbreviation-only parentheticals
+    const bare = name.replace(/\s*\(([^()]*)\)/g, (whole, inner) => inOrder(String(inner), name.replace(/\([^()]*\)/g, "")) ? "" : whole).replace(/\s+/g, " ").replace(/\s+([,;])/g, "$1").trim();
+    if (bare && bare !== name) out.push(bare);
+    // 2 the first entity of a list
+    for (const candidate of [name, bare]) {
+      if (!/[;,]/.test(candidate)) continue;
+      const first = candidate.split(/[;,]/)[0].trim();
+      if (first.split(/\s+/).length >= 2 && institution.test(first)) out.push(first);
+    }
+  }
+  return out;
+}
+
 export function descriptionSourceIdentity(html: string, page: string, names: string[]): { ok: boolean; rule: string; matched_name?: string } {
   const words = (s: string) => String(s || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
     .replace(/&/g, " and ").replace(/[^a-z0-9]+/g, " ").replace(/^the\s+/, "").trim();
-  const labels = [...new Set((names || []).map(words).filter((s) => s.split(" ").length > 1))];
+  const labels = [...new Set(descriptionIdentityLabels(names || []).map(words).filter((s) => s.split(" ").length > 1))];
   const contains = (text: string, label: string) => (` ${words(text)} `).includes(` ${label} `);
   const headings = Array.from(String(html || "").matchAll(/<(title|h1)\b[^>]*>([\s\S]*?)<\/\1>/gi), (m) => ({ tag: m[1].toLowerCase(), text: htmlToText(m[2]) }));
   const matched = labels.find((name) => contains(page, name) || headings.some((h) => contains(h.text, name)));
