@@ -1,9 +1,9 @@
 // Guards: F-INT (valid course intake dates; Platform Admin data population first delivery mandate, 9 Nov 2026): a row held for evidence is looked at again on a revisit time from stored inputs only (D3), the inputs fingerprint holds the course page wording (D2), the 5 Nov mandate section 9 stands for every other deterministic failure, course-specific proof is unchanged, G2 (a switch and the existing revisit_days setting, no number in code), G3 (no consumer API object touched), "nothing is dropped by an applied migration".
-// Source contract over migration 20261109020000 and the isolated-PostgreSQL fixture tests/fixtures/intake-self-driving (run by .github/workflows/intake-run-validate-test.yml; its result is reported with the branch).
+// Source contract over migration 20261109040000 and the isolated-PostgreSQL fixture tests/fixtures/intake-self-driving (run by .github/workflows/intake-run-validate-test.yml; its result is reported with the branch).
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = 'supabase/migrations/20261109020000_cf247_intake_revisit_page_fingerprint.sql'
+const MIG = 'supabase/migrations/20261109040000_cf247_intake_revisit_page_fingerprint.sql'
 const FX = 'tests/fixtures/intake-self-driving'
 const sql = fs.readFileSync(MIG, 'utf8')
 const body = sql.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
@@ -98,7 +98,7 @@ test('governance: nothing is dropped or deleted, no consumer API object is touch
   expect(wf).toContain('SD_REUSE=1 bash tests/fixtures/intake-self-driving/run.sh | tee intake-self-driving-results.log')
   const run = read('run.sh')
   expect(run).toContain('PASS consumer API frozen')
-  expect(run).toContain('PASS migration 20261109020000 applied twice without change')
+  expect(run).toContain('PASS migrations 20261109040000 and 20261109041000 applied twice without change')
   expect(run).toContain("'security.intake_dates_plan_v3(uuid[],integer) 27f5b2a6573aca6c508cd75ab4b3f151'")
   expect(run).toContain("'security.intake_progress_repeats_v1() 4f3d0930df6777edb2a915533e379efb'")
 })

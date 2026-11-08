@@ -1,4 +1,4 @@
--- Guards: F-INT (valid course intake dates; data population mandate 9 Nov 2026), defects D3 and D2 AFTER migration 20261109020000, applied to the production-equivalent
+-- Guards: F-INT (valid course intake dates; data population mandate 9 Nov 2026), defects D3 and D2 AFTER migration 20261109040000, applied to the production-equivalent
 -- fixture. Proves: (D3) a row held for evidence is looked at again on its revisit time from stored inputs; a revisit spends nothing, never re-admits a rejected or
 -- withdrawn date and never overrides a lock; the other deterministic failures still have no timer; the switch works; the repeat alert does not fire on a scheduled look
 -- but still fires on a genuine unchanged repeat. (D2) the fingerprint holds the page wording: a page read again with new wording is queued, the same wording
@@ -360,4 +360,22 @@ begin
   perform security.intake_dates_apply_v1(100, array[k.course_id]);
   if (select start_date from catalogue.course_intakes where id = k.intake_id) is distinct from make_date(y0, 11, 1) then raise exception 'eligible course not filled'; end if;
   raise notice 'PASS fill regression: the plan result for the eligible course (outcome, reason, start, year, period, quote) is identical before and after the migration, and the job fills 1 November %', y0;
+end $$;
+
+-- 9 the applicability fix: the same inputs, no error; every input without a month followed by a year returns exactly what it returned before ------------------------
+do $$
+declare r record; f text := ''; a text; y0 int := public.fixture_dk_y0();
+begin
+  for r in select b.n, b.result before_result, public.sd_appl(b.n) after_result from public.sd_appl_before b order by 1 loop
+    if r.n in (1, 2, 3) and r.after_result <> '<offered>' then f := f || ' input ' || r.n || ' gave ' || r.after_result; end if;
+    if r.n = 4 and r.after_result not like 'the course page does not state February as an intake%' then f := f || ' past year: ' || r.after_result; end if;
+    if r.n > 4 and r.after_result is distinct from r.before_result then f := f || ' input ' || r.n || ' changed: ' || r.before_result || ' -> ' || r.after_result; end if;
+  end loop;
+  if f <> '' then raise exception 'applicability after the fix:%', f; end if;
+  -- the plan no longer raises, and the course is filled through the same proof as any other
+  update pipeline.platform_toolset_settings set value = to_jsonb(1) where toolset_key = 'pipeline' and key = 'intake_dates.month_unique_match';
+  select p.new_start into a from security.intake_dates_plan_v3(array[(select course_id from public.sd_cases where name = 'sMY')], 10) p;
+  update pipeline.platform_toolset_settings set value = to_jsonb(0) where toolset_key = 'pipeline' and key = 'intake_dates.month_unique_match';
+  if a::date is distinct from make_date(y0, 11, 1) then raise exception 'sMY after the fix: %', a; end if;
+  raise notice 'PASS applicability fix: "February 2027", "25 January 2027" and "May 2027, September 2027" are read as offerings (a month of a past year still is not), 8 inputs return exactly what they returned before, and on the month-only path the plan fills the course whose page prints "November % intake" with 1 November %', y0, y0;
 end $$;

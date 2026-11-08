@@ -1,4 +1,4 @@
--- Guards: F-INT (valid course intake dates; data population mandate 9 Nov 2026), defects D3 and D2 BEFORE migration 20261109020000, on the production definitions:
+-- Guards: F-INT (valid course intake dates; data population mandate 9 Nov 2026), defects D3 and D2 BEFORE migration 20261109040000, on the production definitions:
 --   D3  a row held for evidence (evidence_ambiguous, reader_correction_needed) has no revisit time, so it is never looked at again;
 --   D2  a course page read again with new intake wording (same evidence id) is not queued again, because the fingerprint does not hold the wording.
 -- Everything is written by the production job code (security.intake_dates_apply_v1). Dates are relative to the clock (the next 1 November) so the test does not age.
@@ -37,7 +37,8 @@ begin
     ('sElig', 'Intakes Trimesters 1, 2, 3'),            -- eligible, not yet decided (fill regression, before and after)
     ('sRej', 'Intakes Trimesters 1, 2, 3'),             -- eligible; a person rejects the calendar value
     ('sWd', 'Intakes Trimesters 1, 2, 3'),              -- eligible; filled, then withdrawn by a person
-    ('sLock', 'Intakes Trimesters 1, 2, 3')) t(name, wording)  -- eligible; locked by hand
+    ('sLock', 'Intakes Trimesters 1, 2, 3'),            -- eligible; locked by hand
+    ('sMY', 'Start dates: November ' || public.fixture_dk_y0() || ' intake')) t(name, wording)  -- the page prints a month followed by a year (22P02 on the production gate; reached on the month-only path)
   loop
     v_int := public.fixture_clone_intake(v_src, 'November', r.wording);
     select course_id into v_course from catalogue.course_intakes where id = v_int;
@@ -93,3 +94,46 @@ end $$;
 
 -- 3 what the migration must not touch: every decision as it stands before it (revisit time, fingerprint, next action) ----------------------------------
 create table public.sd_state_before as select intake_id, next_action, next_revisit_at, inputs_fp, applied_at from pipeline.course_intake_dates;
+
+-- 4 the latent defect of security.intake_course_applicability_v1: a month followed by a year raises 22P02 (md5 d3789be9 = production) ---------------------------------
+create table public.sd_appl_inputs (n int primary key, raw text, month int, year int, month_only boolean, periods text[], ptxt text);
+insert into public.sd_appl_inputs(n, raw, month, year, month_only, periods, ptxt) values
+  (1, 'Start dates: February 2027 intake', 2, 2027, false, null, null),
+  (2, 'Start dates 25 January 2027 for international students', 1, 2027, false, null, null),
+  (3, 'Intakes: May 2027, September 2027', 5, 2027, false, null, null),
+  (4, 'Start dates: February 2023 intake', 2, 2027, false, null, null),
+  (5, 'Intakes Trimesters 1, 2, 3', 11, 2027, false, null, null),
+  (6, 'Intakes: February, July, November', 7, 2027, false, null, null),
+  (7, 'Study with us. Apply now', 11, 2027, false, null, null),
+  (8, 'Students may start in July. Semester 1 intake', 7, 2027, false, null, null),
+  (9, 'I commenced Trimester 3 2023 and loved it', 11, 2027, false, array['trimester 3'], 'i commenced trimester 3 2023 and loved it'),
+  (10, 'Trimester 3 intake', 11, 2027, false, array['trimester 3'], 'trimester 3 intake'),
+  (11, 'Intakes: January, May and September', 9, 2027, true, null, null),
+  (12, 'Next intake is in March. Applications open all year', 3, 2027, false, null, null);
+create or replace function public.sd_appl(p_n int) returns text language plpgsql as $f$
+declare i public.sd_appl_inputs;
+begin
+  select * into i from public.sd_appl_inputs where n = p_n;
+  return coalesce(security.intake_course_applicability_v1(i.raw, i.month, i.year, '[]'::jsonb, i.month_only, i.periods, i.ptxt), '<offered>');
+exception when others then return 'ERROR ' || sqlstate;
+end $f$;
+create table public.sd_appl_before as select n, public.sd_appl(n) result from public.sd_appl_inputs;
+do $$
+declare f text := ''; r record;
+begin
+  for r in select * from public.sd_appl_before where n in (1, 2, 3, 4) loop
+    if r.result <> 'ERROR 22P02' then f := f || ' input ' || r.n || ' gave ' || r.result; end if;
+  end loop;
+  if exists (select 1 from public.sd_appl_before where n not in (1, 2, 3, 4) and result like 'ERROR%') then f := f || ' other inputs raise'; end if;
+  -- the plan: the course whose page prints "November <year> intake" stops the job on the production code
+  -- (the named-period path never reads a month with its year; the month-only path, setting intake_dates.month_unique_match, and any generic offering check do)
+  update pipeline.platform_toolset_settings set value = to_jsonb(1) where toolset_key = 'pipeline' and key = 'intake_dates.month_unique_match';
+  begin
+    perform * from security.intake_dates_plan_v3(array[(select course_id from public.sd_cases where name = 'sMY')], 10);
+    f := f || ' the plan did not raise for sMY';
+  exception when sqlstate '22P02' then null;
+  end;
+  update pipeline.platform_toolset_settings set value = to_jsonb(0) where toolset_key = 'pipeline' and key = 'intake_dates.month_unique_match';
+  if f <> '' then raise exception 'applicability defect did not reproduce:%', f; end if;
+  raise notice 'PASS defect (applicability): "Start dates: February 2027 intake", "Start dates 25 January 2027 ...", "Intakes: May 2027, September 2027" and "February 2023" each raise 22P02 (invalid input syntax for type integer: "february") in security.intake_course_applicability_v1, and the plan raises it on the month-only path for a course whose page prints "November <year> intake"; the 8 other inputs return a result';
+end $$;
