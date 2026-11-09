@@ -52,6 +52,9 @@ async function watch(page) {
   page.on('request', r => { const u = r.url(); if (u.startsWith(RPC) && /(admin_aer|enrich|_ai|layer3|course_entry_batch|admin_jobs)/.test(u) && r.method() === 'POST') { let b = {}; try { b = r.postDataJSON() || {} } catch {} calls.push({ fn: u.slice(RPC.length), action: b.p_action }) } })
 }
 
+// Reads the Course detail panels make on load (the task list and the course-description task list) are not an AI read or a started read; the guard is about the country change.
+const READ_ONLY_PANELS = c => (c.fn === 'admin_jobs' && c.action === 'read') || (c.fn === 'admin_enrich_fields' && c.action === 'description_tasks')
+
 test.describe('mocked browser', () => {
   test('Course detail: the country selector is in the shared order, a change only asks the resolver, and the choice survives a reload', async ({ page }) => {
     await watch(page)
@@ -62,7 +65,7 @@ test.describe('mocked browser', () => {
     const before = page.entryCalls.length
     await sel.selectOption('NP')
     await expect(page.locator('[data-entry-resolution]')).toContainText('resolved for NP')
-    const after = page.entryCalls.slice(before).filter(c => !(c.fn === 'admin_jobs' && c.action === 'read'))
+    const after = page.entryCalls.slice(before).filter(c => !READ_ONLY_PANELS(c))
     expect(after).toEqual([{ fn: 'admin_entry_requirements', action: 'resolve', args: { course_id: F.courseDetail.id, country: 'NP' } }])
     expect(await page.evaluate(k => localStorage.getItem(k), AER_COURSE_COUNTRY_KEY)).toBe('NP')
     // keyboard: the native select still moves with the arrow keys and asks the resolver for the next country only
@@ -74,7 +77,7 @@ test.describe('mocked browser', () => {
     await expect(page.locator('[data-entry-resolution]')).toContainText('resolved for SG')
     const actions = new Set(page.entryCalls.filter(c => c.fn === 'admin_entry_requirements').map(c => c.action))
     expect([...actions].sort()).toEqual(['course', 'resolve'])
-    expect(page.entryCalls.filter(c => c.fn !== 'admin_entry_requirements' && !(c.fn === 'admin_jobs' && c.action === 'read'))).toEqual([])
+    expect(page.entryCalls.filter(c => c.fn !== 'admin_entry_requirements' && !READ_ONLY_PANELS(c))).toEqual([])
   })
 
   test('phone width: the Course detail country selector stays inside its card (live tour 29 Oct 2026) @responsive', async ({ page }) => {
