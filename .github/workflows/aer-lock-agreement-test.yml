@@ -1,0 +1,41 @@
+# Guards: PR-first gate and G4 database-backed tests: the AER lock agreement (the shared recovery rule and D-R2 agree on what a manual lock blocks; Platform Admin 9 Nov 2026) runs against its migration on an isolated PostgreSQL 16 (fixtures only, never a Supabase project).
+name: AER lock agreement integration
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/20261109190000_cf247_aer_rule_lock_agreement.sql'
+      - 'supabase/migrations/20261109150000_cf247_aer_selector_fix.sql'
+      - 'supabase/migrations/20261107130100_cf247_aer_row_limit_rule.sql'
+      - 'supabase/migrations/20261106400000_cf247_intake_automation_progress.sql'
+      - 'tests/fixtures/aer-lock-agreement/**'
+      - 'tests/fixtures/aer-selector-fix/**'
+      - 'tests/fixtures/aer-recovery-selector/**'
+      - '.github/workflows/aer-lock-agreement-test.yml'
+  workflow_dispatch:
+jobs:
+  isolated-postgres:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: fixture-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: fixture-only
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash tests/fixtures/aer-lock-agreement/run.sh | tee aer-lock-agreement-results.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: aer-lock-agreement-database-evidence
+          path: aer-lock-agreement-results.log
