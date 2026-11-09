@@ -104,7 +104,7 @@ test('the sentence text, the quote and the other sentences are passed on unchang
 test('contract: the worker reads the switch from the worker settings (ships off), is v0.59.14, and adds no operational number', () => {
   const ix = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   const ds = fs.readFileSync('supabase/functions/coverage-sweep/description.ts', 'utf8')
-  expect(ix).toContain('const WORKER = "coverage-sweep-worker-v0.59.14"')
+  expect(ix).toMatch(/(?:const WORKER = "coverage-sweep-worker-v0\.59\.14"; |\/\/ was v0\.59\.14 )\/\/ v0\.59\.14 \(9 Nov 2026/)  // later versions keep the note ("was v0.59.14")
   expect(ix.match(/providerDescriptionSentences\(ans\.a, page, minQuote, \{ fragments: Number\(ws\["reading\.provider_quote_fragments_on"\]\) >= 1 \}\)/g)).toHaveLength(2)
   expect(ix).not.toMatch(/providerDescriptionSentences\(ans\.a, page, minQuote\)/)
   // the shortest fragment is the governed shortest quote that already limits a whole quote

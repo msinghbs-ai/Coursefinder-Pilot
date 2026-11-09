@@ -90,21 +90,39 @@ const inOrder = (abbr: string, name: string) => {
 //   2 the first entity of a ';' or ',' list, when it is still a full institution name (two or more words with university, college, polytechnic or institute).
 // Every other check below is unchanged: the label must still be the whole of a title or h1 (plus framing words), a different institution's heading
 // is still a conflict, and a sub-unit heading is still refused.
-export function descriptionIdentityLabels(names: string[]): string[] {
+// v0.59.15 (CF-247 F-PDESC, 10 Nov 2026): the catalogue holds the registered company name of many private colleges ("Helix College Pty Ltd", "Thames International College
+// Pty Ltd", "Imperial College of New Zealand Limited"). The company form is not part of the name an institution prints on its own page ("About Helix College", site name
+// "Helix College"), so the whole-string label could never be proved (89 of the 159 live identity holds of the v2 reader, read 10 Nov 2026, carry such a form). The same catalogue name
+// without its trailing company form (Pty Ltd, Pty Limited, Limited, Ltd, Inc, Incorporated, LLC, Limited Partnership) is one more derived label, treated exactly like the
+// abbreviation-free and first-entity labels below: never taken from the page, still needs two or more words, still must be the whole of a title, h1 or site-name segment
+// (plus framing words) on the provider's own verified host, and a segment with extra words, another institution or a sub-unit is still a conflict.
+const COMPANY_FORM = /(?:[\s,]+(?:pty\.?\s+ltd\.?|pty\.?\s+limited|limited\s+partnership|limited|ltd\.?|inc\.?|incorporated|l\.?l\.?c\.?))+[\s.,]*$/i;
+export function withoutCompanyForm(name: string): string {
+  const s = String(name || "").replace(/\s+/g, " ").trim();
+  if (s.length > 200) return s;  // fixed: the pattern backtracks on very long runs of separators; no real catalogue name is this long
+  const r = s.replace(COMPANY_FORM, "").replace(/[\s,;]+$/, "").trim();
+  return r && r !== s && r.split(/\s+/).length >= 2 ? r : s;
+}
+
+// withForm=false keeps the strict (segment-free) proof exactly as it was before v0.59.15: the company-form-free label is for the segment proof only
+export function descriptionIdentityLabels(names: string[], withForm = true): string[] {
   const institution = /\b(university|college|polytechnic|institute)\b/i;
   const out: string[] = [];
   for (const raw of names || []) {
-    const name = String(raw || "").replace(/\s+/g, " ").trim();
-    if (!name) continue;
-    out.push(name);
-    // 1 abbreviation-only parentheticals
-    const bare = name.replace(/\s*\(([^()]*)\)/g, (whole, inner) => inOrder(String(inner), name.replace(/\([^()]*\)/g, "")) ? "" : whole).replace(/\s+/g, " ").replace(/\s+([,;])/g, "$1").trim();
-    if (bare && bare !== name) out.push(bare);
-    // 2 the first entity of a list
-    for (const candidate of [name, bare]) {
-      if (!/[;,]/.test(candidate)) continue;
-      const first = candidate.split(/[;,]/)[0].trim();
-      if (first.split(/\s+/).length >= 2 && institution.test(first)) out.push(first);
+    const full = String(raw || "").replace(/\s+/g, " ").trim();
+    if (!full) continue;
+    // the catalogue name as held, then (v0.59.15) the same name without its trailing company form; each goes through the same two derivations
+    for (const name of [...new Set(withForm ? [full, withoutCompanyForm(full)] : [full])]) {
+      out.push(name);
+      // 1 abbreviation-only parentheticals
+      const bare = name.replace(/\s*\(([^()]*)\)/g, (whole, inner) => inOrder(String(inner), name.replace(/\([^()]*\)/g, "")) ? "" : whole).replace(/\s+/g, " ").replace(/\s+([,;])/g, "$1").trim();
+      if (bare && bare !== name) out.push(bare);
+      // 2 the first entity of a list
+      for (const candidate of [name, bare]) {
+        if (!/[;,]/.test(candidate)) continue;
+        const head = candidate.split(/[;,]/)[0].trim();
+        for (const first of new Set(withForm ? [head, withoutCompanyForm(head)] : [head])) if (first.split(/\s+/).length >= 2 && institution.test(first)) out.push(first);
+      }
     }
   }
   return out;
@@ -114,7 +132,7 @@ export type DescriptionIdentity = { ok: boolean; rule: string; matched_name?: st
 function strictSourceIdentity(html: string, page: string, names: string[]): DescriptionIdentity {
   const words = (s: string) => String(s || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
     .replace(/&/g, " and ").replace(/[^a-z0-9]+/g, " ").replace(/^the\s+/, "").trim();
-  const labels = [...new Set(descriptionIdentityLabels(names || []).map(words).filter((s) => s.split(" ").length > 1))];
+  const labels = [...new Set(descriptionIdentityLabels(names || [], false).map(words).filter((s) => s.split(" ").length > 1))];
   const contains = (text: string, label: string) => (` ${words(text)} `).includes(` ${label} `);
   const headings = Array.from(String(html || "").matchAll(/<(title|h1)\b[^>]*>([\s\S]*?)<\/\1>/gi), (m) => ({ tag: m[1].toLowerCase(), text: htmlToText(m[2]) }));
   const matched = labels.find((name) => contains(page, name) || headings.some((h) => contains(h.text, name)));
@@ -161,7 +179,7 @@ const identityWords = (s: string) => String(s || "").normalize("NFKD").replace(/
   .replace(/&/g, " and ").replace(/[^a-z0-9]+/g, " ").replace(/^the\s+/, "").trim();
 const IDENTITY_FRAMING = /\b(about|us|the|our|who|we|are|overview|profile|welcome|to|at|a|glance|facts|and|figures)\b/g;
 const IDENTITY_GENERIC = /\b(university|college|polytechnic|institute)\b/g;
-const IDENTITY_OTHER = /\b(university|college|polytechnic|institute|campus|campuses|faculty|faculties|school|schools)\b/;
+const IDENTITY_OTHER_INSTITUTION = /\b(university|college|polytechnic|institute)\b/;
 const IDENTITY_SUBUNIT = /\b(campus|campuses|faculty|faculties|school|schools)\b/;
 
 // Registry abbreviations of a catalogue name, never taken from the page:
@@ -182,7 +200,7 @@ export function descriptionIdentityAliases(names: string[]): string[] {
       if (!toks.length || !inOrder(inner, plain) || toks.every((t) => own.includes(t))) continue;
       add(inner);
     }
-    const first = plain.split(/[;,]/)[0].trim();
+    const first = withoutCompanyForm(plain.split(/[;,]/)[0].trim());  // v0.59.15: the company form is not a capitalised word of the name ("Engineering Institute of Technology Pty Ltd" is EIT, not EITPL)
     if (/\b(university|college|polytechnic|institute)\b/i.test(first)) {
       const letters = first.split(/\s+/).filter((w, i) => !(i === 0 && /^the$/i.test(w))).filter((w) => /^[A-Z]/.test(w)).map((w) => w[0]).join("");
       if (letters.length >= 3) add(letters);  // fixed: shorter initialisms (UC, CC) are shared by too many institutions
@@ -191,16 +209,58 @@ export function descriptionIdentityAliases(names: string[]): string[] {
   return out;
 }
 
+// v0.59.15 (CF-247 F-PDESC, Platform Admin directive 10 Nov 2026, University of Sydney and UTS held by the v2 reader): a heading is read the way a browser shows it.
+// htmlToText decodes only a few entities, so the numeric ones that real titles use (UTS: "About UTS &#x2013; University of Technology Sydney", Auswide "&#038;",
+// a curly apostrophe "&#8217;") reached the proof as stray words ("x2013") and made the UTS title look like it named something else. Only the identity proof
+// decodes them (headings and meta content), and only to the characters the page shows; the page text the model reads is not changed.
+const NAMED_ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", ndash: "–", mdash: "—", lsquo: "‘", rsquo: "’", ldquo: "“", rdquo: "”", hellip: "…", bull: "•", middot: "·", reg: "®", trade: "™", copy: "©" };
+export function decodeHeadingEntities(s: string): string {
+  return String(s || "").replace(/&(?:#(\d{1,7})|#[xX]([0-9a-fA-F]{1,6})|([a-zA-Z]{2,8}));/g, (whole, dec, hex, name) => {
+    if (name) return NAMED_ENTITIES[String(name).toLowerCase()] ?? whole;
+    const cp = dec !== undefined ? Number(dec) : parseInt(hex, 16);
+    // fixed: Unicode limit; anything outside it is left as printed
+    return Number.isInteger(cp) && cp > 0 && cp <= 0x10ffff && !(cp >= 0xd800 && cp <= 0xdfff) ? String.fromCodePoint(cp) : whole;
+  });
+}
+
 // the headings that identify the page's subject: the title, every h1, og:site_name, og:title and application-name
 function identityHeadings(html: string): { tag: string; text: string }[] {
-  const out = Array.from(String(html || "").matchAll(/<(title|h1)\b[^>]*>([\s\S]*?)<\/\1>/gi), (m) => ({ tag: m[1].toLowerCase(), text: htmlToText(m[2]) }));
+  const out = Array.from(String(html || "").matchAll(/<(title|h1)\b[^>]*>([\s\S]*?)<\/\1>/gi), (m) => ({ tag: m[1].toLowerCase(), text: decodeHeadingEntities(htmlToText(m[2])) }));
   for (const m of String(html || "").matchAll(/<meta\b[^>]*>/gi)) {
     const key = (m[0].match(/\b(?:property|name)\s*=\s*["']([^"']+)["']/i) || [])[1]?.toLowerCase();
     if (key !== "og:site_name" && key !== "og:title" && key !== "application-name") continue;
     const c = m[0].match(/\bcontent\s*=\s*(?:"([^"]*)"|'([^']*)')/i);
-    if (c) out.push({ tag: key, text: htmlToText(c[1] ?? c[2] ?? "") });
+    if (c) out.push({ tag: key, text: decodeHeadingEntities(htmlToText(c[1] ?? c[2] ?? "")) });
   }
   return out;
+}
+
+// v0.59.15: does a heading segment NAME another institution, as opposed to merely using the word "university" or "college"?
+// The University of Sydney's About page has the h1 "We get behind a range of activities ... in our university." That sentence names nobody, but the v2 reader
+// treated the bare word as another institution and refused the page although the title ("About us - The University of Sydney") and the site name proved the provider.
+// A segment names an institution when an institution word (university, college, polytechnic, institute) follows a capitalised word that is not a plain
+// word of English ("Western Sydney University", "Murdoch College") or is followed by "of" and a capitalised word ("University of Melbourne", "College of Arts").
+// When the segment carries no case to read (all capitals or all lower case) the old rule stands: the bare word is a conflict. The sub-unit words
+// (campus, faculty, school) are NOT part of this relaxation and are still refused wherever they occur.
+const PLAIN_WORDS = new Set(["the", "our", "a", "an", "this", "that", "your", "my", "its", "their", "every", "each", "any", "one", "of", "to", "at", "in", "for", "with", "from", "and", "or", "about", "us", "welcome", "who", "we", "are", "is", "as", "by", "on", "into", "all", "study", "join"]);
+const INSTITUTION_WORD = /^(university|college|polytechnic|institute)$/i;
+export function namesAnotherInstitution(segment: string): boolean {
+  const seg = String(segment || "");
+  const letters = seg.replace(/[^\p{L}]/gu, "");
+  const upper = /\p{Lu}/u.test(letters), lower = /\p{Ll}/u.test(letters);
+  if (!upper || !lower) return IDENTITY_OTHER_INSTITUTION.test(identityWords(seg));
+  // a possessive is not part of the name and a hyphen or other punctuation separates words ("Monash University’s story", "Griffith-University news")
+  const toks = seg.replace(/[\u2019']s\b/g, "").split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+  const cap = (t?: string) => !!t && /^\p{Lu}/u.test(t);
+  for (let i = 0; i < toks.length; i++) {
+    if (!INSTITUTION_WORD.test(toks[i])) continue;
+    if (cap(toks[i - 1]) && !PLAIN_WORDS.has(toks[i - 1].toLowerCase())) return true;
+    if (/^of$/i.test(toks[i + 1] || "")) {
+      const j = /^the$/i.test(toks[i + 2] || "") ? i + 3 : i + 2;  // "University of the Sunshine Coast"
+      if (cap(toks[j])) return true;
+    }
+  }
+  return false;
 }
 
 // the opening statement: the first paragraph of the main text (navigation, header, footer and asides removed)
@@ -236,7 +296,8 @@ function registryEvidenceIdentity(html: string, names: string[]): DescriptionIde
         continue;
       }
       if (!w.replace(IDENTITY_FRAMING, " ").replace(IDENTITY_GENERIC, " ").trim()) { if (/\b(about|overview|profile|welcome|who)\b/.test(w)) aboutHeading = true; continue }  // a generic heading ("About us", "About the university")
-      if (IDENTITY_OTHER.test(w)) return fail(el.tag === "h1" && IDENTITY_SUBUNIT.test(w) ? "provider_subunit_source" : "provider_name_conflict");  // another institution, college, faculty, school or campus
+      // another institution, college, faculty, school or campus; v0.59.15: a bare institution word in a sentence is not a name (namesAnotherInstitution), a sub-unit word still is
+      if (IDENTITY_SUBUNIT.test(w) || namesAnotherInstitution(seg)) return fail(el.tag === "h1" && IDENTITY_SUBUNIT.test(w) ? "provider_subunit_source" : "provider_name_conflict");
     }
   }
   if (proof) return { ok: true, rule: "current_provider_name", matched_name: proof.name, via: proof.via };
