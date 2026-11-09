@@ -30,7 +30,7 @@
 --   A passing test switches nothing on: the job keeps its current active flag.
 -- Replaces: the schedule '6,16,26,56 * * * *' of cron job 352 (provider-description-read); the schedule wording in the automation_catalogue description of provider-description-read and in the help text of pdesc.every_minutes
 -- Retires: nothing
-do $mig$
+do $cron6$
 declare
   v_id bigint; v_sched text; v_n int; v_txt text;
   c_old constant text := '6,16,26,56 * * * *'; -- fixed: the schedule this change replaces, kept only to refuse if it is no longer the live value
@@ -74,4 +74,4 @@ begin
     raise exception 'the help of pdesc.every_minutes is neither the old nor the new wording; not overwritten';
   end if;
 end
-$mig$;
+$cron6$;
