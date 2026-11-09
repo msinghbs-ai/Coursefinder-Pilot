@@ -8,7 +8,7 @@
 // Verified HTTP); "not applicable" is not a failure and "not checked" is not a pass.
 import React,{useCallback,useEffect,useMemo,useRef,useState}from'react'
 import{supabase}from'./lib/supabase'
-import{Button,Empty,Loading,StatusChip,fmtDateTime}from'./ui-kit'
+import{Button,Empty,Loading,StatusChip,fmtDateTime,fmtNumber}from'./ui-kit'
 import{plainError}from'./lib/errors'
 import'./course-description-on-demand.css'
 
@@ -20,7 +20,7 @@ const errText=e=>plainError(e)
 const idOf=r=>String(r?.id??r?.course_id??'')
 const titleOf=r=>r?.canonical_title??r?.display_title??r?.title??r?.course_title??'this course'
 const short=id=>String(id||'').slice(0,8)
-const num=n=>Number(n||0).toLocaleString('en-AU')
+const num=n=>fmtNumber(Number(n||0))
 
 // Where a description stands. Each state has its own words; none stands in for another.
 export const DESC_STATE={

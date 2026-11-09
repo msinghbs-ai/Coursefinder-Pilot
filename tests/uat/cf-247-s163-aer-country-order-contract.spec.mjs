@@ -49,7 +49,10 @@ async function watch(page) {
     return route.fulfill({ json: {} })
   })
   // anything that would read with AI or start a read is recorded
-  page.on('request', r => { const u = r.url(); if (u.startsWith(RPC) && /(admin_aer|enrich|_ai|layer3|course_entry_batch|admin_jobs)/.test(u) && r.method() === 'POST') { let b = {}; try { b = r.postDataJSON() || {} } catch {} calls.push({ fn: u.slice(RPC.length), action: b.p_action }) } })
+  page.on('request', r => { const u = r.url(); if (u.startsWith(RPC) && /(admin_aer|enrich|_ai|layer3|course_entry_batch|admin_jobs)/.test(u) && r.method() === 'POST') { let b = {}; try { b = r.postDataJSON() || {} } catch {}
+    // the Course detail on-demand block lists its saved description tasks on open: a read-only list (F-CDESC.06), not a read or a start
+    if (u.slice(RPC.length) === 'admin_enrich_fields' && b.p_action === 'description_tasks') return
+    calls.push({ fn: u.slice(RPC.length), action: b.p_action }) } })
 }
 
 test.describe('mocked browser', () => {
