@@ -57,6 +57,12 @@ tier_thin_held|held/insufficient_verified_facts,held/no_about_page|(none)|0
 tier_not_touched|(none)|0
 tier_again|{"on": true, "held": 0, "errors": 0, "admitted": 0}
 tier_withdraw|true|(none)
+reeval_min3|{"on": true, "held": 1, "errors": 0, "admitted": 0}|(none)
+reeval_min3_again|{"on": true, "held": 0, "errors": 0, "admitted": 0}
+reeval_min2|{"on": true, "held": 0, "errors": 0, "admitted": 1}
+reeval_min2_admitted|No Source University is a university in Australia. It is listed on the Commonwealth Register of Institutions and Courses for Overseas Students (CRICOS) with provider code FX000014.|1
+reeval_min2_audit|registry_factual|pdesc-machine-v1|admitted|true
+reeval_min2_again|{"on": true, "held": 0, "errors": 0, "admitted": 0}
 scope_default|true|false
 scope_unclassified|false|true
 scope_both|true|true
