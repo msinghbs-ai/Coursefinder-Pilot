@@ -75,6 +75,7 @@ const AdaptersWorkspace=lazyPage(()=>import('./AdaptersWorkspace'))
 const IntakeRunValidate=lazyPage(()=>import('./IntakeRunValidate'))
 const ProcessResults=lazyPage(()=>import('./ProcessResults'))
 const LaneFunnels=lazyPage(()=>import('./LaneFunnels'))
+const DataDelivery=lazyPage(()=>import('./DataDelivery'))
 const Layer23Operations=lazyPage(()=>import('./Layer23Operations'))
 const ScreenUse=lazyPage(()=>import('./ScreenUse'))
 const AdapterBuilderTab=lazyPage(()=>import('./AdapterBuilderTab'))
@@ -321,19 +322,21 @@ function Page({pageKey,tab,requestedTab='',routeParams,rank,actorId,onError,navi
   const layerNo=/^layer[1-4]$/.test(pageKey)?Number(pageKey.slice(5)):null
   // SS-020 step 2 (Decision 269, 3 Nov 2026): the Layer 2/3 notice strip (about 104 inputs) is drawn on Operations only, not on all its tabs
   const notices=layerNo&&!(pageKey==='layer2'&&tab&&tab!=='operations')
-  return <PageLayout tabs={tabs} active={tab} onTab={onTab} label={`${page.label} sections`}>{notices&&<LayerNotices layer={layerNo}/>}{body}</PageLayout>
+  // F-OPS.03A (Platform Admin 9 Nov 2026): the Data Delivery summary is the FIRST thing on Operations, above the notice strip, so alert cards never push it below the fold
+  const dataFirst=pageKey==='layer2'&&(!tab||tab==='operations')
+  return <PageLayout tabs={tabs} active={tab} onTab={onTab} label={`${page.label} sections`}>{dataFirst&&<DataDelivery rank={rank} onError={err}/>}{notices&&<LayerNotices layer={layerNo}/>}{body}</PageLayout>
   function pageBody(){
     switch(pageKey){
       case'dashboard':return <DashboardHome onError={onError}/>
       case'guide':return tab==='admin-sop'||tab==='operator-sop'?<Sop key={tab} id={tab} rank={rank} navigate={navigate}/>:<PlatformGuide rank={rank} navigate={navigate}/>
-      case'courses':return <Catalogue key="course" type="course" onError={onError} navigate={navigate} initialId={focusId} rank={rank}/>
+      case'courses':return <Catalogue key="course" type="course" onError={onError} navigate={navigate} initialId={focusId} rank={rank} preset={presetOf(routeParams)}/>
       case'providers':
         if(tab==='campuses')return <Catalogue key="campus" type="campus" onError={onError} navigate={navigate} initialId={focusId} rank={rank}/>
         if(tab==='assets')return <ProviderAssetsWorkspace onError={onError} navigate={navigate}/>
         // v2.15.224: the old country and source onboarding cases panel is retired (no case was ever opened)
         if(tab==='archived')return <ArchivedReview onError={onError} navigate={navigate}/>
         // v2.15.253 (Platform Admin, 12 Oct 2026): universities are onboarded automatically up to Ready to admit; admitting stays a person's step.
-        return <Catalogue key="provider" type="provider" onError={onError} navigate={navigate} initialId={focusId} rank={rank}/>
+        return <Catalogue key="provider" type="provider" onError={onError} navigate={navigate} initialId={focusId} rank={rank} preset={presetOf(routeParams)}/>
       // v2.15.301: Extraction is on Models & services › AI (old address redirects)
       case'entry':return <AerWorkspace tab={tab} rank={rank} onError={onError} navigate={navigate} routeParams={routeParams}/>
       case'scholarships':if(tab==='coverage')return <ScholarshipCoverage rank={rank} onError={onError} navigate={navigate}/>;return <ScholarshipWorkspace rank={rank} onError={onError} navigate={navigate} initialId={focusId}/>
@@ -662,7 +665,11 @@ const ENTITY={
   scholarship:{operation:'scholarships_page',detail:'scholarship_detail',sort:'scholarship',search:'Search Scholarship or Provider'},
 }
 
-function Catalogue({type,onError,navigate,initialId='',completenessMode=false,rank=0}){
+// CF-247 F-OPS.03A drill-down from Operations > Data delivery: a link such as #courses?f_hasFee=false&f_country=AU opens the catalogue with exactly those filters
+// (they replace the remembered ones, once per link); only the filters named here are read, anything else in the address is ignored.
+const PRESET_KEYS=['country','subdivision','lifecycle','publication','hasFee','hasIntake','hasEnglish','hasScholarship','description','admission','sourceTier','website','zoho','providerType']
+function presetOf(p){const o={};if(!p||typeof p.get!=='function')return o;for(const k of PRESET_KEYS){const v=p.get('f_'+k);if(v)o[k]=v}return o}
+function Catalogue({type,onError,navigate,initialId='',completenessMode=false,rank=0,preset={}}){
   const[creating,setCreating]=useState(false),[listEdit,setListEdit]=useState(false)
   const cfg=ENTITY[type]
   const[offset,setOffset]=useState(0)
@@ -671,6 +678,8 @@ function Catalogue({type,onError,navigate,initialId='',completenessMode=false,ra
   const[catalogueUser,setCatalogueUser]=useState(null)
   const[remembered,remember]=useRememberedState(type,{query:'',filters:{},filterLabels:{},advanced:type==='course',sort:completenessMode?'completeness':cfg.sort,direction:'asc'},{userId:catalogueUser})
   const{query,filters,filterLabels,advanced,sort,direction}=remembered
+  const presetKey=JSON.stringify(preset||{})
+  useEffect(()=>{if(presetKey==='{}'||catalogueUser===null)return;remember({filters:JSON.parse(presetKey),filterLabels:{},query:''});setOffset(0)},[presetKey,catalogueUser])
   const rememberField=k=>v=>remember(s=>({[k]:typeof v==='function'?v(s[k]):v}))
   const setQuery=rememberField('query'),setFilters=rememberField('filters'),setFilterLabels=rememberField('filterLabels'),setAdvanced=rememberField('advanced'),setSort=rememberField('sort'),setDirection=rememberField('direction')
   const[data,setData]=useState(null),[busy,setBusy]=useState(false),[filterData,setFilterData]=useState({}),[filterBusy,setFilterBusy]=useState(false),[selected,setSelected]=useState(null),[detail,setDetail]=useState(null),[detailBusy,setDetailBusy]=useState(false)

@@ -134,6 +134,8 @@ export default function LaneFunnels({rank=0,onError,client=null}){
   const rpc=client||((fn,args)=>supabase.rpc(fn,args))
   const load=async()=>{try{const{data,error}=await rpc('admin_lane_funnel_v1',{p_lane:null});if(error)throw error;setD(data&&Array.isArray(data.lanes)?data:{lanes:[]});setErr('')}catch(e){setErr(plainError(e));onError?.(plainError(e));setD(x=>x||{lanes:[]})}}
   useEffect(()=>{load();const t=setInterval(()=>{if(document.visibilityState==='visible')load()},60000);return()=>clearInterval(t)},[])
+  // F-OPS.03A: the Data Delivery summary links here (#layer-2-discovery?tab=operations&lane=<lane>); open and show that lane when the address changes on this page
+  useEffect(()=>{const h=()=>{try{const l=new URLSearchParams((location.hash.split('?')[1])||'').get('lane')||'';if(l){setOpen(l);setTimeout(()=>document.querySelector(`[data-lf-lane="${l.replace(/[^a-z0-9_]/gi,'')}"]`)?.scrollIntoView({block:'start'}),50)}}catch{}};window.addEventListener('hashchange',h);return()=>window.removeEventListener('hashchange',h)},[])
   const control=async(j,action)=>{
     const q={pause:`Pause the schedule of "${j.label||j.job}"? A run in progress finishes.`,resume:`Switch "${j.label||j.job}" on again?`,run_now:`Run "${j.label||j.job}" once now?`}[action]
     const reason=ask(q);if(!reason||lock.current)return
