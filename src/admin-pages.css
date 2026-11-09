@@ -829,3 +829,9 @@
 .kd-drawer-fields dt{font-size:var(--cf-fs-xs);color:var(--cf-text-2)}
 .kd-drawer-fields dd{margin:0;min-width:0}
 .au-area-toggle{font:inherit;font-weight:600;color:var(--cf-text)}
+/* CF-247 F-OPS.04: Layer 2/3 › Universities (Adapters) on a phone. Measured at 412 px: tick boxes 13 px, row-block headers 16 px, Inbox link 12 px high (WCAG 2.2 AA 2.5.8 floor 24 px). Phone only; desktop unchanged. */
+@media(max-width:480px){
+  [data-adapters-workspace] .adp-row-head>input[type="checkbox"],[data-adapters-workspace] .tn-check input[type="checkbox"]{width:24px;height:24px;margin:0;flex:none}
+  [data-adapters-workspace] .adp-block>.adp-row-name{min-height:32px;align-items:center}
+  [data-adapters-workspace] .l23-inbox-link{display:inline-flex;align-items:center;min-height:24px}
+}
