@@ -179,3 +179,19 @@ test('contract: worker v0.59.15 stamps provider-description-source-guard-v3 (the
   // sub-unit words are checked outside the relaxed test
   expect(ds).toContain('if (IDENTITY_SUBUNIT.test(w) || namesAnotherInstitution(seg)) return fail(')
 })
+
+test('NEGATIVE (QA #975 defects 1-4): "University of the X", possessive and hyphenated names still count as another institution; the strict proof keeps its pre-v0.59.15 labels; very long names are not run through the company-form pattern', () => {
+  for (const h1 of ['University of the Sunshine Coast', 'Part of the University of the South Pacific', 'Institute of the Arts', 'Monash University’s story', "Welcome to Monash University's home", 'Griffith-University news']) {
+    const html = page('<title>About us - The University of Sydney</title><meta property="og:site_name" content="The University of Sydney"/>', `<h1>${h1}</h1>`)
+    expect(prove(html, SYD, ...SYD_AT), h1).toEqual({ ok: false, rule: 'provider_name_conflict' })
+  }
+  expect(namesAnotherInstitution('Our university is a place to learn')).toBe(false)
+  // the strict (no segment rules) proof does not use the company-form-free label
+  expect(descriptionIdentityLabels(['Pacific College Pty Ltd'], false)).toEqual(['Pacific College Pty Ltd'])
+  expect(descriptionIdentityLabels(['Pacific College Pty Ltd'])).toContain('Pacific College')
+  // a pathological name returns at once and unchanged
+  const long = ('a, ' .repeat(30000)) + 'Ltdx'
+  const t0 = Date.now()
+  expect(withoutCompanyForm(long)).toBe(long.replace(/\s+/g, ' ').trim())
+  expect(Date.now() - t0).toBeLessThan(500)
+})

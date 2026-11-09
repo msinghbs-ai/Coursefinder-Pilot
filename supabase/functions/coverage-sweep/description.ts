@@ -99,18 +99,20 @@ const inOrder = (abbr: string, name: string) => {
 const COMPANY_FORM = /(?:[\s,]+(?:pty\.?\s+ltd\.?|pty\.?\s+limited|limited\s+partnership|limited|ltd\.?|inc\.?|incorporated|l\.?l\.?c\.?))+[\s.,]*$/i;
 export function withoutCompanyForm(name: string): string {
   const s = String(name || "").replace(/\s+/g, " ").trim();
+  if (s.length > 200) return s;  // fixed: the pattern backtracks on very long runs of separators; no real catalogue name is this long
   const r = s.replace(COMPANY_FORM, "").replace(/[\s,;]+$/, "").trim();
   return r && r !== s && r.split(/\s+/).length >= 2 ? r : s;
 }
 
-export function descriptionIdentityLabels(names: string[]): string[] {
+// withForm=false keeps the strict (segment-free) proof exactly as it was before v0.59.15: the company-form-free label is for the segment proof only
+export function descriptionIdentityLabels(names: string[], withForm = true): string[] {
   const institution = /\b(university|college|polytechnic|institute)\b/i;
   const out: string[] = [];
   for (const raw of names || []) {
     const full = String(raw || "").replace(/\s+/g, " ").trim();
     if (!full) continue;
     // the catalogue name as held, then (v0.59.15) the same name without its trailing company form; each goes through the same two derivations
-    for (const name of [...new Set([full, withoutCompanyForm(full)])]) {
+    for (const name of [...new Set(withForm ? [full, withoutCompanyForm(full)] : [full])]) {
       out.push(name);
       // 1 abbreviation-only parentheticals
       const bare = name.replace(/\s*\(([^()]*)\)/g, (whole, inner) => inOrder(String(inner), name.replace(/\([^()]*\)/g, "")) ? "" : whole).replace(/\s+/g, " ").replace(/\s+([,;])/g, "$1").trim();
@@ -119,7 +121,7 @@ export function descriptionIdentityLabels(names: string[]): string[] {
       for (const candidate of [name, bare]) {
         if (!/[;,]/.test(candidate)) continue;
         const head = candidate.split(/[;,]/)[0].trim();
-        for (const first of new Set([head, withoutCompanyForm(head)])) if (first.split(/\s+/).length >= 2 && institution.test(first)) out.push(first);
+        for (const first of new Set(withForm ? [head, withoutCompanyForm(head)] : [head])) if (first.split(/\s+/).length >= 2 && institution.test(first)) out.push(first);
       }
     }
   }
@@ -130,7 +132,7 @@ export type DescriptionIdentity = { ok: boolean; rule: string; matched_name?: st
 function strictSourceIdentity(html: string, page: string, names: string[]): DescriptionIdentity {
   const words = (s: string) => String(s || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
     .replace(/&/g, " and ").replace(/[^a-z0-9]+/g, " ").replace(/^the\s+/, "").trim();
-  const labels = [...new Set(descriptionIdentityLabels(names || []).map(words).filter((s) => s.split(" ").length > 1))];
+  const labels = [...new Set(descriptionIdentityLabels(names || [], false).map(words).filter((s) => s.split(" ").length > 1))];
   const contains = (text: string, label: string) => (` ${words(text)} `).includes(` ${label} `);
   const headings = Array.from(String(html || "").matchAll(/<(title|h1)\b[^>]*>([\s\S]*?)<\/\1>/gi), (m) => ({ tag: m[1].toLowerCase(), text: htmlToText(m[2]) }));
   const matched = labels.find((name) => contains(page, name) || headings.some((h) => contains(h.text, name)));
@@ -247,12 +249,16 @@ export function namesAnotherInstitution(segment: string): boolean {
   const letters = seg.replace(/[^\p{L}]/gu, "");
   const upper = /\p{Lu}/u.test(letters), lower = /\p{Ll}/u.test(letters);
   if (!upper || !lower) return IDENTITY_OTHER_INSTITUTION.test(identityWords(seg));
-  const toks = seg.split(/\s+/).map((t) => t.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "")).filter(Boolean);
+  // a possessive is not part of the name and a hyphen or other punctuation separates words ("Monash University’s story", "Griffith-University news")
+  const toks = seg.replace(/[\u2019']s\b/g, "").split(/[^\p{L}\p{N}]+/u).filter(Boolean);
   const cap = (t?: string) => !!t && /^\p{Lu}/u.test(t);
   for (let i = 0; i < toks.length; i++) {
     if (!INSTITUTION_WORD.test(toks[i])) continue;
     if (cap(toks[i - 1]) && !PLAIN_WORDS.has(toks[i - 1].toLowerCase())) return true;
-    if (/^of$/i.test(toks[i + 1] || "") && cap(toks[i + 2])) return true;
+    if (/^of$/i.test(toks[i + 1] || "")) {
+      const j = /^the$/i.test(toks[i + 2] || "") ? i + 3 : i + 2;  // "University of the Sunshine Coast"
+      if (cap(toks[j])) return true;
+    }
   }
   return false;
 }
