@@ -1,32 +1,59 @@
 -- CF-247 F-CDESC (Platform Admin decision 10 Nov 2026, "Course descriptions: autonomous AI admission from stored course pages"), slice 2 of 2: the audited machine admission of FIRST course descriptions.
 --
 -- Everything here is OFF until the Platform Admin sets enrich.course_description_machine_on to 1 through Settings, with a reason (added by 20261110060000, ships 0).
---   1. security.course_description_machine_admit_v1(item): re-proves at write time everything security.course_description_machine_check_v1 checks (course and provider live, description empty under the row lock,
---      no hand lock, hold or earlier rejection, page bound (not ambiguous), unchanged, content-hash lineage, object present, recent; every sentence on the page; the admission policy; no duplicate anywhere in the catalogue),
+--   1. security.course_description_machine_admit_v1(item): checks again at write time (under row locks) everything security.course_description_machine_check_v1 checks (course and provider live, description empty under the row lock,
+--      no hand lock, hold or earlier rejection, page bound (not ambiguous, clear margin, not an AI match), unchanged, content hash carried in the stored object's address, object present, recent; the quote
+--      results the worker stored for each sentence (on_page) and the support, length and in-provider duplicate checks, run again on the stored reading (the page is NOT read again); the admission policy;
+--      no duplicate in the catalogue within the comparison window),
 --      then writes the one description, READS IT BACK from catalogue.courses and from public.website_v2_course (read only, not changed), settles the Layer 4 item as a MACHINE decision under the system
 --      automation account (Decision 263) with a layer4_decisions row marked actor_kind machine, an admin_control_events row, a search refresh signal and the ledger row (before and after text, evidence id,
 --      content hash, source URL, model, prompt version, rule, recovery). It does not call the human decision procedure (security.layer4_review_decide_impl / layer4_course_description_apply_v1), does not lower
 --      enrich.course_description_review_first, and never updates catalogue.courses in bulk: one course, one item, one transaction. A decline leaves the item waiting with the exact reason and next action on it.
 --   2. security.course_description_machine_withdraw_v1 (rank 6 through public.admin_course_description_machine_withdraw_v1): puts the empty description back if no person changed it and no lock was added since;
---      proves the row; keeps the audit; holds the course out of further machine admission until a person decides.
---   3. security.course_description_machine_settle_v1: the waiting first course descriptions, as many as a time box and enrich.course_text_items_per_day allow in a run (derived, no new setting); a declined item
+--      proves the row; keeps the audit; holds the course out of further machine admission until a person decides. Nothing else is needed to bring the course back: the withdrawn course has no description and its
+--      last reading is 'filled', which is exactly what the standing gap queue (security.enrich_course_text_gaps_v1) picks up again on its next tick (stored page bound and read, no hand lock); the new reading reaches
+--      Layer 4 and this rule declines it as withdrawn_awaiting_person, so a person decides it. (The on-demand Recheck of a held item releases a counting flag; a machine admission leaves none to release.)
+--   3. security.course_description_machine_settle_v1: the waiting first course descriptions, as many as a time box and enrich.course_text_items_per_day allow in a run (derived, no new setting; this couples the
+--      machine's per-run ceiling to the standing reading queue's per-day ceiling, so a person who changes the one changes the other, and one run can take up to a day's worth of items); a declined item
 --      is looked at again when the policy changed, when its decline was transient, or after gaps.recheck_days. security.course_description_machine_consumer_recheck_v1 follows up Website read-backs that lagged.
 --   4. A fresh reading that reaches Layer 4 is admitted at once when the switch is on: an AFTER trigger on pipeline.field_enrich_items (state becomes review). Off, nothing happens and Layer 4 behaves exactly as before;
---      no existing function is edited. The trigger swallows its own errors: the reading stays waiting for a person.
+--      the record function and the Layer 4 triggers are not edited. The trigger swallows its own errors: the reading stays waiting for a person.
 --   5. One catalogued job, course-description-machine (G1), command without a number; it does nothing while the switch is 0.
+--   6. TRUST ACCOUNTING (one md5-guarded edit, in place): security.course_description_trusted_v1 counts a provider's latest decided course descriptions as the person-trust that lets later descriptions skip Layer 4
+--      once enrich.course_description_review_first is lowered. A machine approval sets the item to approved too, so without this edit machine decisions would be counted as human trust. The edit leaves out an item
+--      whose decision is marked actor_kind machine. Today no machine decision exists and review_first is 100000, so the function answers exactly as before; its three callers (the record function, release_held, promote_held)
+--      are unchanged and all take the corrected answer. Live definition (pg_proc.prosrc md5, read 10 Nov 2026): security.course_description_trusted_v1(uuid) ae8b327f85f0262b3d0b878010a4af3c -> 16568089f58b528b9a6647e78eca3ed5.
+--      Forward recovery (the original body, byte for byte): supabase/held/cdesc_trusted_machine_forward_recovery.sql.
 -- The consumer API (G3) is only called for the read-back, never changed. No setting value changes. Nothing is dropped or deleted.
--- Replaces: nothing (a separate machine route; the human Layer 4 route and its triggers are unchanged)
+-- Replaces: the person-trust count in security.course_description_trusted_v1 (edited in place so a machine decision is not counted as a person's); otherwise nothing (a separate machine route; the human Layer 4 route and its triggers are unchanged)
 -- Retires: nothing
 
 do $g$
 declare r record;
 begin
   for r in select * from (values ('security.course_description_machine_check_v1(uuid)'), ('security.course_description_machine_policy_stamp_v1()'), ('security.cdesc_machine_fail_v1(text,text,text,boolean)'),
-                                 ('public.website_v2_course(text)'), ('security.current_role_rank()'), ('security.course_description_review_trg_v1()')) v(sig) loop
+                                 ('public.website_v2_course(text)'), ('security.current_role_rank()'), ('security.course_description_review_trg_v1()'), ('security.course_description_trusted_v1(uuid)')) v(sig) loop
     if to_regprocedure(r.sig) is null then raise exception 'required % is missing (apply 20261110060000 first)', r.sig; end if;
   end loop;
   if to_regclass('pipeline.course_description_machine_admissions') is null then raise exception 'apply 20261110060000 first'; end if;
 end $g$;
+
+-- ----------------------------------------------------------------------------------------------------------------------------------------- trust accounting: a machine decision is not a person's
+do $t$
+declare v_src text := (select p.prosrc from pg_proc p where p.oid = 'security.course_description_trusted_v1(uuid)'::regprocedure); v_def text; v_c int;
+        v_old constant text := $o$and c.provider_id = p_provider$o$;
+        v_new constant text := $n$and c.provider_id = p_provider and not exists (select 1 from pipeline.layer4_decisions md where md.review_item_id = r.id and md.layer2_state->>'actor_kind' = 'machine')$n$;
+begin
+  -- fixed: the guard is the md5 of the live function body (pg_proc.prosrc), the same text on PostgreSQL 16 and 17
+  if md5(v_src) = '16568089f58b528b9a6647e78eca3ed5' then return; end if; -- already applied
+  if md5(v_src) <> 'ae8b327f85f0262b3d0b878010a4af3c' then raise exception 'live security.course_description_trusted_v1(uuid) differs from the definition this change edits (body md5 %)', md5(v_src); end if;
+  v_def := replace(pg_get_functiondef('security.course_description_trusted_v1(uuid)'::regprocedure), chr(13), '');
+  v_c := (length(v_def) - length(replace(v_def, v_old, ''))) / length(v_old);
+  if v_c <> 1 then raise exception 'security.course_description_trusted_v1: the edit must apply exactly once (found %)', v_c; end if;
+  execute replace(v_def, v_old, v_new);
+  v_src := (select p.prosrc from pg_proc p where p.oid = 'security.course_description_trusted_v1(uuid)'::regprocedure);
+  if md5(v_src) <> '16568089f58b528b9a6647e78eca3ed5' then raise exception 'security.course_description_trusted_v1 after the edit has body md5 %, expected 16568089f58b528b9a6647e78eca3ed5', md5(v_src); end if;
+end $t$;
 
 -- ----------------------------------------------------------------------------------------------------------------------------------------- the admission
 create or replace function security.course_description_machine_admit_v1(p_item uuid, p_via text default 'settle') returns jsonb
@@ -56,7 +83,7 @@ begin
       v_cc := case when v_pub is null then 'error' when v_pub ? 'error' then 'not_in_feed' when v_shown = v_text then 'matched' when nullif(btrim(v_shown), '') is null then 'lag' else 'mismatch' end;
       if v_cc = 'mismatch' then raise exception 'cdesc:consumer_mismatch:the website function shows different text for this course after the write'; end if;
       update pipeline.layer4_review_items set status = 'approved', decided_at = now() where id = i.id and status = 'pending';
-      v_reason := format('Auto (%s, %s): description read from the course''s own stored page %s (content hash %s); right course and page, every sentence''s quote and the wording policy proved again at admission. Not a person''s decision.',
+      v_reason := format('Auto (%s, %s): description read from the course''s own stored page %s (content hash %s); right course and page (identity proof and margin), the quote results the worker stored for each sentence, the sentence, length, support and duplicate checks and the wording policy checked again at admission (the page was not read again). Not a person''s decision.',
                          v_rule, coalesce(p_via, 'settle'), coalesce(v->>'source_url', ''), left(coalesce(v->>'content_hash', ''), 12)); -- fixed: a short hash prefix is shown for reading, the full hash is stored
       insert into pipeline.layer4_decisions (review_item_id, action, actor_id, reason, before_value, proposed_value, final_value, evidence_id, layer2_state, layer3_state, change_control_ref)
       values (i.id, 'approve', v_sys, v_reason, i.before_value, i.proposed_value, i.proposed_value, i.evidence_id,
@@ -94,7 +121,7 @@ begin
    where id = i.id and coalesce(escalation_reason, '') not like 'Machine rule ' || v_rule || ' did not admit this: ' || (v->>'rule') || '.%';
   return jsonb_build_object('ok', false, 'rule', v->>'rule', 'reason', v_reason, 'next_action', v_next);
 end $f$;
-comment on function security.course_description_machine_admit_v1(uuid, text) is 'CF-247 F-CDESC machine admission of one first course description (rule cdesc-machine-v1): needs the switch on; re-proves the safe class under the row locks, writes the one description, reads it back from the catalogue and from the website function, settles the Layer 4 item as a machine decision under the system automation account and records the ledger row. Declines (item stays waiting, exact reason and next action on it and in the ledger) rather than guess. Never calls the human decision procedure.';
+comment on function security.course_description_machine_admit_v1(uuid, text) is 'CF-247 F-CDESC machine admission of one first course description (rule cdesc-machine-v1): needs the switch on; checks the safe class again under the row locks (from the stored reading and the stored page evidence; the page is not read again), writes the one description, reads it back from the catalogue and from the website function, settles the Layer 4 item as a machine decision under the system automation account and records the ledger row. Declines (item stays waiting, exact reason and next action on it and in the ledger) rather than guess. Never calls the human decision procedure.';
 revoke all on function security.course_description_machine_admit_v1(uuid, text) from public, anon, authenticated;
 
 -- ----------------------------------------------------------------------------------------------------------------------------------------- withdrawal and rollback
@@ -235,12 +262,12 @@ revoke all on function security.course_description_machine_report_v1() from publ
 -- ----------------------------------------------------------------------------------------------------------------------------------------- the job (G1: catalogued first; ships on, does nothing while its switch is 0)
 insert into pipeline.automation_catalogue(jobname, area, sort, label, description, control_rank, batch_editable, layer23_stage) values
  ('course-description-machine', 'Enrichment', 30, 'Course descriptions: automatic admission of first descriptions',
-  'Every 10 minutes (not at :35 to :42 or :47 to :48): while Settings > Pipeline settings > Course descriptions: automatic admission is on, checks the waiting first course descriptions against the machine rule cdesc-machine-v1 (right course and page, quotes, wording policy, no duplicates, no lock or earlier rejection), admits those that pass as machine decisions with the reason recorded, leaves the rest for a person in Layer 4 with the exact reason on the item, and follows up Website read-backs that lagged. Does nothing while the switch is 0.',
+  'Every 10 minutes (not at :35 to :42 or :47 to :48): while Settings > Pipeline settings > Course descriptions: automatic admission is on, checks the waiting first course descriptions against the machine rule cdesc-machine-v1 (right course and page, the worker''s stored quote results and text checks, wording policy, no duplicates, no lock or earlier rejection), admits those that pass as machine decisions with the reason recorded, leaves the rest for a person in Layer 4 with the exact reason on the item, and follows up Website read-backs that lagged. Does nothing while the switch is 0.',
   6, false, null)
 on conflict (jobname) do nothing;
 do $c$ begin
   if not exists (select 1 from cron.job where jobname = 'course-description-machine') then
-    perform cron.schedule('course-description-machine', '3,13,23,33,43,53 * * * *', $j$select security.course_description_machine_run_v1()$j$);
+    perform cron.schedule('course-description-machine', '4,14,24,34,44,54 * * * *', $j$select security.course_description_machine_run_v1()$j$);
   end if;
 end $c$;
 

@@ -91,6 +91,11 @@ create function pg_temp.pending(n int) returns boolean language sql as $$ select
 select pg_temp.mk(n, case when n in (16, 17) then 4 when n in (2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 18, 21, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 1) then 1
                           when n in (14, 15, 19, 20, 22) then 2 when n = 23 then 5 when n in (38, 39) then 3 else 1 end)
   from generate_series(1, 39) n;
+-- 44 to 49: identity margin and near duplicates against the catalogue (46 is a clear match and is admitted)
+select pg_temp.mk(n, 1) from generate_series(44, 49) n;
+-- a described course of another provider that no Layer 4 item holds (95), for the catalogue-wide near-duplicate test
+insert into pim.entity_registry(id, stable_key) values (pg_temp.cid(95), 'cm-c95');
+insert into catalogue.courses(id, stable_key, provider_id, canonical_title, publication_status, description) values (pg_temp.cid(95), 'cm-c95', pg_temp.pid(3), 'Cm Course 95', 'published', pg_temp.txt(pg_temp.sents(95)));
 -- a second waiting item on course 29
 select pg_temp.mk(29, 1, 129, '00000000-0000-4000-c000-0000000000f2');
 -- courses with no waiting item that other cases point at: 41 (another course for a reading), 42 (a rejected description), 43 (described)
@@ -138,7 +143,16 @@ insert into pipeline.course_description_source_checks(course_id, evidence_id, re
 update catalogue.courses set description = 'A description that arrived another way and already stands for this course on the site.' where id = pg_temp.cid(28);
 update pipeline.layer4_review_items set before_value = '{"description": "an earlier text"}' where id = pg_temp.rid(30);
 update catalogue.courses set lifecycle_status = 'archived' where id = pg_temp.cid(31);
-update catalogue.courses set publication_status = 'unpublished' where id = pg_temp.cid(32);
+insert into pipeline.cdm_not_in_feed values (pg_temp.cid(32));
+update catalogue.courses set publication_status = 'unpublished' where id = pg_temp.cid(27); -- the live feed answers for an unpublished course too: the read-back must still match
+update pipeline.coverage_course_pages set basis = 'ai_match' where course_id = pg_temp.cid(44);
+update pipeline.coverage_course_pages set basis = 'title_match', score = 0.9, runner_up = 0.85 where course_id = pg_temp.cid(45);
+update pipeline.coverage_course_pages set basis = 'title_match', score = 0.9, runner_up = 0.6 where course_id = pg_temp.cid(46);
+insert into pipeline.course_description_source_checks(course_id, evidence_id, result, content_hash_read, quotes_total, quotes_found, checked_at) values
+  (pg_temp.cid(47), pg_temp.eid(47), 'confirmed', md5('another') || md5('copy'), 2, 2, now()),
+  (pg_temp.cid(48), pg_temp.eid(48), 'confirmed', md5('48') || md5('1048'), 2, 2, now() - interval '100 days');
+select pg_temp.setsents(49, (select jsonb_set(pg_temp.sents(95), '{1,text}', to_jsonb(replace(pg_temp.sents(95)->1->>'text', pg_temp.w(95, 6), pg_temp.w(49, 6))))));
+update pipeline.field_enrich_items set value = jsonb_set(value, '{sentences,1,quote}', to_jsonb(replace(pg_temp.sents(95)->1->>'quote', pg_temp.w(95, 6), pg_temp.w(49, 6)))) where course_id = pg_temp.cid(49);
 update pipeline.coverage_course_pages set url = 'https://example.test/moved' where course_id = pg_temp.cid(33);
 update pipeline.field_enrich_items set value = value || jsonb_build_object('text', 'A different text than the one proposed for this course.') where course_id = pg_temp.cid(34);
 update pipeline.layer4_review_items set layer3_state = layer3_state - 'model' where id = pg_temp.rid(35);
@@ -150,7 +164,7 @@ create temporary table g_state as select pg_temp.fnmd5() consumer_fn, (select va
 
 -- 0. the shipped state ---------------------------------------------------------------------------------------------------------------------------------------
 select pg_temp.expect('settings: the machine switch ships 0, on/off 0 to 1, with label, unit and used_by (G2); it is the only new setting',
-  (select value = '0'::jsonb and min_value = 0 and max_value = 1 and unit = 'on/off' and label <> '' and used_by like '%course_description_machine_admit_v1%' and reason is not null from pipeline.platform_toolset_settings where toolset_key = 'pipeline' and key = 'enrich.course_description_machine_on'));
+  (select value = '0'::jsonb and min_value = 0 and max_value = 1 and unit = 'on/off' and label <> '' and used_by like '%course_description_machine_admit_v1%' and reason is not null and control_class = 'human' and help like '%not counted as a person''s trust%course_description_trusted_v1%' and help !~ 'course_text_verify|svc_course_description_source_check' from pipeline.platform_toolset_settings where toolset_key = 'pipeline' and key = 'enrich.course_description_machine_on'));
 select pg_temp.expect('the job is catalogued (G1) at rank 6 and scheduled with no number in its command',
   (select control_rank = 6 from pipeline.automation_catalogue where jobname = 'course-description-machine') and (select regexp_replace(command, '_v[0-9]+', '', 'g') !~ '[0-9]' from cron.job where jobname = 'course-description-machine'));
 select pg_temp.expect('the ledger, the source-check table and the new functions are closed to anon and authenticated; RLS on',
@@ -193,12 +207,13 @@ insert into g_exp values
  (pg_temp.rid(24), 'lineage_hash_mismatch'), (pg_temp.rid(25), 'object_missing'), (pg_temp.rid(26), 'source_recheck_failed'), (pg_temp.rid(27), 'admitted'), (pg_temp.rid(28), 'description_already_held'),
  (pg_temp.rid(29), 'another_pending_item'), (pg_temp.rid(129), 'another_pending_item'), (pg_temp.rid(30), 'before_value_not_empty'), (pg_temp.rid(31), 'course_not_active'), (pg_temp.rid(32), 'admitted'),
  (pg_temp.rid(33), 'page_url_changed'), (pg_temp.rid(34), 'text_changed'), (pg_temp.rid(35), 'reader_unrecorded'), (pg_temp.rid(36), 'identity_not_allowed'), (pg_temp.rid(37), 'reading_not_current'),
- (pg_temp.rid(38), 'admitted'), (pg_temp.rid(39), 'admitted'), ((select id from pipeline.layer4_review_items where entity_id = pg_temp.cid(60)), 'admitted');
+ (pg_temp.rid(44), 'identity_margin_thin'), (pg_temp.rid(45), 'identity_margin_thin'), (pg_temp.rid(46), 'admitted'), (pg_temp.rid(47), 'source_recheck_unusable'), (pg_temp.rid(48), 'source_recheck_unusable'),
+ (pg_temp.rid(49), 'duplicate_near_other_provider'), (pg_temp.rid(38), 'admitted'), (pg_temp.rid(39), 'admitted'), ((select id from pipeline.layer4_review_items where entity_id = pg_temp.cid(60)), 'admitted');
 create temporary table g_shadow as select security.course_description_machine_shadow_v1(500, 0) s;
 select pg_temp.expect('shadow (switch off): examines every waiting item, would admit the safe class, names the reason for the rest, and writes nothing',
   (select (s->>'waiting_items')::int = (select count(*) from g_exp) and (s->>'examined')::int = (select count(*) from g_exp) and (s->>'would_admit')::int = (select count(*) from g_exp where want = 'admitted')
           and (s->'by_reason'->>'duplicate_exact_waiting')::int = 2 and (s->'by_reason'->>'manual_lock')::int = 1 and jsonb_array_length(s->'sample_would_admit') = 5 and (s->>'switch_on')::boolean is false from g_shadow)
-  and (select count(*) from pipeline.course_description_machine_admissions) = 0 and (select count(*) from pipeline.layer4_review_items) = (select l4_start from g_state) + 1 and (select count(*) from catalogue.courses where nullif(btrim(description), '') is not null) = 2);
+  and (select count(*) from pipeline.course_description_machine_admissions) = 0 and (select count(*) from pipeline.layer4_review_items) = (select l4_start from g_state) + 1 and (select count(*) from catalogue.courses where nullif(btrim(description), '') is not null) = 3);
 select pg_temp.expect('shadow: pages (limit 10, offset 10) and says where the next page starts', (select (security.course_description_machine_shadow_v1(10, 10)->>'examined')::int = 10 and (security.course_description_machine_shadow_v1(10, 10)->>'next_offset')::int = 20));
 select pg_temp.diag('evaluator differs', $q$select e.want || ' <> ' || coalesce(security.course_description_machine_check_v1(e.rid)->>'rule', 'null') from g_exp e where e.want <> 'admitted' and security.course_description_machine_check_v1(e.rid)->>'rule' is distinct from e.want$q$);
 select pg_temp.diag('evaluator not ok', $q$select e.rid::text || ' ' || security.course_description_machine_check_v1(e.rid)::text from g_exp e where e.want = 'admitted' and not coalesce((security.course_description_machine_check_v1(e.rid)->>'ok')::boolean, false)$q$);
@@ -222,7 +237,7 @@ select pg_temp.expect('declined: still waiting, description still empty, never a
   (select count(*) = 0 from g_exp e where e.want <> 'admitted' and (not exists (select 1 from pipeline.layer4_review_items i where i.id = e.rid and i.status = 'pending' and i.escalation_reason like 'Machine rule cdesc-machine-v1 did not admit this: ' || e.want || '.%')
                                                                          or exists (select 1 from pipeline.layer4_decisions d where d.review_item_id = e.rid)
                                                                          or not exists (select 1 from pipeline.course_description_machine_admissions a where a.review_item_id = e.rid and a.outcome = 'declined' and nullif(a.next_action, '') is not null and a.policy_stamp is not null)))
-  and (select count(*) from catalogue.courses where nullif(btrim(description), '') is not null) = 2 + (select count(*) from g_exp where want = 'admitted'));
+  and (select count(*) from catalogue.courses where nullif(btrim(description), '') is not null) = 3 + (select count(*) from g_exp where want = 'admitted'));
 select pg_temp.expect('transient declines are marked and retried within the hour; permanent ones wait gaps.recheck_days',
   (select transient and retry_after < now() + interval '61 minutes' from pipeline.course_description_machine_admissions where review_item_id = pg_temp.rid(25) and outcome = 'declined')
   and (select not transient and retry_after > now() + interval '59 days' from pipeline.course_description_machine_admissions where review_item_id = pg_temp.rid(11) and outcome = 'declined'));
@@ -242,8 +257,8 @@ select pg_temp.expect('admitted: the existing Layer 4 trigger followed (the read
   (select state = 'filled' from pipeline.field_enrich_items where course_id = pg_temp.cid(1) and field = 'description') and exists (select 1 from search.refresh_requests)
   and (select count(*) from pipeline.layer4_decisions where actor_id <> 'c0ffee00-0000-4000-8000-000000000150'::uuid) = 0
   and (select value from pipeline.platform_toolset_settings where key = 'enrich.course_description_review_first') = (select review_first from g_state));
-select pg_temp.expect('admitted (27): the confirmed re-read of the page is recorded; (32): a course not in the feed is admitted and the ledger says so',
-  (select checks->>'source_recheck' = 'confirmed' from pipeline.course_description_machine_admissions where review_item_id = pg_temp.rid(27) and outcome = 'admitted')
+select pg_temp.expect('admitted (27): a recent confirmed re-read of the same page copy is recorded, and the feed (which answers for an unpublished course too) matches; (32): a course not in the feed is admitted and the ledger says so',
+  (select checks->>'source_recheck' = 'confirmed' and consumer_check = 'matched' from pipeline.course_description_machine_admissions where review_item_id = pg_temp.rid(27) and outcome = 'admitted')
   and (select consumer_check = 'not_in_feed' from pipeline.course_description_machine_admissions where review_item_id = pg_temp.rid(32) and outcome = 'admitted'));
 select pg_temp.expect('two providers are admitted in the same run (not one provider only)', (select count(distinct provider_id) from pipeline.course_description_machine_admissions where outcome = 'admitted') >= 2);
 
@@ -258,8 +273,8 @@ select pg_temp.expect('a second settle admits nothing more; an approved item is 
   and (select count(*) = 0 from pipeline.course_description_machine_admissions where outcome = 'declined' group by review_item_id having count(*) > 1 limit 1) is not false);
 select pg_temp.expect('a second settle leaves declined items alone until the policy changes or the retry time passes (no new ledger rows, same created_at)',
   (select count(*) = (select n from g_declined_before) and md5(string_agg(id::text || created_at::text, '' order by id)) = (select h from g_declined_before) from pipeline.course_description_machine_admissions where outcome = 'declined'));
-select pg_temp.expect('only the courses the ledger names were written: every described course is a ledger admission or one of the two that were described before',
-  (select count(*) = 0 from catalogue.courses c where nullif(btrim(c.description), '') is not null and c.id not in (pg_temp.cid(28), pg_temp.cid(43))
+select pg_temp.expect('only the courses the ledger names were written: every described course is a ledger admission or one of the three that were described before',
+  (select count(*) = 0 from catalogue.courses c where nullif(btrim(c.description), '') is not null and c.id not in (pg_temp.cid(28), pg_temp.cid(43), pg_temp.cid(95))
      and not exists (select 1 from pipeline.course_description_machine_admissions a where a.course_id = c.id and a.outcome = 'admitted' and a.withdrawn_at is null and a.after_description = nullif(btrim(c.description), ''))));
 
 -- 6. the fresh reading hook ---------------------------------------------------------------------------------------------------------------------------------
@@ -367,6 +382,10 @@ select pg_temp.expect('withdraw: the Platform Admin restores the empty descripti
   and exists (select 1 from pipeline.admin_control_events where action = 'cdesc_machine_withdraw' and target = pg_temp.cid(1)::text and actor = '00000000-0000-4000-a000-000000000001'::uuid)
   and (select count(*) = 1 and bool_and(status = 'queued') from pipeline.search_refresh_signals s join pipeline.layer4_decisions d on d.id = s.review_decision_id where d.review_item_id = pg_temp.rid(1))
   and (select r->>'rule' = 'no_live_machine_admission' from g_wd2));
+-- the withdrawn course is not left alone: it has no description and its last reading is filled, so the standing gap queue (the production one, from the fixture) offers it for a new reading
+select pg_temp.expect('withdraw: the course goes back to the standing gap queue for a fresh read (no counting flag to release), where its new reading is then held for a person',
+  exists (select 1 from security.enrich_course_text_gaps_v1(array['description']) q where q.course_id = pg_temp.cid(1))
+  and not exists (select 1 from pipeline.enrichment_flags where entity_key = pg_temp.cid(1)::text and state in ('raised', 'counting')));
 -- a new reading for the withdrawn course waits for a person
 select pg_temp.mk(1, 1, 301, '00000000-0000-4000-c000-0000000000f2');
 create temporary table g_wd3 as select security.course_description_machine_admit_v1(pg_temp.rid(301)) r;
@@ -394,6 +413,20 @@ select pg_temp.expect('promote-held inside an admission: the admission completes
   and exists (select 1 from pipeline.layer4_review_items where entity_id = pg_temp.cid(81) and status = 'pending')
   and (select reason_code = 'reader_unrecorded' from pipeline.course_description_machine_admissions where course_id = pg_temp.cid(81) and outcome = 'declined'));
 update pipeline.platform_toolset_settings set value = '10'::jsonb where toolset_key = 'pipeline' and key = 'enrich.course_description_pending_max';
+
+-- TRUST ACCOUNTING (regression that fails on the old function): security.course_description_trusted_v1 counts the provider's latest decided descriptions as person-trust. A machine approval is an approved item too; it must not
+-- count. At review_first 1 a provider whose only decision is a machine approval is NOT trusted; one human approval (older than the machine ones) makes it trusted; the shipped value is restored.
+update pipeline.platform_toolset_settings set value = '1'::jsonb where toolset_key = 'pipeline' and key = 'enrich.course_description_review_first';
+create temporary table g_trust1 as select security.course_description_trusted_v1(pg_temp.pid(1)) machine_only;
+insert into pipeline.layer4_review_items(id, entity_type, entity_id, field_code, evidence_id, before_value, proposed_value, status, change_control_ref, decided_at) values
+  (pg_temp.rid(241), 'course', pg_temp.cid(41), 'course_description_first_read', null, '{"description": null}', '{"description": "A person approved this description in Layer 4."}', 'approved', 'x', now() - interval '1 hour');
+create temporary table g_trust2 as select security.course_description_trusted_v1(pg_temp.pid(1)) with_human;
+update pipeline.platform_toolset_settings set value = to_jsonb((select review_first::text::numeric from g_state)) where toolset_key = 'pipeline' and key = 'enrich.course_description_review_first';
+select pg_temp.expect('trust accounting: machine approvals are not person-trust (review_first 1: machine-only provider is not trusted; one human approval makes it trusted); the shipped value is restored and nobody is trusted at it',
+  (select machine_only is not true from g_trust1) and (select with_human is true from g_trust2)
+  and (select value from pipeline.platform_toolset_settings where key = 'enrich.course_description_review_first') = (select review_first from g_state)
+  and not coalesce(security.course_description_trusted_v1(pg_temp.pid(1)), false)
+  and (select count(*) > 0 from pipeline.layer4_decisions d where d.layer2_state->>'actor_kind' = 'machine'));
 
 -- 12. the report and the consumer API -----------------------------------------------------------------------------------------------------------------------
 select pg_temp.expect('the scoreboard counts admissions, withdrawals, providers, the Website state and the reasons',

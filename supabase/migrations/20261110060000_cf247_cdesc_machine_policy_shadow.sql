@@ -3,8 +3,11 @@
 -- Slice 1 of 2: the machine rule for FIRST course descriptions, read only. Nothing is admitted by this migration and nothing switches on.
 --   1. pipeline.course_description_machine_admissions: the ledger of every course description the machine rule admitted or declined (before and after text, page evidence id and content hash, source URL,
 --      model, prompt version, rule version, actor, outcome, exact reason and next action, withdrawal, recovery, Website read-back).
---   2. pipeline.course_description_source_checks: the optional second proof (a no-AI re-read of the stored page by the worker that re-checks every quote and returns the hash it read). Used only if a row exists:
---      a failed re-check declines; a confirmed one is recorded; no row never blocks (so release does not wait for a worker deploy).
+--   2. pipeline.course_description_source_checks: an OPTIONAL place for a later, independent re-read of the stored page (nothing writes to it yet: no worker mode or RPC for it exists in this change). The evaluator
+--      reads it only if a row exists: a failed result declines; a confirmed result counts only if it is recent (gaps.recheck_days) and the hash it read equals the evidence content hash; no row never blocks.
+--      WHAT IS RE-VALIDATED at admission is therefore NOT a fresh read of the page. It is: the on_page result the worker stored for each quote when it read the page (re-run through the live
+--      course_description_check_v1), the sentence, length, support and in-provider duplicate checks, the wording policy, the identity binding (bound, not ambiguous, identity proof allowed for the country, enough margin
+--      over the runner-up, not an AI match), the evidence not stale (gaps.recheck_days), the content hash carried in the stored object's address and the object present in storage, and no catalogue-wide duplicate.
 --   3. ONE new setting, enrich.course_description_machine_on (ships 0). The text policy is the EXISTING admission policy, not a parallel set: the refused-word lists (pdesc.claim_words, pdesc.superlatives,
 --      pdesc.evidence_claim_words, pdesc.machine_refused_words, pdesc.machine_refused_words_fr, pdesc.machine_neutral_words) and the figures policy (pdesc.machine_numbers_allowed, pdesc.founded_year_min) are read
 --      through the live security.pdesc_machine_text_check_ctx_v1; the sentence, length, support and in-provider duplicate checks are the live security.course_description_check_v1 (pdesc.support_min_share,
@@ -87,7 +90,7 @@ create table if not exists pipeline.course_description_source_checks (
   worker text,
   checked_at timestamptz not null default now()
 );
-comment on table pipeline.course_description_source_checks is 'CF-247 F-CDESC second proof (optional): the result of a no-AI re-read of the stored course page by the worker (coverage-sweep mode course_text_verify): the hash of the object it read and whether every quote of the waiting description is still on it. Written only through public.svc_course_description_source_check_record. security.course_description_machine_check_v1 declines on a failed re-check of the same evidence and records a confirmed one; no row never blocks.';
+comment on table pipeline.course_description_source_checks is 'CF-247 F-CDESC optional independent re-read of a stored course page: the hash of the object read and how many of the waiting description''s quotes were found on it. Nothing writes to it yet (no worker mode or RPC exists for it); it is empty until a later change adds one. security.course_description_machine_check_v1 reads the latest row for the evidence: a failed result declines; a confirmed result counts only if it is no older than gaps.recheck_days and its content_hash_read equals the evidence content hash, otherwise the admission is declined as unusable; no row never blocks.';
 create index if not exists course_description_source_checks_evidence_idx on pipeline.course_description_source_checks (evidence_id, checked_at desc);
 alter table pipeline.course_description_source_checks enable row level security;
 revoke all on pipeline.course_description_source_checks from public, anon, authenticated;
@@ -95,11 +98,18 @@ revoke all on pipeline.course_description_source_checks from public, anon, authe
 -- ----------------------------------------------------------------------------------------------------------------------------------------- the one setting (G2; ships off)
 insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, section, used_by, reason) values
  ('pipeline', 'enrich.course_description_machine_on', 'Course descriptions: automatic admission (source-verified)',
-  '1: a course''s FIRST description read from its own stored official page that passes the objective rule cdesc-machine-v1 is admitted by the machine and recorded as a machine decision in the ledger and in Layer 4, never as a person''s. The rule re-proves, when it writes: the right course and page (bound, not ambiguous, evidence unchanged, content hash, page present, recent), every sentence''s quote, no claim, ranking, accreditation, outcome, campus or figure (the same words and figures policy as provider descriptions), no duplicate of any other course''s text, no hand lock, hold or earlier rejection. Anything else stays for a person with its exact reason. 0: every first description waits for a person in Layer 4. enrich.course_description_review_first is not changed by this.',
+  '1: a course''s FIRST description read from its own stored official page that passes the objective rule cdesc-machine-v1 is admitted by the machine and recorded as a machine decision in the ledger and in Layer 4, never as a person''s. At the moment it writes, the rule checks again (it does not read the page again): the quote results the worker stored for each sentence (on the page), the sentence, length, support and in-provider duplicate checks, the words and figures policy shared with provider descriptions (no claim, ranking, accreditation, outcome, campus or figure), the page binding (bound, not ambiguous, proof allowed, clear margin over the runner-up, not an AI match, evidence unchanged), the stored page recent and present with its content hash in its address, no duplicate of any other course''s text within the comparison window, and no hand lock, hold or earlier rejection. Anything else stays for a person with its exact reason. 0: every first description waits for a person in Layer 4. Machine approvals are not counted as a person''s trust: security.course_description_trusted_v1 (the count behind enrich.course_description_review_first) leaves out items whose decision is marked as a machine decision. enrich.course_description_review_first stays 100000.',
   'number', '0'::jsonb, 0, 1, 'on/off', 1122, 'Course description and deadline',
   'security.course_description_machine_admit_v1, security.course_description_machine_run_v1 (job course-description-machine), security.course_description_machine_trg_v1',
   'CF-247 F-CDESC (Platform Admin decision 10 Nov 2026): source-verified machine admission, default off')
 on conflict (toolset_key, key) do nothing;
+-- the switch is a person's decision (control class 'human', Platform Admin 10 Nov 2026, F-OPS.05). The column is added by 20261110080000; where it is not there yet this does nothing, and that migration leaves a
+-- classified row alone. Only the row this change inserts is set, and only while it is still unclassified.
+do $cc$ begin
+  if exists (select 1 from information_schema.columns where table_schema = 'pipeline' and table_name = 'platform_toolset_settings' and column_name = 'control_class') then
+    execute $q$update pipeline.platform_toolset_settings set control_class = 'human' where toolset_key = 'pipeline' and key = 'enrich.course_description_machine_on' and control_class is null$q$;
+  end if;
+end $cc$;
 
 -- ----------------------------------------------------------------------------------------------------------------------------------------- helpers
 create or replace function security.cdesc_norm_v1(p_text text) returns text language sql immutable set search_path to '' as $f$
@@ -180,6 +190,9 @@ begin
   if g.read_status is distinct from 'read' then return security.cdesc_machine_fail_v1('page_not_read', 'The bound page is not marked read.', 'The queue reads the page again.', true); end if;
   if not security.coverage_identity_allowed(c.provider_id, g.identity_basis, 'description') then
     return security.cdesc_machine_fail_v1('identity_not_allowed', 'The page''s proof (' || coalesce(g.identity_basis, 'none') || ') does not admit a description for this country.', 'A person decides in Layer 4.'); end if;
+  -- how firmly the page was matched to this course: an AI match, or a runner-up page scoring close to the chosen one, is not a clear identity
+  if g.basis = 'ai_match' or (g.score is not null and g.runner_up is not null and g.score - g.runner_up < 0.1) then -- fixed: a margin under 0.1 between the chosen page and the runner-up is not a clear match; no setting exists for it and none is added (10 Nov 2026 05:40 rule)
+    return security.cdesc_machine_fail_v1('identity_margin_thin', 'The page was matched by an AI match or by a score only just above the next candidate (' || coalesce(g.basis, 'no basis') || ', score ' || coalesce(g.score::text, 'none') || ', runner-up ' || coalesce(g.runner_up::text, 'none') || ').', 'A person decides in Layer 4.'); end if;
   if g.evidence_id is distinct from i.evidence_id then
     return security.cdesc_machine_fail_v1('evidence_moved', 'The course''s bound page copy changed after this description was read.', 'The queue reads the new copy; the old proposal is superseded or decided by a person.', true); end if;
   if i.proposed_value->>'source_url' is distinct from g.url then
@@ -203,13 +216,16 @@ begin
     return security.cdesc_machine_fail_v1('object_missing', 'The stored page object is not in storage.', 'The queue reads the course page again.', true); end if;
   if coalesce(e.captured_at, e.created_at) < now() - make_interval(days => v_days) then
     return security.cdesc_machine_fail_v1('evidence_stale', 'The stored page was captured more than ' || v_days || ' days ago.', 'The queue reads the page again; the description is checked on the new copy.', true); end if;
-  -- optional second proof
+  -- optional independent re-read of the page (nothing writes this table yet): the latest row for this evidence, if there is one
   select * into sc from pipeline.course_description_source_checks s where s.evidence_id = e.id and s.course_id = c.id order by s.checked_at desc limit 1;
   if sc.id is not null then
     if sc.result <> 'confirmed' then return security.cdesc_machine_fail_v1('source_recheck_failed', 'A re-read of the stored page did not confirm the quotes (' || sc.result || ').', 'The queue reads the course page again; a person decides if it persists.', true); end if;
+    -- a confirmation counts only if it is recent and it read the very object the evidence names
+    if sc.checked_at < now() - make_interval(days => v_days) or sc.content_hash_read is distinct from e.content_hash then
+      return security.cdesc_machine_fail_v1('source_recheck_unusable', 'The recorded re-read of the page is older than ' || v_days || ' days or read a different copy (hash read ' || coalesce(left(sc.content_hash_read, 12), 'none') || ', evidence hash ' || left(e.content_hash, 12) || ').', 'Read the page again; a person decides meanwhile.', true); end if;
     v_recheck := 'confirmed';
   end if;
-  -- every sentence: on the page, supported, complete, in range (the live check, run again now on the stored reading)
+  -- every sentence: the on_page result the worker stored for each quote, supported, complete, in range (the live check, run again now on the stored reading; the page is not read again here)
   v_chk := security.course_description_check_v1(c.id, f.value);
   if not coalesce((v_chk->>'ok')::boolean, false) then
     return security.cdesc_machine_fail_v1('check_' || coalesce(v_chk->>'rule', 'failed'), coalesce(v_chk->>'reason', 'The text check refused it.'), 'A person decides in Layer 4.'); end if;
@@ -230,9 +246,13 @@ begin
   select z.course_id, z.sim into v_dup from (
     select x.course_id, round(k.n::numeric / (cardinality(v_words) + cardinality(x.wb) - k.n), 4) sim
       from (select x0.course_id, array(select distinct w from regexp_split_to_table(lower(coalesce(x0.d, '')), '[^a-z0-9]+') w where length(w) >= 3) wb
-              from (select r.entity_id course_id, r.proposed_value->>'description' d from pipeline.layer4_review_items r join catalogue.courses c2 on c2.id = r.entity_id
-                     where r.field_code = i.field_code and r.status in ('pending', 'approved', 'edited_approved') and r.entity_id <> c.id and c2.provider_id <> c.provider_id
-                     order by r.created_at desc limit v_win) x0) x
+              from (select * from (select r.entity_id course_id, r.proposed_value->>'description' d from pipeline.layer4_review_items r join catalogue.courses c2 on c2.id = r.entity_id
+                                    where r.field_code = i.field_code and r.status in ('pending', 'approved', 'edited_approved') and r.entity_id <> c.id and c2.provider_id <> c.provider_id
+                                    order by r.created_at desc limit v_win) w1
+                    union all -- and the descriptions the catalogue holds for other providers (however they arrived), newest first, within the same window
+                    select * from (select d2.id course_id, d2.description d from catalogue.courses d2
+                                    where nullif(btrim(d2.description), '') is not null and d2.id <> c.id and d2.provider_id <> c.provider_id
+                                    order by d2.updated_at desc limit v_win) w2) x0) x
       cross join lateral (select count(*) n from unnest(v_words) w where w = any (x.wb)) k
      where cardinality(v_words) > 0 and cardinality(x.wb) > 0) z
    where z.sim >= v_share order by z.sim desc limit 1;
@@ -243,7 +263,7 @@ begin
     'model', i.layer3_state->>'model', 'prompt_version', i.layer3_state->>'prompt', 'worker', i.layer3_state->>'worker', 'source_recheck', v_recheck,
     'checks', coalesce(v_chk->'checks', '{}'::jsonb) || jsonb_build_object('identity_basis', g.identity_basis, 'binding', g.status, 'policy', 'ok'));
 end $f$;
-comment on function security.course_description_machine_check_v1(uuid) is 'CF-247 F-CDESC machine rule cdesc-machine-v1, the safe class (read only): for one waiting first course description, ok with the evidence it rests on, or the exact reason code and next action: course and provider live, description still empty, no hand lock, hold or earlier rejection (by course, page or wording), the page bound (not ambiguous), read, identity allowed, unchanged, stored with its content hash, present in storage and recent (gaps.recheck_days), every sentence on the page and supported (the live text check, run again), the admission policy for claims and figures, no duplicate anywhere in the catalogue, and a failed optional re-read of the page. Changes nothing.';
+comment on function security.course_description_machine_check_v1(uuid) is 'CF-247 F-CDESC machine rule cdesc-machine-v1, the safe class (read only): for one waiting first course description, ok with the evidence it rests on, or the exact reason code and next action: course and provider live, description still empty, no hand lock, hold or earlier rejection (by course, page or wording), the page bound (not ambiguous), read, identity allowed, matched with a clear margin and not by AI match, unchanged, stored with its content hash in the object address, present in storage and recent (gaps.recheck_days), the quote results the worker stored for each sentence and the support, length and in-provider duplicate checks (the live text check, run again on the stored reading; the page itself is not read again), the admission policy for claims and figures, no exact duplicate anywhere in the catalogue, no near duplicate (word overlap at pdesc.duplicate_share) among other providers'' waiting or approved proposals and described courses within the comparison window enrich.course_description_duplicate_window (older text or a paraphrase is not caught), and an optional recorded re-read of the page (a failed one declines; a confirmed one counts only if recent and for the same content hash). Changes nothing.';
 revoke all on function security.course_description_machine_check_v1(uuid) from public, anon, authenticated;
 
 -- ----------------------------------------------------------------------------------------------------------------------------------------- shadow report (read only)
@@ -279,7 +299,7 @@ revoke all on function security.course_description_machine_shadow_v1(integer, in
 -- ----------------------------------------------------------------------------------------------------------------------------------------- register
 insert into pipeline.component_register(kind, name, layer, purpose, status, replaces, introduced_in) values
  ('table', 'pipeline.course_description_machine_admissions', 'Layer 4', 'Ledger of first course descriptions admitted or declined by the machine rule cdesc-machine-v1', 'active', '{}', '20261110060000'),
- ('table', 'pipeline.course_description_source_checks', 'Layer 4', 'Optional second proof: no-AI re-read of the stored course page (quotes and hash)', 'active', '{}', '20261110060000'),
+ ('table', 'pipeline.course_description_source_checks', 'Layer 4', 'Optional record of an independent re-read of a stored course page (quotes found, hash read); empty until a later change writes to it', 'active', '{}', '20261110060000'),
  ('function', 'security.course_description_machine_check_v1', 'Layer 4', 'Safe-class evaluator for one waiting first course description (read only)', 'active', '{}', '20261110060000'),
  ('function', 'security.course_description_machine_shadow_v1', 'Layer 4', 'Shadow report over the waiting first course descriptions (read only)', 'active', '{}', '20261110060000')
 on conflict do nothing;

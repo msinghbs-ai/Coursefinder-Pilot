@@ -58,11 +58,43 @@ test('a limit written in code is a technical safety value and says so (-- fixed:
   expect(C2).toMatch(/make_interval\(hours => 1\) else make_interval\(days => v_days\) end, -- fixed:/)
 })
 
+test('honest wording: no reference to an object that does not exist, no claim that the page is read again; the switch is a human-class control and names the trust dependency', () => {
+  expect(scenarios).toContain("help !~ 'course_text_verify|svc_course_description_source_check'") // the fixture proves the stored help text names neither
+  for (const m of [M1, M2]) {
+    expect(m).not.toContain('course_text_verify')
+    expect(m).not.toContain('svc_course_description_source_check')
+    expect(m).not.toMatch(/re-proves every quote|every sentence''s quote|re-checks every quote/)
+  }
+  expect(M1).toMatch(/nothing writes to it yet|Nothing writes to it yet/)
+  expect(M1).toContain("control_class = 'human' where toolset_key = 'pipeline' and key = 'enrich.course_description_machine_on' and control_class is null")
+  expect(M1).toContain("Machine approvals are not counted as a person''s trust: security.course_description_trusted_v1")
+  // trust accounting is fixed where it is counted (one md5-guarded in-place edit with a held forward recovery), not documented as a hazard
+  expect(M2).toContain("if md5(v_src) <> 'ae8b327f85f0262b3d0b878010a4af3c' then raise exception 'live security.course_description_trusted_v1(uuid) differs")
+  expect(M2).toContain("and not exists (select 1 from pipeline.layer4_decisions md where md.review_item_id = r.id and md.layer2_state->>'actor_kind' = 'machine')")
+  expect(M2).toContain("md5(v_src) = '16568089f58b528b9a6647e78eca3ed5'")
+  const rec = fs.readFileSync('supabase/held/cdesc_trusted_machine_forward_recovery.sql', 'utf8')
+  expect(rec).toContain("'ae8b327f85f0262b3d0b878010a4af3c'")
+  expect(rec).toContain('CREATE OR REPLACE FUNCTION security.course_description_trusted_v1(p_provider uuid)')
+  // a recorded re-read counts only if recent and for the same copy
+  const check = fnBody(C1, 'security.course_description_machine_check_v1')
+  expect(check).toContain('sc.checked_at < now() - make_interval(days => v_days) or sc.content_hash_read is distinct from e.content_hash')
+  expect(check).toContain("'source_recheck_unusable'")
+  // identity strength: AI match or a thin margin goes to a person; the 0.1 is a marked fixed value (no setting exists and none is added)
+  expect(check).toMatch(/g\.basis = 'ai_match' or \(g\.score is not null and g\.runner_up is not null and g\.score - g\.runner_up < 0\.1\) then -- fixed:/)
+  expect(check).toContain("'identity_margin_thin'")
+  // the near-duplicate window also covers the descriptions other providers' courses hold
+  expect(check).toMatch(/union all[\s\S]*from catalogue\.courses d2[\s\S]*d2\.provider_id <> c\.provider_id[\s\S]*limit v_win\) w2/)
+  // the job minute is not :13 (course-description-stale-retire and others fire there)
+  const sched = /cron\.schedule\('course-description-machine', '([^']+)'/.exec(C2)
+  expect(sched).not.toBeNull()
+  expect(sched[1].split(' ')[0].split(',')).not.toContain('13')
+})
+
 test('the evaluator is read only and every decline carries one precise rule, a reason and a next action', () => {
   const check = fnBody(C1, 'security.course_description_machine_check_v1')
   expect(check).not.toMatch(/\b(insert|update|delete)\b\s+(into\s+)?(pipeline|catalogue|search|public)\./i)
   for (const rule of ['machine_admission_off', 'item_not_pending', 'course_not_active', 'provider_not_live', 'description_already_held', 'another_pending_item', 'manual_lock', 'manual_hold', 'rejected_before_course', 'rejected_before_page', 'rejected_before_text',
-    'binding_ambiguous', 'reading_other_course', 'evidence_moved', 'evidence_stale', 'lineage_hash_mismatch', 'object_missing', 'source_recheck_failed', 'page_url_changed', 'text_changed', 'reader_unrecorded', 'identity_not_allowed',
+    'binding_ambiguous', 'identity_margin_thin', 'source_recheck_unusable', 'reading_other_course', 'evidence_moved', 'evidence_stale', 'lineage_hash_mismatch', 'object_missing', 'source_recheck_failed', 'page_url_changed', 'text_changed', 'reader_unrecorded', 'identity_not_allowed',
     'duplicate_exact_waiting', 'duplicate_exact_described', 'duplicate_near_other_provider', 'withdrawn_awaiting_person']) {
     expect(both, rule).toContain(rule)
   }
@@ -89,10 +121,10 @@ test('the admission: switch first, rows locked, the checks proved again at write
   expect(admit).toContain('pipeline.search_refresh_signals')
   const noGuards = both.replace(/do \$g\$[\s\S]*?end \$g\$;/g, '') // the apply-order guards only name the functions that must exist
   expect(noGuards).not.toMatch(/layer4_review_decide_impl|layer4_course_description_apply_v1|admin_layer4_review_decide/) // the human route is not called, not simulated
-  expect(M2).toMatch(/^-- Replaces: nothing/m)
+  expect(M2).toMatch(/^-- Replaces: the person-trust count in security\.course_description_trusted_v1/m)
 })
 
-test('the hook: an after trigger on the reading (off does nothing, errors are swallowed, depth bounded), no existing function edited', () => {
+test('the hook: an after trigger on the reading (off does nothing, errors are swallowed, depth bounded), the record function and the Layer 4 triggers are not edited', () => {
   expect(C2).toMatch(/create or replace trigger field_enrich_items_cdesc_machine after update of state on pipeline\.field_enrich_items for each row/)
   expect(C2).toMatch(/when \(new\.state = 'review' and old\.state is distinct from 'review' and new\.field = 'description'\)/)
   const trg = fnBody(C2, 'security.course_description_machine_trg_v1')
@@ -166,7 +198,7 @@ test('the fixture harness proves it: refusals, no change on apply, applied twice
   for (const s of ['apply 20261110060000 first', 'applied again: no change', 'the new settings are not exactly the switch at 0', 'cdm: all']) expect(run, s).toContain(s)
   for (const s of ['wrong page', 'evidence_stale', 'evidence_moved', 'check_unsupported_marketing', 'policy_refused_word', 'policy_figure', 'check_not_stated', 'manual_lock', 'rejected_before_page', 'rejected_before_text',
     'check_duplicate_other_course', 'duplicate_exact_waiting', 'duplicate_near_other_provider', 'binding_ambiguous', 'provider_not_live', 'consumer_mismatch', "consumer_check = 'lag'", 'forward recovery', 'withdrawn_awaiting_person',
-    'cap: with 2 items a day', 'a second settle admits nothing more', 'off: a fresh reading goes to Layer 4']) {
+    'cap: with 2 items a day', 'a second settle admits nothing more', 'off: a fresh reading goes to Layer 4', 'trust accounting: machine approvals are not person-trust', 'back to the standing gap queue', 'identity_margin_thin', 'source_recheck_unusable']) {
     if (s === 'wrong page') continue // the wrong-page cases are evidence_moved and reading_other_course
     expect(scenarios, s).toContain(s)
   }
