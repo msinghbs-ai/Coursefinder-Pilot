@@ -1,0 +1,40 @@
+# Guards: F-OPS.03A (Platform Admin 9 Nov 2026 21:28) and G4 database-backed tests: the Data Delivery read and its refresh run against the migration on an isolated PostgreSQL image (fixtures only, never a Supabase project).
+name: Data delivery integration
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/20261109210000_cf247_fops03a_data_delivery.sql'
+      - 'supabase/migrations/20261108170000_cf247_lane_funnels.sql'
+      - 'tests/fixtures/fops03a-data-delivery/**'
+      - 'tests/fixtures/lane-funnels/**'
+      - 'src/DataDelivery.jsx'
+      - 'src/data-delivery.css'
+      - '.github/workflows/fops03a-data-delivery-test.yml'
+  workflow_dispatch:
+jobs:
+  isolated-postgres:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:17.6-alpine
+        env:
+          POSTGRES_PASSWORD: fixture-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: fixture-only
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash tests/fixtures/fops03a-data-delivery/run.sh | tee data-delivery-results.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: data-delivery-database-evidence
+          path: data-delivery-results.log

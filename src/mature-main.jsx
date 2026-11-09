@@ -75,6 +75,7 @@ const AdaptersWorkspace=lazyPage(()=>import('./AdaptersWorkspace'))
 const IntakeRunValidate=lazyPage(()=>import('./IntakeRunValidate'))
 const ProcessResults=lazyPage(()=>import('./ProcessResults'))
 const LaneFunnels=lazyPage(()=>import('./LaneFunnels'))
+const DataDelivery=lazyPage(()=>import('./DataDelivery'))
 const Layer23Operations=lazyPage(()=>import('./Layer23Operations'))
 const ScreenUse=lazyPage(()=>import('./ScreenUse'))
 const AdapterBuilderTab=lazyPage(()=>import('./AdapterBuilderTab'))
@@ -321,14 +322,14 @@ function Page({pageKey,tab,requestedTab='',routeParams,rank,actorId,onError,navi
     switch(pageKey){
       case'dashboard':return <DashboardHome onError={onError}/>
       case'guide':return tab==='admin-sop'||tab==='operator-sop'?<Sop key={tab} id={tab} rank={rank} navigate={navigate}/>:<PlatformGuide rank={rank} navigate={navigate}/>
-      case'courses':return <Catalogue key="course" type="course" onError={onError} navigate={navigate} initialId={focusId} rank={rank}/>
+      case'courses':return <Catalogue key="course" type="course" onError={onError} navigate={navigate} initialId={focusId} rank={rank} preset={presetOf(routeParams)}/>
       case'providers':
         if(tab==='campuses')return <Catalogue key="campus" type="campus" onError={onError} navigate={navigate} initialId={focusId} rank={rank}/>
         if(tab==='assets')return <ProviderAssetsWorkspace onError={onError} navigate={navigate}/>
         // v2.15.224: the old country and source onboarding cases panel is retired (no case was ever opened)
         if(tab==='archived')return <ArchivedReview onError={onError} navigate={navigate}/>
         // v2.15.253 (Platform Admin, 12 Oct 2026): universities are onboarded automatically up to Ready to admit; admitting stays a person's step.
-        return <Catalogue key="provider" type="provider" onError={onError} navigate={navigate} initialId={focusId} rank={rank}/>
+        return <Catalogue key="provider" type="provider" onError={onError} navigate={navigate} initialId={focusId} rank={rank} preset={presetOf(routeParams)}/>
       // v2.15.301: Extraction is on Models & services › AI (old address redirects)
       case'entry':return <AerWorkspace tab={tab} rank={rank} onError={onError} navigate={navigate} routeParams={routeParams}/>
       case'scholarships':if(tab==='coverage')return <ScholarshipCoverage rank={rank} onError={onError} navigate={navigate}/>;return <ScholarshipWorkspace rank={rank} onError={onError} navigate={navigate} initialId={focusId}/>
@@ -369,7 +370,7 @@ function Page({pageKey,tab,requestedTab='',routeParams,rank,actorId,onError,navi
             <LazyFold className="m-panel" data="uni-build-waves" summary={<strong>Build adapter: every university and the waves</strong>}>{()=><BuildAdapter rank={rank} onError={err}/>}</LazyFold>
             <AdaptersWorkspace merged rank={rank} actorId={actorId} onError={err} routeParams={routeParams}/></div>}
         // SS-020 step 4 (Decision 269): Operations takes in Progress (where the universities are, journeys, every hour)
-        return <div className="m-page-stack"><Layer23Operations rank={rank} actorId={actorId} onError={err}/><LaneFunnels rank={rank} onError={err}/><IntakeRunValidate rank={rank}/><ProcessResults rank={rank}/><section data-operations-progress><Progress routeParams={routeParams} rank={rank} onError={onError}/></section></div>
+        return <div className="m-page-stack"><DataDelivery rank={rank} onError={err}/><Layer23Operations rank={rank} actorId={actorId} onError={err}/><LaneFunnels rank={rank} onError={err}/><IntakeRunValidate rank={rank}/><ProcessResults rank={rank}/><section data-operations-progress><Progress routeParams={routeParams} rank={rank} onError={onError}/></section></div>
       // v2.15.252 (Platform Admin, 12 Oct 2026): Layer 3 AI validation and Layer 4 AI send-back tab retired; adapters admit the values.
       // v2.15.253 (Platform Admin, 12 Oct 2026): Flagged values, Fee rules, Attributes, Scholarship publishing and Blocks retired (old addresses redirect in nav-map.js).
       // v2.15.300 (Platform Admin, 20 Oct 2026): Review queue, AI could not decide and Websites to find retired into the Inbox kinds.
@@ -657,7 +658,11 @@ const ENTITY={
   scholarship:{operation:'scholarships_page',detail:'scholarship_detail',sort:'scholarship',search:'Search Scholarship or Provider'},
 }
 
-function Catalogue({type,onError,navigate,initialId='',completenessMode=false,rank=0}){
+// CF-247 F-OPS.03A drill-down from Operations > Data delivery: a link such as #courses?f_hasFee=false&f_country=AU opens the catalogue with exactly those filters
+// (they replace the remembered ones, once per link); only the filters named here are read, anything else in the address is ignored.
+const PRESET_KEYS=['country','subdivision','lifecycle','publication','hasFee','hasIntake','hasEnglish','hasScholarship','description','admission','sourceTier','website','zoho','providerType']
+function presetOf(p){const o={};if(!p||typeof p.get!=='function')return o;for(const k of PRESET_KEYS){const v=p.get('f_'+k);if(v)o[k]=v}return o}
+function Catalogue({type,onError,navigate,initialId='',completenessMode=false,rank=0,preset={}}){
   const[creating,setCreating]=useState(false),[listEdit,setListEdit]=useState(false)
   const cfg=ENTITY[type]
   const[offset,setOffset]=useState(0)
@@ -666,6 +671,8 @@ function Catalogue({type,onError,navigate,initialId='',completenessMode=false,ra
   const[catalogueUser,setCatalogueUser]=useState(null)
   const[remembered,remember]=useRememberedState(type,{query:'',filters:{},filterLabels:{},advanced:type==='course',sort:completenessMode?'completeness':cfg.sort,direction:'asc'},{userId:catalogueUser})
   const{query,filters,filterLabels,advanced,sort,direction}=remembered
+  const presetKey=JSON.stringify(preset||{})
+  useEffect(()=>{if(presetKey==='{}'||catalogueUser===null)return;remember({filters:JSON.parse(presetKey),filterLabels:{},query:''});setOffset(0)},[presetKey,catalogueUser])
   const rememberField=k=>v=>remember(s=>({[k]:typeof v==='function'?v(s[k]):v}))
   const setQuery=rememberField('query'),setFilters=rememberField('filters'),setFilterLabels=rememberField('filterLabels'),setAdvanced=rememberField('advanced'),setSort=rememberField('sort'),setDirection=rememberField('direction')
   const[data,setData]=useState(null),[busy,setBusy]=useState(false),[filterData,setFilterData]=useState({}),[filterBusy,setFilterBusy]=useState(false),[selected,setSelected]=useState(null),[detail,setDetail]=useState(null),[detailBusy,setDetailBusy]=useState(false)
