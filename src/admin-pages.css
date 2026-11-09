@@ -743,6 +743,8 @@
 .ba-note{margin:10px 0 0;font-size:var(--cf-fs-xs);color:var(--cf-text-2)}.ba-note.is-done{padding:8px 10px;border-radius:var(--cf-radius-sm);background:var(--cf-green-50);border:1px solid var(--cf-green-200);color:var(--cf-green-800)}
 .ba-back{display:inline-flex;align-items:center;gap:4px;background:none;border:0;padding:0;font:inherit;font-size:var(--cf-fs-xs);cursor:pointer;margin-bottom:6px}
 .ba-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start}.ba-admitted{margin-left:4px}.ba-stage{display:inline-flex;align-items:center;gap:3px;margin-right:8px;font-size:var(--cf-fs-2xs)}
+/* CF-247 F-OPS.04 (9 Nov 2026): Layer 2 › Builder, one-click Build, on a phone. Its three tables (about 760 px) sat in a frame that does not scroll, and the university name buttons (14 px) and pick boxes (13 px) were under the 24 px touch floor; at phone width each table scrolls in its own frame and those controls reach 24 px. */
+@media (max-width:620px){.ba .dense-table-wrap{overflow-x:auto;max-width:100%}.ba-table .ba-name{display:flex;align-items:center;min-height:24px}.ba-table input[type="checkbox"]{width:24px;height:24px}}
 /* v2.15.291: Rankings & statistics cards and dataset details, moved from the retired StatisticsDatasetEnhancer.js */
 .m-stats-card{min-width:0;display:flex;flex-direction:column;align-items:flex-start}
 .m-stats-card>div{margin-top:auto}
