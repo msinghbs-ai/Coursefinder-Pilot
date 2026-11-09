@@ -221,7 +221,7 @@ function registryEvidenceIdentity(html: string, names: string[]): DescriptionIde
   const has = (w: string, phrase: string) => (` ${w} `).includes(` ${phrase} `);
   const strip = (w: string, ps: string[]) => { let r = w; for (const p of ps) r = r.replace(new RegExp(`(?<=^| )${p}(?= |$)`, "g"), " "); return r.replace(/\s+/g, " ").trim() };
   const fail = (rule: string): DescriptionIdentity => ({ ok: false, rule });
-  let proof: { name: string; via: string } | null = null;
+  let proof: { name: string; via: string } | null = null, aboutHeading = false;
   for (const el of identityHeadings(html)) {
     for (const seg of el.text.split(/\s[-–—―]\s|[|:·•,;\/–—]/)) {
       const w = identityWords(seg);
@@ -231,15 +231,17 @@ function registryEvidenceIdentity(html: string, names: string[]): DescriptionIde
         // the name or an abbreviation with extra words ("X University Malaysia", "UTS College") names something else
         const extra = strip(w, phrases).replace(IDENTITY_FRAMING, " ").replace(/\s+/g, " ").trim();
         if (extra) return fail(el.tag === "h1" && IDENTITY_SUBUNIT.test(extra) ? "provider_subunit_source" : "provider_name_conflict");
-        proof ||= label ? { name: label, via: "registry_heading_name" } : { name: alias!, via: "registry_heading_abbreviation" };
+        if (label) { if (!proof || proof.via !== "registry_heading_name") proof = { name: label, via: "registry_heading_name" } }  // the whole name outranks an abbreviation
+        else proof ||= { name: alias!, via: "registry_heading_abbreviation" };
         continue;
       }
-      if (!w.replace(IDENTITY_FRAMING, " ").replace(IDENTITY_GENERIC, " ").trim()) continue;  // a generic heading ("About the university")
+      if (!w.replace(IDENTITY_FRAMING, " ").replace(IDENTITY_GENERIC, " ").trim()) { if (/\b(about|overview|profile|welcome|who)\b/.test(w)) aboutHeading = true; continue }  // a generic heading ("About us", "About the university")
       if (IDENTITY_OTHER.test(w)) return fail(el.tag === "h1" && IDENTITY_SUBUNIT.test(w) ? "provider_subunit_source" : "provider_name_conflict");  // another institution, college, faculty, school or campus
     }
   }
   if (proof) return { ok: true, rule: "current_provider_name", matched_name: proof.name, via: proof.via };
-  // no heading names the provider and none names another: the opening statement must begin with the whole catalogue name
+  // no heading names the provider and none names another, and a heading says this is an About page: the opening statement must begin with the whole catalogue name
+  if (!aboutHeading) return fail("provider_name_not_proved");
   const para = openingParagraph(html), pw = identityWords(para);
   const label = labels.find((l) => pw === l || pw.startsWith(l + " "));
   if (label) {
