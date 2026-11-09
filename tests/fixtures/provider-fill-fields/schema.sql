@@ -72,7 +72,9 @@ create function security.zoho_sync_candidates_v1(p_entity text) returns table(re
 create function security.provider_description_consumer_read_v1(p_consumer text, p_key text) returns jsonb language sql stable as $$
   select coalesce((select jsonb_build_object('item', jsonb_build_object('provider_id', i.item_key, 'description', i.item->>'description'))
            from (select * from pipeline.website_sync_items where p_consumer = 'website' union all select * from pipeline.zoho_sync_items where p_consumer = 'zoho') i
-          where i.entity = 'provider' and i.item_key = p_key and i.removed_at is null), jsonb_build_object('item', null)) $$;
+          where i.entity = 'provider' and i.item_key = p_key and i.removed_at is null),
+          -- the Website provider read answers NOT_FOUND for a provider it does not serve (website_v2_provider); the Zoho read answers no item
+          case when p_consumer = 'website' then jsonb_build_object('error', jsonb_build_object('code', 'NOT_FOUND', 'message', 'provider not found')) else jsonb_build_object('item', null) end) $$;
 -- stub: the governed selection (the live one is not edited by this change). Eligible unless the provider holds a manual lock; a fixture provider whose key ends '-current' is refused the way a current
 -- admission would be (description_current), so the panel's honest refusal can be tested.
 create function security.provider_description_selection_v1(p_args jsonb) returns jsonb language plpgsql stable as $$
@@ -84,7 +86,7 @@ begin
          'eligible', not exists (select 1 from pipeline.manual_locks l where l.entity = 'provider' and l.entity_id = p.id) and not (v_state = 'stale' and p.stable_key like '%-current'),
          'eligibility_reason', case when exists (select 1 from pipeline.manual_locks l where l.entity = 'provider' and l.entity_id = p.id) then 'manual_lock'
                                     when v_state = 'stale' and p.stable_key like '%-current' then 'description_current' else 'eligible' end,
-         'upgrade_basic', coalesce((p_args->>'upgrade_basic')::boolean, false))
+         'upgrade', coalesce((p_args->>'upgrade')::boolean, false))
     into v_row from catalogue.providers p
    where p.id = v_id and ((v_state = 'missing' and nullif(btrim(p.description), '') is null) or (v_state = 'stale' and nullif(btrim(p.description), '') is not null));
   return jsonb_build_object('providers', case when v_row is null then '[]'::jsonb else jsonb_build_array(v_row) end);

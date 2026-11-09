@@ -15,21 +15,23 @@ const list = v => (Array.isArray(v) ? v : [])
 const stamp = v => (v ? fmtDateTime(v) : 'Not recorded')
 export const FILL_MODES = [
   { id: 'missing', label: 'Fill missing description', help: 'Reads the provider\'s official About page and proposes a description. A person decides in Layer 4 where the rules say so.' },
-  { id: 'upgrade_basic', label: 'Refresh a basic registry description', help: 'For a provider whose description was written from register facts only. The same reader is asked for a fuller, evidenced description. If the platform\'s rules do not allow it yet, the exact reason is shown.' },
-  { id: 'preview_only', label: 'Preview only', help: 'Shows what the reader would use and why each provider is or is not eligible. Nothing is saved or run.' },
+  { id: 'upgrade_basic', label: 'Refresh a basic registry description', help: 'For a provider whose description was written from register facts only. The same reader is asked for a fuller, evidenced description. This is a Platform Admin policy switch: while it is off, or if the rules do not allow it, the exact reason is shown and nothing is queued.' },
+  { id: 'preview_only', label: 'Preview only', help: 'Shows what the reader would use and why each provider is or is not eligible. A preview records a short-lived preview that expires, but it changes no description and queues no read.' },
   { id: 'verify_publication', label: 'Verify publication', help: 'Reads the catalogue, the Website and Zoho as they are now and says whether each holds the description. Nothing is changed.' },
 ]
 const TASK_DONE = new Set(['done', 'failed', 'cancelled', 'succeeded'])
 const TONE = { missing: 'warning', queued: 'info', processing: 'info', waiting_decision: 'violet', held: 'warning', basic_registry: 'neutral', unrecorded: 'warning', enriched_admitted: 'success', consumer_pending: 'info', verified_published: 'success' }
-const PUBLICATION = { verified: ['Matched', 'success'], pending: ['Pending', 'info'], not_applicable: ['Not applicable', 'neutral'], mismatch: ['Differs', 'warning'], not_served: ['Not served', 'neutral'], error: ['Could not be read', 'danger'], awaiting_description: ['No description yet', 'neutral'] }
+const PUBLICATION = { verified: ['Matched', 'success'], pending: ['Pending', 'info'], not_applicable: ['Not applicable', 'neutral'], mismatch: ['Differs', 'warning'], not_served: ['Not served (not applicable)', 'neutral'], error: ['Could not be read', 'danger'], awaiting_description: ['No description yet', 'neutral'] }
 const REASONS = {
   description_already_present: 'A description is already held. Use "Refresh a basic registry description" for a registry-only description.',
   not_a_basic_registry_profile: 'This is not a basic registry description, so the refresh mode does not apply.',
   not_selected_by_governed_policy: 'The governed selection did not offer this provider (scope, publication or type policy).',
-  manual_lock: 'A person has locked this provider\'s description. It is never overwritten.',
+  manual_lock: 'Locked: a person has locked this provider\'s description. It is never overwritten.',
+  upgrade_switched_off: 'Upgrade is switched off: a Platform Admin policy decision. Nothing is queued until a Platform Admin switches it on.',
   description_current: 'The description is current under the platform\'s recheck window.',
   unknown_provider: 'This provider was not found.',
 }
+const FEED_WORDS = { verified: 'matched', pending: 'pending', not_applicable: 'not applicable' }
 const reasonText = code => (REASONS[code] ? `${REASONS[code]} ` : '')
 
 export default function ProviderFillFields({ providerIds = [], rank = 0, onClose, onChanged, client = providerDescriptionRunApi, open = true }) {
@@ -134,7 +136,7 @@ export default function ProviderFillFields({ providerIds = [], rank = 0, onClose
 
         <fieldset className="pff-modes" disabled={Boolean(busy)}>
           <legend>What to do</legend>
-          {FILL_MODES.map(m => <label key={m.id} className="pff-mode"><input type="radio" name="pff-mode" value={m.id} checked={mode === m.id} onChange={() => { setMode(m.id); setPreview(null); setError(''); setNote('') }}/><span><strong>{m.label}</strong><small>{m.help}</small></span></label>)}
+          {FILL_MODES.map(m => <label key={m.id} className="pff-mode"><input type="radio" name="pff-mode" value={m.id} checked={mode === m.id} onChange={() => { setMode(m.id); setPreview(null); setError(''); setNote('') }}/><span><strong>{m.label}{m.id === 'upgrade_basic' && caps?.upgrade_basic_on === false ? ' (switched off)' : ''}</strong><small>{m.help}</small></span></label>)}
         </fieldset>
 
         <div className="pff-actions">
@@ -147,15 +149,15 @@ export default function ProviderFillFields({ providerIds = [], rank = 0, onClose
         {modeInfo && <p className="pff-note">{modeInfo.help}</p>}
 
         {pub && <section aria-label="Publication read-back" className="pff-card" data-publication-readback>
-          <h4>Publication read-back</h4><p className="pff-note">As at {stamp(pub.as_at)}. Not applicable means that consumer does not serve the provider; it is not a failure.</p>
+          <h4>Publication read-back</h4><p className="pff-note">As at {stamp(pub.as_at)}. This is what each consumer returns right now. Not served (not applicable) means that consumer does not serve the provider; it is not a failure. The Catalogue&apos;s own Website and Zoho state is shown beside it as the feed&apos;s expectation, and the two can differ (a consumer can return a provider the Catalogue marks Not applicable).</p>
           {list(pub.providers).map(p => <div key={p.provider_id} className="pff-readback"><strong>{p.name}</strong>
             <span>Catalogue: {p.catalogue?.status === 'present' ? 'description held' : 'no description'}</span>
-            <span>Website: <Pub value={p.website?.status}/></span><span>Zoho: <Pub value={p.zoho?.status}/></span></div>)}
+            <span>Website: <Pub value={p.website?.status}/>{p.website?.feed && <small className="pff-feed"> Catalogue: {FEED_WORDS[p.website.feed] || p.website.feed}</small>}</span><span>Zoho: <Pub value={p.zoho?.status}/>{p.zoho?.feed && <small className="pff-feed"> Catalogue: {FEED_WORDS[p.zoho.feed] || p.zoho.feed}</small>}</span></div>)}
         </section>}
 
         {preview && <section aria-label="Preview" className="pff-card" data-fill-preview>
           <h4>{fmtNumber(preview.selected ?? 0)} of {fmtNumber(rows.length)} can be read</h4>
-          <p className="pff-note">As at {stamp(preview.as_at)}. {preview.expires_at && `The preview expires ${stamp(preview.expires_at)}.`} Nothing has been saved or run.</p>
+          <p className="pff-note">As at {stamp(preview.as_at)}. {preview.expires_at && `The preview expires ${stamp(preview.expires_at)}.`} Nothing has been queued and no description has changed.</p>
           {rows.map(r => <article key={r.provider_id} className="pff-preview-row" data-preview-provider={r.provider_id} data-eligible={r.eligible ? 'yes' : 'no'}>
             <div className="pff-head"><strong>{r.provider || r.name || 'Unknown provider'}</strong><StatusChip tone={r.eligible ? 'success' : 'warning'} label={r.eligible ? 'Can be read' : 'Not offered'}/></div>
             <p>{r.eligible ? 'The reader has approved official evidence for this provider.' : <>{reasonText(r.eligibility_reason)}<span className="pff-code">Reason from the platform: <code>{r.eligibility_reason || 'not recorded'}</code></span></>}</p>
@@ -189,7 +191,7 @@ function ProviderState({ p }) {
   const t = p.latest_task
   const reader = p.reader || {}
   return <article className="pff-provider" data-fill-provider={p.provider_id} data-quality={p.quality_class || 'unknown'}>
-    <div className="pff-head"><strong>{p.name}</strong><span><StatusChip tone={p.description_present ? 'success' : 'warning'} label={p.description_present ? 'Description held' : 'Description missing'}/> <StatusChip tone={TONE[p.quality_class] || 'neutral'} label={q.label}/></span></div>
+    <div className="pff-head"><strong>{p.name}</strong><span><StatusChip tone={p.description_present ? 'success' : 'warning'} label={p.description_present ? 'Description held' : 'Description missing'}/> <StatusChip tone={TONE[p.quality_class] || 'neutral'} label={q.label}/>{p.locked && <StatusChip tone="warning" label="Locked"/>}</span></div>
     <dl className="pff-facts">
       <dt>Source</dt><dd>{p.source_tier ? humanLabel(p.source_tier.replace('registry_factual', 'registry facts')) : (p.description_present ? 'Not recorded' : '—')}</dd>
       <dt>Reader</dt><dd>{reader.state ? `${humanLabel(reader.state)}${reader.rule ? ` · ${humanLabel(reader.rule)}` : ''}${reader.tries != null ? ` · ${reader.tries} tries` : ''}` : 'Not read yet'}</dd>

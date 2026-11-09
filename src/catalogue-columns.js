@@ -201,7 +201,7 @@ export const QUALITY_LEVELS = [
   { code: 'queued', label: 'Enrichment queued', tone: 'info', why: 'A read of the provider\'s official page is queued.' },
   { code: 'processing', label: 'Enrichment processing', tone: 'info', why: 'The reader is working on this provider now.' },
   { code: 'waiting_decision', label: 'Waiting for human decision', tone: 'violet', why: 'The reader proposed a description and a Layer 4 decision is still to be made.' },
-  { code: 'held', label: 'Held: evidence or identity', tone: 'warning', why: 'The reader\'s proposal was held or declined (see the held reason and the next retry).' },
+  { code: 'held', label: 'Held (evidence, identity or policy)', tone: 'warning', why: 'The reader\'s proposal was held or declined (see the held reason and the next retry).' },
   { code: 'basic_registry', label: 'Basic registry profile', tone: 'neutral', why: 'A short description written from verified register facts only, with no official About page behind it.' },
   { code: 'unrecorded', label: 'Description: admission not recorded', tone: 'warning', why: 'A description is held but the platform has no admission record for that text (written by hand, or before admissions were recorded).' },
   { code: 'enriched_admitted', label: 'Enriched and admitted', tone: 'success', why: 'A description read from the provider\'s official page was admitted. Neither the Website nor Zoho serves this provider, so there is nothing to publish.' },
@@ -211,7 +211,7 @@ export const QUALITY_LEVELS = [
 const QUALITY_MAP = Object.fromEntries(QUALITY_LEVELS.map(l => [l.code, l]))
 export const qualityOf = code => QUALITY_MAP[code] || { code: code || 'unknown', label: code ? String(code).replaceAll('_', ' ').replace(/^./, c => c.toUpperCase()) : 'Not worked out', tone: 'neutral', why: 'The level could not be worked out for this row (the Website and Zoho states were not read).' }
 export const QUALITY_FILTER_OPTIONS = [
-  { value: 'basic', label: 'Basic registry profile' }, { value: 'enriched', label: 'Enriched (admitted, any publication)' }, { value: 'missing', label: 'Missing' }, { value: 'held', label: 'Held: evidence or identity' },
+  { value: 'basic', label: 'Basic registry profile' }, { value: 'enriched', label: 'Enriched (admitted, any publication)' }, { value: 'missing', label: 'Missing' }, { value: 'held', label: 'Held (evidence, identity or policy)' },
   { value: 'queued', label: 'Enrichment queued' }, { value: 'processing', label: 'Enrichment processing' }, { value: 'waiting_decision', label: 'Waiting for human decision' },
   { value: 'enriched_admitted', label: 'Enriched and admitted' }, { value: 'consumer_pending', label: 'Consumer publication pending' }, { value: 'verified_published', label: 'Verified published' },
   { value: 'unrecorded', label: 'Description: admission not recorded' },

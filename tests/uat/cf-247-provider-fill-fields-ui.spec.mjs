@@ -13,7 +13,7 @@ const LONG_URL = 'https://www.example-university.edu.au/about/who-we-are/the-lon
 const PROVIDERS = {
   [P1]: { provider_id: P1, name: 'Alpha University', description_present: false, quality_class: 'missing', source_tier: null, reader: { state: null }, missing_fields: ['description', 'phone', 'established_year'], latest_task: null },
   [P2]: { provider_id: P2, name: 'Beta College of a Very Long Name for Checking the Layout of the Panel on a Phone', description_present: true, quality_class: 'basic_registry', source_tier: 'registry_factual', admission_state: 'admitted', admitted_by: 'machine', admitted_at: '2026-11-01T01:00:00Z', reader: { state: 'admitted', rule: 'registry_profile' }, website_publication: 'pending', zoho_publication: 'not_applicable', missing_fields: ['phone'], latest_task: null },
-  [P3]: { provider_id: P3, name: 'Gamma Institute', description_present: true, quality_class: 'verified_published', source_tier: 'direct', admission_state: 'admitted', admitted_by: 'layer4', admitted_at: '2026-10-20T01:00:00Z', reader: { state: 'admitted', rule: 'official_site_read' }, website_publication: 'verified', zoho_publication: 'not_applicable', missing_fields: [], latest_task: null },
+  [P3]: { provider_id: P3, name: 'Gamma Institute', description_present: true, quality_class: 'verified_published', source_tier: 'direct', admission_state: 'admitted', admitted_by: 'layer4', admitted_at: '2026-10-20T01:00:00Z', reader: { state: 'admitted', rule: 'official_site_read' }, website_publication: 'verified', zoho_publication: 'not_applicable', missing_fields: [], locked: true, latest_task: null },
 }
 
 // A client that answers like the server, and records every call in order.
@@ -34,7 +34,7 @@ function clientScript(extra = {}) {
       if (name === 'preview') return { token: 'tok-1', selected: eligible ? args.provider_ids.length : 0, as_at: '2026-11-10T01:00:00Z', expires_at: '2026-11-10T01:10:00Z', providers: args.provider_ids.map(id => ({ provider_id: id, provider: providers[id].name, eligible, eligibility_reason: eligible ? 'official_site_read' : reasonCode, source_url: eligible ? '${LONG_URL}' : null })) }
       if (name === 'prepare') return { cohort_id: 'cohort-1', state: 'prepared', created_at: '2026-11-10T01:05:00Z', reason: args.reason, runs: [], totals: { selected: 1 } }
       if (name === 'run') { queued = true; return { state: 'queued', reason: 'Queued with the governed reader' } }
-      if (name === 'provider_publication') return { as_at: '2026-11-10T01:06:00Z', providers: args.provider_ids.map(id => ({ provider_id: id, name: providers[id].name, catalogue: { status: providers[id].description_present ? 'present' : 'no_description' }, website: { status: providers[id].description_present ? 'verified' : 'awaiting_description' }, zoho: { status: 'not_applicable' } })) }
+      if (name === 'provider_publication') return { as_at: '2026-11-10T01:06:00Z', providers: args.provider_ids.map(id => ({ provider_id: id, name: providers[id].name, catalogue: { status: providers[id].description_present ? 'present' : 'no_description' }, website: id === '${P2}' ? { status: 'not_served', feed: 'not_applicable' } : { status: providers[id].description_present ? 'verified' : 'awaiting_description', feed: 'verified' }, zoho: id === '${P2}' ? { status: 'verified', feed: 'not_applicable' } : { status: 'not_served', feed: 'not_applicable' } })) }
       if (name === 'verify') return { cohort_id: args.cohort_id }
       return {}
     } }
@@ -68,7 +68,7 @@ test.describe('the Fill fields panel', () => {
     await expect(page.locator('[data-fill-caps]')).toContainText('Up to 3 providers in one task')
     // preview first: nothing is saved or run
     await page.getByRole('button', { name: 'Preview what the reader would use' }).click()
-    await expect(page.locator('[data-fill-preview]')).toContainText('Nothing has been saved or run')
+    await expect(page.locator('[data-fill-preview]')).toContainText('Nothing has been queued and no description has changed')
     await expect(page.locator(`[data-preview-provider="${P1}"]`)).toHaveAttribute('data-eligible', 'yes')
     expect(await names(page)).toEqual(['fill_caps', 'provider_status', 'preview'])
     expect((await calls(page)).find(c => c.name === 'preview').args).toEqual({ provider_ids: [P1], fill_mode: 'missing', size: 1 })
@@ -91,15 +91,31 @@ test.describe('the Fill fields panel', () => {
   })
 
   test('refresh a basic registry description: the backend\'s exact refusal is shown, and nothing can be queued from a refusal', async ({ page }) => {
-    await mountPanel(page, { ids: [P2], extra: { eligible: false, reason: 'not_selected_by_governed_policy' } })
+    await mountPanel(page, { ids: [P2], extra: { eligible: false, reason: 'upgrade_switched_off', caps: { upgrade_basic_on: false } } })
     await expect(page.getByRole('radio', { name: /Refresh a basic registry description/ })).toBeChecked() // a basic registry profile defaults to the refresh mode
     await page.getByRole('button', { name: 'Preview what the reader would use' }).click()
     const prev = page.locator(`[data-preview-provider="${P2}"]`)
     await expect(prev).toHaveAttribute('data-eligible', 'no')
-    await expect(prev).toContainText('Reason from the platform: not_selected_by_governed_policy')
+    await expect(prev).toContainText('Upgrade is switched off: a Platform Admin policy decision')
+    await expect(prev).toContainText('Reason from the platform: upgrade_switched_off')
+    await expect(page.getByRole('radio', { name: /Refresh a basic registry description \(switched off\)/ })).toBeVisible()
     expect((await calls(page)).find(c => c.name === 'preview').args.fill_mode).toBe('upgrade_basic')
     await expect(page.getByRole('button', { name: 'Save and queue with the reader' })).toHaveCount(0)
     expect(await names(page)).not.toContain('prepare')
+  })
+
+  test('NOT_FOUND from the Website and a Zoho item the Catalogue marks not applicable are both shown as what they are, with the Catalogue state beside them; preview only says it changes no description', async ({ page }) => {
+    await mountPanel(page, { ids: [P2] })
+    await page.getByRole('radio', { name: /Preview only/ }).check()
+    await expect(page.getByText('changes no description and queues no read').first()).toBeVisible()
+    await page.getByRole('radio', { name: /Verify publication/ }).check()
+    await page.getByRole('button', { name: 'Verify publication now' }).click()
+    const rb = page.locator('[data-publication-readback]')
+    await expect(rb).toContainText('Website: Not served (not applicable)')
+    await expect(rb).toContainText('Zoho: Matched')
+    await expect(rb).toContainText('Catalogue: not applicable')
+    await expect(rb).not.toContainText('Could not be read')
+    await expect(rb).toContainText('a consumer can return a provider the Catalogue marks Not applicable')
   })
 
   test('a task this person saved is read again when the panel is opened, so closing the browser loses nothing', async ({ page }) => {
@@ -126,8 +142,11 @@ test.describe('the Fill fields panel', () => {
     const rb = page.locator('[data-publication-readback]')
     await expect(rb).toContainText('Gamma Institute')
     await expect(rb).toContainText('Website: Matched')
-    await expect(rb).toContainText('Zoho: Not applicable')
+    await expect(rb).toContainText('Zoho: Not served (not applicable)')
+    await expect(rb).toContainText('Catalogue: matched')
+    await expect(page.locator(`[data-fill-provider="${P3}"]`)).toContainText('Locked')
     await expect(rb).toContainText('it is not a failure')
+    await expect(rb).not.toContainText('Could not be read')
     expect(await names(page)).toContain('provider_publication')
     // rank 3 (Curator): may preview, may not verify or run
     await mountPanel(page, { ids: [P3], rank: 3, extra: { caps: { can_run: false } } })
@@ -142,7 +161,7 @@ const base = (id, name) => ({ id, canonical_name: name, display_name: name, coun
   pdesc: { description_filled: false, admission_state: 'none', quality: 'missing', missing_fields: ['description', 'phone'], website_publication: null, zoho_publication: null } })
 const ROWS = [base(P1, 'Alpha University'), base(P2, 'Beta College'), base(P3, 'Gamma Institute')]
 
-async function mountCatalogue(page, { rank = 6, cap = 2 } = {}) {
+async function mountCatalogue(page, { rank = 6, cap = 2, capFails = false } = {}) {
   await mockAdmin(page, { rank })
   const filterReads = []
   await page.route('https://example.supabase.co/rest/v1/rpc/admin_read', async route => {
@@ -153,7 +172,7 @@ async function mountCatalogue(page, { rank = 6, cap = 2 } = {}) {
   })
   await page.route('https://example.supabase.co/rest/v1/rpc/admin_provider_description_run_v1', async route => {
     const b = route.request().postDataJSON() || {}
-    if (b.p_action === 'fill_caps') return route.fulfill({ json: { ...CAPS, max_size: cap } })
+    if (b.p_action === 'fill_caps') return capFails ? route.fulfill({ status: 500, contentType: 'application/json', body: '{"message":"unavailable"}' }) : route.fulfill({ json: { ...CAPS, max_size: cap } })
     if (b.p_action === 'provider_status') return route.fulfill({ json: { as_at: '2026-11-10T01:00:00Z', providers: (b.p_args.provider_ids || []).map(id => PROVIDERS[id] || { provider_id: id, name: 'Unknown', description_present: false, quality_class: 'missing', reader: {}, missing_fields: [] }) } })
     return route.fulfill({ json: {} })
   })
@@ -194,6 +213,15 @@ test.describe('the Provider Catalogue', () => {
     await expect(page.locator(`[data-fill-provider="${P1}"]`)).toBeVisible()
   })
 
+  test('if the limit cannot be read, nothing can be ticked (never unlimited), and the row button still opens the panel', async ({ page }) => {
+    await mountCatalogue(page, { capFails: true })
+    await expect(page.locator('[data-fill-caps-failed]')).toBeVisible()
+    for (const name of ['Alpha University', 'Beta College', 'Gamma Institute']) await expect(page.getByLabel(`Select ${name} for Fill fields`)).toBeDisabled()
+    await expect(page.locator('[data-fill-selection]')).toHaveCount(0)
+    await page.getByRole('button', { name: 'Fill fields for Alpha University' }).click()
+    await expect(page.locator('[data-fill-fields]')).toBeVisible()
+  })
+
   test('below Curator the row has no tick box and no Fill fields button', async ({ page }) => {
     await mountCatalogue(page, { rank: 2 })
     await expect(page.locator('input[aria-label$="for Fill fields"]')).toHaveCount(0)
@@ -206,7 +234,7 @@ test.describe('the Provider Catalogue', () => {
     await expect(f).toHaveCount(1)
     await f.locator('button.m-filter-button').click()
     const opts = await f.locator('.m-filter-popover button').allInnerTexts()
-    expect(opts.map(o => o.trim()).slice(0, 5)).toEqual(['All', 'Basic registry profile', 'Enriched (admitted, any publication)', 'Missing', 'Held: evidence or identity'])
+    expect(opts.map(o => o.trim()).slice(0, 5)).toEqual(['All', 'Basic registry profile', 'Enriched (admitted, any publication)', 'Missing', 'Held (evidence, identity or policy)'])
     await f.locator('.m-filter-popover button', { hasText: /^Missing/ }).first().click()
     await expect.poll(() => filterReads.some(a => a?.quality === 'missing')).toBe(true)
   })

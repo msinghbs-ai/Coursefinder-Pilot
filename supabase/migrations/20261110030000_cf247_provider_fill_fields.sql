@@ -17,7 +17,9 @@
 --      _quality_refresh_v1 (the writer), _fill_status_v1 (the panel's status read, with the task that last included each provider), _publication_read_v1 (actual Website and Zoho read-back for the
 --      panel's Verify publication), security.provider_description_cohort_cap_v1 (the one cohort cap), security.provider_description_selection_multi_v1 (a named set of providers, selected one at a
 --      time by the existing security.provider_description_selection_v1, which this change does not edit).
---   3  public.admin_provider_description_run_v1 (md5-guarded edit): preview and prepare accept provider_ids (a named set) and fill_mode (missing, upgrade_basic) and use the multi selection;
+--   3  public.admin_provider_description_run_v1 (md5-guarded edit): preview and prepare accept provider_ids (a named set) and fill_mode (missing, upgrade_basic) and use the multi selection. The upgrade mode passes the argument `upgrade` that the register-profile upgrade change (migration 20261110040000, a separate pull request) defines for
+--      security.provider_description_selection_v1; that change honours it only behind its own Platform Admin switch (pdesc.registry_upgrade_on, shipped off). This change reads that switch and creates no setting: while it is off
+--      (or machine admission is off) the mode answers the exact refusal upgrade_switched_off and queues nothing; a lock answers manual_lock; a provider that is not a basic profile answers not_a_basic_registry_profile;
 --      capabilities.max_size and the Run Now cap check both come from security.provider_description_cohort_cap_v1 (least of Provider descriptions: cohort size per run, review limit,
 --      Run Now pilot cap and queue cap), so the screen's limit and the server's can never differ; new actions fill_caps, provider_status, provider_publication (verify), quality_counts,
 --      quality_refresh. Every existing action keeps its answer.
@@ -41,7 +43,7 @@
 --
 -- Live definitions read 10 Nov 2026 (project fxcwkweaxjtknorudmwp; body md5 = pg_proc.prosrc):
 --   security.admin_providers_page_v3(jsonb)                 body f3eb9fc6f8efa37566c36ac5ef2e8f0e  -> 2c906a2b1f7c346522ef7742d74039f1
---   public.admin_provider_description_run_v1(text,jsonb)    body b397cf320a689b6e981aa6747e7156b8  -> fc036b02c22bf9128a80897635f784cb
+--   public.admin_provider_description_run_v1(text,jsonb)    body b397cf320a689b6e981aa6747e7156b8  -> d87bda2fa24caed6602fa0b53a725699
 --   security.provider_catalogue_facts_v1(uuid[],boolean)     body abc1345d4cdb341deba65bfd0a38277f  (read, not edited)
 -- Both edits are guarded: the migration stops if a live body is neither the one it replaces nor the one it writes.
 -- Order: apply after 20261109220000 (Provider Catalogue filter speed) and 20261110020000. It does not depend on the eligibility rewrite; the upgrade mode shows the exact eligibility
@@ -62,7 +64,7 @@ begin
   if v_page is null or v_run is null or v_facts is null then raise exception 'Fill fields: a required function is missing'; end if;
   -- fixed: the guard is the md5 of the function body (pg_proc.prosrc); a second run finds the new text and rewrites it unchanged
   if v_page not in ('f3eb9fc6f8efa37566c36ac5ef2e8f0e', '2c906a2b1f7c346522ef7742d74039f1') then raise exception 'live security.admin_providers_page_v3 differs from the definition this change replaces (body md5 %)', v_page; end if;
-  if v_run not in ('b397cf320a689b6e981aa6747e7156b8', 'fc036b02c22bf9128a80897635f784cb') then raise exception 'live public.admin_provider_description_run_v1 differs from the definition this change replaces (body md5 %)', v_run; end if;
+  if v_run not in ('b397cf320a689b6e981aa6747e7156b8', 'd87bda2fa24caed6602fa0b53a725699') then raise exception 'live public.admin_provider_description_run_v1 differs from the definition this change replaces (body md5 %)', v_run; end if;
   if v_facts <> 'abc1345d4cdb341deba65bfd0a38277f' then raise exception 'live security.provider_catalogue_facts_v1 differs from the definition this change reads (body md5 %)', v_facts; end if;
 end $g$;
 
@@ -117,7 +119,8 @@ language sql immutable parallel safe set search_path to ''
 as $function$
   select case
     when coalesce(p_filled, false) then
-      case when p_adm = 'admitted' and p_tier = 'registry_factual' then 'basic_registry'
+      case when p_adm = 'admitted' and p_tier = 'registry_factual' then
+             case when p_reader = 'reading' then 'processing' when p_reader = 'queued' then 'queued' when p_reader = 'proposed' then 'waiting_decision' else 'basic_registry' end
            when p_adm = 'admitted' then
              case when not coalesce(p_feeds, false) or security.provider_description_publication_v1(p_web) is null or security.provider_description_publication_v1(p_zoho) is null then null
                   when 'pending' in (security.provider_description_publication_v1(p_web), security.provider_description_publication_v1(p_zoho)) then 'consumer_pending'
@@ -163,6 +166,8 @@ as $function$
 declare
   v_ids uuid[]; v_cap int := security.provider_description_cohort_cap_v1(); v_fill text := coalesce(nullif(p_args->>'fill_mode', ''), 'missing'); v_id uuid;
   v_rows jsonb := '[]'::jsonb; v_one jsonb; v_f record; v_name text;
+  -- the refresh of a basic profile is a Platform Admin policy switch (pdesc.registry_upgrade_on with machine admission); read here, never created here
+  v_up_on boolean := security.pipeline_num_v1('pdesc.registry_upgrade_on', 0) >= 1 and security.pipeline_num_v1('pdesc.machine_admit_on', 0) >= 1;
 begin
   if jsonb_typeof(p_args->'provider_ids') is distinct from 'array' then return security.provider_description_selection_v1(p_args); end if;
   select coalesce(array_agg(distinct e::uuid), array[]::uuid[]) into v_ids from jsonb_array_elements_text(p_args->'provider_ids') e;
@@ -173,13 +178,17 @@ begin
     select coalesce(pp.display_name, pp.canonical_name) into v_name from catalogue.providers pp where pp.id = v_id;
     if v_name is null then
       v_rows := v_rows || jsonb_build_array(jsonb_build_object('provider_id', v_id, 'provider', null, 'name', null, 'eligible', false, 'eligibility_reason', 'unknown_provider', 'state', 'missing'));
+    elsif exists (select 1 from pipeline.manual_locks l where l.entity = 'provider' and l.entity_id = v_id and l.field in ('description', 'p_description', 'all')) then
+      v_rows := v_rows || jsonb_build_array(jsonb_build_object('provider_id', v_id, 'provider', v_name, 'name', v_name, 'eligible', false, 'eligibility_reason', 'manual_lock', 'state', case when coalesce(v_f.description_filled, false) then 'admitted' else 'missing' end));
     elsif v_fill = 'missing' and coalesce(v_f.description_filled, false) then
       v_rows := v_rows || jsonb_build_array(jsonb_build_object('provider_id', v_id, 'provider', v_name, 'name', v_name, 'eligible', false, 'eligibility_reason', 'description_already_present', 'state', 'admitted'));
     elsif v_fill = 'upgrade_basic' and not (coalesce(v_f.description_filled, false) and v_f.admission_state = 'admitted' and v_f.source_tier = 'registry_factual') then
       v_rows := v_rows || jsonb_build_array(jsonb_build_object('provider_id', v_id, 'provider', v_name, 'name', v_name, 'eligible', false, 'eligibility_reason', 'not_a_basic_registry_profile', 'state', case when coalesce(v_f.description_filled, false) then 'admitted' else 'missing' end));
+    elsif v_fill = 'upgrade_basic' and not v_up_on then
+      v_rows := v_rows || jsonb_build_array(jsonb_build_object('provider_id', v_id, 'provider', v_name, 'name', v_name, 'eligible', false, 'eligibility_reason', 'upgrade_switched_off', 'state', 'admitted'));
     else
       v_one := security.provider_description_selection_v1((p_args - 'provider_ids' - 'fill_mode') || jsonb_build_object('provider_id', v_id, 'size', 1,
-                 'description_state', case when v_fill = 'upgrade_basic' then 'stale' else 'missing' end, 'upgrade_basic', v_fill = 'upgrade_basic'));
+                 'description_state', case when v_fill = 'upgrade_basic' then 'stale' else 'missing' end, 'upgrade', v_fill = 'upgrade_basic'));
       if jsonb_array_length(coalesce(v_one->'providers', '[]'::jsonb)) = 0 then
         v_rows := v_rows || jsonb_build_array(jsonb_build_object('provider_id', v_id, 'provider', v_name, 'name', v_name, 'eligible', false, 'eligibility_reason', 'not_selected_by_governed_policy', 'state', 'missing'));
       else
@@ -284,6 +293,7 @@ begin
       'last_read_ok_at', q.last_read_ok_at, 'l4_status', q.l4_status, 'review_item_id', lr.review_item_id,
       'website_state', q.website_state, 'zoho_state', q.zoho_state, 'website_publication', q.website_publication, 'zoho_publication', q.zoho_publication, 'readback_at', q.readback_at,
       'missing_fields', to_jsonb(q.missing_fields),
+      'locked', exists (select 1 from pipeline.manual_locks l where l.entity = 'provider' and l.entity_id = p.id and l.field in ('description', 'p_description', 'all')),
       'latest_task', case when lt.cohort_id is null then null else jsonb_build_object('cohort_id', lt.cohort_id, 'state', lt.cohort_state, 'run_id', lt.run_id, 'created_at', lt.created_at, 'reason', lt.reason,
         'requested_by_me', lt.mine, 'fill_mode', lt.fill_mode, 'run_state', lt.run_state, 'run_outcome', lt.run_outcome, 'run_finished_at', lt.run_finished_at) end
     ) order by coalesce(p.display_name, p.canonical_name)), '[]'::jsonb))
@@ -297,19 +307,24 @@ create or replace function security.provider_description_publication_read_v1(p_i
 language plpgsql stable security definer set search_path to ''
 as $function$
 begin
-  -- the actual consumer reads (security.provider_description_consumer_read_v1 -> the Website and Zoho provider reads), one provider at a time so a failed read never hides the rest
+  -- the actual consumer reads (security.provider_description_consumer_read_v1 -> the Website and Zoho provider reads), one provider at a time so a failed read never hides the rest.
+  -- A consumer that answers NOT_FOUND does not serve the provider: not_served, never an error. 'feed' is what the Catalogue's own Website and Zoho state says the sync expects (verified, pending or
+  -- not_applicable); the read-back is what the consumer returns now, and the two can differ.
   return (
     select jsonb_build_object('as_at', now(), 'providers', coalesce(jsonb_agg(jsonb_build_object('provider_id', p.id, 'name', coalesce(p.display_name, p.canonical_name),
       'catalogue', jsonb_build_object('status', case when nullif(btrim(p.description), '') is null then 'no_description' else 'present' end),
-      'website', jsonb_build_object('status', case when nullif(btrim(p.description), '') is null then 'awaiting_description' when w.body ? 'error' then 'error' when w.body->'item' is null or jsonb_typeof(w.body->'item') <> 'object' then 'not_served'
+      'website', jsonb_build_object('status', case when nullif(btrim(p.description), '') is null then 'awaiting_description' when w.body->'error'->>'code' = 'NOT_FOUND' then 'not_served' when w.body ? 'error' then 'error'
+                                                   when w.body->'item' is null or jsonb_typeof(w.body->'item') <> 'object' then 'not_served'
                                                    when w.body->'item'->>'provider_id' = p.stable_key and w.body->'item'->>'description' = p.description then 'verified' else 'mismatch' end,
-                                   'description', w.body->'item'->>'description', 'error', w.body->'error'),
-      'zoho', jsonb_build_object('status', case when nullif(btrim(p.description), '') is null then 'awaiting_description' when z.body ? 'error' then 'error' when z.body->'item' is null or jsonb_typeof(z.body->'item') <> 'object' then 'not_served'
+                                   'description', w.body->'item'->>'description', 'error', w.body->'error', 'feed', security.provider_description_publication_v1(f.website_state)),
+      'zoho', jsonb_build_object('status', case when nullif(btrim(p.description), '') is null then 'awaiting_description' when z.body->'error'->>'code' = 'NOT_FOUND' then 'not_served' when z.body ? 'error' then 'error'
+                                                when z.body->'item' is null or jsonb_typeof(z.body->'item') <> 'object' then 'not_served'
                                                 when z.body->'item'->>'provider_id' = p.stable_key and z.body->'item'->>'description' = p.description then 'verified' else 'mismatch' end,
-                                 'description', z.body->'item'->>'description', 'error', z.body->'error')) order by coalesce(p.display_name, p.canonical_name)), '[]'::jsonb))
+                                 'description', z.body->'item'->>'description', 'error', z.body->'error', 'feed', security.provider_description_publication_v1(f.zoho_state))) order by coalesce(p.display_name, p.canonical_name)), '[]'::jsonb))
       from catalogue.providers p
       left join lateral (select security.provider_description_consumer_read_v1('website', p.stable_key) body where nullif(btrim(p.description), '') is not null) w on true
       left join lateral (select security.provider_description_consumer_read_v1('zoho', p.stable_key) body where nullif(btrim(p.description), '') is not null) z on true
+      left join lateral (select ff.website_state, ff.zoho_state from security.provider_catalogue_facts_v1(array[p.id], true) ff limit 1) f on true
      where p.id = any(p_ids)
   );
 end
@@ -678,6 +693,7 @@ begin
   'poll_seconds',greatest(30,security.pipeline_num_v1('pdesc.every_minutes',60)::int*15) /* fixed: a quarter of the reader's own window (minutes x 60 / 4), never faster than twice a minute */,'status_max',security.provider_description_cohort_cap_v1(),
   'modes',jsonb_build_array(jsonb_build_object('id','stored','label','Stored official evidence + approved AI','allowed',true),jsonb_build_object('id','approved','label','Existing authorised acquisition + approved AI','allowed',security.pipeline_num_v1('pdesc.acquire_direct',0)>=1)),
   'fill_modes',jsonb_build_array('missing','upgrade_basic','preview_only','verify_publication'),
+  'upgrade_basic_on',security.pipeline_num_v1('pdesc.registry_upgrade_on',0)>=1 and security.pipeline_num_v1('pdesc.machine_admit_on',0)>=1,
   'quality_classes',to_jsonb(security.provider_description_quality_classes_v1()));
  elsif p_action in ('provider_status','provider_publication') then
  -- Fill fields, read only: the state of up to the governed number of providers, and the task that last included each. Needs no saved cohort, so it works after the browser was closed.
@@ -778,7 +794,7 @@ begin
   select md5(p.prosrc) into v_page from pg_proc p where p.oid = to_regprocedure('security.admin_providers_page_v3(jsonb)');
   select md5(p.prosrc) into v_run from pg_proc p where p.oid = to_regprocedure('public.admin_provider_description_run_v1(text,jsonb)');
   if v_page <> '2c906a2b1f7c346522ef7742d74039f1' then raise exception 'Fill fields post-check: page body md5 % is not the text this change writes', v_page; end if;
-  if v_run <> 'fc036b02c22bf9128a80897635f784cb' then raise exception 'Fill fields post-check: run body md5 % is not the text this change writes', v_run; end if;
+  if v_run <> 'd87bda2fa24caed6602fa0b53a725699' then raise exception 'Fill fields post-check: run body md5 % is not the text this change writes', v_run; end if;
   if not exists (select 1 from pg_proc p where p.oid = to_regprocedure('security.admin_providers_page_v3(jsonb)') and p.proconfig @> array['plan_cache_mode=force_custom_plan']) then raise exception 'Fill fields post-check: the page function is no longer set to custom plans'; end if;
   if (select count(*) from pipeline.admin_table_columns where screen = 'providers') <> 34 then raise exception 'Fill fields post-check: the Provider registry is not 34 columns'; end if;
   if (select count(*) from pipeline.admin_table_columns where screen = 'providers' and default_visible) <> 13 then raise exception 'Fill fields post-check: default Provider columns are not today''s 13'; end if;

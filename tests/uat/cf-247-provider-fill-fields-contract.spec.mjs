@@ -18,7 +18,7 @@ test('the Description quality levels are the directive\'s, in pipeline order, an
   expect(QUALITY_LEVELS.map(l => l.code)).toEqual(CLASSES)
   expect(MIG).toContain(`array['${CLASSES.join("', '")}']::text[]`)
   expect(MIG).toContain(`check (quality_class in ('${CLASSES.join("', '")}'))`)
-  expect(QUALITY_LEVELS.map(l => l.label)).toEqual(expect.arrayContaining(['Missing', 'Basic registry profile', 'Enrichment queued', 'Enrichment processing', 'Enriched and admitted', 'Held: evidence or identity', 'Waiting for human decision', 'Consumer publication pending', 'Verified published']))
+  expect(QUALITY_LEVELS.map(l => l.label)).toEqual(expect.arrayContaining(['Missing', 'Basic registry profile', 'Enrichment queued', 'Enrichment processing', 'Enriched and admitted', 'Held (evidence, identity or policy)', 'Waiting for human decision', 'Consumer publication pending', 'Verified published']))
   // the filter offers the four groups first, then each single level, and the server takes every value offered
   expect(QUALITY_FILTER_OPTIONS.slice(0, 4).map(o => o.value)).toEqual(['basic', 'enriched', 'missing', 'held'])
   for (const o of QUALITY_FILTER_OPTIONS) expect(MIG, o.value).toContain(`when '${o.value}' then array[`)
@@ -34,7 +34,7 @@ test('Verified published is per consumer: a consumer that does not serve the pro
   expect(SQL).toContain("else 'enriched_admitted' end")
   expect(qualityOf('verified_published').why).toMatch(/does not serve the provider is Not applicable, not a failure/)
   expect(PANEL).toContain("not_applicable: ['Not applicable', 'neutral']")
-  expect(PANEL).toContain('Not applicable means that consumer does not serve the provider; it is not a failure.')
+  expect(PANEL).toContain('Not served (not applicable) means that consumer does not serve the provider; it is not a failure.')
 })
 
 test('the quality table is new, locked down, commented, and the Catalogue never reads it', () => {
@@ -93,6 +93,31 @@ test('the eligibility refusal is shown as the backend gives it; the refresh mode
   expect(MIG).toContain('It does not depend on the eligibility rewrite')
 })
 
+test('QA 10 Nov 2026: the refresh mode passes the argument the upgrade change defines, shows the exact refusal while the switch is off, and a NOT_FOUND from a consumer is not an error', () => {
+  // the argument is `upgrade` (selection_v1 in the upgrade change), honoured there only behind its own switch; this change reads that switch and creates no setting
+  expect(SQL).toContain("'upgrade', v_fill = 'upgrade_basic'));")
+  expect(SQL).not.toContain("'upgrade_basic', v_fill = 'upgrade_basic'")
+  expect(SQL).toContain("v_up_on boolean := security.pipeline_num_v1('pdesc.registry_upgrade_on', 0) >= 1 and security.pipeline_num_v1('pdesc.machine_admit_on', 0) >= 1;")
+  expect(SQL).toContain("'eligibility_reason', 'upgrade_switched_off'")
+  expect(SQL).toContain("'upgrade_basic_on',security.pipeline_num_v1('pdesc.registry_upgrade_on',0)>=1")
+  expect(SQL).not.toMatch(/insert into pipeline\.platform_toolset_settings[\s\S]{0,200}registry_upgrade_on/)
+  expect(PANEL).toContain('Upgrade is switched off: a Platform Admin policy decision.')
+  expect(PANEL).toContain("caps?.upgrade_basic_on === false ? ' (switched off)'")
+  // a consumer's NOT_FOUND is not served (Not applicable), checked before the generic error; the Catalogue's own feed state is carried beside the read-back
+  expect(SQL.indexOf("->'error'->>'code' = 'NOT_FOUND' then 'not_served'")).toBeGreaterThan(0)
+  expect(SQL.indexOf("->'error'->>'code' = 'NOT_FOUND' then 'not_served'")).toBeLessThan(SQL.indexOf("w.body ? 'error' then 'error'"))
+  expect(SQL).toContain("'feed', security.provider_description_publication_v1(f.zoho_state)")
+  expect(PANEL).toContain("not_served: ['Not served (not applicable)', 'neutral']")
+  // a basic profile whose upgrade read is waiting or running shows that level; a lock shows as Locked
+  expect(SQL).toContain("case when p_reader = 'reading' then 'processing' when p_reader = 'queued' then 'queued' when p_reader = 'proposed' then 'waiting_decision' else 'basic_registry' end")
+  expect(PANEL).toContain('label="Locked"')
+  expect(qualityOf('held').label).toBe('Held (evidence, identity or policy)')
+  expect(FILL_MODES.find(m => m.id === 'preview_only').help).toMatch(/changes no description and queues no read/)
+  // the selection limit fails closed
+  expect(UI).toContain('disabled={!on&&(!fillCap||picked.length>=fillCap)}')
+  expect(UI).toContain('data-fill-caps-failed')
+})
+
 test('the Provider Catalogue gets two registry columns, equal in the screen and the database, off by default and sortable; the filter and the sorts are handled by the page function', () => {
   const rows = [...MIG.matchAll(/\('providers', '([a-z0-9_]+)', '([^']+)', '([^']+)', (\d+), '([a-z0-9_]+)', (true|false), (\d+), (\d+), (true|false)\)/g)]
   expect(rows.map(r => r[1])).toEqual(['description_quality', 'missing_fields'])
@@ -119,7 +144,7 @@ test('the screens: a tick box and a Fill fields button on each Provider row (Cur
   expect(UI).toContain('<ProviderFillFieldsCard providerId={data.id} rank={rank}/>')
   expect(UI).toContain('data-fill-fields-card')
   // the selection stops at the cap the server reports; the panel explains a longer selection and does not read it
-  expect(UI).toContain('fillCap&&p.length>=fillCap?p:')
+  expect(UI).toContain('!fillCap||p.length>=fillCap?p:')
   expect(PANEL).toContain('if (ids.length > Number(c.max_size || 0)) { setStatus(null); return }')
   // no new page, route or dashboard: the panel is one component opened from the two existing screens
   expect(fs.readdirSync('src').filter(f => /fill/i.test(f)).sort()).toEqual(['ProviderFillFields.jsx', 'provider-fill-fields.css'])

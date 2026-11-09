@@ -142,12 +142,24 @@ select pg_temp.ok('fill missing: eligible ones selected, a description already p
   and (select j->'exclusions' @> jsonb_build_array(jsonb_build_object('provider_id', pg_temp.id('basic-one'), 'provider', 'basic-one', 'reason', 'description_already_present'), jsonb_build_object('provider_id', pg_temp.id('locked-one'), 'provider', 'locked-one', 'reason', 'manual_lock')) from pv));
 select pg_temp.ok('the preview is saved with the named set and the mode (so Run Now re-checks the same set)', (select selection->>'fill_mode' = 'missing' and selection->>'description_state' = 'missing' and jsonb_array_length(selection->'provider_ids') = 4
   from pipeline.provider_description_cohorts where id = (select (j->>'token')::uuid from pv)));
+-- the refresh of a basic profile is a Platform Admin policy switch that this change reads and never creates (Agent C's pdesc.registry_upgrade_on, with pdesc.machine_admit_on); off, the panel shows the exact refusal
+create temp table pu_off as select pg_temp.rpc('preview', jsonb_build_object('provider_ids', jsonb_build_array(pg_temp.id('basic-one'), pg_temp.id('missing-one'), pg_temp.id('locked-one')), 'fill_mode', 'upgrade_basic')) j;
+select pg_temp.ok('refresh a basic profile while the switch is off: the exact refusal upgrade_switched_off, nothing selected; a non-basic provider and a locked one keep their own reason',
+  (select (j->>'selected')::int = 0 from pu_off)
+  and (select j->'exclusions' @> jsonb_build_array(jsonb_build_object('provider_id', pg_temp.id('basic-one'), 'provider', 'basic-one', 'reason', 'upgrade_switched_off'),
+        jsonb_build_object('provider_id', pg_temp.id('missing-one'), 'provider', 'missing-one', 'reason', 'not_a_basic_registry_profile'), jsonb_build_object('provider_id', pg_temp.id('locked-one'), 'provider', 'locked-one', 'reason', 'manual_lock')) from pu_off)
+  and not (pg_temp.rpc('fill_caps')->>'upgrade_basic_on')::boolean);
+insert into pipeline.platform_toolset_settings(toolset_key, key, label, kind, value, min_value, max_value, unit, sort, section, used_by) values
+ ('pipeline', 'pdesc.registry_upgrade_on', 'stand-in for the other change', 'number', to_jsonb(1), 0, 1, 'on/off', 90, 's', 'u'), ('pipeline', 'pdesc.machine_admit_on', 'stand-in', 'number', to_jsonb(1), 0, 1, 'on/off', 91, 's', 'u');
+select pg_temp.ok('with the switch on, fill_caps says so', (pg_temp.rpc('fill_caps')->>'upgrade_basic_on')::boolean);
 create temp table pu as select pg_temp.rpc('preview', jsonb_build_object('provider_ids', jsonb_build_array(pg_temp.id('basic-one'), pg_temp.id('basic-current'), pg_temp.id('missing-one'), pg_temp.id('verified-one')), 'fill_mode', 'upgrade_basic')) j;
 select pg_temp.ok('refresh a basic registry profile: the eligible one is selected; the backend''s own refusal is shown as it is; a provider that is not basic is refused by name',
   (select (j->>'selected')::int = 1 from pu)
   and (select j->'exclusions' @> jsonb_build_array(jsonb_build_object('provider_id', pg_temp.id('basic-current'), 'provider', 'basic-current', 'reason', 'description_current'),
         jsonb_build_object('provider_id', pg_temp.id('missing-one'), 'provider', 'missing-one', 'reason', 'not_a_basic_registry_profile'), jsonb_build_object('provider_id', pg_temp.id('verified-one'), 'provider', 'verified-one', 'reason', 'not_a_basic_registry_profile')) from pu)
-  and (select selection->>'description_state' = 'stale' and (selection->>'upgrade_basic')::boolean from pipeline.provider_description_cohorts where id = (select (j->>'token')::uuid from pu)));
+  and (select selection->>'description_state' = 'stale' and selection->>'fill_mode' = 'upgrade_basic' from pipeline.provider_description_cohorts where id = (select (j->>'token')::uuid from pu))
+  and (select (e->>'upgrade')::boolean from pu, jsonb_array_elements(pu.j->'providers') e where e->>'provider_id' = pg_temp.id('basic-one')::text));
+delete from pipeline.platform_toolset_settings where key in ('pdesc.registry_upgrade_on', 'pdesc.machine_admit_on');
 do $$ begin begin perform public.admin_provider_description_run_v1('preview', jsonb_build_object('provider_ids', '[]'::jsonb, 'fill_mode', 'missing')); raise exception 'FAILED: an empty set was accepted';
   exception when sqlstate '22023' then raise notice 'ok: an empty named set is refused (22023)'; end; end $$;
 do $$ begin begin perform public.admin_provider_description_run_v1('preview', jsonb_build_object('provider_ids', jsonb_build_array(gen_random_uuid()), 'fill_mode', 'sideways')); raise exception 'FAILED: an unknown fill mode was accepted';
@@ -187,6 +199,21 @@ select pg_temp.ok('verify publication: the actual consumer read-back, per consum
   (select p->'website'->>'status' = 'verified' and p->'zoho'->>'status' = 'verified' from pb, jsonb_array_elements(pb.j->'providers') p where p->>'name' = 'verified-one')
   and (select p->'website'->>'status' = 'mismatch' and p->'zoho'->>'status' = 'not_served' from pb, jsonb_array_elements(pb.j->'providers') p where p->>'name' = 'pending-one')
   and (select p->'website'->>'status' = 'awaiting_description' from pb, jsonb_array_elements(pb.j->'providers') p where p->>'name' = 'missing-one'));
+-- the Website answers NOT_FOUND for a provider it does not serve: that is not served (Not applicable), never an error
+create temp table nf as select pg_temp.rpc('provider_publication', jsonb_build_object('provider_ids', (select jsonb_agg(p.id) from catalogue.providers p
+  where nullif(btrim(p.description), '') is not null and not exists (select 1 from pipeline.website_sync_items w where w.entity = 'provider' and w.item_key = p.stable_key)))) j;
+select pg_temp.ok('Website NOT_FOUND is not_served and never an error; the Catalogue''s own feed state is carried beside it',
+  (select count(*) from nf, jsonb_array_elements(nf.j->'providers')) > 0
+  and not exists (select 1 from nf, jsonb_array_elements(nf.j->'providers') p where p->'website'->>'status' = 'error' or p->'zoho'->>'status' = 'error')
+  and exists (select 1 from nf, jsonb_array_elements(nf.j->'providers') p where p->'website'->>'status' = 'not_served' and p->'website' ? 'feed'));
+select pg_temp.ok('status of a locked provider says locked', (select (p->>'locked')::boolean from jsonb_array_elements(pg_temp.rpc('provider_status', jsonb_build_object('provider_ids', jsonb_build_array(pg_temp.id('locked-one'))))->'providers') p));
+-- a basic profile whose upgrade read is waiting or running shows that level, and goes back to Basic when no such read is left
+insert into pipeline.provider_description_reads(provider_id, state) values (pg_temp.id('basic-one'), 'queued');
+select pg_temp.ok('a basic profile with an upgrade read queued is Enrichment queued', pg_temp.cls('basic-one') = 'queued');
+update pipeline.provider_description_reads set state = 'reading' where provider_id = pg_temp.id('basic-one') and state = 'queued';
+select pg_temp.ok('a basic profile with an upgrade read running is Enrichment processing', pg_temp.cls('basic-one') = 'processing');
+delete from pipeline.provider_description_reads where provider_id = pg_temp.id('basic-one') and state = 'reading';
+select pg_temp.ok('and Basic registry profile again when the read is gone', pg_temp.cls('basic-one') = 'basic_registry');
 select pg_temp.ok('the verification is recorded in the control log', exists (select 1 from pipeline.admin_control_events where area = 'provider_descriptions' and action = 'verify_provider_publication'));
 select pg_temp.ok('quality_counts through the service', (pg_temp.rpc('quality_counts')->>'total')::int = (select count(*) from catalogue.providers));
 select pg_temp.ok('quality_refresh through the service writes the named provider only', (pg_temp.rpc('quality_refresh', jsonb_build_object('provider_ids', jsonb_build_array(pg_temp.id('basic-one'))))->>'refreshed')::int = 1);
