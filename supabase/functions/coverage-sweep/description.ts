@@ -69,6 +69,15 @@ export function descriptionPageText(html: string, pageChars: number): string {
   return htmlToText(h).slice(0, Math.max(1000, pageChars));
 }
 
+// the letters of an abbreviation occur in order in the name it abbreviates (UTS in University of Technology Sydney)
+const inOrder = (abbr: string, name: string) => {
+  const a = abbr.toLowerCase().replace(/[^a-z0-9]/g, ""), n = name.toLowerCase().replace(/[^a-z0-9]/g, "");
+  if (a.length < 2) return false;  // fixed: a one-letter abbreviation proves nothing
+  let at = 0;
+  for (const ch of n) if (ch === a[at] && ++at === a.length) return true;
+  return false;
+};
+
 // The official host alone does not prove which institution a page describes. Use the current
 // catalogue names, never a shortened shared label such as "Monash" for Monash University.
 // A missing proof is held before any paid AI call; it does not change the catalogue identity.
@@ -82,13 +91,6 @@ export function descriptionPageText(html: string, pageChars: number): string {
 // Every other check below is unchanged: the label must still be the whole of a title or h1 (plus framing words), a different institution's heading
 // is still a conflict, and a sub-unit heading is still refused.
 export function descriptionIdentityLabels(names: string[]): string[] {
-  const inOrder = (abbr: string, name: string) => {
-    const a = abbr.toLowerCase().replace(/[^a-z0-9]/g, ""), n = name.toLowerCase().replace(/[^a-z0-9]/g, "");
-    if (a.length < 2) return false;
-    let at = 0;
-    for (const ch of n) if (ch === a[at] && ++at === a.length) return true;
-    return false;
-  };
   const institution = /\b(university|college|polytechnic|institute)\b/i;
   const out: string[] = [];
   for (const raw of names || []) {
@@ -108,7 +110,8 @@ export function descriptionIdentityLabels(names: string[]): string[] {
   return out;
 }
 
-export function descriptionSourceIdentity(html: string, page: string, names: string[]): { ok: boolean; rule: string; matched_name?: string } {
+export type DescriptionIdentity = { ok: boolean; rule: string; matched_name?: string; via?: string };
+function strictSourceIdentity(html: string, page: string, names: string[]): DescriptionIdentity {
   const words = (s: string) => String(s || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
     .replace(/&/g, " and ").replace(/[^a-z0-9]+/g, " ").replace(/^the\s+/, "").trim();
   const labels = [...new Set(descriptionIdentityLabels(names || []).map(words).filter((s) => s.split(" ").length > 1))];
@@ -138,6 +141,126 @@ export function descriptionSourceIdentity(html: string, page: string, names: str
     return { ok: false, rule: "provider_name_conflict" };
   }
   return { ok: true, rule: "current_provider_name", matched_name: matched };
+}
+
+// v0.59.13 (CF-247 F-PDESC, Platform Admin Directive 3, Blocker B): registry-proved identity.
+// The strict proof above needs the title or h1 to be the provider's whole catalogue name and nothing else. Official pages rarely print that: the
+// title is "About UTS | University of Technology Sydney", the h1 is "About UC", the site name is repeated, or a tagline follows the name. About
+// 65 of 115 live reads were held for that reason although the registry (security.provider_description_identity_v1) already proved the provider.
+// When the strict proof fails (never when it passed, never on a sub-unit h1), the worker also holds the evidence the database gave it: the
+// provider's own verified hosts (security.provider_hosts_v1) and the page's final address. The page is then accepted only when ALL agree:
+//   1 the page address is on one of the provider's own verified hosts (ownHost, the same helper as the About-page rule);
+//   2 a segment of the title, an h1, og:site_name or og:title (split at | : - dash , ; /) is exactly the catalogue name (or a label derived from it
+//     by descriptionIdentityLabels) or exactly a registry abbreviation of it (descriptionIdentityAliases), plus framing words only; or, when no
+//     heading names the provider, the page's opening statement begins with the full catalogue name;
+//   3 no segment of those headings names anything else: a segment that contains the name or an abbreviation with extra words (an offshore branch
+//     "X University Malaysia", "UTS College"), or another institution, college, faculty, school or campus, is a conflict.
+// Nothing here relaxes the checks above, the About-page rule, the sub-unit rule, the manual locks or the database validation. No setting is needed:
+// the hosts and names come from the lease, and the framing words are the same list as the strict proof.
+const identityWords = (s: string) => String(s || "").normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase()
+  .replace(/&/g, " and ").replace(/[^a-z0-9]+/g, " ").replace(/^the\s+/, "").trim();
+const IDENTITY_FRAMING = /\b(about|us|the|our|who|we|are|overview|profile|welcome|to|at|a|glance|facts|and|figures)\b/g;
+const IDENTITY_GENERIC = /\b(university|college|polytechnic|institute)\b/g;
+const IDENTITY_OTHER = /\b(university|college|polytechnic|institute|campus|campuses|faculty|faculties|school|schools)\b/;
+const IDENTITY_SUBUNIT = /\b(campus|campuses|faculty|faculties|school|schools)\b/;
+
+// Registry abbreviations of a catalogue name, never taken from the page:
+//   1 a parenthetical that abbreviates the name ("University of Technology Sydney (UTS)", "(UoN)"); a bare word of the name itself ("(Deakin)",
+//     "(RMIT)") is not an abbreviation, it is the shared name that also belongs to a college of the same group;
+//   2 the initialism of the capitalised words of the first entity of an institution name (University of Technology Sydney -> UTS), three letters
+//     or more (a two-letter initialism such as UC or CC is shared by too many institutions).
+export function descriptionIdentityAliases(names: string[]): string[] {
+  const out: string[] = [], seen = new Set<string>();
+  const add = (a: string) => { const w = identityWords(a); if (w && !seen.has(w)) { seen.add(w); out.push(a) } };
+  for (const raw of names || []) {
+    const name = String(raw || "").replace(/\s+/g, " ").trim();
+    if (!name) continue;
+    const plain = name.replace(/\s*\([^()]*\)/g, "").replace(/\s+/g, " ").trim();
+    const own = identityWords(plain).split(" ");
+    for (const m of name.matchAll(/\(([^()]*)\)/g)) {
+      const inner = m[1].trim(), toks = identityWords(inner).split(" ").filter(Boolean);
+      if (!toks.length || !inOrder(inner, plain) || toks.every((t) => own.includes(t))) continue;
+      add(inner);
+    }
+    const first = plain.split(/[;,]/)[0].trim();
+    if (/\b(university|college|polytechnic|institute)\b/i.test(first)) {
+      const letters = first.split(/\s+/).filter((w, i) => !(i === 0 && /^the$/i.test(w))).filter((w) => /^[A-Z]/.test(w)).map((w) => w[0]).join("");
+      if (letters.length >= 3) add(letters);  // fixed: shorter initialisms (UC, CC) are shared by too many institutions
+    }
+  }
+  return out;
+}
+
+// the headings that identify the page's subject: the title, every h1, og:site_name, og:title and application-name
+function identityHeadings(html: string): { tag: string; text: string }[] {
+  const out = Array.from(String(html || "").matchAll(/<(title|h1)\b[^>]*>([\s\S]*?)<\/\1>/gi), (m) => ({ tag: m[1].toLowerCase(), text: htmlToText(m[2]) }));
+  for (const m of String(html || "").matchAll(/<meta\b[^>]*>/gi)) {
+    const key = (m[0].match(/\b(?:property|name)\s*=\s*["']([^"']+)["']/i) || [])[1]?.toLowerCase();
+    if (key !== "og:site_name" && key !== "og:title" && key !== "application-name") continue;
+    const c = m[0].match(/\bcontent\s*=\s*(?:"([^"]*)"|'([^']*)')/i);
+    if (c) out.push({ tag: key, text: htmlToText(c[1] ?? c[2] ?? "") });
+  }
+  return out;
+}
+
+// the opening statement: the first paragraph of the main text (navigation, header, footer and asides removed)
+function openingParagraph(html: string): string {
+  let h = String(html || "");
+  const main = h.match(/<main[\s\S]*?<\/main>/i);
+  if (main) h = main[0];
+  h = h.replace(/<(nav|header|footer|aside|script|style)\b[\s\S]*?<\/\1>/gi, " ");
+  for (const m of h.matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/gi)) { const t = htmlToText(m[1]).replace(/\s+/g, " ").trim(); if (identityWords(t)) return t }
+  return "";
+}
+
+function registryEvidenceIdentity(html: string, names: string[]): DescriptionIdentity {
+  const uniq = (xs: string[]) => [...new Set(xs.map(identityWords).filter(Boolean))];
+  const labels = uniq(descriptionIdentityLabels(names || [])).filter((l) => l.split(" ").length > 1);
+  const aliases = uniq(descriptionIdentityAliases(names || [])).filter((a) => !labels.includes(a));
+  const phrases = [...labels, ...aliases].sort((a, b) => b.length - a.length);
+  const has = (w: string, phrase: string) => (` ${w} `).includes(` ${phrase} `);
+  const strip = (w: string, ps: string[]) => { let r = w; for (const p of ps) r = r.replace(new RegExp(`(?<=^| )${p}(?= |$)`, "g"), " "); return r.replace(/\s+/g, " ").trim() };
+  const fail = (rule: string): DescriptionIdentity => ({ ok: false, rule });
+  let proof: { name: string; via: string } | null = null;
+  for (const el of identityHeadings(html)) {
+    for (const seg of el.text.split(/\s[-–—―]\s|[|:·•,;\/–—]/)) {
+      const w = identityWords(seg);
+      if (!w) continue;
+      const label = labels.find((l) => has(w, l)), alias = aliases.find((a) => has(w, a));
+      if (label || alias) {
+        // the name or an abbreviation with extra words ("X University Malaysia", "UTS College") names something else
+        const extra = strip(w, phrases).replace(IDENTITY_FRAMING, " ").replace(/\s+/g, " ").trim();
+        if (extra) return fail(el.tag === "h1" && IDENTITY_SUBUNIT.test(extra) ? "provider_subunit_source" : "provider_name_conflict");
+        proof ||= label ? { name: label, via: "registry_heading_name" } : { name: alias!, via: "registry_heading_abbreviation" };
+        continue;
+      }
+      if (!w.replace(IDENTITY_FRAMING, " ").replace(IDENTITY_GENERIC, " ").trim()) continue;  // a generic heading ("About the university")
+      if (IDENTITY_OTHER.test(w)) return fail(el.tag === "h1" && IDENTITY_SUBUNIT.test(w) ? "provider_subunit_source" : "provider_name_conflict");  // another institution, college, faculty, school or campus
+    }
+  }
+  if (proof) return { ok: true, rule: "current_provider_name", matched_name: proof.name, via: proof.via };
+  // no heading names the provider and none names another: the opening statement must begin with the whole catalogue name
+  const para = openingParagraph(html), pw = identityWords(para);
+  const label = labels.find((l) => pw === l || pw.startsWith(l + " "));
+  if (label) {
+    const sentence = para.split(/(?<=[.!?])\s/)[0];
+    const elsewhere = /\b(?:[A-Z][\w'’-]*\s+){1,5}(?:University|College|Polytechnic|Institute|School)\b|\b(?:University|College|Institute|School)\s+of\s+[A-Z]/;
+    const rest = sentence.replace(new RegExp(label.split(" ").join("[\\s\\W]+"), "ig"), " ");
+    if (!elsewhere.test(rest) && !IDENTITY_SUBUNIT.test(identityWords(rest))) return { ok: true, rule: "current_provider_name", matched_name: label, via: "registry_opening_statement" };
+  }
+  return fail("provider_name_not_proved");
+}
+
+// The identity proof the reader applies. `evidence` is what the database gave the worker: the page's final address and the provider's own verified
+// hosts. Without it, or when the page is not on one of those hosts, only the strict proof applies, exactly as before.
+export function descriptionSourceIdentity(html: string, page: string, names: string[], evidence?: { url?: string; hosts?: string[] }): DescriptionIdentity {
+  const strict = strictSourceIdentity(html, page, names);
+  if (strict.ok || strict.rule === "provider_subunit_source" || !evidence) return strict;
+  let host = "";
+  try { host = new URL(String(evidence.url || "")).hostname } catch { return strict }
+  if (!/^https?:$/.test(new URL(String(evidence.url)).protocol) || !ownHost(host, evidence.hosts || [])) return strict;
+  const registry = registryEvidenceIdentity(html, names);
+  return registry.ok || registry.rule === "provider_subunit_source" ? registry : strict;
 }
 
 // The lease protocol this worker follows: reserve a conservative price with svc_provider_description_reserve_v1 before every paid call.
