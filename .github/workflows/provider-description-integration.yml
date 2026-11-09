@@ -96,6 +96,12 @@ jobs:
           PGPORT: "5432"
           PGUSER: postgres
         run: bash tests/fixtures/pdesc-sentence-filter/run.sh
+      - name: The provider-description prompt of the worker is registered as a new version (scratch PostgreSQL 16)
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: "5432"
+          PGUSER: postgres
+        run: bash tests/fixtures/pdesc-prompt-baseline/run.sh
       - name: Operate actual SQL workflow on desktop and phone
         run: npx playwright test --config=playwright.provider-description.config.mjs
       - name: Source quality, navigation and standing governance guards

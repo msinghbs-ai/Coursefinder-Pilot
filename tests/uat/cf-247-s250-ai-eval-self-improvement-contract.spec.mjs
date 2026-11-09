@@ -16,6 +16,8 @@ const run = fs.readFileSync(`${FX}/run.sh`, 'utf8')
 const fixtures = fs.readFileSync(`${FX}/fixtures.sql`, 'utf8')
 const seed = fs.readFileSync(`${FX}/seed.sql`, 'utf8')
 const W = 'supabase/functions/coverage-sweep/'
+// the baseline registrations in release order: this migration, then every later migration that registers a prompt version as current
+const REGISTRY = [m, ...fs.readdirSync('supabase/migrations').filter((f) => f > MIG.split('/').pop() && f.endsWith('.sql')).sort().map((f) => fs.readFileSync(`supabase/migrations/${f}`, 'utf8')).filter((t) => t.includes('ai_instruction_register_v1') && t.includes("'status', 'current'"))]
 const md5 = (s) => crypto.createHash('md5').update(s).digest('hex')
 
 // the text of a worker constant: a template literal without interpolation, or concatenated double-quoted strings
@@ -39,9 +41,10 @@ const BASELINES = [
 test('every live prompt is registered with the md5 of the worker text it runs: a prompt edited in code without a new version fails here', () => {
   for (const [code, file, name] of BASELINES) {
     const h = md5(constText(fs.readFileSync(W + file, 'utf8'), name))
-    const row = m.match(new RegExp(`'code', '${code}', 'kind', 'prompt', 'version', '([^']+)', 'status', 'current'[\\s\\S]*?'body_md5', '([0-9a-f]{32})'`))
-    expect(row, code).not.toBeNull()
-    expect(row[2], `${code}: ${file} ${name} changed; register a new version`).toBe(h)
+    // the registered baseline is the last one a migration registers as current (a prompt edited in code is registered by a later release migration, e.g. 20261110125000)
+    const rows = REGISTRY.map((t) => t.match(new RegExp(`'code', '${code}', 'kind', 'prompt', 'version', '([^']+)', 'status', 'current'[\\s\\S]*?'body_md5', '([0-9a-f]{32})'`))).filter(Boolean)
+    expect(rows.length, code).toBeGreaterThan(0)
+    expect(rows[rows.length - 1][2], `${code}: ${file} ${name} changed; register a new version`).toBe(h)
   }
   expect(m).toContain("'home', 'pipeline.scholarship_ai_prompts version 2 (active)', 'body_md5', coalesce((select md5(p.text) from pipeline.scholarship_ai_prompts p where p.version = 2)")
   // the P1 candidate changes only the deadline paragraph of course-text-v1
