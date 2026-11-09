@@ -20,14 +20,14 @@ test.describe('Data delivery on Operations', () => {
     const root = page.locator('[data-data-delivery]')
     const first = await page.evaluate(() => { const s = document.querySelector('[data-data-delivery]'); return s?.parentElement?.firstElementChild === s })
     expect(first, 'Data delivery is the first element of the Operations stack').toBe(true)
-    await expect(root.locator('[data-dd-stream]')).toHaveCount(4)
+    await expect(root.locator('[data-dd-stream]')).toHaveCount(6)
     const pd = root.locator('[data-dd-stream="pdesc"]')
     for (const c of ['coverage', 'net_short', 'net_long', 'website', 'zoho', 'queue', 'holds', 'speed', 'runs', 'recovery']) await expect(pd.locator(`[data-dd-cell="${c}"]`)).toBeVisible()
     await expect(pd.locator('[data-dd-cell="coverage"]')).toContainText('800')
     await expect(pd.locator('[data-dd-cell="coverage"]')).toContainText('of 3,087')
     await expect(pd.locator('[data-dd-cell="coverage"]')).toContainText('25.9% covered')
     await expect(pd.locator('[data-dd-cell="net_short"]')).toContainText('+10')
-    await expect(pd.locator('[data-dd-cell="net_short"]')).toContainText('12 in')
+    await expect(pd.locator('[data-dd-cell="net_short"]')).toContainText('12 providers in')
     await expect(pd.locator('[data-dd-cell="net_long"]')).toContainText('+795')
     await expect(pd.locator('[data-dd-cell="website"]')).toContainText('790')
     await expect(pd.locator('[data-dd-cell="website"]')).toContainText('6 pending')
@@ -49,14 +49,22 @@ test.describe('Data delivery on Operations', () => {
   test('unknown is the word Unknown or Not measured with its reason, never 0 or blank', async ({ page }) => {
     await open(page)
     const eng = page.locator('[data-dd-stream="eng"]')
-    // removals unknown: net is not shown as a number, the gross admitted figure is, with the reason
-    await expect(eng.locator('[data-dd-cell="net_short"] [data-dd-net]')).toHaveAttribute('data-dd-net', 'unknown')
-    await expect(eng.locator('[data-dd-cell="net_short"] [data-dd-removed-unknown]')).toContainText('removals not measured')
+    // English has no dated admission ledger: Unknown in both windows with the reason, never a bold 0
+    for (const c of ['net_short', 'net_long']) {
+      await expect(eng.locator(`[data-dd-cell="${c}"] [data-dd-unknown]`)).toContainText('Unknown')
+      await expect(eng.locator(`[data-dd-cell="${c}"]`)).toContainText('course_english_requirements has no created_at')
+      await expect(eng.locator(`[data-dd-cell="${c}"] [data-dd-net]`)).toHaveCount(0)
+    }
     await expect(eng.locator('[data-dd-cell="speed"] [data-dd-unknown]')).toContainText('Not measured')
     await expect(eng.locator('[data-dd-cell="speed"] [data-dd-unknown]')).toContainText('cannot be counted')
     await expect(eng.locator('[data-dd-cell="zoho"] [data-dd-unknown]')).toContainText('Not measured')
     await expect(eng.locator('[data-dd-cell="queue"] [data-dd-unknown]')).toContainText('no English reader queue')
     const cd = page.locator('[data-dd-stream="cdesc"]')
+    // course descriptions: the ledger holds no dated admission, so the admitted count is Unknown in both windows (not 0)
+    for (const c of ['net_short', 'net_long']) {
+      await expect(cd.locator(`[data-dd-cell="${c}"] [data-dd-admitted-unknown]`)).toContainText('a count of 0 would not be true')
+      await expect(cd.locator(`[data-dd-cell="${c}"]`)).not.toContainText(/^\s*0\s*$/)
+    }
     await expect(cd.locator('[data-dd-cell="coverage"] [data-dd-unknown]')).toContainText('Unknown')
     await expect(cd.locator('[data-dd-cell="coverage"]')).toContainText('statement timeout')
     await expect(cd.locator('[data-dd-cell="coverage"]')).not.toContainText(/^0$/)
@@ -73,6 +81,7 @@ test.describe('Data delivery on Operations', () => {
     await expect(int.locator('[data-dd-flag="green_no_admission"] [data-dd-reasons-link]')).toHaveAttribute('href', /lane=int/)
     await expect(page.locator('[data-dd-stream="pdesc"] [data-dd-flag]')).toHaveCount(0)
     await expect(page.locator('[data-dd-stream="eng"] [data-dd-flag="job_failing"]')).toContainText('2 failed run(s)')
+    await expect(int.locator('[data-dd-flag="green_no_admission"]')).toContainText('16174 waiting')
     await expect(page.locator('[data-dd-summary]')).toContainText('ran green but admitted nothing in 24 h')
     await expect(page.locator('[data-dd-stream="eng"] [data-dd-recovery]')).toHaveAttribute('data-dd-recovery', 'failing')
   })
@@ -97,7 +106,9 @@ test.describe('Data delivery on Operations', () => {
     const int = page.locator('[data-dd-stream="int"]')
     await int.locator('summary').click()
     await expect(int.locator('[data-dd-drill-box] [data-dd-drill="missing"]')).toHaveAttribute('href', '#courses?f_hasIntake=false')
-    await expect(int.locator('[data-dd-drill-note]')).toContainText('no Website or Zoho state filter')
+    await expect(int.locator('[data-dd-drill-box] [data-dd-drill="missing"]')).toHaveText('Courses with no intake')
+    await expect(int.locator('[data-dd-drill-box] [data-dd-drill="filled"]')).toHaveText('Courses with an intake')
+    await expect(int.locator('[data-dd-drill-note]')).toContainText('no dated-intake filter')
     await int.locator('[data-dd-drill-box] [data-dd-drill="missing"]').click()
     await expect(page).toHaveURL(/#courses\?f_hasIntake=false/)
   })
@@ -142,6 +153,91 @@ test.describe('Data delivery on Operations', () => {
     expect(dd.calls, 'no reads while hidden').toBe(hidden)
     await page.evaluate(() => { Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' }); document.dispatchEvent(new Event('visibilitychange')) })
     await expect.poll(() => dd.calls, { timeout: 20_000 }).toBeGreaterThan(hidden)
+  })
+
+  test('rows and courses are not mixed unlabelled: intake coverage says rows and that the catalogue has no dated-intake filter; Website and Zoho count courses', async ({ page }) => {
+    await open(page)
+    const int = page.locator('[data-dd-stream="int"]')
+    await expect(int.locator('[data-dd-cell="coverage"]')).toContainText('intake rows')
+    await expect(int.locator('[data-dd-cell="coverage"] [data-dd-coverage-note]')).toContainText('no dated-intake filter')
+    await expect(int.locator('[data-dd-cell="website"]')).toContainText('courses matched')
+    await expect(int.locator('[data-dd-cell="net_long"]')).toContainText('intake events')
+    await expect(page.locator('[data-dd-stream="fee"] [data-dd-cell="coverage"]')).toContainText('courses')
+    await expect(page.locator('[data-dd-stream="fee"] [data-dd-cell="net_long"]')).toContainText('fee rows')
+  })
+
+  test('fees: only the rows created are shown, with no net, because removals are not separable (replaced rows are not removals)', async ({ page }) => {
+    await open(page)
+    const fee = page.locator('[data-dd-stream="fee"]')
+    await expect(fee.locator('[data-dd-cell="net_long"] [data-dd-net]')).toHaveAttribute('data-dd-net', 'unknown')
+    await expect(fee.locator('[data-dd-cell="net_long"]')).toContainText('3,095 fee rows in')
+    await expect(fee.locator('[data-dd-cell="net_long"] [data-dd-removed-unknown]')).toContainText('no net')
+    await expect(fee.locator('[data-dd-cell="net_long"] [data-dd-removed-unknown]')).toContainText('not separable')
+    await expect(fee.locator('[data-dd-cell="net_long"]')).not.toContainText(' out')
+  })
+
+  test('scholarship Website pending is Not measured, not a literal 0', async ({ page }) => {
+    await open(page)
+    const sch = page.locator('[data-dd-stream="sch"]')
+    await expect(sch.locator('[data-dd-cell="website"] [data-dd-pending-unknown]')).toContainText('pending: not measured')
+    await expect(sch.locator('[data-dd-cell="website"]')).not.toContainText('0 pending')
+  })
+
+  test('a green job whose queue is empty is still flagged, but reads as information, not an alarm', async ({ page }) => {
+    const payload = JSON.parse(JSON.stringify(DATA_DELIVERY))
+    const int = payload.streams.find((x) => x.stream === 'int')
+    int.queue = { known: true, n: 0, partial: false, parts: [], reasons: [] }
+    int.flags = [{ code: 'green_no_admission', severity: 'info', queue_empty: true, text: 'Ran OK 24 time(s) in 24 h, admitted nothing; queue empty, nothing is waiting' }]
+    await open(page, payload)
+    const flag = page.locator('[data-dd-stream="int"] [data-dd-flag="green_no_admission"]')
+    await expect(flag).toBeVisible()
+    await expect(flag).toHaveAttribute('data-dd-queue-empty', 'true')
+    await expect(flag).toContainText('nothing is waiting')
+    await expect(flag).toHaveClass(/tone-neutral/)
+  })
+
+  test('a failed recount keeps the last good figures, marked Stale with the error beside them', async ({ page }) => {
+    const payload = JSON.parse(JSON.stringify(DATA_DELIVERY))
+    const fee = payload.streams.find((x) => x.stream === 'fee')
+    Object.assign(fee.coverage, { stale: true, count_error: 'canceling statement due to statement timeout', age_minutes: 41 })
+    await open(page, payload)
+    const cov = page.locator('[data-dd-stream="fee"] [data-dd-cell="coverage"]')
+    await expect(cov).toContainText('27,600')
+    await expect(cov).toContainText('Stale')
+    await expect(cov.locator('[data-dd-count-error]')).toContainText('statement timeout')
+    await expect(cov.locator('[data-dd-count-error]')).toContainText('last good figures')
+  })
+
+  test('one hung request does not stop the reloads: it is abandoned after the time-out and the next tick asks again', async ({ page }) => {
+    await page.clock.install()
+    const dd = await open(page, { ...DATA_DELIVERY, ui_refresh_seconds: 20 })
+    dd.hang = true
+    const before = dd.calls
+    await page.getByRole('button', { name: 'Refresh' }).first().click()
+    await expect.poll(() => dd.calls, { timeout: 20_000 }).toBeGreaterThan(before)
+    await page.clock.fastForward(21_000)
+    const banner = page.locator('[data-dd-stale-banner]')
+    await expect(banner).toBeVisible({ timeout: 20_000 })
+    await expect(banner).toContainText('took too long')
+    dd.hang = false
+    await page.clock.fastForward(21_000)
+    await expect(banner).toHaveCount(0, { timeout: 20_000 })
+  })
+
+  test('between 641 and 1100 px the eleven columns become labelled blocks: no sideways scroll and every cell wide enough to read', async ({ page }) => {
+    for (const width of [641, 800, 1100]) {
+      await page.setViewportSize({ width, height: 900 })
+      await open(page)
+      const m = await page.evaluate(() => {
+        const cells = [...document.querySelectorAll('[data-dd-stream="pdesc"] > summary .dd-cell')]
+        return { overflow: document.documentElement.scrollWidth - window.innerWidth, narrowest: Math.min(...cells.map((c) => c.getBoundingClientRect().width)), cells: cells.length, head: getComputedStyle(document.querySelector('.dd-head')).display }
+      })
+      expect(m.overflow, `no sideways scroll at ${width}px`).toBeLessThanOrEqual(1)
+      expect(m.cells).toBe(10)
+      expect(m.narrowest, `the narrowest cell at ${width}px`).toBeGreaterThanOrEqual(120)
+      expect(m.head, `the eleven-column header is hidden at ${width}px`).toBe('none')
+      await page.unrouteAll({ behavior: 'ignoreErrors' })
+    }
   })
 
   test('the lane funnels stay below it and a lane link opens that lane', async ({ page }) => {

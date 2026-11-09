@@ -62,15 +62,24 @@ select pg_temp.ok('a run stops starting new counts once its time budget is spent
 update pipeline.platform_toolset_settings set value = to_jsonb(30) where key = 'data_delivery.run_budget_seconds';
 do $$ begin for i in 1..6 loop perform security.data_delivery_refresh_v1(); end loop; end $$;
 select pg_temp.ok('every measure SELECT runs under the evaluator''s empty search path with no error', (select count(*) = 0 from pipeline.data_delivery_readings where error is not null));
-select pg_temp.ok('every built measure is counted: 8 streams x 4 measures less the two consumer measures that are not built (course descriptions, AER)', (select count(*) = 30 from pipeline.data_delivery_readings));
+select pg_temp.ok('every built measure is counted: 8 streams x 4 measures less the two consumer measures that are not built (course descriptions, AER) and the two net measures of English, which has no dated ledger', (select count(*) = 28 from pipeline.data_delivery_readings));
 select pg_temp.ok('a due measure is not counted again before the count-again time', (select (security.data_delivery_refresh_v1()->>'counted')::int = 0));
 update pipeline.platform_toolset_settings set value = to_jsonb(0) where key = 'data_delivery.on';
 select pg_temp.ok('the refresh switch stops the count', (select (security.data_delivery_refresh_v1()->>'skipped') like 'switched off%'));
 update pipeline.platform_toolset_settings set value = to_jsonb(1) where key = 'data_delivery.on';
 insert into pipeline.data_delivery_streams(stream, title, sort, lane, unit, coverage_sql) values ('bad', 'Bad', 99, 'pdesc', 'x', 'select 1 / 0 as n');
 create temp table t_bad as select security.data_delivery_refresh_v1(true) r;
-select pg_temp.ok('a measure that fails to count is recorded as an error with no rows (never as zero)', (select (r->>'failed')::int >= 1 and (select rows is null and error like '%division by zero%' from pipeline.data_delivery_readings where stream = 'bad' and measure = 'coverage') from t_bad));
+select pg_temp.ok('a measure that fails to count the first time is recorded as an error with no rows (never as zero)', (select (r->>'failed')::int >= 1 and (select rows is null and error like '%division by zero%' and failed_at is not null from pipeline.data_delivery_readings where stream = 'bad' and measure = 'coverage') from t_bad));
 delete from pipeline.data_delivery_readings where stream = 'bad'; delete from pipeline.data_delivery_streams where stream = 'bad';
+-- a failure after a good count keeps the good rows and its count time, and records the error
+create temp table t_good as select rows, measured_at from pipeline.data_delivery_readings where stream = 'pdesc' and measure = 'coverage';
+update pipeline.data_delivery_streams set coverage_sql = 'select 1 / 0 as n' where stream = 'pdesc';
+do $$ begin for i in 1..5 loop perform security.data_delivery_refresh_v1(true); end loop; end $$;
+select pg_temp.ok('a count that fails after a good one keeps the last good rows and their time, and adds the error and when it failed',
+  (select r.rows = g.rows and r.measured_at = g.measured_at and r.error like '%division by zero%' and r.failed_at is not null from pipeline.data_delivery_readings r, t_good g where r.stream = 'pdesc' and r.measure = 'coverage'));
+update pipeline.data_delivery_streams set coverage_sql = $q$select co.iso_alpha2::text as cc, count(*) filter (where nullif(btrim(p.description), '') is not null) as n, count(*) as total from catalogue.providers p join ref.countries co on co.id = p.country_id where p.lifecycle_status = 'active' group by 1$q$ where stream = 'pdesc';
+do $$ begin for i in 1..5 loop perform security.data_delivery_refresh_v1(true); end loop; end $$;
+select pg_temp.ok('and the next good count clears the error', (select error is null and failed_at is null from pipeline.data_delivery_readings where stream = 'pdesc' and measure = 'coverage'));
 
 select security.lane_funnel_refresh_v1(true);  -- the lane funnel readings (queue and hold stages) that the summary reuses
 set test.uid = '00000000-0000-0000-0000-000000000001'; set test.rank = '3';
@@ -83,8 +92,14 @@ select pg_temp.ok('provider descriptions: net over the short window = 1 admitted
 select pg_temp.ok('the long window counts the older admissions too (3 admitted) and says the ledger is younger than the window', (select (x->'net_long'->>'added')::int = 3 and (x->'net_long'->>'partial')::boolean and x->'net_long'->>'since' is not null from (select pg_temp.st('pdesc') x) q));
 select pg_temp.ok('windows come from the settings (24 h and 168 h)', (select (d->'windows'->>'short_hours')::int = 24 and (d->'windows'->>'long_hours')::int = 168 from t_read));
 select pg_temp.ok('speed is items per hour over a stated window with its basis', (select (x->'speed'->>'known')::boolean and (x->'speed'->>'window_hours')::numeric > 0 and x->'speed'->>'basis' is not null from (select pg_temp.st('int') x) q));
-select pg_temp.ok('unknown removals are not zero: English net is null, removed_known false, with the reason', (select x->'net_short'->'removed' = 'null'::jsonb and x->'net_short'->'net' = 'null'::jsonb and not (x->'net_short'->>'removed_known')::boolean and x->'net_short'->>'removed_reason' like '%no withdrawal time%' from (select pg_temp.st('eng') x) q));
-select pg_temp.ok('unknown speed is not zero: English speed is known=false with the reason', (select not (x->'speed'->>'known')::boolean and x->'speed'->>'reason' like '%cannot be counted%' and x->'speed'->'per_hour' is null from (select pg_temp.st('eng') x) q));
+select pg_temp.ok('English admissions are Unknown in both windows with the reason (no dated ledger), never a bold 0; the admitted figure is absent', (select not (x->'net_short'->>'known')::boolean and not (x->'net_long'->>'known')::boolean and x->'net_short'->>'reason' like '%course_english_requirements has no created_at%' and x->'net_short'->'added' is null from (select pg_temp.st('eng') x) q));
+select pg_temp.ok('course descriptions: no dated admission has ever been recorded, so the admitted count is Unknown (not 0) in both windows, the reading still gives the processed count',
+  (select (x->'net_short'->>'known')::boolean and not (x->'net_short'->>'admitted_known')::boolean and x->'net_short'->'added' = 'null'::jsonb and x->'net_short'->'net' = 'null'::jsonb and x->'net_short'->>'admitted_reason' like '%count of 0 would not be true%' and not (x->'net_long'->>'admitted_known')::boolean from (select pg_temp.st('cdesc') x) q));
+select pg_temp.ok('fees: the in figure is rows created, removals are not separable (null with the reason), so there is no net',
+  (select (x->'net_short'->>'known')::boolean and (x->'net_short'->>'admitted_known')::boolean and x->'net_short'->'removed' = 'null'::jsonb and x->'net_short'->'net' = 'null'::jsonb and x->'net_short'->>'removed_reason' like '%not separable%' and x->>'net_unit' = 'fee rows' and x->>'unit' = 'courses' from (select pg_temp.st('fee') x) q));
+select pg_temp.ok('AER and discovery: removals are not separable either', (select bool_and(x->'net_long'->'removed' = 'null'::jsonb and x->'net_long'->>'removed_reason' like '%not separable%') from (select pg_temp.st('aer') x union all select pg_temp.st('disc')) q));
+select pg_temp.ok('intake dates keep a real net (filled less withdrawn) and say events, not courses', (select x->'net_long'->'removed' <> 'null'::jsonb and x->>'net_unit' = 'intake events' and x->>'consumer_unit' = 'courses' from (select pg_temp.st('int') x) q));
+select pg_temp.ok('unknown speed is not zero: English speed is known=false with its own reason', (select not (x->'speed'->>'known')::boolean and x->'speed'->>'reason' like '%cannot be counted%' and x->'speed'->'per_hour' is null from (select pg_temp.st('eng') x) q));
 select pg_temp.ok('scholarships: the total is not defined, so no percentage is invented', (select (x->'coverage'->>'n')::int = 2 and x->'coverage'->'total' = 'null'::jsonb and x->'coverage'->'pct' = 'null'::jsonb and x->'coverage'->>'total_reason' like '%not defined%' from (select pg_temp.st('sch') x) q));
 
 -- 5 Website and Zoho
@@ -92,7 +107,7 @@ select pg_temp.ok('provider descriptions on the Website: 1 matched, 1 pending (t
   (select (x->'website'->>'matched')::int = 1 and (x->'website'->>'pending')::int = 1 and (x->'website'->>'missing')::int = 1 and (x->'website'->>'not_applicable')::int = 1 from (select pg_temp.st('pdesc') x) q));
 select pg_temp.ok('provider descriptions on Zoho: 1 matched, 2 missing', (select (x->'zoho'->>'matched')::int = 1 and (x->'zoho'->>'missing')::int = 2 from (select pg_temp.st('pdesc') x) q));
 select pg_temp.ok('course descriptions: Website and Zoho are Not measured with a reason, never 0', (select not (x->'website'->>'known')::boolean and x->'website'->'matched' is null and x->'website'->>'reason' like '%not compared yet%' and not (x->'zoho'->>'known')::boolean from (select pg_temp.st('cdesc') x) q));
-select pg_temp.ok('scholarships: Website measured, Zoho Not measured with a reason', (select (x->'website'->>'known')::boolean and not (x->'zoho'->>'known')::boolean and x->'zoho'->>'reason' like '%not built%' from (select pg_temp.st('sch') x) q));
+select pg_temp.ok('scholarships: Website matched is measured, pending is Not measured (null with a reason, not a literal 0), Zoho Not measured with a reason', (select (x->'website'->>'known')::boolean and x->'website'->'pending' = 'null'::jsonb and x->'website'->>'pending_reason' like '%not measured%' and not (x->'zoho'->>'known')::boolean and x->'zoho'->>'reason' like '%not built%' from (select pg_temp.st('sch') x) q));
 
 -- 6 queue and holds with exact reasons
 select pg_temp.ok('provider descriptions: queue 2 (waiting for the reader)', (select (x->'queue'->>'n')::int = 2 and x->'queue'->'parts'->0->>'stage' = 'queued' from (select pg_temp.st('pdesc') x) q));
@@ -103,6 +118,7 @@ select pg_temp.ok('a queue that is not recorded is unknown with the reason, neve
 -- 7 last / next run, the green flag, failing, no history
 select pg_temp.ok('last and next run of the primary job are returned as timestamps with the job list', (select x->'jobs'->>'last_run_at' is not null and x->'jobs'->>'next_run_at' is not null and jsonb_array_length(x->'jobs'->'list') = 1 from (select pg_temp.st('pdesc') x) q));
 select pg_temp.ok('a green job that admitted nothing is flagged, with the cause and the count of runs', (select exists (select 1 from jsonb_array_elements(x->'flags') f where f->>'code' = 'green_no_admission' and f->>'text' like 'Ran OK 2 time(s) in 24 h, admitted nothing%') from (select pg_temp.st('int') x) q));
+select pg_temp.ok('the green flag carries the queue context (waiting count, or queue not counted / empty) and its tone follows it', (select f->>'text' ~ '(waiting|queue empty|queue not counted)' and f->>'severity' in ('warn', 'info') from (select jsonb_array_elements(x->'flags') f from (select pg_temp.st('int') x) q) z where f->>'code' = 'green_no_admission'));
 select pg_temp.ok('a job that admitted in the window is not flagged', (select not exists (select 1 from jsonb_array_elements(x->'flags') f where f->>'code' like 'green%') from (select pg_temp.st('pdesc') x) q));
 select pg_temp.ok('a failed run is flagged and recovery says it retries at the next scheduled run', (select exists (select 1 from jsonb_array_elements(x->'flags') f where f->>'code' = 'job_failing') and x->'recovery'->>'state' = 'failing' and x->'recovery'->>'text' like '%retries at its next scheduled run%' from (select pg_temp.st('fee') x) q));
 select pg_temp.ok('a job with no run in the history window is Unknown with the reason, not "never"', (select not (x->'jobs'->>'known')::boolean and x->'jobs'->>'reason' like 'No run of scholarship-read, scholarship-auto-publish in the last 48 hours%' and x->'jobs'->'last_run_at' = 'null'::jsonb from (select pg_temp.st('sch') x) q));
@@ -120,6 +136,8 @@ select pg_temp.ok('a switch that is off shows recovery off: nothing retries',
 -- 9 stale, error and never-counted are shown as such
 update pipeline.data_delivery_readings set measured_at = now() - interval '2 hours' where stream = 'pdesc' and measure = 'coverage';
 select pg_temp.ok('an old count is marked stale with its age', (select (x->'coverage'->>'stale')::boolean and (x->'coverage'->>'age_minutes')::int >= 119 from (select x from jsonb_array_elements(public.admin_layer23('data_delivery')->'streams') x where x->>'stream' = 'pdesc') q));
+update pipeline.data_delivery_readings set error = 'canceling statement due to statement timeout', failed_at = now() where stream = 'sch' and measure = 'net_short';
+select pg_temp.ok('a later failed count keeps the last good figures and shows them stale with the error', (select (x->'net_short'->>'known')::boolean and (x->'net_short'->>'stale')::boolean and x->'net_short'->>'count_error' like 'canceling statement%' and x->'net_short'->'added' <> 'null'::jsonb from (select x from jsonb_array_elements(public.admin_layer23('data_delivery')->'streams') x where x->>'stream' = 'sch') q));
 update pipeline.data_delivery_readings set rows = null, error = 'canceling statement due to statement timeout' where stream = 'int' and measure = 'net_short';
 select pg_temp.ok('a count that failed is Unknown with the error, never 0, and the green flag says what it admitted is unknown',
   (select not (x->'net_short'->>'known')::boolean and x->'net_short'->>'reason' like 'Could not be counted: canceling statement%' and x->'net_short'->'added' is null
@@ -127,6 +145,12 @@ select pg_temp.ok('a count that failed is Unknown with the error, never 0, and t
       from (select x from jsonb_array_elements(public.admin_layer23('data_delivery')->'streams') x where x->>'stream' = 'int') q));
 delete from pipeline.data_delivery_readings where stream = 'fee' and measure = 'coverage';
 select pg_temp.ok('a measure never counted says so (not zero)', (select not (x->'coverage'->>'known')::boolean and x->'coverage'->>'reason' like 'Not counted yet%' and x->'coverage'->'n' is null from (select x from jsonb_array_elements(public.admin_layer23('data_delivery')->'streams') x where x->>'stream' = 'fee') q));
+
+-- 9b plain wording of a reason (the bare word "none" is never shown)
+insert into pipeline.lane_funnel_stages(lane, step, key, title, kind, what, count_sql, drill) values ('pdesc', 99, 'tst', 'Link search', 'queued', 'test', 'select ''none'' as reason, 4 as n, null::timestamptz as oldest, null::bigint as gain', 'x');
+insert into pipeline.lane_funnel_readings(lane, stage_key, n, reasons, measured_at) values ('pdesc', 'tst', 6, '[{"n": 4, "gain": null, "oldest": null, "reason": "none"}, {"n": 2, "gain": null, "oldest": null, "reason": "queued"}]'::jsonb, now());
+select pg_temp.ok('a hold reason given a plain wording shows that wording, not the bare state word', (select p->'reasons'->0->>'reason' = 'The search found nothing' and p->'parts'->0->>'title' = 'The search found nothing' and (p->>'n')::int = 4 from (select security.data_delivery_parts_v1('pdesc', array['tst:none=The search found nothing'], 30, 3) p) q));
+delete from pipeline.lane_funnel_readings where stage_key = 'tst'; delete from pipeline.lane_funnel_stages where key = 'tst';
 
 -- 10 gate, read-only, settings
 reset test.rank; set test.rank = '2';

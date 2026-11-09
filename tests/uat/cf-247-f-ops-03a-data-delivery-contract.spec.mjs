@@ -31,7 +31,7 @@ test('the read never writes and the refresh is the only writer; the evaluator of
 })
 
 test('every stream states what it does not measure, and the read returns known=false with a reason rather than a zero', () => {
-  for (const key of ['net_removed', 'speed', 'queue', 'website', 'zoho', 'coverage_total', 'holds_by_cause']) expect(M).toContain(`'${key}'`)
+  for (const key of ['net', 'net_empty', 'net_removed', 'speed', 'queue', 'website', 'website_pending', 'zoho', 'coverage_total', 'holds_by_cause']) expect(M).toContain(`'${key}'`)
   expect(M).toContain("jsonb_build_object('known', false")
   expect(M).toContain('Could not be counted: ')
   expect(M).toContain('Not counted yet')
@@ -62,4 +62,16 @@ test('the database fixture proves behaviour on a scratch database and CI runs it
   expect(WF).toContain('postgres:17.6-alpine')
   expect(WF).toContain('tests/fixtures/fops03a-data-delivery/run.sh')
   expect(WF).toMatch(/^# Guards: /m)
+})
+
+test('no stream shows a count of 0 it did not count: an empty or missing ledger is Unknown, and a failed recount keeps the last good rows', () => {
+  expect(M).toContain("'admitted_known', min(x.since) is not null")
+  expect(M).toContain("'added', case when min(x.since) is not null")
+  // English has no net SELECT (no dated ledger); course descriptions and the removals of fees, entry requirements and links are not separable
+  expect(M).toMatch(/\('eng', 'English entry requirements'[\s\S]*?\$q\$, null, \$q\$/)
+  // a failed count adds the error and when it failed; it never overwrites rows or measured_at
+  expect(M).toMatch(/on conflict \(stream, measure\) do update set took_ms = excluded\.took_ms, error = excluded\.error, failed_at = excluded\.failed_at;/)
+  expect(UI).toContain('data-dd-admitted-unknown')
+  expect(UI).toContain('data-dd-count-error')
+  expect(UI).toContain('READ_TIMEOUT_MS')
 })

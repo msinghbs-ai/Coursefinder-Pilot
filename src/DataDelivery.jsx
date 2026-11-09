@@ -15,6 +15,7 @@ import{Button,Loading,StatusChip,fmtDateTime,fmtNumber,fmtRelative,fmtTimeSecond
 import{plainError}from'./lib/errors'
 import'./data-delivery.css'
 
+const READ_TIMEOUT_MS=20000 // fixed: an API time-out for one read, so a hung request cannot halt the reload loop
 const stampOf=v=>fmtTimeSeconds(v,null)
 const num=x=>x==null?'':fmtNumber(Number(x))
 const hoursText=h=>{const n=Number(h);return n===168?'7 d':n%24===0&&n>=48?`${n/24} d`:`${fmtNumber(n)} h`}
@@ -25,31 +26,39 @@ const FLAG_TONE={warn:'warning',bad:'danger',info:'neutral'}
 
 /** The word shown when a figure is not counted: never 0, never blank, with the reason beside it. */
 function Unknown({reason,word='Not measured'}){return <span className="dd-unknown" data-dd-unknown><em>{word}</em>{reason&&<small title={reason}>{reason}</small>}</span>}
-function Stale({m}){return m?.stale?<StatusChip tone="warning" label="Stale" title={`Counted ${m.age_minutes??'?'} min ago`}/>:null}
+function Stale({m}){
+  if(!m)return null
+  // a failed recount keeps the last good figures: they are shown, marked Stale, with the error beside them (never replaced by 0 or blank)
+  if(m.count_error)return <><StatusChip tone="warning" label="Stale" title={`Last good count ${m.age_minutes??'?'} min ago`}/><small data-dd-count-error title={m.count_error}>The latest count failed ({m.count_error}); these are the last good figures.</small></>
+  return m.stale?<StatusChip tone="warning" label="Stale" title={`Counted ${m.age_minutes??'?'} min ago`}/>:null
+}
 
 function href(screen,filters,extra){return hrefFor(screen,'',Object.fromEntries([...Object.entries(filters||{}).map(([k,v])=>[`f_${k}`,v]),...Object.entries(extra||{}).map(([k,v])=>[`f_${k}`,v])]))}
 
-function Coverage({c,unit,drill}){
+function Coverage({c,unit,note}){
   if(!c?.known)return <Unknown reason={c?.reason} word="Unknown"/>
   const pct=c.pct==null?null:`${fmtNumber(Number(c.pct),{maxDecimals:1})}%`
   return <span data-dd-value={c.n}><strong>{num(c.n)}</strong>{c.total!=null&&<> of {num(c.total)}</>} <small>{unit}</small>
     {pct&&<span className="dd-bar" role="img" aria-label={`${pct} covered`}><i style={{width:`${Math.min(100,Number(c.pct))}%`}}/></span>}
-    <small>{pct?`${pct} covered. `:''}{c.total==null&&<span data-dd-total-unknown title={c.total_reason}>Total not measured: {c.total_reason}. </span>}<Stale m={c}/></small></span>
+    <small>{pct?`${pct} covered. `:''}{note&&<span data-dd-coverage-note>{note} </span>}{c.total==null&&<span data-dd-total-unknown title={c.total_reason}>Total not measured: {c.total_reason}. </span>}<Stale m={c}/></small></span>
 }
-function Net({n,hours}){
+function Net({n,hours,unit}){
   if(!n?.known)return <Unknown reason={n?.reason} word="Unknown"/>
+  // a stream whose ledger holds no dated admission cannot say how many it admitted: Unknown, never a bold 0
+  if(n.admitted_known===false)return <span data-dd-net="unknown" data-dd-admitted-unknown><Unknown reason={n.admitted_reason} word="Unknown"/><Stale m={n}/></span>
   const net=n.net,added=Number(n.added),removed=n.removed==null?null:Number(n.removed)
   const sign=v=>v>0?`+${fmtNumber(v)}`:v<0?`−${fmtNumber(Math.abs(v))}`:'0'
+  const what=unit||'items'
   return <span data-dd-net={net==null?'unknown':net} data-dd-added={added}>
-    {net==null?<><strong>{sign(added)}</strong> <small>admitted</small></>:<strong>{sign(Number(net))}</strong>}
-    <small>{fmtNumber(added)} in{removed==null?'':` · ${fmtNumber(removed)} out`}{removed==null&&<span data-dd-removed-unknown title={n.removed_reason}>; removals not measured: {n.removed_reason}</span>}</small>
+    {net==null?<><strong>{sign(added)}</strong> <small>{what} created</small></>:<strong>{sign(Number(net))}</strong>}
+    <small>{fmtNumber(added)} {what} in{removed==null?'':` · ${fmtNumber(removed)} out`}{removed==null&&<span data-dd-removed-unknown title={n.removed_reason}>; no net: {n.removed_reason}</span>}</small>
     {n.partial&&<small data-dd-partial>{n.since?`Ledger starts ${fmtDateTime(n.since)}`:'No ledger events yet'}, shorter than {hoursText(hours)}</small>}
     <Stale m={n}/></span>
 }
-function Feed({f,drillLinks,note}){
+function Feed({f,drillLinks,unit}){
   if(!f?.known)return <Unknown reason={f?.reason}/>
-  return <span data-dd-value={f.matched}><strong>{num(f.matched)}</strong> <small>of {num(f.expected)} matched</small>
-    <small>{drillLinks.pending?<a href={drillLinks.pending} data-dd-drill="pending">{num(f.pending)} pending</a>:<>{num(f.pending)} pending</>}{' · '}{drillLinks.missing?<a href={drillLinks.missing} data-dd-drill="missing">{num(f.missing)} missing</a>:<>{num(f.missing)} missing</>}{' · '}{num(f.not_applicable)} not applicable</small>
+  return <span data-dd-value={f.matched}><strong>{num(f.matched)}</strong> <small>of {num(f.expected)} {unit||'items'} matched</small>
+    <small>{f.pending==null?<span data-dd-pending-unknown title={f.pending_reason}>pending: not measured</span>:drillLinks.pending?<a href={drillLinks.pending} data-dd-drill="pending">{num(f.pending)} pending</a>:<>{num(f.pending)} pending</>}{' · '}{drillLinks.missing?<a href={drillLinks.missing} data-dd-drill="missing">{num(f.missing)} missing</a>:<>{num(f.missing)} missing</>}{' · '}{num(f.not_applicable)} not applicable</small>
     <Stale m={f}/></span>
 }
 function Parts({p,label}){
@@ -91,11 +100,11 @@ function Stream({s,now,providerFilters,open,onToggle}){
   const feedLink=(side,state)=>dr.screen==='providers'&&dr[side]&&providerFilters?href('providers',{[dr[side].key]:state}):null
   const flags=s.flags||[]
   const cells=[
-    ['coverage','Coverage',<Coverage c={s.coverage} unit={s.unit}/>],
-    ['net_short',`Net ${hoursText(s.net_short?.window_hours)}`,<Net n={s.net_short} hours={s.net_short?.window_hours}/>],
-    ['net_long',`Net ${hoursText(s.net_long?.window_hours)}`,<Net n={s.net_long} hours={s.net_long?.window_hours}/>],
-    ['website','Website',<Feed f={s.website} drillLinks={{pending:feedLink('website','pending'),missing:feedLink('website','missing')}}/>],
-    ['zoho','Zoho',<Feed f={s.zoho} drillLinks={{pending:feedLink('zoho','pending'),missing:feedLink('zoho','missing')}}/>],
+    ['coverage','Coverage',<Coverage c={s.coverage} unit={s.unit} note={dr.coverage_note}/>],
+    ['net_short',`Net ${hoursText(s.net_short?.window_hours)}`,<Net n={s.net_short} hours={s.net_short?.window_hours} unit={s.net_unit}/>],
+    ['net_long',`Net ${hoursText(s.net_long?.window_hours)}`,<Net n={s.net_long} hours={s.net_long?.window_hours} unit={s.net_unit}/>],
+    ['website','Website',<Feed f={s.website} unit={s.consumer_unit} drillLinks={{pending:feedLink('website','pending'),missing:feedLink('website','missing')}}/>],
+    ['zoho','Zoho',<Feed f={s.zoho} unit={s.consumer_unit} drillLinks={{pending:feedLink('zoho','pending'),missing:feedLink('zoho','missing')}}/>],
     ['queue','Queue',<Parts p={s.queue}/>],
     ['holds','Holds and reasons',<Holds h={s.holds}/>],
     ['speed','Speed',<Speed s={s.speed}/>],
@@ -106,21 +115,21 @@ function Stream({s,now,providerFilters,open,onToggle}){
   return <details className="dd-stream" data-dd-stream={s.stream} data-dd-stale={s.stale?'true':'false'} open={open} onToggle={e=>onToggle(e.currentTarget.open)}>
     <summary>
       <div className="dd-name" data-dd-cell="name"><strong>{s.title}</strong>
-        {flags.map(f=><span key={f.code} className={`dd-flag tone-${FLAG_TONE[f.severity]||'neutral'}`} data-dd-flag={f.code} role="status"><span>{f.text}</span>{f.code.startsWith('green')&&<> <a href={lanes} onClick={e=>e.stopPropagation()} data-dd-reasons-link>See reasons</a></>}</span>)}
+        {flags.map(f=><span key={f.code} className={`dd-flag tone-${FLAG_TONE[f.severity]||'neutral'}`} data-dd-flag={f.code} data-dd-queue-empty={f.queue_empty?'true':undefined} role="status"><span>{f.text}</span>{f.code.startsWith('green')&&<> <a href={lanes} onClick={e=>e.stopPropagation()} data-dd-reasons-link>See reasons</a></>}</span>)}
       </div>
       {cells.map(([k,label,node])=><div className="dd-cell" key={k} data-label={label} data-dd-cell={k}>{node}</div>)}
     </summary>
     <div className="dd-body">
       <p><strong>What this stream is.</strong> {s.what}</p>
-      <p><strong>How the net gain is counted.</strong> {s.net_basis||'Not stated.'} Net = admitted minus withdrawn, from the ledger timestamps in the window.</p>
+      <p><strong>How the gain is counted.</strong> {s.net_basis||'Not stated.'}{s.net_short?.removed_known?' Net = admitted minus withdrawn, from the ledger timestamps in the window.':''}</p>
       {(s.coverage?.by_country||[]).length>0&&<table className="cf-table dd-countries"><thead><tr><th>Country</th><th>Covered</th><th>Of</th></tr></thead><tbody>
         {s.coverage.by_country.map(c=><tr key={c.cc}><td data-label="Country">{c.cc}</td><td data-label="Covered">{num(c.n)}</td><td data-label="Of">{c.total==null?'Not measured':num(c.total)}</td></tr>)}</tbody></table>}
       <div className="dd-drill" data-dd-drill-box>
         <strong>Open in the catalogue</strong>
-        {filled&&<a href={filled} data-dd-drill="filled">Filled</a>}{missing&&<a href={missing} data-dd-drill="missing">Missing</a>}
+        {filled&&<a href={filled} data-dd-drill="filled">{dr.filled_label||'Filled'}</a>}{missing&&<a href={missing} data-dd-drill="missing">{dr.missing_label||'Missing'}</a>}
         {dr.screen&&!filled&&!missing&&dr.screen!=='providers'&&<a href={hrefFor(dr.screen)} data-dd-drill="open">Open the list</a>}
         <a href={lanes} data-dd-drill="lane">Reason breakdown</a>
-        {dr.needs_provider_filters&&!providerFilters&&<small data-dd-degraded>Provider Catalogue filters (Filled, Missing, Website and Zoho state) arrive with the Provider Catalogue columns release; these links appear then.</small>}
+        {dr.needs_provider_filters&&!providerFilters&&<small data-dd-degraded>Provider Catalogue filters (Filled, Missing, Website and Zoho state) arrive when the Provider Catalogue columns release is live; these links appear then.</small>}
         {dr.note&&<small data-dd-drill-note>{dr.note}</small>}
       </div>
       <h4 className="sl-h4">Primary jobs</h4>
@@ -139,11 +148,14 @@ export default function DataDelivery({rank=0,onError,client=null}){
   const load=useCallback(async()=>{
     if(inflight.current)return
     inflight.current=true;setBusy(true)
-    try{const{data,error}=await rpc('admin_layer23',{p_action:'data_delivery',p_args:{}});if(error)throw error
+    let timer=null
+    // one hung request must not stop the polling: the read is abandoned after the time-out and the next tick asks again (fixed: an API time-out, not an operating value)
+    const timeout=new Promise((_,no)=>{timer=setTimeout(()=>no(new Error('The read took too long and was stopped; it will be asked again')),READ_TIMEOUT_MS)})
+    try{const{data,error}=await Promise.race([rpc('admin_layer23',{p_action:'data_delivery',p_args:{}}),timeout]);if(error)throw error
       if(!data||!Array.isArray(data.streams))throw new Error('The Data Delivery read returned no streams')
       setD(data);setErr(null);last.current=Date.now()}
     catch(e){const m=plainError(e);setErr({message:m,at:new Date().toISOString()});onError?.(m)}
-    finally{inflight.current=false;setBusy(false);setNow(Date.now())}
+    finally{clearTimeout(timer);inflight.current=false;setBusy(false);setNow(Date.now())}
   },[])
   useEffect(()=>{load()},[])
   const every=Math.max(15,Number(d?.ui_refresh_seconds||60))*1000
@@ -158,7 +170,8 @@ export default function DataDelivery({rank=0,onError,client=null}){
   if(rank<3)return null
   if(!d)return <section className="m-panel dd" data-data-delivery aria-label="Data delivery">{err?<div role="alert" data-dd-error><p>Data delivery could not be read: {err.message}</p><Button compact onClick={load}><RefreshCw size={14}/>Try again</Button></div>:<Loading label="Reading data delivery…"/>}</section>
   const streams=d.streams||[]
-  const flagged=streams.filter(s=>(s.flags||[]).some(f=>f.code.startsWith('green')))
+  const flagged=streams.filter(s=>(s.flags||[]).some(f=>f.code==='green_no_admission'))
+  const unknownAdm=streams.filter(s=>(s.flags||[]).some(f=>f.code==='green_admission_unknown'))
   const failing=streams.filter(s=>(s.flags||[]).some(f=>f.code==='job_failing'))
   const snap=d.snapshot||{}
   const age=snap.oldest_measured_at?Math.round((Date.now()-new Date(snap.oldest_measured_at).getTime())/60000):null
@@ -170,7 +183,7 @@ export default function DataDelivery({rank=0,onError,client=null}){
       {' '}Counts were taken {snap.newest_measured_at?`as recently as ${stampOf(snap.newest_measured_at)}`:'at an unknown time'}{age!=null?`, the oldest ${age} min ago`:''}.
       {Number(snap.failed_measures)>0&&<> <strong>{fmtNumber(snap.failed_measures)} measure(s) could not be counted.</strong></>}</p>
     {err&&<p role="alert" className="dd-stale" data-dd-stale-banner>The last refresh failed at {stampOf(err.at)} (Melbourne): {err.message}. These are the figures read at {stampOf(d.at)}; they may be out of date.</p>}
-    {(flagged.length>0||failing.length>0)&&<p className="dd-summary" data-dd-summary>{flagged.length>0&&<><strong>{flagged.length}</strong> stream{flagged.length===1?'':'s'} ran green but admitted nothing in {hoursText(d.windows?.short_hours)} ({flagged.map(s=>s.title).join(', ')}). </>}{failing.length>0&&<><strong>{failing.length}</strong> with a failed run ({failing.map(s=>s.title).join(', ')}).</>}</p>}
+    {(flagged.length>0||failing.length>0||unknownAdm.length>0)&&<p className="dd-summary" data-dd-summary>{flagged.length>0&&<><strong>{flagged.length}</strong> stream{flagged.length===1?'':'s'} ran green but admitted nothing in {hoursText(d.windows?.short_hours)} ({flagged.map(s=>s.title).join(', ')}). </>}{unknownAdm.length>0&&<><strong>{unknownAdm.length}</strong> ran green with what they admitted unknown ({unknownAdm.map(s=>s.title).join(', ')}). </>}{failing.length>0&&<><strong>{failing.length}</strong> with a failed run ({failing.map(s=>s.title).join(', ')}).</>}</p>}
     <div className="dd-head" aria-hidden="true"><span>Stream</span><span>Coverage</span><span>Net {hoursText(d.windows?.short_hours)}</span><span>Net {hoursText(d.windows?.long_hours)}</span><span>Website</span><span>Zoho</span><span>Queue</span><span>Holds and reasons</span><span>Speed</span><span>Last and next run</span><span>Automatic recovery</span></div>
     <div className="dd-streams">{streams.map(s=><Stream key={s.stream} s={s} now={now} providerFilters={Boolean(d.provider_filters_available)} open={Boolean(open[s.stream])} onToggle={o=>setOpen(x=>({...x,[s.stream]:o}))}/>)}</div>
     <p className="sl-sub">Net = admitted minus withdrawn, from each stream&rsquo;s own ledger timestamps. A job the scheduler reports as OK says nothing about data: the flag shows when it admitted nothing. Reload interval, windows and the number of reasons are settings (Settings &rsaquo; Pipeline settings &rsaquo; Data delivery).</p>

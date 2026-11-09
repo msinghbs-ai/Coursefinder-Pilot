@@ -29,6 +29,13 @@
 .dd .dd-drill{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;margin:8px 0}
 .dd .dd-drill small{flex-basis:100%;color:var(--cf-muted)}
 .dd .lf-frame{overflow-x:auto;max-width:100%}
+/* Tablet and narrow laptop (641 to 1100 px): eleven columns would be unreadable, so each stream becomes a block of labelled cells, three across; the name and its flags take the full width. */
+@media (min-width:641px) and (max-width:1100px){
+  .dd .dd-head{display:none}
+  .dd .dd-stream>summary{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 12px}
+  .dd .dd-stream>summary .dd-name{grid-column:1/-1}
+  .dd .dd-stream>summary .dd-cell::before{content:attr(data-label);display:block;color:var(--cf-muted);font-size:var(--cf-fs-md);font-weight:600;margin-bottom:2px}
+}
 @media (max-width:640px){
   .dd .dd-head{display:none}
   .dd .dd-stream>summary{grid-template-columns:minmax(0,1fr);gap:6px;min-height:44px}
