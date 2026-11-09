@@ -23,6 +23,10 @@ test('G3 approval is recorded on the first line; the gate still refuses without 
   expect(m).not.toMatch(/on condition of API compatibility tests|approved in principle\. Complete/)  // the conditional wording is retired
   expect(m).toContain('9 Nov 2026 19:18 AEDT, in chat: "I approve the Website API R23/R24 consumer contract change in #945')
   expect(m).not.toMatch(/NOT APPROVED|G3 approval PENDING/)
+  // Zoho provider sync items are built from the website items (security.zoho_v2_provider_item_v1), so they change too; the header says so
+  expect(m).toContain('The Zoho PROVIDER SYNC')
+  expect(m).toContain('security.zoho_v2_provider_item_v1 builds each Zoho provider sync item from pipeline.website_sync_items')
+  expect(m).not.toContain('the Zoho sync items and zoho_edge_* are unaffected')
   const gate = m.indexOf("if coalesce(security.pipeline_num_v1('api.v2_r23_r24_approved', 0), 0) <> 1 then")
   expect(gate).toBeGreaterThan(0)
   expect(m).toContain("raise exception 'CF-247 Website API v2 R23/R24 consumer change: setting api.v2_r23_r24_approved is not 1 (no recorded Platform Admin approval): not applied'")
