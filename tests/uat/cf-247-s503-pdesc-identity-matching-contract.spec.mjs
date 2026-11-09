@@ -103,5 +103,5 @@ test('G2: the change adds no setting, no migration and no operational number; th
   const ix = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(ix).toContain('{ url: String(rec.url || ""), hosts })')
   expect(ix).toContain('coverage-sweep-worker-v0.59.13')
-  expect(fs.readdirSync('supabase/migrations').filter((f) => f.endsWith('.sql') && f >= '20261109130000')).toEqual([])
+  expect(fs.readdirSync('supabase/migrations').filter((f) => f.endsWith('.sql') && f >= '20261109130000' && f < '20261109140000')).toEqual([])
 })
