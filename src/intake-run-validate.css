@@ -18,3 +18,10 @@
 .intake-evidence-summary div { display: flex; flex-wrap: wrap; gap: 4px 12px; }
 .intake-evidence-summary dt { font-weight: 600; min-width: 11em; }
 .intake-evidence-summary dd { margin: 0; overflow-wrap: anywhere; }
+
+/* CF-247 F-INT.05 phone acceptance (IQ-00313): on a phone the saved-cohort picker no longer runs past the screen (its option text is long) and the Official source links reach the 24 px touch floor (WCAG 2.2 AA 2.5.8, as S121). Desktop and tablet unchanged. */
+@media (max-width: 600px) {
+  .intake-run > label { display: flex; flex-direction: column; gap: var(--cf-space-2); min-width: 0; }
+  .intake-run > label select { width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; }
+  .intake-run a.cf-link { display: inline-flex; align-items: center; min-height: 24px; }
+}
