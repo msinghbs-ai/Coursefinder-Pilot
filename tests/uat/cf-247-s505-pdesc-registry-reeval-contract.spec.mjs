@@ -32,3 +32,12 @@ test('nothing else changes: no setting, schedule, table, drop or consumer API ob
   expect(body).toMatch(/^-- Retires: nothing/m)
   expect(code).toMatch(/comment on function security\.provider_description_registry_tier_v1\(\)/)
 })
+
+test('the isolated PostgreSQL fixture applies it, checks both body md5s and proves retry (positive) and no retry at an unchanged requirement (negative)', () => {
+  const run = fs.readFileSync('tests/fixtures/pdesc-machine/run.sh', 'utf8')
+  expect(run).toContain('20261109140000_cf247_pdesc_registry_reeval.sql')
+  expect(run).toContain('b14315e77beb36aba6005efbed208b62')
+  expect(run).toContain('1f9cbb77a59ab392a2e59b6aff317adb')
+  const sc = fs.readFileSync('tests/fixtures/pdesc-machine/scenarios.sql', 'utf8')
+  for (const l of ['reeval_min3|', 'reeval_min3_again|', 'reeval_min2|', 'reeval_min2_admitted|', 'reeval_min2_again|']) expect(sc).toContain(l)
+})
