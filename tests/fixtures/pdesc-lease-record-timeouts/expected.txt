@@ -1,0 +1,4 @@
+scope_skip|fixture:provider:1=https://p1.example.edu/about,fixture:provider:3=https://p3.example.edu/about,fixture:provider:4=https://p4.example.edu/about idle=-
+draft_skip|fixture:provider:2=https://p2.example.edu/about,fixture:provider:3=https://p3.example.edu/about,fixture:provider:4=https://p4.example.edu/about,fixture:provider:5=https://p5.example.edu/about idle=-
+setting_limit|fixture:provider:1=https://p1.example.edu/about,fixture:provider:2=https://p2.example.edu/about idle=-
+record_direct|tally={"held": 1, "queued": 1} evidence=1 fixture:provider:1=held/no_about_page/true,fixture:provider:2=queued/retry/false
