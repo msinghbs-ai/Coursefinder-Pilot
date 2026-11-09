@@ -11,8 +11,8 @@ const INFO = {
 }
 // state by position in the page: the same course always gets the same state, so a spec can name it
 export const ORDER = ['source_ready', 'missing', 'held', 'machine_admitted', 'human_decision', 'ai_read']
-function row(id, i) {
-  const state = ORDER[i % ORDER.length]
+function row(id, i, force = null) {
+  const state = force || ORDER[i % ORDER.length]
   const has = ['machine_admitted', 'human_decision'].includes(state)
   const fill_block = has ? 'already_has_description' : state === 'missing' ? 'no_source' : state === 'held' ? 'recent_attempt' : state === 'ai_read' ? 'waiting_for_person' : null
   const recheck_block = has ? 'already_has_description' : state === 'missing' ? 'no_source' : state === 'source_ready' ? 'nothing_to_recheck' : state === 'ai_read' ? 'waiting_for_person' : null
@@ -23,14 +23,20 @@ function row(id, i) {
     human_decision: state === 'human_decision', next_retry_at: state === 'held' ? '2026-12-26T01:00:00Z' : null, fill_block, recheck_block,
     fill_info: INFO[fill_block] || (fill_block ? { label: fill_block, next: '' } : null), recheck_info: INFO[recheck_block] || (recheck_block ? { label: recheck_block, next: '' } : null) }
 }
-export async function mockOnDemand(page, { cap = 20, startError = null, verify = null } = {}) {
+export async function mockOnDemand(page, { cap = 20, startError = null, verify = null, forceState = null, withdraw = null } = {}) {
   const calls = []
   const index = new Map()
   const idx = (id) => { if (!index.has(id)) index.set(id, index.size); return index.get(id) }
   await page.route(BASE + 'admin_course_description_state_v1', async (route) => {
     const b = route.request().postDataJSON() || {}; calls.push({ name: 'state', ...b })
     const ids = b.p_course_ids || []
-    return route.fulfill({ json: { read_at: '2026-11-10T01:00:00Z', machine_ledger: true, recheck_days: 60, courses_per_request: cap, courses: ids.map((id, i) => row(id, idx(id))) } })
+    return route.fulfill({ json: { read_at: '2026-11-10T01:00:00Z', machine_ledger: true, recheck_days: 60, courses_per_request: cap, courses: ids.map((id, i) => row(id, idx(id), forceState)) } })
+  })
+  // public.admin_course_description_machine_withdraw_v1(p_course, p_reason): `withdraw` is the answer ({ ok: true } by default; { ok: false, rule, reason } is a refusal) or { status, message } for an error
+  await page.route(BASE + 'admin_course_description_machine_withdraw_v1', async (route) => {
+    const b = route.request().postDataJSON() || {}; calls.push({ name: 'withdraw', ...b })
+    if (withdraw?.status) return route.fulfill({ status: withdraw.status, json: { code: '42501', message: withdraw.message } })
+    return route.fulfill({ json: withdraw || { ok: true, course_id: b.p_course, admission_id: 'a1', restored: null, withdrawn_by: 'u1' } })
   })
   await page.route(BASE + 'admin_enrich_fields', async (route) => {
     const b = route.request().postDataJSON() || {}; const a = b.p_args || {}

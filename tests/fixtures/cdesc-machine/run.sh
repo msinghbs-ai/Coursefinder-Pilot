@@ -5,7 +5,7 @@
 # cost cap, consumer lag and mismatch, ambiguous binding, hidden provider, idempotence, withdrawal, forward recovery) against production-shaped constraints and triggers.
 # Needs a scratch PostgreSQL 16 (never a Supabase project): PGHOST/PGPORT/PGUSER point at it. Builds the database with the course-description-backpressure harness (production-parity fixture plus 20261106500000,
 # 20261107120000 and 20261108130000), adds the stand-ins in stubs.sql and the live definitions in live/ (each checked against its live body md5, read 10 Nov 2026), then applies the two migrations, each twice.
-# Drops the database at the end (CDM_KEEP=1 keeps it).
+# Then applies 20261110100000 (Data Delivery stage counts) and 20261110100100 (wrong_page_kind) and runs the earlier scenarios again with both in place, then scenarios_visible.sql. Drops the database at the end (CDM_KEEP=1 keeps it).
 set -euo pipefail
 cd "$(dirname "$0")/../../.."
 export LC_ALL=C # fixed: one byte order for sort and comm, whatever the runner's locale
@@ -18,12 +18,12 @@ F=tests/fixtures/cdesc-machine
 q() { psql -X -d "$DB" -Atc "$1"; }
 BASE=$(CDBP_KEEP=1 CDBP_DB=$DB bash tests/fixtures/course-description-backpressure/run.sh 2>&1) || { echo "$BASE" | tail -15; echo "the base harness failed"; exit 1; }
 W=$(mktemp -d)
-cleanup() { local code=$?; trap - EXIT; rm -rf "$W"; if [ -z "${CDM_KEEP:-}" ]; then dropdb --if-exists "$DB" >/dev/null 2>&1 || true; dropdb --if-exists "${DB}_refuse" >/dev/null 2>&1 || true; fi; exit "$code"; }
+cleanup() { local code=$?; trap - EXIT; rm -rf "$W"; if [ -z "${CDM_KEEP:-}" ]; then dropdb --if-exists "$DB" >/dev/null 2>&1 || true; dropdb --if-exists "${DB}_refuse" >/dev/null 2>&1 || true; dropdb --if-exists "${DB}_oldchk" >/dev/null 2>&1 || true; fi; exit "$code"; }
 trap cleanup EXIT
 echo "base: course-description-backpressure harness built the database (production-parity fixture, 20261106500000, 20261107120000, 20261108130000)"
 $P -f $F/stubs.sql
 $P -f $F/seed.sql
-for f in security.pdesc_claim_check_v1 security.pdesc_machine_neutral_supported_v1 security.pdesc_machine_text_check_ctx_v1 security.pdesc_machine_text_check_v1 security.enrich_item_held_v1 security.layer4_pace_v1; do $P -c "set check_function_bodies = off" -f $F/live/$f.sql; done
+for f in security.pdesc_claim_check_v1 security.pdesc_machine_neutral_supported_v1 security.pdesc_machine_text_check_ctx_v1 security.pdesc_machine_text_check_v1 security.enrich_item_held_v1 security.layer4_pace_v1 security.data_delivery_v1; do $P -c "set check_function_bodies = off" -f $F/live/$f.sql; done
 declare -A LIVE=( ['security.pdesc_claim_check_v1(text,text,text)']=5e256534e43073bc32f842bee2e50c98 ['security.pdesc_machine_neutral_supported_v1(text,jsonb)']=8601c0066d7bde714fc753e5ae0ba0db
                   ['security.pdesc_machine_text_check_ctx_v1(uuid,text,text[],jsonb)']=e9a12bc0383e321345fc015f89768042 ['security.pdesc_machine_text_check_v1(uuid,text,text[])']=bafcb58c2ac586829ce4f1b1d2780a44
                   ['security.course_description_check_v1(uuid,jsonb)']=0d3a4cc7811eddaf6bb94307b542cc60 ['security.course_description_check_with_v1(uuid,jsonb,jsonb,jsonb)']=3bb5d62b5e86cd7c76707171e02a3ae5
@@ -32,7 +32,7 @@ declare -A LIVE=( ['security.pdesc_claim_check_v1(text,text,text)']=5e256534e430
                   ['security.pdesc_has_term_v1(text,text)']=2900b13238674e92caa77f8339f81698 ['security.pdesc_support_v1(text,text)']=2065dfd6987b47852d267f5d33dd9056
                   ['security.pdesc_words_v1(text)']=0ca18e0d985cf01902977d992e364815 ['security.pipeline_num_v1(text,numeric)']=cbde6549dbdab8cad5ad961e8278e86c
                   ['security.enrich_course_text_gaps_v1(text[])']=5352bc7ea7bbf3ef00bd616f2897f2f4 ['security.enrich_item_held_v1(uuid,text)']=78c7102adf2804fb536eb2e263264edc
-                  ['security.layer4_pace_v1()']=344a3abad89b63baf9316a5d85f5f8ff ['security.course_description_summary_v1(uuid,boolean)']=8e284898fdc7bda9dcbcc9d85acabace
+                  ['security.layer4_pace_v1()']=344a3abad89b63baf9316a5d85f5f8ff ['security.data_delivery_v1()']=916e015e0cce905c97e17786b4c2ada1 ['security.course_description_summary_v1(uuid,boolean)']=8e284898fdc7bda9dcbcc9d85acabace
                   ['security.course_description_capacity_v1()']=ef83be9476da04995081ac04ab517bf0 ['security.course_description_sample_report_v1()']=5854cf436c26cb814033f58a47e4d33e
                   ['security.course_description_trusted_v1(uuid)']=ae8b327f85f0262b3d0b878010a4af3c )
 for sig in "${!LIVE[@]}"; do
@@ -107,9 +107,47 @@ psql -X -d $RF -q -v ON_ERROR_STOP=1 -1 -f $M2 >/dev/null 2>&1 || { echo "202611
 dropdb --if-exists $RF >/dev/null 2>&1
 echo "applied again with the switch at 1: both post-checks pass and the switch stays at 1"
 
+# 20261110100000 (Data Delivery stage counts) and 20261110100100 (the wrong_page_kind decline): applied here, before the scenarios, so every earlier scenario also runs with them in place.
+# A copy from before them is kept to prove the new regression fails on the old evaluator body.
+M3A=supabase/migrations/20261110100000_cf247_cdesc_visible_results.sql
+M3B=supabase/migrations/20261110100100_cf247_cdesc_wrong_page_kind.sql
+dropdb --if-exists "${DB}_oldchk" >/dev/null 2>&1; createdb -T "$DB" "${DB}_oldchk"
+fnmd5() { psql -X -d "$1" -Atc "select p.oid::regprocedure::text || ' ' || md5(p.prosrc) from pg_proc p where p.oid = '$2'::regprocedure"; }
+# (file, held recovery file, function, live md5, edited md5)
+for row in "$M3A|supabase/held/cdesc_visible_results_forward_recovery.sql|security.data_delivery_v1()|916e015e0cce905c97e17786b4c2ada1|b67bd181c58546076da48e7b5f00a2a4" \
+           "$M3B|supabase/held/cdesc_wrong_page_kind_forward_recovery.sql|security.course_description_machine_check_v1(uuid)|fca43249b1846aae9eae0df7fc83ecb4|3e0fe24d762e7fc4348865ea09499690"; do
+  IFS='|' read -r MIG HELD FN OLDMD NEWMD <<<"$row"
+  snap "$W/p"
+  OUT=$($P -1 -At -f $MIG 2>&1) || { echo "$OUT" | tail -8; exit 1; }
+  snap "$W/q"
+  [ "$(comm -23 "$W/p.fn" "$W/q.fn")" = "$FN $OLDMD" ] || { echo "$MIG changed other functions than $FN:"; comm -23 "$W/p.fn" "$W/q.fn"; exit 1; }
+  [ "$(comm -13 "$W/p.fn" "$W/q.fn" | grep -Fx "$FN $NEWMD")" = "$FN $NEWMD" ] || { echo "$MIG: $FN does not have the md5 the migration states"; comm -13 "$W/p.fn" "$W/q.fn" | grep -F "$FN"; exit 1; }
+  for f in set l4 rd desc l4rows; do cmp -s "$W/p.$f" "$W/q.$f" || { echo "$MIG changed $f"; exit 1; }; done
+  $P -1 -At -f $MIG >/dev/null
+  snap "$W/r"; for f in fn set l4 rd desc l4rows; do cmp -s "$W/q.$f" "$W/r.$f" || { echo "$MIG applied again changed $f"; exit 1; }; done
+  createdb -T "$DB" "$RF"
+  psql -X -d "$RF" -q -v ON_ERROR_STOP=1 -f $HELD >/dev/null || { echo "the forward recovery $HELD failed"; exit 1; }
+  [ "$(fnmd5 "$RF" "$FN")" = "$FN $OLDMD" ] || { echo "$HELD did not restore the live body of $FN"; exit 1; }
+  psql -X -d "$RF" -q -v ON_ERROR_STOP=1 -1 -f $MIG >/dev/null 2>&1 || { echo "$MIG failed after its forward recovery"; exit 1; }
+  [ "$(fnmd5 "$RF" "$FN")" = "$FN $NEWMD" ] || { echo "$MIG did not bring its edit back after the forward recovery"; exit 1; }
+  dropdb --if-exists "$RF" >/dev/null 2>&1
+  echo "$(basename $MIG): only $FN changed ($OLDMD -> $NEWMD); applied again with no change; the held recovery file restores the live body byte for byte and the migration brings the edit back"
+done
+[ "$(psql -X -d "$DB" -Atc "select count(*) from pg_proc where proname = 'data_delivery_cdesc_stages_v1'")" = 1 ] || { echo "the stage counts function is not there exactly once"; exit 1; }
+
 if [ -n "${CDM_KEEP:-}" ]; then dropdb --if-exists "${DB}_pre" >/dev/null 2>&1; createdb -T "$DB" "${DB}_pre"; fi # a copy from before the scenarios, so they can be run again by hand
 OUT=$(psql -X -d "$DB" -v ON_ERROR_STOP=1 -f $F/scenarios.sql 2>&1 | sed -n 's/^.*\(NOTICE\|ERROR\|WARNING\):  /\1 /p') || true
 if echo "$OUT" | grep -E 'FAIL|ERROR'; then echo "cdesc machine scenarios FAILED"; exit 1; fi
 echo "$OUT" | grep -q 'cdm: all' || { echo "the scenarios did not finish"; echo "$OUT" | tail -5; exit 1; }
 echo "$OUT" | sed 's/^NOTICE //'
+# visible results: the page kind decline and the stage counts, on the migrated database; the same checks on the database from before 20261110100000 and 20261110100100 must FAIL the page kind and stage checks (a regression that fails on the old body)
+{ sed -n '5,88p' $F/scenarios.sql; cat $F/scenarios_visible.sql; } > "$W/visible.sql"
+OUT=$(psql -X -d "$DB" -v ON_ERROR_STOP=1 -f "$W/visible.sql" 2>&1 | sed -n 's/^.*\(NOTICE\|ERROR\|WARNING\):  /\1 /p') || true
+if echo "$OUT" | grep -E 'FAIL|ERROR'; then echo "cdesc visible results scenarios FAILED"; exit 1; fi
+echo "$OUT" | grep -q 'cdv: all' || { echo "the visible results scenarios did not finish"; echo "$OUT" | tail -5; exit 1; }
+echo "$OUT" | grep -E '^NOTICE .*\[pass\]' | sed 's/^NOTICE //'
+OLD=$(psql -X -d "${DB}_oldchk" -f "$W/visible.sql" 2>&1 | sed -n 's/^.*\(NOTICE\|ERROR\|WARNING\):  /\1 /p') || true
+echo "$OLD" | grep -q 'page kind' && echo "$OLD" | grep -E '\[FAIL\]' | grep -q 'page kind' || { echo "the page kind regression did not fail on the old evaluator body"; echo "$OLD" | tail -8; exit 1; }
+echo "regression: on the evaluator from before 20261110100100 the page kind checks FAIL ($(echo "$OLD" | grep -c '\[FAIL\]') checks), on the edited body they pass"
+dropdb --if-exists "${DB}_oldchk" >/dev/null 2>&1
 echo "cdesc-machine: done"
