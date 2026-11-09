@@ -829,3 +829,5 @@
 .kd-drawer-fields dt{font-size:var(--cf-fs-xs);color:var(--cf-text-2)}
 .kd-drawer-fields dd{margin:0;min-width:0}
 .au-area-toggle{font:inherit;font-weight:600;color:var(--cf-text)}
+/* CF-247 F-OPS.04 (9 Nov 2026): Operations › API usage on a phone. The six tables sit in a frame that does not scroll, so the keys table (about 1,200 px) ran past a 412 px screen; each frame now scrolls on its own at phone width. */
+@media (max-width:620px){.m-page-stack .dense-table-wrap:has(> table[class*="cf-api-"]){overflow-x:auto;max-width:100%}}
