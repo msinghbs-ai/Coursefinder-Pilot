@@ -12,7 +12,7 @@
 --   2 Providers with no address that is an About page are not asked at all: security.pdesc_about_like_patterns_v1() is the first step of provider_description_stored_v1 (a copy must have an address matching it), as the picker already uses it. A set query finds them (147 ms), the function is asked only about those (52 of 475).
 --   The choice of items, their order, the limit, every check and every setting are unchanged; the reservation protocol, the advisory lock, the AI and Firecrawl ceilings and the 20 minute claim timer are untouched. No statement timeout is changed. The stored copy of an item in a cohort is still the cohort's own evidence, as before.
 -- Live definition this change edits (pg_proc.prosrc md5, read 9 Nov 2026 09:17 UTC), before -> after:
---   public.svc_provider_description_next(integer) cb83dc4e3502d6cc16450c2126368ec9 -> 90275ff3bc7da9989c2a3430b16cb94f
+--   public.svc_provider_description_next(integer) cb83dc4e3502d6cc16450c2126368ec9 -> 2783d0a82e9f472b38b179c07add38ac
 -- Replaces: the three per-row calls of security.provider_description_stored_v1 in public.svc_provider_description_next (recovery update, retry check, identity check) by one pass
 -- Retires: nothing
 -- Nothing is dropped or deleted. No consumer API object is touched (G3).
@@ -51,7 +51,7 @@ begin
   return p_sig || ': applied';
 end $f$;
 
-select pg_temp.edit_all('public.svc_provider_description_next(integer)', 'cb83dc4e3502d6cc16450c2126368ec9', '90275ff3bc7da9989c2a3430b16cb94f',
+select pg_temp.edit_all('public.svc_provider_description_next(integer)', 'cb83dc4e3502d6cc16450c2126368ec9', '2783d0a82e9f472b38b179c07add38ac',
 array[
 $old$v_fc_res int; v_fc_left int;$old$,
 $old$  update pipeline.provider_description_reads r set state='held',rule='recovery_knowledge_unchanged_failure'$old$,
@@ -67,8 +67,9 @@ $new$  -- one pass (9 Nov 2026, lease statement time-out): the stored About copy
   v_ws := security.pdesc_about_like_patterns_v1();
   select coalesce(jsonb_object_agg(z.pid, to_jsonb(z.sid)), '{}'::jsonb) into v_stored from (
     select x.provider_id::text pid, security.provider_description_stored_v1(x.provider_id) sid
-      from (select distinct o.provider_id from pipeline.provider_description_reads o where o.state='queued' or (o.state='reading' and o.leased_until<now())) x
-     where exists (select 1 from pipeline.sources s join pipeline.evidence_artifacts a on a.source_id=s.id where s.provider_id=x.provider_id and lower(a.source_url) like any (v_ws))) z
+      from (select distinct o.provider_id from pipeline.provider_description_reads o where (o.state='queued' or (o.state='reading' and o.leased_until<now()))
+               and exists (select 1 from pipeline.sources s join pipeline.evidence_artifacts a on a.source_id=s.id where s.provider_id=o.provider_id and lower(a.source_url) like any (v_ws))
+             offset 0) x) z -- offset 0 is an optimisation fence: without it the planner moves the not-null test below the DISTINCT and asks stored_v1 for every open read
    where z.sid is not null;
   update pipeline.provider_description_reads r set state='held',rule='recovery_knowledge_unchanged_failure'$new$,
 $new$join pipeline.evidence_artifacts a on a.id=(v_stored->>x.provider_id::text)::uuid$new$,
