@@ -3,6 +3,7 @@ import { Button, Loading, Metric, SectionTitle, StatusChip, fmtDateTime } from '
 import { intakeRunApi } from './intake-run-api'
 import { intakeParity, parityByProvider, PARITY_LABEL } from './intake-parity'
 import { runOutcomeNotice } from './intake-run-outcome'
+import { intakeErrorMessage } from './intake-error-message'
 import { intakeStageTimeline } from './intake-stage-timeline'
 import { summariseEvidence } from './intake-evidence-view'
 import './intake-run-validate.css'
@@ -27,10 +28,7 @@ export default function IntakeRunValidate({ rank = 0, client = intakeRunApi }) {
     if (lock.current) return
     lock.current = true; setBusy(name); setError('')
     try { await fn() } catch (e) {
-      const message = e?.message || 'Request failed. Check access and refresh before continuing.'
-      setError(name === 'Previewing eligible courses' && (e?.code === '57014' || /statement timeout/i.test(message))
-        ? 'Preview timed out before a cohort was fixed. No intake job was started. Ask the operator to check preview performance before trying again.'
-        : message)
+      setError(intakeErrorMessage(name, e))
     }
     finally { lock.current = false; setBusy('') }
   }

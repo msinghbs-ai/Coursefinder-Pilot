@@ -26,6 +26,8 @@ async function mount(page, options = {}) {
       async run(id, reason, key) {
         window.intakeCalls.push({ method: 'run', id, reason, key }); window.runAttempts++
         if (options.unknown && window.runAttempts === 1) throw new Error('Network interrupted')
+        if (options.runDenied) throw Object.assign(new Error('permission denied for function admin_intake_run_now_v1'), { code: '42501' })
+        if (options.runTimeout && window.runAttempts === 1) throw Object.assign(new Error('canceling statement due to statement timeout'), { code: '57014' })
         if (options.noAdmission) return { run_id: 'run-1', state: 'done', processed: 3, admitted: 0, skipped: 3, failed: 0, started_at: '2026-11-04T10:01:00Z', finished_at: '2026-11-04T10:02:00Z' }
         if (options.refused) return { run_id: 'run-1', state: 'refused', refused: 'job is paused' }
         return { run_id: 'run-1', state: 'done', processed: 1, admitted: 1, skipped: 0, failed: 0, started_at: '2026-11-04T10:01:00Z', finished_at: '2026-11-04T10:02:00Z' }
@@ -151,4 +153,26 @@ test('a done job that admitted nothing is flagged and a clean run is not (F-INT.
   await page.getByRole('button', { name: 'Run Now', exact: true }).click()
   await expect(page.getByText('Admitted 1')).toBeVisible()
   await expect(page.getByText('A finished job is not data gain')).toHaveCount(0)
+})
+
+test('a Run Now permission refusal is worded plainly and a second job is not started', async ({ page }) => {
+  await mount(page, { runDenied: true })
+  await page.getByRole('button', { name: 'Preview eligible courses' }).click()
+  await page.getByLabel('Audited reason').fill('Permission refusal check')
+  await page.getByRole('button', { name: 'Fix previewed cohort' }).click()
+  await page.getByRole('button', { name: 'Run Now', exact: true }).click()
+  await expect(page.getByRole('alert')).toContainText('Run Now was refused')
+  expect(await page.evaluate(() => window.runAttempts)).toBe(1)
+})
+
+test('a Run Now timeout leaves the outcome unknown and Recover repeats the same request key', async ({ page }) => {
+  await mount(page, { runTimeout: true })
+  await page.getByRole('button', { name: 'Preview eligible courses' }).click()
+  await page.getByLabel('Audited reason').fill('Timeout recovery check')
+  await page.getByRole('button', { name: 'Fix previewed cohort' }).click()
+  await page.getByRole('button', { name: 'Run Now', exact: true }).click()
+  await expect(page.getByRole('alert')).toContainText('outcome is not known')
+  await page.getByRole('button', { name: 'Recover same request' }).click()
+  const keys = await page.evaluate(() => window.intakeCalls.filter(c => c.method === 'run').map(c => c.key))
+  expect(keys).toEqual(['fixture-key', 'fixture-key'])
 })
