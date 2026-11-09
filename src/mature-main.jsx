@@ -322,7 +322,9 @@ function Page({pageKey,tab,requestedTab='',routeParams,rank,actorId,onError,navi
   const layerNo=/^layer[1-4]$/.test(pageKey)?Number(pageKey.slice(5)):null
   // SS-020 step 2 (Decision 269, 3 Nov 2026): the Layer 2/3 notice strip (about 104 inputs) is drawn on Operations only, not on all its tabs
   const notices=layerNo&&!(pageKey==='layer2'&&tab&&tab!=='operations')
-  return <PageLayout tabs={tabs} active={tab} onTab={onTab} label={`${page.label} sections`}>{notices&&<LayerNotices layer={layerNo}/>}{body}</PageLayout>
+  // F-OPS.03A (Platform Admin 9 Nov 2026): the Data Delivery summary is the FIRST thing on Operations, above the notice strip, so alert cards never push it below the fold
+  const dataFirst=pageKey==='layer2'&&(!tab||tab==='operations')
+  return <PageLayout tabs={tabs} active={tab} onTab={onTab} label={`${page.label} sections`}>{dataFirst&&<DataDelivery rank={rank} onError={err}/>}{notices&&<LayerNotices layer={layerNo}/>}{body}</PageLayout>
   function pageBody(){
     switch(pageKey){
       case'dashboard':return <DashboardHome onError={onError}/>
@@ -375,7 +377,7 @@ function Page({pageKey,tab,requestedTab='',routeParams,rank,actorId,onError,navi
             <LazyFold className="m-panel" data="uni-build-waves" summary={<strong>Build adapter: every university and the waves</strong>}>{()=><BuildAdapter rank={rank} onError={err}/>}</LazyFold>
             <AdaptersWorkspace merged rank={rank} actorId={actorId} onError={err} routeParams={routeParams}/></div>}
         // SS-020 step 4 (Decision 269): Operations takes in Progress (where the universities are, journeys, every hour)
-        return <div className="m-page-stack"><DataDelivery rank={rank} onError={err}/><Layer23Operations rank={rank} actorId={actorId} onError={err}/><LaneFunnels rank={rank} onError={err}/><IntakeRunValidate rank={rank}/><ProcessResults rank={rank}/><section data-operations-progress><Progress routeParams={routeParams} rank={rank} onError={onError}/></section></div>
+        return <div className="m-page-stack"><Layer23Operations rank={rank} actorId={actorId} onError={err}/><LaneFunnels rank={rank} onError={err}/><IntakeRunValidate rank={rank}/><ProcessResults rank={rank}/><section data-operations-progress><Progress routeParams={routeParams} rank={rank} onError={onError}/></section></div>
       // v2.15.252 (Platform Admin, 12 Oct 2026): Layer 3 AI validation and Layer 4 AI send-back tab retired; adapters admit the values.
       // v2.15.253 (Platform Admin, 12 Oct 2026): Flagged values, Fee rules, Attributes, Scholarship publishing and Blocks retired (old addresses redirect in nav-map.js).
       // v2.15.300 (Platform Admin, 20 Oct 2026): Review queue, AI could not decide and Websites to find retired into the Inbox kinds.

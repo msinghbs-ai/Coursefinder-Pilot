@@ -21,7 +21,7 @@ const num=x=>x==null?'':fmtNumber(Number(x))
 const hoursText=h=>{const n=Number(h);return n===168?'7 d':n%24===0&&n>=48?`${n/24} d`:`${fmtNumber(n)} h`}
 const ago=(iso,now)=>iso?fmtRelative(iso,'',now):''
 function until(iso,now){if(!iso)return'';const s=Math.round((new Date(iso).getTime()-now)/1000);if(!(s>-60))return'due now';if(s<60)return'in under a minute';if(s<3600)return`in ${Math.round(s/60)} min`;if(s<86400)return`in ${Math.round(s/3600)} h`;return`in ${Math.round(s/86400)} days`}
-const RECOVERY={healthy:['success','Retrying on schedule'],recovering:['info','Recovering'],needs_attention:['warning','Needs attention'],failing:['danger','Last run failed'],off:['warning','Off'],unknown:['neutral','Unknown']}
+const RECOVERY={healthy:['success','Retrying on schedule'],recovering:['info','Recovering'],needs_attention:['warning','Needs attention'],failing:['danger','Last run failed'],off:['warning','Off'],paused:['warning','Paused'],stalled:['warning','Stalled'],unknown:['neutral','Unknown']}
 const FLAG_TONE={warn:'warning',bad:'danger',info:'neutral'}
 
 /** The word shown when a figure is not counted: never 0, never blank, with the reason beside it. */
@@ -61,18 +61,23 @@ function Feed({f,drillLinks,unit}){
     <small>{f.pending==null?<span data-dd-pending-unknown title={f.pending_reason}>pending: not measured</span>:drillLinks.pending?<a href={drillLinks.pending} data-dd-drill="pending">{num(f.pending)} pending</a>:<>{num(f.pending)} pending</>}{' · '}{drillLinks.missing?<a href={drillLinks.missing} data-dd-drill="missing">{num(f.missing)} missing</a>:<>{num(f.missing)} missing</>}{' · '}{num(f.not_applicable)} not applicable</small>
     <Stale m={f}/></span>
 }
+/** The age of one lane-funnel stage figure: a stalled lane-funnel job must not look current, so a stale or failed stage shows Stale with when it was counted and the error. */
+function PartAge({x}){
+  if(!x||!(x.stale||x.error))return null
+  return <><StatusChip tone="warning" label="Stale" title={x.error||'The stage was not counted recently'}/><small data-dd-part-stale>{x.measured_at?`counted ${fmtDateTime(x.measured_at)} (${ago(x.measured_at,Date.now())})`:'not counted recently'}{x.error?`; the latest count failed (${x.error})`:''}</small></>
+}
 function Parts({p,label}){
   if(!p?.known)return <Unknown reason={p?.reason}/>
   return <span data-dd-value={p.n}><strong>{p.partial?'≥ ':''}{num(p.n)}</strong>
     {p.partial&&<small data-dd-partial>Some stages are not counted</small>}
-    {(p.parts||[]).map(x=><small key={x.stage+x.title} data-dd-part={x.stage}>{x.title} {x.n==null?<em title={x.error||'not counted'}>unknown</em>:num(x.n)}</small>)}
+    {(p.parts||[]).map(x=><small key={x.stage+x.title} data-dd-part={x.stage}>{x.title} {x.n==null?<em title={x.error||'not counted'}>unknown</em>:num(x.n)}<PartAge x={x}/></small>)}
     {p.causes_reason&&<small data-dd-causes-unknown>By cause: {p.causes_reason}</small>}</span>
 }
 function Holds({h}){
   if(!h?.known)return <Unknown reason={h?.reason}/>
   return <span data-dd-value={h.n}><strong>{h.partial?'≥ ':''}{num(h.n)}</strong>
     {h.partial&&<small data-dd-partial>Some stages are not counted</small>}
-    {(h.parts||[]).map(x=><small key={x.stage+x.title}>{x.title} {x.n==null?<em title={x.error||'not counted'}>unknown</em>:num(x.n)}</small>)}
+    {(h.parts||[]).map(x=><small key={x.stage+x.title} data-dd-part={x.stage}>{x.title} {x.n==null?<em title={x.error||'not counted'}>unknown</em>:num(x.n)}<PartAge x={x}/></small>)}
     {(h.reasons||[]).length>0&&<ul className="dd-reasons" data-dd-reasons>{h.reasons.map((r,i)=><li key={i}><span title={r.reason}>{r.reason}</span> <strong>{num(r.n)}</strong></li>)}</ul>}
     {h.causes_reason&&<small data-dd-causes-unknown>By cause: {h.causes_reason}</small>}</span>
 }
@@ -84,6 +89,7 @@ function Runs({j,now}){
   if(!j?.known)return <Unknown reason={j?.reason} word="Unknown"/>
   const bad=j.last_status==='failed'
   return <span data-dd-last={j.last_run_at||''}>
+    {j.history_stale&&<><StatusChip tone="warning" label="Stale" title={j.history_error||'The run history was not summarised recently'}/><small data-dd-history-stale>{j.history_measured_at?`run history counted ${fmtDateTime(j.history_measured_at)}`:'run history not counted yet'}{j.history_error?`; the latest summary failed (${j.history_error})`:''}</small></>}
     <small>Last</small> <strong>{fmtDateTime(j.last_run_at)}</strong> <small>{ago(j.last_run_at,now)}</small> <StatusChip tone={bad?'danger':j.last_status==='succeeded'?'success':'neutral'} label={bad?'Failed':j.last_status==='succeeded'?'OK':String(j.last_status||'').replaceAll('_',' ')||'Unknown'} title={j.last_message||undefined}/>
     <small>Next</small> {j.next_run_at?<><strong data-dd-next={j.next_run_at}>{fmtDateTime(j.next_run_at)}</strong> <small>{until(j.next_run_at,now)}</small></>:<em data-dd-unknown>{Number(j.active)>0?'Unknown':'Not scheduled (paused or off)'}</em>}</span>
 }

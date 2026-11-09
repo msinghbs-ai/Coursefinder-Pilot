@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CF-247 F-OPS.03A Data Delivery (migration 20261109210000) on isolated fixtures. Needs a scratch PostgreSQL 16 (never a Supabase project): PGHOST/PGPORT/PGUSER point at it.
+# CF-247 F-OPS.03A Data Delivery (migration 20261110000100) on isolated fixtures. Needs a scratch PostgreSQL 16 (never a Supabase project): PGHOST/PGPORT/PGUSER point at it.
 # Builds a throwaway database: the lane funnel schema and migration it reuses, schema.sql (the live columns this change reads, stubs marked), the migration, again
 # (idempotent: same rows), fixtures.sql (behaviour). The md5 guard of the admin_layer23 edit is re-pointed at the fixture stub's body; the live md5 was read from the project.
 # Drops the database at the end (DD_KEEP=1 keeps it).
@@ -7,7 +7,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 DB=${DD_DB:-g_fops03a_data_delivery}
 P="psql -v ON_ERROR_STOP=1 -q -X"
-MIG=supabase/migrations/20261109210000_cf247_fops03a_data_delivery.sql
+MIG=supabase/migrations/20261110000100_cf247_fops03a_data_delivery.sql
 TMP=$(mktemp -d); trap 'rm -rf "$TMP"; [ -n "${DD_KEEP:-}" ] || $P -d postgres -c "drop database if exists '$DB'" >/dev/null 2>&1' EXIT
 $P -d postgres -c "drop database if exists $DB" -c "create database $DB" >/dev/null
 $P -d $DB -f tests/fixtures/lane-funnels/schema.sql >/dev/null

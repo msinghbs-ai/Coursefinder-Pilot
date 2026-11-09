@@ -4,7 +4,7 @@
 import { test, expect } from '@playwright/test'
 import { mockAdmin } from './support/admin-mock.mjs'
 import { mockLaneFunnels } from './support/lane-funnel-mock.mjs'
-import { mockDataDelivery } from './support/data-delivery-mock.mjs'
+import { mockDataDelivery, THREE_ALERTS } from './support/data-delivery-mock.mjs'
 
 const PHONE_MAX = 480
 const TAP_MIN = 44
@@ -49,5 +49,26 @@ test.describe('data delivery on a phone @responsive', () => {
     await expect(pd.locator('.dd-body table thead').first()).toBeHidden()
     await expect(pd.locator('.dd-body td[data-label="Job"]').first()).toBeVisible()
     expect(await pageOverflow(page)).toBeLessThanOrEqual(0)
+  })
+
+  test('at 390 px the panel header and the first stream card are inside the first screen, above the three alert cards, and an unknown reason is readable in full without hover', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await mockAdmin(page); await mockLaneFunnels(page); await mockDataDelivery(page)
+    await atPhoneWidth(page)
+    await page.goto('/#layer-2-discovery?tab=operations')
+    await expect(page.locator('[data-dd-stream]').first()).toBeVisible()
+    await expect.poll(() => page.locator(THREE_ALERTS).count()).toBeGreaterThanOrEqual(3)
+    const m = await page.evaluate((sel) => ({ header: document.querySelector('[data-data-delivery] h3').getBoundingClientRect().top, alert: document.querySelector(sel).getBoundingClientRect().top,
+      card: document.querySelector('[data-dd-stream]').getBoundingClientRect().top, vh: window.innerHeight }), THREE_ALERTS)
+    expect(m.header, 'panel header above the first alert card').toBeLessThan(m.alert)
+    expect(m.header, 'panel header inside the first screen').toBeLessThan(m.vh)
+    expect(m.card, 'the first stream card starts inside the first screen').toBeLessThan(m.vh)
+    // a long reason is shown whole: no line clamp, and its box is as tall as its text
+    const eng = page.locator('[data-dd-stream="eng"] [data-dd-cell="net_short"] [data-dd-unknown] small')
+    await eng.scrollIntoViewIfNeeded()
+    await expect(eng).toContainText('would not be true')
+    const r = await eng.evaluate((el) => ({ clamp: getComputedStyle(el).webkitLineClamp, over: el.scrollHeight - el.clientHeight, overflow: getComputedStyle(el).overflow }))
+    expect(r.clamp).toBe('none')
+    expect(r.over).toBeLessThanOrEqual(1)
   })
 })

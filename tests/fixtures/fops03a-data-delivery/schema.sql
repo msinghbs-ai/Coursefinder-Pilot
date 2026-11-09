@@ -1,5 +1,5 @@
 -- CF-247 F-OPS.03A Data Delivery: the minimum of the live schema (columns checked against project fxcwkweaxjtknorudmwp, 9 Nov 2026, read only) that migration
--- 20261109210000 reads, added to the lane funnel fixture schema (tests/fixtures/lane-funnels/schema.sql, applied first, then migration 20261108170000). Stubs are marked STUB.
+-- 20261110000100 reads, added to the lane funnel fixture schema (tests/fixtures/lane-funnels/schema.sql, applied first, then migration 20261108170000). Stubs are marked STUB.
 create schema if not exists ref; create schema if not exists scholarship;
 create table ref.countries (id uuid primary key default gen_random_uuid(), iso_alpha2 text unique);
 alter table catalogue.providers add column if not exists stable_key text, add column if not exists country_id uuid;

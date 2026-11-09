@@ -1,4 +1,4 @@
--- CF-247 F-OPS.03A Data Delivery: behaviour of migration 20261109210000 on isolated fixtures. Each assertion names what it proves.
+-- CF-247 F-OPS.03A Data Delivery: behaviour of migration 20261110000100 on isolated fixtures. Each assertion names what it proves.
 \set ON_ERROR_STOP on
 create temp table t_results(name text);
 create or replace function pg_temp.ok(p_name text, p_cond boolean) returns void language plpgsql as $$ begin
@@ -124,6 +124,17 @@ select pg_temp.ok('a failed run is flagged and recovery says it retries at the n
 select pg_temp.ok('a job with no run in the history window is Unknown with the reason, not "never"', (select not (x->'jobs'->>'known')::boolean and x->'jobs'->>'reason' like 'No run of scholarship-read, scholarship-auto-publish in the last 48 hours%' and x->'jobs'->'last_run_at' = 'null'::jsonb from (select pg_temp.st('sch') x) q));
 select pg_temp.ok('a stream with no primary job found in the scheduler is unknown, and its flag is not green', (select not (x->'jobs'->>'known')::boolean from (select pg_temp.st('aer') x) q));
 
+select pg_temp.ok('a stream whose job ran OK but admitted nothing with work waiting (or an uncounted queue) reads Stalled in the recovery cell, not healthy; with a known-empty queue it stays healthy',
+  (select x->'recovery'->>'state' = case when (select bool_or((f->>'queue_empty')::boolean) from jsonb_array_elements(x->'flags') f where f->>'code' = 'green_no_admission') then 'healthy' else 'stalled' end
+      and (x->'recovery'->>'state' <> 'stalled' or x->'recovery'->>'text' like 'Stalled: the job ran OK 2 time(s) in 24 h but admitted nothing%') from (select pg_temp.st('int') x) q));
+-- a paused primary job: the stream does not read healthy
+update cron.job set active = false where jobname = 'intake-dates-apply';
+select pg_temp.ok('a paused primary job reads Paused and is named in the recovery cell',
+  (select x->'recovery'->>'state' = 'paused' and x->'recovery'->>'text' like 'Paused: intake-dates-apply is paused%' from (select x from jsonb_array_elements(public.admin_layer23('data_delivery')->'streams') x where x->>'stream' = 'int') q));
+select pg_temp.ok('a primary job that is not scheduled at all reads Paused too (scholarships: scholarship-auto-publish has no schedule)',
+  (select x->'recovery'->>'state' = 'paused' and x->'recovery'->>'text' like '%scholarship-auto-publish is not scheduled%' from (select x from jsonb_array_elements(public.admin_layer23('data_delivery')->'streams') x where x->>'stream' = 'sch') q));
+update cron.job set active = true where jobname = 'intake-dates-apply';
+
 -- 8 recovery: open issues, remedy runs, a switch that is off
 insert into pipeline.integration_issues(issue_ref, title, severity, status) values ('IQ-00313', 'Intake dates stalled', 'P1', 'open');
 insert into pipeline.ops_remedy_runs(issue_id, remedy_code, result) select id, 'work_retry_parked', 'acted' from pipeline.integration_issues where issue_ref = 'IQ-00313';
@@ -172,4 +183,25 @@ select pg_temp.ok('and available once admin_providers_page_v3 exists', (select (
 select pg_temp.ok('the answer carries a timezone and a time, and the meaning of unknown', (select d->>'timezone' = 'Australia/Melbourne' and d->>'at' is not null and d->'meaning'->>'unknown' like '%never shown as 0%' from (select public.admin_layer23('data_delivery') d) q));
 create or replace function pg_temp.read_ms() returns numeric language plpgsql as $$ declare t0 timestamptz := clock_timestamp(); x jsonb; begin x := public.admin_layer23('data_delivery'); return extract(epoch from clock_timestamp() - t0) * 1000; end $$;
 select pg_temp.ok('the read answers within the one-second budget on the fixtures (measured, not assumed)', (select pg_temp.read_ms() < 1000));
+-- 11 the panel read does not scan the scheduler history; a failing heavy count backs off; the stale time cannot be shorter than twice the count-again time
+select security.data_delivery_refresh_v1(true);
+delete from cron.job_run_details;
+select pg_temp.ok('the read answers from the summary written by the job: with the scheduler history emptied the last run is still shown', (select x->'jobs'->>'last_run_at' is not null and not (x->'jobs'->>'history_stale')::boolean from (select pg_temp.st('pdesc') x) q) or (select x->'jobs'->>'last_run_at' is not null from (select x from jsonb_array_elements(public.admin_layer23('data_delivery')->'streams') x where x->>'stream' = 'pdesc') q));
+select security.data_delivery_refresh_v1(true);
+select pg_temp.ok('and the next summary reflects the history (now empty: Unknown with the reason, not never)', (select not (x->'jobs'->>'known')::boolean and x->'jobs'->>'reason' like 'No run of provider-description-read in the last 48 hours%' from (select x from jsonb_array_elements(public.admin_layer23('data_delivery')->'streams') x where x->>'stream' = 'pdesc') q));
+truncate pipeline.data_delivery_job_runs;
+select pg_temp.ok('before the first summary the run history is Not counted yet, not "never ran"', (select not (x->'jobs'->>'known')::boolean and x->'jobs'->>'reason' like 'The run history is not counted yet%' from (select x from jsonb_array_elements(public.admin_layer23('data_delivery')->'streams') x where x->>'stream' = 'pdesc') q));
+update pipeline.data_delivery_streams set coverage_sql = 'select 1 / 0 as n' where stream = 'pdesc';
+do $$ begin for i in 1..5 loop perform security.data_delivery_refresh_v1(true); end loop; end $$;
+create temp table t_fail1 as select failed_at from pipeline.data_delivery_readings where stream = 'pdesc' and measure = 'coverage';
+do $$ begin for i in 1..3 loop perform security.data_delivery_refresh_v1(); end loop; end $$;
+select pg_temp.ok('a failed count is not re-run every minute: a normal run leaves it alone until the count-again time has passed', (select r.failed_at = f.failed_at from pipeline.data_delivery_readings r, t_fail1 f where r.stream = 'pdesc' and r.measure = 'coverage'));
+update pipeline.data_delivery_readings set failed_at = now() - interval '11 minutes' where stream = 'pdesc' and measure = 'coverage';
+do $$ begin for i in 1..5 loop perform security.data_delivery_refresh_v1(); end loop; end $$;
+select pg_temp.ok('and it is tried again once that time has passed', (select r.failed_at > now() - interval '1 minute' from pipeline.data_delivery_readings r where r.stream = 'pdesc' and r.measure = 'coverage'));
+update pipeline.data_delivery_streams set coverage_sql = $q$select co.iso_alpha2::text as cc, count(*) filter (where nullif(btrim(p.description), '') is not null) as n, count(*) as total from catalogue.providers p join ref.countries co on co.id = p.country_id where p.lifecycle_status = 'active' group by 1$q$ where stream = 'pdesc';
+select security.data_delivery_refresh_v1(true);
+update pipeline.platform_toolset_settings set value = to_jsonb(5) where key = 'data_delivery.stale_after_minutes';
+select pg_temp.ok('the stale time is never shorter than twice the count-again time (setting 5 min, count-again 10 min: 20 min applies)', (select (public.admin_layer23('data_delivery')->>'stale_after_minutes')::int = 20));
+update pipeline.platform_toolset_settings set value = to_jsonb(30) where key = 'data_delivery.stale_after_minutes';
 select pg_temp.ok('all assertions ran', (select count(*) >= 40 from t_results));

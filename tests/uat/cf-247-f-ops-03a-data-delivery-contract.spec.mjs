@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261109210000_cf247_fops03a_data_delivery.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations/20261110000100_cf247_fops03a_data_delivery.sql', 'utf8')
 const UI = fs.readFileSync('src/DataDelivery.jsx', 'utf8')
 const MAIN = fs.readFileSync('src/mature-main.jsx', 'utf8')
 const FX = fs.readFileSync('tests/fixtures/fops03a-data-delivery/fixtures.sql', 'utf8')
@@ -26,8 +26,11 @@ test('the read never writes and the refresh is the only writer; the evaluator of
   expect(M).toContain('security.lane_funnel_eval_v1(m.sql, m.hours)')
   expect(M).not.toMatch(/create or replace function security\.lane_funnel_eval_v1/)
   expect(M).toMatch(/create or replace function security\.data_delivery_refresh_v1[\s\S]*?security definer/i)
-  // one pass over the scheduler history for all streams: the cron history is read once, outside the stream loop
-  expect((read.match(/cron\.job_run_details/g) || []).length).toBe(1)
+  // the screen's read never scans the scheduler history (577 ms, 82 thousand of 156 thousand rows): job data-delivery summarises it once, in one grouped pass, into pipeline.data_delivery_job_runs
+  expect((read.match(/cron\.job_run_details/g) || []).length).toBe(0)
+  const refresh = M.slice(M.indexOf('create or replace function security.data_delivery_refresh_v1'), M.indexOf('-- 4. helpers for the read'))
+  expect((refresh.match(/from cron\.job_run_details/g) || []).length).toBe(1)
+  expect(read).toContain('pipeline.data_delivery_job_runs')
 })
 
 test('every stream states what it does not measure, and the read returns known=false with a reason rather than a zero', () => {
@@ -49,7 +52,10 @@ test('the refresh interval, the windows and the number of reasons are settings, 
 })
 
 test('it is the first panel on Operations, above the existing panels, and the lane funnels it links to stay', () => {
-  expect(MAIN).toMatch(/<div className="m-page-stack"><DataDelivery rank=\{rank\} onError=\{err\}\/><Layer23Operations/)
+  // above the notice strip (the alert cards), not inside the page stack below it
+  expect(MAIN).toMatch(/\{dataFirst&&<DataDelivery rank=\{rank\} onError=\{err\}\/>\}\{notices&&<LayerNotices/)
+  expect(MAIN).toMatch(/const dataFirst=pageKey==='layer2'&&\(!tab\|\|tab==='operations'\)/)
+  expect(MAIN).not.toMatch(/<div className="m-page-stack"><DataDelivery/)
   expect(MAIN).toContain('<LaneFunnels rank={rank} onError={err}/>')
   expect(MAIN).toContain('function presetOf(')
   expect(MAIN).toMatch(/PRESET_KEYS=\[[^\]]*'hasIntake'[^\]]*'website'[^\]]*'zoho'/)

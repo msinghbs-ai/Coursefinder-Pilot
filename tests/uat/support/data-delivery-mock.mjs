@@ -1,5 +1,5 @@
 // Mocked answer for public.admin_layer23('data_delivery') (F-OPS.03A). The shape follows security.data_delivery_v1 in
-// supabase/migrations/20261109210000_cf247_fops03a_data_delivery.sql. Nothing reaches a real backend.
+// supabase/migrations/20261110000100_cf247_fops03a_data_delivery.sql. Nothing reaches a real backend.
 const ago = (m) => new Date(Date.now() - m * 60000).toISOString()
 const soon = (m) => new Date(Date.now() + m * 60000).toISOString()
 const meta = (m = 3) => ({ measured_at: ago(m), age_minutes: m, stale: false, took_ms: 400 })
@@ -29,7 +29,7 @@ export const STREAMS = [
     queue: { known: true, n: 16174, partial: false, parts: [{ stage: 'selected', title: 'Selected and evaluated', kind: 'eligible', n: 16174 }], reasons: [] },
     holds: { known: true, n: 575, partial: false, parts: [{ stage: 'held', title: 'Held, by cause', kind: 'held', n: 575 }], reasons: [{ reason: 'missing_application_deadline', n: 400, stage: 'Held, by cause' }] },
     speed: { known: true, processed: 589, window_hours: 24, per_hour: 24.5, basis: 'intake date events of every outcome, including skipped and nothing new' },
-    jobs: jobs([job('intake-dates-apply', { runs: 24, succeeded: 24 })], { runs: 24, succeeded: 24 }), recovery: { state: 'healthy', text: 'No open issues; the scheduled job retries on its next run', open_issues: 0, issue_refs: [], remedy_acted: 0, remedy_refused: 0 },
+    jobs: jobs([job('intake-dates-apply', { runs: 24, succeeded: 24 })], { runs: 24, succeeded: 24 }), recovery: { state: 'stalled', text: 'Stalled: the job ran OK 24 time(s) in 24 h but admitted nothing (16174 waiting); it retries on schedule, and nothing is changing', open_issues: 0, issue_refs: [], remedy_acted: 0, remedy_refused: 0 },
     flags: [{ code: 'green_no_admission', severity: 'warn', text: 'Ran OK 24 time(s) in 24 h, admitted nothing; 16174 waiting; top hold: missing_application_deadline' }] },
   { stream: 'eng', title: 'English entry requirements', unit: 'courses', net_unit: 'courses', consumer_unit: 'courses', what: 'University English policies to course English rows.', lane: 'eng', net_basis: 'Layer 4 approvals of course English', stale: false,
     drill: { screen: 'courses', filled: { hasEnglish: 'true' }, missing: { hasEnglish: 'false' }, website: null, zoho: null, needs_provider_filters: false, note: null },
@@ -69,7 +69,7 @@ export const STREAMS = [
     website: { known: true, expected: 1150, matched: 1150, pending: null, pending_reason: 'Scholarship feed items are not compared with the stored scholarship, so pending is not measured.', missing: 0, not_applicable: 0, ...meta() }, zoho: unknown('The Zoho scholarship comparison is not built yet. Follow-up gap.'),
     queue: { known: true, n: 0, partial: false, parts: [], reasons: [] }, holds: { known: true, n: 3, partial: false, parts: [], reasons: [{ reason: 'Waiting for review', n: 3, stage: 'Layer 4' }] },
     speed: { known: true, processed: 8, window_hours: 24, per_hour: 0.3, basis: 'scholarship admission decisions in the window' },
-    jobs: jobs([job('scholarship-read')]), recovery: { state: 'healthy', text: 'No open issues; the scheduled job retries on its next run', open_issues: 0, issue_refs: [], remedy_acted: 0, remedy_refused: 0 }, flags: [] },
+    jobs: jobs([job('scholarship-read', { active: false, next_run: null })]), recovery: { state: 'paused', text: 'Paused: scholarship-read is paused, so that work does not run until it is switched on', open_issues: 0, issue_refs: [], remedy_acted: 0, remedy_refused: 0 }, flags: [] },
 ]
 
 export const DATA_DELIVERY = {
@@ -91,3 +91,6 @@ export async function mockDataDelivery(page, payload = DATA_DELIVERY) {
   })
   return state
 }
+
+/** Three action-needed notice cards above the page body (the default admin mock's Layer 2 notices): the Data Delivery panel must stay above them. */
+export const THREE_ALERTS = '[data-layer-notices] [data-notice]'

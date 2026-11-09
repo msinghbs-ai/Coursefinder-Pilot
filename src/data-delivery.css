@@ -14,7 +14,7 @@
 .dd .dd-name strong{font-size:var(--cf-fs-base)}
 .dd .dd-unknown{display:flex;flex-direction:column;gap:2px}
 .dd .dd-unknown em{font-style:italic;color:var(--cf-muted);font-weight:600}
-.dd .dd-unknown small{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.dd .dd-unknown small{display:block;overflow-wrap:anywhere}  /* the whole reason is readable without hover or a tap */
 .dd .dd-bar{display:block;height:4px;border-radius:2px;background:var(--cf-border);overflow:hidden}
 .dd .dd-bar i{display:block;height:100%;background:var(--cf-success)}
 .dd .dd-flag{display:flex;flex-wrap:wrap;gap:4px;align-items:baseline;padding:3px 6px;border-radius:6px;font-size:var(--cf-fs-md);border:1px solid var(--cf-border)}
@@ -50,3 +50,5 @@
   .dd table.cf-table td{display:flex;justify-content:space-between;gap:12px;border:0;padding:3px 0;text-align:right}
   .dd table.cf-table td::before{content:attr(data-label);color:var(--cf-muted);font-size:var(--cf-fs-md);text-align:left;flex:0 0 38%}
 }
+/* a chip wraps instead of being clipped (the shared chip is one line with an ellipsis) */
+.dd .cf-chip{white-space:normal;overflow:visible;text-overflow:clip;align-self:flex-start}

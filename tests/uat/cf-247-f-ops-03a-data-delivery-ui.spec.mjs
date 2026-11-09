@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import { mockAdmin } from './support/admin-mock.mjs'
 import { mockLaneFunnels } from './support/lane-funnel-mock.mjs'
-import { mockDataDelivery, DATA_DELIVERY } from './support/data-delivery-mock.mjs'
+import { mockDataDelivery, DATA_DELIVERY, THREE_ALERTS } from './support/data-delivery-mock.mjs'
 
 const OPERATIONS = '/#layer-2-discovery?tab=operations'
 async function open(page, payload) {
@@ -21,7 +21,7 @@ test.describe('Data delivery on Operations', () => {
     await open(page)
     const root = page.locator('[data-data-delivery]')
     const first = await page.evaluate(() => { const s = document.querySelector('[data-data-delivery]'); return s?.parentElement?.firstElementChild === s })
-    expect(first, 'Data delivery is the first element of the Operations stack').toBe(true)
+    expect(first, 'Data delivery is the first element of the Operations page body, above the notice strip').toBe(true)
     await expect(root.locator('[data-dd-stream]')).toHaveCount(6)
     const pd = root.locator('[data-dd-stream="pdesc"]')
     for (const c of ['coverage', 'net_short', 'net_long', 'website', 'zoho', 'queue', 'holds', 'speed', 'runs', 'recovery']) await expect(pd.locator(`[data-dd-cell="${c}"]`)).toBeVisible()
@@ -245,6 +245,60 @@ test.describe('Data delivery on Operations', () => {
       expect(m.head, `the eleven-column header is hidden at ${width}px`).toBe('none')
       await page.unrouteAll({ behavior: 'ignoreErrors' })
     }
+  })
+
+  test('it is above the alert cards and inside the first screen at 1280 x 900 with three alert cards shown', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 })
+    await open(page)
+    const alerts = page.locator(THREE_ALERTS)
+    await expect.poll(() => alerts.count()).toBeGreaterThanOrEqual(3)
+    const m = await page.evaluate((sel) => {
+      const h = document.querySelector('[data-data-delivery] h3').getBoundingClientRect()
+      const a = document.querySelector(sel).getBoundingClientRect()
+      const row = document.querySelector('[data-dd-stream]').getBoundingClientRect()
+      return { header: h.top, headerBottom: h.bottom, alert: a.top, row: row.top, rowBottom: row.bottom, vh: window.innerHeight }
+    }, THREE_ALERTS)
+    expect(m.header, 'panel header above the first alert card').toBeLessThan(m.alert)
+    expect(m.headerBottom).toBeLessThan(m.vh)
+    expect(m.row, 'the first stream row starts inside the first screen').toBeLessThan(m.vh - 150)
+  })
+
+  test('queue and hold figures show Stale with when they were counted and the error, so a stalled lane-funnel job cannot look current', async ({ page }) => {
+    const payload = JSON.parse(JSON.stringify(DATA_DELIVERY))
+    const pd = payload.streams.find((x) => x.stream === 'pdesc')
+    const t = new Date(Date.now() - 95 * 60000).toISOString()
+    pd.queue.parts[0] = { ...pd.queue.parts[0], stale: true, measured_at: t, error: null }
+    pd.holds.parts[0] = { ...pd.holds.parts[0], stale: false, measured_at: new Date().toISOString(), error: 'canceling statement due to statement timeout' }
+    await open(page, payload)
+    const q = page.locator('[data-dd-stream="pdesc"] [data-dd-cell="queue"] [data-dd-part="queued"]')
+    await expect(q).toContainText('Stale')
+    await expect(q.locator('[data-dd-part-stale]')).toContainText('counted')
+    const h = page.locator('[data-dd-stream="pdesc"] [data-dd-cell="holds"] [data-dd-part="held"]')
+    await expect(h).toContainText('Stale')
+    await expect(h.locator('[data-dd-part-stale]')).toContainText('the latest count failed (canceling statement due to statement timeout)')
+    await expect(page.locator('[data-dd-stream="pdesc"] [data-dd-cell="queue"] [data-dd-part-stale]')).toHaveCount(1)
+    await expect(page.locator('[data-dd-stream="int"] [data-dd-part-stale]')).toHaveCount(0)
+  })
+
+  test('recovery reads Paused for a paused primary job and Stalled for a job that runs but admits nothing; the chip is not clipped', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 })
+    await open(page)
+    const sch = page.locator('[data-dd-stream="sch"] [data-dd-recovery]')
+    await expect(sch).toHaveAttribute('data-dd-recovery', 'paused')
+    await expect(sch).toContainText('scholarship-read is paused')
+    const int = page.locator('[data-dd-stream="int"] [data-dd-recovery]')
+    await expect(int).toHaveAttribute('data-dd-recovery', 'stalled')
+    await expect(int).toContainText('admitted nothing')
+    const clipped = await page.evaluate(() => [...document.querySelectorAll('[data-dd-recovery] .cf-chip')].filter((c) => c.scrollWidth > c.clientWidth + 1).map((c) => c.textContent))
+    expect(clipped, 'no recovery chip is cut off').toEqual([])
+  })
+
+  test('a stale run history summary (the data-delivery job has not run) is shown on the runs cell', async ({ page }) => {
+    const payload = JSON.parse(JSON.stringify(DATA_DELIVERY))
+    const pd = payload.streams.find((x) => x.stream === 'pdesc')
+    Object.assign(pd.jobs, { history_stale: true, history_measured_at: new Date(Date.now() - 3 * 3600000).toISOString(), history_error: null })
+    await open(page, payload)
+    await expect(page.locator('[data-dd-stream="pdesc"] [data-dd-history-stale]')).toContainText('run history counted')
   })
 
   test('the lane funnels stay below it and a lane link opens that lane', async ({ page }) => {
