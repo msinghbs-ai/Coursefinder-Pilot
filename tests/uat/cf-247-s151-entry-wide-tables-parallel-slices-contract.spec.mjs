@@ -29,7 +29,7 @@ test('narrower tables are given row by row as before', () => {
 test('worker v0.51.0: slices read at the set concurrency, joined in slice order; a cut reply named; gates unchanged', () => {
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   const ai = w.slice(w.indexOf('if (mode === "entry_ai") {'), w.indexOf('if (mode === "fee_ai") {'))
-  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(5[1-9]\.\d+)"/)
+  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.((5[1-9]|[6-9]\d)\.\d+)"/)
   expect(ai).toContain('await pool([...slices.keys()], Math.max(1, Math.min(Number(it.slice_concurrency) || 1, 12)), async (i) => {  // fixed: the setting\'s upper bound (entry.matrix_slice_concurrency)')
   expect(ai).toContain('if (failed) throw failed;')
   expect(ai).toContain('for (const { parsed, nm } of parts) { rows.push(...nm.rows); dropped.push(...parsed.dropped, ...nm.dropped); edition ??= parsed.edition; intake_year ??= parsed.intake_year }')

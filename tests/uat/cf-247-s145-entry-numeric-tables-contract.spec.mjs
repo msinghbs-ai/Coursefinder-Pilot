@@ -41,6 +41,6 @@ test('worker: named only outside the completeness guard, and the read is told so
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(w).toContain('const stored = await storedText(it.storage_path, it.mime, Number(it.pdf_max_pages) || 40, it.completeness_required !== true), page = stored.text;')
   expect(w).toContain('note: stored.pdf ? PDF_NOTE : stored.named ? NAMED_NOTE : undefined }')
-  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(50\.([1-9]|\d{2,})|5[1-9]\.\d+)"/)
+  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(50\.([1-9]|\d{2,})|5[1-9]\.\d+|[6-9]\d\.\d+)"/)
   expect(NAMED_NOTE).toMatch(/quote the whole line/)
 })

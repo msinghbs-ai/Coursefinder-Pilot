@@ -198,7 +198,7 @@ test('page rule (pilot 2 Nov 2026 16:16): only the provider\'s own About or Over
   expect(p).toContain("'max_chars', security.pipeline_num_v1('pdesc.max_chars', 900)::int)")
   expect(lengthNote({ min_sentences: 2, max_sentences: 5, min_chars: 150, max_chars: 900 })).toBe('Length: 2 to 5 sentences, 150 to 900 characters in all (the sentences, not the quotes).\n')
   expect(lengthNote(null)).toBe('')
-  expect(worker).toContain('descriptionRequest(model, String(it.provider || ""), String(rec.url || ""), page, maxTokens, w.length)')
+  expect(worker).toContain('descriptionRequest(model, String(it.provider || ""), String(rec.url || ""), page, maxTokens, w.length, Number(w.verbatim_span_max_chars))')  // v0.60.0 adds the copy limit as a last argument
 })
 
 test('nothing cuts a description (Platform Admin 2 Nov 2026 23:24): the worker keeps every sentence and quote whole', () => {
