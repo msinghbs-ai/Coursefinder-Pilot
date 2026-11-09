@@ -332,6 +332,8 @@ export const DESCRIPTION_WORKER_PROTOCOL = "provider-description-reserve-v1";
 // Worker-side check: only long copied official passages. Numbers and historic context are decided once, evidence-aware, by
 // security.provider_description_validate_v1 (validation 5 Nov 2026, decision 20:03 §2: no keyword- or format-only rejection).
 // Keep the whole answer and quotes; hold it rather than rewriting any sentence to make it pass.
+// v0.60.0: the worker no longer holds the whole answer for a copied sentence (rule verbatim_passage). The same test is made per sentence by
+// security.provider_description_validate_v1, which leaves out a sentence that copies its quote and keeps the sentences that pass every rule.
 export function descriptionClaimCheck(answer: any, maxVerbatimChars?: number): { ok: boolean; rule?: string; reason?: string } {
   if (!Array.isArray(answer?.sentences)) return { ok: false, rule: "invalid_answer", reason: "The answer has no sentence array." };
   if (maxVerbatimChars !== undefined && (!Number.isInteger(maxVerbatimChars) || maxVerbatimChars < 1)) return { ok: false, rule: "invalid_verbatim_limit", reason: "The governed quotation-copy limit is unavailable." };
@@ -377,9 +379,15 @@ export function descriptionCostQuote(request: any, catalogue: any): { ok: false;
   return { ok: true, model, max_cost_usd: Math.ceil(maximum * precision) / precision, input_tokens_bound: input, output_tokens_bound: output, pricing: rates, provider_max_price: maxPrice };
 }
 
+// v0.60.0 (10 Nov 2026, CF-247 F-PDESC delivery): 94 reads, 2 admitted. The model copied its quote into the sentence (verbatim_passage, 51 holds) or added a point the quote does not state
+// (unsupported_sentence, unsupported_claim, 17 holds), and one such sentence held a proposal whose other sentences were fully supported. The prompt now asks for one short paraphrase per
+// quote, in the quote's own key words, with nothing added; the database (security.provider_description_validate_v1, drop_failing) leaves a sentence out that still fails and keeps the rest.
 export const DESCRIPTION_SYSTEM =
   "You write a short description of one university or education provider for prospective students, using only what the provider's own official page states. " +
-  "Give 2 to 5 sentences. Each sentence is a plain, factual paraphrase of one passage of the page, and for each sentence you give that passage's exact words as its quote, copied character for character from the page text. " +
+  "Give 2 to 5 sentences. Each sentence is one short, plain, factual paraphrase of one passage of the page, and for each sentence you give that passage's exact words as its quote, copied character for character from the page text. " +
+  "The quote is the shortest exact passage (one clause or one sentence) that states the point, and one quote supports one sentence only: never join two passages in one sentence. " +
+  "Write the sentence in your own words and make it shorter than its quote: keep the quote's key nouns and verbs, leave out its extra clauses, and never copy a long run of the quote word for word. " +
+  "Say only what the quote states. Add no aim, mission, motive, value or benefit that is not in it (for example dedicated to, committed to, aims to, so that students thrive). If a point needs more than the quote says, leave the point out: fewer sentences that the quotes fully support are better than one sentence that goes beyond its quote. " +
   "Do not state rankings, ratings, awards, facilities, employment or graduate outcomes, accreditations, student or staff numbers, or comparisons with other institutions unless the quoted words state them. " +
   "Do not use superlatives or marketing words (best, leading, world-class, top, renowned, prestigious, excellent) unless they are inside the quote. " +
   "Do not use anything you know about the provider from elsewhere. Write in Australian English, third person, present tense. " +
@@ -401,11 +409,16 @@ export function lengthNote(l: DescriptionLength | null | undefined): string {
   if (!s2 && !c2) return "";
   return `Length: ${s1 && s2 ? `${s1} to ${s2} sentences` : s2 ? `at most ${s2} sentences` : ""}${s2 && c2 ? ", " : ""}${c1 && c2 ? `${c1} to ${c2} characters in all (the sentences, not the quotes)` : c2 ? `at most ${c2} characters in all` : ""}.\n`;
 }
-export function descriptionRequest(model: string, provider: string, url: string, page: string, maxTokens: number, length?: DescriptionLength) {
+// the copy limit the database applies (setting pdesc.verbatim_span_max_chars, sent by the lease as verbatim_span_max_chars), stated to the model
+export function copyNote(maxVerbatimChars: number | null | undefined): string {
+  const n = Number.isInteger(Number(maxVerbatimChars)) && Number(maxVerbatimChars) > 0 ? Number(maxVerbatimChars) : null;
+  return n ? `Copy limit: keep each sentence short (under ${n} characters) and never repeat ${n} or more characters in a row from its quote.\n` : "";
+}
+export function descriptionRequest(model: string, provider: string, url: string, page: string, maxTokens: number, length?: DescriptionLength, maxVerbatimChars?: number) {
   return {
     model, temperature: 0, max_tokens: maxTokens, provider: { require_parameters: true },  // pinned: one model, never a router
     response_format: { type: "json_schema", json_schema: { name: "provider_description", strict: true, schema: DESCRIPTION_SCHEMA } },
-    messages: [{ role: "system", content: DESCRIPTION_SYSTEM }, { role: "user", content: `Provider: ${provider}\nPage: ${url}\n${lengthNote(length)}\nPage text:\n${page}` }],
+    messages: [{ role: "system", content: DESCRIPTION_SYSTEM }, { role: "user", content: `Provider: ${provider}\nPage: ${url}\n${lengthNote(length)}${copyNote(maxVerbatimChars)}\nPage text:\n${page}` }],
   };
 }
 
