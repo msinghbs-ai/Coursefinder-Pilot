@@ -14,11 +14,16 @@ manual_lock_wins|manual_lock
 setting_empty_parked|unchanged_unsuitable_evidence
 setting_narrowed|eligible|unchanged_unsuitable_evidence
 judged_again_parked|unchanged_unsuitable_evidence
-v10_over_v9|provider-description-source-guard-v10|eligible|unchanged_unsuitable_evidence
-sig_reader_v1|provider-description-source-guard-v1
-sig_changes_with_reader|true|provider-description-source-guard-v2
-sig_stable_within_reader|true
-retry_old_signature|false
-retry_new_signature|true
-grants|false|false
+new_stamp_current|provider-description-source-guard-v10
+old_row_touched_unchanged|provider-description-source-guard-v10
+prefix_rename_current|identity-reader-2027-a
+rolled_back_current|provider-description-source-guard-v2
+update_changing_stamp_current|provider-description-source-guard-v3
+reader_state_rows|1
+sig_independent_of_reader|true
+lease_reoffer|p2,p5,p6,p8
+lease_blocked|p3=held:recovery_knowledge_unchanged_failure,p4=held:recovery_knowledge_unchanged_failure,p7=held:recovery_knowledge_unchanged_failure
+lease_setting_empty|p8
+lease_rolled_back_reader|p3,p6,p8
+grants|false|false|false|false
 setting|["provider_name_conflict", "provider_name_not_proved", "provider_subunit_source"]|list|rules|Provider descriptions|true|true
