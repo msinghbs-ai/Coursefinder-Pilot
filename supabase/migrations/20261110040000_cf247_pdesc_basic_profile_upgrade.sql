@@ -1,10 +1,10 @@
 -- CF-247 F-PDESC P0 (Platform Admin directive, 9 Nov 2026: unique, source-backed university descriptions): an admitted register-fact ("basic") description no longer takes the provider out of source-backed enrichment.
 --
 -- What was wrong (project fxcwkweaxjtknorudmwp, SELECT only, 9 and 10 Nov 2026):
---   * 893 providers hold a register-fact profile (rule registry_factual, worker registry-factual-v1, machine admission tier registry_factual). Every gate of the source-backed reader treated that profile as "the provider already has a description":
+--   * About 910 providers hold (912 on 10 Nov 2026) a register-fact profile (rule registry_factual, worker registry-factual-v1, machine admission tier registry_factual). Every gate of the source-backed reader treated that profile as "the provider already has a description":
 --     the automatic queue pre-filter (provider_description_selection_v1: description is null), the selection (description_current), the machine block (provider_description_machine_blocked_v1: description_already_held),
 --     the machine admission (provider_description_machine_admit_v1: before_value_not_empty, description_already_held) and the lease pick (svc_provider_description_next: description is null). A profile therefore was the end of the road.
---   * 285 of those providers have a website and 152 have stored pages (AU 86, NZ 63, CA 3): official evidence that could make a richer, source-backed description exists for them and could not be used.
+--   * 304 of those providers have a website and 184 have a stored About page (10 Nov 2026): official evidence that could make a source-backed description exists for them and could not be used.
 --   * Separate fault found while diagnosing the queue (see the next block): a queued read whose provider cannot pass the identity test (no website, or another provider holds the host) was neither read nor held. It stayed queued for ever, and the registry
 --     tier never took the provider because the tier skips a provider with a queued read.
 --
@@ -22,20 +22,23 @@
 --   4 security.provider_description_machine_admit_v1: an item whose before text is the provider's current profile may be admitted when its tier is a source tier (stored, direct, firecrawl), the text differs from the profile, and it has at least pdesc.min_sentences
 --     quote-verified sentences (the same quote, identity and lineage checks, proved again at admission, and the same machine text gate). The profile admission is closed (withdrawn_reason "Upgraded ...", never deleted), the profile read becomes superseded (existing line),
 --     the new admission records before_description = the profile text and checks.upgrade (prior admission and read, source address and hash, evidence, sentence count). Withdrawing the new admission restores the profile text (existing withdraw route).
---   5 security.provider_description_selection_v1: with the new argument upgrade = true (only while the setting is on and only for the automatic queue) the pre-filter lists providers that hold a profile and have a website or a stored About page, without queued/reading/proposed work; the profile is not "description_current". The revisit is the existing one (same-evidence parking, retry_wait for pdesc.recheck_days unless the stored page changed). Every other eligibility test (scope, lock, identity of the stored page, recovery memory) is the one the missing-description list uses.
+--   5 security.provider_description_selection_v1: with the new argument upgrade = true (only while the setting is on and only for the automatic queue) the pre-filter lists providers that hold a profile and have a website or a stored About page, without queued/reading/proposed work; the profile is not "description_current". The revisit is the existing one (same-evidence parking, retry_wait for pdesc.recheck_days unless the stored page changed, or the read was held by the identity hold and the provider now passes the identity test). Every other eligibility test (scope, lock, identity of the stored page, recovery memory) is the one the missing-description list uses.
 --   6 security.provider_description_enqueue_v1: after the missing-description queue, up to pdesc.queue_per_run upgrade reads are queued (only while pdesc.registry_upgrade_on = 1, and not while pdesc.queue_cap or more reads already wait). A provider with a lock, rejection, withdrawal or edited text is never selected.
---   7 public.svc_provider_description_next: the lease pick accepts a queued read of a provider that holds a profile (same condition), and up to batch.provider_description of the oldest due queued reads of ACTIVE, PUBLISHED providers are tested for identity first (a draft or inactive provider is skipped as before): a read that fails is HELD with the identity rule and reason
---     (wrong_host and no_website are rules the register-fact tier takes; provider_host_conflict waits for a person to resolve the duplicate host) instead of waiting unseen. Not applied to a Run Now cohort.
+--   7 public.svc_provider_description_next: the lease pick accepts a queued read of a provider that holds a profile (same condition). Identity hold: after the stored About copies are found (once, in v_stored, so no second lookup), up to batch.provider_description due queued reads of ACTIVE, PUBLISHED providers are tested for identity,
+--     the ones tested longest ago first (each tested read is marked checks.identity_checked_at, so the same oldest reads are not tested on every call). ONLY the outcomes wrong_host (this includes a provider with no website) and provider_host_conflict hold the read, with the identity rule and reason and the mark checks.identity_hold.
+--     Every other outcome (provider_inactive, a lifecycle hold, an open identity finding) leaves the read queued, as before. wrong_host is taken by the register-fact tier (pdesc.registry_after_rules); provider_host_conflict waits for a person to resolve the duplicate host. Not applied to a Run Now cohort.
+--     Measured on live (read only, 10 Nov 2026): the identity test of 10 queued reads takes about 50 ms; the stored About copy lookup that 20261109233000 removed from the per-row path is not repeated.
+--   8 Re-offer after a correction (no new setting): public.svc_provider_description_next marks the read it holds (checks.identity_hold), and provider_description_selection_v1 does not park such a read in retry_wait once the provider passes the identity test again (website or host corrected). pdesc.recheck_days therefore never delays a corrected provider.
 --   Free sources first: the lease and worker are unchanged (stored About evidence first, then a direct read; Firecrawl only up to pdesc.firecrawl_reads_max, which is used up, so none). No ceiling is changed. No word list is changed.
---   Quality bar (what "richer" means here): every sentence of the new text quotes the official page (validated, proved again at admission), identity and lineage are clear, the machine text gate passes, and the text has at least pdesc.min_sentences sentences. There is no numeric richness score.
+--   What is enforced for an upgrade (there is no richness score): every sentence of the new text quotes the official page (validated, proved again at admission), identity and lineage are clear, the same machine text gate as a first description passes, the text has at least pdesc.min_sentences sentences, and it differs from the profile. Anything else is a person's call in Layer 4.
 --   A text the machine rule declines for a word (for example "campus") waits in Layer 4 for a person (pdesc.machine_pending_max) with the profile as the before text; nothing is published until a person decides.
 --
 -- Live definitions this change edits (pg_proc.prosrc md5, read 9 Nov 2026 UTC, project fxcwkweaxjtknorudmwp), before -> after:
 --   security.provider_description_machine_blocked_v1(uuid) 46634e38c0469cbcbd6c23158dfadc94 -> e23fa20639a882233ad07c44299de4c0
---   security.provider_description_machine_admit_v1(uuid) 5decbd99c8ecd5e0b072d22ed6f68962 -> af12eeb05ee313b9f9543f6176eeab25
---   security.provider_description_selection_v1(jsonb) 04acb9419b9965b5d6aab420059c7e84 -> 29c99ddfe50791de28a150978c709872
+--   security.provider_description_machine_admit_v1(uuid) 5decbd99c8ecd5e0b072d22ed6f68962 -> dedf28930cc7a12ad31570dec0d2f334
+--   security.provider_description_selection_v1(jsonb) 04acb9419b9965b5d6aab420059c7e84 -> 41c9e5ffaba74453c699fd84e9135648
 --   security.provider_description_enqueue_v1() 803478538da3dd9594ba08be38284c3e -> e97170e51cb27dee62db0cef3e07bb43
---   public.svc_provider_description_next(integer) 7583808609dc2dea1d3fc251607405a1 -> 34d7c83ffa3ba81107a1b7a4bc176f4f
+--   public.svc_provider_description_next(integer) 7583808609dc2dea1d3fc251607405a1 -> 504678d725b0131785f7e3541a6c3695
 -- Each edit is guarded by the md5 of the live body: if a function differs, the migration raises and nothing is applied; applying it again changes nothing.
 -- Forward recovery (md5 back to the text above, byte for byte): supabase/held/pdesc_basic_profile_upgrade_forward_recovery.sql.
 -- Consumer API (G3): nothing in public.website_v2_*, website_edge_*, website_api_v2_*, zoho_edge_*, svc_website_settings_v1, schema api or the five edge functions is read, changed, dropped or renamed. Consumer API change approved: not applicable (no change).
@@ -76,7 +79,7 @@ end $f$;
 -- ----------------------------------------------------------------------------------------------------------------------------------------- settings (G2: label, range, unit and used_by; changed on Settings with a reason)
 insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, section, used_by, reason) values
  ('pipeline', 'pdesc.registry_upgrade_on', 'Provider descriptions: upgrade a register-fact profile from a verified official page',
-  'On: a provider whose description is the automatic register-fact profile stays eligible for source-backed enrichment. When the reader finds an official About page and every sentence of the new text quotes it, the machine rule may replace the profile with the source-backed text (the profile is kept as the earlier version in the admission record and can be restored by withdrawing). Off: a profile is a description already held, as before. A lock, an earlier rejection, a withdrawal or a text changed by hand always keeps the provider out.',
+  'On: a provider whose description is the automatic register-fact profile stays eligible for source-backed enrichment. The machine rule may replace the profile only when the new text differs from it, has at least the minimum number of sentences (pdesc.min_sentences), every sentence quotes the provider''s official page (checked again at admission) and it passes the same machine text rules as a first description. Anything else waits for a person in Layer 4. The profile is kept as the earlier version in the admission record and is restored by withdrawing. Off: a profile is a description already held, as before. A lock, an earlier rejection, a withdrawal or a text changed by hand always keeps the provider out.',
   'number', to_jsonb(0), 0, 1, 'on/off', 1030, 'Provider descriptions', 'security.provider_description_basic_profile_v1; machine_blocked_v1; machine_admit_v1; selection_v1; enqueue_v1; svc_provider_description_next',
   'CF-247 F-PDESC P0 (Platform Admin directive, 9 Nov 2026): unique, source-backed university descriptions. Created OFF; switched on by the Platform Admin or the release controller')
 on conflict (toolset_key, key) do nothing;
@@ -109,7 +112,7 @@ $new$if nullif(btrim(p.description), '') is not null and security.provider_descr
 $new$if nullif(btrim(p.description), '') is null and exists (select 1 from pipeline.provider_description_machine_admissions a where a.provider_id = p.id and a.outcome = 'admitted' and a.withdrawn_at is null) then$new$,
 $new$and a.withdrawn_at is not null and coalesce(a.withdrawn_reason, '') not like 'Upgraded to a source-verified description%'$new$]);
 
-select pg_temp.edit_all('security.provider_description_machine_admit_v1(uuid)', '5decbd99c8ecd5e0b072d22ed6f68962', 'af12eeb05ee313b9f9543f6176eeab25',
+select pg_temp.edit_all('security.provider_description_machine_admit_v1(uuid)', '5decbd99c8ecd5e0b072d22ed6f68962', 'dedf28930cc7a12ad31570dec0d2f334',
 array[
 $old$v_url text; v_hash text; v_reason text; v_decline text;
 begin$old$,
@@ -128,7 +131,7 @@ $new$  v_decline := null;
   v_basic := security.provider_description_basic_profile_v1(i.entity_id);
   v_upg := v_basic is not null and v_tier in ('stored', 'direct', 'firecrawl') and btrim(coalesce(i.before_value->>'description', '')) = btrim(v_basic->>'text');
   if v_read.id is null then v_decline := 'no_proposed_read';$new$,
-$new$if v_decline is null and v_upg and (jsonb_array_length(coalesce(i.proposed_value->'sentences', '[]'::jsonb)) < security.pipeline_num_v1('pdesc.min_sentences', 2) or v_text = btrim(v_basic->>'text')) then v_decline := 'upgrade_not_richer'; end if;
+$new$if v_decline is null and v_upg and (jsonb_array_length(coalesce(i.proposed_value->'sentences', '[]'::jsonb)) < security.pipeline_num_v1('pdesc.min_sentences', 2) or v_text = btrim(v_basic->>'text')) then v_decline := 'upgrade_too_short_or_unchanged'; end if;
   if v_decline is null and not v_upg and i.before_value->>'description' is not null and nullif(btrim(i.before_value->>'description'), '') is not null then v_decline := 'before_value_not_empty'; end if;$new$,
 $new$if v_now is not null and not (v_upg and v_now = btrim(v_basic->>'text')) then v_decline := 'description_already_held'; end if;$new$,
 $new$if v_upg then
@@ -146,12 +149,13 @@ $new$if v_upg then
   end if;
   return jsonb_build_object('ok', true, 'provider_id', i.entity_id, 'tier', v_tier,$new$]);
 
-select pg_temp.edit_all('security.provider_description_selection_v1(jsonb)', '04acb9419b9965b5d6aab420059c7e84', '29c99ddfe50791de28a150978c709872',
+select pg_temp.edit_all('security.provider_description_selection_v1(jsonb)', '04acb9419b9965b5d6aab420059c7e84', '41c9e5ffaba74453c699fd84e9135648',
 array[
 $old$v_idr jsonb:=coalesce(security.toolset_setting('pipeline','pdesc.identity_reeval_rules'),'[]'::jsonb);$old$,
 $old$and security.provider_description_scope_v1(p.id) and nullif(btrim(p.description),'') is null and p.publication_status='published'$old$,
 $old$and not exists(select 1 from pipeline.provider_description_reads x where x.provider_id=p.id and x.state in ('queued','reading','proposed'))$old$,
-$old$when r.state in ('admitted','verified') and nullif(btrim(p.description),'') is not null and coalesce(r.last_verified_at,r.updated_at)>now()-make_interval(days=>security.pipeline_num_v1('pdesc.recheck_days',180)::int) then 'description_current'$old$],
+$old$when r.state in ('admitted','verified') and nullif(btrim(p.description),'') is not null and coalesce(r.last_verified_at,r.updated_at)>now()-make_interval(days=>security.pipeline_num_v1('pdesc.recheck_days',180)::int) then 'description_current'$old$,
+$old$is distinct from coalesce(v_cur,'')) then 'retry_wait'$old$],
 array[
 $new$v_idr jsonb:=coalesce(security.toolset_setting('pipeline','pdesc.identity_reeval_rules'),'[]'::jsonb);
  -- upgrade mode (pdesc.registry_upgrade_on, argument upgrade): the list is the providers that hold a register-fact profile, not the providers with no description
@@ -159,7 +163,8 @@ $new$v_idr jsonb:=coalesce(security.toolset_setting('pipeline','pdesc.identity_r
 $new$and security.provider_description_scope_v1(p.id) and case when v_upg then security.provider_description_basic_profile_v1(p.id) is not null else nullif(btrim(p.description),'') is null end and p.publication_status='published'$new$,
 $new$and not exists(select 1 from pipeline.provider_description_reads x where x.provider_id=p.id and x.state in ('queued','reading','proposed'))
     and (not v_upg or ((nullif(btrim(p.website),'') is not null or security.provider_description_stored_candidate_v1(p.id,v_pat))))$new$,
-$new$when r.state in ('admitted','verified') and nullif(btrim(p.description),'') is not null and coalesce(r.last_verified_at,r.updated_at)>now()-make_interval(days=>security.pipeline_num_v1('pdesc.recheck_days',180)::int) and not (v_upg and security.provider_description_basic_profile_v1(p.id) is not null) then 'description_current'$new$]);
+$new$when r.state in ('admitted','verified') and nullif(btrim(p.description),'') is not null and coalesce(r.last_verified_at,r.updated_at)>now()-make_interval(days=>security.pipeline_num_v1('pdesc.recheck_days',180)::int) and not (v_upg and security.provider_description_basic_profile_v1(p.id) is not null) then 'description_current'$new$,
+$new$is distinct from coalesce(v_cur,'')) and not (r.state='held' and coalesce(r.checks ? 'identity_hold',false) and coalesce((security.provider_description_identity_v1(p.id,coalesce(a.source_url,p.website))->>'ok')::boolean,false)) then 'retry_wait'$new$]);
 
 select pg_temp.edit_all('security.provider_description_enqueue_v1()', '803478538da3dd9594ba08be38284c3e', 'e97170e51cb27dee62db0cef3e07bb43',
 array[
@@ -182,20 +187,23 @@ $new$  end loop;
   end if;
   return v_n;$new$]);
 
-select pg_temp.edit_all('public.svc_provider_description_next(integer)', '7583808609dc2dea1d3fc251607405a1', '34d7c83ffa3ba81107a1b7a4bc176f4f',
+select pg_temp.edit_all('public.svc_provider_description_next(integer)', '7583808609dc2dea1d3fc251607405a1', '504678d725b0131785f7e3541a6c3695',
 array[
-$old$-- one pass (9 Nov 2026, lease statement time-out)$old$,
+$old$-- identity re-offer (9 Nov 2026): a provider whose latest finished read was held$old$,
 $old$own.state in ('admitted','verified'))))$old$],
 array[
-$new$-- identity hold (10 Nov 2026): the oldest due queued reads are tested for the provider identity first. A read whose provider cannot pass (no website, another provider holds the host) is held with the identity rule instead of being skipped on every call without a word;
-  -- wrong_host and no_website are taken by the register-fact tier, provider_host_conflict waits for a person. Not for a Run Now cohort (the job guard holds those).
+$new$-- identity hold (10 Nov 2026): due queued reads are tested for the provider identity, the ones tested longest ago first (each tested read is marked checks.identity_checked_at, so the same oldest reads are not tested on every call). The stored About copy is read from v_stored (found once, above).
+  -- Only wrong_host (a provider with no website gives this too) and provider_host_conflict hold the read, with the identity rule and reason and the mark checks.identity_hold: the selection offers such a read again as soon as the provider passes (website or host corrected).
+  -- Any other outcome (provider_inactive, a lifecycle hold, an open identity finding) leaves the read queued as before. wrong_host is taken by the register-fact tier; provider_host_conflict waits for a person. Not for a Run Now cohort (the job guard holds those).
   if v_mach and nullif(current_setting('cf.pdesc_cohort',true),'') is null and security.pipeline_num_v1('batch.provider_description', 3) >= 1 then
-    update pipeline.provider_description_reads r set state='held',rule=h.idr,reason=left(h.why,400),leased_until=null,updated_at=now() -- fixed: the stored reason shows its first 400 characters
-      from (select o.id, i.v->>'rule' idr, i.v->>'reason' why
-              from (select x.id, x.provider_id from pipeline.provider_description_reads x join catalogue.providers pp on pp.id=x.provider_id and pp.lifecycle_status='active' and pp.publication_status='published' where x.state='queued' and x.next_try_at<=now() order by x.next_try_at, x.id limit security.pipeline_num_v1('batch.provider_description', 3)::int) o
-              cross join lateral (select security.provider_description_identity_v1(o.provider_id, coalesce((select a.source_url from pipeline.evidence_artifacts a where a.id=security.provider_description_stored_v1(o.provider_id)), (select pw.website from catalogue.providers pw where pw.id=o.provider_id))) v offset 0) i
-             where not coalesce((i.v->>'ok')::boolean, false)) h
+    update pipeline.provider_description_reads r set state=case when h.hold then 'held' else r.state end, rule=case when h.hold then h.idr else r.rule end, reason=case when h.hold then left(h.why,400) else r.reason end, -- fixed: the stored reason shows its first 400 characters
+           leased_until=case when h.hold then null else r.leased_until end, updated_at=case when h.hold then now() else r.updated_at end,
+           checks=coalesce(r.checks,'{}'::jsonb)||jsonb_build_object('identity_checked_at',now())||case when h.hold then jsonb_build_object('identity_hold',true) else '{}'::jsonb end
+      from (select o.id, i.v->>'rule' idr, i.v->>'reason' why, (not coalesce((i.v->>'ok')::boolean,false) and i.v->>'rule' in ('wrong_host','provider_host_conflict')) hold
+              from (select x.id, x.provider_id, pp.website from pipeline.provider_description_reads x join catalogue.providers pp on pp.id=x.provider_id and pp.lifecycle_status='active' and pp.publication_status='published'
+                     where x.state='queued' and x.next_try_at<=now() order by (x.checks->>'identity_checked_at') nulls first, x.next_try_at, x.id limit security.pipeline_num_v1('batch.provider_description', 3)::int) o
+              cross join lateral (select security.provider_description_identity_v1(o.provider_id, coalesce((select a.source_url from pipeline.evidence_artifacts a where a.id=(v_stored->>o.provider_id::text)::uuid), o.website)) v offset 0) i) h
      where r.id=h.id and r.state='queued';
   end if;
-  -- one pass (9 Nov 2026, lease statement time-out)$new$,
+  -- identity re-offer (9 Nov 2026): a provider whose latest finished read was held$new$,
 $new$own.state in ('admitted','verified'))) or (v_mach and security.provider_description_basic_profile_v1(r.provider_id) is not null))$new$]);

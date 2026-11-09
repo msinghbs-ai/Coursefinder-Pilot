@@ -160,6 +160,8 @@ select 'declined_person_approves|' || (security.layer4_provider_description_appl
   from pipeline.layer4_review_items li where li.entity_id = pg_temp.pid(1) and li.status = 'pending';
 select 'declined_person_result|' || (pg_temp.desc_of(1) like 'Aurora Maritime University offers education in marine navigation%')::text || '|' || (select string_agg(state || '/' || coalesce(rule, '-'), ',' order by state) from pipeline.provider_description_reads where provider_id = pg_temp.pid(1) and state in ('admitted', 'superseded'))
   || '|' || (select (a.after_description like 'Aurora Maritime University is a university%')::text from pipeline.provider_description_machine_admissions a where a.provider_id = pg_temp.pid(1) and a.tier = 'registry_factual');
+-- known and stated (PR note): a person's approval does not close the profile admission row; the profile rule gives nothing from here on because the text differs
+select 'declined_person_profile_row|' || (select count(*) from pipeline.provider_description_machine_admissions where provider_id = pg_temp.pid(1) and outcome = 'admitted' and withdrawn_at is null and tier = 'registry_factual') || '|' || coalesce(security.provider_description_basic_profile_v1(pg_temp.pid(1))::text, 'null');
 rollback;
 
 -- ---------------------------------------------------------------------------------------------------------------- 6. revisit rate, and which providers are listed
@@ -199,4 +201,77 @@ update pipeline.provider_description_reads set state = 'queued', rule = null, re
 update catalogue.providers set publication_status = 'draft', website = null where id = pg_temp.pid(14);
 select 'idhold_draft_ran|' || (pg_temp.run_worker(3) is not null)::text;
 select 'idhold_draft|' || (select state from pipeline.provider_description_reads where provider_id = pg_temp.pid(14));
+rollback;
+
+-- ---------------------------------------------------------------------------------------------------------------- 8. the identity hold takes only wrong_host and provider_host_conflict; a held read is offered again once the provider passes
+-- the selection of the automatic queue for one provider (approved mode, as set in the blocks below)
+create or replace function pg_temp.sel_missing(n int) returns text language sql as $f$
+  select coalesce((select (x->>'eligibility_reason') || '/' || (x->>'eligible') from jsonb_array_elements(security.provider_description_selection_v1(jsonb_build_object('filter','all','size',60,'prefilter',true,'mode','approved'))->'providers') x
+                    where (x->>'provider_id')::uuid = pg_temp.pid(n)), 'not_listed')
+$f$;
+create or replace function pg_temp.read_of(n int) returns text language sql as $f$
+  select coalesce((select state || '/' || coalesce(rule, '-') || '/' || coalesce(checks->>'identity_hold', 'none') || '/' || coalesce(checks ? 'identity_checked_at', false)::text
+                     from pipeline.provider_description_reads where provider_id = pg_temp.pid(n) order by created_at desc, id desc limit 1), 'no_read')
+$f$;
+
+-- 8a. no website: held with the mark; parked while the website is missing; offered again as soon as the website is corrected (no waiting for pdesc.recheck_days)
+begin;
+select pg_temp.set_s('pdesc.machine_admit_on', '1'); select pg_temp.set_s('pdesc.acquire_direct', '1'); select pg_temp.set_s('pdesc.retry_minutes', '360'); -- the live value: a read held less than six hours ago is not retried on a changed page
+update catalogue.providers set website = null where id = pg_temp.pid(14);
+insert into pipeline.provider_description_reads(provider_id, state, created_at, next_try_at) values (pg_temp.pid(14), 'queued', now() - interval '9 hours', now() - interval '9 hours');
+select 'reoffer_lease_ran|' || (pg_temp.run_worker(3) is not null)::text;
+select 'reoffer_held|' || pg_temp.read_of(14);
+select 'reoffer_no_website|' || pg_temp.sel_missing(14);
+update catalogue.providers set website = 'https://p14.example.edu' where id = pg_temp.pid(14);
+select 'reoffer_corrected|' || pg_temp.sel_missing(14);
+-- the queue run takes what the selection lists, so the provider is read again at once
+insert into pipeline.provider_description_reads(provider_id) values (pg_temp.pid(14));
+select 'reoffer_read_again|' || (pg_temp.run_worker(3)->>'leased');
+rollback;
+
+-- 8b. a hold made by the worker (no mark) keeps its existing parking: only a read held by the identity hold is offered again
+begin;
+select pg_temp.set_s('pdesc.machine_admit_on', '1'); select pg_temp.set_s('pdesc.acquire_direct', '1'); select pg_temp.set_s('pdesc.retry_minutes', '360');
+insert into pipeline.provider_description_reads(provider_id, state, rule, reason) values (pg_temp.pid(14), 'held', 'wrong_host', 'fixture worker hold');
+select 'worker_hold_parked|' || pg_temp.sel_missing(14);
+rollback;
+
+-- 8c. another provider holds the host: held (waits for a person to resolve the duplicate); offered again only when the host is resolved
+begin;
+select pg_temp.set_s('pdesc.machine_admit_on', '1'); select pg_temp.set_s('pdesc.acquire_direct', '1'); select pg_temp.set_s('pdesc.retry_minutes', '360');
+update catalogue.providers set website = (select website from catalogue.providers where id = pg_temp.pid(15)) where id = pg_temp.pid(14);
+insert into pipeline.provider_description_reads(provider_id, state, created_at, next_try_at) values (pg_temp.pid(14), 'queued', now() - interval '9 hours', now() - interval '9 hours');
+select 'conflict_lease_ran|' || (pg_temp.run_worker(3) is not null)::text;
+select 'conflict_held|' || pg_temp.read_of(14);
+select 'conflict_parked|' || pg_temp.sel_missing(14);
+update catalogue.providers set website = 'https://p14.example.edu' where id = pg_temp.pid(14);
+select 'conflict_resolved|' || pg_temp.sel_missing(14);
+rollback;
+
+-- 8d. every other identity outcome leaves the read queued: a provider whose lifecycle is held (provider_inactive)
+begin;
+select pg_temp.set_s('pdesc.machine_admit_on', '1'); select pg_temp.set_s('pdesc.acquire_direct', '1');
+insert into pipeline.provider_lifecycle_events(id, scope, provider_id, transition, effective_date, source, state) values (990001, 'provider', pg_temp.pid(14), 'temporarily_unavailable', current_date, 'fixture', 'executed');
+insert into pipeline.provider_description_reads(provider_id, state, created_at, next_try_at) values (pg_temp.pid(14), 'queued', now() - interval '9 hours', now() - interval '9 hours');
+select 'inactive_lease_ran|' || (pg_temp.run_worker(3) is not null)::text;
+select 'inactive_kept|' || pg_temp.read_of(14);
+rollback;
+
+-- 8e. an open identity finding is not taken by the identity hold (the machine block, which has always held it, is unchanged)
+begin;
+select pg_temp.set_s('pdesc.machine_admit_on', '1'); select pg_temp.set_s('pdesc.acquire_direct', '1');
+insert into pipeline.provider_identity_findings(provider_id, check_code, reason) values (pg_temp.pid(14), 'identity_unconfirmed', 'fixture');
+insert into pipeline.provider_description_reads(provider_id, state, created_at, next_try_at) values (pg_temp.pid(14), 'queued', now() - interval '9 hours', now() - interval '9 hours');
+select 'finding_lease_ran|' || (pg_temp.run_worker(3) is not null)::text;
+select 'finding_read|' || pg_temp.read_of(14);
+rollback;
+
+-- 8f. the reads tested longest ago go first: the oldest read, which passes and cannot be leased, is not tested on every call (batch.provider_description 1)
+begin;
+select pg_temp.set_s('pdesc.machine_admit_on', '1'); select pg_temp.set_s('pdesc.acquire_direct', '1'); select pg_temp.set_s('batch.provider_description', '1');
+update catalogue.providers set website = null where id = pg_temp.pid(14);
+insert into pipeline.provider_description_reads(provider_id, state, tries, created_at, next_try_at) values (pg_temp.pid(15), 'queued', 3, now() - interval '10 hours', now() - interval '10 hours');
+insert into pipeline.provider_description_reads(provider_id, state, created_at, next_try_at) values (pg_temp.pid(14), 'queued', now() - interval '9 hours', now() - interval '9 hours');
+select 'rotate_call1|' || (pg_temp.run_worker(1)->>'leased') || '|' || pg_temp.read_of(15) || '|' || pg_temp.read_of(14);
+select 'rotate_call2|' || (pg_temp.run_worker(1)->>'leased') || '|' || pg_temp.read_of(15) || '|' || pg_temp.read_of(14);
 rollback;

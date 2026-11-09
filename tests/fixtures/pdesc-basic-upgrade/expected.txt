@@ -39,6 +39,7 @@ declined_waits|1|true|1|true
 declined_profile_live|1
 declined_person_approves|true
 declined_person_result|true|admitted/changed,superseded/registry_factual|true
+declined_person_profile_row|1|null
 revisit_same_page|unchanged_unsuitable_evidence/false
 revisit_page_changed|eligible/true
 queue_full_ran|true
@@ -50,3 +51,19 @@ idhold_lease|0
 idhold_after|held/wrong_host/true
 idhold_draft_ran|true
 idhold_draft|queued
+reoffer_lease_ran|true
+reoffer_held|held/wrong_host/true/true
+reoffer_no_website|retry_wait/false
+reoffer_corrected|eligible/true
+reoffer_read_again|1
+worker_hold_parked|retry_wait/false
+conflict_lease_ran|true
+conflict_held|held/provider_host_conflict/true/true
+conflict_parked|retry_wait/false
+conflict_resolved|eligible/true
+inactive_lease_ran|true
+inactive_kept|queued/-/none/true
+finding_lease_ran|true
+finding_read|held/machine_declined_identity_identity_unconfirmed/none/false
+rotate_call1|0|queued/-/none/true|queued/-/none/false
+rotate_call2|0|queued/-/none/true|held/wrong_host/true/true

@@ -41,7 +41,7 @@ test('every guard that protects a description still applies to a profile; only t
   for (const rule of ['manual_lock', 'prior_human_rejection', 'withdrawn_awaiting_review', 'identity_', 'name_not_clean']) expect(blockedEdit).not.toContain(`'${rule}`)
   // admission: only a source tier with the profile as the before text, a different text, and at least pdesc.min_sentences quoted sentences
   expect(code).toContain("v_tier in ('stored', 'direct', 'firecrawl') and btrim(coalesce(i.before_value->>'description', '')) = btrim(v_basic->>'text')")
-  expect(code).toContain("'upgrade_not_richer'")
+  expect(code).toContain("'upgrade_too_short_or_unchanged'")
   expect(code).toContain("security.pipeline_num_v1('pdesc.min_sentences', 2)")
   expect(code).toContain("and not v_upg and i.before_value->>'description' is not null")
   expect(code).toContain("not (v_upg and v_now = btrim(v_basic->>'text'))")
@@ -55,10 +55,25 @@ test('the prior version is kept: closed (never deleted) admission, before_descri
   expect(code).not.toMatch(/delete\s+from\s+pipeline\.provider_description_machine_admissions/i)
 })
 
-test('queued reads that fail the identity test are held with the identity rule; draft and inactive providers and Run Now cohorts are left alone', () => {
+test('the identity hold takes only wrong_host and provider_host_conflict, reuses the stored copy found once, rotates through the queue, and a held read is offered again once the provider passes', () => {
   expect(code).toContain("nullif(current_setting('cf.pdesc_cohort',true),'') is null")
   expect(code).toContain("pp.lifecycle_status='active' and pp.publication_status='published'")
-  expect(code).toContain("set state='held',rule=h.idr")
+  const pass = mig.slice(mig.indexOf("-- identity hold (10 Nov 2026)"), mig.indexOf("-- identity re-offer (9 Nov 2026): a provider whose latest finished read was held$new$"))
+  expect(pass.length).toBeGreaterThan(500)
+  // only the two outcomes hold; provider_inactive and identity_<finding> leave the read queued
+  expect(pass).toContain("i.v->>'rule' in ('wrong_host','provider_host_conflict')")
+  expect(pass).toContain("state=case when h.hold then 'held' else r.state end")
+  // the stored copy comes from v_stored (found once, above); the pass never calls provider_description_stored_v1 itself
+  expect(pass).toContain("(v_stored->>o.provider_id::text)::uuid")
+  expect(pass).not.toContain('provider_description_stored_v1')
+  // the tested read is marked, and the least recently tested go first
+  expect(pass).toContain("jsonb_build_object('identity_checked_at',now())")
+  expect(pass).toContain("order by (x.checks->>'identity_checked_at') nulls first")
+  expect(pass).toContain("jsonb_build_object('identity_hold',true)")
+  // the pass sits after v_stored is built, not before it
+  expect(mig.indexOf("-- identity hold (10 Nov 2026)")).toBeGreaterThan(mig.indexOf("$old$-- identity re-offer (9 Nov 2026)"))
+  // the selection offers a read held by the pass again once the provider passes the identity test (no new setting)
+  expect(code).toContain("coalesce(r.checks ? 'identity_hold',false) and coalesce((security.provider_description_identity_v1(p.id,coalesce(a.source_url,p.website))->>'ok')::boolean,false)) then 'retry_wait'")
 })
 
 test('no consumer API object, drop, schedule, ceiling or word list is touched; housekeeping lines are present', () => {
@@ -79,5 +94,5 @@ test('the isolated PostgreSQL fixture proves locks, rejection, edit, withdrawal 
   expect(run).toContain('the five bodies return to the live md5 byte for byte')
   const exp = fs.readFileSync('tests/fixtures/pdesc-basic-upgrade/expected.txt', 'utf8')
   for (const l of ['off_profile_held|null|description_already_held', 'on_prior_version_kept|true|true|registry_factual|true|2|true', 'lock_blocked|manual_lock', 'rejected_blocked|prior_human_rejection', 'edited_profile|null|description_already_held',
-    'withdrawn_blocked|null|withdrawn_awaiting_review', 'race_read|held/description_changed_after_lease', 'declined_person_result|true|', 'idhold_after|held/wrong_host/true', 'settings|pdesc.registry_upgrade_on=0/0-1/on/off/true']) expect(exp).toContain(l)
+    'withdrawn_blocked|null|withdrawn_awaiting_review', 'race_read|held/description_changed_after_lease', 'declined_person_result|true|', 'idhold_after|held/wrong_host/true', 'reoffer_corrected|eligible/true', 'worker_hold_parked|retry_wait/false', 'conflict_held|held/provider_host_conflict/true/true', 'inactive_kept|queued/-/none/true', 'rotate_call2|0|queued/-/none/true|held/wrong_host/true/true', 'settings|pdesc.registry_upgrade_on=0/0-1/on/off/true']) expect(exp).toContain(l)
 })

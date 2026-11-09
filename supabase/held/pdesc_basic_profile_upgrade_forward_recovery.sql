@@ -1,7 +1,7 @@
 -- HELD (not a migration): forward recovery for 20261110040000 (register-fact profiles stay eligible for source-backed enrichment; queued reads that fail the identity test are held).
 -- Run only if the Platform Admin decides to go back to the text of the five functions before that migration. It restores them byte for byte (body md5 below), each guarded by the md5 of what is live now
 -- (the text before the migration, or the text the migration wrote); a function that differs from both is refused and nothing is changed. Switch pdesc.registry_upgrade_on to 0 first if an upgrade has to stop without going back.
--- Descriptions already upgraded stay as they are (each keeps its earlier version in pipeline.provider_description_machine_admissions). The four settings and security.provider_description_basic_profile_v1 are left in place (harmless);
+-- Descriptions already upgraded stay as they are (each keeps its earlier version in pipeline.provider_description_machine_admissions). The one setting (pdesc.registry_upgrade_on) and security.provider_description_basic_profile_v1 are left in place (harmless);
 -- to remove the function too, paste the one commented line at the end (a drop is for the Platform Admin to run).
 
 do $g$
@@ -12,16 +12,16 @@ begin
   if v not in ('46634e38c0469cbcbd6c23158dfadc94', 'e23fa20639a882233ad07c44299de4c0') then raise exception 'live security.provider_description_machine_blocked_v1(uuid) differs from both texts this recovery knows (body md5 %)', v; end if;
   select md5(p.prosrc) into v from pg_proc p where p.oid = to_regprocedure('security.provider_description_machine_admit_v1(uuid)');
   if v is null then raise exception 'security.provider_description_machine_admit_v1(uuid) is missing'; end if;
-  if v not in ('5decbd99c8ecd5e0b072d22ed6f68962', 'af12eeb05ee313b9f9543f6176eeab25') then raise exception 'live security.provider_description_machine_admit_v1(uuid) differs from both texts this recovery knows (body md5 %)', v; end if;
+  if v not in ('5decbd99c8ecd5e0b072d22ed6f68962', 'dedf28930cc7a12ad31570dec0d2f334') then raise exception 'live security.provider_description_machine_admit_v1(uuid) differs from both texts this recovery knows (body md5 %)', v; end if;
   select md5(p.prosrc) into v from pg_proc p where p.oid = to_regprocedure('security.provider_description_selection_v1(jsonb)');
   if v is null then raise exception 'security.provider_description_selection_v1(jsonb) is missing'; end if;
-  if v not in ('04acb9419b9965b5d6aab420059c7e84', '29c99ddfe50791de28a150978c709872') then raise exception 'live security.provider_description_selection_v1(jsonb) differs from both texts this recovery knows (body md5 %)', v; end if;
+  if v not in ('04acb9419b9965b5d6aab420059c7e84', '41c9e5ffaba74453c699fd84e9135648') then raise exception 'live security.provider_description_selection_v1(jsonb) differs from both texts this recovery knows (body md5 %)', v; end if;
   select md5(p.prosrc) into v from pg_proc p where p.oid = to_regprocedure('security.provider_description_enqueue_v1()');
   if v is null then raise exception 'security.provider_description_enqueue_v1() is missing'; end if;
   if v not in ('803478538da3dd9594ba08be38284c3e', 'e97170e51cb27dee62db0cef3e07bb43') then raise exception 'live security.provider_description_enqueue_v1() differs from both texts this recovery knows (body md5 %)', v; end if;
   select md5(p.prosrc) into v from pg_proc p where p.oid = to_regprocedure('public.svc_provider_description_next(integer)');
   if v is null then raise exception 'public.svc_provider_description_next(integer) is missing'; end if;
-  if v not in ('7583808609dc2dea1d3fc251607405a1', '34d7c83ffa3ba81107a1b7a4bc176f4f') then raise exception 'live public.svc_provider_description_next(integer) differs from both texts this recovery knows (body md5 %)', v; end if;
+  if v not in ('7583808609dc2dea1d3fc251607405a1', '504678d725b0131785f7e3541a6c3695') then raise exception 'live public.svc_provider_description_next(integer) differs from both texts this recovery knows (body md5 %)', v; end if;
 end $g$;
 
 CREATE OR REPLACE FUNCTION security.provider_description_machine_blocked_v1(p_provider uuid)
