@@ -210,7 +210,7 @@ rollback;
 begin;
 select pg_temp.reg_setup();
 update catalogue.provider_registrations set evidence_id = (select evidence_id from catalogue.provider_registrations where provider_id = pg_temp.pid(2)), status = 'active' where provider_id = pg_temp.pid(14);
-update catalogue.providers set website = null, provider_type_id = null where id = pg_temp.pid(14); -- register listing and location only: 2 facts, no type
+update catalogue.providers set website = null, primary_city = null, subdivision_id = null where id = pg_temp.pid(14); -- register listing and type only: 2 facts, no location
 select pg_temp.set_s('pdesc.machine_admit_on', '1');
 select pg_temp.set_s('pdesc.registry_factual_on', '1');
 select pg_temp.set_s('pdesc.registry_after_rules', '["no_about_page"]');
