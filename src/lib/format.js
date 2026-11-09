@@ -90,6 +90,14 @@ export function fmtTime(value, fallback = EMPTY) {
   return d ? time12(d) : fallback
 }
 
+const MEL_SECONDS = new Intl.DateTimeFormat('en-AU', { timeZone: 'Australia/Melbourne', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' })
+
+/** 14:37:05 (Melbourne, 24-hour, with seconds) for live "updated at" stamps where a minute is too coarse. */
+export function fmtTimeSeconds(value, fallback = EMPTY) {
+  const d = toDate(value)
+  return d ? MEL_SECONDS.format(d) : fallback
+}
+
 /** "3 min ago", "2 h ago", "5 days ago"; older than 30 days falls back to the date. */
 export function fmtRelative(value, fallback = EMPTY, now = Date.now()) {
   const d = toDate(value)

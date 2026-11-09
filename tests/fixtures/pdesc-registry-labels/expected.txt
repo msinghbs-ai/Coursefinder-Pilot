@@ -1,0 +1,27 @@
+profile_ok|true|No Source University is a university in Melbourne, Victoria, Australia. It is listed on the Commonwealth Register of Institutions and Courses for Overseas Students (CRICOS) with provider code FX000014. Its listed courses are at Non AQF Award levels, in fields including Employment Skills Programmes.
+profile_codes|Non AQF Award ; Employment Skills Programmes
+gate_old_codes|false|refused_word:employment
+gate_new_codes|true|
+neg_outcome|false|refused_word:employment
+neg_employability|false|refused_word:employability
+neg_award|false|refused_word:award
+neg_ranking|false|refused_word:ranked
+neg_label_alone_lower|false|refused_word:employment
+neg_stored_tier|machine_text_refused_word
+label_whole|true|true|
+label_plus_claim|true|false|refused_word:ranked
+city_question|No Source University is a university in Victoria, Australia. It is listed on the Commonwealth Register of Institutions and Courses for Overseas Students (CRICOS) with provider code FX000014. Its listed courses are at Certificate levels, in fields including Business.
+city_replacement|No Source University is a university in Victoria, Australia. It is listed on the Commonwealth Register of Institutions and Courses for Overseas Students (CRICOS) with provider code FX000014. Its listed courses are at Certificate levels, in fields including Business.
+city_macron_kept|No Source University is a university in Whangārei, Victoria, Australia. It is listed on the Commonwealth Register of Institutions and Courses for Overseas Students (CRICOS) with provider code FX000014. Its listed courses are at Certificate levels, in fields including Business.
+reeval_before|(none)|0
+reeval_run|{"on": true, "held": 0, "errors": 0, "admitted": 1}
+reeval_admitted|true|1
+reeval_audit|registry_factual|pdesc-machine-v1|admitted|true
+reeval_again|{"on": true, "held": 0, "errors": 0, "admitted": 0}
+stale_run|{"on": true, "held": 1, "errors": 0, "admitted": 0}|(none)
+stamped|1|1
+current_again|{"on": true, "held": 0, "errors": 0, "admitted": 0}|2
+rule_changed|{"on": true, "held": 0, "errors": 0, "admitted": 1}|true
+fingerprint_stable|true
+fingerprint_setting|true
+fingerprint_grants|false|false

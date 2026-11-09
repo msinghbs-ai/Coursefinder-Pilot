@@ -1,0 +1,54 @@
+/* CF-247 F-OPS.03A Data Delivery summary (top of Layer 2/3 > Operations). Desktop: one row per stream on an eleven-column grid that shrinks (no sideways page scroll).
+   Phone (<= 640 px): each stream is a card, its cells stack with their label beside the value, every table becomes stacked rows, tap targets are 44 px. */
+.dd .dd-head,.dd .dd-stream>summary{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1.1fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1.3fr) minmax(0,.8fr) minmax(0,1.2fr) minmax(0,1.1fr);gap:8px;align-items:start}
+.dd .dd-head{font-size:var(--cf-fs-md);color:var(--cf-muted);padding:4px 12px;border-bottom:1px solid var(--cf-border)}
+.dd .dd-streams{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.dd .dd-stream{border:1px solid var(--cf-border);border-radius:8px;background:var(--cf-surface)}
+.dd .dd-stream[data-dd-stale="true"]{border-color:var(--cf-warning)}
+.dd .dd-stream>summary{list-style:none;cursor:pointer;padding:10px 12px;min-height:44px;font-size:var(--cf-fs-md)}
+.dd .dd-stream>summary::-webkit-details-marker{display:none}
+.dd .dd-stream[open]>summary{border-bottom:1px solid var(--cf-border)}
+.dd .dd-cell,.dd .dd-name{min-width:0;overflow-wrap:anywhere}
+.dd .dd-cell>span,.dd .dd-name{display:flex;flex-direction:column;gap:2px}
+.dd .dd-cell small,.dd .dd-name small{color:var(--cf-muted);font-size:var(--cf-fs-sm)}
+.dd .dd-name strong{font-size:var(--cf-fs-base)}
+.dd .dd-unknown{display:flex;flex-direction:column;gap:2px}
+.dd .dd-unknown em{font-style:italic;color:var(--cf-muted);font-weight:600}
+.dd .dd-unknown small{display:block;overflow-wrap:anywhere}  /* the whole reason is readable without hover or a tap */
+.dd .dd-bar{display:block;height:4px;border-radius:2px;background:var(--cf-border);overflow:hidden}
+.dd .dd-bar i{display:block;height:100%;background:var(--cf-success)}
+.dd .dd-flag{display:flex;flex-wrap:wrap;gap:4px;align-items:baseline;padding:3px 6px;border-radius:6px;font-size:var(--cf-fs-md);border:1px solid var(--cf-border)}
+.dd .dd-flag.tone-warning{background:color-mix(in srgb,var(--cf-warning) 12%,transparent);border-color:var(--cf-warning)}
+.dd .dd-flag.tone-danger{background:color-mix(in srgb,var(--cf-danger) 10%,transparent);border-color:var(--cf-danger)}
+.dd .dd-flag a{font-weight:600}
+.dd .dd-reasons{margin:2px 0 0;padding-left:14px;font-size:var(--cf-fs-md)}
+.dd .dd-reasons li{overflow-wrap:anywhere}
+.dd .dd-stale{color:var(--cf-danger);font-size:var(--cf-fs-md);border:1px solid var(--cf-danger);border-radius:6px;padding:6px 8px}
+.dd .dd-summary{font-size:var(--cf-fs-md);margin:4px 0}
+.dd .dd-body{padding:10px 12px 14px;font-size:var(--cf-fs-md)}
+.dd .dd-drill{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;margin:8px 0}
+.dd .dd-drill small{flex-basis:100%;color:var(--cf-muted)}
+.dd .lf-frame{overflow-x:auto;max-width:100%}
+/* Tablet and narrow laptop (641 to 1100 px): eleven columns would be unreadable, so each stream becomes a block of labelled cells, three across; the name and its flags take the full width. */
+@media (min-width:641px) and (max-width:1100px){
+  .dd .dd-head{display:none}
+  .dd .dd-stream>summary{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 12px}
+  .dd .dd-stream>summary .dd-name{grid-column:1/-1}
+  .dd .dd-stream>summary .dd-cell::before{content:attr(data-label);display:block;color:var(--cf-muted);font-size:var(--cf-fs-md);font-weight:600;margin-bottom:2px}
+}
+@media (max-width:640px){
+  .dd .dd-head{display:none}
+  .dd .dd-stream>summary{grid-template-columns:minmax(0,1fr);gap:6px;min-height:44px}
+  .dd .dd-stream>summary .dd-cell{display:flex;justify-content:space-between;gap:12px;align-items:baseline;border-top:1px solid var(--cf-border);padding-top:4px}
+  .dd .dd-stream>summary .dd-cell::before{content:attr(data-label);color:var(--cf-muted);font-size:var(--cf-fs-md);flex:0 0 34%}
+  .dd .dd-stream>summary .dd-cell>span{flex:1 1 auto;text-align:right;align-items:flex-end}
+  .dd .dd-flag{width:100%}
+  .dd .dd-flag a,.dd .dd-drill a,.dd .cf-btn{min-height:44px;min-width:44px;display:inline-flex;align-items:center}
+  .dd table.cf-table,.dd table.cf-table tbody,.dd table.cf-table tr,.dd table.cf-table td{display:block;width:100%}
+  .dd table.cf-table thead{display:none}
+  .dd table.cf-table tr{border:1px solid var(--cf-border);border-radius:6px;margin-bottom:8px;padding:6px 8px}
+  .dd table.cf-table td{display:flex;justify-content:space-between;gap:12px;border:0;padding:3px 0;text-align:right}
+  .dd table.cf-table td::before{content:attr(data-label);color:var(--cf-muted);font-size:var(--cf-fs-md);text-align:left;flex:0 0 38%}
+}
+/* a chip wraps instead of being clipped (the shared chip is one line with an ellipsis) */
+.dd .cf-chip{white-space:normal;overflow:visible;text-overflow:clip;align-self:flex-start}
