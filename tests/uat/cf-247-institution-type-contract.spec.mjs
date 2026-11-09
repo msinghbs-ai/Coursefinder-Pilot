@@ -161,3 +161,15 @@ test.describe('mocked browser', () => {
     await expect(card.getByRole('status')).toContainText('1 changed')
   })
 })
+
+// R23/R24 (G3 change approved 9 Nov 2026): the institution type the website reads in the provider payload is untouched. The provider list and
+// detail wrappers that embed it are pinned (not replaced), and the two institution-type builders are pinned to their live text.
+test('R23/R24 leave institution_type alone: its builders and the provider wrappers are pinned to their live text, and the migration does not touch them', () => {
+  const m = fs.readFileSync('supabase/migrations/20261109150000_cf247_website_api_v2_r23_r24.sql', 'utf8')
+  const live = fs.readFileSync('tests/fixtures/website-api-v2-r23-r24/functions-live.tsv', 'utf8')
+  expect(live).toContain('api.website_v2_institution_type(uuid)\t42563a41eb18ba688e3324fbada96219\t')
+  expect(live).toContain('api.website_v2_institution_type_code(uuid)\t1541a9c84e6d27ada3d041d26503267d\t')
+  expect(live).toContain('public.website_v2_providers(jsonb,integer,integer,text)\t73ba533ee2f4c20b840c4cf172c17912\t')
+  expect(m).toContain("('public.website_v2_providers(jsonb,integer,integer,text)', '73ba533ee2f4c20b840c4cf172c17912')")
+  expect(m.replace(/--[^\n]*/g, '')).not.toMatch(/institution_type/i)
+})

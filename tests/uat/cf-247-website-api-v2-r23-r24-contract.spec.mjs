@@ -1,25 +1,40 @@
-// Guards: Platform Admin decision 5 Nov 2026 19:14 §5 (website developer requests R23 campus names and course counts, R24 scholarship nationality status; G3 approval PENDING)
+// Guards: Platform Admin decision 5 Nov 2026 19:14 §5 and G3 approval 9 Nov 2026 (website developer requests R23 campus names and course counts, R24 scholarship nationality status)
 // CF-247 R23 (provider campuses: campus_id, campus_name, course_count; one item per campus) and R24 (scholarship
-// nationality_eligibility_status). Prepared, NOT approved: the migration's approval line says PENDING (s57 refuses it) and step 0 refuses to
-// apply until the Platform Admin's approval setting exists. Proof on a production-parity PostgreSQL: tests/fixtures/website-api-v2-r23-r24/
-// (run.sh; CI workflow website-api-v2-r23-r24-fixture.yml). Approval package: admin docs/platform/approvals/2026-11-06-g3-r23-r24-approval-package.md.
+// nationality_eligibility_status). G3 approved by the Platform Admin on 9 Nov 2026 ("G3 change is approved in principle. Complete the required API
+// compatibility tests, developer guide, versioned handover and record the formal G3 approval before merging. Do not release an unvalidated
+// consumer contract change."). The migration records the approval on its first line, still refuses to apply until the Platform Admin's approval
+// setting exists (a Platform Admin write, never a migration), and re-takes the consumer API baseline after checking that nothing else differs from it.
+// Proof on a production-parity PostgreSQL: tests/fixtures/website-api-v2-r23-r24/ (run.sh; CI workflow website-api-v2-r23-r24-fixture.yml).
+// Approval package and compatibility record: admin docs/platform/approvals/2026-11-06-g3-r23-r24-approval-package.md (section 11).
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = 'supabase/migrations/20261106100000_cf247_website_api_v2_r23_r24.sql'
+const MIG = 'supabase/migrations/20261109150000_cf247_website_api_v2_r23_r24.sql'
 const FX = 'tests/fixtures/website-api-v2-r23-r24'
 const m = fs.readFileSync(MIG, 'utf8')
 const code = (s) => s.replace(/--[^\n]*/g, '')
 
-test('pending approval: the placeholder is visibly PENDING, the gate refuses before any change, and the baseline is not re-taken', () => {
-  expect(m.split('\n')[0]).toBe('-- Consumer API change approved: PENDING Platform Admin G3 approval (R23/R24)')
-  expect(m.split('\n')[1]).toMatch(/^-- NOT APPROVED\./)
+test('G3 approval is recorded on the first line; the gate still refuses without the Platform Admin setting; the baseline is re-taken last', () => {
+  const approval = '-- Consumer API change approved: Platform Admin (Mandeep Singh), 9 Nov 2026, in chat: G3 change approved for R23 and R24 on condition of API compatibility tests, developer guide and versioned handover'
+  expect(m.split('\n')[0]).toBe(approval)
+  expect(approval).toMatch(/^-- Consumer API change approved: (?!.*\bPENDING\b).{10,}$/)  // what s57 accepts
+  expect(m).not.toMatch(/NOT APPROVED|G3 approval PENDING/)
   const gate = m.indexOf("if coalesce(security.pipeline_num_v1('api.v2_r23_r24_approved', 0), 0) <> 1 then")
   expect(gate).toBeGreaterThan(0)
-  expect(m).toContain("raise exception 'CF-247 Website API v2 R23/R24 consumer change is PENDING Platform Admin G3 approval: not applied'")
+  expect(m).toContain("raise exception 'CF-247 Website API v2 R23/R24 consumer change: setting api.v2_r23_r24_approved is not 1 (no recorded Platform Admin approval): not applied'")
   for (const s of ['create or replace function pg_temp.edit_once', 'select pg_temp.replace_once(', 'select pg_temp.edit_once(']) expect(m.indexOf(s)).toBeGreaterThan(gate)
-  expect(m).not.toMatch(/consumer_api_rebaseline_v1\(/)
+  // the migration never creates its own approval (a migration must not approve itself) and drops or deletes nothing
   expect(code(m)).not.toMatch(/platform_toolset_settings|insert\s+into|update\s+\w+\.\w+\s+set|delete\s+from|drop\s+/i)
+  // the baseline is re-taken exactly once, after both changes and after the check that nothing else differs from it
+  const reb = code(m).match(/consumer_api_rebaseline_v1\(/g) || []
+  expect(reb).toHaveLength(1)
+  const iReb = m.indexOf("select security.consumer_api_rebaseline_v1('R23/R24")
+  expect(iReb).toBeGreaterThan(m.indexOf("select pg_temp.edit_once('api.website_v2_scholarship_item(uuid)'"))
+  expect(iReb).toBeGreaterThan(m.indexOf("select pg_temp.replace_once('api.website_v2_provider_campuses(uuid)'"))
+  const drift = m.indexOf("where d not in ('api.website_v2_provider_campuses(uuid)', 'api.website_v2_scholarship_item(uuid)')")
+  expect(drift).toBeGreaterThan(0)
+  expect(iReb).toBeGreaterThan(drift)
+  expect(m).toContain('approved Platform Admin (Mandeep Singh) 9 Nov 2026')
 })
 
 test('md5-guarded: only the two builders change, from the live text of 5 Nov 2026; their readers and wrappers are pinned', () => {
@@ -65,10 +80,12 @@ test('R24 nationality: additive status from held evidence and the review queues;
 
 test('the production-parity fixture proves refusal, md5s, two runs, every case, end-to-end byte identity and the benchmark', () => {
   const run = fs.readFileSync(`${FX}/run.sh`, 'utf8')
-  for (const s of ['MIG=../../../supabase/migrations/20261106100000_cf247_website_api_v2_r23_r24.sql', 'diff parity-live-2026-11-05.txt',
-    'functions-live.tsv', 'no approval: refused, nothing changed', 'second run: already applied, unchanged; privileges unchanged', 'bench.sql'])
+  for (const s of ['MIG=../../../supabase/migrations/20261109150000_cf247_website_api_v2_r23_r24.sql', 'diff parity-live-2026-11-09.txt',
+    'functions-live.tsv', 'no approval: refused, nothing changed', 'unrelated consumer API difference: refused, nothing changed',
+    'baseline re-taken: the two approved functions changed, no other consumer function differs from it',
+    'second run: already applied, unchanged; privileges unchanged', 'bench.sql'])
     expect(run).toContain(s)
-  expect(fs.readFileSync(`${FX}/parity-live-2026-11-05.txt`, 'utf8').trim().split('\n')).toHaveLength(46)
+  expect(fs.readFileSync(`${FX}/parity-live-2026-11-09.txt`, 'utf8').trim().split('\n')).toHaveLength(46)
   const fx = fs.readFileSync(`${FX}/fixtures.sql`, 'utf8')
   for (const s of ["('S11','restricted')", "('S3','unknown')", "('S4','unrestricted')", "('S5','under_review')", "('S13','under_review')", "('S6','restricted')",
     "'[\"R-SASIA\"]'::jsonb", 'array[3,1,0]', 'set role service_role', "a::text like '%provider:fx:hidden%'", 'insufficient_privilege'])
@@ -78,10 +95,16 @@ test('the production-parity fixture proves refusal, md5s, two runs, every case, 
   expect(fs.readFileSync('.github/workflows/website-api-v2-r23-r24-fixture.yml', 'utf8')).toContain('bash tests/fixtures/website-api-v2-r23-r24/run.sh')
 })
 
-test('the edge baseline prepared for approval keeps every edge function hash: no edge function changes', () => {
-  const now = JSON.parse(fs.readFileSync('tests/uat/consumer-api-baseline.json', 'utf8'))
-  const next = JSON.parse(fs.readFileSync(`${FX}/consumer-api-baseline.on-approval.json`, 'utf8'))
-  expect(next.edge_files).toEqual(now.edge_files)
-  expect(next.note.startsWith(now.note)).toBe(true)
-  expect(next.note).toContain('PREPARED, NOT APPLIED (R23/R24')
+test('no edge function changes: the five frozen edge hashes are untouched, so the edge baseline file is not updated', () => {
+  const base = JSON.parse(fs.readFileSync('tests/uat/consumer-api-baseline.json', 'utf8'))
+  expect(Object.keys(base.edge_files)).toHaveLength(5)
+  expect(fs.existsSync(`${FX}/consumer-api-baseline.on-approval.json`)).toBe(false)  // retired: nothing to apply, the edge functions do not change
+})
+
+test('the approval setting is a Platform Admin write documented with the migration: label, range, unit and used_by, and a missing setting reads as not approved', () => {
+  const doc = fs.readFileSync(`${FX}/approval-setting.sql`, 'utf8')
+  for (const s of ["'pipeline', 'api.v2_r23_r24_approved'", "'number', '1', 0, 1, 'on (1) / off (0)', 'Website API'", 'migration 20261109150000', 'Mandeep Singh'])
+    expect(doc).toContain(s)
+  expect(code(m)).toContain("coalesce(security.pipeline_num_v1('api.v2_r23_r24_approved', 0), 0) <> 1")
+  expect(m).toContain('a missing setting reads as 0 and refuses')
 })
