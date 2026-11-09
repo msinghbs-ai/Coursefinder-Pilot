@@ -107,15 +107,17 @@ psql -X -d $RF -q -v ON_ERROR_STOP=1 -1 -f $M2 >/dev/null 2>&1 || { echo "202611
 dropdb --if-exists $RF >/dev/null 2>&1
 echo "applied again with the switch at 1: both post-checks pass and the switch stays at 1"
 
-# 20261110100000 (Data Delivery stage counts) and 20261110100100 (the wrong_page_kind decline): applied here, before the scenarios, so every earlier scenario also runs with them in place.
+# 20261110100000 (Data Delivery stage counts), 20261110100100 (the wrong_page_kind decline) and 20261110130000 (the stage counts read what the Website serves): applied here, before the scenarios, so every earlier scenario also runs with them in place.
 # A copy from before them is kept to prove the new regression fails on the old evaluator body.
 M3A=supabase/migrations/20261110100000_cf247_cdesc_visible_results.sql
 M3B=supabase/migrations/20261110100100_cf247_cdesc_wrong_page_kind.sql
+M3C=supabase/migrations/20261110130000_cf247_dd_served_to_website.sql
 dropdb --if-exists "${DB}_oldchk" >/dev/null 2>&1; createdb -T "$DB" "${DB}_oldchk"
 fnmd5() { psql -X -d "$1" -Atc "select p.oid::regprocedure::text || ' ' || md5(p.prosrc) from pg_proc p where p.oid = '$2'::regprocedure"; }
 # (file, held recovery file, function, live md5, edited md5)
 for row in "$M3A|supabase/held/cdesc_visible_results_forward_recovery.sql|security.data_delivery_v1()|916e015e0cce905c97e17786b4c2ada1|b67bd181c58546076da48e7b5f00a2a4" \
-           "$M3B|supabase/held/cdesc_wrong_page_kind_forward_recovery.sql|security.course_description_machine_check_v1(uuid)|fca43249b1846aae9eae0df7fc83ecb4|3e0fe24d762e7fc4348865ea09499690"; do
+           "$M3B|supabase/held/cdesc_wrong_page_kind_forward_recovery.sql|security.course_description_machine_check_v1(uuid)|fca43249b1846aae9eae0df7fc83ecb4|3e0fe24d762e7fc4348865ea09499690" \
+           "$M3C|supabase/held/dd_served_to_website_forward_recovery.sql|security.data_delivery_cdesc_stages_v1()|eeb3d57c652c66d3f11f38c4de44068b|d2a913a4d294f71fadf949bff6786f94"; do
   IFS='|' read -r MIG HELD FN OLDMD NEWMD <<<"$row"
   snap "$W/p"
   OUT=$($P -1 -At -f $MIG 2>&1) || { echo "$OUT" | tail -8; exit 1; }

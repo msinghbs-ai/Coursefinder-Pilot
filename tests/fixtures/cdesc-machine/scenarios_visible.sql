@@ -1,6 +1,6 @@
 -- Guards: F-CDESC visible results (Platform Admin decision 10 Nov 2026): the machine rule declines a reading taken from a requirements, entry, fees, how-to-apply or programme-structure page
 -- (wrong_page_kind) and leaves it for a person, without touching any other rule; and Data Delivery counts the course description stages exactly (security.data_delivery_cdesc_stages_v1), machine and
--- person kept apart, "unpublished course" and Zoho never shown as 0.
+-- person kept apart, the courses served and not served to the Website (by hidden provider and Layer 4 block, not by the course flag) and Zoho never shown as 0.
 -- Run by run.sh after the prelude of scenarios.sql (the helper functions and the providers): once on the migrated database (every check must pass) and once on the database from before
 -- 20261110100000, where the page kind checks must FAIL (a regression that fails on the old evaluator body).
 \set ON_ERROR_STOP 1
@@ -45,8 +45,8 @@ insert into pipeline.layer4_review_items(id, entity_type, entity_id, field_code,
 insert into pipeline.layer4_decisions(review_item_id, action, actor_id, reason, layer2_state, layer3_state, change_control_ref) values
   (pg_temp.rid(210), 'approve', '00000000-0000-4000-a000-000000000001', '[other] x', '{}', '{}', 'x');
 insert into search.course_documents(course_id, provider_id, country_id, provider_name, course_title, search_text, search_tsv, publication_status, description)
-select pg_temp.cid(n), pg_temp.pid(1), (select id from ref.countries where iso_alpha2 = 'AU'), 'Cm Alpha College', 'Cm Course ' || n, 'x', to_tsvector('x'), case when n = 207 then 'published' else 'unpublished' end, pg_temp.dsc(n)
-  from generate_series(206, 209) n;
+select pg_temp.cid(n), case when n = 210 then pg_temp.pid(2) else pg_temp.pid(1) end, (select id from ref.countries where iso_alpha2 = 'AU'), 'Cm Alpha College', 'Cm Course ' || n, 'x', to_tsvector('x'), case when n = 207 then 'published' else 'unpublished' end, pg_temp.dsc(n)
+  from generate_series(206, 210) n; -- the course flag is deliberately the opposite of what the Website serves: 207 is flagged published, 210 is not; 211 has no course document
 insert into pipeline.field_enrich_items(job_id, provider_id, course_id, field, state, source, reason, value) values
   ('00000000-0000-4000-c000-0000000000f1', pg_temp.pid(2), pg_temp.cid(211), 'description', 'skipped', 'ai_stored', 'held_first_admission: the provider''s first descriptions wait in Layer 4', '{}'),
   ('00000000-0000-4000-c000-0000000000f1', pg_temp.pid(2), pg_temp.cid(210), 'description', 'skipped', 'ai_stored', 'held: length: 900 characters, over the limit', '{}');
@@ -56,6 +56,9 @@ select pg_temp.as_user(6);
 create temporary table g_wd as select public.admin_course_description_machine_withdraw_v1(pg_temp.cid(206), 'Page was not the course overview') r;
 select pg_temp.expect('stages: the withdrawal used for the counts worked (course 206)', (select (r->>'ok')::boolean from g_wd) and pg_temp.dsc(206) is null);
 
+-- what the Website serves (Platform Admin 10 Nov 2026): every course document whose provider is not hidden and that Layer 4 does not block; the course's own publication flag does not decide it.
+-- Provider 1 is hidden: its documents (207, 208, 209) are not served although 207 is flagged published; 210 (provider 2, flagged unpublished) is served; 211 has no course document, so it is not served.
+insert into pipeline.cdm_hidden values (pg_temp.pid(1));
 create temporary table g_st as select security.data_delivery_cdesc_stages_v1() j;
 select pg_temp.diag('stages', $q$select j::text from g_st$q$);
 select pg_temp.expect('stages: the counts are exact and add up (3 admitted by the machine, 1 withdrawn, 1 by a person, 5 declined for their page kind; 5 described courses: 3 + 1 + 1 by another route)',
@@ -70,7 +73,7 @@ select pg_temp.expect('stages: the counts are exact and add up (3 admitted by th
 select pg_temp.expect('stages: the machine rule''s declines come with their top reasons and a sample reason',
   (select jsonb_array_length(j->'validation'->'top_decline_reasons') = 1 and j->'validation'->'top_decline_reasons'->0->>'code' = 'wrong_page_kind' and (j->'validation'->'top_decline_reasons'->0->>'n')::int = 5
       and j->'validation'->'top_decline_reasons'->0->>'example' like '%page%' from g_st));
-select pg_temp.expect('stages: Website published and unpublished course are counted apart (1 published of 5 described); the machine read-back is the recorded one; Zoho is not counted, with the reason, never 0',
+select pg_temp.expect('stages: served and not served to the Website are counted apart from the provider and the Layer 4 block, not the course flag (1 served of 5 described: provider 1 hidden covers 207 to 209, 211 has no document); the machine read-back is the recorded one; Zoho is not counted, with the reason, never 0',
   (select (j->'consumers'->>'website_published')::int = 1 and (j->'consumers'->>'unpublished_course')::int = 4
       and (j->'consumers'->'machine_readback'->>'matched')::int = 3 and (j->'consumers'->'machine_readback'->>'not_in_feed')::int = 0
       and j->'consumers'->'zoho'->>'known' = 'false' and j->'consumers'->'zoho'->>'reason' like '%no description field%' and not (j->'consumers'->'zoho' ? 'with_description') from g_st));

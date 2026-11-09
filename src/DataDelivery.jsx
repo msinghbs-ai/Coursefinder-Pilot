@@ -102,7 +102,7 @@ function Recovery({r}){
 function N({v,k,actor}){return v==null?<em data-dd-unknown data-dd-stage-n={k}>Not measured</em>:<strong data-dd-stage-n={k} data-dd-actor={actor||undefined}>{fmtNumber(Number(v))}</strong>}
 function Row({k,label,v,actor,children}){return <li data-dd-stage-row={k}><span>{label}{actor&&<StatusChip tone={actor==='machine'?'info':'neutral'} label={actor==='machine'?'Machine rule':'Person'}/>}</span> <N v={v} k={k} actor={actor}/>{children}</li>}
 /** The course description stages (CF-247 F-CDESC, Platform Admin 10 Nov 2026): counted live and exactly by the server when the page was read (no estimate, no forecast).
- *  Machine counts and person counts are labelled apart. An unpublished course is shown on its own line: it is correctly not served to the Website. Zoho is Not counted with the reason, never 0. */
+ *  Machine counts and person counts are labelled apart. A course that is not served to the Website (its provider is hidden, or Layer 4 blocks it) is shown on its own line; the course's own publication flag is not what the Website reads. Zoho is Not counted with the reason, never 0. */
 function Stages({st}){
   if(!st)return null
   if(!st.known)return <div className="dd-stages-box" data-dd-stages="unknown"><h4 className="sl-h4">Course description stages</h4><Unknown reason={st.reason} word="Not counted"/></div>
@@ -129,8 +129,8 @@ function Stages({st}){
         <Row k="described_courses" label="Courses with a description in the catalogue" v={ad.described_courses}/>
         <Row k="described_other_route" label="of which by another route (neither of the above)" v={ad.described_other_route}/></ul></li>
       <li data-dd-stage="consumers"><h5>5. Website and Zoho</h5><ul>
-        <Row k="website_published" label="Described courses published to the Website" v={co.website_published}/>
-        <Row k="unpublished_course" label="Described courses that are unpublished (not served to the Website)" v={co.unpublished_course}/>
+        <Row k="website_published" label="Described courses served to the Website" v={co.website_published}/>
+        <Row k="unpublished_course" label="Described courses not served to the Website (provider hidden or blocked in Layer 4)" v={co.unpublished_course}/>
         <li data-dd-stage-row="machine_readback"><span>Website read-back of machine admissions at admission <StatusChip tone="info" label="Machine rule"/></span>
           <small data-dd-readback>matched {num(rb.matched)} · lag {num(rb.lag)} · not in the feed {num(rb.not_in_feed)} · error {num(rb.error)}{Number(rb.not_checked)>0?` · not checked ${num(rb.not_checked)}`:''}. The detail function answered by identifier; that is not the same as listed and published.</small></li>
         <li data-dd-stage-row="zoho"><span>Zoho</span> {zo.known?<N v={zo.with_description} k="zoho"/>:<Unknown reason={zo.reason} word="Not counted"/>}</li></ul></li>
