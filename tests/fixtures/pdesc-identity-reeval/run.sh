@@ -18,12 +18,12 @@ echo "base: pdesc-claim-context harness built the database (20261109020000, 2026
 # the prerequisite: the lease as 20261109182000 leaves it (this change edits that text); a clone without it is kept to show the refusal
 dropdb --if-exists ${DB}_pre >/dev/null 2>&1; createdb -T $DB ${DB}_pre
 $P -1 -At -f $PRE >/dev/null || { echo "the prerequisite migration failed"; exit 1; }
-[ "$(q "select md5(prosrc) from pg_proc where oid = 'public.svc_provider_description_next(integer)'::regprocedure")" = 90275ff3bc7da9989c2a3430b16cb94f ] || { echo "the lease after 20261109182000 is not the recorded one"; exit 1; }
-echo "prerequisite: 20261109182000 applied (lease body md5 90275ff3bc7da9989c2a3430b16cb94f)"
+[ "$(q "select md5(prosrc) from pg_proc where oid = 'public.svc_provider_description_next(integer)'::regprocedure")" = 2783d0a82e9f472b38b179c07add38ac ] || { echo "the lease after 20261109182000 is not the recorded one"; exit 1; }
+echo "prerequisite: 20261109182000 applied (lease body md5 2783d0a82e9f472b38b179c07add38ac)"
 W=$(mktemp -d); trap 'rm -rf "$W"; [ -n "${PDIR_KEEP:-}" ] || { dropdb --if-exists '$DB' >/dev/null 2>&1; dropdb --if-exists '${DB}_refuse' >/dev/null 2>&1; dropdb --if-exists '${DB}_pre' >/dev/null 2>&1; }' EXIT
 
 # the edited functions are the live ones (md5 of the function body, pg_proc.prosrc, read 9 Nov 2026, project fxcwkweaxjtknorudmwp)
-declare -A LIVE=( ['security.provider_description_selection_v1(jsonb)']=c8dd7882a5a6c5b174a829972d475d40 ['public.svc_provider_description_next(integer)']=90275ff3bc7da9989c2a3430b16cb94f )
+declare -A LIVE=( ['security.provider_description_selection_v1(jsonb)']=c8dd7882a5a6c5b174a829972d475d40 ['public.svc_provider_description_next(integer)']=2783d0a82e9f472b38b179c07add38ac )
 SIG0=$(q "select md5(pg_get_functiondef('security.provider_description_signature_v1(text,text,text)'::regprocedure))") # the evidence signature is read, not edited
 for sig in "${!LIVE[@]}"; do
   [ "$(q "select md5(prosrc) from pg_proc where oid = '$sig'::regprocedure")" = "${LIVE[$sig]}" ] || { echo "the loaded $sig differs from live ${LIVE[$sig]}"; exit 1; }

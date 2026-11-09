@@ -34,7 +34,7 @@ test('housekeeping: Replaces and Retires lines, comments, revokes, a table comme
 test('the edits are guarded by the body md5 (live picker; the lease as 20261109182000 leaves it) and the recorded after md5, and the migration refuses until 20261109182000 is applied', () => {
   const hdr = [...M.matchAll(/^--   ([a-z0-9_.]+\([^)]*\)) ([0-9a-f]{32}) -> ([0-9a-f]{32})/gm)].map((m) => [m[1], m[2], m[3]])
   expect(hdr.map((h) => h[0])).toEqual(['security.provider_description_selection_v1(jsonb)', 'public.svc_provider_description_next(integer)'])
-  expect(hdr.map((h) => h[1])).toEqual(['c8dd7882a5a6c5b174a829972d475d40', '90275ff3bc7da9989c2a3430b16cb94f'])
+  expect(hdr.map((h) => h[1])).toEqual(['c8dd7882a5a6c5b174a829972d475d40', '2783d0a82e9f472b38b179c07add38ac'])
   for (const [sig, before, after] of hdr) expect(C, sig).toContain(`'${sig}', '${before}', '${after}'`)
   expect(C).toContain('(apply 20261109182000 first)')
   expect(C).toContain('differs from the definition this change edits')
@@ -95,7 +95,18 @@ test('positive: a hold made by another reader is offered again by the picker; ne
   for (const r of ['v1_verbatim_parked', 'v1_quote_parked', 'v1_not_stated_parked', 'rejected_parked', 'setting_empty_parked', 'judged_again_parked']) expect(res(r), r).toBe('unchanged_unsuitable_evidence')
   expect(res('manual_lock_wins')).toBe('manual_lock')
   expect(res('setting_narrowed')).toBe('eligible|unchanged_unsuitable_evidence')
-  expect(C.match(/and not \(r\.state='held' and v_idr \? r\.rule and coalesce\(r\.checks->'identity'->>'reader_behavior_version',''\) is distinct from coalesce\(v_cur,''\)\)/g)).toHaveLength(2)
+  // the same bypass at all three parking places of the picker (the page-hash park, retry_wait, and the later recovery-knowledge branch), NULL-safe: a read with no rule is never re-offered
+  expect(C.match(/and not \(r\.state='held' and coalesce\(v_idr \? r\.rule, false\) and coalesce\(r\.checks->'identity'->>'reader_behavior_version',''\) is distinct from coalesce\(v_cur,''\)\)/g)).toHaveLength(3)
+  expect(C).not.toMatch(/and v_idr \? r\.rule/)
+  expect(C).toContain("then 'recovery_knowledge_unchanged_failure'$new$")
+  // QA: a recorded failure for the same signature (what the live providers have) must not stop the offer: the picker says eligible and enqueue queues it
+  expect(res('failed_allowed')).toBe('false')
+  expect(res('failed_v1_identity_picker')).toBe('eligible')
+  expect(res('failed_v1_identity_enqueued')).toBe('queued:-')
+  for (const r of ['failed_v2_identity_picker', 'failed_other_rule_picker', 'failed_null_rule_picker']) expect(res(r), r).toBe('unchanged_unsuitable_evidence')
+  expect(res('failed_v2_identity_not_enqueued')).toBe('held:provider_name_conflict')
+  expect(res('failed_other_rule_not_enqueued')).toBe('held:not_stated')
+  expect(res('failed_null_rule_not_enqueued')).toBe('held:-')
   expect(C).not.toMatch(/pdesc\.ai_usd_max|pdesc\.firecrawl_reads_max/)
 })
 

@@ -25,5 +25,15 @@ lease_reoffer|p2,p5,p6,p8
 lease_blocked|p3=held:recovery_knowledge_unchanged_failure,p4=held:recovery_knowledge_unchanged_failure,p7=held:recovery_knowledge_unchanged_failure
 lease_setting_empty|p8
 lease_rolled_back_reader|p3,p6,p8
+failed_allowed|false
+failed_v1_identity_picker|eligible
+failed_v2_identity_picker|unchanged_unsuitable_evidence
+failed_other_rule_picker|unchanged_unsuitable_evidence
+failed_null_rule_picker|unchanged_unsuitable_evidence
+enqueue_ran|true
+failed_v1_identity_enqueued|queued:-
+failed_v2_identity_not_enqueued|held:provider_name_conflict
+failed_other_rule_not_enqueued|held:not_stated
+failed_null_rule_not_enqueued|held:-
 grants|false|false|false|false
 setting|["provider_name_conflict", "provider_name_not_proved", "provider_subunit_source"]|list|rules|Provider descriptions|true|true

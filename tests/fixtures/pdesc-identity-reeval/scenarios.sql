@@ -141,6 +141,24 @@ select pg_temp.lease_set();
 select pg_temp.set_reader('provider-description-source-guard-v1');
 select 'lease_rolled_back_reader|' || pg_temp.lease_keys();
 
+-- 7c. QA (picker + enqueue with a recorded failure): provider 2 has an identity hold by an earlier reader AND a recorded failure of the lease's signature for the same stored page (what the live providers have: same hash, allowed=false).
+--     The picker must call it eligible and enqueue must queue it; a hold of the current reader, another rule, or no rule at all keeps the old behaviour with the same failure on record.
+select pg_temp.set_reader('provider-description-source-guard-v2');
+select pg_temp.hold(2, 'provider_name_conflict', 'provider-description-source-guard-v1'); select pg_temp.fail(2);
+select pg_temp.hold(3, 'provider_name_conflict', 'provider-description-source-guard-v2'); select pg_temp.fail(3);
+select pg_temp.hold(4, 'not_stated', 'provider-description-source-guard-v1');             select pg_temp.fail(4);
+select pg_temp.hold(12, null, 'provider-description-source-guard-v1');                    select pg_temp.fail(12);
+select 'failed_allowed|' || (security.ops_learning_retry_check_v1('provider_description:official_about', pg_temp.pid(2)::text, security.provider_description_signature_v1(pg_temp.stored_hash(2), (select model_identifier from pipeline.central_ai_settings where id = 1), 'provider-description-v2'))->>'allowed');
+select 'failed_v1_identity_picker|' || pg_temp.why(2);
+select 'failed_v2_identity_picker|' || pg_temp.why(3);
+select 'failed_other_rule_picker|' || pg_temp.why(4);
+select 'failed_null_rule_picker|' || pg_temp.why(12);
+select 'enqueue_ran|' || (security.provider_description_enqueue_v1() is not null)::text;
+select 'failed_v1_identity_enqueued|' || pg_temp.open_state(2);
+select 'failed_v2_identity_not_enqueued|' || pg_temp.open_state(3);
+select 'failed_other_rule_not_enqueued|' || pg_temp.open_state(4);
+select 'failed_null_rule_not_enqueued|' || pg_temp.open_state(12);
+
 -- 8. grants and setting
 select 'grants|' || has_function_privilege('anon', 'security.pdesc_reader_behaviour_v1()'::regprocedure, 'execute')::text || '|' || has_function_privilege('authenticated', 'security.pdesc_reader_behaviour_v1()'::regprocedure, 'execute')::text
   || '|' || has_table_privilege('anon', 'pipeline.pdesc_reader_state', 'select')::text || '|' || has_table_privilege('authenticated', 'pipeline.pdesc_reader_state', 'select')::text;

@@ -10,15 +10,18 @@
 -- What this changes:
 --   1 pipeline.pdesc_reader_state: one row, the behaviour version of the reader that is running (checks.identity.reader_behavior_version, stamped by the worker on every identity check). Two row triggers on provider_description_reads keep it: a stamp that is new on a read (insert, or an update that changes it) becomes the current one.
 --     The newest stamp wins, so a prefix rename is picked up, and a worker rolled back to an earlier reader makes that reader current again (its holds are read once by it, not for ever). It is seeded from the newest stamped read.
+--     Bound (newest stamp wins): while two worker versions overlap (a deploy in progress, or an old instance still running), the stamp can flip between them. Each flip makes one version current and re-offers the identity holds of the other version once;
+--     a re-offer is a stored-page read with at most one AI call (about US$0.0005) and the AI ceiling (US$1) and the pdesc queue cap still apply, and the re-read hold is stamped with the version that made it. So a flap costs at most one extra re-read per identity hold per flip
+--     (about 45 providers today) and ends when the old version stops writing. Nothing loops inside one version.
 --   2 security.pdesc_reader_behaviour_v1(): the current reader, one primary-key row (microseconds).
---   3 The picker no longer parks a HELD read on an identity rule (setting pdesc.identity_reeval_rules, default provider_name_conflict, provider_name_not_proved, provider_subunit_source) whose identity check was made by another reader than the current one (unchanged_unsuitable_evidence and retry_wait are skipped for it).
+--   3 The picker no longer parks a HELD read on an identity rule (setting pdesc.identity_reeval_rules, default provider_name_conflict, provider_name_not_proved, provider_subunit_source) whose identity check was made by another reader than the current one: unchanged_unsuitable_evidence, retry_wait AND the later recovery_knowledge_unchanged_failure branch are skipped for it (QA: without the third, enqueue never queued the provider, because the ops-learning check still said allowed=false for the same signature). The rule test is NULL-safe (coalesce(... ? rule, false)), so a read with no rule is never re-offered.
 --   4 The lease (public.svc_provider_description_next) does not hold or skip such a provider on its recovery knowledge: the knowledge recorded the earlier reader's failure. The set is found once per lease from the latest finished read of each provider (indexed), not per row.
 --   The evidence signature (security.provider_description_signature_v1) is NOT edited: a failure of any other kind, or of the current reader, keeps its memory exactly as now. After the re-read the hold carries the current version and is parked as before; a hold the current reader still refuses stays held with the evidence.
 --   Every later check is unchanged: scope, manual locks, provider_description_identity_v1, the budget, the AI and Firecrawl ceilings, Layer 4. The re-read uses the stored official copy (no Firecrawl, no new fetch), and an AI call only when the worker's identity proof passes. Nothing relaxes the identity proof itself (worker).
 -- Depends on 20261109182000 (the lease finds each stored copy once): this change edits the lease function that migration produced and refuses until it is applied.
 -- Live definitions this change edits (pg_proc.prosrc md5, read 9 Nov 2026), before -> after:
---   security.provider_description_selection_v1(jsonb) c8dd7882a5a6c5b174a829972d475d40 -> b51801e562a1569940c88c8413596cc4
---   public.svc_provider_description_next(integer) 90275ff3bc7da9989c2a3430b16cb94f -> d2635ebd4545fc45a8dd84c2007f90f6
+--   security.provider_description_selection_v1(jsonb) c8dd7882a5a6c5b174a829972d475d40 -> 04acb9419b9965b5d6aab420059c7e84
+--   public.svc_provider_description_next(integer) 2783d0a82e9f472b38b179c07add38ac -> 54c8856ec36465059d41d71a5a5d462b
 -- Replaces: the identity-hold branches of the 'unchanged_unsuitable_evidence' and 'retry_wait' parking in security.provider_description_selection_v1 and of the recovery-knowledge hold and skip in public.svc_provider_description_next (both for a held read on an identity rule made by another reader)
 -- Retires: nothing
 -- Nothing is dropped or deleted. No consumer API object is touched (G3).
@@ -31,7 +34,7 @@ begin
     if to_regprocedure(r.sig) is null then raise exception 'required % is missing', r.sig; end if;
   end loop;
   -- fixed: this change edits the lease function as 20261109182000 leaves it
-  if md5((select p.prosrc from pg_proc p where p.oid = 'public.svc_provider_description_next(integer)'::regprocedure)) not in ('90275ff3bc7da9989c2a3430b16cb94f', 'd2635ebd4545fc45a8dd84c2007f90f6') then
+  if md5((select p.prosrc from pg_proc p where p.oid = 'public.svc_provider_description_next(integer)'::regprocedure)) not in ('2783d0a82e9f472b38b179c07add38ac', '54c8856ec36465059d41d71a5a5d462b') then
     raise exception 'public.svc_provider_description_next differs from the definition this change edits (apply 20261109182000 first)';
   end if;
 end $g$;
@@ -111,17 +114,19 @@ comment on function security.pdesc_reader_behaviour_v1() is 'CF-247 F-PDESC: the
 revoke all on function security.pdesc_reader_behaviour_v1() from public, anon, authenticated;
 
 -- ----------------------------------------------------------------------------------------------------------------------------------------- guarded edits of the live definitions
-select pg_temp.edit_all('security.provider_description_selection_v1(jsonb)', 'c8dd7882a5a6c5b174a829972d475d40', 'b51801e562a1569940c88c8413596cc4',
+select pg_temp.edit_all('security.provider_description_selection_v1(jsonb)', 'c8dd7882a5a6c5b174a829972d475d40', '04acb9419b9965b5d6aab420059c7e84',
 array[
 $old$v_pat text[]:=security.pdesc_about_like_patterns_v1();$old$,
 $old$when r.state in ('held','rejected') and r.content_hash is not null and r.content_hash=coalesce(a.content_hash,a.id::text) then 'unchanged_unsuitable_evidence'$old$,
-$old$(r.state='held' or (r.source_url is not null and not coalesce((security.provider_description_page_v1(p.id,r.source_url)->>'ok')::boolean,true)))) then 'retry_wait'$old$],
+$old$(r.state='held' or (r.source_url is not null and not coalesce((security.provider_description_page_v1(p.id,r.source_url)->>'ok')::boolean,true)))) then 'retry_wait'$old$,
+$old$coalesce(r.prompt_version,'provider-description-v2')))->>'allowed')::boolean,true) then 'recovery_knowledge_unchanged_failure'$old$],
 array[
 $new$v_pat text[]:=security.pdesc_about_like_patterns_v1(); v_cur text:=security.pdesc_reader_behaviour_v1(); v_idr jsonb:=coalesce(security.toolset_setting('pipeline','pdesc.identity_reeval_rules'),'[]'::jsonb);$new$,
-$new$when r.state in ('held','rejected') and r.content_hash is not null and r.content_hash=coalesce(a.content_hash,a.id::text) and not (r.state='held' and v_idr ? r.rule and coalesce(r.checks->'identity'->>'reader_behavior_version','') is distinct from coalesce(v_cur,'')) then 'unchanged_unsuitable_evidence'$new$,
-$new$(r.state='held' or (r.source_url is not null and not coalesce((security.provider_description_page_v1(p.id,r.source_url)->>'ok')::boolean,true)))) and not (r.state='held' and v_idr ? r.rule and coalesce(r.checks->'identity'->>'reader_behavior_version','') is distinct from coalesce(v_cur,'')) then 'retry_wait'$new$]);
+$new$when r.state in ('held','rejected') and r.content_hash is not null and r.content_hash=coalesce(a.content_hash,a.id::text) and not (r.state='held' and coalesce(v_idr ? r.rule, false) and coalesce(r.checks->'identity'->>'reader_behavior_version','') is distinct from coalesce(v_cur,'')) then 'unchanged_unsuitable_evidence'$new$,
+$new$(r.state='held' or (r.source_url is not null and not coalesce((security.provider_description_page_v1(p.id,r.source_url)->>'ok')::boolean,true)))) and not (r.state='held' and coalesce(v_idr ? r.rule, false) and coalesce(r.checks->'identity'->>'reader_behavior_version','') is distinct from coalesce(v_cur,'')) then 'retry_wait'$new$,
+$new$coalesce(r.prompt_version,'provider-description-v2')))->>'allowed')::boolean,true) and not (r.state='held' and coalesce(v_idr ? r.rule, false) and coalesce(r.checks->'identity'->>'reader_behavior_version','') is distinct from coalesce(v_cur,'')) then 'recovery_knowledge_unchanged_failure'$new$]);
 
-select pg_temp.edit_all('public.svc_provider_description_next(integer)', '90275ff3bc7da9989c2a3430b16cb94f', 'd2635ebd4545fc45a8dd84c2007f90f6',
+select pg_temp.edit_all('public.svc_provider_description_next(integer)', '2783d0a82e9f472b38b179c07add38ac', '54c8856ec36465059d41d71a5a5d462b',
 array[
 $old$v_ws text[]; v_stored jsonb;$old$,
 $old$  update pipeline.provider_description_reads r set state='held',rule='recovery_knowledge_unchanged_failure'$old$,
