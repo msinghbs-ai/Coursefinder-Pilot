@@ -36,6 +36,12 @@ jobs:
           PGPORT: "5432"
           PGUSER: postgres
         run: bash tests/fixtures/pdesc-retry-funnel/run.sh
+      - name: Lease finds each stored About copy once; same items, order and content (scratch PostgreSQL 16)
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: "5432"
+          PGUSER: postgres
+        run: bash tests/fixtures/pdesc-lease-one-pass/run.sh
       - name: A provider with no description is selected again after an admitted read (scratch PostgreSQL 16)
         env:
           PGHOST: 127.0.0.1
@@ -71,6 +77,7 @@ jobs:
           tests/uat/cf-247-s216-p1-provider-descriptions-contract.spec.mjs
           tests/uat/cf-247-s460-pdesc-retry-and-funnel-contract.spec.mjs
           tests/uat/cf-247-s500-pdesc-self-driving-contract.spec.mjs
+          tests/uat/cf-247-s513-pdesc-lease-one-pass-contract.spec.mjs
           tests/uat/cf-247-s501-pdesc-machine-admission-contract.spec.mjs
           tests/uat/cf-247-s504-pdesc-claim-word-context-contract.spec.mjs
           tests/uat/cf-247-s511-pdesc-identity-reeval-contract.spec.mjs
