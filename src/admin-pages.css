@@ -700,6 +700,9 @@
 .sr-range{width:100%;font-size:var(--cf-fs-2xs);color:var(--cf-slate-500)}
 .sr-hide{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .sr-cell{display:flex;flex-wrap:wrap;gap:4px;align-items:center}.sr-cell input[type=number]{width:120px}.sr-cell input[aria-label=Reason]{width:140px}
+.sr-group{border-top:1px solid var(--cf-slate-100);margin-top:6px}
+.sr-group>summary{display:flex;flex-wrap:wrap;gap:8px;align-items:center;min-height:36px;padding:8px 0;cursor:pointer;font-size:var(--cf-fs-sm);font-weight:600;color:var(--cf-slate-800)}
+.sr-group-note,.sr-replaced{display:block;font-size:var(--cf-fs-xs);color:var(--cf-slate-600);line-height:1.4;padding-bottom:4px}
 @media (max-width:760px){.sr-row{grid-template-columns:1fr}}
 /* v2.15.271: StudySearch code marker; Scholarship search flag in the provider panel */
 .m-code-ss{display:inline-flex;align-items:center;gap:4px}.m-code-ss small{font-size:var(--cf-fs-3xs);font-weight:800;color:var(--cf-indigo-600);letter-spacing:.04em}
