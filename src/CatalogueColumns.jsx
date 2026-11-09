@@ -6,19 +6,19 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowDown, ArrowUp, Columns3, RotateCcw, Search, Undo2, X } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import { StatusChip, fmtDate, fmtDateTime, fmtNumber, fmtTime } from './ui-kit'
-import { ADAPTER_STATES, COURSE_COLUMNS, COURSE_SCREEN, DEFAULT_LIMITS, FIELD_STATES, GROUPS, citySummary, clampWidth, columnOf, defaultLayout, intakeName, intakeSummary, minWidthOf, monthName, moveColumn, normaliseLayout, toggleColumn } from './catalogue-columns'
+import { ADAPTER_STATES, COURSE_COLUMNS, COURSE_SCREEN, DEFAULT_LIMITS, FIELD_STATES, GROUPS, PROVIDER_SCREEN, citySummary, clampWidth, columnOf, defaultLayout, groupHeading, intakeName, intakeSummary, minWidthOf, monthName, moveColumn, normaliseLayout, registryOf, toggleColumn } from './catalogue-columns'
 import './catalogue-columns.css'
 
 const LOCAL = 'coursefinder:pim:catalogue-layout:v1:'
-const readLocal = user => { try { return JSON.parse(localStorage.getItem(LOCAL + user + ':' + COURSE_SCREEN) || 'null') } catch { return null } }
-const writeLocal = (user, layout) => { try { localStorage.setItem(LOCAL + user + ':' + COURSE_SCREEN, JSON.stringify(layout)) } catch { /* private window */ } }
-const readOldWidths = () => { try { return JSON.parse(localStorage.getItem('cf-colw:course') || '{}') || {} } catch { return {} } }
+const readLocal = (user, screen) => { try { return JSON.parse(localStorage.getItem(LOCAL + user + ':' + screen) || 'null') } catch { return null } }
+const writeLocal = (user, layout, screen) => { try { localStorage.setItem(LOCAL + user + ':' + screen, JSON.stringify(layout)) } catch { /* private window */ } }
+const readOldWidths = screen => { try { return JSON.parse(localStorage.getItem(screen === COURSE_SCREEN ? 'cf-colw:course' : 'cf-colw:provider') || '{}') || {} } catch { return {} } }
 const SAVE_AFTER_MS = 700 // UI debounce while a person drags or ticks: one save for a burst of changes
 const timeOf = v => fmtTime(v, '') // the shared en-AU format: Melbourne clock time
 
-/** The person's Course catalogue layout: server first, then this browser's copy, then the default. */
-export function useCourseLayout(userId) {
-  const [layout, setLayout] = useState(defaultLayout)
+/** The person's catalogue layout for one screen (Courses, or from 9 Nov 2026 Providers; each is kept on its own): server first, then this browser's copy, then the default. */
+export function useCourseLayout(userId, screen = COURSE_SCREEN) {
+  const [layout, setLayout] = useState(() => defaultLayout(screen))
   const [limits, setLimits] = useState(DEFAULT_LIMITS)
   const [source, setSource] = useState('default') // default | local | server
   const [ack, setAck] = useState(null) // { tone, text }
@@ -32,27 +32,28 @@ export function useCourseLayout(userId) {
   useEffect(() => {
     if (!userId) return
     let live = true
-    const local = readLocal(userId)
-    const start = local ? normaliseLayout(local) : { ...defaultLayout(), widths: normaliseLayout({ ...defaultLayout(), widths: readOldWidths() }).widths }
+    const local = readLocal(userId, screen)
+    // the browser-only widths each table kept before layouts (cf-colw:course, cf-colw:provider) are read, never removed, and still apply
+    const start = local ? normaliseLayout(local, DEFAULT_LIMITS, screen) : { ...defaultLayout(screen), widths: normaliseLayout({ ...defaultLayout(screen), widths: readOldWidths(screen) }, DEFAULT_LIMITS, screen).widths }
     setLayout(start); setSource(local ? 'local' : 'default')
-    supabase.rpc('admin_table_layout', { p_action: 'read', p_args: { screen: COURSE_SCREEN } }).then(({ data, error }) => {
+    supabase.rpc('admin_table_layout', { p_action: 'read', p_args: { screen } }).then(({ data, error }) => {
       if (!live) return
       if (error || !data || typeof data !== 'object' || Array.isArray(data)) { setLoaded(true); return }
       const lim = { ...DEFAULT_LIMITS, ...(data.limits || {}) }
       setLimits(lim); setHasPrevious(Boolean(data.has_previous))
       if (data.server_layouts === false) { serverRef.current = false; setServerOn(false) }
       if (data.new_sorts === false) setNewSorts(false)
-      if (data.layout) { setLayout(normaliseLayout(data.layout, lim)); setSource('server') }
+      if (data.layout) { setLayout(normaliseLayout(data.layout, lim, screen)); setSource('server') }
       setLoaded(true)
     }).catch(() => live && setLoaded(true))
     return () => { live = false; clearTimeout(timer.current) }
-  }, [userId])
+  }, [userId, screen])
   const persist = next => {
     clearTimeout(timer.current)
     timer.current = setTimeout(async () => {
       if (!serverRef.current) { setAck({ tone: 'warning', text: 'Saved in this browser only: server layouts are switched off (Settings › Pipeline settings › Course catalogue)' }); return }
       try {
-        const { data, error } = await supabase.rpc('admin_table_layout', { p_action: 'save', p_args: { screen: COURSE_SCREEN, layout: next } })
+        const { data, error } = await supabase.rpc('admin_table_layout', { p_action: 'save', p_args: { screen, layout: next } })
         if (error || !data?.saved) throw error || new Error('not saved')
         setSource('server'); setHasPrevious(Boolean(data.has_previous))
         setAck({ tone: 'success', text: `Layout saved to your account at ${timeOf(data.saved_at)}` })
@@ -60,28 +61,28 @@ export function useCourseLayout(userId) {
     }, SAVE_AFTER_MS)
   }
   const update = patch => {
-    const next = normaliseLayout({ ...latest.current, ...(typeof patch === 'function' ? patch(latest.current) : patch) }, limits)
+    const next = normaliseLayout({ ...latest.current, ...(typeof patch === 'function' ? patch(latest.current) : patch) }, limits, screen)
     setLayout(next); latest.current = next
-    if (userId) writeLocal(userId, next)
+    if (userId) writeLocal(userId, next, screen)
     setAck({ tone: 'info', text: 'Saving…' }); persist(next)
   }
   const reset = async () => {
     clearTimeout(timer.current)
-    const next = defaultLayout(); setLayout(next); latest.current = next
-    if (userId) writeLocal(userId, next)
+    const next = defaultLayout(screen); setLayout(next); latest.current = next
+    if (userId) writeLocal(userId, next, screen)
     if (!serverRef.current) { setAck({ tone: 'warning', text: 'Default layout restored in this browser (server layouts are switched off)' }); return }
     try {
-      const { data, error } = await supabase.rpc('admin_table_layout', { p_action: 'reset', p_args: { screen: COURSE_SCREEN } })
+      const { data, error } = await supabase.rpc('admin_table_layout', { p_action: 'reset', p_args: { screen } })
       if (error || !data?.reset) throw error || new Error('not reset')
       setHasPrevious(Boolean(data.has_previous)); setSource('default'); setAck({ tone: 'success', text: 'Default layout restored. Your last saved layout can be brought back.' })
     } catch (e) { setAck({ tone: 'warning', text: `Default layout shown in this browser only: ${e?.message || 'the server did not answer'}` }) }
   }
   const restore = async () => {
     try {
-      const { data, error } = await supabase.rpc('admin_table_layout', { p_action: 'restore', p_args: { screen: COURSE_SCREEN } })
+      const { data, error } = await supabase.rpc('admin_table_layout', { p_action: 'restore', p_args: { screen } })
       if (error || !data?.restored) throw error || new Error('nothing to restore')
-      const next = normaliseLayout(data.layout, limits); setLayout(next); latest.current = next
-      if (userId) writeLocal(userId, next)
+      const next = normaliseLayout(data.layout, limits, screen); setLayout(next); latest.current = next
+      if (userId) writeLocal(userId, next, screen)
       setHasPrevious(Boolean(data.has_previous)); setSource('server'); setAck({ tone: 'success', text: `Last saved layout restored at ${timeOf(data.saved_at)}` })
     } catch (e) { setAck({ tone: 'warning', text: `Could not restore: ${e?.message || 'the server did not answer'}` }) }
   }
@@ -89,31 +90,36 @@ export function useCourseLayout(userId) {
 }
 
 /** Columns control: search, four groups, a count, show and hide, move up and down, Reset to default, Restore last saved. */
-export function ColumnsControl({ layout, limits, hasPrevious, onChange, onReset, onRestore, ack }) {
+export function ColumnsControl({ layout, limits, hasPrevious, onChange, onReset, onRestore, ack, screen = COURSE_SCREEN, hide = () => false }) {
   const [open, setOpen] = useState(false), [q, setQ] = useState('')
   const ref = useRef(null), searchRef = useRef(null)
   useEffect(() => { if (!open) return; const close = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }; const esc = e => { if (e.key === 'Escape') setOpen(false) }; addEventListener('mousedown', close); addEventListener('keydown', esc); setTimeout(() => searchRef.current?.focus(), 0); return () => { removeEventListener('mousedown', close); removeEventListener('keydown', esc) } }, [open])
-  const shown = layout.columns, full = shown.length >= (limits.max_columns || DEFAULT_LIMITS.max_columns)
+  const REG = registryOf(screen).filter(c => !hide(c.key)), TOTAL = REG.length
+  const shown = layout.columns.filter(k => !hide(k)), full = shown.length >= (limits.max_columns || DEFAULT_LIMITS.max_columns)
   const match = c => !q || `${c.label} ${c.group}`.toLowerCase().includes(q.toLowerCase())
-  const move = (key, by) => { onChange({ columns: moveColumn(shown, key, by) }); requestAnimationFrame(() => document.querySelector(`[data-col-move="${key}:${by}"]`)?.focus()) }
+  const move = (key, by) => {
+    // a column the person cannot see (Adapter below Platform Admin) is stepped over, so every press moves a visible column
+    let cols = layout.columns; const before = cols.filter(k => !hide(k)).join()
+    for (let n = 0; n < cols.length; n++) { cols = moveColumn(cols, key, by); if (cols.filter(k => !hide(k)).join() !== before) break }
+    onChange({ columns: cols }); requestAnimationFrame(() => document.querySelector(`[data-col-move="${key}:${by}"]`)?.focus()) }
   return <div className="ccol-columns" ref={ref}>
-    <button type="button" className="m-secondary compact" aria-expanded={open} aria-haspopup="dialog" data-columns-toggle onClick={() => setOpen(x => !x)}><Columns3 size={14} />Columns <span className="ccol-count" data-columns-count>{shown.length} of {COURSE_COLUMNS.length}</span></button>
+    <button type="button" className="m-secondary compact" aria-expanded={open} aria-haspopup="dialog" data-columns-toggle onClick={() => setOpen(x => !x)}><Columns3 size={14} />Columns <span className="ccol-count" data-columns-count>{shown.length} of {TOTAL}</span></button>
     {open && <div className="ccol-panel" role="dialog" aria-label="Choose columns" data-columns-panel>
-      <div className="ccol-panel-head"><strong>Columns</strong><span>{shown.length} of {COURSE_COLUMNS.length} shown{full ? ' (the most a layout can show)' : ''}</span><button type="button" className="ccol-icon" aria-label="Close columns" onClick={() => setOpen(false)}><X size={14} /></button></div>
+      <div className="ccol-panel-head"><strong>Columns</strong><span>{shown.length} of {TOTAL} shown{full ? ' (the most a layout can show)' : ''}</span><button type="button" className="ccol-icon" aria-label="Close columns" onClick={() => setOpen(false)}><X size={14} /></button></div>
       {/* the acknowledgement also inside the panel: on a phone the panel covers the bar while it is open (v2.15.486 acceptance) */}
       {ack && <span className={`ccol-ack tone-${ack.tone}`} data-layout-ack-panel={ack.tone} aria-hidden="true">{ack.text}</span>}
       <label className="ccol-search"><Search size={14} /><input ref={searchRef} value={q} onChange={e => setQ(e.target.value)} placeholder="Search columns…" aria-label="Search columns" /></label>
       <div className="ccol-order" aria-label="Shown columns, in order">
         <small>Shown, in order</small>
-        <ol>{shown.filter(k => match(columnOf(k))).map(k => { const c = columnOf(k), i = shown.indexOf(k); return <li key={k} data-col-order={k}><span>{c.label}</span>
+        <ol>{shown.filter(k => match(columnOf(k, screen))).map(k => { const c = columnOf(k, screen), i = shown.indexOf(k); return <li key={k} data-col-order={k}><span>{c.label}</span>
           <button type="button" className="ccol-icon" data-col-move={`${k}:-1`} aria-label={`Move ${c.label} left`} disabled={i === 0} onClick={() => move(k, -1)}><ArrowUp size={13} /></button>
           <button type="button" className="ccol-icon" data-col-move={`${k}:1`} aria-label={`Move ${c.label} right`} disabled={i === shown.length - 1} onClick={() => move(k, 1)}><ArrowDown size={13} /></button></li> })}</ol>
       </div>
-      {GROUPS.map(g => { const cols = COURSE_COLUMNS.filter(c => c.group === g && match(c)); if (!cols.length) return null; return <fieldset key={g} className="ccol-group" data-columns-group={g}>
-        <legend>{g} <small>{cols.filter(c => shown.includes(c.key)).length} of {COURSE_COLUMNS.filter(c => c.group === g).length}</small></legend>
-        {cols.map(c => <label key={c.key} className="ccol-option"><input type="checkbox" checked={shown.includes(c.key)} disabled={c.alwaysVisible || (!shown.includes(c.key) && full)} onChange={e => onChange({ columns: toggleColumn(shown, c.key, e.target.checked, limits) })} data-col-toggle={c.key} />{c.label}{c.alwaysVisible && <small> (always shown)</small>}{c.sortKey && <small> · sorts</small>}</label>)}
+      {GROUPS.map(g => { const cols = REG.filter(c => c.group === g && match(c)); if (!cols.length) return null; return <fieldset key={g} className="ccol-group" data-columns-group={g}>
+        <legend>{groupHeading(screen, g)} <small>{cols.filter(c => shown.includes(c.key)).length} of {REG.filter(c => c.group === g).length}</small></legend>
+        {cols.map(c => <label key={c.key} className="ccol-option"><input type="checkbox" checked={shown.includes(c.key)} disabled={c.alwaysVisible || (!shown.includes(c.key) && full)} onChange={e => onChange({ columns: toggleColumn(layout.columns, c.key, e.target.checked, limits, screen) })} data-col-toggle={c.key} />{c.label}{c.alwaysVisible && <small> (always shown)</small>}{c.sortKey && <small> · sorts</small>}</label>)}
       </fieldset> })}
-      {!COURSE_COLUMNS.some(match) && <p className="ccol-empty">No column matches “{q}”.</p>}
+      {!REG.some(match) && <p className="ccol-empty">No column matches “{q}”.</p>}
       <div className="ccol-actions"><button type="button" className="m-secondary compact" onClick={onReset} data-columns-reset><RotateCcw size={13} />Reset to default</button><button type="button" className="m-secondary compact" onClick={onRestore} disabled={!hasPrevious} data-columns-restore><Undo2 size={13} />Restore last saved</button></div>
     </div>}
   </div>
@@ -226,3 +232,104 @@ export function useCourseTableColumns(layout, limits, { navigate, hide = () => f
   return useMemo(() => layout.columns.filter(k => !hide(k)).map(k => { const c = columnOf(k); return { key: k, label: c.header, width: c.width, sortKey: (c.sortKey && (newSorts || !NEW_SORTS.has(c.sortKey)) ? c.sortKey : undefined), minWidth: minWidthOf(k, limits), ...(NEW_CELL_KEYS.has(k) ? { render: r => renderCourseCell(k, r, { navigate }) } : {}) } }), [layout.columns.join(','), limits, navigate, hide, newSorts])
 }
 export { clampWidth }
+
+
+// ---------------------------------------------------------------------------------------------------------------------------------------------
+// CF-247 Provider Catalogue columns (Platform Admin directive 9 Nov 2026). The cells of the Provider columns this change adds. Every fact comes from
+// the providers_page item (security.admin_providers_page_v3): registration, scholarships, entry_coverage and pdesc (security.provider_catalogue_facts_v1).
+// Where the platform holds no trustworthy record the cell says Unknown, never a guess. The catalogue description's state, the Website feed's state and
+// the Zoho feed's state are three separate facts: a description in the catalogue does not mean it is published to either consumer.
+const PD = row => (row && row.pdesc && typeof row.pdesc === 'object' ? row.pdesc : null)
+const ADMISSION = { admitted: ['Admitted', 'success'], declined: ['Declined', 'danger'], held: ['Held', 'warning'], pending: ['Pending', 'info'], none: ['No description read', 'neutral'], unrecorded: ['Admitted: no record', 'warning'] }
+const ADMISSION_WHY = { admitted: 'The description in the catalogue was admitted by the machine rule or by a Layer 4 approval.', declined: 'The reader\'s proposal was declined. See the reason.', held: 'The reader\'s proposal is held. See the reason and the next retry.',
+  pending: 'A read is queued, running or waiting for a decision.', none: 'No description read has been recorded for this provider.', unrecorded: 'A description is held, but the platform has no admission record for that text (written before admissions were recorded, or changed since). Shown as recorded, not as admitted.' }
+const SOURCE_TIER = { stored: 'Stored page', direct: 'Direct page read', firecrawl: 'Firecrawl page read', registry_factual: 'Registry facts (written from verified register facts)' }
+const READER = { queued: 'Queued', reading: 'Reading', proposed: 'Proposed, awaiting decision', held: 'Held', rejected: 'Rejected', admitted: 'Admitted', verified: 'Verified', dead_letter: 'Gave up' }
+const FEED = { matched: ['Matched', 'success'], pending: ['Pending', 'info'], missing: ['Missing', 'warning'], not_applicable: ['Not applicable', 'neutral'] }
+const FEED_WHY = {
+  website: { matched: 'The Website feed holds this exact description.', pending: 'The Website feed has an item for this provider, but its description differs from the catalogue (or the catalogue has none yet).', missing: 'The Website feed serves this provider but has no item yet.', not_applicable: 'The Website feed does not serve this provider (unpublished, inactive, or nothing to publish).' },
+  zoho: { matched: 'The Zoho feed holds this exact description.', pending: 'The Zoho feed has an item for this provider, but its description differs from the catalogue (or the catalogue has none yet).', missing: 'The Zoho feed serves this provider but has no item yet.', not_applicable: 'The Zoho feed does not serve this provider (unpublished, inactive, or nothing to publish).' },
+}
+const CANONICAL = { none: ['No description', 'neutral', 'The catalogue holds no description for this provider.'], published: ['Published (active)', 'success', 'The catalogue holds a description and the provider is active and published, so the consumers are meant to serve it.'], unpublished: ['Held back', 'warning', 'The catalogue holds a description, but the provider is unpublished or not active, so consumers do not serve it.'] }
+const MISMATCH = { none: ['None', 'neutral'], website: ['Website differs', 'warning'], zoho: ['Zoho differs', 'warning'], both: ['Website and Zoho differ', 'danger'] }
+const COVERAGE_WORDS = { not_started: 'Not started', in_progress: 'In progress', partial: 'Partial', covered: 'Covered', complete: 'Complete', none: 'None', not_applicable: 'Not applicable' }
+const words = v => (v == null || v === '' ? '' : String(v).replaceAll('_', ' ').replace(/^./, c => c.toUpperCase()))
+const UnknownFact = ({ why }) => <Unknown title={why} />
+const dt = v => fmtDateTime(v)
+function Chip({ map, value, attr, why }) { const [label, tone] = map[value] || [words(value), 'neutral']; return <span {...attr}><StatusChip tone={tone} label={label} title={why} /></span> }
+
+/** The description with its full text one tap away: a preview in the cell, the whole text inline when opened and always in the tooltip. */
+function DescriptionCell({ row }) {
+  const [open, setOpen] = useState(false)
+  const text = typeof row.pdesc?.text === 'string' ? row.pdesc.text.trim() : ''
+  if (!PD(row)) return <UnknownFact why="The page did not return the description facts for this provider" />
+  if (!text) return <span className="ccol-unknown" data-description="missing" title="The catalogue holds no description for this provider">No description</span>
+  const short = text.length > 140 ? text.slice(0, 140).trimEnd() + '…' : text
+  return <span className="ccol-desc" data-description="filled" title={text}>
+    <span data-description-text>{open ? text : short}</span>
+    {text.length > 140 && <button type="button" className="ccol-link" aria-expanded={open} onClick={e => { e.stopPropagation(); setOpen(x => !x) }}>{open ? 'Show less' : 'Show full text'}</button>}
+  </span>
+}
+function Evidence({ row }) {
+  const d = PD(row)
+  if (!d) return <UnknownFact />
+  const url = d.source_url && /^https?:\/\//i.test(d.source_url) ? d.source_url : null
+  let host = ''; try { host = url ? new URL(url).hostname.replace(/^www\./, '') : '' } catch { host = url || '' }
+  if (!d.evidence_id && !url) return d.description_filled ? <UnknownFact why="No evidence or source address is recorded for the description held" /> : <span>—</span>
+  return <span className="ccol-evidence">
+    {d.evidence_id && <span data-evidence-id={d.evidence_id} title={`Evidence ${d.evidence_id}`}>{String(d.evidence_id).slice(0, 8)}</span>}
+    {url && <a className="ccol-link" href={url} target="_blank" rel="noreferrer" title={url} onClick={e => e.stopPropagation()}>{host || 'Open source'}</a>}
+  </span>
+}
+const Clip = ({ text, empty = '—' }) => (text ? <span className="m-cell-clip" title={text}>{text}</span> : <span>{empty}</span>)
+
+/** Cells of the Provider columns this change adds. Existing Provider columns keep their own cells. */
+export function renderProviderCell(key, row) {
+  const d = PD(row)
+  switch (key) {
+    case 'registration': { const r = row.registration; return r ? <span data-registration title={`${r.scheme} ${r.code}${r.status ? ` · ${r.status}` : ''}${r.checked_at ? ` · checked ${dt(r.checked_at)}` : ''}`}>{r.scheme} {r.code}</span> : <UnknownFact why="No registration identity is held for this provider" /> }
+    case 'scholarship_count': { const s = row.scholarships; return s ? <span data-scholarships={s.total} title={`${fmtNumber(s.total)} scholarship record(s), ${fmtNumber(s.published)} published`}>{fmtNumber(s.total)}{s.total ? <small> · {fmtNumber(s.published)} published</small> : null}</span> : <UnknownFact /> }
+    case 'entry_coverage': { const c = row.entry_coverage; if (!c) return <UnknownFact why="This provider is not in the entry requirements coverage table, so its coverage is not known" />
+      return <span data-coverage={c.disposition} title={[`Discovery: ${words(c.discovery) || '—'}`, `Extraction: ${words(c.extraction) || '—'}`, `Admission: ${words(c.admission) || '—'}`, `Matrix active: ${c.matrix_active == null ? 'Unknown' : c.matrix_active ? 'yes' : 'no'}`, `Course requirements active: ${c.course_requirements_active == null ? 'Unknown' : c.course_requirements_active ? 'yes' : 'no'}`, c.as_at && `As at ${dt(c.as_at)}`].filter(Boolean).join('\n')}>{COVERAGE_WORDS[c.disposition] || words(c.disposition) || 'Unknown'}</span> }
+    case 'admission_state': return d ? <Chip map={ADMISSION} value={d.admission_state} why={ADMISSION_WHY[d.admission_state]} attr={{ 'data-admission': d.admission_state }} /> : <UnknownFact />
+    case 'description_filled': return d ? <span data-filled={d.description_filled ? 'yes' : 'no'}><StatusChip tone={d.description_filled ? 'success' : 'warning'} label={d.description_filled ? 'Filled' : 'Missing'} /></span> : <UnknownFact />
+    case 'description_text': return <DescriptionCell row={row} />
+    case 'description_source': { if (!d) return <UnknownFact />
+      if (d.source_tier === 'unknown') return <span data-source="unknown"><Unknown title="The description was admitted but the way it was read was not recorded" /></span>
+      if (!d.source_tier) return d.description_filled ? <span data-source="unknown"><Unknown title="No source is recorded for the description held" /></span> : <span>—</span>
+      return <span data-source={d.source_tier} title={SOURCE_TIER[d.source_tier] || d.source_tier}>{SOURCE_TIER[d.source_tier]?.split(' (')[0] || words(d.source_tier)}</span> }
+    case 'description_evidence': return <Evidence row={row} />
+    case 'description_admitted_at': { if (!d) return <UnknownFact />
+      if (!d.description_filled) return <span>—</span>
+      return d.admitted_at ? <span data-admitted-at={d.admitted_at} title={`${dt(d.admitted_at)}${d.admitted_by ? ` · admitted by ${d.admitted_by === 'machine' ? 'the machine rule' : 'a Layer 4 decision'}` : ''}`}>{dt(d.admitted_at)}</span> : <UnknownFact why="The description is held but no admission time is recorded" /> }
+    case 'reader_status': { if (!d) return <UnknownFact />
+      if (!d.reader_state) return <span data-reader="none" className="ccol-muted" title="No description read has been recorded">Not read</span>
+      return <span data-reader={d.reader_state} title={[d.reader_rule && `Rule: ${d.reader_rule}`, d.reader_via && `Read by: ${d.reader_via}`, d.reader_tries != null && `Tries: ${d.reader_tries}`, d.reader_updated_at && `Updated ${dt(d.reader_updated_at)}`].filter(Boolean).join('\n') || undefined}>{READER[d.reader_state] || words(d.reader_state)}</span> }
+    case 'last_read_ok_at': return !d ? <UnknownFact /> : d.last_read_ok_at ? <span data-last-read={d.last_read_ok_at}>{dt(d.last_read_ok_at)}</span> : <span className="ccol-muted" title="No page read that kept evidence is recorded">Never read</span>
+    case 'hold_reason': return !d ? <UnknownFact /> : <Clip text={d.hold_reason} />
+    case 'next_retry_at': return !d ? <UnknownFact /> : d.next_retry_at ? <span data-next-retry={d.next_retry_at}>{dt(d.next_retry_at)}</span> : <span>—</span>
+    case 'layer4_status': { if (!d) return <UnknownFact />
+      if (!d.l4_status) return <span className="ccol-muted" title="No Layer 4 item is linked to this provider's description">No item</span>
+      const tone = d.l4_status === 'approved' ? 'success' : d.l4_status === 'pending' ? 'violet' : 'neutral'
+      return <span data-layer4={d.l4_status}><StatusChip tone={tone} label={words(d.l4_status)} title={[d.l4_at && `Decided ${dt(d.l4_at)}`, d.l4_actor && `By: ${d.l4_actor}`].filter(Boolean).join('\n') || undefined} /></span> }
+    case 'canonical_status': { if (!d) return <UnknownFact />; const [label, tone, why] = CANONICAL[d.canonical_status] || [words(d.canonical_status), 'neutral']; return <span data-canonical={d.canonical_status}><StatusChip tone={tone} label={label} title={why} /></span> }
+    case 'website_state': return d ? <Chip map={FEED} value={d.website_state} why={FEED_WHY.website[d.website_state]} attr={{ 'data-website': d.website_state }} /> : <UnknownFact />
+    case 'zoho_state': return d ? <Chip map={FEED} value={d.zoho_state} why={FEED_WHY.zoho[d.zoho_state]} attr={{ 'data-zoho': d.zoho_state }} /> : <UnknownFact />
+    case 'mismatch': return d ? <Chip map={MISMATCH} value={d.mismatch} why="Compares the catalogue's description with what the Website feed and the Zoho feed hold, for the consumers that serve this provider." attr={{ 'data-mismatch': d.mismatch }} /> : <UnknownFact />
+    case 'last_modified_at': { const v = row.last_modified_at ?? row.updated_at; return v ? <span data-modified title={`The provider record itself, as its writers recorded it: ${dt(v)}. Descriptions, evidence and feed items live in other tables and do not change this.`}>{dt(v)}</span> : <UnknownFact why="No change of the provider record is recorded" /> }
+    default: return undefined
+  }
+}
+export const PROVIDER_NEW_CELL_KEYS = new Set(['registration', 'scholarship_count', 'entry_coverage', 'admission_state', 'description_filled', 'description_text', 'description_source', 'description_evidence', 'description_admitted_at', 'reader_status', 'last_read_ok_at', 'hold_reason', 'next_retry_at', 'layer4_status', 'canonical_status', 'website_state', 'zoho_state', 'mismatch', 'last_modified_at'])
+// layer4_status and last_modified_at also exist on the Course screen, with their own cells: the Provider screen never uses those
+/** The Provider table's columns for the person's layout, in their order. `overrides` are the cells that need the screen's state (Type, Published, Scholarship search, Adapter); every other
+ *  existing column keeps the shared table's own cell. Built on each render, so an override always sees the latest state. */
+export function providerTableColumns(layout, limits, { overrides = {}, hide = () => false } = {}) {
+  return layout.columns.filter(k => !hide(k)).map(k => {
+    const c = columnOf(k, PROVIDER_SCREEN), o = overrides[k]
+    const col = { key: k, label: c.header, width: c.width, sortKey: c.sortKey || undefined, minWidth: minWidthOf(k, limits, PROVIDER_SCREEN) }
+    if (o) return { ...col, ...o, key: k, label: o.label || col.label, sortKey: c.sortKey || undefined }
+    if (PROVIDER_NEW_CELL_KEYS.has(k)) col.render = r => renderProviderCell(k, r)
+    return col
+  })
+}
