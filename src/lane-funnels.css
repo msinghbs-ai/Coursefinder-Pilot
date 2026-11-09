@@ -41,3 +41,4 @@
 .svc-card{grid-template-columns:minmax(0,1fr)}
 .svc-card>.m-page-stack{min-width:0}
 [data-fc-acceptance]{min-width:0;max-width:100%}
+.lf .lf-asat{color:var(--cf-muted);margin-left:.35rem}

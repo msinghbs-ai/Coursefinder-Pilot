@@ -620,6 +620,8 @@
 /* v2.15.262: Firecrawl credits by university */
 .fcc-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0 4px}
 .fcc-only{display:inline-flex;gap:6px;align-items:center;font-size:.9rem}
+/* F-OPS.04 (phone): Task manager › Background jobs: the "Only what is busy" checkbox was 13 px; the whole label is a 32 px target on a phone, in this board only */
+@media(max-width:620px){[data-progress-running] .fcc-only{min-height:32px}}
 /* v2.15.264: Models & services › AI & OpenRouter */
 .ai-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:4px 0 12px}
 .ai-grid>div{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border:1px solid var(--cf-border);border-radius:8px}
@@ -833,3 +835,19 @@
 .kd-drawer-fields dt{font-size:var(--cf-fs-xs);color:var(--cf-text-2)}
 .kd-drawer-fields dd{margin:0;min-width:0}
 .au-area-toggle{font:inherit;font-weight:600;color:var(--cf-text)}
+/* CF-247 F-OPS.04: Layer 2/3 › Universities (Adapters) on a phone. Measured at 412 px: tick boxes 13 px, row-block headers 16 px, Inbox link 12 px high, the "page" links in an opened row 20 px high (WCAG 2.2 AA 2.5.8 floor 24 px). Phone only; desktop unchanged. */
+@media(max-width:480px){
+  [data-adapters-workspace] .adp-row-head>input[type="checkbox"],[data-adapters-workspace] .tn-check input[type="checkbox"]{width:24px;height:24px;margin:0;flex:none}
+  [data-adapters-workspace] .adp-block>.adp-row-name{min-height:32px;align-items:center}
+  [data-adapters-workspace] .l23-inbox-link{display:inline-flex;align-items:center;min-height:24px}
+  [data-adapters-workspace] .uc-policy>a.cf-link{display:inline-flex;align-items:center;min-height:24px}
+}
+/* F-OPS.04: Integration queue on a phone. An opened issue's history sits in a full-width table row, so it was as wide as the whole table
+   and had to be scrolled sideways to read. On a phone its table frame becomes a size container, and the history is one frame wide (less the
+   cell's own 9 px each side) and pinned 9 px in from the left of that frame, so it fits the frame at any phone width and never runs past its right edge. */
+@media (max-width:620px){
+  .cf-table-wrap:has(>.iq-table){container-type:inline-size}
+  .iq-table .iq-detail .iq-history{position:sticky;left:9px;box-sizing:border-box;width:calc(100cqw - 18px);max-width:100%}
+}
+/* CF-247 F-OPS.04 (9 Nov 2026): Operations › API usage on a phone. The six tables sit in a frame that does not scroll, so the keys table (about 1,200 px) ran past a 412 px screen; each frame now scrolls on its own at phone width. */
+@media (max-width:620px){.m-page-stack .dense-table-wrap:has(> table[class*="cf-api-"]){overflow-x:auto;max-width:100%}}
