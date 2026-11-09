@@ -1,4 +1,4 @@
--- CF-247 F-PDESC (Platform Admin, 9-10 Nov 2026, on-demand provider descriptions): the identity fix must be able to reach the AI step. A failure the earlier reader recorded no longer blocks the current reader.
+-- CF-247 F-PDESC (Platform Admin, 9-10 Nov 2026, on-demand provider descriptions): the identity fix must be able to reach the AI step. A failure the earlier reader recorded no longer blocks the current reader, and a hold that came from that false refusal is offered again.
 --
 -- What was wrong (project fxcwkweaxjtknorudmwp, read-only evidence, 10 Nov 2026 about 06:25 AEDT):
 --   * Since worker v0.59.15 (reader stamp provider-description-source-guard-v3) the University of Sydney read (14939e4a-09e4-4b3b-ab4d-2e1166148679, evidence cc325a2c, content hash a73149cc) passes the identity proof
@@ -11,15 +11,23 @@
 --     to the current reader), the page did not, the signature did not, and the old failure of the old reader blocked the new reader before it could call the AI. No AI call had ever been made for that page.
 --   * It is not one provider. Of the latest finished reads, 41 are held provider_name_conflict by reader v2, 29 by reader v1 and 3 provider_subunit_source by reader v2; the running reader is v3
 --     (pipeline.pdesc_reader_state, newest stamp, seen 9 Nov 19:17 UTC). Each of them is re-offered once to v3, and each would meet this refusal at the reservation. 206 reads are queued, 10 are reading, none of the queued has failure memory.
--- What this changes (one function body; no setting, job, table, column, trigger, grant or consumer object):
---   security.provider_description_signature_v1(text,text,text) also carries the reader that is running now, security.pdesc_reader_behaviour_v1() (the newest stamp a worker wrote, one primary-key row of
+-- What this changes (two function bodies; no setting, job, table, column, trigger, grant or consumer object):
+--   1 security.provider_description_signature_v1(text,text,text) also carries the reader that is running now, security.pdesc_reader_behaviour_v1() (the newest stamp a worker wrote, one primary-key row of
 --   pipeline.pdesc_reader_state, kept by the triggers of 20261109185000). A failure recorded while reader X was running is found only by a check made while reader X is running; when the reader's behaviour changes, the
 --   signature changes, and the same page may be tried once by the new reader. A failure recorded under the current reader still blocks an unchanged retry, exactly as now.
 --   When there is no running reader (the state row is empty, the function returns null) nothing is added and the signature is exactly the one before this change.
+--   2 security.provider_description_selection_v1(jsonb) (QA of this change, 10 Nov 2026: it did not unblock Sydney). The picker parked a held read of rule recovery_knowledge_unchanged_failure on its unchanged page
+--     (unchanged_unsuitable_evidence, then retry_wait), even when that hold came from a refusal with no AI call. Sydney's read 14939e4a is exactly that (ai_calls 0, reserved_usd 0, hold made by the old signature check), so after change 1 the
+--     reservation would allow it, but nothing ever queued it. Now such a read is not parked by those two tests when ALL of: it is held on rule recovery_knowledge_unchanged_failure; no AI call was made (ai_calls 0) and nothing is reserved (reserved_usd 0);
+--     its page is still the stored page (same content hash); the retry memory no longer matches under the current signature (the same ops_learning_retry_check_v1 test the picker applies in its last branch); and no earlier read of the provider was
+--     REJECTED on that page. It is then judged by every later test as before (identity proof, the recovery-memory test, scope, manual locks) and, if all pass, is eligible. It stays parked when: the page changed (retry_wait as now), the hold was a real AI
+--     failure or another rule (the rule or ai_calls differ), the page was rejected (unchanged_unsuitable_evidence), or the memory still matches. If the re-read is refused again because the memory now matches, that hold is parked at once (the memory test
+--     is the one this change adds), so a provider is offered again only when the signature (page, model, prompt, validation, reader) is new. policy_retry_parked, identity_reeval_rules, the recheck period (retry_wait), the manual locks and every cap
+--     (queue_cap, queue_per_run, pending_max, pdesc.ai_usd_max, the daily guard, tries) are not changed.
 -- One signature for the recorder and every checker (checked by grep of supabase/ and of the live pg_proc.prosrc on 10 Nov 2026): the function is called by
 --   the recorder security.provider_description_learning_trg_v1 (live body md5 470dd2b0208e0fc6f46f1c95be55a72e), and the checkers public.svc_provider_description_reserve_v1 (8f1f3edfb97f848b4296d6be0333a35b),
---   public.svc_provider_description_next (7583808609dc2dea1d3fc251607405a1) and security.provider_description_selection_v1 (04acb9419b9965b5d6aab420059c7e84). None is edited here (the lease and the picker are being edited by
---   draft PR 973); all four call the one function, so recorder and checkers cannot disagree. The trigger fires after the reader's stamp trigger (pdesc_reader_stamp_upd sorts before provider_description_learning), so a failure
+--   public.svc_provider_description_next (504678d725b0131785f7e3541a6c3695, as 20261110040000 leaves it) and security.provider_description_selection_v1 (41c9e5ffaba74453c699fd84e9135648, as 20261110040000 leaves it).
+--   Only the picker is edited here (change 2); all four call the one function, so recorder and checkers cannot disagree. The trigger fires after the reader's stamp trigger (pdesc_reader_stamp_upd sorts before provider_description_learning), so a failure
 --   is recorded under the reader that wrote the read.
 -- Cost: the function adds one primary-key read of a one-row table (about 0.001 ms; security.pdesc_reader_behaviour_v1 never scans the reads). The function already reads the validation text and the settings.
 -- Alternative considered and NOT taken: stop the trigger recording the identity rules (provider_name_conflict, provider_name_not_proved, provider_subunit_source, wrong_host, provider_host_conflict) as learning failures, because no AI
@@ -32,14 +40,19 @@
 --       by content hash, independent of the signature. So no provider is released that the picker does not offer. Spend is still bounded by pdesc.ai_usd_max (US$1 lifetime), the daily lane guard (guard_provider_description),
 --       pdesc.queue_cap, pdesc.queue_per_run and pdesc.tries, in the reservation, which is unchanged. Read on 10 Nov 2026: lane spend US$0.0799, today US$0.0710.
 --   (b) Nothing is deleted or changed in pipeline.ops_remedy_outcomes, pipeline.ops_remedy_knowledge or the reads. The old outcomes stay as the history of what each reader decided.
---   (c) A read held recovery_knowledge_unchanged_failure by the false refusal (Sydney, 14939e4a) is still parked by the picker on its unchanged page. This change lets its next read reach the AI step; it does not queue it. See the hand-back note.
--- Live definition this change edits (pg_proc.prosrc md5, read 10 Nov 2026), before -> after:
+--   (c) A read held recovery_knowledge_unchanged_failure by the false refusal (Sydney, 14939e4a, provider 68022bdf) is offered again by the picker (change 2), once, because the signature is new; it is read from the stored page (no Firecrawl,
+--       no new fetch) and meets the same identity proof, reservation and ceilings. A repeat read is not offered twice without a new failure signature: if the memory matches again the hold is parked as before.
+--   (d) Deferred, not done here (QA note 2): the reader stamp is last-write-wins, and the recorder uses the running reader, not the stamp of the read it records. While two worker versions overlap, a failure of the older version can be recorded
+--       under the newer stamp. It needs a second signature form that takes the stamp of the read (a new function or argument that the picker and lease would also call), which is not a few lines. Bound: one extra re-read per hold per flip, as 20261109185000
+--       states. Owner: the release controller (to schedule as its own change after #980). Nothing in this change makes it worse.
+-- Live definitions this change edits (pg_proc.prosrc md5, read 10 Nov 2026), before -> after:
 --   security.provider_description_signature_v1(text,text,text) b48bbd5b345f2e7b9a1fc6df9958163b -> 2002daebe8768dc9504b8c53131472e0
--- The edit is guarded: the migration stops if the live body is neither the one it replaces nor the one it writes, and applying it twice changes nothing. The text before it is kept in supabase/held/pdesc_signature_reader_forward_recovery.sql.
--- Depends on 20261109185000 (security.pdesc_reader_behaviour_v1): this change refuses until it is applied.
+--   security.provider_description_selection_v1(jsonb) 41c9e5ffaba74453c699fd84e9135648 -> 7f4a7aa8fea1b81bbf8c1742d749502e
+-- Each edit is guarded: the migration stops, and nothing is applied, if a live body is neither the one it replaces nor the one it writes; applying it twice changes nothing. The text before is kept in supabase/held/pdesc_signature_reader_forward_recovery.sql.
+-- Depends on 20261109185000 (security.pdesc_reader_behaviour_v1) and 20261110040000 (the picker text this change edits): this change refuses until both are applied.
 -- Consumer API (G3): not touched (security.provider_description_signature_v1 is an internal recovery-memory function, not a website, Zoho or api object; no table or column the consumer API reads is changed).
 -- No operational number is written into code (G2) and no setting or job is added (G1).
--- Replaces: the body of security.provider_description_signature_v1 (the signature without the running reader); the earlier text is kept in supabase/held/pdesc_signature_reader_forward_recovery.sql
+-- Replaces: the body of security.provider_description_signature_v1 (the signature without the running reader) and the parking of a no-AI recovery-knowledge refusal in security.provider_description_selection_v1; the earlier text is kept in supabase/held/pdesc_signature_reader_forward_recovery.sql
 -- Retires: nothing
 -- Nothing is dropped, deleted or renamed by this migration.
 
@@ -47,7 +60,7 @@ do $g$
 declare r record;
 begin
   for r in select * from (values ('security.provider_description_signature_v1(text,text,text)'), ('security.pdesc_reader_behaviour_v1()'), ('security.provider_description_validate_v1(uuid,text,timestamptz,jsonb)'),
-                                 ('security.ops_learning_retry_check_v1(text,text,text)')) v(sig) loop
+                                 ('security.ops_learning_retry_check_v1(text,text,text)'), ('security.provider_description_selection_v1(jsonb)')) v(sig) loop
     if to_regprocedure(r.sig) is null then raise exception 'required % is missing (apply 20261109185000 first)', r.sig; end if;
   end loop;
 end $g$;
@@ -76,3 +89,11 @@ array[
 $old$pdesc.superlatives')),''))$old$],
 array[
 $new$pdesc.superlatives')),'')||coalesce('|'||security.pdesc_reader_behaviour_v1(),''))$new$]);
+
+select pg_temp.edit_all('security.provider_description_selection_v1(jsonb)', '41c9e5ffaba74453c699fd84e9135648', '7f4a7aa8fea1b81bbf8c1742d749502e',
+array[
+$old$is distinct from coalesce(v_cur,'')) then 'unchanged_unsuitable_evidence'$old$,
+$old$,false)) then 'retry_wait'$old$],
+array[
+$new$is distinct from coalesce(v_cur,'')) and not (r.state='held' and r.rule='recovery_knowledge_unchanged_failure' and coalesce(r.ai_calls,0)=0 and coalesce(r.reserved_usd,0)=0 and a.id is not null and r.content_hash=coalesce(a.content_hash,a.id::text) and coalesce((security.ops_learning_retry_check_v1('provider_description:official_about',p.id::text,security.provider_description_signature_v1(coalesce(a.content_hash,a.id::text),(select model_identifier from pipeline.central_ai_settings where id=1),coalesce(r.prompt_version,'provider-description-v2')))->>'allowed')::boolean,true) and not exists(select 1 from pipeline.provider_description_reads z where z.provider_id=p.id and z.state='rejected' and z.content_hash=coalesce(a.content_hash,a.id::text))) then 'unchanged_unsuitable_evidence'$new$,
+$new$,false)) and not (r.state='held' and r.rule='recovery_knowledge_unchanged_failure' and coalesce(r.ai_calls,0)=0 and coalesce(r.reserved_usd,0)=0 and a.id is not null and r.content_hash=coalesce(a.content_hash,a.id::text) and coalesce((security.ops_learning_retry_check_v1('provider_description:official_about',p.id::text,security.provider_description_signature_v1(coalesce(a.content_hash,a.id::text),(select model_identifier from pipeline.central_ai_settings where id=1),coalesce(r.prompt_version,'provider-description-v2')))->>'allowed')::boolean,true) and not exists(select 1 from pipeline.provider_description_reads z where z.provider_id=p.id and z.state='rejected' and z.content_hash=coalesce(a.content_hash,a.id::text))) then 'retry_wait'$new$]);

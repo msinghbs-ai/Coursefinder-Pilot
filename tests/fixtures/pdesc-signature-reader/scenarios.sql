@@ -1,5 +1,5 @@
 -- Guards: Platform Admin 9-10 Nov 2026 on-demand provider descriptions – identity fix must be able to reach the AI step: the evidence signature carries the reader that is running, so a failure recorded under an earlier reader does not block the current reader, and a failure recorded under the current reader still blocks an unchanged retry.
--- Fixture data only (the provider-description-autonomy seed: fictional providers). Prints "<scenario>|<result>" lines and rolls everything back. Run by tests/fixtures/pdesc-signature-reader/run.sh after migrations 20261109182000 and 20261109185000, BEFORE and AFTER migration 20261110090000.
+-- Fixture data only (the provider-description-autonomy seed: fictional providers). Prints "<scenario>|<result>" lines and rolls everything back. Run by tests/fixtures/pdesc-signature-reader/run.sh after migrations 20261109182000, 20261109185000, 20261109233000 and 20261110040000, BEFORE and AFTER migration 20261110090000.
 \set ON_ERROR_STOP on
 \pset tuples_only on
 \pset format unaligned
@@ -159,6 +159,90 @@ select 'recorded_under_the_reader_that_wrote_it|' || exists (select 1 from pipel
 select pg_temp.set_reader('provider-description-source-guard-v2');
 select 'not_recorded_under_the_old_reader|' || (not exists (select 1 from pipeline.ops_remedy_outcomes o where o.entity = pg_temp.pid(11)::text and o.knowledge_code = 'provider_description:official_about'
                                                                 and o.evidence_signature = security.provider_description_signature_v1(pg_temp.stored_hash(11), pg_temp.model(), 'provider-description-v2')))::text;
+
+-- 8c. Sydney's shape (QA of #980, read 14939e4a on 10 Nov 2026): the latest read is held recovery_knowledge_unchanged_failure on the unchanged page with no AI call and nothing reserved; the failure it found was recorded under an earlier reader.
+--     The picker must offer it again under the new reader, and must keep parking every other hold. A latest read is made the way the platform makes it: the hold is written with the reader triggers off (a past read).
+create or replace function pg_temp.latest(n int, p_rule text, p_calls int, p_reserved numeric, p_hash text default null, p_state text default 'held') returns void language plpgsql as $f$
+begin
+  perform set_config('session_replication_role', 'replica', true);
+  insert into pipeline.provider_description_reads(provider_id, state, rule, content_hash, source_url, created_at, updated_at, tries, ai_calls, reserved_usd, model, prompt_version, checks)
+  values (pg_temp.pid(n), p_state, p_rule, coalesce(p_hash, pg_temp.stored_hash(n)), 'https://p' || n || '.example.edu/about', now() + interval '1 minute', now() + interval '1 minute', 1, p_calls, p_reserved, pg_temp.model(), 'provider-description-v2',
+          '{"identity":{"ok":true,"reader_behavior_version":"provider-description-source-guard-v3"}}'::jsonb);
+  perform set_config('session_replication_role', 'origin', true);
+end $f$;
+-- Sydney: a failure recorded under reader v2 (the identity hold), then the v3 read refused by the old signature check
+select pg_temp.set_reader('provider-description-source-guard-v2');
+select pg_temp.clean(12);
+select pg_temp.fail(12, 'provider_name_conflict');
+select pg_temp.set_reader('provider-description-source-guard-v3');
+select pg_temp.latest(12, 'recovery_knowledge_unchanged_failure', 0, 0);
+select 'sydney_shape_picker|' || pg_temp.why(12);
+-- the same shape with the memory made by the CURRENT reader: the memory still matches, parked
+select pg_temp.clean(15);
+select pg_temp.fail(15, 'provider_name_conflict');
+select pg_temp.latest(15, 'recovery_knowledge_unchanged_failure', 0, 0);
+select 'memory_matches_current_reader_picker|' || pg_temp.why(15);
+-- a real AI failure on the unchanged page stays parked: another rule, or the same rule with an AI call made, or a reservation left
+select pg_temp.set_reader('provider-description-source-guard-v2');
+select pg_temp.clean(7);
+select pg_temp.fail(7, 'verbatim_passage');
+select pg_temp.set_reader('provider-description-source-guard-v3');
+select pg_temp.latest(7, 'verbatim_passage', 1, 0);
+select 'real_ai_failure_other_rule_picker|' || pg_temp.why(7);
+select pg_temp.set_reader('provider-description-source-guard-v2');
+select pg_temp.clean(5);
+select pg_temp.fail(5, 'provider_name_conflict');
+select pg_temp.set_reader('provider-description-source-guard-v3');
+select pg_temp.latest(5, 'recovery_knowledge_unchanged_failure', 1, 0);
+select 'real_ai_failure_same_rule_picker|' || pg_temp.why(5);
+select pg_temp.set_reader('provider-description-source-guard-v2');
+select pg_temp.clean(6);
+select pg_temp.fail(6, 'provider_name_conflict');
+select pg_temp.set_reader('provider-description-source-guard-v3');
+select pg_temp.latest(6, 'recovery_knowledge_unchanged_failure', 0, 0.0002);
+select 'reservation_left_picker|' || pg_temp.why(6);
+-- a rejected page stays refused: the latest read rejected, or an earlier read of the provider rejected on this page
+select pg_temp.set_reader('provider-description-source-guard-v2');
+select pg_temp.clean(1);
+select pg_temp.fail(1, 'provider_name_conflict');
+select pg_temp.set_reader('provider-description-source-guard-v3');
+select pg_temp.latest(1, 'review_rejected', 0, 0, null, 'rejected');
+select 'rejected_latest_picker|' || pg_temp.why(1);
+select pg_temp.set_reader('provider-description-source-guard-v2');
+select pg_temp.clean(2);
+select pg_temp.fail(2, 'provider_name_conflict');
+select pg_temp.set_reader('provider-description-source-guard-v3');
+do $d$ begin
+  perform set_config('session_replication_role', 'replica', true);
+  insert into pipeline.provider_description_reads(provider_id, state, rule, content_hash, source_url, created_at, updated_at, tries)
+  values (pg_temp.pid(2), 'rejected', 'review_rejected', pg_temp.stored_hash(2), 'https://p2.example.edu/about', now() - interval '3 days', now() - interval '3 days', 1);
+  perform set_config('session_replication_role', 'origin', true);
+end $d$;
+select pg_temp.latest(2, 'recovery_knowledge_unchanged_failure', 0, 0);
+select 'rejected_earlier_picker|' || pg_temp.why(2);
+-- a changed page stays parked by the recheck period (the hold was made on another page)
+select pg_temp.set_reader('provider-description-source-guard-v2');
+select pg_temp.clean(3);
+select pg_temp.fail(3, 'provider_name_conflict');
+select pg_temp.set_reader('provider-description-source-guard-v3');
+select pg_temp.latest(3, 'recovery_knowledge_unchanged_failure', 0, 0, 'an-older-page');
+select 'changed_page_picker|' || pg_temp.why(3);
+-- a repeat read is not offered twice without a new failure signature: Sydney's read is offered, is read, and the AI step fails for real under v3 (a failure is recorded for the new signature); the next hold is parked,
+-- and a still newer reader (v4) is a new signature, so it is offered once more
+select pg_temp.fail(12, 'not_stated');
+select pg_temp.latest(12, 'recovery_knowledge_unchanged_failure', 0, 0);
+select 'repeat_same_signature_picker|' || pg_temp.why(12);
+select pg_temp.set_reader('provider-description-source-guard-v4');
+select 'repeat_new_reader_picker|' || pg_temp.why(12);
+-- the automatic queue offers Sydney's shape: its read is queued again (a stored-page read, no new fetch)
+select pg_temp.set_reader('provider-description-source-guard-v2');
+select pg_temp.clean(12);
+select pg_temp.fail(12, 'provider_name_conflict');
+select pg_temp.set_reader('provider-description-source-guard-v3');
+select pg_temp.latest(12, 'recovery_knowledge_unchanged_failure', 0, 0);
+update pipeline.platform_toolset_settings set value = '40'::jsonb where toolset_key = 'pipeline' and key in ('pdesc.queue_per_run', 'pdesc.pending_max', 'run_now.pilot_cap');
+select 'enqueue_ran|' || (security.provider_description_enqueue_v1() is not null)::text;
+select 'sydney_shape_enqueued|' || case when exists (select 1 from pipeline.provider_description_reads r where r.provider_id = pg_temp.pid(12) and r.state = 'queued') then 'queued' else 'not queued' end;
 
 -- 9. the reader function is one primary-key row of the reader table and never reads the reads; grants stay closed
 select 'reader_fn_reads_only_state|' || (prosrc like '%pdesc_reader_state%' and prosrc not like '%provider_description_reads%')::text from pg_proc where oid = 'security.pdesc_reader_behaviour_v1()'::regprocedure;
