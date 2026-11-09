@@ -620,6 +620,8 @@
 /* v2.15.262: Firecrawl credits by university */
 .fcc-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0 4px}
 .fcc-only{display:inline-flex;gap:6px;align-items:center;font-size:.9rem}
+/* F-OPS.04 (phone): Task manager › Background jobs: the "Only what is busy" checkbox was 13 px; the whole label is a 32 px target on a phone, in this board only */
+@media(max-width:620px){[data-progress-running] .fcc-only{min-height:32px}}
 /* v2.15.264: Models & services › AI & OpenRouter */
 .ai-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:4px 0 12px}
 .ai-grid>div{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border:1px solid var(--cf-border);border-radius:8px}
@@ -764,6 +766,8 @@
 .qw-list small{display:block;color:var(--cf-muted);font-size:var(--cf-fs-xs)}
 /* F-OPS.04 (phone): the "Go to ..." link in a queue row was 12 px high; 32 px target on a phone, in this table only */
 @media(max-width:620px){.qw-table .ph-fix{margin:2px 0 0;padding:8px 0;min-height:32px;box-sizing:border-box}}
+/* F-OPS.04 (phone): Layer 2 › Enrich fields: the university search input was 22 px high and each checkbox label about 18 px; 32 px targets on a phone, in this form only */
+@media(max-width:620px){.ef-form .ef-search{min-height:32px;box-sizing:border-box}.ef-form .ef-search input{min-height:24px}.ef-form .rs-check{min-height:32px}}
 /* Platform health › Work queues › Last 15 minutes (v2.15.320). */
 .st-gaps{margin:0 0 12px;padding:10px 12px;border:1px solid var(--cf-border);border-radius:var(--cf-radius-md);background:var(--cf-surface);font-size:var(--cf-fs-sm)}
 .st-gaps strong{display:flex;align-items:center;gap:6px}.st-gaps ul{margin:6px 0 0;padding-left:18px}
