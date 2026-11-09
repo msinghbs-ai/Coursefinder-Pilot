@@ -58,6 +58,24 @@ function SettingRow({s,can,onSave}){
   </div>
 }
 
+// CF-247 F-OPS.05 (Platform Admin, 10 Nov 2026, "Simplify production controls"): settings a person decides come first; the ones the software tunes inside their own
+// range (control_class 'automatic') sit in a collapsed group, still visible and editable with a reason; 'retiring' ones are collapsed apart. No class (null) is
+// shown with the human ones, as before. The range columns (min and max) clamp an automatic value on every write, so a change here can never leave its safe limits.
+const GROUPS=[['automatic','Automatically managed (software-tuned within safe limits)','The platform keeps these within the safe range shown on each row. They stay editable here with a reason.'],
+  ['retiring','Retiring','Switched off in favour of a newer control. Kept for the housekeeping period, then listed for removal.']]
+function SectionRows({settings,can,onSave}){
+  const cls=s=>s.control_class==='automatic'||s.control_class==='retiring'?s.control_class:'human'
+  const row=s=><SettingRow key={s.key} s={s} can={can} onSave={onSave}/>
+  return <>
+    {settings.filter(s=>cls(s)==='human').map(row)}
+    {GROUPS.map(([c,title,note])=>{const rows=settings.filter(s=>cls(s)===c);return rows.length>0&&<details key={c} className="sr-group" data-control-group={c}>
+      <summary><span>{title}</span><span className="cf-chip tone-neutral">{fmtNumber(rows.length)}</span></summary>
+      <small className="sr-group-note">{note}</small>
+      {rows.map(s=>c==='retiring'&&s.replaced_by?<React.Fragment key={s.key}>{row(s)}<small className="sr-replaced" data-replaced-by={s.key}>Replaced by {s.replaced_by}</small></React.Fragment>:row(s))}
+    </details>})}
+  </>
+}
+
 export default function SettingsRegister({onError}){
   const[d,setD]=useState(null),[failed,setFailed]=useState('')
   const load=async()=>{try{const{data,error}=await supabase.rpc('admin_settings_register_read');if(error)throw error;setD(data||{})}catch(e){setFailed(errText(e));onError?.(errText(e))}}
@@ -74,7 +92,7 @@ export default function SettingsRegister({onError}){
     {!can&&<p className="l3v-note">You can see every setting. Only a Platform Admin can change one.</p>}
     {(d.sections||[]).map(sec=><Card key={sec.section} id={`settings.register.${slug(sec.section)}`} title={sec.section} subtitle={SECTION_HELP[sec.section]||''}
         data-register-section={sec.section} data-anchor={`register:${sec.section}`} meta={<span className="cf-chip tone-neutral">{fmtNumber(sec.settings.length)} settings</span>}>
-      {sec.settings.map(s=><SettingRow key={s.key} s={s} can={can} onSave={save}/>)}
+      <SectionRows settings={sec.settings} can={can} onSave={save}/>
     </Card>)}
     <PolicyTables can={can} onError={onError}/>
   </div>
