@@ -1,8 +1,9 @@
--- Consumer API change approved: PENDING Platform Admin G3 approval (R23/R24)
--- NOT APPROVED. The line above is a placeholder: it records that G3 approval is still PENDING. It is not an approval. Spec s57 refuses a
--- "Consumer API change approved:" line that says PENDING, so this change cannot pass the build, merge or deploy until the Platform Admin's
--- approval line replaces it (approval package: admin docs/platform/approvals/2026-11-06-g3-r23-r24-approval-package.md §9). Independently,
--- step 0 below refuses to apply on any database until the Platform Admin's approval setting exists.
+-- Consumer API change approved: Platform Admin (Mandeep Singh), 9 Nov 2026, in chat: G3 change approved for R23 and R24 on condition of API compatibility tests, developer guide and versioned handover
+-- G3 approval recorded above (Platform Admin, 9 Nov 2026: "G3 change is approved in principle. Complete the required API compatibility tests,
+-- developer guide, versioned handover and record the formal G3 approval before merging. Do not release an unvalidated consumer contract
+-- change."). The conditions are met in this change and its admin counterpart: the compatibility evidence (isolated PostgreSQL fixture and the
+-- live rolled-back comparison, admin docs/platform/approvals/2026-11-06-g3-r23-r24-approval-package.md section 11), developer guide Issue 8 and
+-- its versioned handover note. Nothing here has been applied to any database by the author.
 --
 -- CF-247 Website API v2, developer requests R23 and R24 (developer feedback of 5 Nov 2026; Platform Admin decision 5 Nov 2026 19:14 §5;
 -- mandate 3 Nov 2026 11:46 §2-§3; design: admin docs/platform/nz-enrichment-brief/2026-11-03-website-api-v2-change-proposal.md §2-§3).
@@ -39,14 +40,21 @@
 --   cf247-website-api-v2-campus-nationality, never applied)
 -- Retires: nothing
 -- Nothing dropped, deleted or renamed. No table, job, status or setting is created here. The approval setting is created by the Platform
--- Admin's approval paste (approval package §9), not by this migration.
+-- Admin's approval paste (approval package §9), not by this migration. The migration does read that setting (step 0) and re-takes the
+-- consumer API baseline (step 4).
+--
+-- Release order (approval package §9): 1. the Platform Admin's approval paste creates pipeline setting api.v2_r23_r24_approved = 1 (reason
+--   quoting the 9 Nov 2026 approval); 2. this migration applies (it refuses without the setting and changes nothing); 3. security.consumer_api_check_v1()
+--   must report no drift; 4. developer guide Issue 8 is sent with the release date. If the setting is missing the migration stops at step 0,
+--   so it must exist before the release applies migrations.
 
--- 0. G3 approval gate: refuse unless the Platform Admin has recorded approval as pipeline setting api.v2_r23_r24_approved = 1
+-- 0. G3 approval gate: refuse unless the Platform Admin has recorded approval as pipeline setting api.v2_r23_r24_approved = 1. The setting is
+--    a Platform Admin write (never created by a migration, so a migration cannot approve itself); a missing setting reads as 0 and refuses.
 do $approval$
 begin
   -- fixed: approval gate value (1 = approved); a governance flag, not an operational value
   if coalesce(security.pipeline_num_v1('api.v2_r23_r24_approved', 0), 0) <> 1 then
-    raise exception 'CF-247 Website API v2 R23/R24 consumer change is PENDING Platform Admin G3 approval: not applied'
+    raise exception 'CF-247 Website API v2 R23/R24 consumer change: setting api.v2_r23_r24_approved is not 1 (no recorded Platform Admin approval): not applied'
       using hint = 'Record the approval (admin docs/platform/approvals/2026-11-06-g3-r23-r24-approval-package.md §9) before applying this migration.';
   end if;
 end $approval$;
@@ -158,6 +166,27 @@ $o$, $n$    'citizenship_eligibility', to_jsonb((select codes from nat)), 'eligi
 $n$]],
  array[1]);
 
--- G3 baseline: on approval the Integration Controller adds here the re-take of the consumer API baseline, the security function
--- consumer_api_rebaseline_v1 with the reason '<decision>: additive campus_id, campus_name, course_count on provider campuses[] and
--- nationality_eligibility_status on scholarships; approved Platform Admin <date time>' (approval package §9). It is not called while PENDING.
+-- 4. G3 baseline. Re-taken last, so it records only this approved change: first refuse if any consumer API function other than the two this change
+--    replaces differs from the baseline (the baseline would otherwise absorb an unrelated, unapproved change). Compared as the guard compares
+--    (search_path empty, so type names print the same way).
+create or replace function pg_temp.consumer_drift_v1() returns jsonb language sql stable set search_path = '' as $f$
+  select coalesce(jsonb_agg(x.name order by x.name), '[]'::jsonb)
+    from (select f.name from security.consumer_api_functions_v1() f
+            left join pipeline.consumer_api_baseline b on b.kind = 'function' and b.name = f.name
+           where b.name is null or b.md5 is distinct from pg_catalog.md5(pg_catalog.pg_get_functiondef(f.oid))
+          union
+          select b.name from pipeline.consumer_api_baseline b
+           where b.kind = 'function' and not exists (select 1 from security.consumer_api_functions_v1() f where f.name = b.name)) x
+$f$;
+do $b$
+declare v_other jsonb;
+begin
+  select coalesce(jsonb_agg(d), '[]'::jsonb) into v_other
+    from jsonb_array_elements_text(pg_temp.consumer_drift_v1()) d
+   where d not in ('api.website_v2_provider_campuses(uuid)', 'api.website_v2_scholarship_item(uuid)');
+  if jsonb_array_length(v_other) > 0 then
+    raise exception 'CF-247 R23/R24: consumer API objects other than the two approved functions differ from the baseline (%): not re-baselined', left(v_other::text, 600);
+  end if;
+end $b$;
+
+select security.consumer_api_rebaseline_v1('R23/R24 (website developer requests; mandate 3 Nov 2026 11:46; decision 5 Nov 2026 19:14 section 5): additive campus_id, campus_name, course_count on provider campuses[] and nationality_eligibility_status on scholarships; approved Platform Admin (Mandeep Singh) 9 Nov 2026');
