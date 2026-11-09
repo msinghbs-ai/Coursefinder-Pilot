@@ -54,4 +54,6 @@ settle_within_the_hour|{"on": true, "errors": 0, "admitted": 0, "left_for_a_pers
 settle_after_the_hour|{"on": true, "errors": 0, "admitted": 1, "left_for_a_person": 0}|0|1|true
 settle_audit|declined:-,admitted:true
 settle_step_is_the_scheduled_path|true|true
+waiting_promotional_settle|{"on": true, "errors": 0, "admitted": 0, "left_for_a_person": 1}
+waiting_promotional|1|(none)|refused_word:best
 tier4_strict|refused_word:students|clean

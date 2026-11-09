@@ -180,7 +180,8 @@ select pg_temp.run_worker(3, jsonb_build_object(pg_temp.pid(5)::text, pg_temp.an
      ['Its students are taught by the best staff, with a long record of teaching in many fields.', 'Our students are taught by the best staff, with a long record of teaching in many fields.'],
      ['Elm Arts University offers music composition and theatre performance to its community.', 'Elm Arts University offers music composition and theatre performance to its community.']]))) is not null;
 select pg_temp.set_s('pdesc.machine_admit_on', '1');
-select 'waiting_promotional|' || (security.provider_description_machine_settle_pending_v1())::text || '|' || pg_temp.items(5, 'pending') || '|' || pg_temp.desc_of(5) || '|' || (select substring(a.reason from '\(([^)]*)\)') from pipeline.provider_description_machine_admissions a where a.provider_id = pg_temp.pid(5));
+select 'waiting_promotional_settle|' || (security.provider_description_machine_settle_pending_v1())::text;
+select 'waiting_promotional|' || pg_temp.items(5, 'pending') || '|' || pg_temp.desc_of(5) || '|' || (select substring(a.reason from '\(([^)]*)\)') from pipeline.provider_description_machine_admissions a where a.provider_id = pg_temp.pid(5));
 rollback;
 
 -- ---------------------------------------------------------------------------------------------------------------- 7. the register-fact profile (tier 4) is unchanged: it has no quotes, so no neutral word is allowed there
