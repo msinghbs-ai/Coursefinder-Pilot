@@ -4,7 +4,7 @@ name: Website API v2 R23/R24 isolated PostgreSQL
 on:
   pull_request:
     paths:
-      - 'supabase/migrations/20261109150000_cf247_website_api_v2_r23_r24.sql'
+      - 'supabase/migrations/20261109160000_cf247_website_api_v2_r23_r24.sql'
       - 'tests/fixtures/website-api-v2-r23-r24/**'
       - 'tests/uat/cf-247-website-api-v2-r23-r24-contract.spec.mjs'
       - '.github/workflows/website-api-v2-r23-r24-fixture.yml'

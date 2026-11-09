@@ -78,7 +78,7 @@ test('14 Oct: display code, course status follows the provider switch, QILT at p
 // R23/R24 (website developer requests; G3 change approved by the Platform Admin 9 Nov 2026): additive-only proof from the migration text and the
 // byte-exact live "before" definitions kept with the isolated PostgreSQL fixture. The behaviour proof (end to end as service_role, byte-identical
 // apart from the new keys) is tests/fixtures/website-api-v2-r23-r24/run.sh.
-const R2324 = 'supabase/migrations/20261109150000_cf247_website_api_v2_r23_r24.sql'
+const R2324 = 'supabase/migrations/20261109160000_cf247_website_api_v2_r23_r24.sql'
 const R2324FX = 'tests/fixtures/website-api-v2-r23-r24/live'
 test('R23 provider campuses[] is additive: every existing key and its value expression is kept, exactly three keys are new, nulls mean not held', () => {
   const m = fs.readFileSync(R2324, 'utf8')

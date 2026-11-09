@@ -16,7 +16,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 DB=${A_R2324_DB:-a_r2324_fixture}
-MIG=../../../supabase/migrations/20261109150000_cf247_website_api_v2_r23_r24.sql
+MIG=../../../supabase/migrations/20261109160000_cf247_website_api_v2_r23_r24.sql
 P="psql -v ON_ERROR_STOP=1 -q -X"
 $P -d postgres -c "drop database if exists $DB" -c "create database $DB" >/dev/null
 [ -n "${A_KEEP:-}" ] || trap '$P -d postgres -c "drop database if exists $DB" >/dev/null' EXIT

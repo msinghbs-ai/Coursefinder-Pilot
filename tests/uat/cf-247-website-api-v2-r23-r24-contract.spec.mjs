@@ -9,7 +9,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = 'supabase/migrations/20261109150000_cf247_website_api_v2_r23_r24.sql'
+const MIG = 'supabase/migrations/20261109160000_cf247_website_api_v2_r23_r24.sql'
 const FX = 'tests/fixtures/website-api-v2-r23-r24'
 const m = fs.readFileSync(MIG, 'utf8')
 const code = (s) => s.replace(/--[^\n]*/g, '')
@@ -80,7 +80,7 @@ test('R24 nationality: additive status from held evidence and the review queues;
 
 test('the production-parity fixture proves refusal, md5s, two runs, every case, end-to-end byte identity and the benchmark', () => {
   const run = fs.readFileSync(`${FX}/run.sh`, 'utf8')
-  for (const s of ['MIG=../../../supabase/migrations/20261109150000_cf247_website_api_v2_r23_r24.sql', 'diff parity-live-2026-11-09.txt',
+  for (const s of ['MIG=../../../supabase/migrations/20261109160000_cf247_website_api_v2_r23_r24.sql', 'diff parity-live-2026-11-09.txt',
     'functions-live.tsv', 'no approval: refused, nothing changed', 'unrelated consumer API difference: refused, nothing changed',
     'baseline re-taken: the two approved functions changed, no other consumer function differs from it',
     'second run: already applied, unchanged; privileges unchanged', 'bench.sql'])
@@ -103,7 +103,7 @@ test('no edge function changes: the five frozen edge hashes are untouched, so th
 
 test('the approval setting is a Platform Admin write documented with the migration: label, range, unit and used_by, and a missing setting reads as not approved', () => {
   const doc = fs.readFileSync(`${FX}/approval-setting.sql`, 'utf8')
-  for (const s of ["'pipeline', 'api.v2_r23_r24_approved'", "'number', '1', 0, 1, 'on (1) / off (0)', 'Website API'", 'migration 20261109150000', 'Mandeep Singh'])
+  for (const s of ["'pipeline', 'api.v2_r23_r24_approved'", "'number', '1', 0, 1, 'on (1) / off (0)', 'Website API'", 'migration 20261109160000', 'Mandeep Singh'])
     expect(doc).toContain(s)
   expect(code(m)).toContain("coalesce(security.pipeline_num_v1('api.v2_r23_r24_approved', 0), 0) <> 1")
   expect(m).toContain('a missing setting reads as 0 and refuses')
