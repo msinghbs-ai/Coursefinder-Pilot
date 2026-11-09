@@ -11,12 +11,11 @@ import React,{useCallback,useEffect,useRef,useState}from'react'
 import{RefreshCw}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{hrefFor}from'./nav-map'
-import{Button,Loading,StatusChip,fmtDateTime,fmtNumber,fmtRelative}from'./ui-kit'
+import{Button,Loading,StatusChip,fmtDateTime,fmtNumber,fmtRelative,fmtTimeSeconds}from'./ui-kit'
 import{plainError}from'./lib/errors'
 import'./data-delivery.css'
 
-const SECONDS=new Intl.DateTimeFormat('en-AU',{timeZone:'Australia/Melbourne',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'})
-const stampOf=v=>{const t=v?new Date(v):null;return t&&!Number.isNaN(t.getTime())?SECONDS.format(t):null}
+const stampOf=v=>fmtTimeSeconds(v,null)
 const num=x=>x==null?'':fmtNumber(Number(x))
 const hoursText=h=>{const n=Number(h);return n===168?'7 d':n%24===0&&n>=48?`${n/24} d`:`${fmtNumber(n)} h`}
 const ago=(iso,now)=>iso?fmtRelative(iso,'',now):''

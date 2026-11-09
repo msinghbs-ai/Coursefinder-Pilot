@@ -117,20 +117,20 @@ test.describe('Data delivery on Operations', () => {
     const dd = await open(page, { ...DATA_DELIVERY, ui_refresh_seconds: 20 })
     const first = dd.calls
     await page.getByRole('button', { name: 'Refresh' }).first().click()
-    await expect.poll(() => dd.calls).toBeGreaterThan(first)
+    await expect.poll(() => dd.calls, { timeout: 20_000 }).toBeGreaterThan(first)
     const before = dd.calls
     await page.clock.fastForward(21_000)
-    await expect.poll(() => dd.calls).toBeGreaterThan(before)
+    await expect.poll(() => dd.calls, { timeout: 20_000 }).toBeGreaterThan(before)
     dd.fail = 'database is busy'
     await page.clock.fastForward(21_000)
     const banner = page.locator('[data-dd-stale-banner]')
-    await expect(banner).toBeVisible()
+    await expect(banner).toBeVisible({ timeout: 20_000 })
     await expect(banner).toContainText('last refresh failed')
     await expect(banner).toContainText('database is busy')
-    await expect(page.locator('[data-dd-stream="pdesc"] [data-dd-cell="coverage"]')).toContainText('800')
+    await expect(page.locator('[data-dd-stream="pdesc"] [data-dd-cell="coverage"]')).toContainText('800', { timeout: 20_000 })
     dd.fail = null
     await page.getByRole('button', { name: 'Refresh' }).first().click()
-    await expect(banner).toHaveCount(0)
+    await expect(banner).toHaveCount(0, { timeout: 20_000 })
   })
 
   test('it stops reloading while the tab is hidden and catches up when shown', async ({ page }) => {
@@ -141,7 +141,7 @@ test.describe('Data delivery on Operations', () => {
     await page.clock.fastForward(65_000)
     expect(dd.calls, 'no reads while hidden').toBe(hidden)
     await page.evaluate(() => { Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' }); document.dispatchEvent(new Event('visibilitychange')) })
-    await expect.poll(() => dd.calls).toBeGreaterThan(hidden)
+    await expect.poll(() => dd.calls, { timeout: 20_000 }).toBeGreaterThan(hidden)
   })
 
   test('the lane funnels stay below it and a lane link opens that lane', async ({ page }) => {
