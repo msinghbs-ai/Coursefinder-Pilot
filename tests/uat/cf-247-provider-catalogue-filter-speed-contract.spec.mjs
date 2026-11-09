@@ -66,6 +66,20 @@ test('the facts function keeps its signature, its columns and its query word for
   expect(NEW).toMatch(/SQL functions are planned once with their arguments unknown/)
 })
 
+test('both functions are set to custom plans, because a plpgsql page statement switches to a generic plan from the sixth call on a connection and the facts function is planned with its arguments unknown', () => {
+  const header = f => NEW.slice(NEW.indexOf(f), NEW.indexOf('AS $function$', NEW.indexOf(f)))
+  expect(header(FACTS_HEAD)).toContain("SET plan_cache_mode TO 'force_custom_plan'")
+  expect(header(V3_HEAD)).toContain("SET plan_cache_mode TO 'force_custom_plan'")
+  expect(header(V3_HEAD)).toContain("SET search_path TO 'pg_catalog', 'catalogue', 'ref', 'pipeline', 'security', 'auth'")
+  expect(header(V3_HEAD)).toContain('LANGUAGE plpgsql')
+  expect(header(V3_HEAD)).toContain('STABLE SECURITY DEFINER')
+  // the post-check requires both settings; the recovery clears both
+  expect(NEW).toMatch(/admin_providers_page_v3\(jsonb\)'\) and p\.proconfig @> array\['plan_cache_mode=force_custom_plan'\]/)
+  expect(NEW).toMatch(/provider_catalogue_facts_v1\(uuid\[\],boolean\)'\) and p\.proconfig @> array\['plan_cache_mode=force_custom_plan'\]/)
+  expect(REC).toContain('alter function security.admin_providers_page_v3(jsonb) reset plan_cache_mode;')
+  expect(REC).toContain('alter function security.provider_catalogue_facts_v1(uuid[], boolean) reset plan_cache_mode;')
+})
+
 test('the page: Description reads the provider column and needs no facts; the facts are read for the providers that pass the cheap filters; everything after that is unchanged', () => {
   // Description filter and sort: the very test the facts use for description_filled, on the provider's own column
   expect(v3New).toContain("and (v_desc is null or (v_desc='filled')=(nullif(btrim(p.description),'') is not null))")

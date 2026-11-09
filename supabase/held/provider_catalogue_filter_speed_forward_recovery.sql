@@ -12,6 +12,7 @@ end $g$;
 
 -- facts: back to the SQL-language function (a replaced function keeps its settings, so the plan setting is cleared first)
 alter function security.provider_catalogue_facts_v1(uuid[], boolean) reset plan_cache_mode;
+alter function security.admin_providers_page_v3(jsonb) reset plan_cache_mode;
 CREATE OR REPLACE FUNCTION security.provider_catalogue_facts_v1(p_ids uuid[] DEFAULT NULL, p_feeds boolean DEFAULT true)
  RETURNS TABLE(provider_id uuid, description_filled boolean, admission_state text, source_tier text, evidence_id uuid, source_url text,
                admitted_at timestamptz, admitted_by text, reader_state text, reader_rule text, reader_via text, reader_tries integer,

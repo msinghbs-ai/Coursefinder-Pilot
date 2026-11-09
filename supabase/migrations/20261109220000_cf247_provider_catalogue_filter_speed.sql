@@ -10,7 +10,11 @@
 --   2. security.admin_providers_page_v3(jsonb): (a) the Description filter and the Description sort read catalogue.providers.description directly (btrim <> ''), the
 --      very test the facts use for description_filled, and no longer start the facts at all; (b) the pipeline facts are worked out only for the providers that
 --      already pass the filters on the provider's own columns (query, country, state, lifecycle, publication, group, type, Description), not for all 3,103; (c) the
---      two feed candidate scans still run only for a Website or Zoho filter or sort (or feeds=true from a visible feed column), as in 20261109200000.
+--      two feed candidate scans still run only for a Website or Zoho filter or sort (or feeds=true from a visible feed column), as in 20261109200000;
+--      (d) the function is also set to plan_cache_mode = force_custom_plan. A plpgsql function keeps the plan of its page statement and, from the sixth call on a
+--      connection, may switch to a plan made with the filters unknown. Measured on live in a DO block that calls the same statement repeatedly: the first six
+--      calls took 0.1 to 0.4 s, the following ones 2 to 10 s for the Admission, Website and Zoho filters. The page statement is re-planned on each call (about
+--      0.1 s or less), which also keeps the default list at its measured speed.
 --   Rows, order, fields, paging, totals, validation errors and the Unknown-not-zero behaviour are unchanged: the same request gives the same answer, only sooner.
 -- Live definitions read 9 Nov 2026 (project fxcwkweaxjtknorudmwp; body md5 = pg_proc.prosrc):
 --   security.provider_catalogue_facts_v1(uuid[], boolean)  body 4127aab7f07d3b97431191e58f07bfdb  (replaced here)
@@ -174,6 +178,9 @@ CREATE OR REPLACE FUNCTION security.admin_providers_page_v3(p_args jsonb DEFAULT
  LANGUAGE plpgsql
  STABLE SECURITY DEFINER
  SET search_path TO 'pg_catalog', 'catalogue', 'ref', 'pipeline', 'security', 'auth'
+ -- fixed: a plan setting, not an operational value. Without it the page statement is planned once with its filters unknown after five calls on a connection
+ -- (measured: 0.3 s becomes 4 to 10 s for the Admission, Website and Zoho filters), the same defect as in the facts function.
+ SET plan_cache_mode TO 'force_custom_plan'
 AS $function$
 declare
   v_limit integer:=least(greatest(coalesce(nullif(p_args->>'limit','')::integer,50),1),200);
@@ -413,6 +420,7 @@ begin
   if v_f <> 'abc1345d4cdb341deba65bfd0a38277f' then raise exception 'Provider Catalogue filter speed post-check: facts body md5 % is not the text this change writes', v_f; end if;
   if v_v <> 'f3eb9fc6f8efa37566c36ac5ef2e8f0e' then raise exception 'Provider Catalogue filter speed post-check: page body md5 % is not the text this change writes', v_v; end if;
   if not exists (select 1 from pg_proc p where p.oid = to_regprocedure('security.provider_catalogue_facts_v1(uuid[],boolean)') and p.proconfig @> array['plan_cache_mode=force_custom_plan']) then raise exception 'Provider Catalogue filter speed post-check: the facts function is not set to custom plans'; end if;
+  if not exists (select 1 from pg_proc p where p.oid = to_regprocedure('security.admin_providers_page_v3(jsonb)') and p.proconfig @> array['plan_cache_mode=force_custom_plan']) then raise exception 'Provider Catalogue filter speed post-check: the page function is not set to custom plans'; end if;
   if has_function_privilege('authenticated', 'security.admin_providers_page_v3(jsonb)', 'execute') or has_function_privilege('anon', 'security.provider_catalogue_facts_v1(uuid[], boolean)', 'execute') then raise exception 'Provider Catalogue filter speed post-check: a function is callable by a user directly'; end if;
   if position('security.admin_providers_page_v3(p_args)' in pg_get_functiondef('security.admin_catalogue_page(text,jsonb)'::regprocedure)) = 0 then raise exception 'Provider Catalogue filter speed post-check: providers_page no longer routes to v3'; end if;
 end $$;
