@@ -21,12 +21,12 @@ async function mount(page) {
   return w
 }
 
-// Boxes of the visible controls inside a scope. Inline links in a sentence are exempt (WCAG 2.5.8 inline exception).
-async function controls(scope, selector) {
-  return scope.locator(selector).evaluateAll((els) => els.filter((el) => el.offsetParent !== null && !el.closest('p, li, small')).map((el) => {
+// Boxes of the visible controls inside a scope. The list and filters exempt inline links in a sentence (WCAG 2.5.8 inline exception); the opened row does not (inline: true), so every link in it is measured.
+async function controls(scope, selector, { inline = false } = {}) {
+  return scope.locator(selector).evaluateAll((els, inl) => els.filter((el) => el.offsetParent !== null && (inl || !el.closest('p, li, small'))).map((el) => {
     const b = el.getBoundingClientRect()
     return { label: (el.getAttribute('aria-label') || el.textContent || el.tagName).trim().slice(0, 40), x: b.x, right: b.x + b.width, w: b.width, h: b.height }
-  }))
+  }), inline)
 }
 
 test.describe('Layer 2/3 › Universities (Adapters) on a phone @responsive', () => {
@@ -63,13 +63,16 @@ test.describe('Layer 2/3 › Universities (Adapters) on a phone @responsive', ()
     await row.locator('.adp-row-head .adp-row-name').click()
     await expect(row.locator('[data-adapter-detail]')).toBeVisible()
     const small = []
-    for (const sel of ['button', 'select', 'input[type="checkbox"]']) {
-      for (const b of await controls(row.locator('[data-adapter-detail]'), sel)) {
+    let measured = 0
+    for (const sel of ['button', 'select', 'input[type="checkbox"]', 'a[href]']) {
+      for (const b of await controls(row.locator('[data-adapter-detail]'), sel, { inline: true })) {
+        measured++
         expect(b.right, `detail ${sel} "${b.label}" ends inside the screen`).toBeLessThanOrEqual(w + 1)
         if (Math.min(b.w, b.h) < TAP_MIN) small.push(`${sel} "${b.label}" ${Math.round(b.w)}x${Math.round(b.h)}`)
       }
     }
-    expect(small, 'detail controls below the WCAG 2.2 AA target size').toEqual([])
+    expect(measured, 'detail controls measured').toBeGreaterThanOrEqual(4)
+    expect(small, 'detail controls and links below the WCAG 2.2 AA target size').toEqual([])
     expect(await pageOverflow(page)).toBeLessThanOrEqual(1)
   })
 
