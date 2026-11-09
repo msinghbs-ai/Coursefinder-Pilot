@@ -66,6 +66,7 @@ jobs:
           tests/uat/cf-247-s460-pdesc-retry-and-funnel-contract.spec.mjs
           tests/uat/cf-247-s500-pdesc-self-driving-contract.spec.mjs
           tests/uat/cf-247-s501-pdesc-machine-admission-contract.spec.mjs
+          tests/uat/cf-247-s515-pdesc-quote-fragments-setting-contract.spec.mjs
           tests/uat/cf-247-s504-pdesc-claim-word-context-contract.spec.mjs
           tests/uat/cf-247-s32-controls-in-settings-contract.spec.mjs
           tests/uat/cf-247-s42-housekeeping-contract.spec.mjs
