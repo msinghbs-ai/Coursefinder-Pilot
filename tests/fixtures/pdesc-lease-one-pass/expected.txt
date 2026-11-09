@@ -1,0 +1,9 @@
+manual_five|fixture:provider:1=https://p1.example.edu/about,fixture:provider:2=https://p2.example.edu/about,fixture:provider:3=https://p3.example.edu/about,fixture:provider:4=https://p4.example.edu/about,fixture:provider:5=https://p5.example.edu/about idle=-
+machine_ten|fixture:provider:1=https://p1.example.edu/about,fixture:provider:2=https://p2.example.edu/about,fixture:provider:3=https://p3.example.edu/about,fixture:provider:4=https://p4.example.edu/about,fixture:provider:5=https://p5.example.edu/about,fixture:provider:6=https://p6.example.edu/about,fixture:provider:7=https://p7.example.edu/about,fixture:provider:8=https://p8.example.edu/about,fixture:provider:9=https://p9.example.edu/about,fixture:provider:10=https://p10.example.edu/about idle=-
+not_about_address|fixture:provider:2=https://p2.example.edu/about,fixture:provider:3=https://p3.example.edu/about,fixture:provider:4=https://p4.example.edu/about idle=-
+address_shapes|fixture:provider:1=https://p1.example.edu/about_us,fixture:provider:2=https://p2.example.edu/ABOUT,fixture:provider:5=https://p5.example.edu/about idle=-
+old_copy|fixture:provider:2=https://p2.example.edu/about,fixture:provider:3=https://p3.example.edu/about,fixture:provider:4=https://p4.example.edu/about idle=-
+lease_ran_out|fixture:provider:1=https://p1.example.edu/about,fixture:provider:2=https://p2.example.edu/about,fixture:provider:7=https://p7.example.edu/about idle=-
+lease_running|fixture:provider:2=https://p2.example.edu/about,fixture:provider:3=https://p3.example.edu/about idle=-
+newest_copy|fixture:provider:1=https://p1.example.edu/about,fixture:provider:2=https://p2.example.edu/overview,fixture:provider:3=https://p3.example.edu/about idle=-
+nothing_queued|(none) idle=-
