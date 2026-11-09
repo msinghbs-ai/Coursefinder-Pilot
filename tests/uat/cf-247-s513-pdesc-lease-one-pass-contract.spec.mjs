@@ -11,9 +11,9 @@ const WF = fs.readFileSync('.github/workflows/provider-description-integration.y
 test('the migration names what it replaces and retires, and records the live md5 it was written against and the md5 it produces', () => {
   expect(MIG).toMatch(/^-- Replaces: .*stored_v1/m)
   expect(MIG).toMatch(/^-- Retires: nothing$/m)
-  expect(MIG).toContain('public.svc_provider_description_next(integer) cb83dc4e3502d6cc16450c2126368ec9 -> 90275ff3bc7da9989c2a3430b16cb94f')
+  expect(MIG).toContain('public.svc_provider_description_next(integer) cb83dc4e3502d6cc16450c2126368ec9 -> 2783d0a82e9f472b38b179c07add38ac')
   expect(CODE.match(/pg_temp\.edit_all\('/g)).toHaveLength(1)
-  expect(CODE).toContain("edit_all('public.svc_provider_description_next(integer)', 'cb83dc4e3502d6cc16450c2126368ec9', '90275ff3bc7da9989c2a3430b16cb94f'")
+  expect(CODE).toContain("edit_all('public.svc_provider_description_next(integer)', 'cb83dc4e3502d6cc16450c2126368ec9', '2783d0a82e9f472b38b179c07add38ac'")
 })
 
 test('it refuses, and changes nothing, when the lease, the stored-copy function or the About pattern function is not the one it was written against', () => {
@@ -29,6 +29,9 @@ test('the one pass: the stored copy is found once for the providers with open wo
   // the population: only a provider with an address that can be an About page is asked, once
   expect(news).toContain('security.pdesc_about_like_patterns_v1()')
   expect(news).toContain('like any (v_ws)')
+  // optimisation fence: without offset 0 the planner moves 'sid is not null' below the DISTINCT and asks stored_v1 for every open read (about 413 calls on live, not about 37)
+  expect(news).toContain('offset 0) x) z')
+  expect(news.indexOf('and exists (select 1 from pipeline.sources s')).toBeLessThan(news.indexOf('offset 0) x) z'))
   expect(news.match(/security\.provider_description_stored_v1\(/g)).toHaveLength(1)
   // the places that called it per row now read the pass
   for (const read of ['(v_stored->>x.provider_id::text)::uuid', '(v_stored->>r.provider_id::text)::uuid', '(v_stored->>p.id::text)::uuid', '(v_stored->>r.provider_id::text) is not null', '(v_stored->>u.provider_id::text)::uuid end stored_id'])
