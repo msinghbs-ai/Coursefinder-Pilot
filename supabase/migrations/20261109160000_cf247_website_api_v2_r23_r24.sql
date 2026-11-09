@@ -1,9 +1,12 @@
--- Consumer API change approved: Platform Admin (Mandeep Singh), 9 Nov 2026, in chat: G3 change approved for R23 and R24 on condition of API compatibility tests, developer guide and versioned handover
--- G3 approval recorded above (Platform Admin, 9 Nov 2026: "G3 change is approved in principle. Complete the required API compatibility tests,
--- developer guide, versioned handover and record the formal G3 approval before merging. Do not release an unvalidated consumer contract
--- change."). The conditions are met in this change and its admin counterpart: the compatibility evidence (isolated PostgreSQL fixture and the
--- live rolled-back comparison, admin docs/platform/approvals/2026-11-06-g3-r23-r24-approval-package.md section 11), developer guide Issue 8 and
--- its versioned handover note. Nothing here has been applied to any database by the author.
+-- Consumer API change approved: Platform Admin (Mandeep Singh), 9 Nov 2026 19:18 AEDT, in chat: formal G3 authorisation of Website API v2 R23 and R24 including the documented campus-array content and ordering changes for 489 providers
+-- G3 approval recorded above. Platform Admin, 9 Nov 2026 19:18 AEDT, in chat: "I approve the Website API R23/R24 consumer contract change in #945,
+-- including the documented campus-array content and ordering changes for 489 providers. Record this as formal G3 authorisation. Complete Wix
+-- Issue 8, the versioned developer handover, Zoho notification, final QA and live checks. Apply the required approval setting through the
+-- authorised, audited mechanism, then merge and deploy if all release gates pass." This follows the Platform Admin's earlier instruction of 9 Nov
+-- 2026 (approved in principle; complete the compatibility tests, developer guide and versioned handover before merging; do not release an
+-- unvalidated consumer contract change). Those conditions are met in this change and its admin counterpart: the compatibility evidence (isolated
+-- PostgreSQL fixture and the live rolled-back comparison, admin docs/platform/approvals/2026-11-06-g3-r23-r24-approval-package.md section 11),
+-- developer guide Issue 8 and its versioned handover note. Nothing here has been applied to any database by the author.
 --
 -- CF-247 Website API v2, developer requests R23 and R24 (developer feedback of 5 Nov 2026; Platform Admin decision 5 Nov 2026 19:14 §5;
 -- mandate 3 Nov 2026 11:46 §2-§3; design: admin docs/platform/nz-enrichment-brief/2026-11-03-website-api-v2-change-proposal.md §2-§3).
@@ -42,17 +45,19 @@
 --   supersedes the unmerged prepared migration 20261103180000_cf247_website_api_v2_campus_nationality.sql (branch
 --   cf247-website-api-v2-campus-nationality, never applied)
 -- Retires: nothing
--- Nothing dropped, deleted or renamed. No table, job, status or setting is created here. The approval setting is created by the Platform
--- Admin's approval paste (approval package §9), not by this migration. The migration does read that setting (step 0) and re-takes the
--- consumer API baseline (step 4).
+-- Nothing dropped, deleted or renamed. No table, job, status or setting is created here. The approval setting is defined (at 0, not approved) by
+-- the separate migration 20261109155000_cf247_r23_r24_approval_setting.sql and changed to 1 by the Platform Admin on Settings > Pipeline settings
+-- (an audited write), never by this migration. The migration does read that setting (step 0) and re-takes the consumer API baseline (step 4).
 --
--- Release order (approval package §9): 1. the Platform Admin's approval paste creates pipeline setting api.v2_r23_r24_approved = 1 (reason
---   quoting the 9 Nov 2026 approval); 2. this migration applies (it refuses without the setting and changes nothing); 3. security.consumer_api_check_v1()
---   must report no drift; 4. developer guide Issue 8 is sent with the release date. If the setting is missing the migration stops at step 0,
---   so it must exist before the release applies migrations.
+-- Release order (approval package §9): 1. migration 20261109155000 defines pipeline setting api.v2_r23_r24_approved at 0; 2. the Platform Admin's
+--   value change to 1 on Settings > Pipeline settings, with a reason quoting the 9 Nov 2026 19:18 AEDT authorisation (kept in
+--   pipeline.admin_control_events); 3. this migration applies (it refuses while the setting is not 1 and changes nothing); 4.
+--   security.consumer_api_check_v1() must report no drift; 5. developer guide Issue 8 is sent with the release date. If the setting is not 1
+--   the migration stops at step 0, so it must be 1 before the release applies migrations.
 
 -- 0. G3 approval gate: refuse unless the Platform Admin has recorded approval as pipeline setting api.v2_r23_r24_approved = 1. The setting is
---    a Platform Admin write (never created by a migration, so a migration cannot approve itself); a missing setting reads as 0 and refuses.
+--    a Platform Admin write on Settings (defined at 0 by migration 20261109155000; no migration sets it to 1, so a migration cannot approve itself);
+--    a missing setting reads as 0 and refuses.
 do $approval$
 begin
   -- fixed: approval gate value (1 = approved); a governance flag, not an operational value

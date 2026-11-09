@@ -1,9 +1,11 @@
-// Guards: Platform Admin decision 5 Nov 2026 19:14 §5 and G3 approval 9 Nov 2026 (website developer requests R23 campus names and course counts, R24 scholarship nationality status)
+// Guards: Platform Admin decision 5 Nov 2026 19:14 §5 and formal G3 authorisation 9 Nov 2026 19:18 AEDT (website developer requests R23 campus names and course counts, R24 scholarship nationality status)
 // CF-247 R23 (provider campuses: campus_id, campus_name, course_count; one item per campus) and R24 (scholarship
-// nationality_eligibility_status). G3 approved by the Platform Admin on 9 Nov 2026 ("G3 change is approved in principle. Complete the required API
-// compatibility tests, developer guide, versioned handover and record the formal G3 approval before merging. Do not release an unvalidated
-// consumer contract change."). The migration records the approval on its first line, still refuses to apply until the Platform Admin's approval
-// setting exists (a Platform Admin write, never a migration), and re-takes the consumer API baseline after checking that nothing else differs from it.
+// nationality_eligibility_status). Formal G3 authorisation by the Platform Admin, 9 Nov 2026 19:18 AEDT, in chat: "I approve the Website API R23/R24
+// consumer contract change in #945, including the documented campus-array content and ordering changes for 489 providers. Record this as formal G3
+// authorisation." (earlier the same day: approved in principle, subject to the compatibility tests, developer guide and versioned handover). The
+// migration records the approval on its first line, still refuses to apply unless the approval setting is 1 (defined at 0 by migration
+// 20261109155000 and changed to 1 on Settings, an audited Platform Admin write, never by a migration), and re-takes the consumer API baseline after
+// checking that nothing else differs from it.
 // Proof on a production-parity PostgreSQL: tests/fixtures/website-api-v2-r23-r24/ (run.sh; CI workflow website-api-v2-r23-r24-fixture.yml).
 // Approval package and compatibility record: admin docs/platform/approvals/2026-11-06-g3-r23-r24-approval-package.md (section 11).
 import { test, expect } from '@playwright/test'
@@ -15,9 +17,11 @@ const m = fs.readFileSync(MIG, 'utf8')
 const code = (s) => s.replace(/--[^\n]*/g, '')
 
 test('G3 approval is recorded on the first line; the gate still refuses without the Platform Admin setting; the baseline is re-taken last', () => {
-  const approval = '-- Consumer API change approved: Platform Admin (Mandeep Singh), 9 Nov 2026, in chat: G3 change approved for R23 and R24 on condition of API compatibility tests, developer guide and versioned handover'
+  const approval = '-- Consumer API change approved: Platform Admin (Mandeep Singh), 9 Nov 2026 19:18 AEDT, in chat: formal G3 authorisation of Website API v2 R23 and R24 including the documented campus-array content and ordering changes for 489 providers'
   expect(m.split('\n')[0]).toBe(approval)
   expect(approval).toMatch(/^-- Consumer API change approved: (?!.*\bPENDING\b).{10,}$/)  // what s57 accepts
+  expect(m).not.toMatch(/on condition of API compatibility tests|approved in principle\. Complete/)  // the conditional wording is retired
+  expect(m).toContain('9 Nov 2026 19:18 AEDT, in chat: "I approve the Website API R23/R24 consumer contract change in #945')
   expect(m).not.toMatch(/NOT APPROVED|G3 approval PENDING/)
   const gate = m.indexOf("if coalesce(security.pipeline_num_v1('api.v2_r23_r24_approved', 0), 0) <> 1 then")
   expect(gate).toBeGreaterThan(0)
@@ -101,10 +105,19 @@ test('no edge function changes: the five frozen edge hashes are untouched, so th
   expect(fs.existsSync(`${FX}/consumer-api-baseline.on-approval.json`)).toBe(false)  // retired: nothing to apply, the edge functions do not change
 })
 
-test('the approval setting is a Platform Admin write documented with the migration: label, range, unit and used_by, and a missing setting reads as not approved', () => {
-  const doc = fs.readFileSync(`${FX}/approval-setting.sql`, 'utf8')
-  for (const s of ["'pipeline', 'api.v2_r23_r24_approved'", "'number', '1', 0, 1, 'on (1) / off (0)', 'Website API'", 'migration 20261109160000', 'Mandeep Singh'])
+test('the approval setting is defined at 0 by its own migration (release step 1) and changed to 1 only by the Platform Admin on Settings (step 2); a missing setting reads as not approved', () => {
+  const def = fs.readFileSync('supabase/migrations/20261109155000_cf247_r23_r24_approval_setting.sql', 'utf8')
+  expect(def).toContain("values ('pipeline', 'api.v2_r23_r24_approved', 'Website API v2 R23/R24 consumer change: approved', 'number', '0'::jsonb, 0, 1, 'on (1) / off (0)', 307, 'Website API',")
+  expect(def).toContain('migration 20261109160000')
+  expect('20261109155000' < '20261109160000').toBe(true)
+  const doc = fs.readFileSync(`${FX}/approval-setting.sql`, 'utf8')   // the fixture's stand-in for the Settings write
+  for (const s of ["key = 'api.v2_r23_r24_approved'", "value = '1'::jsonb", "value = '0'::jsonb", 'Mandeep Singh', '9 Nov 2026 19:18 AEDT', 'admin_toolsets_write'])
     expect(doc).toContain(s)
+  expect(doc).not.toMatch(/insert\s+into/i)   // the value is changed, never created, by the approval
+  const run = fs.readFileSync(`${FX}/run.sh`, 'utf8')
+  for (const s of ['setting defined at 0: refused, nothing changed', 'approval recorded (1); defining the setting again keeps it', 'SET0=../../../supabase/migrations/20261109155000_cf247_r23_r24_approval_setting.sql'])
+    expect(run).toContain(s)
+  expect(fs.readFileSync('.github/workflows/website-api-v2-r23-r24-fixture.yml', 'utf8')).toContain("'supabase/migrations/20261109155000_cf247_r23_r24_approval_setting.sql'")
   expect(code(m)).toContain("coalesce(security.pipeline_num_v1('api.v2_r23_r24_approved', 0), 0) <> 1")
   expect(m).toContain('a missing setting reads as 0 and refuses')
 })

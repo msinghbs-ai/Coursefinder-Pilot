@@ -6,8 +6,9 @@
 #  2. proves parity with live: the fingerprint of every relation (columns, constraints, foreign keys, indexes, triggers, row level security,
 #     grants, view text) equals parity-live-2026-11-09.txt, and every function's md5 and privileges equal functions-live.tsv;
 #  3. seeds synthetic records through those constraints and triggers (seed.sql) and snapshots the live output (before.sql);
-#  4. shows the migration REFUSES without the Platform Admin's approval setting and changes nothing;
-#  5. records the approval setting as the approval paste would, shows the migration REFUSES to re-take the consumer baseline while an unrelated
+#  4. shows the migration REFUSES without the Platform Admin's approval, first while the setting does not exist and then while it is defined at 0 by
+#     migration 20261109155000 (release step 1 of 2; defining it twice keeps the value), and changes nothing;
+#  5. records the approval as the Platform Admin's value change to 1 on Settings (approval-setting.sql), shows the migration REFUSES to re-take the consumer baseline while an unrelated
 #     consumer function differs from it, applies the migration unchanged (md5 guards, after-md5 checks, baseline re-taken with only the two
 #     approved functions changed), applies it again (already applied, unchanged), and runs every check (fixtures.sql), builders and end to end
 #     as service_role;
@@ -17,6 +18,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 DB=${A_R2324_DB:-a_r2324_fixture}
 MIG=../../../supabase/migrations/20261109160000_cf247_website_api_v2_r23_r24.sql
+SET0=../../../supabase/migrations/20261109155000_cf247_r23_r24_approval_setting.sql
 P="psql -v ON_ERROR_STOP=1 -q -X"
 $P -d postgres -c "drop database if exists $DB" -c "create database $DB" >/dev/null
 [ -n "${A_KEEP:-}" ] || trap '$P -d postgres -c "drop database if exists $DB" >/dev/null' EXIT
@@ -49,8 +51,18 @@ if OUT=$($P -d $DB -1 -At -f $MIG 2>&1); then echo "the migration applied withou
 echo "$OUT" | grep -q 'setting api.v2_r23_r24_approved is not 1' || { echo "refusal message missing: $OUT"; exit 1; }
 [ "$(md5of 'api.website_v2_provider_campuses(uuid)')" = 57115d3b8ddbc40729ec04078ee15d41 ] && [ "$(md5of 'api.website_v2_scholarship_item(uuid)')" = d1792cc7161101ce8c22abad70ecbd36 ] || { echo "a refused run changed a definition"; exit 1; }
 echo "no approval: refused, nothing changed"
-# approval recorded: the Platform Admin's approval paste itself (approval-setting.sql; approval package §9)
+# release step 1 of 2: the setting is defined at 0 (not approved); the migration still refuses, and defining it again keeps the value
+$P -d $DB -f $SET0
+[ "$($P -d $DB -Atc "select value::text from pipeline.platform_toolset_settings where toolset_key = 'pipeline' and key = 'api.v2_r23_r24_approved'")" = 0 ] || { echo "the approval setting is not defined at 0"; exit 1; }
+if OUT=$($P -d $DB -1 -At -f $MIG 2>&1); then echo "the migration applied while the approval setting is 0"; exit 1; fi
+echo "$OUT" | grep -q 'setting api.v2_r23_r24_approved is not 1' || { echo "refusal message missing at 0: $OUT"; exit 1; }
+[ "$(md5of 'api.website_v2_provider_campuses(uuid)')" = 57115d3b8ddbc40729ec04078ee15d41 ] && [ "$(md5of 'api.website_v2_scholarship_item(uuid)')" = d1792cc7161101ce8c22abad70ecbd36 ] || { echo "a refused run changed a definition"; exit 1; }
+echo "setting defined at 0: refused, nothing changed"
+# release step 2 of 2: the Platform Admin's value change to 1 on Settings (approval-setting.sql; approval package §9)
 $P -d $DB -f approval-setting.sql
+$P -d $DB -f $SET0
+[ "$($P -d $DB -Atc "select value::text from pipeline.platform_toolset_settings where toolset_key = 'pipeline' and key = 'api.v2_r23_r24_approved'")" = 1 ] || { echo "defining the setting again changed an approved value"; exit 1; }
+echo "approval recorded (1); defining the setting again keeps it"
 # an unrelated consumer function that differs from the baseline: the migration refuses and changes nothing (the baseline is never re-taken over it)
 $P -d $DB -c "alter function api.website_text_array(jsonb) set work_mem = '64MB'"
 if OUT=$($P -d $DB -1 -At -f $MIG 2>&1); then echo "the migration applied over an unrelated consumer API difference"; exit 1; fi
