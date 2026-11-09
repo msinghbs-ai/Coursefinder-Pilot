@@ -11,17 +11,20 @@ import { COURSE_COLUMNS, PROVIDER_COLUMNS, GROUPS, defaultLayout, normaliseLayou
 
 const MIGRATION = 'supabase/migrations/20261109200000_cf247_provider_catalogue_columns.sql'
 const MIG = fs.readFileSync(MIGRATION, 'utf8')
+// Fill fields (Platform Admin directive 9-10 Nov 2026) adds two registry rows and replaces the page function with a superset of the first one's sorts; the registry is the two migrations read in order
+const MIG_FILL = fs.readFileSync('supabase/migrations/20261110030000_cf247_provider_fill_fields.sql', 'utf8')
+const ROWS = /\('providers', '([a-z0-9_]+)', '([^']+)', '([^']+)', (\d+), (?:'([a-z0-9_]+)'|null), (true|false), (\d+), (\d+), (true|false)\)/g
 const UI = fs.readFileSync('src/mature-main.jsx', 'utf8')
 const COLS = fs.readFileSync('src/CatalogueColumns.jsx', 'utf8')
 const SQL = MIG.split('\n').filter(l => !/^\s*--/.test(l)).join('\n') // the migration without its comment lines
-const rows = [...MIG.matchAll(/\('providers', '([a-z0-9_]+)', '([^']+)', '([^']+)', (\d+), (?:'([a-z0-9_]+)'|null), (true|false), (\d+), (\d+), (true|false)\)/g)]
+const rows = [...MIG.matchAll(ROWS), ...MIG_FILL.matchAll(ROWS)]
   .map(m => ({ key: m[1], group: m[2], label: m[3], order: +m[4], sortKey: m[5] || null, defaultVisible: m[6] === 'true', width: +m[7], minWidth: +m[8], alwaysVisible: m[9] === 'true' }))
 
 test('the screen registry equals the database registry the server checks a Provider layout against', () => {
-  expect(rows).toHaveLength(32)
+  expect(rows).toHaveLength(34)
   expect(PROVIDER_COLUMNS.map(({ header, ...c }) => ({ ...c, sortKey: c.sortKey || null }))).toEqual(rows)
   expect(new Set(PROVIDER_COLUMNS.map(c => c.group))).toEqual(new Set(GROUPS))
-  expect(new Set(rows.map(r => r.key)).size).toBe(32)
+  expect(new Set(rows.map(r => r.key)).size).toBe(34)
 })
 
 test('the default Provider layout is today\'s 13 columns in today\'s order and headings; the Course screen is unchanged', () => {
@@ -58,7 +61,7 @@ test('a saved Provider layout is made safe before use; show, hide and move keep 
 })
 
 test('every sort the Provider registry offers is a sort the server function orders by, and the server keeps every sort the old function accepted', () => {
-  const handled = new Set([...MIG.matchAll(/case when v_sort='([a-z0-9_]+)' and v_dir='asc'/g)].map(m => m[1]))
+  const handled = new Set([...MIG_FILL.matchAll(/case when v_sort='([a-z0-9_]+)' and v_dir='asc'/g)].map(m => m[1])) // the page function in force is the later migration's, which keeps every earlier sort
   for (const c of PROVIDER_COLUMNS) if (c.sortKey) expect(handled.has(c.sortKey), `${c.key} sorts by ${c.sortKey}`).toBe(true)
   for (const old of ['provider', 'country', 'currency', 'subdivision', 'city', 'type', 'courses', 'adapter', 'verified']) expect(handled.has(old), `old sort ${old}`).toBe(true)
   // the same set is written in the registry's database rows
@@ -163,14 +166,14 @@ const filter = (page, label) => page.locator('.m-filter-select').filter({ has: p
 const choose = async (page, label, option) => { await filter(page, label).locator('button.m-filter-button').click(); await filter(page, label).locator('.m-filter-popover button', { hasText: new RegExp(`^${option}`) }).first().click() }
 
 test.describe('mocked browser', () => {
-  test('the default Provider table is today\'s columns; the Columns control lists all 32 in four groups, searchable and counted; hiding one saves the Provider layout and says so', async ({ page }) => {
+  test('the default Provider table is today\'s columns; the Columns control lists all 34 in four groups, searchable and counted; hiding one saves the Provider layout and says so', async ({ page }) => {
     const { layoutCalls } = await mount(page)
     expect(await keys(page)).toEqual(['canonical_name', 'adapter', 'country_code', 'provider_type_name', 'subdivision_name', 'city', 'course_count', 'university_groups', 'evidence_count', 'lifecycle_status', 'publication_status', 'scholarship_search', 'last_verified_at'])
     await expect(page.locator('[data-active-sort]')).toContainText('Sorted by Provider, A to Z')
     await page.locator('[data-columns-toggle]').click()
     for (const g of GROUPS) await expect(page.locator(`[data-columns-group="${g}"]`)).toBeVisible()
-    await expect(page.locator('[data-columns-count]')).toHaveText('13 of 32')
-    await expect(page.locator('[data-col-toggle]')).toHaveCount(32)
+    await expect(page.locator('[data-columns-count]')).toHaveText('13 of 34')
+    await expect(page.locator('[data-col-toggle]')).toHaveCount(34)
     await expect(page.locator('[data-col-toggle="canonical_name"]')).toBeDisabled()
     await page.getByLabel('Search columns').fill('zoho')
     await expect(page.locator('[data-col-toggle]')).toHaveCount(1)
@@ -316,7 +319,7 @@ test.describe('mocked browser', () => {
     await mount(page, { rank: 5 })
     expect(await keys(page)).not.toContain('adapter')
     await page.locator('[data-columns-toggle]').click()
-    await expect(page.locator('[data-columns-count]')).toHaveText('12 of 31')
+    await expect(page.locator('[data-columns-count]')).toHaveText('12 of 33')
     await expect(page.locator('[data-col-toggle="adapter"]')).toHaveCount(0)
     await page.keyboard.press('Escape')
     await expect(page.locator('tr[data-row="p1"] [role="switch"]')).toBeEnabled()
@@ -332,12 +335,12 @@ test.describe('mocked browser', () => {
   })
 })
 
-test('with every stylesheet loaded as in production, all 32 Provider checkboxes can be clicked', async ({ page }) => {
+test('with every stylesheet loaded as in production, all 34 Provider checkboxes can be clicked', async ({ page }) => {
   await mount(page)
   await page.addStyleTag({ content: ALL_CSS })
   await page.locator('[data-columns-toggle]').click()
   const boxes = page.locator('[data-columns-panel] [data-col-toggle]')
-  expect(await boxes.count()).toBe(32)
+  expect(await boxes.count()).toBe(34)
   for (const box of await boxes.all()) {
     const hit = await box.evaluate(el => {
       const p = el.closest('[data-columns-panel]'), pr = p.getBoundingClientRect()
@@ -362,7 +365,7 @@ test.describe('phone @responsive', () => {
     const b = await panel.boundingBox()
     expect(b.x).toBeGreaterThanOrEqual(-1); expect(b.x + b.width).toBeLessThanOrEqual(w + 1); expect(b.height).toBeGreaterThanOrEqual(200)
     const boxes = page.locator('[data-columns-panel] [data-col-toggle]')
-    expect(await boxes.count()).toBe(32)
+    expect(await boxes.count()).toBe(34)
     for (const box of await boxes.all()) {
       const hit = await box.evaluate(el => {
         const p = el.closest('[data-columns-panel]'), pr = p.getBoundingClientRect()
