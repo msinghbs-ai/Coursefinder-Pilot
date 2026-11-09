@@ -6,7 +6,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowDown, ArrowUp, Columns3, RotateCcw, Search, Undo2, X } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import { StatusChip, fmtDate, fmtDateTime, fmtNumber, fmtTime } from './ui-kit'
-import { ADAPTER_STATES, COURSE_COLUMNS, COURSE_SCREEN, DEFAULT_LIMITS, FIELD_STATES, GROUPS, PROVIDER_SCREEN, citySummary, clampWidth, columnOf, defaultLayout, groupHeading, intakeName, intakeSummary, minWidthOf, monthName, moveColumn, normaliseLayout, registryOf, toggleColumn } from './catalogue-columns'
+import { ADAPTER_STATES, COURSE_COLUMNS, COURSE_SCREEN, DEFAULT_LIMITS, FIELD_STATES, fieldWords, GROUPS, PROVIDER_SCREEN, citySummary, clampWidth, columnOf, defaultLayout, groupHeading, intakeName, intakeSummary, minWidthOf, monthName, moveColumn, normaliseLayout, qualityOf, registryOf, toggleColumn } from './catalogue-columns'
 import './catalogue-columns.css'
 
 const LOCAL = 'coursefinder:pim:catalogue-layout:v1:'
@@ -295,6 +295,13 @@ export function renderProviderCell(key, row) {
     case 'entry_coverage': { const c = row.entry_coverage; if (!c) return <UnknownFact why="This provider is not in the entry requirements coverage table, so its coverage is not known" />
       return <span data-coverage={c.disposition} title={[`Discovery: ${words(c.discovery) || '—'}`, `Extraction: ${words(c.extraction) || '—'}`, `Admission: ${words(c.admission) || '—'}`, `Active matrix entries: ${count(c.matrix_active)}`, `Active course requirements: ${count(c.course_requirements_active)}`, c.as_at && `As at ${dt(c.as_at)}`].filter(Boolean).join('\n')}>{COVERAGE_WORDS[c.disposition] || words(c.disposition) || 'Unknown'}{c.matrix_active != null || c.course_requirements_active != null ? <small> · {count(c.matrix_active)} matrix · {count(c.course_requirements_active)} course</small> : null}</span> }
     case 'admission_state': return d ? <Chip map={ADMISSION} value={d.admission_state} why={ADMISSION_WHY[d.admission_state]} attr={{ 'data-admission': d.admission_state }} /> : <UnknownFact />
+    case 'description_quality': { if (!d) return <UnknownFact />
+      const q = qualityOf(d.quality)
+      return d.quality ? <span data-quality={d.quality}><StatusChip tone={q.tone} label={q.label} title={q.why} /></span> : <span data-quality="unknown"><Unknown title="The level of an enriched description depends on the Website and Zoho feeds, which were not read for this row" /></span> }
+    case 'missing_fields': { if (!d || !Array.isArray(d.missing_fields)) return <UnknownFact />
+      const all = fieldWords(d.missing_fields)
+      if (!all.length) return <span data-missing-fields="0" className="ccol-muted">None</span>
+      return <span data-missing-fields={all.length} title={`Provider fields with no value (information only; the reader fills the description only): ${all.join(', ')}`}>{all.length > 3 ? `${all.slice(0, 3).join(', ')} +${all.length - 3}` : all.join(', ')}</span> }
     case 'description_filled': return d ? <span data-filled={d.description_filled ? 'yes' : 'no'}><StatusChip tone={d.description_filled ? 'success' : 'warning'} label={d.description_filled ? 'Filled' : 'Missing'} /></span> : <UnknownFact />
     case 'description_text': return <DescriptionCell row={row} />
     case 'description_source': { if (!d) return <UnknownFact />
@@ -324,7 +331,7 @@ export function renderProviderCell(key, row) {
     default: return undefined
   }
 }
-export const PROVIDER_NEW_CELL_KEYS = new Set(['registration', 'scholarship_count', 'entry_coverage', 'admission_state', 'description_filled', 'description_text', 'description_source', 'description_evidence', 'description_admitted_at', 'reader_status', 'last_read_ok_at', 'hold_reason', 'next_retry_at', 'layer4_status', 'canonical_status', 'website_state', 'zoho_state', 'mismatch', 'last_modified_at'])
+export const PROVIDER_NEW_CELL_KEYS = new Set(['description_quality', 'missing_fields', 'registration', 'scholarship_count', 'entry_coverage', 'admission_state', 'description_filled', 'description_text', 'description_source', 'description_evidence', 'description_admitted_at', 'reader_status', 'last_read_ok_at', 'hold_reason', 'next_retry_at', 'layer4_status', 'canonical_status', 'website_state', 'zoho_state', 'mismatch', 'last_modified_at'])
 // layer4_status and last_modified_at also exist on the Course screen, with their own cells: the Provider screen never uses those
 /** The Provider table's columns for the person's layout, in their order. `overrides` are the cells that need the screen's state (Type, Published, Scholarship search, Adapter); every other
  *  existing column keeps the shared table's own cell. Built on each render, so an override always sees the latest state. */
