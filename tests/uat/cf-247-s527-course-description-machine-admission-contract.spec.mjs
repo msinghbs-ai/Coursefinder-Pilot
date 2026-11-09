@@ -266,7 +266,7 @@ test('visible results (Platform Admin 10 Nov 2026): wrong_page_kind and the Data
   expect(run).toContain('_oldchk')
   const sv = fs.readFileSync('tests/fixtures/cdesc-machine/scenarios_visible.sql', 'utf8')
   expect(sv).toMatch(/^-- Guards: F-CDESC/)
-  for (const s of ['wrong_page_kind', 'entry-level', 'unpublished course', 'never 0', 'known false']) expect(sv, s).toContain(s)
+  for (const s of ['wrong_page_kind', 'entry-level', 'not served to the Website', 'never 0', 'known false']) expect(sv, s).toContain(s)
   expect(workflow).toContain('supabase/migrations/2026111010*.sql')
   expect(workflow).toContain('supabase/held/cdesc_*_forward_recovery.sql')
 })

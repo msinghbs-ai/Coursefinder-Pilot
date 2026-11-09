@@ -321,7 +321,7 @@ test.describe('Data delivery on Operations', () => {
     expect(bodies.some((b) => b?.p_args && 'nonsense' in b.p_args)).toBe(false)
   })
 
-  test('course description stages: five stages, machine and person counts apart, unpublished course on its own line, Zoho not counted (never 0)', async ({ page }) => {
+  test('course description stages: five stages, machine and person counts apart, courses not served to the Website on their own line, Zoho not counted (never 0)', async ({ page }) => {
     await open(page, withStages())
     const cd = page.locator('[data-dd-stream="cdesc"]')
     await expect(cd).toHaveAttribute('open', '')
@@ -335,7 +335,9 @@ test.describe('Data delivery on Operations', () => {
     await expect(n('declined_by_machine')).toHaveAttribute('data-dd-actor', 'machine')
     await expect(box.locator('[data-dd-decline-reasons] li').first()).toContainText('wrong page kind')
     await expect(box.locator('[data-dd-decline-reasons] li').first()).toContainText('5')
-    await expect(box.locator('[data-dd-stage-row="unpublished_course"]')).toContainText('unpublished')
+    await expect(box.locator('[data-dd-stage-row="website_published"]')).toContainText('served to the Website')
+    await expect(box.locator('[data-dd-stage-row="unpublished_course"]')).toContainText('not served to the Website (provider hidden or blocked in Layer 4)')
+    await expect(box.locator('[data-dd-stage-row="unpublished_course"]')).not.toContainText('unpublished')
     const zoho = box.locator('[data-dd-stage-row="zoho"]')
     await expect(zoho).toContainText('Not counted')
     await expect(zoho).toContainText('no description field')
