@@ -10,8 +10,8 @@ const PHONE_MAX = 480
 
 const HUMAN = ['pdesc.enabled', 'pdesc.countries', 'pdesc.provider_types', 'pdesc.ai_usd_max', 'pdesc.firecrawl_reads_max', 'pdesc.acquire_firecrawl', 'pdesc.acquire_direct',
   'pdesc.machine_admit_on', 'pdesc.registry_factual_on', 'pdesc.machine_refused_words', 'pdesc.machine_refused_words_fr', 'pdesc.machine_numbers_allowed',
-  'pdesc.evidence_claim_words', 'pdesc.pending_max', 'reading.provider_quote_fragments_on', 'pdesc.superlatives', 'pdesc.claim_words', 'pdesc.machine_neutral_words']
-// still read by deployed functions (scope test, enqueue, manual cohorts), so they are NOT retiring yet
+  'pdesc.evidence_claim_words', 'pdesc.pending_max', 'reading.provider_quote_fragments_on', 'pdesc.superlatives', 'pdesc.claim_words', 'pdesc.machine_neutral_words', 'pdesc.provider_keys']
+// still read by deployed functions (scope test, enqueue, manual cohorts), so neither is retiring yet; provider_keys is a live scope pin (human), queue_per_run stays automatic
 const STILL_READ = ['pdesc.provider_keys', 'pdesc.queue_per_run']
 
 test('migration: one nullable column with three classes, commented, idempotent, replaces and retires nothing, drops nothing', () => {
@@ -27,7 +27,7 @@ test('migration: one nullable column with three classes, commented, idempotent, 
   expect(MIG.match(/control_class is null/g).length).toBeGreaterThanOrEqual(3)
 })
 
-test('migration: the human keys are exactly the 18 agreed, the rest of the provider-description controls are automatic, the two still read are not retiring', () => {
+test('migration: the human keys are exactly the 19 agreed, the rest of the provider-description controls are automatic, the two still read are not retiring', () => {
   const human = MIG.match(/set control_class = 'human'[\s\S]*?;/)[0]
   const keys = [...human.matchAll(/'((?:pdesc|reading)\.[a-z_]+)'/g)].map((m) => m[1])
   expect(keys.sort()).toEqual([...HUMAN].sort())
@@ -36,7 +36,9 @@ test('migration: the human keys are exactly the 18 agreed, the rest of the provi
   expect(auto).toContain("key = 'batch.provider_description'")
   expect(auto).toContain("key like 'reading.provider\\_%' escape '\\'")
   expect(MIG).not.toMatch(/set control_class = 'retiring'/)
-  for (const k of STILL_READ) expect(human).not.toContain(`'${k}'`)
+  expect(human).toContain("'pdesc.provider_keys'") // a live scope pin: a person decides it
+  expect(human).not.toContain("'pdesc.queue_per_run'")
+  expect(STILL_READ).toHaveLength(2)
   // the dependency evidence: the live readers the migration names are still in the migrations that define them
   const all = fs.readdirSync('supabase/migrations').filter((f) => f.endsWith('.sql')).map((f) => fs.readFileSync(`supabase/migrations/${f}`, 'utf8')).join('\n')
   expect(all).toContain("security.toolset_setting('pipeline', 'pdesc.provider_keys')")
