@@ -57,6 +57,9 @@ insert into cron.job_run_details(jobid, start_time, end_time, status, return_mes
 -- 3 the refresh: records only, a few measures per run, oldest first, then everything
 create temp table t_run1 as select security.data_delivery_refresh_v1() r;
 select pg_temp.ok('one run counts at most the batch setting (8 measures)', (select (r->>'counted')::int + (r->>'failed')::int = 8 from t_run1));
+update pipeline.platform_toolset_settings set value = to_jsonb(0) where key = 'data_delivery.run_budget_seconds';
+select pg_temp.ok('a run stops starting new counts once its time budget is spent (budget 0: exactly one measure, the rest stay due)', (select (r->>'counted')::int + (r->>'failed')::int = 1 from (select security.data_delivery_refresh_v1() r) q));
+update pipeline.platform_toolset_settings set value = to_jsonb(30) where key = 'data_delivery.run_budget_seconds';
 do $$ begin for i in 1..6 loop perform security.data_delivery_refresh_v1(); end loop; end $$;
 select pg_temp.ok('every measure SELECT runs under the evaluator''s empty search path with no error', (select count(*) = 0 from pipeline.data_delivery_readings where error is not null));
 select pg_temp.ok('every built measure is counted: 8 streams x 4 measures less the two consumer measures that are not built (course descriptions, AER)', (select count(*) = 30 from pipeline.data_delivery_readings));

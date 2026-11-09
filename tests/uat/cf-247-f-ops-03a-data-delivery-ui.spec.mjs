@@ -108,7 +108,7 @@ test.describe('Data delivery on Operations', () => {
     await expect(pd.locator('[data-dd-cell="website"] [data-dd-drill]')).toHaveCount(0)
     await pd.locator('summary').click()
     await expect(pd.locator('[data-dd-drill-box] [data-dd-drill="filled"]')).toHaveCount(0)
-    await expect(pd.locator('[data-dd-degraded]')).toContainText('#956')
+    await expect(pd.locator('[data-dd-degraded]')).toContainText('Provider Catalogue columns release')
     await expect(pd.locator('[data-dd-drill="lane"]')).toHaveAttribute('href', /lane=pdesc/)
   })
 

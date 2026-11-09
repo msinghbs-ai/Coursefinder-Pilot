@@ -42,7 +42,7 @@ test('every stream states what it does not measure, and the read returns known=f
 })
 
 test('the refresh interval, the windows and the number of reasons are settings, not code', () => {
-  for (const k of ['data_delivery.on', 'data_delivery.refresh_minutes', 'data_delivery.measures_per_run', 'data_delivery.stage_timeout_seconds', 'data_delivery.net_short_hours', 'data_delivery.net_long_hours', 'data_delivery.stale_after_minutes', 'data_delivery.ui_refresh_seconds', 'data_delivery.run_history_hours', 'data_delivery.reasons_shown']) expect(M).toContain(`'${k}'`)
+  for (const k of ['data_delivery.on', 'data_delivery.refresh_minutes', 'data_delivery.measures_per_run', 'data_delivery.run_budget_seconds', 'data_delivery.net_short_hours', 'data_delivery.net_long_hours', 'data_delivery.stale_after_minutes', 'data_delivery.ui_refresh_seconds', 'data_delivery.run_history_hours', 'data_delivery.reasons_shown']) expect(M).toContain(`'${k}'`)
   expect(UI).toContain('d?.ui_refresh_seconds')
   expect(UI).toContain('visibilityState')
   expect(M).toContain("'* * * * *', 'select security.data_delivery_refresh_v1()'")

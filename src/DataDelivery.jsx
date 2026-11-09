@@ -2,7 +2,7 @@
 // to know whether StudySearch is processing, admitting or publishing data."
 // One row per data stream: coverage (n of N), net admission gain over the short and long windows (admitted minus withdrawn, from each stream's own ledger
 // timestamps), Website and Zoho state, queue, holds with the largest exact reasons, processing speed, last and next run, and the automatic recovery status.
-// It reuses the lane funnels below it (queue and hold stages, the reason breakdown), the Provider Catalogue (#956) and the Course Catalogue for drill-down; it
+// It reuses the lane funnels below it (queue and hold stages, the reason breakdown), the Provider Catalogue and the Course Catalogue for drill-down; it
 // is not another dashboard. Server: public.admin_layer23('data_delivery') (rank 3 and above, the same gate as Operations; SELECT only, counted by job
 // data-delivery). It reloads itself at the interval in Pipeline settings > Data delivery (stops while the tab is hidden), and has a Refresh button.
 // Unknown is never 0: a measure that is not counted, not built or failed shows "Not measured" or "Unknown" with the reason. A green job that admitted nothing
@@ -121,7 +121,7 @@ function Stream({s,now,providerFilters,open,onToggle}){
         {filled&&<a href={filled} data-dd-drill="filled">Filled</a>}{missing&&<a href={missing} data-dd-drill="missing">Missing</a>}
         {dr.screen&&!filled&&!missing&&dr.screen!=='providers'&&<a href={hrefFor(dr.screen)} data-dd-drill="open">Open the list</a>}
         <a href={lanes} data-dd-drill="lane">Reason breakdown</a>
-        {dr.needs_provider_filters&&!providerFilters&&<small data-dd-degraded>Provider Catalogue filters (Filled, Missing, Website and Zoho state) arrive with the Provider Catalogue columns release (#956); these links appear then.</small>}
+        {dr.needs_provider_filters&&!providerFilters&&<small data-dd-degraded>Provider Catalogue filters (Filled, Missing, Website and Zoho state) arrive with the Provider Catalogue columns release; these links appear then.</small>}
         {dr.note&&<small data-dd-drill-note>{dr.note}</small>}
       </div>
       <h4 className="sl-h4">Primary jobs</h4>
