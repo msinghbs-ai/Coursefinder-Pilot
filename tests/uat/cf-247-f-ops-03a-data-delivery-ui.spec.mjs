@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import { mockAdmin } from './support/admin-mock.mjs'
 import { mockLaneFunnels } from './support/lane-funnel-mock.mjs'
-import { mockDataDelivery, DATA_DELIVERY, THREE_ALERTS } from './support/data-delivery-mock.mjs'
+import { mockDataDelivery, DATA_DELIVERY, THREE_ALERTS, withStages, STAGES } from './support/data-delivery-mock.mjs'
 
 const OPERATIONS = '/#layer-2-discovery?tab=operations'
 async function open(page, payload) {
@@ -319,5 +319,48 @@ test.describe('Data delivery on Operations', () => {
     await page.goto('/#courses?f_nonsense=1&f_hasFee=true')
     await expect.poll(() => bodies.some((b) => b?.p_args?.has_fee === true && b?.p_args?.has_intake === undefined)).toBe(true)
     expect(bodies.some((b) => b?.p_args && 'nonsense' in b.p_args)).toBe(false)
+  })
+
+  test('course description stages: five stages, machine and person counts apart, unpublished course on its own line, Zoho not counted (never 0)', async ({ page }) => {
+    await open(page, withStages())
+    const cd = page.locator('[data-dd-stream="cdesc"]')
+    await expect(cd).toHaveAttribute('open', '')
+    const box = cd.locator('[data-dd-stages="known"]')
+    await expect(box).toBeVisible()
+    await expect(box.locator('[data-dd-stage]')).toHaveCount(5)
+    const n = (k) => box.locator(`[data-dd-stage-n="${k}"]`)
+    for (const [k, v] of Object.entries({ proposals_from_a_stored_page: '9', waiting_in_layer4: '5', held_behind_provider_cap: '1', held_by_a_check: '1', declined_by_machine: '5', by_machine: '3', by_person: '1', withdrawn: '1', described_courses: '5', described_other_route: '1', website_published: '1', unpublished_course: '4' })) await expect(n(k).first(), k).toHaveText(v)
+    await expect(n('by_machine')).toHaveAttribute('data-dd-actor', 'machine')
+    await expect(n('by_person')).toHaveAttribute('data-dd-actor', 'person')
+    await expect(n('declined_by_machine')).toHaveAttribute('data-dd-actor', 'machine')
+    await expect(box.locator('[data-dd-decline-reasons] li').first()).toContainText('wrong page kind')
+    await expect(box.locator('[data-dd-decline-reasons] li').first()).toContainText('5')
+    await expect(box.locator('[data-dd-stage-row="unpublished_course"]')).toContainText('unpublished')
+    const zoho = box.locator('[data-dd-stage-row="zoho"]')
+    await expect(zoho).toContainText('Not counted')
+    await expect(zoho).toContainText('no description field')
+    await expect(zoho.locator('strong'), 'Zoho is not shown as a number').toHaveCount(0)
+    await expect(box.locator('[data-dd-readback]')).toContainText('matched 3')
+    await expect(box.locator('[data-dd-readback]')).toContainText('not the same as listed and published')
+    await expect(box.locator('[data-dd-stages-stamp]')).toContainText('Counted live at')
+    // the other streams carry no stage block
+    await expect(page.locator('[data-dd-stages]')).toHaveCount(1)
+  })
+
+  test('course description stages: a stage that could not be counted says so with the reason, a missing figure is Not measured, never 0', async ({ page }) => {
+    await open(page, withStages({ known: false, reason: 'The stage counts could not be read: canceling statement due to statement timeout' }))
+    const box = page.locator('[data-dd-stream="cdesc"] [data-dd-stages="unknown"]')
+    await expect(box).toContainText('Not counted')
+    await expect(box).toContainText('could not be read')
+    await expect(box.locator('[data-dd-stage-n]')).toHaveCount(0)
+    const partial = { ...STAGES, admitted: { ...STAGES.admitted, by_person: null }, consumers: { ...STAGES.consumers, website_published: null } }
+    const page2 = await page.context().newPage()
+    await mockAdmin(page2); await mockLaneFunnels(page2); await mockDataDelivery(page2, withStages(partial))
+    await page2.goto(OPERATIONS)
+    const b2 = page2.locator('[data-dd-stream="cdesc"] [data-dd-stages="known"]')
+    await expect(b2).toBeVisible({ timeout: 20_000 })
+    await expect(b2.locator('[data-dd-stage-n="by_person"]')).toHaveText('Not measured')
+    await expect(b2.locator('[data-dd-stage-n="website_published"]')).toHaveText('Not measured')
+    await expect(b2.locator('[data-dd-stage-n="by_machine"]')).toHaveText('3')
   })
 })

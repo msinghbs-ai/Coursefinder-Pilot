@@ -1,12 +1,14 @@
 // Fill description / Recheck description (CF-247 F-CDESC.06, Platform Admin directive 10 Nov 2026). The Course Catalogue (tick courses), the Course Detail blade (one course)
 // and the Provider Catalogue (one university) start the EXISTING governed Enrich fields task for the description field: no other scheduler, job kind or reader.
 // The Course Catalogue shows each course's description state under its name (no new column: the saved column layout is untouched).
-// Reads and writes only public.admin_enrich_fields('preview' | 'start' | 'verify' | 'description_tasks') and public.admin_course_description_state_v1.
+// Reads and writes only public.admin_enrich_fields('preview' | 'start' | 'verify' | 'description_tasks') and public.admin_course_description_state_v1, plus (Platform Admin, rank 6, only on a course with a live machine
+// admission) the existing public.admin_course_description_machine_withdraw_v1.
 // Every figure on this page comes from the server: the per-request bound is the existing "Run now: most courses in a cohort" setting, the day's room is the existing
 // "Enrich fields: items per day" setting. Nothing is a number in this file except the poll interval.
 // Honest states: the pipeline states (Missing, Source-ready, AI-read, Held, Machine-admitted, Human decision) are kept apart from the three consumer read-backs (Website feed, Zoho feed,
 // Verified HTTP); "not applicable" is not a failure and "not checked" is not a pass.
 import React,{useCallback,useEffect,useMemo,useRef,useState}from'react'
+import { fmtNumber } from './lib/format'
 import{supabase}from'./lib/supabase'
 import{Button,Empty,Loading,StatusChip,fmtDateTime}from'./ui-kit'
 import{plainError}from'./lib/errors'
@@ -16,11 +18,12 @@ const POLL_MS=15000 // fixed: how often an open task list looks again while a ta
 
 const call=async(action,args)=>{const{data,error}=await supabase.rpc('admin_enrich_fields',{p_action:action,p_args:args||{}});if(error)throw error;return data}
 const readStates=async ids=>{const{data,error}=await supabase.rpc('admin_course_description_state_v1',{p_course_ids:ids});if(error)throw error;return data}
+const withdrawCall=async(courseId,reason)=>{const{data,error}=await supabase.rpc('admin_course_description_machine_withdraw_v1',{p_course:courseId,p_reason:reason});if(error)throw error;return data}
 const errText=e=>plainError(e)
 const idOf=r=>String(r?.id??r?.course_id??'')
 const titleOf=r=>r?.canonical_title??r?.display_title??r?.title??r?.course_title??'this course'
 const short=id=>String(id||'').slice(0,8)
-const num=n=>Number(n||0).toLocaleString('en-AU')
+const num=n=>fmtNumber(Number(n||0))
 
 // Where a description stands. Each state has its own words; none stands in for another.
 export const DESC_STATE={
@@ -145,10 +148,26 @@ export function useCourseDescriptionOnDemand({enabled,rows,rank,onError}){
 }
 
 // ---- Course Detail blade ------------------------------------------------------------------------------------------------------------------------------------------
+// Withdraw a machine-admitted description (rank 6). The server decides: it keeps a description a person changed or locked, and says so; nothing is guessed here.
+const WITHDRAW_NO={no_live_machine_admission:'This course has no live machine admission (it may already be withdrawn).'}
+function WithdrawPanel({courseId,onClose,onDone,onError}){
+  const[reason,setReason]=useState(''),[busy,setBusy]=useState(false),[err,setErr]=useState(''),[done,setDone]=useState(false),reasonOk=reason.trim().length>=4
+  async function go(){setBusy(true);setErr('');try{const d=await withdrawCall(String(courseId),reason.trim());if(d?.ok){setDone(true);onDone?.(d)}else{const m=d?.reason||WITHDRAW_NO[d?.rule]||'The description was not withdrawn.';setErr(m);onError?.(m)}}catch(e){const m=errText(e);setErr(m);onError?.(m)}finally{setBusy(false)}}
+  return <div className="cdod-panel" role="group" aria-label="Withdraw machine description" data-cdod-withdraw-panel>
+    <div className="cdod-panel-head"><strong>Withdraw machine description</strong><button type="button" className="cdod-x" onClick={onClose} aria-label="Close Withdraw machine description">Close</button></div>
+    {!done&&<>
+      <p className="cdod-sum" data-cdod-withdraw-what>The description is removed from the catalogue and the search refresh runs again. The course returns to the gap queue, and a new reading is not admitted by the machine: it waits for a person in Layer 4. The text of the old description is kept in the ledger. A description that a person has changed or locked since is kept, and you are told.</p>
+      <label className="cdod-reason"><span>Reason (kept in the log, at least 4 characters)</span><input value={reason} onChange={e=>setReason(e.target.value)} maxLength={300} placeholder="Why is this description withdrawn?" aria-label="Reason for withdrawing"/></label>
+      {err&&<p className="cdod-error" role="alert">{err}</p>}
+      <div className="cdod-actions"><Button variant="danger" disabled={!reasonOk||busy} onClick={go} title={!reasonOk?'Give a reason first.':undefined}>{busy?'Withdrawing…':'Withdraw description'}</Button><Button onClick={onClose}>Cancel</Button></div>
+    </>}
+    {done&&<p className="cdod-done" role="status" data-cdod-withdraw-done>The machine description was withdrawn. The course has no description now and is back in the gap queue; the old text is kept in the ledger.</p>}
+  </div>
+}
 function Row({label,children}){return <div className="cdod-row"><dt>{label}</dt><dd>{children}</dd></div>}
 export function CourseDescriptionBlock({courseId,rank,onError}){
   const enabled=Number(rank)>=3&&!!courseId,st=useDescriptionStates(courseId?[String(courseId)]:[],enabled)
-  const[mode,setMode]=useState(''),[refresh,setRefresh]=useState(0),[ver,setVer]=useState(null),[verBusy,setVerBusy]=useState(false),[verErr,setVerErr]=useState('')
+  const[wd,setWd]=useState(false),[mode,setMode]=useState(''),[refresh,setRefresh]=useState(0),[ver,setVer]=useState(null),[verBusy,setVerBusy]=useState(false),[verErr,setVerErr]=useState('')
   if(!enabled)return null
   const s=st.map[String(courseId)]
   async function verify(){setVerBusy(true);setVerErr('');try{const d=await call('verify',{course_ids:[String(courseId)]});setVer((d?.courses||[])[0]||{missing:true})}catch(e){setVerErr(errText(e))}finally{setVerBusy(false)}}
@@ -171,7 +190,9 @@ export function CourseDescriptionBlock({courseId,rank,onError}){
         <Button compact disabled={!!s.fill_block} onClick={()=>setMode('fill')} title={s.fill_info?.label}>Fill description</Button>
         <Button compact disabled={!!s.recheck_block} onClick={()=>setMode('recheck')} title={s.recheck_info?.label}>Recheck description</Button>
         <Button compact onClick={verify} disabled={verBusy}>{verBusy?'Checking…':'Check the feeds'}</Button>
+        {Number(rank)>=6&&s.state==='machine_admitted'&&<Button compact variant="danger" onClick={()=>setWd(true)} data-cdod-withdraw>Withdraw machine description</Button>}
       </div>
+      {wd&&Number(rank)>=6&&<WithdrawPanel courseId={courseId} onError={onError} onClose={()=>setWd(false)} onDone={()=>{setRefresh(x=>x+1);st.reload()}}/>}
       {(s.fill_block||s.recheck_block)&&<p className="cdod-muted" data-cdod-why>{s.fill_block?<>Fill: {s.fill_info?.label}. {s.fill_info?.next} </>:null}{s.recheck_block?<>Recheck: {s.recheck_info?.label}. {s.recheck_info?.next}</>:null}</p>}
       {mode&&<RunPanel mode={mode} scope={{course_ids:[String(courseId)]}} label="This course" rank={rank} onError={onError} onClose={()=>setMode('')} onStarted={()=>{setRefresh(x=>x+1);st.reload()}}/>}
     </>}

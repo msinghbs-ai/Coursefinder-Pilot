@@ -5,6 +5,7 @@ on:
     paths:
       - 'supabase/migrations/20261110000100_cf247_fops03a_data_delivery.sql'
       - 'supabase/migrations/20261108170000_cf247_lane_funnels.sql'
+      - 'supabase/migrations/20261110100000_cf247_cdesc_visible_results.sql'
       - 'tests/fixtures/fops03a-data-delivery/**'
       - 'tests/fixtures/lane-funnels/**'
       - 'src/DataDelivery.jsx'

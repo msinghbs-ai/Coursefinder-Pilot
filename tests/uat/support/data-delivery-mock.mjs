@@ -78,6 +78,19 @@ export const DATA_DELIVERY = {
   provider_filters_available: true, streams: STREAMS, meaning: { unknown: 'Unknown or Not measured means the figure is not counted here; it is never shown as 0' },
 }
 
+/** The course description stage counts exactly as security.data_delivery_cdesc_stages_v1() returns them (the cdesc fixture's own numbers). Added to the cdesc stream by the stage tests only. */
+export const STAGES = {
+  known: true, counted_at: new Date().toISOString(), unit: 'courses',
+  source: { proposals_from_a_stored_page: 9 },
+  proposal: { waiting_in_layer4: 5, held_behind_provider_cap: 1, held_by_a_check: 1 },
+  validation: { not_yet_checked_by_machine: 0, declined_by_machine: 5, top_decline_reasons: [{ code: 'wrong_page_kind', n: 5, example: 'The description was read from a page whose address has the part "requirements"' }] },
+  admitted: { by_machine: 3, by_person: 1, withdrawn: 1, described_courses: 5, described_other_route: 1 },
+  consumers: { website_published: 1, unpublished_course: 4, machine_readback: { matched: 3, lag: 0, not_in_feed: 0, error: 0, not_checked: 0 },
+    zoho: { known: false, reason: 'The latest course item in the Zoho course feed has no description field, so a course description does not reach Zoho. Nothing is counted for it.' } },
+}
+/** DATA_DELIVERY with the stage counts on the cdesc stream (or any other stages value). */
+export const withStages = (stages = STAGES) => ({ ...DATA_DELIVERY, streams: DATA_DELIVERY.streams.map((s) => (s.stream === 'cdesc' ? { ...s, stages } : s)) })
+
 /** Answers admin_layer23('data_delivery') and passes every other action to the admin mock registered before it. Returns the call log and a switch to fail the read. */
 export async function mockDataDelivery(page, payload = DATA_DELIVERY) {
   const state = { calls: 0, fail: null, hang: false, payload }

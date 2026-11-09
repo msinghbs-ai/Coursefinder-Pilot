@@ -4,7 +4,7 @@
 import { test, expect } from '@playwright/test'
 import { mockAdmin } from './support/admin-mock.mjs'
 import { mockLaneFunnels } from './support/lane-funnel-mock.mjs'
-import { mockDataDelivery, THREE_ALERTS } from './support/data-delivery-mock.mjs'
+import { mockDataDelivery, THREE_ALERTS, withStages } from './support/data-delivery-mock.mjs'
 
 const PHONE_MAX = 480
 const TAP_MIN = 44
@@ -70,5 +70,19 @@ test.describe('data delivery on a phone @responsive', () => {
     const r = await eng.evaluate((el) => ({ clamp: getComputedStyle(el).webkitLineClamp, over: el.scrollHeight - el.clientHeight, overflow: getComputedStyle(el).overflow }))
     expect(r.clamp).toBe('none')
     expect(r.over).toBeLessThanOrEqual(1)
+  })
+
+  test('course description stages stack in one column, every figure keeps its label, and the page never scrolls sideways', async ({ page }) => {
+    await mockAdmin(page); await mockLaneFunnels(page); await mockDataDelivery(page, withStages())
+    const w = await atPhoneWidth(page)
+    await page.goto('/#layer-2-discovery?tab=operations')
+    const box = page.locator('[data-dd-stream="cdesc"] [data-dd-stages="known"]')
+    await expect(box).toBeVisible()
+    const tops = await box.locator('[data-dd-stage]').evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().left)))
+    expect(new Set(tops).size, 'the five stages share one left edge (one column)').toBe(1)
+    await expect(box.locator('[data-dd-stage-row="by_machine"]')).toContainText('Admitted by the machine rule')
+    await expect(box.locator('[data-dd-stage-row="by_person"]')).toContainText('Admitted by a person')
+    expect(await pageOverflow(page), 'no sideways scroll').toBeLessThanOrEqual(0)
+    expect(w).toBeLessThanOrEqual(PHONE_MAX)
   })
 })

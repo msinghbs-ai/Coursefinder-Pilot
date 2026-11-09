@@ -34,4 +34,12 @@ echo "migration applied twice: streams/stages/settings/jobs/register/admin_layer
 out=$($P -d $DB -f tests/fixtures/fops03a-data-delivery/fixtures.sql 2>&1) || { echo "$out" | grep -E 'FAILED|ERROR'; exit 1; }
 echo "$out" | grep 'NOTICE:  ok:' | sed 's/^[^N]*NOTICE:  //'
 echo "assertions passed: $(echo "$out" | grep -c 'NOTICE:  ok:')"
+# 20261110100000 (course description stages in Data Delivery): applied twice; this database holds no course description ledger, so the count cannot be made and the stream shows it as such (known false with the error)
+# while every other stream, and the read itself, are unchanged. The counts themselves are proved on the course description fixture (tests/fixtures/cdesc-machine).
+CDV=supabase/migrations/20261110100000_cf247_cdesc_visible_results.sql
+$P -d $DB -f $CDV >/dev/null; $P -d $DB -f $CDV >/dev/null
+res=$($P -d $DB -Atc "select (select count(*) from jsonb_array_elements(j->'streams')) || '|' || (select count(*) from jsonb_array_elements(j->'streams') s where s->>'stream' <> 'cdesc' and jsonb_typeof(s->'stages') <> 'null')
+  || '|' || (select s->'stages'->>'known' || '/' || left(s->'stages'->>'reason', 34) from jsonb_array_elements(j->'streams') s where s->>'stream' = 'cdesc') from (select security.data_delivery_v1() j) z")
+[ "$res" = "8|0|false/The stage counts could not be read" ] || { echo "Data Delivery with the stage counts: unexpected result $res"; exit 1; }
+echo "stages: Data Delivery still returns its 8 streams; only the course description stream carries stages, and a count that cannot be made shows known false with the error"
 # Guards: F-OPS.03A (Platform Admin 9 Nov 2026 21:28) and G4 database-backed tests: the Data Delivery read and its refresh run against the migration on an isolated PostgreSQL (fixtures only, never a Supabase project).
