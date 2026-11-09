@@ -829,3 +829,6 @@
 .kd-drawer-fields dt{font-size:var(--cf-fs-xs);color:var(--cf-text-2)}
 .kd-drawer-fields dd{margin:0;min-width:0}
 .au-area-toggle{font:inherit;font-weight:600;color:var(--cf-text)}
+/* F-OPS.04: Integration queue on a phone. An opened issue's history sits in a full-width table row, so it was as wide as the whole table
+   and had to be scrolled sideways to read. On a phone it stays one frame wide and pinned to the left edge of the table's own frame. */
+@media (max-width:620px){.iq-table .iq-detail .iq-history{position:sticky;left:0;box-sizing:border-box;width:calc(100vw - 56px);max-width:100%}}
