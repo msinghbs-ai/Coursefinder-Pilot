@@ -1,34 +1,35 @@
--- CF-247 AER selector fix (v2.15.473 first-run verification, Integration Controller 4 Nov 2026 20:02; follows 20261104580000).
--- Why (production, read only, 4 Nov 2026 20:08-20:13 AEDT):
+-- CF-247 AER selector fix, re-based on live 9 Nov 2026 (originally written 4 Nov 2026 as 20261104620000, held with PR #875 under the engineering hold;
+-- Platform Admin 9 Nov 2026: complete the PR-first gate, migration renumbering and regression tests before merging).
+-- Why (production, read only, 4 Nov 2026 20:08-20:13 AEDT; first-run verification of v2.15.473, Integration Controller 20:02):
 --   * first-run-verify judged job work-continuity (run 1229030, 18:58) on transition aer_technical_correction at 19:02: "55 eligible, 0 processed,
 --     nothing created". work-continuity only returns due items to stage eligible; the corrected reads are asked by aer-scheduled-read at :13, and the
 --     shared rule first ran at 19:13. The measure counted the lane's bookkeeping (items in stage eligible, re-checks, lane recoveries), so the 2
 --     corrected reads that replaced their read at 18:14 (no lane item) counted nothing.
---   * The shared rule (security.aer_recovery_rule_v1) classed 109 items cut at the row limit as changed_conditions (eligible): it compared the newest
---     entry.% setting time (all touched 3 Nov 20:07, values unchanged) with the item's creation. None of them can be read again usefully: their
---     row limit (entry.max_rows_per_course 6, set 28 Oct; no university limit) is the one they were cut under.
 --   * The held step (security.aer_schedule_held_v1) scans 40 waiting items in order of last check; at 19:13 its 40 were row-limit cuts (19), shared
 --     pages (12), complete (4), unchecked (3) and decisions (2). None of the 51 items the rule makes eligible was reached, so no corrected read was asked.
--- What (three md5-guarded edits and one row; no cap, spending, enqueue or switch change):
---   1. security.aer_recovery_rule_v1: a row-limit cut is changed_conditions only when a row-limit setting that applies to its university
---      (entry.max_rows_per_course, or its own entry in entry.max_rows_by_provider) changed after its last read.
---   2. security.aer_schedule_held_v1: items the rule last classed reread_eligible, then changed_conditions, are scanned first.
---   3. security.progress_measure_v1 (owner: verification measures, v2.15.469), branch aer_technical_correction: eligible = items the rule allows a
+--   * The third defect of the original change (109 row-limit cuts classed changed_conditions because the newest entry.% setting TIME, not a value, moved)
+--     is NOT edited here any more: migration 20261107130100 (AER technical holds part 2, live) replaced that clause with a stricter one (a cut is
+--     eligible only when the university's row limit now fits the rows the read saw and is above the limit it was cut under). Live 9 Nov 2026: the rule
+--     is 35281a19 and classes 151 row-limit cuts row_limit (not eligible). This file leaves the rule untouched; the tests keep the regression.
+-- What (two md5-guarded edits and one row; no cap, spending, enqueue or switch change):
+--   1. security.aer_schedule_held_v1: items the rule last classed reread_eligible, then changed_conditions, are scanned first (live md5 unchanged
+--      since 4 Nov 2026: c866167b).
+--   2. security.progress_measure_v1 (owner: verification measures, v2.15.469), branch aer_technical_correction: eligible = items the rule allows a
 --      corrected read (deterministic holds parked, not counted); processed = corrected reads asked; created = reads that replaced the held read;
---      excluded/rejected = refused by the reader; downstream = replacements in Layer 4; cap = the last scheduled run's refusal.
---   4. pipeline.progress_transitions aer_technical_correction: producer aer-scheduled-read (was work-continuity).
--- Before (live, 4 Nov 2026 20:08 AEDT) -> after:
---   security.aer_recovery_rule_v1(uuid) b194475a46186bc674a3364816a8b06b -> 605cba4a9b49d1cfebee8ada5414b561
+--      excluded/rejected = refused by the reader; downstream = replacements in Layer 4; cap = the last scheduled run's refusal. RE-GUARDED on live
+--      9 Nov 2026: the function now also carries the intake branches added by 20261106400000 (md5 40c0c972 -> e758d1c2); those are untouched.
+--   3. pipeline.progress_transitions aer_technical_correction: producer aer-scheduled-read (was work-continuity).
+-- Before (live, 9 Nov 2026, read only) -> after:
 --   security.aer_schedule_held_v1(integer) c866167b55d2494c366fd2700a518ff8 -> 483fbcead73c7996d02c372fd6128108
---   security.progress_measure_v1(text,timestamp with time zone) 40c0c972abc353be8f6eee35c79750e9 -> 4f10e10e25c30f35f05f7ba1bbb2a4d8
--- Replaces: security.aer_recovery_rule_v1, security.aer_schedule_held_v1, security.progress_measure_v1 (same names; md5-guarded edits)
+--   security.progress_measure_v1(text,timestamp with time zone) e758d1c2d36f8f523c3fdbcc1b9dff2f -> b5fc7aae44039565dc85644352f0c719
+-- Replaces: security.aer_schedule_held_v1, security.progress_measure_v1 (same names; md5-guarded edits); the producer job of transition aer_technical_correction (work-continuity -> aer-scheduled-read)
 -- Retires: nothing
 -- Nothing is dropped or deleted. No consumer API object, cap, spending limit, setting, job, admission authority or gate changes.
 
 do $g$
 begin
-  if to_regprocedure('security.course_entry_max_rows_v1(uuid)') is null or to_regclass('pipeline.progress_transitions') is null then
-    raise exception 'needs the E13 row limit (security.course_entry_max_rows_v1) and first-run verification (pipeline.progress_transitions)'; end if;
+  if to_regprocedure('security.aer_recovery_rule_v1(uuid)') is null or to_regclass('pipeline.progress_transitions') is null or to_regclass('pipeline.aer_read_supersessions') is null then
+    raise exception 'needs the AER recovery rule (20261104580000), the AER read supersessions (D-R2) and first-run verification (pipeline.progress_transitions)'; end if;
 end $g$;
 
 create or replace function pg_temp.edit_once(p_sig text, p_before text, p_after text, p_edits text[][], p_times int[]) returns text language plpgsql as $f$
@@ -50,16 +51,7 @@ begin
   return p_sig || ': applied';
 end $f$;
 
--- 1 the rule: a row-limit cut changes only with a row limit that applies to it, set after its last read
-select pg_temp.edit_once('security.aer_recovery_rule_v1(uuid)', 'b194475a46186bc674a3364816a8b06b', '605cba4a9b49d1cfebee8ada5414b561', array[
-  [$e$    when v_cls = 'row_limit' and v_set_at > r.created_at then 'changed_conditions'$e$,
-   $e$    -- 4 Nov 2026 20:02 (v2.15.473 first run): only a row limit that applies to this university, set after the last read, changes a row-limit cut
-    when v_cls = 'row_limit' and (select max(t.updated_at) from pipeline.platform_toolset_settings t where t.toolset_key = 'pipeline'
-                                     and (t.key = 'entry.max_rows_per_course' or (t.key = 'entry.max_rows_by_provider' and jsonb_typeof(t.value) = 'array'
-                                          and exists (select 1 from jsonb_array_elements_text(t.value) e where btrim(split_part(e, '=', 1)) = v_pid::text))))
-         > greatest(r.created_at, coalesce(v_last.closed_at, v_last.requested_at, r.created_at)) then 'changed_conditions'$e$]], array[1]);
-
--- 2 the held step: what the rule makes eligible is scanned first
+-- 1 the held step: what the rule makes eligible is scanned first
 select pg_temp.edit_once('security.aer_schedule_held_v1(integer)', 'c866167b55d2494c366fd2700a518ff8', '483fbcead73c7996d02c372fd6128108', array[
   [$e$            order by k.checked_at nulls first, i.created_at, i.id$e$,
    $e$            -- 4 Nov 2026 20:02 (v2.15.473 first run): items the shared rule last made eligible first, so the scan is not spent on holds it never reads
@@ -68,8 +60,8 @@ select pg_temp.edit_once('security.aer_schedule_held_v1(integer)', 'c866167b55d2
                                   and w.stage <> 'done' limit 1), 2),
                      k.checked_at nulls first, i.created_at, i.id$e$]], array[1]);
 
--- 3 the measure: corrected reads, not the lane's bookkeeping
-select pg_temp.edit_once('security.progress_measure_v1(text,timestamp with time zone)', '40c0c972abc353be8f6eee35c79750e9', '4f10e10e25c30f35f05f7ba1bbb2a4d8', array[
+-- 2 the measure: corrected reads, not the lane's bookkeeping
+select pg_temp.edit_once('security.progress_measure_v1(text,timestamp with time zone)', 'e758d1c2d36f8f523c3fdbcc1b9dff2f', 'b5fc7aae44039565dc85644352f0c719', array[
   [$e$    select jsonb_build_object(
       'eligible', (select count(*) from pipeline.work_items w where w.lane = 'aer_technical' and w.stage = 'eligible'),
       'processed', (select count(*) from pipeline.work_items w where w.lane = 'aer_technical' and w.last_attempt_at >= p_since),
@@ -99,7 +91,7 @@ select pg_temp.edit_once('security.progress_measure_v1(text,timestamp with time 
       'basis', 'corrected reads of held AER items (job aer-scheduled-read): eligible = items the shared recovery rule allows a corrected read; processed = corrected reads asked; created = reads that replaced the held read; rejected = refused by the reader; parked = lane aer_technical holds by class') into v;$e$]],
   array[1, 1]);
 
--- 4 the transition's producer
+-- 3 the transition's producer
 update pipeline.progress_transitions set producer_jobs = '{aer-scheduled-read}'
  where key = 'aer_technical_correction' and producer_jobs = '{work-continuity}';
 

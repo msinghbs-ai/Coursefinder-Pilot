@@ -4,6 +4,11 @@
 update pipeline.platform_toolset_settings set updated_at = '2026-11-03 09:07:09.670112+00' where toolset_key = 'pipeline' and key like 'entry.%';
 update pipeline.platform_toolset_settings set updated_at = '2026-10-28 10:38:37.661455+00' where toolset_key = 'pipeline' and key = 'entry.max_rows_per_course';
 update pipeline.platform_toolset_settings set updated_at = '2026-11-01 19:43:26.950319+00' where toolset_key = 'pipeline' and key = 'entry.max_rows_by_provider';
+-- 1b production shape of a read cut at the row limit (live 9 Nov 2026): proposed_value.rows is the 6 kept rows, no limit key; the gate says how many were cut
+-- and they were read before the entry settings were last touched (3 Nov 2026 20:07 AEDT on live; 1 Nov here): the precondition of the defect this change first fixed
+update pipeline.layer4_review_items i set proposed_value = i.proposed_value || '{"rows": 6}'::jsonb, created_at = '2026-10-30 09:00:00+00'
+ where i.status = 'pending' and i.field_code = 'course_entry_first_read'
+   and exists (select 1 from pipeline.layer4_item_readiness x where x.item_id = i.id and coalesce((x.gate->>'rows_cut')::int, 0) > 0);
 -- 2 the earlier fixture's end-to-end recovery happened two hours ago
 update pipeline.work_items set recovered_at = recovered_at - interval '2 hours' where lane = 'aer_technical' and recovered_at is not null;
 update pipeline.aer_read_supersessions set requested_at = requested_at - interval '2 hours', closed_at = closed_at - interval '2 hours';
