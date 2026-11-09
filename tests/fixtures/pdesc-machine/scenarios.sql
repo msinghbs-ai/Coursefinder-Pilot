@@ -206,6 +206,27 @@ select 'tier_again|' || (security.provider_description_registry_tier_v1())::text
 select 'tier_withdraw|' || (pg_temp.wd(pg_temp.pid(14), 'fixture withdraw registry')->>'ok') || '|' || pg_temp.desc_of(14);
 rollback;
 
+-- ---------------------------------------------------------------------------------------------------------------- 5b. Directive 3 Blocker C: a register-fact hold made at a higher facts requirement is looked at again when the requirement is lowered
+begin;
+select pg_temp.reg_setup();
+update catalogue.provider_registrations set evidence_id = (select evidence_id from catalogue.provider_registrations where provider_id = pg_temp.pid(2)), status = 'active' where provider_id = pg_temp.pid(14);
+update catalogue.providers set website = null, primary_city = null, subdivision_id = null where id = pg_temp.pid(14); -- register listing and type only: 2 facts, no location
+select pg_temp.set_s('pdesc.machine_admit_on', '1');
+select pg_temp.set_s('pdesc.registry_factual_on', '1');
+select pg_temp.set_s('pdesc.registry_after_rules', '["no_about_page"]');
+-- at 3 required facts the provider is held (2 of 3)
+select 'reeval_min3|' || (security.provider_description_registry_tier_v1())::text || '|' || pg_temp.desc_of(14);
+-- negative: the requirement is unchanged, so the hold still blocks a second look
+select 'reeval_min3_again|' || (security.provider_description_registry_tier_v1())::text;
+-- positive: the requirement is lowered to 2, the hold made at 3 is looked at again and the provider is admitted by the machine rule
+select pg_temp.set_s('pdesc.registry_min_facts', '2');
+select 'reeval_min2|' || (security.provider_description_registry_tier_v1())::text;
+select 'reeval_min2_admitted|' || pg_temp.desc_of(14) || '|' || pg_temp.items(14, 'approved');
+select 'reeval_min2_audit|' || (select a.tier || '|' || a.rule || '|' || a.outcome || '|' || (a.evidence_id is not null)::text from pipeline.provider_description_machine_admissions a where a.provider_id = pg_temp.pid(14) order by a.created_at desc limit 1);
+-- idempotent: nothing more to do
+select 'reeval_min2_again|' || (security.provider_description_registry_tier_v1())::text;
+rollback;
+
 -- ---------------------------------------------------------------------------------------------------------------- 6. scope: an empty type list is every type, a provider with no type is "unclassified"
 begin;
 update catalogue.providers set provider_type_id = null where id = pg_temp.pid(12);

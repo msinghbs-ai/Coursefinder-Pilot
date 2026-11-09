@@ -12,6 +12,7 @@ case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"
 M2=supabase/migrations/20261109020000_cf247_pdesc_machine_admission.sql
 M3=supabase/migrations/20261109030000_cf247_pdesc_whole_platform_queue.sql
+M5=supabase/migrations/20261109140000_cf247_pdesc_registry_reeval.sql
 F=tests/fixtures/pdesc-machine
 q() { psql -X -d "$DB" -Atc "$1"; }
 [ -n "${PDM_KEEP:-}" ] || trap 'dropdb --if-exists '$DB' >/dev/null 2>&1; dropdb --if-exists '${DB}_refuse' >/dev/null 2>&1; dropdb --if-exists '${DB}_scale' >/dev/null 2>&1' EXIT
@@ -83,6 +84,13 @@ apply $M2 M2 'security.provider_description_scope_v1(uuid)=71075d22096ac3f28306a
 echo "M2: pdesc.machine_admit_on, pdesc.registry_factual_on and pdesc.machine_numbers_allowed are 0"
 refuse $M3 M3 'public.svc_provider_description_next(integer)'
 apply $M3 M3 'security.provider_description_selection_v1(jsonb)=1fa6c1c9fa9200eb644fcabf8c85dcf0' 'security.provider_description_enqueue_v1()=c25746895368b9320a1e5fc4222b14d1' 'public.svc_provider_description_next(integer)=3d6eb1eb35b80f54c72eb160c63aac82' 'public.svc_provider_description_record(jsonb)=1b7fec4fb287277e31fa4fbcc2a101ef' 'security.provider_description_fire_v1()=92e445408c50883e301088b9ba0d8b9c'
+
+# Directive 3 Blocker C (migration 20261109140000): the register-fact tier looks again at a hold made at a higher facts requirement; it edits only the registry tier body, and a second run is a no-op
+[ "$(q "select md5(prosrc) from pg_proc where oid = 'security.provider_description_registry_tier_v1()'::regprocedure")" = b14315e77beb36aba6005efbed208b62 ] || { echo "M5: the registry tier before the change differs from live (b14315e7...)"; exit 1; }
+$P -f $M5 >/dev/null
+[ "$(q "select md5(prosrc) from pg_proc where oid = 'security.provider_description_registry_tier_v1()'::regprocedure")" = 1f9cbb77a59ab392a2e59b6aff317adb ] || { echo "M5: the registry tier after the change is not 1f9cbb77..."; exit 1; }
+$P -f $M5 >/dev/null
+echo "M5: registry tier b14315e7... -> 1f9cbb77... (second run no-op)"
 
 # the earlier harness still holds with the machine switch off
 AFTERS=$($P -At < tests/fixtures/pdesc-self-driving/scenarios.sql | grep .)
