@@ -37,3 +37,8 @@
   .ccol-panel{position:fixed;left:16px;right:16px;top:72px;width:auto;max-height:calc(100vh - 96px)}
   .m-table-wrap.ccol-frame{max-height:calc(100vh - 180px)}
 }
+
+/* CF-247 Provider Catalogue columns (directive 9 Nov 2026): the Description column (preview, full text on demand), evidence and source address, quiet text */
+.ccol-desc { display: grid; gap: 2px; white-space: normal; overflow-wrap: anywhere; line-height: 1.35; }
+.ccol-evidence { display: inline-flex; flex-wrap: wrap; gap: 2px 8px; align-items: baseline; overflow-wrap: anywhere; }
+.ccol-muted { color: var(--cf-slate-450); }
