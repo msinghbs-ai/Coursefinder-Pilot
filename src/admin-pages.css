@@ -762,6 +762,8 @@
 .qw-list{list-style:none;margin:0;padding:0;font-size:var(--cf-fs-sm)}
 .qw-list li{padding:7px 0;border-top:1px solid var(--cf-border)}.qw-list li:first-child{border-top:0}
 .qw-list small{display:block;color:var(--cf-muted);font-size:var(--cf-fs-xs)}
+/* F-OPS.04 (phone): the "Go to ..." link in a queue row was 12 px high; 32 px target on a phone, in this table only */
+@media(max-width:620px){.qw-table .ph-fix{margin:2px 0 0;padding:8px 0;min-height:32px;box-sizing:border-box}}
 /* Platform health › Work queues › Last 15 minutes (v2.15.320). */
 .st-gaps{margin:0 0 12px;padding:10px 12px;border:1px solid var(--cf-border);border-radius:var(--cf-radius-md);background:var(--cf-surface);font-size:var(--cf-fs-sm)}
 .st-gaps strong{display:flex;align-items:center;gap:6px}.st-gaps ul{margin:6px 0 0;padding-left:18px}
