@@ -620,6 +620,8 @@
 /* v2.15.262: Firecrawl credits by university */
 .fcc-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0 4px}
 .fcc-only{display:inline-flex;gap:6px;align-items:center;font-size:.9rem}
+/* F-OPS.04 (phone): Task manager › Background jobs: the "Only what is busy" checkbox was 13 px; the whole label is a 32 px target on a phone, in this board only */
+@media(max-width:620px){[data-progress-running] .fcc-only{min-height:32px}}
 /* v2.15.264: Models & services › AI & OpenRouter */
 .ai-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:4px 0 12px}
 .ai-grid>div{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border:1px solid var(--cf-border);border-radius:8px}
