@@ -1,0 +1,28 @@
+setting_min_sentences|2
+two_good_plain|propose|kept=-1|dropped=-|chars=203
+two_good_flag|propose|kept=2|dropped=-|chars=203
+aim_plain_holds|held|unsupported_sentence|kept=-1|dropped=-|chars=309
+aim_flag_keeps_two|propose|kept=2|dropped=unsupported_sentence|chars=203
+aim_first_flag_keeps_two|propose|kept=2|dropped=unsupported_sentence|chars=203
+copy_plain_holds|held|verbatim_passage|kept=-1|dropped=-|chars=333
+copy_flag_keeps_two|propose|kept=2|dropped=verbatim_passage|chars=203
+off_plain_holds|held|quote_not_on_page|kept=-1|dropped=-|chars=269
+off_flag_keeps_two|propose|kept=2|dropped=quote_not_on_page|chars=203
+marketing_flag|propose|kept=2|dropped=unsupported_marketing|chars=203
+ranking_flag|propose|kept=2|dropped=unsupported_claim|chars=203
+number_flag|propose|kept=2|dropped=unsupported_numeric_claim|chars=203
+fragment_flag|propose|kept=2|dropped=incomplete_sentence|chars=203
+five_failures_flag|propose|kept=2|dropped=unsupported_sentence,verbatim_passage,unsupported_marketing|chars=203
+one_kept_holds_first_rule|held|unsupported_sentence|kept=-1|dropped=unsupported_sentence,verbatim_passage|chars=89
+one_kept_holds_first_rule_b|held|verbatim_passage|kept=-1|dropped=verbatim_passage,unsupported_sentence|chars=89
+none_kept_holds|held|verbatim_passage|kept=-1|dropped=verbatim_passage,unsupported_sentence|chars=0
+all_copied_holds|held|verbatim_passage|kept=-1|dropped=verbatim_passage,verbatim_passage|chars=0
+six_sentences_flag|held|sentence_count|kept=-1|dropped=-|chars=611
+kept_too_short_holds|held|length|kept=-1|dropped=unsupported_sentence|chars=74
+flag_false_holds|held|unsupported_sentence
+dropped_detail|1|unsupported_sentence|2|The university is dedicated to solving the world's biggest problems through marine research and learning.|true|true|3|2
+kept_order|Aurora Maritime University offers education in marine navigation and coastal engineering. / Teaching focuses on ocean research and nautical practice and develops knowledge through learning in these fields.
+e2e_aim|true
+e2e_aim_read|proposed|missing|proposal=2|dropped=unsupported_sentence|item=2|text_has_aim=false
+e2e_one_kept|true
+e2e_one_kept_read|held|unsupported_sentence|proposal=3|dropped=unsupported_sentence,unsupported_sentence|item=-|text_has_aim=false

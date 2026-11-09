@@ -103,7 +103,7 @@ test('the worker holds anything not proven before any AI read, for every PDF (no
   expect(ai).toContain('if (stored.pdf && stored.pdf.status !== "ok") {')
   expect(ai).toContain('await rec({ p_error: `held_unparsed: PDF ${stored.pdf.reason}`.slice(0, 400)')
   expect(ai).toContain('if (!stored.pdf && /\\.pdf($|[?#])/i.test(String(it.url || ""))) {')
-  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(5\d)\.\d+"/)
+  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.([5-9]\d)\.\d+"/)
   // the PDF is read directly (robots.txt respected), never through Firecrawl, within a size cap from the settings
   expect(ai).toContain('const readPdf = async (url: string, maxBytes: number) => {')
   expect(ai).toContain('if (!robotsAllows(await robotsFor(u), u.pathname + u.search)) return { status: "robots_disallowed"')
