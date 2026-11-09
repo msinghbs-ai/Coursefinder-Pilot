@@ -8,8 +8,9 @@
 --   1. This migration defines the setting at 0 (off) so that it appears on Settings > Pipeline settings (section "Website API"), with its label,
 --      range, unit and the line saying what uses it (G2). It changes no behaviour: nothing reads the setting until migration 20261109160000 is applied,
 --      and with the value at 0 that migration still refuses to apply.
---   2. The Platform Admin (or the Integration Controller acting on the recorded decision of 9 Nov 2026 19:18 AEDT) changes the value to 1 on
---      Settings > Pipeline settings, with a reason. That write is public.admin_toolsets_write('setting') and is kept in
+--   2. Only a Platform Admin (role rank 6 or higher) with an authenticated session changes the value to 1, on the Admin Settings screen
+--      (Settings > Pipeline settings), with a reason; the decision of 9 Nov 2026 19:18 AEDT authorises it. That write is
+--      public.admin_toolsets_write('setting') and is kept in
 --      pipeline.admin_control_events (area toolsets, action setting, target pipeline.api.v2_r23_r24_approved, before, after, reason, actor).
 --   Migration 20261109160000 is then applied.
 -- Re-running this migration never changes a value that has been set (on conflict do nothing).
