@@ -76,4 +76,9 @@ echo "migration: two guarded edits to their after md5s and the producer row; the
 
 # 5 after
 $P -d $DB -v part=after -f $FX/fixtures.sql 2>&1 | show
+# 6 the md5 guard: a definition that is not the live one is refused, nothing is edited (the held step drifts by one comment, then the migration runs)
+$P -d $DB -c "do \$\$ begin execute replace(pg_get_functiondef('security.aer_schedule_held_v1(integer)'::regprocedure), 'begin', 'begin -- drift'); end \$\$"
+if OUT=$($P -d $DB -1 -At -f $MIG 2>&1); then echo "the migration edited a definition that is not the live one"; exit 1; fi
+grep -q "differs from the definition this change edits" <<<"$OUT" || { echo "the guard did not name the drift: $OUT"; exit 1; }
+echo "ok: the md5 guard refuses a drifted definition"
 echo "aer-selector-fix fixtures: passed"
