@@ -1,4 +1,4 @@
--- HELD (not a migration): offline replay for 20261110110000 (provider-description sentence filter). READ ONLY: one SELECT, no AI call, no write, no fetch. Run it on the live project (or any copy) to see how many of the held provider-description reads
+-- HELD (not a migration): offline replay for 20261110120000 (provider-description sentence filter). READ ONLY: one SELECT, no AI call, no write, no fetch. Run it on the live project (or any copy) to see how many of the held provider-description reads
 -- would pass the validator if the sentences that fail a sentence rule were left out, which is what the record does for a new read once the migration and worker v0.60.0 are live.
 -- It takes the stored proposal of every read held on one of the rules the filter handles and tests each stored sentence ALONE with the live security.provider_description_validate_v1: the sentence is given with a second sentence whose quote is
 -- not on the page ("zzqq."), so a sentence that passes every sentence rule (quote on the page, marketing, claim, evidence-claim, complete sentence, numbers, verbatim span, historic context, support) is stopped only at that second sentence, and the

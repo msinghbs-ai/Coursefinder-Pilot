@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Guards: Platform Admin operating model v1.5 (10 Nov 2026, delivery first): migration 20261110110000 edits only security.provider_description_validate_v1(uuid,text,timestamptz,jsonb) and public.svc_provider_description_record(jsonb) (checked by the md5 of each function body, the same text on PostgreSQL 16 and 17; it refuses and changes nothing when a live function differs, and applying it again changes nothing) and extends the value of the existing setting pdesc.identity_reeval_rules,
+# Guards: Platform Admin operating model v1.5 (10 Nov 2026, delivery first): migration 20261110120000 edits only security.provider_description_validate_v1(uuid,text,timestamptz,jsonb) and public.svc_provider_description_record(jsonb) (checked by the md5 of each function body, the same text on PostgreSQL 16 and 17; it refuses and changes nothing when a live function differs, and applying it again changes nothing) and extends the value of the existing setting pdesc.identity_reeval_rules,
 # so that one weak sentence no longer sinks a provider-description proposal: with drop_failing (set only by the record of a new read) a sentence that fails a sentence rule is left out, the sentences that pass every rule are kept and stored, and fewer kept sentences than pdesc.min_sentences hold the read with the first failing rule; every other caller of the validator still holds the answer on the first failing sentence; no sentence rule is loosened; no other function, setting, table, trigger, read, Layer 4 item or job changes; the forward recovery in supabase/held restores both earlier bodies byte for byte.
 # Needs a scratch PostgreSQL 16 (never a Supabase project): PGHOST/PGPORT/PGUSER point at it. Builds the database with the pdesc-lease-record-timeouts harness (which applies 20261109182000, 20261109185000 and 20261109233000), applies 20261110040000 and 20261110090000, runs the scenarios, applies the migration twice, runs them again, applies the forward recovery and runs them a third time.
 set -euo pipefail
@@ -8,7 +8,7 @@ export LC_ALL=C # fixed: one byte order for sort and comm, whatever the runner's
 DB=${PDSF_DB:-g_pdesc_sentfilter}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"
-MIG=supabase/migrations/20261110110000_cf247_pdesc_sentence_filter.sql
+MIG=supabase/migrations/20261110120000_cf247_pdesc_sentence_filter.sql
 REC=supabase/held/pdesc_sentence_filter_forward_recovery.sql
 REPLAY=supabase/held/pdesc_sentence_filter_replay.sql
 F=tests/fixtures/pdesc-sentence-filter

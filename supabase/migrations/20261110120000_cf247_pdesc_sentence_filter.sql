@@ -1,3 +1,4 @@
+-- Version note: drafted as 20261110110000; applied as 20261110120000 because 20261110110000 is the publication verification. The text "migration 20261110110000" inside the new validator body below is the draft number and is kept so the body md5 stays as qualified.
 -- CF-247 F-PDESC delivery (Platform Admin operating model v1.5, 10 Nov 2026: one successful basic-to-enriched provider admission). One weak sentence no longer sinks a proposal whose other sentences are fully supported.
 --
 -- Production fact (project fxcwkweaxjtknorudmwp, SELECT only, 10 Nov 2026): the AI provider reader has run 94 times. 2 were admitted, the rest were held or are waiting. The 91 reads held on a sentence rule, by rule:
