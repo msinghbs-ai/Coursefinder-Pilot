@@ -58,6 +58,8 @@ CREATE INDEX course_mappings_evidence_id_fk_idx ON scholarship.course_mappings U
 CREATE INDEX layer4_review_items_entity_field_iq_idx ON pipeline.layer4_review_items USING btree (entity_id, field_code, status);
 CREATE INDEX layer4_review_items_layer3_interpretation ON pipeline.layer4_review_items USING btree (layer3_interpretation_id) WHERE (layer3_interpretation_id IS NOT NULL);
 CREATE UNIQUE INDEX layer4_review_items_course_entry_pending_uq ON pipeline.layer4_review_items USING btree (entity_id) WHERE ((field_code = 'course_entry_first_read'::text) AND (status = 'pending'::text));
+-- index added since 5 Nov 2026 (found by the 9 Nov 2026 live re-check; an expression index on the live function security.site_host_v1, live/site_host_v1.sql)
+CREATE INDEX providers_site_host_active_idx ON catalogue.providers USING btree (security.site_host_v1(website)) WHERE (lifecycle_status = 'active'::text);
 -- triggers added since 10 Oct. provider_publish_by_default is the live function (live/provider_publish_by_default.sql): an active
 -- provider is published on insert, so a fixture provider with the Published switch off is set by an update, as in production. The other
 -- trigger functions act on writes this change never makes; they keep their live names with no-op bodies.

@@ -16,3 +16,4 @@ security.provider_publish_by_default()	28d748cea8622a399612679eb05c1b36	(default
 public.website_v2_providers(jsonb,integer,integer,text)	73ba533ee2f4c20b840c4cf172c17912	postgres=X/postgres,service_role=X/postgres
 public.website_v2_scholarships(jsonb,integer,integer)	b3a616d8ec31a86ffa3e770cf24db0af	postgres=X/postgres,service_role=X/postgres
 public.website_v2_scholarship(text)	79131c22331c7439438177517bd1ba12	postgres=X/postgres,service_role=X/postgres
+security.site_host_v1(text)	04938c208412f46735c7a3f99348612c	(default)

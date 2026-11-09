@@ -5,7 +5,7 @@ catalogue.course_fees|3e7603ad|4129a7da|4b6483a9|08614313|course_fee_identity_ga
 catalogue.courses|3f1bef9f|08cd1c8f|3b76f979|932efa3e|manual_lock_guard|10|service_role=arwdDxt/postgres|0|
 catalogue.provider_assets|f80b793d|6af27581|9ebdf6ac|43a9a99e||10||0|
 catalogue.provider_collection_memberships|8dbc19ee|9f4675bf|2f14869c|20d71897|evidence_entity_links_sync,evidence_lineage_stats_sync|10|service_role=arwdDxt/postgres|0|
-catalogue.providers|d7631e9e|09196890|74d1cadb|f6788860|manual_lock_guard,provider_publish_by_default,provider_site_followups,providers_onboarding_new|10|service_role=arwdDxt/postgres|0|
+catalogue.providers|d7631e9e|09196890|74d1cadb|226fecdb|manual_lock_guard,provider_publish_by_default,provider_site_followups,providers_onboarding_new|10|service_role=arwdDxt/postgres|0|
 pim.entity_registry|0dd0189a|c344ea28|d41d8cd9|da74edbc||10|service_role=arwdDxt/postgres|0|
 pipeline.campus_regional_class|4b8b0361|071e5f1b|d41d8cd9|84871b59||10||0|
 pipeline.evidence_artifacts|95b9e562|95399c43|3e3fa9ee|7921cece|layer2_evidence_version_guard,trg_layer2_evidence_lineage_stamp|10|service_role=arwdDxt/postgres|0|
