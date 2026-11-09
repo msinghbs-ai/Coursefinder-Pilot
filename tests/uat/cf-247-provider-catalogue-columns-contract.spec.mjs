@@ -68,13 +68,42 @@ test('every sort the Provider registry offers is a sort the server function orde
 test('the migration is additive: providers_page routes to the new page function behind a body md5 guard, the old one is only marked retiring, nothing consumer-facing is named', () => {
   expect(MIG).toContain("'7efb948272dc64abaac2bb141ccb50f6', '109237d709578315e1acd9eefdb645cc'")
   expect(MIG).toContain('return security.admin_providers_page_v3(p_args);')
-  expect(MIG).toMatch(/revoke all on function security\.provider_catalogue_facts_v1\(uuid\[\]\), security\.admin_providers_page_v3\(jsonb\) from public, anon, authenticated;/)
+  expect(MIG).toMatch(/revoke all on function security\.provider_catalogue_facts_v1\(uuid\[\], boolean\), security\.admin_providers_page_v3\(jsonb\) from public, anon, authenticated;/)
   expect(MIG).toMatch(/status = 'retiring', replaced_by = 'security\.admin_providers_page_v3'/)
   // the page reads the feeds' own tables and candidate scans; it never calls the consumer API functions
   expect(SQL).not.toMatch(/website_v2_|website_edge_|website_api_v2_|zoho_edge_|svc_website_settings_v1|\bapi\./)
   // the Website and Zoho states stay separate facts from the catalogue description (the directive's data rule)
   expect(MIG).toMatch(/website_state[\s\S]*zoho_state[\s\S]*mismatch/)
   expect(MIG).toContain('never read as consumer publication')
+})
+
+test('the facts function skips the two feed candidate scans unless a column, filter or sort needs them; a proposal awaiting Layer 4 is pending; an unknown provider type is refused', () => {
+  expect(SQL).toMatch(/website_sync_candidates_v1\('provider'\) c where p_feeds and c\.ref_id is not null/)
+  expect(SQL).toMatch(/zoho_sync_candidates_v1\('provider'\) c where p_feeds and c\.ref_id is not null/)
+  // the whole-set read (filters and sorts) scans only for a feed filter or sort; the page read also when the screen sends feeds=true
+  expect(SQL).toContain("v_scan_feeds:=coalesce(v_web,v_zoho) is not null or v_sort in ('website','zoho','mismatch');")
+  expect(SQL).toContain("v_page_feeds:=v_scan_feeds or lower(coalesce(p_args->>'feeds',''))='true';")
+  expect(SQL).toContain('provider_catalogue_facts_v1(null, v_scan_feeds) where v_need_facts')
+  expect(SQL).toContain('provider_catalogue_facts_v1(array(select k.id from keys k), v_page_feeds)')
+  expect(SQL).toContain("case when p_feeds then s.website_state end, case when p_feeds then s.zoho_state end")
+  // pending before declined
+  expect(SQL.indexOf("b.l4_status = 'pending' then 'pending'")).toBeGreaterThan(0)
+  expect(SQL.indexOf("b.l4_status = 'pending' then 'pending'")).toBeLessThan(SQL.indexOf("when b.lr_state = 'rejected' or b.lr_rule like"))
+  expect(SQL).toMatch(/unsupported provider type filter: %',v_type using errcode='22023'/)
+})
+
+test('forward recovery and the post-deploy equivalence check are held outside supabase/migrations', () => {
+  expect(fs.readdirSync('supabase/migrations').filter(f => /provider_catalogue_columns/.test(f))).toEqual(['20261109200000_cf247_provider_catalogue_columns.sql'])
+  const rec = fs.readFileSync('supabase/held/provider_catalogue_columns_forward_recovery.sql', 'utf8')
+  // the recovery is the migration's own edit read backwards: the md5s swap and the new and old texts swap
+  expect(rec).toContain("'109237d709578315e1acd9eefdb645cc', '7efb948272dc64abaac2bb141ccb50f6'")
+  expect(rec).toContain('return security.admin_providers_page_v2(v_limit,v_offset,')
+  expect(rec).not.toMatch(/^\s*(drop|delete|truncate)\b/im)
+  const eq = fs.readFileSync('supabase/held/provider_catalogue_columns_v2_v3_equivalence.sql', 'utf8')
+  expect(eq).not.toMatch(/^\s*(insert|update|delete|drop|alter|create)\b/im)
+  expect(eq).toContain('security.admin_providers_page_v2(')
+  expect(eq).toContain('security.admin_providers_page_v3(v_a)')
+  expect(eq).toContain("raise exception 'EQUIVALENCE")
 })
 
 test('the screen reuses the Course catalogue\'s layout mechanism and adds no second one', () => {
@@ -92,12 +121,14 @@ const LONG = 'Alpha University is a research-intensive university with campuses 
 const PDESC = (o = {}) => ({ description_filled: false, admission_state: 'none', source_tier: null, evidence_id: null, source_url: null, admitted_at: null, admitted_by: null, reader_state: null, reader_rule: null, reader_via: null, reader_tries: null, reader_updated_at: null, last_read_ok_at: null, hold_reason: null, hold_rule: null, next_retry_at: null, l4_status: null, l4_at: null, l4_actor: null, canonical_status: 'none', website_state: 'not_applicable', zoho_state: 'not_applicable', mismatch: 'none', text: null, ...o })
 const base = (id, name, extra) => ({ id, canonical_name: name, display_name: name, country_code: 'AU', course_count: 10, lifecycle_status: 'active', publication_status: 'published', last_verified_at: '2026-10-01T00:00:00Z', updated_at: '2026-11-01T02:00:00Z', adapter_status: 'none', university_groups: [], evidence_count: 2, provider_type_code: null, provider_type_name: null, ...extra })
 const PROVIDERS = [
-  base('p1', 'Alpha University', { registration: { scheme: 'CRICOS', code: '00001A', status: 'active', checked_at: '2026-10-02T00:00:00Z' }, scholarships: { total: 4, published: 3 }, entry_coverage: { disposition: 'covered', discovery: 'done', extraction: 'done', admission: 'done', matrix_active: true, course_requirements_active: true, as_at: '2026-11-01T00:00:00Z' },
+  base('p1', 'Alpha University', { registration: { scheme: 'CRICOS', code: '00001A', status: 'active', checked_at: '2026-10-02T00:00:00Z' }, scholarships: { total: 4, published: 3 }, entry_coverage: { disposition: 'active_verified', discovery: 'source_read', extraction: 'complete', admission: 'active', matrix_active: 54, course_requirements_active: 2, as_at: '2026-11-01T00:00:00Z' },
     pdesc: PDESC({ description_filled: true, admission_state: 'admitted', source_tier: 'direct', evidence_id: '11111111-2222-4333-8444-555555555555', source_url: 'https://www.alpha.edu.au/about', admitted_at: '2026-10-20T01:00:00Z', admitted_by: 'machine', reader_state: 'admitted', last_read_ok_at: '2026-10-20T00:30:00Z', l4_status: 'approved', canonical_status: 'published', website_state: 'matched', zoho_state: 'matched', text: LONG }) }),
   base('p2', 'Beta College', { registration: null, scholarships: { total: 0, published: 0 }, entry_coverage: null,
     pdesc: PDESC({ admission_state: 'held', reader_state: 'held', reader_rule: 'insufficient_page', hold_reason: 'The page names no founding year or location', hold_rule: 'insufficient_page', next_retry_at: '2026-11-20T01:00:00Z' }) }),
   base('p3', 'Gamma Institute', { registration: { scheme: 'CRICOS', code: '00003C', status: 'active', checked_at: null }, scholarships: { total: 1, published: 0 }, entry_coverage: null,
     pdesc: PDESC({ description_filled: true, admission_state: 'unrecorded', source_tier: 'unknown', canonical_status: 'published', website_state: 'pending', zoho_state: 'missing', mismatch: 'both', text: 'Gamma Institute is a small private college.' }) }),
+  base('p5', 'Epsilon College', { registration: null, scholarships: { total: 0, published: 0 }, entry_coverage: { disposition: 'awaiting_layer4', discovery: 'source_read', extraction: 'complete', admission: 'awaiting', matrix_active: 0, course_requirements_active: 0, as_at: null },
+    pdesc: PDESC({ admission_state: 'pending', reader_state: 'proposed', reader_rule: 'machine_declined_claim', l4_status: 'pending' }) }), // proposed and waiting for a Layer 4 decision: pending, never declined
   base('p4', 'Delta Academy', {}), // a page that did not return the facts: the cells say Unknown
 ]
 const FEED_KEYS = ['website_state', 'zoho_state', 'mismatch']
@@ -167,7 +198,15 @@ test.describe('mocked browser', () => {
     await expect(await at('p1', 'zoho_state')).toContainText('Matched')
     await expect(await at('p1', 'registration')).toContainText('CRICOS 00001A')
     await expect(await at('p1', 'scholarship_count')).toContainText('4')
-    await expect(await at('p1', 'entry_coverage')).toContainText('Covered')
+    await expect(await at('p1', 'entry_coverage')).toContainText('Active and verified')
+    await expect(await at('p1', 'entry_coverage')).toContainText('54 matrix')
+    await expect(row('p1').locator('[data-coverage="active_verified"]')).toHaveAttribute('title', /Active matrix entries: 54\nActive course requirements: 2/)
+    // a proposal waiting for its Layer 4 decision is pending and awaits Layer 4: it is not declined
+    await expect(await at('p5', 'admission_state')).toContainText('Pending')
+    await expect(await at('p5', 'reader_status')).toHaveText('Awaiting Layer 4')
+    await expect(await at('p5', 'layer4_status')).toContainText('Awaiting Layer 4')
+    await expect(await at('p5', 'entry_coverage')).toContainText('Awaiting Layer 4')
+    await expect(row('p2').locator('[data-website="not_applicable"] [title]').first()).toHaveAttribute('title', /not served by the Website feed \(for example, no courses\)/)
     await expect(await at('p2', 'admission_state')).toContainText('Held')
     await expect(await at('p2', 'hold_reason')).toContainText('names no founding year')
     await expect(await at('p2', 'next_retry_at')).toContainText('2026')
@@ -186,6 +225,16 @@ test.describe('mocked browser', () => {
     for (const col of ['admission_state', 'description_filled', 'description_source', 'website_state', 'zoho_state', 'mismatch', 'canonical_status', 'layer4_status']) await expect(await at('p4', col)).toHaveText('Unknown')
     await expect(await at('p4', 'registration')).toHaveText('Unknown')
     await expect(await at('p4', 'entry_coverage')).toHaveText('Unknown')
+  })
+
+  test('the Website and Zoho states are asked for only when a column that shows them is in the layout', async ({ page }) => {
+    const { reads } = await mount(page)
+    expect(reads.every(a => a.feeds === undefined)).toBe(true)
+    await page.locator('[data-columns-toggle]').click()
+    await page.locator('[data-col-toggle="zoho_state"]').check()
+    await expect.poll(() => reads.at(-1)?.feeds).toBe(true)
+    await page.locator('[data-col-toggle="zoho_state"]').uncheck()
+    await expect.poll(() => reads.at(-1)?.feeds).toBeUndefined()
   })
 
   test('the description column shows a preview and the full text on demand, and the whole text is always in the tooltip', async ({ page }) => {

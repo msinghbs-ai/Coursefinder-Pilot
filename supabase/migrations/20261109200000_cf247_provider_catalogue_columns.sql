@@ -5,7 +5,7 @@
 --   1. pipeline.admin_table_columns gets the Provider catalogue's 32 columns under screen 'providers' (a data insert; the table, its check on the four
 --      group names, the layout table pipeline.admin_table_layouts and public.admin_table_layout are reused as they are). A person's Provider layout and
 --      Course layout are separate rows of one table (user_id, screen). The catalogue_layout.* settings now say they serve both catalogues (used_by only).
---   2. security.provider_catalogue_facts_v1(uuid[]): one set-based read of the description pipeline and its two consumers for a set of providers (null =
+--   2. security.provider_catalogue_facts_v1(uuid[], boolean): one set-based read of the description pipeline and its two consumers for a set of providers (null =
 --      every provider). It answers, per provider, from existing records only: is the description populated; its admission state (admitted, declined,
 --      held, pending, none); the source tier (stored page, direct page, Firecrawl page, registry facts); evidence, source address and when the
 --      description was admitted; the reader's state, last successful page read, hold reason and next retry; the Layer 4 decision state; whether the
@@ -94,7 +94,7 @@ insert into pipeline.admin_table_columns(screen, key, grp, label, sort, sort_key
 on conflict (screen, key) do nothing;
 
 -- 3. the provider description facts: one set-based read for a set of providers (null = every provider)
-CREATE OR REPLACE FUNCTION security.provider_catalogue_facts_v1(p_ids uuid[] DEFAULT NULL)
+CREATE OR REPLACE FUNCTION security.provider_catalogue_facts_v1(p_ids uuid[] DEFAULT NULL, p_feeds boolean DEFAULT true)
  RETURNS TABLE(provider_id uuid, description_filled boolean, admission_state text, source_tier text, evidence_id uuid, source_url text,
                admitted_at timestamptz, admitted_by text, reader_state text, reader_rule text, reader_via text, reader_tries integer,
                reader_updated_at timestamptz, last_read_ok_at timestamptz, hold_reason text, hold_rule text, next_retry_at timestamptz,
@@ -104,7 +104,8 @@ CREATE OR REPLACE FUNCTION security.provider_catalogue_facts_v1(p_ids uuid[] DEF
  STABLE SECURITY DEFINER
  SET search_path TO ''
 AS $function$
-  -- p_ids null = every provider; an empty array = none. Reads only; nothing is written. A provider is attributed an admission only when its
+  -- p_ids null = every provider; an empty array = none. p_feeds false skips the two feed candidate scans (they read every provider) and leaves
+  -- website_state, zoho_state and mismatch null: the page asks for them only when a column, filter or sort needs them. Reads only; nothing is written. A provider is attributed an admission only when its
   -- catalogue description is the very text that was admitted (a later hand edit leaves it "unrecorded", never credited to the pipeline).
   with pv as (
     select p.id, p.stable_key, p.lifecycle_status, p.publication_status, nullif(btrim(p.description), '') descr
@@ -144,8 +145,8 @@ AS $function$
     select i.item_key, i.removed_at, nullif(btrim(i.item ->> 'description'), '') d from pipeline.website_sync_items i join pv on pv.stable_key = i.item_key where i.entity = 'provider'
   ), zf as (
     select i.item_key, i.removed_at, nullif(btrim(i.item ->> 'description'), '') d from pipeline.zoho_sync_items i join pv on pv.stable_key = i.item_key where i.entity = 'provider'
-  ), wc as (select c.ref_id from security.website_sync_candidates_v1('provider') c where c.ref_id is not null),
-     zc as (select c.ref_id from security.zoho_sync_candidates_v1('provider') c where c.ref_id is not null),
+  ), wc as (select c.ref_id from security.website_sync_candidates_v1('provider') c where p_feeds and c.ref_id is not null),
+     zc as (select c.ref_id from security.zoho_sync_candidates_v1('provider') c where p_feeds and c.ref_id is not null),
   base as (
     select pv.id provider_id, pv.descr, pv.lifecycle_status, pv.publication_status,
            lr.state lr_state, lr.rule lr_rule, lr.reason lr_reason, lr.read_via lr_via, lr.tries lr_tries, lr.next_try_at, lr.updated_at lr_updated,
@@ -173,6 +174,8 @@ AS $function$
     select b.*,
       case when b.descr is not null and b.has_admission then 'admitted'
            when b.descr is not null then 'unrecorded'
+           -- a proposal waiting for its Layer 4 decision is pending, whatever the machine rule said about it: declined is a decision already taken
+           when b.lr_state in ('proposed', 'queued', 'reading') and b.l4_status = 'pending' then 'pending'
            when b.lr_state = 'rejected' or b.lr_rule like 'machine\_declined%' or (b.lr_item is not null and b.lr_item = b.ld_item) then 'declined'
            when b.lr_state in ('held', 'dead_letter') then 'held'
            when b.lr_state in ('queued', 'reading', 'proposed') then 'pending'
@@ -203,8 +206,9 @@ AS $function$
          case when s.lr_state in ('queued', 'held') then s.next_try_at end,
          s.l4_status, s.l4_at, s.l4_actor,
          case when s.descr is null then 'none' when s.lifecycle_status = 'active' and s.publication_status = 'published' then 'published' else 'unpublished' end,
-         s.website_state, s.zoho_state,
-         case when s.website_state in ('pending', 'missing') and s.zoho_state in ('pending', 'missing') then 'both'
+         case when p_feeds then s.website_state end, case when p_feeds then s.zoho_state end,
+         case when not p_feeds then null
+              when s.website_state in ('pending', 'missing') and s.zoho_state in ('pending', 'missing') then 'both'
               when s.website_state in ('pending', 'missing') then 'website'
               when s.zoho_state in ('pending', 'missing') then 'zoho' else 'none' end,
          case when s.ar_checked is not null then s.ar_checked else s.lr_checked end,
@@ -214,7 +218,7 @@ AS $function$
               then (case when s.ar_checked is not null then s.ar_checks else s.lr_checks end ->> 'zoho_verified')::boolean end
     from st s
 $function$;
-comment on function security.provider_catalogue_facts_v1(uuid[]) is 'CF-247 Provider Catalogue columns (directive 9 Nov 2026): per provider, read only and set-based, the description pipeline and its two consumers: populated, admission state (admitted, declined, held, pending, none, unrecorded), source tier (stored, direct, firecrawl, registry_factual, unknown), evidence and source address, when and how it was admitted, the reader''s state, last successful page read, hold reason and next retry, the Layer 4 decision state, the catalogue description''s state, and, separately, the Website feed and Zoho feed states (matched, pending, missing, not applicable) read from pipeline.website_sync_items and pipeline.zoho_sync_items for the providers the existing scans serve, with a mismatch summary. p_ids null = every provider. Presence in catalogue.providers.description is never read as consumer publication.';
+comment on function security.provider_catalogue_facts_v1(uuid[], boolean) is 'CF-247 Provider Catalogue columns (directive 9 Nov 2026): per provider, read only and set-based, the description pipeline and its two consumers: populated, admission state (admitted, declined, held, pending, none, unrecorded), source tier (stored, direct, firecrawl, registry_factual, unknown), evidence and source address, when and how it was admitted, the reader''s state, last successful page read, hold reason and next retry, the Layer 4 decision state, the catalogue description''s state, and, separately, the Website feed and Zoho feed states (matched, pending, missing, not applicable) read from pipeline.website_sync_items and pipeline.zoho_sync_items for the providers the existing scans serve, with a mismatch summary. p_ids null = every provider. Presence in catalogue.providers.description is never read as consumer publication.';
 
 -- 4. providers_page, version 3: the same rows, order, fields, paging and total as v2, plus the new columns, filters and sorts
 CREATE OR REPLACE FUNCTION security.admin_providers_page_v3(p_args jsonb DEFAULT '{}'::jsonb)
@@ -242,6 +246,8 @@ declare
   v_zoho text:=nullif(lower(trim(coalesce(p_args->>'zoho',''))),'');
   v_type text:=nullif(trim(coalesce(p_args->>'provider_type','')),'');
   v_need_facts boolean;
+  v_scan_feeds boolean;
+  v_page_feeds boolean;
   v_rank integer:=0;
 begin
   if auth.uid() is null then raise exception 'authentication required' using errcode='42501'; end if;
@@ -252,16 +258,22 @@ begin
   if v_tier is not null and v_tier not in ('stored','direct','firecrawl','registry_factual','unknown') then raise exception 'unsupported source tier filter: %',v_tier using errcode='22023'; end if;
   if v_web is not null and v_web not in ('matched','pending','missing','not_applicable') then raise exception 'unsupported website filter: %',v_web using errcode='22023'; end if;
   if v_zoho is not null and v_zoho not in ('matched','pending','missing','not_applicable') then raise exception 'unsupported zoho filter: %',v_zoho using errcode='22023'; end if;
+  if v_type is not null and v_type<>'unclassified' and not exists (select 1 from ref.provider_types pt where pt.code=v_type) then raise exception 'unsupported provider type filter: %',v_type using errcode='22023'; end if;
   -- the description facts are worked out for every provider only when a filter or a sort needs them
   v_need_facts:=coalesce(v_desc,v_adm,v_tier,v_web,v_zoho) is not null
     or v_sort in ('description','admission','source','desc_admitted','reader','last_read','next_retry','layer4','canonical','website','zoho','mismatch');
+
+  -- The two feed candidate scans read every provider, so they run only when a Website or Zoho filter or sort needs them across the whole set, or when the
+  -- screen shows a feed column (it then sends feeds=true) for the rows of the page. Otherwise those three fields come back null.
+  v_scan_feeds:=coalesce(v_web,v_zoho) is not null or v_sort in ('website','zoho','mismatch');
+  v_page_feeds:=v_scan_feeds or lower(coalesce(p_args->>'feeds',''))='true';
 
   return (
     -- Same design as v2 (CF-247 W34): the page is chosen first on the light columns; the per-provider counts, the adapter status, the evidence count and
     -- the new columns are worked out for the rows of the page only. The adapter status is worked out for every matching provider only when the Adapter
     -- filter or sort needs it, the course count only for the Courses sort, the registration, scholarship and coverage values only for their own sort.
     with facts as materialized (
-      select * from security.provider_catalogue_facts_v1(null) where v_need_facts
+      select * from security.provider_catalogue_facts_v1(null, v_scan_feeds) where v_need_facts
     ), base as (
       select
         p.id,p.display_name,p.canonical_name,c.iso_alpha2::text country_code,c.default_currency_code::text currency_code,
@@ -367,7 +379,7 @@ begin
       select n.id,n.total_count,n.ord from numbered n where n.ord>v_offset and n.ord<=v_offset+v_limit
     ), pfacts as (
       -- the page's rows only: array(...) is an empty array, never null, when the page is empty (null would mean every provider)
-      select * from security.provider_catalogue_facts_v1(array(select k.id from keys k))
+      select * from security.provider_catalogue_facts_v1(array(select k.id from keys k), v_page_feeds)
     ), reg as (
       select distinct on (pr.provider_id) pr.provider_id,jsonb_build_object('scheme',pr.registration_scheme,'code',pr.registration_code,'status',pr.status,'checked_at',pr.checked_at) j
         from catalogue.provider_registrations pr where pr.provider_id in (select k.id from keys k)
@@ -426,7 +438,7 @@ end
 $function$;
 comment on function security.admin_providers_page_v3(jsonb) is 'CF-247 Provider Catalogue columns (directive 9 Nov 2026): providers_page. Every request security.admin_providers_page_v2 accepted gives the same rows, order, fields, paging and total; each item also carries registration, scholarships (all rows, and published), entry_coverage (pipeline.aer_provider_coverage) and pdesc (security.provider_catalogue_facts_v1 plus the description text). New filters over the whole filtered set: description (filled, missing), admission (pending, held, declined, admitted), source_tier, website and zoho (matched, pending, missing, not_applicable), provider_type; new sort keys for the new columns. Any assigned role (rank 1 and above), as v2.';
 
-revoke all on function security.provider_catalogue_facts_v1(uuid[]), security.admin_providers_page_v3(jsonb) from public, anon, authenticated;
+revoke all on function security.provider_catalogue_facts_v1(uuid[], boolean), security.admin_providers_page_v3(jsonb) from public, anon, authenticated;
 
 -- 5. security.admin_catalogue_page routes providers_page to v3: one exact text edit, guarded by the live body md5 (a second run finds it applied and changes nothing)
 create or replace function pg_temp.edit_one(p_sig text, p_before text, p_after text, p_old text, p_new text) returns text language plpgsql as $f$
@@ -469,6 +481,6 @@ begin
   if (select count(*) from pipeline.admin_table_columns where screen = 'providers') <> 32 then raise exception 'Provider Catalogue columns post-check: registry incomplete'; end if;
   if (select count(*) from pipeline.admin_table_columns where screen = 'courses') <> 40 then raise exception 'Provider Catalogue columns post-check: the Course registry changed'; end if;
   if (select count(*) from pipeline.admin_table_columns where screen = 'providers' and default_visible) <> 13 then raise exception 'Provider Catalogue columns post-check: default columns are not today''s 13'; end if;
-  if has_function_privilege('authenticated', 'security.admin_providers_page_v3(jsonb)', 'execute') or has_function_privilege('anon', 'security.provider_catalogue_facts_v1(uuid[])', 'execute') then raise exception 'Provider Catalogue columns post-check: a new function is callable by a user directly'; end if;
+  if has_function_privilege('authenticated', 'security.admin_providers_page_v3(jsonb)', 'execute') or has_function_privilege('anon', 'security.provider_catalogue_facts_v1(uuid[], boolean)', 'execute') then raise exception 'Provider Catalogue columns post-check: a new function is callable by a user directly'; end if;
   if has_table_privilege('authenticated', 'pipeline.admin_table_layouts', 'select') then raise exception 'Provider Catalogue columns post-check: layouts readable directly'; end if;
 end $$;
