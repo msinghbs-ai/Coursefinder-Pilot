@@ -35,6 +35,9 @@
 --       citizenship_eligibility and eligible_countries_list are unchanged (codes as held; region codes R-* keep their region meaning).
 -- Not changed: course search and detail campuses[] (also read by Zoho through the same item builder; decision P3), the nationality_codes
 -- filter, rankings, entry, tuition, every public.website_v2_* wrapper, every edge function (the edge baseline hashes are unchanged).
+-- Zoho (corrected 9 Nov 2026 after independent QA): public.zoho_v2_providers passes the website campuses[] items through (count, order and the three
+-- new keys change) and public.zoho_v2_passthrough 'scholarships' / 'scholarship' return the new nationality_eligibility_status key; zoho_v2_provider
+-- (detail), the Zoho sync items and zoho_edge_* are unaffected. Additive for Zoho; the Zoho developer is told before the release.
 -- Replaces: api.website_v2_provider_campuses(uuid), api.website_v2_scholarship_item(uuid) (same names and signatures; md5-guarded);
 --   supersedes the unmerged prepared migration 20261103180000_cf247_website_api_v2_campus_nationality.sql (branch
 --   cf247-website-api-v2-campus-nationality, never applied)
