@@ -1,5 +1,6 @@
-// Guards: StudySearch F-OPS.04 (Feature Acceptance Contract, phone acceptance of operated screens; monitoring closure for the Integration queue, IQ-00046/47/56 queue families) and S121/G4 (phone tests are @responsive and first assert phone width). Platform health › Integration queue (IntegrationQueue, PipelineYield), mocked REST responses; nothing reaches a real backend.
+// Guards: StudySearch F-OPS.04 (Feature Acceptance Contract, phone acceptance of operated screens; monitoring closure for the Integration queue, IQ-00046/47/56 queue families) and S121/G4 (phone tests are @responsive and first assert phone width). Platform health › Integration queue (IntegrationQueue) and its Pipeline yield on Work queues (PipelineYield), mounted in the real admin shell with the shared mocked admin REST (support/admin-mock.mjs); nothing reaches a real backend.
 import { test, expect } from '@playwright/test'
+import { mockAdmin } from './support/admin-mock.mjs'
 
 const PHONE_MAX = 480
 const TAP_MIN = 24 // WCAG 2.2 AA target size (2.5.8) floor, as S121
@@ -43,32 +44,22 @@ async function atPhoneWidth(page) {
 }
 const pageOverflow = (page) => page.evaluate(() => document.documentElement.scrollWidth - innerWidth)
 
-async function mount(page) {
-  const cors = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' }
-  const calls = []
-  await page.route('**/rest/v1/rpc/**', async (route) => {
-    const req = route.request()
-    if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors })
-    const name = new URL(req.url()).pathname.split('/').pop()
-    let body = {}
-    if (name === 'admin_integration_queue') {
-      const b = req.postDataJSON(); calls.push(b)
-      body = b.p_action === 'issue' ? detail : summary
-    } else if (name === 'admin_pipeline_yield') body = yieldData
-    return route.fulfill({ status: 200, headers: { ...cors, 'content-type': 'application/json' }, body: JSON.stringify(body) })
-  })
-  await page.goto('/')
-  await page.evaluate(async () => {
-    const React = await import('/node_modules/.vite/deps/react.js')
-    const { default: ReactDOM } = await import('/node_modules/.vite/deps/react-dom_client.js')
-    const { default: IntegrationQueue, PipelineYield } = await import('/src/IntegrationQueue.jsx')
-    document.body.innerHTML = '<div id="iq-root"></div>'
-    ReactDOM.createRoot(document.getElementById('iq-root')).render(
-      React.default.createElement(React.default.Fragment, {}, React.default.createElement(IntegrationQueue, {}), React.default.createElement(PipelineYield, {})))
-  })
-  await expect(page.locator('[data-iq-issue="IQ-00001"]')).toBeVisible()
-  await expect(page.locator('[data-pipeline-yield]')).toBeVisible()
-  return calls
+// The real shell: Platform health › Integration queue (#platform-health?tab=integration) or Work queues, where the Pipeline yield sits (tab=queues)
+async function mount(page, tab = 'integration') {
+  if (!page.__iq) {
+    await mockAdmin(page, { rank: 5 })
+    const calls = []
+    await page.route('**/rest/v1/rpc/admin_integration_queue', async (route) => {
+      const b = route.request().postDataJSON(); calls.push(b)
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify(b.p_action === 'issue' ? detail : summary) })
+    })
+    await page.route('**/rest/v1/rpc/admin_pipeline_yield', (route) => route.fulfill({ contentType: 'application/json', body: JSON.stringify(yieldData) }))
+    page.__iq = calls
+  }
+  await page.goto(`/#platform-health?tab=${tab}`)
+  if (tab === 'integration') await expect(page.locator('[data-iq-issue="IQ-00001"]')).toBeVisible()
+  else await expect(page.locator('[data-pipeline-yield]')).toBeVisible()
+  return page.__iq
 }
 
 async function boxes(page, selector) {
@@ -81,50 +72,77 @@ async function boxes(page, selector) {
 test.describe('Platform health › Integration queue on a phone @responsive', () => {
   test('panels fit the phone; the issue and yield tables scroll in their own frames; the page never scrolls sideways', async ({ page }) => {
     const w = await atPhoneWidth(page)
-    await mount(page)
-    const panels = await boxes(page, '.m-panel')
-    expect(panels.length, 'panels are on the screen, so this check measures something').toBeGreaterThanOrEqual(3)
-    for (const b of panels) {
-      expect(b.x, `panel "${b.label}" starts inside the screen`).toBeGreaterThanOrEqual(-1)
-      expect(b.right, `panel "${b.label}" ends inside the screen`).toBeLessThanOrEqual(w + 1)
+    let panelCount = 0, frameCount = 0
+    for (const tab of ['integration', 'queues']) {
+      await mount(page, tab)
+      const panels = await boxes(page, '.m-panel')
+      panelCount += panels.length
+      for (const b of panels) {
+        expect(b.x, `${tab}: panel "${b.label}" starts inside the screen`).toBeGreaterThanOrEqual(-1)
+        expect(b.right, `${tab}: panel "${b.label}" ends inside the screen`).toBeLessThanOrEqual(w + 1)
+      }
+      const frames = await page.locator('.cf-table-wrap').evaluateAll((els) => els.filter((el) => el.offsetParent !== null).map((p) => {
+        const t = p.querySelector('table')
+        return { frameClient: p.clientWidth, overflowX: getComputedStyle(p).overflowX, tableWidth: t.getBoundingClientRect().width }
+      }))
+      frameCount += frames.length
+      for (const f of frames) {
+        expect(f.frameClient, `${tab}: table frame fits the phone`).toBeLessThanOrEqual(w)
+        if (f.tableWidth > f.frameClient) expect(['auto', 'scroll'], `${tab}: a table wider than the phone scrolls inside its own frame`).toContain(f.overflowX)
+      }
+      expect(await pageOverflow(page), `${tab}: the page does not scroll sideways`).toBeLessThanOrEqual(1)
     }
-    const frames = await page.locator('.cf-table-wrap').evaluateAll((els) => els.map((p) => {
-      const t = p.querySelector('table')
-      return { frameClient: p.clientWidth, overflowX: getComputedStyle(p).overflowX, tableWidth: t.getBoundingClientRect().width }
-    }))
-    expect(frames.length, 'issue table, lanes and field backlog frames').toBeGreaterThanOrEqual(3)
-    for (const f of frames) {
-      expect(f.frameClient, 'table frame fits the phone').toBeLessThanOrEqual(w)
-      if (f.tableWidth > f.frameClient) expect(['auto', 'scroll'], 'a table wider than the phone scrolls inside its own frame').toContain(f.overflowX)
-    }
+    expect(panelCount, 'panels are on the screens, so this check measures something').toBeGreaterThanOrEqual(3)
+    expect(frameCount, 'issue table, lanes and field backlog frames').toBeGreaterThanOrEqual(3)
+    await mount(page, 'integration')
     await expect(page.locator('[data-iq-issue]')).toHaveCount(4)
-    expect(await pageOverflow(page)).toBeLessThanOrEqual(1)
   })
 
   test('every control a Platform Admin taps is at least 24 by 24 pixels', async ({ page }) => {
     await atPhoneWidth(page)
-    await mount(page)
     const small = []
     let measured = 0
-    for (const sel of ['button', '[role="tab"]', '[data-iq-issue]']) {
-      for (const b of await boxes(page, sel)) { measured++; if (Math.min(b.w, b.h) < TAP_MIN) small.push(`${sel} "${b.label}" ${Math.round(b.w)}x${Math.round(b.h)}`) }
+    for (const tab of ['integration', 'queues']) {
+      await mount(page, tab)
+      for (const sel of ['.m-panel button', '.m-panel [role="tab"]', '[data-iq-issue]']) {
+        for (const b of await boxes(page, sel)) { measured++; if (Math.min(b.w, b.h) < TAP_MIN) small.push(`${tab} ${sel} "${b.label}" ${Math.round(b.w)}x${Math.round(b.h)}`) }
+      }
     }
     expect(measured, 'controls measured').toBeGreaterThanOrEqual(8)
     expect(small, 'controls below the WCAG 2.2 AA target size').toEqual([])
   })
 
-  test('opening an issue shows its history inside the screen; the scope tabs ask the server for that scope', async ({ page }) => {
-    const w = await atPhoneWidth(page)
+  test('opening an issue shows its whole history inside its table frame at 360, 390 and 412 px; the scope tabs ask the server for that scope', async ({ page }) => {
+    await atPhoneWidth(page)
     const calls = await mount(page)
-    await page.locator('[data-iq-issue="IQ-00001"]').click()
-    const hist = page.locator('[data-iq-history="IQ-00001"]')
-    await expect(hist).toBeVisible()
-    const b = await hist.boundingBox()
-    expect(b.x, 'the history starts inside the screen').toBeGreaterThanOrEqual(-1)
-    expect(b.x + b.width, 'the history ends inside the screen, so it is read without scrolling sideways').toBeLessThanOrEqual(w + 1)
-    expect(await pageOverflow(page)).toBeLessThanOrEqual(1)
+    for (const width of [360, 390, 412]) {
+      await page.setViewportSize({ width, height: 900 })
+      await mount(page)
+      await page.reload()
+      await expect(page.locator('[data-iq-issue="IQ-00001"]')).toBeVisible()
+      await page.locator('[data-iq-issue="IQ-00001"]').click()
+      const hist = page.locator('[data-iq-history="IQ-00001"]')
+      await expect(hist).toBeVisible()
+      // the box the history must sit in is the client box of its own table frame (the frame scrolls; the viewport is not the test)
+      const read = () => hist.evaluate((el) => {
+        const frame = el.closest('.cf-table-wrap'), f = frame.getBoundingClientRect(), b = el.getBoundingClientRect()
+        const left = f.left + frame.clientLeft
+        return { inLeft: b.left - left, inRight: left + frame.clientWidth - b.right, width: b.width, frameClient: frame.clientWidth, tableWidth: frame.querySelector('table').getBoundingClientRect().width, scrollLeft: frame.scrollLeft }
+      })
+      const atStart = await read()
+      expect(atStart.tableWidth, `${width}px: the table is wider than its frame, so this checks a scrolling frame`).toBeGreaterThan(atStart.frameClient)
+      expect(atStart.inLeft, `${width}px: the history starts inside its frame`).toBeGreaterThanOrEqual(-1)
+      expect(atStart.inRight, `${width}px: the history ends inside its frame, nothing clipped on the right`).toBeGreaterThanOrEqual(-1)
+      // scrolled to the far end, the history stays pinned inside the frame
+      await hist.evaluate((el) => { const fr = el.closest('.cf-table-wrap'); fr.scrollLeft = fr.scrollWidth })
+      const atEnd = await read()
+      expect(atEnd.scrollLeft, `${width}px: the frame did scroll`).toBeGreaterThan(0)
+      expect(atEnd.inLeft, `${width}px: scrolled right, the history still starts inside its frame`).toBeGreaterThanOrEqual(-1)
+      expect(atEnd.inRight, `${width}px: scrolled right, the history still ends inside its frame`).toBeGreaterThanOrEqual(-1)
+      expect(await pageOverflow(page), `${width}px: the page does not scroll sideways`).toBeLessThanOrEqual(1)
+    }
     await page.locator('[data-iq-scope="closed"]').click()
     await expect.poll(() => calls.filter((c) => c.p_action === 'summary').map((c) => c.p_args.scope)).toContain('closed')
-    expect(calls.filter((c) => c.p_action === 'issue')).toHaveLength(1)
+    expect(calls.filter((c) => c.p_action === 'issue').length, 'each opening asked the server once').toBe(3)
   })
 })

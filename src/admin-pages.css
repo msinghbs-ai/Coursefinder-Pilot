@@ -830,5 +830,9 @@
 .kd-drawer-fields dd{margin:0;min-width:0}
 .au-area-toggle{font:inherit;font-weight:600;color:var(--cf-text)}
 /* F-OPS.04: Integration queue on a phone. An opened issue's history sits in a full-width table row, so it was as wide as the whole table
-   and had to be scrolled sideways to read. On a phone it stays one frame wide and pinned to the left edge of the table's own frame. */
-@media (max-width:620px){.iq-table .iq-detail .iq-history{position:sticky;left:0;box-sizing:border-box;width:calc(100vw - 56px);max-width:100%}}
+   and had to be scrolled sideways to read. On a phone its table frame becomes a size container, and the history is one frame wide (less the
+   cell's own 9 px each side) and pinned 9 px in from the left of that frame, so it fits the frame at any phone width and never runs past its right edge. */
+@media (max-width:620px){
+  .cf-table-wrap:has(>.iq-table){container-type:inline-size}
+  .iq-table .iq-detail .iq-history{position:sticky;left:9px;box-sizing:border-box;width:calc(100cqw - 18px);max-width:100%}
+}
