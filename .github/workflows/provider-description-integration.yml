@@ -60,12 +60,19 @@ jobs:
           PGPORT: "5432"
           PGUSER: postgres
         run: bash tests/fixtures/pdesc-claim-context/run.sh
+      - name: Register-fact profile labels and machine-text re-evaluation (scratch PostgreSQL 16)
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: "5432"
+          PGUSER: postgres
+        run: bash tests/fixtures/pdesc-registry-labels/run.sh
       - name: Operate actual SQL workflow on desktop and phone
         run: npx playwright test --config=playwright.provider-description.config.mjs
       - name: Source quality, navigation and standing governance guards
         run: >-
           npx playwright test
           tests/uat/provider-description-source-identity.spec.mjs
+          tests/uat/cf-247-s512-pdesc-quote-fragments-contract.spec.mjs
           tests/uat/provider-description-navigation.spec.mjs
           tests/uat/provider-description-navigation-ui.spec.mjs
           tests/uat/cf-247-s216-p1-provider-descriptions-contract.spec.mjs
@@ -74,6 +81,7 @@ jobs:
           tests/uat/cf-247-s513-pdesc-lease-one-pass-contract.spec.mjs
           tests/uat/cf-247-s501-pdesc-machine-admission-contract.spec.mjs
           tests/uat/cf-247-s504-pdesc-claim-word-context-contract.spec.mjs
+          tests/uat/cf-247-s510-pdesc-registry-label-words-contract.spec.mjs
           tests/uat/cf-247-s32-controls-in-settings-contract.spec.mjs
           tests/uat/cf-247-s42-housekeeping-contract.spec.mjs
           tests/uat/cf-247-s57-consumer-api-frozen.spec.mjs
