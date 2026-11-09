@@ -11,6 +11,8 @@ async function open(page, payload) {
   const dd = await mockDataDelivery(page, payload)
   await page.goto(OPERATIONS)
   await expect(page.locator('[data-data-delivery]')).toBeVisible()
+  // the section is also on screen while it reads: wait for the first stream row, which only exists once the answer has arrived
+  await expect(page.locator('[data-dd-stream]').first()).toBeVisible({ timeout: 20_000 })
   return dd
 }
 
@@ -127,11 +129,14 @@ test.describe('Data delivery on Operations', () => {
     await page.clock.install()
     const dd = await open(page, { ...DATA_DELIVERY, ui_refresh_seconds: 20 })
     const first = dd.calls
-    await page.getByRole('button', { name: 'Refresh' }).first().click()
+    const refresh = page.locator('[data-dd-refresh]')
+    await refresh.click()
     await expect.poll(() => dd.calls, { timeout: 20_000 }).toBeGreaterThan(first)
+    await expect(refresh).toBeEnabled({ timeout: 20_000 }) // the read has finished: a tick while one is in flight is skipped by design
     const before = dd.calls
     await page.clock.fastForward(21_000)
     await expect.poll(() => dd.calls, { timeout: 20_000 }).toBeGreaterThan(before)
+    await expect(refresh).toBeEnabled({ timeout: 20_000 })
     dd.fail = 'database is busy'
     await page.clock.fastForward(21_000)
     const banner = page.locator('[data-dd-stale-banner]')
@@ -140,7 +145,8 @@ test.describe('Data delivery on Operations', () => {
     await expect(banner).toContainText('database is busy')
     await expect(page.locator('[data-dd-stream="pdesc"] [data-dd-cell="coverage"]')).toContainText('800', { timeout: 20_000 })
     dd.fail = null
-    await page.getByRole('button', { name: 'Refresh' }).first().click()
+    await expect(refresh).toBeEnabled({ timeout: 20_000 })
+    await refresh.click()
     await expect(banner).toHaveCount(0, { timeout: 20_000 })
   })
 
@@ -213,13 +219,14 @@ test.describe('Data delivery on Operations', () => {
     const dd = await open(page, { ...DATA_DELIVERY, ui_refresh_seconds: 20 })
     dd.hang = true
     const before = dd.calls
-    await page.getByRole('button', { name: 'Refresh' }).first().click()
+    await page.locator('[data-dd-refresh]').click()
     await expect.poll(() => dd.calls, { timeout: 20_000 }).toBeGreaterThan(before)
     await page.clock.fastForward(21_000)
     const banner = page.locator('[data-dd-stale-banner]')
     await expect(banner).toBeVisible({ timeout: 20_000 })
     await expect(banner).toContainText('took too long')
     dd.hang = false
+    await expect(page.locator('[data-dd-refresh]')).toBeEnabled({ timeout: 20_000 })
     await page.clock.fastForward(21_000)
     await expect(banner).toHaveCount(0, { timeout: 20_000 })
   })
