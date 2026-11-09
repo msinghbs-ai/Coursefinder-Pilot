@@ -317,9 +317,9 @@ export function renderProviderCell(key, row) {
       const tone = d.l4_status === 'approved' ? 'success' : d.l4_status === 'pending' ? 'violet' : 'neutral'
       return <span data-layer4={d.l4_status}><StatusChip tone={tone} label={d.l4_status === 'pending' ? 'Awaiting Layer 4' : words(d.l4_status)} title={[d.l4_at && `Decided ${dt(d.l4_at)}`, d.l4_actor && `By: ${d.l4_actor}`].filter(Boolean).join('\n') || undefined} /></span> }
     case 'canonical_status': { if (!d) return <UnknownFact />; const [label, tone, why] = CANONICAL[d.canonical_status] || [words(d.canonical_status), 'neutral']; return <span data-canonical={d.canonical_status}><StatusChip tone={tone} label={label} title={why} /></span> }
-    case 'website_state': return d ? <Chip map={FEED} value={d.website_state} why={FEED_WHY.website[d.website_state]} attr={{ 'data-website': d.website_state }} /> : <UnknownFact />
-    case 'zoho_state': return d ? <Chip map={FEED} value={d.zoho_state} why={FEED_WHY.zoho[d.zoho_state]} attr={{ 'data-zoho': d.zoho_state }} /> : <UnknownFact />
-    case 'mismatch': return d ? <Chip map={MISMATCH} value={d.mismatch} why="Compares the catalogue's description with what the Website feed and the Zoho feed hold, for the consumers that serve this provider." attr={{ 'data-mismatch': d.mismatch }} /> : <UnknownFact />
+    case 'website_state': return d && d.website_state != null ? <Chip map={FEED} value={d.website_state} why={FEED_WHY.website[d.website_state]} attr={{ 'data-website': d.website_state }} /> : <UnknownFact />
+    case 'zoho_state': return d && d.zoho_state != null ? <Chip map={FEED} value={d.zoho_state} why={FEED_WHY.zoho[d.zoho_state]} attr={{ 'data-zoho': d.zoho_state }} /> : <UnknownFact />
+    case 'mismatch': return d && d.mismatch != null ? <Chip map={MISMATCH} value={d.mismatch} why="Compares the catalogue's description with what the Website feed and the Zoho feed hold, for the consumers that serve this provider." attr={{ 'data-mismatch': d.mismatch }} /> : <UnknownFact />
     case 'last_modified_at': { const v = row.last_modified_at ?? row.updated_at; return v ? <span data-modified title={`The provider record itself, as its writers recorded it: ${dt(v)}. Descriptions, evidence and feed items live in other tables and do not change this.`}>{dt(v)}</span> : <UnknownFact why="No change of the provider record is recorded" /> }
     default: return undefined
   }
