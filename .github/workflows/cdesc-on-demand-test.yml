@@ -1,0 +1,64 @@
+# Fill description / Recheck description on demand (CF-247 F-CDESC.06, Platform Admin 10 Nov 2026): runs the production-parity fixture with the live public.admin_enrich_fields captured byte for byte,
+# applies migration 20261110070000 twice, runs every scenario, the forward recovery and the re-apply. Isolated PostgreSQL 17.6 only; never connects to Supabase.
+name: Course description on demand fixture
+on:
+  pull_request:
+    paths:
+      - 'tests/fixtures/cdesc-on-demand/**'
+      - 'tests/fixtures/course-description-parity/**'
+      - 'supabase/migrations/20261110070000_cf247_cdesc_on_demand.sql'
+      - 'supabase/held/cdesc_on_demand_forward_recovery.sql'
+      - '.github/workflows/cdesc-on-demand-test.yml'
+  workflow_dispatch:
+jobs:
+  cdesc-on-demand:
+    runs-on: ubuntu-latest
+    # psql connects through the shared Unix socket, so inet_server_addr() is
+    # NULL in the existing local-only guard. Docker bridge TCP is not loopback.
+    container:
+      image: node:22-bookworm
+      volumes:
+        - cdod-postgres-socket:/var/run/postgresql
+    defaults:
+      run:
+        shell: bash
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:17.6-alpine
+        env:
+          POSTGRES_PASSWORD: fixture-only
+        volumes:
+          - cdod-postgres-socket:/var/run/postgresql
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: /var/run/postgresql
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: fixture-only
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install isolated PostgreSQL client
+        run: apt-get update && apt-get install -y --no-install-recommends postgresql-client
+      - name: Prove genuinely local fixture connection
+        run: |
+          set -euo pipefail
+          psql -X -v ON_ERROR_STOP=1 -d postgres -c "select version(), current_database(), inet_server_addr() is null as unix_socket;"
+          test "$(psql -X -At -d postgres -c 'select inet_server_addr() is null')" = t
+      - name: Execute the fixture, the migration twice, every scenario, the forward recovery and the re-apply
+        run: |
+          set -euo pipefail
+          bash tests/fixtures/cdesc-on-demand/run.sh 2>&1 | tee cdesc-on-demand-results.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cdesc-on-demand-evidence
+          path: cdesc-on-demand-results.log
+# Full governed suite and same-run register: existing Test evidence workflow (#892).
