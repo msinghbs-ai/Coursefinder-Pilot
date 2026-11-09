@@ -63,3 +63,8 @@ insert into pipeline.coverage_admission_countries(country_id, identities) select
 -- the field list the unchanged part of public.admin_enrich_fields reads (an invented body; the real one is not under test)
 create or replace function security.enrich_fields_v1() returns table (field text, label text, level text, sources text[], sort int) language sql stable as $$
   select * from (values ('description', 'Course description', 'course', array['ai_stored']::text[], 1), ('duration', 'Duration', 'course', array['ai_stored']::text[], 2)) v $$;
+
+-- the Layer 4 back-pressure setting the standing queue reads (migration 20261108130000; ships 0 = off)
+insert into pipeline.platform_toolset_settings(toolset_key, key, label, kind, value, min_value, max_value, unit, sort, section, used_by) values
+ ('pipeline', 'enrich.course_description_pending_global_max', 'Course description: most waiting for a person before new readings pause', 'number', to_jsonb(0), 0, 20000, 'descriptions', 4, 'Enrich fields', 'security.enrich_course_text_gaps_v1')
+on conflict (toolset_key, key) do nothing;

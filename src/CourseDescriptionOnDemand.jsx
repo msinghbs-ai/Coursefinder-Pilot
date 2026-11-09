@@ -58,10 +58,11 @@ export function useDescriptionStates(ids,enabled){
 // ---- preview, reason, queue --------------------------------------------------------------------------------------------------------------------------------------
 function RunPanel({mode,scope,label,rank,onClose,onStarted,onError}){
   const[prev,setPrev]=useState(null),[err,setErr]=useState(''),[reason,setReason]=useState(''),[busy,setBusy]=useState(false),[done,setDone]=useState(null)
-  const key=useRef(`cdod:${globalThis.crypto?.randomUUID?globalThis.crypto.randomUUID():String(Date.now())+Math.random()}`) // one key per panel: a second tap never makes a second task
+  const newKey=()=>`cdod:${globalThis.crypto?.randomUUID?globalThis.crypto.randomUUID():String(Date.now())+Math.random()}`
+  const key=useRef(newKey()) // one key per request (mode and selection): a second tap never makes a second task; a changed mode or selection is a new request with a new key
   const word=mode==='recheck'?'Recheck description':'Fill description'
   const scopeKey=JSON.stringify(scope)
-  useEffect(()=>{let live=true;setPrev(null);setErr('')
+  useEffect(()=>{let live=true;setPrev(null);setErr('');setDone(null);key.current=newKey()
     call('preview',{mode,...scope}).then(d=>live&&setPrev(d||{})).catch(e=>live&&setErr(errText(e)))
     return()=>{live=false}},[mode,scopeKey])
   const canStart=Number(rank)>=4,reasonOk=reason.trim().length>=4,n=Number(prev?.to_queue||0)

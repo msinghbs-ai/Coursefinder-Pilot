@@ -17,7 +17,7 @@ do $g$ begin
 end $g$;
 SQL
 WORK=$(mktemp -d)
-cleanup() { local code=$?; trap - EXIT; [ -n "${CDOD_KEEP:-}" ] || $P -d postgres -c "drop database if exists $DB" -c "drop database if exists ${DB}_refuse" >/dev/null || code=1; rm -rf "$WORK"; exit "$code"; }
+cleanup() { local code=$?; trap - EXIT; [ -n "${CDOD_KEEP:-}" ] || $P -d postgres -c "drop database if exists $DB" -c "drop database if exists ${DB}_refuse" -c "drop database if exists ${DB}_conc" >/dev/null || code=1; rm -rf "$WORK"; exit "$code"; }
 trap cleanup EXIT
 MIG=$ROOT/supabase/migrations/20261110070000_cf247_cdesc_on_demand.sql
 REC=$ROOT/supabase/held/cdesc_on_demand_forward_recovery.sql
@@ -77,6 +77,52 @@ echo "$OUT" | grep -q '^ERROR' && { grep -B1 -A4 "ERROR" "$WORK/scen.raw" | head
 echo "$OUT" | grep -q '^NOTICE FAIL' && { echo "scenarios FAILED"; exit 1; }
 echo "$OUT" | grep -q 'cdesc on demand: all scenarios ran' || { echo "scenarios did not finish"; exit 1; }
 echo "scenarios: $(echo "$OUT" | grep -c '^NOTICE PASS') checks passed"
+
+# two sessions at once (a copy of the database after the scenarios): the same course asked twice with different keys, two requests naming the same courses in opposite order, and a course request against a
+# university request. Each course must end with exactly one open description item, every request must finish (no deadlock), and the second request must have WAITED for the first.
+CC=${DB}_conc
+$P -d postgres -c "drop database if exists $CC" >/dev/null; createdb -T $DB $CC
+cq() { psql -X -d $CC -Atc "$1"; }
+IDS=($(cq "select (array_agg(course_id order by course_id))[1:6] from (select course_id, provider_id from security.cdesc_state_v1(array(select id from catalogue.courses), null) where fill_block is null) z group by provider_id having count(*) >= 6 order by count(*) desc limit 1" | tr -d '{}' | tr ',' ' '))
+[ "${#IDS[@]}" = 6 ] || { echo "the concurrency check needs six Fill-eligible courses of one university; found ${#IDS[@]}"; exit 1; }
+PROV=$(cq "select provider_id from catalogue.courses where id = '${IDS[0]}'")
+who="select set_config('g.uid', '99999999-0000-4000-8000-000000000001', false), set_config('g.rank', '4', false);"
+hold() { # hold <courses json> <key> <seconds>: starts a request and keeps its transaction open for the given seconds
+  psql -X -d $CC -At -v ON_ERROR_STOP=1 -c "$who" -c "begin" -c "select public.admin_enrich_fields('start', jsonb_build_object('mode', 'fill', 'course_ids', '$1'::jsonb, 'reason', 'concurrent request holding', 'idempotency_key', '$2'))->>'items'" -c "select pg_sleep($3)" -c "commit" 2>&1; }
+now() { date +%s.%N; }
+open_items() { cq "select count(*) from pipeline.field_enrich_items where course_id = '$1' and field = 'description' and state in ('queued', 'waiting', 'ai', 'leased', 'review')"; }
+HOLD=4
+# 1. the same course, two different keys
+hold "[\"${IDS[0]}\"]" conc-a $HOLD >"$WORK/c1a.out" & PA=$!
+sleep 1.5
+T0=$(now)
+OUT=$(psql -X -d $CC -At -c "$who" -c "select public.admin_enrich_fields('start', jsonb_build_object('mode', 'fill', 'course_ids', '[\"${IDS[0]}\"]'::jsonb, 'reason', 'second request with another key', 'idempotency_key', 'conc-b'))" 2>&1 || true)
+T1=$(now); wait $PA
+grep -q "nothing to queue" <<<"$OUT" || { echo "the second request for the same course was not refused: $OUT"; exit 1; }
+[ "$(open_items ${IDS[0]})" = 1 ] || { echo "the same course has $(open_items ${IDS[0]}) open items after two requests with different keys"; exit 1; }
+awk -v a="$T0" -v b="$T1" 'BEGIN { exit !(b - a >= 1.5) }' || { echo "the second request did not wait for the first"; exit 1; }
+echo "concurrency 1: two requests, two keys, one course: the second waited, then found it held; one open item"
+# 2. the same two courses in opposite order
+hold "[\"${IDS[1]}\", \"${IDS[2]}\"]" conc-c $HOLD >"$WORK/c2a.out" & PA=$!
+sleep 1.5
+OUT=$(psql -X -d $CC -At -c "$who" -c "select public.admin_enrich_fields('start', jsonb_build_object('mode', 'fill', 'course_ids', '[\"${IDS[2]}\", \"${IDS[1]}\"]'::jsonb, 'reason', 'opposite order', 'idempotency_key', 'conc-d'))" 2>&1 || true)
+wait $PA
+grep -q "deadlock" <<<"$OUT$(cat "$WORK/c2a.out")" && { echo "deadlock between two requests naming the same courses in opposite order"; exit 1; }
+grep -q "nothing to queue" <<<"$OUT" || { echo "the opposite-order request was not refused: $OUT"; exit 1; }
+[ "$(open_items ${IDS[1]})" = 1 ] && [ "$(open_items ${IDS[2]})" = 1 ] || { echo "opposite-order requests left $(open_items ${IDS[1]}) and $(open_items ${IDS[2]}) open items"; exit 1; }
+echo "concurrency 2: opposite order, no deadlock, one open item each"
+# 3. chosen courses against the whole university
+hold "[\"${IDS[3]}\"]" conc-e $HOLD >"$WORK/c3a.out" & PA=$!
+sleep 1.5
+T0=$(now)
+OUT=$(psql -X -d $CC -At -c "$who" -c "select public.admin_enrich_fields('start', jsonb_build_object('mode', 'fill', 'provider_ids', '[\"$PROV\"]'::jsonb, 'reason', 'whole university while a course request holds', 'idempotency_key', 'conc-f'))->>'items'" 2>&1 | tail -1 || true)
+T1=$(now); wait $PA
+awk -v a="$T0" -v b="$T1" 'BEGIN { exit !(b - a >= 1.5) }' || { echo "the university request did not wait for the course request: $OUT"; exit 1; }
+[[ "$OUT" =~ ^[0-9]+$ ]] || { echo "the university request did not finish: $OUT"; exit 1; }
+[ "$(open_items ${IDS[3]})" = 1 ] && [ "$(open_items ${IDS[4]})" = 1 ] || { echo "after a university request and a course request the held course has $(open_items ${IDS[3]}) open items"; exit 1; }
+[ "$(cq "select count(*) from (select course_id from pipeline.field_enrich_items where field = 'description' and state in ('queued', 'waiting', 'ai', 'leased', 'review') group by course_id having count(*) > 1) z")" = 0 ] || { echo "a course has more than one open description item"; exit 1; }
+echo "concurrency 3: a university request waited for the course request; no course has two open description items"
+dropdb --if-exists $CC >/dev/null 2>&1
 
 # forward recovery: the production text, byte for byte, and the migration applies again after it
 $P -d "$DB" -1 -f $REC

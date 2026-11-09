@@ -56,6 +56,8 @@ set session_replication_role = origin;
 select security.flag_raise_v1('course', g.cid(14)::text, g.pid(1), 'description', 'enrich_no_value', 'Enrich fields: the page does not state it', 'hard', 'enrich-fields', 'auto', '{}', g.eid(14)::text, null);
 select security.flag_raise_v1('course', g.cid(15)::text, g.pid(1), 'description', 'enrich_no_value', 'Enrich fields: the page does not state it', 'soft', 'enrich-fields', 'auto', '{}', g.eid(15)::text, null);
 select security.flag_raise_v1('course', g.cid(25)::text, g.pid(1), 'description', 'enrich_no_value', 'Enrich fields: the page does not state it', 'soft', 'enrich-fields', 'auto', '{}', g.eid(25)::text, null);
+-- 4: an ENTITY-level counting flag (field '') as well: the engine's own gate holds a description item for it too, so a Recheck must release it
+select security.flag_raise_v1('course', g.cid(4)::text, g.pid(1), '', 'enrich_no_value', 'Enrich fields: nothing found for this course', 'soft', 'enrich-fields', 'auto', '{}', g.eid(4)::text, null);
 select security.flag_raise_v1('course', g.cid(27)::text, g.pid(1), 'description', 'manual_hold', 'held by a person', 'hard', 'person', 'person', '{}', null, null);
 -- the cases of the other descriptions: published, with feed rows
 insert into search.course_documents(course_id, provider_id, country_id, provider_name, course_title, search_text, search_tsv, publication_status, course_stable_key)
@@ -160,6 +162,8 @@ select g.ok('start recheck: the counting flag of course 15 is released as a pers
   and (select state = 'raised' from pipeline.enrichment_flags where entity_key = g.cid(14)::text) and (select state = 'raised' from pipeline.enrichment_flags where entity_key = g.cid(27)::text)
   and (select state = 'counting' from pipeline.enrichment_flags where entity_key = g.cid(25)::text)
   and (select count(*) = 1 from pipeline.enrichment_flag_events e join pipeline.enrichment_flags f on f.id = e.flag_id where f.entity_key = g.cid(15)::text and e.action = 'released' and e.actor_kind = 'person'));
+select g.ok('start recheck: the ENTITY-level counting flag (field empty) of course 4 is released too, so its item got past the engine''s own gate',
+  (select state = 'released' and release_kind = 'person' from pipeline.enrichment_flags where entity_key = g.cid(4)::text and field = '') and (select count(*) = 1 from pipeline.field_enrich_items where job_id = (select (j->>'job_id')::uuid from s2) and course_id = g.cid(4)));
 select g.ok('start recheck: audit line says recheck and keeps the reason', (select count(*) = 1 from pipeline.admin_control_events where action = 'on_demand_recheck' and detail->>'reason' like 'Recheck the held%'));
 select g.ok('recheck with only guarded courses refuses, makes no task and releases nothing', g.fails($$select public.admin_enrich_fields('start', jsonb_build_object('mode', 'recheck', 'course_ids', jsonb_build_array(g.cid(14), g.cid(8), g.cid(13), g.cid(9)), 'reason', 'all guarded?'))$$, '%nothing to queue%')
   and (select count(*) from pipeline.admin_jobs where args->>'on_demand' = 'true') = 3 and (select state = 'raised' from pipeline.enrichment_flags where entity_key = g.cid(14)::text));
@@ -181,6 +185,39 @@ select g.ok('university start: queues exactly the room, one task, items only for
   and (select scope = 'Provider 4' and args->>'scope' = 'university' and title like 'Fill description · Provider 4%' from pipeline.admin_jobs where id = (select (j->>'job_id')::uuid from us)));
 update pipeline.platform_toolset_settings set value = to_jsonb(500) where key = 'enrich.course_text_items_per_day';
 
+-- 6b. an idempotency key is for one request; the room caps chosen courses too; the Layer 4 back-pressure is honoured ----------------------------------------------------------
+select g.ok('a key used before for a Fill is refused for a Recheck (not answered with the Fill task)', g.fails($$select public.admin_enrich_fields('start', jsonb_build_object('mode', 'recheck', 'course_ids', jsonb_build_array(g.cid(3)), 'reason', 'same key, other mode', 'idempotency_key', 'k-001'))$$, '%idempotency key was already used for a different request%'));
+select g.ok('a key used before for chosen courses is refused for a university', g.fails($$select public.admin_enrich_fields('start', jsonb_build_object('mode', 'fill', 'provider_ids', jsonb_build_array(g.pid(4)), 'reason', 'same key, other scope', 'idempotency_key', 'k-001'))$$, '%idempotency key was already used for a different request%'));
+create temp table two as select array_agg(course_id) ids from (select course_id from security.cdesc_state_v1(array(select id from catalogue.courses), null) where fill_block is null order by course_id limit 2) z;
+select g.ok('control: two untouched courses are Fill-eligible', (select cardinality(ids) = 2 from two));
+select set_config('g.room_cap', (select count(*) + 1 from pipeline.field_enrich_items where field = 'description' and created_at > now() - interval '1 day')::text, false);
+update pipeline.platform_toolset_settings set value = to_jsonb(current_setting('g.room_cap')::int) where key = 'enrich.course_text_items_per_day';
+create temp table cp as select public.admin_enrich_fields('preview', jsonb_build_object('mode', 'fill', 'course_ids', to_jsonb((select ids from two)))) j;
+select g.ok('chosen courses are capped by the day''s room too: room 1 queues 1 and leaves the other out as daily_capacity', (select (j->'limit'->>'room_today')::int = 1 and (j->>'to_queue')::int = 1 and j->'blocked' = '{"daily_capacity": 1}'::jsonb from cp));
+update pipeline.platform_toolset_settings set value = to_jsonb(current_setting('g.room_cap')::int - 1) where key = 'enrich.course_text_items_per_day';
+select g.ok('chosen courses with no room left: nothing is queued and a start refuses', (select (j->>'to_queue')::int = 0 from (select public.admin_enrich_fields('preview', jsonb_build_object('mode', 'fill', 'course_ids', to_jsonb((select ids from two)))) j) z)
+  and g.fails(format($q$select public.admin_enrich_fields('start', jsonb_build_object('mode', 'fill', 'course_ids', %L::jsonb, 'reason', 'no room'))$q$, to_jsonb((select ids from two))::text), '%nothing to queue%Over today''s limit%'));
+update pipeline.platform_toolset_settings set value = to_jsonb(500) where key = 'enrich.course_text_items_per_day';
+select g.ok('control: the Layer 4 back-pressure setting ships off', coalesce((select value from pipeline.platform_toolset_settings where key = 'enrich.course_description_pending_global_max'), '0'::jsonb) = '0'::jsonb
+  and (select count(*) > 0 from pipeline.layer4_review_items where entity_type = 'course' and field_code = 'course_description_first_read' and status = 'pending'));
+update pipeline.platform_toolset_settings set value = to_jsonb((select count(*)::int from pipeline.layer4_review_items where entity_type = 'course' and field_code = 'course_description_first_read' and status = 'pending')) where key = 'enrich.course_description_pending_global_max';
+create temp table bp as select public.admin_enrich_fields('preview', jsonb_build_object('mode', 'fill', 'course_ids', to_jsonb((select ids from two)))) j;
+select g.ok('back-pressure on (as many waiting as the limit): every course is left out as review_backlog and none is queued, as the standing queue would not read either',
+  (select (j->>'to_queue')::int = 0 and j->'blocked' = '{"review_backlog": 2}'::jsonb and j->'blocked_info'->'review_backlog'->>'label' like 'Too many descriptions%' from bp)
+  and not exists (select 1 from security.enrich_course_text_gaps_v1(array['description']) t));
+update pipeline.platform_toolset_settings set value = to_jsonb(0) where key = 'enrich.course_description_pending_global_max';
+select g.ok('back-pressure off again: the two courses are eligible again', (select (j->>'to_queue')::int = 2 from (select public.admin_enrich_fields('preview', jsonb_build_object('mode', 'fill', 'course_ids', to_jsonb((select ids from two)))) j) z));
+-- the standing queue and an on-demand task keep each other's courses out (what is already committed)
+select g.ok('standing queue: a course an on-demand task already holds is not selected by the standing queue', not exists (select 1 from security.enrich_course_text_gaps_v1(array['description']) t where t.course_id in (g.cid(1), g.cid(3), g.cid(20))));
+do $$ declare j uuid := gen_random_uuid(); c uuid := (select ids[1] from two); begin
+  insert into pipeline.admin_jobs(id, kind, lane, state, title, args, requested_by, reason) values (j, 'enrich_fields', 'enrich-standing', 'queued', 'standing', '{"standing": true}', '99999999-0000-4000-8000-000000000001', 'standing');
+  insert into pipeline.field_enrich_items(job_id, provider_id, course_id, field) select j, provider_id, c, 'description' from catalogue.courses where id = c;
+  perform g.ok('a course the standing queue holds (open item) is left out of an on-demand Fill as in_flight', (select (public.admin_enrich_fields('preview', jsonb_build_object('mode', 'fill', 'course_ids', jsonb_build_array(c)))->'blocked') = '{"in_flight": 1}'::jsonb));
+  perform g.ok('and a start for it refuses and adds no second item', g.fails(format($q$select public.admin_enrich_fields('start', jsonb_build_object('mode', 'fill', 'course_ids', jsonb_build_array(%L), 'reason', 'while the standing queue holds it'))$q$, c::text), '%nothing to queue%Already in an open task%')
+    and (select count(*) = 1 from pipeline.field_enrich_items where course_id = c and field = 'description' and state in ('queued', 'waiting', 'ai', 'leased', 'review')));
+  delete from pipeline.field_enrich_items where job_id = j; delete from pipeline.admin_jobs where id = j;
+end $$;
+
 -- 7. verify: catalogue, Website, Zoho and HTTP are separate states; not applicable is not a failure; unknown is not zero -----------------------------------------------
 create temp table vf as select public.admin_enrich_fields('verify', jsonb_build_object('course_ids', jsonb_build_array(g.cid(10), g.cid(31), g.cid(32), g.cid(33), g.cid(34), g.cid(1), g.cid(19)))) j;
 create or replace function g.vrow(n int) returns jsonb language sql stable as $$ select r from vf, jsonb_array_elements(j->'courses') r where (r->>'course_id')::uuid = g.cid(n) $$;
@@ -195,7 +232,7 @@ update catalogue.courses set description = 'A described NZ course whose words ar
 select g.ok('verify: an NZ course is not applicable to Zoho (not in zoho.sync_countries), never a failure', (select public.admin_enrich_fields('verify', jsonb_build_object('course_ids', jsonb_build_array(g.cid(19))))->'courses'->0->'zoho'->>'state' = 'not_applicable'));
 select g.ok('verify: summary counts per state, and an unknown id is listed as missing', (select j->'summary'->'website' ? 'matched' and j->'summary'->'zoho' ? 'not_carried' and jsonb_array_length(j->'courses') = 7 from vf)
   and (select public.admin_enrich_fields('verify', jsonb_build_object('course_ids', jsonb_build_array(g.cid(99))))->'missing' = to_jsonb(array[g.cid(99)])));
-select g.ok('verify refuses more courses than run_now.pilot_cap and an empty list', g.fails($$select public.admin_enrich_fields('verify', jsonb_build_object('course_ids', (select jsonb_agg(g.cid(n)) from generate_series(1, 21) n)))$$, '%at most 20 courses%')
+select g.ok('verify refuses more than ten courses (each read-back costs about 255 ms; 8 second limit) and an empty list', g.fails($$select public.admin_enrich_fields('verify', jsonb_build_object('course_ids', (select jsonb_agg(g.cid(n)) from generate_series(1, 11) n)))$$, '%at most 10 courses%')
   and g.fails($$select public.admin_enrich_fields('verify', '{}')$$, '%choose the courses to check%'));
 select g.ok('verify changed nothing', (select count(*) from catalogue.courses where description is not null) = 6 /* 5 seeded + the NZ course the previous check described */);
 
@@ -208,14 +245,28 @@ select g.ok('state RPC: rows with the reasons in words, the ledger is reported a
    and (select bool_and(c->'machine_admitted' = 'null'::jsonb) from jsonb_array_elements(j->'courses') c) and (select c->'fill_info'->>'label' from jsonb_array_elements(j->'courses') c where c->>'title' = 'Course 26') = 'Tried recently' from rs));
 select g.ok('state RPC: bounded to one screen page and empty input is empty', g.fails($$select public.admin_course_description_state_v1((select array_agg(g.cid(n)) from generate_series(1, 60) n, generate_series(1, 4)))$$, '%at most 200 courses%')
   and (select public.admin_course_description_state_v1('{}') = '{"courses": []}'::jsonb));
-create table pipeline.course_description_machine_admissions (course_id uuid not null, admitted_at timestamptz default now());
-insert into pipeline.course_description_machine_admissions(course_id) values (g.cid(10));
-select g.ok('machine ledger present: Machine-admitted is shown for the admitted course only, and the others are false', (select (c->>'machine_admitted')::boolean from jsonb_array_elements(public.admin_course_description_state_v1(array[g.cid(10), g.cid(31)])->'courses') c where c->>'title' = 'Course 10')
-  and (select c->>'state' = 'machine_admitted' from jsonb_array_elements(public.admin_course_description_state_v1(array[g.cid(10)])->'courses') c)
-  and (select c->>'state' = 'human_decision' from jsonb_array_elements(public.admin_course_description_state_v1(array[g.cid(31)])->'courses') c));
-alter table pipeline.course_description_machine_admissions rename column course_id to other_id;
-select g.ok('machine ledger of an unexpected shape: unknown (null), never false', (select c->'machine_admitted' = 'null'::jsonb from jsonb_array_elements(public.admin_course_description_state_v1(array[g.cid(10)])->'courses') c));
+\i ledger.sql
+-- agent D1's real ledger: course 10 is live-admitted; course 31 (a person approved it in Layer 4) was declined by the machine first; course 26's admission was withdrawn; course 1 has a declined row only
+insert into pipeline.course_description_machine_admissions(course_id, provider_id, rule, outcome, actor) select g.cid(n), c.provider_id, 'cdesc-machine-v1', o, '99999999-0000-4000-8000-000000000001'
+  from (values (10, 'admitted'), (31, 'declined'), (1, 'declined')) v(n, o) join catalogue.courses c on c.id = g.cid(v.n);
+insert into pipeline.course_description_machine_admissions(course_id, provider_id, rule, outcome, actor, withdrawn_at, withdrawn_by, withdrawn_reason) select g.cid(26), c.provider_id, 'cdesc-machine-v1', 'admitted', '99999999-0000-4000-8000-000000000001', now(), '99999999-0000-4000-8000-000000000001', 'withdrawn by a person'
+  from catalogue.courses c where c.id = g.cid(26);
+create temp table lg as select c->>'title' t, c->>'state' st, c->'machine_admitted' ma from jsonb_array_elements(public.admin_course_description_state_v1(array[g.cid(10), g.cid(31), g.cid(26), g.cid(1)])->'courses') c;
+select g.ok('machine ledger (real shape): a LIVE admission is Machine-admitted', (select st = 'machine_admitted' and ma = 'true'::jsonb from lg where t = 'Course 10'));
+select g.ok('machine ledger: declined, then approved by a person, is Human decision and not Machine-admitted', (select st = 'human_decision' and ma = 'false'::jsonb from lg where t = 'Course 31'));
+select g.ok('machine ledger: a declined row alone is not an admission', (select st <> 'machine_admitted' and ma = 'false'::jsonb from lg where t = 'Course 1'));
+select g.ok('machine ledger: a withdrawn admission is not an admission', (select st <> 'machine_admitted' and ma = 'false'::jsonb from lg where t = 'Course 26'));
+select g.ok('machine ledger present: the state RPC says so', (public.admin_course_description_state_v1(array[g.cid(10)])->>'machine_ledger')::boolean);
+alter table pipeline.course_description_machine_admissions rename column withdrawn_at to withdrawn_when;
+select g.ok('machine ledger of another shape: unknown (null), never false, and no error is hidden', (select c->'machine_admitted' = 'null'::jsonb from jsonb_array_elements(public.admin_course_description_state_v1(array[g.cid(10)])->'courses') c)
+  and security.cdesc_machine_ids_v1(array[g.cid(10)]) is null);
+alter table pipeline.course_description_machine_admissions rename column withdrawn_when to withdrawn_at;
+alter table pipeline.course_description_machine_admissions rename column outcome to result;
+select g.ok('machine ledger without outcome: unknown (null)', security.cdesc_machine_ids_v1(array[g.cid(10)]) is null);
+alter table pipeline.course_description_machine_admissions rename column result to outcome;
+select g.ok('machine ledger restored: answers again', security.cdesc_machine_ids_v1(array[g.cid(10), g.cid(31)]) = array[g.cid(10)]);
 drop table pipeline.course_description_machine_admissions;
+select g.ok('no ledger: unknown (null)', security.cdesc_machine_ids_v1(array[g.cid(10)]) is null);
 select g.as_user(4);
 
 -- 9. the old actions run the old text -----------------------------------------------------------------------------------------------------------------------------------

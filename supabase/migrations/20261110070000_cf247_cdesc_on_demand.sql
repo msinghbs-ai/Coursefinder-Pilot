@@ -23,7 +23,16 @@
 -- Verify (read only): for chosen courses it reads back catalogue.courses.description and public.website_v2_course(stable key)->item->description and reports, separately, Catalogue, Website feed, Zoho feed
 --   (only for the countries in zoho.sync_countries; others are not applicable, never a failure; a Zoho course item that carries no description field is reported as not carried) and Verified HTTP
 --   (not checked by the database: it cannot call the website; the release check does that; reported as not checked, never as passed or failed). Unknown is never zero.
--- Machine admission (agent D1, not merged): Machine-admitted is shown only when pipeline.course_description_machine_admissions exists with a course_id column; otherwise it is unknown (null), never false.
+-- Machine admission (agent D1, migration 20261110060000): Machine-admitted is shown only for a LIVE ledger row of pipeline.course_description_machine_admissions (outcome = 'admitted' and withdrawn_at is null).
+--   A declined row, or an admission a person withdrew, does not count (a declined course a person then approved is Human decision). If the ledger is not there, or lacks course_id, outcome or withdrawn_at,
+--   the answer is unknown (null), never false; there is no catch-all fallback.
+-- Capacity: a request for chosen courses is at most least(run_now.pilot_cap, the day's room); a request for one university is at most the day's room. The standing queue's back-pressure
+--   (enrich.course_description_pending_global_max, 0 = off) is honoured as well: while that many descriptions wait for a person in Layer 4, every course is left out as review_backlog. A person's request is not
+--   exempt, because the reason for the limit (a reviewer who cannot keep up) is the same.
+-- Concurrency: start takes advisory locks BEFORE it chooses the courses (one university: that university's lock; chosen courses: each course's lock, and each university's lock shared; always in sorted order),
+--   then checks for a repeat, then chooses, then writes, so two requests (even with different keys) cannot queue the same course twice. The standing queue (security.field_gap_queue_tick_v1) takes no lock and
+--   is not edited here: it keeps a course out when an open item is already COMMITTED, and so does this; the only gap left is a request that commits between that queue's read and its insert in one tick.
+--   An idempotency key used again for a different mode or scope is refused, not answered with the other task.
 -- Consumer API (G3): nothing in public.website_v2_*, website_edge_*, website_api_v2_*, zoho_edge_*, svc_website_settings_v1, schema api or the five edge functions is altered, dropped, renamed or granted.
 --   public.website_v2_course and pipeline.zoho_sync_items are READ by verify, exactly as the Data Delivery and Provider Catalogue facts read the feeds. Consumer API change approved: not applicable (no change).
 -- Controls: all functions SECURITY DEFINER, search_path '', start needs rank 4 (Pipeline Operator) and a reason, preview and verify and state need rank 3 (Curator), as admin_enrich_fields has them.
@@ -52,11 +61,12 @@ create or replace function security.cdesc_machine_ids_v1(p_ids uuid[]) returns u
 language plpgsql stable security definer set search_path to '' as $function$
 declare v uuid[]; v_rel regclass := to_regclass('pipeline.course_description_machine_admissions');
 begin
-  if v_rel is null or not exists (select 1 from pg_attribute a where a.attrelid = v_rel and a.attname = 'course_id' and not a.attisdropped) then return null; end if;
-  execute 'select coalesce(array_agg(distinct m.course_id), ''{}''::uuid[]) from pipeline.course_description_machine_admissions m where m.course_id = any ($1)' into v using p_ids;
+  -- the ledger exists once the machine admission change is applied (20261110060000): course_id, outcome ('admitted' | 'declined') and withdrawn_at.
+  -- Not there, or not that shape: unknown (null), which the screen shows as "not known", never as "no machine admission".
+  if v_rel is null or (select count(*) from pg_attribute a where a.attrelid = v_rel and a.attname in ('course_id', 'outcome', 'withdrawn_at') and not a.attisdropped) <> 3 then return null; end if;
+  -- only a live admission counts: a declined row, or an admission a person later withdrew, is not "Machine-admitted" (a declined course a person then approved is "Human decision")
+  execute 'select coalesce(array_agg(distinct m.course_id), ''{}''::uuid[]) from pipeline.course_description_machine_admissions m where m.course_id = any ($1) and m.outcome = ''admitted'' and m.withdrawn_at is null' into v using p_ids;
   return v;
-exception when others then
-  return null; -- unknown (a ledger whose shape is not the one expected) is never reported as "no machine admission"
 end $function$;
 
 -- 2. the reason a course is left out, in plain words and with the next action ------------------------------------------------------------------------------------
@@ -76,6 +86,7 @@ language sql immutable set search_path to '' as $function$
     when 'same_page_not_stated' then jsonb_build_object('label', 'This same page copy was read and does not state it', 'next', 'It is read again when the page is read again.')
     when 'recent_attempt' then jsonb_build_object('label', 'Tried recently', 'next', 'The standing queue tries again on its own date; use Recheck description to read it now.')
     when 'nothing_to_recheck' then jsonb_build_object('label', 'Not tried yet', 'next', 'Use Fill description.')
+    when 'review_backlog' then jsonb_build_object('label', 'Too many descriptions already wait for a person in Layer 4', 'next', 'Decide the waiting readings in Layer 4; the limit is Pipeline settings > Course description: most waiting for a person before new readings pause.')
     when 'daily_capacity' then jsonb_build_object('label', 'Over today''s limit for description readings', 'next', 'The limit is Pipeline settings > Enrich fields > items per day; it frees as the day moves on.')
     when null then null
     else jsonb_build_object('label', p_key, 'next', '') end
@@ -105,7 +116,7 @@ language sql stable security definer set search_path to '' as $function$
                 -- the standing queue's wait (security.enrich_item_held_v1): a counting flag younger than gaps.recheck_days, unless the page was read again with new content since
                 bool_or(f.state = 'counting' and f.reason_code = 'enrich_no_value' and f.flagged_at > now() - make_interval(days => p.days)
                         and not (pg0.evidence_id is not null and pg0.evidence_id::text is distinct from f.input_mark and pg0.read_at > f.flagged_at)) counting_any,
-                array_agg(f.id) filter (where f.state = 'counting' and f.reason_code = 'enrich_no_value' and f.field = 'description') counting_ids
+                array_agg(f.id) filter (where f.state = 'counting' and f.reason_code = 'enrich_no_value') counting_ids
            from pipeline.enrichment_flags f cross join p left join pg pg0 on pg0.course_id::text = f.entity_key
           where f.entity = 'course' and f.field in ('description', '') and f.entity_key in (select c0.id::text from c c0) group by f.entity_key),
   l4 as (select r.entity_id course_id, bool_or(r.status = 'pending') pending, bool_or(r.status in ('approved', 'edited_approved')) approved,
@@ -164,6 +175,7 @@ declare
   v_pids uuid[] := array(select distinct x::uuid from jsonb_array_elements_text(case when jsonb_typeof(a->'provider_ids') = 'array' then a->'provider_ids' else '[]'::jsonb end) x);
   v_max int := security.pipeline_num_v1('run_now.pilot_cap', 20)::int;
   v_cap int := security.pipeline_num_v1('enrich.course_text_items_per_day', 500)::int;
+  v_vmax constant int := 10; -- fixed: the read-back calls public.website_v2_course for each course (about 255 ms each), so ten stay inside the 8 second request limit
   v_used int; v_room int; v_scope text; v_limit int; v_reason text; v_key text; v_given boolean; v_job uuid; v_n int; v_total int; v_elig int;
   v_blocks jsonb; v_sel uuid[]; v_providers uuid[]; v_flags bigint[]; f bigint; v_title text; v_usd numeric; v_rows jsonb; v_missing uuid[]; v_ex pipeline.admin_jobs%rowtype; v_ptitle text; v_zoho jsonb;
   r record; v_web jsonb; v_wst text; v_zst text; v_wnote text; v_znote text;
@@ -171,7 +183,7 @@ begin
   if p_action = 'verify' then
     if coalesce(p_rank, 0) < 3 then raise exception 'Curator role or above required' using errcode = '42501'; end if;
     if cardinality(v_ids) = 0 then raise exception 'choose the courses to check'; end if;
-    if cardinality(v_ids) > v_max then raise exception 'check at most % courses at a time', v_max; end if;
+    if cardinality(v_ids) > v_vmax then raise exception 'check at most % courses at a time', v_vmax; end if;
     v_zoho := coalesce((select s.value from pipeline.platform_toolset_settings s where s.toolset_key = 'pipeline' and s.key = 'zoho.sync_countries'), '["AU"]'::jsonb); -- fixed: the Zoho feed's own default country (security.zoho_sync_item_v1)
     v_rows := '[]'::jsonb;
     for r in select co.id, nullif(btrim(co.description), '') descr, k.iso_alpha2::text cc, d.course_stable_key sk
@@ -190,7 +202,7 @@ begin
             v_wst := case when v_web->'item'->>'description' is null then 'missing' when v_web->'item'->>'description' = r.descr then 'matched' else 'differs' end;
             v_wnote := case v_wst when 'matched' then 'The Website API returns the same words as the catalogue.' when 'missing' then 'The Website API returns no description for this course.' else 'The Website API returns different words from the catalogue.' end;
           exception when others then
-            v_wst := 'unknown'; v_wnote := 'The read-back failed: ' || left(sqlerrm, 160);
+            v_wst := 'unknown'; v_wnote := 'The read-back failed: ' || left(sqlerrm, 160); -- fixed: the length of an error shown to a person
           end;
         end if;
         if not (v_zoho ? r.cc) then v_zst := 'not_applicable'; v_znote := 'The country is not synced to Zoho (zoho.sync_countries).';
@@ -228,6 +240,7 @@ begin
   end if;
 
   -- preview and start
+  if p_action not in ('preview', 'start') then raise exception 'unknown action %', p_action using errcode = '22023'; end if;
   if v_mode not in ('fill', 'recheck') then raise exception 'choose Fill description or Recheck description'; end if;
   if cardinality(v_ids) > 0 and cardinality(v_pids) > 0 then raise exception 'choose courses or one university, not both'; end if;
   if cardinality(v_ids) > 0 then
@@ -239,10 +252,40 @@ begin
     raise exception 'choose up to % courses, or one university', v_max;
   end if;
 
+  if p_action = 'start' then
+    if coalesce(p_rank, 0) < 4 then raise exception 'Pipeline Operator role or above required' using errcode = '42501'; end if;
+    v_reason := btrim(coalesce(a->>'reason', ''));
+    if length(v_reason) < 4 then raise exception 'give a reason (it is kept with the task)'; end if;
+    v_given := nullif(btrim(coalesce(a->>'idempotency_key', '')), '') is not null;
+    v_key := left(coalesce(nullif(btrim(coalesce(a->>'idempotency_key', '')), ''),
+                'cdesc:' || v_mode || ':' || md5(coalesce((select string_agg(x::text, ',' order by x) from unnest(case when v_scope = 'courses' then v_ids else v_pids end) x), ''))), 120); -- fixed: a key's length
+    -- Locks come BEFORE the selection, so what is chosen is what is true when the items are written. A request for one university takes that university's lock exclusively; a request for chosen
+    -- courses takes each course's lock exclusively and each of their universities' locks shared (so two course requests in one university run side by side, but a university request waits for
+    -- them and they wait for it). Always taken providers first, then courses, in sorted order, so two requests can never wait on each other. The standing queue takes no lock: see the header.
+    perform pg_advisory_xact_lock(hashtextextended('cdesc_on_demand:' || v_key, 0));
+    if v_scope = 'university' then
+      perform pg_advisory_xact_lock(hashtextextended('cdesc_provider:' || v_pids[1]::text, 0));
+    else
+      for r in select distinct co.provider_id pid from catalogue.courses co where co.id = any (v_ids) order by 1 loop
+        perform pg_advisory_xact_lock_shared(hashtextextended('cdesc_provider:' || r.pid::text, 0));
+      end loop;
+      for r in select x from unnest(v_ids) x order by 1 loop
+        perform pg_advisory_xact_lock(hashtextextended('cdesc_course:' || r.x::text, 0));
+      end loop;
+    end if;
+    select * into v_ex from pipeline.admin_jobs j where j.kind = 'enrich_fields' and j.args->>'idempotency_key' = v_key and (v_given or j.state in ('queued', 'running')) order by j.created_at desc limit 1;
+    if v_ex.id is not null then
+      if v_ex.args->>'mode' is distinct from v_mode or v_ex.args->>'scope' is distinct from v_scope then
+        raise exception 'this idempotency key was already used for a different request (% / %); use a new key', v_ex.args->>'mode', v_ex.args->>'scope';
+      end if;
+      return jsonb_build_object('job_id', v_ex.id, 'items', (select count(*) from pipeline.field_enrich_items e where e.job_id = v_ex.id), 'repeat', true, 'mode', v_mode, 'scope', v_scope, 'idempotency_key', v_key);
+    end if;
+  end if;
+
   -- the day's room under the standing queue's own ceiling (items already made today for the description, by any route)
   select v_cap - count(*) into v_used from pipeline.field_enrich_items e where e.field = 'description' and e.created_at > now() - interval '1 day'; -- fixed: the cap is a day's
   v_room := greatest(v_used, 0); -- v_used is what is left of the day's ceiling
-  v_limit := case when v_scope = 'courses' then v_max else v_room end;
+  v_limit := case when v_scope = 'courses' then least(v_max, v_room) else v_room end; -- an on-demand request never takes more readings than the day's ceiling leaves
 
   create temporary table if not exists pg_temp.cdesc_sel (course_id uuid, provider_id uuid, block text, ord int, flags bigint[], payload jsonb) on commit drop;
   truncate pg_temp.cdesc_sel;
@@ -254,10 +297,16 @@ begin
     from security.cdesc_state_v1(case when v_scope = 'courses' then v_ids end, case when v_scope = 'university' then v_pids[1] end) s;
 
   v_total := (select count(*) from pg_temp.cdesc_sel);
+  -- back-pressure as the standing queue has it (enrich.course_description_pending_global_max, 0 = off): no new readings while that many descriptions already wait for a person in Layer 4
+  if coalesce(security.pipeline_num_v1('enrich.course_description_pending_global_max', 0), 0) > 0
+     and (select count(*) from pipeline.layer4_review_items q where q.entity_type = 'course' and q.field_code = 'course_description_first_read' and q.status = 'pending')
+         >= security.pipeline_num_v1('enrich.course_description_pending_global_max', 0) then
+    update pg_temp.cdesc_sel set block = 'review_backlog' where block is null;
+  end if;
   v_elig := (select count(*) from pg_temp.cdesc_sel where block is null);
   v_missing := array(select x from unnest(v_ids) x where x not in (select course_id from pg_temp.cdesc_sel));
-  -- the university request queues the first v_room eligible courses (never-tried first, then the oldest attempt); the rest wait for the next request
-  update pg_temp.cdesc_sel set block = 'daily_capacity' where block is null and ord > 0 and v_scope = 'university'
+  -- a request queues the first v_limit eligible courses (never-tried first, then the oldest attempt); the rest wait for the next request
+  update pg_temp.cdesc_sel set block = 'daily_capacity' where block is null and ord > 0
      and (select count(*) from pg_temp.cdesc_sel x where x.block is null and x.ord <= pg_temp.cdesc_sel.ord) > v_limit;
   v_blocks := (select coalesce(jsonb_object_agg(k, n), '{}'::jsonb) from (select block k, count(*) n from pg_temp.cdesc_sel where block is not null group by 1) z);
   v_n := (select count(*) from pg_temp.cdesc_sel where block is null);
@@ -275,19 +324,7 @@ begin
                              from (select * from pg_temp.cdesc_sel order by (block is not null), ord limit v_max) z) end);
   end if;
 
-  -- start
-  if p_action <> 'start' then raise exception 'unknown action %', p_action using errcode = '22023'; end if;
-  if coalesce(p_rank, 0) < 4 then raise exception 'Pipeline Operator role or above required' using errcode = '42501'; end if;
-  v_reason := btrim(coalesce(a->>'reason', ''));
-  if length(v_reason) < 4 then raise exception 'give a reason (it is kept with the task)'; end if;
-  v_given := nullif(btrim(coalesce(a->>'idempotency_key', '')), '') is not null;
-  v_key := left(coalesce(nullif(btrim(coalesce(a->>'idempotency_key', '')), ''),
-              'cdesc:' || v_mode || ':' || md5(coalesce((select string_agg(x::text, ',' order by x) from unnest(case when v_scope = 'courses' then v_ids else v_pids end) x), ''))), 120); -- fixed: a key's length
-  perform pg_advisory_xact_lock(hashtextextended('cdesc_on_demand:' || v_key, 0));
-  select * into v_ex from pipeline.admin_jobs j where j.kind = 'enrich_fields' and j.args->>'idempotency_key' = v_key and (v_given or j.state in ('queued', 'running')) order by j.created_at desc limit 1;
-  if v_ex.id is not null then
-    return jsonb_build_object('job_id', v_ex.id, 'items', (select count(*) from pipeline.field_enrich_items e where e.job_id = v_ex.id), 'repeat', true, 'mode', v_mode, 'scope', v_scope, 'idempotency_key', v_key);
-  end if;
+  -- start (rank, reason, key, locks and the repeat check were done before the selection)
   if v_n = 0 then
     raise exception 'nothing to queue: %', coalesce((select string_agg(coalesce(security.cdesc_block_info_v1(k)->>'label', k) || ' (' || n || ')', '; ' order by n desc) from (select block k, count(*) n from pg_temp.cdesc_sel where block is not null group by 1) z), 'no course found');
   end if;

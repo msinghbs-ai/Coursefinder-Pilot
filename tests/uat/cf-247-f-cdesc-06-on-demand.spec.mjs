@@ -42,6 +42,20 @@ test('migration: one md5-guarded edit of public.admin_enrich_fields, new functio
   // the consumer API is read (the verify action), never changed (G3)
   expect(code).not.toMatch(/create\s+(or\s+replace\s+)?function\s+(public\.(website_v2_|website_edge_|website_api_v2_|zoho_edge_)|api\.|public\.svc_website_settings_v1)/i)
   expect(code).toContain('public.website_v2_course(r.sk)')
+  // the machine-admission ledger is read in the shape agent D1's migration 20261110060000 defines: only a live admission counts, and nothing hides a wrong shape
+  const ledger = code.slice(code.indexOf('function security.cdesc_machine_ids_v1'), code.indexOf('$function$;', code.indexOf('function security.cdesc_machine_ids_v1')))
+  expect(ledger).toContain("m.outcome = ''admitted'' and m.withdrawn_at is null")
+  expect(ledger).toMatch(/a\.attname in \('course_id', 'outcome', 'withdrawn_at'\)/)
+  expect(ledger).not.toMatch(/exception\s+when\s+others/i)
+  // two requests cannot queue the same course: locks are taken before the courses are chosen, in a fixed order; verify is bounded
+  expect(code.indexOf('pg_advisory_xact_lock(hashtextextended(\'cdesc_course:\'')).toBeGreaterThan(-1)
+  expect(code.indexOf('pg_advisory_xact_lock_shared')).toBeGreaterThan(-1)
+  expect(code.indexOf('cdesc_course:')).toBeLessThan(code.indexOf('create temporary table if not exists pg_temp.cdesc_sel'))
+  expect(code).toMatch(/v_vmax constant int := 10; -- fixed: /)
+  expect(code).toMatch(/left\(sqlerrm, 160\); -- fixed: /)
+  expect(code).toContain('least(v_max, v_room)')
+  expect(code).toContain('enrich.course_description_pending_global_max')
+  expect(code).toContain('this idempotency key was already used for a different request')
   // the recovery file restores the recorded body and is guarded
   expect(REC).toContain('f11db4466add68c4d7de5cb7c87d9bce')
   expect(REC).toContain('c9701d334b732a729a30a5147d9d016b')
@@ -108,6 +122,27 @@ test.describe('mocked browser', () => {
     await page.locator('.cdod-tasks-fold > summary').first().click()
     await expect(page.locator('[data-cdod-tasks]')).toContainText('Recheck description · 2 course(s)')
     expect(calls.some((c) => c.name === 'description_tasks')).toBe(true)
+  })
+
+  test('Course Catalogue: a changed selection is a new request: the earlier result is cleared and the next Queue uses a new key', async ({ page }) => {
+    await mockAdmin(page, { rank: 4 })
+    const calls = await mockOnDemand(page)
+    await page.goto('/#courses')
+    const boxes = page.locator('.cdod-pick input[type="checkbox"]')
+    await boxes.nth(0).check()
+    await page.getByRole('button', { name: 'Fill description' }).click()
+    const panel = page.locator('[data-cdod-panel="fill"]')
+    await panel.getByLabel('Reason').fill('First request')
+    await panel.getByRole('button', { name: /^Queue 1 course/ }).click()
+    await expect(panel.locator('[data-cdod-done]')).toBeVisible()
+    await boxes.nth(1).check() // another course joins the selection while the panel is open
+    await expect(panel.locator('[data-cdod-done]')).toHaveCount(0)
+    await panel.getByLabel('Reason').fill('Second request')
+    await panel.getByRole('button', { name: /^Queue \d+ course/ }).click()
+    await expect(panel.locator('[data-cdod-done]')).toBeVisible()
+    const starts = calls.filter((c) => c.name === 'start')
+    expect(starts).toHaveLength(2)
+    expect(starts[0].idempotency_key).not.toBe(starts[1].idempotency_key)
   })
 
   test('Course Catalogue: a Curator can preview but not start; a lower role sees no Fill or Recheck at all', async ({ page }) => {
