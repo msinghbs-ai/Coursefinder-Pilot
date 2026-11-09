@@ -1,8 +1,8 @@
-// Guards: F-OPS.04 (Platform Admin, phone acceptance of the F-OPS.03A Data Delivery panel, 9 Nov 2026): at 390 px nothing in the panel makes Operations scroll sideways and every link in it is at least 24 px high (G4 @responsive, phone project only).
+// Guards: F-OPS.04 (Platform Admin, phone acceptance of Layer 2/3 › Operations and its F-OPS.03A Data Delivery panel, 9 Nov 2026): at 390 px the whole Operations page (main.m-main) never scrolls sideways, nothing in the Data Delivery panel reaches past the screen, and every link in that panel is at least 24 px high (G4 @responsive, phone project only).
 // These tests run on the phone project only (chromium-mobile, Pixel 7; `@responsive`). The viewport is set to 390 px and each test first asserts it really is at phone width.
 // Mocked admin (tests/uat/support/admin-mock.mjs plus data-delivery-mock.mjs); nothing reaches a real backend.
-// Why this spec sits beside cf-247-f-ops-03a-data-delivery-phone: that one measures only the document (which never scrolls; main.m-main does). This one measures the panel against main's visible width.
-// It scopes to the Data Delivery panel on purpose: other Operations panels (for example Governed actions) have their own phone work.
+// Why this spec sits beside cf-247-f-ops-03a-data-delivery-phone: that one measures only the document (which never scrolls; main.m-main does). This one measures main.m-main itself, and the Data Delivery panel against main's visible width.
+// The Data Delivery tests are scoped to that panel so a failure names the panel; the page-level test covers every other Operations panel (for example Governed actions, whose table sits in its own scroll frame).
 import { test, expect } from '@playwright/test'
 import { mockAdmin } from './support/admin-mock.mjs'
 import { mockLaneFunnels } from './support/lane-funnel-mock.mjs'
@@ -30,7 +30,7 @@ async function openOperationsWithEveryStreamOpen(page) {
   return root
 }
 
-test.describe('data delivery on a phone, acceptance @responsive', () => {
+test.describe('Operations on a phone, acceptance @responsive', () => {
   test('with every stream open, nothing in the Data Delivery panel reaches past the screen, so it adds no sideways scroll to main, and the country and job tables are stacked', async ({ page }) => {
     const root = await openOperationsWithEveryStreamOpen(page)
     await expect(root.locator('table.dd-countries').first()).toBeVisible()
@@ -61,5 +61,18 @@ test.describe('data delivery on a phone, acceptance @responsive', () => {
     const heights = await root.locator('a').evaluateAll((els) => els.map((a) => ({ text: a.textContent.trim().slice(0, 30), h: a.getBoundingClientRect().height })))
     expect(heights.length).toBeGreaterThan(4)
     for (const l of heights) expect(l.h, `link "${l.text}" is tap-sized`).toBeGreaterThanOrEqual(LINK_MIN)
+  })
+
+  test('the whole Operations page does not scroll sideways at 390 px, with the Data Delivery streams closed and with every one open', async ({ page }) => {
+    const root = await openOperationsWithEveryStreamOpen(page)
+    const over = () => page.evaluate(() => { const main = document.querySelector('main.m-main'); return { scroll: main.scrollWidth, client: main.clientWidth } })
+    // wait for the lower panels (Governed actions is the last one that loads) so the measure covers the whole page
+    await expect(page.locator('[data-governed-actions]')).toBeVisible()
+    const open = await over()
+    expect(open.scroll, 'main.m-main, every stream open').toBeLessThanOrEqual(open.client)
+    await root.locator('[data-dd-stream]').evaluateAll((els) => els.forEach((d) => { d.open = false }))
+    await expect(root.locator('[data-dd-stream][open]')).toHaveCount(0)
+    const closed = await over()
+    expect(closed.scroll, 'main.m-main, every stream closed').toBeLessThanOrEqual(closed.client)
   })
 })
