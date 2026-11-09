@@ -386,6 +386,8 @@ update pipeline.platform_toolset_settings set used_by = used_by || '; security.c
  where toolset_key = 'pipeline' and key = 'run_now.pilot_cap' and used_by not like '%cdesc_on_demand_v1%';
 update pipeline.platform_toolset_settings set used_by = used_by || '; security.cdesc_on_demand_v1 (the day''s room for a university''s Fill / Recheck description request)'
  where toolset_key = 'pipeline' and key = 'enrich.course_text_items_per_day' and used_by not like '%cdesc_on_demand_v1%';
+update pipeline.platform_toolset_settings set used_by = used_by || '; security.cdesc_on_demand_v1 (back-pressure for Fill / Recheck description)'
+ where toolset_key = 'pipeline' and key = 'enrich.course_description_pending_global_max' and used_by not like '%cdesc_on_demand_v1%';
 
 insert into pipeline.component_register(kind, name, layer, area, purpose, status, replaces, introduced_in) values
  ('function', 'security.cdesc_state_v1', 'Platform', 'Course descriptions', 'Fill / Recheck description on demand: where each course''s description stands and why it would be left out (read only)', 'active', '{}', '20261110070000'),

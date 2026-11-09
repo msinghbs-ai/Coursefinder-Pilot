@@ -65,9 +65,9 @@ changed=$(comm -23 "$WORK/0.fn" "$WORK/1.fn" | sed 's/ [0-9a-f]*$//' | sort -u)
 added=$(comm -13 "$WORK/0.fn" "$WORK/1.fn" | sed 's/ [0-9a-f]*$//' | sort -u | tr '\n' ' ')
 [ "$added" = "admin_course_description_state_v1(uuid[]) admin_enrich_fields(text,jsonb) security.cdesc_block_info_v1(text) security.cdesc_machine_ids_v1(uuid[]) security.cdesc_on_demand_v1(text,jsonb,integer,uuid) security.cdesc_state_v1(uuid[],uuid) " ] || { echo "functions added or edited: $added"; exit 1; }
 cmp -s "$WORK/0.courses" "$WORK/1.courses" && cmp -s "$WORK/0.rel" "$WORK/1.rel" || { echo "the migration added a table or changed rows of the catalogue"; exit 1; }
-# settings: no setting is added or changed; only used_by of two existing ones (not part of the value snapshot)
+# settings: no setting is added or changed; only used_by of three existing ones (not part of the value snapshot)
 cmp -s "$WORK/0.set" "$WORK/1.set" || { echo "the migration added or changed a setting"; diff "$WORK/0.set" "$WORK/1.set"; exit 1; }
-[ "$(q "select count(*) from pipeline.platform_toolset_settings where used_by like '%cdesc_on_demand_v1%'")" = 2 ] || { echo "used_by of the two existing settings was not extended"; exit 1; }
+[ "$(q "select count(*) from pipeline.platform_toolset_settings where used_by like '%cdesc_on_demand_v1%'")" = 3 ] || { echo "used_by of the three existing settings was not extended"; exit 1; }
 echo "applied: only public.admin_enrich_fields changed; five functions added; no setting, table, column or catalogue row added or changed"
 
 $P -d "$DB" -f scenarios.sql >"$WORK/scen.raw" 2>&1 || true
