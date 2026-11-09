@@ -364,29 +364,55 @@ export function descriptionSentences(a: any, page: string, minQuoteChars = 20): 
   return { about_page: a?.about_page === true, sentences };
 }
 
+// v0.59.14 (9 Nov 2026, CF-247 F-PDESC, Platform Admin Directive 3): a quote the model joined from separate passages of the page with an
+// ellipsis ("..", "..." or the single character) is proven fragment by fragment, but only when the switch reading.provider_quote_fragments_on
+// is on (ships off) and the whole quote is not on the page. Each fragment must be on the page exactly as the whole quote is (same boundary
+// rule, same canonical form), be at least pdesc.min_quote_chars letters and digits long, and follow the one before it in the page's order;
+// at least two fragments are required. One fragment missing, too short, out of order or only partly a word fails the whole quote
+// (quote_not_on_page, as before). The quote is passed on whole, with the ellipsis; the database checks are unchanged.
+const QUOTE_ELLIPSIS = /\s*(?:\.{2,}|\u2026)\s*/;
+export const providerQuoteFragments = (q: string): string[] => String(q || "").split(QUOTE_ELLIPSIS).map((x) => x.trim()).filter((x) => flatText(x).length > 0);
+
 // Provider descriptions only (provider-description-source-guard-v1): the quote must be on the page exactly.
 // Only canonical Unicode form and layout whitespace may differ. Punctuation, decimal points,
 // signs, percentages, words and case remain evidence: "1.2%" must never prove "12%".
-export function providerDescriptionSentences(a: any, page: string, minQuoteChars = 20): { about_page: boolean; sentences: { text: string; quote: string; on_page: boolean }[] } {
+export function providerDescriptionSentences(a: any, page: string, minQuoteChars = 20, opts: { fragments?: boolean } = {}): { about_page: boolean; sentences: { text: string; quote: string; on_page: boolean; fragments?: number }[] } {
   const sourceText = (value: string) => String(value || "").normalize("NFC").replace(/\s+/g, " ").trim();
   const fp = sourceText(page);
-  const onPage = (quote: string) => {
+  // the end of the first place the quote stands on the page at or after `from` (-1: nowhere); the boundary rules are those of the whole quote
+  const placeOnPage = (quote: string, from = 0): number => {
     const needle = sourceText(quote), ends = Array.from(needle), first = ends[0] || "", last = ends[ends.length - 1] || "";
     const word = (c: string) => /[\p{L}\p{N}_]/u.test(c);
     const numeric = (c: string) => /[0-9.,+\-$€£%]/u.test(c);
-    for (let at = fp.indexOf(needle); at >= 0 && needle; at = fp.indexOf(needle, at + 1)) {
+    for (let at = fp.indexOf(needle, from); at >= 0 && needle; at = fp.indexOf(needle, at + 1)) {
       const before = Array.from(fp.slice(0, at)).at(-1) || "", after = Array.from(fp.slice(at + needle.length))[0] || "";
       if (word(first) && word(before) || word(last) && word(after)) continue;
       if (numeric(first) && numeric(before) || numeric(last) && numeric(after)) continue;
-      return true;
+      return at + needle.length;
     }
-    return false;
+    return -1;
+  };
+  const onPage = (quote: string) => placeOnPage(quote) >= 0;
+  // the number of fragments proven in the page's order (0: not proven)
+  const provedFragments = (quote: string): number => {
+    const frags = providerQuoteFragments(quote);
+    if (frags.length < 2) return 0;  // fixed: a joined quote has at least two passages, by definition
+    let from = 0;
+    for (const f of frags) {
+      if (flatText(f).length < minQuoteChars) return 0;
+      const end = placeOnPage(f, from);
+      if (end < 0) return 0;
+      from = end;
+    }
+    return frags.length;
   };
   // As descriptionSentences: nothing is cut; every sentence and its whole quote is passed on for the database checks.
   const sentences = (Array.isArray(a?.sentences) ? a.sentences : []).map((s: any) => {
     const text = String(s?.text || "").replace(/\s+/g, " ").trim(), quote = String(s?.quote || "");
     const fq = flatText(quote);
-    return { text, quote, on_page: fq.length >= minQuoteChars && onPage(quote) };
+    if (fq.length >= minQuoteChars && onPage(quote)) return { text, quote, on_page: true };
+    const n = opts.fragments === true && fq.length >= minQuoteChars ? provedFragments(quote) : 0;
+    return n > 1 ? { text, quote, on_page: true, fragments: n } : { text, quote, on_page: false };
   }).filter((s: any) => s.text);
   return { about_page: a?.about_page === true, sentences };
 }

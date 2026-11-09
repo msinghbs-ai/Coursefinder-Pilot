@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react'
 import { ArrowLeft, ChevronRight, Database, RefreshCw, X } from 'lucide-react'
 import { fmtNumber } from './lib/format.js'
 
-export { fmtNumber, fmtDate, fmtDateTime, fmtDayMonth, fmtTime, fmtMoney, fmtPercent, fmtShare, fmtRelative, fmtBytes } from './lib/format.js'
+export { fmtNumber, fmtDate, fmtDateTime, fmtDayMonth, fmtTime, fmtTimeSeconds, fmtMoney, fmtPercent, fmtShare, fmtRelative, fmtBytes } from './lib/format.js'
 
 // "layer2_run" -> "Layer2 run"; keeps the words, drops underscores.
 export function humanLabel(v){const s=String(v??'').replaceAll('_',' ').replaceAll('-',' ').trim();return s?s.charAt(0).toUpperCase()+s.slice(1):''}
