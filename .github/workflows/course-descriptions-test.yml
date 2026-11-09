@@ -14,6 +14,7 @@ on:
       - 'tests/fixtures/course-description-backpressure/**'
       - 'tests/fixtures/cdesc-machine/**'
       - 'supabase/migrations/2026111006*.sql'
+      - 'supabase/held/cdesc_*_machine_forward_recovery.sql'
       - 'tests/uat/cf-247-s527-course-description-machine-admission-contract.spec.mjs'
       - 'tests/uat/cf-247-s450-course-description-review-pack-contract.spec.mjs'
       - 'supabase/functions/coverage-sweep/course-text.ts'

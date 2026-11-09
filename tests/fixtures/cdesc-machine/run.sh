@@ -23,7 +23,7 @@ trap cleanup EXIT
 echo "base: course-description-backpressure harness built the database (production-parity fixture, 20261106500000, 20261107120000, 20261108130000)"
 $P -f $F/stubs.sql
 $P -f $F/seed.sql
-for f in security.pdesc_claim_check_v1 security.pdesc_machine_neutral_supported_v1 security.pdesc_machine_text_check_ctx_v1 security.pdesc_machine_text_check_v1 security.enrich_item_held_v1; do $P -c "set check_function_bodies = off" -f $F/live/$f.sql; done
+for f in security.pdesc_claim_check_v1 security.pdesc_machine_neutral_supported_v1 security.pdesc_machine_text_check_ctx_v1 security.pdesc_machine_text_check_v1 security.enrich_item_held_v1 security.layer4_pace_v1; do $P -c "set check_function_bodies = off" -f $F/live/$f.sql; done
 declare -A LIVE=( ['security.pdesc_claim_check_v1(text,text,text)']=5e256534e43073bc32f842bee2e50c98 ['security.pdesc_machine_neutral_supported_v1(text,jsonb)']=8601c0066d7bde714fc753e5ae0ba0db
                   ['security.pdesc_machine_text_check_ctx_v1(uuid,text,text[],jsonb)']=e9a12bc0383e321345fc015f89768042 ['security.pdesc_machine_text_check_v1(uuid,text,text[])']=bafcb58c2ac586829ce4f1b1d2780a44
                   ['security.course_description_check_v1(uuid,jsonb)']=0d3a4cc7811eddaf6bb94307b542cc60 ['security.course_description_check_with_v1(uuid,jsonb,jsonb,jsonb)']=3bb5d62b5e86cd7c76707171e02a3ae5
@@ -32,6 +32,8 @@ declare -A LIVE=( ['security.pdesc_claim_check_v1(text,text,text)']=5e256534e430
                   ['security.pdesc_has_term_v1(text,text)']=2900b13238674e92caa77f8339f81698 ['security.pdesc_support_v1(text,text)']=2065dfd6987b47852d267f5d33dd9056
                   ['security.pdesc_words_v1(text)']=0ca18e0d985cf01902977d992e364815 ['security.pipeline_num_v1(text,numeric)']=cbde6549dbdab8cad5ad961e8278e86c
                   ['security.enrich_course_text_gaps_v1(text[])']=5352bc7ea7bbf3ef00bd616f2897f2f4 ['security.enrich_item_held_v1(uuid,text)']=78c7102adf2804fb536eb2e263264edc
+                  ['security.layer4_pace_v1()']=344a3abad89b63baf9316a5d85f5f8ff ['security.course_description_summary_v1(uuid,boolean)']=8e284898fdc7bda9dcbcc9d85acabace
+                  ['security.course_description_capacity_v1()']=ef83be9476da04995081ac04ab517bf0 ['security.course_description_sample_report_v1()']=5854cf436c26cb814033f58a47e4d33e
                   ['security.course_description_trusted_v1(uuid)']=ae8b327f85f0262b3d0b878010a4af3c )
 for sig in "${!LIVE[@]}"; do
   [ "$(q "select md5(prosrc) from pg_proc where oid = '$sig'::regprocedure")" = "${LIVE[$sig]}" ] || { echo "the loaded $sig differs from live ${LIVE[$sig]}"; exit 1; }
@@ -61,31 +63,49 @@ psql -X -d $RF -q -At -v ON_ERROR_STOP=1 -1 -f $M1 >/dev/null 2>&1 || { echo "M1
 dropdb --if-exists $RF >/dev/null 2>&1
 echo "applied without the control class column: the switch is added, the column is not created by this change"
 
+# a person's Layer 4 decisions and the four measures as they answer today (compared after the migrations)
+$P -f $F/measures_before.sql >/dev/null
 snap "$W/0"
 OUT=$($P -1 -At -f $M1 2>&1) || { echo "$OUT" | tail -8; exit 1; }
 OUT=$($P -1 -At -f $M2 2>&1) || { echo "$OUT" | tail -8; exit 1; }
 snap "$W/1"
 # nothing existing changed: every function that was there has the same body; the only new setting is the switch at 0; no Layer 4 item, reading or description changed
-# the one governed in-place edit: security.course_description_trusted_v1 (a machine decision is not person-trust), from its live md5 to the md5 the migration states
-[ "$(comm -23 "$W/0.fn" "$W/1.fn")" = 'security.course_description_trusted_v1(uuid) ae8b327f85f0262b3d0b878010a4af3c' ] || { echo "the changed functions are not exactly security.course_description_trusted_v1:"; comm -23 "$W/0.fn" "$W/1.fn"; exit 1; }
-[ "$(comm -13 "$W/0.fn" "$W/1.fn" | grep -c '^security.course_description_trusted_v1(uuid) 16568089f58b528b9a6647e78eca3ed5$')" = 1 ] || { echo "trusted_v1 does not have the md5 the migration states"; exit 1; }
+# the five governed in-place edits (a machine decision is not a person's): security.course_description_trusted_v1 and the four existing measures; each from its live md5 to the md5 the migration states
+EXPECT_OLD=$(printf '%s\n' 'security.course_description_trusted_v1(uuid) ae8b327f85f0262b3d0b878010a4af3c' 'security.course_description_summary_v1(uuid,boolean) 8e284898fdc7bda9dcbcc9d85acabace' 'security.course_description_capacity_v1() ef83be9476da04995081ac04ab517bf0' 'security.course_description_sample_report_v1() 5854cf436c26cb814033f58a47e4d33e' 'security.layer4_pace_v1() 344a3abad89b63baf9316a5d85f5f8ff' | sort)
+EXPECT_NEW=$(printf '%s\n' 'security.course_description_trusted_v1(uuid) 16568089f58b528b9a6647e78eca3ed5' 'security.course_description_summary_v1(uuid,boolean) d5c88f55bcaadee970f7f3b2cc2ac25e' 'security.course_description_capacity_v1() 3ccb9929e42f7360056d7438570da110' 'security.course_description_sample_report_v1() 55b26a23b44a8ce8c5db8502ceabeb62' 'security.layer4_pace_v1() 5a90aa3d1d421902ebe48692bba2322c' | sort)
+[ "$(comm -23 "$W/0.fn" "$W/1.fn")" = "$EXPECT_OLD" ] || { echo "the changed functions are not exactly the five edited ones (old bodies):"; comm -23 "$W/0.fn" "$W/1.fn"; exit 1; }
+[ "$(comm -13 "$W/0.fn" "$W/1.fn" | grep -Fxf <(echo "$EXPECT_NEW") | sort)" = "$EXPECT_NEW" ] || { echo "an edited function does not have the md5 the migration states"; comm -13 "$W/0.fn" "$W/1.fn" | grep -F -e trusted_v1 -e summary_v1 -e capacity_v1 -e sample_report_v1 -e pace_v1; exit 1; }
 [ -z "$(comm -23 "$W/0.set" "$W/1.set")" ] || { echo "a setting value changed:"; comm -23 "$W/0.set" "$W/1.set"; exit 1; }
 [ "$(comm -13 "$W/0.set" "$W/1.set")" = 'enrich.course_description_machine_on=0' ] || { echo "the new settings are not exactly the switch at 0:"; comm -13 "$W/0.set" "$W/1.set"; exit 1; }
 for f in l4 rd desc l4rows; do cmp -s "$W/0.$f" "$W/1.$f" || { echo "the migrations changed $f"; exit 1; }; done
-echo "applied: no existing function ($(wc -l < "$W/0.fn")), setting value, Layer 4 item, reading or description changed; one new setting (the switch, 0); $(comm -13 "$W/0.fn" "$W/1.fn" | wc -l) functions added"
+echo "applied: no existing function ($(wc -l < "$W/0.fn")) changed except the five governed edits, no setting value, Layer 4 item, reading or description changed; one new setting (the switch, 0); $(comm -13 "$W/0.fn" "$W/1.fn" | wc -l) function bodies new or edited"
+OUT=$($P -f $F/measures_after.sql 2>&1) || { echo "$OUT" | tail -8; exit 1; }
+echo "$OUT" | sed -n 's/^.*NOTICE:  //p'
 $P -1 -At -f $M1 >/dev/null; $P -1 -At -f $M2 >/dev/null
 snap "$W/2"; for f in fn set l4 rd desc l4rows; do cmp -s "$W/1.$f" "$W/2.$f" || { echo "the second run changed $f"; exit 1; }; done
 [ "$(q "select count(*) from cron.job where jobname = 'course-description-machine'")" = 1 ] || { echo "the job is not scheduled exactly once"; exit 1; }
 [ "$(q "select count(*) from pipeline.component_register where introduced_in in ('20261110060000','20261110060100')")" = 10 ] || { echo "register rows were added twice or are missing"; exit 1; }
 echo "applied again: no change (functions, settings, items, readings, descriptions, one job, register rows once)"
-# forward recovery of the one edited function: the held paste file restores the original body byte for byte; applying the migration again brings the edit back
+# forward recovery of the five edited functions: the held paste files restore each original body byte for byte; applying the migration again brings the edits back
 createdb -T $DB $RF
-psql -X -d $RF -q -v ON_ERROR_STOP=1 -f supabase/held/cdesc_trusted_machine_forward_recovery.sql >/dev/null || { echo "the forward recovery failed"; exit 1; }
-[ "$(psql -X -d $RF -Atc "select md5(prosrc) from pg_proc where oid = 'security.course_description_trusted_v1(uuid)'::regprocedure")" = ae8b327f85f0262b3d0b878010a4af3c ] || { echo "the forward recovery did not restore the live body"; exit 1; }
+psql -X -d $RF -q -v ON_ERROR_STOP=1 -f supabase/held/cdesc_trusted_machine_forward_recovery.sql >/dev/null || { echo "the forward recovery of trusted_v1 failed"; exit 1; }
+psql -X -d $RF -q -v ON_ERROR_STOP=1 -f supabase/held/cdesc_measures_machine_forward_recovery.sql >/dev/null || { echo "the forward recovery of the measures failed"; exit 1; }
+psql -X -d $RF -Atc "select p.oid::regprocedure::text || ' ' || md5(p.prosrc) from pg_proc p where p.oid in ('security.course_description_trusted_v1(uuid)'::regprocedure, 'security.course_description_summary_v1(uuid,boolean)'::regprocedure, 'security.course_description_capacity_v1()'::regprocedure, 'security.course_description_sample_report_v1()'::regprocedure, 'security.layer4_pace_v1()'::regprocedure) order by 1" | sort > "$W/rf.fn"
+[ "$(cat "$W/rf.fn")" = "$EXPECT_OLD" ] || { echo "the forward recovery did not restore the live bodies:"; cat "$W/rf.fn"; exit 1; }
+psql -X -d $RF -q -v ON_ERROR_STOP=1 -f supabase/held/cdesc_measures_machine_forward_recovery.sql >/dev/null || { echo "the forward recovery of the measures does not run twice"; exit 1; }
 psql -X -d $RF -q -v ON_ERROR_STOP=1 -1 -f $M2 >/dev/null 2>&1 || { echo "the migration failed after the forward recovery"; exit 1; }
-[ "$(psql -X -d $RF -Atc "select md5(prosrc) from pg_proc where oid = 'security.course_description_trusted_v1(uuid)'::regprocedure")" = 16568089f58b528b9a6647e78eca3ed5 ] || { echo "the migration did not bring the edit back"; exit 1; }
+psql -X -d $RF -Atc "select p.oid::regprocedure::text || ' ' || md5(p.prosrc) from pg_proc p where p.oid in ('security.course_description_trusted_v1(uuid)'::regprocedure, 'security.course_description_summary_v1(uuid,boolean)'::regprocedure, 'security.course_description_capacity_v1()'::regprocedure, 'security.course_description_sample_report_v1()'::regprocedure, 'security.layer4_pace_v1()'::regprocedure) order by 1" | sort > "$W/rf.fn"
+[ "$(cat "$W/rf.fn")" = "$EXPECT_NEW" ] || { echo "the migration did not bring the edits back:"; cat "$W/rf.fn"; exit 1; }
 dropdb --if-exists $RF >/dev/null 2>&1
-echo "forward recovery: the held file restores security.course_description_trusted_v1 byte for byte (live md5); applying 20261110060100 again brings the edit back"
+echo "forward recovery: the two held files restore the five edited functions byte for byte (live md5s); applying 20261110060100 again brings the edits back"
+# applying again with the switch ON (a forward-recovery path after a go-live): neither post-check may refuse, and the switch stays on
+createdb -T $DB $RF
+psql -X -d $RF -q -c "update pipeline.platform_toolset_settings set value = '1'::jsonb where key = 'enrich.course_description_machine_on'" >/dev/null
+psql -X -d $RF -q -v ON_ERROR_STOP=1 -1 -f $M1 >/dev/null 2>&1 || { echo "20261110060000 refused to apply again while the switch is 1"; exit 1; }
+psql -X -d $RF -q -v ON_ERROR_STOP=1 -1 -f $M2 >/dev/null 2>&1 || { echo "20261110060100 refused to apply again while the switch is 1"; exit 1; }
+[ "$(psql -X -d $RF -Atc "select value::text from pipeline.platform_toolset_settings where key = 'enrich.course_description_machine_on'")" = 1 ] || { echo "applying again changed the switch"; exit 1; }
+dropdb --if-exists $RF >/dev/null 2>&1
+echo "applied again with the switch at 1: both post-checks pass and the switch stays at 1"
 
 if [ -n "${CDM_KEEP:-}" ]; then dropdb --if-exists "${DB}_pre" >/dev/null 2>&1; createdb -T "$DB" "${DB}_pre"; fi # a copy from before the scenarios, so they can be run again by hand
 OUT=$(psql -X -d "$DB" -v ON_ERROR_STOP=1 -f $F/scenarios.sql 2>&1 | sed -n 's/^.*\(NOTICE\|ERROR\|WARNING\):  /\1 /p') || true

@@ -278,6 +278,27 @@ test.describe('course descriptions in the Layer 4 Inbox', () => {
     // every call is a read action
     expect([...new Set(calls.map((c) => c.p_action))].sort()).toEqual(['claim_words', 'held_reasons', 'sample', 'summary'])
   })
+
+  test('Enrich fields › Course descriptions: machine-admitted descriptions are shown apart and never as a person\'s (F-CDESC)', async ({ page }) => {
+    await mockAdmin(page, { rank: 4 })
+    await page.route('https://example.supabase.co/rest/v1/rpc/admin_enrich_fields', (route) => route.fulfill({ json: route.request().postDataJSON().p_action === 'fields' ? { fields: [], countries: ['AU'], can_start: false, rules: [] } : route.request().postDataJSON().p_action === 'jobs' ? { jobs: [] } : {} }))
+    await page.route('https://example.supabase.co/rest/v1/rpc/admin_course_description_queue', async (route) => {
+      const b = route.request().postDataJSON()
+      const r = b.p_action === 'summary' ? { ...SUMMARY, provider_id: null, pending: 10, proposed_in_layer4: 10, admitted_by_person: 4, admitted_by_machine: 12, published_to_the_website: 16, by_class: { ready: 10 } }
+        : b.p_action === 'held_reasons' ? { days: 7, readings: 0, passed_every_check: 0, held_by_a_check: 0, by_rule: {}, claim_words: {}, reask: {}, reask_max: 0 }
+        : { strata: [], selected: 20, pending: 5, approved: 8, approved_by_machine: 7, rejected: 0, rejected_by_class: {}, approval_share_of_decided: 0.5, reviewer_disagreement: { passed_every_check_but_rejected: 0, approved_but_rules_now_fail: 0 }, claim_support: {}, note: 'x', rows: [] }
+      return route.fulfill({ json: r })
+    })
+    await page.goto('/#layer-2-discovery?tab=enrich')
+    const card = page.locator('[data-enrich-descriptions]')
+    await card.locator('.cf-card-toggle').click()
+    const m = card.locator('[data-enrich-cd-measures]')
+    await expect(m).toContainText('4 admitted by a person')
+    await expect(m).toContainText('12 admitted by the machine rule')
+    await expect(m).toContainText('never counted as a person')
+    await card.locator('[data-enrich-cd-sample]').click()
+    await expect(card.locator('[data-enrich-cd-samplereport]')).toContainText('8 approved (not counting 7 approved by the machine rule)')
+  })
 })
 
 test.describe('course descriptions at phone width @responsive', () => {

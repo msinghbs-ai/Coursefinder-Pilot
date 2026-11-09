@@ -2,7 +2,7 @@
 --
 -- Everything here is OFF until the Platform Admin sets enrich.course_description_machine_on to 1 through Settings, with a reason (added by 20261110060000, ships 0).
 --   1. security.course_description_machine_admit_v1(item): checks again at write time (under row locks) everything security.course_description_machine_check_v1 checks (course and provider live, description empty under the row lock,
---      no hand lock, hold or earlier rejection, page bound (not ambiguous, clear margin, not an AI match), unchanged, content hash carried in the stored object's address, object present, recent; the quote
+--      no hand lock, hold or earlier rejection, page bound (not ambiguous, a margin of at least 0.1 over the runner-up, not an AI match), unchanged, content hash carried in the stored object's address, object present, recent; the quote
 --      results the worker stored for each sentence (on_page) and the support, length and in-provider duplicate checks, run again on the stored reading (the page is NOT read again); the admission policy;
 --      no duplicate in the catalogue within the comparison window),
 --      then writes the one description, READS IT BACK from catalogue.courses and from public.website_v2_course (read only, not changed), settles the Layer 4 item as a MACHINE decision under the system
@@ -24,8 +24,15 @@
 --      whose decision is marked actor_kind machine. Today no machine decision exists and review_first is 100000, so the function answers exactly as before; its three callers (the record function, release_held, promote_held)
 --      are unchanged and all take the corrected answer. Live definition (pg_proc.prosrc md5, read 10 Nov 2026): security.course_description_trusted_v1(uuid) ae8b327f85f0262b3d0b878010a4af3c -> 16568089f58b528b9a6647e78eca3ed5.
 --      Forward recovery (the original body, byte for byte): supabase/held/cdesc_trusted_machine_forward_recovery.sql.
+--   7. THE EXISTING MEASURES (four more md5-guarded in-place edits, same test): security.course_description_summary_v1 (admitted_by_person, and a new admitted_by_machine beside it; the note names it),
+--      security.course_description_capacity_v1 (approved_ever and decided_in_window / decided_a_day leave out machine decisions; new approved_by_machine), security.course_description_sample_report_v1 (approved and
+--      approval_share_of_decided leave out machine approvals, as does approved_but_rules_now_fail, which is a reviewer-disagreement measure; new approved_by_machine) and security.layer4_pace_v1 (a machine decision is not
+--      read as reviewer pace). With no machine decision every answer is what it was (the new keys are 0; the summary note names the new key). Live bodies (pg_proc.prosrc md5, read 10 Nov 2026), original -> edited:
+--      summary_v1 8e284898fdc7bda9dcbcc9d85acabace -> d5c88f55bcaadee970f7f3b2cc2ac25e; capacity_v1 ef83be9476da04995081ac04ab517bf0 -> 3ccb9929e42f7360056d7438570da110;
+--      sample_report_v1 5854cf436c26cb814033f58a47e4d33e -> 55b26a23b44a8ce8c5db8502ceabeb62; layer4_pace_v1 344a3abad89b63baf9316a5d85f5f8ff -> 5a90aa3d1d421902ebe48692bba2322c.
+--      Forward recovery (the original bodies, byte for byte): supabase/held/cdesc_measures_machine_forward_recovery.sql.
 -- The consumer API (G3) is only called for the read-back, never changed. No setting value changes. Nothing is dropped or deleted.
--- Replaces: the person-trust count in security.course_description_trusted_v1 (edited in place so a machine decision is not counted as a person's); otherwise nothing (a separate machine route; the human Layer 4 route and its triggers are unchanged)
+-- Replaces: the person-trust count in security.course_description_trusted_v1 and the person counts in security.course_description_summary_v1, course_description_capacity_v1, course_description_sample_report_v1 and layer4_pace_v1 (each edited in place so a machine decision is not counted as a person's); otherwise nothing (a separate machine route; the human Layer 4 route and its triggers are unchanged)
 -- Retires: nothing
 
 do $g$
@@ -55,6 +62,66 @@ begin
   if md5(v_src) <> '16568089f58b528b9a6647e78eca3ed5' then raise exception 'security.course_description_trusted_v1 after the edit has body md5 %, expected 16568089f58b528b9a6647e78eca3ed5', md5(v_src); end if;
 end $t$;
 
+-- ----------------------------------------------------------------------------------------------------------------------------------------- the existing measures: a machine decision is not a person's
+-- Four existing measurement functions read Layer 4 decisions as the work of a person (admitted by a person, decided a day, approved ever, approval share, reviewer pace). Machine admissions are Layer 4 decisions too (status approved),
+-- so each is edited in place, md5-guarded, to leave out an item whose decision is marked actor_kind machine (the same test as security.course_description_trusted_v1) and, where a count is shown, to report the machine count apart.
+-- With no machine decision every answer is what it was (one new key beside the old ones). Forward recovery (the live bodies, byte for byte): supabase/held/cdesc_measures_machine_forward_recovery.sql.
+do $m$
+declare r record; v_def text; v_src text; v_c int; k int; v_sig regprocedure;
+begin
+  for r in select * from (values
+    ('security.course_description_summary_v1(uuid,boolean)', '8e284898fdc7bda9dcbcc9d85acabace', 'd5c88f55bcaadee970f7f3b2cc2ac25e',
+     array[$o$nullif(btrim(c.description), '') cur$o$,
+           $o$'admitted_by_person', (select count(*) from l4 where l4.status in ('approved', 'edited_approved') and l4.cur is not distinct from nullif(btrim(l4.d), '')),$o$,
+           $o$'Measurement only. A person admits every description in Layer 4; nothing here admits, decides or changes a setting.'$o$],
+     array[$n$nullif(btrim(c.description), '') cur, exists (select 1 from pipeline.layer4_decisions md where md.review_item_id = i.id and md.layer2_state->>'actor_kind' = 'machine') by_machine$n$,
+           $n$'admitted_by_person', (select count(*) from l4 where l4.status in ('approved', 'edited_approved') and not l4.by_machine and l4.cur is not distinct from nullif(btrim(l4.d), '')),
+    'admitted_by_machine', (select count(*) from l4 where l4.status in ('approved', 'edited_approved') and l4.by_machine and l4.cur is not distinct from nullif(btrim(l4.d), '')),$n$,
+           $n$'Measurement only. A person admits every description in Layer 4 except those the machine rule admits (counted apart as admitted_by_machine); nothing here admits, decides or changes a setting.'$n$]),
+    ('security.course_description_capacity_v1()', 'ef83be9476da04995081ac04ab517bf0', '3ccb9929e42f7360056d7438570da110',
+     array[$o$'returned_layer3') and i.decided_at > now() - make_interval(days => s.days::int)) decided,$o$, -- derived: the existing measure's own window (layer4.lifecycle_report_days), unchanged
+           $o$count(*) filter (where i.status in ('approved', 'edited_approved')) approved_ever,$o$,
+           $o$q.pending, q.arrived, q.decided, q.approved_ever, q.oldest,$o$,
+           $o$'approved_ever', m.approved_ever,$o$],
+     array[$n$'returned_layer3') and i.decided_at > now() - make_interval(days => s.days::int) and not exists (select 1 from pipeline.layer4_decisions md where md.review_item_id = i.id and md.layer2_state->>'actor_kind' = 'machine')) decided,$n$, -- derived: the existing measure's own window (layer4.lifecycle_report_days), unchanged
+           $n$count(*) filter (where i.status in ('approved', 'edited_approved') and not exists (select 1 from pipeline.layer4_decisions md where md.review_item_id = i.id and md.layer2_state->>'actor_kind' = 'machine')) approved_ever,
+           count(*) filter (where i.status in ('approved', 'edited_approved') and exists (select 1 from pipeline.layer4_decisions md where md.review_item_id = i.id and md.layer2_state->>'actor_kind' = 'machine')) approved_by_machine,$n$,
+           $n$q.pending, q.arrived, q.decided, q.approved_ever, q.approved_by_machine, q.oldest,$n$,
+           $n$'approved_ever', m.approved_ever, 'approved_by_machine', m.approved_by_machine,$n$]),
+    ('security.course_description_sample_report_v1()', '5854cf436c26cb814033f58a47e4d33e', '55b26a23b44a8ce8c5db8502ceabeb62',
+     array[$o$d.review_item_id, d.action, d.reason from pipeline.layer4_decisions d$o$,
+           $o$i.status, dcn.action, dcn.reason,$o$,
+           $o$'approved', (select count(*) from rws where rws.status in ('approved', 'edited_approved')),$o$,
+           $o$(select round((count(*) filter (where rws.status in ('approved', 'edited_approved')))::numeric / nullif(count(*) filter (where rws.status <> 'pending'), 0), 3) from rws)$o$,
+           $o$(select count(*) from rws where rws.status in ('approved', 'edited_approved') and rws.rules_now is not null$o$],
+     array[$n$d.review_item_id, d.action, d.reason, coalesce(d.layer2_state->>'actor_kind', '') = 'machine' by_machine from pipeline.layer4_decisions d$n$,
+           $n$i.status, dcn.action, dcn.reason, coalesce(dcn.by_machine, false) by_machine,$n$,
+           $n$'approved', (select count(*) from rws where rws.status in ('approved', 'edited_approved') and not rws.by_machine),
+    'approved_by_machine', (select count(*) from rws where rws.status in ('approved', 'edited_approved') and rws.by_machine),$n$,
+           $n$(select round((count(*) filter (where rws.status in ('approved', 'edited_approved') and not rws.by_machine))::numeric / nullif(count(*) filter (where rws.status <> 'pending' and not rws.by_machine), 0), 3) from rws)$n$,
+           $n$(select count(*) from rws where rws.status in ('approved', 'edited_approved') and not rws.by_machine and rws.rules_now is not null$n$]),
+    ('security.layer4_pace_v1()', '344a3abad89b63baf9316a5d85f5f8ff', '5a90aa3d1d421902ebe48692bba2322c',
+     array[$o$and x.actor_id is not null),$o$],
+     array[$n$and x.actor_id is not null and coalesce(x.layer2_state->>'actor_kind', '') <> 'machine'),$n$])
+  ) v(sig, md5_before, md5_after, olds, news) loop
+    v_sig := to_regprocedure(r.sig);
+    if v_sig is null then raise exception '% is missing', r.sig; end if;
+    v_src := (select p.prosrc from pg_proc p where p.oid = v_sig);
+    -- fixed: the guard is the md5 of the live function body (pg_proc.prosrc), the same text on PostgreSQL 16 and 17
+    if md5(v_src) = r.md5_after then continue; end if; -- already applied
+    if md5(v_src) <> r.md5_before then raise exception 'live % differs from the definition this change edits (body md5 %)', r.sig, md5(v_src); end if;
+    v_def := replace(pg_get_functiondef(v_sig), chr(13), '');
+    for k in 1 .. array_length(r.olds, 1) loop
+      v_c := (length(v_def) - length(replace(v_def, r.olds[k], ''))) / length(r.olds[k]);
+      if v_c <> 1 then raise exception '%: edit % must apply exactly once (found %)', r.sig, k, v_c; end if;
+      v_def := replace(v_def, r.olds[k], r.news[k]);
+    end loop;
+    execute v_def;
+    v_src := (select p.prosrc from pg_proc p where p.oid = v_sig);
+    if md5(v_src) <> r.md5_after then raise exception '% after the edit has body md5 %, expected %', r.sig, md5(v_src), r.md5_after; end if;
+  end loop;
+end $m$;
+
 -- ----------------------------------------------------------------------------------------------------------------------------------------- the admission
 create or replace function security.course_description_machine_admit_v1(p_item uuid, p_via text default 'settle') returns jsonb
 language plpgsql security definer set search_path to '' as $f$
@@ -83,7 +150,7 @@ begin
       v_cc := case when v_pub is null then 'error' when v_pub ? 'error' then 'not_in_feed' when v_shown = v_text then 'matched' when nullif(btrim(v_shown), '') is null then 'lag' else 'mismatch' end;
       if v_cc = 'mismatch' then raise exception 'cdesc:consumer_mismatch:the website function shows different text for this course after the write'; end if;
       update pipeline.layer4_review_items set status = 'approved', decided_at = now() where id = i.id and status = 'pending';
-      v_reason := format('Auto (%s, %s): description read from the course''s own stored page %s (content hash %s); right course and page (identity proof and margin), the quote results the worker stored for each sentence, the sentence, length, support and duplicate checks and the wording policy checked again at admission (the page was not read again). Not a person''s decision.',
+      v_reason := format('Auto (%s, %s): description read from the course''s own stored page %s (content hash %s); right course and page (identity proof and a margin of at least 0.1 over the runner-up), the quote results the worker stored for each sentence, the sentence, length, support and duplicate checks and the wording policy checked again at admission (the page was not read again). Not a person''s decision.',
                          v_rule, coalesce(p_via, 'settle'), coalesce(v->>'source_url', ''), left(coalesce(v->>'content_hash', ''), 12)); -- fixed: a short hash prefix is shown for reading, the full hash is stored
       insert into pipeline.layer4_decisions (review_item_id, action, actor_id, reason, before_value, proposed_value, final_value, evidence_id, layer2_state, layer3_state, change_control_ref)
       values (i.id, 'approve', v_sys, v_reason, i.before_value, i.proposed_value, i.proposed_value, i.evidence_id,
@@ -283,7 +350,7 @@ on conflict do nothing;
 
 -- ----------------------------------------------------------------------------------------------------------------------------------------- post-check
 do $post$ begin
-  if security.pipeline_num_v1('enrich.course_description_machine_on', -1) <> 0 then raise exception 'post-check: the machine switch must be 0'; end if;
+  if security.pipeline_num_v1('enrich.course_description_machine_on', -1) not in (0, 1) then raise exception 'post-check: the machine switch must exist (0 or 1; applying again must not need it off)'; end if;
   if security.pipeline_num_v1('enrich.course_description_review_first', 0) < 1 then raise exception 'post-check: review_first must be untouched'; end if;
   if not exists (select 1 from pg_trigger where tgname = 'field_enrich_items_cdesc_machine' and tgrelid = 'pipeline.field_enrich_items'::regclass) then raise exception 'post-check: the reading trigger is missing'; end if;
   if not exists (select 1 from pipeline.automation_catalogue where jobname = 'course-description-machine') then raise exception 'post-check: the job is not catalogued'; end if;

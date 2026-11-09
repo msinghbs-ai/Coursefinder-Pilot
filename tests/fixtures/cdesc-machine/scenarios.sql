@@ -428,6 +428,57 @@ select pg_temp.expect('trust accounting: machine approvals are not person-trust 
   and not coalesce(security.course_description_trusted_v1(pg_temp.pid(1)), false)
   and (select count(*) > 0 from pipeline.layer4_decisions d where d.layer2_state->>'actor_kind' = 'machine'));
 
+-- THE EXISTING MEASURES (regressions that fail on the old bodies): a machine decision is a Layer 4 decision with status approved, but it is not a person's. Summary (admitted by a person), capacity (decided a day, approved ever),
+-- the sample report (approved share) and the reviewer pace must leave it out and show it apart. Course 95 is described (provider 3). Person: items 500 to 506 approved (500 carries the course's own text), 507 rejected,
+-- decisions 4 minutes apart. Machine: 7 synthetic approved items (510 to 516) with machine decisions 10 minutes apart, besides the real admissions above. Expected counts are taken from item ids, not from the decision marker.
+insert into pipeline.layer4_review_items(id, entity_type, entity_id, field_code, evidence_id, before_value, proposed_value, status, change_control_ref, decided_at)
+select pg_temp.rid(k), 'course', pg_temp.cid(95), 'course_description_first_read', null, '{"description": null}'::jsonb,
+       jsonb_build_object('description', case when k = 500 then (select description from catalogue.courses where id = pg_temp.cid(95)) else 'A decided text number ' || k end),
+       case when k = 507 then 'rejected' else 'approved' end, 'x', now() - interval '1 hour'
+  from generate_series(500, 507) k;
+insert into pipeline.layer4_decisions(review_item_id, action, actor_id, reason, layer2_state, layer3_state, change_control_ref, created_at)
+select pg_temp.rid(k), case when k = 507 then 'reject' else 'approve' end, '00000000-0000-4000-a000-000000000001'::uuid, '[other] x', '{}'::jsonb, '{}'::jsonb, 'x', now() - interval '4 minutes' * (508 - k)
+  from generate_series(500, 507) k;
+insert into pipeline.layer4_review_items(id, entity_type, entity_id, field_code, evidence_id, before_value, proposed_value, status, change_control_ref, decided_at)
+select pg_temp.rid(k), 'course', pg_temp.cid(95), 'course_description_first_read', null, '{"description": null}'::jsonb, jsonb_build_object('description', 'A machine text number ' || k), 'approved', 'x', now() - interval '1 hour'
+  from generate_series(510, 516) k;
+insert into pipeline.layer4_decisions(review_item_id, action, actor_id, reason, layer2_state, layer3_state, change_control_ref, created_at)
+select pg_temp.rid(k), 'approve', 'c0ffee00-0000-4000-8000-000000000150'::uuid, 'Auto (cdesc-machine-v1): x', jsonb_build_object('machine_rule', 'cdesc-machine-v1', 'actor_kind', 'machine'), '{}'::jsonb, 'x', now() - interval '10 minutes' * (517 - k)
+  from generate_series(510, 516) k;
+create temporary table g_mitems as select i.id from pipeline.layer4_review_items i
+ where i.id in (select l.review_item_id from pipeline.course_description_machine_admissions l where l.outcome = 'admitted') or i.id in (select pg_temp.rid(k) from generate_series(510, 516) k);
+update pipeline.platform_toolset_settings set value = '1000'::jsonb where toolset_key = 'pipeline' and key = 'enrich.course_description_sample_au';
+create temporary table g_ms as select security.course_description_summary_v1(null, false) j;
+create temporary table g_mc as select security.course_description_capacity_v1() j;
+create temporary table g_mr as select security.course_description_sample_report_v1() j;
+create temporary table g_mp as select security.layer4_pace_v1() -> 'course_description_first_read' j;
+create temporary table g_mx as select
+  (select count(*) from pipeline.layer4_review_items i where i.entity_type = 'course' and i.field_code = 'course_description_first_read' and i.status in ('approved', 'edited_approved') and i.id not in (select id from g_mitems)) person_approved,
+  (select count(*) from pipeline.layer4_review_items i where i.entity_type = 'course' and i.field_code = 'course_description_first_read' and i.status in ('approved', 'edited_approved') and i.id in (select id from g_mitems)) machine_approved,
+  (select count(*) from pipeline.layer4_review_items i where i.entity_type = 'course' and i.field_code = 'course_description_first_read' and i.status in ('approved', 'edited_approved', 'rejected', 'more_evidence', 'returned_layer2', 'returned_layer3')
+      and i.decided_at > now() - interval '7 days' and i.id not in (select id from g_mitems)) person_decided,
+  (select count(*) from pipeline.layer4_review_items i join pipeline.course_description_machine_admissions l on l.review_item_id = i.id
+     where l.outcome = 'admitted' and i.status in ('approved', 'edited_approved') and nullif(btrim((select c.description from catalogue.courses c where c.id = i.entity_id)), '') is not distinct from nullif(btrim(i.proposed_value->>'description'), '')) machine_admitted_matching,
+  (select count(*) from security.course_description_sample_pool_v1() p join pipeline.layer4_review_items i on i.id = p.item_id where i.status in ('approved', 'edited_approved') and i.id not in (select id from g_mitems)) sample_person_approved,
+  (select count(*) from security.course_description_sample_pool_v1() p join pipeline.layer4_review_items i on i.id = p.item_id where i.status in ('approved', 'edited_approved') and i.id in (select id from g_mitems)) sample_machine_approved,
+  (select count(*) from security.course_description_sample_pool_v1() p join pipeline.layer4_review_items i on i.id = p.item_id where i.status <> 'pending' and i.id not in (select id from g_mitems)) sample_person_decided;
+update pipeline.platform_toolset_settings set value = '30'::jsonb where toolset_key = 'pipeline' and key = 'enrich.course_description_sample_au';
+select pg_temp.diag('measures', $q$select 'ms=' || (g_ms.j->>'admitted_by_person') || '/' || coalesce(g_ms.j->>'admitted_by_machine', 'null') || ' mc=' || (g_mc.j->>'approved_ever') || '/' || coalesce(g_mc.j->>'approved_by_machine', 'null') || '/' || (g_mc.j->>'decided_in_window')
+  || ' mr=' || (g_mr.j->>'approved') || '/' || coalesce(g_mr.j->>'approved_by_machine', 'null') || '/' || coalesce(g_mr.j->>'approval_share_of_decided', 'null') || ' mp=' || coalesce(g_mp.j::text, 'null')
+  || ' mx=' || g_mx.person_approved || '/' || g_mx.machine_approved || '/' || g_mx.person_decided || '/' || g_mx.machine_admitted_matching || '/' || g_mx.sample_person_approved || '/' || g_mx.sample_machine_approved || '/' || g_mx.sample_person_decided from g_ms, g_mc, g_mr, g_mp, g_mx$q$);
+select pg_temp.expect('summary: admitted by a person leaves out the machine admissions, which are counted apart (the two add up to what the old count said)',
+  (select (j->>'admitted_by_person')::int = 1 and (j->>'admitted_by_machine')::int = (select machine_admitted_matching from g_mx) and (select machine_admitted_matching from g_mx) > 0 from g_ms));
+select pg_temp.expect('capacity: approved ever and decided a day leave out the machine decisions, which are counted apart',
+  (select (j->>'approved_ever')::int = (select person_approved from g_mx) and (j->>'approved_by_machine')::int = (select machine_approved from g_mx) and (select machine_approved from g_mx) >= 7
+          and (j->>'decided_in_window')::int = (select person_decided from g_mx) and (j->>'decided_a_day')::numeric = round((select person_decided from g_mx) / 7.0, 1) from g_mc));
+select pg_temp.expect('sample report: the approved count and approval share leave out the machine approvals, which are counted apart',
+  (select (j->>'approved')::int = (select sample_person_approved from g_mx) and (j->>'approved_by_machine')::int = (select sample_machine_approved from g_mx) and (select sample_machine_approved from g_mx) >= 7
+          and (j->>'approval_share_of_decided')::numeric = round((select sample_person_approved from g_mx)::numeric / (select sample_person_decided from g_mx), 3) from g_mr));
+select pg_temp.expect('reviewer pace: machine decisions (10 minutes apart under the system account) are not read as a reviewer: only the person''s 7 gaps of 4 minutes are measured',
+  (select (j->>'measured')::int = 7 and (j->>'minutes')::numeric = 4 and j->>'basis' = 'measured' from g_mp));
+delete from pipeline.layer4_decisions where review_item_id in (select pg_temp.rid(k) from generate_series(500, 516) k);
+delete from pipeline.layer4_review_items where id in (select pg_temp.rid(k) from generate_series(500, 516) k);
+
 -- 12. the report and the consumer API -----------------------------------------------------------------------------------------------------------------------
 select pg_temp.expect('the scoreboard counts admissions, withdrawals, providers, the Website state and the reasons',
   (select (r->>'admitted')::int = (select count(*) from pipeline.course_description_machine_admissions where outcome = 'admitted' and withdrawn_at is null) and (r->>'withdrawn')::int = 1 and (r->>'admitted_by_provider')::int >= 3

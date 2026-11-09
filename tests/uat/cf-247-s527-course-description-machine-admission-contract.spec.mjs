@@ -75,6 +75,31 @@ test('honest wording: no reference to an object that does not exist, no claim th
   const rec = fs.readFileSync('supabase/held/cdesc_trusted_machine_forward_recovery.sql', 'utf8')
   expect(rec).toContain("'ae8b327f85f0262b3d0b878010a4af3c'")
   expect(rec).toContain('CREATE OR REPLACE FUNCTION security.course_description_trusted_v1(p_provider uuid)')
+  // the same test in the four existing measures: a machine decision is not a person's (each md5-guarded, in place, with a held forward recovery)
+  const measures = [['security.course_description_summary_v1(uuid,boolean)', '8e284898fdc7bda9dcbcc9d85acabace', 'd5c88f55bcaadee970f7f3b2cc2ac25e'], ['security.course_description_capacity_v1()', 'ef83be9476da04995081ac04ab517bf0', '3ccb9929e42f7360056d7438570da110'],
+    ['security.course_description_sample_report_v1()', '5854cf436c26cb814033f58a47e4d33e', '55b26a23b44a8ce8c5db8502ceabeb62'], ['security.layer4_pace_v1()', '344a3abad89b63baf9316a5d85f5f8ff', '5a90aa3d1d421902ebe48692bba2322c']]
+  const rec2 = fs.readFileSync('supabase/held/cdesc_measures_machine_forward_recovery.sql', 'utf8')
+  for (const [sig, before, after] of measures) {
+    expect(M2, sig).toContain(`'${sig}', '${before}', '${after}'`)
+    expect(rec2, sig).toContain(`v not in ('${after}', '${before}')`)
+    expect(rec2, sig).toContain(`<> '${before}' then raise exception 'post-check`)
+  }
+  expect(M2).toContain("if md5(v_src) <> r.md5_before then raise exception 'live % differs from the definition this change edits")
+  expect(M2).toContain("if md5(v_src) <> r.md5_after then raise exception '% after the edit has body md5 %, expected %'")
+  expect(M2).toContain("and not l4.by_machine and l4.cur is not distinct from")
+  expect(M2).toContain("'admitted_by_machine'")
+  expect(M2).toContain("'approved_by_machine'")
+  expect(M2).toContain("and x.actor_id is not null and coalesce(x.layer2_state->>'actor_kind', '') <> 'machine'")
+  expect(rec2).toContain('CREATE OR REPLACE FUNCTION security.layer4_pace_v1()')
+  // the margin test is "under 0.1" in the code, so the words say "under 0.1" or "at least 0.1", never "within 0.1"
+  for (const m of [M1, M2]) expect(m).not.toMatch(/within 0\.1|clear margin|only just above/)
+  expect(M1).toContain('a margin of at least 0.1')
+  expect(M1).toContain('a margin under 0.1 declines')
+  // applying again (a forward-recovery path) must not need the switch to be 0: both post-checks accept 0 or 1
+  for (const m of [M1, M2]) {
+    expect(m).toContain("security.pipeline_num_v1('enrich.course_description_machine_on', -1) not in (0, 1)")
+    expect(m).not.toMatch(/machine_on', -1\) <> 0/)
+  }
   // a recorded re-read counts only if recent and for the same copy
   const check = fnBody(C1, 'security.course_description_machine_check_v1')
   expect(check).toContain('sc.checked_at < now() - make_interval(days => v_days) or sc.content_hash_read is distinct from e.content_hash')
@@ -198,11 +223,12 @@ test('the fixture harness proves it: refusals, no change on apply, applied twice
   for (const s of ['apply 20261110060000 first', 'applied again: no change', 'the new settings are not exactly the switch at 0', 'cdm: all']) expect(run, s).toContain(s)
   for (const s of ['wrong page', 'evidence_stale', 'evidence_moved', 'check_unsupported_marketing', 'policy_refused_word', 'policy_figure', 'check_not_stated', 'manual_lock', 'rejected_before_page', 'rejected_before_text',
     'check_duplicate_other_course', 'duplicate_exact_waiting', 'duplicate_near_other_provider', 'binding_ambiguous', 'provider_not_live', 'consumer_mismatch', "consumer_check = 'lag'", 'forward recovery', 'withdrawn_awaiting_person',
-    'cap: with 2 items a day', 'a second settle admits nothing more', 'off: a fresh reading goes to Layer 4', 'trust accounting: machine approvals are not person-trust', 'back to the standing gap queue', 'identity_margin_thin', 'source_recheck_unusable']) {
+    'cap: with 2 items a day', 'a second settle admits nothing more', 'off: a fresh reading goes to Layer 4', 'trust accounting: machine approvals are not person-trust', 'summary: admitted by a person leaves out the machine admissions', 'capacity: approved ever and decided a day leave out the machine decisions', 'sample report: the approved count and approval share leave out the machine approvals', 'reviewer pace: machine decisions', 'back to the standing gap queue', 'identity_margin_thin', 'source_recheck_unusable']) {
     if (s === 'wrong page') continue // the wrong-page cases are evidence_moved and reading_other_course
     expect(scenarios, s).toContain(s)
   }
   expect(scenarios).toContain('reading_other_course')
+  for (const s of ['measures_before.sql', 'measures_after.sql', 'applied again with the switch at 1', 'cdesc_measures_machine_forward_recovery.sql', 'the changed functions are not exactly the five edited ones']) expect(run, s).toContain(s)
   expect(workflow).toContain('tests/fixtures/cdesc-machine/')
   expect(workflow).toContain('bash tests/fixtures/cdesc-machine/run.sh')
   expect(workflow).toContain('supabase/migrations/2026111006*.sql')
