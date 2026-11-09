@@ -89,6 +89,9 @@ export const PROVIDER_COLUMNS = [
   P('zoho_state', 'Lifecycle and timestamps', 'Zoho publication', 200, 'zoho', false, 150, 100),
   P('mismatch', 'Lifecycle and timestamps', 'Catalogue and consumer mismatch', 205, 'mismatch', false, 200, 120),
   P('last_modified_at', 'Lifecycle and timestamps', 'Provider record updated (as recorded)', 210, 'modified', false, 190, 120),
+  // Fill fields (20261110030000): the two columns the directive of 9-10 Nov 2026 adds; the registry's rows for them are in that migration
+  P('description_quality', 'Pipeline and enrichment', 'Description quality level', 132, 'quality', false, 210, 130),
+  P('missing_fields', 'Pipeline and enrichment', 'Missing enrichment fields', 138, 'missing_fields', false, 240, 130),
 ]
 // The picker's group headings per screen. The four group names are the database's (its CHECK constraint is not widened); the Provider screen shows its own wording.
 export const GROUP_HEADINGS = {
@@ -150,15 +153,16 @@ export const SORT_WORDS = { course: 'Course', provider: 'Provider', city: 'City'
 export const PROVIDER_SORT_WORDS = { provider: 'Provider', country: 'Country', type: 'Type', subdivision: 'State / Region', city: 'City', courses: 'Courses', adapter: 'Adapter', lifecycle: 'Lifecycle', publication: 'Published',
   verified: 'Source last verified', registration: 'Registration identity', scholarships: 'Scholarships', coverage: 'Entry requirements coverage', admission: 'Description admission', description: 'Description populated',
   source: 'Description source', desc_admitted: 'Last description admitted', reader: 'Description reader status', last_read: 'Last successful page read', next_retry: 'Next retry', layer4: 'Layer 4 decision',
-  canonical: 'Catalogue description', website: 'Website feed sync', zoho: 'Zoho publication', mismatch: 'Catalogue and consumer mismatch', modified: 'Provider record updated' }
+  canonical: 'Catalogue description', quality: 'Description quality level', missing_fields: 'Missing enrichment fields', website: 'Website feed sync', zoho: 'Zoho publication', mismatch: 'Catalogue and consumer mismatch', modified: 'Provider record updated' }
 const TIME_SORTS = new Set(['modified', 'admitted', 'verified'])
 const PROVIDER_TIME_SORTS = new Set(['modified', 'verified', 'desc_admitted', 'last_read'])
-const PROVIDER_COUNT_SORTS = new Set(['courses', 'scholarships'])
+const PROVIDER_COUNT_SORTS = new Set(['courses', 'scholarships', 'missing_fields'])
 export function sortSentence(sort, direction, screen = COURSE_SCREEN) {
   if (screen === PROVIDER_SCREEN) {
     const w = PROVIDER_SORT_WORDS[sort] || sort
     if (PROVIDER_TIME_SORTS.has(sort)) return `${w}, ${direction === 'desc' ? 'newest first' : 'oldest first'}${sort === 'verified' ? '' : ' (Unknown last)'}`
     if (sort === 'next_retry') return `${w}, ${direction === 'desc' ? 'latest first' : 'soonest first'} (none last)`
+    if (sort === 'quality') return `${w}, ${direction === 'desc' ? 'Verified published first' : 'Missing first'}`
     if (PROVIDER_COUNT_SORTS.has(sort)) return `${w}, ${direction === 'desc' ? 'most first' : 'fewest first'}`
     return `${w}, ${direction === 'desc' ? 'Z to A' : 'A to Z'}`
   }
@@ -189,3 +193,29 @@ export function intakeSummary(intakes) {
   return { names, short: names.length ? (names.length > 1 ? `${names[0]} +${names.length - 1}` : names[0]) : '' }
 }
 export const monthName = n => (Number(n) >= 1 && Number(n) <= 12 ? MONTH[Number(n) - 1] : null)
+
+// CF-247 Fill fields (Platform Admin directive 9-10 Nov 2026): the Description quality levels, in the order of the pipeline (the order the server sorts by), as the screen names them.
+// The Provider Catalogue filter offers the four groups the directive names first (Basic, Enriched, Missing, Held), then each single level. `value` is what the server's quality filter takes.
+export const QUALITY_LEVELS = [
+  { code: 'missing', label: 'Missing', tone: 'warning', why: 'No description is held and no read is queued, running, held or waiting for a decision.' },
+  { code: 'queued', label: 'Enrichment queued', tone: 'info', why: 'A read of the provider\'s official page is queued.' },
+  { code: 'processing', label: 'Enrichment processing', tone: 'info', why: 'The reader is working on this provider now.' },
+  { code: 'waiting_decision', label: 'Waiting for human decision', tone: 'violet', why: 'The reader proposed a description and a Layer 4 decision is still to be made.' },
+  { code: 'held', label: 'Held: evidence or identity', tone: 'warning', why: 'The reader\'s proposal was held or declined (see the held reason and the next retry).' },
+  { code: 'basic_registry', label: 'Basic registry profile', tone: 'neutral', why: 'A short description written from verified register facts only, with no official About page behind it.' },
+  { code: 'unrecorded', label: 'Description: admission not recorded', tone: 'warning', why: 'A description is held but the platform has no admission record for that text (written by hand, or before admissions were recorded).' },
+  { code: 'enriched_admitted', label: 'Enriched and admitted', tone: 'success', why: 'A description read from the provider\'s official page was admitted. Neither the Website nor Zoho serves this provider, so there is nothing to publish.' },
+  { code: 'consumer_pending', label: 'Consumer publication pending', tone: 'info', why: 'Admitted, but the Website or Zoho feed does not hold the same text yet.' },
+  { code: 'verified_published', label: 'Verified published', tone: 'success', why: 'Admitted, and every consumer that serves this provider holds the same text. A consumer that does not serve the provider is Not applicable, not a failure.' },
+]
+const QUALITY_MAP = Object.fromEntries(QUALITY_LEVELS.map(l => [l.code, l]))
+export const qualityOf = code => QUALITY_MAP[code] || { code: code || 'unknown', label: code ? String(code).replaceAll('_', ' ').replace(/^./, c => c.toUpperCase()) : 'Not worked out', tone: 'neutral', why: 'The level could not be worked out for this row (the Website and Zoho states were not read).' }
+export const QUALITY_FILTER_OPTIONS = [
+  { value: 'basic', label: 'Basic registry profile' }, { value: 'enriched', label: 'Enriched (admitted, any publication)' }, { value: 'missing', label: 'Missing' }, { value: 'held', label: 'Held: evidence or identity' },
+  { value: 'queued', label: 'Enrichment queued' }, { value: 'processing', label: 'Enrichment processing' }, { value: 'waiting_decision', label: 'Waiting for human decision' },
+  { value: 'enriched_admitted', label: 'Enriched and admitted' }, { value: 'consumer_pending', label: 'Consumer publication pending' }, { value: 'verified_published', label: 'Verified published' },
+  { value: 'unrecorded', label: 'Description: admission not recorded' },
+]
+// The provider fields the server lists as having no value (security.provider_missing_fields_v1), in words. Information only: the reader fills the description and nothing else.
+const FIELD_WORDS = { description: 'Description', website: 'Website', city: 'City', state_region: 'State / region', provider_type: 'Type', phone: 'Phone', email: 'Email', address: 'Address', established_year: 'Year established' }
+export const fieldWords = list => (Array.isArray(list) ? list : []).map(f => FIELD_WORDS[f] || String(f).replaceAll('_', ' ').replace(/^./, c => c.toUpperCase()))

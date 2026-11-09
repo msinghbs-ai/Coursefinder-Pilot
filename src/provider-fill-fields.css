@@ -1,0 +1,48 @@
+/* CF-247 Fill fields (Platform Admin directive 9-10 Nov 2026): the panel on the Provider Catalogue and Provider Detail. Colours and spacing come from the shared tokens.
+   Every block wraps long words and addresses and never forces the page sideways; at phone width the Overlay already fills the screen, and every control is at least 24 px (WCAG 2.2 AA 2.5.8). */
+.pff{display:grid;gap:var(--cf-space-4);min-width:0}
+.pff p{margin:0;overflow-wrap:anywhere}
+.pff h4{margin:0;font-size:var(--cf-fs-lg)}
+.pff code{overflow-wrap:anywhere}
+.pff-lead{color:var(--cf-text-2)}
+.pff-policy{display:flex;align-items:center;flex-wrap:wrap;gap:var(--cf-space-3);padding:var(--cf-space-3);background:var(--cf-surface-2);border-radius:var(--cf-radius-md);font-size:var(--cf-fs-md)}
+.pff-providers{display:grid;gap:var(--cf-space-3)}
+.pff-provider,.pff-card,.pff-preview-row{display:grid;gap:var(--cf-space-2);padding:var(--cf-space-3);border:1px solid var(--cf-border);border-radius:var(--cf-radius-md);min-width:0}
+.pff-card{gap:var(--cf-space-3)}
+.pff-head{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:var(--cf-space-2);min-width:0}
+.pff-head>strong{min-width:0;overflow-wrap:anywhere}
+.pff-head>span{display:flex;flex-wrap:wrap;gap:var(--cf-space-2)}
+.pff-facts{display:grid;grid-template-columns:minmax(90px,130px) minmax(0,1fr);gap:var(--cf-space-1) var(--cf-space-3);margin:0;font-size:var(--cf-fs-md)}
+.pff-facts dt{color:var(--cf-muted)}
+.pff-facts dd{margin:0;overflow-wrap:anywhere}
+.pff-note{color:var(--cf-muted);font-size:var(--cf-fs-md)}
+.pff-code{display:block;color:var(--cf-muted);font-size:var(--cf-fs-md)}
+.pff-modes{display:grid;gap:var(--cf-space-2);border:1px solid var(--cf-border);border-radius:var(--cf-radius-md);padding:var(--cf-space-3);min-width:0;margin:0}
+.pff-modes legend{font-weight:600;padding:0 var(--cf-space-2)}
+.pff-mode{display:flex;align-items:flex-start;gap:var(--cf-space-3);min-height:32px;cursor:pointer}
+.pff-mode input{flex:0 0 auto;width:24px;height:24px;margin:2px 0 0}
+.pff-mode span{display:grid;gap:2px;min-width:0}
+.pff-mode small{color:var(--cf-muted);font-weight:400}
+.pff-actions,.pff-audit{display:flex;flex-wrap:wrap;align-items:flex-start;gap:var(--cf-space-3)}
+.pff-audit{display:grid}
+.pff-audit label{display:grid;gap:var(--cf-space-2);font-weight:600;font-size:var(--cf-fs-md)}
+.pff-audit textarea{width:100%;max-width:100%;box-sizing:border-box;min-height:70px;resize:vertical;border:1px solid var(--cf-border-input);border-radius:var(--cf-radius-sm);padding:var(--cf-space-2);font:inherit;color:var(--cf-text);background:var(--cf-surface)}
+.pff-audit>.cf-btn{justify-self:start}
+.pff-readback{display:flex;flex-wrap:wrap;align-items:center;gap:var(--cf-space-3);min-width:0}
+.pff-totals{display:flex;flex-wrap:wrap;gap:var(--cf-space-3);font-size:var(--cf-fs-md)}
+.pff-message{padding:var(--cf-space-3);background:var(--cf-info-soft);color:var(--cf-info-ink);border-radius:var(--cf-radius-sm)}
+.pff-error{background:var(--cf-danger-soft);color:var(--cf-danger-ink)}
+.pff .cf-btn{min-height:32px}
+/* the Provider Catalogue row: a tick box and a button beside the provider's name */
+.pff-name{display:flex;align-items:center;gap:var(--cf-space-2);min-width:0}
+.pff-pick{display:inline-flex;align-items:center;justify-content:center;min-width:32px;min-height:32px;flex:0 0 auto;cursor:pointer}
+.pff-pick input{width:24px;height:24px;margin:0}
+.pff-title{min-width:0;overflow-wrap:anywhere;flex:1 1 auto}
+.pff-open{flex:0 0 auto;min-height:28px;min-width:28px;padding:2px var(--cf-space-3);border:1px solid var(--cf-border-strong);border-radius:var(--cf-radius-sm);background:var(--cf-surface);color:var(--cf-text);font:inherit;font-size:var(--cf-fs-md);cursor:pointer}
+.pff-open:hover{background:var(--cf-surface-2)}
+.pff-bar{display:flex;flex-wrap:wrap;align-items:center;gap:var(--cf-space-3);padding:var(--cf-space-2) var(--cf-space-3);background:var(--cf-info-soft);border-radius:var(--cf-radius-md)}
+.pff-bar .cf-btn,.pff-bar button{min-height:32px}
+.pff-detail{display:flex;flex-wrap:wrap;align-items:center;gap:var(--cf-space-3);padding:var(--cf-space-3);border:1px solid var(--cf-border);border-radius:var(--cf-radius-md)}
+.pff-detail>div{min-width:0;flex:1 1 220px}
+.pff-detail p{margin:0;color:var(--cf-muted);font-size:var(--cf-fs-md)}
+@media(max-width:600px){.pff-facts{grid-template-columns:minmax(0,1fr)}.pff-facts dd{margin-bottom:var(--cf-space-2)}.pff-actions>.cf-btn{flex:1 1 auto}.pff-open{padding:2px var(--cf-space-2)}}
