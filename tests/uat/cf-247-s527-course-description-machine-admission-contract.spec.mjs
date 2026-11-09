@@ -233,3 +233,40 @@ test('the fixture harness proves it: refusals, no change on apply, applied twice
   expect(workflow).toContain('bash tests/fixtures/cdesc-machine/run.sh')
   expect(workflow).toContain('supabase/migrations/2026111006*.sql')
 })
+
+test('visible results (Platform Admin 10 Nov 2026): wrong_page_kind and the Data Delivery stage counts are md5-guarded edits of functions we own, with forward recovery, no new setting and no new table', () => {
+  const V = fs.readFileSync('supabase/migrations/20261110100000_cf247_cdesc_visible_results.sql', 'utf8')
+  const W = fs.readFileSync('supabase/migrations/20261110100100_cf247_cdesc_wrong_page_kind.sql', 'utf8')
+  for (const m of [V, W]) {
+    expect(m).toMatch(/^-- Replaces: .+/m)
+    expect(m).toMatch(/^-- Retires: .+/m)
+    expect(m).not.toContain('Consumer API change approved')
+    expect(code(m)).not.toMatch(/\b(drop|truncate)\s+(table|function|trigger|index|column|schema)?/i)
+    expect(code(m)).not.toMatch(/\bcreate\s+table\b/i)
+    expect(code(m)).not.toMatch(/insert\s+into\s+pipeline\.platform_toolset_settings/i)
+  }
+  // the edits are guarded by the md5 of the live body before and the body expected after
+  expect(V).toContain('916e015e0cce905c97e17786b4c2ada1')
+  expect(V).toContain('b67bd181c58546076da48e7b5f00a2a4')
+  expect(W).toContain('fca43249b1846aae9eae0df7fc83ecb4')
+  expect(W).toContain('3e0fe24d762e7fc4348865ea09499690')
+  expect(code(V)).toContain("'stages', case when s.stream = 'cdesc' then security.data_delivery_cdesc_stages_v1() end")
+  expect(code(W)).toContain("'wrong_page_kind'")
+  // the top reasons use the existing setting, never a number in code
+  expect(code(V)).toContain("security.pipeline_num_v1('data_delivery.reasons_shown', 3)")
+  // the helper is not callable from outside
+  expect(code(V)).toMatch(/revoke all on function security\.data_delivery_cdesc_stages_v1\(\) from public, anon, authenticated/)
+  // forward recovery for both, accepting either the edited or the original body
+  const HV = fs.readFileSync('supabase/held/cdesc_visible_results_forward_recovery.sql', 'utf8')
+  const HW = fs.readFileSync('supabase/held/cdesc_wrong_page_kind_forward_recovery.sql', 'utf8')
+  expect(HV).toContain('916e015e0cce905c97e17786b4c2ada1'); expect(HV).toContain('b67bd181c58546076da48e7b5f00a2a4')
+  expect(HW).toContain('fca43249b1846aae9eae0df7fc83ecb4'); expect(HW).toContain('3e0fe24d762e7fc4348865ea09499690')
+  // the harness runs the page kind checks on the migrated database (all pass) and on the old body (they must fail)
+  expect(run).toContain('scenarios_visible.sql')
+  expect(run).toContain('_oldchk')
+  const sv = fs.readFileSync('tests/fixtures/cdesc-machine/scenarios_visible.sql', 'utf8')
+  expect(sv).toMatch(/^-- Guards: F-CDESC/)
+  for (const s of ['wrong_page_kind', 'entry-level', 'unpublished course', 'never 0', 'known false']) expect(sv, s).toContain(s)
+  expect(workflow).toContain('supabase/migrations/2026111010*.sql')
+  expect(workflow).toContain('supabase/held/cdesc_*_forward_recovery.sql')
+})

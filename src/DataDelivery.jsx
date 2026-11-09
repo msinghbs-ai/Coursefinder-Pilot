@@ -98,6 +98,45 @@ function Recovery({r}){
   return <span data-dd-recovery={r?.state||'unknown'}><StatusChip tone={tone} label={label}/><small>{r?.text}</small>{(r?.issue_refs||[]).length>0&&<small>Open: {r.issue_refs.join(', ')}</small>}</span>
 }
 
+/** One counted figure: a number from the server, or "Not measured" when the server did not send it. Never 0 for a figure that was not counted. */
+function N({v,k,actor}){return v==null?<em data-dd-unknown data-dd-stage-n={k}>Not measured</em>:<strong data-dd-stage-n={k} data-dd-actor={actor||undefined}>{fmtNumber(Number(v))}</strong>}
+function Row({k,label,v,actor,children}){return <li data-dd-stage-row={k}><span>{label}{actor&&<StatusChip tone={actor==='machine'?'info':'neutral'} label={actor==='machine'?'Machine rule':'Person'}/>}</span> <N v={v} k={k} actor={actor}/>{children}</li>}
+/** The course description stages (CF-247 F-CDESC, Platform Admin 10 Nov 2026): counted live and exactly by the server when the page was read (no estimate, no forecast).
+ *  Machine counts and person counts are labelled apart. An unpublished course is shown on its own line: it is correctly not served to the Website. Zoho is Not counted with the reason, never 0. */
+function Stages({st}){
+  if(!st)return null
+  if(!st.known)return <div className="dd-stages-box" data-dd-stages="unknown"><h4 className="sl-h4">Course description stages</h4><Unknown reason={st.reason} word="Not counted"/></div>
+  const src=st.source||{},pr=st.proposal||{},va=st.validation||{},ad=st.admitted||{},co=st.consumers||{},rb=co.machine_readback||{},zo=co.zoho||{}
+  const reasons=va.top_decline_reasons||[]
+  return <div className="dd-stages-box" data-dd-stages="known">
+    <h4 className="sl-h4">Course description stages</h4>
+    <p className="sl-sub" data-dd-stages-stamp>Counted live at {stampOf(st.counted_at)} (Melbourne), in {st.unit||'courses'}. Exact counts, no estimate. Machine-rule counts are kept apart from person counts.</p>
+    <ol className="dd-stages">
+      <li data-dd-stage="source"><h5>1. Source</h5><ul>
+        <Row k="proposals_from_a_stored_page" label="Proposals read from a stored official page" v={src.proposals_from_a_stored_page}/></ul></li>
+      <li data-dd-stage="proposal"><h5>2. AI proposal</h5><ul>
+        <Row k="waiting_in_layer4" label="Waiting in Layer 4 for a decision" v={pr.waiting_in_layer4}/>
+        <Row k="held_behind_provider_cap" label="Readings held behind a university's first waiting descriptions" v={pr.held_behind_provider_cap}/>
+        <Row k="held_by_a_check" label="Readings held by a check (not proposed)" v={pr.held_by_a_check}/></ul></li>
+      <li data-dd-stage="validation"><h5>3. Validation by the machine rule</h5><ul>
+        <Row k="not_yet_checked_by_machine" label="Waiting, not yet looked at by the machine rule" v={va.not_yet_checked_by_machine} actor="machine"/>
+        <Row k="declined_by_machine" label="Declined, left for a person" v={va.declined_by_machine} actor="machine">
+          {reasons.length>0&&<ul className="dd-reasons" data-dd-decline-reasons>{reasons.map(r=><li key={r.code}><span title={r.example||undefined}>{String(r.code).replaceAll('_',' ')}</span> <strong>{fmtNumber(Number(r.n))}</strong></li>)}</ul>}</Row></ul></li>
+      <li data-dd-stage="admitted"><h5>4. Admitted</h5><ul>
+        <Row k="by_machine" label="Admitted by the machine rule" v={ad.by_machine} actor="machine"/>
+        <Row k="by_person" label="Admitted by a person in Layer 4" v={ad.by_person} actor="person"/>
+        <Row k="withdrawn" label="Machine admissions withdrawn" v={ad.withdrawn} actor="machine"/>
+        <Row k="described_courses" label="Courses with a description in the catalogue" v={ad.described_courses}/>
+        <Row k="described_other_route" label="of which by another route (neither of the above)" v={ad.described_other_route}/></ul></li>
+      <li data-dd-stage="consumers"><h5>5. Website and Zoho</h5><ul>
+        <Row k="website_published" label="Described courses published to the Website" v={co.website_published}/>
+        <Row k="unpublished_course" label="Described courses that are unpublished (not served to the Website)" v={co.unpublished_course}/>
+        <li data-dd-stage-row="machine_readback"><span>Website read-back of machine admissions at admission <StatusChip tone="info" label="Machine rule"/></span>
+          <small data-dd-readback>matched {num(rb.matched)} · lag {num(rb.lag)} · not in the feed {num(rb.not_in_feed)} · error {num(rb.error)}{Number(rb.not_checked)>0?` · not checked ${num(rb.not_checked)}`:''}. The detail function answered by identifier; that is not the same as listed and published.</small></li>
+        <li data-dd-stage-row="zoho"><span>Zoho</span> {zo.known?<N v={zo.with_description} k="zoho"/>:<Unknown reason={zo.reason} word="Not counted"/>}</li></ul></li>
+    </ol></div>
+}
+
 function Stream({s,now,providerFilters,open,onToggle}){
   const dr=s.drill||{}
   const lanes=hrefFor('layer2','operations',{lane:s.lane})
@@ -126,6 +165,7 @@ function Stream({s,now,providerFilters,open,onToggle}){
       {cells.map(([k,label,node])=><div className="dd-cell" key={k} data-label={label} data-dd-cell={k}>{node}</div>)}
     </summary>
     <div className="dd-body">
+      <Stages st={s.stages}/>
       <p><strong>What this stream is.</strong> {s.what}</p>
       <p><strong>How the gain is counted.</strong> {s.net_basis||'Not stated.'}{s.net_short?.removed_known?' Net = admitted minus withdrawn, from the ledger timestamps in the window.':''}</p>
       {(s.coverage?.by_country||[]).length>0&&<table className="cf-table dd-countries"><thead><tr><th>Country</th><th>Covered</th><th>Of</th></tr></thead><tbody>
@@ -191,7 +231,7 @@ export default function DataDelivery({rank=0,onError,client=null}){
     {err&&<p role="alert" className="dd-stale" data-dd-stale-banner>The last refresh failed at {stampOf(err.at)} (Melbourne): {err.message}. These are the figures read at {stampOf(d.at)}; they may be out of date.</p>}
     {(flagged.length>0||failing.length>0||unknownAdm.length>0)&&<p className="dd-summary" data-dd-summary>{flagged.length>0&&<><strong>{flagged.length}</strong> stream{flagged.length===1?'':'s'} ran green but admitted nothing in {hoursText(d.windows?.short_hours)} ({flagged.map(s=>s.title).join(', ')}). </>}{unknownAdm.length>0&&<><strong>{unknownAdm.length}</strong> ran green with what they admitted unknown ({unknownAdm.map(s=>s.title).join(', ')}). </>}{failing.length>0&&<><strong>{failing.length}</strong> with a failed run ({failing.map(s=>s.title).join(', ')}).</>}</p>}
     <div className="dd-head" aria-hidden="true"><span>Stream</span><span>Coverage</span><span>Net {hoursText(d.windows?.short_hours)}</span><span>Net {hoursText(d.windows?.long_hours)}</span><span>Website</span><span>Zoho</span><span>Queue</span><span>Holds and reasons</span><span>Speed</span><span>Last and next run</span><span>Automatic recovery</span></div>
-    <div className="dd-streams">{streams.map(s=><Stream key={s.stream} s={s} now={now} providerFilters={Boolean(d.provider_filters_available)} open={Boolean(open[s.stream])} onToggle={o=>setOpen(x=>({...x,[s.stream]:o}))}/>)}</div>
+    <div className="dd-streams">{streams.map(s=><Stream key={s.stream} s={s} now={now} providerFilters={Boolean(d.provider_filters_available)} open={open[s.stream]??Boolean(s.stages)} onToggle={o=>setOpen(x=>({...x,[s.stream]:o}))}/>)}</div>
     <p className="sl-sub">Net = admitted minus withdrawn, from each stream&rsquo;s own ledger timestamps. A job the scheduler reports as OK says nothing about data: the flag shows when it admitted nothing. Reload interval, windows and the number of reasons are settings (Settings &rsaquo; Pipeline settings &rsaquo; Data delivery).</p>
   </section>
 }
