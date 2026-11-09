@@ -14,7 +14,7 @@ test('D3: the four held actions get a revisit time from stored inputs, through o
   expect(sql).toMatch(/^-- Retires: /m)
   // the one place that names the four actions and reads the switch
   expect(body).toContain("select p_next_action in ('evidence_ambiguous', 'reader_correction_needed', 'calendar_needs_correction', 'human_decision_required')")
-  expect(body).toContain("and security.pipeline_num_v1('intake_dates.revisit_stored_inputs', 1) = 1")
+  expect(body).toContain("and security.pipeline_num_v1('intake_dates.revisit_stored_inputs', 0) = 1")
   // the revisit time and the trigger edits are guarded by the production definitions and each applies exactly once
   expect(body).toContain("'30790a1cdb910a25012d2cc8fa938dbc'")
   expect(body).toContain("'1ce780aa6cbde2c9a1d9307c3cd68a53'")
@@ -26,7 +26,7 @@ test('D3: the four held actions get a revisit time from stored inputs, through o
   expect(body).not.toMatch(/awaiting_official_calendar.*intake_revisit_stored_inputs_v1/)
   // the days are the existing setting; the new switch is a setting with a label, a range, a unit and a used_by line
   expect(body).toContain("security.pipeline_num_v1('intake_dates.revisit_days', 14)")
-  expect(body).toMatch(/'intake_dates\.revisit_stored_inputs', '[^']+',\s*'[^']+'[\s\S]*?'number', to_jsonb\(1\), 0, 1, 'on\/off', 1013, 'Intake dates',\s*'[^']*intake_revisit_stored_inputs_v1[^']*'/)
+  expect(body).toMatch(/'intake_dates\.revisit_stored_inputs', '[^']+',\s*'[^']+'[\s\S]*?'number', to_jsonb\(0\), 0, 1, 'on\/off', 1013, 'Intake dates',\s*'[^']*intake_revisit_stored_inputs_v1[^']*'/)
   expect(body).toContain('on conflict (toolset_key, key) do nothing')
 })
 

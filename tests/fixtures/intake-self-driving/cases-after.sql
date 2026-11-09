@@ -34,11 +34,26 @@ do $$
 declare s record;
 begin
   select * into s from pipeline.platform_toolset_settings where toolset_key = 'pipeline' and key = 'intake_dates.revisit_stored_inputs';
-  if s.key is null or s.label is null or s.min_value is null or s.max_value is null or s.unit is null or s.used_by is null or s.section is null or s.value is distinct from to_jsonb(1) or s.kind <> 'number' then
+  if s.key is null or s.label is null or s.min_value is null or s.max_value is null or s.unit is null or s.used_by is null or s.section is null or s.value is distinct from to_jsonb(0) or s.kind <> 'number' then
     raise exception 'setting: %', row_to_json(s); end if;
   if (select count(*) from pipeline.platform_toolset_settings where toolset_key = 'pipeline' and key = 'intake_dates.revisit_days' and value = to_jsonb(14)) <> 1 then raise exception 'revisit_days'; end if;
-  raise notice 'PASS setting (G2): intake_dates.revisit_stored_inputs has a label, a range (0 to 1), a unit (on/off), a section and a used_by line; it is on by default; the days are the existing intake_dates.revisit_days (14)';
+  raise notice 'PASS setting (G2): intake_dates.revisit_stored_inputs has a label, a range (0 to 1), a unit (on/off), a section and a used_by line; it is OFF by default (release path 9 Nov 2026); the days are the existing intake_dates.revisit_days (14)';
 end $$;
+
+-- 0b default off: the migration changed no revisit time, and the helper and the timer do nothing until the switch is turned on ---------------------------
+do $$
+declare bad int;
+begin
+  select count(*) into bad from public.sd_state_before b join pipeline.course_intake_dates d using (intake_id) where d.next_revisit_at is distinct from b.next_revisit_at;
+  if bad <> 0 then raise exception 'default off: the migration changed % revisit times', bad; end if;
+  if security.intake_revisit_stored_inputs_v1('evidence_ambiguous') or security.intake_revisit_at_v1('evidence_ambiguous') is not null then raise exception 'default off: the helper or the timer is active'; end if;
+  if security.intake_revisit_at_v1('awaiting_official_calendar') is null then raise exception 'default off: the original waiting actions lost their time'; end if;
+  raise notice 'PASS default off (release path 9 Nov 2026): with intake_dates.revisit_stored_inputs at 0 the migration gave no row a revisit time and the four held actions get none; the original waiting actions are unchanged';
+end $$;
+-- the Platform Admin switches it on after release and QA: the switch is turned on and the migration (idempotent) is applied again, which runs the backfill
+update pipeline.platform_toolset_settings set value = to_jsonb(1) where toolset_key = 'pipeline' and key = 'intake_dates.revisit_stored_inputs';
+\i supabase/migrations/20261109040000_cf247_intake_revisit_page_fingerprint.sql
+\set QUIET on
 
 -- 1 D3 backfill: rows already waiting get a spread revisit time ------------------------------------------------------------------------------------
 do $$
@@ -379,3 +394,6 @@ begin
   if a::date is distinct from make_date(y0, 11, 1) then raise exception 'sMY after the fix: %', a; end if;
   raise notice 'PASS applicability fix: "February 2027", "25 January 2027" and "May 2027, September 2027" are read as offerings (a month of a past year still is not), 8 inputs return exactly what they returned before, and on the month-only path the plan fills the course whose page prints "November % intake" with 1 November %', y0, y0;
 end $$;
+
+-- the switch goes back to its default (off) for the phases that follow: the page-date route is judged at the production defaults
+update pipeline.platform_toolset_settings set value = to_jsonb(0) where toolset_key = 'pipeline' and key = 'intake_dates.revisit_stored_inputs';

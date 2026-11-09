@@ -162,7 +162,7 @@ Results:
 | `intake_progress.monopoly_runs` | 3 runs | 1–24 | monopoly check |
 | `intake_progress.monopoly_share_pct` | 80 per cent | 50–100 | monopoly check |
 | `progress.intake_chain_on` (section First-run verification and progress) | 1 | 0–1 | the observer reads the intake chain and runs the intake checks only while 1 (forward recovery, §8) |
-| `intake_dates.revisit_stored_inputs` (section Intake dates) | 1 | 0–1 | held rows (evidence ambiguous, reader correction needed, calendar needs correction, human decision required) are looked at again on `intake_dates.revisit_days` from stored inputs (migration 20261109040000) |
+| `intake_dates.revisit_stored_inputs` (section Intake dates) | 0 (off until the Platform Admin switches it on) | 0–1 | held rows (evidence ambiguous, reader correction needed, calendar needs correction, human decision required) are looked at again on `intake_dates.revisit_days` from stored inputs (migration 20261109040000) |
 | `intake_dates.page_date_admit` (section Intake dates) | **0 (off)** | 0–1 | a start date printed on the course page is admitted only when the page is the course's own, the date is the only full date of the month with its year, it is inside `intake_dates.max_months_ahead`, quoted with its section label, and corroborated by an approved main-calendar start that day (P1) or by the audience shown (P2); page only (P3) is never admitted. Switched on only by the Platform Admin (migration 20261109042000) |
 
 - **Existing settings that now also apply to intake:** `progress.on`, `progress.window_hours` (24) and `progress.stall_hours` (6).

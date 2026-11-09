@@ -12,7 +12,8 @@
 -- What (existing architecture; no new job, scheduler, engine, table or screen):
 --   D3  a row held as evidence_ambiguous, reader_correction_needed, calendar_needs_correction or human_decision_required is looked at again after
 --       intake_dates.revisit_days (14) from the STORED inputs only (the plan and the apply function call no crawler, reader or AI: a revisit re-reads the
---       stored page wording, calendar and settings). Switch: setting intake_dates.revisit_stored_inputs (1 on, 0 off).
+--       stored page wording, calendar and settings). Switch: setting intake_dates.revisit_stored_inputs (1 on, 0 off), OFF by default (release path 9 Nov 2026: new intake switches stay off until their controlled activation is validated).
+--       With the switch off the migration backfill (5) gives no row a revisit time; it is repeated by running this file again after the switch is turned on (the backfill is idempotent).
 --         1 security.intake_revisit_stored_inputs_v1 (new): the one place that names the four next actions and reads the switch.
 --         2 security.intake_revisit_at_v1 (md5-guarded edit, 30790a1c): the revisit time also for those four.
 --         3 security.intake_failure_class_trg_v1 (md5-guarded edit, 1ce780aa): a deterministic failure of those four gets the revisit time; every other
@@ -49,8 +50,8 @@ end $e$;
 -- 0 setting (G2) ----------------------------------------------------------------------------------------------------------------------------
 insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, section, used_by, reason) values
  ('pipeline', 'intake_dates.revisit_stored_inputs', 'Intake dates: look again at a row held for evidence, from stored inputs',
-  'When on, an intake row held as evidence ambiguous, reader correction needed, calendar needs correction or human decision required is looked at again after the number of days in "Intake dates: look again at a waiting row after". The look uses only what is already stored (the course page wording, the approved calendar and the settings); it calls no crawler, reader or AI and spends nothing. A date rejected or withdrawn earlier is never admitted again, and the course-specific proof rules are the same. When off, such a row waits for a change of its inputs only.',
-  'number', to_jsonb(1), 0, 1, 'on/off', 1013, 'Intake dates',
+  'Off (0) by default until the Platform Admin switches it on after release and QA. When on (1), an intake row held as evidence ambiguous, reader correction needed, calendar needs correction or human decision required is looked at again after the number of days in "Intake dates: look again at a waiting row after". The look uses only what is already stored (the course page wording, the approved calendar and the settings); it calls no crawler, reader or AI and spends nothing. A date rejected or withdrawn earlier is never admitted again, and the course-specific proof rules are the same. When off, such a row waits for a change of its inputs only.',
+  'number', to_jsonb(0), 0, 1, 'on/off', 1013, 'Intake dates',
   'security.intake_revisit_stored_inputs_v1; security.intake_revisit_at_v1; security.intake_failure_class_trg_v1; job intake-dates-apply',
   'F-INT (9 Nov 2026): 8,793 undated intake rows held for evidence had no revisit time and were never looked at again')
 on conflict (toolset_key, key) do nothing;
@@ -59,9 +60,9 @@ on conflict (toolset_key, key) do nothing;
 create or replace function security.intake_revisit_stored_inputs_v1(p_next_action text) returns boolean
 language sql stable security definer set search_path to '' as $function$
   select p_next_action in ('evidence_ambiguous', 'reader_correction_needed', 'calendar_needs_correction', 'human_decision_required')
-         and security.pipeline_num_v1('intake_dates.revisit_stored_inputs', 1) = 1
+         and security.pipeline_num_v1('intake_dates.revisit_stored_inputs', 0) = 1
 $function$;
-comment on function security.intake_revisit_stored_inputs_v1(text) is 'CF-247 F-INT (9 Nov 2026): true when a row held with this next action is looked at again from its stored inputs on the revisit timer (setting intake_dates.revisit_stored_inputs, on by default). The four actions: evidence_ambiguous, reader_correction_needed, calendar_needs_correction, human_decision_required.';
+comment on function security.intake_revisit_stored_inputs_v1(text) is 'CF-247 F-INT (9 Nov 2026): true when a row held with this next action is looked at again from its stored inputs on the revisit timer (setting intake_dates.revisit_stored_inputs, off by default). The four actions: evidence_ambiguous, reader_correction_needed, calendar_needs_correction, human_decision_required.';
 revoke all on function security.intake_revisit_stored_inputs_v1(text) from public, anon, authenticated;
 
 -- 2 D3: the revisit time (md5-guarded edit) -------------------------------------------------------------------------------------------------
