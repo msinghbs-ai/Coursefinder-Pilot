@@ -1,0 +1,177 @@
+// Guards: F-CDESC (Platform Admin decision 10 Nov 2026, course descriptions are AI-generated; operating rule 10 Nov 2026 05:40, only class-A settings): the narrow machine admission of FIRST course descriptions (migrations 20261110060000 and 20261110060100) is separate from the human Layer 4 route, ships off with one switch and no other setting, derives its limits from existing settings, writes only where the description is empty, reads back what it wrote, can be withdrawn by a named Platform Admin, and changes nothing the consumer API reads
+import { test, expect } from '@playwright/test'
+import fs from 'node:fs'
+
+const M1 = fs.readFileSync('supabase/migrations/20261110060000_cf247_cdesc_machine_policy_shadow.sql', 'utf8')
+const M2 = fs.readFileSync('supabase/migrations/20261110060100_cf247_cdesc_machine_admission.sql', 'utf8')
+const code = (t) => t.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')
+const C1 = code(M1)
+const C2 = code(M2)
+const both = C1 + '\n' + C2
+const run = fs.readFileSync('tests/fixtures/cdesc-machine/run.sh', 'utf8')
+const scenarios = fs.readFileSync('tests/fixtures/cdesc-machine/scenarios.sql', 'utf8')
+const workflow = fs.readFileSync('.github/workflows/course-descriptions-test.yml', 'utf8')
+const fnBody = (c, name) => { const i = c.indexOf(`create or replace function ${name}(`); expect(i, name).toBeGreaterThan(-1); const j = c.indexOf('end $f$;', i); expect(j, name).toBeGreaterThan(i); return c.slice(i, j) }
+
+test('the housekeeping lines are there and nothing is dropped or deleted', () => {
+  for (const m of [M1, M2]) {
+    expect(m).toMatch(/^-- Replaces: .+/m)
+    expect(m).toMatch(/^-- Retires: .+/m)
+  }
+  for (const c of [C1, C2]) {
+    // outside a function body no statement drops, deletes or truncates (a function body may delete a trigger-owned scratch row only if it says so; these do not)
+    expect(c).not.toMatch(/^\s*(drop|truncate)\s/im)
+    expect(c).not.toMatch(/^\s*delete\s+from\s/im)
+  }
+  expect(both).not.toMatch(/\bdrop\s+(table|function|trigger|index|column|schema)\b/i)
+  expect(both).not.toMatch(/\bdelete\s+from\b/i)
+  expect(both).not.toMatch(/\btruncate\b/i)
+  expect(C1).toMatch(/comment on table pipeline\.course_description_machine_admissions is/)
+  expect(C1).toMatch(/comment on table pipeline\.course_description_source_checks is/)
+})
+
+test('one new setting, the switch, ships 0; the refused-word and figures policy is the existing admission policy, not a parallel set', () => {
+  const inserts = C1.match(/insert into pipeline\.platform_toolset_settings[\s\S]*?on conflict/g) || []
+  expect(inserts.length).toBe(1)
+  expect(C2).not.toMatch(/insert into pipeline\.platform_toolset_settings/)
+  expect(inserts[0]).toContain("'enrich.course_description_machine_on'")
+  expect(inserts[0]).toMatch(/'number', '0'::jsonb, 0, 1, 'on\/off'/)
+  expect(inserts[0]).toContain('security.course_description_machine_admit_v1') // used_by line
+  // every other value is derived from a setting that already exists (G2: no operational value written into code)
+  for (const k of ['gaps.recheck_days', 'pdesc.duplicate_share', 'enrich.course_description_duplicate_window', 'enrich.course_text_items_per_day']) expect(both).toContain(`'${k}'`)
+  expect(C1).toContain('security.pdesc_machine_text_check_ctx_v1(') // the existing wording policy, the same function the provider route calls
+  expect(C1).toContain('security.course_description_check_v1(') // the existing sentence, support and in-provider duplicate checks
+  // no setting value is changed and the human-first requirement is neither lowered nor read as a limit
+  expect(both).not.toMatch(/update\s+pipeline\.platform_toolset_settings\s+set\s+value/i)
+  expect(both).not.toMatch(/set_config|pipeline_set_setting|toolset_setting_set/i)
+  expect(both.split('\n').filter((l) => l.includes("'enrich.course_description_review_first'") && !l.includes('post-check:')).length).toBe(0) // only the post-checks read it, to prove it is untouched
+  expect(C1).toMatch(/post-check: review_first must be untouched/)
+})
+
+test('a limit written in code is a technical safety value and says so (-- fixed: <why>); a derived one says where it comes from', () => {
+  const lines = both.split('\n')
+  const timing = lines.filter((l) => /make_interval\(|interval '/.test(l))
+  expect(timing.length).toBeGreaterThan(3)
+  for (const l of timing) expect(l, l).toMatch(/-- (fixed|derived):|v_days|make_interval\(days => v_days\)|age_days/)
+  for (const l of lines.filter((x) => /pipeline_num_v1\('(gaps|enrich|pdesc)\./.test(x) && !/machine_on/.test(x) && /v_(cap|days|share|win)\s+\w*\s*:?=?/.test(x))) expect(l, l).toMatch(/-- derived:|:= security\.pipeline_num_v1/)
+  expect(C2).toMatch(/make_interval\(secs => 40\); -- fixed:/)
+  expect(C2).toMatch(/make_interval\(hours => 1\) else make_interval\(days => v_days\) end, -- fixed:/)
+})
+
+test('the evaluator is read only and every decline carries one precise rule, a reason and a next action', () => {
+  const check = fnBody(C1, 'security.course_description_machine_check_v1')
+  expect(check).not.toMatch(/\b(insert|update|delete)\b\s+(into\s+)?(pipeline|catalogue|search|public)\./i)
+  for (const rule of ['machine_admission_off', 'item_not_pending', 'course_not_active', 'provider_not_live', 'description_already_held', 'another_pending_item', 'manual_lock', 'manual_hold', 'rejected_before_course', 'rejected_before_page', 'rejected_before_text',
+    'binding_ambiguous', 'reading_other_course', 'evidence_moved', 'evidence_stale', 'lineage_hash_mismatch', 'object_missing', 'source_recheck_failed', 'page_url_changed', 'text_changed', 'reader_unrecorded', 'identity_not_allowed',
+    'duplicate_exact_waiting', 'duplicate_exact_described', 'duplicate_near_other_provider', 'withdrawn_awaiting_person']) {
+    expect(both, rule).toContain(rule)
+  }
+  expect(fnBody(C1, 'security.course_description_machine_shadow_v1')).not.toMatch(/\b(insert|update|delete)\b\s+(into\s+)?(pipeline|catalogue|search|public)\./i)
+  expect(C1).toContain('security.cdesc_machine_fail_v1')
+  expect(C1).toContain("security.cdesc_machine_fail_v1('policy_' || split_part(v_pol, ':', 1)") // the wording policy's own code names the decline (policy_refused_word, policy_figure, ...)
+})
+
+test('the admission: switch first, rows locked, the checks proved again at write time, the write read back from the catalogue and from the Website function, a machine actor, never the human decision route', () => {
+  const admit = fnBody(C2, 'security.course_description_machine_admit_v1')
+  expect(admit.indexOf("'enrich.course_description_machine_on'")).toBeGreaterThan(-1)
+  expect(admit.indexOf("'enrich.course_description_machine_on'")).toBeLessThan(admit.indexOf('security.course_description_machine_check_v1'))
+  expect(admit).toMatch(/for update/i)
+  expect(admit).toContain('security.course_description_machine_check_v1(') // run again inside the write
+  expect(admit).toMatch(/update catalogue\.courses set description = .* where id = .* and nullif\(btrim\(description\), ''\) is null/s) // only where the description is empty
+  expect(admit).toContain('public.website_v2_course(') // read back, never changed
+  expect(admit).toMatch(/matched|not_in_feed|lag/)
+  expect(admit).toContain("raise exception 'cdesc:consumer_mismatch:") // a mismatch rolls the write back
+  expect(admit).toContain("raise exception 'cdesc:description_not_written:") // a guard that restored the old text stops the claim
+  expect(admit).toContain("'c0ffee00-0000-4000-8000-000000000150'") // the existing system automation account, not a person
+  expect(admit).toContain("'actor_kind', 'machine'")
+  expect(admit).toContain('pipeline.layer4_decisions')
+  expect(admit).toContain('pipeline.admin_control_events')
+  expect(admit).toContain('pipeline.search_refresh_signals')
+  const noGuards = both.replace(/do \$g\$[\s\S]*?end \$g\$;/g, '') // the apply-order guards only name the functions that must exist
+  expect(noGuards).not.toMatch(/layer4_review_decide_impl|layer4_course_description_apply_v1|admin_layer4_review_decide/) // the human route is not called, not simulated
+  expect(M2).toMatch(/^-- Replaces: nothing/m)
+})
+
+test('the hook: an after trigger on the reading (off does nothing, errors are swallowed, depth bounded), no existing function edited', () => {
+  expect(C2).toMatch(/create or replace trigger field_enrich_items_cdesc_machine after update of state on pipeline\.field_enrich_items for each row/)
+  expect(C2).toMatch(/when \(new\.state = 'review' and old\.state is distinct from 'review' and new\.field = 'description'\)/)
+  const trg = fnBody(C2, 'security.course_description_machine_trg_v1')
+  expect(trg).toContain('pg_trigger_depth() > 5')
+  expect(trg).toContain("'enrich.course_description_machine_on', 0) < 1 then return null")
+  expect(trg).toMatch(/exception when others then null/)
+  // none of the live functions it sits beside is replaced here
+  for (const f of ['enrich_course_text_record_v1', 'course_description_review_trg_v1', 'course_description_promote_held_v1', 'course_description_check_v1', 'layer4_course_description_apply_v1', 'pdesc_machine_text_check_ctx_v1']) {
+    expect(both, f).not.toMatch(new RegExp(`create (or replace )?function [a-z_.]*${f}\\(`))
+  }
+})
+
+test('withdrawal: Platform Admin (rank 6) only, a named person and a reason, restores the empty text only if nothing changed since, queues the refresh on the admission\'s own decision', () => {
+  const pub = fnBody(C2, 'public.admin_course_description_machine_withdraw_v1')
+  expect(pub).toMatch(/security\.current_role_rank\(\), 0\) < 6/)
+  expect(pub).toContain('auth.uid()')
+  expect(C2).toMatch(/revoke all on function public\.admin_course_description_machine_withdraw_v1\(uuid, text\) from public, anon;/)
+  expect(C2).toMatch(/grant execute on function public\.admin_course_description_machine_withdraw_v1\(uuid, text\) to authenticated;/)
+  const w = fnBody(C2, 'security.course_description_machine_withdraw_v1')
+  expect(w).toContain("'c0ffee00-0000-4000-8000-000000000150'::uuid then raise exception 'the person who withdraws must be named'")
+  for (const s of ['description_changed_since_admission', 'manual_lock', 'withdraw_not_applied', 'on conflict (review_decision_id) do update']) expect(w).toContain(s)
+  for (const f of ['security.course_description_machine_admit_v1(uuid, text)', 'security.course_description_machine_withdraw_v1(uuid, text, uuid)', 'security.course_description_machine_settle_v1()', 'security.course_description_machine_run_v1()']) {
+    expect(C2, f).toContain(`revoke all on function ${f} from public, anon, authenticated;`)
+  }
+})
+
+test('the job: catalogued (G1) at rank 6 before it is scheduled, its command has no number, the run is bounded by existing settings and a time box', () => {
+  const cat = C2.indexOf("insert into pipeline.automation_catalogue(jobname, area, sort, label, description, control_rank, batch_editable, layer23_stage)")
+  const sched = C2.indexOf("cron.schedule('course-description-machine'")
+  expect(cat).toBeGreaterThan(-1)
+  expect(sched).toBeGreaterThan(cat)
+  const row = C2.slice(cat, C2.indexOf('on conflict', cat))
+  expect(row).toContain("'course-description-machine'")
+  expect(row).toMatch(/\n\s*6, false, null\)/) // control_rank 6, not batch editable
+  const cmd = /\$j\$(select security\.course_description_machine_run_v1\(\))\$j\$/.exec(C2)
+  expect(cmd).not.toBeNull()
+  expect(cmd[1].replace(/_v1/g, '')).not.toMatch(/\d/)
+  expect(fnBody(C2, 'security.course_description_machine_settle_v1')).toContain("'enrich.course_text_items_per_day'")
+  expect(fnBody(C2, 'security.course_description_machine_settle_v1')).toContain('-- fixed:')
+})
+
+test('the ledger: one live admission per course, one decline per item, closed to the app, row level security on', () => {
+  expect(C1).toContain('create unique index if not exists course_description_machine_admissions_live_uq')
+  expect(C1).toMatch(/\(course_id\) where outcome = 'admitted' and withdrawn_at is null/)
+  expect(C1).toContain('create unique index if not exists course_description_machine_admissions_declined_uq')
+  expect(C1).toMatch(/\(review_item_id\) where outcome = 'declined'/)
+  for (const t of ['course_description_machine_admissions', 'course_description_source_checks']) {
+    expect(C1).toContain(`alter table pipeline.${t} enable row level security;`)
+    expect(C1).toMatch(new RegExp(`revoke all on pipeline\\.${t} from public, anon, authenticated`))
+  }
+  for (const col of ['before_description', 'after_description', 'evidence_id', 'content_hash', 'source_url', 'model', 'prompt_version', 'rule', 'actor', 'reason_code', 'next_action', 'withdrawn_by', 'withdrawn_reason', 'consumer_check', 'recovery']) expect(C1, col).toContain(col)
+})
+
+test('the consumer API is not changed (G3): no consumer function is replaced, no column of a table it reads is altered, the only catalogue.courses writes are the empty description and the restore', () => {
+  expect(both).not.toMatch(/create (or replace )?function (public\.)?(website_v2_|website_edge_|website_api_v2_|zoho_edge_|svc_website_settings_v1)/)
+  expect(both).not.toMatch(/create (or replace )?function api\./)
+  expect(both).not.toMatch(/alter\s+table\s+(catalogue|ref|search|api|public)\.\w+\s+(drop|rename|alter)\b/i)
+  expect(both).not.toMatch(/alter\s+table\s+catalogue\./i)
+  expect(both).not.toMatch(/(update|insert into)\s+api\./i)
+  const writes = [...both.matchAll(/update catalogue\.courses set ([a-z_]+)/g)].map((m) => m[1])
+  expect(writes.length).toBe(2) // the admission and the withdrawal
+  expect(new Set(writes)).toEqual(new Set(['description']))
+  expect(C1).toMatch(/create index if not exists courses_description_norm_md5_idx on catalogue\.courses/) // an index beside the table, no column or row
+  expect(M1).not.toContain('Consumer API change approved')
+  expect(M2).not.toContain('Consumer API change approved')
+})
+
+test('the fixture harness proves it: refusals, no change on apply, applied twice, and the scenarios; it runs in the course-description workflow', () => {
+  expect(run).toMatch(/^# Guards: F-CDESC/m)
+  expect(scenarios).toMatch(/^-- Guards: F-CDESC/)
+  for (const s of ['apply 20261110060000 first', 'applied again: no change', 'the new settings are not exactly the switch at 0', 'cdm: all']) expect(run, s).toContain(s)
+  for (const s of ['wrong page', 'evidence_stale', 'evidence_moved', 'check_unsupported_marketing', 'policy_refused_word', 'policy_figure', 'check_not_stated', 'manual_lock', 'rejected_before_page', 'rejected_before_text',
+    'check_duplicate_other_course', 'duplicate_exact_waiting', 'duplicate_near_other_provider', 'binding_ambiguous', 'provider_not_live', 'consumer_mismatch', "consumer_check = 'lag'", 'forward recovery', 'withdrawn_awaiting_person',
+    'cap: with 2 items a day', 'a second settle admits nothing more', 'off: a fresh reading goes to Layer 4']) {
+    if (s === 'wrong page') continue // the wrong-page cases are evidence_moved and reading_other_course
+    expect(scenarios, s).toContain(s)
+  }
+  expect(scenarios).toContain('reading_other_course')
+  expect(workflow).toContain('tests/fixtures/cdesc-machine/')
+  expect(workflow).toContain('bash tests/fixtures/cdesc-machine/run.sh')
+  expect(workflow).toContain('supabase/migrations/2026111006*.sql')
+})

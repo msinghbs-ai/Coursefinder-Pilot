@@ -12,6 +12,9 @@ on:
       - 'supabase/migrations/20261107120000_cf247_course_description_promote_held.sql'
       - 'supabase/migrations/20261108130*.sql'
       - 'tests/fixtures/course-description-backpressure/**'
+      - 'tests/fixtures/cdesc-machine/**'
+      - 'supabase/migrations/2026111006*.sql'
+      - 'tests/uat/cf-247-s527-course-description-machine-admission-contract.spec.mjs'
       - 'tests/uat/cf-247-s450-course-description-review-pack-contract.spec.mjs'
       - 'supabase/functions/coverage-sweep/course-text.ts'
       - '.github/workflows/course-descriptions-test.yml'
@@ -63,6 +66,7 @@ jobs:
           set -euo pipefail
           bash tests/fixtures/course-description-parity/run.sh 2>&1 | tee course-description-results.log
           bash tests/fixtures/course-description-backpressure/run.sh 2>&1 | tee -a course-description-results.log
+          bash tests/fixtures/cdesc-machine/run.sh 2>&1 | tee -a course-description-results.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
