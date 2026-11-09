@@ -87,6 +87,7 @@ test.describe('Task manager on a phone @responsive', () => {
     await atPhoneWidth(page)
     await mount(page, { canManage: true })
     await expect(page.locator('[data-task-row="t1"] button', { hasText: 'Cancel' })).toBeVisible()
+    await expect(page.locator('[data-progress-job] button', { hasText: 'Run now' }).first(), 'a manager has Run now on the jobs board (the read-only test proves it absent)').toBeVisible()
     const small = []
     let measured = 0
     for (const sel of ['button', 'select']) {
@@ -121,11 +122,15 @@ test.describe('Task manager on a phone @responsive', () => {
     expect(await pageOverflow(page)).toBeLessThanOrEqual(1)
   })
 
-  test('a read-only role sees the tasks and jobs but no Pause, Resume, Cancel or Run now', async ({ page }) => {
+  test('a read-only role sees the tasks and jobs, and the Background jobs board offers no Pause, Resume or Run now', async ({ page }) => {
     const w = await atPhoneWidth(page)
     await mount(page, { canManage: false })
-    await expect(page.locator('.tm-actions button')).toHaveCount(await page.locator('[data-task-row] .tm-actions button').count())
-    await expect(page.locator('[data-progress-job] .tm-actions')).toHaveCount(0)
+    // The Background jobs board (Progress) drops its Control column for a role that cannot manage. The task table above it shows Resume and Cancel
+    // by task state and leaves the refusal to the server, so this test makes no claim about those task buttons.
+    await expect(page.locator('[data-progress-job]').first(), 'the jobs board is on the screen, so this check measures something').toBeVisible()
+    await expect(page.locator('.pg-jobs th', { hasText: 'Control' }), 'no Control column').toHaveCount(0)
+    await expect(page.locator('[data-progress-job] .tm-actions'), 'no control cell in any job row').toHaveCount(0)
+    await expect(page.locator('[data-progress-job] button', { hasText: /^(Pause|Resume|Run now)$/ }), 'no Pause, Resume or Run now in the jobs board').toHaveCount(0)
     for (const b of await boxes(page, '.m-panel')) expect(b.right, `panel "${b.label}" ends inside the screen`).toBeLessThanOrEqual(w + 1)
     expect(await pageOverflow(page)).toBeLessThanOrEqual(1)
   })
