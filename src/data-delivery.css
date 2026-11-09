@@ -45,6 +45,11 @@
   .dd .dd-flag{width:100%}
   .dd .dd-flag a,.dd .dd-drill a,.dd .cf-btn{min-height:44px;min-width:44px;display:inline-flex;align-items:center}
   .dd table.cf-table,.dd table.cf-table tbody,.dd table.cf-table tr,.dd table.cf-table td{display:block;width:100%}
+  /* F-OPS.04 (phone): the stacked tables (country coverage, primary jobs) were still 760 px wide, because the global `table{min-width:760px}` in
+     styles.css is not undone by `display:block`; the Operations page then scrolled sideways (scrollWidth 806 against 390). Stacked rows need no minimum width. */
+  .dd table.cf-table{min-width:0}
+  /* F-OPS.04 (phone): the "N pending" and "N missing" links inside a stream's summary were 14 px high; 24 px is the WCAG 2.2 AA (2.5.8) floor. Phone only; desktop unchanged. */
+  .dd .dd-cell a[data-dd-drill]{display:inline-flex;align-items:center;min-height:24px}
   .dd table.cf-table thead{display:none}
   .dd table.cf-table tr{border:1px solid var(--cf-border);border-radius:6px;margin-bottom:8px;padding:6px 8px}
   .dd table.cf-table td{display:flex;justify-content:space-between;gap:12px;border:0;padding:3px 0;text-align:right}

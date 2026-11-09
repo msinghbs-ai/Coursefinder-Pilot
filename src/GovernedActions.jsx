@@ -45,8 +45,8 @@ export default function GovernedActions({onError}){
         <StatusChip tone={a.done?'success':a.paused?'danger':'warning'} label={a.done?'Done':a.paused?`Paused after ${fmtNumber(a.failed_attempts)} failed attempts`:'Ready to review'}/>
         <Button compact onClick={load} disabled={busy}><RefreshCw size={14}/>Refresh</Button></div>
       <p className="sd-desc">{a.what}</p>
-      <table className="cf-table" data-governed-outcomes><thead><tr><th>Recovery run</th><th>Outcome</th><th className="num">Attempts</th><th className="num">Cost since it opened (US$)</th></tr></thead>
-        <tbody>{(s.runs||[]).map(r=><tr key={r.run} data-governed-run={r.slug}><td>{SLUG[r.slug]||r.slug}</td><td><small>{outcome(r)}</small></td><td className="num">{fmtNumber(r.attempts)}</td><td className="num">{Number(r.cost_since_open||0).toFixed(4)}</td></tr>)}</tbody></table>
+      <div className="cf-table-wrap"><table className="cf-table" data-governed-outcomes><thead><tr><th>Recovery run</th><th>Outcome</th><th className="num">Attempts</th><th className="num">Cost since it opened (US$)</th></tr></thead>
+        <tbody>{(s.runs||[]).map(r=><tr key={r.run} data-governed-run={r.slug}><td>{SLUG[r.slug]||r.slug}</td><td><small>{outcome(r)}</small></td><td className="num">{fmtNumber(r.attempts)}</td><td className="num">{Number(r.cost_since_open||0).toFixed(4)}</td></tr>)}</tbody></table></div>
       <ul className="sd-desc" data-governed-counts>
         <li>RMIT entry rows: {fmtNumber(s.counts?.active)} active, {fmtNumber(s.counts?.proposed)} proposed (in {fmtNumber(s.counts?.items_pending)} Layer 4 items, not admitted by this action), {fmtNumber(s.counts?.quarantined)} quarantined.</li>
         <li>Cost of the recovery: US${Number(s.cost_usd_since_open||0).toFixed(4)} <small>({s.cost_basis})</small></li>
