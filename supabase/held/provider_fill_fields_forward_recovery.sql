@@ -2,7 +2,7 @@
 -- CF-247 Fill fields: forward recovery for migration 20261110030000.
 -- It writes the two edited function bodies back, byte for byte, to the text they had before that migration (the text in migration 20261109220000 for the Provider
 -- Catalogue page and in 20261106200000 for the Run & Validate service). Each is guarded by body md5: the live body must be the one 20261110030000 wrote
--- (2c906a2b1f7c346522ef7742d74039f1 for the page, d87bda2fa24caed6602fa0b53a725699 for the service) or already the earlier one, and the result must be the earlier body md5
+-- (2c906a2b1f7c346522ef7742d74039f1 for the page, 93af85a25c3f6c01334feeee8b7a355f for the service) or already the earlier one, and the result must be the earlier body md5
 -- (f3eb9fc6f8efa37566c36ac5ef2e8f0e for the page, b397cf320a689b6e981aa6747e7156b8 for the service), or the whole script stops.
 -- It is a forward change, written as a new migration if it is ever used; it drops and deletes nothing. The new table pipeline.provider_description_quality, the new
 -- functions and the two registry rows can stay (nothing calls them once the service and the page are back); the screen then needs the previous build, because the
@@ -16,7 +16,7 @@ begin
   select md5(p.prosrc) into v_page from pg_proc p where p.oid = to_regprocedure('security.admin_providers_page_v3(jsonb)');
   select md5(p.prosrc) into v_run from pg_proc p where p.oid = to_regprocedure('public.admin_provider_description_run_v1(text,jsonb)');
   if v_page not in ('2c906a2b1f7c346522ef7742d74039f1', 'f3eb9fc6f8efa37566c36ac5ef2e8f0e') then raise exception 'live security.admin_providers_page_v3 is neither the Fill fields text nor the earlier one (body md5 %)', v_page; end if;
-  if v_run not in ('d87bda2fa24caed6602fa0b53a725699', 'b397cf320a689b6e981aa6747e7156b8') then raise exception 'live public.admin_provider_description_run_v1 is neither the Fill fields text nor the earlier one (body md5 %)', v_run; end if;
+  if v_run not in ('93af85a25c3f6c01334feeee8b7a355f', 'b397cf320a689b6e981aa6747e7156b8') then raise exception 'live public.admin_provider_description_run_v1 is neither the Fill fields text nor the earlier one (body md5 %)', v_run; end if;
 end $g$;
 
 -- the Provider Catalogue page, earlier text

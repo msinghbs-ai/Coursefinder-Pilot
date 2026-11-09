@@ -79,13 +79,16 @@ create function security.provider_description_consumer_read_v1(p_consumer text, 
 -- admission would be (description_current), so the panel's honest refusal can be tested.
 create function security.provider_description_selection_v1(p_args jsonb) returns jsonb language plpgsql stable as $$
 declare v_id uuid := nullif(p_args->>'provider_id', '')::uuid; v_state text := coalesce(p_args->>'description_state', 'missing'); v_row jsonb;
+  -- as the upgrade change (migration 20261110040000): upgrade mode needs both switches and the argument, and skips description_current only for a register-fact profile
+  v_upg boolean := security.pipeline_num_v1('pdesc.registry_upgrade_on', 0) >= 1 and security.pipeline_num_v1('pdesc.machine_admit_on', 0) >= 1 and coalesce((p_args->>'upgrade')::boolean, false);
+  v_basic boolean := exists (select 1 from pipeline.provider_description_reads r where r.provider_id = v_id and r.rule = 'registry_factual' and r.state = 'admitted');
 begin
   select jsonb_build_object('provider_id', p.id, 'provider', coalesce(p.display_name, p.canonical_name), 'name', coalesce(p.display_name, p.canonical_name), 'stable_key', p.stable_key,
          'country', 'AU', 'type', null, 'active_course_count', 0, 'current_description', p.description, 'evidence_id', null, 'source_hash', null, 'last_read_id', null,
          'state', coalesce((select r.state from pipeline.provider_description_reads r where r.provider_id = p.id order by r.created_at desc limit 1), 'missing'),
-         'eligible', not exists (select 1 from pipeline.manual_locks l where l.entity = 'provider' and l.entity_id = p.id) and not (v_state = 'stale' and p.stable_key like '%-current'),
+         'eligible', not exists (select 1 from pipeline.manual_locks l where l.entity = 'provider' and l.entity_id = p.id) and not (v_state = 'stale' and p.stable_key like '%-current' and not (v_upg and v_basic)),
          'eligibility_reason', case when exists (select 1 from pipeline.manual_locks l where l.entity = 'provider' and l.entity_id = p.id) then 'manual_lock'
-                                    when v_state = 'stale' and p.stable_key like '%-current' then 'description_current' else 'eligible' end,
+                                    when v_state = 'stale' and p.stable_key like '%-current' and not (v_upg and v_basic) then 'description_current' else 'eligible' end,
          'upgrade', coalesce((p_args->>'upgrade')::boolean, false))
     into v_row from catalogue.providers p
    where p.id = v_id and ((v_state = 'missing' and nullif(btrim(p.description), '') is null) or (v_state = 'stale' and nullif(btrim(p.description), '') is not null));

@@ -154,8 +154,8 @@ insert into pipeline.platform_toolset_settings(toolset_key, key, label, kind, va
 select pg_temp.ok('with the switch on, fill_caps says so', (pg_temp.rpc('fill_caps')->>'upgrade_basic_on')::boolean);
 create temp table pu as select pg_temp.rpc('preview', jsonb_build_object('provider_ids', jsonb_build_array(pg_temp.id('basic-one'), pg_temp.id('basic-current'), pg_temp.id('missing-one'), pg_temp.id('verified-one')), 'fill_mode', 'upgrade_basic')) j;
 select pg_temp.ok('refresh a basic registry profile: the eligible one is selected; the backend''s own refusal is shown as it is; a provider that is not basic is refused by name',
-  (select (j->>'selected')::int = 1 from pu)
-  and (select j->'exclusions' @> jsonb_build_array(jsonb_build_object('provider_id', pg_temp.id('basic-current'), 'provider', 'basic-current', 'reason', 'description_current'),
+  (select (j->>'selected')::int = 2 from pu)
+  and (select j->'exclusions' @> jsonb_build_array(
         jsonb_build_object('provider_id', pg_temp.id('missing-one'), 'provider', 'missing-one', 'reason', 'not_a_basic_registry_profile'), jsonb_build_object('provider_id', pg_temp.id('verified-one'), 'provider', 'verified-one', 'reason', 'not_a_basic_registry_profile')) from pu)
   and (select selection->>'description_state' = 'stale' and selection->>'fill_mode' = 'upgrade_basic' from pipeline.provider_description_cohorts where id = (select (j->>'token')::uuid from pu))
   and (select (e->>'upgrade')::boolean from pu, jsonb_array_elements(pu.j->'providers') e where e->>'provider_id' = pg_temp.id('basic-one')::text));
@@ -225,6 +225,29 @@ do $$ declare v_before text; v_after text; begin
   exception when others then raise exception 'FAILED: %', sqlerrm; end;
   update pipeline.platform_toolset_settings set value = to_jsonb(10) where key = 'pdesc.queue_per_run';
 end $$;
+
+-- 7b. Run Now carries the upgrade argument: an upgrade cohort is prepared AND run, and the read is queued (the run re-checks the stored selection with the same argument the preview used)
+insert into pipeline.platform_toolset_settings(toolset_key, key, label, kind, value, min_value, max_value, unit, sort, section, used_by) values
+ ('pipeline', 'pdesc.registry_upgrade_on', 'stand-in for the other change', 'number', to_jsonb(1), 0, 1, 'on/off', 90, 's', 'u'), ('pipeline', 'pdesc.machine_admit_on', 'stand-in', 'number', to_jsonb(1), 0, 1, 'on/off', 91, 's', 'u');
+create temp table uv as select pg_temp.rpc('preview', jsonb_build_object('provider_ids', jsonb_build_array(pg_temp.id('basic-current')), 'fill_mode', 'upgrade_basic')) j;
+create temp table up as select pg_temp.rpc('prepare', jsonb_build_object('preview_token', (select j->>'token' from uv), 'reason', 'Upgrade the register profile through the reader')) j;
+select pg_temp.ok('the stored cohort selection carries upgrade, so the run re-checks it as the preview did',
+  (select (selection->>'upgrade')::boolean and selection->>'fill_mode' = 'upgrade_basic' from pipeline.provider_description_cohorts where id = (select (j->>'cohort_id')::uuid from up)));
+create temp table ur as select pg_temp.rpc('run', jsonb_build_object('cohort_id', (select j->>'cohort_id' from up))) j;
+select pg_temp.ok('an upgrade cohort runs: not parked as selection_changed_before_run, and the read is queued for the member',
+  (select coalesce(j->>'reason', '') <> 'selection_changed_before_run' and not coalesce((j->>'parked')::boolean, false) from ur)
+  and exists (select 1 from pipeline.provider_description_cohort_members m join pipeline.provider_description_reads r on r.id = m.read_id
+               where m.cohort_id = (select (j->>'cohort_id')::uuid from up) and m.provider_id = pg_temp.id('basic-current') and r.state = 'queued')
+  and (select count(*) from pipeline.provider_description_reads where provider_id = pg_temp.id('basic-current') and state = 'queued') = 1);
+-- with the switch turned off after the preview, the run does not read: it parks the member instead of queueing an upgrade the policy no longer allows
+delete from pipeline.provider_description_reads where provider_id = pg_temp.id('basic-current') and state = 'queued';
+update pipeline.provider_description_cohort_members set read_id = null where provider_id = pg_temp.id('basic-current');
+create temp table up2 as select pg_temp.rpc('prepare', jsonb_build_object('preview_token', (select j->>'token' from (select pg_temp.rpc('preview', jsonb_build_object('provider_ids', jsonb_build_array(pg_temp.id('basic-current')), 'fill_mode', 'upgrade_basic')) j) z), 'reason', 'Second upgrade cohort')) j;
+update pipeline.platform_toolset_settings set value = to_jsonb(0) where key = 'pdesc.registry_upgrade_on';
+create temp table ur2 as select pg_temp.rpc('run', jsonb_build_object('cohort_id', (select j->>'cohort_id' from up2))) j;
+select pg_temp.ok('switched off after the preview: the run queues nothing for the member',
+  not exists (select 1 from pipeline.provider_description_reads where provider_id = pg_temp.id('basic-current') and state = 'queued'));
+delete from pipeline.platform_toolset_settings where key in ('pdesc.registry_upgrade_on', 'pdesc.machine_admit_on');
 
 -- 8. the migration says what it should
 select pg_temp.ok('no setting is added (Platform Admin 10 Nov 2026 05:40)', (select count(*) from pipeline.platform_toolset_settings where key in ('pdesc.quality_refresh_max', 'pdesc.quality_stale_minutes', 'pdesc.fill_poll_seconds', 'pdesc.fill_status_max')) = 0);

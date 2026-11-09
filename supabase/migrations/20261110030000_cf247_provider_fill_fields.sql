@@ -43,7 +43,7 @@
 --
 -- Live definitions read 10 Nov 2026 (project fxcwkweaxjtknorudmwp; body md5 = pg_proc.prosrc):
 --   security.admin_providers_page_v3(jsonb)                 body f3eb9fc6f8efa37566c36ac5ef2e8f0e  -> 2c906a2b1f7c346522ef7742d74039f1
---   public.admin_provider_description_run_v1(text,jsonb)    body b397cf320a689b6e981aa6747e7156b8  -> d87bda2fa24caed6602fa0b53a725699
+--   public.admin_provider_description_run_v1(text,jsonb)    body b397cf320a689b6e981aa6747e7156b8  -> 93af85a25c3f6c01334feeee8b7a355f
 --   security.provider_catalogue_facts_v1(uuid[],boolean)     body abc1345d4cdb341deba65bfd0a38277f  (read, not edited)
 -- Both edits are guarded: the migration stops if a live body is neither the one it replaces nor the one it writes.
 -- Order: apply after 20261109220000 (Provider Catalogue filter speed) and 20261110020000. It does not depend on the eligibility rewrite; the upgrade mode shows the exact eligibility
@@ -64,7 +64,7 @@ begin
   if v_page is null or v_run is null or v_facts is null then raise exception 'Fill fields: a required function is missing'; end if;
   -- fixed: the guard is the md5 of the function body (pg_proc.prosrc); a second run finds the new text and rewrites it unchanged
   if v_page not in ('f3eb9fc6f8efa37566c36ac5ef2e8f0e', '2c906a2b1f7c346522ef7742d74039f1') then raise exception 'live security.admin_providers_page_v3 differs from the definition this change replaces (body md5 %)', v_page; end if;
-  if v_run not in ('b397cf320a689b6e981aa6747e7156b8', 'd87bda2fa24caed6602fa0b53a725699') then raise exception 'live public.admin_provider_description_run_v1 differs from the definition this change replaces (body md5 %)', v_run; end if;
+  if v_run not in ('b397cf320a689b6e981aa6747e7156b8', '93af85a25c3f6c01334feeee8b7a355f') then raise exception 'live public.admin_provider_description_run_v1 differs from the definition this change replaces (body md5 %)', v_run; end if;
   if v_facts <> 'abc1345d4cdb341deba65bfd0a38277f' then raise exception 'live security.provider_catalogue_facts_v1 differs from the definition this change reads (body md5 %)', v_facts; end if;
 end $g$;
 
@@ -311,6 +311,7 @@ begin
   -- A consumer that answers NOT_FOUND does not serve the provider: not_served, never an error. 'feed' is what the Catalogue's own Website and Zoho state says the sync expects (verified, pending or
   -- not_applicable); the read-back is what the consumer returns now, and the two can differ.
   return (
+    with f as (select ff.provider_id, ff.website_state, ff.zoho_state from security.provider_catalogue_facts_v1(p_ids, true) ff) -- one call for the whole set: it runs both feed scans once, not once a provider
     select jsonb_build_object('as_at', now(), 'providers', coalesce(jsonb_agg(jsonb_build_object('provider_id', p.id, 'name', coalesce(p.display_name, p.canonical_name),
       'catalogue', jsonb_build_object('status', case when nullif(btrim(p.description), '') is null then 'no_description' else 'present' end),
       'website', jsonb_build_object('status', case when nullif(btrim(p.description), '') is null then 'awaiting_description' when w.body->'error'->>'code' = 'NOT_FOUND' then 'not_served' when w.body ? 'error' then 'error'
@@ -324,7 +325,7 @@ begin
       from catalogue.providers p
       left join lateral (select security.provider_description_consumer_read_v1('website', p.stable_key) body where nullif(btrim(p.description), '') is not null) w on true
       left join lateral (select security.provider_description_consumer_read_v1('zoho', p.stable_key) body where nullif(btrim(p.description), '') is not null) z on true
-      left join lateral (select ff.website_state, ff.zoho_state from security.provider_catalogue_facts_v1(array[p.id], true) ff limit 1) f on true
+      left join f on f.provider_id = p.id
      where p.id = any(p_ids)
   );
 end
@@ -617,7 +618,7 @@ begin
  -- Fill fields (Provider Catalogue and Provider Detail): the screen names what it wants to do; the governed selection gets the same description state it always had.
  if nullif(p_args->>'fill_mode','') is not null then
   if p_args->>'fill_mode' not in ('missing','upgrade_basic') then raise exception 'unsupported fill mode' using errcode='22023'; end if;
-  v_args:=v_args||jsonb_build_object('description_state',case p_args->>'fill_mode' when 'upgrade_basic' then 'stale' else 'missing' end,'upgrade_basic',p_args->>'fill_mode'='upgrade_basic');
+  v_args:=v_args||jsonb_build_object('description_state',case p_args->>'fill_mode' when 'upgrade_basic' then 'stale' else 'missing' end,'upgrade',p_args->>'fill_mode'='upgrade_basic');
  end if;
  v_res:=security.provider_description_selection_multi_v1(v_args);
  insert into pipeline.provider_description_cohorts(requested_by,selection,snapshot,expires_at)
@@ -794,7 +795,7 @@ begin
   select md5(p.prosrc) into v_page from pg_proc p where p.oid = to_regprocedure('security.admin_providers_page_v3(jsonb)');
   select md5(p.prosrc) into v_run from pg_proc p where p.oid = to_regprocedure('public.admin_provider_description_run_v1(text,jsonb)');
   if v_page <> '2c906a2b1f7c346522ef7742d74039f1' then raise exception 'Fill fields post-check: page body md5 % is not the text this change writes', v_page; end if;
-  if v_run <> 'd87bda2fa24caed6602fa0b53a725699' then raise exception 'Fill fields post-check: run body md5 % is not the text this change writes', v_run; end if;
+  if v_run <> '93af85a25c3f6c01334feeee8b7a355f' then raise exception 'Fill fields post-check: run body md5 % is not the text this change writes', v_run; end if;
   if not exists (select 1 from pg_proc p where p.oid = to_regprocedure('security.admin_providers_page_v3(jsonb)') and p.proconfig @> array['plan_cache_mode=force_custom_plan']) then raise exception 'Fill fields post-check: the page function is no longer set to custom plans'; end if;
   if (select count(*) from pipeline.admin_table_columns where screen = 'providers') <> 34 then raise exception 'Fill fields post-check: the Provider registry is not 34 columns'; end if;
   if (select count(*) from pipeline.admin_table_columns where screen = 'providers' and default_visible) <> 13 then raise exception 'Fill fields post-check: default Provider columns are not today''s 13'; end if;

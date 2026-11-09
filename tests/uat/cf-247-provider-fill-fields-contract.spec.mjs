@@ -103,6 +103,14 @@ test('QA 10 Nov 2026: the refresh mode passes the argument the upgrade change de
   expect(SQL).not.toMatch(/insert into pipeline\.platform_toolset_settings[\s\S]{0,200}registry_upgrade_on/)
   expect(PANEL).toContain('Upgrade is switched off: a Platform Admin policy decision.')
   expect(PANEL).toContain("caps?.upgrade_basic_on === false ? ' (switched off)'")
+  // Run Now re-checks the STORED selection with selection_v1, so the stored selection must carry the same `upgrade` argument as the preview (else every upgrade member parks as selection_changed_before_run)
+  expect(SQL).toContain("'upgrade',p_args->>'fill_mode'='upgrade_basic');")
+  expect(SQL).not.toContain("'upgrade_basic',p_args->>'fill_mode'")
+  // the publication read asks for the feed states once for the whole set, not once a provider
+  const pubRead = SQL.slice(SQL.indexOf('create or replace function security.provider_description_publication_read_v1'), SQL.indexOf('revoke all on function security.provider_description_quality_classes_v1'))
+  expect(pubRead).toContain('with f as (select ff.provider_id, ff.website_state, ff.zoho_state from security.provider_catalogue_facts_v1(p_ids, true) ff)')
+  expect(pubRead.match(/provider_catalogue_facts_v1/g)).toHaveLength(1)
+  expect(pubRead).not.toMatch(/left join lateral \(select ff\./)
   // a consumer's NOT_FOUND is not served (Not applicable), checked before the generic error; the Catalogue's own feed state is carried beside the read-back
   expect(SQL.indexOf("->'error'->>'code' = 'NOT_FOUND' then 'not_served'")).toBeGreaterThan(0)
   expect(SQL.indexOf("->'error'->>'code' = 'NOT_FOUND' then 'not_served'")).toBeLessThan(SQL.indexOf("w.body ? 'error' then 'error'"))
