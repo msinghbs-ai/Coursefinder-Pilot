@@ -63,15 +63,17 @@ function Jobs({lane,rank,busy,onControl}){
   return <div className="cf-table-wrap lf-frame"><table className="cf-table lf-jobs" data-lf-jobs={lane.lane}>
     <thead><tr><th>Job</th><th>Schedule</th><th>State</th><th>Next run</th><th>Last attempt</th><th className="num">Runs (green / failed)</th><th>First run after release</th><th>Control</th></tr></thead>
     <tbody>{(lane.jobs||[]).map(j=>{
-      const state=!j.scheduled?['neutral','Not scheduled']:!j.active?['warning','Paused']:j.running?['info','Running']:Number(j.failed)>0?['danger','Failing']:['success','Waiting']
+      // Operations load speed: the scheduler history is a summary kept by job lane-funnel; a job it does not hold is unknown, never "0 runs"
+      const known=j.history_known!==false
+      const state=!j.scheduled?['neutral','Not scheduled']:!j.active?['warning','Paused']:!known?['neutral','Unknown']:j.running?['info','Running']:Number(j.failed)>0?['danger','Failing']:['success','Waiting']
       const fr=j.first_run
       return <tr key={j.job} data-lf-job={j.job}>
         <td data-label="Job">{j.label||j.job}<br/><small>{j.job}</small></td>
         <td data-label="Schedule"><small title={j.schedule}>{j.schedule?cronText(j.schedule):'—'}</small></td>
         <td data-label="State"><StatusChip tone={state[0]} label={state[1]}/></td>
         <td data-label="Next run">{j.next_run?fmtDateTime(j.next_run):j.scheduled&&j.active?<small>{/seconds/.test(j.schedule||'')?'continuous':'unknown'}</small>:'—'}</td>
-        <td data-label="Last attempt">{j.last_start?<>{fmtDateTime(j.last_start)} <StatusChip value={j.last_status}/>{j.last_message&&j.last_status!=='succeeded'&&<small className="lf-error"> {j.last_message}</small>}</>:<span className="lf-unknown">{j.scheduled?'none in the history read':'—'}</span>}</td>
-        <td className="num" data-label="Runs">{j.scheduled?`${fmtNumber(j.succeeded)} / ${fmtNumber(j.failed)}`:'—'}</td>
+        <td data-label="Last attempt">{!known&&j.scheduled?<span className="lf-unknown">unknown</span>:j.last_start?<>{fmtDateTime(j.last_start)} <StatusChip value={j.last_status}/>{j.last_message&&j.last_status!=='succeeded'&&<small className="lf-error"> {j.last_message}</small>}</>:<span className="lf-unknown">{j.scheduled?'none in the history read':'—'}</span>}</td>
+        <td className="num" data-label="Runs">{j.scheduled?(known?`${fmtNumber(j.succeeded)} / ${fmtNumber(j.failed)}`:<span className="lf-unknown">unknown</span>):'—'}</td>
         <td data-label="First run after release">{fr?<><StatusChip value={fr.status}/> <small>{fr.release}{fr.reason?` · ${fr.reason}`:''}</small></>:<small>none registered</small>}</td>
         <td data-label="Control" className="lf-actions">{j.scheduled&&rank>=Number(j.control_rank||6)?<>
           {j.active?<Button compact disabled={busy} onClick={()=>onControl(j,'pause')}>Pause</Button>:<Button compact disabled={busy} onClick={()=>onControl(j,'resume')}>Resume</Button>}
@@ -147,11 +149,13 @@ export default function LaneFunnels({rank=0,onError,client=null}){
   // an older server (or a mocked one) without the read renders nothing rather than an empty frame
   if(!lanes.length)return err?<section className="m-panel" data-lane-funnels role="alert"><p>Lane funnels could not be read: {err}</p></section>:null
   const stamps=lanes.flatMap(l=>(l.stages||[]).map(s=>s.measured_at)).filter(Boolean).sort()
+  const jh=d.job_history,jhState=!jh?'':jh.known===false?'unknown':jh.stale?'stale':''
   const stale=lanes.flatMap(l=>l.stages||[]).filter(s=>s.stale).length,unknown=lanes.flatMap(l=>l.stages||[]).filter(s=>s.n==null).length
   return <section className="m-panel lf" data-lane-funnels aria-label="Lane funnels">
     <div className="cf-section-title"><div className="cf-section-heading"><h3>Lane funnels</h3><small>Every autonomous lane, stage by stage. A green job is not a transfer, and a transfer is not published data. &ldquo;Unknown&rdquo; means not counted, never zero.</small></div>
       <Button compact onClick={load} disabled={busy}><RefreshCw size={14}/>Refresh</Button></div>
     <p className="sl-sub" data-lf-stamp>Read {fmtDateTime(d.at)}. Oldest counted figure {stamps[0]?fmtDateTime(stamps[0]):'unknown'}; newest {stamps.length?fmtDateTime(stamps[stamps.length-1]):'unknown'}. {unknown>0?`${fmtNumber(unknown)} stage${unknown===1?'':'s'} not counted (unknown). `:''}{stale>0?`${fmtNumber(stale)} stale. `:''}Gains cover the last {fmtNumber(d.window_hours||24)} hours.</p>
+    {jhState&&<p className="sl-sub" data-lf-job-history={jhState}>{jhState==='unknown'?'The scheduler history (running now, last attempt, runs) has not been counted yet, so those columns show unknown.':`The scheduler history (running now, last attempt, runs) was counted ${jh.measured_at?fmtDateTime(jh.measured_at):'at an unknown time'}${jh.age_seconds!=null?`, ${age(jh.measured_at)} ago`:''} and is stale.`}{jh.error?` The last attempt to count it again failed: ${jh.error}`:''}</p>}
     {err&&<p role="alert" className="lf-error">{err}</p>}{msg&&<p role="status" className="l4i-note">{msg}</p>}
     <div className="lf-head" aria-hidden="true"><span>Lane</span><span>State</span><span>Jobs on</span><span>Last attempt</span><span>Transfer 24 h</span><span>Published 24 h</span><span>Waiting for a person</span><span>Oldest waiting</span><span>Credits 24 h</span></div>
     <div className="lf-lanes">{lanes.map(l=><Lane key={l.lane} lane={l} rank={rank} busy={busy} onControl={control} open={open===l.lane} onToggle={o=>setOpen(o?l.lane:(open===l.lane?'':open))}/>)}</div>
