@@ -56,13 +56,14 @@ So runs whose rows only lack evidence raise nothing. A row that validated but is
 | `intake-progress:publication-mismatch` | Some admitted values are not published while others are, so the publication transition still advances and never stalls. It is raised only while `intake_publication` is not stalled. When nothing publishes, the condition is `stall:intake_publication` and this issue is marked cleared, so one condition never carries two fingerprints. |
 | `intake-progress:repeated-deterministic` | A per-row invariant: a deterministic failure must not be decided again under unchanged inputs (mandate 12:44 §9). It is not a throughput measure. Only **confirmed** repeats are raised (see below). |
 
-**Repeat classification** (Platform Admin 5 Nov 2026 22:46, `security.intake_progress_repeats_v1`). Each deterministic refusal of the last day that repeats an earlier refusal of the same class for the same intake row is classified from existing records only. The checks run in this order:
+**Repeat classification** (Platform Admin 5 Nov 2026 22:46, `security.intake_progress_repeats_v1`). Each deterministic refusal of the last day that repeats an earlier refusal of the same class for the same intake row is classified from existing records only. The checks run in this order (a scheduled revisit is checked after a setting change and before the unverified diagnostic):
 
 | Status | When | Raised |
 |---|---|---|
 | `excluded_source_update` | The calendar set, calendar document, approved reading, periods, evidence year or stored course page wording differ between the two decisions (`pipeline.course_intake_date_events`). | no |
 | `excluded_reader_revision` | The reader or rule differ, or a release deployed between the two decisions changed an intake or calendar function (`pipeline.integration_deploy_checks.result->functions`). | no |
 | `excluded_setting_change` | An `intake_dates.*` or `run_now.*` setting was changed between them. Two sources are read. The first is the Settings audit (`pipeline.admin_control_events`, area `toolsets`/`settings`); an example is event 28963, `intake_dates.month_unique_match` 1 → 0 at 15:56. The second, for a change written without an audit row (for example by a release), is the setting's own `pipeline.platform_toolset_settings.updated_at`. That column is maintained (`month_unique_match` reads 04:56:00Z, the same as event 28963), but it holds only the latest change of each key. | no |
+| `excluded_scheduled_revisit` | The earlier decision set a revisit time (`next_revisit_at`, `intake_dates.revisit_days` after it) and this decision was made on or after it: a held row (evidence ambiguous, reader correction needed, calendar needs correction, human decision required) is looked at again on its timer from stored inputs only (migration 20261109040000, switch `intake_dates.revisit_stored_inputs`). The look is by design, not an unchanged repeat. A repeat decided before the revisit time is still `confirmed`. | no |
 | `unverified_repeat` | The inputs of the later decision cannot be established (no calendar set, no page wording or no rule) and the earlier decision lacks them too, so no difference can be seen. It also applies when a release between them does not record the functions it changed. A gap on the earlier decision only is a difference, classified as a source update, which is also not raised. | no. Shown as a diagnostic count on the screen. |
 | `confirmed` | Otherwise: evidence, reader and settings are demonstrably unchanged. | yes, one issue `intake-progress:repeated-deterministic` |
 
@@ -161,6 +162,8 @@ Results:
 | `intake_progress.monopoly_runs` | 3 runs | 1–24 | monopoly check |
 | `intake_progress.monopoly_share_pct` | 80 per cent | 50–100 | monopoly check |
 | `progress.intake_chain_on` (section First-run verification and progress) | 1 | 0–1 | the observer reads the intake chain and runs the intake checks only while 1 (forward recovery, §8) |
+| `intake_dates.revisit_stored_inputs` (section Intake dates) | 1 | 0–1 | held rows (evidence ambiguous, reader correction needed, calendar needs correction, human decision required) are looked at again on `intake_dates.revisit_days` from stored inputs (migration 20261109040000) |
+| `intake_dates.page_date_admit` (section Intake dates) | **0 (off)** | 0–1 | a start date printed on the course page is admitted only when the page is the course's own, the date is the only full date of the month with its year, it is inside `intake_dates.max_months_ahead`, quoted with its section label, and corroborated by an approved main-calendar start that day (P1) or by the audience shown (P2); page only (P3) is never admitted. Switched on only by the Platform Admin (migration 20261109042000) |
 
 - **Existing settings that now also apply to intake:** `progress.on`, `progress.window_hours` (24) and `progress.stall_hours` (6).
 - **Fixed windows:** latest, 24 hours, 7 days and 30 days are the windows named in 16:36 §3D (`-- fixed:`).
