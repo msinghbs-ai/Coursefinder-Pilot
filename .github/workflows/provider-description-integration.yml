@@ -87,6 +87,7 @@ jobs:
           tests/uat/cf-247-s500-pdesc-self-driving-contract.spec.mjs
           tests/uat/cf-247-s513-pdesc-lease-one-pass-contract.spec.mjs
           tests/uat/cf-247-s501-pdesc-machine-admission-contract.spec.mjs
+          tests/uat/cf-247-s515-pdesc-quote-fragments-setting-contract.spec.mjs
           tests/uat/cf-247-s504-pdesc-claim-word-context-contract.spec.mjs
           tests/uat/cf-247-s510-pdesc-registry-label-words-contract.spec.mjs
           tests/uat/cf-247-s511-pdesc-identity-reeval-contract.spec.mjs
