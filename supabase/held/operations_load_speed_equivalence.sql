@@ -4,7 +4,7 @@
 -- What it proves, on live data:
 --   1 lane_funnel_v1(null) and lane_funnel_v1('<each lane>'): the old function (this file holds its production text, md5 cd8ecc118783da99f50c6fbd035cd3c1) and the new one give the same JSON apart from the
 --     documented additions (job_history, history_known) and the cache-derived job fields (running, runs, failed, succeeded, last_start, last_end, last_status, last_message, last_success) and the clock
---     (at, next_run). Everything else must be identical. A cache-derived field may differ only where it is explained by the summary's age: a run started after the summary was made, or only the window's
+--     (at, next_run). Everything else must be identical. A lane whose job history is stale or unknown (job_history_state) says verdict unknown; its old verdict is the one compared, and the lane is counted. A cache-derived field may differ only where it is explained by the summary's age: a run started after the summary was made, or only the window's
 --     counts sliding (same last attempt and same state). Anything else is reported as UNEXPLAINED and fails the check.
 --   2 intake_progress_repeats_v1 (production md5 3f4a208ca8e0252eb17a1e21e73f80ca) and process_results_recovery_v1 (0bb7a5bd32ba384bf341214c9a5a9c3c): identical JSON (the recovery measurement
 --     ignores measured_at / window_since, which are the time it was read).
@@ -244,9 +244,12 @@ begin
     insert into eq_out(chk, result, ms_old, ms_new, detail) values
       ('lane funnel ' || coalesce(v_lane, '(all lanes)') || ': everything except the cache-derived job fields',
        case when v_bad = 0 and (v_a - 'at' - 'lanes') = (v_b - 'at' - 'lanes' - 'job_history')
-              and (select jsonb_agg(l - 'jobs' order by l->>'lane') from jsonb_array_elements(v_a->'lanes') l) is not distinct from (select jsonb_agg(l - 'jobs' order by l->>'lane') from jsonb_array_elements(v_b->'lanes') l)
+              and (select jsonb_agg(l - 'jobs' order by l->>'lane') from jsonb_array_elements(v_a->'lanes') l)
+              is not distinct from (select jsonb_agg((l - 'jobs' - 'job_history_state') || case when l->>'job_history_state' <> 'current' -- a lane whose job history is stale or unknown says verdict unknown: its old verdict is the one compared
+                                                           then jsonb_build_object('verdict', (select o.value->>'verdict' from jsonb_array_elements(v_a->'lanes') o where o.value->>'lane' = l->>'lane')) else '{}'::jsonb end order by l->>'lane')
+                                      from jsonb_array_elements(v_b->'lanes') l)
             then 'SAME' else 'DIFFERENT' end, round(v_ms_o, 1), round(v_ms_n, 1),
-       'jobs whose identity fields differ: ' || v_bad || '; jobs whose cache-derived fields differ: ' || v_diff || ', of which explained by the summary age: ' || v_exp ||
+       'jobs whose identity fields differ: ' || v_bad || '; jobs whose cache-derived fields differ: ' || v_diff || ', of which explained by the summary age: ' || v_exp || '; lanes whose job history is not current: ' || (select count(*) from jsonb_array_elements(v_b->'lanes') l where l->>'job_history_state' <> 'current') ||
        case when v_diff > v_exp then ' (UNEXPLAINED ' || (v_diff - v_exp) || ')' else '' end);
     if v_diff > v_exp then update eq_out set result = 'UNEXPLAINED' where n = (select max(n) from eq_out); end if;
   end loop;

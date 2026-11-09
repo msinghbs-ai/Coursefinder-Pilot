@@ -4,7 +4,7 @@ drop table if exists ols.old_out;
 create table ols.old_out(k text primary key, j jsonb not null);
 -- the answers that are compared: the cache-derived job fields and the time-derived next run are set aside (the first changes only within the cache's age, the second with the minute)
 create or replace function ols.norm_lane(j jsonb) returns jsonb language sql stable as $$
-  select (j - 'at' - 'job_history') || jsonb_build_object('lanes', (select coalesce(jsonb_agg(l || jsonb_build_object('jobs', (select coalesce(jsonb_agg(x - 'next_run' - 'history_known' order by x->>'job'), '[]'::jsonb) from jsonb_array_elements(l->'jobs') x)) order by l->>'lane'), '[]'::jsonb)
+  select (j - 'at' - 'job_history') || jsonb_build_object('lanes', (select coalesce(jsonb_agg((l - 'job_history_state') || jsonb_build_object('jobs', (select coalesce(jsonb_agg(x - 'next_run' - 'history_known' order by x->>'job'), '[]'::jsonb) from jsonb_array_elements(l->'jobs') x)) order by l->>'lane'), '[]'::jsonb)
                                                        from jsonb_array_elements(j->'lanes') l))
 $$;
 create or replace function ols.norm_rec(j jsonb) returns jsonb language sql stable as $$

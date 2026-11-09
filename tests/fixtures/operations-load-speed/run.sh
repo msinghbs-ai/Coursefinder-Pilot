@@ -12,7 +12,7 @@ F=tests/fixtures/operations-load-speed
 MIG=supabase/migrations/20261110020000_cf247_operations_load_speed.sql
 REC=supabase/held/operations_load_speed_forward_recovery.sql
 q() { psql -X -d "$1" -Atc "$2"; }
-cleanup() { for d in "$DB" "${DB}_refuse"; do $P -d postgres -c "drop database if exists $d" >/dev/null 2>&1 || true; done; }
+cleanup() { for d in "$DB" "${DB}_refuse" "${DB}_idx"; do $P -d postgres -c "drop database if exists $d" >/dev/null 2>&1 || true; done; }
 [ -n "${OLS_KEEP:-}" ] || trap cleanup EXIT
 cleanup
 $P -d postgres -c "create database $DB" >/dev/null
@@ -84,9 +84,18 @@ added=$(comm -13 "$W/0.fn" "$W/1.fn" | sed 's/ [0-9a-f]*$//' | sort | comm -23 -
 echo "migration: 5 edits from the recorded live md5 to the recorded after md5; 1 writer, 1 table, 1 index, 2 settings added; no other function, setting value, job, run, lane or stage changed"
 
 # the answers after the change, and the scenarios
-OUT=$(psql -X -d $DB -f $F/after.sql 2>&1) || { echo "$OUT" | grep -E 'FAILED|ERROR' ; exit 1; }
+OUT=$(psql -X -v ON_ERROR_STOP=1 -d $DB -f $F/after.sql 2>&1) || { echo "$OUT" | grep -E 'FAILED|ERROR' ; exit 1; }
 echo "$OUT" | grep 'NOTICE:  ok:' | sed 's/^[^N]*NOTICE:  //'
 echo "assertions passed: $(echo "$OUT" | grep -c 'NOTICE:  ok:')"
+
+# the partial index is kept only for its benefit: the migration's own statement, on a scratch table of the live size (208 thousand evidence rows)
+sed -n '/^create index if not exists evidence_artifacts_link_queue_idx/,/;$/p' $MIG > "$W/idx.sql"
+[ "$(grep -c '^create index' "$W/idx.sql")" = 1 ] || { echo "could not read the index statement from the migration"; exit 1; }
+IX=${DB}_idx
+$P -d postgres -c "drop database if exists $IX" >/dev/null 2>&1; $P -d postgres -c "create database $IX" >/dev/null
+OUT=$(psql -X -d $IX -v ON_ERROR_STOP=1 -v idxfile="$W/idx.sql" -f $F/index-benefit.sql 2>&1) || { echo "$OUT" | tail -12; exit 1; }
+echo "$OUT" | grep -E 'NOTICE: +(link queue|ok:)' | sed 's/^[^N]*NOTICE:  //'
+$P -d postgres -c "drop database if exists $IX" >/dev/null
 
 # applied again: no change (the migration is idempotent; the summary is made again, which changes only its own row)
 snap "$W/2"

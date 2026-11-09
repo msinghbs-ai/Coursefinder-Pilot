@@ -17,12 +17,15 @@
 -- What (the UI shows no change; the answers keep their shape; nothing the consumer API reads is touched):
 --   a pipeline.lane_funnel_job_runs            one row: the scheduler history of the lane jobs, summarised in ONE grouped pass over cron.job_run_details, with measured_at, the window and
 --                                              history it was made for, took_ms, and error / failed_at (a failed summary keeps the last good rows).
---   b security.lane_funnel_job_runs_refresh_v1 the only writer. It is called by the existing lane-funnel job (security.lane_funnel_refresh_v1, every minute): no new job, no new schedule. It is
+--   b security.lane_funnel_job_runs_refresh_v1 the only writer. It is called at the END of each run of the existing lane-funnel job (security.lane_funnel_refresh_v1, every minute; after the
+--                                              stage counts, inside its own handler, so it can never stop the run): no new job, no new schedule. It is
 --                                              not due until the summary is older than lane_funnel.job_runs_refresh_seconds, or the window or history setting changed. It excludes its own backend, so
 --                                              the job never reports itself as running.
 --   c security.lane_funnel_v1                  reads the job fields from the summary. The shape is the same; added only: job_history (measured_at, age, stale, known, error) and history_known per job.
---                                              A summary older than lane_funnel.job_runs_stale_minutes, a failed one, one made for another window, or none at all is reported stale or unknown, never
---                                              as current, and a job missing from the summary is unknown, never "0 runs". The stage counts (the lane readings) are unchanged and still live.
+--                                              A summary older than its threshold (the longer of lane_funnel.job_runs_stale_minutes and two looks of the job plus 30 s, so the two settings can never leave it stale for good), a failed one,
+--                                              one made for another window, or none at all is reported stale or unknown, never as current; a job missing from the summary is unknown, never "0 runs".
+--                                              Each lane says job_history_state (current, stale, unknown) and a lane whose verdict would rest on a stale or unknown history has the verdict unknown (a lane that is off stays off).
+--                                              The screen shows the summary's time beside every running state: the state is as at that time, up to a minute old. The stage counts (the lane readings) are unchanged and still live.
 --   d security.intake_progress_repeats_v1      st as materialized: the control log is read once.
 --   e security.process_results_recovery_v1     one grouped pass for the job arm (last run and last status of the five jobs by name, over the whole history, as before).
 --   f public.admin_layer23                     the operations action builds the inbox without its evidence detail (kind and provider are all it uses).
@@ -44,8 +47,8 @@
 -- Retires: nothing
 --
 -- Body md5 of each function (pg_proc.prosrc, read 10 Nov 2026 AEDT, project fxcwkweaxjtknorudmwp): live -> after this migration.
---   security.lane_funnel_v1(text) cd8ecc118783da99f50c6fbd035cd3c1 -> 93f3ece83f3fff3be0322b7844815b46
---   security.lane_funnel_refresh_v1(boolean) e3e4280b536fe985822608139714434e -> 268be58a1afd5cf26661d29885947f33
+--   security.lane_funnel_v1(text) cd8ecc118783da99f50c6fbd035cd3c1 -> a52dc6bbcea06b7eaa2a5bb40a05d0c4
+--   security.lane_funnel_refresh_v1(boolean) e3e4280b536fe985822608139714434e -> bdba1e435806cb88a2d5cf8370b96ab7
 --   security.intake_progress_repeats_v1() 3f4a208ca8e0252eb17a1e21e73f80ca -> c973fda29d27214c393dc6f4405a632c
 --   security.process_results_recovery_v1() 0bb7a5bd32ba384bf341214c9a5a9c3c -> 55686871dbffb3e2e381a5d11684d4e4
 --   public.admin_layer23(text,jsonb) 4c99a80f6899cda0d836dcc4196534de -> 5b4c18db5115318ff0423b0a5d5c4248
@@ -66,11 +69,11 @@ end $g$;
 -- 1. the settings (G2): how often the scheduler-history summary is made again, and when it is shown as stale ----------------------------------------------------
 insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, reason, section, used_by) values
  ('pipeline', 'lane_funnel.job_runs_refresh_seconds', 'Lane funnels: read the scheduler history again after',
-  'Job lane-funnel summarises the scheduler history of the lane jobs (last attempt, last success, runs in the window, running now) in one pass and keeps the summary; the lane funnel read on Layer 2/3 > Operations shows the summary and never scans the scheduler history. The summary is made again when it is older than this, or when the window or history setting below changed. The job looks every minute, so a value above 60 seconds means every second look.',
+  'Job lane-funnel summarises the scheduler history of the lane jobs (last attempt, last success, runs in the window, running now) in one pass and keeps the summary; the lane funnel read on Layer 2/3 > Operations shows the summary and never scans the scheduler history. The summary is made at the end of each run of the job, when it is older than this or when the window or history setting changed. The job looks every minute, so a value above 60 seconds means every second look.',
   'number', to_jsonb(45), 10, 600, 'seconds', 1710, 'CF-247 Operations load speed (10 Nov 2026): the lane funnel read stops scanning the scheduler history', 'Lane funnels', 'security.lane_funnel_job_runs_refresh_v1 (job lane-funnel)'),
  ('pipeline', 'lane_funnel.job_runs_stale_minutes', 'Lane funnels: job history marked stale after',
-  'The job columns of the lane funnels (running now, last attempt, runs) are marked stale when their summary is older than this, when the last summary failed, or when it was made for another window. A stale summary is shown with a notice and its age; it is never shown as current.',
-  'number', to_jsonb(5), 2, 120, 'minutes', 1711, 'CF-247 Operations load speed (10 Nov 2026)', 'Lane funnels', 'security.lane_funnel_v1')
+  'The job columns of the lane funnels (running now, last attempt, runs) are marked stale when their summary is older than this, when the last summary failed, or when it was made for another window. A stale summary is shown with a notice and its age, and a lane whose verdict rests on it says unknown; it is never shown as current. The time used is the longer of this and two looks of the job (the refresh time above, or one minute if that is shorter) plus 30 seconds, so no allowed pair of settings leaves the history stale for good.',
+  'number', to_jsonb(5), 2, 120, 'minutes', 1711, 'CF-247 Operations load speed (10 Nov 2026)', 'Lane funnels', 'security.lane_funnel_v1 (stale after the longer of this and 2 x the look interval of job lane-funnel + 30 s)')
 on conflict (toolset_key, key) do nothing;
 update pipeline.platform_toolset_settings set used_by = used_by || '; security.lane_funnel_job_runs_refresh_v1'
  where toolset_key = 'pipeline' and key in ('lane_funnel.gain_window_hours', 'lane_funnel.run_history_hours') and used_by not like '%lane_funnel_job_runs_refresh_v1%';
@@ -111,7 +114,8 @@ begin
     ids as (select c.jobid, w.jobname from want w join cron.job c on c.jobname = w.jobname),
     h as (
       select d.jobid, max(d.start_time) as last_start, (array_agg(d.end_time order by d.start_time desc))[1] as last_end, (array_agg(d.status order by d.start_time desc))[1] as last_status,
-             (array_agg(left(d.return_message, 240) order by d.start_time desc))[1] as last_message, max(d.start_time) filter (where d.status = 'succeeded') as last_success,
+             (array_agg(left(d.return_message, 240) order by d.start_time desc))[1] as last_message,  -- fixed: the scheduler's message is cut so a summary row stays small
+             max(d.start_time) filter (where d.status = 'succeeded') as last_success,
              count(*) filter (where d.start_time > now() - make_interval(hours => v_win)) as runs,
              count(*) filter (where d.start_time > now() - make_interval(hours => v_win) and d.status = 'failed') as failed,
              count(*) filter (where d.start_time > now() - make_interval(hours => v_win) and d.status = 'succeeded') as succeeded,
@@ -123,16 +127,21 @@ begin
              'last_success', h.last_success, 'runs', coalesce(h.runs, 0), 'failed', coalesce(h.failed, 0), 'succeeded', coalesce(h.succeeded, 0), 'running', coalesce(h.running, false))), '{}'::jsonb)
       into v_rows from want w left join ids i on i.jobname = w.jobname left join h on h.jobid = i.jobid;
     insert into pipeline.lane_funnel_job_runs as r(singleton, measured_at, window_hours, history_hours, jobs, took_ms, error, failed_at)
-      values (true, clock_timestamp(), v_win, v_hist, v_rows, (extract(epoch from clock_timestamp() - v_t0) * 1000)::int, null, null)
+      values (true, clock_timestamp(), v_win, v_hist, v_rows,
+              (extract(epoch from clock_timestamp() - v_t0) * 1000)::int,  -- fixed: seconds to milliseconds
+              null, null)
       on conflict (singleton) do update set measured_at = excluded.measured_at, window_hours = excluded.window_hours, history_hours = excluded.history_hours, jobs = excluded.jobs,
                                             took_ms = excluded.took_ms, error = null, failed_at = null;
     return jsonb_build_object('refreshed', true, 'jobs', (select count(*) from jsonb_object_keys(v_rows)));
   exception when others then
     -- a failed summary never overwrites the last good one: its rows and time stay, the error and its time are added (the read marks the history stale)
     insert into pipeline.lane_funnel_job_runs as r(singleton, measured_at, window_hours, history_hours, jobs, took_ms, error, failed_at)
-      values (true, clock_timestamp(), v_win, v_hist, null, (extract(epoch from clock_timestamp() - v_t0) * 1000)::int, left(sqlerrm, 300), clock_timestamp())
+      values (true, clock_timestamp(), v_win, v_hist, null,
+              (extract(epoch from clock_timestamp() - v_t0) * 1000)::int,  -- fixed: seconds to milliseconds
+              left(sqlerrm, 300),  -- fixed: an error text is cut so the row stays small
+              clock_timestamp())
       on conflict (singleton) do update set took_ms = excluded.took_ms, error = excluded.error, failed_at = excluded.failed_at;
-    return jsonb_build_object('refreshed', false, 'error', left(sqlerrm, 300));
+    return jsonb_build_object('refreshed', false, 'error', left(sqlerrm, 300));  -- fixed: an error text is cut so the answer stays small
   end;
 end $function$;
 revoke all on function security.lane_funnel_job_runs_refresh_v1(boolean) from public, anon, authenticated;
@@ -157,7 +166,7 @@ begin
   return p_sig || ': applied';
 end $f$;
 
-select pg_temp.edit_all('security.lane_funnel_v1(text)', 'cd8ecc118783da99f50c6fbd035cd3c1', '93f3ece83f3fff3be0322b7844815b46',
+select pg_temp.edit_all('security.lane_funnel_v1(text)', 'cd8ecc118783da99f50c6fbd035cd3c1', 'a52dc6bbcea06b7eaa2a5bb40a05d0c4',
 array[
 $old$  v_fc jsonb := security.fc_budget_status_v1();$old$,
 $old$begin
@@ -172,19 +181,27 @@ $old$        left join lateral (select d.start_time, d.end_time, d.status, d.ret
                                   count(*) filter (where d.start_time > now() - make_interval(hours => v_win) and d.status = 'succeeded') succeeded,
                                   bool_or(d.status in ('running', 'starting')) running, max(d.start_time) filter (where d.status = 'succeeded') last_success
                              from cron.job_run_details d where d.jobid = c.jobid and d.start_time > now() - make_interval(hours => v_hist)) g on true) q;$old$,
-$old$  return jsonb_build_object('at', now(), 'window_hours', v_win, 'lanes', v_out,$old$],
+$old$  return jsonb_build_object('at', now(), 'window_hours', v_win, 'lanes', v_out,$old$,
+$old$    v_verdict := case
+      when v_jobs_n = 0 and not exists (select 1 from jsonb_array_elements(v_sw) x) then 'unknown'
+      when coalesce(v_off_switch, false) or (v_jobs_n > 0 and v_active = 0) then 'off'$old$,
+$old$    v_lane := jsonb_build_object('lane', l.lane, 'title', l.title, 'what', l.what, 'screen', l.screen, 'review_kinds', to_jsonb(l.review_kinds), 'verdict', v_verdict,$old$],
 array[
 $new$  v_fc jsonb := security.fc_budget_status_v1();
-  v_jr_stale_after int := security.pipeline_num_v1('lane_funnel.job_runs_stale_minutes', 5)::int;  -- how old the job-history summary may be before it is marked stale
-  v_jr jsonb; v_jr_at timestamptz; v_jr_err text; v_jr_win int; v_jr_hist int; v_jr_failed timestamptz;$new$,
+  -- how old the job-history summary may be before it is marked stale, in seconds: the longer of the setting and two looks of job lane-funnel plus a grace, so allowed settings never leave it stale for good
+  v_jr_stale_after int := greatest(security.pipeline_num_v1('lane_funnel.job_runs_stale_minutes', 5)::int * 60,  -- fixed: minutes to seconds
+                                   2 * greatest(security.pipeline_num_v1('lane_funnel.job_runs_refresh_seconds', 45)::int, 60) + 30);  -- fixed: job lane-funnel looks once a minute (its schedule), so a summary is made again at most every second look; two looks and 30 s of grace before it is called stale
+  v_jr jsonb; v_jr_at timestamptz; v_jr_err text; v_jr_win int; v_jr_hist int; v_jr_failed timestamptz; v_jr_stale boolean; v_jh_state text;$new$,
 $new$begin
-  -- the scheduler history of the lane jobs is read from the summary that job lane-funnel keeps (security.lane_funnel_job_runs_refresh_v1) and never from
-  -- the scheduler run table has no index on (job, time), so the old two scans per job per lane read 82 thousand rows each time
+  -- the scheduler history of the lane jobs is read from the summary that job lane-funnel keeps at the end of each run (security.lane_funnel_job_runs_refresh_v1), not from the
+  -- scheduler's run table: that table has no index on (job, time), so the old two scans per job per lane read 82 thousand rows each time
   select r.jobs, r.measured_at, r.error, r.window_hours, r.history_hours, r.failed_at into v_jr, v_jr_at, v_jr_err, v_jr_win, v_jr_hist, v_jr_failed
     from pipeline.lane_funnel_job_runs r where r.singleton;
+  -- stale: older than its threshold, a failed last summary, one made for another window, or none; a stale or missing summary is never shown as current (the lane verdict says unknown)
+  v_jr_stale := v_jr is null or v_jr_at < now() - make_interval(secs => v_jr_stale_after) or v_jr_err is not null or v_jr_win is distinct from v_win or v_jr_hist is distinct from v_hist;
   for l in select * from pipeline.lane_funnel_lanes x where p_lane is null or x.lane = p_lane order by x.sort, x.lane loop$new$,
 $new$          'running', coalesce(g.running, false), 'runs', coalesce(g.runs, 0), 'failed', coalesce(g.failed, 0), 'succeeded', coalesce(g.succeeded, 0),
-          'last_start', g.last_start, 'last_end', g.last_end, 'last_status', g.last_status, 'last_message', left(g.last_message, 240),
+          'last_start', g.last_start, 'last_end', g.last_end, 'last_status', g.last_status, 'last_message', g.last_message,
           'last_success', g.last_success, 'history_known', coalesce(jsonb_typeof(v_jr -> j.jobname) = 'object', false),$new$,
 $new$        left join lateral (select x.* from jsonb_to_record(case when jsonb_typeof(v_jr -> j.jobname) = 'object' then v_jr -> j.jobname end)
                              as x(last_start timestamptz, last_end timestamptz, last_status text, last_message text, last_success timestamptz,
@@ -192,16 +209,34 @@ $new$        left join lateral (select x.* from jsonb_to_record(case when jsonb_
 $new$  return jsonb_build_object('at', now(), 'window_hours', v_win, 'lanes', v_out,
     -- how fresh the job history is: a summary older than its threshold, a failed last summary, or one made for another window is stale, never shown as current
     'job_history', jsonb_build_object('known', v_jr is not null, 'measured_at', v_jr_at, 'age_seconds', case when v_jr_at is not null then round(extract(epoch from now() - v_jr_at)) end,
-      'stale', v_jr is null or v_jr_at < now() - make_interval(mins => v_jr_stale_after) or v_jr_err is not null or v_jr_win is distinct from v_win or v_jr_hist is distinct from v_hist,
-      'error', v_jr_err, 'failed_at', v_jr_failed, 'window_hours', v_jr_win, 'history_hours', v_jr_hist, 'stale_after_minutes', v_jr_stale_after),$new$]);
+      'stale', v_jr_stale,
+      'error', v_jr_err, 'failed_at', v_jr_failed, 'window_hours', v_jr_win, 'history_hours', v_jr_hist, 'stale_after_seconds', v_jr_stale_after),$new$,
+$new$    -- the state of the job history behind this lane's job results: unknown (no summary, or a job of the lane that is on is not in it), stale (older than its threshold, failed, other window) or current
+    v_jh_state := case when v_jobs_n = 0 then 'current'
+                       when v_jr is null or exists (select 1 from jsonb_array_elements(v_jobs) x where (x->>'active')::boolean and not (x->>'history_known')::boolean) then 'unknown'
+                       when v_jr_stale then 'stale' else 'current' end;
+    v_verdict := case
+      when v_jobs_n = 0 and not exists (select 1 from jsonb_array_elements(v_sw) x) then 'unknown'
+      when coalesce(v_off_switch, false) or (v_jobs_n > 0 and v_active = 0) then 'off'
+      -- a verdict that rests on job results is not given from a history that is unknown or stale (all-zero counts would read as idle or transferring, an old failure as failing)
+      when v_jh_state <> 'current' then 'unknown'$new$,
+$new$    v_lane := jsonb_build_object('lane', l.lane, 'title', l.title, 'what', l.what, 'screen', l.screen, 'review_kinds', to_jsonb(l.review_kinds), 'verdict', v_verdict,
+      'job_history_state', v_jh_state,$new$]);
 
-select pg_temp.edit_all('security.lane_funnel_refresh_v1(boolean)', 'e3e4280b536fe985822608139714434e', '268be58a1afd5cf26661d29885947f33',
+select pg_temp.edit_all('security.lane_funnel_refresh_v1(boolean)', 'e3e4280b536fe985822608139714434e', 'bdba1e435806cb88a2d5cf8370b96ab7',
 array[
-$old$  if not pg_try_advisory_xact_lock(hashtext('lane_funnel_refresh')) then return jsonb_build_object('skipped', 'another count is running'); end if;$old$],
+$old$  perform set_config('statement_timeout', v_prev, true);
+  return jsonb_build_object('counted', v_done, 'failed', v_failed);$old$],
 array[
-$new$  if not pg_try_advisory_xact_lock(hashtext('lane_funnel_refresh')) then return jsonb_build_object('skipped', 'another count is running'); end if;
-  -- the scheduler history of the lane jobs, summarised in one pass for the lane funnel read (its own failure handling: a failure never stops the stage counts below)
-  perform security.lane_funnel_job_runs_refresh_v1(p_force);$new$]);
+$new$  -- the scheduler history of the lane jobs, summarised in one pass for the lane funnel read, at the END of the run (after the stage counts, so it is as recent as the run can make it).
+  -- Its own handler records a failure of the summary; this block makes sure that nothing it does can stop the run: the stage counts above are already written.
+  begin
+    perform security.lane_funnel_job_runs_refresh_v1(p_force);
+  exception when others then
+    raise warning 'lane funnel job history summary failed: %', left(sqlerrm, 300);  -- fixed: an error text is cut so the log line stays short
+  end;
+  perform set_config('statement_timeout', v_prev, true);
+  return jsonb_build_object('counted', v_done, 'failed', v_failed);$new$]);
 
 select pg_temp.edit_all('security.intake_progress_repeats_v1()', '3f4a208ca8e0252eb17a1e21e73f80ca', 'c973fda29d27214c393dc6f4405a632c',
 array[
@@ -233,6 +268,8 @@ $new$  -- only the kind and the university of each item are used here: the detai
 -- 5. one plain index: the queue count of job evidence-link-index (a line of public.admin_live_activity_v1, read by the Running view of Operations) ----------------------
 -- The count walked 104,722 evidence rows through evidence_source_idx and their heap (86 thousand buffers, 0.93 s) to find the few without an index state. The index holds exactly the rows
 -- the count tests (same condition, so the count's own text is unchanged and answers from the index alone). A plain index: nothing is dropped; the build over the 208 thousand rows takes a moment.
+-- Benefit shown (tests/fixtures/operations-load-speed/index-benefit.sql, a scratch table of the live size: 208 thousand rows, 41,600 heap pages): the count took 350 to 630 ms with a
+-- sequential pass over the heap and 85 to 170 ms as an index only scan with no heap fetch (2.7 to 5 times faster). The live figure (0.93 s) cannot be measured without the index.
 create index if not exists evidence_artifacts_link_queue_idx on pipeline.evidence_artifacts (source_id, id)
   where storage_path is not null and storage_path !~ '^[a-z-]+://' and evidence_type in ('layer2_html_snapshot','layer2_extraction_input','source_snapshot','provider_contact_html_snapshot')
     and (mime_type ilike '%html%' or mime_type ilike '%json%');
@@ -259,6 +296,10 @@ begin
   if position('cron.job_run_details' in v_def) > 0 then raise exception 'operations load speed post-check: the lane funnel read still scans the scheduler history'; end if;
   if position('security.lane_funnel_job_runs_refresh_v1' in pg_get_functiondef('security.lane_funnel_refresh_v1(boolean)'::regprocedure)) = 0 then
     raise exception 'operations load speed post-check: job lane-funnel does not make the job history summary';
+  end if;
+  v_def := pg_get_functiondef('security.lane_funnel_refresh_v1(boolean)'::regprocedure);
+  if position('lane_funnel_job_runs_refresh_v1' in v_def) < position('insert into pipeline.lane_funnel_history' in v_def) then
+    raise exception 'operations load speed post-check: the job history summary is made before the stage counts, not at the end of the run';
   end if;
   if position('as materialized' in pg_get_functiondef('security.intake_progress_repeats_v1()'::regprocedure)) = 0 then raise exception 'operations load speed post-check: the repeat check is not materialised'; end if;
   if position('layer4_inbox_items_v2(null, null, null, false)' in pg_get_functiondef('public.admin_layer23(text,jsonb)'::regprocedure)) = 0 then raise exception 'operations load speed post-check: Layer 2/3 operations still builds the inbox detail'; end if;

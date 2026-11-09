@@ -10,6 +10,7 @@ const rec = fs.readFileSync('supabase/held/operations_load_speed_forward_recover
 const eq = fs.readFileSync('supabase/held/operations_load_speed_equivalence.sql', 'utf8')
 const run = fs.readFileSync('tests/fixtures/operations-load-speed/run.sh', 'utf8')
 const after = fs.readFileSync('tests/fixtures/operations-load-speed/after.sql', 'utf8')
+const idx = fs.readFileSync('tests/fixtures/operations-load-speed/index-benefit.sql', 'utf8')
 const wf = fs.readFileSync('.github/workflows/operations-load-speed-test.yml', 'utf8')
 const ui = fs.readFileSync('src/LaneFunnels.jsx', 'utf8')
 const FUNCTIONS = ['security.lane_funnel_v1(text)', 'security.lane_funnel_refresh_v1(boolean)', 'security.intake_progress_repeats_v1()', 'security.process_results_recovery_v1()', 'public.admin_layer23(text,jsonb)']
@@ -46,6 +47,48 @@ test.describe('Operations load speed: migration', () => {
     expect(writer).toContain('failed_at')
     expect(mig).toMatch(/revoke all on function security\.lane_funnel_job_runs_refresh_v1\(boolean\) from public, anon, authenticated/)
     expect(mig).toMatch(/alter table pipeline\.lane_funnel_job_runs enable row level security/)
+  })
+
+  test('the summary is made at the END of the lane-funnel run inside its own handler, so it is as recent as the run can make it and can never stop the run', () => {
+    const refresh = mig.slice(mig.indexOf("select pg_temp.edit_all('security.lane_funnel_refresh_v1(boolean)'"), mig.indexOf("select pg_temp.edit_all('security.intake_progress_repeats_v1()'"))
+    const added = [...refresh.matchAll(/\$new\$([\s\S]*?)\$new\$/g)].map((m) => m[1]).join('\n')
+    expect(added).toMatch(/begin\s+perform security\.lane_funnel_job_runs_refresh_v1\(p_force\);\s+exception when others then\s+raise warning/)
+    // it is placed after the stage counts: the only text after it is the restore of the statement time-out and the return
+    expect(added.indexOf('lane_funnel_job_runs_refresh_v1')).toBeLessThan(added.indexOf("perform set_config('statement_timeout', v_prev, true)"))
+    expect(refresh).not.toMatch(/pg_try_advisory_xact_lock[^$]*perform security\.lane_funnel_job_runs_refresh_v1/)
+    expect(mig).toContain('is made before the stage counts, not at the end of the run')
+  })
+
+  test('a lane whose verdict would rest on a stale or unknown job history says unknown, and the two settings cannot leave the history stale for good', () => {
+    const reader = mig.slice(mig.indexOf("select pg_temp.edit_all('security.lane_funnel_v1(text)'"), mig.indexOf("select pg_temp.edit_all('security.lane_funnel_refresh_v1(boolean)'"))
+    const becomes = [...reader.matchAll(/\$new\$([\s\S]*?)\$new\$/g)].map((m) => m[1]).join('\n')
+    expect(becomes).toContain("'job_history_state', v_jh_state")
+    expect(becomes).toMatch(/when v_jh_state <> 'current' then 'unknown'/)
+    expect(becomes).toMatch(/when coalesce\(v_off_switch, false\) or \(v_jobs_n > 0 and v_active = 0\) then 'off'\s+--[^\n]*\n\s+when v_jh_state <> 'current'/) // a lane that is off stays off
+    expect(becomes).toMatch(/greatest\(security\.pipeline_num_v1\('lane_funnel\.job_runs_stale_minutes', 5\)::int \* 60,/)
+    expect(becomes).toMatch(/2 \* greatest\(security\.pipeline_num_v1\('lane_funnel\.job_runs_refresh_seconds', 45\)::int, 60\) \+ 30\)/)
+    expect(becomes).toContain("'stale_after_seconds', v_jr_stale_after")
+    expect(mig).toContain('no allowed pair of settings leaves the history stale for good')
+  })
+
+  test('every line of the new code that holds a bare number is marked fixed with its reason (G2)', () => {
+    const marked = (re) => mig.split('\n').filter((l) => re.test(l) && !/^\s*--/.test(l)).every((l) => /-- fixed: /.test(l))
+    expect(marked(/left\(sqlerrm, 300\)/)).toBe(true)
+    expect(marked(/left\(d\.return_message, 240\)/)).toBe(true)
+    expect(marked(/\* 1000\)::int/)).toBe(true)
+    expect(marked(/\* 60,/)).toBe(true)
+    expect(marked(/\+ 30\)/)).toBe(true)
+  })
+
+  test('the partial index is kept only for a shown benefit: a scratch table of the live size, an index only scan, no heap fetch and a faster count', () => {
+    expect(idx).toMatch(/^-- Guards: /m)
+    expect(idx).toContain('generate_series(1, 208000)')
+    expect(idx).toContain('Index Only Scan using evidence_artifacts_link_queue_idx')
+    expect(idx).toContain('Heap Fetches: 0')
+    expect(idx).toMatch(/t_after \* 1\.5 > t_before/)
+    expect(run).toContain('index-benefit.sql')
+    expect(run).toContain('-v ON_ERROR_STOP=1 -d $DB -f $F/after.sql') // a failed assertion stops the harness (it did not once)
+    expect(mig).toContain('index-benefit.sql')
   })
 
   test('the numbers are settings (G2) and the other fixes are plain: materialised control log, grouped recovery pass, inbox without detail, partial index', () => {
@@ -106,6 +149,8 @@ test.describe('Operations load speed: held scripts, fixture and workflow', () =>
   test('the lane funnel screen marks a stale or unknown job history and keeps the data attribute off a current one', () => {
     expect(ui).toContain('data-lf-job-history')
     expect(ui).toContain('history_known')
+    expect(ui).toContain('job_history_state')
+    expect(ui).toContain('data-lf-as-at')
   })
 })
 
@@ -138,6 +183,32 @@ test.describe('Operations load speed: lane funnels screen', () => {
     await expect(note).toContainText('is stale')
     await expect(note).toContainText('12 min ago')
     await expect(note).toContainText('failed: canceling statement due to statement timeout')
+  })
+
+  test('a running job and the lane job result say as at when the summary was counted', async ({ page }) => {
+    const lanes = withHistory({ known: true, stale: false, measured_at: at(0.5), age_seconds: 30 })
+    lanes.lanes[0].jobs[0].running = true
+    await mockAdmin(page); await mockLaneFunnels(page, { lanes })
+    await page.goto(OPERATIONS)
+    const root = page.locator('[data-lane-funnels]')
+    await root.locator('[data-lf-lane="fee"] summary').click()
+    const row = root.locator('[data-lf-job="fee-reader"]')
+    await expect(row.locator('td[data-label="State"]')).toContainText('Running')
+    await expect(row.locator('[data-lf-as-at]')).toContainText('as at')
+    await expect(root.locator('[data-lf-lane="fee"] [data-lf-three]')).toContainText('as at')
+  })
+
+  test('a lane whose job history is stale says unknown for its job result and its verdict, not a confident value', async ({ page }) => {
+    const lanes = withHistory({ known: true, stale: true, measured_at: at(12), age_seconds: 720 })
+    lanes.lanes[0].job_history_state = 'stale'; lanes.lanes[0].verdict = 'unknown'
+    await mockAdmin(page); await mockLaneFunnels(page, { lanes })
+    await page.goto(OPERATIONS)
+    const fee = page.locator('[data-lane-funnels] [data-lf-lane="fee"]')
+    await expect(fee).toHaveAttribute('data-lf-verdict', 'unknown')
+    await fee.locator('summary').click()
+    await expect(fee.locator('[data-lf-job-result]')).toHaveText('unknown')
+    await expect(fee.locator('[data-lf-three]')).toContainText('stale')
+    await expect(page.locator('[data-lf-lane="aer"] [data-lf-three]')).toHaveCount(0) // a closed lane keeps its body hidden
   })
 
   test('an unknown job history says unknown for the running state, last attempt and runs, never 0', async ({ page }) => {

@@ -59,7 +59,7 @@ function Stages({lane}){
     </tbody></table></div>
 }
 
-function Jobs({lane,rank,busy,onControl}){
+function Jobs({lane,rank,busy,onControl,asAt}){
   return <div className="cf-table-wrap lf-frame"><table className="cf-table lf-jobs" data-lf-jobs={lane.lane}>
     <thead><tr><th>Job</th><th>Schedule</th><th>State</th><th>Next run</th><th>Last attempt</th><th className="num">Runs (green / failed)</th><th>First run after release</th><th>Control</th></tr></thead>
     <tbody>{(lane.jobs||[]).map(j=>{
@@ -70,7 +70,7 @@ function Jobs({lane,rank,busy,onControl}){
       return <tr key={j.job} data-lf-job={j.job}>
         <td data-label="Job">{j.label||j.job}<br/><small>{j.job}</small></td>
         <td data-label="Schedule"><small title={j.schedule}>{j.schedule?cronText(j.schedule):'—'}</small></td>
-        <td data-label="State"><StatusChip tone={state[0]} label={state[1]}/></td>
+        <td data-label="State"><StatusChip tone={state[0]} label={state[1]}/>{j.scheduled&&j.active&&known&&asAt&&<small className="lf-asat" data-lf-as-at title="The scheduler history is counted by job lane-funnel at the end of each of its runs, so this state is as at that time, up to a minute old."> as at {fmtDateTime(asAt)}</small>}</td>
         <td data-label="Next run">{j.next_run?fmtDateTime(j.next_run):j.scheduled&&j.active?<small>{/seconds/.test(j.schedule||'')?'continuous':'unknown'}</small>:'—'}</td>
         <td data-label="Last attempt">{!known&&j.scheduled?<span className="lf-unknown">unknown</span>:j.last_start?<>{fmtDateTime(j.last_start)} <StatusChip value={j.last_status}/>{j.last_message&&j.last_status!=='succeeded'&&<small className="lf-error"> {j.last_message}</small>}</>:<span className="lf-unknown">{j.scheduled?'none in the history read':'—'}</span>}</td>
         <td className="num" data-label="Runs">{j.scheduled?(known?`${fmtNumber(j.succeeded)} / ${fmtNumber(j.failed)}`:<span className="lf-unknown">unknown</span>):'—'}</td>
@@ -96,13 +96,13 @@ function Settings({lane}){
   </div>
 }
 
-function Lane({lane,rank,busy,onControl,open,onToggle}){
+function Lane({lane,rank,busy,onControl,open,onToggle,asAt}){
   const v=VERDICT[lane.verdict]||VERDICT.unknown
   const human=(lane.stages||[]).find(s=>s.kind==='human_review'),adm=lane.transfer_24h,pub=lane.published_24h
   const oldest=(lane.stages||[]).filter(s=>s.oldest_at&&['eligible','queued','human_review','review_ready','blocked'].includes(s.kind)).map(s=>s.oldest_at).sort()[0]
   const lastJob=(lane.jobs||[]).filter(j=>j.last_start).sort((a,b)=>b.last_start.localeCompare(a.last_start))[0]
   const nextJob=(lane.jobs||[]).filter(j=>j.next_run).sort((a,b)=>a.next_run.localeCompare(b.next_run))[0]
-  const b=lane.budget
+  const b=lane.budget,jhs=lane.job_history_state||'current'
   return <details className="lf-lane" open={open} data-lf-lane={lane.lane} data-lf-verdict={lane.verdict} onToggle={e=>{if(e.currentTarget.open!==open)onToggle(e.currentTarget.open)}}>
     <summary>
       <span className="lf-name"><strong>{lane.title}</strong></span>
@@ -118,13 +118,13 @@ function Lane({lane,rank,busy,onControl,open,onToggle}){
     {open&&<div className="lf-body">
       <p className="sl-sub">{lane.what} {v[2]}.</p>
       {lane.screen&&<p className="sl-sub">Worked on: {lane.screen}.</p>}
-      <div className="lf-three" data-lf-three><div><small>Job result</small><strong>{lane.jobs_green>0?`${fmtNumber(lane.jobs_green)} green`:'no green job'}{lane.jobs_failing>0?`, ${fmtNumber(lane.jobs_failing)} failing`:''}</strong><small>the scheduler's word, not data</small></div>
+      <div className="lf-three" data-lf-three><div><small>Job result</small>{jhs!=='current'?<><strong data-lf-job-result="unknown">unknown</strong><small>{jhs==='unknown'?'the scheduler history has not been counted':`the scheduler history is stale${asAt?` (as at ${fmtDateTime(asAt)})`:''}`}</small></>:<><strong>{lane.jobs_green>0?`${fmtNumber(lane.jobs_green)} green`:'no green job'}{lane.jobs_failing>0?`, ${fmtNumber(lane.jobs_failing)} failing`:''}</strong><small>the scheduler's word, not data{asAt?`, as at ${fmtDateTime(asAt)}`:''}</small></>}</div>
         <div><small>Stage transfer (admitted, 24 h)</small><strong>{adm==null?'unknown':fmtNumber(adm)}</strong><small>values placed in the catalogue</small></div>
         <div><small>Published (24 h)</small><strong>{pub==null?'unknown':fmtNumber(pub)}</strong><small>reached the consumer-visible stage</small></div></div>
       {b&&<p className="sl-sub" data-lf-budget>Firecrawl budget group &ldquo;{b.label}&rdquo;, shared by every lane that reads with it: used today {fmtNumber(Number(b.used_today||0))} of {fmtNumber(Number(b.share_today||0))} credits, refused today {fmtNumber(Number(b.refused_today||0))}, {fmtNumber(Number(b.credits_window||0))} credits in the window. Credits, not money.</p>}
       {(lane.issues||[]).length>0&&<p className="sl-sub" data-lf-issues>Issues: {lane.issues.map(i=>`${i.ref} ${words(i.status)} (${i.severity})`).join(' · ')}</p>}
       <h4 className="sl-h4">Stages</h4><Stages lane={lane}/>
-      <h4 className="sl-h4">Jobs and controls</h4><Jobs lane={lane} rank={rank} busy={busy} onControl={onControl}/>
+      <h4 className="sl-h4">Jobs and controls</h4><Jobs lane={lane} rank={rank} busy={busy} onControl={onControl} asAt={asAt}/>
       <h4 className="sl-h4">Switches and settings</h4><Settings lane={lane}/>
     </div>}
   </details>
@@ -158,6 +158,6 @@ export default function LaneFunnels({rank=0,onError,client=null}){
     {jhState&&<p className="sl-sub" data-lf-job-history={jhState}>{jhState==='unknown'?'The scheduler history (running now, last attempt, runs) has not been counted yet, so those columns show unknown.':`The scheduler history (running now, last attempt, runs) was counted ${jh.measured_at?fmtDateTime(jh.measured_at):'at an unknown time'}${jh.age_seconds!=null?`, ${age(jh.measured_at)} ago`:''} and is stale.`}{jh.error?` The last attempt to count it again failed: ${jh.error}`:''}</p>}
     {err&&<p role="alert" className="lf-error">{err}</p>}{msg&&<p role="status" className="l4i-note">{msg}</p>}
     <div className="lf-head" aria-hidden="true"><span>Lane</span><span>State</span><span>Jobs on</span><span>Last attempt</span><span>Transfer 24 h</span><span>Published 24 h</span><span>Waiting for a person</span><span>Oldest waiting</span><span>Credits 24 h</span></div>
-    <div className="lf-lanes">{lanes.map(l=><Lane key={l.lane} lane={l} rank={rank} busy={busy} onControl={control} open={open===l.lane} onToggle={o=>setOpen(o?l.lane:(open===l.lane?'':open))}/>)}</div>
+    <div className="lf-lanes">{lanes.map(l=><Lane key={l.lane} lane={l} rank={rank} busy={busy} onControl={control} asAt={jh?.known===false?null:jh?.measured_at} open={open===l.lane} onToggle={o=>setOpen(o?l.lane:(open===l.lane?'':open))}/>)}</div>
   </section>
 }
