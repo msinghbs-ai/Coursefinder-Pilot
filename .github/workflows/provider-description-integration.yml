@@ -66,6 +66,7 @@ jobs:
         run: >-
           npx playwright test
           tests/uat/provider-description-source-identity.spec.mjs
+          tests/uat/cf-247-s512-pdesc-quote-fragments-contract.spec.mjs
           tests/uat/provider-description-navigation.spec.mjs
           tests/uat/provider-description-navigation-ui.spec.mjs
           tests/uat/cf-247-s216-p1-provider-descriptions-contract.spec.mjs
