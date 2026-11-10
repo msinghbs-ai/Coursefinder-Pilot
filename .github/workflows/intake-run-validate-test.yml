@@ -14,6 +14,8 @@ on:
       - 'tests/fixtures/intake-self-driving/**'
       - 'tests/fixtures/intake-page-date-recovery/**'
       - 'supabase/held/intake_page_date_recovery_forward_recovery.sql'
+      - 'tests/fixtures/intake-hyphen-dates/**'
+      - 'supabase/held/intake_hyphen_dates_forward_recovery.sql'
       - 'tests/fixtures/intake-revisit-backfill/**'
       - 'tests/fixtures/intake-calendar-qualify/**'
       - 'docs/paste/PASTE-20261108-iq00313-deakin-intake-withdrawal.sql'
@@ -59,7 +61,8 @@ jobs:
       - run: bash tests/fixtures/intake-fairness/browser.sh | tee intake-fairness-browser.log
       - run: DK_KEEP=1 bash tests/fixtures/deakin-intake-calendar/run.sh | tee intake-deakin-calendar-results.log
       - run: SD_REUSE=1 SD_KEEP=1 bash tests/fixtures/intake-self-driving/run.sh | tee intake-self-driving-results.log
-      - run: bash tests/fixtures/intake-page-date-recovery/run.sh | tee intake-page-date-recovery-results.log
+      - run: PR_KEEP=1 bash tests/fixtures/intake-page-date-recovery/run.sh | tee intake-page-date-recovery-results.log
+      - run: bash tests/fixtures/intake-hyphen-dates/run.sh | tee intake-hyphen-dates-results.log
       - run: CQ_REUSE=1 bash tests/fixtures/intake-calendar-qualify/run.sh | tee intake-calendar-qualify-results.log
       - run: RB_REUSE=1 bash tests/fixtures/intake-revisit-backfill/run.sh | tee intake-revisit-backfill-results.log
       - uses: actions/upload-artifact@v4
@@ -77,6 +80,7 @@ jobs:
             intake-deakin-calendar-results.log
             intake-self-driving-results.log
             intake-page-date-recovery-results.log
+            intake-hyphen-dates-results.log
             intake-calendar-qualify-results.log
             intake-revisit-backfill-results.log
             uat-artifacts/intake-integration.json
