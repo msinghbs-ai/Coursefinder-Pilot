@@ -108,6 +108,12 @@ jobs:
           PGPORT: "5432"
           PGUSER: postgres
         run: bash tests/fixtures/pdesc-dd-ai/run.sh
+      - name: Sentence-subset recovery of machine-declined provider readings, and the attempts rules (scratch PostgreSQL 16)
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: "5432"
+          PGUSER: postgres
+        run: bash tests/fixtures/pdesc-subset-recovery/run.sh
       - name: The provider-description prompt of the worker is registered as a new version (scratch PostgreSQL 16)
         env:
           PGHOST: 127.0.0.1
@@ -139,6 +145,9 @@ jobs:
           tests/uat/cf-247-pdesc-sentence-filter-contract.spec.mjs
           tests/uat/cf-247-pdesc-reservation-settlement-contract.spec.mjs
           tests/uat/cf-247-pdesc-dd-ai-contract.spec.mjs
+          tests/uat/cf-247-pdesc-subset-recovery-contract.spec.mjs
+          tests/uat/cf-247-provider-fill-fields-ui.spec.mjs
+          tests/uat/cf-247-provider-fill-fields-contract.spec.mjs
           tests/uat/cf-247-pdesc-identity-seen.spec.mjs
           tests/uat/cf-247-s516-pdesc-identity-sentence-entities-contract.spec.mjs
           tests/uat/cf-247-s32-controls-in-settings-contract.spec.mjs
