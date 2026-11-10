@@ -12,14 +12,15 @@
 --   Consumer publication: the decisions that hold a date, by publication state, and when it was last checked (the existing check). Blockers: the job switched off, the page route switched off, and the held causes above with their count and kind
 --     (technical, decision, source). A figure that cannot be counted returns known false with the error: the rest of Data Delivery is not affected.
 --   Cost (live, 10 Nov 2026, EXPLAIN ANALYZE of the same statements, read only): the events, decisions and denominator parts 315 ms, the page-date hint over the 9,262 month-only decisions 630 ms. The statement time-out is 8 s.
--- Live definition this change edits (pg_proc.prosrc md5, read 10 Nov 2026, project fxcwkweaxjtknorudmwp), before -> after:
---   security.data_delivery_v1() 849453412a8b9a448118e7b87362752a -> 630f8696c18ff05703bb9798ed6fe8fa
+-- Definitions (pg_proc.prosrc md5):
 --   security.data_delivery_intake_v1() (new) -> ed0361e1ab65cf4525836f4fdd055287
--- The edit is guarded: the migration stops, and nothing is applied, if the live body is neither the one it replaces nor the one it writes; applying it twice changes nothing. The text before is kept in supabase/held/dd_intake_delivery_forward_recovery.sql.
--- Depends on 20261110150000 (the 'provider_ai' key as it leaves it) and 20261110170000 (security.intake_page_date_hint_v1). Another change that edits security.data_delivery_v1 first changes its md5: this migration then stops and is re-based on the new text.
+--   security.data_delivery_v1() is edited by several streams, so its edit is ONE ANCHORED LINE applied once to whatever body is live (the pattern of 20261110160000): the 'intake_delivery' line is inserted after the existing 'provider_ai' line,
+--   skipped when the body already carries it, and refused (nothing applied) when the anchor is not found exactly once. Read 10 Nov 2026 the live body was 849453412a8b9a448118e7b87362752a; on its own this edit makes 630f8696c18ff05703bb9798ed6fe8fa; on top of the AER edit (04b560cfb6b79758e2b694c96771be33) the result carries both keys.
+--   The forward recovery (supabase/held/dd_intake_delivery_forward_recovery.sql) removes only this line, so the keys other streams added stay.
+-- Depends on 20261110150000 (the 'provider_ai' key it anchors on) and 20261110170000 (security.intake_page_date_hint_v1). Applying it twice changes nothing.
 -- Consumer API (G3): not touched; the Website and Zoho objects, the feed tables and every api.* function are not read or changed. No operational value is written into code (G2): the windows and the switches are read from settings; the only constants are
 --   text rules (the cause words) and are marked. No job is added (G1): it runs inside the existing Data Delivery read. No setting, ledger row, read or admission is written; no setting value changes.
--- Replaces: security.data_delivery_v1 is edited in place (md5-guarded, one new key 'intake_delivery'); the earlier text is kept in supabase/held/dd_intake_delivery_forward_recovery.sql; otherwise nothing
+-- Replaces: security.data_delivery_v1 is edited in place (one anchored line, one new key 'intake_delivery'); the line is removed by supabase/held/dd_intake_delivery_forward_recovery.sql; otherwise nothing
 -- Retires: nothing
 -- Nothing is dropped, deleted or renamed by this migration.
 
@@ -116,31 +117,23 @@ $int$;
 comment on function security.data_delivery_intake_v1() is 'CF-247 F-INT Data Delivery (Platform Admin 10 Nov 2026): the intake stream''s eligible denominator, new and retained admissions in the stream''s two windows, the skipped outcomes by cause (month-only kept apart from the ones a run can still take), the consumer publication state of the decisions and the blockers. Read only, counted live; called by security.data_delivery_v1 for the stream int only, as the key intake_delivery.';
 revoke all on function security.data_delivery_intake_v1() from public, anon, authenticated;
 
--- ----------------------------------------------------------------------------------------------------------------------------------------- the md5-guarded edit
+-- ----------------------------------------------------------------------------------------------------------------------------------------- the anchored edit (one line, applied once to whatever body is live)
 do $m$
-declare r record; v_def text; v_src text; v_c int; k int; v_sig regprocedure;
+declare v_src text; v_def text; v_c int; v_sig regprocedure := to_regprocedure('security.data_delivery_v1()');
+        v_old text := $o$      'provider_ai', case when s.stream = 'pdesc' then security.data_delivery_pdesc_v1() end,$o$;
+        v_new text := $n$      'provider_ai', case when s.stream = 'pdesc' then security.data_delivery_pdesc_v1() end,
+      'intake_delivery', case when s.stream = 'int' then security.data_delivery_intake_v1() end,$n$;
 begin
-  for r in select * from (values
-    ('security.data_delivery_v1()', '849453412a8b9a448118e7b87362752a', '630f8696c18ff05703bb9798ed6fe8fa',
-     array[$o$      'provider_ai', case when s.stream = 'pdesc' then security.data_delivery_pdesc_v1() end,$o$],
-     array[$n$      'provider_ai', case when s.stream = 'pdesc' then security.data_delivery_pdesc_v1() end,
-      'intake_delivery', case when s.stream = 'int' then security.data_delivery_intake_v1() end,$n$])
-  ) v(sig, md5_before, md5_after, olds, news) loop
-    v_sig := to_regprocedure(r.sig);
-    v_src := (select p.prosrc from pg_proc p where p.oid = v_sig);
-    -- fixed: the guard is the md5 of the live function body (pg_proc.prosrc), the same text on PostgreSQL 16 and 17
-    if md5(v_src) = r.md5_after then continue; end if; -- already applied
-    if md5(v_src) <> r.md5_before then raise exception 'live % differs from the definition this change edits (body md5 %)', r.sig, md5(v_src); end if;
-    v_def := replace(pg_get_functiondef(v_sig), chr(13), '');
-    for k in 1 .. array_length(r.olds, 1) loop
-      v_c := (length(v_def) - length(replace(v_def, r.olds[k], ''))) / length(r.olds[k]);
-      if v_c <> 1 then raise exception '%: edit % must apply exactly once (found %)', r.sig, k, v_c; end if;
-      v_def := replace(v_def, r.olds[k], r.news[k]);
-    end loop;
-    execute v_def;
-    v_src := (select p.prosrc from pg_proc p where p.oid = v_sig);
-    if md5(v_src) <> r.md5_after then raise exception '% after the edit has body md5 %, expected %', r.sig, md5(v_src), r.md5_after; end if;
-  end loop;
+  v_src := (select p.prosrc from pg_proc p where p.oid = v_sig);
+  -- Data Delivery is edited by several streams: the edit is one anchored line, applied once to whatever is live
+  if position('data_delivery_intake_v1' in v_src) > 0 then raise notice 'security.data_delivery_v1(): already carries the intake key'; return; end if;
+  v_def := replace(pg_get_functiondef(v_sig), chr(13), '');
+  v_c := (length(v_def) - length(replace(v_def, v_old, ''))) / length(v_old);
+  if v_c <> 1 then raise exception 'security.data_delivery_v1(): the anchor line (the provider_ai key) must be found exactly once (found %): nothing applied', v_c; end if;
+  execute replace(v_def, v_old, v_new);
+  v_src := (select p.prosrc from pg_proc p where p.oid = v_sig);
+  if position('data_delivery_intake_v1' in v_src) = 0 then raise exception 'security.data_delivery_v1(): the intake key was not added'; end if;
+  raise notice 'security.data_delivery_v1(): applied';
 end $m$;
 
 -- ----------------------------------------------------------------------------------------------------------------------------------------- register, post-check

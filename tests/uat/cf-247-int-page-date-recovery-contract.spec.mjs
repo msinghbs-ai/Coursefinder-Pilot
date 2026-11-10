@@ -58,13 +58,16 @@ test('the page reader never takes a year heading for the year of the date before
   expect(M1).toContain('a rejected value, or a value withdrawn from this intake, is never admitted again')
 })
 
-test('the Data Delivery migration adds one read-only function and one key for the intake stream only, md5-guarded', () => {
+test('the Data Delivery migration adds one read-only function and one anchored line for the intake stream only, tolerant of the other streams\' edits', () => {
   expect(M2).toMatch(/^-- Replaces: security\.data_delivery_v1 is edited in place/m)
   expect(M2).toMatch(/^-- Retires: nothing$/m)
-  expect(M2).toContain('--   security.data_delivery_v1() 849453412a8b9a448118e7b87362752a -> 630f8696c18ff05703bb9798ed6fe8fa')
+  expect(M2).toContain('ONE ANCHORED LINE applied once to whatever body is live')
+  expect(M2).toContain('04b560cfb6b79758e2b694c96771be33')   // the body #989 (AER) leaves: the result carries both keys
+  expect(M2).not.toContain('md5_before')              // no strict md5 guard on a function other streams edit
+  expect(M2).toContain("if position('data_delivery_intake_v1' in v_src) > 0 then raise notice 'security.data_delivery_v1(): already carries the intake key'; return; end if;")
+  expect(M2).toContain('the anchor line (the provider_ai key) must be found exactly once')
   expect(M2).toContain('--   security.data_delivery_intake_v1() (new) -> ed0361e1ab65cf4525836f4fdd055287')
   expect(M2).toContain("'intake_delivery', case when s.stream = 'int' then security.data_delivery_intake_v1() end,")
-  expect(M2).toContain("if md5(v_src) = r.md5_after then continue; end if; -- already applied")
   expect(M2).toContain('revoke all on function security.data_delivery_intake_v1() from public, anon, authenticated;')
   expect(M2.match(/create or replace function /g)).toHaveLength(1)
   expect(M2).not.toMatch(/^\s*(drop|delete|truncate)\b/im)
@@ -86,13 +89,14 @@ test('no operational value is written into the Data Delivery function (G2): the 
   expect(DDFN).toContain("when c.reason like '%page does not show the audience%'")
 })
 
-test('the forward recoveries restore the live text and are guarded by the md5 of what is live', () => {
+test('the forward recoveries are guarded: the plan recovery by the md5 of what is live, the Data Delivery recovery removes only its own line', () => {
   expect(R1).toContain(`v_p not in ('${PLAN[0]}', '${PLAN[1]}') or v_d not in ('${PD[0]}', '${PD[1]}')`)
   expect(R1).toContain("raise exception 'live security.intake_dates_plan_v3 or security.intake_page_date_v1 differs from both texts this recovery knows")
   expect(R1).toContain(`<> '${PLAN[0]}' then raise exception 'the plan was not restored byte for byte'`)
   expect(R1.slice(R1.indexOf('CREATE OR REPLACE FUNCTION'))).not.toContain('pagedate=1')   // the restored plan has no suffix
-  expect(R2).toContain("if v not in ('630f8696c18ff05703bb9798ed6fe8fa', '849453412a8b9a448118e7b87362752a') then raise exception 'live security.data_delivery_v1() differs from both texts this recovery knows")
-  expect(R2.slice(R2.indexOf('CREATE OR REPLACE FUNCTION'))).not.toContain('intake_delivery')
+  expect(R2).toContain("'intake_delivery', case when s.stream = 'int' then security.data_delivery_intake_v1() end,$l$")   // removes only this line
+  expect(R2).toContain('the intake_delivery line is not found exactly once')
+  expect(R2).not.toContain('CREATE OR REPLACE FUNCTION')   // it does not restore a whole body that other keys share
   for (const r of [R1, R2]) expect(r).not.toMatch(/^\s*drop\b/im)
 })
 
@@ -109,5 +113,6 @@ test('CI runs the fixture after the self-driving harness and keeps the log', () 
   expect(WF.indexOf('intake-page-date-recovery/run.sh')).toBeGreaterThan(WF.indexOf('intake-self-driving/run.sh'))
   expect(WF).toContain("'tests/fixtures/intake-page-date-recovery/**'")
   expect(RUN).toContain('PLAN_BEFORE=0d11bc5dfc4b0705f0722a1aa7905db6; PLAN_AFTER=06255497ef431b0ae0d9fca6460c6cb5')
-  expect(RUN).toContain('DD_BEFORE=849453412a8b9a448118e7b87362752a; DD_AFTER=630f8696c18ff05703bb9798ed6fe8fa')
+  expect(RUN).toContain('DD_LIVE=849453412a8b9a448118e7b87362752a; DD_AER=04b560cfb6b79758e2b694c96771be33; DD_AFTER=630f8696c18ff05703bb9798ed6fe8fa')
+  expect(RUN).toContain('scen aer_first')   // our edit on top of the #989 definition, and #989's line on top of ours
 })
