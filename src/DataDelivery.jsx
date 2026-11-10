@@ -138,6 +138,55 @@ function Stages({st}){
     </ol></div>
 }
 
+/** Why an intake outcome is skipped, kept apart: what is legitimately unresolvable (the page or calendar gives a month or season, no day: never invented), what a run can still take, and what waits for another fix or a decision. */
+const INTAKE_SKIP={
+  month_only:['Month or season only: no day (or no year) is printed','unresolvable'],
+  page_date_waiting:['The stored page prints a full date and the intake has no date yet (the next hourly run checks it against the calendar)','recoverable'],
+  page_only_unproven:['The page prints one date that no approved calendar start shares, and the audience is not shown (the Platform Admin decides the audience rule)','held'],
+  identity:['The page is not proved to be the course’s own (E16)','held'],
+  no_page_reading:['No stored reading of the course page','held'],
+  waiting_for_period:['Waiting for the next academic year, or the date is past','held'],
+  calendar_source:['The provider’s calendar is set aside or does not start the period that month','held'],
+  person_decision:['Held for a person (locked, withdrawn or a course-level exception)','held'],
+  other:['Another reason, as recorded','held']}
+/** The intake stream's eligible denominator, new and retained admissions, skipped outcomes by cause, consumer publication and blockers (CF-247 F-INT, Platform Admin 10 Nov 2026 14:02): counted live and exactly by security.data_delivery_intake_v1
+ *  when the page was read. Legitimately unresolvable (month or season only) is kept apart from what a run can still take and from what waits for another fix. A figure the server did not send is Not measured, never 0; a missing block (an older server) is Not measured as a whole. */
+function IntakeDelivery({d}){
+  if(d==null||d.known===false)return <div className="dd-stages-box" data-dd-intake-delivery="unknown"><h4 className="sl-h4">Eligible intakes, admissions, skipped causes and blockers</h4><Unknown reason={d?.reason||'This count is not available from the server yet'} word="Not measured"/></div>
+  const dn=d.denominator||{},ad=d.admissions||{},wins=ad.windows||[],sk=d.skipped||{},now=sk.now||[],win=sk.window||[],pb=d.publication||{},bl=d.blockers||[],sw=d.switches||{}
+  const nm=x=>x==null?'Not measured':fmtNumber(Number(x))
+  const group=(kind)=>now.filter(r=>(INTAKE_SKIP[r.k]||INTAKE_SKIP.other)[1]===kind)
+  const tech=bl.filter(b=>b.kind==='technical')
+  const SkipList=({rows,k})=>rows.length>0?<ul className="dd-reasons" data-dd-intake-skips={k}>{rows.map(r=><li key={r.k}><span>{(INTAKE_SKIP[r.k]||INTAKE_SKIP.other)[0]}</span> <strong>{fmtNumber(Number(r.n))}</strong></li>)}</ul>:null
+  const sum=(rows)=>rows.length?rows.reduce((a,r)=>a+Number(r.n),0):0
+  return <div className="dd-stages-box" data-dd-intake-delivery="known">
+    <h4 className="sl-h4">Eligible intakes, admissions, skipped causes and blockers</h4>
+    <p className="sl-sub" data-dd-intake-delivery-stamp>Counted live at {stampOf(d.counted_at)} (Melbourne), in {d.unit||'intakes'}. Exact counts, no estimate. A month or season is never turned into a day.</p>
+    <ol className="dd-stages dd-stages-3">
+      <li data-dd-intake-stage="denominator"><h5>1. Eligible denominator</h5><ul>
+        <Row k="active_intakes" label="Active intakes of active courses" v={dn.active_intakes}/>
+        <Row k="exact_start" label="With an exact start date" v={dn.exact_start}/>
+        <Row k="with_deadline" label="With an application deadline" v={dn.with_deadline}/>
+        <Row k="eligible" label="Eligible: exact starts plus undated intakes at a provider whose approved calendar the plan reads" v={dn.eligible}/>
+        <Row k="undated_eligible" label="Eligible and still undated" v={dn.undated_eligible}/>
+        <Row k="undated_no_decision" label="Undated, not yet looked at: the provider has no approved calendar (a source gap, not a failure)" v={dn.undated_no_decision}/></ul></li>
+      <li data-dd-intake-stage="admissions"><h5>2. New admissions and retained net gain</h5><ul>
+        {wins.length===0?<li data-dd-stage-row="windows"><span>Admissions in the window</span> <N v={null} k="windows"/></li>:wins.map(w=><li key={w.hours} data-dd-stage-row={'window_'+w.hours}><span>Last {w.hours} hours: new start dates <StatusChip tone="info" label="Machine rule"/></span> <N v={w.new_start} k={'new_start_'+w.hours}/>
+          <small data-dd-intake-window={w.hours}>retained now {nm(w.retained_start)} · gross fills {nm(w.gross)} · withdrawn {nm(w.withdrawn)} · net {nm(w.net)} · new deadlines {nm(w.new_deadline)} (retained {nm(w.retained_deadline)})</small></li>)}
+        {(ad.by_rule||[]).length>0&&<li data-dd-stage-row="by_rule"><span>By rule, short window</span> <small>{(ad.by_rule||[]).map(r=>`${r.rule}: ${nm(r.filled)} filled${Number(r.withdrawn)>0?`, ${nm(r.withdrawn)} withdrawn`:''}`).join(' · ')}</small></li>}
+        <li data-dd-stage-row="last_admitted"><span>Last admission / last processed</span> <small>{d.admissions?.last_admitted_at?stampOf(ad.last_admitted_at):'Not measured'} / {ad.last_processed_at?stampOf(ad.last_processed_at):'Not measured'}</small></li></ul></li>
+      <li data-dd-intake-stage="skipped"><h5>3. Skipped, by cause</h5><ul>
+        <Row k="skip_unresolvable" label="Legitimately unresolvable: month or season only" v={sum(group('unresolvable'))}><SkipList rows={group('unresolvable')} k="unresolvable"/></Row>
+        <Row k="skip_recoverable" label="A run can still take: the stored page prints a date" v={sum(group('recoverable'))}><SkipList rows={group('recoverable')} k="recoverable"/>{sw.page_date_admit===false&&<small data-dd-route-off>The page-date route is switched off.</small>}</Row>
+        <Row k="skip_held" label="Held for another fix or a decision" v={sum(group('held'))}><SkipList rows={group('held')} k="held"/></Row>
+        <li data-dd-stage-row="skip_window"><span>Skipped events in the last {sk.window_hours==null?'?':sk.window_hours} hours (as recorded)</span> <N v={sk.window_events} k="skip_window"/><small>{sk.window_intakes==null?'':`${nm(sk.window_intakes)} intakes. `}{win.slice(0,6).map(r=>`${(INTAKE_SKIP[r.k]||INTAKE_SKIP.other)[0].split(':')[0]}: ${nm(r.n)}`).join(' · ')}</small></li></ul></li>
+      <li data-dd-intake-stage="publication"><h5>4. Consumers and blockers</h5><ul>
+        <li data-dd-stage-row="publication"><span>Decisions that hold a date, by publication check</span> {(pb.by_state||[]).length===0?<em data-dd-unknown>Not measured</em>:<small data-dd-intake-publication>{(pb.by_state||[]).map(r=>`${String(r.state).replaceAll('_',' ')}: ${nm(r.n)}`).join(' · ')}{pb.last_checked_at?` · last checked ${stampOf(pb.last_checked_at)}`:''}</small>}</li>
+        <li data-dd-stage-row="technical_blocker"><span>Active technical blocker</span> {tech.length===0?<strong data-dd-blocker="none">None</strong>:<small data-dd-blocker="technical">{tech.map(b=>b.text).join(' ')}</small>}</li>
+        {bl.filter(b=>b.kind!=='technical').length>0&&<li data-dd-stage-row="held_blockers"><span>What holds the rest</span><ul className="dd-reasons" data-dd-intake-blockers>{bl.filter(b=>b.kind!=='technical').map(b=><li key={b.code}><span title={b.text}>{b.kind==='decision'?'Decision: ':'Source: '}{b.text}</span> <strong>{b.n==null?'Not measured':fmtNumber(Number(b.n))}</strong></li>)}</ul></li>}</ul></li>
+    </ol></div>
+}
+
 /** A counted US dollar figure from the server, or "Not measured" when the server did not send it. Cents, or four decimals under one cent (one provider read costs less than a cent), never rounded to 0. */
 function Usd({v,k}){return v==null?<em data-dd-unknown data-dd-money={k}>Not measured</em>:<strong data-dd-money={k} data-dd-value={v}>{fmtMoney(Number(v),'USD',{decimals:Number(v)>0&&Number(v)<0.01?4:2})}</strong>}
 /** The provider-description AI cost, remaining allowance and Basic to Enriched outcome (CF-247 F-PDESC, Platform Admin 10 Nov 2026 12:07): counted live and exactly by security.data_delivery_pdesc_v1 when the page was read.
@@ -238,6 +287,7 @@ function Stream({s,now,providerFilters,open,onToggle}){
       <Stages st={s.stages}/>
       {s.stream==='pdesc'&&<ProviderAi pa={s.provider_ai}/>}
       {s.stream==='aer'&&<AerSources a={s.aer_sources}/>}
+      {s.stream==='int'&&<IntakeDelivery d={s.intake_delivery}/>}
       <p><strong>What this stream is.</strong> {s.what}</p>
       <p><strong>How the gain is counted.</strong> {s.net_basis||'Not stated.'}{s.net_short?.removed_known?' Net = admitted minus withdrawn, from the ledger timestamps in the window.':''}</p>
       {(s.coverage?.by_country||[]).length>0&&<table className="cf-table dd-countries"><thead><tr><th>Country</th><th>Covered</th><th>Of</th></tr></thead><tbody>
