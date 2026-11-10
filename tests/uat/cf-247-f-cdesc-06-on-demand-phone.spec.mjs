@@ -74,7 +74,7 @@ test.describe('Fill / Recheck description on a phone @responsive', () => {
     await block.locator('[data-cdod-more] summary').click()
     await tap(block.getByRole('button', { name: 'Recheck description' }), 'Recheck description')
     await expect(block.locator('[data-cdod-run]')).toBeVisible()
-    await expect(block.locator('[data-cdod-next]')).toBeVisible()
+    await expect(block.locator('[data-cdod-next-field]')).toBeVisible()
     expect(await pageOverflow(page)).toBeLessThanOrEqual(1)
   })
   test('Course detail blade: Withdraw machine description, its explanation, reason and buttons fit the phone and are tap-sized; no sideways page scroll', async ({ page }) => {

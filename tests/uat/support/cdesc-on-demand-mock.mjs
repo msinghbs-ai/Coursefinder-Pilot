@@ -24,14 +24,17 @@ function row(id, i, force = null) {
     human_decision: state === 'human_decision', next_retry_at: state === 'held' ? '2026-12-26T01:00:00Z' : null, fill_block, recheck_block,
     fill_info: INFO[fill_block] || (fill_block ? { label: fill_block, next: '' } : null), recheck_info: INFO[recheck_block] || (recheck_block ? { label: recheck_block, next: '' } : null) }
 }
-export async function mockOnDemand(page, { cap = 20, startError = null, verify = null, forceState = null, withdraw = null, itemOverride } = {}) {
+export async function mockOnDemand(page, { cap = 20, startError = null, verify = null, forceState = null, withdraw = null, itemOverride, itemError = false, itemDelayMs = 0 } = {}) {
   const calls = []
   const index = new Map()
   const idx = (id) => { if (!index.has(id)) index.set(id, index.size); return index.get(id) }
-  // public.admin_course_description_item_v1: the latest description item as stored. `itemOverride` replaces the item (for example attempts 0: never tried)
+  // public.admin_course_description_item_v1: the latest description item as stored. `itemOverride` replaces the item (for example attempts 0: never tried; null: the server has no item), `itemError` makes the read fail, `itemDelayMs` holds it
   await page.route(BASE + 'admin_course_description_item_v1', async (route) => {
     const b = route.request().postDataJSON() || {}; calls.push({ name: 'item', ...b })
     const ids = b.p_course_ids || []
+    // itemError: the read fails (an older server, a network fault): the screen must say "Not available", never "Not tried". itemDelayMs: the read is still loading
+    if (itemDelayMs) await new Promise((r) => setTimeout(r, itemDelayMs))
+    if (itemError) return route.fulfill({ status: 500, json: { message: 'item read failed' } })
     return route.fulfill({ json: { read_at: '2026-11-10T01:00:00Z', courses: ids.map((id) => {
       const r = row(id, idx(id), forceState)
       const item = itemOverride !== undefined ? itemOverride : r.last_item_id ? { id: r.last_item_id, state: r.last_state, reason: r.last_reason, attempts: r.last_state === 'failed' ? 3 : 1, source: 'ai_stored', evidence_id: r.evidence_id, storage_path: 'evidence/ab12cd34/page.html', reading_chars: r.last_state === 'skipped' ? 812 : 0, at: r.last_attempt_at } : null

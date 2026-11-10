@@ -11,32 +11,40 @@
 -- What this changes:
 --   1. security.cdesc_sentence_fault_v1 is the ONE definition of the per-sentence tests of the course description check (quote on the page, marketing word, claim word, complete sentence, support by the quote). security.course_description_check_with_v1 now calls it in its sentence loop;
 --      the result of the check is unchanged for every input (proved by the fixture against the body from before).
---   2. security.cdesc_subset_plan_v1 (read only) plans the subset of a reading: the sentences that fail a per-sentence test or the machine wording policy (refused word, figure, markup) are set aside, then the LEADING remaining sentences are kept in their original order up to
---      enrich.course_description_max_sentences and enrich.course_description_max_chars (a sentence after the limit is set aside; nothing is cut inside a sentence). A kept sentence that opens by pointing back (This / It / They / However ...) right after a sentence that was set aside is
+--   2. security.cdesc_subset_plan_v1 (read only) plans the subset of a reading: ONLY the sentences that fail a per-sentence test or the machine wording policy (unsupported claim, marketing word, quote not on the page, unsupported or incomplete sentence, refused word, figure, markup) are set aside.
+--      Nothing is ever cut for length: every sentence that passes is kept, in its original order. A reading whose only fault is its length or sentence count (every sentence passes), or whose remainder is still over the set limits, stays held as it is and is counted
+--      as over_length_needs_decision (whether to cut for length is the Platform Admin's decision and is NOT taken here). A kept sentence that opens by pointing back (This / It / They / The program / Another / And / Which / However ... or a quote or bracket) right after a sentence that was set aside is
 --      NOT used (it would read as a fragment of the missing sentence): that reading stays as it is. The remainder must then pass the SAME full check (security.course_description_check_v1: sentence range, quote on the page, support, length, duplicate guard of the provider) and the
 --      machine wording policy. No word is added, reworded or cut.
 --   3. security.cdesc_subset_recover_v1 (part of the existing job course-description-machine, before the settle) hands each plan that passes to the EXISTING path inside one sub-transaction that is rolled back unless the machine rule admits it:
 --      (a) a held reading goes through security.enrich_course_text_record_v1 (identity proof, bound page unchanged, manual lock, already filled, the provider's places enrich.course_description_pending_max, then the Layer 4 item and the machine rule runs on it as for a fresh reading);
 --      (b) a waiting item declined for policy_* / check_* is rewritten to its subset (the original reading and the original proposal are kept inside the subset record) and settled by security.course_description_machine_admit_v1, which runs every machine test again
 --          (identity, page margin, stored page, rejection memory, manual hold, duplicates, the wording policy). A reading is tried once for each policy stamp. A reading the reader cannot be proved for (no model and prompt recorded or stored) is not tried.
---      Failures that dropping cannot fix (identity, wrong page, generic page, duplicate of another course, lock, human rejection, remainder below the minimum, the page not supporting the text) stay exactly as they are: nothing is written.
+--      Failures that dropping cannot fix (identity, wrong page, generic page, duplicate of another course, lock, human rejection, remainder below the minimum or still over the limits, the page not supporting the text) stay exactly as they are: nothing is written.
 --      No read happens, so the daily read cap is not consumed; the provider places and the policy stamp are respected.
 --   4. security.course_description_machine_admit_v1 records an admission whose reading carries a subset with the distinct via 'subset_of_reading' and adds the sentences set aside and why to the decision reason, the decision state and the ledger checks (the original reading, quotes, evidence and history stay).
 --   5. security.course_description_machine_run_v1 runs the recovery before the settle.
 --   6. Data Delivery: the existing course description flow gains one additive key "subset" (security.data_delivery_cdesc_subset_v1, read only): recovered by subset (24 hours, 7 days, kept, withdrawn) by cause, and the readings still held or waiting by the reason the last attempt gave. Existing keys are unchanged.
 --
 --   7. security.cdesc_item_detail_v1 and public.admin_course_description_item_v1 (read only, new): the stored latest description item of a course (state, reason, attempts, source, evidence_id, storage_path), so the Fill / refresh result shows, per field, what was examined and whether the field was tried at all (attempts 0: no valid source was read, which is never counted as an attempt or as evidence of absence). The recovery above only ever takes readings that were read (attempts 1 or more, reason 'held: <rule>'); a never-tried item is not touched.
---   8. security.cdesc_page_kind_v1 (read only, new): the subset recovery never admits a reading whose bound page is a university About / Overview / Who we are / Our university page, or a page proved only by the host with no course in its address (Platform Admin standing rule). The shared admission function is not changed.
--- Settings: none added or changed (G2): every limit is read from the settings the check already reads (min and max sentences, max characters, support share, claim and marketing words, pending_max, recheck days, the daily read figure as the run's upper bound as the replay does). A time box is marked -- fixed:.
+--   8. security.cdesc_page_kind_v1 (read only, new): whether the bound page of a course is a page about THIS course. A university About / Overview / Who we are / Our story / Facts and figures / About-<university> page never stands in for a course page (Platform Admin standing rule), and it fails closed:
+--      a missing bound page or address fails. It is used by the subset recovery AND by the owning layer, security.course_description_machine_check_v1 (change 9), so the settle and fresh-reading routes cannot admit such a page either.
+--   9. security.course_description_machine_check_v1 gains one md5-guarded step after the existing wrong_page_kind test: the same security.cdesc_page_kind_v1 test, declined as wrong_page_kind (a person decides in Layer 4).
+--
+-- ACTIVATION (stated plainly): applying this migration IS the activation of the subset recovery. security.course_description_machine_run_v1 (job course-description-machine) calls it on its next run, inside the already approved course machine policy (enrich.course_description_machine_on = 1);
+-- no switch other than that one exists. To pause it: set enrich.course_description_machine_on to 0 (Settings, with a reason), or run the forward recovery (supabase/held/cdesc_subset_recovery_forward_recovery.sql). To take back what it admitted:
+-- supabase/held/cdesc_subset_bulk_withdraw.sql (paste file, nothing applies it) withdraws every admission whose checks carry subset_of_reading through the existing withdraw function.
+-- Settings: none added or changed (G2): every limit is read from the settings the check already reads (min and max sentences, max characters, support share, claim and marketing words, pending_max, recheck days, the daily read figure as the run's upper bound as the replay does). The time box is marked -- fixed: (20 s of its own time and 45 s after the job began, whichever is first; part (a) takes at most 60 % of it so part (b) is not starved).
 -- Live definitions this change edits (pg_proc.prosrc md5, read 10 Nov 2026), before -> after (the migration stops, and applies nothing, if a live body is neither):
 --   security.course_description_check_with_v1(uuid,jsonb,jsonb,jsonb)  6e65745a7863f0dae97a743821475eb0 -> d310fa64f61f2243df1416d3e48f6bab
 --   security.course_description_machine_admit_v1(uuid,text)            69b8911fe24f041b4cf67a844d8d8f6f -> 569f3ceb95c3d31b378ce7288b7abd24
+--   security.course_description_machine_check_v1(uuid)                 4c321730269064b42ff9ac10a114336b -> 2a5b91aa6b93b920bbb80df9920aca09
 --   security.course_description_machine_run_v1()                       faa6dab1bfeef3464ba86fac11b34766 -> 42c73e9c0f376150e7778104dfa9830a
 --   security.data_delivery_cdesc_flow_v1()                             bd500303727d5c11a708aa99341809a4 -> 3d4c538fc23977018982bc64023a4690
 -- Forward recovery (the original bodies, byte for byte): supabase/held/cdesc_subset_recovery_forward_recovery.sql.
 -- Consumer API (G3): not touched. No public.website_v2_*, website_edge_*, website_api_v2_*, zoho_edge_*, svc_website_settings_v1, api.* object, table column or edge function is read for change or changed.
 -- Withdrawal: an admission by subset is withdrawn like any machine admission, with public.admin_course_description_machine_withdraw_v1(course, reason) (Platform Admin).
--- Replaces: the per-sentence loop of security.course_description_check_with_v1 (now security.cdesc_sentence_fault_v1, same result), the admission audit of security.course_description_machine_admit_v1 (adds the subset record), the job body security.course_description_machine_run_v1 and the flow key set of security.data_delivery_cdesc_flow_v1 (edited in place, md5-guarded)
+-- Replaces: the per-sentence loop of security.course_description_check_with_v1 (now security.cdesc_sentence_fault_v1, same result), the admission audit of security.course_description_machine_admit_v1 (adds the subset record), the page test of security.course_description_machine_check_v1 (one added step), the job body security.course_description_machine_run_v1 and the flow key set of security.data_delivery_cdesc_flow_v1 (edited in place, md5-guarded)
 -- Retires: nothing
 -- Nothing is dropped or deleted by this migration. No description, Layer 4 item, reading, ledger row or setting is changed by applying it (the job does that afterwards, through the existing record and admission functions).
 
@@ -54,8 +62,8 @@ begin
 end $g$;
 
 -- ----------------------------------------------------------------------------------------------------------------------------------------- new functions
-create or replace function security.cdesc_sentence_fault_v1(p_text text, p_quote text, p_on_page boolean, p_claim jsonb, p_mkt jsonb, p_min_support numeric) returns jsonb
-language plpgsql stable security definer set search_path to '' as $f$
+CREATE OR REPLACE FUNCTION security.cdesc_sentence_fault_v1(p_text text, p_quote text, p_on_page boolean, p_claim jsonb, p_mkt jsonb, p_min_support numeric) returns jsonb
+language plpgsql stable security definer set search_path to '' as $function$
 declare t text := btrim(coalesce(p_text, '')); v_sup numeric;
 begin
   -- the per-sentence tests of the course description check, in the order the check runs them; null when the sentence passes
@@ -77,52 +85,81 @@ begin
     return jsonb_build_object('rule', 'unsupported_sentence', 'checks', jsonb_build_object('support', v_sup), 'reason', 'a sentence is not supported by its quote (' || v_sup || '): ' || left(t, 120));
   end if;
   return null;
-end $f$;
+end $function$;
 comment on function security.cdesc_sentence_fault_v1(text, text, boolean, jsonb, jsonb, numeric) is 'CF-247 F-CDESC: the one definition of the per-sentence tests of the course description check (quote on the page, marketing word, claim word with the learner word, complete sentence, support by the quote). Returns null when the sentence passes, else {rule, reason, checks}. Used by security.course_description_check_with_v1 and by the subset recovery. Read only.';
 revoke all on function security.cdesc_sentence_fault_v1(text, text, boolean, jsonb, jsonb, numeric) from public, anon, authenticated;
 
--- The page the reading was taken from must be a page about THIS course. A university About / Overview / Who we are / Our university page never stands in for a course page (Platform Admin standing rule).
--- Returns null when the page is fine, else the reason. An institution-level segment in the address (about-us, who-we-are, our-university, about-the-university ...) always fails. A bare "about" or "overview"
--- fails unless the address also carries a segment that names the course (a distinctive word of the course title), because a university publishes course pages as .../master-of-x/overview and .../about.
--- A page proved only by the host (identity_basis host_page) must carry such a segment as its course evidence. Read only; used by the subset recovery only, the shared admission is not changed.
-create or replace function security.cdesc_page_kind_v1(p_url text, p_title text, p_basis text) returns text
-language plpgsql stable security definer set search_path to '' as $f$
-declare v_path text := lower(regexp_replace(split_part(split_part(coalesce(p_url, ''), '#', 1), '?', 1), '^[a-z][a-z0-9+.-]*://[^/]*', '')); v_segs text[]; v_tok text[]; v_hit int; v_dis int; v_amb boolean; v_inst boolean; v_need int;
+-- The page the reading was taken from must be a page about THIS course. A university About / Overview / Who we are / Our story / Facts and figures page never stands in for a course page (Platform Admin standing rule).
+-- Returns null when the page is fine, else the reason: no_bound_page (no address: fails closed), no_course_in_address (the home page), university_about_page, host_page_no_course_evidence.
+-- Address rules (file extensions are stripped first, a trailing index / default page name is ignored):
+--   an institution-level segment fails, matched by pattern (about-us, about-<anything>, who-we-are, our-story / our-values ..., why-study-with-us, facts-and-figures, at-a-glance, university-profile ...);
+--   a bare "about" / "overview" (or about-this-course) in the middle of the address is a parent section (/about/faculty-of-nursing) and fails;
+--   as the LAST segment it is a course tab and is accepted only when the segment before it names the course: it holds ALL the distinctive words of the course title (word-set containment), the award word of the title when it has one,
+--   and is not a faculty / school / department style segment;
+--   a page proved only by the host (identity_basis host_page) needs one such course segment anywhere in the address.
+-- Read only; used by the subset recovery and by security.course_description_machine_check_v1.
+CREATE OR REPLACE FUNCTION security.cdesc_page_kind_v1(p_url text, p_title text, p_basis text) RETURNS text
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO '' AS $function$
+declare v_path text; v_segs text[]; v_n int; v_tok text[]; v_ta text[]; v_st text[]; v_good boolean[]; v_i int; v_clean text; v_dis int;
+        -- fixed: the names a university gives its institution-level pages and its course tabs (structure of the web, not an operating value)
+        v_inst constant text := '^(about-us|aboutus|about-(?!(this|the|your|our)-(course|program|programme|degree|qualification|unit|study)s?(-|$))[a-z0-9-]+|[a-z0-9-]+-about-us|who-we-are|why-(study|choose|come|join|learn)-(with|at|in)-[a-z0-9-]+|why-us|our-(story|history|values|university|college|institute|mission|vision|people|campus|campuses)(-[a-z0-9-]+)?|facts-(and|n|&)-figures|facts-figures|at-a-glance|(university|college|institute)-(overview|profile|facts)[a-z0-9-]*)$';
+        v_amb constant text := '^(about|overview|about-(this|the|your)-(course|program|programme|degree|qualification))$';
+        -- fixed: award words and joining words never identify a subject; a word of fewer than four letters never does either (of, in, and, the ...)
+        v_award constant text[] := array['bachelor', 'master', 'masters', 'doctor', 'diploma', 'certificate', 'graduate', 'postgraduate', 'honours', 'associate'];
+        v_stop constant text[] := array['bachelor', 'master', 'masters', 'doctor', 'diploma', 'certificate', 'graduate', 'postgraduate', 'honours', 'associate', 'degree', 'advanced', 'with', 'level', 'course', 'program', 'programme'];
+        -- fixed: a segment that names a faculty, school or department (a part of the university) is not a course
+        v_fac constant text[] := array['faculty', 'faculties', 'school', 'schools', 'department', 'departments', 'dept', 'college', 'colleges', 'institute', 'centre', 'center', 'division', 'campus', 'university'];
 begin
-  v_segs := array(select x from regexp_split_to_table(v_path, '/') x where x <> '');
-  -- fixed: the names a university gives its own institution-level pages (structure of the web, not an operating value)
-  v_inst := exists (select 1 from unnest(v_segs) x where x in ('about-us', 'aboutus', 'who-we-are', 'our-university', 'about-the-university', 'university-overview', 'our-story', 'our-history', 'at-a-glance', 'about-the-college', 'about-the-institute', 'college-profile', 'university-profile'));
-  if v_inst then return 'university_about_page'; end if;
-  v_amb := exists (select 1 from unnest(v_segs) x where x in ('about', 'overview'));
-  if not v_amb and p_basis is distinct from 'host_page' then return null; end if;
-  -- the distinctive words of the course title: its subject words, without the award words, the level and the joining words
-  -- fixed: a word of fewer than four letters never identifies a subject (of, in, and, the ...)
-  v_tok := array(select distinct w from regexp_split_to_table(regexp_replace(regexp_replace(lower(coalesce(p_title, '')), 'level\s*\d+', ' ', 'g'), '[^a-z0-9]+', ' ', 'g'), ' ') w
-                  where length(w) >= 4 and w not in ('bachelor', 'master', 'masters', 'doctor', 'diploma', 'certificate', 'graduate', 'postgraduate', 'honours', 'degree', 'associate', 'advanced', 'with', 'level'));
+  if nullif(btrim(coalesce(p_url, '')), '') is null then return 'no_bound_page'; end if;
+  v_path := lower(regexp_replace(split_part(split_part(btrim(p_url), '#', 1), '?', 1), '^[a-z][a-z0-9+.-]*://[^/]*', ''));
+  v_segs := array(select regexp_replace(x, '\.(html?|shtml|aspx?|php|jsp|cfm)$', '') from regexp_split_to_table(v_path, '/') with ordinality t(x, o) where x <> '' order by o);
+  v_n := coalesce(array_length(v_segs, 1), 0);
+  while v_n > 1 and v_segs[v_n] in ('index', 'default', 'home') loop v_segs := v_segs[1 : v_n - 1]; v_n := v_n - 1; end loop;
+  if v_n = 0 then return 'no_course_in_address'; end if;
+  if exists (select 1 from unnest(v_segs) x where x ~ v_inst) then return 'university_about_page'; end if;
+  -- a bare about / overview anywhere but at the end is a parent section of the university
+  for v_i in 1 .. v_n - 1 loop
+    if v_segs[v_i] ~ v_amb then return 'university_about_page'; end if;
+  end loop;
+  if v_segs[v_n] !~ v_amb and p_basis is distinct from 'host_page' then return null; end if;
+  -- the course title: its distinctive subject words and its award words
+  v_clean := regexp_replace(regexp_replace(lower(coalesce(p_title, '')), 'level\s*\d+', ' ', 'g'), '[^a-z0-9]+', ' ', 'g');
+  v_tok := array(select distinct w from regexp_split_to_table(v_clean, ' ') w where length(w) >= 4 and not (w = any (v_stop))); -- fixed: a word of fewer than four letters never identifies a subject
+  v_ta := array(select distinct w from regexp_split_to_table(v_clean, ' ') w where w = any (v_award));
   v_dis := coalesce(array_length(v_tok, 1), 0);
-  select count(distinct w) into v_hit from (select regexp_split_to_table(x, '[-_]') w from unnest(v_segs) x where x not in ('about', 'overview')) q where w = any (v_tok);
-  -- the page names the course when it shares a distinctive word, and two of them when the title has several
-  v_need := case when v_dis >= 2 then 2 else 1 end;
-  if v_dis > 0 and v_hit >= v_need then return null; end if;
-  return case when p_basis = 'host_page' then 'host_page_no_course_evidence' else 'university_about_page' end;
-end $f$;
-comment on function security.cdesc_page_kind_v1(text, text, text) is 'CF-247 F-CDESC: null when the address of a bound page is a page about the course; university_about_page for an institution-level About / Overview address, host_page_no_course_evidence for a page proved only by its host with no course in the address. Read only.';
+  v_good := array_fill(false, array[v_n]);
+  for v_i in 1 .. v_n loop
+    continue when v_segs[v_i] ~ v_amb;
+    v_st := array(select w from regexp_split_to_table(v_segs[v_i], '[-_]+') w where w <> '');
+    -- the segment names the course: all the distinctive title words (word-set containment), an award word of the title if it has one, and no faculty / school / department word the title does not carry
+    v_good[v_i] := v_dis > 0 and v_tok <@ v_st and (cardinality(v_ta) = 0 or v_ta && v_st)
+                   and not exists (select 1 from unnest(v_st) w where w = any (v_fac) and not (w = any (v_tok)));
+  end loop;
+  if v_segs[v_n] ~ v_amb then
+    if v_n >= 2 and v_good[v_n - 1] then return null; end if;
+    return 'university_about_page';
+  end if;
+  if true = any (v_good) then return null; end if;
+  return 'host_page_no_course_evidence';
+end $function$;
+comment on function security.cdesc_page_kind_v1(text, text, text) is 'CF-247 F-CDESC: null when the address of a bound page is a page about the course; no_bound_page (no address, fails closed), no_course_in_address, university_about_page for an institution-level About / Overview / Who we are / Our story / Facts and figures address or a parent /about/ section, host_page_no_course_evidence for a page proved only by its host with no course in the address. Read only.';
 revoke all on function security.cdesc_page_kind_v1(text, text, text) from public, anon, authenticated;
 
-create or replace function security.cdesc_subset_plan_v1(p_course uuid, p_provider uuid, p_value jsonb) returns jsonb
-language plpgsql stable security definer set search_path to '' as $f$
+CREATE OR REPLACE FUNCTION security.cdesc_subset_plan_v1(p_course uuid, p_provider uuid, p_value jsonb) returns jsonb
+language plpgsql stable security definer set search_path to '' as $function$
 declare v_s jsonb := coalesce(p_value->'sentences', '[]'::jsonb); n int; i int; s jsonb; f jsonb; t text; v_pol text;
         v_min int := greatest(1, security.pipeline_num_v1('enrich.course_description_min_sentences', 1)::int); v_max int := security.pipeline_num_v1('enrich.course_description_max_sentences', 4)::int;
         v_maxc int := security.pipeline_num_v1('enrich.course_description_max_chars', 700)::int; v_sup numeric := security.pipeline_num_v1('pdesc.support_min_share', 0.6);
         v_claim jsonb := coalesce(security.toolset_setting('pipeline', 'enrich.course_description_claim_words'), security.toolset_setting('pipeline', 'pdesc.claim_words'), '[]'::jsonb);
         v_mkt jsonb := coalesce(security.toolset_setting('pipeline', 'enrich.course_description_marketing_words'), security.toolset_setting('pipeline', 'pdesc.superlatives'), '[]'::jsonb);
-        v_fault text[]; v_kept int[] := '{}'; v_drop jsonb := '[]'::jsonb; v_len int := 0; v_add int; v_stop text; v_sents jsonb := '[]'::jsonb; v_chk jsonb; v_orig text; v_page text;
+        v_fault text[]; v_kept int[] := '{}'; v_drop jsonb := '[]'::jsonb; v_len int := 0; v_add int; v_over boolean; v_sents jsonb := '[]'::jsonb; v_chk jsonb; v_orig text; v_page text;
 begin
   if jsonb_typeof(v_s) is distinct from 'array' or jsonb_array_length(v_s) = 0 then return jsonb_build_object('ok', false, 'rule', 'no_sentences', 'reason', 'the reading holds no sentences'); end if;
   n := jsonb_array_length(v_s); v_fault := array_fill(null::text, array[n]);
   -- 0. the bound page must be a page about this course (an institution-level About page never stands in for it)
-  select security.cdesc_page_kind_v1(g.url, c.canonical_title, g.identity_basis) into v_page from pipeline.coverage_course_pages g join catalogue.courses c on c.id = g.course_id where g.course_id = p_course limit 1;
-  if v_page is not null then return jsonb_build_object('ok', false, 'rule', v_page, 'reason', 'the bound page is not a page about this course (' || v_page || ')'); end if;
+  select coalesce(security.cdesc_page_kind_v1(g.url, c.canonical_title, g.identity_basis), 'ok') into v_page from pipeline.coverage_course_pages g join catalogue.courses c on c.id = g.course_id where g.course_id = p_course limit 1;
+  if not found then v_page := 'no_bound_page'; end if; -- fails closed: no bound page row is no proof of the page
+  if v_page <> 'ok' then return jsonb_build_object('ok', false, 'rule', v_page, 'reason', 'the bound page is not a page about this course (' || v_page || ')'); end if;
   -- 1. the sentences that fail a per-sentence test or the machine wording policy
   for i in 1 .. n loop
     s := v_s->(i - 1);
@@ -133,23 +170,25 @@ begin
       if v_pol is not null then v_fault[i] := 'policy_' || split_part(v_pol, ':', 1); end if;
     end if;
   end loop;
-  -- 2. the leading sentences that pass, in their original order, up to the sentence and character limits (the first one over a limit and every later one is set aside)
+  -- 2. every sentence that passes is kept, in its original order. Nothing is cut for length or sentence count: a reading whose only fault is its size stays held (the Platform Admin decides that separately)
   for i in 1 .. n loop
     s := v_s->(i - 1); t := btrim(coalesce(s->>'text', ''));
     if v_fault[i] is not null then v_drop := v_drop || jsonb_build_object('index', i, 'text', t, 'cause', v_fault[i]); continue; end if;
-    if v_stop is null and cardinality(v_kept) >= v_max then v_stop := 'too_many_sentences'; end if;
     v_add := length(t) + case when cardinality(v_kept) > 0 then 1 else 0 end;
-    if v_stop is null and v_len + v_add > v_maxc then v_stop := 'too_long'; end if;
-    if v_stop is not null then v_drop := v_drop || jsonb_build_object('index', i, 'text', t, 'cause', v_stop); continue; end if;
     v_kept := v_kept || i; v_len := v_len + v_add; v_sents := v_sents || s;
   end loop;
-  if jsonb_array_length(v_drop) = 0 then return jsonb_build_object('ok', false, 'rule', 'nothing_to_drop', 'reason', 'every sentence passes: dropping sentences cannot change the outcome'); end if;
+  v_over := cardinality(v_kept) > v_max or v_len > v_maxc;
+  if jsonb_array_length(v_drop) = 0 then
+    if v_over then return jsonb_build_object('ok', false, 'rule', 'over_length_needs_decision', 'reason', 'every sentence passes; the reading is over the set sentence or character limit and is held whole (a decision to cut is not taken here)'); end if;
+    return jsonb_build_object('ok', false, 'rule', 'nothing_to_drop', 'reason', 'every sentence passes: dropping sentences cannot change the outcome');
+  end if;
   if cardinality(v_kept) < v_min then return jsonb_build_object('ok', false, 'rule', 'remainder_below_minimum', 'reason', cardinality(v_kept) || ' sentence(s) are left, fewer than the set minimum', 'dropped', v_drop); end if;
-  -- 3. a kept sentence that points back to the sentence before it, which was set aside for a fault, would be published as a fragment of it
+  if v_over then return jsonb_build_object('ok', false, 'rule', 'over_length_needs_decision', 'reason', 'after the failing sentences are set aside the remainder is still over the set sentence or character limit; it is held whole (a decision to cut is not taken here)', 'dropped', v_drop); end if;
+  -- 3. a kept sentence that points back to the sentence before it, which was set aside for a fault, would be published as a fragment of it (the opener list is wider than pronouns: QA, 10 Nov 2026)
   for i in 2 .. n loop
     continue when not (i = any (v_kept)) or v_fault[i - 1] is null;
-    -- fixed: a structural test of the grammar (a sentence that opens with a pronoun or a connecting word), not a tunable limit
-    if btrim(coalesce(v_s->(i - 1)->>'text', '')) ~* '^\s*(this|these|that|those|it|its|they|their|them|he|she|his|her|such|both|also|however|therefore|thus|moreover|furthermore|additionally|in addition|as a result)\M' then
+    -- fixed: a structural test of the grammar (a sentence that opens with a pronoun, a connecting word, "the program" or a quote or bracket), not a tunable limit
+    if btrim(coalesce(v_s->(i - 1)->>'text', '')) ~* '^\s*(((this|these|that|those|it|its|they|their|them|he|she|his|her|such|both|also|however|therefore|thus|moreover|furthermore|additionally|in addition|as a result|another|alternatively|further|and|which|here|each|but|or|so|yet|then|instead|otherwise|similarly|likewise|meanwhile|for example|for instance|in particular|the (program|programme|course|degree|qualification|major))\M)|["''“‘(\[«])' then
       return jsonb_build_object('ok', false, 'rule', 'depends_on_dropped_sentence', 'reason', 'sentence ' || i || ' opens by pointing back to sentence ' || (i - 1) || ', which is set aside', 'dropped', v_drop);
     end if;
   end loop;
@@ -162,17 +201,21 @@ begin
   return jsonb_build_object('ok', true, 'text', v_chk->>'text', 'sentences', v_sents, 'check', v_chk,
     'subset', jsonb_build_object('rule', 'subset_of_reading', 'original_count', n, 'kept_count', cardinality(v_kept), 'kept', to_jsonb(v_kept), 'dropped', v_drop,
                                  'original', jsonb_build_object('sentences', v_s, 'text', v_orig, 'check', p_value->'check')));
-end $f$;
-comment on function security.cdesc_subset_plan_v1(uuid, uuid, jsonb) is 'CF-247 F-CDESC: the deterministic subtractive plan for a course description reading. Sentences that fail a per-sentence test (security.cdesc_sentence_fault_v1) or the machine wording policy are set aside, then the leading remaining sentences are kept in their original order up to the sentence and character limits; nothing is reworded, added or cut. A kept sentence that opens by pointing back to a set-aside sentence is not used. The remainder must pass the same full check (security.course_description_check_v1) and the wording policy. Returns {ok, text, sentences, check, subset} or {ok false, rule, reason}. Read only.';
+end $function$;
+comment on function security.cdesc_subset_plan_v1(uuid, uuid, jsonb) is 'CF-247 F-CDESC: the deterministic subtractive plan for a course description reading. Only the sentences that fail a per-sentence test (security.cdesc_sentence_fault_v1) or the machine wording policy are set aside; every other sentence is kept in its original order; nothing is reworded, added or cut, and nothing is dropped for length (a reading over the limits stays held: over_length_needs_decision). A kept sentence that opens by pointing back to a set-aside sentence is not used. The remainder must pass the same full check (security.course_description_check_v1) and the wording policy. Returns {ok, text, sentences, check, subset} or {ok false, rule, reason}. Read only.';
 revoke all on function security.cdesc_subset_plan_v1(uuid, uuid, jsonb) from public, anon, authenticated;
 
-create or replace function security.cdesc_subset_recover_v1() returns jsonb
-language plpgsql security definer set search_path to '' as $f$
+CREATE OR REPLACE FUNCTION security.cdesc_subset_recover_v1() returns jsonb
+language plpgsql security definer set search_path to '' as $function$
 declare r record; v_stamp text := security.course_description_machine_policy_stamp_v1(); v_cap int := security.pipeline_num_v1('enrich.course_text_items_per_day', 500)::int; -- derived: never more in a run than the platform reads in a day (as the replay)
-        v_days int := security.pipeline_num_v1('gaps.recheck_days', 60)::int; v_t0 timestamptz := clock_timestamp(); v_prov jsonb; v_plan jsonb; v_sub jsonb; v_val jsonb; v_res text; v_why text; v_msg text; v_adm jsonb; v_slots jsonb := '{}'::jsonb; v_n int;
+        v_days int := security.pipeline_num_v1('gaps.recheck_days', 60)::int; v_t0 timestamptz := clock_timestamp(); v_dl timestamptz; v_dl_a timestamptz; v_tb boolean := false; v_prov jsonb; v_plan jsonb; v_sub jsonb; v_val jsonb; v_res text; v_why text; v_msg text; v_adm jsonb; v_slots jsonb := '{}'::jsonb; v_n int;
         v_looked int := 0; v_rec_a int := 0; v_rec_b int := 0; v_by jsonb := '{}'::jsonb; v_no jsonb := '{}'::jsonb; v_full int := 0; v_item uuid;
 begin
   if security.pipeline_num_v1('enrich.course_description_machine_on', 0) < 1 then return jsonb_build_object('on', false); end if;
+  -- fixed: the whole subset step ends 20 s after it began or 45 s after the job began, whichever comes first, so the replay, the settle and the follow-up that come after it keep their share of the 120 s statement time-out of the job (live runs average 31 s, the longest was 74 s)
+  v_dl := least(v_t0 + make_interval(secs => 20), statement_timestamp() + make_interval(secs => 45));
+  -- fixed: part (a) may use 60 % of that time box, so part (b) is never starved behind it (what part (a) leaves is part (b)'s)
+  v_dl_a := v_t0 + (v_dl - v_t0) * 0.6;
   -- (a) a reading held by the reader's own check: the latest reading of an active course that has no description
   for r in select e.id, e.course_id, e.value, e.quote, c.provider_id, btrim(split_part(e.reason, ':', 2)) cause
              from pipeline.field_enrich_items e join catalogue.courses c on c.id = e.course_id
@@ -182,7 +225,7 @@ begin
               and e.id = (select max(x.id) from pipeline.field_enrich_items x where x.course_id = e.course_id and x.field = 'description')
               and coalesce(e.value->'subset_attempt'->>'stamp', '') <> v_stamp
             order by e.id limit v_cap loop
-    exit when clock_timestamp() - v_t0 > make_interval(secs => 20); -- fixed: stays well inside the 120 s statement time-out of the job, with the replay, the settle and the follow-up that come around it
+    if clock_timestamp() > v_dl_a then v_tb := true; exit; end if;
     v_looked := v_looked + 1; v_why := null; v_sub := null;
     -- the provider's places (enrich.course_description_pending_max): a provider whose places are all taken is left for a later run (nothing is written, so it is not marked)
     if not v_slots ? r.provider_id::text then v_slots := v_slots || jsonb_build_object(r.provider_id::text, security.cdesc_provider_slots_v1(r.provider_id)); end if;
@@ -230,7 +273,7 @@ begin
             where i.entity_type = 'course' and i.field_code = 'course_description_first_read' and i.status = 'pending' and jsonb_typeof(f.value->'sentences') = 'array'
               and coalesce(f.value->'subset_attempt'->>'stamp', '') <> v_stamp
             order by i.created_at, i.id limit v_cap loop
-    exit when clock_timestamp() - v_t0 > make_interval(secs => 20); -- fixed: the same time box, for both parts together
+    if clock_timestamp() > v_dl then v_tb := true; exit; end if;
     v_looked := v_looked + 1; v_why := null;
     begin
       v_plan := security.cdesc_subset_plan_v1(r.course_id, r.provider_id, r.value);
@@ -258,13 +301,13 @@ begin
       update pipeline.field_enrich_items set value = value || jsonb_build_object('subset_attempt', jsonb_build_object('stamp', v_stamp, 'result', v_why, 'at', now())) where id = r.rid and state = 'review';
     end if;
   end loop;
-  return jsonb_build_object('on', true, 'looked_at', v_looked, 'recovered_held_readings', v_rec_a, 'recovered_waiting_items', v_rec_b, 'recovered_by_cause', v_by, 'not_recovered_by_reason', v_no, 'provider_places_full', v_full);
-end $f$;
-comment on function security.cdesc_subset_recover_v1() is 'CF-247 F-CDESC: part of the job course-description-machine, before the settle. For a course reading stuck after the read because of a few sentences (held by the reader''s check, or waiting in Layer 4 after a machine decline for its wording), plans the deterministic subset (security.cdesc_subset_plan_v1) and, if it passes, hands it to the existing path inside a sub-transaction that is rolled back unless the machine rule admits it: security.enrich_course_text_record_v1 for a held reading, security.course_description_machine_admit_v1 for a waiting item. No AI call, no page read, no read-cap use; the provider places and the policy stamp are respected; a reading is tried once per policy stamp. Needs enrich.course_description_machine_on = 1.';
+  return jsonb_build_object('on', true, 'looked_at', v_looked, 'recovered_held_readings', v_rec_a, 'recovered_waiting_items', v_rec_b, 'recovered_by_cause', v_by, 'not_recovered_by_reason', v_no, 'provider_places_full', v_full, 'time_box_reached', v_tb);
+end $function$;
+comment on function security.cdesc_subset_recover_v1() is 'CF-247 F-CDESC: part of the job course-description-machine, before the settle. For a course reading stuck after the read because of a few sentences (held by the reader''s check, or waiting in Layer 4 after a machine decline for its wording), plans the deterministic subset (security.cdesc_subset_plan_v1) and, if it passes, hands it to the existing path inside a sub-transaction that is rolled back unless the machine rule admits it: security.enrich_course_text_record_v1 for a held reading, security.course_description_machine_admit_v1 for a waiting item. No AI call, no page read, no read-cap use; the provider places and the policy stamp are respected; a reading is tried once per policy stamp. Needs enrich.course_description_machine_on = 1. Time-boxed to 20 s and to 45 s after the job began; part (a) takes at most 60 % of the box.';
 revoke all on function security.cdesc_subset_recover_v1() from public, anon, authenticated;
 
-create or replace function security.data_delivery_cdesc_subset_v1() returns jsonb
-language plpgsql stable security definer set search_path to '' as $f$
+CREATE OR REPLACE FUNCTION security.data_delivery_cdesc_subset_v1() returns jsonb
+language plpgsql stable security definer set search_path to '' as $function$
 declare v_stamp text := security.course_description_machine_policy_stamp_v1(); v_by jsonb; v_no jsonb; v_g jsonb;
 begin
   select jsonb_build_object('retained_total', count(*) filter (where a.withdrawn_at is null),
@@ -281,15 +324,15 @@ begin
   return jsonb_build_object('known', true, 'counted_at', now(), 'unit', 'courses', 'recovered', v_g, 'recovered_by_cause', v_by, 'not_recovered_by_reason', v_no);
 exception when others then
   return jsonb_build_object('known', false, 'reason', 'The subset recovery counts could not be read: ' || sqlerrm);
-end $f$;
+end $function$;
 comment on function security.data_delivery_cdesc_subset_v1() is 'CF-247 F-CDESC: read-only figures for the subset recovery of course readings in Data Delivery: descriptions admitted by subset (kept, 24 hours, 7 days, withdrawn) by the cause that held the reading, and the readings still held or waiting by the reason the last attempt of this policy stamp gave. A count that cannot be made returns known false, never 0.';
 revoke all on function security.data_delivery_cdesc_subset_v1() from public, anon, authenticated;
 
 -- security.cdesc_item_detail_v1 / public.admin_course_description_item_v1 (read only): for each course, the latest description item exactly as the table holds it, so the Fill / refresh result can show, per field,
 -- the value or empty, the source examined (source, evidence_id, storage_path), the reason, the attempts and (in the screen) the next action. An item with attempts 0 was never tried: no valid source was read.
 -- No class, state or enum is added: the screen reads attempts and reason as they are. Nothing is written.
-create or replace function security.cdesc_item_detail_v1(p_course_ids uuid[]) returns jsonb
-language sql stable security definer set search_path to '' as $f$
+CREATE OR REPLACE FUNCTION security.cdesc_item_detail_v1(p_course_ids uuid[]) returns jsonb
+language sql stable security definer set search_path to '' as $function$
   select coalesce(jsonb_agg(jsonb_build_object('course_id', c.id, 'field', 'description', 'catalogue_chars', length(btrim(coalesce(c.description, ''))),
            'item', case when e.id is null then null else jsonb_build_object('id', e.id, 'state', e.state, 'reason', e.reason, 'attempts', e.attempts, 'source', e.source,
                       'evidence_id', e.evidence_id, 'storage_path', e.storage_path, 'reading_chars', length(btrim(coalesce(e.value->>'text', ''))), 'at', e.updated_at) end) order by c.id), '[]'::jsonb)
@@ -297,18 +340,18 @@ language sql stable security definer set search_path to '' as $f$
     left join lateral (select x.id, x.state, x.reason, x.attempts, x.source, x.evidence_id, x.storage_path, x.value, x.updated_at from pipeline.field_enrich_items x
                         where x.course_id = c.id and x.field = 'description' order by x.id desc limit 1) e on true
    where c.id = any (p_course_ids)
-$f$;
+$function$;
 revoke all on function security.cdesc_item_detail_v1(uuid[]) from public, anon, authenticated;
 comment on function security.cdesc_item_detail_v1(uuid[]) is 'CF-247 F-CDESC: the latest description item of each course as stored (state, reason, attempts, source, evidence, storage path); read only. attempts 0 means no valid source was read, which is not evidence of absence.';
-create or replace function public.admin_course_description_item_v1(p_course_ids uuid[]) returns jsonb
-language plpgsql stable security definer set search_path to '' as $f$
+CREATE OR REPLACE FUNCTION public.admin_course_description_item_v1(p_course_ids uuid[]) returns jsonb
+language plpgsql stable security definer set search_path to '' as $function$
 declare v_cap int := 200; -- fixed: the same bound as public.admin_course_description_state_v1 (a hand-made call)
 begin
   if auth.uid() is null or coalesce(security.current_role_rank(), 0) < 3 then raise exception 'Curator role or above required' using errcode = '42501'; end if;
   if p_course_ids is null or cardinality(p_course_ids) = 0 then return jsonb_build_object('courses', '[]'::jsonb); end if;
   if cardinality(p_course_ids) > v_cap then raise exception 'ask for at most % courses at a time', v_cap; end if;
   return jsonb_build_object('read_at', now(), 'courses', security.cdesc_item_detail_v1(p_course_ids));
-end $f$;
+end $function$;
 revoke all on function public.admin_course_description_item_v1(uuid[]) from public, anon;
 grant execute on function public.admin_course_description_item_v1(uuid[]) to authenticated, service_role;
 comment on function public.admin_course_description_item_v1(uuid[]) is 'CF-247 F-CDESC: read-only latest description item of the given courses for the Fill / refresh result (rank 3 and above).';
@@ -397,6 +440,17 @@ select pg_temp.edit_all('security.course_description_machine_admit_v1(uuid,text)
         $n4$coalesce(i.layer2_state, '{}'::jsonb) || jsonb_build_object('machine_rule', v_rule, 'actor_kind', 'machine', 'via', coalesce(p_via, 'settle')) || case when v_sub is not null then jsonb_build_object('subset_of_reading', v_sub) else '{}'::jsonb end, coalesce(i.layer3_state, '{}'::jsonb), v_ref) returning id into v_dec;$n4$,
         $n5$coalesce(v->'checks', '{}'::jsonb) || jsonb_build_object('decision_id', v_dec, 'via', coalesce(p_via, 'settle'), 'source_recheck', v->>'source_recheck', 'captured_at', v->>'captured_at') || case when v_sub is not null then jsonb_build_object('subset_of_reading', v_sub) else '{}'::jsonb end,$n5$]);
 
+-- 2b. the owning layer of the machine rule: a university About / Overview page (or a page with no address, or a host-only page with no course in it) is never a course page, for every route that admits (settle, fresh reading, subset)
+select pg_temp.edit_all('security.course_description_machine_check_v1(uuid)', '4c321730269064b42ff9ac10a114336b', '2a5b91aa6b93b920bbb80df9920aca09',
+  array[$o1$v_kind text; v_prov jsonb; v_many boolean := false;$o1$,
+        $o2$  v_fid := case when coalesce($o2$],
+  array[$n1$v_kind text; v_pk text; v_prov jsonb; v_many boolean := false;$n1$,
+        $n2$  -- the page must be a page about THIS course: not a university About / Overview page, not a page with no address (security.cdesc_page_kind_v1)
+  v_pk := security.cdesc_page_kind_v1(g.url, c.canonical_title, g.identity_basis);
+  if v_pk is not null then
+    return security.cdesc_machine_fail_v1('wrong_page_kind', 'The bound page is not a page about this course (' || v_pk || '; ' || coalesce(g.url, 'no address') || ').', 'A person decides in Layer 4.'); end if;
+  v_fid := case when coalesce($n2$]);
+
 -- 3. the job: the recovery runs before the settle
 select pg_temp.replace_all('security.course_description_machine_run_v1()', 'faa6dab1bfeef3464ba86fac11b34766', '42c73e9c0f376150e7778104dfa9830a', $ddl$
 create or replace function security.course_description_machine_run_v1() returns jsonb
@@ -434,6 +488,7 @@ do $post$ begin
   if security.pipeline_num_v1('enrich.course_description_review_first', 0) < 1 then raise exception 'post-check: review_first must be untouched'; end if;
   if position('cdesc_sentence_fault_v1' in (select p.prosrc from pg_proc p where p.oid = 'security.course_description_check_with_v1(uuid,jsonb,jsonb,jsonb)'::regprocedure)) = 0 then raise exception 'post-check: the check does not use the one sentence test'; end if;
   if position('subset_of_reading' in (select p.prosrc from pg_proc p where p.oid = 'security.course_description_machine_admit_v1(uuid,text)'::regprocedure)) = 0 then raise exception 'post-check: the admission does not record a subset'; end if;
+  if position('cdesc_page_kind_v1' in (select p.prosrc from pg_proc p where p.oid = 'security.course_description_machine_check_v1(uuid)'::regprocedure)) = 0 then raise exception 'post-check: the machine check does not test the kind of page'; end if;
   if position('cdesc_subset_recover_v1' in (select p.prosrc from pg_proc p where p.oid = 'security.course_description_machine_run_v1()'::regprocedure)) = 0 then raise exception 'post-check: the job does not run the subset recovery'; end if;
   if position('data_delivery_cdesc_subset_v1' in (select p.prosrc from pg_proc p where p.oid = 'security.data_delivery_cdesc_flow_v1()'::regprocedure)) = 0 then raise exception 'post-check: the flow does not carry the subset key'; end if;
 end $post$;

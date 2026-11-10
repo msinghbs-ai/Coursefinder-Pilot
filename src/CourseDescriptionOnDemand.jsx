@@ -75,17 +75,22 @@ export function descriptionStages(s,item){
   return[['page','Stored page',page],['ai','AI reading',ai],['validation','Checks',val],['decision','Decision',dec],['catalogue','Catalogue',cat]]
 }
 // The result for the field, per item as the server stores it: value or empty, the source examined, the reason, the attempts and the next action.
+// Three different things, never mixed (Operating Model v1.7): the server says there is no item (item null: "Not tried"), the server says attempts 0 ("Never tried"), or the item could not be read / is still loading ("Not available" / "Reading"): unknown is not zero.
 // attempts 0 = never tried (no valid source was read): not an attempt, not evidence of absence. Only attempts 1 or more with the page not stating it is "tried, not found".
-function FieldResult({s,item,detail}){
-  const it=item||null,att=it==null?null:Number(it.attempts),chars=Number(detail?.catalogue_chars||0)
-  const verdict=s.has_description?'A description is in the catalogue.':it==null?'Not tried: nothing has been read for this course.':att===0?'Never tried: no valid source was read. This is not evidence that the page has no description.'
+export const NOT_AVAILABLE='Not available: the stored item could not be read, so whether this was tried is unknown. This is not evidence that nothing was tried or that the page has no description.'
+function FieldResult({s,det}){
+  const status=det?.status||'loading',ok=status==='ok',row=ok?det.row:null,it=ok?(row.item||null):null,att=it==null?null:Number(it.attempts),chars=Number(row?.catalogue_chars||0)
+  const na=status==='error'?'Not available':'Reading…'
+  const verdict=s.has_description?'A description is in the catalogue.':!ok?(status==='error'?NOT_AVAILABLE:'Reading the stored item…'):it==null?'Not tried: nothing has been read for this course.':att===0?'Never tried: no valid source was read. This is not evidence that the page has no description.'
     :s.state==='not_stated'?'Tried and not found: the page was read and does not state a description.':'Read, then held or declined (see the reason).'
-  return <dl className="cdod-dl" data-cdod-field-result aria-label="Result for the course description">
+  return <dl className="cdod-dl" data-cdod-field-result data-cdod-detail={status} aria-label="Result for the course description">
     <Row label="Field">Course description</Row>
-    <Row label="Value"><span data-cdod-value>{chars>0?`In the catalogue (${num(chars)} characters)`:Number(it?.reading_chars)>0?`Empty. A reading of ${num(it.reading_chars)} characters is held and not admitted.`:'Empty'}</span></Row>
-    <Row label="Source examined">{it==null?'None':<><span data-cdod-source>{it.source||'No source recorded'}</span>{it.evidence_id?<> · evidence <code>{short(it.evidence_id)}</code></>:null}{it.storage_path?<> · <code data-cdod-storage>{it.storage_path}</code></>:null}{!it.evidence_id&&!it.storage_path?<span className="cdod-muted"> · no stored page was read</span>:null}</>}</Row>
-    <Row label="Reason"><span data-cdod-reason>{it?.reason?String(it.reason):'No reason recorded'}</span></Row>
-    <Row label="Attempts"><span data-cdod-attempts>{att==null?'None':num(att)}</span> <span className="cdod-muted" data-cdod-verdict>{verdict}</span></Row>
+    <Row label="Value"><span data-cdod-value>{!ok?(s.has_description?'In the catalogue':na):chars>0?`In the catalogue (${num(chars)} characters)`:Number(it?.reading_chars)>0?`Empty. A reading of ${num(it.reading_chars)} characters is held and not admitted.`:'Empty'}</span></Row>
+    <Row label="Source examined">{!ok?<span data-cdod-source>{na}{s.evidence_id?<> · evidence <code>{short(s.evidence_id)}</code></>:null}</span>:it==null?'None':<><span data-cdod-source>{it.source||'No source recorded'}</span>{it.evidence_id?<> · evidence <code>{short(it.evidence_id)}</code></>:null}{it.storage_path?<> · <code data-cdod-storage>{it.storage_path}</code></>:null}{!it.evidence_id&&!it.storage_path?<span className="cdod-muted"> · no stored page was read</span>:null}</>}</Row>
+    <Row label="Source page">{s.source_url?<a href={s.source_url} target="_blank" rel="noreferrer">{s.source_url}</a>:'None stored'}{s.page_read_at?<span className="cdod-muted"> · page read {fmtDateTime(s.page_read_at)}</span>:null}{!s.source_ready&&s.source_reason?<span className="cdod-muted"> · {String(s.source_reason).replaceAll('_',' ')}</span>:null}</Row>
+    <Row label="Reason"><span data-cdod-reason>{!ok?na:it?.reason?String(it.reason):'No reason recorded'}</span></Row>
+    <Row label="Attempts"><span data-cdod-attempts>{!ok?na:att==null?'None':num(att)}</span> <span className="cdod-muted" data-cdod-verdict>{verdict}</span></Row>
+    <Row label="Last attempt">{s.last_attempt_at?<>{fmtDateTime(s.last_attempt_at)} · {s.last_state}{s.last_reason?` · ${s.last_reason}`:''}</>:ok&&it==null?'Never tried':'No attempt recorded in the state'}</Row>
     <Row label="Next action"><span data-cdod-next-field>{nextAction(s)}</span></Row>
   </dl>
 }
@@ -216,11 +221,12 @@ function WithdrawPanel({courseId,onClose,onDone,onError}){
 function Row({label,children}){return <div className="cdod-row"><dt>{label}</dt><dd>{children}</dd></div>}
 export function CourseDescriptionBlock({courseId,rank,onError}){
   const enabled=Number(rank)>=3&&!!courseId,st=useDescriptionStates(courseId?[String(courseId)]:[],enabled)
-  const[detail,setDetail]=useState(null)
+  const[detail,setDetail]=useState({status:'loading'}) // loading | error | ok (with the row): an item that could not be read is NOT an item that does not exist
   const[wd,setWd]=useState(false),[mode,setMode]=useState(''),[refresh,setRefresh]=useState(0),[ver,setVer]=useState(null),[verBusy,setVerBusy]=useState(false),[verErr,setVerErr]=useState('')
   const dkey=enabled?String(courseId):'',stamp=st.map[String(courseId)]?.last_item_id??'',stateKey=st.map[String(courseId)]?.state??''
-  useEffect(()=>{if(!dkey){setDetail(null);return}let live=true
-    readItems([dkey]).then(d=>{if(live)setDetail((Array.isArray(d?.courses)?d.courses:[])[0]||null)}).catch(()=>{if(live)setDetail(null)}) // an older server has no item read: the result shows what the state holds
+  useEffect(()=>{if(!dkey){setDetail({status:'loading'});return}let live=true
+    setDetail(d=>d.status==='ok'?d:{status:'loading'})
+    readItems([dkey]).then(d=>{if(!live)return;const row=(Array.isArray(d?.courses)?d.courses:[])[0];setDetail(row?{status:'ok',row}:{status:'error'})}).catch(()=>{if(live)setDetail({status:'error'})}) // an older server has no item read, or the read failed: "Not available", never "Not tried"
     return()=>{live=false}},[dkey,stamp,stateKey,refresh])
   if(!enabled)return null
   const s=st.map[String(courseId)]
@@ -232,17 +238,13 @@ export function CourseDescriptionBlock({courseId,rank,onError}){
     {st.err&&<p className="cdod-error" role="alert">{st.err}</p>}
     {s&&<>
       <p className="cdod-muted">{DESC_STATE[s.state]?.[2]}</p>
-      <ol className="cdod-stages" data-cdod-stages aria-label="Where this description stands, stage by stage">{descriptionStages(s,detail?.item).map(([k,label,v])=><li key={k} data-cdod-stage={k}><span className="cdod-stage-name">{label}</span><StatusChip tone={v.tone} label={v.text}/></li>)}</ol>
-      <FieldResult s={s} item={detail?.item} detail={detail}/>
+      <ol className="cdod-stages" data-cdod-stages aria-label="Where this description stands, stage by stage">{descriptionStages(s,detail.status==='ok'?detail.row.item:undefined).map(([k,label,v])=><li key={k} data-cdod-stage={k}><span className="cdod-stage-name">{label}</span><StatusChip tone={v.tone} label={v.text}/></li>)}</ol>
+      <FieldResult s={s} det={detail}/>
       <dl className="cdod-dl">
-        <Row label="Source page">{s.source_url?<a href={s.source_url} target="_blank" rel="noreferrer">{s.source_url}</a>:'None stored'}{!s.source_ready&&s.source_reason?<span className="cdod-muted"> · {String(s.source_reason).replaceAll('_',' ')}</span>:null}</Row>
-        <Row label="Evidence">{s.evidence_id?<><code>{short(s.evidence_id)}</code>{s.page_read_at?` · page read ${fmtDateTime(s.page_read_at)}`:''}</>:'No evidence stored'}</Row>
-        <Row label="Last attempt">{s.last_attempt_at?<>{fmtDateTime(s.last_attempt_at)} · {s.last_state}{s.last_reason?` · ${s.last_reason}`:''}</>:'Never tried'}</Row>
         <Row label="Next retry">{s.next_retry_at?fmtDateTime(s.next_retry_at):'No date is set'}</Row>
         {s.held_kind&&<Row label="Held">{String(s.held_kind).replaceAll('_',' ')}</Row>}
         <Row label="Run">{s.last_job_id?<code data-cdod-run>{short(s.last_job_id)}</code>:'No run yet'}</Row>
         {s.last_state==='failed'&&<Row label="Error"><span data-cdod-error-reason>{dash(s.last_reason)||'The last reading failed; no reason was recorded.'}</span></Row>}
-        <Row label="Next action"><span data-cdod-next>{nextAction(s)}</span></Row>
         <Row label="Actual gain">{gain}</Row>
       </dl>
       <div className="cdod-actions">
