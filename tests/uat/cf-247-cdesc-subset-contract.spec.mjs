@@ -109,6 +109,18 @@ test('evidence-backed absence (Operating Model v1.7): only readings that were re
   expect(OD).toContain('Number(item.attempts)===0')
 })
 
+test('standing rule: a university About page never stands in for a course page; the subset recovery checks the bound page itself, in its own functions, and the shared admission is not changed', () => {
+  const pk = fnBody('security.cdesc_page_kind_v1')
+  for (const k of ["'about-us'", "'who-we-are'", "'our-university'", "'about-the-university'", "'about'", "'overview'", "'host_page'", "'university_about_page'", "'host_page_no_course_evidence'"]) expect(pk, k).toContain(k)
+  expect(pk).not.toMatch(/\b(insert|update|delete)\b/i)
+  const plan = fnBody('security.cdesc_subset_plan_v1')
+  expect(plan).toContain('security.cdesc_page_kind_v1(')
+  expect(plan.indexOf('cdesc_page_kind_v1')).toBeLessThan(plan.indexOf('cdesc_sentence_fault_v1'))   // the page is judged before any sentence work
+  expect(M).toContain("('function', 'security.cdesc_page_kind_v1'")
+  // the only shared admission function edited is the audit of admit_v1 (via subset_of_reading); no page-kind rule is added there
+  expect(M).not.toMatch(/university_about_page[^\n]*(course_description_machine_check_v1|enrich_course_text_record_v1)/)
+})
+
 test('CI runs the fixture and this contract', () => {
   expect(WF).toContain('bash tests/fixtures/cdesc-subset/run.sh')
   expect(WF).toContain('tests/fixtures/cdesc-subset/**')

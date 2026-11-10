@@ -141,6 +141,25 @@ select pg_temp.expect('setup: 501 is held for the sentence count, 502 for the le
   and (select reason like 'held: sentence_count:%' from pipeline.field_enrich_items where id = pg_temp.rd(503)) and :'h501' = 'held' and :'h502' = 'held');
 select pg_temp.expect('setup: 504 and 505 wait in Layer 4, declined by the machine rule for their wording', pg_temp.got(pg_temp.rid(504)) = 'policy_refused_word' and pg_temp.got(pg_temp.rid(505)) = 'policy_figure' and pg_temp.pending(504) and pg_temp.pending(505));
 
+-- the bound page must be a page about this course. 524 an institution-level About address; 525 a bare overview address with no course in it; 526 a course page that ends in /overview (a course tab: fine);
+-- 527 a page proved only by its host with no course in the address. 529 and 530 are modelled on live samples 3 and 5 (a first sentence set aside; a middle sentence set aside), to show the remainder still names the course.
+select pg_temp.held(524, 2, pg_temp.arr(pg_temp.sn(524, 1), pg_temp.sn(524, 2), pg_temp.sn(524, 3), pg_temp.sn(524, 4), pg_temp.sn(524, 5)), true, 'https://example.test/about-us/our-university/') h524 \gset
+select pg_temp.held(525, 2, pg_temp.arr(pg_temp.sn(525, 1), pg_temp.sn(525, 2), pg_temp.sn(525, 3), pg_temp.sn(525, 4), pg_temp.sn(525, 5)), true, 'https://example.test/overview') h525 \gset
+select pg_temp.held(526, 2, pg_temp.arr(pg_temp.sn(526, 1), pg_temp.sn(526, 2), pg_temp.sn(526, 3), pg_temp.sn(526, 4), pg_temp.sn(526, 5)), true, 'https://example.test/explore/cm-course-526/overview') h526 \gset
+select pg_temp.held(527, 2, pg_temp.arr(pg_temp.sn(527, 1), pg_temp.sn(527, 2), pg_temp.sn(527, 3), pg_temp.sn(527, 4), pg_temp.sn(527, 5)), true, 'https://example.test/study/') h527 \gset
+update pipeline.coverage_course_pages set identity_basis = 'host_page' where course_id = pg_temp.cid(527);
+select pg_temp.held(529, 2, pg_temp.arr(
+  jsonb_build_object('text', 'The Certificate III in Glass and Glazing is a nationally recognised course that runs over 3 years part time.', 'quote', 'The Certificate III in Glass and Glazing is a nationally recognised course that runs over 3 years part time.', 'on_page', true),
+  jsonb_build_object('text', 'With this course, you will learn residential, commercial and industrial glass applications.', 'quote', 'With this course, you will learn residential, commercial and industrial glass applications.', 'on_page', true),
+  jsonb_build_object('text', 'This course will teach you how to work with a wide range of glass products and their installation.', 'quote', 'This course will teach you how to work with a wide range of glass products and their installation.', 'on_page', true),
+  jsonb_build_object('text', 'You will obtain hands-on experience installing glass windows, doors and mirrors.', 'quote', 'You will obtain hands-on experience installing glass windows, doors and mirrors.', 'on_page', true))) h529 \gset
+select pg_temp.held(530, 2, pg_temp.arr(
+  jsonb_build_object('text', 'The Bachelor of Engineering (Honours) - Bachelor of Computer Science develops a set of skills in software and systems.', 'quote', 'The Bachelor of Engineering (Honours) - Bachelor of Computer Science develops a set of skills in software and systems.', 'on_page', true),
+  jsonb_build_object('text', 'The Bachelor of Computer Science covers the theoretical foundations of computer science and its applications.', 'quote', 'The Bachelor of Computer Science covers the theoretical foundations of computer science and its applications.', 'on_page', true),
+  jsonb_build_object('text', 'The Bachelor of Engineering (Honours) runs over 3 years with specialisation options.', 'quote', 'The Bachelor of Engineering (Honours) runs over 3 years with specialisation options.', 'on_page', true),
+  jsonb_build_object('text', 'The double degree provides a qualification in less time and cost than studying the two degrees separately.', 'quote', 'The double degree provides a qualification in less time and cost than studying the two degrees separately.', 'on_page', true))) h530 \gset
+update catalogue.courses set canonical_title = 'Certificate III in Glass and Glazing' where id = pg_temp.cid(529);
+update catalogue.courses set canonical_title = 'Bachelor of Engineering (Honours) - Bachelor of Computer Science' where id = pg_temp.cid(530);
 -- 517 and 523 were never tried: no valid source was read (attempts 0, "no correct course page" / "no allowed source had a value"). Even with sentences in the row they are not a held reading and not evidence of absence
 select pg_temp.mkc(517, 1); select pg_temp.mkc(523, 1);
 select pg_temp.reading(517, 1, 'skipped', 'no correct course page: the page found is for another course', pg_temp.arr(pg_temp.sn(517, 1), pg_temp.sn(517, 2), pg_temp.sn(517, 3), pg_temp.sn(517, 4), pg_temp.sn(517, 5)), true);
@@ -192,7 +211,7 @@ select pg_temp.expect('NEG no provable reader (516): not tried, noted', pg_temp.
 select pg_temp.expect('NEG a reading held for another reason (518, the same words as another course) is not looked at', pg_temp.dsc(518) is null and pg_temp.att(518) is null);
 select pg_temp.expect('NEG the provider places (519): a provider whose places are all taken is left for a later run, nothing is written, nothing is marked', pg_temp.dsc(519) is null and pg_temp.att(519) is null and pg_temp.l4(519) = 0
   and (select state = 'skipped' and jsonb_array_length(value->'sentences') = 5 from pipeline.field_enrich_items where id = :r519));
-select pg_temp.expect('the run reports what it did', (:'r1'::jsonb->>'recovered_held_readings')::int = 3 and (:'r1'::jsonb->>'recovered_waiting_items')::int = 2 and (:'r1'::jsonb->'recovered_by_cause'->>'sentence_count')::int = 2
+select pg_temp.expect('the run reports what it did', (:'r1'::jsonb->>'recovered_held_readings')::int = 4 and (:'r1'::jsonb->>'recovered_waiting_items')::int = 4 and (:'r1'::jsonb->'recovered_by_cause'->>'sentence_count')::int = 3
   and (:'r1'::jsonb->'not_recovered_by_reason'->>'record_not_admitted')::int = 1 and (:'r1'::jsonb->>'provider_places_full')::int >= 1);
 
 -- ---- 3. once per policy stamp; a changed policy looks again ----------------------------------------------------------------------------------------------
@@ -206,9 +225,9 @@ select pg_temp.expect('recovery: a changed policy stamp looks at the unrecovered
 select security.course_description_machine_run_v1() r4 \gset
 select pg_temp.expect('the job runs the recovery before the settle and reports it', :'r4'::jsonb ? 'subset' and :'r4'::jsonb->'subset' ? 'looked_at' and :'r4'::jsonb ? 'settle' and :'r4'::jsonb ? 'held');
 select pg_temp.expect('Data Delivery: the flow carries the additive key subset with the recovered descriptions by cause and the readings not recovered by reason',
-  (select (f->'subset'->>'known')::boolean and (f->'subset'->'recovered'->>'retained_total')::int = 5 and (f->'subset'->'recovered'->>'admitted_24h')::int = 5 and (f->'subset'->'recovered'->>'withdrawn_total')::int = 0
-          and (select (x->>'n')::int from jsonb_array_elements(f->'subset'->'recovered_by_cause') x where x->>'code' = 'sentence_count') = 2
-          and (select (x->>'n')::int from jsonb_array_elements(f->'subset'->'recovered_by_cause') x where x->>'code' = 'policy_figure') = 1
+  (select (f->'subset'->>'known')::boolean and (f->'subset'->'recovered'->>'retained_total')::int = 8 and (f->'subset'->'recovered'->>'admitted_24h')::int = 8 and (f->'subset'->'recovered'->>'withdrawn_total')::int = 0
+          and (select (x->>'n')::int from jsonb_array_elements(f->'subset'->'recovered_by_cause') x where x->>'code' = 'sentence_count') = 3
+          and (select (x->>'n')::int from jsonb_array_elements(f->'subset'->'recovered_by_cause') x where x->>'code' = 'policy_figure') = 3
           and (select count(*) >= 6 from jsonb_array_elements(f->'subset'->'not_recovered_by_reason') x)
           and f ? 'declined_by_cause' and f ? 'held_by_cause' and f ? 'eligible' and f ? 'gain' and f ? 'blocker'
      from (select security.data_delivery_cdesc_flow_v1() f) z));
@@ -220,6 +239,31 @@ select pg_temp.expect('Fill result per field: the latest description item is sho
      from jsonb_array_elements(security.cdesc_item_detail_v1(array[pg_temp.cid(517)])) x)
   and (select (x->'item'->>'state') in ('skipped', 'filled') and x->'item'->>'reason' is not distinct from (select reason from pipeline.field_enrich_items where id = pg_temp.rd(502)) and (x->>'catalogue_chars')::int > 0 from jsonb_array_elements(security.cdesc_item_detail_v1(array[pg_temp.cid(502)])) x)
   and jsonb_array_length(security.cdesc_item_detail_v1(array[]::uuid[])) = 0);
+select pg_temp.expect('NEG page kind: an institution-level About address (524), a bare overview address (525) and a page proved only by its host with no course in the address (527) are not admitted, their reading is as it was, and the rule is recorded',
+  pg_temp.dsc(524) is null and pg_temp.dsc(525) is null and pg_temp.dsc(527) is null and pg_temp.att(524) = 'university_about_page' and pg_temp.att(525) = 'university_about_page' and pg_temp.att(527) = 'host_page_no_course_evidence'
+  and pg_temp.l4(524) = 0 and pg_temp.l4(525) = 0 and pg_temp.l4(527) = 0
+  and not exists (select 1 from pipeline.course_description_machine_admissions where course_id in (pg_temp.cid(524), pg_temp.cid(525), pg_temp.cid(527))));
+select pg_temp.expect('page kind: a course page that ends in /overview (526) is a page about the course and recovers with its leading sentences by subset',
+  pg_temp.dsc(526) = pg_temp.prefix(pg_temp.arr(pg_temp.sn(526, 1), pg_temp.sn(526, 2), pg_temp.sn(526, 3), pg_temp.sn(526, 4), pg_temp.sn(526, 5)), 4) and pg_temp.via(526) = 'subset_of_reading');
+select pg_temp.expect('page kind function: the address decides (institution-level names fail; about/overview fail unless the address names the course; host_page needs the course in the address; an ordinary course address is fine)',
+  security.cdesc_page_kind_v1('https://x.edu/about-us/college-profile', 'Bachelor of Health Science (Naturopathy)', 'cricos_code') = 'university_about_page'
+  and security.cdesc_page_kind_v1('https://x.edu/about-us/about-the-university/the-university/official-publications/university-calendar/c', 'Transitional Certificate (Level 7)', 'adapter_title') = 'university_about_page'
+  and security.cdesc_page_kind_v1('https://x.edu/explore/postgraduate-programmes/master-of-renewable-energy/overview', 'Master of Renewable Energy (Level 9)', 'adapter_title') is null
+  and security.cdesc_page_kind_v1('https://x.edu/explore/degrees/laws/overview', 'Bachelor of Laws (Level 7)', 'adapter_title') is null
+  and security.cdesc_page_kind_v1('https://x.edu/explore/postgraduate-programmes/master-of-music/about?programme=master-of-music', 'Master of Music (Level 9)', 'degree_name') is null
+  and security.cdesc_page_kind_v1('https://x.edu/explore/postgraduate-programmes/master-of-music/about', 'Master of Nursing Science (Level 9)', 'adapter_title') = 'university_about_page'
+  and security.cdesc_page_kind_v1('https://x.edu/overview', 'Master of Music', 'exact_title') = 'university_about_page'
+  and security.cdesc_page_kind_v1('https://x.edu/study/', 'Master of Music', 'host_page') = 'host_page_no_course_evidence'
+  and security.cdesc_page_kind_v1('https://x.edu/study/master-of-music', 'Master of Music', 'host_page') is null
+  and security.cdesc_page_kind_v1('https://x.edu/courses/master-of-music', 'Master of Music', 'exact_title') is null
+  and security.cdesc_page_kind_v1(null, null, null) is null);
+select pg_temp.expect('samples 3 and 5 (live): a first sentence set aside (529) and a middle one set aside (530); the remainder is admitted by subset and still names the course (a distinctive word of its title)',
+  pg_temp.via(529) = 'subset_of_reading' and pg_temp.via(530) = 'subset_of_reading'
+  and pg_temp.dsc(529) = 'With this course, you will learn residential, commercial and industrial glass applications. This course will teach you how to work with a wide range of glass products and their installation. You will obtain hands-on experience installing glass windows, doors and mirrors.'
+  and pg_temp.dsc(529) ilike '%glass%' and pg_temp.dsc(530) ilike '%computer science%'
+  and (pg_temp.sub(529)->'dropped'->0->>'index')::int = 1 and (pg_temp.sub(529)->'dropped'->0->>'cause') = 'policy_figure'
+  and (pg_temp.sub(530)->'dropped'->0->>'index')::int = 3 and (pg_temp.sub(530)->'dropped'->0->>'cause') = 'policy_figure'
+  and (pg_temp.sub(530)->>'kept_count')::int = 3);
 select pg_temp.expect('Data Delivery: the existing stages still carry the flow key and the subset key sits inside it', (select (s->'flow' ? 'subset') and s ? 'validation' from (select security.data_delivery_cdesc_stages_v1() s) z));
 select pg_temp.expect('withdrawal: a description admitted by subset is withdrawn like any machine admission and the empty description comes back',
   (select (security.course_description_machine_withdraw_v1(pg_temp.cid(501), 'fixture', '00000000-0000-4000-c000-0000000000aa')->>'ok')::boolean) and pg_temp.dsc(501) is null);

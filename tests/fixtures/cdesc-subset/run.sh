@@ -40,10 +40,10 @@ EXPECT=$(printf '%s\n' "${!LIVE[@]}" | sort)
 for sig in "${!LIVE[@]}"; do grep -Fq "$sig ${LIVE[$sig]}" "$W/0.fn" || { echo "$sig was not at its live md5 before"; exit 1; }; done
 ! grep -q '@@MD5_' $M || { echo "a placeholder md5 is left in the migration"; exit 1; }
 NEW=$(comm -13 "$W/0.fn" "$W/1.fn" | sed 's/ .*//' | sort)
-[ "$(comm -13 <(printf '%s\n' "$CHANGED") <(printf '%s\n' "$NEW") | tr '\n' ' ')" = "admin_course_description_item_v1(uuid[]) security.cdesc_item_detail_v1(uuid[]) security.cdesc_sentence_fault_v1(text,text,boolean,jsonb,jsonb,numeric) security.cdesc_subset_plan_v1(uuid,uuid,jsonb) security.cdesc_subset_recover_v1() security.data_delivery_cdesc_subset_v1() " ] || { echo "the new functions are not exactly the six new ones:"; echo "$NEW"; exit 1; }
+[ "$(comm -13 <(printf '%s\n' "$CHANGED") <(printf '%s\n' "$NEW") | tr '\n' ' ')" = "admin_course_description_item_v1(uuid[]) security.cdesc_item_detail_v1(uuid[]) security.cdesc_page_kind_v1(text,text,text) security.cdesc_sentence_fault_v1(text,text,boolean,jsonb,jsonb,numeric) security.cdesc_subset_plan_v1(uuid,uuid,jsonb) security.cdesc_subset_recover_v1() security.data_delivery_cdesc_subset_v1() " ] || { echo "the new functions are not exactly the seven new ones:"; echo "$NEW"; exit 1; }
 cmp -s "$W/0.set" "$W/1.set" || { echo "a setting changed or was added:"; diff "$W/0.set" "$W/1.set"; exit 1; }
 for f in l4 rd desc l4rows rdrows led; do cmp -s "$W/0.$f" "$W/1.$f" || { echo "the migration changed $f"; exit 1; }; done
-echo "applied: only the four governed function bodies changed (and six new functions were added); no setting (none added), Layer 4 item, reading, ledger row or description changed"
+echo "applied: only the four governed function bodies changed (and seven new functions were added); no setting (none added), Layer 4 item, reading, ledger row or description changed"
 $P -1 -At -f $M >/dev/null
 snap "$W/2"; for f in fn set l4 rd desc l4rows rdrows led; do cmp -s "$W/1.$f" "$W/2.$f" || { echo "the second run changed $f"; exit 1; }; done
 echo "applied again: no change (functions, settings, items, readings, ledger, descriptions)"
