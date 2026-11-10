@@ -8,7 +8,7 @@ const UI = fs.readFileSync('src/DataDelivery.jsx', 'utf8')
 const WF = fs.readFileSync('.github/workflows/course-descriptions-test.yml', 'utf8')
 const EDITS = [
   ['security.course_description_check_with_v1(uuid,jsonb,jsonb,jsonb)', '3bb5d62b5e86cd7c76707171e02a3ae5', '6e65745a7863f0dae97a743821475eb0'],
-  ['security.course_description_machine_check_v1(uuid)', '3e0fe24d762e7fc4348865ea09499690', 'ef8dc9a90dd81e09e6f1fd2091937aa0'],
+  ['security.course_description_machine_check_v1(uuid)', '3e0fe24d762e7fc4348865ea09499690', '4c321730269064b42ff9ac10a114336b'],
   ['security.enrich_course_text_record_v1(bigint,jsonb)', 'c52c1969a80f2d3db1d81a4e46a49cd9', '82e93b8b73d1f13ac3fd62dbb59264f9'],
   ['security.course_description_promote_held_v1(uuid)', '1c990fb9c93b1841195160a0e9a712ae', '2f46bf63e50726d67bdd9d7cf74e915a'],
   ['security.enrich_course_text_gaps_v1(text[])', '5352bc7ea7bbf3ef00bd616f2897f2f4', '66d9dad4eb0d743b804097b1bf9d38d2'],
@@ -51,6 +51,21 @@ test('the protections stay: the review-first setting is not read or changed, the
   expect(rc.length).toBeGreaterThan(500)
   expect(rc).not.toMatch(/openrouter|http_post|net\.http|ai_cost|reserve/i)
   expect(rc).toContain('enrich_course_text_record_v1')
+})
+
+test('QA conditions: a currency code is never a paper code, leading the way still refuses, the learner quote must speak to the reader, a shared page is found by its normalised address or evidence, wording at three providers is not tie-broken', () => {
+  expect(M).toContain("(a|the)\\s+teams?")                                   // only the verb senses of leading are set aside
+  expect(M).not.toMatch(/leading\\s\+\(to\|into\|towards\?\|a\|an\|the/)       // a|an|the are no longer in the alternation
+  expect(M).toContain("\\m(aud|usd|nzd|eur|gbp|cad|sgd|cny|jpy|inr|hkd|chf)\\s?[0-9]")
+  expect(M).toContain("\\m(papers?|courses?|units?|subjects?|modules?)\\M")
+  expect(M).toContain("v_q !~ '\\myou(r|rs|rself)?\\M'")
+  expect(M).toContain("regexp_replace(regexp_replace(g2.url, '[?#].*$', ''), '/+$', '')")
+  expect(M).toContain('g2.evidence_id = g.evidence_id')
+  expect(M).toContain('select count(distinct c3.provider_id) >= 3 into v_many')
+  expect(M).toContain('v_many or ((o.created_at, o.id) < (i.created_at, i.id)')
+  // the header says only what the code does about word-form figures
+  expect(M).toContain('a figure written as a word (for example "three years") is not caught by the shared figures rule')
+  expect(M).not.toContain('Durations, hours,\n--      weeks, counts of anything else, prices')
 })
 
 test('the forward recovery restores the seven live bodies and is guarded by the md5 of what is live', () => {

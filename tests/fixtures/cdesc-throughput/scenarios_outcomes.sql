@@ -56,13 +56,13 @@ select pg_temp.setsents(323, pg_temp.two('The ' || pg_temp.w(323, 1) || ' course
 select pg_temp.setsents(324, pg_temp.two('The ' || pg_temp.w(324, 1) || ' course covers ' || pg_temp.w(324, 2) || ' and ' || pg_temp.w(324, 3) || ' in depth.', 'Placements are with some of the leading ' || pg_temp.w(324, 4) || ' providers in the region.'));
 select pg_temp.setsents(325, pg_temp.two('The ' || pg_temp.w(325, 1) || ' diploma is a 120-point coursework programme covering ' || pg_temp.w(325, 2) || ' and ' || pg_temp.w(325, 3) || '.', 'Learners complete a ' || pg_temp.w(325, 6) || ' project in the final stage under academic guidance.'));
 select pg_temp.setsents(326, pg_temp.two('The ' || pg_temp.w(326, 1) || ' diploma runs over 3 years and covers ' || pg_temp.w(326, 2) || ' and ' || pg_temp.w(326, 3) || ' in depth.', 'Learners complete a ' || pg_temp.w(326, 6) || ' project in the final stage under academic guidance.'));
-select pg_temp.setsents(327, pg_temp.two('The programme consists of CHHE 701 and CHHE 702 and covers ' || pg_temp.w(327, 2) || ' and ' || pg_temp.w(327, 3) || ' in depth.', 'Learners complete a ' || pg_temp.w(327, 6) || ' project in the final stage under academic guidance.'));
+select pg_temp.setsents(327, pg_temp.two('The programme consists of the papers CHHE 701 and CHHE 702 and covers ' || pg_temp.w(327, 2) || ' and ' || pg_temp.w(327, 3) || ' in depth.', 'Learners complete a ' || pg_temp.w(327, 6) || ' project in the final stage under academic guidance.'));
 select pg_temp.setsents(328, pg_temp.two('Learners study ' || pg_temp.w(328, 2) || ' and ' || pg_temp.w(328, 3) || ' for 40 hours a week over the first stage.', 'Learners complete a ' || pg_temp.w(328, 6) || ' project in the final stage under academic guidance.'));
 select pg_temp.expect('REGRESSION wording: a pathway the sentence''s own on-page quote states is kept', pg_temp.try(321) = 'admitted');
 select pg_temp.expect('wording: a pathway whose quote does not hold the word is still declined policy_refused_word', pg_temp.try(322) = 'policy_refused_word');
 select pg_temp.expect('REGRESSION wording: "leading to" (a direction, not a ranking) is kept', pg_temp.try(323) = 'admitted');
 select pg_temp.expect('wording: "leading providers" (a ranking claim) is still declined policy_refused_word', pg_temp.try(324) = 'policy_refused_word');
-select pg_temp.expect('REGRESSION wording: a 120-point programme and a paper code are programme structure, not a figure claim', pg_temp.try(325) = 'admitted' and pg_temp.try(327) = 'admitted');
+select pg_temp.expect('REGRESSION wording: a 120-point programme and a paper code in a sentence that names its papers are programme structure, not a figure claim', pg_temp.try(325) = 'admitted' and pg_temp.try(327) = 'admitted');
 select pg_temp.expect('wording: a duration in years and a count of hours are still declined policy_figure', pg_temp.try(326) = 'policy_figure' and pg_temp.try(328) = 'policy_figure');
 
 -- ---- 4. "students" where the page says "you" -------------------------------------------------------------------------------------------------------------------
@@ -106,6 +106,58 @@ select pg_temp.expect('REGRESSION twins: the YOUNGER twin waits (declined duplic
 select pg_temp.expect('REGRESSION twins: the OLDER twin is admitted (it used to be declined too, so neither ever was)', pg_temp.try(351) = 'admitted');
 select pg_temp.expect('twins: the younger twin is then declined as a duplicate of the described course, never admitted', pg_temp.try(352) = 'duplicate_exact_described' and pg_temp.dsc(352) is null);
 select pg_temp.expect('REGRESSION twins: an older twin that is parked for another reason (a hand lock) does not hold up the younger', pg_temp.try(353) = 'manual_lock' and pg_temp.try(354) = 'admitted');
+
+
+-- ---- 5b. QA conditions on the first head (B1 money codes, B2 leading the way, N1 the quote must speak to the reader, N2 the same page by another spelling, N3 wording at three providers) ----------------------
+select pg_temp.mk(n, 1) from generate_series(501, 506) n;
+create function pg_temp.body(n int, lead text) returns jsonb language sql as $$ select pg_temp.two(lead || ' and covers ' || pg_temp.w(n, 2) || ' and ' || pg_temp.w(n, 3) || ' in depth.', 'Learners complete a ' || pg_temp.w(n, 6) || ' project in the final stage under academic guidance.') $$;
+select pg_temp.setsents(501, pg_temp.body(501, 'The ' || pg_temp.w(501, 1) || ' unit costs AUD 250'));
+select pg_temp.setsents(502, pg_temp.body(502, 'The ' || pg_temp.w(502, 1) || ' unit ENGR 101 is charged USD 120'));
+select pg_temp.setsents(503, pg_temp.body(503, 'Each ' || pg_temp.w(503, 1) || ' module is NZD 300'));
+select pg_temp.setsents(504, pg_temp.body(504, 'The ' || pg_temp.w(504, 1) || ' school is leading the way in education'));
+select pg_temp.setsents(505, pg_temp.body(505, 'The ' || pg_temp.w(505, 1) || ' school is leading the nation'));
+select pg_temp.setsents(506, pg_temp.body(506, 'The ' || pg_temp.w(506, 1) || ' school prepares teams leading people and others'));
+select pg_temp.expect('B1 money: a currency code beside an amount (AUD 250, USD 120, NZD 300) is never set aside as a paper code and still declines policy_figure',
+  pg_temp.try(501) = 'policy_figure' and pg_temp.try(502) = 'policy_figure' and pg_temp.try(503) = 'policy_figure');
+select pg_temp.expect('B2 leading: "leading the way" and "leading the nation" are rankings and still decline policy_refused_word', pg_temp.try(504) = 'policy_refused_word' and pg_temp.try(505) = 'policy_refused_word');
+select pg_temp.expect('B2 leading: leading teams / people / others (a verb) is kept', pg_temp.try(506) = 'admitted');
+
+-- N1: the learner word needs a quote that speaks to the reader
+create function pg_temp.chk(n int) returns text language sql as $$ select (security.course_description_check_v1(pg_temp.cid(n), (select value from pipeline.field_enrich_items where course_id = pg_temp.cid(n) and field = 'description')))->>'rule' $$;
+select pg_temp.mk(n, 1) from generate_series(511, 514) n;
+select pg_temp.setsents(511, jsonb_build_array(jsonb_build_object('text', 'The programme prepares students for work in ' || pg_temp.w(511, 2) || ' and ' || pg_temp.w(511, 3) || ' in depth.',
+       'quote', 'Surveyors have to be skilled in ' || pg_temp.w(511, 2) || ' and ' || pg_temp.w(511, 3) || ' in depth.', 'on_page', true)));
+select pg_temp.setsents(512, jsonb_build_array(jsonb_build_object('text', 'Students learn about ' || pg_temp.w(512, 2) || ' and ' || pg_temp.w(512, 3) || ' in depth through coursework and a project.',
+       'quote', 'Learn about ' || pg_temp.w(512, 2) || ' and ' || pg_temp.w(512, 3) || ' in depth through coursework and a project.', 'on_page', true)));
+select pg_temp.setsents(513, jsonb_build_array(jsonb_build_object('text', 'Students learn about ' || pg_temp.w(513, 2) || ' and ' || pg_temp.w(513, 3) || ' in depth through coursework and a project.',
+       'quote', 'Graduates study ' || pg_temp.w(513, 2) || ' and ' || pg_temp.w(513, 3) || ' in depth through coursework and a project.', 'on_page', true)));
+select pg_temp.setsents(514, jsonb_build_array(jsonb_build_object('text', 'Current students study ' || pg_temp.w(514, 2) || ' and ' || pg_temp.w(514, 3) || ' in depth through coursework and a project.',
+       'quote', 'You will study ' || pg_temp.w(514, 2) || ' and ' || pg_temp.w(514, 3) || ' in depth through coursework and a project.', 'on_page', true)));
+select pg_temp.diag('n1', $q$select pg_temp.chk(511) || ' ' || pg_temp.chk(512) || ' ' || pg_temp.chk(513) || ' ' || pg_temp.chk(514)$q$);
+select pg_temp.expect('N1 reader: a quote about the profession ("Surveyors have to be skilled in ...") for "prepares students for" proves nothing and is still held unsupported_claim', pg_temp.chk(511) = 'unsupported_claim');
+select pg_temp.expect('N1 reader: an instruction that opens with the same verb ("Learn about ...") speaks to the reader and is kept', pg_temp.chk(512) = 'ok');
+select pg_temp.expect('N1 reader: a quote with no you and a different verb is still held unsupported_claim', pg_temp.chk(513) = 'unsupported_claim');
+select pg_temp.expect('N1 reader: "current students" is a population statement even when the quote says you', pg_temp.chk(514) = 'unsupported_claim');
+
+-- N2: the same page by another spelling or the same stored evidence is still a shared page
+select pg_temp.mk(n, 1) from generate_series(521, 524) n;
+select pg_temp.page(n, 'cricos_code_on_page', 0.889, 0.889) from generate_series(521, 524) n;
+update pipeline.coverage_course_pages set url = (select url from pipeline.coverage_course_pages where course_id = pg_temp.cid(521)) || '/?utm_source=x#top' where course_id = pg_temp.cid(522);
+update pipeline.coverage_course_pages set evidence_id = (select evidence_id from pipeline.coverage_course_pages where course_id = pg_temp.cid(523)) where course_id = pg_temp.cid(524);
+select pg_temp.diag('n2', $q$select (select url from pipeline.coverage_course_pages where course_id = pg_temp.cid(521)) || ' | ' || (select url from pipeline.coverage_course_pages where course_id = pg_temp.cid(522))$q$);
+select pg_temp.expect('N2 page: the same address with a query, a fragment and a trailing slash is a shared page and still declines identity_margin_thin', pg_temp.try(521) = 'identity_margin_thin');
+select pg_temp.expect('N2 page: two courses bound to the same stored evidence are a shared page and still decline identity_margin_thin', pg_temp.try(523) = 'identity_margin_thin');
+
+-- N3: wording that waits at three different providers is shared training-package wording: no tie-break, the oldest waits too
+select pg_temp.mk(541, 1); select pg_temp.mk(542, 2); select pg_temp.mk(543, 4);
+select pg_temp.setsents(541, pg_temp.two('The ' || pg_temp.w(541, 1) || ' training package covers ' || pg_temp.w(541, 2) || ', ' || pg_temp.w(541, 3) || ' and ' || pg_temp.w(541, 4) || ' in depth.', 'Learners complete a ' || pg_temp.w(541, 6) || ' project in the final stage under academic guidance.'));
+select pg_temp.setsents(542, (select value->'sentences' from pipeline.field_enrich_items where course_id = pg_temp.cid(541) and field = 'description'));
+select pg_temp.setsents(543, (select value->'sentences' from pipeline.field_enrich_items where course_id = pg_temp.cid(541) and field = 'description'));
+update pipeline.layer4_review_items set created_at = now() - interval '3 hours' where id = pg_temp.rid(541);
+update pipeline.layer4_review_items set created_at = now() - interval '2 hours' where id = pg_temp.rid(542);
+update pipeline.layer4_review_items set created_at = now() - interval '1 hour' where id = pg_temp.rid(543);
+select pg_temp.expect('N3 twins: the same wording at three providers keeps the old rule, so even the oldest is declined duplicate_exact_waiting (two providers are tie-broken, see above)',
+  pg_temp.try(541) = 'duplicate_exact_waiting' and pg_temp.try(542) = 'duplicate_exact_waiting' and pg_temp.try(543) = 'duplicate_exact_waiting');
 
 -- ---- 6. protections that stay -----------------------------------------------------------------------------------------------------------------------------------
 select pg_temp.mk(n, 1) from generate_series(361, 362) n;

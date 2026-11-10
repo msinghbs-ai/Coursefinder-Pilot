@@ -7,7 +7,7 @@ declare r record; v text;
 begin
   for r in select * from (values
     ('security.course_description_check_with_v1(uuid,jsonb,jsonb,jsonb)', '3bb5d62b5e86cd7c76707171e02a3ae5', '6e65745a7863f0dae97a743821475eb0'),
-    ('security.course_description_machine_check_v1(uuid)', '3e0fe24d762e7fc4348865ea09499690', 'ef8dc9a90dd81e09e6f1fd2091937aa0'),
+    ('security.course_description_machine_check_v1(uuid)', '3e0fe24d762e7fc4348865ea09499690', '4c321730269064b42ff9ac10a114336b'),
     ('security.enrich_course_text_record_v1(bigint,jsonb)', 'c52c1969a80f2d3db1d81a4e46a49cd9', '82e93b8b73d1f13ac3fd62dbb59264f9'),
     ('security.course_description_promote_held_v1(uuid)', '1c990fb9c93b1841195160a0e9a712ae', '2f46bf63e50726d67bdd9d7cf74e915a'),
     ('security.enrich_course_text_gaps_v1(text[])', '5352bc7ea7bbf3ef00bd616f2897f2f4', '66d9dad4eb0d743b804097b1bf9d38d2'),

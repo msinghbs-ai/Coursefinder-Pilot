@@ -14,14 +14,14 @@
 --      of the reading. security.course_description_machine_check_v1 uses it, so a reading whose reader is provable is no longer declined as reader_unrecorded; one with no provable reader still is. The reader is also recorded on every held reading and on the Layer 4 item a held reading is promoted to.
 --   2. The provider places. security.cdesc_provider_slots_v1 counts the provider's waiting descriptions the machine has NOT already declined for good under the current policy (a person decides those; they no longer occupy a place a new reading needs). Used by security.enrich_course_text_record_v1 (the cap),
 --      security.course_description_promote_held_v1 and the standing queue. Held readings then take their places (job course-description-machine promotes them, see 5). No place is created for a description the machine could still admit.
---   3. The learner word. A sentence that says "students" where its on-page quote says "you" (or gives the instruction) is not a population claim. security.cdesc_learner_word_ok_v1 admits a word from the new list enrich.course_description_learner_words (ships "students") only when the quote is on the page, the word is not in the quote,
---      and the sentence states no population (a figure beside it, "our/international/former students", "students from over ...", "of students", "student satisfaction" ...); security.course_description_check_with_v1 uses it. Every other claim word still needs the same word in the quote.
---   4. The machine wording policy for a course. security.cdesc_machine_text_check_v1 runs the SAME shared policy (security.pdesc_machine_text_check_ctx_v1, every list and the figures rule, unchanged) on the sentences after four structural things are set aside: "leading" as a verb or direction (leading to, leading a team);
---      programme structure (N points, N-point, N credit points, a paper code such as CHHE 701, 100-level, Year 1, Level 7); a word from the new list enrich.course_description_supported_words (ships pathway, pathways) in a sentence whose on-page quote holds the same word; and the learner word of 3. Durations, hours,
---      weeks, counts of anything else, prices, campuses, employment, accreditation and every superlative still refuse.
---   5. The page margin. A page bound by the course's own CRICOS code on the page (basis cricos_code_on_page, Decision 265) is a code proof, not a score contest; the margin test no longer declines it when no other course is bound to the same address. An AI match still declines, and so does a title match under 0.1.
+--   3. The learner word. A sentence that says "students" where its on-page quote says "you" (or gives the instruction) is not a population claim. security.cdesc_learner_word_ok_v1 admits a word from the new list enrich.course_description_learner_words (ships "students") only when the quote is on the page, the word is not in the quote, the quote speaks to the reader (it holds you / your, or a clause that opens with the same verb the sentence
+--      gives the word: "Learn about ..." for "Students learn about ..."; a quote about the profession proves nothing and stays held), and the sentence states no population (a figure beside it, "our/international/former/top/current students", "students from over ...", "students who/are/have ...", "of students", "student satisfaction" ...); security.course_description_check_with_v1 uses it. Every other claim word still needs the same word in the quote.
+--   4. The machine wording policy for a course. security.cdesc_machine_text_check_v1 runs the SAME shared policy (security.pdesc_machine_text_check_ctx_v1, every list and the figures rule, unchanged) on the sentences after four structural things are set aside: "leading" as a verb or direction (leading to / into / towards, leading teams / people / others / a team; "leading the way", "leading the nation" and "leading providers" are NOT set aside and still refuse);
+--      programme structure (N points, N-point, N credit points, 100-level, Year 1, Level 7; and a paper code such as CHHE 701 only in a sentence that names a paper, course, unit, subject or module and holds no money word, no $ and no currency code beside a number, so AUD 250 / USD 120 / NZD 300 still refuse); a word from the new list enrich.course_description_supported_words (ships pathway, pathways) in a sentence whose on-page quote holds the same word; and the learner word of 3. Every figure written in digits (durations, hours, weeks, counts, prices) still refuses; a figure written as a word (for example "three years") is not caught by the shared figures rule, which is unchanged
+--      here, and so is not caught now either. Campuses, employment, accreditation and every superlative still refuse.
+--   5. The page margin. A page bound by the course's own CRICOS code on the page (basis cricos_code_on_page, Decision 265) is a code proof, not a score contest; the margin test no longer declines it when no other course is bound to the same address (the same address means the same web address with the query, the fragment and a trailing slash set aside and the case ignored, or the same stored evidence). An AI match still declines, and so does a title match under 0.1.
 --   6. The mutual wait. Two courses with the same (or nearly the same) wording both waiting declined each other for good. An item now waits for an OLDER twin (earlier created, same wording) that is not already parked for another reason; the oldest goes on to the remaining tests and, once admitted, every later twin is declined as
---      duplicate_exact_described / duplicate_near_other_provider. No duplicate is ever admitted.
+--      duplicate_exact_described / duplicate_near_other_provider. No duplicate is ever admitted. Wording that waits at three or more different providers (shared training-package wording) keeps the old rule: every waiting twin blocks, nothing is tie-broken.
 --   7. Replay without a new AI call. security.cdesc_recheck_held_v1 (called by the job course-description-machine before it settles) (a) runs the live text check again on each reader-held reading once per policy stamp and, where it now passes and its reader is provable, hands it to the one existing record
 --      function exactly as the reader would have (identity, lock, page unchanged, cap, then Layer 4 and the machine rule), and (b) promotes held first-admission readings into free provider places. No AI call, no spend.
 --   8. Fair queue. security.enrich_course_text_gaps_v1 takes the same eligible courses in the same priority but in rounds across providers (the first course of every provider, then the second ...) and leaves out a university whose places are all taken by descriptions that wait for a person, so one large provider cannot take the whole day.
@@ -32,7 +32,7 @@
 -- Settings: two new lists (G2), enrich.course_description_learner_words and enrich.course_description_supported_words, control class human; no setting value that exists is changed. enrich.course_text_items_per_day (500) is the binding limit on reads and is NOT changed here: the Platform Admin decides (see the hand-back).
 -- Live definitions this change edits (pg_proc.prosrc md5, read 10 Nov 2026), before -> after (the migration stops, and applies nothing, if a live body is neither):
 --   security.course_description_check_with_v1(uuid,jsonb,jsonb,jsonb)  3bb5d62b5e86cd7c76707171e02a3ae5 -> 6e65745a7863f0dae97a743821475eb0
---   security.course_description_machine_check_v1(uuid)                 3e0fe24d762e7fc4348865ea09499690 -> ef8dc9a90dd81e09e6f1fd2091937aa0
+--   security.course_description_machine_check_v1(uuid)                 3e0fe24d762e7fc4348865ea09499690 -> 4c321730269064b42ff9ac10a114336b
 --   security.enrich_course_text_record_v1(bigint,jsonb)                c52c1969a80f2d3db1d81a4e46a49cd9 -> 82e93b8b73d1f13ac3fd62dbb59264f9
 --   security.course_description_promote_held_v1(uuid)                  1c990fb9c93b1841195160a0e9a712ae -> 2f46bf63e50726d67bdd9d7cf74e915a
 --   security.enrich_course_text_gaps_v1(text[])                        5352bc7ea7bbf3ef00bd616f2897f2f4 -> 66d9dad4eb0d743b804097b1bf9d38d2
@@ -100,16 +100,20 @@ revoke all on function security.cdesc_reading_provenance_v1(bigint, jsonb, jsonb
 
 create or replace function security.cdesc_learner_word_ok_v1(p_word text, p_text text, p_quote text) returns boolean
 language plpgsql stable security definer set search_path to '' as $f$
-declare w text := lower(btrim(coalesce(p_word, ''))); v_t text := lower(coalesce(p_text, ''));
+declare w text := lower(btrim(coalesce(p_word, ''))); v_t text := lower(coalesce(p_text, '')); v_q text := lower(coalesce(p_quote, '')); v_verb text;
 begin
   if w = '' or w !~ '^[a-z]+$' then return false; end if; -- fixed: a plain word only, so it can sit inside the pattern below
   if not exists (select 1 from jsonb_array_elements_text(coalesce(security.toolset_setting('pipeline', 'enrich.course_description_learner_words'), '[]'::jsonb)) x where lower(btrim(x)) = w) then return false; end if;
   if not security.pdesc_has_term_v1(p_text, w) or security.pdesc_has_term_v1(p_quote, w) then return false; end if;
+  -- the quote must speak to the reader: a second-person pronoun, or a clause that opens with the verb the sentence gives the word ("Learn about ..." for "Students learn about ...")
+  v_verb := substring(v_t from ('\m' || w || '\s+(?:(?:will|can|may|could|should|also|then)\s+)*([a-z]{3,})\M'));
+  if v_verb in ('for', 'the', 'and', 'who', 'are', 'from', 'with', 'into', 'that', 'their', 'have', 'has', 'was', 'were', 'not') then v_verb := null; end if; -- fixed: function words are not a verb
+  if v_q !~ '\myou(r|rs|rself)?\M' and (v_verb is null or v_q !~ ('(^|[.:;!?]\s*)' || v_verb || '\M')) then return false; end if;
   -- a population statement is not a stand-in for "you"
-  return v_t !~ ('([0-9][0-9,.]*\s+([a-z-]+\s+)?' || w || '|' || w || '\s+(from\s+(over|more|across|around)|come|choose|rate|say|report|achieve|graduate)|(international|former|past|successful|our|alumni|graduate|all|many|most|other|some)\s+' || w
+  return v_t !~ ('([0-9][0-9,.]*\s+([a-z-]+\s+)?' || w || '|' || w || '\s+(from\s+(over|more|across|around)|come|choose|rate|say|report|achieve|graduate|who|are|have|often|typically|usually|consistently|regularly)|(international|former|past|successful|our|alumni|graduate|all|many|most|other|some|top|best|brightest|talented|gifted|enrolled|current)\s+' || w
                  || '|of\s+' || w || '|' || w || '''?s?\s+(satisfaction|outcomes|success))');
 end $f$;
-comment on function security.cdesc_learner_word_ok_v1(text, text, text) is 'CF-247 F-CDESC: true when the claim word is in enrich.course_description_learner_words, the sentence holds it, its quote does not (the page says "you"), and the sentence states no population (a figure beside it, our/international/former/all students, students from over ..., of students, student satisfaction). Read only.';
+comment on function security.cdesc_learner_word_ok_v1(text, text, text) is 'CF-247 F-CDESC: true when the claim word is in enrich.course_description_learner_words, the sentence holds it, its quote does not (the page says "you"), and the sentence states no population (a figure beside it, our/international/former/all/top/current students, students from over ..., students who/are/have ..., of students, student satisfaction), and the quote speaks to the reader (you / your, or a clause that opens with the verb the sentence gives the word). Read only.';
 revoke all on function security.cdesc_learner_word_ok_v1(text, text, text) from public, anon, authenticated;
 
 create or replace function security.cdesc_scrub_sentence_v1(p_text text, p_quote text) returns text
@@ -117,11 +121,15 @@ language plpgsql stable security definer set search_path to '' as $f$
 declare t text := coalesce(p_text, ''); w text;
 begin
   -- "leading" as a verb or direction is not a ranking
-  t := regexp_replace(t, '\mleading\s+(to|into|towards?|a|an|the|teams?|people|others|and\s+(managing|supervising|motivating))\M', ' ', 'gi');
+  t := regexp_replace(t, '\mleading\s+(to|into|towards?|teams?|people|others|(a|the)\s+teams?|and\s+(managing|supervising|motivating))\M', ' ', 'gi');
   t := regexp_replace(t, '\mteam[- ]leading\M', ' ', 'gi');
   -- programme structure, not a claim: points, paper codes, levels, years of study
   t := regexp_replace(t, '\m[0-9]+(\s*-\s*|\s+)(credit\s+)?points?\M', ' ', 'gi');
-  t := regexp_replace(t, '\m[A-Z]{3,5}\s?[0-9]{3}\M', ' ', 'g');
+  -- a paper code (CHHE 701) only in a sentence that names a paper, course, unit, subject or module and holds no money: never a currency code beside an amount (AUD 250)
+  if t ~* '\m(papers?|courses?|units?|subjects?|modules?)\M'
+     and t !~* '(\$|\m(fees?|costs?|costing|prices?|priced|tuition|dollars?|payable|charges?|scholarships?)\M|\m(aud|usd|nzd|eur|gbp|cad|sgd|cny|jpy|inr|hkd|chf)\s?[0-9])' then
+    t := regexp_replace(t, '\m[A-Z]{3,5}\s?[0-9]{3}\M', ' ', 'g');
+  end if;
   t := regexp_replace(t, '\m[0-9]{3}-level\M', ' ', 'gi');
   t := regexp_replace(t, '\m(year|level)\s+[0-9]\M', ' ', 'gi');
   -- a word the course may keep when the sentence's own on-page quote holds it
@@ -134,7 +142,7 @@ begin
   end loop;
   return t;
 end $f$;
-comment on function security.cdesc_scrub_sentence_v1(text, text) is 'CF-247 F-CDESC: the sentence with the parts that are not claims set aside before the shared wording policy reads it: leading as a verb, programme structure (N points, paper codes, 100-level, Year 1), a supported word (enrich.course_description_supported_words) and the learner word. Used only to TEST the wording; the sentence that is stored and published is never changed. Read only.';
+comment on function security.cdesc_scrub_sentence_v1(text, text) is 'CF-247 F-CDESC: the sentence with the parts that are not claims set aside before the shared wording policy reads it: leading as a verb (to / into / towards / teams / people / others / a team), programme structure (N points, 100-level, Year 1, and a paper code only in a sentence that names a paper, course, unit, subject or module with no money word, $ or currency code beside a number), a supported word (enrich.course_description_supported_words) and the learner word. Used only to TEST the wording; the sentence that is stored and published is never changed. Read only.';
 revoke all on function security.cdesc_scrub_sentence_v1(text, text) from public, anon, authenticated;
 
 create or replace function security.cdesc_machine_text_check_v1(p_provider uuid, p_text text, p_sentences jsonb) returns text
@@ -314,7 +322,7 @@ select pg_temp.edit_all('security.course_description_check_with_v1(uuid,jsonb,js
       return jsonb_build_object('ok', false, 'rule', 'unsupported_claim'$n1$]);
 
 -- 2. the machine rule's evaluator: provable reader, code-proof page margin, course wording policy, twin tie-break
-select pg_temp.edit_all('security.course_description_machine_check_v1(uuid)', '3e0fe24d762e7fc4348865ea09499690', 'ef8dc9a90dd81e09e6f1fd2091937aa0',
+select pg_temp.edit_all('security.course_description_machine_check_v1(uuid)', '3e0fe24d762e7fc4348865ea09499690', '4c321730269064b42ff9ac10a114336b',
   array[$o1$v_recheck text := 'not_run'; v_kind text;$o1$,
         $o2$  if g.basis = 'ai_match' or (g.score is not null and g.runner_up is not null and g.score - g.runner_up < 0.1) then -- fixed:$o2$,
         $o3$  if nullif(btrim(i.layer3_state->>'model'), '') is null or nullif(btrim(i.layer3_state->>'prompt'), '') is null then$o3$,
@@ -322,18 +330,23 @@ select pg_temp.edit_all('security.course_description_machine_check_v1(uuid)', '3
         $o5$  select o.entity_id into v_other from pipeline.layer4_review_items o where o.field_code = i.field_code and o.status = 'pending' and o.entity_id <> c.id and md5(security.cdesc_norm_v1(o.proposed_value->>'description')) = v_md5 limit 1;$o5$,
         $o6$r.status in ('pending', 'approved', 'edited_approved') and r.entity_id <> c.id and c2.provider_id <> c.provider_id$o6$,
         $o7$    'model', i.layer3_state->>'model', 'prompt_version', i.layer3_state->>'prompt', 'worker', i.layer3_state->>'worker', 'source_recheck', v_recheck,$o7$],
-  array[$n1$v_recheck text := 'not_run'; v_kind text; v_prov jsonb;$n1$,
+  array[$n1$v_recheck text := 'not_run'; v_kind text; v_prov jsonb; v_many boolean := false;$n1$,
         $n2$  -- a page bound by the course's own CRICOS code on the page (Decision 265) is a code proof, not a score contest: the margin does not apply to it while no other course is bound to the same address
   if g.basis = 'ai_match' or (g.score is not null and g.runner_up is not null and g.score - g.runner_up < 0.1
-                              and not (g.basis = 'cricos_code_on_page' and not exists (select 1 from pipeline.coverage_course_pages g2 where g2.provider_id = g.provider_id and g2.url = g.url and g2.course_id <> g.course_id))) then -- fixed:$n2$,
+                              and not (g.basis = 'cricos_code_on_page' and not exists (select 1 from pipeline.coverage_course_pages g2 where g2.provider_id = g.provider_id and g2.course_id <> g.course_id
+                                                                                                                       and (g2.url = g.url or lower(regexp_replace(regexp_replace(g2.url, '[?#].*$', ''), '/+$', '')) = lower(regexp_replace(regexp_replace(g.url, '[?#].*$', ''), '/+$', ''))
+                                                                                                                            or (g2.evidence_id is not null and g2.evidence_id = g.evidence_id))))) then -- fixed:$n2$,
         $n3$  -- the reader: recorded on the item, else on the reading, else the stored AI answer that holds exactly this reading's sentences
   v_prov := security.cdesc_reading_provenance_v1(f.id, f.value, i.layer3_state);
   if nullif(v_prov->>'model', '') is null or nullif(v_prov->>'prompt', '') is null then$n3$,
         $n4$  v_pol := security.cdesc_machine_text_check_v1(p.id, v_text, v_sents);$n4$,
         $n5$  -- a twin that waits is only a reason to wait when it is OLDER and can still be admitted; otherwise two courses with the same wording would decline each other for good
+  -- wording that waits at three or more different providers is shared training-package wording: nothing is tie-broken, every waiting twin blocks as before
+  select count(distinct c3.provider_id) >= 3 into v_many from pipeline.layer4_review_items o3 join catalogue.courses c3 on c3.id = o3.entity_id
+   where o3.field_code = i.field_code and o3.status = 'pending' and md5(security.cdesc_norm_v1(o3.proposed_value->>'description')) = v_md5;
   select o.entity_id into v_other from pipeline.layer4_review_items o where o.field_code = i.field_code and o.status = 'pending' and o.entity_id <> c.id and md5(security.cdesc_norm_v1(o.proposed_value->>'description')) = v_md5
-     and (o.created_at, o.id) < (i.created_at, i.id) and not security.cdesc_parked_other_v1(o.id) limit 1;$n5$,
-        $n6$(r.status in ('approved', 'edited_approved') or (r.status = 'pending' and (r.created_at, r.id) < (i.created_at, i.id) and not security.cdesc_parked_other_v1(r.id))) and r.entity_id <> c.id and c2.provider_id <> c.provider_id$n6$,
+     and (v_many or ((o.created_at, o.id) < (i.created_at, i.id) and not security.cdesc_parked_other_v1(o.id))) limit 1;$n5$,
+        $n6$(r.status in ('approved', 'edited_approved') or (r.status = 'pending' and (v_many or ((r.created_at, r.id) < (i.created_at, i.id) and not security.cdesc_parked_other_v1(r.id))))) and r.entity_id <> c.id and c2.provider_id <> c.provider_id$n6$,
         $n7$    'model', v_prov->>'model', 'prompt_version', v_prov->>'prompt', 'worker', v_prov->>'worker', 'source_recheck', v_recheck,$n7$]);
 
 -- 3. the one record function: the provider's places, and the reader recorded on a held reading
