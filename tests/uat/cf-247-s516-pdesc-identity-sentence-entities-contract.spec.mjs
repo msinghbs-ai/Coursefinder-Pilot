@@ -167,7 +167,7 @@ test('contract: worker v0.59.15 stamped provider-description-source-guard-v3 (th
   const ix = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   const ds = fs.readFileSync('supabase/functions/coverage-sweep/description.ts', 'utf8')
   expect(ix).toMatch(/(?:const WORKER = "coverage-sweep-worker-v0\.59\.15"; \/\/ |\/\/ [^\n]*?\b)v0\.59\.15 \(10 Nov 2026, CF-247 F-PDESC/)   // v0.60.0 (sentence filter) keeps the v0.59.15 note
-  expect(ix).toMatch(/reader_behavior_version: "provider-description-source-guard-v[34]" \};/)   // v4 from worker v0.60.0 (cf-247-pdesc-sentence-filter-contract)
+  expect(ix).toMatch(/reader_behavior_version: "provider-description-source-guard-v[345]" \};/)   // v5 from worker v0.63.0 (cf-247-pdesc-identity-labels); v4 from worker v0.60.0 (cf-247-pdesc-sentence-filter-contract)
   expect(ix).not.toContain('provider-description-source-guard-v2" }')
   expect(ix).toContain('descriptionSourceIdentity(html, page,')
   // the only literal limit is the Unicode range, marked fixed
