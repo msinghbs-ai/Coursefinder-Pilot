@@ -310,22 +310,6 @@ function openingParagraph(html: string): string {
   return "";
 }
 
-// v0.63.0 (CF-247 F-PDESC, Platform Admin 10 Nov 2026, Bond University: title "Our University | Bond University | Australia" and site name "Bond University" on bond.edu.au, held because the
-// h1 is the quotation "Bond University will be bold and pioneering; resourceful and determined."): an h1 that is a QUOTED SENTENCE is a pull-quote of the institution's own words, not
-// the name of the page, so it is not read as a heading that adds words to the name. Only when ALL hold: the whole h1 is inside quotation marks; it has at least IDENTITY_SENTENCE_WORDS words; once
-// the provider's own name and abbreviations are taken out of it no institution word and no sub-unit word is left (so it names no other institution, college, faculty, school or campus);
-// the page is on the provider's own verified host (this proof only runs there); and the provider is still proved by another element, the title, the site name or og:title, as before (an
-// h1 never proves the provider here). A sentence that is not quoted, a short quoted name ("Bond University Malaysia"), and anything naming another institution or a sub-unit stay refused.
-export const IDENTITY_SENTENCE_WORDS = 6;  // fixed: fewer words are a name or a tagline, not a sentence (a diagnostic-grade text test, not an operating value)
-function quotedSentenceHeading(text: string, phrases: string[], strip: (w: string, ps: string[]) => string): boolean {
-  const t = String(text || "").replace(/\s+/g, " ").trim();
-  if (!/^["\u201c\u201e\u00ab]/.test(t) || !/["\u201d\u00bb][\s.!?]*$/.test(t)) return false;
-  const w = identityWords(t);
-  if (w.split(" ").filter(Boolean).length < IDENTITY_SENTENCE_WORDS) return false;
-  const rest = strip(w, phrases);
-  return !IDENTITY_OTHER_INSTITUTION.test(rest) && !IDENTITY_SUBUNIT.test(rest);
-}
-
 function registryEvidenceIdentity(html: string, names: string[], trace?: IdentityTrace): DescriptionIdentity {
   const uniq = (xs: string[]) => [...new Set(xs.map(identityWords).filter(Boolean))];
   const labels = uniq(descriptionIdentityLabels(names || [])).filter((l) => l.split(" ").length > 1);
@@ -341,8 +325,6 @@ function registryEvidenceIdentity(html: string, names: string[], trace?: Identit
   const heads = identityHeadings(html);
   if (trace) { trace.labels = labels.map(cut).slice(0, IDENTITY_TRACE_HEADINGS_MAX); trace.aliases = aliases.map(cut).slice(0, IDENTITY_TRACE_HEADINGS_MAX); trace.headings = heads.slice(0, IDENTITY_TRACE_HEADINGS_MAX).map((h) => ({ tag: h.tag, text: cut(h.text) })) }
   for (const el of heads) {
-    // v0.63.0: an h1 that is a quoted sentence ("Bond University will be bold and pioneering; resourceful and determined.") is a pull-quote, not the name of the page; see quotedSentenceHeading
-    if (el.tag === "h1" && quotedSentenceHeading(el.text, phrases, strip)) continue;
     for (const seg of el.text.split(/\s[-–—―]\s|[|:·•,;\/–—]/)) {
       const w = identityWords(seg);
       if (!w) continue;
