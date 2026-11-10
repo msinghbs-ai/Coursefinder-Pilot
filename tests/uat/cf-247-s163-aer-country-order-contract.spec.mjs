@@ -49,11 +49,12 @@ async function watch(page) {
     return route.fulfill({ json: {} })
   })
   // anything that would read with AI or start a read is recorded
-  page.on('request', r => { const u = r.url(); if (u.startsWith(RPC) && /(admin_aer|enrich|_ai|layer3|course_entry_batch|admin_jobs)/.test(u) && r.method() === 'POST') { let b = {}; try { b = r.postDataJSON() || {} } catch {} calls.push({ fn: u.slice(RPC.length), action: b.p_action }) } })
+  page.on('request', r => { const u = r.url(); if (u.startsWith(RPC) && /(admin_aer|enrich|_ai|layer3|course_entry_batch|admin_jobs)/.test(u) && r.method() === 'POST') { let b = {}; try { b = r.postDataJSON() || {} } catch {} calls.push({ fn: u.slice(RPC.length), action: b.p_action, args: b.p_args }) } })
 }
 
 // Reads the Course detail panels make on load (the task list and the course-description task list) are not an AI read or a started read; the guard is about the country change.
-const READ_ONLY_PANELS = c => (c.fn === 'admin_jobs' && c.action === 'read') || (c.fn === 'admin_enrich_fields' && c.action === 'description_tasks')
+// CF-247 AER read now (10 Nov 2026): the stage timeline's status read is a read, never the action (action run), and starts nothing
+const READ_ONLY_PANELS = c => (c.fn === 'admin_jobs' && c.action === 'read') || (c.fn === 'admin_enrich_fields' && c.action === 'description_tasks') || (c.fn === 'admin_aer_read_now' && c.args?.action === 'status')
 
 test.describe('mocked browser', () => {
   test('Course detail: the country selector is in the shared order, a change only asks the resolver, and the choice survives a reload', async ({ page }) => {

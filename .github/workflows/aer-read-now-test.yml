@@ -1,0 +1,38 @@
+# Guards: Platform Admin decision 10 Nov 2026 19:47 (AER read now, F-AER.01-.06) and G4 database-backed tests: migration 20261110220000 (the Read / refresh entry requirements now action, the packet facts check, the Data Delivery reviewer key and the recovery-switch derivation) runs against its edits, refusals and forward recovery on an isolated PostgreSQL 16 (fixtures only, never a Supabase project).
+name: AER read now integration
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/20261110220000_cf247_aer_read_now.sql'
+      - 'supabase/held/aer_read_now_forward_recovery.sql'
+      - 'supabase/migrations/20261110160000_cf247_aer_source_recovery.sql'
+      - 'tests/fixtures/aer-read-now/**'
+      - '.github/workflows/aer-read-now-test.yml'
+  workflow_dispatch:
+jobs:
+  isolated-postgres:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: fixture-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: fixture-only
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash tests/fixtures/aer-read-now/run.sh | tee aer-read-now-results.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: aer-read-now-database-evidence
+          path: aer-read-now-results.log

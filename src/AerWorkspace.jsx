@@ -15,6 +15,7 @@ import{supabase}from'./lib/supabase'
 import{Button,StatusChip,FilterChip,Pager,Loading,EmptyInline,fmtDate,fmtDateTime,fmtNumber}from'./ui-kit'
 import{DataTable,FilterSelect}from'./DataTable'
 import{ReasonAction}from'./ProviderOnboarding'
+import AerReadNow from'./AerReadNow'
 import{hrefFor}from'./nav-map'
 import{Overlay}from'./Overlay'
 import{orderAerCountries}from'./aer-countries'
@@ -23,6 +24,7 @@ import'./aer-workspace.css'
 
 export const aer=async(action,args={})=>{const{data,error}=await supabase.rpc('admin_aer',{p_action:action,p_args:args});if(error)throw error;return data}
 const PAGE=50
+const isId=v=>/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(v||''))
 const PROGRAMME_PAGE=100 // providers a page on Course-level reading (screen length)
 
 // pills: the shared statusTone system, with plain words (never colour alone)
@@ -158,6 +160,7 @@ export function MatrixView({rank,onError,navigate,routeParams}){
   const onSaved=row=>setD(x=>x?{...x,rows:x.rows.map(r=>r.id===row.id?row:r)}:x)
   return <div className="m-page-stack aer-page" data-aer-view="matrix">
     <AerSummary providerId={f.provider_id} onError={onError} refreshKey={refresh}/>
+    {f.provider_id&&<AerReadNow providerId={f.provider_id} onChanged={()=>setRefresh(r=>r+1)} onError={onError}/>}
     <section className="m-panel m-catalogue-panel">
       <div className="m-workspace-head"><div><h2>Provider entry matrix</h2><p>The requirement each provider publishes for a student's country of prior education. Only active rows reach the website.</p></div>
         <div className="m-result-count">{busy?<><span className="m-spinner"/>Loading…</>:<><strong>{fmtNumber(Number(d?.total||0))}</strong><span>matching</span></>}</div></div>
@@ -226,6 +229,7 @@ export function CourseView({rank,onError,routeParams}){
   const onSaved=row=>setD(x=>x?{...x,rows:x.rows.map(r=>r.id===row.id?row:r)}:x)
   return <div className="m-page-stack aer-page" data-aer-view="course">
     <AerSummary providerId={f.provider_id} onError={onError} refreshKey={refresh}/>
+    {(f.provider_id||isId(f.course))&&<AerReadNow providerId={f.provider_id} courseId={isId(f.course)?f.course:undefined} onChanged={()=>setRefresh(r=>r+1)} onError={onError}/>}
     <section className="m-panel m-catalogue-panel">
       <div className="m-workspace-head"><div><h2>Course entry requirements</h2><p>What each course's own page asks for: a course rule, a minimum, a score with its printed basis, a band, prerequisites.</p></div>
         <div className="m-result-count">{busy?<><span className="m-spinner"/>Loading…</>:<><strong>{fmtNumber(Number(d?.total||0))}</strong><span>matching</span></>}</div></div>
@@ -464,6 +468,7 @@ export function SourcesView({rank,onError,routeParams}){
   const[cols,hidden,setHidden]=useColumns('sources',all)
   return <div className="m-page-stack aer-page" data-aer-view="sources">
     <AerSummary providerId={f.provider_id} onError={onError} refreshKey={refresh}/>
+    {f.provider_id&&<AerReadNow providerId={f.provider_id} onChanged={()=>setRefresh(r=>r+1)} onError={onError}/>}
     <section className="m-panel m-catalogue-panel">
       <div className="m-workspace-head"><div><h2>Sources, reads and holds</h2><p>Every official page or PDF the entry reader uses, its stored copy, its latest read and why rows were held or not kept.{d&&!d.ai_allowed?' AI reading is stopped (AI limits).':''}</p></div>
         <div className="m-result-count">{busy?<><span className="m-spinner"/>Loading…</>:<><strong>{fmtNumber(Number(d?.total||0))}</strong><span>sources</span></>}</div></div>
