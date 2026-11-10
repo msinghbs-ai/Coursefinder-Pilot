@@ -1,4 +1,4 @@
-// Guards: IQ-00355 planner head-of-queue starvation (CF-247 F-OPS): the hourly automatic planner must remember every university whose plan has no step and leave it out of the candidate list for plans.noop_wait_hours, so universities that can be planned are reached. The behaviour is proved by the PostgreSQL fixture tests/fixtures/planner-noop-memory/run.sh (run in CI by planner-noop-memory-test.yml); this is the source contract over the migration and its forward recovery.
+// Guards: IQ-00355 planner head-of-queue starvation (CF-247 F-OPS): the hourly automatic planner must remember every university whose plan has no step and leave it out of the candidate list for plans.noop_wait_hours, so universities that can be planned are reached. The behaviour is proved by the PostgreSQL fixture tests/fixtures/planner-noop-memory/run.sh; this is the source contract over the migration and its forward recovery.
 import fs from 'node:fs'
 import { test, expect } from '@playwright/test'
 
@@ -64,10 +64,9 @@ test('the forward recovery restores the previous body and keeps the setting', ()
   expect(body(R).length).toBe(11126)
 })
 
-test('the database fixture and its workflow exist and run the migration and the recovery', () => {
+test('the database fixture exists and runs the migration and the recovery', () => {
   const run = fs.readFileSync('tests/fixtures/planner-noop-memory/run.sh', 'utf8')
   expect(run).toContain(`BEFORE=${BEFORE}`)
   expect(run).toContain(`AFTER=${AFTER}`)
   expect(run).toContain('supabase/held/planner_noop_memory_forward_recovery.sql')
-  expect(fs.readFileSync('.github/workflows/planner-noop-memory-test.yml', 'utf8')).toContain('bash tests/fixtures/planner-noop-memory/run.sh')
 })

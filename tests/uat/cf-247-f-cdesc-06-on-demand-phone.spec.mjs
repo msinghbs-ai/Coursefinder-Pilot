@@ -22,9 +22,10 @@ test.describe('Fill / Recheck description on a phone @responsive', () => {
     await tap(box, 'row tick')
     await box.locator('input').check()
     expect(await pageOverflow(page)).toBeLessThanOrEqual(1)
-    const fill = page.getByRole('button', { name: 'Fill description' })
-    const fb = await tap(fill, 'Fill description')
+    const fill = page.getByRole('button', { name: 'Fill / refresh course description now' })
+    const fb = await tap(fill, 'Fill / refresh course description now')
     expect(fb.x + fb.width).toBeLessThanOrEqual(w + 1)
+    await page.locator('[data-cdod-more] summary').click()
     await tap(page.getByRole('button', { name: 'Recheck description' }), 'Recheck description')
     await fill.click()
     const panel = page.locator('[data-cdod-panel="fill"]')
@@ -46,7 +47,7 @@ test.describe('Fill / Recheck description on a phone @responsive', () => {
     const block = page.locator('[data-cdod-block]')
     await block.scrollIntoViewIfNeeded()
     await expect(block).toBeVisible()
-    for (const n of ['Fill description', 'Check the feeds']) { const b = await tap(block.getByRole('button', { name: n }), n); expect(b.x + b.width).toBeLessThanOrEqual(w + 1) }
+    for (const n of ['Fill / refresh course description now', 'Check the feeds']) { const b = await tap(block.getByRole('button', { name: n }), n); expect(b.x + b.width).toBeLessThanOrEqual(w + 1) }
     await block.getByRole('button', { name: 'Check the feeds' }).click()
     await expect(block.locator('[data-cdod-feeds]')).toBeVisible()
     const bb = await block.boundingBox()
@@ -54,6 +55,28 @@ test.describe('Fill / Recheck description on a phone @responsive', () => {
     expect(await pageOverflow(page)).toBeLessThanOrEqual(1)
   })
 
+  test('Course detail blade: the one primary action, the stage list, the run and the next action fit the phone and are tap-sized; no sideways page scroll (design section 3)', async ({ page }) => {
+    await mockAdmin(page, { rank: 4 })
+    const w = atPhoneWidth(page)
+    await mockOnDemand(page, { forceState: 'held' })
+    await page.goto(`/#courses?id=${COURSE}`)
+    const block = page.locator('[data-cdod-block]')
+    await block.scrollIntoViewIfNeeded()
+    const primary = block.getByRole('button', { name: 'Fill / refresh course description now' })
+    const pb = await tap(primary, 'Fill / refresh course description now')
+    expect(pb.x + pb.width).toBeLessThanOrEqual(w + 1)
+    const stages = block.locator('[data-cdod-stages]')
+    await expect(stages.locator('[data-cdod-stage]')).toHaveCount(5)
+    for (const k of ['page', 'ai', 'validation', 'decision', 'catalogue']) {
+      const b = await stages.locator(`[data-cdod-stage="${k}"]`).boundingBox()
+      expect(b.x, k).toBeGreaterThanOrEqual(-1); expect(b.x + b.width, k).toBeLessThanOrEqual(w + 1)
+    }
+    await block.locator('[data-cdod-more] summary').click()
+    await tap(block.getByRole('button', { name: 'Recheck description' }), 'Recheck description')
+    await expect(block.locator('[data-cdod-run]')).toBeVisible()
+    await expect(block.locator('[data-cdod-next-field]')).toBeVisible()
+    expect(await pageOverflow(page)).toBeLessThanOrEqual(1)
+  })
   test('Course detail blade: Withdraw machine description, its explanation, reason and buttons fit the phone and are tap-sized; no sideways page scroll', async ({ page }) => {
     await mockAdmin(page, { rank: 6 })
     const w = atPhoneWidth(page)
