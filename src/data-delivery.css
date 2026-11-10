@@ -57,6 +57,11 @@
 }
 /* CF-247 F-CDESC: the course description stages, five columns on a wide screen, stacked below it. Machine and person counts carry their own chip. */
 .dd .dd-stages-box{margin:0 0 10px}
+.dd .dd-flow{margin:10px 0 0;border:1px solid var(--cf-border);border-radius:8px;padding:8px 10px;background:var(--cf-surface)}
+.dd .dd-flow h5{margin:0 0 6px;font-size:var(--cf-fs-md);color:var(--cf-muted)}
+.dd .dd-flow ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.dd .dd-flow li[data-dd-stage-row]{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:2px 8px;overflow-wrap:anywhere}
+.dd .dd-flow li[data-dd-stage-row]>span{display:flex;flex-direction:column;gap:2px;flex:1 1 60%}
 .dd .dd-stages{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;list-style:none;margin:6px 0 0;padding:0}
 .dd .dd-stages>li{border:1px solid var(--cf-border);border-radius:8px;padding:8px 10px;min-width:0;background:var(--cf-surface)}
 .dd .dd-stages h5{margin:0 0 6px;font-size:var(--cf-fs-md);color:var(--cf-muted)}

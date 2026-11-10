@@ -82,6 +82,7 @@ test.describe('data delivery on a phone @responsive', () => {
     expect(new Set(tops).size, 'the five stages share one left edge (one column)').toBe(1)
     await expect(box.locator('[data-dd-stage-row="by_machine"]')).toContainText('Admitted by the machine rule')
     await expect(box.locator('[data-dd-stage-row="by_person"]')).toContainText('Admitted by a person')
+    await expect(box.locator('[data-dd-flow="known"] [data-dd-stage-row="flow_retained"]')).toContainText('net gain')
     expect(await pageOverflow(page), 'no sideways scroll').toBeLessThanOrEqual(0)
     expect(w).toBeLessThanOrEqual(PHONE_MAX)
   })

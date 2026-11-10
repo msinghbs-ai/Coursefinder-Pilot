@@ -87,6 +87,15 @@ export const STAGES = {
   admitted: { by_machine: 3, by_person: 1, withdrawn: 1, described_courses: 5, described_other_route: 1 },
   consumers: { website_published: 1, unpublished_course: 4, machine_readback: { matched: 3, lag: 0, not_in_feed: 0, error: 0, not_checked: 0 },
     zoho: { known: false, reason: 'The latest course item in the Zoho course feed has no description field, so a course description does not reach Zoho. Nothing is counted for it.' } },
+  flow: {
+    known: true, counted_at: new Date().toISOString(), unit: 'courses',
+    eligible: { active_courses: 40, without_description: 30, never_read: 20, waiting_in_layer4: 5, held_behind_provider_cap: 2, held_by_a_check: 2, read_other: 1 },
+    gain: { admitted_24h: 3, admitted_7d: 7, withdrawn_7d: 1, retained_total: 6 },
+    declined_by_cause: [{ code: 'wrong_page_kind', n: 3 }, { code: 'twin_course', n: 2 }], held_by_cause: [{ code: 'unsupported_claim', n: 2 }],
+    reads: { today: 4, daily_cap: 500, universities_with_all_places_taken: 1, parked_for_a_person: 5 },
+    run: { automatic_admission_on: true, last_admission_at: new Date().toISOString(), last_decline_at: new Date().toISOString(), schedule: '*/10 * * * *' },
+    blocker: '1 universities have every place taken by waiting descriptions; no new reading is made for them until a person decides.',
+  },
 }
 /** DATA_DELIVERY with the stage counts on the cdesc stream (or any other stages value). */
 export const withStages = (stages = STAGES) => ({ ...DATA_DELIVERY, streams: DATA_DELIVERY.streams.map((s) => (s.stream === 'cdesc' ? { ...s, stages } : s)) })
