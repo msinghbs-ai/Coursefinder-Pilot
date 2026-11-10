@@ -4,7 +4,7 @@
 import { test, expect } from '@playwright/test'
 import { mockAdmin } from './support/admin-mock.mjs'
 import { mockLaneFunnels } from './support/lane-funnel-mock.mjs'
-import { mockDataDelivery, THREE_ALERTS, withStages } from './support/data-delivery-mock.mjs'
+import { mockDataDelivery, THREE_ALERTS, withStages, withProviderAi } from './support/data-delivery-mock.mjs'
 
 const PHONE_MAX = 480
 const TAP_MIN = 44
@@ -82,6 +82,22 @@ test.describe('data delivery on a phone @responsive', () => {
     expect(new Set(tops).size, 'the five stages share one left edge (one column)').toBe(1)
     await expect(box.locator('[data-dd-stage-row="by_machine"]')).toContainText('Admitted by the machine rule')
     await expect(box.locator('[data-dd-stage-row="by_person"]')).toContainText('Admitted by a person')
+    expect(await pageOverflow(page), 'no sideways scroll').toBeLessThanOrEqual(0)
+    expect(w).toBeLessThanOrEqual(PHONE_MAX)
+  })
+  test('provider AI cost, admissions and upgrade stack in one column, every figure keeps its label, and the page never scrolls sideways', async ({ page }) => {
+    await mockAdmin(page); await mockLaneFunnels(page); await mockDataDelivery(page, withProviderAi())
+    const w = await atPhoneWidth(page)
+    await page.goto('/#layer-2-discovery?tab=operations')
+    const box = page.locator('[data-dd-stream="pdesc"] [data-dd-provider-ai="known"]')
+    await expect(box).toBeVisible()
+    const lefts = await box.locator('[data-dd-pdesc-stage]').evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().left)))
+    expect(lefts.length).toBe(3)
+    expect(new Set(lefts).size, 'the three stages share one left edge (one column)').toBe(1)
+    await expect(box.locator('[data-dd-stage-row="ai_remaining"]')).toContainText('Remaining allowance')
+    await expect(box.locator('[data-dd-stage-row="by_person"]')).toContainText('Admitted by a person')
+    await expect(box.locator('[data-dd-stage-row="ai_settled"]')).toContainText('Estimated')
+    await expect(box.locator('[data-dd-stage-row="upgrade_held"]')).toContainText('Upgrade reads held')
     expect(await pageOverflow(page), 'no sideways scroll').toBeLessThanOrEqual(0)
     expect(w).toBeLessThanOrEqual(PHONE_MAX)
   })

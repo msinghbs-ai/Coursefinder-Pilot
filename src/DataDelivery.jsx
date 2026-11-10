@@ -12,6 +12,7 @@ import{RefreshCw}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{hrefFor}from'./nav-map'
 import{Button,Loading,StatusChip,fmtDateTime,fmtNumber,fmtRelative,fmtTimeSeconds}from'./ui-kit'
+import{fmtMoney}from'./lib/format'
 import{plainError}from'./lib/errors'
 import'./data-delivery.css'
 
@@ -137,6 +138,41 @@ function Stages({st}){
     </ol></div>
 }
 
+/** A counted US dollar figure from the server, or "Not measured" when the server did not send it. Cents, or four decimals under one cent (one provider read costs less than a cent), never rounded to 0. */
+function Usd({v,k}){return v==null?<em data-dd-unknown data-dd-money={k}>Not measured</em>:<strong data-dd-money={k} data-dd-value={v}>{fmtMoney(Number(v),'USD',{decimals:Number(v)>0&&Number(v)<0.01?4:2})}</strong>}
+/** The provider-description AI cost, remaining allowance and Basic to Enriched outcome (CF-247 F-PDESC, Platform Admin 10 Nov 2026 12:07): counted live and exactly by security.data_delivery_pdesc_v1 when the page was read.
+ *  Machine-rule counts and person counts are labelled apart. Spend settled as an estimate is labelled estimated. A figure the server did not send is Not measured, never 0; a missing block (an older server) is Not measured as a whole. */
+function ProviderAi({pa}){
+  if(pa==null||pa.known===false)return <div className="dd-stages-box" data-dd-provider-ai="unknown"><h4 className="sl-h4">AI cost, admissions and Basic to Enriched upgrade</h4><Unknown reason={pa?.reason||'This count is not available from the server yet'} word="Not measured"/></div>
+  const ai=pa.ai||{},ad=pa.admitted||{},up=pa.upgrade||{}
+  const tops=up.top_hold_rules||[]
+  return <div className="dd-stages-box" data-dd-provider-ai="known">
+    <h4 className="sl-h4">AI cost, admissions and Basic to Enriched upgrade</h4>
+    <p className="sl-sub" data-dd-provider-ai-stamp>Counted live at {stampOf(pa.counted_at)} (Melbourne), in {pa.unit||'providers'}. Exact counts, no estimate except where a line says estimated. Machine-rule counts are kept apart from person counts.</p>
+    <ol className="dd-stages dd-stages-3">
+      <li data-dd-pdesc-stage="ai_cost"><h5>1. AI cost and remaining allowance</h5><ul>
+        <li data-dd-stage-row="ai_spent"><span>Spent on provider descriptions</span> <Usd v={ai.spent_usd} k="spent"/><small>{ai.calls==null?'calls not measured':`${fmtNumber(Number(ai.calls))} paid calls`}</small></li>
+        <li data-dd-stage-row="ai_reserved"><span>Reserved by reads in progress or unsettled</span> <Usd v={ai.reserved_usd} k="reserved"/><small>{ai.reserved_reads==null?'reads not measured':`${fmtNumber(Number(ai.reserved_reads))} reads`}</small></li>
+        <li data-dd-stage-row="ai_ceiling"><span>Ceiling set for the lane</span> <Usd v={ai.ceiling_usd} k="ceiling"/></li>
+        <li data-dd-stage-row="ai_remaining"><span>Remaining allowance (ceiling less spent less reserved)</span> <Usd v={ai.remaining_usd} k="remaining"/></li>
+        <li data-dd-stage-row="ai_today"><span>Spent today (UTC day) against the daily guard</span> <Usd v={ai.today_usd} k="today"/><small data-dd-daily>{ai.daily_guard_usd==null?'Daily guard: Not measured':<>Daily guard <Usd v={ai.daily_guard_usd} k="guard"/>, left today <Usd v={ai.daily_remaining_usd} k="daily_remaining"/></>}</small></li>
+        <li data-dd-stage-row="ai_settled"><span>Reservations settled as an estimate <StatusChip tone="warning" label="Estimated"/></span> <N v={ai.settled_estimated_reads} k="settled_reads"/><small data-dd-settled>{ai.settled_estimated_usd==null?'Amount: Not measured':<>summed <Usd v={ai.settled_estimated_usd} k="settled_usd"/> estimated. The call was assumed made; the provider never reported its cost.</>}</small></li></ul></li>
+      <li data-dd-pdesc-stage="admitted"><h5>2. Admitted, by route</h5><ul>
+        <Row k="ai_first_description" label="Descriptions written by the AI from an official page (first descriptions)" v={ad.ai_first_description} actor="machine"/>
+        <Row k="ai_upgrade" label="Descriptions written by the AI from an official page (upgrades of a Basic profile)" v={ad.ai_upgrade} actor="machine"/>
+        <Row k="registry_fact" label="Basic profiles built from the register (registry-fact route)" v={ad.registry_fact} actor="machine"/>
+        <Row k="by_person" label="Admitted by a person in Layer 4" v={ad.by_person} actor="person"/>
+        <Row k="withdrawn" label="Machine admissions withdrawn (not replaced by an upgrade)" v={ad.withdrawn} actor="machine"/></ul></li>
+      <li data-dd-pdesc-stage="upgrade"><h5>3. Basic to Enriched upgrade</h5><ul>
+        <Row k="upgrade_admitted" label="Upgraded to an Enriched description" v={up.admitted} actor="machine"/>
+        <Row k="basic_profiles_held" label="Basic profiles still held (not upgraded yet)" v={up.basic_profiles_held}/>
+        <Row k="upgrade_queued" label="Upgrade reads waiting for the reader" v={up.queued_reads}>
+          {up.lane_on===false&&<small data-dd-upgrade-off>The upgrade lane is switched off, so no upgrade read is queued.</small>}</Row>
+        <Row k="upgrade_held" label="Upgrade reads held, and why" v={up.held_reads}>
+          {tops.length>0&&<ul className="dd-reasons" data-dd-upgrade-holds>{tops.map(r=><li key={r.rule}><span title={r.example||undefined}>{String(r.rule).replaceAll('_',' ')}</span> <strong>{fmtNumber(Number(r.n))}</strong></li>)}</ul>}</Row></ul></li>
+    </ol></div>
+}
+
 function Stream({s,now,providerFilters,open,onToggle}){
   const dr=s.drill||{}
   const lanes=hrefFor('layer2','operations',{lane:s.lane})
@@ -166,6 +202,7 @@ function Stream({s,now,providerFilters,open,onToggle}){
     </summary>
     <div className="dd-body">
       <Stages st={s.stages}/>
+      {s.stream==='pdesc'&&<ProviderAi pa={s.provider_ai}/>}
       <p><strong>What this stream is.</strong> {s.what}</p>
       <p><strong>How the gain is counted.</strong> {s.net_basis||'Not stated.'}{s.net_short?.removed_known?' Net = admitted minus withdrawn, from the ledger timestamps in the window.':''}</p>
       {(s.coverage?.by_country||[]).length>0&&<table className="cf-table dd-countries"><thead><tr><th>Country</th><th>Covered</th><th>Of</th></tr></thead><tbody>
@@ -231,7 +268,7 @@ export default function DataDelivery({rank=0,onError,client=null}){
     {err&&<p role="alert" className="dd-stale" data-dd-stale-banner>The last refresh failed at {stampOf(err.at)} (Melbourne): {err.message}. These are the figures read at {stampOf(d.at)}; they may be out of date.</p>}
     {(flagged.length>0||failing.length>0||unknownAdm.length>0)&&<p className="dd-summary" data-dd-summary>{flagged.length>0&&<><strong>{flagged.length}</strong> stream{flagged.length===1?'':'s'} ran green but admitted nothing in {hoursText(d.windows?.short_hours)} ({flagged.map(s=>s.title).join(', ')}). </>}{unknownAdm.length>0&&<><strong>{unknownAdm.length}</strong> ran green with what they admitted unknown ({unknownAdm.map(s=>s.title).join(', ')}). </>}{failing.length>0&&<><strong>{failing.length}</strong> with a failed run ({failing.map(s=>s.title).join(', ')}).</>}</p>}
     <div className="dd-head" aria-hidden="true"><span>Stream</span><span>Coverage</span><span>Net {hoursText(d.windows?.short_hours)}</span><span>Net {hoursText(d.windows?.long_hours)}</span><span>Website</span><span>Zoho</span><span>Queue</span><span>Holds and reasons</span><span>Speed</span><span>Last and next run</span><span>Automatic recovery</span></div>
-    <div className="dd-streams">{streams.map(s=><Stream key={s.stream} s={s} now={now} providerFilters={Boolean(d.provider_filters_available)} open={open[s.stream]??Boolean(s.stages)} onToggle={o=>setOpen(x=>({...x,[s.stream]:o}))}/>)}</div>
+    <div className="dd-streams">{streams.map(s=><Stream key={s.stream} s={s} now={now} providerFilters={Boolean(d.provider_filters_available)} open={open[s.stream]??Boolean(s.stages||s.provider_ai)} onToggle={o=>setOpen(x=>({...x,[s.stream]:o}))}/>)}</div>
     <p className="sl-sub">Net = admitted minus withdrawn, from each stream&rsquo;s own ledger timestamps. A job the scheduler reports as OK says nothing about data: the flag shows when it admitted nothing. Reload interval, windows and the number of reasons are settings (Settings &rsaquo; Pipeline settings &rsaquo; Data delivery).</p>
   </section>
 }
