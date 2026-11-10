@@ -1,0 +1,30 @@
+empty_known|true|providers
+empty_ai|ceiling=0.75000|spent=0.00000|calls=0|reserved=0.00000|reads=0|remaining=0.75000|today=0.00000|guard=1.00000|daily_remaining=1.00000|settled_reads=0|settled_usd=0.00000
+empty_admitted|ai_first=0|ai_upgrade=0|registry=0|person=0|withdrawn=0
+empty_upgrade|on=true|upgraded=0|basic_held=0|queued=0|held=0|top=-
+empty_keys|admitted,ai,counted_at,known,subset_recovery,unit,upgrade / calls,ceiling_usd,daily_guard_usd,daily_remaining_usd,remaining_usd,reserved_reads,reserved_usd,settled_estimated_reads,settled_estimated_usd,spent_usd,today_usd / ai_first_description,ai_upgrade,by_person,registry_fact,withdrawn / admitted,basic_profiles_held,held_reads,lane_on,queued_reads,top_hold_rules
+spend_and_reservations|ceiling=0.75000|spent=0.15000|calls=2|reserved=0.05000|reads=2|remaining=0.55000|today=0.10000|guard=1.00000|daily_remaining=0.85000|settled_reads=0|settled_usd=0.00000
+allowance_floored_at_zero|ceiling=0.15000|spent=0.15000|calls=2|reserved=0.05000|reads=2|remaining=0.00000|today=0.10000|guard=1.00000|daily_remaining=0.85000|settled_reads=0|settled_usd=0.00000
+allowance_exact_to_the_cent|0.10000
+daily_guard_1|ceiling=5.00000|spent=0.60000|calls=2|reserved=0.05000|reads=1|remaining=4.35000|today=0.20000|guard=1.00000|daily_remaining=0.75000|settled_reads=0|settled_usd=0.00000
+daily_guard_below_today_plus_reserved|ceiling=5.00000|spent=0.60000|calls=2|reserved=0.05000|reads=1|remaining=4.35000|today=0.20000|guard=0.20000|daily_remaining=0.00000|settled_reads=0|settled_usd=0.00000
+daily_guard_not_held|ceiling=5.00000|spent=0.60000|calls=2|reserved=0.05000|reads=1|remaining=4.35000|today=0.20000|guard=null|daily_remaining=null|settled_reads=0|settled_usd=0.00000
+settled_estimated|ceiling=1.00000|spent=0.00000|calls=0|reserved=0.00000|reads=0|remaining=1.00000|today=0.00000|guard=1.00000|daily_remaining=1.00000|settled_reads=3|settled_usd=0.01050
+routes|ai_first=3|ai_upgrade=1|registry=2|person=3|withdrawn=1
+upgrade_count|on=true|upgraded=1|basic_held=2|queued=0|held=0|top=-
+admission_without_admitted_read|ai_first=0|ai_upgrade=0|registry=0|person=0|withdrawn=0
+upgrade_reads_top_two|on=true|upgraded=0|basic_held=3|queued=1|held=6|top=provider_name_not_proved:3,no_about_page:2
+upgrade_top_example|latest not proved
+upgrade_top_three|on=true|upgraded=0|basic_held=3|queued=1|held=6|top=provider_name_not_proved:3,no_about_page:2,not_stated:1
+lane_off|on=false|upgraded=0|basic_held=3|queued=0|held=6|top=provider_name_not_proved:3,no_about_page:2,not_stated:1
+text_edited_queued_not_counted|on=true|upgraded=0|basic_held=3|queued=0|held=6|top=provider_name_not_proved:3,no_about_page:2,not_stated:1
+cannot_count|false|The provider AI and upgrade counts could not be read: column|true
+read_only|true
+stable_and_definer|s|true|{"search_path=\"\""}
+not_for_anon_or_authenticated|true|true
+scaled_known|true
+scaled_five_runs_under_two_seconds|true
+seen_tally|{"held": 1}
+seen_stored|held|provider_name_not_proved|false|provider_name_not_proved|Welcome|Study with us|[]|1200|90|true
+passed_tally|{"held": 1}
+no_seen_stored|held|provider_name_conflict|false|provider_name_conflict

@@ -9,7 +9,7 @@ import { PROVIDER_COLUMNS, QUALITY_LEVELS, QUALITY_FILTER_OPTIONS, qualityOf, fi
 const MIG = fs.readFileSync('supabase/migrations/20261110030000_cf247_provider_fill_fields.sql', 'utf8')
 const SQL = MIG.split('\n').filter(l => !/^\s*--/.test(l)).join('\n')
 const UI = fs.readFileSync('src/mature-main.jsx', 'utf8')
-const PANEL = fs.readFileSync('src/ProviderFillFields.jsx', 'utf8')
+const PANEL = fs.readFileSync('src/ProviderFillFields.jsx', 'utf8') + '\n' + fs.readFileSync('src/provider-fill-stages.js', 'utf8') // the panel and its plain-word helpers
 const api = fs.readFileSync('src/provider-description-run-api.js', 'utf8')
 const FILL_MODES = [...PANEL.matchAll(/\{ id: '([a-z_]+)', label: '[^']+', help: '((?:[^'\\]|\\.)*)' \}/g)].map(m => ({ id: m[1], help: m[2] })) // the panel's modes, read from its source (the component imports a stylesheet)
 const CLASSES = ['missing', 'queued', 'processing', 'waiting_decision', 'held', 'basic_registry', 'unrecorded', 'enriched_admitted', 'consumer_pending', 'verified_published']
@@ -143,7 +143,7 @@ test('the Provider Catalogue gets two registry columns, equal in the screen and 
   expect(SQL).toMatch(/unsupported quality filter: %/)
 })
 
-test('the screens: a tick box and a Fill fields button on each Provider row (Curator and above), a selection bar bounded by the server\'s cap, the same panel in Provider Detail, and no second dashboard', () => {
+test('the screens: a tick box and an Extract / refresh button on each Provider row (Curator and above), a selection bar bounded by the server\'s cap, the same panel in Provider Detail, and no second dashboard', () => {
   expect(UI).toContain("const ProviderFillFields=lazyPage(()=>import('./ProviderFillFields'))")
   expect(UI).toContain("const fillOn=type==='provider'&&!completenessMode&&Number(rank)>=3")
   expect(UI).toContain("providerDescriptionRunApi.call('fill_caps')")
@@ -155,7 +155,7 @@ test('the screens: a tick box and a Fill fields button on each Provider row (Cur
   expect(UI).toContain('!fillCap||p.length>=fillCap?p:')
   expect(PANEL).toContain('if (ids.length > Number(c.max_size || 0)) { setStatus(null); return }')
   // no new page, route or dashboard: the panel is one component opened from the two existing screens
-  expect(fs.readdirSync('src').filter(f => /fill/i.test(f)).sort()).toEqual(['ProviderFillFields.jsx', 'provider-fill-fields.css'])
+  expect(fs.readdirSync('src').filter(f => /fill/i.test(f)).sort()).toEqual(['ProviderFillFields.jsx', 'provider-fill-fields.css', 'provider-fill-stages.js'])
   expect(UI).not.toMatch(/PAGES\.[a-z]*[fF]ill|key:'fill/)
   // the panel states what the reader does and does not fill
   expect(PANEL).toContain('The reader produces the <strong>description</strong> only.')

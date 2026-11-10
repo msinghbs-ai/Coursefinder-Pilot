@@ -1,0 +1,42 @@
+function|true|true
+monash_proposed|pending|(none)|0
+monash_whole_check|refused_word:students|clean
+monash_settled|1
+monash_description|true|approved
+monash_ledger|declined 1 admitted 1|true|true|pdesc-machine-v1|true
+monash_dropped|2|refused_word:campus|true|2|3|true|true
+monash_declined_kept|true
+monash_proposal_kept|2|true|true|3|true|true
+monash_lineage|true
+monash_selection|description_current/false
+monash_publication_check|1
+monash_run_result|verified|verified|verified
+monash_decision|approve|true|3|true|2|true|true|true
+monash_event|true|true
+monash_again|not_a_waiting_provider_description|1
+monash_status|admitted|true|2/3|refused_word:campus|false|true
+monash_dd|1|1|true
+record_figure|true|approved|figure:35|0
+clean_reading|true|true|true
+below_minimum|machine_text_refused_word|remainder_validation_sentence_count|pending|(none)|0
+below_minimum_audit|1|2|machine_text_refused_word
+below_minimum_status|declined|true|remainder_validation_sentence_count|false|true|true
+all_refused|machine_text_refused_word|every_sentence_refused|pending|(none)
+identity_finding|identity_identity_identity_unconfirmed|none|pending|(none)
+manual_lock|manual_lock|none|pending|(none)
+rejection_memory|prior_human_rejection|(none)
+description_held|description_already_held|A description already held by hand for this provider.
+switch_off|machine_admission_off|(none)|pending
+duplicate_remainder|machine_text_refused_word|remainder_validation_duplicate_other_provider|(none)
+person_settled|not_a_waiting_provider_description|(none)|0
+legacy_name_kept|true|true
+legacy_name_dropped|machine_text_refused_word|name_not_in_remaining_quotes|(none)
+dd_counts|0|2|2|2
+dd_causes|subset: every_sentence_refused=1,subset: remainder_validation_sentence_count=1
+promotional_record|true|approved|refused_word:best|2/3|true
+attempt_leased|true|reading/1/-/false/0/0
+attempt_budget_refused|1|queued/0/ai_budget_refused/true/0/0
+attempt_budget_ceiling|true|1|queued/0/ai_ceiling/true/0/0
+attempt_fetch_failed|true|1|queued/1/retry/true/0/0
+attempt_not_found|true|1|held/2/no_about_page/false/0/0
+clean|0|0

@@ -80,7 +80,7 @@ test('the exemption is narrow: only claim words and the French list, only suppor
 
 test('admitted: the UNSW and Monash sentences with their exact quotes, two supported sentences, and a proposal recorded by the reader', () => {
   for (const l of ['unsw_admitted|true|pdesc-machine-v1|', 'unsw_short_admitted|true|pdesc-machine-v1|', 'monash_admitted|true|pdesc-machine-v1|', 'two_sentences_admitted|true|pdesc-machine-v1|',
-    'record_tally|{"admitted": 1, "proposed": 1}', 'record_admitted|admitted|machine|pdesc-machine-v1|1|0', 'record_description|true']) expect(expected).toContain(l)
+    'record_admitted|admitted|machine|pdesc-machine-v1|1|0', 'record_description|true']) expect(expected).toContain(l)
   // the real quotes of the two declined proposals are in the fixture
   expect(scenarios).toContain('It is found in our students, our staff, our alumni and our generous donors.')
   expect(scenarios).toContain('When our first students began their studies at our foundation campus in Clayton in 1961')
@@ -114,13 +114,17 @@ test('still refused: ranking, rating, outcome, accreditation, award, facility, s
 test('the setting is the control, and a promotional proposal still waits for a person with the reason on the item', () => {
   for (const l of ['setting_empty|false|machine_text_refused_word|refused_word:students', 'setting_alumni_only_students_refused|false|machine_text_refused_word|refused_word:students', 'setting_alumni_only_alumni_admitted|true|pdesc-machine-v1|',
     'setting|["students", "staff", "alumni"]|list|0|words|Provider descriptions|true|true|true|true']) expect(expected).toContain(l)
-  expect(expected.some((l) => l.startsWith('record_declined|proposed|1|(none)|refused_word:ranked|Machine rule pdesc-machine-v1 did not admit this:'))).toBe(true)
-  expect(expected.some((l) => l.startsWith('waiting_promotional|1|(none)|refused_word:best'))).toBe(true)
+  // RETIRED 10 Nov 2026 (migration 20261110210000, sentence-subset recovery): a reading with ONE promotional sentence among clean ones is no longer left whole for a person; the clean sentences are admitted and the promotional one is left out.
+  // record_tally, record_declined, waiting_promotional_settle and waiting_promotional are no longer expected; the superseding scenarios are promotional_* in tests/fixtures/pdesc-subset-recovery. The setting stays the control, and a reading that cannot be recovered still waits with the reason.
+  for (const n of ['record_tally', 'record_declined', 'waiting_promotional_settle', 'waiting_promotional']) {
+    expect(expected.some((l) => l.startsWith(n + '|')), n).toBe(false)
+    expect(scenarios).toContain("'RETIRED_" + n + "|'")
+  }
 })
 
 test('re-evaluation: a proposal declined for a neutral word is admitted by the existing settlement of waiting items, with no row written by the migration', () => {
   for (const l of ['waiting_declined|1|(none)|refused_word:students', 'settle_within_the_hour|{"on": true, "errors": 0, "admitted": 0, "left_for_a_person": 0}|1',
-    'settle_after_the_hour|{"on": true, "errors": 0, "admitted": 1, "left_for_a_person": 0}|0|1|true', 'settle_audit|declined:-,admitted:true', 'waiting_promotional_settle|{"on": true, "errors": 0, "admitted": 0, "left_for_a_person": 1}', 'settle_step_is_the_scheduled_path|true|true']) expect(expected).toContain(l)
+    'settle_after_the_hour|{"on": true, "errors": 0, "admitted": 1, "left_for_a_person": 0}|0|1|true', 'settle_audit|declined:-,admitted:true', 'settle_step_is_the_scheduled_path|true|true']) expect(expected).toContain(l)
   // the migration writes no row of Layer 4, reads, admissions, descriptions or jobs: the only insert is the setting
   expect([...C.matchAll(/^\s*insert into ([a-z_.]+)/gm)].map((m) => m[1])).toEqual(['pipeline.platform_toolset_settings'])
   expect(C).not.toMatch(/\bupdate\s+(pipeline|catalogue)\./i)
