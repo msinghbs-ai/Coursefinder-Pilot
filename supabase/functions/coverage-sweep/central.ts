@@ -1,5 +1,7 @@
 // v0.19.0 (11 Oct 2026, Platform Admin Feature 4): central pages found automatically. A Firecrawl map of the provider's own
 // site lists its addresses; these fixed rules pick the likeliest key-dates, international-fee and English-requirements pages.
+// v0.64.0 (11 Nov 2026, F-AER.01): a top-level entry or admission requirements page of a small provider scores as a strong page; entryCandidates and ENTRY_SEARCH for
+// the targeted entry search (index.ts central_find). weakKinds is unchanged: the whole-site map path asks no extra targeted map for entry pages.
 // They are only suggestions: a person attaches one, and an attached page waits for approval in Layer 4 › Attributes.
 // v0.47.0 (CF-247 Track C, entry requirements step A): page type entry_requirements (a provider's academic entry minimums by country of
 // prior education; Part 1 address and link-text patterns). It is suggested from the whole-site map only: no extra targeted map is asked for
@@ -28,7 +30,7 @@ const RULES: Record<CentralKind, { strong: RegExp; weak?: RegExp; why: string }>
   },
   entry_requirements: {
     strong: /country[-_ ]?equivalen|academic[-_ ]?(equivalen|entry[-_ ]?requirements?|requirements)|international[-_ ]?(and[-_ ]?overseas[-_ ]?)?qualifications|overseas[-_ ]?qualifications|qualifications?[-_ ]?(by[-_ ]?country|equivalen)|admission[-_ ]?by[-_ ]?country|entry[-_ ]?requirements?[-_ ]?(by[-_ ]?country|for[-_ ]?international)|international[-_ ]?(academic[-_ ]?)?entry[-_ ]?requirements?|minimum[-_ ]?entry[-_ ]?score/,
-    weak: /entry[-_ ]?requirements?/,
+    weak: /(entry|admission)[-_ ]?requirements?/,
     why: "entry requirements",
   },
   about_page: {
@@ -70,6 +72,9 @@ export function centralCandidates(links: { url: string; title?: string | null }[
       let score = r.strong.test(path) ? 6 : r.strong.test(title) ? 4 : (r.weak && (r.weak.test(path) || r.weak.test(title))) ? 1.5 : 0;
       // a top-level fees or tuition page (slc.edu.au/fees, provider.edu.au/tuition-fees) is the fee schedule of a small provider
       if (kind === "fee_schedule" && depth <= 2 && /^\/(fees?|tuition)([-_][a-z-]+)?(\/|$)/.test(path)) score = Math.max(score, 4.5);
+      // v0.64.0 (11 Nov 2026, F-AER.01): a top-level entry or admission requirements page (college.edu.au/entry-requirements, /international/admission-requirements)
+      // is the provider-wide entry rule of a small provider; it scored 2.3 as a weak match and was never suggested (724 private VET providers have nothing stored)
+      if (kind === "entry_requirements" && depth <= 2 && /^\/((international|study|apply|admissions?|students?)\/)?(entry|admissions?)[-_]?requirements?(\/|$)/.test(path)) score = Math.max(score, 4.5);
       if (!score) continue;
       if (kind !== "intake_calendar" && kind !== "about_page" && INTERNATIONAL.test(path + " " + title)) score += 2;
       if (/\.pdf$/.test(path)) score += kind === "fee_schedule" ? 1 : -0.5;
@@ -82,6 +87,12 @@ export function centralCandidates(links: { url: string; title?: string | null }[
 }
 
 // What to ask a targeted map for when the whole-site map found no strong page of a kind (large sites list only part of themselves).
+// v0.64.0 (11 Nov 2026, F-AER.01): the targeted search the worker runs, only for a provider AER source discovery asked about (public.svc_aer_entry_search_wanted),
+// when the whole-site map is not due or found no entry page. Broader than CENTRAL_SEARCH.entry_requirements so a college's single entry page is found too.
+export const ENTRY_SEARCH = "entry requirements admission";
+export function entryCandidates(links: { url: string; title?: string | null }[], siteHost: string): CentralCandidate[] {
+  return centralCandidates(links, siteHost).filter((c) => c.kind === "entry_requirements");
+}
 export const CENTRAL_SEARCH: Record<CentralKind, string> = { intake_calendar: "key dates academic calendar", fee_schedule: "international student tuition fees", english_policy: "english language requirements", entry_requirements: "international entry requirements by country", about_page: "about the university" };
 export function weakKinds(found: CentralCandidate[]): CentralKind[] {
   return (Object.keys(RULES) as CentralKind[]).filter((k) => k !== "about_page").filter((k) => k !== "entry_requirements" && !found.some((c) => c.kind === k && c.score >= 5));

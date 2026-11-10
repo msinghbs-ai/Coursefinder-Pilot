@@ -86,7 +86,7 @@ test('it only observes: the pages the proof passes and fails are the same as bef
 })
 
 test('worker v0.62.0 stores seen when the proof fails and only then, and holds the read exactly as before (v0.63.0 adds the proof trace to it)', () => {
-  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v0.63.0";')
+  expect(IX).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(6[3-9]|[7-9]\d)\.\d+";/)   // v0.63.0 or a later worker (v0.64.0: F-AER.01 entry search, no provider-description change)
   expect(IX).toMatch(/\/\/ was v0\.62\.0 \/\/ v0\.62\.0 \(10 Nov 2026, CF-247 F-PDESC, Platform Admin order 10 Nov 2026 12:07/)
   expect(IX).toMatch(/\/\/ was v0\.61\.0 \/\/ v0\.61\.0 \(10 Nov 2026, CF-247 F-PDESC delivery/)
   expect(IX).toMatch(/import \{[^}]*\bdescriptionIdentitySeen\b[^}]*\} from "\.\/description\.ts";/)
