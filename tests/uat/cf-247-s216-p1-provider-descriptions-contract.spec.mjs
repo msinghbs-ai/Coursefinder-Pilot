@@ -139,7 +139,7 @@ test('worker v0.57.0: stored copy first, own hosts only, direct before Firecrawl
   expect(w.indexOf('let target = suggested[0] || "";')).toBeLessThan(w.indexOf('const h = await readPage(home, it);'))
   expect(w).toContain('if (d?.model && !String(d.model).startsWith(model))')  // pinned: no other model's answer
   expect(w).toContain('const ans = descriptionAnswer(d, maxTokens); cost += ans.cost;')
-  expect(w).toContain('rpc("svc_provider_description_record", { p_results: noNul(out) })')
+  expect(w).toContain('rpc("svc_provider_description_record", { p_results: noNul([o]) })')  // v0.61.0: one call for each item (a failed call lost the whole invocation)
   expect(w).not.toMatch(/catalogue\.providers|description:\s*ans/)
   expect(DESCRIPTION_SYSTEM).toContain('Do not state rankings, ratings, awards, facilities, employment or graduate outcomes, accreditations')
   const req = descriptionRequest('openai/gpt-4.1-mini', 'U', 'https://u.edu.au/about', 'text', 1500)

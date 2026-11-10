@@ -1,0 +1,12 @@
+full_queue_lane_ran|0
+full_queue_provider1_queued|0
+empty_queue_lane_ran|1
+empty_queue_provider1_queued|1
+empty_queue_again_provider1_queued|true|1
+own_queue_at_bound_lane_ran|1
+own_queue_at_bound_provider1_queued|1
+own_queue_below_bound_lane_ran|1
+many_queued_lane_ran|0
+many_queued_provider1_queued|0
+switch_off_provider1_queued|0
+edited_profile_is_not_counted|null|0

@@ -42,9 +42,7 @@ declined_person_result|true|admitted/changed,superseded/registry_factual|true
 declined_person_profile_row|1|null
 revisit_same_page|unchanged_unsuitable_evidence/false
 revisit_page_changed|eligible/true
-queue_full_ran|true
-queue_full|0
-first_admission|{"admitted": 4}
+first_admission|{"admitted": 1}
 first_admission_after|null|description_already_held|not_listed|stored/null
 idhold_before|queued
 idhold_lease|0
