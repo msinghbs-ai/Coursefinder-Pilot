@@ -155,7 +155,7 @@ function Flow({fl}){
       <Row k="flow_held_cap" label="Held behind a university's first waiting descriptions" v={el.held_behind_provider_cap}/>
       <Row k="flow_held_check" label="Held by a check" v={el.held_by_a_check}>{cause(fl.held_by_cause,'held')}</Row>
       <Row k="flow_read_other" label="Read, other outcome" v={el.read_other}/>
-      <Row k="flow_declined" label="Declined by the machine rule, by cause" v={fl.declined_by_cause==null?null:fl.declined_by_cause.reduce((a,r)=>a+Number(r.n||0),0)} actor="machine">{cause(fl.declined_by_cause,'declined')}</Row>
+      <Row k="flow_declined" label="Declined by the machine rule, by cause" v={fl.declined_by_cause==null||fl.declined_by_cause.some(r=>!Number.isFinite(Number(r.n)))?null:fl.declined_by_cause.reduce((a,r)=>a+Number(r.n),0)} actor="machine">{cause(fl.declined_by_cause,'declined')}</Row>
       <Row k="flow_admitted_24h" label="Admitted by the machine rule, last 24 hours (kept)" v={ga.admitted_24h} actor="machine"/>
       <Row k="flow_admitted_7d" label="Admitted by the machine rule, last 7 days (kept)" v={ga.admitted_7d} actor="machine"/>
       <Row k="flow_withdrawn_7d" label="Withdrawn, last 7 days" v={ga.withdrawn_7d} actor="machine"/>
