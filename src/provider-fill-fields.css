@@ -34,10 +34,10 @@
 .pff-error{background:var(--cf-danger-soft);color:var(--cf-danger-ink)}
 .pff .cf-btn{min-height:32px}
 /* the Provider Catalogue row: a tick box and a button beside the provider's name */
-.pff-name{display:flex;align-items:center;gap:var(--cf-space-2);min-width:0}
+.pff-name{display:flex;flex-wrap:wrap;align-items:center;gap:var(--cf-space-2);min-width:0}
 .pff-pick{display:inline-flex;align-items:center;justify-content:center;min-width:32px;min-height:32px;flex:0 0 auto;cursor:pointer}
 .pff-pick input{width:24px;height:24px;margin:0}
-.pff-title{min-width:0;overflow-wrap:anywhere;flex:1 1 auto}
+.pff-title{min-width:8em;overflow-wrap:anywhere;flex:1 1 8em} /* the long button wraps below the name; the name never shrinks to nothing (Playwright and a reader both treat a zero-width name as hidden) */
 .pff-open{flex:0 0 auto;min-height:28px;min-width:28px;padding:2px var(--cf-space-3);border:1px solid var(--cf-border-strong);border-radius:var(--cf-radius-sm);background:var(--cf-surface);color:var(--cf-text);font:inherit;font-size:var(--cf-fs-md);cursor:pointer}
 .pff-open:hover{background:var(--cf-surface-2)}
 .pff-bar{display:flex;flex-wrap:wrap;align-items:center;gap:var(--cf-space-3);padding:var(--cf-space-2) var(--cf-space-3);background:var(--cf-info-soft);border-radius:var(--cf-radius-md)}
