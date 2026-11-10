@@ -35,6 +35,11 @@
 .cdod-row dt{color:var(--cf-muted);font-size:var(--cf-fs-md)}
 .cdod-row dd{margin:0;min-width:0;overflow-wrap:anywhere}
 .cdod-row a{display:inline-block;min-height:24px;line-height:24px;overflow-wrap:anywhere}
+.cdod-stages{list-style:none;margin:8px 0;padding:0;display:grid;gap:6px}
+.cdod-stages li{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;min-width:0}
+.cdod-stage-name{color:var(--cf-muted);font-size:var(--cf-fs-md);min-width:96px}
+.cdod-more{margin:4px 0}
+.cdod-more summary{cursor:pointer;min-height:24px;color:var(--cf-muted)}
 @media (max-width:620px){
   .cdod-row{grid-template-columns:1fr;gap:2px}
   .cdod-actions .cf-btn,.cdod-bar .cf-btn{min-height:36px}

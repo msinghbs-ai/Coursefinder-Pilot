@@ -14,19 +14,30 @@ export const ORDER = ['source_ready', 'missing', 'held', 'machine_admitted', 'hu
 function row(id, i, force = null) {
   const state = force || ORDER[i % ORDER.length]
   const has = ['machine_admitted', 'human_decision'].includes(state)
-  const fill_block = has ? 'already_has_description' : state === 'missing' ? 'no_source' : state === 'held' ? 'recent_attempt' : state === 'ai_read' ? 'waiting_for_person' : null
+  const fill_block = has ? 'already_has_description' : state === 'missing' ? 'no_source' : state === 'held' || state === 'failed' ? 'recent_attempt' : state === 'ai_read' ? 'waiting_for_person' : null
   const recheck_block = has ? 'already_has_description' : state === 'missing' ? 'no_source' : state === 'source_ready' ? 'nothing_to_recheck' : state === 'ai_read' ? 'waiting_for_person' : null
   return { course_id: id, provider_id: 'p-1', title: `Course ${i + 1}`, provider: 'RMIT University', active: true, has_description: has, state, source_ready: state !== 'missing', source_reason: state === 'missing' ? 'no_page' : null,
     source_url: state === 'missing' ? null : `https://example.edu.au/course/${i + 1}`, evidence_id: state === 'missing' ? null : '11111111-2222-4333-8444-555555555555', page_read_at: '2026-11-01T01:00:00Z', page_next_read_at: null,
-    last_item_id: state === 'held' ? 7 : null, last_state: state === 'held' ? 'skipped' : null, last_reason: state === 'held' ? 'held: the words copy the page' : null, last_attempt_at: state === 'held' ? '2026-11-05T01:00:00Z' : null,
+    last_item_id: state === 'held' ? 7 : state === 'failed' ? 8 : null, last_state: state === 'held' ? 'skipped' : state === 'failed' ? 'failed' : null, last_reason: state === 'held' ? 'held: the words copy the page' : state === 'failed' ? 'the page timed out' : null, last_attempt_at: state === 'held' || state === 'failed' ? '2026-11-05T01:00:00Z' : null,
+    last_job_id: state === 'held' || state === 'failed' ? 'abcdef12-0000-4000-8000-000000000001' : null,
     held_kind: state === 'held' ? 'check' : null, locked: false, hidden: false, waiting_for_person: state === 'ai_read', rejected_same_evidence: false, machine_admitted: state === 'machine_admitted' ? true : null,
     human_decision: state === 'human_decision', next_retry_at: state === 'held' ? '2026-12-26T01:00:00Z' : null, fill_block, recheck_block,
     fill_info: INFO[fill_block] || (fill_block ? { label: fill_block, next: '' } : null), recheck_info: INFO[recheck_block] || (recheck_block ? { label: recheck_block, next: '' } : null) }
 }
-export async function mockOnDemand(page, { cap = 20, startError = null, verify = null, forceState = null, withdraw = null } = {}) {
+export async function mockOnDemand(page, { cap = 20, startError = null, verify = null, forceState = null, withdraw = null, itemOverride } = {}) {
   const calls = []
   const index = new Map()
   const idx = (id) => { if (!index.has(id)) index.set(id, index.size); return index.get(id) }
+  // public.admin_course_description_item_v1: the latest description item as stored. `itemOverride` replaces the item (for example attempts 0: never tried)
+  await page.route(BASE + 'admin_course_description_item_v1', async (route) => {
+    const b = route.request().postDataJSON() || {}; calls.push({ name: 'item', ...b })
+    const ids = b.p_course_ids || []
+    return route.fulfill({ json: { read_at: '2026-11-10T01:00:00Z', courses: ids.map((id) => {
+      const r = row(id, idx(id), forceState)
+      const item = itemOverride !== undefined ? itemOverride : r.last_item_id ? { id: r.last_item_id, state: r.last_state, reason: r.last_reason, attempts: r.last_state === 'failed' ? 3 : 1, source: 'ai_stored', evidence_id: r.evidence_id, storage_path: 'evidence/ab12cd34/page.html', reading_chars: r.last_state === 'skipped' ? 812 : 0, at: r.last_attempt_at } : null
+      return { course_id: id, field: 'description', catalogue_chars: r.has_description ? 420 : 0, item }
+    }) } })
+  })
   await page.route(BASE + 'admin_course_description_state_v1', async (route) => {
     const b = route.request().postDataJSON() || {}; calls.push({ name: 'state', ...b })
     const ids = b.p_course_ids || []
