@@ -9,7 +9,7 @@ const start = (period, year, month, day, quote, extra = {}) => ({ period, start:
 const read = (p, periods) => calendarAiParsed([{ scope: 'main_teaching', scope_quote: '', periods }], p, `ai:m:${CALENDAR_READER}`)
 
 test('UNSW: the year comes from the year tabs and the repeated term blocks; 2027 terms start 15 Feb, 31 May and 13 Sep', () => {
-  expect(CALENDAR_READER).toBe('calendar-v2.2')
+  expect(CALENDAR_READER).toBe('calendar-v2.3')
   const r = read(unsw, [
     start('Term 1', 2027, 2, 15, 'Teaching period T1 | 15 Feb - 23 Apr'), start('Term 2', 2027, 5, 31, 'Teaching period T2 | 31 May - 6 Aug'),
     start('Term 3 2027', 2027, 9, 13, 'Teaching period T3 | 13 Sep - 19 Nov'), start('Term 1', null, 2, 16, 'Teaching period T1 | 16 Feb - 24 Apr')])

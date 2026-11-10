@@ -16,7 +16,7 @@ const answer = { scope: 'main_teaching', scope_quote: 'Main campus academic cale
 
 test('every value must be on the page: dated teaching starts kept, orientation never a commencement, unproven values become findings', () => {
   const p = calendarAiParsed([answer], page, `ai:gpt-4.1-mini:${CALENDAR_READER}`)
-  expect(p.parser).toBe('ai:gpt-4.1-mini:calendar-v2.2'); expect(p.reader).toBe('calendar-v2.2'); expect(p.scope).toBe('main_teaching')
+  expect(p.parser).toBe('ai:gpt-4.1-mini:calendar-v2.3'); expect(p.reader).toBe('calendar-v2.3'); expect(p.scope).toBe('main_teaching')
   const autumn = p.periods.find(x => x.period === 'autumn session')
   expect(autumn.starts).toEqual([{ year: Y, month: 2, day: 22, date: `${Y}-02-22`, quote: `22 February ${Y} | Autumn session teaching begins`, year_basis: 'quote', meaning: 'teaching_start' }])
   expect(autumn.deadlines).toEqual([{ year: Y - 1, month: 12, day: 1, date: `${Y - 1}-12-01`, quote: `1 December ${Y - 1} | International applications close for Autumn session`, year_basis: 'quote', applies_to: 'international', rolling: false }])
