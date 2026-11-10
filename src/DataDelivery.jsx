@@ -173,6 +173,40 @@ function ProviderAi({pa}){
     </ol></div>
 }
 
+/** The academic entry requirements (AER) sources, gaps and holds (CF-247 AER source recovery, Platform Admin 10 Nov 2026 14:02): counted live by security.data_delivery_aer_v1 when the page was read, from the AER tables
+ *  (the gaps by route come from the hourly findings). A figure the server did not send is Not measured, never 0; a missing block (an older server) or known false is Not measured as a whole. */
+function AerSources({a}){
+  if(a==null||a.known===false)return <div className="dd-stages-box" data-dd-aer-sources="unknown"><h4 className="sl-h4">Entry-requirement sources, gaps and holds</h4><Unknown reason={a?.reason||'This count is not available from the server yet'} word="Not measured"/></div>
+  const c=a.coverage||{},src=a.sources||{},sf=src.stored_find||{},gaps=a.gaps||[],prk=a.parked||{},rule=prk.by_rule||[],oth=a.other_findings||[],lr=a.last_run||{},jobs=a.jobs||[],blk=a.blockers||[]
+  const routeName=r=>String(r||'').replaceAll('_',' ')
+  return <div className="dd-stages-box" data-dd-aer-sources="known">
+    <h4 className="sl-h4">Entry-requirement sources, gaps and holds</h4>
+    <p className="sl-sub" data-dd-aer-stamp>Counted live at {stampOf(a.counted_at)} (Melbourne), in {a.unit||'providers'}; provider coverage as cached by the hourly reconcile ({c.counted_at?stampOf(c.counted_at):'Not measured'}). Gaps are grouped by what the platform already holds for each provider.</p>
+    {blk.length>0&&<ul className="dd-reasons" data-dd-aer-blockers>{blk.map((b,i)=><li key={i}><span>{b}</span></li>)}</ul>}
+    <ol className="dd-stages dd-stages-3">
+      <li data-dd-aer-stage="coverage"><h5>1. Eligible providers and sources</h5><ul>
+        <Row k="aer_eligible" label="Eligible providers (AU and NZ, published, enrolling international students)" v={c.eligible}/>
+        <Row k="aer_with_source" label="With an entry-requirements source" v={c.with_source}/>
+        <Row k="aer_source_read" label="With a source read" v={c.source_read}/>
+        <Row k="aer_with_active" label="With active entry-requirement rows" v={c.with_active_rows}/>
+        <Row k="aer_waiting" label="With rows waiting for a Layer 4 decision" v={c.waiting_for_layer4}/>
+        <Row k="aer_active_course_rows" label="Active course rows" v={c.active_course_rows}/>
+        <Row k="aer_active_matrix_rows" label="Active provider matrix rows" v={c.active_matrix_rows}/>
+        <Row k="aer_proposed_course_rows" label="Proposed course rows" v={c.proposed_course_rows}/>
+        <Row k="aer_sources_total" label="Sources held" v={src.total}>
+          <small data-dd-aer-stored-find>{sf.switch_on===true?'Entry pages from stored links: on':sf.switch_on===false?'Entry pages from stored links: off':'Entry pages from stored links: Not measured'}; {sf.sources_attached==null?'attached: Not measured':`${fmtNumber(Number(sf.sources_attached))} attached`}</small></Row></ul></li>
+      <li data-dd-aer-stage="gaps"><h5>2. Remaining gaps, by route</h5>
+        {gaps.length===0?<Unknown reason="No provider is waiting without a source in the latest findings" word="None found"/>:<ul>{gaps.map(g=><li key={g.route} data-dd-aer-gap={g.route}><span title={g.example_reason||undefined}>{routeName(g.route)}{g.parked&&<StatusChip tone="warning" label="Parked"/>}</span> <strong>{fmtNumber(Number(g.providers))}</strong>
+          <small>{g.courses_waiting>0?`${fmtNumber(Number(g.courses_waiting))} courses. `:''}{g.next_action||'Next action: Not measured'}</small></li>)}</ul>}
+        {oth.length>0&&<><h5>Other open findings</h5><ul className="dd-reasons" data-dd-aer-other>{oth.map(o=><li key={o.cause}><span>{routeName(o.cause)}</span> <strong>{fmtNumber(Number(o.findings))}</strong></li>)}</ul></>}</li>
+      <li data-dd-aer-stage="holds"><h5>3. Parked holds, last and next run</h5>
+        <ul><Row k="aer_parked" label="Layer 4 items parked by the technical lane (not counted against the Layer 4 limit)" v={prk.items}/></ul>
+        {rule.length>0&&<ul className="dd-reasons" data-dd-aer-parked>{rule.map(r=><li key={r.class} title={r.next_action||undefined}><span>{routeName(r.class)}: {r.reason||'reason Not measured'}</span> <strong>{fmtNumber(Number(r.items))}</strong></li>)}</ul>}
+        <p data-dd-aer-last-run>{lr.ran_at?<>Last scheduled read <strong>{fmtDateTime(lr.ran_at)}</strong>: {num(lr.course_reads)} course reads, {num(lr.corrections)} corrections, {num(lr.matrix_pages)} entry pages; Layer 4 waiting {num(lr.layer4_waiting)}{lr.back_pressure?' (full)':''}{lr.parked_not_counted==null?'':`; parked not counted ${num(lr.parked_not_counted)}`}.</>:<Unknown reason="No scheduled read is on record" word="Not measured"/>}</p>
+        {jobs.length>0&&<ul className="dd-reasons" data-dd-aer-jobs>{jobs.map(j=><li key={j.job}><span>{j.job} <small>{j.schedule}</small></span> <strong>{j.active?(j.next_run?`next ${fmtDateTime(j.next_run)}`:'next run Not measured'):'paused'}</strong></li>)}</ul>}</li>
+    </ol></div>
+}
+
 function Stream({s,now,providerFilters,open,onToggle}){
   const dr=s.drill||{}
   const lanes=hrefFor('layer2','operations',{lane:s.lane})
@@ -203,6 +237,7 @@ function Stream({s,now,providerFilters,open,onToggle}){
     <div className="dd-body">
       <Stages st={s.stages}/>
       {s.stream==='pdesc'&&<ProviderAi pa={s.provider_ai}/>}
+      {s.stream==='aer'&&<AerSources a={s.aer_sources}/>}
       <p><strong>What this stream is.</strong> {s.what}</p>
       <p><strong>How the gain is counted.</strong> {s.net_basis||'Not stated.'}{s.net_short?.removed_known?' Net = admitted minus withdrawn, from the ledger timestamps in the window.':''}</p>
       {(s.coverage?.by_country||[]).length>0&&<table className="cf-table dd-countries"><thead><tr><th>Country</th><th>Covered</th><th>Of</th></tr></thead><tbody>
@@ -268,7 +303,7 @@ export default function DataDelivery({rank=0,onError,client=null}){
     {err&&<p role="alert" className="dd-stale" data-dd-stale-banner>The last refresh failed at {stampOf(err.at)} (Melbourne): {err.message}. These are the figures read at {stampOf(d.at)}; they may be out of date.</p>}
     {(flagged.length>0||failing.length>0||unknownAdm.length>0)&&<p className="dd-summary" data-dd-summary>{flagged.length>0&&<><strong>{flagged.length}</strong> stream{flagged.length===1?'':'s'} ran green but admitted nothing in {hoursText(d.windows?.short_hours)} ({flagged.map(s=>s.title).join(', ')}). </>}{unknownAdm.length>0&&<><strong>{unknownAdm.length}</strong> ran green with what they admitted unknown ({unknownAdm.map(s=>s.title).join(', ')}). </>}{failing.length>0&&<><strong>{failing.length}</strong> with a failed run ({failing.map(s=>s.title).join(', ')}).</>}</p>}
     <div className="dd-head" aria-hidden="true"><span>Stream</span><span>Coverage</span><span>Net {hoursText(d.windows?.short_hours)}</span><span>Net {hoursText(d.windows?.long_hours)}</span><span>Website</span><span>Zoho</span><span>Queue</span><span>Holds and reasons</span><span>Speed</span><span>Last and next run</span><span>Automatic recovery</span></div>
-    <div className="dd-streams">{streams.map(s=><Stream key={s.stream} s={s} now={now} providerFilters={Boolean(d.provider_filters_available)} open={open[s.stream]??Boolean(s.stages||s.provider_ai)} onToggle={o=>setOpen(x=>({...x,[s.stream]:o}))}/>)}</div>
+    <div className="dd-streams">{streams.map(s=><Stream key={s.stream} s={s} now={now} providerFilters={Boolean(d.provider_filters_available)} open={open[s.stream]??Boolean(s.stages||s.provider_ai||s.aer_sources)} onToggle={o=>setOpen(x=>({...x,[s.stream]:o}))}/>)}</div>
     <p className="sl-sub">Net = admitted minus withdrawn, from each stream&rsquo;s own ledger timestamps. A job the scheduler reports as OK says nothing about data: the flag shows when it admitted nothing. Reload interval, windows and the number of reasons are settings (Settings &rsaquo; Pipeline settings &rsaquo; Data delivery).</p>
   </section>
 }
