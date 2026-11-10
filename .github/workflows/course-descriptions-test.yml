@@ -19,6 +19,9 @@ on:
       - 'tests/fixtures/cdesc-throughput/**'
       - 'tests/uat/cf-247-cdesc-decline-throughput-contract.spec.mjs'
       - 'supabase/held/cdesc_*_forward_recovery.sql'
+      - 'supabase/migrations/20261110230*.sql'
+      - 'tests/fixtures/cdesc-subset/**'
+      - 'tests/uat/cf-247-cdesc-subset-contract.spec.mjs'
       - 'tests/uat/cf-247-s527-course-description-machine-admission-contract.spec.mjs'
       - 'tests/uat/cf-247-s450-course-description-review-pack-contract.spec.mjs'
       - 'supabase/functions/coverage-sweep/course-text.ts'
@@ -73,6 +76,7 @@ jobs:
           bash tests/fixtures/course-description-backpressure/run.sh 2>&1 | tee -a course-description-results.log
           bash tests/fixtures/cdesc-machine/run.sh 2>&1 | tee -a course-description-results.log
           bash tests/fixtures/cdesc-throughput/run.sh 2>&1 | tee -a course-description-results.log
+          bash tests/fixtures/cdesc-subset/run.sh 2>&1 | tee -a course-description-results.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:

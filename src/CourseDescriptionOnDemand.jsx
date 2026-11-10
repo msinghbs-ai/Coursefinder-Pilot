@@ -17,6 +17,7 @@ import'./course-description-on-demand.css'
 const POLL_MS=15000 // fixed: how often an open task list looks again while a task is running (a screen refresh, not an operating value)
 
 const call=async(action,args)=>{const{data,error}=await supabase.rpc('admin_enrich_fields',{p_action:action,p_args:args||{}});if(error)throw error;return data}
+const readItems=async ids=>{const{data,error}=await supabase.rpc('admin_course_description_item_v1',{p_course_ids:ids});if(error)throw error;return data}
 const readStates=async ids=>{const{data,error}=await supabase.rpc('admin_course_description_state_v1',{p_course_ids:ids});if(error)throw error;return data}
 const withdrawCall=async(courseId,reason)=>{const{data,error}=await supabase.rpc('admin_course_description_machine_withdraw_v1',{p_course:courseId,p_reason:reason});if(error)throw error;return data}
 const errText=e=>plainError(e)
@@ -46,6 +47,59 @@ const FEED_STATE={
   matched:['Same words','success'],differs:['Different words','danger'],missing:['No description returned','danger'],pending:['Not in the feed yet','warning'],
   unknown:['Could not be read','warning'],not_applicable:['Not applicable','neutral'],not_carried:['Not carried by this feed','neutral'],not_checked:['Not checked','neutral'],
   present:['Present','success'],
+}
+
+// The one primary action (design section 3): "Fill / refresh course description now". The server decides what each course can take (fill_block / recheck_block from
+// admin_course_description_state_v1); the screen only picks the mode that has a course to take. Fill and Recheck stay available as explicit modes under "Fill or Recheck only".
+export const PRIMARY_LABEL='Fill / refresh course description now'
+export function autoMode(ids,map){
+  const rows=(ids||[]).map(i=>map?.[String(i)]).filter(Boolean)
+  if(rows.some(r=>!r.fill_block))return'fill'
+  if(rows.some(r=>!r.recheck_block))return'recheck'
+  return'fill'
+}
+const dash=x=>x?String(x).replace(/^held:\s*/,''):''
+// The durable stages of one course, read from the server state only (nothing here is guessed): the stored page, the AI reading, the checks, the decision, the catalogue.
+export function descriptionStages(s,item){
+  if(!s)return[]
+  const never=!!item&&Number(item.attempts)===0&&!s.has_description // attempts 0: no valid source was read; never counted as a try or as evidence of absence
+  const inFlight=['queued','waiting','ai','leased'].includes(s.last_state),notStated=s.state==='not_stated'
+  const page=s.source_ready?{tone:'success',text:`Identified and read${s.page_read_at?` ${fmtDateTime(s.page_read_at)}`:''}`}:{tone:'warning',text:`Not ready${s.source_reason?`: ${String(s.source_reason).replaceAll('_',' ')}`:''}`}
+  const ai=!s.last_item_id?{tone:'neutral',text:'Not read yet'}:never&&!inFlight?{tone:'neutral',text:'Not tried: no valid source was read'}:inFlight?{tone:'info',text:'In progress'}:s.last_state==='failed'?{tone:'danger',text:`Failed${s.last_attempt_at?` ${fmtDateTime(s.last_attempt_at)}`:''}`}:{tone:'success',text:`Read${s.last_attempt_at?` ${fmtDateTime(s.last_attempt_at)}`:''}`}
+  const val=never&&!inFlight?{tone:'neutral',text:'Not reached'}:s.held_kind==='check'?{tone:'warning',text:`Held by a check: ${dash(s.last_reason)||'see the reason'}`}:notStated?{tone:'neutral',text:'The page does not state a description; nothing to check'}
+    :(s.last_state==='review'||s.waiting_for_person||s.has_description||s.last_state==='filled')?{tone:'success',text:'Passed the checks'}:{tone:'neutral',text:'Not reached'}
+  const dec=never&&!inFlight&&!s.waiting_for_person&&!s.locked?{tone:'neutral',text:'No decision: nothing was read, so this is not evidence the page has no description'}:s.has_description?(s.machine_admitted?{tone:'success',text:'Machine-admitted'}:s.human_decision?{tone:'success',text:'Human decision'}:{tone:'success',text:'Not decided by this pipeline'})
+    :s.locked?{tone:'neutral',text:'Locked by a person'}:s.waiting_for_person?{tone:'violet',text:'Layer 4 needed: waiting for a person'}:s.rejected_same_evidence?{tone:'neutral',text:'Declined by a person on this same page'}
+    :s.last_state==='failed'?{tone:'warning',text:'Technical recovery: the standing queue tries again'}:s.held_kind?{tone:'warning',text:`Held: ${String(s.held_kind).replaceAll('_',' ')}`}:{tone:'neutral',text:'No decision yet'}
+  const cat={tone:s.has_description?'success':'neutral',text:s.has_description?'Description is in the catalogue':'No description yet'}
+  return[['page','Stored page',page],['ai','AI reading',ai],['validation','Checks',val],['decision','Decision',dec],['catalogue','Catalogue',cat]]
+}
+// The result for the field, per item as the server stores it: value or empty, the source examined, the reason, the attempts and the next action.
+// Three different things, never mixed (Operating Model v1.7): the server says there is no item (item null: "Not tried"), the server says attempts 0 ("Never tried"), or the item could not be read / is still loading ("Not available" / "Reading"): unknown is not zero.
+// attempts 0 = never tried (no valid source was read): not an attempt, not evidence of absence. Only attempts 1 or more with the page not stating it is "tried, not found".
+export const NOT_AVAILABLE='Not available: the stored item could not be read, so whether this was tried is unknown. This is not evidence that nothing was tried or that the page has no description.'
+function FieldResult({s,det}){
+  const status=det?.status||'loading',ok=status==='ok',row=ok?det.row:null,it=ok?(row.item||null):null,att=it==null?null:Number(it.attempts),chars=Number(row?.catalogue_chars||0)
+  const na=status==='error'?'Not available':'Reading…'
+  const verdict=s.has_description?'A description is in the catalogue.':!ok?(status==='error'?NOT_AVAILABLE:'Reading the stored item…'):it==null?'Not tried: nothing has been read for this course.':att===0?'Never tried: no valid source was read. This is not evidence that the page has no description.'
+    :s.state==='not_stated'?'Tried and not found: the page was read and does not state a description.':'Read, then held or declined (see the reason).'
+  return <dl className="cdod-dl" data-cdod-field-result data-cdod-detail={status} aria-label="Result for the course description">
+    <Row label="Field">Course description</Row>
+    <Row label="Value"><span data-cdod-value>{!ok?(s.has_description?'In the catalogue':na):chars>0?`In the catalogue (${num(chars)} characters)`:Number(it?.reading_chars)>0?`Empty. A reading of ${num(it.reading_chars)} characters is held and not admitted.`:'Empty'}</span></Row>
+    <Row label="Source examined">{!ok?<span data-cdod-source>{na}{s.evidence_id?<> · evidence <code>{short(s.evidence_id)}</code></>:null}</span>:it==null?'None':<><span data-cdod-source>{it.source||'No source recorded'}</span>{it.evidence_id?<> · evidence <code>{short(it.evidence_id)}</code></>:null}{it.storage_path?<> · <code data-cdod-storage>{it.storage_path}</code></>:null}{!it.evidence_id&&!it.storage_path?<span className="cdod-muted"> · no stored page was read</span>:null}</>}</Row>
+    <Row label="Source page">{s.source_url?<a href={s.source_url} target="_blank" rel="noreferrer">{s.source_url}</a>:'None stored'}{s.page_read_at?<span className="cdod-muted"> · page read {fmtDateTime(s.page_read_at)}</span>:null}{!s.source_ready&&s.source_reason?<span className="cdod-muted"> · {String(s.source_reason).replaceAll('_',' ')}</span>:null}</Row>
+    <Row label="Reason"><span data-cdod-reason>{!ok?na:it?.reason?String(it.reason):'No reason recorded'}</span></Row>
+    <Row label="Attempts"><span data-cdod-attempts>{!ok?na:att==null?'None':num(att)}</span> <span className="cdod-muted" data-cdod-verdict>{verdict}</span></Row>
+    <Row label="Last attempt">{s.last_attempt_at?<>{fmtDateTime(s.last_attempt_at)} · {s.last_state}{s.last_reason?` · ${s.last_reason}`:''}</>:ok&&it==null?'Never tried':'No attempt recorded in the state'}</Row>
+    <Row label="Next action"><span data-cdod-next-field>{nextAction(s)}</span></Row>
+  </dl>
+}
+function nextAction(s){
+  if(!s)return''
+  if(s.has_description)return'Nothing to do: a description is in the catalogue.'
+  if(s.fill_info?.next&&s.fill_block&&s.recheck_block)return s.fill_info.next
+  if(s.next_retry_at)return`The standing queue tries again ${fmtDateTime(s.next_retry_at)}.`
+  return s.fill_block?(s.fill_info?.next||''):'Use the button above to read the stored page now.'
 }
 
 // ---- state of the courses on the page ---------------------------------------------------------------------------------------------------------------------------
@@ -135,8 +189,8 @@ export function useCourseDescriptionOnDemand({enabled,rows,rank,onError}){
     <div className="cdod-bar-row">
       <span className="cdod-count" aria-live="polite">{picked.length?`${picked.length} selected`:'Tick courses to fill or recheck their descriptions.'}</span>
       {picked.length>0&&<>
-        <Button compact onClick={()=>setMode('fill')}>Fill description</Button>
-        <Button compact onClick={()=>setMode('recheck')}>Recheck description</Button>
+        <Button compact variant="primary" data-cdod-primary onClick={()=>setMode(autoMode(picked,st.map))}>{PRIMARY_LABEL}</Button>
+        <details className="cdod-more" data-cdod-more><summary>Fill or Recheck only</summary><div className="cdod-actions"><Button compact onClick={()=>setMode('fill')}>Fill description</Button><Button compact onClick={()=>setMode('recheck')}>Recheck description</Button></div></details>
         <Button compact onClick={()=>{setPicked([]);setMode('');setNote('')}}>Clear</Button></>}
     </div>
     {note&&<p className="cdod-muted" role="status">{note}</p>}
@@ -167,7 +221,13 @@ function WithdrawPanel({courseId,onClose,onDone,onError}){
 function Row({label,children}){return <div className="cdod-row"><dt>{label}</dt><dd>{children}</dd></div>}
 export function CourseDescriptionBlock({courseId,rank,onError}){
   const enabled=Number(rank)>=3&&!!courseId,st=useDescriptionStates(courseId?[String(courseId)]:[],enabled)
+  const[detail,setDetail]=useState({status:'loading'}) // loading | error | ok (with the row): an item that could not be read is NOT an item that does not exist
   const[wd,setWd]=useState(false),[mode,setMode]=useState(''),[refresh,setRefresh]=useState(0),[ver,setVer]=useState(null),[verBusy,setVerBusy]=useState(false),[verErr,setVerErr]=useState('')
+  const dkey=enabled?String(courseId):'',stamp=st.map[String(courseId)]?.last_item_id??'',stateKey=st.map[String(courseId)]?.state??''
+  useEffect(()=>{if(!dkey){setDetail({status:'loading'});return}let live=true
+    setDetail(d=>d.status==='ok'?d:{status:'loading'})
+    readItems([dkey]).then(d=>{if(!live)return;const row=(Array.isArray(d?.courses)?d.courses:[])[0];setDetail(row?{status:'ok',row}:{status:'error'})}).catch(()=>{if(live)setDetail({status:'error'})}) // an older server has no item read, or the read failed: "Not available", never "Not tried"
+    return()=>{live=false}},[dkey,stamp,stateKey,refresh])
   if(!enabled)return null
   const s=st.map[String(courseId)]
   async function verify(){setVerBusy(true);setVerErr('');try{const d=await call('verify',{course_ids:[String(courseId)]});setVer((d?.courses||[])[0]||{missing:true})}catch(e){setVerErr(errText(e))}finally{setVerBusy(false)}}
@@ -178,21 +238,24 @@ export function CourseDescriptionBlock({courseId,rank,onError}){
     {st.err&&<p className="cdod-error" role="alert">{st.err}</p>}
     {s&&<>
       <p className="cdod-muted">{DESC_STATE[s.state]?.[2]}</p>
+      <ol className="cdod-stages" data-cdod-stages aria-label="Where this description stands, stage by stage">{descriptionStages(s,detail.status==='ok'?detail.row.item:undefined).map(([k,label,v])=><li key={k} data-cdod-stage={k}><span className="cdod-stage-name">{label}</span><StatusChip tone={v.tone} label={v.text}/></li>)}</ol>
+      <FieldResult s={s} det={detail}/>
       <dl className="cdod-dl">
-        <Row label="Source page">{s.source_url?<a href={s.source_url} target="_blank" rel="noreferrer">{s.source_url}</a>:'None stored'}{!s.source_ready&&s.source_reason?<span className="cdod-muted"> · {String(s.source_reason).replaceAll('_',' ')}</span>:null}</Row>
-        <Row label="Evidence">{s.evidence_id?<><code>{short(s.evidence_id)}</code>{s.page_read_at?` · page read ${fmtDateTime(s.page_read_at)}`:''}</>:'No evidence stored'}</Row>
-        <Row label="Last attempt">{s.last_attempt_at?<>{fmtDateTime(s.last_attempt_at)} · {s.last_state}{s.last_reason?` · ${s.last_reason}`:''}</>:'Never tried'}</Row>
         <Row label="Next retry">{s.next_retry_at?fmtDateTime(s.next_retry_at):'No date is set'}</Row>
         {s.held_kind&&<Row label="Held">{String(s.held_kind).replaceAll('_',' ')}</Row>}
+        <Row label="Run">{s.last_job_id?<code data-cdod-run>{short(s.last_job_id)}</code>:'No run yet'}</Row>
+        {s.last_state==='failed'&&<Row label="Error"><span data-cdod-error-reason>{dash(s.last_reason)||'The last reading failed; no reason was recorded.'}</span></Row>}
         <Row label="Actual gain">{gain}</Row>
       </dl>
       <div className="cdod-actions">
-        <Button compact disabled={!!s.fill_block} onClick={()=>setMode('fill')} title={s.fill_info?.label}>Fill description</Button>
-        <Button compact disabled={!!s.recheck_block} onClick={()=>setMode('recheck')} title={s.recheck_info?.label}>Recheck description</Button>
+        <Button compact variant="primary" data-cdod-primary disabled={!!s.fill_block&&!!s.recheck_block} onClick={()=>setMode(autoMode([courseId],st.map))} title={s.fill_block&&s.recheck_block?s.fill_info?.label:undefined}>{PRIMARY_LABEL}</Button>
         <Button compact onClick={verify} disabled={verBusy}>{verBusy?'Checking…':'Check the feeds'}</Button>
         {Number(rank)>=6&&s.state==='machine_admitted'&&<Button compact variant="danger" onClick={()=>setWd(true)} data-cdod-withdraw>Withdraw machine description</Button>}
       </div>
       {wd&&Number(rank)>=6&&<WithdrawPanel courseId={courseId} onError={onError} onClose={()=>setWd(false)} onDone={()=>{setRefresh(x=>x+1);st.reload()}}/>}
+      <details className="cdod-more" data-cdod-more><summary>Fill or Recheck only</summary><div className="cdod-actions">
+        <Button compact disabled={!!s.fill_block} onClick={()=>setMode('fill')} title={s.fill_info?.label}>Fill description</Button>
+        <Button compact disabled={!!s.recheck_block} onClick={()=>setMode('recheck')} title={s.recheck_info?.label}>Recheck description</Button></div></details>
       {(s.fill_block||s.recheck_block)&&<p className="cdod-muted" data-cdod-why>{s.fill_block?<>Fill: {s.fill_info?.label}. {s.fill_info?.next} </>:null}{s.recheck_block?<>Recheck: {s.recheck_info?.label}. {s.recheck_info?.next}</>:null}</p>}
       {mode&&<RunPanel mode={mode} scope={{course_ids:[String(courseId)]}} label="This course" rank={rank} onError={onError} onClose={()=>setMode('')} onStarted={()=>{setRefresh(x=>x+1);st.reload()}}/>}
     </>}
