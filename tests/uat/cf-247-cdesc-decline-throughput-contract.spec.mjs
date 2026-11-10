@@ -87,7 +87,7 @@ test('Data Delivery: one additive key "flow" on the existing course stages, read
   expect(UI).toContain('<Flow fl={st.flow}/>')
   expect(UI).toContain('data-dd-flow="unknown"')
   expect(UI).toContain('if(fl==null)return')
-  expect(UI).toContain('fl.declined_by_cause==null?null:')   // a missing list is Not measured, never 0
+  expect(UI).toContain('fl.declined_by_cause==null||fl.declined_by_cause.some(r=>!Number.isFinite(Number(r.n)))?null:')   // a missing list is Not measured, never 0
   expect((UI.match(/export default function/g) || []).length).toBe(1)
   expect(UI).toContain('data-dd-stages="known"')              // the existing box is still the one box
 })
