@@ -109,7 +109,7 @@ test('the forward recovery restores both earlier bodies byte for byte, guarded b
 
 test('the worker asks for one short paraphrase per quote, states the copy limit, and does not hold a whole answer for a copied sentence (fails on the earlier worker)', () => {
   expect(IX).toMatch(/(?:const WORKER = "coverage-sweep-worker-v0\.60\.0"; |\/\/ was v0\.60\.0 )\/\/ v0\.60\.0 \(10 Nov 2026, CF-247 F-PDESC delivery/)   // later versions keep the note ("was v0.60.0")
-  expect(IX).toContain('reader_behavior_version: "provider-description-source-guard-v4" };')
+  expect(IX).toMatch(/reader_behavior_version: "provider-description-source-guard-v[45]" \};/)
   expect(IX).not.toContain('reader_behavior_version: "provider-description-source-guard-v3" };')
   expect(IX).toContain('if (!claimCheck.ok && claimCheck.rule !== "verbatim_passage") {')
   expect(IX).toContain('Number(w.verbatim_span_max_chars))')

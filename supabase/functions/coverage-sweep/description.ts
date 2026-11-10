@@ -104,6 +104,25 @@ export function withoutCompanyForm(name: string): string {
   return r && r !== s && r.split(/\s+/).length >= 2 ? r : s;
 }
 
+// v0.63.0 (CF-247 F-PDESC, Platform Admin 10 Nov 2026, Holmesglen "Holmesglen, Holmesglen Institute" held provider_name_not_proved: the page title is "About Us - Holmesglen Institute"):
+// the catalogue lists the short name first and the full name second, and only the first entity of a list was ever a label. A LATER entity of the list is now a label only when it is the
+// full name of the FIRST entity: the first is a bare short name (no university, college, polytechnic or institute word in it) and the later entity is that name and nothing else but
+// institution words ("Holmesglen" -> "Holmesglen Institute"). Lists of different institutions are not touched: "Murdoch College, The University of Adelaide College, Kaplan International
+// College Adelaide" or "Humber College; Humber Trading Institute" have no bare first entity or carry other words, so a page of one entity never proves the merged record, and a centre, school,
+// campus, faculty or department is never a name here. The label keeps every safeguard of the first-entity label: it must still be the whole of a title, h1 or site-name segment plus framing
+// words, on the provider's own verified host, with no extra word, no other institution and no sub-unit.
+const ENTITY_GENERIC = new Set(["university", "college", "polytechnic", "institute", "the", "of"]);
+const ENTITY_UNIT = /\b(campus|campuses|faculty|faculties|school|schools|centre|centres|center|centers|department|division|library)\b/i;
+function fullNameOfShortEntity(first: string, later: string): boolean {
+  const toks = (x: string) => String(x || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+  const f = toks(first), l = toks(later);
+  if (!f.length || l.length < 2 || f.some((t) => ENTITY_GENERIC.has(t))) return false;      // the first entity is a bare short name
+  if (!l.some((t) => t === "university" || t === "college" || t === "polytechnic" || t === "institute")) return false;
+  if (ENTITY_UNIT.test(later)) return false;
+  if (!f.every((t) => l.includes(t))) return false;                                           // it contains the first entity
+  return l.every((t) => f.includes(t) || ENTITY_GENERIC.has(t));                              // and nothing else but institution words
+}
+
 // withForm=false keeps the strict (segment-free) proof exactly as it was before v0.59.15: the company-form-free label is for the segment proof only
 export function descriptionIdentityLabels(names: string[], withForm = true): string[] {
   const institution = /\b(university|college|polytechnic|institute)\b/i;
@@ -122,6 +141,10 @@ export function descriptionIdentityLabels(names: string[], withForm = true): str
         if (!/[;,]/.test(candidate)) continue;
         const head = candidate.split(/[;,]/)[0].trim();
         for (const first of new Set(withForm ? [head, withoutCompanyForm(head)] : [head])) if (first.split(/\s+/).length >= 2 && institution.test(first)) out.push(first);
+        // 3 (v0.63.0) a later entity of the list that is the full name of a bare short first entity ("Holmesglen, Holmesglen Institute")
+        for (const later of candidate.split(/[;,]/).slice(1).map((x) => x.trim()).filter(Boolean)) {
+          for (const e of new Set(withForm ? [later, withoutCompanyForm(later)] : [later])) if (fullNameOfShortEntity(head, e)) out.push(e);
+        }
       }
     }
   }
@@ -129,16 +152,28 @@ export function descriptionIdentityLabels(names: string[], withForm = true): str
 }
 
 export type DescriptionIdentity = { ok: boolean; rule: string; matched_name?: string; via?: string };
-function strictSourceIdentity(html: string, page: string, names: string[]): DescriptionIdentity {
+// v0.63.0 (diagnostics only): what the proof used and where it refused, so a conflict names its own cause. Filled while the proof runs; nothing reads it back, no result depends on it.
+export const IDENTITY_TRACE_TEXT_MAX = 160;      // fixed: the longest excerpt kept (a diagnostic excerpt, not an operating value)
+export const IDENTITY_TRACE_HEADINGS_MAX = 12;   // fixed: the most headings listed (a diagnostic excerpt, not an operating value)
+export type IdentityTrace = {
+  labels?: string[]; aliases?: string[]; headings?: { tag: string; text: string }[];
+  strict?: { rule: string; why: string; heading?: string };
+  registry?: { reached: boolean; why?: string; rule?: string; tag?: string; heading?: string; segment?: string; extra?: string };
+  returned?: string;
+};
+const cut = (x: unknown) => String(x ?? "").replace(/\s+/g, " ").trim().slice(0, IDENTITY_TRACE_TEXT_MAX);
+function strictSourceIdentity(html: string, page: string, names: string[], trace?: IdentityTrace): DescriptionIdentity {
   const words = (s: string) => String(s || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
     .replace(/&/g, " and ").replace(/[^a-z0-9]+/g, " ").replace(/^the\s+/, "").trim();
   const labels = [...new Set(descriptionIdentityLabels(names || [], false).map(words).filter((s) => s.split(" ").length > 1))];
   const contains = (text: string, label: string) => (` ${words(text)} `).includes(` ${label} `);
   const headings = Array.from(String(html || "").matchAll(/<(title|h1)\b[^>]*>([\s\S]*?)<\/\1>/gi), (m) => ({ tag: m[1].toLowerCase(), text: htmlToText(m[2]) }));
   const matched = labels.find((name) => contains(page, name) || headings.some((h) => contains(h.text, name)));
-  if (!matched) return { ok: false, rule: "provider_name_not_proved" };
+  if (trace) trace.labels = labels.map(cut).slice(0, IDENTITY_TRACE_HEADINGS_MAX);
+  if (!matched) { if (trace) trace.strict = { rule: "provider_name_not_proved", why: "no label is in the page text or a title or h1" }; return { ok: false, rule: "provider_name_not_proved" } }
   const subunits = /\b(campus|campuses|faculty|faculties|school|schools)\b/g;
   if (headings.some((h) => h.tag === "h1" && (words(h.text).match(subunits) || []).some((unit) => !(` ${matched} `).includes(` ${unit} `)))) {
+    if (trace) trace.strict = { rule: "provider_subunit_source", why: "an h1 names a campus, faculty or school", heading: cut(headings.find((h) => h.tag === "h1" && (words(h.text).match(subunits) || []).some((unit) => !(` ${matched} `).includes(` ${unit} `)))?.text) };
     return { ok: false, rule: "provider_subunit_source" };
   }
   // A heading identifying a different university or college is stronger evidence of a conflict
@@ -147,6 +182,7 @@ function strictSourceIdentity(html: string, page: string, names: string[]): Desc
     && words(h.text).replace(/\b(about|us|the|our|who|we|are|overview|profile|welcome|to|at|university|college|polytechnic|institute)\b/g, "").trim());
   const subjectHeadings = institutionalHeadings.some((h) => h.tag === "h1") ? institutionalHeadings.filter((h) => h.tag === "h1") : institutionalHeadings;
   if (subjectHeadings.length && !subjectHeadings.some((h) => labels.some((name) => contains(h.text, name)))) {
+    if (trace) trace.strict = { rule: "provider_name_conflict", why: "a title or h1 names another institution and none names this one", heading: cut(subjectHeadings[0].text) };
     return { ok: false, rule: "provider_name_conflict" };
   }
   // An offshore branch can include its parent's complete name ("X University Malaysia").
@@ -156,6 +192,7 @@ function strictSourceIdentity(html: string, page: string, names: string[]): Desc
   const framing = /\b(about|us|the|our|who|we|are|overview|profile|welcome|to|at|a|glance|facts|and|figures)\b/g;
   const proofHeadings = namedH1.length ? namedH1 : headings.filter((h) => h.tag === "title");
   if (!proofHeadings.some((h) => labels.some((name) => contains(h.text, name) && !words(h.text).replace(name, " ").replace(framing, " ").trim()))) {
+    if (trace) trace.strict = { rule: "provider_name_conflict", why: proofHeadings.length ? (namedH1.length ? "the h1 that names the provider carries other words" : "the name is in the page text but no h1 names the provider and the title is not the name alone") : "the name is in the page text but there is no title or h1 that is the name alone", heading: cut(proofHeadings[0]?.text) };
     return { ok: false, rule: "provider_name_conflict" };
   }
   return { ok: true, rule: "current_provider_name", matched_name: matched };
@@ -273,16 +310,21 @@ function openingParagraph(html: string): string {
   return "";
 }
 
-function registryEvidenceIdentity(html: string, names: string[]): DescriptionIdentity {
+function registryEvidenceIdentity(html: string, names: string[], trace?: IdentityTrace): DescriptionIdentity {
   const uniq = (xs: string[]) => [...new Set(xs.map(identityWords).filter(Boolean))];
   const labels = uniq(descriptionIdentityLabels(names || [])).filter((l) => l.split(" ").length > 1);
   const aliases = uniq(descriptionIdentityAliases(names || [])).filter((a) => !labels.includes(a));
   const phrases = [...labels, ...aliases].sort((a, b) => b.length - a.length);
   const has = (w: string, phrase: string) => (` ${w} `).includes(` ${phrase} `);
   const strip = (w: string, ps: string[]) => { let r = w; for (const p of ps) r = r.replace(new RegExp(`(?<=^| )${p}(?= |$)`, "g"), " "); return r.replace(/\s+/g, " ").trim() };
-  const fail = (rule: string): DescriptionIdentity => ({ ok: false, rule });
+  const fail = (rule: string, at?: { tag: string; heading: string; segment: string; extra?: string }): DescriptionIdentity => {
+    if (trace) trace.registry = { reached: true, rule, ...(at ? { tag: at.tag, heading: cut(at.heading), segment: cut(at.segment), ...(at.extra ? { extra: cut(at.extra) } : {}) } : {}) };
+    return { ok: false, rule };
+  };
   let proof: { name: string; via: string } | null = null, aboutHeading = false;
-  for (const el of identityHeadings(html)) {
+  const heads = identityHeadings(html);
+  if (trace) { trace.labels = labels.map(cut).slice(0, IDENTITY_TRACE_HEADINGS_MAX); trace.aliases = aliases.map(cut).slice(0, IDENTITY_TRACE_HEADINGS_MAX); trace.headings = heads.slice(0, IDENTITY_TRACE_HEADINGS_MAX).map((h) => ({ tag: h.tag, text: cut(h.text) })) }
+  for (const el of heads) {
     for (const seg of el.text.split(/\s[-–—―]\s|[|:·•,;\/–—]/)) {
       const w = identityWords(seg);
       if (!w) continue;
@@ -290,28 +332,30 @@ function registryEvidenceIdentity(html: string, names: string[]): DescriptionIde
       if (label || alias) {
         // the name or an abbreviation with extra words ("X University Malaysia", "UTS College") names something else
         const extra = strip(w, phrases).replace(IDENTITY_FRAMING, " ").replace(/\s+/g, " ").trim();
-        if (extra) return fail(el.tag === "h1" && IDENTITY_SUBUNIT.test(extra) ? "provider_subunit_source" : "provider_name_conflict");
+        if (extra) return fail(el.tag === "h1" && IDENTITY_SUBUNIT.test(extra) ? "provider_subunit_source" : "provider_name_conflict", { tag: el.tag, heading: el.text, segment: seg, extra });
         if (label) { if (!proof || proof.via !== "registry_heading_name") proof = { name: label, via: "registry_heading_name" } }  // the whole name outranks an abbreviation
         else proof ||= { name: alias!, via: "registry_heading_abbreviation" };
         continue;
       }
       if (!w.replace(IDENTITY_FRAMING, " ").replace(IDENTITY_GENERIC, " ").trim()) { if (/\b(about|overview|profile|welcome|who)\b/.test(w)) aboutHeading = true; continue }  // a generic heading ("About us", "About the university")
       // another institution, college, faculty, school or campus; v0.59.15: a bare institution word in a sentence is not a name (namesAnotherInstitution), a sub-unit word still is
-      if (IDENTITY_SUBUNIT.test(w) || namesAnotherInstitution(seg)) return fail(el.tag === "h1" && IDENTITY_SUBUNIT.test(w) ? "provider_subunit_source" : "provider_name_conflict");
+      if (IDENTITY_SUBUNIT.test(w) || namesAnotherInstitution(seg)) return fail(el.tag === "h1" && IDENTITY_SUBUNIT.test(w) ? "provider_subunit_source" : "provider_name_conflict", { tag: el.tag, heading: el.text, segment: seg, extra: IDENTITY_SUBUNIT.test(w) ? "a sub-unit word" : "another institution" });
     }
   }
-  if (proof) return { ok: true, rule: "current_provider_name", matched_name: proof.name, via: proof.via };
+  if (proof) { if (trace) trace.registry = { reached: true }; return { ok: true, rule: "current_provider_name", matched_name: proof.name, via: proof.via } }
   // no heading names the provider and none names another, and a heading says this is an About page: the opening statement must begin with the whole catalogue name
-  if (!aboutHeading) return fail("provider_name_not_proved");
+  if (!aboutHeading) { const r = fail("provider_name_not_proved"); if (trace) trace.registry!.extra = "no heading names the provider and none says About"; return r }
   const para = openingParagraph(html), pw = identityWords(para);
   const label = labels.find((l) => pw === l || pw.startsWith(l + " "));
   if (label) {
     const sentence = para.split(/(?<=[.!?])\s/)[0];
     const elsewhere = /\b(?:[A-Z][\w'’-]*\s+){1,5}(?:University|College|Polytechnic|Institute|School)\b|\b(?:University|College|Institute|School)\s+of\s+[A-Z]/;
     const rest = sentence.replace(new RegExp(label.split(" ").join("[\\s\\W]+"), "ig"), " ");
-    if (!elsewhere.test(rest) && !IDENTITY_SUBUNIT.test(identityWords(rest))) return { ok: true, rule: "current_provider_name", matched_name: label, via: "registry_opening_statement" };
+    if (!elsewhere.test(rest) && !IDENTITY_SUBUNIT.test(identityWords(rest))) { if (trace) trace.registry = { reached: true }; return { ok: true, rule: "current_provider_name", matched_name: label, via: "registry_opening_statement" } }
   }
-  return fail("provider_name_not_proved");
+  const last = fail("provider_name_not_proved");
+  if (trace) trace.registry!.extra = "no heading names the provider; the opening statement does not begin with its name";
+  return last;
 }
 
 // v0.62.0 (CF-247 F-PDESC, Platform Admin 10 Nov 2026): what the identity proof was given, kept when it FAILS (observability only; no page passes or fails differently).
@@ -342,14 +386,17 @@ export function descriptionIdentitySeen(html: string): DescriptionIdentitySeen {
 
 // The identity proof the reader applies. `evidence` is what the database gave the worker: the page's final address and the provider's own verified
 // hosts. Without it, or when the page is not on one of those hosts, only the strict proof applies, exactly as before.
-export function descriptionSourceIdentity(html: string, page: string, names: string[], evidence?: { url?: string; hosts?: string[] }): DescriptionIdentity {
-  const strict = strictSourceIdentity(html, page, names);
-  if (strict.ok || strict.rule === "provider_subunit_source" || !evidence) return strict;
+export function descriptionSourceIdentity(html: string, page: string, names: string[], evidence?: { url?: string; hosts?: string[] }, trace?: IdentityTrace): DescriptionIdentity {
+  const strict = strictSourceIdentity(html, page, names, trace);
+  const done = (r: DescriptionIdentity, from: string, why?: string) => { if (trace) { trace.returned = from; if (why && !trace.registry) trace.registry = { reached: false, why } } return r };
+  if (strict.ok) return done(strict, "strict", "strict proof passed");
+  if (strict.rule === "provider_subunit_source") return done(strict, "strict", "strict proof refused on a sub-unit");
+  if (!evidence) return done(strict, "strict", "no registry evidence given");
   let host = "";
-  try { host = new URL(String(evidence.url || "")).hostname } catch { return strict }
-  if (!/^https?:$/.test(new URL(String(evidence.url)).protocol) || !ownHost(host, evidence.hosts || [])) return strict;
-  const registry = registryEvidenceIdentity(html, names);
-  return registry.ok || registry.rule === "provider_subunit_source" ? registry : strict;
+  try { host = new URL(String(evidence.url || "")).hostname } catch { return done(strict, "strict", "the page address cannot be read") }
+  if (!/^https?:$/.test(new URL(String(evidence.url)).protocol) || !ownHost(host, evidence.hosts || [])) return done(strict, "strict", "the page is not on one of the provider's verified hosts");
+  const registry = registryEvidenceIdentity(html, names, trace);
+  return registry.ok || registry.rule === "provider_subunit_source" ? done(registry, "registry") : done(strict, "strict");
 }
 
 // The lease protocol this worker follows: reserve a conservative price with svc_provider_description_reserve_v1 before every paid call.

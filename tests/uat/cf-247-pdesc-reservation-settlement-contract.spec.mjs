@@ -178,7 +178,7 @@ test('worker v0.61.0 posts one record call for each item, tries a failed item on
   expect(rec).toContain('record_errors')
   expect(rec).toContain('recordErrors.length ? 500 : 200')
   // the AI call, the reservation and the reader behaviour stamp are the earlier text
-  expect(IX).toContain('reader_behavior_version: "provider-description-source-guard-v4" };')
+  expect(IX).toMatch(/reader_behavior_version: "provider-description-source-guard-v[45]" \};/)
   expect(IX).toContain('const reservation = await rpc("svc_provider_description_reserve_v1"')
   // the records of the items come after all the reads, in the order the items finished (nothing is recorded twice)
   expect(IX.indexOf('for (const o of out) o.fc_reads = fcBy.get(String(o.item_id)) || 0;')).toBeLessThan(at)
