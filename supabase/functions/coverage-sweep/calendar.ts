@@ -14,7 +14,16 @@
 //    (UNSW "2026 | 2027" then Term 1 … Term 3 twice). The heading or tab is kept as year_quote with year_basis. A year the reader claims that
 //    the section does not give is rejected (year_from_wrong_section); a quote found in sections of different years is rejected
 //    (year_ambiguous); no section year at all stays "academic year unproven" (year_not_printed). Period names lose their printed year.
-export const CALENDAR_READER = "calendar-v2.1";
+// calendar-v2.2 (Decisions 270 and 270a, Platform Admin 10 Nov 2026): a start printed without a year may also take its year from
+//    * its table column: the nearest row above it in the same table whose cell over the date's column is one year (basis "column");
+//      the date's column is the one cell of the row whose first date is the start's day and month;
+//    * a range heading over unlabelled columns ("Semester dates 2026–2028"): only when the date columns number the years of the range, in
+//      order, and every column of the row gives a start on the same weekday that a one-year shift would break (basis "range_columns");
+//    * the address: exactly one edition year (2025–2035) in the URL path, only when no section gives a year, no heading or title names
+//      another year and every year printed on the page is within a year of it (basis "address").
+//    Where the page prints a weekday against the date, it must agree with the resolved date (weekday_mismatch otherwise). A column year
+//    that disagrees with the section year gives no start (year_ambiguous). A year is never guessed.
+export const CALENDAR_READER = "calendar-v2.2";
 export const CALENDAR_PARSER_DATES = "provider-policy-calendar-dates-v2";
 const MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
 const flat = (s: string) => String(s || "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "");
@@ -25,7 +34,7 @@ const APPLIES = ["international", "domestic", "all", "unstated"];
 export const CALENDAR_PROMPT = [
   "You read one university page or document with academic dates (an academic calendar, key dates or principal dates).",
   "1. scope: which students this calendar is for: main_teaching (the university's main coursework teaching periods at its home campuses), offshore_campus (a campus in another country), college_or_residence (a residential or affiliated college), study_abroad_inbound (exchange or study abroad students), pathway_or_foundation (a foundation, diploma or English pathway provider), research_only, or other. Copy the sentence or heading that shows it (scope_quote).",
-  "2. periods: every study period (Semester 1, Trimester 2, Term 3, Autumn session, Teaching period 1, Summer school and similar). For each, the date it starts, exactly as printed: year, month and day (null when not printed). Copy the exact row or sentence that gives that date (start_quote). If the year is not printed in that row, give the year of the section that encloses the row: the heading above it, the page title, or the year tab the section sits under (pages often show one block of identical headings per year, in the order of their year tabs); copy that heading or tab as year_quote. Never take a year from a neighbouring section, a note about future changes or another year's block; leave the year null if the enclosing section shows none. Give the period name without its year. Give start_meaning: teaching_start when classes or teaching begin, orientation for orientation or O-week, enrolment for enrolment or census, other otherwise. Give the end date the same way when printed (end_quote).",
+  "2. periods: every study period (Semester 1, Trimester 2, Term 3, Autumn session, Teaching period 1, Summer school and similar). For each, the date it starts, exactly as printed: year, month and day (null when not printed). Copy the exact row or sentence that gives that date (start_quote). If the year is not printed in that row, give the year of the section that encloses the row: the heading above it, the page title, or the year tab the section sits under (pages often show one block of identical headings per year, in the order of their year tabs); copy that heading or tab as year_quote. Never take a year from a neighbouring section, a note about future changes or another year's block; leave the year null if the enclosing section shows none. Give the period name without its year. Give start_meaning: teaching_start when classes or teaching begin, orientation for orientation or O-week, enrolment for enrolment or census, other otherwise. Give the end date the same way when printed (end_quote). In a table with one column per year, report the start once for each year column, each with that column's date, and copy the whole row as start_quote. In a table of teaching weeks, a period's teaching start is the date of its week 1 row under that period's section row (for example Semester one), not orientation.",
   "3. application_deadlines: for each period, the closing dates for applications printed for it, with year, month, day, who they apply to (international, domestic, all, unstated) and the exact quote.",
   "Never infer, calculate or move a date to another year. Leave out exams, census dates, holidays, results and graduation. Return an empty periods list if the page gives no dates.",
 ].join("\n");
@@ -123,10 +132,95 @@ export function sectionYear(page: string, quote: string): SectionYear {
   if (known.length > 1) return { year: null, basis: null, quote: "", reason: "year_ambiguous" };
   return ys[0];
 }
+// calendar-v2.2 (Decisions 270, 270a): table columns, range headings over unlabelled columns, the address, and printed weekdays.
+type EditionYear = { year: number | null; basis: "column" | "range_columns" | "address" | null; quote: string; reason?: string };
+const EDITION = (y: number) => y >= 2025 && y <= 2035;  // fixed: the edition-year window of Decision 270
+const WEEKDAYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+const plain = (s: string) => String(s || "").replace(/<br\s*\/?>/gi, " ").replace(/[*_^\\]/g, " ").replace(/\s+/g, " ").trim();
+const rowCells = (line: string) => line.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map(plain);
+const isRow = (line: string) => /^\s*\|.*\|\s*$/.test(line);
+const isRule = (line: string) => /^\s*\|(\s*:?-{3,}:?\s*\|)+\s*$/.test(line);
+const monthOf = (w: string) => { const l = w.toLowerCase().replace(/\.$/, ""); const i = l.length >= 3 ? MONTHS.findIndex((m) => m.startsWith(l)) : -1; return i + 1 };
+// the first date printed in a cell, as day and month ("1 Mar – 25 Jun", "19–27 Feb", "Monday 4 January 2027")
+function firstDate(cell: string): { d: number; m: number } | null {
+  const t = cell.match(/(\d{1,2})(?:st|nd|rd|th)?(?:\s*[–-]\s*\d{1,2})?\s+([A-Za-z]{3,9}\.?)/);
+  if (!t) return null;
+  const m = monthOf(t[2]); return m ? { d: Number(t[1]), m } : null;
+}
+const weekday = (y: number, m: number, d: number) => new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+// the weekdays printed against one day and month in a text ("Monday 1 March", "Mon 4 Oct", "Tue, Sep 8")
+export function printedWeekdays(text: string, m: number, d: number): number[] {
+  const mon = MONTHS[m - 1].slice(0, 3), out: number[] = [];
+  const res = [new RegExp(`\\b(sun|mon|tue|wed|thu|fri|sat)[a-z]*\\.?,?\\s+0?${d}(?:st|nd|rd|th)?\\s+${mon}`, "gi"),
+    new RegExp(`\\b(sun|mon|tue|wed|thu|fri|sat)[a-z]*\\.?,?\\s+${mon}[a-z]*\\.?\\s+0?${d}(?![0-9])`, "gi")];
+  for (const re of res) for (const x of plain(text).matchAll(re)) out.push(WEEKDAYS.indexOf(x[1].toLowerCase().slice(0, 3)));
+  return [...new Set(out)];
+}
+export function columnYear(page: string, quote: string, m: number, d: number): EditionYear | null {
+  const lines = String(page || "").split("\n"), fq = flat(quote);
+  if (fq.length < 6) return null;
+  const at = lines.map((l, i) => (isRow(l) && flat(l).includes(fq) ? i : -1)).filter((i) => i >= 0);
+  if (!at.length) return null;
+  const found: EditionYear[] = [];
+  for (const i of at) {
+    const cells = rowCells(lines[i]);
+    const k = cells.map((c, j) => { const f = firstDate(c); return f && f.d === d && f.m === m ? j : -1 }).filter((j) => j >= 0);
+    if (k.length !== 1) { found.push({ year: null, basis: null, quote: "", reason: k.length ? "year_ambiguous" : "column_not_found" }); continue }
+    let t0 = i; while (t0 > 0 && isRow(lines[t0 - 1])) t0--;
+    // 1. the nearest row above in the same table whose cell over the date's column is one edition year
+    let col: EditionYear | null = null;
+    for (let h = i - 1; h >= t0; h--) {
+      if (isRule(lines[h])) continue;
+      const hc = rowCells(lines[h]); if (hc.length !== cells.length) continue;
+      const years = hc.map((c) => (/^(20\d\d)$/.test(c) ? Number(c) : 0));
+      if (years.filter(Boolean).length < 2) continue;
+      const y = years[k[0]];
+      col = y && EDITION(y) ? { year: y, basis: "column", quote: lines[h].trim().slice(0, 200) } : { year: null, basis: null, quote: "", reason: "year_not_printed" };
+      break;
+    }
+    if (col) { found.push(col); continue }
+    // 2. Decision 270a: a range heading over unlabelled date columns, validated by weekday and academic period
+    let head = ""; for (let h = t0 - 1; h >= 0; h--) { if (HEAD.test(lines[h])) { head = lines[h].trim(); break } if (isRow(lines[h])) break }
+    const r = head.match(/\b(20\d\d)\s*[–-]\s*(20\d\d)\b/);
+    if (!r) continue;
+    const a = Number(r[1]), b = Number(r[2]), n = b - a + 1;
+    if (!(n >= 2 && EDITION(a) && EDITION(b)) || cells.length - 1 !== n || k[0] < 1) { found.push({ year: null, basis: null, quote: "", reason: "range_columns_unproved" }); continue }
+    const dates = cells.slice(1).map(firstDate);
+    // weekday evidence: every column's start falls on the same weekday under this mapping (a one-year shift moves them all, so this alone
+    // is not enough); academic-period evidence, at least one of: the starts are Mondays (a teaching period opens on a Monday), or another
+    // row of the same table prints one year per column, rising by one across the columns in step with the mapping ("11–15 Jan (2027)")
+    const wds = dates.every(Boolean) ? [...new Set(dates.map((x, j) => weekday(a + j, x!.m, x!.d)))] : [];
+    let tEnd = i; while (tEnd + 1 < lines.length && isRow(lines[tEnd + 1])) tEnd++;
+    const stepRow = lines.slice(t0, tEnd + 1).some((l, j) => {
+      if (t0 + j === i) return false;
+      const c = rowCells(l); if (c.length !== cells.length) return false;
+      const ys = c.slice(1).map((x) => { const y = yearsOf(x); return y.length === 1 ? y[0] : 0 });
+      return ys.every(Boolean) && ys.every((y, q) => y - q === ys[0]) && (ys[0] === a || ys[0] === a + 1);
+    });
+    const months = dates.filter(Boolean).map((x) => x!.m), spread = Math.max(...months) - Math.min(...months);
+    if (wds.length === 1 && (wds[0] === 1 || stepRow) && spread <= 1) found.push({ year: a + k[0] - 1, basis: "range_columns", quote: `${head.slice(0, 120)}: column ${k[0]} of ${n}`.slice(0, 200) });
+    else found.push({ year: null, basis: null, quote: "", reason: "range_columns_unproved" });
+  }
+  if (!found.length) return null;
+  const years = [...new Set(found.map((f) => f.year))];
+  if (years.length > 1) return { year: null, basis: null, quote: "", reason: "year_ambiguous" };
+  return found[0];
+}
+export function addressYear(url: string, page: string): EditionYear | null {
+  let path = ""; try { path = new URL(url).pathname } catch { return null }
+  const ys = yearsOf(path).filter(EDITION);
+  if (ys.length !== 1) return null;
+  const y = ys[0], lines = String(page || "").split("\n");
+  const heads = lines.filter((l) => HEAD.test(l) || /^\*\*[^*]+\*\*$/.test(l.trim())).flatMap(yearsOf);
+  if (heads.some((h) => h !== y)) return { year: null, basis: null, quote: "", reason: "year_ambiguous" };
+  if (yearsOf(page).some((p) => Math.abs(p - y) > 1)) return { year: null, basis: null, quote: "", reason: "year_ambiguous" };
+  return { year: y, basis: "address", quote: `address ${path}`.slice(0, 200) };
+}
+
 export const periodName = (s: string) => String(s || "").toLowerCase().replace(/\b(19|20)\d\d\b/g, " ").replace(/[()]/g, " ").replace(/\s+/g, " ").trim().slice(0, 60);
 
 // one answer (or several slices' answers) in the shape the approval and calendar_dated_periods read, keeping only what the page proves
-export function calendarAiParsed(answers: any[], page: string, parser: string, cut = false) {
+export function calendarAiParsed(answers: any[], page: string, parser: string, cut = false, address = "") {
   const P = flat(page), on = (q: string) => flat(q).length >= 6 && P.includes(flat(q));
   const findings: Finding[] = [];
   const found = (msg: Finding) => { if (findings.length < 40 && !findings.some((f) => f.code === msg.code && f.detail === msg.detail)) findings.push({ ...msg, example: msg.example?.slice(0, 300) }) };
@@ -149,11 +243,29 @@ export function calendarAiParsed(answers: any[], page: string, parser: string, c
       // a closing date often falls in the year before its section's year: it is a date only when its own row prints the year
       found({ code: "year_not_printed", detail: `${where} of ${period}`, example: q }); year = null;
     } else if (!(year && yearIn(year, q))) {
-      const sy = sectionYear(page, q);
+      // v2.2 (Decisions 270, 270a): the date's table column first, then the enclosing section, then the address; they must not disagree
+      const sec = sectionYear(page, q);
+      const col = day ? columnYear(page, q, m, day) : null;
+      let sy: { year: number | null; basis: string | null; quote: string; reason?: string } = sec;
+      if (col && col.year) sy = sec.year && sec.year !== col.year ? { year: null, basis: null, quote: "", reason: "year_ambiguous" } : col;
+      else if (col && col.reason && col.reason !== "column_not_found" && !sec.year) sy = { ...col };
+      if (!sy.year && sy.reason === "year_not_printed" && address) { const ad = addressYear(address, page); if (ad) sy = ad }
       if (sy.year && claimed && claimed !== sy.year) { found({ code: "year_from_wrong_section", detail: `${where} of ${period}: ${claimed} claimed, the section gives ${sy.year}`, example: q }); year = null }
       else if (sy.year) { year = sy.year; yq = sy.quote; basis = sy.basis || "" }
       else { found({ code: sy.reason || "year_not_printed", detail: `${where} of ${period}`, example: q }); year = null }
-    } else basis = "quote";
+    } else {
+      basis = "quote";
+      // v2.2: in a row printing several years, the year must be in the date's own cell (2 March 2026 | 1 March 2027 | 28 February 2028)
+      if (day && yearsOf(q).length > 1 && q.includes("|")) {
+        const own = rowCells(q).filter((c) => { const f = firstDate(c); return f && f.d === day && f.m === m });
+        if (own.length !== 1 || !yearIn(year as number, own[0])) { found({ code: "year_from_wrong_section", detail: `${where} of ${period}: ${year} is not in the date's own cell`, example: q }); year = null; basis = "" }
+      }
+    }
+    // v2.2 (Decision 270): a weekday printed against the date must agree with the resolved date
+    if (year && day) {
+      const wd = printedWeekdays(q, m, day);
+      if (wd.length && (wd.length > 1 || wd[0] !== weekday(year, m, day))) { found({ code: "weekday_mismatch", detail: `${where} of ${period}: ${year}`, example: q }); year = null; yq = ""; basis = "" }
+    }
     return { year, month: m, day, date: iso(year, m, day), quote: q.slice(0, 300), ...(yq ? { year_quote: yq } : {}), ...(year && basis ? { year_basis: basis } : {}) };
   };
   for (const a of answers) {
