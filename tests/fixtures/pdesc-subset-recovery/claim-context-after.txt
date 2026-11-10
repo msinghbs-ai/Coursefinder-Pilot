@@ -1,0 +1,58 @@
+setting|["students", "staff", "alumni"]|list|0|words|Provider descriptions|true|true|true|true
+numbers_not_loosened|0
+claim_words_untouched|true
+unsw_admitted|true|pdesc-machine-v1|
+unsw_short_admitted|true|pdesc-machine-v1|
+monash_admitted|true|pdesc-machine-v1|
+two_sentences_admitted|true|pdesc-machine-v1|
+unsw_without_sentences|false|machine_text_refused_word|refused_word:students
+unsw_sentences_null|false|machine_text_refused_word
+quote_lacks_word|false|machine_text_refused_word|refused_word:students
+quote_has_other_form|false|machine_text_refused_word|refused_word:students
+quote_negates_word|false|machine_text_refused_word|refused_word:alumni
+quote_not_on_page|false|machine_text_refused_word|refused_word:students
+text_is_not_the_sentences|false|machine_text_refused_word|refused_word:students
+one_of_two_unsupported|false|machine_text_refused_word|refused_word:alumni
+word_in_second_sentence_only_unsupported|false|machine_text_refused_word|refused_word:staff
+ranking|false|machine_text_refused_word|refused_word:ranked
+ranking_plain|false|machine_text_refused_word|refused_word:ranked
+rating|false|machine_text_refused_word|refused_word:rating
+outcome_employment|false|machine_text_refused_word|refused_word:employability
+outcome_salary|false|machine_text_refused_word|refused_word:salaries
+outcome_employers|false|machine_text_refused_word|refused_word:employers
+outcome_earnings_figure|false|machine_text_figure|figure:90,000
+accreditation|false|machine_text_refused_word|refused_word:accredited
+accreditation_noun|false|machine_text_refused_word|refused_word:accreditation
+award|false|machine_text_refused_word|refused_word:awards
+facilities|false|machine_text_refused_word|refused_word:facilities
+superlative_best|false|machine_text_refused_word|refused_word:best
+superlative_leading|false|machine_text_refused_word|refused_word:leading
+superlative_world_class|false|machine_text_refused_word|refused_word:world-class
+visa|false|machine_text_refused_word|refused_word:visa
+fees|false|machine_text_refused_word|refused_word:fees
+scholarships|false|machine_text_refused_word|refused_word:scholarships
+guaranteed|false|machine_text_refused_word|refused_word:guaranteed
+campus_beside_students|false|machine_text_refused_word|refused_word:campus
+partnership|false|machine_text_refused_word|refused_word:partnership
+figure_count|false|machine_text_figure|figure:400
+figure_percentage|false|machine_text_figure|figure:95
+figure_year_out_of_range|false|machine_text_figure|figure:1500
+markup|false|machine_text_entity_encoded|entity_encoded:page markup
+monash_as_proposed|false|machine_text_refused_word|refused_word:campus
+unsw_as_proposed|false|machine_text_refused_word|refused_word:unique
+setting_empty|false|machine_text_refused_word|refused_word:students
+setting_alumni_only_students_refused|false|machine_text_refused_word|refused_word:students
+setting_alumni_only_alumni_admitted|true|pdesc-machine-v1|
+record_tally|{"admitted": 2}
+record_admitted|admitted|machine|pdesc-machine-v1|1|0
+record_description|true
+record_audit|admitted|stored|true|true|true|3|true|true|true|["students", "staff", "alumni"]|true
+record_decision_is_machine|machine|pdesc-machine-v1
+waiting_declined|1|(none)|refused_word:students
+settle_within_the_hour|{"on": true, "errors": 0, "admitted": 0, "left_for_a_person": 0}|1
+settle_after_the_hour|{"on": true, "errors": 0, "admitted": 1, "left_for_a_person": 0}|0|1|true
+settle_audit|declined:-,admitted:true
+settle_step_is_the_scheduled_path|true|true
+waiting_promotional_settle|{"on": true, "errors": 0, "admitted": 1, "left_for_a_person": 0}
+waiting_promotional|0|The university's essence is found in its students, staff, alumni and donors. Elm Arts University offers music composition and theatre performance to its community.|pdesc-machine-v1, tier stored
+tier4_strict|refused_word:students|clean
