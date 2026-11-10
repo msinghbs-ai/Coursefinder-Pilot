@@ -135,7 +135,38 @@ function Stages({st}){
         <li data-dd-stage-row="machine_readback"><span>Website read-back of machine admissions at admission <StatusChip tone="info" label="Machine rule"/></span>
           <small data-dd-readback>matched {num(rb.matched)} · lag {num(rb.lag)} · not in the feed {num(rb.not_in_feed)} · error {num(rb.error)}{Number(rb.not_checked)>0?` · not checked ${num(rb.not_checked)}`:''}. The detail function answered by identifier; that is not the same as listed and published.</small></li>
         <li data-dd-stage-row="zoho"><span>Zoho</span> {zo.known?<N v={zo.with_description} k="zoho"/>:<Unknown reason={zo.reason} word="Not counted"/>}</li></ul></li>
-    </ol></div>
+    </ol>
+    <Flow fl={st.flow}/></div>
+}
+/** The course description flow (CF-247 F-CDESC decline throughput, Platform Admin 10 Nov 2026): the eligible denominator, the retained net gain, what is declined or held and why, the day's reads against the cap, the last and next run and the blocker, counted live by security.data_delivery_cdesc_flow_v1.
+ *  An additive block: a server that does not send it (an older server), or one that could not count it, shows Not measured as a whole; a figure the server did not send is Not measured, never 0. */
+function Flow({fl}){
+  if(fl==null)return <div className="dd-flow" data-dd-flow="unknown"><h5>Flow of eligible courses</h5><Unknown reason="This count is not available from the server yet" word="Not measured"/></div>
+  if(!fl.known)return <div className="dd-flow" data-dd-flow="unknown"><h5>Flow of eligible courses</h5><Unknown reason={fl.reason} word="Not measured"/></div>
+  const el=fl.eligible||{},ga=fl.gain||{},rd=fl.reads||{},ru=fl.run||{}
+  const cause=(list,k)=>(list||[]).length>0&&<ul className="dd-reasons" data-dd-flow-causes={k}>{list.map(r=><li key={r.code}><span>{String(r.code).replaceAll('_',' ')}</span> <strong>{fmtNumber(Number(r.n))}</strong></li>)}</ul>
+  return <div className="dd-flow" data-dd-flow="known">
+    <h5>Flow of eligible courses</h5>
+    <p className="sl-sub">Eligible means the course has no description and holds a stored page whose identity is proved. Counted live; each figure is exact.</p>
+    <ul>
+      <Row k="flow_eligible" label="Eligible courses (no description, identity-proved stored page)" v={el.without_description}/>
+      <Row k="flow_never_read" label="Not read yet" v={el.never_read}/>
+      <Row k="flow_waiting" label="Waiting in Layer 4" v={el.waiting_in_layer4}/>
+      <Row k="flow_held_cap" label="Held behind a university's first waiting descriptions" v={el.held_behind_provider_cap}/>
+      <Row k="flow_held_check" label="Held by a check" v={el.held_by_a_check}>{cause(fl.held_by_cause,'held')}</Row>
+      <Row k="flow_read_other" label="Read, other outcome" v={el.read_other}/>
+      <Row k="flow_declined" label="Declined by the machine rule, by cause" v={fl.declined_by_cause==null?null:fl.declined_by_cause.reduce((a,r)=>a+Number(r.n||0),0)} actor="machine">{cause(fl.declined_by_cause,'declined')}</Row>
+      <Row k="flow_admitted_24h" label="Admitted by the machine rule, last 24 hours (kept)" v={ga.admitted_24h} actor="machine"/>
+      <Row k="flow_admitted_7d" label="Admitted by the machine rule, last 7 days (kept)" v={ga.admitted_7d} actor="machine"/>
+      <Row k="flow_withdrawn_7d" label="Withdrawn, last 7 days" v={ga.withdrawn_7d} actor="machine"/>
+      <Row k="flow_retained" label="Machine admissions kept in total (net gain)" v={ga.retained_total} actor="machine"/>
+      <Row k="flow_reads_today" label="Course readings today" v={rd.today}><small>of a daily limit of {rd.daily_cap==null?<em data-dd-unknown>Not measured</em>:num(rd.daily_cap)}</small></Row>
+      <Row k="flow_full" label="Universities with every place taken by waiting descriptions" v={rd.universities_with_all_places_taken}/>
+      <Row k="flow_parked" label="Waiting for a person (declined for good by the machine rule)" v={rd.parked_for_a_person}/>
+    </ul>
+    <p className="sl-sub" data-dd-flow-run>Automatic admission {ru.automatic_admission_on==null?'not measured':ru.automatic_admission_on?'on':'off'}{' · '}last admission {ru.last_admission_at?fmtDateTime(ru.last_admission_at):'none yet'}{' · '}last decline {ru.last_decline_at?fmtDateTime(ru.last_decline_at):'none yet'}{' · '}schedule {ru.schedule||'not measured'}</p>
+    {fl.blocker&&<p className="sl-sub" data-dd-flow-blocker><strong>Blocker:</strong> {fl.blocker}</p>}
+  </div>
 }
 
 /** Why an intake outcome is skipped, kept apart: what is legitimately unresolvable (the page or calendar gives a month or season, no day: never invented), what a run can still take, and what waits for another fix or a decision. */

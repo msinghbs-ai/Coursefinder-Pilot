@@ -365,6 +365,36 @@ test.describe('Data delivery on Operations', () => {
     await expect(b2.locator('[data-dd-stage-n="website_published"]')).toHaveText('Not measured')
     await expect(b2.locator('[data-dd-stage-n="by_machine"]')).toHaveText('3')
   })
+  test('course description flow: the eligible denominator, kept admissions, declines and holds by cause, reads against the limit and the blocker; a missing flow key is Not measured, never 0 (CF-247 F-CDESC, 10 Nov 2026)', async ({ page }) => {
+    await open(page, withStages())
+    const box = page.locator('[data-dd-stream="cdesc"] [data-dd-flow="known"]')
+    await expect(box).toBeVisible()
+    for (const [k, v] of Object.entries({ flow_eligible: '30', flow_never_read: '20', flow_waiting: '5', flow_held_cap: '2', flow_held_check: '2', flow_read_other: '1', flow_declined: '5', flow_admitted_24h: '3', flow_admitted_7d: '7', flow_withdrawn_7d: '1', flow_retained: '6', flow_reads_today: '4', flow_full: '1', flow_parked: '5' })) await expect(box.locator(`[data-dd-stage-n="${k}"]`), k).toHaveText(v)
+    await expect(box.locator('[data-dd-stage-n="flow_declined"]')).toHaveAttribute('data-dd-actor', 'machine')
+    await expect(box.locator('[data-dd-flow-causes="declined"] li').first()).toContainText('wrong page kind')
+    await expect(box.locator('[data-dd-flow-causes="held"] li').first()).toContainText('unsupported claim')
+    await expect(box.locator('[data-dd-stage-row="flow_reads_today"]')).toContainText('daily limit of 500')
+    await expect(box.locator('[data-dd-flow-run]')).toContainText('Automatic admission on')
+    await expect(box.locator('[data-dd-flow-blocker]')).toContainText('every place taken')
+    // the five stages are unchanged
+    await expect(page.locator('[data-dd-stream="cdesc"] [data-dd-stage]')).toHaveCount(5)
+    // an older server sends no flow key: Not measured as a whole, and no figure is shown as 0
+    const { flow, ...old } = STAGES
+    const page2 = await page.context().newPage()
+    await mockAdmin(page2); await mockLaneFunnels(page2); await mockDataDelivery(page2, withStages(old))
+    await page2.goto(OPERATIONS)
+    const b2 = page2.locator('[data-dd-stream="cdesc"] [data-dd-flow="unknown"]')
+    await expect(b2).toBeVisible({ timeout: 20_000 })
+    await expect(b2).toContainText('Not measured')
+    await expect(b2.locator('[data-dd-stage-n]')).toHaveCount(0)
+    await expect(page2.locator('[data-dd-stream="cdesc"] [data-dd-stage-n="by_machine"]')).toHaveText('3')
+    // a flow that is known but lacks one figure shows that figure as Not measured
+    const part = { ...STAGES, flow: { ...STAGES.flow, gain: { ...STAGES.flow.gain, retained_total: null } } }
+    const page3 = await page.context().newPage()
+    await mockAdmin(page3); await mockLaneFunnels(page3); await mockDataDelivery(page3, withStages(part))
+    await page3.goto(OPERATIONS)
+    await expect(page3.locator('[data-dd-flow="known"] [data-dd-stage-n="flow_retained"]')).toHaveText('Not measured', { timeout: 20_000 })
+  })
   test('provider descriptions: AI cost and remaining allowance, admissions by route (machine rule and person apart) and the Basic to Enriched outcome, counted live (CF-247 F-PDESC, 10 Nov 2026)', async ({ page }) => {
     await open(page, withProviderAi())
     const pd = page.locator('[data-dd-stream="pdesc"]')
