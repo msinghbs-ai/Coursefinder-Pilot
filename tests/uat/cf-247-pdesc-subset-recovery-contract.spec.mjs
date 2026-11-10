@@ -26,7 +26,7 @@ test('the recovery is subtractive: it drops sentences, reruns the same checks, a
   expect(M).toContain('pdesc-machine-v1')
   expect(SQL).toContain('provider_description_validate_v1')
   expect(SQL).toContain('provider_description_machine_gate_v1')
-  expect(SQL).not.toMatch(/firecrawl|openrouter|svc_provider_description_reserve/i)
+  expect(SQL).not.toMatch(/openrouter|net\.http|svc_provider_description_reserve|ai_use_allowed/i)
   for (const code of ['every_sentence_refused', 'no_sentence_to_leave_out', 'name_not_in_remaining_quotes']) expect(M, code).toContain(code)
   // consumer API (G3): none of it is named
   expect(SQL).not.toMatch(/website_v2_|website_edge_|website_api_v2_|zoho_edge_|svc_website_settings_v1|\bapi\./)
