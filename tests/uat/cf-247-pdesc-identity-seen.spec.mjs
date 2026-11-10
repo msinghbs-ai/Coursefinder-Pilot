@@ -85,21 +85,22 @@ test('it only observes: the pages the proof passes and fails are the same as bef
   }
 })
 
-test('worker v0.62.0 stores seen when the proof fails and only then, and holds the read exactly as before', () => {
-  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v0.62.0";')
+test('worker v0.62.0 stores seen when the proof fails and only then, and holds the read exactly as before (v0.63.0 adds the proof trace to it)', () => {
+  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v0.63.0";')
+  expect(IX).toMatch(/\/\/ was v0\.62\.0 \/\/ v0\.62\.0 \(10 Nov 2026, CF-247 F-PDESC, Platform Admin order 10 Nov 2026 12:07/)
   expect(IX).toMatch(/\/\/ was v0\.61\.0 \/\/ v0\.61\.0 \(10 Nov 2026, CF-247 F-PDESC delivery/)
   expect(IX).toMatch(/import \{[^}]*\bdescriptionIdentitySeen\b[^}]*\} from "\.\/description\.ts";/)
   const id = IX.indexOf('const identity = descriptionSourceIdentity(html, page,')
   expect(id).toBeGreaterThan(0)
   const win = IX.slice(id, id + 1600)
-  expect(win).toContain('rec.identity_check = { ...identity, reader_behavior_version: "provider-description-source-guard-v4" };\n          if (!identity.ok) rec.identity_check.seen = descriptionIdentitySeen(html);')
+  expect(win).toContain('rec.identity_check = { ...identity, reader_behavior_version: "provider-description-source-guard-v5" };\n          if (!identity.ok) rec.identity_check.seen = { ...descriptionIdentitySeen(html), proof: proofTrace };')
   // the hold is the earlier line, with the earlier rule and reason, and no AI call
   expect(win).toContain('if (!identity.ok) { out.push({ ...base, ...rec, rule: identity.rule, reason: "The page does not prove the provider\'s current full institutional identity; no AI call was made." }); return }')
   expect(win.indexOf('rec.identity_check')).toBeLessThan(win.indexOf('if (!identity.ok) { out.push('))
   expect(win.indexOf('if (!identity.ok)')).toBeLessThan(win.indexOf('svc_provider_description_reserve_v1'))
-  // the reader behaviour stamp is unchanged, so no hold is offered again because of this change
-  expect((IX.match(/provider-description-source-guard-v4/g) || []).length).toBeGreaterThanOrEqual(1)
-  expect(IX).not.toContain('provider-description-source-guard-v5')
+  // v0.63.0 changes which pages pass, so the reader behaviour stamp moves to v5 and earlier identity holds are re-tested once on their stored page
+  expect(IX).toContain('reader_behavior_version: "provider-description-source-guard-v5" };')
+  expect(IX).not.toContain('reader_behavior_version: "provider-description-source-guard-v4" };')
   // the helper's constants are marked fixed (G2)
   for (const c of ['IDENTITY_SEEN_TEXT_MAX', 'IDENTITY_SEEN_H1_MAX', 'IDENTITY_SHELL_TEXT_MAX']) expect(DS).toMatch(new RegExp(`export const ${c} = \\d+;\\s+// fixed:`))
 })
