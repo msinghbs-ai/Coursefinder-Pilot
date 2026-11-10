@@ -41,7 +41,8 @@ jobs:
           if ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then echo "::error::Previous commit $BEFORE is unknown; deploy this push by hand"; exit 1; fi
       - name: Apply new migrations
         run: |
-          mapfile -t FILES < <(git diff --name-only --diff-filter=A "$BEFORE" "$AFTER" -- 'supabase/migrations/*.sql' | xargs -r -n1 basename | sort)
+          # --no-renames (11 Nov 2026, F-AER.01): a migration file moved to a new version is a new file; with rename detection it was listed as R and never applied
+          mapfile -t FILES < <(git diff --no-renames --name-only --diff-filter=A "$BEFORE" "$AFTER" -- 'supabase/migrations/*.sql' | xargs -r -n1 basename | sort)
           echo "## Deploy on merge" >> "$GITHUB_STEP_SUMMARY"
           if [ "${#FILES[@]}" -eq 0 ]; then echo "No new migrations." | tee -a "$GITHUB_STEP_SUMMARY"; exit 0; fi
           for f in "${FILES[@]}"; do scripts/ci/apply-migration.sh "$f"; done

@@ -23,7 +23,8 @@ test('consumer API functions keep their recorded verify_jwt (Decision 266)', () 
 
 test('deploy on merge: new migrations first, in order, then changed functions; the Pilot only', () => {
   expect(onMerge).toMatch(/on:\n  push:\n    branches: \[main\]/)
-  expect(onMerge).toContain("git diff --name-only --diff-filter=A \"$BEFORE\" \"$AFTER\" -- 'supabase/migrations/*.sql' | xargs -r -n1 basename | sort")
+  // --no-renames (11 Nov 2026): a migration moved to a new version is applied as a new file, not skipped as a rename
+  expect(onMerge).toContain("git diff --no-renames --name-only --diff-filter=A \"$BEFORE\" \"$AFTER\" -- 'supabase/migrations/*.sql' | xargs -r -n1 basename | sort")
   expect(onMerge).toContain('scripts/ci/apply-migration.sh "$f"')
   expect(onMerge).toContain('scripts/ci/deploy-function.sh "$fn"')
   expect(onMerge.indexOf('Apply new migrations')).toBeLessThan(onMerge.indexOf('Deploy changed edge functions'))
