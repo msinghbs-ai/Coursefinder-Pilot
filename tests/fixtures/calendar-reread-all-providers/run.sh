@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Guards: F-INT calendar re-read for every eligible provider (Platform Admin 10 Nov 2026 ~23:40, "Re-read and column fix first"; Decisions 273, 274): the migration adds
+# Guards: F-INT calendar re-read for every eligible provider (Platform Admin 10 Nov 2026, by 22:59, "Re-read and column fix first"; Decisions 273, 274): the migration adds
 # security.calendar_reread_relevant_v2() and edits only public.svc_calendar_reread_next_v2(integer,text), on an isolated PostgreSQL copy of the database
 # tests/fixtures/intake-page-date-recovery/run.sh leaves (kept). The edited definition is checked by md5 against production (read 10 Nov 2026), the cases run before and after,
 # a hand-changed definition is refused, the migration is applied twice, the held forward recovery returns the earlier text byte for byte and is repeatable, and the consumer API

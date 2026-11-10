@@ -1,4 +1,4 @@
--- Guards: F-INT calendar re-read for every eligible provider (Platform Admin 10 Nov 2026 ~23:40, "Re-read and column fix first"; Decisions 273, 274): the setup and the
+-- Guards: F-INT calendar re-read for every eligible provider (Platform Admin 10 Nov 2026, by 22:59, "Re-read and column fix first"; Decisions 273, 274): the setup and the
 -- baseline BEFORE the change, on the picker as production holds it (svc_calendar_reread_next_v2 body md5 755ef3b77c797c89fa2caa215e33d4ee). A provider outside the 5 Nov pilot
 -- scope, with intake rows missing a date and a stored main-teaching calendar, is set aside as "not needed"; the defect.
 \set ON_ERROR_STOP on
