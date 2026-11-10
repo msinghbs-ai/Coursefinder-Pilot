@@ -1,13 +1,13 @@
 // Guards: F-AER.01 AER source coverage: targeted entry-requirements search for providers AER source discovery asked about (Platform Admin 11 Nov 2026 05:42 AEDT)
 // CF-247 F-AER.01. Production evidence 11 Nov 2026: job aer-source-discover asked about 294 providers with nothing stored; 242 settled 'refused' (svc_fc_spend
 // 'not_due': their whole-site central map ran within central_refresh_days), 0 credits spent, 0 entry sources found. 357 of the 370 were last searched before the
-// entry page kind existed. Migration 20261111090000 lets one targeted entry search run on its own interval; worker v0.64.0 runs it; central.ts scores a small
+// entry page kind existed. Migration 20261111100000 lets one targeted entry search run on its own interval; worker v0.64.0 runs it; central.ts scores a small
 // provider's top-level entry requirements page. These are source contracts: the migration is run against live by the governed deploy and checked by md5 there.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { centralCandidates, entryCandidates, weakKinds, ENTRY_SEARCH } from '../../supabase/functions/coverage-sweep/central.ts'
 
-const MIG = 'supabase/migrations/20261111090000_cf247_aer_entry_search.sql'
+const MIG = 'supabase/migrations/20261111100000_cf247_aer_entry_search.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const worker = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
@@ -24,7 +24,7 @@ test('the two live functions are edited only from their live md5, by one exact t
   expect(code).toContain("md5(pg_get_functiondef('security.fc_purpose_group_v1(text)'::regprocedure)) <> '94950903b554779e4d0793620b3ccad3'")
   expect(code).toContain("md5(pg_get_functiondef('public.svc_fc_spend(numeric,text,uuid,text)'::regprocedure)) <> 'a0f43e737574f504de4aad17daf792bb'")
   expect(code).toContain("'8041bf166d40460f8b255ed0bcbc8312'")
-  expect(code).toContain("'9dea6e647cce8ab0e08e22e1bc4bf444'")
+  expect(code).toContain("'ee400f93352eef2be4158d4edacdc716'")
   expect(m).toMatch(/^-- Replaces: security\.fc_purpose_group_v1, public\.svc_fc_spend/m)
   expect(m).toMatch(/^-- Retires: |Retires: nothing/m)
 })
