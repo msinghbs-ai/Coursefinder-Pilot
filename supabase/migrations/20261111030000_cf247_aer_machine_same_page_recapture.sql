@@ -5,8 +5,7 @@
 -- Change (one function, md5-guarded, created by 20261111020000): a different stored copy of the SAME bound address passes when the read's copy is inside the platform's existing
 --   freshness period for entry sources (aer.stale_source_days, 90 days, set 2 Nov 2026 under AER mandate section 11); a different address still declines (page_changed_since_read),
 --   and a copy older than the period declines as read_copy_stale. The re-capture is recorded in the checks. Nothing else changes; the mode stays shadow.
--- Replaces: security.aer_machine_check_v1 (same name; md5-guarded edit)
--- Retires: nothing.
+-- Replaces: security.aer_machine_check_v1 (same name; md5-guarded edit). Retires: nothing.
 
 do $g$
 begin

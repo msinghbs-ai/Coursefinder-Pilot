@@ -21,8 +21,7 @@
 --   4. security.aer_source_discover_report_v1(): requests by outcome, providers still to ask, credits used in 24 hours, and the exception queue (providers whose tries are used up,
 --      with the last outcome and the next action).
 --   5. Job aer-source-discover (catalogued, G1) at :19, command free of numbers (G2).
--- Replaces: nothing.
--- Retires: nothing. Reversal: aer.source_discover_on = 0 (the job does nothing; asked searches already queued run once).
+-- Replaces: nothing. Retires: nothing. Reversal: aer.source_discover_on = 0 (the job does nothing; asked searches already queued run once).
 
 insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, section, used_by, reason) values
  ('pipeline', 'aer.source_discover_on', 'Entry requirements: find entry pages for providers with nothing stored',

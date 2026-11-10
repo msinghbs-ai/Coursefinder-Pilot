@@ -5,8 +5,7 @@
 -- Change: security.aer_title_identity_courses_v1() (new, set-based, read only) answers the SAME rule for every course at once (the courses whose title-matched page passes);
 -- the population uses it as one hashed set instead of one call per course (md5-guarded edit of the line added by 20261111040000). The per-course function stays for the
 -- reader's record step and the machine check (one course at a time) and is the reference: a post-check compares the two on every course they consider.
--- Replaces: security.aer_course_population_v1 (same name; md5-guarded edit)
--- Retires: nothing.
+-- Replaces: security.aer_course_population_v1 (same name; md5-guarded edit). Retires: nothing.
 
 do $g$
 begin

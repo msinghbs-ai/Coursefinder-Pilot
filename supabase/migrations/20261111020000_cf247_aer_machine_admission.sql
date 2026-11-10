@@ -25,8 +25,7 @@
 --      pending for a person, decision and ledger kept.
 --   8. security.aer_machine_history_v1() (read only): the row-level rules over the 498 historical human decisions (agreement measure for validation).
 --   9. security.aer_machine_validate_v1() and security.aer_machine_report_v1().
--- Replaces: nothing (a separate machine route; the human Layer 4 route, its functions and triggers are unchanged)
--- Retires: nothing.
+-- Replaces: nothing (a separate machine route; the human Layer 4 route, its functions and triggers are unchanged). Retires: nothing.
 -- Reversal: aer.machine_mode = 0 (nothing runs); withdraw admitted items with public.admin_aer_machine_withdraw_v1.
 
 do $g$

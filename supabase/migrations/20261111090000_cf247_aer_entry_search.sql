@@ -40,7 +40,7 @@ begin
   v_d := pg_get_functiondef('public.svc_fc_spend(numeric,text,uuid,text)'::regprocedure);
   execute replace(v_d, $q$    elsif p_provider_id is not null and v_grp = 'central'
           and exists (select 1 from pipeline.coverage_vendor_usage x where x.provider_id = p_provider_id and security.fc_purpose_group_v1(x.purpose) = 'central'
-$q$, $q$    -- CF-247 F-AER.01 (20261111080000): a targeted entry-requirements search for a provider that AER source discovery asked about is not held by the
+$q$, $q$    -- CF-247 F-AER.01 (20261111090000): a targeted entry-requirements search for a provider that AER source discovery asked about is not held by the
     -- central refresh interval (that interval belongs to the whole-site map, which for 357 of these providers ran before the entry page kind existed).
     -- It is held only by its own interval, aer.source_discover_recheck_days, and still by every rule above (month limit, cost breakers, the central share).
     elsif p_provider_id is not null and p_purpose = 'central_entry_search' then
@@ -117,7 +117,7 @@ begin
      and not exists (select 1 from pipeline.coverage_vendor_usage x where x.provider_id = p_provider_id and x.purpose = 'central_entry_search'
                        and x.at > now() - make_interval(days => security.pipeline_num_v1('aer.source_discover_recheck_days', 30)::int));
 end $f$;
-comment on function public.svc_aer_entry_search_wanted(uuid) is 'CF-247 F-AER.01 (20261111080000): true while AER source discovery has an open request for the provider, aer.entry_search_on is 1 and no targeted entry-requirements search ran for it within aer.source_discover_recheck_days. Asked by worker coverage-sweep central_find.';
+comment on function public.svc_aer_entry_search_wanted(uuid) is 'CF-247 F-AER.01 (20261111090000): true while AER source discovery has an open request for the provider, aer.entry_search_on is 1 and no targeted entry-requirements search ran for it within aer.source_discover_recheck_days. Asked by worker coverage-sweep central_find.';
 revoke all on function public.svc_aer_entry_search_wanted(uuid) from public, anon, authenticated;
 grant execute on function public.svc_aer_entry_search_wanted(uuid) to service_role;
 
@@ -144,11 +144,11 @@ begin
          state = 'done', searched_at = now(), requested_at = null, leased_until = null, updated_at = now()
    where s.provider_id = p_provider_id;
 end $f$;
-comment on function public.svc_central_entry_record(uuid, jsonb, jsonb) is 'CF-247 F-AER.01 (20261111080000): records a targeted entry-requirements search of a provider''s own website: replaces only the entry_requirements suggestions in provider_central_search.found and sets searched_at; an error is a failed try. Called by worker coverage-sweep central_find.';
+comment on function public.svc_central_entry_record(uuid, jsonb, jsonb) is 'CF-247 F-AER.01 (20261111090000): records a targeted entry-requirements search of a provider''s own website: replaces only the entry_requirements suggestions in provider_central_search.found and sets searched_at; an error is a failed try. Called by worker coverage-sweep central_find.';
 revoke all on function public.svc_central_entry_record(uuid, jsonb, jsonb) from public, anon, authenticated;
 grant execute on function public.svc_central_entry_record(uuid, jsonb, jsonb) to service_role;
 
 insert into pipeline.component_register(kind, name, layer, purpose, status, replaces, introduced_in) values
- ('function', 'public.svc_aer_entry_search_wanted', 'Layer 1', 'Whether the central-page search should run a targeted entry-requirements search for a provider AER discovery asked about', 'active', '{}', '20261111080000'),
- ('function', 'public.svc_central_entry_record', 'Layer 1', 'Records a targeted entry-requirements search without losing the other central page suggestions', 'active', '{}', '20261111080000')
+ ('function', 'public.svc_aer_entry_search_wanted', 'Layer 1', 'Whether the central-page search should run a targeted entry-requirements search for a provider AER discovery asked about', 'active', '{}', '20261111090000'),
+ ('function', 'public.svc_central_entry_record', 'Layer 1', 'Records a targeted entry-requirements search without losing the other central page suggestions', 'active', '{}', '20261111090000')
 on conflict do nothing;
