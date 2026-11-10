@@ -4,6 +4,12 @@
 # Integration Controller (artifact release-readiness-<sha>). Adds a check; it changes no existing workflow and no required check name.
 # The full suite runs when the pull request is ready for review, carries the label full-suite-evidence, or is started by hand; drafts get the
 # lightweight path (reuse where valid, otherwise "deferred" in the report).
+# Guards: CF-247 CI wall-clock, same evidence. The full suite is the same command (npx playwright test --grep-invert @deployed), split with
+# Playwright --shard across a matrix of runners (repository variable TEST_EVIDENCE_SHARDS, default 6) and merged with playwright merge-reports into
+# the same uat-artifacts/results.json and junit.xml, so the bundle, register, readiness report and every later step read what they read before.
+# The required check stays the single job "test-evidence": it needs every shard and fails closed if any shard, any blob or the merge is missing.
+# Nothing is tested differently: the project rules (@responsive on the phone project only), --grep-invert @deployed and retries come from
+# playwright.config.mjs and the unchanged command line; the bundle still checks the merged totals against `playwright test --list`.
 name: Test evidence
 on:
   pull_request:
@@ -22,13 +28,28 @@ permissions:
   checks: read
   pull-requests: read
 jobs:
-  test-evidence:
+  # Job 1: decide. Resolves the pull request, looks for earlier evidence, picks full / reuse / deferred and the shard list. No dependencies are
+  # installed here: the plan only needs git and node built-ins. Its label filter is the one the single job had, so a label other than
+  # full-suite-evidence still skips everything, including the required check, exactly as before.
+  test-evidence-plan:
     if: github.event_name != 'pull_request' || github.event.action != 'labeled' || github.event.label.name == 'full-suite-evidence'
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 30
     env:
       GH_TOKEN: ${{ github.token }}
       REPO: ${{ github.repository }}
+    outputs:
+      pr: ${{ steps.ctx.outputs.pr }}
+      sha: ${{ steps.ctx.outputs.sha }}
+      base: ${{ steps.ctx.outputs.base }}
+      draft: ${{ steps.ctx.outputs.draft }}
+      labelled: ${{ steps.ctx.outputs.labelled }}
+      lineage: ${{ steps.plan.outputs.lineage }}
+      reuse: ${{ steps.plan.outputs.reuse }}
+      changed: ${{ steps.plan.outputs.changed }}
+      mode: ${{ steps.mode.outputs.mode }}
+      shards: ${{ steps.shards.outputs.list }}
+      shard_total: ${{ steps.shards.outputs.total }}
     steps:
       - name: Resolve the pull request and its head revision
         id: ctx
@@ -49,7 +70,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install --package-lock=false --ignore-scripts --no-audit --no-fund
       - name: Look for earlier evidence on this pull request and decide
         id: plan
         run: |
@@ -78,17 +98,211 @@ jobs:
           else M=deferred; fi
           echo "mode=$M" >> $GITHUB_OUTPUT
           echo "::notice::Test evidence mode: $M"
+      - name: Shard list for the full suite
+        id: shards
+        env:
+          CONFIGURED: ${{ vars.TEST_EVIDENCE_SHARDS }}
+        run: |
+          # Number of shards is a repository variable (Settings > Secrets and variables > Actions > Variables), default 6. 1 is valid: one shard, same merge path.
+          N="${CONFIGURED:-6}"
+          case "$N" in ''|*[!0-9]*) echo "::error::TEST_EVIDENCE_SHARDS must be a whole number from 1 to 16, got '$N'"; exit 1;; esac
+          if [ "$N" -lt 1 ] || [ "$N" -gt 16 ]; then echo "::error::TEST_EVIDENCE_SHARDS must be from 1 to 16, got $N"; exit 1; fi
+          echo "total=$N" >> $GITHUB_OUTPUT
+          echo "list=$(seq 1 "$N" | jq -sc .)" >> $GITHUB_OUTPUT
+      - name: Hand the earlier evidence (reuse path) to the final job
+        if: steps.mode.outputs.mode == 'reuse'
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-evidence-prior-${{ steps.ctx.outputs.sha }}
+          overwrite: true
+          if-no-files-found: error
+          retention-days: 1
+          path: prior/
+
+  # Job 2: the full suite, one shard per runner. Same command as before plus --shard and the blob reporter; blob reports are merged by the final job.
+  # Playwright splits the filtered test list (after --grep-invert @deployed and the project rules) into contiguous slices of equal test COUNT per
+  # shard, in project order: all chromium-desktop tests (file order), then the chromium-mobile @responsive tests, so the phone tests land in the last
+  # shard or two. Each shard runs workers 1 / fullyParallel false / retries 1 from playwright.config.mjs, so file-level ordering inside a shard is as before.
+  test-evidence-shard:
+    needs: test-evidence-plan
+    if: needs.test-evidence-plan.outputs.mode == 'full'
+    name: test-evidence-shard (${{ matrix.shard }}/${{ needs.test-evidence-plan.outputs.shard_total }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(needs.test-evidence-plan.outputs.shards) }}
+    env:
+      SHA: ${{ needs.test-evidence-plan.outputs.sha }}
+      SHARD: ${{ matrix.shard }}
+      SHARD_TOTAL: ${{ needs.test-evidence-plan.outputs.shard_total }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.test-evidence-plan.outputs.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Restore npm cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: pilot-npm-${{ runner.os }}-node22-${{ hashFiles('package.json') }}
+          restore-keys: |
+            pilot-npm-${{ runner.os }}-node22-
+      - run: npm install --package-lock=false --ignore-scripts --no-audit --no-fund
+      - name: Playwright version (browser cache key)
+        id: pw
+        run: echo "version=$(node -p "require('./node_modules/@playwright/test/package.json').version")" >> $GITHUB_OUTPUT
+      - name: Restore Playwright browser cache
+        id: pwcache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: testev-playwright-${{ runner.os }}-${{ hashFiles('package.json') }}-${{ steps.pw.outputs.version }}
+          restore-keys: |
+            testev-playwright-${{ runner.os }}-${{ hashFiles('package.json') }}-
+            pilot-playwright-${{ runner.os }}-${{ hashFiles('package.json') }}
       - name: Install Chromium
-        if: steps.mode.outputs.mode != 'deferred'
         run: npx playwright install --with-deps chromium
-      - name: Full suite, one run, structured results part of the same execution
+      - name: Full suite, shard ${{ matrix.shard }} of ${{ needs.test-evidence-plan.outputs.shard_total }}
+        run: |
+          START=$SECONDS
+          set +e
+          npx playwright test --grep-invert @deployed --shard=$SHARD/$SHARD_TOTAL --reporter=list,blob
+          RC=$?
+          echo "shard $SHARD/$SHARD_TOTAL: $((SECONDS-START)) s, exit $RC" | tee -a $GITHUB_STEP_SUMMARY
+          exit $RC
+      - name: Upload this shard's blob report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-evidence-blob-${{ needs.test-evidence-plan.outputs.sha }}-${{ matrix.shard }}
+          overwrite: true
+          if-no-files-found: error
+          retention-days: 3
+          path: blob-report/
+      - name: Upload Playwright detail for failures
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-evidence-detail-${{ needs.test-evidence-plan.outputs.sha }}-${{ github.run_attempt }}-shard-${{ matrix.shard }}
+          if-no-files-found: ignore
+          retention-days: 14
+          path: |
+            test-results/
+            uat-artifacts/
+
+  # Job 3: the required check. Same name as the single job it replaces. Merges the shard blobs into the same results.json and junit.xml, then runs
+  # every later step as before. The first three steps republish the plan under the step ids the later steps already use.
+  test-evidence:
+    needs: [test-evidence-plan, test-evidence-shard]
+    # Runs when the plan ran (even if it failed, so it can fail closed) and a shard failed; skipped only when the plan was skipped by the label filter.
+    if: ${{ !cancelled() && needs.test-evidence-plan.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+    steps:
+      - name: The plan job must have succeeded
+        if: needs.test-evidence-plan.result != 'success'
+        run: echo "::error::The plan job ended as ${{ needs.test-evidence-plan.result }}; no test evidence can be produced"; exit 1
+      - name: Pull request and head revision (from the plan job)
+        id: ctx
+        env:
+          V_PR: ${{ needs.test-evidence-plan.outputs.pr }}
+          V_SHA: ${{ needs.test-evidence-plan.outputs.sha }}
+          V_BASE: ${{ needs.test-evidence-plan.outputs.base }}
+          V_DRAFT: ${{ needs.test-evidence-plan.outputs.draft }}
+          V_LABELLED: ${{ needs.test-evidence-plan.outputs.labelled }}
+        run: |
+          echo "pr=$V_PR" >> $GITHUB_OUTPUT
+          echo "sha=$V_SHA" >> $GITHUB_OUTPUT
+          echo "base=$V_BASE" >> $GITHUB_OUTPUT
+          echo "draft=$V_DRAFT" >> $GITHUB_OUTPUT
+          echo "labelled=$V_LABELLED" >> $GITHUB_OUTPUT
+      - name: Evidence plan (from the plan job)
+        id: plan
+        env:
+          V_LINEAGE: ${{ needs.test-evidence-plan.outputs.lineage }}
+          V_REUSE: ${{ needs.test-evidence-plan.outputs.reuse }}
+          V_CHANGED: ${{ needs.test-evidence-plan.outputs.changed }}
+        run: |
+          echo "lineage=$V_LINEAGE" >> $GITHUB_OUTPUT
+          echo "reuse=$V_REUSE" >> $GITHUB_OUTPUT
+          echo "changed=$V_CHANGED" >> $GITHUB_OUTPUT
+      - name: Mode (from the plan job)
+        id: mode
+        env:
+          V_MODE: ${{ needs.test-evidence-plan.outputs.mode }}
+        run: |
+          echo "mode=$V_MODE" >> $GITHUB_OUTPUT
+          echo "::notice::Test evidence mode: $V_MODE"
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.ctx.outputs.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Restore npm cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: pilot-npm-${{ runner.os }}-node22-${{ hashFiles('package.json') }}
+          restore-keys: |
+            pilot-npm-${{ runner.os }}-node22-
+      - run: npm install --package-lock=false --ignore-scripts --no-audit --no-fund
+      - name: Earlier evidence (reuse path)
+        if: steps.mode.outputs.mode == 'reuse'
+        uses: actions/download-artifact@v4
+        with:
+          name: test-evidence-prior-${{ steps.ctx.outputs.sha }}
+          path: prior
+      - name: Playwright version (browser cache key)
+        if: steps.mode.outputs.mode == 'reuse'
+        id: pw
+        run: echo "version=$(node -p "require('./node_modules/@playwright/test/package.json').version")" >> $GITHUB_OUTPUT
+      - name: Restore Playwright browser cache
+        if: steps.mode.outputs.mode == 'reuse'
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: testev-playwright-${{ runner.os }}-${{ hashFiles('package.json') }}-${{ steps.pw.outputs.version }}
+          restore-keys: |
+            testev-playwright-${{ runner.os }}-${{ hashFiles('package.json') }}-
+            pilot-playwright-${{ runner.os }}-${{ hashFiles('package.json') }}
+      - name: Install Chromium
+        # Only the reuse path runs a browser test here (the final-candidate specs); the full suite ran on the shards, and merging needs no browser.
+        if: steps.mode.outputs.mode == 'reuse'
+        run: npx playwright install --with-deps chromium
+      - name: Download the shard blob reports
+        if: steps.mode.outputs.mode == 'full'
+        id: blobs
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-evidence-blob-${{ steps.ctx.outputs.sha }}-*
+          path: all-blobs
+          merge-multiple: true
+      - name: Merge the shards into the one results.json and junit.xml (same files, same paths as the single run)
         if: steps.mode.outputs.mode == 'full'
         id: suite
         continue-on-error: true
         env:
           PLAYWRIGHT_JSON_OUTPUT_NAME: uat-artifacts/results.json
           PLAYWRIGHT_JUNIT_OUTPUT_NAME: uat-artifacts/junit.xml
-        run: npx playwright test --grep-invert @deployed --reporter=list,json,junit
+          SHARD_TOTAL: ${{ needs.test-evidence-plan.outputs.shard_total }}
+        run: |
+          # Fail closed: every shard must have delivered its blob. A missing shard is a partial run, never evidence.
+          N=$(ls all-blobs/*.zip 2>/dev/null | wc -l)
+          if [ "$N" != "$SHARD_TOTAL" ]; then echo "::error::Expected $SHARD_TOTAL shard blob reports, found $N"; exit 1; fi
+          mkdir -p uat-artifacts
+          npx playwright merge-reports --reporter=json,junit all-blobs
+          ls -l uat-artifacts/results.json uat-artifacts/junit.xml
       - name: Final-candidate release-contract and governance checks (reuse path)
         if: steps.mode.outputs.mode == 'reuse'
         id: final
@@ -135,7 +349,7 @@ jobs:
             --workflow "Test evidence" --run-id ${{ github.run_id }} --attempt ${{ github.run_attempt }} \
             --run-url "${{ github.server_url }}/$REPO/actions/runs/${{ github.run_id }}" $EXTRA
       - name: Upload the evidence bundle (immutable, named by commit)
-        if: steps.mode.outputs.mode != 'deferred' && always()
+        if: steps.mode.outputs.mode != 'deferred' && always() && needs.test-evidence-plan.result == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: test-evidence-${{ steps.ctx.outputs.sha }}
@@ -143,7 +357,7 @@ jobs:
           retention-days: 90
           path: evidence-bundle/
       - name: Upload Playwright detail for failures
-        if: failure() || steps.suite.outcome == 'failure'
+        if: failure() || steps.suite.outcome == 'failure' || needs.test-evidence-shard.result == 'failure'
         uses: actions/upload-artifact@v4
         with:
           name: test-evidence-detail-${{ steps.ctx.outputs.sha }}-${{ github.run_attempt }}
@@ -163,12 +377,12 @@ jobs:
             node scripts/test-evidence-readiness.mjs report --repo $REPO --sha ${{ steps.ctx.outputs.sha }} --dir evidence-bundle --out readiness
           fi
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && needs.test-evidence-plan.result == 'success'
         with:
           name: release-readiness-${{ steps.ctx.outputs.sha }}
           if-no-files-found: ignore
           retention-days: 90
           path: readiness/
       - name: Fail closed
-        if: steps.mode.outputs.mode != 'deferred' && (steps.bundle.outcome != 'success' || steps.suite.outcome == 'failure')
-        run: echo "::error::Test evidence is incomplete or the suite failed; see the readiness report"; exit 1
+        if: steps.mode.outputs.mode != 'deferred' && (steps.bundle.outcome != 'success' || steps.suite.outcome == 'failure' || (steps.mode.outputs.mode == 'full' && needs.test-evidence-shard.result != 'success'))
+        run: echo "::error::Test evidence is incomplete or the suite failed (any shard failing fails this check); see the readiness report"; exit 1
