@@ -165,7 +165,7 @@ test('the forward recoveries are guarded by the md5 of what is live and restore 
 })
 
 test('worker v0.61.0 posts one record call for each item, tries a failed item once more, names what still fails, and changes nothing else', () => {
-  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v0.61.0";')
+  expect(IX).toMatch(/(?:const WORKER = "coverage-sweep-worker-v0\.61\.0"; |\/\/ was v0\.61\.0 )\/\/ v0\.61\.0 \(10 Nov 2026, CF-247 F-PDESC delivery/)   // later versions keep the note ("was v0.61.0")
   expect(IX).toMatch(/\/\/ was v0\.60\.0 \/\/ v0\.60\.0 \(10 Nov 2026, CF-247 F-PDESC delivery/)
   expect(IX).not.toContain('rpc("svc_provider_description_record", { p_results: noNul(out) })')
   const at = IX.indexOf('// v0.61.0: one record call for each item')

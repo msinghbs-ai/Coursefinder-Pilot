@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import { mockAdmin } from './support/admin-mock.mjs'
 import { mockLaneFunnels } from './support/lane-funnel-mock.mjs'
-import { mockDataDelivery, DATA_DELIVERY, THREE_ALERTS, withStages, STAGES } from './support/data-delivery-mock.mjs'
+import { mockDataDelivery, DATA_DELIVERY, THREE_ALERTS, withStages, STAGES, PROVIDER_AI, withProviderAi } from './support/data-delivery-mock.mjs'
 
 const OPERATIONS = '/#layer-2-discovery?tab=operations'
 async function open(page, payload) {
@@ -364,5 +364,71 @@ test.describe('Data delivery on Operations', () => {
     await expect(b2.locator('[data-dd-stage-n="by_person"]')).toHaveText('Not measured')
     await expect(b2.locator('[data-dd-stage-n="website_published"]')).toHaveText('Not measured')
     await expect(b2.locator('[data-dd-stage-n="by_machine"]')).toHaveText('3')
+  })
+  test('provider descriptions: AI cost and remaining allowance, admissions by route (machine rule and person apart) and the Basic to Enriched outcome, counted live (CF-247 F-PDESC, 10 Nov 2026)', async ({ page }) => {
+    await open(page, withProviderAi())
+    const pd = page.locator('[data-dd-stream="pdesc"]')
+    await expect(pd).toHaveAttribute('open', '')
+    const box = pd.locator('[data-dd-provider-ai="known"]')
+    await expect(box).toBeVisible()
+    await expect(box.locator('[data-dd-provider-ai-stamp]')).toContainText('Counted live at')
+    await expect(box.locator('[data-dd-pdesc-stage]')).toHaveCount(3)
+    // 1 AI cost: spent, reserved, ceiling, remaining allowance (the ceiling less spent less reserved), the day against the daily guard, the estimated settlements
+    const money = (k) => box.locator(`[data-dd-money="${k}"]`).first()
+    await expect(money('spent')).toHaveText('US$0.28'); await expect(box.locator('[data-dd-stage-row="ai_spent"]')).toContainText('187 paid calls')
+    await expect(money('reserved')).toHaveText('US$0.14'); await expect(box.locator('[data-dd-stage-row="ai_reserved"]')).toContainText('19 reads')
+    await expect(money('ceiling')).toHaveText('US$0.75')
+    await expect(money('remaining')).toHaveText('US$0.33')
+    await expect(money('today')).toHaveText('US$0.19')
+    await expect(box.locator('[data-dd-daily]')).toContainText('Daily guard US$1.00'); await expect(box.locator('[data-dd-daily]')).toContainText('left today US$0.68')
+    const settled = box.locator('[data-dd-stage-row="ai_settled"]')
+    await expect(settled).toContainText('Estimated'); await expect(settled.locator('[data-dd-stage-n="settled_reads"]')).toHaveText('60'); await expect(settled.locator('[data-dd-settled]')).toContainText('US$0.18'); await expect(settled.locator('[data-dd-settled]')).toContainText('estimated')
+    // 2 admitted, by route: the machine rule and a person are labelled apart
+    const n = (k) => box.locator(`[data-dd-stage-n="${k}"]`)
+    for (const [k, v] of Object.entries({ ai_first_description: '2', ai_upgrade: '0', registry_fact: '1,088', by_person: '0', withdrawn: '0' })) await expect(n(k), k).toHaveText(v)
+    for (const k of ['ai_first_description', 'ai_upgrade', 'registry_fact', 'withdrawn']) await expect(n(k)).toHaveAttribute('data-dd-actor', 'machine')
+    await expect(n('by_person')).toHaveAttribute('data-dd-actor', 'person')
+    await expect(box.locator('[data-dd-stage-row="by_person"]')).toContainText('Person')
+    await expect(box.locator('[data-dd-stage-row="registry_fact"]')).toContainText('Machine rule')
+    // 3 Basic to Enriched: upgraded, still held, upgrade reads waiting, upgrade reads held by rule (the rule with its count; the exact reason on hover)
+    for (const [k, v] of Object.entries({ upgrade_admitted: '0', basic_profiles_held: '1,088', upgrade_queued: '9', upgrade_held: '8' })) await expect(n(k), k).toHaveText(v)
+    const holds = box.locator('[data-dd-upgrade-holds] li')
+    await expect(holds).toHaveCount(3)
+    await expect(holds.first()).toContainText('provider name not proved'); await expect(holds.first()).toContainText('6')
+    await expect(holds.first().locator('span')).toHaveAttribute('title', /does not prove the provider's current full institutional identity/)
+    await expect(box.locator('[data-dd-upgrade-off]')).toHaveCount(0)
+    // only the provider stream carries the box, and the course stages box is not touched
+    await expect(page.locator('[data-dd-provider-ai]')).toHaveCount(1)
+  })
+
+  test('provider descriptions: a missing block is Not measured as a whole, a count that failed says why, a missing figure is Not measured and never 0, a switched-off upgrade lane says so', async ({ page }) => {
+    // an older server: no provider_ai key at all
+    await open(page)
+    const pd = page.locator('[data-dd-stream="pdesc"]')
+    await pd.locator('summary').click()
+    await expect(pd.locator('[data-dd-provider-ai="unknown"]')).toContainText('Not measured')
+    await expect(pd.locator('[data-dd-provider-ai="unknown"] [data-dd-money], [data-dd-provider-ai="unknown"] [data-dd-stage-n]')).toHaveCount(0)
+    // a count that failed
+    const p2 = await page.context().newPage()
+    await mockAdmin(p2); await mockLaneFunnels(p2); await mockDataDelivery(p2, withProviderAi({ known: false, reason: 'The provider AI and upgrade counts could not be read: canceling statement due to statement timeout' }))
+    await p2.goto(OPERATIONS)
+    const failed = p2.locator('[data-dd-stream="pdesc"] [data-dd-provider-ai="unknown"]')
+    await expect(failed).toBeVisible({ timeout: 20_000 })
+    await expect(failed).toContainText('could not be read')
+    // figures the server did not send (null or absent): Not measured, never 0; the lane switched off says so
+    const partial = { ...PROVIDER_AI, ai: { ...PROVIDER_AI.ai, remaining_usd: null, daily_guard_usd: null, daily_remaining_usd: null, settled_estimated_usd: null }, admitted: { ...PROVIDER_AI.admitted, by_person: null, ai_first_description: undefined }, upgrade: { ...PROVIDER_AI.upgrade, lane_on: false, queued_reads: 0, held_reads: null, top_hold_rules: [] } }
+    const p3 = await page.context().newPage()
+    await mockAdmin(p3); await mockLaneFunnels(p3); await mockDataDelivery(p3, withProviderAi(partial))
+    await p3.goto(OPERATIONS)
+    const b3 = p3.locator('[data-dd-stream="pdesc"] [data-dd-provider-ai="known"]')
+    await expect(b3).toBeVisible({ timeout: 20_000 })
+    await expect(b3.locator('[data-dd-money="remaining"]')).toHaveText('Not measured')
+    await expect(b3.locator('[data-dd-daily]')).toContainText('Daily guard: Not measured')
+    await expect(b3.locator('[data-dd-settled]')).toContainText('Amount: Not measured')
+    for (const k of ['by_person', 'ai_first_description', 'upgrade_held']) await expect(b3.locator(`[data-dd-stage-n="${k}"]`), k).toHaveText('Not measured')
+    await expect(b3.locator('[data-dd-stage-n="registry_fact"]')).toHaveText('1,088')
+    await expect(b3.locator('[data-dd-upgrade-off]')).toContainText('switched off')
+    await expect(b3.locator('[data-dd-stage-n="upgrade_queued"]')).toHaveText('0')
+    await expect(b3.locator('[data-dd-upgrade-holds]')).toHaveCount(0)
   })
 })

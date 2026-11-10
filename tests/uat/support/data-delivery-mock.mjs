@@ -91,6 +91,17 @@ export const STAGES = {
 /** DATA_DELIVERY with the stage counts on the cdesc stream (or any other stages value). */
 export const withStages = (stages = STAGES) => ({ ...DATA_DELIVERY, streams: DATA_DELIVERY.streams.map((s) => (s.stream === 'cdesc' ? { ...s, stages } : s)) })
 
+/** The provider AI cost, admissions and upgrade counts exactly as security.data_delivery_pdesc_v1() returns them (live figures of 10 Nov 2026 12:00 UTC). Added to the pdesc stream by the provider AI tests only. */
+export const PROVIDER_AI = {
+  known: true, counted_at: new Date().toISOString(), unit: 'providers',
+  ai: { ceiling_usd: 0.75, spent_usd: 0.2837956, calls: 187, reserved_usd: 0.136690016, reserved_reads: 19, remaining_usd: 0.329514384, today_usd: 0.1856412, daily_guard_usd: 1, daily_remaining_usd: 0.677668784, settled_estimated_reads: 60, settled_estimated_usd: 0.18 },
+  admitted: { ai_first_description: 2, ai_upgrade: 0, registry_fact: 1088, by_person: 0, withdrawn: 0 },
+  upgrade: { lane_on: true, admitted: 0, basic_profiles_held: 1088, queued_reads: 9, held_reads: 8,
+    top_hold_rules: [{ rule: 'provider_name_not_proved', n: 6, example: "The page does not prove the provider's current full institutional identity; no AI call was made." }, { rule: 'no_about_page', n: 1, example: 'no About or Overview link on the home page' }, { rule: 'not_stated', n: 1, example: 'the page does not describe the institution' }] },
+}
+/** DATA_DELIVERY with the provider AI counts on the pdesc stream (or any other provider_ai value). */
+export const withProviderAi = (provider_ai = PROVIDER_AI) => ({ ...DATA_DELIVERY, streams: DATA_DELIVERY.streams.map((s) => (s.stream === 'pdesc' ? { ...s, provider_ai } : s)) })
+
 /** Answers admin_layer23('data_delivery') and passes every other action to the admin mock registered before it. Returns the call log and a switch to fail the read. */
 export async function mockDataDelivery(page, payload = DATA_DELIVERY) {
   const state = { calls: 0, fail: null, hang: false, payload }

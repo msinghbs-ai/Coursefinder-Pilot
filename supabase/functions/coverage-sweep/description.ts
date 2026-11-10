@@ -314,6 +314,32 @@ function registryEvidenceIdentity(html: string, names: string[]): DescriptionIde
   return fail("provider_name_not_proved");
 }
 
+// v0.62.0 (CF-247 F-PDESC, Platform Admin 10 Nov 2026): what the identity proof was given, kept when it FAILS (observability only; no page passes or fails differently).
+// 199 reads were held provider_name_not_proved (Swinburne, Collarts, Alphacrucis, Ara, Whitecliffe, Auckland Institute of Studies among them) and the database could not
+// say why: a page drawn in the browser (a script shell with no title or h1 in the raw HTML), a title with extra words, the short name only. This is the evidence for that
+// decision: the first <title>, up to three <h1>, og:site_name (each as the proof reads it, entities decoded, white space collapsed), the size of the raw HTML and of the
+// visible text, and whether the page looks like a script shell. It is stored by svc_provider_description_record inside checks.identity.seen.
+export const IDENTITY_SEEN_TEXT_MAX = 160;        // fixed: the longest heading excerpt kept (a diagnostic excerpt, not an operating value)
+export const IDENTITY_SEEN_H1_MAX = 3;            // fixed: the most h1 headings kept (a diagnostic excerpt, not an operating value)
+export const IDENTITY_SHELL_TEXT_MAX = 200;       // fixed: below this many visible characters a page with script tags is a shell drawn in the browser (a diagnostic label, not an operating value)
+export type DescriptionIdentitySeen = { title: string; h1: string[]; og_site_name: string; html_chars: number; text_chars: number; has_script_shell: boolean };
+export function descriptionIdentitySeen(html: string): DescriptionIdentitySeen {
+  const raw = String(html || "");
+  const read = (inner: string) => decodeHeadingEntities(htmlToText(inner)).replace(/\s+/g, " ").trim().slice(0, IDENTITY_SEEN_TEXT_MAX);
+  const title = raw.match(/<title\b[^>]*>([\s\S]*?)<\/title>/i);
+  const h1: string[] = [];
+  for (const m of raw.matchAll(/<h1\b[^>]*>([\s\S]*?)<\/h1>/gi)) { const t = read(m[1]); if (t) h1.push(t); if (h1.length >= IDENTITY_SEEN_H1_MAX) break }
+  let site = "";
+  for (const m of raw.matchAll(/<meta\b[^>]*>/gi)) {
+    if ((m[0].match(/\b(?:property|name)\s*=\s*["']([^"']+)["']/i) || [])[1]?.toLowerCase() !== "og:site_name") continue;
+    const c = m[0].match(/\bcontent\s*=\s*(?:"([^"]*)"|'([^']*)')/i);
+    if (c) { site = read(c[1] ?? c[2] ?? ""); break }
+  }
+  // the visible text of the whole page (no cap at the model's page length): the same reader as the page text, with the navigation left in
+  const text_chars = htmlToText(raw).replace(/\s+/g, " ").trim().length;
+  return { title: title ? read(title[1]) : "", h1, og_site_name: site, html_chars: raw.length, text_chars, has_script_shell: text_chars < IDENTITY_SHELL_TEXT_MAX && /<script\b/i.test(raw) };
+}
+
 // The identity proof the reader applies. `evidence` is what the database gave the worker: the page's final address and the provider's own verified
 // hosts. Without it, or when the page is not on one of those hosts, only the strict proof applies, exactly as before.
 export function descriptionSourceIdentity(html: string, page: string, names: string[], evidence?: { url?: string; hosts?: string[] }): DescriptionIdentity {
