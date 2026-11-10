@@ -58,6 +58,8 @@ test('QA conditions: a currency code is never a paper code, leading the way stil
   expect(M).not.toMatch(/leading\\s\+\(to\|into\|towards\?\|a\|an\|the/)       // a|an|the are no longer in the alternation
   expect(M).toContain("\\m(aud|usd|nzd|eur|gbp|cad|sgd|cny|jpy|inr|hkd|chf)\\s?[0-9]")
   expect(M).toContain("\\m(papers?|courses?|units?|subjects?|modules?)\\M")
+  expect(M).toContain("regexp_replace(t, '\\m[A-Z]{4,5}\\s?[0-9]{3}\\M', ' ', 'g'); -- fixed: an ISO currency code is always 3 letters")
+  expect(M).not.toContain('[A-Z]{3,5}')
   expect(M).toContain("v_q !~ '\\myou(r|rs|rself)?\\M'")
   expect(M).toContain("regexp_replace(regexp_replace(g2.url, '[?#].*$', ''), '/+$', '')")
   expect(M).toContain('g2.evidence_id = g.evidence_id')

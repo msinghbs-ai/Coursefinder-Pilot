@@ -122,6 +122,22 @@ select pg_temp.expect('B1 money: a currency code beside an amount (AUD 250, USD 
 select pg_temp.expect('B2 leading: "leading the way" and "leading the nation" are rankings and still decline policy_refused_word', pg_temp.try(504) = 'policy_refused_word' and pg_temp.try(505) = 'policy_refused_word');
 select pg_temp.expect('B2 leading: leading teams / people / others (a verb) is kept', pg_temp.try(506) = 'admitted');
 
+
+-- B1 (second round): an ISO currency code is exactly 3 letters, so a paper code is 4 or 5 letters and no 3-letter prefix is ever set aside, whatever the currency
+select pg_temp.mk(n, 1) from generate_series(551, 560) n;
+select pg_temp.setsents(551, pg_temp.body(551, 'Each ' || pg_temp.w(551, 1) || ' unit of study is MYR 250'));
+select pg_temp.setsents(552, pg_temp.body(552, 'Each ' || pg_temp.w(552, 1) || ' course is THB 300'));
+select pg_temp.setsents(553, pg_temp.body(553, 'Each ' || pg_temp.w(553, 1) || ' unit is AED 300'));
+select pg_temp.setsents(554, pg_temp.body(554, 'Each ' || pg_temp.w(554, 1) || ' subject is ZAR 120'));
+select pg_temp.setsents(555, pg_temp.body(555, 'Each ' || pg_temp.w(555, 1) || ' module is KRW 500'));
+select pg_temp.setsents(556, pg_temp.body(556, 'The ' || pg_temp.w(556, 1) || ' programme has the papers PSYC 100 and LAWS 201'));
+select pg_temp.setsents(557, pg_temp.body(557, 'The ' || pg_temp.w(557, 1) || ' programme has the papers CHHE 701 and CHHE 702'));
+select pg_temp.setsents(558, pg_temp.body(558, 'The ' || pg_temp.w(558, 1) || ' programme has the papers LAW 201'));
+select pg_temp.expect('B1 currency: MYR 250, THB 300, AED 300, ZAR 120 and KRW 500 beside a unit, course, subject or module are never a paper code and still decline policy_figure',
+  pg_temp.try(551) = 'policy_figure' and pg_temp.try(552) = 'policy_figure' and pg_temp.try(553) = 'policy_figure' and pg_temp.try(554) = 'policy_figure' and pg_temp.try(555) = 'policy_figure');
+select pg_temp.expect('B1 paper codes: PSYC 100, LAWS 201, CHHE 701 and CHHE 702 (4 letters) in a sentence that names its papers are programme structure and pass', pg_temp.try(556) = 'admitted' and pg_temp.try(557) = 'admitted');
+select pg_temp.expect('B1 paper codes: a 3-letter prefix (LAW 201) is never set aside, so it declines policy_figure (the conservative side)', pg_temp.try(558) = 'policy_figure');
+
 -- N1: the learner word needs a quote that speaks to the reader
 create function pg_temp.chk(n int) returns text language sql as $$ select (security.course_description_check_v1(pg_temp.cid(n), (select value from pipeline.field_enrich_items where course_id = pg_temp.cid(n) and field = 'description')))->>'rule' $$;
 select pg_temp.mk(n, 1) from generate_series(511, 514) n;
