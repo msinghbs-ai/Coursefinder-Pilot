@@ -10,8 +10,7 @@
 -- Expected recovery by job aer-replay with no AI read: about 113 held reads, each checked again by E13 and D-R2 (duplicates collapse to one row: 20261107130000),
 -- replaced only when complete. Replay throughput is raised so that this clears in about a day (no spend; each replay replaces one waiting item with one).
 -- Reversal: set entry.max_rows_by_provider back to [] and the three replay settings back to 5 / 10 / 100.
--- Replaces: nothing.
--- Retires: nothing.
+-- Replaces: nothing. Retires: nothing.
 
 do $g$
 begin

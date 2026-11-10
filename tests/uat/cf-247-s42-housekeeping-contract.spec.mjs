@@ -14,7 +14,9 @@ const mig = fs.readFileSync(`${MIG_DIR}/${FIRST}_cf247_component_register.sql`, 
 export function housekeepingProblems(sql) {
   const out = []
   if (!/^-- Replaces: .+/m.test(sql)) out.push('no "-- Replaces:" line')
-  if (!/^-- Retires: .+/m.test(sql)) out.push('no "-- Retires:" line')
+  // 11 Nov 2026 (F-AER.01): "Retires:" may share the Replaces line ("-- Replaces: nothing. Retires: nothing."); migrations applied outside CI keep their
+  // applied bytes (scripts/ci/apply-migration.sh refuses a changed applied file), so the rule reads the statement, not the line break
+  if (!/^--.*\bRetires: .+/m.test(sql)) out.push('no "-- Retires:" line')
   for (const m of sql.matchAll(/create table (?:if not exists )?([a-z_]+\.[a-z0-9_]+)/gi)) {
     if (!new RegExp(`comment on table ${m[1].replace('.', '\\.')} is '`, 'i').test(sql)) out.push(`table ${m[1]} has no purpose (comment on table)`)
   }

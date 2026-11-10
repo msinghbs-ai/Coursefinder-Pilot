@@ -16,8 +16,7 @@
 --   security.aer_machine_check_v1(uuid) (machine admission; the rule's evidence is recorded in the checks as title_identity).
 -- A read admitted this way still passes every other gate (E13, D-R3, quote on page) and, in machine mode, every aer-machine-v1 check. No AI or Firecrawl call is made by this migration.
 -- Reversal: aer.title_identity_on = 0 (the rule answers false; behaviour is exactly as before).
--- Replaces: the three functions above (same names; md5-guarded edits)
--- Retires: nothing.
+-- Replaces: the three functions above (same names; md5-guarded edits). Retires: nothing.
 
 do $g$
 begin
