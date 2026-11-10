@@ -16,7 +16,7 @@ const answer = { scope: 'main_teaching', scope_quote: 'Main campus academic cale
 
 test('every value must be on the page: dated teaching starts kept, orientation never a commencement, unproven values become findings', () => {
   const p = calendarAiParsed([answer], page, `ai:gpt-4.1-mini:${CALENDAR_READER}`)
-  expect(p.parser).toBe('ai:gpt-4.1-mini:calendar-v2.1'); expect(p.reader).toBe('calendar-v2.1'); expect(p.scope).toBe('main_teaching')
+  expect(p.parser).toBe('ai:gpt-4.1-mini:calendar-v2.2'); expect(p.reader).toBe('calendar-v2.2'); expect(p.scope).toBe('main_teaching')
   const autumn = p.periods.find(x => x.period === 'autumn session')
   expect(autumn.starts).toEqual([{ year: Y, month: 2, day: 22, date: `${Y}-02-22`, quote: `22 February ${Y} | Autumn session teaching begins`, year_basis: 'quote', meaning: 'teaching_start' }])
   expect(autumn.deadlines).toEqual([{ year: Y - 1, month: 12, day: 1, date: `${Y - 1}-12-01`, quote: `1 December ${Y - 1} | International applications close for Autumn session`, year_basis: 'quote', applies_to: 'international', rolling: false }])
@@ -64,7 +64,7 @@ test('the worker: calendars read by calendar-v2 in the existing central_ai mode,
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   const ai = w.slice(w.indexOf('if (mode === "central_ai") {'), w.indexOf('if (mode === "calendar_reread") {'))
   expect(ai).toContain('if (it.kind === "intake_calendar") {')
-  expect(ai).toContain('calendarAiParsed(answers, md, `ai:${it.model_code}:${CALENDAR_READER}`, cut)')
+  expect(ai).toContain('calendarAiParsed(answers, md, `ai:${it.model_code}:${CALENDAR_READER}`, cut, String(it.url || ""))')
   expect(ai).toContain('wsNum("reading.calendar_slice_chars", 24000), wsNum("reading.calendar_max_slices", 4)')
   expect(ai).toContain('centralAiRequest(it.model, it.kind,')   // English policy unchanged
   const rr = w.slice(w.indexOf('if (mode === "calendar_reread") {'), w.indexOf('// v0.47.0 (CF-247 Track C'))
