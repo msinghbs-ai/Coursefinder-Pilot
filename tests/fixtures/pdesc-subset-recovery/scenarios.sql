@@ -45,6 +45,16 @@ create or replace function pg_temp.ledger(n int, o text) returns bigint language
 create or replace function pg_temp.try_code(n int) returns text language sql as $f$
   select coalesce(checks->'subset_recovery'->>'result', 'none') from pipeline.provider_description_machine_admissions where provider_id = pg_temp.pid(n) and outcome = 'declined' $f$;
 
+create or replace function pg_temp.cohort_for(n int) returns table(m jsonb) language plpgsql as $f$
+declare v_c uuid; v_u uuid;
+begin
+  select id into v_u from auth.users limit 1;
+  if v_u is null then insert into auth.users (id) values (gen_random_uuid()) returning id into v_u; end if;
+  insert into pipeline.provider_description_cohorts (requested_by, state, selection, snapshot, expires_at) values (v_u, 'prepared', '{}'::jsonb, '{}'::jsonb, now() + interval '1 day') returning id into v_c;
+  insert into pipeline.provider_description_cohort_members (cohort_id, provider_id, read_id, pick, snapshot)
+  select v_c, pg_temp.pid(n), r.id, 1, '{}'::jsonb from pipeline.provider_description_reads r where r.provider_id = pg_temp.pid(n) and r.state in ('admitted', 'verified') order by r.created_at desc limit 1;
+  return query select e from jsonb_array_elements(security.provider_description_run_result_v1(v_c)->'providers') e;
+end $f$;
 -- ---------------------------------------------------------------------------------------------------------------- 1. the shape: one new function, read only, not granted
 select 'function|' || (select (prosecdef and provolatile = 's')::text from pg_proc where oid = 'security.provider_description_subset_v1(uuid,jsonb)'::regprocedure)
   || '|' || (not has_function_privilege('anon', 'security.provider_description_subset_v1(uuid,jsonb)', 'execute') and not has_function_privilege('authenticated', 'security.provider_description_subset_v1(uuid,jsonb)', 'execute'))::text;
@@ -68,8 +78,15 @@ select 'monash_dropped|' || (select (checks->'subset_of_reading'->'dropped'->0->
   || '|' || (checks->'subset_of_reading'->>'kept_sentences') || '|' || (checks->'subset_of_reading'->>'given_sentences') || '|' || (checks->'subset_of_reading'->>'original_read_id' = read_id::text)::text || '|' || (checks->'subset_of_reading'->>'original_evidence_id' = evidence_id::text)::text
   from pipeline.provider_description_machine_admissions where provider_id = pg_temp.pid(4) and outcome = 'admitted');
 select 'monash_declined_kept|' || (select (reason like '%refused_word:campus%')::text from pipeline.provider_description_machine_admissions where provider_id = pg_temp.pid(4) and outcome = 'declined');
-select 'monash_proposal_intact|' || (select jsonb_array_length(proposed_value->'sentences') || '|' || (proposed_value->>'description' like '%single campus%')::text from pipeline.layer4_review_items where id = pg_temp.item(4))
-  || '|' || (select (jsonb_array_length(proposal->'sentences') = 3 and proposal->>'description' like '%single campus%')::text from pipeline.provider_description_reads where provider_id = pg_temp.pid(4) and state = 'admitted');
+-- the item and the read now hold the description the catalogue holds (the kept sentences); the original proposal (every sentence) stays in the decision row, the item's layer2_state and the ledger
+select 'monash_proposal_kept|' || (select jsonb_array_length(proposed_value->'sentences') || '|' || (proposed_value->>'description' = pg_temp.desc_of(4))::text || '|' || (layer2_state->'subset_of_reading'->>'original_text' like '%single campus%')::text || '|' || jsonb_array_length(layer2_state->'subset_of_reading'->'original_sentences') from pipeline.layer4_review_items where id = pg_temp.item(4))
+  || '|' || (select (jsonb_array_length(proposal->'sentences') = 2 and proposal->>'description' = pg_temp.desc_of(4))::text from pipeline.provider_description_reads where provider_id = pg_temp.pid(4) and state = 'admitted')
+  || '|' || (select (checks->'subset_of_reading'->>'original_text' like '%single campus%')::text from pipeline.provider_description_machine_admissions where provider_id = pg_temp.pid(4) and outcome = 'admitted');
+-- B1 (QA 10 Nov): the read-back finds the recovered description. The approved lineage is not null, the consumer read-back accepts the row, a run that includes it no longer says awaiting_admission, and the selection does not call it a manual description
+select 'monash_lineage|' || (security.provider_description_approved_lineage_v1(pg_temp.pid(4), pg_temp.desc_of(4)) = pg_temp.item(4))::text;
+select 'monash_selection|' || coalesce((select x->>'eligibility_reason' || '/' || (x->>'eligible') from jsonb_array_elements(security.provider_description_selection_v1(jsonb_build_object('filter', 'all', 'size', 50, 'prefilter', false, 'provider_id', pg_temp.pid(4)))->'providers') x), 'not_listed');
+select 'monash_publication_check|' || security.provider_description_publication_check_v1();
+select 'monash_run_result|' || coalesce((select (m->'publication'->'website'->>'status') || '|' || (m->'publication'->'zoho'->>'status') || '|' || (m->'publication'->'catalogue'->>'status') from pg_temp.cohort_for(4) m), 'no_member');
 select 'monash_decision|' || (select d.action || '|' || (d.proposed_value->>'description' like '%single campus%')::text || '|' || jsonb_array_length(d.proposed_value->'sentences') || '|' || (d.final_value->>'description' = pg_temp.c1() || ' ' || pg_temp.c3())::text || '|' || jsonb_array_length(d.final_value->'sentences')
     || '|' || (d.layer2_state->>'subset_of_reading') || '|' || (d.actor_id = 'c0ffee00-0000-4000-8000-000000000150')::text || '|' || (d.reason like '%Not a person%')::text
   from pipeline.layer4_decisions d where d.review_item_id = pg_temp.item(4));
@@ -181,6 +198,15 @@ select pg_temp.set_s('pdesc.machine_admit_on', '1');
 select security.provider_description_machine_settle_pending_v1();
 select 'dd_counts|' || (security.data_delivery_pdesc_v1()->'subset_recovery'->>'recovered') || '|' || (security.data_delivery_pdesc_v1()->'subset_recovery'->>'waiting_items') || '|' || (security.data_delivery_pdesc_v1()->'subset_recovery'->>'still_declined') || '|' || (security.data_delivery_pdesc_v1()->'subset_recovery'->>'causes');
 select 'dd_causes|' || (select string_agg((c->>'cause') || '=' || (c->>'n'), ',' order by c->>'cause') from jsonb_array_elements(security.data_delivery_pdesc_v1()->'subset_recovery'->'still_declined_by_cause') c);
+rollback;
+
+-- ---------------------------------------------------------------------------------------------------------------- 10a. the promotional sentence (supersedes the retired pdesc-claim-context results record_tally, record_declined, waiting_promotional_settle, waiting_promotional): ONE promotional sentence among clean ones is left out, the clean sentences are admitted
+begin;
+select pg_temp.set_s('pdesc.machine_admit_on', '1'); select pg_temp.queue(6);
+select pg_temp.run_worker(3, jsonb_build_object(pg_temp.pid(6)::text, pg_temp.ans(array[pg_temp.c1(), 'Its students are taught by the best staff, with a long record of teaching in many fields.', pg_temp.c3()])));
+select 'promotional_record|' || (pg_temp.desc_of(6) = pg_temp.c1() || ' ' || pg_temp.c3())::text || '|' || pg_temp.istatus(6) || '|' || (select (checks->'subset_of_reading'->'dropped'->0->>'code') || '|' || (checks->'subset_of_reading'->>'kept_sentences') || '/' || (checks->'subset_of_reading'->>'given_sentences')
+    from pipeline.provider_description_machine_admissions where provider_id = pg_temp.pid(6) and outcome = 'admitted')
+  || '|' || (security.provider_description_approved_lineage_v1(pg_temp.pid(6), pg_temp.desc_of(6)) = pg_temp.item(6))::text;
 rollback;
 
 -- ---------------------------------------------------------------------------------------------------------------- 10b. attempts (Operating Model v1.7, evidence-backed absence): a budget refusal is NOT an attempt; a failed fetch is a retryable attempt; a real read with nothing usable is tried, not found

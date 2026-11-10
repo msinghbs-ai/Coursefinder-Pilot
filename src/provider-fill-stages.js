@@ -202,6 +202,27 @@ export function fieldOutcome(p) {
   if (r.state === 'queued' && NOT_AN_ATTEMPT.has(r.rule)) return { kind: 'not_attempt', title: 'Not an attempt: waiting for the AI budget or policy', text: `No page was judged and no try was used (${humanLabel(r.rule).toLowerCase()}).${next}` }
   if (r.state === 'queued' && r.rule === 'retry') return { kind: 'technical', title: 'Technical failure: it will be tried again', text: `${src}${tries}${next}${r.reason ? ` Failure: ${r.reason}` : ''}` }
   if (r.state === 'queued' || r.state === 'reading') return { kind: 'working', title: r.state === 'reading' ? 'Reading now' : 'Queued for the reader', text: `${src}${tries}${next}` }
-  if (r.state === 'held') return { kind: 'not_found', title: 'Tried, not found', text: `${src}${tries} ${r.reason || humanLabel(r.rule)}.${next} An unchanged page is not read again until the page changes or the next try is due.` }
+  if (r.state === 'held') {
+    const h = heldKind(r)
+    return { kind: h.kind, title: h.title, text: `${p?.source_url ? src : ''}${tries} ${h.text}${r.reason ? ` (${r.reason})` : ''}${next}${h.kind === 'not_found' ? ' An unchanged page is not read again until the page changes or the next try is due.' : ''}`.replace(/\s+/g, ' ').trim() }
+  }
   return { kind: 'none', title: 'Not read yet', text: src }
+}
+
+// the live held rules, by what they mean (counts of 10 Nov 2026 in the comments are for reading only)
+const NOT_ATTEMPTED = new Set(['insufficient_verified_facts', 'home_not_read', 'about_not_read']) // 472, 104, 25: no page was read
+const SOURCE_UNAVAILABLE = new Set(['no_about_page', 'not_about_page', 'robots_disallowed', 'wrong_host']) // no About page found on the provider's own site, a page that is not an About page, robots.txt, a host that is not the provider's
+const IDENTITY = new Set(['provider_name_not_proved', 'provider_name_conflict', 'provider_host_conflict', 'provider_subunit_source']) // the page does not prove it is the provider's own
+const NOT_STATED = new Set(['not_stated', 'no_about_page'])
+
+/** What a held read means. 'Tried, not found' only for a real read (read_via and content_hash exist) whose rule says the page does not describe the institution. */
+export function heldKind(r) {
+  const rule = String(r?.rule ?? '')
+  const real = Boolean(r?.read_via) && Boolean(r?.content_hash)
+  if (/^machine_declined/.test(rule)) return { kind: 'person', title: 'Held for a person or policy', text: 'The automatic rule did not admit the reading; a person decides in Layer 4, or the platform recovers it by leaving out the refused sentences.' }
+  if (NOT_ATTEMPTED.has(rule)) return { kind: 'not_attempted', title: 'Not attempted', text: rule === 'insufficient_verified_facts' ? 'The register holds too few verified facts to find this provider\'s page, so no page was read.' : 'The provider\'s page could not be reached by an earlier step, so no page was read.' }
+  if (IDENTITY.has(rule)) return { kind: 'identity', title: 'Held: identity or host not proved', text: real ? 'A page was read but it does not prove it is this provider\'s own page.' : 'The page found does not belong to this provider\'s own site.' }
+  if (NOT_STATED.has(rule) && real) return { kind: 'not_found', title: 'Tried, not found', text: 'The official page was read and does not describe the institution.' }
+  if (SOURCE_UNAVAILABLE.has(rule) || !real) return { kind: 'source_unavailable', title: 'Source unavailable', text: 'No usable official page could be read (' + (rule ? rule.replace(/_/g, ' ') : 'no reason recorded') + '); no description was judged.' }
+  return { kind: 'insufficient', title: 'Insufficient or ambiguous evidence', text: 'The page was read but what it says did not pass the checks (' + (rule ? rule.replace(/_/g, ' ') : 'no reason recorded') + ').' }
 }

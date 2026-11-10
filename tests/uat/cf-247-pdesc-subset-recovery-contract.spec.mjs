@@ -11,7 +11,7 @@ const SQL = M.split('\n').filter(l => !/^\s*--/.test(l)).join('\n')
 test('the migration follows the house pattern: md5-guarded edits, one new read-only function, nothing dropped, held forward recovery', () => {
   expect(M).toMatch(/^-- Replaces: /m)
   expect(M).toMatch(/^-- Retires: nothing$/m)
-  for (const h of ['dedf28930cc7a12ad31570dec0d2f334', 'ed205f4b6dbdaf1a27b1bdf39479a276', '15b2f9882e77d7fcf0a8a4be2b6df18f', '575bded841d3ceca0afc9bdf13bf4d82', '4a37300325d9da37ba26c92a0eda8279', 'e0fea4e1e736f97b5a7172ecb981501a', '5f2d1a514ffcb45582888a2f455c63b8']) expect(M, h).toContain(h)
+  for (const h of ['dedf28930cc7a12ad31570dec0d2f334', '86d2596a13efe885b597771e70542efd', '15b2f9882e77d7fcf0a8a4be2b6df18f', '575bded841d3ceca0afc9bdf13bf4d82', '4a37300325d9da37ba26c92a0eda8279', 'e0fea4e1e736f97b5a7172ecb981501a', '5f2d1a514ffcb45582888a2f455c63b8']) expect(M, h).toContain(h)
   expect(M).toContain("raise exception 'live % differs from the definition this change edits")
   expect(M).not.toMatch(/^\s*(drop|delete|truncate)\b/im)
   expect(SQL).not.toMatch(/insert into pipeline\.platform_toolset_settings|update pipeline\.platform_toolset_settings/i)

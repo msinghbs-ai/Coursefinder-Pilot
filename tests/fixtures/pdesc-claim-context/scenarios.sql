@@ -126,10 +126,11 @@ select 'setting_alumni_only_students_refused|' || pg_temp.one(12, 'The universit
 select 'setting_alumni_only_alumni_admitted|' || pg_temp.one(12, 'The alumni community keeps in touch with the university.', 'Our alumni community keeps in touch with the university.');
 rollback;
 
+-- RETIRED 10 Nov 2026 (migration 20261110210000, sentence-subset recovery): record_tally, record_declined, waiting_promotional_settle and waiting_promotional are no longer asserted. A reading with ONE promotional sentence among clean ones is now recovered by leaving that sentence out (it used to wait whole for a person); the superseding scenarios are tests/fixtures/pdesc-subset-recovery promotional_*. The statements stay (they set up the later scenarios); their output carries the RETIRED_ label and is not compared.
 -- ---------------------------------------------------------------------------------------------------------------- 5. the reader: a supported neutral sentence is admitted by the machine rule; a promotional one waits for a person
 begin;
 select pg_temp.queue(2); select pg_temp.queue(3);
-select 'record_tally|' || ((pg_temp.run_worker(3, jsonb_build_object(
+select 'RETIRED_record_tally|' || ((pg_temp.run_worker(3, jsonb_build_object(
    pg_temp.pid(2)::text, pg_temp.ans(array[
      ['The university''s essence is found in its students, staff, alumni and donors.', pg_temp.q_unsw()],
      ['The first students began their studies in Clayton in 1961.', pg_temp.q_monash()],
@@ -147,7 +148,7 @@ select 'record_audit|' || (select a.outcome || '|' || a.tier || '|' || (a.source
    from pipeline.provider_description_machine_admissions a where a.provider_id = pg_temp.pid(2));
 select 'record_decision_is_machine|' || (select (d.layer2_state->>'actor_kind') || '|' || (d.layer2_state->>'machine_rule') from pipeline.layer4_decisions d join pipeline.layer4_review_items li on li.id = d.review_item_id where li.entity_id = pg_temp.pid(2));
 -- the ranked sentence: not admitted; the proposal waits in Layer 4 with the exact reason; nothing is published
-select 'record_declined|' || (select r.state from pipeline.provider_description_reads r where r.provider_id = pg_temp.pid(3) order by r.created_at desc limit 1) || '|' || pg_temp.items(3, 'pending') || '|' || pg_temp.desc_of(3)
+select 'RETIRED_record_declined|' || (select r.state from pipeline.provider_description_reads r where r.provider_id = pg_temp.pid(3) order by r.created_at desc limit 1) || '|' || pg_temp.items(3, 'pending') || '|' || pg_temp.desc_of(3)
    || '|' || (select substring(a.reason from '\(([^)]*)\)') from pipeline.provider_description_machine_admissions a where a.provider_id = pg_temp.pid(3) and a.outcome = 'declined')
    || '|' || (select left(escalation_reason, 70) from pipeline.layer4_review_items where entity_id = pg_temp.pid(3) and status = 'pending');
 rollback;
@@ -180,8 +181,8 @@ select pg_temp.run_worker(3, jsonb_build_object(pg_temp.pid(5)::text, pg_temp.an
      ['Its students are taught by the best staff, with a long record of teaching in many fields.', 'Our students are taught by the best staff, with a long record of teaching in many fields.'],
      ['Elm Arts University offers music composition and theatre performance to its community.', 'Elm Arts University offers music composition and theatre performance to its community.']]))) is not null;
 select pg_temp.set_s('pdesc.machine_admit_on', '1');
-select 'waiting_promotional_settle|' || (security.provider_description_machine_settle_pending_v1())::text;
-select 'waiting_promotional|' || pg_temp.items(5, 'pending') || '|' || pg_temp.desc_of(5) || '|' || (select substring(a.reason from '\(([^)]*)\)') from pipeline.provider_description_machine_admissions a where a.provider_id = pg_temp.pid(5));
+select 'RETIRED_waiting_promotional_settle|' || (security.provider_description_machine_settle_pending_v1())::text;
+select 'RETIRED_waiting_promotional|' || pg_temp.items(5, 'pending') || '|' || pg_temp.desc_of(5) || '|' || (select substring(a.reason from '\(([^)]*)\)') from pipeline.provider_description_machine_admissions a where a.provider_id = pg_temp.pid(5));
 rollback;
 
 -- ---------------------------------------------------------------------------------------------------------------- 7. the register-fact profile (tier 4) is unchanged: it has no quotes, so no neutral word is allowed there

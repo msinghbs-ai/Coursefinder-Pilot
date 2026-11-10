@@ -73,7 +73,8 @@ const reasonBox = page => page.getByLabel('Extract audit reason')
 test.describe('the Extract / refresh description now panel', () => {
   test('one primary action: it is the only primary button, the older routes sit under a collapsed Details, and one click does preview, fixed cohort and Run Now in that order', async ({ page }) => {
     await mountPanel(page)
-    await expect(page.locator('button.cf-btn-primary, [data-extract-now]')).toHaveCount(1) // the only primary button before Details is opened
+    await expect(page.locator('[data-fill-fields] button.cf-btn.primary')).toHaveCount(1) // the only primary button in the panel
+    await expect(page.locator('[data-fill-details] button.cf-btn.primary')).toHaveCount(0)
     await expect(page.locator('[data-fill-details]')).not.toHaveAttribute('open', '')
     await expect(page.getByRole('radio', { name: /Preview only/ })).toBeHidden()
     const row = page.locator(`[data-fill-provider="${P1}"]`)
@@ -202,7 +203,7 @@ test.describe('the Extract / refresh description now panel', () => {
 
   test('the result by field: tried-not-found, a technical failure that will retry and a budget refusal that is not an attempt are told apart, with the source examined and the next try', async ({ page }) => {
     const cases = [
-      [{ reader: { state: 'held', rule: 'no_about_page', reason: 'no About page found', tries: 1 }, source_url: 'https://a.example/about' }, 'not_found', 'Tried, not found', 'Source examined: https://a.example/about'],
+      [{ reader: { state: 'held', rule: 'not_stated', reason: 'the page does not describe the institution', tries: 1, read_via: 'direct', content_hash: 'abc123' }, source_url: 'https://a.example/about' }, 'not_found', 'Tried, not found', 'Source examined: https://a.example/about'],
       [{ reader: { state: 'queued', rule: 'retry', reason: 'fetch_failed: timeout', tries: 1 }, next_retry_at: '2026-11-10T09:00:00Z' }, 'technical', 'Technical failure: it will be tried again', 'Next try: 2026-11-10T09:00:00Z'],
       [{ reader: { state: 'queued', rule: 'ai_budget_refused', tries: 0 } }, 'not_attempt', 'Not an attempt', 'no try was used'],
     ]
@@ -212,6 +213,36 @@ test.describe('the Extract / refresh description now panel', () => {
       await expect(f, kind).toContainText(title)
       await expect(f, kind).toContainText(text)
       await expect(page.locator(`[data-fill-provider="${P1}"] [data-field-outcome="not_read"]`)).toContainText('not read')
+    }
+  })
+
+  test('a held read is labelled by what it means: only a real read of a page that does not describe the institution is "Tried, not found"; never-read, identity or host, unavailable source, weak evidence and machine-declined holds each have their own words, and no "No source examined yet" sits under a tried-not-found heading', async ({ page }) => {
+    const real = { read_via: 'direct', content_hash: 'abc123' }
+    const url = { source_url: 'https://a.example/about' }
+    const cases = [ // [rule, read facts, source, kind, heading, must not say]
+      ['insufficient_verified_facts', {}, {}, 'not_attempted', 'Not attempted', /Tried, not found/],
+      ['home_not_read', {}, {}, 'not_attempted', 'Not attempted', /Tried, not found/],
+      ['about_not_read', {}, {}, 'not_attempted', 'Not attempted', /Tried, not found/],
+      ['no_about_page', {}, {}, 'source_unavailable', 'Source unavailable', /Tried, not found/],
+      ['no_about_page', real, url, 'not_found', 'Tried, not found', /No source examined yet/],
+      ['not_stated', real, url, 'not_found', 'Tried, not found', /No source examined yet/],
+      ['not_stated', {}, {}, 'source_unavailable', 'Source unavailable', /Tried, not found/],
+      ['provider_name_not_proved', real, url, 'identity', 'identity or host not proved', /Tried, not found/],
+      ['provider_name_conflict', real, url, 'identity', 'identity or host not proved', /Tried, not found/],
+      ['provider_host_conflict', {}, {}, 'identity', 'identity or host not proved', /Tried, not found/],
+      ['wrong_host', {}, {}, 'source_unavailable', 'Source unavailable', /Tried, not found/],
+      ['robots_disallowed', {}, {}, 'source_unavailable', 'Source unavailable', /Tried, not found/],
+      ['verbatim_passage', real, url, 'insufficient', 'Insufficient or ambiguous evidence', /Tried, not found/],
+      ['quote_not_on_page', real, url, 'insufficient', 'Insufficient or ambiguous evidence', /Tried, not found/],
+      ['unsupported_claim', real, url, 'insufficient', 'Insufficient or ambiguous evidence', /Tried, not found/],
+      ['machine_declined_machine_text_refused_word', {}, {}, 'person', 'Held for a person or policy', /Tried, not found/],
+    ]
+    for (const [rule, facts, src, kind, heading, never] of cases) {
+      await mountPanel(page, { ids: [P1], extra: { override: { reader: { state: 'held', rule, tries: 1, ...facts }, ...src } } })
+      const f = page.locator(`[data-fill-provider="${P1}"] [data-field-outcome]`).first()
+      await expect(f, rule).toHaveAttribute('data-field-outcome', kind)
+      await expect(f, rule).toContainText(heading)
+      await expect(f, rule).not.toContainText(never)
     }
   })
 
@@ -335,15 +366,15 @@ async function mountCatalogue(page, { rank = 6, cap = 2, capFails = false } = {}
 }
 
 test.describe('the Provider Catalogue', () => {
-  test('each row has a tick box and an Extract / refresh button; ticking stops at the cap the server reports; the button opens the panel and does not open the row\'s detail', async ({ page }) => {
+  test('each row has a tick box and an Extract / refresh description now button; ticking stops at the cap the server reports; the button opens the panel and does not open the row\'s detail', async ({ page }) => {
     await mountCatalogue(page, { cap: 2 })
     await expect(page.locator('input[aria-label^="Select "][aria-label$="for description extraction"]')).toHaveCount(3)
     await page.getByLabel('Select Alpha University for description extraction').check()
     await page.getByLabel('Select Beta College for description extraction').check()
     await expect(page.locator('[data-fill-selection]')).toContainText('2 selected (up to 2 in one task)')
     await expect(page.getByLabel('Select Gamma Institute for description extraction')).toBeDisabled()
-    await page.getByRole('button', { name: 'Extract descriptions for selected' }).click()
-    await expect(page.locator('[data-fill-fields]')).toContainText('Extract descriptions for 2 providers')
+    await page.getByRole('button', { name: 'Extract / refresh description now for selected' }).click()
+    await expect(page.locator('[data-fill-fields]')).toContainText('Extract / refresh description now: 2 providers')
     await expect(page.locator(`[data-fill-provider="${P1}"]`)).toBeVisible()
     await expect(page.locator(`[data-fill-provider="${P2}"]`)).toBeVisible()
     await page.getByRole('button', { name: 'Close description panel' }).click()
@@ -431,7 +462,7 @@ test.describe('phone @responsive', () => {
     expect(await overflow(page)).toBeLessThanOrEqual(1)
   })
 
-  test('the Provider Catalogue row action at phone width: the tick box and the Extract / refresh button are at least 24 px and the page does not scroll sideways', async ({ page }) => {
+  test('the Provider Catalogue row action at phone width: the tick box and the Extract / refresh description now button are at least 24 px and the page does not scroll sideways', async ({ page }) => {
     const w = page.viewportSize()?.width || 9999
     expect(w, 'this test must run at phone width (chromium-mobile)').toBeLessThanOrEqual(PHONE_MAX)
     await mountCatalogue(page, { cap: 2 })
@@ -441,7 +472,7 @@ test.describe('phone @responsive', () => {
     await expect(page.locator('[data-fill-selection]')).toBeVisible()
     expect(await tapTargets(page, '[data-fill-selection] button')).toEqual([])
     expect(await overflow(page)).toBeLessThanOrEqual(1)
-    await page.getByRole('button', { name: 'Extract descriptions for selected' }).click()
+    await page.getByRole('button', { name: 'Extract / refresh description now for selected' }).click()
     await expect(page.locator('[data-fill-fields-panel]')).toBeVisible()
     expect(await overflow(page)).toBeLessThanOrEqual(1)
   })

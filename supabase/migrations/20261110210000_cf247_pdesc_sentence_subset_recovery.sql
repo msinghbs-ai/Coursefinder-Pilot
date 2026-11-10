@@ -14,7 +14,7 @@
 --     If the remainder passes everything it is admitted through the existing admission below under the existing machine actor and rule (pdesc-machine-v1): the description written is exactly the kept sentences. A reading whose refusal is not removable by dropping sentences (identity, host, name, lock, rejection,
 --     duplicate, a remainder below the minimums or with no sentence left) stays exactly as before: declined, in Layer 4. The ledger row of the decline now also says what the recovery tried and why it did not apply (checks.subset_recovery: refusal, dropped, kept, result).
 --   3 The audit of a recovered reading: the admitted ledger row (pipeline.provider_description_machine_admissions) starts its reason with "subset_of_reading:" and holds checks.subset_of_reading (the sentences left out with their text, quote and exact code, how many were kept, the original refusal, the original read, evidence and
---     source hash, the md5 and length of the original text); the earlier declined ledger row, the Layer 4 item (proposal unchanged), the read (proposal unchanged) and the decision history are kept. The Layer 4 item is settled by the existing machine decision: layer4_decisions has proposed_value = the original
+--     source hash, the md5 and length of the original text); the earlier declined ledger row, the decision history and the original proposal are kept (decision proposed_value, the ledger checks and the item's layer2_state.subset_of_reading hold every sentence, the ones left out and why). At admission the read's proposal and the item's proposed_value are set to the kept description and sentences, the text the catalogue holds, because security.provider_description_approved_lineage_v1 (and so the Website and Zoho read-back, the run result and the selection) finds an admitted description only when the read and the item carry that exact text. The Layer 4 item is settled by the existing machine decision: layer4_decisions has proposed_value = the original
 --     proposal and final_value = the original proposal with the kept description and sentences and subset_of_reading, layer2_state.subset_of_reading = true; the control event carries subset_of_reading. Nothing is deleted.
 --   4 security.data_delivery_pdesc_v1(): one additive key subset_recovery (recovered, recovered_ever, sentences_left_out, waiting_items, still_declined, still_declined_by_cause, causes). Existing keys unchanged; a count that cannot be made is shown as before.
 --   5 security.provider_description_fill_status_v1(uuid[],boolean,uuid) (the status read of Provider Fill Fields, read only): one additive key machine for each provider (the latest machine ledger row: outcome, tier, reason, time, the Layer 4 item, whether it is for the current reading, the sentences left out of a recovered reading
@@ -22,7 +22,7 @@
 --     Existing keys unchanged. The screen builds its single Extract / refresh description now action and its stage view on it.
 -- Not changed: the settle (its hourly re-check and its per-run bound), the step, the gate, the text check, the validation, the word lists, pdesc.machine_numbers_allowed, pdesc.min_sentences, pdesc.min_chars, the identity proof, the quote proof, rejection memory, locks, budgets, the reader, any read, ledger row, Layer 4 item or description by this migration.
 -- Live definitions this change edits (pg_proc.prosrc md5, read 10 Nov 2026), before -> after:
---   security.provider_description_machine_admit_v1(uuid) dedf28930cc7a12ad31570dec0d2f334 -> ed205f4b6dbdaf1a27b1bdf39479a276
+--   security.provider_description_machine_admit_v1(uuid) dedf28930cc7a12ad31570dec0d2f334 -> 86d2596a13efe885b597771e70542efd
 --   security.data_delivery_pdesc_v1() 15b2f9882e77d7fcf0a8a4be2b6df18f -> 575bded841d3ceca0afc9bdf13bf4d82
 --   security.provider_description_fill_status_v1(uuid[],boolean,uuid) 4a37300325d9da37ba26c92a0eda8279 -> e0fea4e1e736f97b5a7172ecb981501a
 --   security.provider_description_subset_v1(uuid,jsonb) (new) -> 5f2d1a514ffcb45582888a2f455c63b8
@@ -86,7 +86,7 @@ comment on function security.provider_description_subset_v1(uuid, jsonb) is 'CF-
 revoke all on function security.provider_description_subset_v1(uuid, jsonb) from public, anon, authenticated;
 
 -- 2 the machine admission recovers a reading by leaving out the sentences the text rule refuses; 4 Data Delivery counts the recovery
-select pg_temp.edit_all('security.provider_description_machine_admit_v1(uuid)', 'dedf28930cc7a12ad31570dec0d2f334', 'ed205f4b6dbdaf1a27b1bdf39479a276',
+select pg_temp.edit_all('security.provider_description_machine_admit_v1(uuid)', 'dedf28930cc7a12ad31570dec0d2f334', '86d2596a13efe885b597771e70542efd',
 array[$o1$v_url text; v_hash text; v_reason text; v_decline text; v_basic jsonb; v_upg boolean := false;$o1$,
       $o2$  v_text := nullif(btrim(i.proposed_value->>'description'), '');$o2$,
       $o3$    if not (v_gate->>'ok')::boolean then v_decline := v_gate->>'rule'; v_reason := v_gate->>'reason'; end if;
@@ -105,7 +105,8 @@ $o6$,
       $o10$'admitted', v_reason || case when v_upg then$o10$,
       $o11$'neutral_words', to_jsonb(security.pdesc_machine_neutral_supported_v1(v_text, case when v_tier = 'registry_factual' then '[]'::jsonb else coalesce(i.proposed_value->'sentences', '[]'::jsonb) end))), v_sys);$o11$,
       $o12$'sentences', jsonb_array_length(coalesce(i.proposed_value->'sentences', '[]'::jsonb))))$o12$,
-      $o13$'description_chars', length(v_text), 'published', v_shown = v_text);$o13$],
+      $o13$'description_chars', length(v_text), 'published', v_shown = v_text);$o13$,
+      $o14$  update pipeline.layer4_review_items set status = 'approved', decided_at = now() where id = i.id and status = 'pending';$o14$],
 array[$n1$v_url text; v_hash text; v_reason text; v_decline text; v_basic jsonb; v_upg boolean := false;
         v_sent jsonb; v_sub jsonb; v_subinfo jsonb; v_try jsonb; v_gate2 jsonb; v_text0 text; -- sentence-subset recovery$n1$,
       $n2$  v_text := nullif(btrim(i.proposed_value->>'description'), '');
@@ -115,7 +116,7 @@ array[$n1$v_url text; v_hash text; v_reason text; v_decline text; v_basic jsonb;
   -- Sentence-subset recovery (CF-247 F-PDESC, Platform Admin 10 Nov 2026): a reading from an official page that the text rule declined (a word or a figure, or page markup) is not parked for a person when the refusal sits in only some of its sentences.
   -- Exactly those sentences are left out (never reworded, never added to), and the SAME validation (host, About page, sentence range, character range, quote on the page for every sentence, age, duplicate guard), the SAME machine gate (lock, rejection memory,
   -- withdrawal, identity finding, name, full text check) and, for a reading without an identity snapshot, the name in a quote, are run again on what is left. The identity, host, evidence and snapshot proofs above do not depend on the sentences.
-  -- If anything fails the reading stays declined exactly as before, and the ledger row says what was tried. The proposal, the read and the Layer 4 item are never changed; the decision records the original proposal and the kept description.
+  -- If anything fails the reading stays declined exactly as before, and the ledger row says what was tried. The decision row, the ledger row and the item's layer2_state keep the original proposal (every sentence, the sentences left out and why); once admitted, the read's proposal and the item's proposed_value hold the kept description the catalogue holds, so the read-back lineage finds it.
   if v_decline in ('machine_text_refused_word', 'machine_text_figure', 'machine_text_entity_encoded') and v_tier in ('stored', 'direct', 'firecrawl') then -- fixed: the three refusals of the text rule that leaving a sentence out can remove
     v_sub := security.provider_description_subset_v1(i.entity_id, v_sent);
     v_try := jsonb_build_object('refusal', v_decline, 'reason', v_reason, 'dropped', coalesce(v_sub->'dropped', '[]'::jsonb), 'kept_sentences', jsonb_array_length(coalesce(v_sub->'kept', '[]'::jsonb)), 'given_sentences', jsonb_array_length(v_sent), 'at', now());
@@ -136,7 +137,7 @@ array[$n1$v_url text; v_hash text; v_reason text; v_decline text; v_basic jsonb;
         else
           v_text0 := v_text;
           v_subinfo := jsonb_build_object('refusal', v_decline, 'refusal_reason', v_reason, 'dropped', v_sub->'dropped', 'kept_sentences', jsonb_array_length(v_sub->'kept'), 'given_sentences', jsonb_array_length(v_sent),
-                         'original_text_chars', length(v_text0), 'original_text_md5', md5(v_text0), 'original_read_id', v_read.id, 'original_evidence_id', i.evidence_id, 'source_url', v_read.source_url, 'source_hash', v_read.content_hash, 'review_item_id', i.id);
+                         'original_text_chars', length(v_text0), 'original_text_md5', md5(v_text0), 'original_text', v_text0, 'original_sentences', v_sent, 'original_read_id', v_read.id, 'original_evidence_id', i.evidence_id, 'source_url', v_read.source_url, 'source_hash', v_read.content_hash, 'review_item_id', i.id);
           v_sent := v_sub->'kept'; v_text := v_check->>'text'; v_gate := v_gate2; v_decline := null; v_reason := null;
           v_facts := coalesce((select jsonb_agg(jsonb_build_object('sentence', s->>'text', 'quote', s->>'quote', 'source_url', v_read.source_url, 'source_hash', v_read.content_hash, 'evidence_id', v_read.evidence_id,
                     'captured_at', v_read.source_captured_at, 'model', v_read.model, 'prompt_version', v_read.prompt_version, 'worker', v_read.worker)) from jsonb_array_elements(v_sent) s), '[]'::jsonb);
@@ -161,12 +162,18 @@ $n6$,
           case when v_subinfo is not null then i.proposed_value || jsonb_build_object('description', v_text, 'sentences', v_sent, 'subset_of_reading', v_subinfo) else i.proposed_value end, i.evidence_id,
           coalesce(i.layer2_state, '{}'::jsonb) || jsonb_build_object('machine_rule', v_rule, 'tier', v_tier, 'actor_kind', 'machine') || case when v_subinfo is not null then jsonb_build_object('subset_of_reading', true) else '{}'::jsonb end, coalesce(i.layer3_state, '{}'::jsonb), v_ref) returning id into v_dec;$n7$,
       $n8$'machine_rule', v_rule, 'tier', v_tier, 'decision_id', v_dec, 'field_code', i.field_code, 'subset_of_reading', v_subinfo is not null), v_sys);$n8$,
-      $n9$checks = coalesce(checks, '{}'::jsonb) || jsonb_build_object('machine_rule', v_rule, 'tier', v_tier, 'actor_kind', 'machine') || case when v_subinfo is not null then jsonb_build_object('subset_of_reading', v_subinfo) else '{}'::jsonb end where id = v_read.id;$n9$,
+      $n9$proposal = case when v_subinfo is not null then coalesce(proposal, '{}'::jsonb) || jsonb_build_object('description', v_text, 'sentences', v_sent) else proposal end,
+         checks = coalesce(checks, '{}'::jsonb) || jsonb_build_object('machine_rule', v_rule, 'tier', v_tier, 'actor_kind', 'machine') || case when v_subinfo is not null then jsonb_build_object('subset_of_reading', v_subinfo) else '{}'::jsonb end where id = v_read.id;$n9$,
       $n10$'admitted', case when v_subinfo is not null then 'subset_of_reading: ' else '' end || v_reason || case when v_upg then$n10$,
       $n11$'neutral_words', to_jsonb(security.pdesc_machine_neutral_supported_v1(v_text, case when v_tier = 'registry_factual' then '[]'::jsonb else v_sent end)))
           || case when v_subinfo is not null then jsonb_build_object('subset_of_reading', v_subinfo) else '{}'::jsonb end, v_sys);$n11$,
       $n12$'sentences', jsonb_array_length(v_sent)))$n12$,
-      $n13$'description_chars', length(v_text), 'published', v_shown = v_text, 'subset_of_reading', v_subinfo is not null);$n13$]);
+      $n13$'description_chars', length(v_text), 'published', v_shown = v_text, 'subset_of_reading', v_subinfo is not null);$n13$,
+      $n14$  -- a recovered reading: the item and the read hold the description the catalogue now holds (the kept sentences), so the approved-lineage test of the Website and Zoho read-back, the run result and the selection find it; the original proposal (every sentence, the sentences left out and why) stays in the decision row (proposed_value), the ledger row and layer2_state.subset_of_reading
+  update pipeline.layer4_review_items set status = 'approved', decided_at = now(),
+         proposed_value = case when v_subinfo is not null then proposed_value || jsonb_build_object('description', v_text, 'sentences', v_sent) else proposed_value end,
+         layer2_state = case when v_subinfo is not null then coalesce(layer2_state, '{}'::jsonb) || jsonb_build_object('subset_of_reading', v_subinfo) else layer2_state end
+   where id = i.id and status = 'pending';$n14$]);
 
 select pg_temp.edit_all('security.provider_description_fill_status_v1(uuid[],boolean,uuid)', '4a37300325d9da37ba26c92a0eda8279', 'e0fea4e1e736f97b5a7172ecb981501a',
 array[$o1$r.review_item_id, r.evidence_id, r.source_url, r.read_via

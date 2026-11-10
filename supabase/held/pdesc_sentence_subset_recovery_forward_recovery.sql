@@ -1,6 +1,6 @@
 -- HELD (not a migration): forward recovery for 20261110210000 (provider-description sentence-subset recovery). Run only if the Platform Admin decides to take the change back.
 -- It puts back, byte for byte, the text of security.provider_description_machine_admit_v1 (body md5 dedf28930cc7a12ad31570dec0d2f334), security.data_delivery_pdesc_v1 (body md5 15b2f9882e77d7fcf0a8a4be2b6df18f) and security.provider_description_fill_status_v1 (body md5 4a37300325d9da37ba26c92a0eda8279) before that migration, each guarded by the md5 of what is live now:
--- it stops, and changes nothing, if a live body is neither its earlier text nor the one the migration wrote (ed205f4b6dbdaf1a27b1bdf39479a276, 575bded841d3ceca0afc9bdf13bf4d82 and e0fea4e1e736f97b5a7172ecb981501a). Readings already recovered, ledger rows, Layer 4 items, decisions and descriptions are never touched.
+-- it stops, and changes nothing, if a live body is neither its earlier text nor the one the migration wrote (86d2596a13efe885b597771e70542efd, 575bded841d3ceca0afc9bdf13bf4d82 and e0fea4e1e736f97b5a7172ecb981501a). Readings already recovered, ledger rows, Layer 4 items, decisions and descriptions are never touched.
 -- security.provider_description_subset_v1 is left in place (nothing calls it once the admission is restored); it is dropped by a paste file only on the Platform Admin's say. After it a reading that the text rule declines for some of its sentences is declined as a whole again. The migration applies again after it.
 do $g$
 declare v_a text; v_d text; v_f text;
@@ -9,7 +9,7 @@ begin
   select md5(p.prosrc) into v_d from pg_proc p where p.oid = to_regprocedure('security.data_delivery_pdesc_v1()');
   select md5(p.prosrc) into v_f from pg_proc p where p.oid = to_regprocedure('security.provider_description_fill_status_v1(uuid[],boolean,uuid)');
   if v_a is null or v_d is null or v_f is null then raise exception 'the provider-description admission, its Data Delivery stream or the Fill fields status read is missing'; end if;
-  if v_a not in ('dedf28930cc7a12ad31570dec0d2f334', 'ed205f4b6dbdaf1a27b1bdf39479a276') then raise exception 'live security.provider_description_machine_admit_v1 differs from both texts this recovery knows (body md5 %)', v_a; end if;
+  if v_a not in ('dedf28930cc7a12ad31570dec0d2f334', '86d2596a13efe885b597771e70542efd') then raise exception 'live security.provider_description_machine_admit_v1 differs from both texts this recovery knows (body md5 %)', v_a; end if;
   if v_d not in ('15b2f9882e77d7fcf0a8a4be2b6df18f', '575bded841d3ceca0afc9bdf13bf4d82') then raise exception 'live security.data_delivery_pdesc_v1 differs from both texts this recovery knows (body md5 %)', v_d; end if;
   if v_f not in ('4a37300325d9da37ba26c92a0eda8279', 'e0fea4e1e736f97b5a7172ecb981501a') then raise exception 'live security.provider_description_fill_status_v1 differs from both texts this recovery knows (body md5 %)', v_f; end if;
 end $g$;

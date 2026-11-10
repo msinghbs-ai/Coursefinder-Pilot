@@ -13,7 +13,7 @@ R=supabase/held/pdesc_sentence_subset_recovery_forward_recovery.sql
 F=tests/fixtures/pdesc-subset-recovery
 ADM='security.provider_description_machine_admit_v1(uuid)'; DDP='security.data_delivery_pdesc_v1()'; SUB='security.provider_description_subset_v1(uuid,jsonb)'
 ADM_BEFORE=dedf28930cc7a12ad31570dec0d2f334; FS='security.provider_description_fill_status_v1(uuid[],boolean,uuid)'; FS_BEFORE=4a37300325d9da37ba26c92a0eda8279; FS_AFTER=e0fea4e1e736f97b5a7172ecb981501a
-ADM_AFTER=ed205f4b6dbdaf1a27b1bdf39479a276; DDP_BEFORE=15b2f9882e77d7fcf0a8a4be2b6df18f; DDP_AFTER=575bded841d3ceca0afc9bdf13bf4d82; SUB_AFTER=5f2d1a514ffcb45582888a2f455c63b8
+ADM_AFTER=86d2596a13efe885b597771e70542efd; DDP_BEFORE=15b2f9882e77d7fcf0a8a4be2b6df18f; DDP_AFTER=575bded841d3ceca0afc9bdf13bf4d82; SUB_AFTER=5f2d1a514ffcb45582888a2f455c63b8
 q() { psql -X -d "$DB" -Atc "$1"; }
 BASE=$(PDDA_KEEP=1 PDDA_DB=$DB bash tests/fixtures/pdesc-dd-ai/run.sh 2>&1) || { echo "$BASE" | tail -15; echo "the base harness failed"; exit 1; }
 echo "base: pdesc-dd-ai harness built the database (20261109020000 to 20261110150000 as the harnesses apply them)"
@@ -77,16 +77,9 @@ echo "scenarios: every block rolled back (no function, setting, Layer 4 item, re
 # the earlier scenarios give the same result with the migration applied
 for S in pdesc-machine pdesc-claim-context pdesc-basic-upgrade; do
   GOT=$(psql -X -d $DB -v ON_ERROR_STOP=1 -f tests/fixtures/$S/scenarios.sql 2>&1 | grep -E '^[a-z0-9_]+\|' || true)
-  # the one deliberate change: a reading with ONE promotional sentence (ranked, best) among clean ones used to wait whole for a person; its clean sentences are now admitted (claim-context-after.txt differs from the earlier expected file in exactly those three results)
-  E=tests/fixtures/$S/expected.txt; [ "$S" != pdesc-claim-context ] || E=$F/claim-context-after.txt
-  check "the earlier $S scenarios" "$GOT" $E
-  if [ "$S" = pdesc-claim-context ]; then
-    CH=$(diff tests/fixtures/$S/expected.txt $E | grep '^[<>]' | cut -c3- | cut -d'|' -f1 | sort -u | tr '\n' ' ' || true)
-    [ "$CH" = "record_declined record_tally waiting_promotional waiting_promotional_settle " ] || { echo "the claim-context change is not exactly the promotional-sentence results: $CH"; exit 1; }
-    echo "earlier: the $(wc -l < tests/fixtures/$S/expected.txt) $S scenarios give the same result after the migration except the three where one promotional sentence no longer holds the clean ones (record_tally, record_declined, waiting_promotional)"
-  else
-    echo "earlier: the $(wc -l < tests/fixtures/$S/expected.txt) $S scenarios give the same result after the migration"
-  fi
+  # pdesc-claim-context retired its four promotional-sentence results (RETIRED_ labels, not compared) when this change superseded them; the superseding scenarios are promotional_* in this fixture
+  check "the earlier $S scenarios" "$GOT" tests/fixtures/$S/expected.txt
+  echo "earlier: the $(wc -l < tests/fixtures/$S/expected.txt) $S scenarios give the same result after the migration"
 done
 GOT=$(psql -X -d $DB -Atq -f tests/fixtures/pdesc-dd-ai/scenarios.sql 2>&1 | grep -aE '^([a-z0-9_]+\||.*ERROR)' || true)
 check "the earlier pdesc-dd-ai scenarios" "$GOT" $F/dd-ai-after.txt

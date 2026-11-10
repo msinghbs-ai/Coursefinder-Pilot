@@ -43,17 +43,13 @@ unsw_as_proposed|false|machine_text_refused_word|refused_word:unique
 setting_empty|false|machine_text_refused_word|refused_word:students
 setting_alumni_only_students_refused|false|machine_text_refused_word|refused_word:students
 setting_alumni_only_alumni_admitted|true|pdesc-machine-v1|
-record_tally|{"admitted": 1, "proposed": 1}
 record_admitted|admitted|machine|pdesc-machine-v1|1|0
 record_description|true
 record_audit|admitted|stored|true|true|true|3|true|true|true|["students", "staff", "alumni"]|true
 record_decision_is_machine|machine|pdesc-machine-v1
-record_declined|proposed|1|(none)|refused_word:ranked|Machine rule pdesc-machine-v1 did not admit this: machine_text_refused
 waiting_declined|1|(none)|refused_word:students
 settle_within_the_hour|{"on": true, "errors": 0, "admitted": 0, "left_for_a_person": 0}|1
 settle_after_the_hour|{"on": true, "errors": 0, "admitted": 1, "left_for_a_person": 0}|0|1|true
 settle_audit|declined:-,admitted:true
 settle_step_is_the_scheduled_path|true|true
-waiting_promotional_settle|{"on": true, "errors": 0, "admitted": 0, "left_for_a_person": 1}
-waiting_promotional|1|(none)|refused_word:best
 tier4_strict|refused_word:students|clean

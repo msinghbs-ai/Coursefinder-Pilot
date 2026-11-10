@@ -6,7 +6,11 @@ monash_description|true|approved
 monash_ledger|declined 1 admitted 1|true|true|pdesc-machine-v1|true
 monash_dropped|2|refused_word:campus|true|2|3|true|true
 monash_declined_kept|true
-monash_proposal_intact|3|true|true
+monash_proposal_kept|2|true|true|3|true|true
+monash_lineage|true
+monash_selection|description_current/false
+monash_publication_check|1
+monash_run_result|verified|verified|verified
 monash_decision|approve|true|3|true|2|true|true|true
 monash_event|true|true
 monash_again|not_a_waiting_provider_description|1
@@ -29,6 +33,7 @@ legacy_name_kept|true|true
 legacy_name_dropped|machine_text_refused_word|name_not_in_remaining_quotes|(none)
 dd_counts|0|2|2|2
 dd_causes|subset: every_sentence_refused=1,subset: remainder_validation_sentence_count=1
+promotional_record|true|approved|refused_word:best|2/3|true
 attempt_leased|true|reading/1/-/false/0/0
 attempt_budget_refused|1|queued/0/ai_budget_refused/true/0/0
 attempt_budget_ceiling|true|1|queued/0/ai_ceiling/true/0/0

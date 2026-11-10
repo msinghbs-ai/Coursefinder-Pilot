@@ -188,7 +188,7 @@ export default function ProviderFillFields({ providerIds = [], rank = 0, onClose
   const rows = list(preview?.providers)
   const modeInfo = FILL_MODES.find(m => m.id === mode)
   const runnable = (mode === 'missing' || mode === 'upgrade_basic')
-  const title = ids.length === 1 ? (providers[0]?.name || 'Extract description') : `Extract descriptions for ${ids.length} providers`
+  const title = ids.length === 1 ? (providers[0]?.name || 'Extract description') : `Extract / refresh description now: ${ids.length} providers`
   const readerState = !caps ? null : !caps.enabled ? ['paused', 'The reader is switched off. A request is saved and resumes when it is switched on.'] : !caps.job_active ? ['paused', 'The reader is paused. A request is saved and resumes when it is switched on.'] : !caps.run_now_allowed ? ['warning', 'Run Now is not switched on for this reader (the allowlist is off). A request is saved and the scheduled reader picks it up.'] : null
   const needReason = (readable.length > 0 && !resumable) || (Boolean(preview) && Number(preview.selected ?? 0) > 0 && (mode === 'missing' || mode === 'upgrade_basic'))
   const reasonShort = needReason && reason.trim().length < minReason
@@ -262,7 +262,7 @@ export default function ProviderFillFields({ providerIds = [], rank = 0, onClose
               </article>)}
               {runnable && (preview.selected ?? 0) > 0 && <div className="pff-audit">
                 <p className="pff-note">{reasonShort ? `Type the reason above (${minReason} characters or more), then save.` : 'The reason above is recorded with the task.'}</p>
-                <Button variant="primary" disabled={Boolean(busy) || !canRun || reasonShort} onClick={doQueue}>Save and queue with the reader</Button>
+                <Button disabled={Boolean(busy) || !canRun || reasonShort} onClick={doQueue}>Save and queue with the reader</Button>
                 {!canRun && <p className="pff-note">Your role can preview. An authorised operator must save and run a task.</p>}
               </div>}
             </section>}
