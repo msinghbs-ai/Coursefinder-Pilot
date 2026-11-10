@@ -1,0 +1,28 @@
+/* Read / refresh entry requirements now (CF-247 F-AER.01-.06). Prefix arn-. Tap targets at least 24 px (WCAG 2.2 AA 2.5.8); the page never scrolls sideways at 390 px. */
+.arn{margin:0 0 12px;padding:10px 12px;border:1px solid var(--cf-border);border-radius:8px;background:var(--cf-surface);max-width:100%;box-sizing:border-box;min-width:0}
+.arn-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px}
+.arn-head h3{margin:0;display:flex;align-items:center;gap:6px;font-size:var(--cf-fs-base)}
+.arn-muted{color:var(--cf-muted);font-size:var(--cf-fs-md);overflow-wrap:anywhere}
+.arn-lead{margin:6px 0;overflow-wrap:anywhere}
+.arn-outcome{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin:6px 0;min-width:0}
+.arn-text{min-width:0;overflow-wrap:anywhere}
+.arn-blocks{list-style:none;margin:4px 0;padding:0;display:grid;gap:4px}
+.arn-blocks li{overflow-wrap:anywhere}
+.arn-actions{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:8px 0}
+.arn-actions .cf-btn{min-height:32px}
+.arn-result{margin:6px 0;overflow-wrap:anywhere}
+.arn-stages{list-style:none;margin:8px 0;padding:0;display:grid;gap:6px}
+.arn-stages li{padding:6px 8px;border:1px solid var(--cf-border);border-radius:6px;min-width:0;display:grid;gap:2px}
+.arn-stage-head{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px}
+.arn-n{color:var(--cf-muted);font-size:var(--cf-fs-md)}
+.arn-facts{margin:6px 0;overflow-wrap:anywhere}
+.arn-foot{margin:6px 0 0}
+@media (max-width:620px){
+  .arn{padding:8px}
+  .arn-actions .cf-btn{min-height:36px}
+}
+.arn-advanced{margin:6px 0}
+.arn-advanced>summary{cursor:pointer;min-height:24px;display:flex;align-items:center}
+.arn-source{margin:6px 0;overflow-wrap:anywhere;min-width:0}
+.arn-sources{list-style:none;margin:4px 0 0;padding:0;display:grid;gap:4px}
+.arn-url{overflow-wrap:anywhere;word-break:break-all}

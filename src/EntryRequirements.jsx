@@ -14,6 +14,7 @@ import{GraduationCap,RefreshCw}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{Button,StatusChip,Pager,fmtDate,fmtNumber}from'./ui-kit'
 import{ReasonAction}from'./ProviderOnboarding'
+import AerReadNow from'./AerReadNow'
 import{plainError}from'./lib/errors'
 import{hrefFor}from'./nav-map'
 import{orderAerCountries,readAerCountry,saveAerCountry}from'./aer-countries'
@@ -36,6 +37,7 @@ export function ProviderEntryMatrix({providerId}){
   const sources=d.sources||[]
   return <section className="rl-provider" data-entry-matrix>
     <h4><GraduationCap size={14}/>Academic entry requirements <a className="cf-link" href={hrefFor('entry','',{provider:providerId})} data-entry-workspace-link>Open in Entry requirements</a></h4>
+    <AerReadNow providerId={providerId}/>
     {sources.length>0&&<details data-entry-sources open={!total}><summary>Sources and reads ({fmtNumber(d.sources_total||sources.length)})</summary>
       <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Source</th><th>Fetch</th><th>Latest read</th><th>Rows</th><th>Not kept</th><th>Hold or error</th><th>Layer 4</th></tr></thead>
         <tbody>{sources.map(x=><tr key={x.id} data-entry-source={x.status}>
@@ -77,6 +79,7 @@ export function CourseEntryRequirements({courseId,onError}){
   if(!d)return null
   return <section className="rl-provider" data-course-entry>
     <h4><GraduationCap size={14}/>Academic entry requirements <Button compact onClick={load} disabled={busy}><RefreshCw size={13}/>Refresh</Button> <a className="cf-link" href={hrefFor('entry','course',{course:courseId})} data-entry-workspace-link>Open in Entry requirements</a> <a className="cf-link" href={hrefFor('entry','resolve',{course:courseId})}>Inspect resolution</a></h4>
+    <AerReadNow courseId={courseId} onError={onError} onChanged={load}/>
     {(d.rows||[]).length===0?<small>Nothing read from this course's page yet.</small>:
     <div className="cf-table-wrap"><table className="cf-table" data-course-entry-rows><thead><tr><th>Kind</th><th>Requirement</th><th>Score and basis</th><th>Band</th><th>For</th><th>Quote</th><th>Source</th><th>As at</th><th>Status</th></tr></thead>
       <tbody>{d.rows.map(r=><tr key={r.id} data-course-entry-row={r.status}><td>{r.kind.replaceAll('_',' ')}</td><td>{r.description}</td>
@@ -93,7 +96,8 @@ export function CourseEntryRequirements({courseId,onError}){
       {(res.rows||[]).length>0&&<div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Qualification</th><th>Level</th><th>Minimum</th><th>Scale</th><th>Quote</th><th>As at</th></tr></thead>
         <tbody>{res.rows.map((r,i)=><tr key={i}><td>{r.qualification||r.text}</td><td>{r.study_level||'—'}</td><td>{r.min_grade||r.min_score||<em>case by case</em>}</td><td>{r.scale||r.min_score_basis||'—'}</td><td><small>“{r.quote}”</small></td><td>{fmtDate(r.as_at)}</td></tr>)}</tbody></table></div>}
     </div>}
-    {d.can_read&&<div className="sd-actions" data-course-entry-read><ReasonAction label="Read from the stored page" confirm="Read once" testid="course-entry-read" disabled={busy} onDo={read}/></div>}
+    {d.can_read&&<details className="arn-advanced" data-course-entry-read-advanced><summary>Advanced: one direct read of this course’s stored page</summary>
+      <div className="sd-actions" data-course-entry-read><ReasonAction label="Read from the stored page" confirm="Read once" testid="course-entry-read" disabled={busy} onDo={read}/></div></details>}
     {msg&&<small role="status">{msg}</small>}
   </section>
 }
