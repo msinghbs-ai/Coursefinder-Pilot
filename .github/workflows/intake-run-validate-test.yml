@@ -18,6 +18,9 @@ on:
       - 'supabase/held/intake_hyphen_dates_forward_recovery.sql'
       - 'tests/fixtures/intake-revisit-backfill/**'
       - 'tests/fixtures/intake-calendar-qualify/**'
+      - 'tests/fixtures/calendar-reread-all-providers/**'
+      - 'supabase/migrations/*calendar_reread*'
+      - 'supabase/held/calendar_reread_all_providers_forward_recovery.sql'
       - 'docs/paste/PASTE-20261108-iq00313-deakin-intake-withdrawal.sql'
       - 'supabase/functions/coverage-sweep/calendar.ts'
       - 'tests/integration/intake-postgres.spec.mjs'
@@ -65,6 +68,7 @@ jobs:
       - run: bash tests/fixtures/intake-hyphen-dates/run.sh | tee intake-hyphen-dates-results.log
       - run: CQ_REUSE=1 bash tests/fixtures/intake-calendar-qualify/run.sh | tee intake-calendar-qualify-results.log
       - run: RB_REUSE=1 bash tests/fixtures/intake-revisit-backfill/run.sh | tee intake-revisit-backfill-results.log
+      - run: bash tests/fixtures/calendar-reread-all-providers/run.sh | tee calendar-reread-all-providers-results.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -83,6 +87,7 @@ jobs:
             intake-hyphen-dates-results.log
             intake-calendar-qualify-results.log
             intake-revisit-backfill-results.log
+            calendar-reread-all-providers-results.log
             uat-artifacts/intake-integration.json
             uat-artifacts/intake-benchmark.json
             uat-artifacts/intake-timeout-regression.json
