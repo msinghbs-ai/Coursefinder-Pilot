@@ -55,6 +55,23 @@ The workflow looks, newest first, through the pull request's own commits and its
 
 On a pull request that is ready for review, that carries the label `full-suite-evidence`, or by `workflow_dispatch` with the PR number. A draft gets the reuse path where valid and otherwise a report saying the full suite was deferred. A push cancels the earlier run for the same PR.
 
+### How the full suite is split across runners (CF-247, CI wall-clock only)
+
+The full suite is the same command, `npx playwright test --grep-invert @deployed`, run as a matrix of shards and merged. The evidence contract does not change.
+
+| Job | Role |
+|---|---|
+| `test-evidence-plan` | Resolves the pull request, looks for earlier evidence, picks `full`, `reuse` or `deferred`, and the shard list. Carries the label filter the single job had. |
+| `test-evidence-shard (i/N)` | Only in `full` mode. `npx playwright test --grep-invert @deployed --shard=i/N --reporter=list,blob`; uploads its blob report. `fail-fast` is off, so every shard reports. |
+| `test-evidence` | The required check, the same single name as before. Needs the plan and every shard. Merges the blobs with `npx playwright merge-reports --reporter=json,junit` into the same `uat-artifacts/results.json` and `junit.xml`, then runs the release contract, build, parity wait, bundle, readiness report and fail-closed step unchanged. |
+
+- Number of shards: repository variable `TEST_EVIDENCE_SHARDS` (1 to 16, default 6). It is a size, not a rule, so it is a setting and not a number in a script.
+- Fails closed: the check fails if any shard fails, if fewer blobs than shards arrive, or if the merge fails. The bundle still compares the merged total with `playwright test --list`, so a lost shard is a "partial run" and the bundle is incomplete.
+- Retries (1 in CI), `workers: 1`, `fullyParallel: false`, the `@responsive` phone rule (`chromium-mobile` runs only `@responsive`, `chromium-desktop` skips it) and `--grep-invert @deployed` come from `playwright.config.mjs` and the unchanged command line. Playwright filters first and shards after, so no rule is applied differently.
+- Balance: Playwright 1.63 cuts the filtered list into equal-sized contiguous slices by test count, in project order (all `chromium-desktop` tests in file order, then the `chromium-mobile` tests). It does not weigh by duration. The 83 phone tests (Pixel 7) therefore all land in the last shard. Each shard writes its wall-clock into its job summary; if one shard stays much slower than the rest, the next step is a duration-weighted split, not a change to any test.
+- The merged `results.json` differs from a single run only in report metadata (`config.workers`, `config.metadata.actualWorkers`, `config.forbidOnly`, `config.projects[].id`) and in `stats.duration`, which is the sum of the shard run times and not the wall-clock. Suites, specs, tests, results, statuses and retries are the same.
+- Caches: `~/.npm` (key `pilot-npm-<os>-node22-<hash of package.json>`, the key `Pilot Frontend Build` already saves on main) and `~/.cache/ms-playwright` (key `testev-playwright-<os>-<hash of package.json>-<Playwright version>`). Neither key uses a lockfile (there is none); `npm install` still resolves versions exactly as before.
+
 ### Readiness report
 
 `node scripts/test-evidence-readiness.mjs report --repo msinghbs-ai/Coursefinder-Pilot --pr <n>` (or the `release-readiness-<sha>` artifact and job summary of the workflow) gives the one report: PR and revision, evidence valid or not and whether executed or reused, the fingerprint and its freshness against the candidate right now, production-parity validity, each required check (`Workers Builds: coursefinder-pilot`, `build-and-smoke`, `release-history-contract`, `isolated-postgres`; a path-filtered check that does not apply is shown as not applicable), the final-candidate checks, and the remaining blockers. The verdict is READY, WAITING (only pending checks) or BLOCKED; missing, stale or incomplete evidence is always BLOCKED. Branch protection settings are not readable with the workflow token, so the required names are mirrored in the classification file and guarded by `cf-247-s400`.
