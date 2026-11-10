@@ -174,13 +174,7 @@ select 'revisit_same_page|' || pg_temp.upg_sel(1);
 update pipeline.provider_description_reads set content_hash = 'an-earlier-copy-of-the-page' where provider_id = pg_temp.pid(1) and state = 'held' and rule = 'verbatim_passage';
 select 'revisit_page_changed|' || pg_temp.upg_sel(1);
 delete from pipeline.provider_description_reads where provider_id = pg_temp.pid(1) and state = 'held' and rule = 'verbatim_passage';
--- the upgrade lane waits while the queue is full (pdesc.queue_cap), and is bounded by pdesc.queue_per_run
-update pipeline.platform_toolset_settings set value = '1'::jsonb where toolset_key = 'pipeline' and key = 'pdesc.queue_cap';
-insert into pipeline.provider_description_reads(provider_id, state) values (pg_temp.pid(2), 'queued');
-select 'queue_full_ran|' || (security.provider_description_enqueue_v1() is not null)::text;
-select 'queue_full|' || (select count(*) from pipeline.provider_description_reads where provider_id = pg_temp.pid(1) and state = 'queued');
-update pipeline.platform_toolset_settings set value = '60'::jsonb where toolset_key = 'pipeline' and key = 'pdesc.queue_cap';
-delete from pipeline.provider_description_reads where provider_id = pg_temp.pid(2) and state = 'queued';
+-- (the scenario here that the upgrade lane waits while the queue is full was retired with 20261110141000: the lane is now gated on its own queue, see tests/fixtures/pdesc-reservation-settlement/gate-scenarios.sql)
 -- a provider with a first (not register-fact) admission is never listed or upgraded
 insert into pipeline.provider_description_reads(provider_id, state) values (pg_temp.pid(2), 'queued');
 select 'first_admission|' || (pg_temp.run_worker(10)->'recorded')::text;
