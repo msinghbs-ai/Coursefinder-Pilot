@@ -61,7 +61,11 @@ test('the page rules are the worker\'s: every pattern of central.ts entry_requir
   const central = fs.readFileSync('supabase/functions/coverage-sweep/central.ts', 'utf8')
   const strong = central.match(/entry_requirements: \{\s*strong: \/(.+?)\/,\s*weak: \/(.+?)\//s)
   expect(strong).toBeTruthy()
-  const score = fn('security.entry_source_score_v1')
+  // the latest migration that defines the scorer (20261111080000 F-AER.01 adds the small-provider top-level rule with central.ts v0.64.0)
+  const lastDef = fs.readdirSync('supabase/migrations').filter((f) => f.endsWith('.sql')).sort().reverse()
+    .map((f) => fs.readFileSync(`supabase/migrations/${f}`, 'utf8')).find((t) => /function security\.entry_source_score_v1\(/i.test(t))
+  const lc = lastDef.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n'), la = lc.search(/function security\.entry_source_score_v1\(/i)
+  const score = lc.slice(la, lc.indexOf('$function$;', lc.indexOf('$function$', la) + 10))
   expect(score).toContain(strong[1].replace(/\\\//g, '/'))
   expect(score).toContain(strong[2])
   const noise = central.match(/const NOISE = \/(.+?)\/;/)[1]
