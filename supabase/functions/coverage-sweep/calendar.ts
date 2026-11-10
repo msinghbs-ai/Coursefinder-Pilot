@@ -23,7 +23,10 @@
 //      another year and every year printed on the page is within a year of it (basis "address").
 //    Where the page prints a weekday against the date, it must agree with the resolved date (weekday_mismatch otherwise). A column year
 //    that disagrees with the section year gives no start (year_ambiguous). A year is never guessed.
-export const CALENDAR_READER = "calendar-v2.2";
+// calendar-v2.3 (11 Nov 2026, Decisions 270 and 270a, first live result): a teaching start resolved by its table column stands for its whole
+//    row, so every other column of that row whose first date maps to one year by the same rule (and agrees with any printed weekday) is a
+//    start too, with the same quote. gpt-4.1-mini reported only the 2026 column of Monash summary-dates under v2.2.
+export const CALENDAR_READER = "calendar-v2.3";
 export const CALENDAR_PARSER_DATES = "provider-policy-calendar-dates-v2";
 const MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
 const flat = (s: string) => String(s || "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "");
@@ -206,6 +209,22 @@ export function columnYear(page: string, quote: string, m: number, d: number): E
   if (years.length > 1) return { year: null, basis: null, quote: "", reason: "year_ambiguous" };
   return found[0];
 }
+// v2.3: a teaching start resolved by its column stands for its whole row: every other column of the same row whose first date maps to
+// one year by the same rule is a start too (same quote). The model often reports only one column (Monash summary-dates, 11 Nov 2026).
+export function columnSiblings(page: string, quote: string): Dated[] {
+  const rows = String(page || "").split("\n").filter((l) => isRow(l) && flat(l).includes(flat(quote)));
+  if (rows.length !== 1 || flat(quote).length < 6) return [];
+  const out: Dated[] = [];
+  for (const c of rowCells(rows[0]).slice(1)) {
+    const f = firstDate(c); if (!f) continue;
+    const cy = columnYear(page, quote, f.m, f.d);
+    if (!cy || !cy.year || !(cy.basis === "column" || cy.basis === "range_columns")) continue;
+    if (printedWeekdays(c, f.m, f.d).some((w) => w !== weekday(cy.year!, f.m, f.d))) continue;
+    const date = iso(cy.year, f.m, f.d); if (!date) continue;
+    out.push({ year: cy.year, month: f.m, day: f.d, date, quote: quote.slice(0, 300), year_quote: cy.quote, year_basis: cy.basis });
+  }
+  return out;
+}
 export function addressYear(url: string, page: string): EditionYear | null {
   let path = ""; try { path = new URL(url).pathname } catch { return null }
   const ys = yearsOf(path).filter(EDITION);
@@ -284,6 +303,10 @@ export function calendarAiParsed(answers: any[], page: string, parser: string, c
         else {
           f.months.add(st.month); if (st.year) f.years.add(st.year); if (f.quotes.length < 3) f.quotes.push(st.quote);
           if (!f.starts.some((y) => y.date === st.date && y.month === st.month && y.year === st.year)) f.starts.push({ ...st, meaning });
+          // v2.3: the other year columns of a column-resolved row are starts of the same period
+          if (st.year_basis === "column" || st.year_basis === "range_columns")
+            for (const sib of columnSiblings(page, st.quote))
+              if (!f.starts.some((y) => y.date === sib.date)) { f.starts.push({ ...sib, meaning }); if (sib.year) f.years.add(sib.year) }
         }
       }
       for (const d of (x?.application_deadlines || []) as any[]) {

@@ -13,14 +13,24 @@ const s1 = 'Semester one<br>teaching period | **2 Mar – 26 Jun** | **1 Mar –
 const s2 = 'Semester two<br>teaching period | **27 Jul – 18 Nov** | **26 Jul – 19 Nov** | **24 Jul – 17 Nov**'
 
 test('Monash summary-dates: each start takes the year of its own column (Semester 1 = 1 Mar 2027, Semester 2 = 26 Jul 2027)', () => {
-  expect(CALENDAR_READER).toBe('calendar-v2.2')
+  expect(CALENDAR_READER).toBe('calendar-v2.3')
   const r = read(monash, [start('Semester one', null, 3, 1, s1), start('Semester one', null, 2, 28, s1), start('Semester two', null, 7, 26, s2)])
   const one = r.periods.find((p) => p.period === 'semester one').starts
-  expect(one.map((s) => s.date).sort()).toEqual(['2027-03-01', '2028-02-28'])
+  expect(one.map((s) => s.date).sort()).toEqual(['2026-03-02', '2027-03-01', '2028-02-28'])   // v2.3: the whole row
   expect(one.find((s) => s.date === '2027-03-01')).toMatchObject({ year_basis: 'column', year_quote: '|  | 2026 | 2027 | 2028 |' })
   expect(r.periods.find((p) => p.period === 'semester two').starts[0].date).toBe('2027-07-26')
   // the range heading alone is never an edition year, and a claimed year that is not the column's is refused
   expect(first(read(monash, [start('Semester one', 2026, 3, 1, s1)])).date).toBeNull()
+})
+
+test('v2.3: a start resolved by its column stands for its whole row (the model reported only the 2026 column of Monash live)', () => {
+  const r = read(monash, [start('Semester one', null, 3, 2, s1), start('Semester two', null, 7, 27, s2)])
+  expect(r.periods.find((p) => p.period === 'semester one').starts.map((s) => s.date).sort()).toEqual(['2026-03-02', '2027-03-01', '2028-02-28'])
+  expect(r.periods.find((p) => p.period === 'semester two').starts.map((s) => s.date).sort()).toEqual(['2026-07-27', '2027-07-26', '2028-07-24'])
+  expect(r.periods[0].starts.every((s) => s.year_basis === 'column' && s.quote === s1)).toBe(true)
+  // an orientation row is never expanded into teaching starts (it is not a teaching start)
+  const o = read(monash, [{ ...start('Orientation', null, 2, 19, 'Orientation | 19–27 Feb | 18–26 Feb | 17–25 Feb'), start_meaning: 'orientation' }])
+  expect(o.periods.flatMap((p) => p.starts)).toHaveLength(0)
 })
 
 test('Decision 270a: unlabelled columns under a range heading map only with weekday and academic-period evidence', () => {
@@ -69,9 +79,9 @@ test('the address gives the edition only when no section does and nothing on the
   expect(first(read(p, [start('Trimester 1', null, 3, 1, q)])).date).toBeNull()                                     // no address, no year
 })
 
-test('worker v0.65.0 passes the document address to the calendar reader', () => {
+test('worker v0.66.0 (reader v2.3) passes the document address to the calendar reader', () => {
   const IX = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v0.65.0";')
+  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v0.66.0";')
   expect(IX).toContain('calendarAiParsed(answers, md, `ai:${it.model_code}:${CALENDAR_READER}`, cut, String(it.url || ""))')
 })
 
