@@ -238,6 +238,27 @@ function Bulk({ids,rows,settings,can,canQualify,onClear,onChanged,onError,canOnb
 
 // ---- the screen ------------------------------------------------------------------------------------------------------
 // Decision 255 (6 Oct 2026), Rule 2 (8 Oct 2026): a read-only measure of the page-fee rule. It changes nothing; a card that is closed reads nothing.
+// CF-247 F-INT (Platform Admin 11 Nov 2026): the calendar status of each provider with intake rows waiting for a date. Read only.
+const CAL_STATUS={approved_2027:['Approved 2027 calendar','good'],read_2027_not_approved:['2027 starts read, not approved','warn'],approved_earlier_edition:['Approved, earlier edition only','warn'],stored_no_2027:['Stored, no 2027 start read','warn'],read_failed:['Calendar found, read failed','bad'],none_found:['No calendar found','bad']}
+const CAL_ORDER=['none_found','read_failed','stored_no_2027','approved_earlier_edition','read_2027_not_approved','approved_2027']
+export function CalendarStatus({onError}){
+  const[d,setD]=useState(null),[busy,setBusy]=useState(false),[only,setOnly]=useState('')
+  const run=()=>{setBusy(true);supabase.rpc('admin_calendar_status_read',{p_args:{}}).then(({data,error})=>{if(error)throw error;setD(data)}).catch(e=>onError?.(errText(e))).finally(()=>setBusy(false))}
+  useEffect(()=>{run()},[])
+  if(!d)return <p className="adp-note">{busy?'Measuring…':'No status yet.'}</p>
+  const rows=(d.rows||[]).filter(r=>!only||r.status===only)
+  const label=s=>(CAL_STATUS[s]||[s])[0], tone=s=>(CAL_STATUS[s]||[s,'neutral'])[1]
+  return <div data-calendar-status>
+    <p className="adp-note">Course pages give the intake month; an approved academic calendar gives the day. A provider is listed while any of its intake rows waits for a date. Calendar re-read: {fmtNumber(d.reread?.per_run)} stored calendars an hour, {fmtNumber(d.reread?.waiting)} waiting (no Firecrawl).</p>
+    <table className="m-table" data-calendar-status-totals><thead><tr><th>Status</th><th>Providers</th><th>Rows waiting</th></tr></thead><tbody>
+      {CAL_ORDER.filter(s=>d.totals?.[s]).map(s=><tr key={s}><th scope="row"><button type="button" className="cf-link" aria-pressed={only===s} onClick={()=>setOnly(only===s?'':s)}>{label(s)}</button></th><td>{fmtNumber(d.totals[s].providers)}</td><td>{fmtNumber(d.totals[s].rows_waiting)}</td></tr>)}
+    </tbody></table>
+    <table className="m-table" data-calendar-status-rows><thead><tr><th>Provider</th><th>Status</th><th>Rows waiting</th><th>Calendars (read)</th><th>Latest check</th><th>First 2027 start read</th></tr></thead><tbody>
+      {rows.map(r=><tr key={r.provider_id}><td>{r.provider}{r.country?` (${r.country})`:''}</td><td><span className={`cf-chip tone-${tone(r.status)}`}>{label(r.status)}</span></td><td>{fmtNumber(r.rows_waiting)}</td><td>{fmtNumber(r.sources)} ({fmtNumber(r.sources_read)})</td><td>{r.last_verdict?`${r.last_verdict}${r.last_reason?`: ${String(r.last_reason).replace(/_/g,' ')}`:''}`:'not checked'}{r.next_check_at?`, next ${String(r.next_check_at).slice(0,10)}`:''}</td><td>{r.first_next_start||'—'}</td></tr>)}
+    </tbody></table>
+  </div>
+}
+
 function FeeRulesReport({onError}){
   const[d,setD]=useState(null),[busy,setBusy]=useState(false)
   const run=()=>{setBusy(true);supabase.rpc('admin_fee_rules_report',{p_args:{}}).then(({data,error})=>{if(error)throw error;setD(data)}).catch(e=>onError?.(errText(e))).finally(()=>setBusy(false))}
@@ -366,6 +387,7 @@ export default function AdaptersWorkspace({onError,merged=false,rank=6,routePara
     <Card id="adapters.firecrawl-targets" title="Firecrawl targets and credits spent" subtitle="The universities Firecrawl is used for, and the credits spent this period." data-adapters-firecrawl-targets><FirecrawlTargets onError={fail} onOpen={openRow}/></Card>
     {!merged&&<Card id="adapters.next" title="What each university needs next" subtitle="Rules learnt from the first adapters: find pages first, an adapter for page data, start dates or English, or admitted as it is." data-adapters-next><AdapterEvaluation onPick={openRow} onError={fail}/></Card>}
     {!merged&&<Card id="adapters.fee-rules" title="Page fees against CRICOS (dry run)" subtitle="What the page-fee rules would change. Read only; nothing is applied." data-adapters-fee-rules><FeeRulesReport onError={fail}/></Card>}
+    <Card id="adapters.calendar-status" title="Academic calendars by provider" subtitle="Which providers have a usable calendar to date their intakes, and why the rest are held. Read only." data-adapters-calendar-status><CalendarStatus onError={fail}/></Card>
     <Card id="adapters.settings" title="Fee range and award link settings" subtitle="Settings that apply to every university's fee range and hosted courses." data-adapters-settings>
       <FeeRangeSettings d={fr} can={can} onDone={load} onError={fail}/>
       <AwardLinkSettings can={can} onError={fail}/>
