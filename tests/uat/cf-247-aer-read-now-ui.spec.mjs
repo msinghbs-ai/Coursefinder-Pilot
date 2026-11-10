@@ -1,4 +1,4 @@
-// Guards: Platform Admin decision 10 Nov 2026 19:47 (one primary outcome action, "Read / refresh entry requirements now", for academic entry requirements; F-AER.01-.06) and F-AER.04 (a packet awaiting a person is never called published or active): the action and its stage timeline show in the AER workspace and the Course detail blade, every outcome is in its own words, a second click starts nothing, a role below Platform Admin sees what would happen but cannot start it, and the Data Delivery aer stream shows reviewer-ready packets apart from approved rows.
+// Guards: Platform Admin decision 10 Nov 2026 19:47 (one primary outcome action, "Read / refresh entry requirements now", for academic entry requirements; F-AER.01-.06) and F-AER.04 (a packet awaiting a person is never called published or active): the action and its stage timeline show in the AER workspace and the Course detail blade, every outcome is in its own words, a second click starts nothing, a role below Platform Admin sees what would happen but cannot start it, each kind of evidence (no source on record, source found not read, read with no requirement kept, technical failure, budget hold, human review) is named with the source examined and the next action. The Data Delivery screen is not part of this change: its server keys only are guarded in the contract spec.
 // Desktop project (chromium-desktop) except the phone test. Mocked admin; nothing reaches a real backend.
 import { test, expect } from '@playwright/test'
 import { mockAdmin } from './support/admin-mock.mjs'
@@ -98,7 +98,7 @@ test.describe('mocked browser', () => {
 
   // Operating Model v1.7 (evidence-backed absence): each kind of "nothing" is named, the source examined is shown as recorded, and no kind says "published"
   const KINDS = [
-    ['source_unavailable', 'no_source_found', 'No official source found'], ['source_unavailable', 'source_found_not_read', 'Source found, not read'],
+    ['source_unavailable', 'no_source_on_record', 'No source on record'], ['source_unavailable', 'source_found_not_read', 'Source found, not read'],
     ['already_up_to_date', 'tried_not_found', 'Read, no requirement kept'], ['source_unavailable', 'technical_failure', 'Technical failure, can be retried'],
     ['budget_reached', 'budget_hold', 'Budget hold'], ['human_review_required', 'human_review', 'Waiting for a person'],
   ]
@@ -122,7 +122,7 @@ test.describe('mocked browser', () => {
   }
 
   test('a missing source record is said to be missing, and a course page shows its stored copy and last recorded result', async ({ page }) => {
-    await mock(page, { st: status('source_unavailable', { source: { kind: 'matrix_sources', recorded: false, count: 0, sources: [] }, outcome: { outcome: 'source_unavailable', reason: 'nothing_stored', class: 'no_source_found', text: 't', next_action: 'n' } }) })
+    await mock(page, { st: status('source_unavailable', { source: { kind: 'matrix_sources', recorded: false, count: 0, sources: [] }, outcome: { outcome: 'source_unavailable', reason: 'nothing_stored', class: 'no_source_on_record', text: 't', next_action: 'n' } }) })
     await page.goto('/#entry-requirements?provider=p-rmit')
     await expect(page.locator('[data-arn-source="none"]')).toContainText('no entry source is recorded for this provider', { timeout: 20_000 })
     const p2 = await page.context().newPage()

@@ -32,7 +32,7 @@ export const OUTCOME={
 }
 // What the evidence says, in words. A label from the server (worked out from the stored state and reason; never from a guess that a field was searched).
 export const KIND={
-  no_source_found:'No official source found',
+  no_source_on_record:'No source on record',
   source_found_not_read:'Source found, not read',
   tried_not_found:'Read, no requirement kept',
   technical_failure:'Technical failure, can be retried',

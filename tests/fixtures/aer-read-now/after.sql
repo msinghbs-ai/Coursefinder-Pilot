@@ -150,9 +150,9 @@ do $$ declare p jsonb; rr jsonb; m text; k text; begin
   k := 'security.aer_read_now_class_v1';
   -- 1. no official source found
   p := pg_temp.plan('10000000-0000-0000-0000-000000000004');
-  perform pg_temp.ok(security.aer_read_now_class_v1(p->>'outcome', p->>'reason') = 'no_source_found', 'evidence: nothing stored is "no official source found"');
+  perform pg_temp.ok(security.aer_read_now_class_v1(p->>'outcome', p->>'reason') = 'no_source_on_record', 'evidence: nothing stored is "no source on record" (not a finding that discovery ran)');
   p := pg_temp.plan(null, '36000000-0000-0000-0000-000000000001');
-  perform pg_temp.ok(security.aer_read_now_class_v1(p->>'outcome', p->>'reason') = 'no_source_found', 'evidence: a course with no bound page is "no official source found"');
+  perform pg_temp.ok(security.aer_read_now_class_v1(p->>'outcome', p->>'reason') = 'no_source_on_record', 'evidence: a course with no bound page is "no source on record" (not a finding that discovery ran)');
   -- 2. source found but not read
   p := pg_temp.plan('10000000-0000-0000-0000-000000000003');
   perform pg_temp.ok(security.aer_read_now_class_v1(p->>'outcome', p->>'reason') = 'source_found_not_read', 'evidence: course pages matched by title only are "source found, not read"');
@@ -203,6 +203,49 @@ do $$ declare p jsonb; rr jsonb; m text; k text; begin
   perform pg_temp.ok(p->'outcome'->>'class' = 'tried_not_found' and p->'source'->'sources'->0->>'url' = 'https://pn.edu.au/entry' and p->'outcome'->>'next_action' is not null and (p->'outcome')::text !~* 'published', 'status: the outcome carries its kind, the source examined and the next action, and never says published');
 end $$;
 
+-- 5c. QA round: a reader hold is not an absence; no re-queue of a failed read against an unchanged page; on-demand rereads and replays count against the shared allowance ------
+do $$ declare p jsonb; rr jsonb; n int; before_runs text; begin
+  -- reader holds (held_unparsed, held_incomplete): a hold for a person, never "tried, not found", never green, never queued
+  p := pg_temp.plan('10000000-0000-0000-0000-000000000011');
+  perform pg_temp.ok(p->>'outcome' = 'human_review_required' and p->>'reason' = 'reader_held' and security.aer_read_now_class_v1(p->>'outcome', p->>'reason') = 'human_review' and jsonb_array_length(p->'actions') = 0
+    and (p->'source_counts'->>'held_by_the_reader')::int = 2 and (p->'source_counts'->>'read_nothing_kept')::int = 0 and p->>'text' like '%could not read the page reliably%' and p->>'text' not like '%no entry-requirement row was kept%',
+    'held: sources the reader held (unparsed, incomplete) are a hold for a person, not an absence, and are not queued');
+  p := pg_temp.plan('10000000-0000-0000-0000-000000000005');
+  perform pg_temp.ok(p->>'reason' <> 'tried_not_found', 'held: a held_unparsed run never reads as tried, not found');
+  -- a technically failed read is asked once for this page (same content hash); the click then no longer re-queues it
+  p := pg_temp.plan('10000000-0000-0000-0000-000000000012');
+  perform pg_temp.ok(p->>'outcome' = 'queued' and p->>'reason' = 'technical_failure_retry' and p->'actions'->0->>'content_hash' = 'h1', 'retry: a failed read not yet asked from here is queued once, carrying its content hash');
+  insert into pipeline.admin_control_events(area, action, target, detail) values ('aer_read_now', 'provider', '10000000-0000-0000-0000-000000000012',
+    jsonb_build_object('outcome', 'queued', 'started', jsonb_build_array(jsonb_build_object('kind', 'reread_source', 'source_id', '50000000-0000-0000-0000-00000000000b', 'content_hash', 'h1')), 'rereads', 1));
+  p := pg_temp.plan('10000000-0000-0000-0000-000000000012');
+  perform pg_temp.ok(p->>'outcome' = 'no_eligible_work' and p->>'reason' = 'technical_failure_retried' and jsonb_array_length(p->'actions') = 0 and security.aer_read_now_class_v1(p->>'outcome', p->>'reason') = 'technical_failure',
+    'retry: asked once already for the same page, a failed read is not queued again (and attempts are not reset again)');
+  update pipeline.admin_control_events set detail = jsonb_set(detail, '{started,0,content_hash}', '"h0"') where target = '10000000-0000-0000-0000-000000000012';
+  p := pg_temp.plan('10000000-0000-0000-0000-000000000012');
+  perform pg_temp.ok(p->>'outcome' = 'queued', 'retry: a request made for an earlier version of the page does not block the page as it is now');
+  update pipeline.admin_control_events set detail = jsonb_set(detail, '{started,0,content_hash}', '"h1"'), created_at = now() - interval '31 days' where target = '10000000-0000-0000-0000-000000000012';
+  p := pg_temp.plan('10000000-0000-0000-0000-000000000012');
+  perform pg_temp.ok(p->>'outcome' = 'queued', 'retry: after the retry interval (aer.schedule_retry_days) it can be asked again');
+  delete from pipeline.admin_control_events where target = '10000000-0000-0000-0000-000000000012';
+  -- the same for a failed course read
+  insert into pipeline.admin_control_events(area, action, target, detail) values ('aer_read_now', 'course', '3d000000-0000-0000-0000-000000000003',
+    jsonb_build_object('outcome', 'queued', 'started', jsonb_build_array(jsonb_build_object('kind', 'read_course', 'course_id', '3d000000-0000-0000-0000-000000000003', 'content_hash', 'h1')), 'course_reads', 1));
+  p := pg_temp.plan(null, '3d000000-0000-0000-0000-000000000003');
+  perform pg_temp.ok(p->>'outcome' = 'no_eligible_work' and p->>'reason' = 'technical_failure_retried' and p->>'text' like '%timeout%' and p->>'text' like '%already asked again%', 'retry: a failed course read already asked again for the same stored copy is not queued again');
+  insert into pipeline.platform_toolset_settings values ('fx', 'ai_refusal_enrich_fields', '"AI reading is stopped for the test"');
+  p := pg_temp.plan(null, '3d000000-0000-0000-0000-000000000003');
+  perform pg_temp.ok(p->>'reason' = 'technical_failure_retried', 'retry: the unchanged-page rule is stated before the budget (the read would not start whatever the budget)');
+  delete from pipeline.platform_toolset_settings where toolset_key = 'fx' and key = 'ai_refusal_enrich_fields';
+  delete from pipeline.admin_control_events where target = '3d000000-0000-0000-0000-000000000003';
+  -- the shared daily allowance counts on-demand course reads, source reads again and replays
+  perform pg_temp.cfg('aer.schedule_daily_max', '3');
+  insert into pipeline.admin_control_events(area, action, target, detail) values ('aer_read_now', 'provider', 'x', jsonb_build_object('outcome', 'queued', 'course_reads', 0, 'rereads', 2, 'replays', 1, 'started', '[]'::jsonb));
+  p := pg_temp.plan('10000000-0000-0000-0000-000000000002');
+  perform pg_temp.ok(p->>'outcome' = 'budget_reached' and p->>'reason' = 'daily_cap', 'cap: 2 source reads again and 1 replay asked today use up a daily allowance of 3 for first reads');
+  perform pg_temp.cfg('aer.schedule_daily_max', '200');
+  delete from pipeline.admin_control_events where target = 'x';
+end $$;
+
 -- 6. the action: governed, shared with the scheduled reader's allowance, idempotent -------------------------------------------------------------------------
 do $$ declare r jsonb; n int; ev int; begin
   r := security.aer_read_now_v1('10000000-0000-0000-0000-000000000002', null, 'test run', '00000000-0000-0000-0000-0000000000aa');
@@ -219,6 +262,8 @@ do $$ declare r jsonb; n int; ev int; begin
   perform pg_temp.cfg('aer.schedule_daily_max', '200');
   r := security.aer_read_now_v1('10000000-0000-0000-0000-000000000005', null, null, '00000000-0000-0000-0000-0000000000aa');
   perform pg_temp.ok(r->>'outcome' = 'queued' and (select count(*) from pipeline.entry_matrix_runs where source_id = '50000000-0000-0000-0000-000000000002' and state = 'queued') = 1 and (select status from pipeline.entry_matrix_sources where id = '50000000-0000-0000-0000-000000000002') = 'found', 'run: a failed source is read again through the workspace function');
+  perform pg_temp.ok((select (detail->>'rereads')::int from pipeline.admin_control_events where area = 'aer_read_now' order by id desc limit 1) = 1 and (select detail->'started'->0 ? 'content_hash' from pipeline.admin_control_events where area = 'aer_read_now' order by id desc limit 1),
+    'cap: the event records the source reads again asked and their content hash (so an unchanged page is not asked again)');
   r := security.aer_read_now_v1('10000000-0000-0000-0000-000000000005', null, null, '00000000-0000-0000-0000-0000000000aa');
   perform pg_temp.ok(r->>'outcome' = 'in_progress' and (select count(*) from pipeline.entry_matrix_runs where source_id = '50000000-0000-0000-0000-000000000002' and state = 'queued') = 1, 'run: asking again does not queue a second read of the same source');
   r := security.aer_read_now_v1('10000000-0000-0000-0000-000000000007', null, null, '00000000-0000-0000-0000-0000000000aa');

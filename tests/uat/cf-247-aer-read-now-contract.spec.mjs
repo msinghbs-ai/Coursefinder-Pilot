@@ -93,7 +93,7 @@ test('Operating Model v1.7 scope: absence is named from existing state, with no 
   expect(code).not.toMatch(/create\s+table|create\s+type|alter\s+table|create\s+index/i)
   for (const fn of ['aer_read_now_class_v1', 'aer_read_now_source_v1']) expect(mig).toContain(`security.${fn}`)
   // the six kinds, derived from the outcome and reason that already exist
-  for (const k of ['no_source_found', 'source_found_not_read', 'tried_not_found', 'technical_failure', 'budget_hold', 'human_review']) { expect(mig).toContain(`'${k}'`); expect(comp).toContain(k) }
+  for (const k of ['no_source_on_record', 'source_found_not_read', 'tried_not_found', 'technical_failure', 'budget_hold', 'human_review']) { expect(mig).toContain(`'${k}'`); expect(comp).toContain(k) }
   // "tried, not found" is said only from a stored result; the over-row-limit hold is shown as recorded and is not turned into a search finding
   expect(mig).toContain("r.reason in ('the page does not state it', 'no quoted requirement was on the page', 'no row met the admission rules')")
   // unchanged evidence: the same stored copy or the same content hash
@@ -101,4 +101,30 @@ test('Operating Model v1.7 scope: absence is named from existing state, with no 
   // the nine outcomes are unchanged (the six kinds are labels, not outcomes)
   expect(comp).toContain("permission_denied:['danger','Permission denied']")
   for (const f of ['src/DataDelivery.jsx', 'src/CatalogueColumns.jsx', 'src/data-delivery.css']) { const t = fs.existsSync(f) ? fs.readFileSync(f, 'utf8') : ''; expect(t).not.toContain('aer_read_now'); expect(t).not.toContain('AerReadNow') }
+})
+
+test('QA round: no unfiltered parked/readiness join per request, reader holds are not absences, a failed read is not re-queued against an unchanged page, the cap counts every on-demand read', () => {
+  const code = mig.split('\n').filter(l => !l.trim().startsWith('--')).join('\n')
+  // B1: the parked lookup is per item (the unique work_items key); the unfiltered function is not called by any new function (it is only named in the guard list)
+  expect(code).not.toMatch(/(from|join)\s+security\.aer_parked_items_v1\(\)/i)
+  expect(code).toContain("w.entity = i.id::text")
+  expect(code).toContain('v_hold_ids') // the held ids are passed down, not fetched again
+  expect(code).toContain('v_ready_ids') // the ready ids are passed to the facts check, not fetched again
+  // B2: a held read is a hold for a person; tried, not found only for a finished run with no row kept
+  expect(code).toContain("'reader_held'")
+  expect(code).toContain("lr.error like 'held%'")
+  expect(code).not.toMatch(/held_unparsed%'\)\s*\)?\s*n_none|n_none[^;]*held_unparsed/)
+  expect(code).toContain("lr.state = 'done' and coalesce(lr.rows_admitted, 0) = 0")
+  // (a) once asked for this content hash, a failed read is not queued again before the retry interval; the cap counts rereads and replays
+  expect(code).toContain("'technical_failure_retried'")
+  expect(code).toContain('make_interval(days => v_retry)')
+  expect(code).toContain("(e.detail->>'rereads')::int")
+  expect(code).toContain("(e.detail->>'replays')::int")
+  // (b) honest label: nothing on record is not a finding that discovery ran
+  expect(comp).toContain("no_source_on_record:'No source on record'")
+  expect(comp).not.toContain('No official source found')
+  // (d) the anchored Data Delivery edit is asserted against the recorded after md5 when applied to the recorded body
+  expect(code).toContain('(r.must_match or v_at_before) and md5(v_src) <> r.md5_after')
+  // (e) the displayed state change is global and said so
+  expect(mig).toContain('THE DISPLAYED STATE CHANGES FOR MORE THAN AER')
 })

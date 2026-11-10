@@ -132,3 +132,16 @@ insert into pipeline.field_enrich_items(provider_id, course_id, field, state, ev
   ('10000000-0000-0000-0000-000000000010', '3d000000-0000-0000-0000-000000000003', 'entry_requirements', 'failed', '20000000-0000-0000-0000-000000000001', 'timeout'),
   ('10000000-0000-0000-0000-000000000010', '3d000000-0000-0000-0000-000000000004', 'entry_requirements', 'skipped', '20000000-0000-0000-0000-000000000001', 'held_partial: over_row_limit: the page has 7 requirements and the limit is 5'),
   ('10000000-0000-0000-0000-000000000010', '3d000000-0000-0000-0000-000000000005', 'entry_requirements', 'skipped', '20000000-0000-0000-0000-00000000000b', 'the page does not state it');
+
+-- v1.7 QA round: reader holds are not absences; a failed read is not re-queued against an unchanged page
+insert into catalogue.providers(id, canonical_name, country_id, enrols_international) values
+  ('10000000-0000-0000-0000-000000000011', 'PR reader held', 1, true),
+  ('10000000-0000-0000-0000-000000000012', 'PS read failed technically, asked once', 1, true);
+insert into pipeline.entry_matrix_sources(id, provider_id, url, status, evidence_id, read_at, content_hash, rank) values
+  ('50000000-0000-0000-0000-000000000009', '10000000-0000-0000-0000-000000000011', 'https://pr.edu.au/entry', 'read', '20000000-0000-0000-0000-000000000001', now(), 'h1', 1),
+  ('50000000-0000-0000-0000-00000000000a', '10000000-0000-0000-0000-000000000011', 'https://pr.edu.au/entry2', 'read', '20000000-0000-0000-0000-000000000001', now(), 'h1', 2),
+  ('50000000-0000-0000-0000-00000000000b', '10000000-0000-0000-0000-000000000012', 'https://ps.edu.au/entry', 'read', '20000000-0000-0000-0000-000000000001', now(), 'h1', 1);
+insert into pipeline.entry_matrix_runs(provider_id, source_id, content_hash, state, rows_admitted, error) values
+  ('10000000-0000-0000-0000-000000000011', '50000000-0000-0000-0000-000000000009', 'h1', 'failed', 0, 'held_unparsed: not a country table: no country named in the page'),
+  ('10000000-0000-0000-0000-000000000011', '50000000-0000-0000-0000-00000000000a', 'h1', 'failed', 0, 'held_incomplete: 2 of 31 published minimums not read'),
+  ('10000000-0000-0000-0000-000000000012', '50000000-0000-0000-0000-00000000000b', 'h1', 'failed', 0, 'timeout');
