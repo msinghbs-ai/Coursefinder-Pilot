@@ -188,34 +188,54 @@ export function cdescSentences(text: string): string[] {
   return String(text || "").replace(/\s+/g, " ").trim().split(/(?<=[.!?]["')\]\u2019\u201d]*)\s+(?=[A-Z0-9"'(\u2018\u201c])/).map((x) => x.trim()).filter(Boolean);
 }
 
-// the answer as the existing record and checks hold it: { about_course, sentences: [{ text, quote, on_page }] }. Each claim is placed on the
-// sentence that shares most of its words; a sentence's quote is the exact text of the spans its claims cite, in page order (on the page by
-// construction). A sentence no claim backs has no quote and is held (quote_not_on_page). Cited ids that are not spans are kept as bad_evidence.
-export function cdescValue(a: any, spans: CdescSpan[], courseId: string) {
+// the answer as the existing record and checks hold it: { about_course, sentences: [{ text, quote, on_page }] }.
+// v0.72.1 (12 Nov 2026, first-cycle check of #1047: 1,553 of 1,882 readings held, 252 quote_not_on_page and many unsupported_sentence because a
+// claim reached only ONE sentence): a claim with page evidence backs every sentence that shares at least enrich.course_description_claim_reach_share
+// of its meaningful words, and its best sentence, never with fewer than enrich.course_description_claim_reach_min_words shared; a sentence no claim
+// reaches takes the page claim that shares most meaningful words with it (at least the minimum). A quote is page text only (on_page means page
+// spans): the evidence id "catalogue" (VERIFIED_COURSE_FACTS) is accepted, never quoted; the database leaves the course's own title and provider out
+// of the tests (security.cdesc_known_strip_v1, QA of #1049). A sentence with no page evidence keeps an empty quote (held). Cited ids that are not
+// spans are kept as bad_evidence; the cited spans' text is kept (cited_spans) so a stored answer can be re-checked.
+const STOP = new Set(["the", "and", "for", "with", "from", "into", "that", "this", "are", "was", "were", "its", "their", "has", "have", "can", "will", "also", "such", "who", "you", "your", "our", "all", "any", "per", "via"]);
+const meaningful = (s: string) => new Set([...words3(s)].filter((w) => !STOP.has(w)));
+export function cdescValue(a: any, spans: CdescSpan[], courseId: string, opt: { reachShare?: number; reachMinWords?: number } = {}) {
   const byId = new Map(spans.map((s, i) => [s.id, { s, i }]));
+  const share0 = Number.isFinite(opt.reachShare) ? Number(opt.reachShare) : 0.5, min0 = Number.isFinite(opt.reachMinWords) ? Math.max(1, Number(opt.reachMinWords)) : 2;
   const base = { prompt_version: CDESC_PROMPT_VERSION, status: String(a?.status || ""), unverified_claims: Array.isArray(a?.unverified_claims) ? a.unverified_claims.map(String).slice(0, 20) : [] };
   if (String(a?.course_id || "") !== courseId) return { value: { ...base, about_course: false, sentences: [] }, reason: "held: course_id_mismatch: the answer names another course" };
   if (base.status !== "candidate" || !String(a?.description || "").trim()) return { value: { ...base, about_course: false, sentences: [] }, reason: "insufficient_verified_course_facts" };
-  const sents = cdescSentences(a.description), cites: Set<string>[] = sents.map(() => new Set()), bad: string[] = [], claims: any[] = [];
-  for (const c of (Array.isArray(a?.claims) ? a.claims : [])) {
-    const ids = (Array.isArray(c?.evidence_ids) ? c.evidence_ids : []).map(String), ok = ids.filter((x: string) => byId.has(x));
-    bad.push(...ids.filter((x: string) => !byId.has(x)));
-    const cw = words3(c?.text); let best = -1, bestN = 0;
-    sents.forEach((t, i) => { const tw = words3(t); let n = 0; for (const w of cw) if (tw.has(w)) n++; if (n > bestN) { bestN = n; best = i } });
-    claims.push({ text: String(c?.text || "").slice(0, 300), evidence_ids: ok, sentence: best });
-    if (best >= 0) for (const x of ok) cites[best].add(x);
-  }
-  const sentences = sents.map((t, i) => {
-    const q = [...cites[i]].map((x) => byId.get(x)!).sort((p, r) => p.i - r.i).map((x) => x.s.exact_text).join(" ");
-    return { text: t, quote: q.slice(0, 2000), on_page: q.length > 0, evidence_ids: [...cites[i]] };
+  const sents = cdescSentences(a.description), sw = sents.map(meaningful), cites: Set<string>[] = sents.map(() => new Set()), bad: string[] = [], claims: any[] = [];
+  const parsed = (Array.isArray(a?.claims) ? a.claims : []).map((c: any) => {
+    const ids = (Array.isArray(c?.evidence_ids) ? c.evidence_ids : []).map(String);
+    const page = ids.filter((x: string) => byId.has(x));
+    bad.push(...ids.filter((x: string) => !byId.has(x) && x !== "catalogue"));
+    const cw = meaningful(c?.text), share = sw.map((tw) => { let n = 0; for (const w of cw) if (tw.has(w)) n++; return n });
+    return { text: String(c?.text || "").slice(0, 300), ids: ids.filter((x: string) => byId.has(x) || x === "catalogue"), page, cw, share };
   });
-  return { value: { ...base, about_course: true, sentences, claims, ...(bad.length ? { bad_evidence: [...new Set(bad)].slice(0, 20) } : {}) }, reason: null as string | null };
+  for (const c of parsed) {
+    const max = Math.max(0, ...c.share), best = max >= min0 ? c.share.indexOf(max) : -1;
+    const reach = c.share.map((n: number, i: number) => i === best || (n >= min0 && n >= c.cw.size * share0) ? i : -1).filter((i: number) => i >= 0);
+    for (const i of reach) for (const x of c.page) cites[i].add(x);
+    claims.push({ text: c.text, evidence_ids: c.ids, sentences: reach });
+  }
+  sents.forEach((_, i) => {
+    if (cites[i].size) return;
+    let bestC: any = null, bestN = min0 - 1;
+    for (const c of parsed) if (c.page.length && c.share[i] > bestN) { bestN = c.share[i]; bestC = c }
+    if (bestC) for (const x of bestC.page) cites[i].add(x);
+  });
+  const sentences = sents.map((t, i) => {
+    const ids = [...cites[i]], q = ids.map((x) => byId.get(x)!).sort((p, r) => p.i - r.i).map((x) => x.s.exact_text).join(" ");
+    return { text: t, quote: q.slice(0, 2000), on_page: q.length > 0, evidence_ids: ids };  // fixed: 2,000 characters bound one sentence's stored quote (spans are 600 at most)
+  });
+  const cited = [...new Set(sentences.flatMap((x) => x.evidence_ids))].map((x) => ({ id: x, exact_text: byId.get(x)!.s.exact_text }));
+  return { value: { ...base, about_course: true, sentences, claims, cited_spans: cited, ...(bad.length ? { bad_evidence: [...new Set(bad)].slice(0, 20) } : {}) }, reason: null as string | null };
 }
 
 // the description result recorded for the course's description item (svc_enrich_ai_record -> security.enrich_course_text_record_v1)
-export function cdescResults(a: any, spans: CdescSpan[], courseId: string, items: { item_id: number; field: string }[], meta: { model: string; worker: string; cost: number }) {
+export function cdescResults(a: any, spans: CdescSpan[], courseId: string, items: { item_id: number; field: string }[], meta: { model: string; worker: string; cost: number }, opt: { reachShare?: number; reachMinWords?: number } = {}) {
   const ds = items.filter((x) => x.field === "description"), share = meta.cost / Math.max(1, ds.length);
-  const v = cdescValue(a, spans, courseId);
+  const v = cdescValue(a, spans, courseId, opt);
   return ds.map((x) => ({ item_id: Number(x.item_id), model: meta.model, worker: meta.worker, prompt_version: CDESC_PROMPT_VERSION, cost: share,
     value: v.value, quote: v.value.sentences[0]?.quote?.slice(0, 300) || null, reason: v.reason }));
 }
