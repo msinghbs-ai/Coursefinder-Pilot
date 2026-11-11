@@ -1,0 +1,63 @@
+-- HELD (not a migration): forward recovery for 20261111230000 (bounded retry of a task after a passing database error, CF-247 F-OPS). It restores security.admin_jobs_tick_v1(integer) byte for byte to the body read live on
+-- 11 Nov 2026 14:30 AEDT (any slice error fails the task for good). Run only if the Platform Admin decides to take the change back. The setting jobs.transient_retry_max stays (unread). Guarded by the md5 of what is live now
+-- (the edited text or the original); a body that is neither stops it. Nothing is dropped or deleted. Setting jobs.transient_retry_max to 0 has the same effect without this file.
+
+do $g$
+declare v_src text := (select p.prosrc from pg_proc p where p.oid = 'security.admin_jobs_tick_v1(integer)'::regprocedure);
+begin
+  if md5(v_src) = 'f95f8c26d9bbd4fa07a74bcd0797e198' then raise notice 'already the original'; return; end if;
+  if md5(v_src) <> 'd25e4bad56b632eae40d15f69ddfc4f4' then raise exception 'live security.admin_jobs_tick_v1(integer) differs from both texts this recovery knows (body md5 %)', md5(v_src); end if;
+  execute $ddl$
+CREATE OR REPLACE FUNCTION security.admin_jobs_tick_v1(p_items integer DEFAULT 10)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare v_lane text; v_j pipeline.admin_jobs%rowtype; v_fin boolean; v_out jsonb := '[]'::jsonb;
+        v_n int := greatest(1, least(security.pipeline_num_v1('jobs.per_lane_per_tick', 1)::int, 2000)); v_t0 timestamptz := clock_timestamp();
+begin
+  for v_lane in select distinct lane from pipeline.admin_jobs where state in ('queued', 'running') loop
+    -- 23 Oct 2026: up to jobs.per_lane_per_tick tasks per lane each minute, oldest first
+    for v_j in select * from pipeline.admin_jobs j where j.lane = v_lane and j.state in ('queued', 'running')
+     order by (j.state = 'running') desc, j.created_at limit v_n for no key update skip locked loop  -- CF-247 IQ-00053: the row is held for the whole run; NO KEY UPDATE does not block the workers' foreign-key checks
+    exit when clock_timestamp() - v_t0 > interval '40 seconds';  -- fixed: the runner is called each minute; a run ends before the next starts
+    if v_j.cancel_requested then
+      update pipeline.admin_jobs set state = 'cancelled', finished_at = now(), updated_at = now() where id = v_j.id;
+      insert into pipeline.admin_job_events(job_id, note) values (v_j.id, 'cancelled at a provider boundary, work done so far kept');
+      perform security.admin_job_close_v1(v_j.id);
+      v_out := v_out || jsonb_build_object('id', v_j.id, 'state', 'cancelled'); continue;
+    end if;
+    if v_j.pause_requested then
+      update pipeline.admin_jobs set state = 'paused', pause_requested = false, updated_at = now() where id = v_j.id;
+      insert into pipeline.admin_job_events(job_id, note) values (v_j.id, 'paused at a provider boundary');
+      v_out := v_out || jsonb_build_object('id', v_j.id, 'state', 'paused'); continue;
+    end if;
+    if v_j.state = 'queued' then
+      update pipeline.admin_jobs set state = 'running', started_at = now(), updated_at = now() where id = v_j.id;
+      insert into pipeline.admin_job_events(job_id, note) values (v_j.id, 'started');
+    end if;
+    begin
+      v_fin := security.admin_job_slice_v1(v_j.id, p_items);
+    exception when others then
+      update pipeline.admin_jobs set state = 'failed', error = left(sqlerrm, 500), finished_at = now(), updated_at = now() where id = v_j.id;
+      insert into pipeline.admin_job_events(job_id, note) values (v_j.id, 'failed: ' || left(sqlerrm, 300));
+      perform security.admin_job_close_v1(v_j.id);
+      v_out := v_out || jsonb_build_object('id', v_j.id, 'state', 'failed'); continue;
+    end;
+    if v_fin then
+      -- CF-247 IQ-00064: a task the watcher ended with end_state failed (held past tasks.lane_hold_max_hours) is failed, its note the error
+      -- CF-247 IQ-00066: a task the watcher ended not needed (no eligible work) is never done: it is closed cancelled, its error the reason
+      update pipeline.admin_jobs set state = case when result->>'end_state' = 'failed' then 'failed' when result->>'end_state' = 'not_needed' then 'cancelled' else 'done' end,
+             error = case when result->>'end_state' in ('failed', 'not_needed') then left(result->>'note', 500) else error end,
+             finished_at = now(), updated_at = now() where id = v_j.id;
+      insert into pipeline.admin_job_events(job_id, note, detail) values (v_j.id, 'finished', (select j.result from pipeline.admin_jobs j where j.id = v_j.id));
+      perform security.admin_job_close_v1(v_j.id);
+    end if;
+    v_out := v_out || jsonb_build_object('id', v_j.id, 'state', case when v_fin then 'done' else 'running' end);
+    end loop;
+  end loop;
+  return v_out;
+end $function$
+$ddl$;
+end $g$;
