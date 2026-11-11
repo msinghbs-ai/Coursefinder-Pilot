@@ -30,6 +30,8 @@ on:
       - 'tests/uat/cf-247-cdesc-run-time-budget-contract.spec.mjs'
       - 'supabase/migrations/20261112170000_cf247_cdesc_source_grounded_v1.sql'
       - 'tests/fixtures/cdesc-source-grounded/**'
+      - 'supabase/migrations/20261112190000_cf247_cdesc_first_cycle_reread.sql'
+      - 'tests/fixtures/cdesc-reread/**'
       - 'tests/uat/cf-247-cdesc-source-grounded-contract.spec.mjs'
       - 'supabase/functions/coverage-sweep/index.ts'
       - 'tests/uat/cf-247-s527-course-description-machine-admission-contract.spec.mjs'
@@ -90,6 +92,7 @@ jobs:
           bash tests/fixtures/cdesc-admit-outside-record/run.sh 2>&1 | tee -a course-description-results.log
           bash tests/fixtures/cdesc-run-time-budget/run.sh 2>&1 | tee -a course-description-results.log
           bash tests/fixtures/cdesc-source-grounded/run.sh 2>&1 | tee -a course-description-results.log
+          bash tests/fixtures/cdesc-reread/run.sh 2>&1 | tee -a course-description-results.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
