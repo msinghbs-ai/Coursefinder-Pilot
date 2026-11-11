@@ -9,6 +9,7 @@ import { promptSentences, promptRequest, PROMPT_SCHEMA, passageCanonical } from 
 const MIG = fs.readFileSync('supabase/migrations/20261112011000_cf247_pdesc_prompt_based.sql', 'utf8')
 const IX = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 const MIG4 = fs.readFileSync('supabase/migrations/20261112023700_cf247_pdesc_name_forms_prompt_v4.sql', 'utf8')
+const MIG5 = fs.readFileSync('supabase/migrations/20261112034500_cf247_pdesc_machine_gate_prompt_profile.sql', 'utf8')
 const read = (f) => fs.readFileSync(f, 'utf8')
 
 test('the prompt is kept in the database, versioned, one active, and edited only as a new version by the Platform Admin with a reason', () => {
@@ -153,4 +154,14 @@ test('v0.69.1: a passage is on the page despite tag spacing, quote and dash shap
   expect(promptSentences(a, page, 10).sentences.map((x) => x.on_page)).toEqual([true, true, false, false])
   expect(passageCanonical('Fees rose 1.2 % ( approx )')).toBe('Fees rose 1.2% (approx)')
   expect(IX).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(69\.[1-9]|[7-9]\d\.\d+)";/)
+})
+
+test('20261112034500: with the prompt, the automatic admission keeps refused topics, marketing words and figures proved in quotes; the built-in-only lists no longer decline', () => {
+  expect(MIG5).toContain("if md5(pg_get_functiondef('security.pdesc_machine_text_check_ctx_v1(uuid,text,text[],jsonb)'::regprocedure)) <> '97dc630f1a12238ef9889873e2338a35'")
+  expect(MIG5).toContain("then array['pdesc.prompt_refused_words', 'pdesc.superlatives', 'pdesc.machine_refused_words']")
+  expect(MIG5).toContain("then array['pdesc.machine_refused_words_fr'] else '{}'::text[] end")  // the French list only for a French text
+  expect(MIG5).toContain("else array['pdesc.claim_words', 'pdesc.superlatives', 'pdesc.evidence_claim_words', 'pdesc.machine_refused_words', 'pdesc.machine_refused_words_fr'] end")  // prompt off: as before
+  expect(MIG5).toContain("key = 'pdesc.machine_numbers_allowed' and value = '0'::jsonb")  // a recorded settings change, reversible on screen
+  for (const c of ["'post-check: campus and students pass with the prompt'", "'post-check: marketing still goes to a person'", "'post-check: visas still go to a person'", "'post-check: French list for a French text'"]) expect(MIG5).toContain(c)
+  expect(MIG5).toMatch(/-- Replaces: .+\n-- Retires: /)
 })
