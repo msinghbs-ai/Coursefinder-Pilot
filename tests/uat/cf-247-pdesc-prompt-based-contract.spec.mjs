@@ -188,3 +188,9 @@ test('Guide (Platform Admin 11 Nov 2026 21:04): provider descriptions for each r
   expect(MIG6).toContain("'Every 10 minutes (at :03, :13 … :53), between the reader''s runs")
   expect(MIG6).toMatch(/-- Replaces: .+\n-- Retires: /)
 })
+
+test('G4: the retirement log lives beside the tests and every register regeneration carries it (it had been dropped twice)', () => {
+  const GEN = fs.readFileSync('scripts/test-register.mjs', 'utf8')
+  expect(GEN).toContain("fs.existsSync('docs/test-retirement-log.md') ? ['## Retirement log', '', fs.readFileSync('docs/test-retirement-log.md', 'utf8').trim(), '']")
+  expect(fs.readFileSync('docs/test-retirement-log.md', 'utf8')).toContain('`cf-247-f-pdesc-run-validate-phone` (3 phone tests) retired')
+})
