@@ -36,7 +36,7 @@ export function ProviderEntryMatrix({providerId}){
   const set=(k,v)=>{setOffset(0);setF(x=>({...x,[k]:v}))}
   const sources=d.sources||[]
   return <section className="rl-provider" data-entry-matrix>
-    <h4><GraduationCap size={14}/>Academic entry requirements <a className="cf-link" href={hrefFor('entry','',{provider:providerId})} data-entry-workspace-link>Open in Entry requirements</a></h4>
+    <h4><GraduationCap size={14}/>Academic entry requirements <a className="cf-link" href={hrefFor('entry','',{provider:providerId})} data-entry-workspace-link>Open in Entry requirements</a> <a className="cf-link" href={hrefFor('entry','sources',{provider:providerId})} data-entry-sources-link>Attach or manage sources</a></h4>
     <AerReadNow providerId={providerId}/>
     {sources.length>0&&<details data-entry-sources open={!total}><summary>Sources and reads ({fmtNumber(d.sources_total||sources.length)})</summary>
       <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Source</th><th>Fetch</th><th>Latest read</th><th>Rows</th><th>Not kept</th><th>Hold or error</th><th>Layer 4</th></tr></thead>

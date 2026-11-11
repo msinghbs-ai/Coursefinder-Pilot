@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { Button, Loading, Metric, SectionTitle, StatusChip, fmtDateTime, fmtMoney, fmtNumber } from './ui-kit'
 import { processResultsApi } from './process-results-api'
 import AutomationProgress from './AutomationProgress'
+import RuleBRegister from './RuleBRegister'
 import './intake-run-validate.css'
 
 // CF-247 process accountability (Platform Admin decision 5 Nov 2026 §6, §8, §10): Layer 2/3 Operations › Process results. Shows the saved
@@ -149,6 +150,8 @@ export default function ProcessResults({ rank = 0, client = processResultsApi })
     <AutomationProgress rank={rank} client={client}/>
     {!busy && !latest && !error && <p role="status">No measurement saved yet. The process-results job records one every hour.</p>}
     {recovery && <Recovery r={recovery}/>}
+    {/* CF-247 F-INT (11 Nov 2026, option B): the nearest-start qualification register and the one approval */}
+    <RuleBRegister/>
     {s && <>
       <p>Measured {fmtDateTime(latest.measured_at)} by {latest.measured_by}. Job intake-dates-apply: {jobs.enabled ? 'on' : 'off'}, {jobs.intake_dates_apply?.schedule}, last run {jobs.intake_dates_apply?.last_run ? `${fmtDateTime(jobs.intake_dates_apply.last_run.at)} (${jobs.intake_dates_apply.last_run.status})` : 'none'}, last success {jobs.intake_dates_apply?.last_success ? fmtDateTime(jobs.intake_dates_apply.last_success) : 'none'}; {n(jobs.batch)} rows a run; unique month {jobs.month_unique_match ? 'on' : 'off'}; waiting rows looked at again after {n(jobs.revisit_days)} days. Calendar re-read: last run {jobs.calendar_reread?.last_run ? `${fmtDateTime(jobs.calendar_reread.last_run.at)} (${jobs.calendar_reread.last_run.status})` : 'none'}.</p>
       <div className="intake-metrics">

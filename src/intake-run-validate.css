@@ -25,3 +25,7 @@
   .intake-run > label select { width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; }
   .intake-run a.cf-link { display: inline-flex; align-items: center; min-height: 24px; }
 }
+/* CF-247 F-INT (11 Nov 2026): nearest-start qualification register */
+.rb-register h3{margin:0 0 6px;font-size:var(--cf-fs-md)}
+.rb-counts{display:flex;flex-wrap:wrap;gap:6px}
+.rb-approve{display:grid;gap:6px;margin:8px 0}.rb-approve label{display:grid;gap:4px}.rb-approve input{width:100%;min-width:0}

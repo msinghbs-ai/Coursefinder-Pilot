@@ -16,6 +16,7 @@ import{Button,StatusChip,FilterChip,Pager,Loading,EmptyInline,fmtDate,fmtDateTim
 import{DataTable,FilterSelect}from'./DataTable'
 import{ReasonAction}from'./ProviderOnboarding'
 import AerReadNow from'./AerReadNow'
+import{SourceAttach,SourceDiscovery,useSourceMeta,classLabels}from'./AerSourceManage'
 import{hrefFor}from'./nav-map'
 import{Overlay}from'./Overlay'
 import{orderAerCountries}from'./aer-countries'
@@ -449,10 +450,15 @@ export function SourcesView({rank,onError,routeParams}){
   const args=useMemo(()=>({...f,offset,page_size:PAGE}),[JSON.stringify(f),offset])
   const[d,busy,err]=useList('sources_list',args,onError,refresh)
   const rows=d?.rows||[]
+  // F-AER.04 D3: classes, version, last verified and next retry of the listed sources (public.admin_aer_source 'meta')
+  const meta=useSourceMeta(rows.map(s=>s.id))
   const reread=async(s,reason)=>{try{const x=await aer('reread',{source_id:s.id,reason});setMsg(m=>({...m,[s.id]:x?.refetch?'Asked. The page is fetched again as HTML (the markdown copy stays as evidence); its read follows and its rows go to Layer 4.':'Asked. The read waits for the next run of the entry reader; its rows go to Layer 4.'}));setRefresh(n=>n+1)}catch(e){setMsg(m=>({...m,[s.id]:plainError(e)}));throw e}}
   const all=[
     {key:'provider_name',label:'Provider',width:200,sortKey:'provider',render:s=><span className="m-cell-title"><strong>{s.provider_name}</strong>{!s.in_scope&&<small>outside reading scope</small>}</span>},
     {key:'url',label:'Source',width:260,render:s=><span className="m-cell-title"><a className="cf-link aer-wrap" href={s.url} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()}>{short(s.url.replace(/^https?:\/\/(www\.)?/,''),70)}</a><small>{s.type}{s.title?` · ${short(s.title,40)}`:''}</small></span>},
+    {key:'classes',label:'Class',width:170,render:s=>{const x=meta[s.id];return x?.classes?<span className="m-cell-title"><span>{classLabels(x.classes)}</span><small>{x.attached?.how==='pdf_upload'?'uploaded PDF':'attached'}{x.attached?.reused?' · reused':''}</small></span>:<small>{x?.found_via==='search'?'found by search':'—'}</small>}},
+    {key:'version',label:'Version',width:90,render:s=>meta[s.id]?.version?`v${meta[s.id].version}`:'—'},
+    {key:'verified',label:'Last verified · next retry',width:220,render:s=>{const x=meta[s.id];return <small className="aer-wrap">{x?.last_verified?fmtDate(x.last_verified):'never'}{x?.next_retry?` · ${x.next_retry}`:''}</small>}},
     {key:'status',label:'Fetch',width:150,sortKey:'status',render:s=><span><StatusChip value={s.status} label={s.status}/>{s.read_via&&<small> · {s.read_via}</small>}</span>},
     {key:'stored',label:'Stored copy',width:170,render:s=>s.evidence_id?<span><a className="cf-link" href={evHref(s.evidence_id)} onClick={e=>e.stopPropagation()}>{fmtDate(s.captured_at)}</a><small> · {s.content_hash||''}</small></span>:'—'},
     {key:'read',label:'Latest read',width:210,sortKey:'read',render:s=><span>{s.run?.outcome==='no_requirements_table'?<NoTablePill status={s.run.review_status}/>:<HoldPill state={s.hold_state} title={s.run?.error||s.error||undefined}/>}{s.run?.attempts!=null&&<small> · {s.run.attempts} tries</small>}</span>},
@@ -469,6 +475,7 @@ export function SourcesView({rank,onError,routeParams}){
   return <div className="m-page-stack aer-page" data-aer-view="sources">
     <AerSummary providerId={f.provider_id} onError={onError} refreshKey={refresh}/>
     {f.provider_id&&<AerReadNow providerId={f.provider_id} onChanged={()=>setRefresh(r=>r+1)} onError={onError}/>}
+    {rank>=4&&<SourceAttach providers={o.providers||[]} providerId={f.provider_id} onAttached={()=>setRefresh(r=>r+1)}/>}
     <section className="m-panel m-catalogue-panel">
       <div className="m-workspace-head"><div><h2>Sources, reads and holds</h2><p>Every official page or PDF the entry reader uses, its stored copy, its latest read and why rows were held or not kept.{d&&!d.ai_allowed?' AI reading is stopped (AI limits).':''}</p></div>
         <div className="m-result-count">{busy?<><span className="m-spinner"/>Loading…</>:<><strong>{fmtNumber(Number(d?.total||0))}</strong><span>sources</span></>}</div></div>
@@ -484,6 +491,7 @@ export function SourcesView({rank,onError,routeParams}){
       <DataTable rows={rows} columns={cols} loading={busy} sort={f.sort} direction={f.direction} onSort={sortBy} tableId="aer-sources"/>
       <Pager offset={offset} limit={PAGE} total={Number(d?.total||0)} onOffset={setOffset}/>
     </section>
+    {rank>=4&&<SourceDiscovery/>}
   </div>
 }
 
