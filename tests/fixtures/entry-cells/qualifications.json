@@ -1,0 +1,147 @@
+{
+"on": true,
+"global_tokens": [
+"ALL",
+"ANY",
+"INT",
+"GLOBAL",
+"WORLDWIDE",
+"INTERNATIONAL",
+"ALL COUNTRIES",
+"ANY COUNTRY",
+"GENERAL"
+],
+"qualifications": [
+{
+"code": "AP",
+"aliases": [
+"advanced placement",
+"ap exams",
+"ap examinations",
+"advanced placement examinations"
+]
+},
+{
+"code": "APID",
+"aliases": [
+"advanced placement international diploma",
+"advanced placement international diploma apid",
+"apid",
+"ap international diploma"
+]
+},
+{
+"code": "CAIE_AL",
+"aliases": [
+"cambridge international as and a level",
+"cambridge international a level",
+"cambridge international examinations",
+"cambridge international examinations cie",
+"cie",
+"caie",
+"cie a level",
+"cambridge a level",
+"cambridge international as & a level"
+]
+},
+{
+"code": "EB",
+"aliases": [
+"european baccalaureate",
+"baccalaureat europeen"
+]
+},
+{
+"code": "GAC",
+"aliases": [
+"global assessment certificate",
+"gac"
+]
+},
+{
+"code": "GCE_A",
+"aliases": [
+"gce a level",
+"gce a levels",
+"a level",
+"a levels",
+"a-level",
+"a-levels",
+"gce advanced level",
+"advanced level"
+]
+},
+{
+"code": "GCE_AS",
+"aliases": [
+"gce as level",
+"as level",
+"as levels",
+"as-level"
+]
+},
+{
+"code": "IB_COURSES",
+"aliases": [
+"international baccalaureate certificate",
+"ib certificate",
+"international baccalaureate certificate ib",
+"ib courses",
+"ib diploma programme courses",
+"international baccalaureate diploma programme courses (certificates)"
+]
+},
+{
+"code": "IB_CP",
+"aliases": [
+"ib career-related programme",
+"ibcp",
+"international baccalaureate career-related programme"
+]
+},
+{
+"code": "IB_DP",
+"aliases": [
+"international baccalaureate",
+"international baccalaureate diploma",
+"ib diploma",
+"ibdp",
+"ib",
+"international baccalaureate ib",
+"international baccalaureate ib diploma",
+"global ib"
+]
+},
+{
+"code": "IGCSE",
+"aliases": [
+"igcse",
+"international gcse",
+"cambridge igcse",
+"pearson edexcel international gcse",
+"cie pearson edexcel igcse levels"
+]
+},
+{
+"code": "NCUK_IFY",
+"aliases": [
+"ncuk international foundation year",
+"ncuk international foundation year ncuk ify",
+"ncuk ify",
+"northern consortium uk international foundation year",
+"northern consortium united kingdom ncuk",
+"ncuk"
+]
+},
+{
+"code": "PEARSON_IAL",
+"aliases": [
+"pearson edexcel international advanced level",
+"pearson edexcel international a level",
+"international advanced level",
+"pearson edexcel",
+"edexcel"
+]
+}
+]
+}
