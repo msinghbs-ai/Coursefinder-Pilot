@@ -129,7 +129,8 @@ export function applyAdapter(a: Adapter, html: string, course: { title: string; 
   // an IELTS score kept as a number in the page data (json_paths.ielts_overall, json_paths.ielts_min_band)
   const num = (k: string) => { const v = data && paths[k] ? Number(jsonText(jsonAt(data, paths[k]))) : NaN; return Number.isFinite(v) && v > 0 && v <= 9 ? v : null };
   const eng = (() => { const e: Record<string, unknown> = english(part("english")); const o = num("ielts_overall"), b = num("ielts_min_band"); if (o !== null && e.ielts_overall == null) { e.ielts_overall = o; e.context = `page data: IELTS ${o}${b !== null ? `, no band below ${b}` : ""}` } if (b !== null && e.ielts_min_band == null) e.ielts_min_band = b; return e })();
-  const pat = patternValues(a, text, course.code);
+  const patWords: Record<string, string> = {};
+  const pat = patternValues(a, text, course.code, patWords);
   const extra: Record<string, string> = {};
   for (const f of EXTRA_FIELDS) {
     const v = pat[f] ?? (data && paths[f] ? clean(jsonText(jsonAt(data, paths[f]))).slice(0, f === "majors" ? 900 : 300) : "");
@@ -168,7 +169,9 @@ export function applyAdapter(a: Adapter, html: string, course: { title: string; 
     fee: Number.isFinite(pFee) && pFee >= 1000 && pFee <= 500000 ? { value: pFee, safe: true, ambiguous: false, basis: "annual", fee_year: patternYear(a, text, fromTotal ? "fee_total" : "fee", course.code), currency: currencyFor(course.country), rejection_reason: null, candidates: [], context: pat.fee ? `adapter pattern: ${pat.fee}` : fromTotal ? `adapter: whole-course fee ${pat.fee_total} / ${Math.round(tYears * 100) / 100} full-time years (${pat.course_years})` : `page data: ${paths.fee} = ${jFeeRaw}`, ...(fromTotal ? { from_total: { total: tTotal, years: Math.round(tYears * 10000) / 10000 } } : {}) } : fee(part("fee"), currencyFor(course.country)),
     english: eng,
     intakes: pIntakes && pIntakes.length ? pIntakes : intakes(part("intakes")),
-    intake_context: pIntakes && pIntakes.length ? [`adapter pattern: ${pat.intakes}`.slice(0, 200)] : intakeEvidence(part("intakes")),
+    // v0.68.0: the page's own words around the reading (the end of the whole match, e.g. "Next intake: February, July"), so the
+    // offering check can read the intake statement; the months alone ("adapter pattern: February") held every such course
+    intake_context: pIntakes && pIntakes.length ? [`adapter pattern: ${patternWordsTail(patWords.intakes || pat.intakes)}`.slice(0, 200)] : intakeEvidence(part("intakes")),
     ...(pIntakes && pIntakes.length ? { intakes_by: "adapter" } : {}),
     ...(Number.isFinite(pFee) && pFee >= 1000 ? { fee_by: "adapter" } : {}),
     ...(Number.isFinite(pIelts) && pIelts >= 4 && pIelts <= 9 ? { english_by: "adapter" } : (num("ielts_overall") !== null ? { english_by: "adapter" } : {})),
@@ -232,17 +235,29 @@ export function withCode(p: string | undefined, code: string): string | null {
   const c = String(code || "").trim(); if (!c) return null;
   return p.split("{code}").join(c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
 }
-export function patternValues(a: Adapter, text: string, code = ""): Record<string, string> {
+export function patternValues(a: Adapter, text: string, code = "", words?: Record<string, string>): Record<string, string> {
   const out: Record<string, string> = {};
   for (const [f, p0] of Object.entries(a.patterns || {})) {
     const p = withCode(p0, code); if (!p) continue;
     let r: RegExp; try { r = new RegExp(p, "gi") } catch { continue }
-    const ms = [...text.matchAll(r)].slice(0, 20).map((m) => clean(m[1] ?? m[0])).filter(Boolean);
+    const found = [...text.matchAll(r)].slice(0, 20).map((m) => ({ v: clean(m[1] ?? m[0]), w: clean(m[0]) })).filter((x) => x.v);
+    const ms = found.map((x) => x.v);
     if (!ms.length) continue;
     const how = (a.pick || {})[f] || "first";
     out[f] = (how === "last" ? ms[ms.length - 1] : how === "all" ? [...new Set(ms)].join(" | ") : ms[0]).slice(0, f === "exit_awards" || f === "majors" ? 900 : 300);
+    // v0.68.0: the whole match as printed (the page's words around the value), for the reading's evidence
+    if (words) words[f] = how === "last" ? found[found.length - 1].w : how === "all" ? [...new Set(found.map((x) => x.w))].join(" | ") : found[0].w;
   }
   return out;
+}
+// v0.68.0: the end of a match, up to 180 characters, starting at a word: the statement that holds the value
+// ("... Next intake: February, July"). A match of 180 characters or fewer is kept whole.
+export function patternWordsTail(w: string): string {
+  const t = clean(w || "");
+  if (t.length <= 180) return t;
+  const cut = t.slice(-180);
+  const sp = cut.indexOf(" ");
+  return sp >= 0 && sp < 40 ? cut.slice(sp + 1) : cut;
 }
 
 // What a stored page offers an adapter author: its title and heading, JSON scripts and headings.
