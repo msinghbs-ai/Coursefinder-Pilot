@@ -63,7 +63,7 @@ test('the grid keeps each course row\'s CRICOS code (Sydney: every course row), 
 
 test('worker v0.73.0 reads a proven grid only with its switch, before a PDF is held, and names its reader; Layer 4 shows course links', () => {
   const ix = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-  expect(ix).toContain('const WORKER = "coverage-sweep-worker-v0.73.0"')
+  expect(ix).toMatch(/(?:const WORKER = "coverage-sweep-worker-v0\.73\.0"; |\/\/ was v0\.73\.0 )\/\/ v0\.73\.0 \(12 Nov 2026, CF-247 F-AER\.08/)
   expect(ix).toMatch(/Number\(ws\["reading\.entry_grid_reader_on"\]\) >= 1 \? pdfGrids2\(stored\.pdfPages\)/)
   expect(ix).toMatch(/if \(stored\.pdf && stored\.pdf\.status !== "ok" && !grid\)/)
   expect(ix).toContain('entryGridHeadingList(ws["reading.entry_grid_headings"])')
