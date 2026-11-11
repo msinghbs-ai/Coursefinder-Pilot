@@ -1,0 +1,43 @@
+# Guards: F-AER.04 source management (Platform Admin decision D3, 11 Nov 2026) and the D1 quote proof, and G4 database-backed tests: migrations 20261112110700 and 20261112113700 on the entry-matrix path (ownership, classes, reuse, upload record, one read, never machine-admitted, the published minimum in the quote, recovery) on an isolated PostgreSQL 16 (fixtures only, never a Supabase project).
+name: AER source management integration
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/20261112113700_cf247_aer_source_management.sql'
+      - 'supabase/held/aer_source_management_forward_recovery.sql'
+      - 'tests/fixtures/aer-source-management/**'
+      - 'tests/fixtures/aer-matrix-machine/**'
+      - 'supabase/migrations/20261112093700_cf247_aer_matrix_machine_admission.sql'
+      - 'supabase/migrations/20261112110700_cf247_aer_matrix_machine_quote_proof.sql'
+      - 'supabase/held/aer_matrix_machine_quote_proof_forward_recovery.sql'
+      - 'tests/fixtures/aer-qualification-first/**'
+      - 'supabase/migrations/20261112060000_cf247_aer_qualification_first.sql'
+      - '.github/workflows/aer-source-management-test.yml'
+  workflow_dispatch:
+jobs:
+  isolated-postgres:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: fixture-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: fixture-only
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash tests/fixtures/aer-source-management/run.sh | tee aer-source-management-results.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: aer-source-management-database-evidence
+          path: aer-source-management-results.log
