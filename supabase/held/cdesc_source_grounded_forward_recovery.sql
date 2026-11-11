@@ -1,5 +1,5 @@
 -- HELD forward recovery for migration 20261112170000_cf247_cdesc_source_grounded_v1.sql (CF-247 F-CDESC). NOT a migration: run by hand only on the Platform Admin's decision.
--- Restores the four edited bodies byte for byte (each md5-guarded; applying it twice changes nothing). The worker keeps writing with cdesc-source-grounded-v1 until coverage-sweep is redeployed at v0.71.0;
+-- Restores the three edited bodies byte for byte (each md5-guarded; applying it twice changes nothing). The worker keeps writing with cdesc-source-grounded-v1 until coverage-sweep is redeployed at v0.71.0;
 -- the two new functions (security.cdesc_prompt_version_v1, security.cdesc_prompt_supersede_v1) and the two settings stay, unused by the restored bodies. Layer 4 items already superseded stay superseded (their record is in
 -- pipeline.layer4_supersessions and can be reversed there).
 create or replace function pg_temp.edit_all(p_sig text, p_before text, p_after text, p_olds text[], p_news text[]) returns text language plpgsql as $f$
@@ -46,21 +46,11 @@ select pg_temp.edit_all('security.cdesc_sentence_fault_v1(text,text,boolean,json
         $n1$  -- a sentence that does not end as a sentence is a fragment$n1$,
         $n2$  return null;$n2$]);
 
-select pg_temp.edit_all('security.course_description_check_with_v1(uuid,jsonb,jsonb,jsonb)', '0aeeeeee93debfaa6bdc86c0fe528010', 'd310fa64f61f2243df1416d3e48f6bab',
-  array[$o0$  -- cdesc-source-grounded-v1 (CF-247 F-CDESC, 12 Nov 2026): a claim the writer reported it could not tie to the page is never published; the description
-  -- is held when it carries one (most of the claim's words are in the text)
-  if exists (select 1 from jsonb_array_elements_text(case when jsonb_typeof(p_result->'unverified_claims') = 'array' then p_result->'unverified_claims' else '[]'::jsonb end) u
-              where security.pdesc_support_v1(u, v_text) >= v_min_sup) then
-    return jsonb_build_object('ok', false, 'rule', 'unverified_claims', 'checks', v_checks,
-      'reason', 'the description carries a claim the writer could not tie to the page: ' || left(p_result->'unverified_claims'->>0, 120));
-  end if;
-  if v_n < security.pipeline_num_v1('enrich.course_description_min_sentences', 1)$o0$],
-  array[$n0$  if v_n < security.pipeline_num_v1('enrich.course_description_min_sentences', 1)$n0$]);
-
-select pg_temp.edit_all('security.enrich_course_text_gaps_v1(text[])', '89e208ffd0c66694d6d26a21b2a4d64f', '66d9dad4eb0d743b804097b1bf9d38d2',
+select pg_temp.edit_all('security.enrich_course_text_gaps_v1(text[])', 'ddba9b553a63a9e38c49782a0b0d29c9', '66d9dad4eb0d743b804097b1bf9d38d2',
   array[$o0$                                  and a.answer->'value'->'sentences' = e.value->'sentences')) unproven,
                -- cdesc-source-grounded-v1 (CF-247 F-CDESC, 12 Nov 2026): a description reading held by a check, or superseded in Layer 4, that an earlier prompt made is read once more with the released prompt
-               (f = 'description' and e.state = 'skipped' and (e.reason like 'held%' or e.reason like 'superseded:%')
+               -- (a reading held behind the provider's places passed its checks: it follows a decision through course_description_promote_held_v1 and is not read again here)
+               (f = 'description' and e.state = 'skipped' and ((e.reason like 'held%' and e.reason not like 'held\_first\_admission:%') or e.reason like 'superseded:%')
                 and coalesce(e.value->>'prompt_version', e.value->'reader'->>'prompt', '') <> security.cdesc_prompt_version_v1()) old_prompt$o0$,
         $o1$case when coalesce(l.unproven, false) then 0 when l.state is null or coalesce(l.old_prompt, false) then 1$o1$,
         $o2$or coalesce(l.unproven, false) or coalesce(l.old_prompt, false) or l.updated_at <$o2$],

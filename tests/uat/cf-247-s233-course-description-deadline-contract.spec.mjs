@@ -137,10 +137,10 @@ test('course-text.ts: schema per field asked, quotes on the page, dates never ma
     deadlines: [{ intake: 'February 2027 intake', kind: 'date', date: '2026-11-30', quote: 'Applications for the February 2027 intake close 30 November 2026.' },
                 { intake: null, kind: 'date', date: '30 Nov', quote: 'close 30 November' }] }
   // v0.72.0: courseTextResults records the deadline only (the description is recorded by cdescResults); the call's cost is shared by the items it answers
-  const out = [null, ...courseTextResults(a, page, [{ item_id: 1, field: 'description' }, { item_id: 2, field: 'deadline' }], { model: 'm', worker: 'w', cost: 0.002 })]
-  expect(out).toHaveLength(2); expect(out[1].item_id).toBe(2); expect(out[1].prompt_version).toBe('course-text-v2')
-  expect(out[1].value.deadlines[0]).toEqual({ intake: 'February 2027 intake', kind: 'date', date: '2026-11-30', quote: 'Applications for the February 2027 intake close 30 November 2026.', on_page: true })
-  expect(out[1].value.deadlines[1].date).toBeNull()  // not YYYY-MM-DD: never completed here
+  const out = courseTextResults(a, page, [{ item_id: 1, field: 'description' }, { item_id: 2, field: 'deadline' }], { model: 'm', worker: 'w', cost: 0.002 })
+  expect(out).toHaveLength(1); expect(out[0].item_id).toBe(2); expect(out[0].prompt_version).toBe('course-text-v2'); expect(out[0].cost).toBe(0.002)
+  expect(out[0].value.deadlines[0]).toEqual({ intake: 'February 2027 intake', kind: 'date', date: '2026-11-30', quote: 'Applications for the February 2027 intake close 30 November 2026.', on_page: true })
+  expect(out[0].value.deadlines[1].date).toBeNull()  // not YYYY-MM-DD: never completed here
   expect(courseTextDeadlines({ deadlines: [] }, page)).toEqual([])
   expect(courseTextResults({ deadlines: [] }, page, [{ item_id: 3, field: 'deadline' }], { model: 'm', worker: 'w', cost: 0 })[0].reason).toBe('the page does not state it')
   expect(courseTextResults({ description: { about_course: true, sentences: [] } }, page, [{ item_id: 4, field: 'description' }], { model: 'm', worker: 'w', cost: 0 })).toEqual([])

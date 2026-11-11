@@ -1,6 +1,6 @@
 // Guards: F-CDESC cdesc-source-grounded-v1 (Platform Admin 11 Nov 2026: "Implement the Course Description production redesign recorded in Admin PR #430"; contract admin docs/platform/COURSE-DESCRIPTION-PRODUCTION-DESIGN.md):
 // the course description is written by its own call with the pinned, versioned prompt (exact text, recorded hash) over numbered official source spans, each claim citing its spans; each sentence reaches the database with the exact
-// text of the spans it cites; insufficient evidence is recorded as such; the deadline keeps its own prompt; the D4 re-ask is gone. The database behaviour (copied, generic and unverified text held; earlier-prompt readings read again;
+// text of the spans it cites; insufficient evidence is recorded as such; unverified claims are recorded, never published; the deadline keeps its own prompt; the D4 re-ask is gone. The database behaviour (copied and generic text held; earlier-prompt readings read again;
 // earlier-prompt waiting descriptions the machine declined for good superseded) runs on the isolated fixture tests/fixtures/cdesc-source-grounded/run.sh (course-descriptions-test.yml).
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
@@ -81,10 +81,9 @@ test('worker v0.72.0: the description has its own call, the deadline keeps cours
   expect(CT).not.toMatch(/export function courseTextReask|export function courseTextBreach/)
 })
 
-test('migration 20261112170000: four md5-guarded edits, two functions, two settings with label, range, unit and used_by; housekeeping lines; nothing dropped; no consumer API', () => {
+test('migration 20261112170000: three md5-guarded edits, two functions, two settings with label, range, unit and used_by; housekeeping lines; nothing dropped; no consumer API', () => {
   for (const [sig, b, a] of [['security.cdesc_sentence_fault_v1(text,text,boolean,jsonb,jsonb,numeric)', '0aacac45e2a294a51db82777a9d1bc19', 'c17adb1d759d24cf8b41bcdeac7c6b54'],
-                             ['security.course_description_check_with_v1(uuid,jsonb,jsonb,jsonb)', 'd310fa64f61f2243df1416d3e48f6bab', '0aeeeeee93debfaa6bdc86c0fe528010'],
-                             ['security.enrich_course_text_gaps_v1(text[])', '66d9dad4eb0d743b804097b1bf9d38d2', '89e208ffd0c66694d6d26a21b2a4d64f'],
+                             ['security.enrich_course_text_gaps_v1(text[])', '66d9dad4eb0d743b804097b1bf9d38d2', 'ddba9b553a63a9e38c49782a0b0d29c9'],
                              ['security.course_description_machine_run_v1()', '42c73e9c0f376150e7778104dfa9830a', '545a874051466f132221de12160fbd46']]) {
     expect(MIG).toContain(`--   ${sig}  ${b} -> ${a}`)
     expect(code).toContain(`select pg_temp.edit_all('${sig}', '${b}', '${a}',`)
@@ -105,6 +104,9 @@ test('migration 20261112170000: four md5-guarded edits, two functions, two setti
   expect(code).toContain("'decided_before'")
   expect(code).toContain('and d.policy_stamp = v_stamp)')
   expect(code).toContain("k.field in ('description', 'course_description', 'all')")
+  // QA C1: a reading held behind the provider's places is not read again (it follows a Layer 4 decision); QA C2: no word-overlap hold on the unverified list
+  expect(code).toContain("e.reason not like 'held\\_first\\_admission:%'")
+  expect(code).not.toContain("'unverified_claims', 'checks'")
 })
 
 test('fixture: wired into the Course descriptions workflow and built on the live definitions', () => {

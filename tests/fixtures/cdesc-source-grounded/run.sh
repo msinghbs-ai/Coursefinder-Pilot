@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Guards: F-CDESC cdesc-source-grounded-v1 (Platform Admin 11 Nov 2026, Admin PR #430): migration 20261112170000 edits exactly four course-description function bodies (md5 from live to the stated md5), adds two functions and two settings and
-# nothing else, applies twice with no change, stops over a changed live body with nothing applied, restores the four bodies byte for byte from its held recovery (twice) and comes back; and behaves as scenarios.sql says, with every REGRESSION
+# Guards: F-CDESC cdesc-source-grounded-v1 (Platform Admin 11 Nov 2026, Admin PR #430): migration 20261112170000 edits exactly three course-description function bodies (md5 from live to the stated md5), adds two functions and two settings and
+# nothing else, applies twice with no change, stops over a changed live body with nothing applied, restores the three bodies byte for byte from its held recovery (twice) and comes back; and behaves as scenarios.sql says, with every REGRESSION
 # check failing on the database from before it. Needs a scratch PostgreSQL 16 or 17 (never a Supabase project): PGHOST/PGPORT/PGUSER point at it. Builds on the cdesc-subset harness (which builds on cdesc-throughput, cdesc-machine and
 # course-description-backpressure). CSG_KEEP=1 keeps the databases.
 set -euo pipefail
@@ -19,13 +19,13 @@ BASE=$(CDS_KEEP=1 CDS_DB=${DB}_sub bash tests/fixtures/cdesc-subset/run.sh 2>&1)
 for d in ${DB}_sub_old ${DB}_sub_thr ${DB}_sub_thr_old; do dropdb --if-exists "$d" >/dev/null 2>&1 || true; done
 echo "base: the cdesc-subset harness built the database (production-parity fixture with the cdesc migrations up to 20261110230000)"
 dropdb --if-exists "$DB" >/dev/null 2>&1 || true; createdb -T "${DB}_sub" "$DB"
-declare -A LIVE=( ['security.cdesc_sentence_fault_v1(text,text,boolean,jsonb,jsonb,numeric)']=0aacac45e2a294a51db82777a9d1bc19 ['security.course_description_check_with_v1(uuid,jsonb,jsonb,jsonb)']=d310fa64f61f2243df1416d3e48f6bab
+declare -A LIVE=( ['security.cdesc_sentence_fault_v1(text,text,boolean,jsonb,jsonb,numeric)']=0aacac45e2a294a51db82777a9d1bc19
                   ['security.enrich_course_text_gaps_v1(text[])']=66d9dad4eb0d743b804097b1bf9d38d2 ['security.course_description_machine_run_v1()']=42c73e9c0f376150e7778104dfa9830a )
 for sig in "${!LIVE[@]}"; do
   [ "$(q $DB "select md5(prosrc) from pg_proc where oid = '$sig'::regprocedure")" = "${LIVE[$sig]}" ] || { echo "the loaded $sig differs from live ${LIVE[$sig]}"; exit 1; }
   grep -qF -- "--   $sig  ${LIVE[$sig]} -> " $M || { echo "the header does not record $sig ${LIVE[$sig]}"; exit 1; }
 done
-echo "loaded: the four definitions the migration edits = live (body md5, read 12 Nov 2026)"
+echo "loaded: the three definitions the migration edits = live (body md5, read 12 Nov 2026)"
 dropdb --if-exists "${DB}_old" >/dev/null 2>&1; createdb -T "$DB" "${DB}_old"
 
 FNS="select p.oid::regprocedure::text || ' ' || md5(p.prosrc) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname in ('security', 'public', 'api', 'pipeline', 'catalogue') and p.prokind = 'f' order by 1"
@@ -35,7 +35,7 @@ snap "$W/0"
 psql -X -q -v ON_ERROR_STOP=1 -d $DB -1 -At -f $M >/dev/null
 snap "$W/1"
 CHANGED=$(comm -23 "$W/0.fn" "$W/1.fn" | sed 's/ .*//' | sort)
-[ "$CHANGED" = "$(printf '%s\n' "${!LIVE[@]}" | sort)" ] || { echo "the changed functions are not exactly the four edited ones:"; echo "$CHANGED"; exit 1; }
+[ "$CHANGED" = "$(printf '%s\n' "${!LIVE[@]}" | sort)" ] || { echo "the changed functions are not exactly the three edited ones:"; echo "$CHANGED"; exit 1; }
 for sig in "${!LIVE[@]}"; do A=$(grep -oP -- "--   \Q$sig\E  ${LIVE[$sig]} -> \K[0-9a-f]{32}" $M); grep -qF "$sig $A" "$W/1.fn" || { echo "$sig is not at the stated md5 $A"; exit 1; }; done
 NEW=$(comm -13 <(sed 's/ .*//' "$W/0.fn" | sort -u) <(sed 's/ .*//' "$W/1.fn" | sort -u) | tr '\n' ' ')
 [ "$NEW" = "security.cdesc_prompt_supersede_v1() security.cdesc_prompt_version_v1() " ] || { echo "unexpected new functions: $NEW"; exit 1; }
@@ -44,7 +44,7 @@ SADD=$(comm -13 <(sed 's/=.*//' "$W/0.set") <(sed 's/=.*//' "$W/1.set") | tr '\n
 SCHG=$(comm -23 "$W/0.set" "$W/1.set" | sed 's/=.*//' | tr '\n' ' ')
 [ -z "$SCHG" ] || [ "$SCHG" = "enrich.course_description_reask_max " ] || { echo "a setting changed: $SCHG"; exit 1; }
 cmp -s "$W/0.rows" "$W/1.rows" || { echo "the migration changed Layer 4 items, readings or courses"; exit 1; }
-echo "applied: only the four governed bodies changed (to the stated md5), two functions and two settings were added (reask_max marked retiring), no Layer 4 item, reading or course changed"
+echo "applied: only the three governed bodies changed (to the stated md5), two functions and two settings were added (reask_max marked retiring), no Layer 4 item, reading or course changed"
 psql -X -q -v ON_ERROR_STOP=1 -d $DB -1 -At -f $M >/dev/null; snap "$W/2"
 for f in fn set rows; do cmp -s "$W/1.$f" "$W/2.$f" || { echo "the second run changed $f"; exit 1; }; done
 echo "applied again: no change"
@@ -61,7 +61,7 @@ for sig in "${!LIVE[@]}"; do [ "$(q ${DB}_rf "select md5(prosrc) from pg_proc wh
 psql -X -d "${DB}_rf" -q -v ON_ERROR_STOP=1 -1 -f $M >/dev/null
 for sig in "${!LIVE[@]}"; do grep -Fq "$sig $(q ${DB}_rf "select md5(prosrc) from pg_proc where oid = '$sig'::regprocedure")" "$W/1.fn" || { echo "the migration did not bring back $sig"; exit 1; }; done
 dropdb --if-exists "${DB}_rf" >/dev/null 2>&1
-echo "forward recovery: the held file restores the four live bodies byte for byte (twice); applying the migration again brings the edits back"
+echo "forward recovery: the held file restores the three live bodies byte for byte (twice); applying the migration again brings the edits back"
 
 { sed -n '5,88p' tests/fixtures/cdesc-machine/scenarios.sql; cat $F/scenarios.sql; } > "$W/s.sql"
 for pair in "$DB:new" "${DB}_old:old"; do

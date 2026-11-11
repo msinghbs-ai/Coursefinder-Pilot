@@ -1,4 +1,4 @@
--- Guards: F-CDESC cdesc-source-grounded-v1 (Platform Admin 11 Nov 2026, Admin PR #430 COURSE-DESCRIPTION-PRODUCTION-DESIGN.md): copied sentences, generic phrases and unverified claims are held; a reading an earlier prompt made that a check held
+-- Guards: F-CDESC cdesc-source-grounded-v1 (Platform Admin 11 Nov 2026, Admin PR #430 COURSE-DESCRIPTION-PRODUCTION-DESIGN.md): copied sentences and generic phrases are held; a source-backed original description passes; a reading an earlier prompt made that a check held
 -- (or Layer 4 superseded) is read once more with the released prompt; a waiting first description an earlier prompt made that the machine declined for good under the current policy is superseded and read again; a person's decision, a lock,
 -- a description the released prompt made, a transient decline or one at an old policy is never superseded. Every row is invented. Runs after the cdesc-machine prelude (tests/fixtures/cdesc-machine/scenarios.sql lines 5 to 88).
 create function pg_temp.fault(t text, q text) returns text language sql as $$
@@ -57,16 +57,14 @@ select pg_temp.expect('setting: copy_run_words 15 lets the same 14-word run pass
                 'You study design thinking, user research, prototyping and usability testing in the studio units across three years.') = 'ok');
 update pipeline.platform_toolset_settings set value = '10'::jsonb where toolset_key = 'pipeline' and key = 'enrich.course_description_copy_run_words';
 
--- ---- 2. unverified claims -----------------------------------------------------------------------------------------------------------------------------------------------
+-- ---- 2. a source-backed original description -----------------------------------------------------------------------------------------------------------------------------------------------
 select pg_temp.newpage(801, 1);
 create function pg_temp.chk(p_unverified jsonb) returns text language sql as $$
   select security.course_description_check_v1(pg_temp.cid(801), jsonb_build_object('about_course', true, 'unverified_claims', p_unverified, 'sentences', jsonb_build_array(
     jsonb_build_object('text', 'Studio units cover design thinking and user research, then prototyping and usability testing.', 'quote', 'You study design thinking, user research, prototyping and usability testing in the studio units across three years.', 'on_page', true),
     jsonb_build_object('text', 'The final year centres on an industry brief completed with a design team.', 'quote', 'In the final year you complete an industry brief in a design team.', 'on_page', true))))->>'rule' $$;
 select pg_temp.expect('ok: a source-backed description with no unverified claim passes the check', pg_temp.chk('[]'::jsonb) = 'ok');
-select pg_temp.expect('ok: an unverified claim the description leaves out does not hold it', pg_temp.chk('["Graduates are hired by leading agencies within six months."]'::jsonb) = 'ok');
-select pg_temp.expect('REGRESSION unverified: a description that carries a claim the writer could not tie to the page is held (unverified_claims)',
-  pg_temp.chk('["The final year centres on an industry brief completed with a design team."]'::jsonb) = 'unverified_claims');
+select pg_temp.expect('ok: the writer''s unverified list does not hold a description that leaves the claim out (QA C2)', pg_temp.chk('["The course is accredited for design registration and graduates join leading agencies."]'::jsonb) = 'ok');
 
 -- ---- 3. read again with the released prompt -----------------------------------------------------------------------------------------------------------------------------
 select pg_temp.newpage(n, 2) from generate_series(701, 707) n;
@@ -79,7 +77,7 @@ select pg_temp.last(706, 2, 'skipped', 'insufficient_verified_course_facts', jso
 select pg_temp.last(707, 2, 'skipped', 'the page does not state it', jsonb_build_object('reader', jsonb_build_object('model', 'm', 'prompt', 'course-text-v2')));
 select pg_temp.expect('REGRESSION re-read: a reading course-text-v2 made that a check held is read again', pg_temp.picked(701));
 select pg_temp.expect('REGRESSION re-read: a reading superseded in Layer 4 is read again', pg_temp.picked(704));
-select pg_temp.expect('REGRESSION re-read: a reading course-text-v1 made that waits behind the provider places is read again', pg_temp.picked(705));
+select pg_temp.expect('not re-read: a reading that passed its checks and waits behind the provider places follows a Layer 4 decision instead (QA C1)', not pg_temp.picked(705));
 select pg_temp.expect('not re-read: a reading the released prompt made and a check held waits for the usual recheck days', not pg_temp.picked(702));
 select pg_temp.expect('not re-read: a description a person rejected in Layer 4 is never read again on a prompt change', not pg_temp.picked(703));
 select pg_temp.expect('not re-read: insufficient_verified_course_facts under the released prompt waits for the recheck days', not pg_temp.picked(706));

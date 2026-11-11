@@ -6,8 +6,10 @@
 --   * copied text: 65.7% of the course-description sentences read under course-text-v1/v2 were verbatim page copies, and copied paragraphs were admitted. A sentence that repeats enrich.course_description_copy_run_words words of its source in order
 --     (new setting, 10 words, range 0 to 60, 0 = off) is held: copied_sentence;
 --   * generic filler: 26 admitted and 45 waiting descriptions carry "designed to equip" or "comprehensive program". A sentence with a phrase of enrich.course_description_generic_phrases (new setting, the contract's list) is held: generic_phrase;
---   * unverified claims: a description that carries a claim the writer reported it could not tie to the page is held: unverified_claims;
---   * a reading held by a check, or superseded in Layer 4, that an earlier prompt made is read once more with the released prompt (security.enrich_course_text_gaps_v1; security.cdesc_prompt_version_v1 is the database's copy of the released
+--   * unverified claims: the writer's unverified_claims are recorded with the reading and never published; every published sentence must still be supported by the spans it cites (the existing support test), so a claim the
+--     writer could not tie to the page cannot pass (a word-overlap test against the unverified list was rejected in QA: it held descriptions that leave the claim out);
+--   * a reading held by a check, or superseded in Layer 4, that an earlier prompt made is read once more with the released prompt (a reading held behind the provider's places passed its checks and keeps following a Layer 4
+--     decision through security.course_description_promote_held_v1; it is not read again) (security.enrich_course_text_gaps_v1; security.cdesc_prompt_version_v1 is the database's copy of the released
 --     version, kept equal to course-text.ts by tests/uat/cf-247-cdesc-source-grounded-contract.spec.mjs);
 --   * new readings had stopped: 2,030 first descriptions waited in Layer 4, at or over enrich.course_description_pending_global_max (1,500), so field-gap-queue created no description reading after 11 Nov 03:23 AEDT; 2,014 of them were made by
 --     course-text-v1/v2 (or an unrecorded prompt) and declined for good by the machine rule. security.cdesc_prompt_supersede_v1 (new, first step of job course-description-machine) supersedes such items in batches of layer4.reconcile_batch
@@ -17,12 +19,11 @@
 --
 -- Live definitions this change edits (pg_proc.prosrc md5, read 12 Nov 2026), before -> after (the migration stops, and applies nothing, if a live body is neither):
 --   security.cdesc_sentence_fault_v1(text,text,boolean,jsonb,jsonb,numeric)  0aacac45e2a294a51db82777a9d1bc19 -> c17adb1d759d24cf8b41bcdeac7c6b54
---   security.course_description_check_with_v1(uuid,jsonb,jsonb,jsonb)  d310fa64f61f2243df1416d3e48f6bab -> 0aeeeeee93debfaa6bdc86c0fe528010
---   security.enrich_course_text_gaps_v1(text[])  66d9dad4eb0d743b804097b1bf9d38d2 -> 89e208ffd0c66694d6d26a21b2a4d64f
+--   security.enrich_course_text_gaps_v1(text[])  66d9dad4eb0d743b804097b1bf9d38d2 -> ddba9b553a63a9e38c49782a0b0d29c9
 --   security.course_description_machine_run_v1()  42c73e9c0f376150e7778104dfa9830a -> 545a874051466f132221de12160fbd46
--- Replaces: course-text-v2 as the course description prompt (the deadline keeps it); the four bodies above in place (md5-guarded edits); the D4 length re-ask of the worker
+-- Replaces: course-text-v2 as the course description prompt (the deadline keeps it); the three bodies above in place (md5-guarded edits); the D4 length re-ask of the worker
 -- Retires: setting enrich.course_description_reask_max (no reader after worker v0.72.0; its used_by says so; removed by a paste file after hygiene.retire_after_days, with the description re-ask code already gone from the worker)
--- Nothing is dropped or deleted. Two settings are added (with label, range, unit and used_by; each recorded in admin_control_events). No table, job, job kind or consumer-API object is added or changed (G3). Forward recovery (restores the four
+-- Nothing is dropped or deleted. Two settings are added (with label, range, unit and used_by; each recorded in admin_control_events). No table, job, job kind or consumer-API object is added or changed (G3). Forward recovery (restores the three
 -- previous bodies byte for byte; the two new functions and settings stay, unused): supabase/held/cdesc_source_grounded_forward_recovery.sql
 
 -- 1. settings ---------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -89,7 +90,7 @@ comment on function security.cdesc_prompt_supersede_v1() is 'CF-247 F-CDESC (202
 revoke all on function security.cdesc_prompt_supersede_v1() from public;
 revoke all on function security.cdesc_prompt_version_v1() from public;
 
--- 3. the four md5-guarded edits ------------------------------------------------------------------------------------------------------------------------------------------------
+-- 3. the three md5-guarded edits ------------------------------------------------------------------------------------------------------------------------------------------------
 create or replace function pg_temp.edit_all(p_sig text, p_before text, p_after text, p_olds text[], p_news text[]) returns text language plpgsql as $f$
 declare v_def text := pg_get_functiondef(p_sig::regprocedure); v_src text := (select p.prosrc from pg_proc p where p.oid = p_sig::regprocedure); v_c int; i int;
 begin
@@ -134,24 +135,14 @@ select pg_temp.edit_all('security.cdesc_sentence_fault_v1(text,text,boolean,json
   end if;
   return null;$n2$]);
 
-select pg_temp.edit_all('security.course_description_check_with_v1(uuid,jsonb,jsonb,jsonb)', 'd310fa64f61f2243df1416d3e48f6bab', '0aeeeeee93debfaa6bdc86c0fe528010',
-  array[$o0$  if v_n < security.pipeline_num_v1('enrich.course_description_min_sentences', 1)$o0$],
-  array[$n0$  -- cdesc-source-grounded-v1 (CF-247 F-CDESC, 12 Nov 2026): a claim the writer reported it could not tie to the page is never published; the description
-  -- is held when it carries one (most of the claim's words are in the text)
-  if exists (select 1 from jsonb_array_elements_text(case when jsonb_typeof(p_result->'unverified_claims') = 'array' then p_result->'unverified_claims' else '[]'::jsonb end) u
-              where security.pdesc_support_v1(u, v_text) >= v_min_sup) then
-    return jsonb_build_object('ok', false, 'rule', 'unverified_claims', 'checks', v_checks,
-      'reason', 'the description carries a claim the writer could not tie to the page: ' || left(p_result->'unverified_claims'->>0, 120));
-  end if;
-  if v_n < security.pipeline_num_v1('enrich.course_description_min_sentences', 1)$n0$]);
-
-select pg_temp.edit_all('security.enrich_course_text_gaps_v1(text[])', '66d9dad4eb0d743b804097b1bf9d38d2', '89e208ffd0c66694d6d26a21b2a4d64f',
+select pg_temp.edit_all('security.enrich_course_text_gaps_v1(text[])', '66d9dad4eb0d743b804097b1bf9d38d2', 'ddba9b553a63a9e38c49782a0b0d29c9',
   array[$o0$                                  and a.answer->'value'->'sentences' = e.value->'sentences')) unproven$o0$,
         $o1$case when coalesce(l.unproven, false) then 0 when l.state is null then 1$o1$,
         $o2$or coalesce(l.unproven, false) or l.updated_at <$o2$],
   array[$n0$                                  and a.answer->'value'->'sentences' = e.value->'sentences')) unproven,
                -- cdesc-source-grounded-v1 (CF-247 F-CDESC, 12 Nov 2026): a description reading held by a check, or superseded in Layer 4, that an earlier prompt made is read once more with the released prompt
-               (f = 'description' and e.state = 'skipped' and (e.reason like 'held%' or e.reason like 'superseded:%')
+               -- (a reading held behind the provider's places passed its checks: it follows a decision through course_description_promote_held_v1 and is not read again here)
+               (f = 'description' and e.state = 'skipped' and ((e.reason like 'held%' and e.reason not like 'held\_first\_admission:%') or e.reason like 'superseded:%')
                 and coalesce(e.value->>'prompt_version', e.value->'reader'->>'prompt', '') <> security.cdesc_prompt_version_v1()) old_prompt$n0$,
         $n1$case when coalesce(l.unproven, false) then 0 when l.state is null or coalesce(l.old_prompt, false) then 1$n1$,
         $n2$or coalesce(l.unproven, false) or coalesce(l.old_prompt, false) or l.updated_at <$n2$]);

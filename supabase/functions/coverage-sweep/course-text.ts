@@ -11,19 +11,19 @@
 //   setting enrich.course_description_reask_max (ships 0 = off). The re-ask is on the same stored page with the same pinned model and answer limit; it states
 //   the previous answer, its measured size and the limits. The second answer replaces the first only as an answer: it goes through EVERY database check again,
 //   and nothing is ever cut, joined or completed here. A failed re-ask keeps the first answer (held as before).
-// v0.60.0 (12 Nov 2026, CF-247 F-CDESC, Platform Admin 11 Nov 2026, Admin PR #430 COURSE-DESCRIPTION-PRODUCTION-DESIGN.md): the description is
+// v0.72.0 (12 Nov 2026, CF-247 F-CDESC, Platform Admin 11 Nov 2026, Admin PR #430 COURSE-DESCRIPTION-PRODUCTION-DESIGN.md): the description is
 //   written by its OWN call with the pinned, versioned prompt cdesc-source-grounded-v1 (CDESC_SYSTEM, sha-256 CDESC_SYSTEM_SHA256). The stored
 //   page is cut into numbered official source spans (cdescSpans); the model returns original prose plus the claims it makes, each citing span
 //   ids. Each sentence's quote is the exact text of the spans its claims cite (on the page by construction), so the database checks every
-//   sentence against its evidence and, new, against copying, generic filler and unverified claims (security.cdesc_sentence_fault_v1,
-//   security.course_description_check_with_v1). insufficient_verified_course_facts is recorded as such, never filled with generic text. The
+//   sentence against its evidence (support: a claim the writer could not tie to the page cannot pass) and, new, against copying and generic
+//   filler (security.cdesc_sentence_fault_v1). The writer's unverified_claims are recorded, never published. insufficient_verified_course_facts is recorded as such, never filled with generic text. The
 //   deadline keeps its own call on prompt course-text-v2 (unchanged). The length re-ask (D4, setting enrich.course_description_reask_max,
 //   shipped 0) is retired: under the new prompt the length band is an editorial target, not a reason to pay for a second call.
 // Pure functions only (no network), so the contract spec can read them.
 import { callCost } from "./answer.ts";
 import { descriptionPageText } from "./description.ts";
 
-export const COURSE_TEXT_PROMPT_VERSION = "course-text-v2"; // the deadline read (v0.60.0: the description is no longer read with this prompt; see CDESC_SYSTEM)
+export const COURSE_TEXT_PROMPT_VERSION = "course-text-v2"; // the deadline read (v0.72.0: the description is no longer read with this prompt; see CDESC_SYSTEM)
 export const COURSE_TEXT_FIELDS = ["description", "deadline"] as const;
 // the setting that limits the answer (pipeline toolset, returned by svc_worker_settings_v1 like every reading.answer_tokens.* limit)
 export const COURSE_TEXT_ANSWER_KEY = "reading.answer_tokens.course_text";
@@ -116,7 +116,7 @@ export function courseTextDeadlines(a: any, page: string, minQuoteChars = 8): { 
   }).filter((x) => x.quote || x.kind !== "not_stated");
 }
 
-// the deadline results recorded for the course's items (svc_enrich_ai_record -> security.enrich_course_text_record_v1); v0.60.0: deadline only
+// the deadline results recorded for the course's items (svc_enrich_ai_record -> security.enrich_course_text_record_v1); v0.72.0: deadline only
 export function courseTextResults(a: any, page: string, items: { item_id: number; field: string }[], meta: { model: string; worker: string; cost: number }) {
   const dl0 = items.filter((x) => x.field === "deadline"), share = meta.cost / Math.max(1, dl0.length), out: any[] = [];
   for (const x of dl0) {
@@ -129,7 +129,7 @@ export function courseTextResults(a: any, page: string, items: { item_id: number
 }
 
 // ---------------------------------------------------------------------------------------------------------------------------------------
-// v0.60.0 the course description: cdesc-source-grounded-v1 (COURSE-DESCRIPTION-PRODUCTION-DESIGN.md, "Versioned production prompt contract")
+// v0.72.0 the course description: cdesc-source-grounded-v1 (COURSE-DESCRIPTION-PRODUCTION-DESIGN.md, "Versioned production prompt contract")
 // ---------------------------------------------------------------------------------------------------------------------------------------
 export const CDESC_PROMPT_VERSION = "cdesc-source-grounded-v1";
 // the contract's text block, verbatim (a spec checks the hash; the Execution Register records it). Never edited in place: a new version is a new constant.
@@ -140,7 +140,8 @@ export const CDESC_SYSTEM_SHA256 = "e1fcd3e1d34d5700aa3daf14405cbc6cd97aa93f46b8
 
 export type CdescSpan = { id: string; exact_text: string };
 // the stored page's main text cut into numbered official source spans: one sentence (or line) each, the page's own words; spans shorter than
-// minChars are joined to the next so a heading carries its text. fixed: the span count bounds the prompt (the page text is already bounded by enrich.page_chars)
+// minChars are joined to the next so a heading carries its text. fixed: the span count and a span's 600 characters bound one span and the prompt
+// shape (the page text itself is already bounded by the setting enrich.page_chars); a longer passage is kept to its first 600 characters, never dropped
 export function cdescSpans(page: string, minChars = 20, maxSpans = 400): CdescSpan[] {
   const parts = String(page || "").split(/\n+|(?<=[.!?]["')\]\u2019\u201d]*)\s+(?=[A-Z0-9"'(\u2018\u201c])/).map((x) => x.replace(/\s+/g, " ").trim()).filter(Boolean);
   const out: CdescSpan[] = []; let buf = "";

@@ -2730,7 +2730,7 @@ async function handle(req: Request): Promise<Response> {
       // and the cost of every call made is recorded, also when the read fails.
       const ENTRY_PROMPT = COURSE_ENTRY_PROMPT_VERSION;
       // v0.59.4 (CF-247 Workstream C): a course's description and application deadline on the stored page only
-      // v0.60.0 (12 Nov 2026, CF-247 F-CDESC, Admin PR #430): the description has its OWN call with the pinned prompt cdesc-source-grounded-v1 over the
+      // v0.72.0 (12 Nov 2026, CF-247 F-CDESC, Admin PR #430): the description has its OWN call with the pinned prompt cdesc-source-grounded-v1 over the
       // page's numbered source spans (course-text.ts cdesc*); the deadline keeps prompt course-text-v2 in its own call. The length re-ask is retired.
       const textRead = async (pg: any, raw: string, items: any[]) => {
         const page = courseTextPage(raw, PAGE_CHARS), maxTokens = courseTextAnswerLimit(ws);
