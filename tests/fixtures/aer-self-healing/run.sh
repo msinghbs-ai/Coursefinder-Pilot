@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Guards: F-AER.02 AER self-healing (Platform Admin 11 Nov 2026 05:42 "self sustaining") and G4 database-backed tests: migration 20261111110000 (a) sends a read cut at
+# Guards: F-AER.02 AER self-healing (Platform Admin 11 Nov 2026 05:42 "self sustaining") and G4 database-backed tests: migration 20261111220000 (a) sends a read cut at
 # the row limit to the shared recovery rule instead of always to a person, (b) gives corrected reads their own 24-hour allowance apart from new reads; md5-guarded,
 # idempotent, refused on a changed live body, and taken back byte for byte by its held forward recovery.
 # Needs a scratch PostgreSQL 16 (never a Supabase project): PGHOST/PGPORT/PGUSER point at it. Builds a small database from ../aer-source-recovery (stubs, data,
@@ -14,7 +14,7 @@ case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"
 F=tests/fixtures/aer-self-healing
 B=tests/fixtures/aer-source-recovery
-M=supabase/migrations/20261111110000_cf247_aer_self_healing_corrections.sql
+M=supabase/migrations/20261111220000_cf247_aer_self_healing_corrections.sql
 R=supabase/held/aer_self_healing_corrections_forward_recovery.sql
 HELD='security.aer_schedule_held_v1(integer)'; TICK='security.aer_schedule_tick_v1(boolean)'
 HELD_BEFORE=d390d02a5e9b59b6e8ffaadadbf2c7e8; TICK_BEFORE=f995e9521198ae57ab0401564e4e5a20
@@ -59,7 +59,7 @@ changed=$(comm -23 $W/0.fn $W/1.fn | sed 's/ [0-9a-f]*$//' | sort | tr '\n' ' ')
 [ "$(q "select value from pipeline.platform_toolset_settings where key = 'aer.schedule_correction_daily_max'")" = "100" ] || { echo "setting not added at 100"; exit 1; }
 OUT=$($P -1 -At -f $M 2>&1) || { echo "$OUT" | tail -8; exit 1; }
 q "$FNS" | sort > $W/2.fn; cmp -s $W/1.fn $W/2.fn || { echo "applied again: something changed"; exit 1; }
-echo "migration 20261111110000: the two functions go from the recorded live md5s to the recorded after md5s, nothing else changes, setting added at 100; applied again: no change"
+echo "migration 20261111220000: the two functions go from the recorded live md5s to the recorded after md5s, nothing else changes, setting added at 100; applied again: no change"
 
 OUT=$($P -f $F/after.sql 2>&1) || { echo "$OUT" | grep -E 'FAIL|ERROR' | head -3; exit 1; }
 echo "$OUT" | grep -o 'ok: after.*' | sed 's/^/  /'

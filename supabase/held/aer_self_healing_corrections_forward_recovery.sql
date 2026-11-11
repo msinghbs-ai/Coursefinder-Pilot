@@ -1,4 +1,4 @@
--- Forward recovery for migration 20261111110000_cf247_aer_self_healing_corrections (F-AER.02). Paste in the SQL editor (Platform Admin) or apply as a new
+-- Forward recovery for migration 20261111220000_cf247_aer_self_healing_corrections (F-AER.02). Paste in the SQL editor (Platform Admin) or apply as a new
 -- migration. Restores security.aer_schedule_held_v1 and security.aer_schedule_tick_v1 to the bodies they had before (md5 d390d02a... and f995e952...), byte for byte:
 -- the same guarded text edits, reversed. The setting aer.schedule_correction_daily_max is left in place and set to 0 (nothing is deleted); with the old tick it is unused.
 -- A quicker reversal without code: set aer.schedule_correction_daily_max to 0 on Settings > Pipeline settings (the job then reads no held item again).

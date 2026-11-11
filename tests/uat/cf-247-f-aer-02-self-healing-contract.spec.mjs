@@ -1,12 +1,12 @@
 // Guards: F-AER.02 AER self-healing: corrected reads keep draining Layer 4 when nobody reviews (Platform Admin 11 Nov 2026 05:42 AEDT "self sustaining")
 // CF-247 F-AER.02. Production evidence 11 Nov 2026: Layer 4 held 717 entry items against 600; aer-scheduled-read started 0 reads since 14:13Z 10 Nov (back-pressure and
 // the shared 24-hour cap). 160 of the 277 incomplete reads were eligible for a corrected read under security.aer_recovery_rule_v1, but the held picker sent every
-// row-limit cut to a person before asking the rule, and corrected reads shared the new-read cap. Migration 20261111110000 fixes both; behaviour is proven on isolated
+// row-limit cut to a person before asking the rule, and corrected reads shared the new-read cap. Migration 20261111220000 fixes both; behaviour is proven on isolated
 // PostgreSQL by tests/fixtures/aer-self-healing/run.sh (workflow aer-self-healing-test). These are source contracts of the migration and its recovery.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = 'supabase/migrations/20261111110000_cf247_aer_self_healing_corrections.sql'
+const MIG = 'supabase/migrations/20261111220000_cf247_aer_self_healing_corrections.sql'
 const REC = 'supabase/held/aer_self_healing_corrections_forward_recovery.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
@@ -59,4 +59,10 @@ test('the fixture runs in CI on isolated PostgreSQL only', () => {
   expect(wf).toContain('bash tests/fixtures/aer-self-healing/run.sh')
   expect(wf).toContain('postgres:16-alpine')
   expect(fs.readFileSync('tests/fixtures/aer-self-healing/run.sh', 'utf8')).toMatch(/^# Guards: F-AER\.02/m)
+})
+
+test('the migration version is used by no other file (deploy-on-merge skips a version already in the ledger)', () => {
+  const v = MIG.match(/\/(\d{14})_/)[1]
+  const same = fs.readdirSync('supabase/migrations').filter((f) => f.startsWith(`${v}_`))
+  expect(same).toEqual(['20261111220000_cf247_aer_self_healing_corrections.sql'])
 })
