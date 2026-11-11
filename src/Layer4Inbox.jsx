@@ -22,6 +22,7 @@ import{ReviewReadinessLine}from'./AerCoverage'
 import{GroupBar,GroupList,recordNavigation}from'./Layer4Groups' // CF-247 mandate 16:32 §7: the three choices
 import{ItemLifecycle}from'./Layer4ItemLifecycle' // CF-247 decision 12:24: action lifecycle, times and acknowledgement on every card
 import{layer4DeepLinkCursor}from'./layer4-deep-link'
+import AerCourseLinks from'./AerCourseLinks' // CF-247 F-AER.08 step 3: course links of a university's entry tables
 import{CdList,CdPanel,ChecksLine,ReasonChips,isCourseDescription,useCdQueue}from'./CourseDescriptionPanel' // CF-247 course descriptions (6 Nov 2026): reconcile, ready first, the sample
 
 const rpc=async(action,args)=>{const{data,error}=await supabase.rpc('admin_layer4_inbox',{p_action:action,p_args:args||{}});if(error)throw new Error(error.message);return data||{}}
@@ -232,6 +233,7 @@ function Item({it,k,showProvider,rank,onDone,onError,onRefresh}){
       {sample.length>0&&<ul className="l4i-sample" data-l4-sample>{sample.map(x=><li key={x.course_id}>{open?.input==='courses'?<label><input type="checkbox" checked={ticked.includes(x.course_id)} onChange={()=>tick(x.course_id)} data-l4-sample-tick={x.course_code||x.code||x.course_id}/> {x.title}{x.code?` (${x.code})`:''} has its own page</label>:<>{x.title}{x.code?` (${x.code})`:''}</>}</li>)}</ul>}
     </div>}
     {aerItem&&<AerRows aer={aer} rank={rank} ticking={open?.input==='rows'} ticked={ticked} tick={tick}/>}
+    {aerItem&&aer&&!aer.error&&aer.provider_id&&(aer.rows||[]).some(r=>r.course)&&<AerCourseLinks providerId={aer.provider_id} rank={rank} onDecided={()=>lazy(()=>aerRead(it.ref)).then(setAer).catch(()=>{})}/>}
     {hooked&&(!hd?<Loading compact/>:hd.error?<p className="l4i-err" role="alert">{hd.error}</p>:Array.isArray(hd.sections)&&hd.sections.length>0&&<div className="l4i-hook" data-l4-hook-detail>
       {hd.sections.map((x,n)=><details key={x.key||n} data-l4-section={x.key} open={x.key==='summary'||undefined}><summary>{x.title||String(x.key||'').replace(/_/g,' ')}</summary>
         {x.body&&typeof x.body==='object'?(Array.isArray(x.body)?<HookValue v={x.body}/>:<dl className="l4i-dl">{Object.entries(x.body).map(([a,b])=><React.Fragment key={a}><dt>{a.replace(/_/g,' ')}</dt><dd><HookValue v={b} label={a}/></dd></React.Fragment>)}</dl>):<p className="l4i-why"><small>{String(x.body??'')}</small></p>}</details>)}</div>)}
@@ -313,7 +315,7 @@ function AerRows({aer,rank,ticking,ticked,tick}){
         {(sup.removed||[]).map((r,n)=><li key={`r${n}`} data-l4-aer-diff="removed">Removed: {r.kind&&String(r.kind).replace(/_/g,' ')}{r.score!=null?` · ${r.score} (${r.basis||'no basis'})`:''} <q>{r.quote}</q></li>)}</ul></div>}
     {aer.superseded_by&&<p className="l4i-why" data-l4-aer-superseded-by><small>Replaced by a corrected read (D-R2), Ref {String(aer.superseded_by.review_item_id).slice(0,8)}.</small></p>}
     {rank<6&&<p className="l4i-why" data-l4-aer-pa-only><small>AER items are admitted or rejected by the Platform Admin (decision A3). Curators correct active rows in Catalogue › Entry requirements.</small></p>}
-    <ul className="l4i-sample l4i-aer-rows" data-l4-aer-rows>{rows.map(r=>{const label=course?[r.kind&&String(r.kind).replace(/_/g,' '),r.description].filter(Boolean).join(': '):[r.country,r.level,r.qualification].filter(Boolean).join(' · ')
+    <ul className="l4i-sample l4i-aer-rows" data-l4-aer-rows>{rows.map(r=>{const label=course?[r.kind&&String(r.kind).replace(/_/g,' '),r.description].filter(Boolean).join(': '):[r.course,r.country,r.level,r.qualification].filter(Boolean).join(' · ')
       const min=[r.min_grade,r.scale&&r.scale!=='none'?r.scale:null,r.score!=null?`${r.score} (${r.basis||'no basis'})`:null,r.band?`band ${r.band}`:null].filter(Boolean).join(' · ')
       const body=<><strong>{label||'—'}</strong>{min&&<small> · {min}</small>}<span className="l4i-aer-status" data-l4-aer-status={isExcluded(r)?'excluded':r.status}>{isExcluded(r)?'Excluded in Layer 4':ROW_STATUS[r.status]||r.status}</span>{other[r.id]&&<span className="l4i-aer-status" data-l4-aer-other={r.id}>About another programme: {other[r.id]}</span>}{flag[r.id]&&<span className="l4i-aer-status" data-l4-aer-flag={r.id}>Cannot be admitted as read: {flag[r.id]}</span>}{r.quote&&<q>{r.quote}</q>}</>
       return <li key={r.id} data-l4-aer-row={r.id} title={r.status_reason||undefined}>{ticking&&r.status==='proposed'?<label><input type="checkbox" checked={ticked.includes(r.id)} onChange={()=>tick(r.id)} data-l4-aer-tick={r.id} aria-label={`Leave out ${label}`}/> {body}</label>:body}</li>})}</ul>
