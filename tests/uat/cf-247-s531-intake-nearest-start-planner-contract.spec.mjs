@@ -39,3 +39,14 @@ test('nothing is switched on: the list ships empty and the unique-month containm
   expect(MIG).toContain("post-check: this change lists no provider; a Platform Admin lists one with a reason")
   expect(MIG).toContain("security.pipeline_num_v1('intake_dates.month_unique_match', 0) <> 0 then raise exception")
 })
+
+test('the provider list can be emptied on the settings screen (the stop), and says empty means none', async () => {
+  const M2 = fs.readFileSync('supabase/migrations/20261111140000_cf247_nearest_start_list_can_be_empty.sql', 'utf8')
+  expect(M2).toMatch(/set min_value = 0,[\s\S]*where toolset_key = 'pipeline' and key = 'intake_dates\.nearest_start_providers';/)
+  expect(M2).not.toMatch(/set value/)
+  const { listPlaceholder, listValid } = await import('../../src/lib/settings-list.js')
+  const s = { min: 0, help: 'Providers (ids) for which Rule B may admit dates. Empty: Rule B admits for no provider and only the shadow is computed.' }
+  expect(listValid(s, '')).toBe(true)
+  expect(listPlaceholder(s)).toBe('Empty means none')
+  expect(listPlaceholder({ min: 0, help: 'empty is every provider' })).toBe('Empty means all')
+})
