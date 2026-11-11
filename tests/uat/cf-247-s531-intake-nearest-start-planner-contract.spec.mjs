@@ -50,3 +50,9 @@ test('the provider list can be emptied on the settings screen (the stop), and sa
   expect(listPlaceholder(s)).toBe('Empty means none')
   expect(listPlaceholder({ min: 0, help: 'empty is every provider' })).toBe('Empty means all')
 })
+
+test('hotfix 20261111160000: the page day numbers are integers (int[]), md5-guarded both ways', () => {
+  const H = fs.readFileSync('supabase/migrations/20261111160000_cf247_nearest_start_page_day_type.sql', 'utf8')
+  expect(H).toContain("'517f2986c5142c5d075f243fb8b0fc22', 'a99b42c7007436a78860a386652f81a9',")
+  expect(H).toContain('array[$o$v_pd date[];$o$], array[$n$v_pd int[];$n$]')
+})
