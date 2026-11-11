@@ -1,0 +1,1247 @@
+[
+{
+"a2": "AD",
+"name": "Andorra",
+"official": "Principality of Andorra"
+},
+{
+"a2": "AE",
+"name": "United Arab Emirates",
+"official": "United Arab Emirates"
+},
+{
+"a2": "AF",
+"name": "Afghanistan",
+"official": "Islamic Republic of Afghanistan"
+},
+{
+"a2": "AG",
+"name": "Antigua and Barbuda",
+"official": "Antigua and Barbuda"
+},
+{
+"a2": "AI",
+"name": "Anguilla",
+"official": "Anguilla"
+},
+{
+"a2": "AL",
+"name": "Albania",
+"official": "Republic of Albania"
+},
+{
+"a2": "AM",
+"name": "Armenia",
+"official": "Republic of Armenia"
+},
+{
+"a2": "AO",
+"name": "Angola",
+"official": "Republic of Angola"
+},
+{
+"a2": "AQ",
+"name": "Antarctica",
+"official": "Antarctica"
+},
+{
+"a2": "AR",
+"name": "Argentina",
+"official": "Argentine Republic"
+},
+{
+"a2": "AS",
+"name": "American Samoa",
+"official": "American Samoa"
+},
+{
+"a2": "AT",
+"name": "Austria",
+"official": "Republic of Austria"
+},
+{
+"a2": "AU",
+"name": "Australia",
+"official": "Australia"
+},
+{
+"a2": "AW",
+"name": "Aruba",
+"official": "Aruba"
+},
+{
+"a2": "AX",
+"name": "Åland Islands",
+"official": "Åland Islands"
+},
+{
+"a2": "AZ",
+"name": "Azerbaijan",
+"official": "Republic of Azerbaijan"
+},
+{
+"a2": "BA",
+"name": "Bosnia and Herzegovina",
+"official": "Republic of Bosnia and Herzegovina"
+},
+{
+"a2": "BB",
+"name": "Barbados",
+"official": "Barbados"
+},
+{
+"a2": "BD",
+"name": "Bangladesh",
+"official": "People's Republic of Bangladesh"
+},
+{
+"a2": "BE",
+"name": "Belgium",
+"official": "Kingdom of Belgium"
+},
+{
+"a2": "BF",
+"name": "Burkina Faso",
+"official": "Burkina Faso"
+},
+{
+"a2": "BG",
+"name": "Bulgaria",
+"official": "Republic of Bulgaria"
+},
+{
+"a2": "BH",
+"name": "Bahrain",
+"official": "Kingdom of Bahrain"
+},
+{
+"a2": "BI",
+"name": "Burundi",
+"official": "Republic of Burundi"
+},
+{
+"a2": "BJ",
+"name": "Benin",
+"official": "Republic of Benin"
+},
+{
+"a2": "BL",
+"name": "Saint Barthélemy",
+"official": "Saint Barthélemy"
+},
+{
+"a2": "BM",
+"name": "Bermuda",
+"official": "Bermuda"
+},
+{
+"a2": "BN",
+"name": "Brunei Darussalam",
+"official": "Brunei Darussalam"
+},
+{
+"a2": "BO",
+"name": "Bolivia, Plurinational State of",
+"official": "Plurinational State of Bolivia"
+},
+{
+"a2": "BQ",
+"name": "Bonaire, Sint Eustatius and Saba",
+"official": "Bonaire, Sint Eustatius and Saba"
+},
+{
+"a2": "BR",
+"name": "Brazil",
+"official": "Federative Republic of Brazil"
+},
+{
+"a2": "BS",
+"name": "Bahamas",
+"official": "Commonwealth of the Bahamas"
+},
+{
+"a2": "BT",
+"name": "Bhutan",
+"official": "Kingdom of Bhutan"
+},
+{
+"a2": "BV",
+"name": "Bouvet Island",
+"official": "Bouvet Island"
+},
+{
+"a2": "BW",
+"name": "Botswana",
+"official": "Republic of Botswana"
+},
+{
+"a2": "BY",
+"name": "Belarus",
+"official": "Republic of Belarus"
+},
+{
+"a2": "BZ",
+"name": "Belize",
+"official": "Belize"
+},
+{
+"a2": "CA",
+"name": "Canada",
+"official": "Canada"
+},
+{
+"a2": "CC",
+"name": "Cocos (Keeling) Islands",
+"official": "Cocos (Keeling) Islands"
+},
+{
+"a2": "CD",
+"name": "Congo, The Democratic Republic of the",
+"official": "Congo, The Democratic Republic of the"
+},
+{
+"a2": "CF",
+"name": "Central African Republic",
+"official": "Central African Republic"
+},
+{
+"a2": "CG",
+"name": "Congo",
+"official": "Republic of the Congo"
+},
+{
+"a2": "CH",
+"name": "Switzerland",
+"official": "Swiss Confederation"
+},
+{
+"a2": "CI",
+"name": "Côte d'Ivoire",
+"official": "Republic of Côte d'Ivoire"
+},
+{
+"a2": "CK",
+"name": "Cook Islands",
+"official": "Cook Islands"
+},
+{
+"a2": "CL",
+"name": "Chile",
+"official": "Republic of Chile"
+},
+{
+"a2": "CM",
+"name": "Cameroon",
+"official": "Republic of Cameroon"
+},
+{
+"a2": "CN",
+"name": "China",
+"official": "People's Republic of China"
+},
+{
+"a2": "CO",
+"name": "Colombia",
+"official": "Republic of Colombia"
+},
+{
+"a2": "CR",
+"name": "Costa Rica",
+"official": "Republic of Costa Rica"
+},
+{
+"a2": "CU",
+"name": "Cuba",
+"official": "Republic of Cuba"
+},
+{
+"a2": "CV",
+"name": "Cabo Verde",
+"official": "Republic of Cabo Verde"
+},
+{
+"a2": "CW",
+"name": "Curaçao",
+"official": "Curaçao"
+},
+{
+"a2": "CX",
+"name": "Christmas Island",
+"official": "Christmas Island"
+},
+{
+"a2": "CY",
+"name": "Cyprus",
+"official": "Republic of Cyprus"
+},
+{
+"a2": "CZ",
+"name": "Czechia",
+"official": "Czech Republic"
+},
+{
+"a2": "DE",
+"name": "Germany",
+"official": "Federal Republic of Germany"
+},
+{
+"a2": "DJ",
+"name": "Djibouti",
+"official": "Republic of Djibouti"
+},
+{
+"a2": "DK",
+"name": "Denmark",
+"official": "Kingdom of Denmark"
+},
+{
+"a2": "DM",
+"name": "Dominica",
+"official": "Commonwealth of Dominica"
+},
+{
+"a2": "DO",
+"name": "Dominican Republic",
+"official": "Dominican Republic"
+},
+{
+"a2": "DZ",
+"name": "Algeria",
+"official": "People's Democratic Republic of Algeria"
+},
+{
+"a2": "EC",
+"name": "Ecuador",
+"official": "Republic of Ecuador"
+},
+{
+"a2": "EE",
+"name": "Estonia",
+"official": "Republic of Estonia"
+},
+{
+"a2": "EG",
+"name": "Egypt",
+"official": "Arab Republic of Egypt"
+},
+{
+"a2": "EH",
+"name": "Western Sahara",
+"official": "Western Sahara"
+},
+{
+"a2": "ER",
+"name": "Eritrea",
+"official": "the State of Eritrea"
+},
+{
+"a2": "ES",
+"name": "Spain",
+"official": "Kingdom of Spain"
+},
+{
+"a2": "ET",
+"name": "Ethiopia",
+"official": "Federal Democratic Republic of Ethiopia"
+},
+{
+"a2": "FI",
+"name": "Finland",
+"official": "Republic of Finland"
+},
+{
+"a2": "FJ",
+"name": "Fiji",
+"official": "Republic of Fiji"
+},
+{
+"a2": "FK",
+"name": "Falkland Islands (Malvinas)",
+"official": "Falkland Islands (Malvinas)"
+},
+{
+"a2": "FM",
+"name": "Micronesia, Federated States of",
+"official": "Federated States of Micronesia"
+},
+{
+"a2": "FO",
+"name": "Faroe Islands",
+"official": "Faroe Islands"
+},
+{
+"a2": "FR",
+"name": "France",
+"official": "French Republic"
+},
+{
+"a2": "GA",
+"name": "Gabon",
+"official": "Gabonese Republic"
+},
+{
+"a2": "GB",
+"name": "United Kingdom",
+"official": "United Kingdom of Great Britain and Northern Ireland"
+},
+{
+"a2": "GD",
+"name": "Grenada",
+"official": "Grenada"
+},
+{
+"a2": "GE",
+"name": "Georgia",
+"official": "Georgia"
+},
+{
+"a2": "GF",
+"name": "French Guiana",
+"official": "French Guiana"
+},
+{
+"a2": "GG",
+"name": "Guernsey",
+"official": "Guernsey"
+},
+{
+"a2": "GH",
+"name": "Ghana",
+"official": "Republic of Ghana"
+},
+{
+"a2": "GI",
+"name": "Gibraltar",
+"official": "Gibraltar"
+},
+{
+"a2": "GL",
+"name": "Greenland",
+"official": "Greenland"
+},
+{
+"a2": "GM",
+"name": "Gambia",
+"official": "Republic of the Gambia"
+},
+{
+"a2": "GN",
+"name": "Guinea",
+"official": "Republic of Guinea"
+},
+{
+"a2": "GP",
+"name": "Guadeloupe",
+"official": "Guadeloupe"
+},
+{
+"a2": "GQ",
+"name": "Equatorial Guinea",
+"official": "Republic of Equatorial Guinea"
+},
+{
+"a2": "GR",
+"name": "Greece",
+"official": "Hellenic Republic"
+},
+{
+"a2": "GS",
+"name": "South Georgia and the South Sandwich Islands",
+"official": "South Georgia and the South Sandwich Islands"
+},
+{
+"a2": "GT",
+"name": "Guatemala",
+"official": "Republic of Guatemala"
+},
+{
+"a2": "GU",
+"name": "Guam",
+"official": "Guam"
+},
+{
+"a2": "GW",
+"name": "Guinea-Bissau",
+"official": "Republic of Guinea-Bissau"
+},
+{
+"a2": "GY",
+"name": "Guyana",
+"official": "Republic of Guyana"
+},
+{
+"a2": "HK",
+"name": "Hong Kong",
+"official": "Hong Kong Special Administrative Region of China"
+},
+{
+"a2": "HM",
+"name": "Heard Island and McDonald Islands",
+"official": "Heard Island and McDonald Islands"
+},
+{
+"a2": "HN",
+"name": "Honduras",
+"official": "Republic of Honduras"
+},
+{
+"a2": "HR",
+"name": "Croatia",
+"official": "Republic of Croatia"
+},
+{
+"a2": "HT",
+"name": "Haiti",
+"official": "Republic of Haiti"
+},
+{
+"a2": "HU",
+"name": "Hungary",
+"official": "Hungary"
+},
+{
+"a2": "ID",
+"name": "Indonesia",
+"official": "Republic of Indonesia"
+},
+{
+"a2": "IE",
+"name": "Ireland",
+"official": "Ireland"
+},
+{
+"a2": "IL",
+"name": "Israel",
+"official": "State of Israel"
+},
+{
+"a2": "IM",
+"name": "Isle of Man",
+"official": "Isle of Man"
+},
+{
+"a2": "IN",
+"name": "India",
+"official": "Republic of India"
+},
+{
+"a2": "IO",
+"name": "British Indian Ocean Territory",
+"official": "British Indian Ocean Territory"
+},
+{
+"a2": "IQ",
+"name": "Iraq",
+"official": "Republic of Iraq"
+},
+{
+"a2": "IR",
+"name": "Iran, Islamic Republic of",
+"official": "Islamic Republic of Iran"
+},
+{
+"a2": "IS",
+"name": "Iceland",
+"official": "Republic of Iceland"
+},
+{
+"a2": "IT",
+"name": "Italy",
+"official": "Italian Republic"
+},
+{
+"a2": "JE",
+"name": "Jersey",
+"official": "Jersey"
+},
+{
+"a2": "JM",
+"name": "Jamaica",
+"official": "Jamaica"
+},
+{
+"a2": "JO",
+"name": "Jordan",
+"official": "Hashemite Kingdom of Jordan"
+},
+{
+"a2": "JP",
+"name": "Japan",
+"official": "Japan"
+},
+{
+"a2": "KE",
+"name": "Kenya",
+"official": "Republic of Kenya"
+},
+{
+"a2": "KG",
+"name": "Kyrgyzstan",
+"official": "Kyrgyz Republic"
+},
+{
+"a2": "KH",
+"name": "Cambodia",
+"official": "Kingdom of Cambodia"
+},
+{
+"a2": "KI",
+"name": "Kiribati",
+"official": "Republic of Kiribati"
+},
+{
+"a2": "KM",
+"name": "Comoros",
+"official": "Union of the Comoros"
+},
+{
+"a2": "KN",
+"name": "Saint Kitts and Nevis",
+"official": "Saint Kitts and Nevis"
+},
+{
+"a2": "KP",
+"name": "Korea, Democratic People's Republic of",
+"official": "Democratic People's Republic of Korea"
+},
+{
+"a2": "KR",
+"name": "Korea, Republic of",
+"official": "Korea, Republic of"
+},
+{
+"a2": "KW",
+"name": "Kuwait",
+"official": "State of Kuwait"
+},
+{
+"a2": "KY",
+"name": "Cayman Islands",
+"official": "Cayman Islands"
+},
+{
+"a2": "KZ",
+"name": "Kazakhstan",
+"official": "Republic of Kazakhstan"
+},
+{
+"a2": "LA",
+"name": "Lao People's Democratic Republic",
+"official": "Lao People's Democratic Republic"
+},
+{
+"a2": "LB",
+"name": "Lebanon",
+"official": "Lebanese Republic"
+},
+{
+"a2": "LC",
+"name": "Saint Lucia",
+"official": "Saint Lucia"
+},
+{
+"a2": "LI",
+"name": "Liechtenstein",
+"official": "Principality of Liechtenstein"
+},
+{
+"a2": "LK",
+"name": "Sri Lanka",
+"official": "Democratic Socialist Republic of Sri Lanka"
+},
+{
+"a2": "LR",
+"name": "Liberia",
+"official": "Republic of Liberia"
+},
+{
+"a2": "LS",
+"name": "Lesotho",
+"official": "Kingdom of Lesotho"
+},
+{
+"a2": "LT",
+"name": "Lithuania",
+"official": "Republic of Lithuania"
+},
+{
+"a2": "LU",
+"name": "Luxembourg",
+"official": "Grand Duchy of Luxembourg"
+},
+{
+"a2": "LV",
+"name": "Latvia",
+"official": "Republic of Latvia"
+},
+{
+"a2": "LY",
+"name": "Libya",
+"official": "Libya"
+},
+{
+"a2": "MA",
+"name": "Morocco",
+"official": "Kingdom of Morocco"
+},
+{
+"a2": "MC",
+"name": "Monaco",
+"official": "Principality of Monaco"
+},
+{
+"a2": "MD",
+"name": "Moldova, Republic of",
+"official": "Republic of Moldova"
+},
+{
+"a2": "ME",
+"name": "Montenegro",
+"official": "Montenegro"
+},
+{
+"a2": "MF",
+"name": "Saint Martin (French part)",
+"official": "Saint Martin (French part)"
+},
+{
+"a2": "MG",
+"name": "Madagascar",
+"official": "Republic of Madagascar"
+},
+{
+"a2": "MH",
+"name": "Marshall Islands",
+"official": "Republic of the Marshall Islands"
+},
+{
+"a2": "MK",
+"name": "North Macedonia",
+"official": "Republic of North Macedonia"
+},
+{
+"a2": "ML",
+"name": "Mali",
+"official": "Republic of Mali"
+},
+{
+"a2": "MM",
+"name": "Myanmar",
+"official": "Republic of Myanmar"
+},
+{
+"a2": "MN",
+"name": "Mongolia",
+"official": "Mongolia"
+},
+{
+"a2": "MO",
+"name": "Macao",
+"official": "Macao Special Administrative Region of China"
+},
+{
+"a2": "MP",
+"name": "Northern Mariana Islands",
+"official": "Commonwealth of the Northern Mariana Islands"
+},
+{
+"a2": "MQ",
+"name": "Martinique",
+"official": "Martinique"
+},
+{
+"a2": "MR",
+"name": "Mauritania",
+"official": "Islamic Republic of Mauritania"
+},
+{
+"a2": "MS",
+"name": "Montserrat",
+"official": "Montserrat"
+},
+{
+"a2": "MT",
+"name": "Malta",
+"official": "Republic of Malta"
+},
+{
+"a2": "MU",
+"name": "Mauritius",
+"official": "Republic of Mauritius"
+},
+{
+"a2": "MV",
+"name": "Maldives",
+"official": "Republic of Maldives"
+},
+{
+"a2": "MW",
+"name": "Malawi",
+"official": "Republic of Malawi"
+},
+{
+"a2": "MX",
+"name": "Mexico",
+"official": "United Mexican States"
+},
+{
+"a2": "MY",
+"name": "Malaysia",
+"official": "Malaysia"
+},
+{
+"a2": "MZ",
+"name": "Mozambique",
+"official": "Republic of Mozambique"
+},
+{
+"a2": "NA",
+"name": "Namibia",
+"official": "Republic of Namibia"
+},
+{
+"a2": "NC",
+"name": "New Caledonia",
+"official": "New Caledonia"
+},
+{
+"a2": "NE",
+"name": "Niger",
+"official": "Republic of the Niger"
+},
+{
+"a2": "NF",
+"name": "Norfolk Island",
+"official": "Norfolk Island"
+},
+{
+"a2": "NG",
+"name": "Nigeria",
+"official": "Federal Republic of Nigeria"
+},
+{
+"a2": "NI",
+"name": "Nicaragua",
+"official": "Republic of Nicaragua"
+},
+{
+"a2": "NL",
+"name": "Netherlands",
+"official": "Kingdom of the Netherlands"
+},
+{
+"a2": "NO",
+"name": "Norway",
+"official": "Kingdom of Norway"
+},
+{
+"a2": "NP",
+"name": "Nepal",
+"official": "Federal Democratic Republic of Nepal"
+},
+{
+"a2": "NR",
+"name": "Nauru",
+"official": "Republic of Nauru"
+},
+{
+"a2": "NU",
+"name": "Niue",
+"official": "Niue"
+},
+{
+"a2": "NZ",
+"name": "New Zealand",
+"official": "New Zealand"
+},
+{
+"a2": "OM",
+"name": "Oman",
+"official": "Sultanate of Oman"
+},
+{
+"a2": "PA",
+"name": "Panama",
+"official": "Republic of Panama"
+},
+{
+"a2": "PE",
+"name": "Peru",
+"official": "Republic of Peru"
+},
+{
+"a2": "PF",
+"name": "French Polynesia",
+"official": "French Polynesia"
+},
+{
+"a2": "PG",
+"name": "Papua New Guinea",
+"official": "Independent State of Papua New Guinea"
+},
+{
+"a2": "PH",
+"name": "Philippines",
+"official": "Republic of the Philippines"
+},
+{
+"a2": "PK",
+"name": "Pakistan",
+"official": "Islamic Republic of Pakistan"
+},
+{
+"a2": "PL",
+"name": "Poland",
+"official": "Republic of Poland"
+},
+{
+"a2": "PM",
+"name": "Saint Pierre and Miquelon",
+"official": "Saint Pierre and Miquelon"
+},
+{
+"a2": "PN",
+"name": "Pitcairn",
+"official": "Pitcairn"
+},
+{
+"a2": "PR",
+"name": "Puerto Rico",
+"official": "Puerto Rico"
+},
+{
+"a2": "PS",
+"name": "Palestine, State of",
+"official": "the State of Palestine"
+},
+{
+"a2": "PT",
+"name": "Portugal",
+"official": "Portuguese Republic"
+},
+{
+"a2": "PW",
+"name": "Palau",
+"official": "Republic of Palau"
+},
+{
+"a2": "PY",
+"name": "Paraguay",
+"official": "Republic of Paraguay"
+},
+{
+"a2": "QA",
+"name": "Qatar",
+"official": "State of Qatar"
+},
+{
+"a2": "RE",
+"name": "Réunion",
+"official": "Réunion"
+},
+{
+"a2": "RO",
+"name": "Romania",
+"official": "Romania"
+},
+{
+"a2": "RS",
+"name": "Serbia",
+"official": "Republic of Serbia"
+},
+{
+"a2": "RU",
+"name": "Russian Federation",
+"official": "Russian Federation"
+},
+{
+"a2": "RW",
+"name": "Rwanda",
+"official": "Rwandese Republic"
+},
+{
+"a2": "SA",
+"name": "Saudi Arabia",
+"official": "Kingdom of Saudi Arabia"
+},
+{
+"a2": "SB",
+"name": "Solomon Islands",
+"official": "Solomon Islands"
+},
+{
+"a2": "SC",
+"name": "Seychelles",
+"official": "Republic of Seychelles"
+},
+{
+"a2": "SD",
+"name": "Sudan",
+"official": "Republic of the Sudan"
+},
+{
+"a2": "SE",
+"name": "Sweden",
+"official": "Kingdom of Sweden"
+},
+{
+"a2": "SG",
+"name": "Singapore",
+"official": "Republic of Singapore"
+},
+{
+"a2": "SH",
+"name": "Saint Helena, Ascension and Tristan da Cunha",
+"official": "Saint Helena, Ascension and Tristan da Cunha"
+},
+{
+"a2": "SI",
+"name": "Slovenia",
+"official": "Republic of Slovenia"
+},
+{
+"a2": "SJ",
+"name": "Svalbard and Jan Mayen",
+"official": "Svalbard and Jan Mayen"
+},
+{
+"a2": "SK",
+"name": "Slovakia",
+"official": "Slovak Republic"
+},
+{
+"a2": "SL",
+"name": "Sierra Leone",
+"official": "Republic of Sierra Leone"
+},
+{
+"a2": "SM",
+"name": "San Marino",
+"official": "Republic of San Marino"
+},
+{
+"a2": "SN",
+"name": "Senegal",
+"official": "Republic of Senegal"
+},
+{
+"a2": "SO",
+"name": "Somalia",
+"official": "Federal Republic of Somalia"
+},
+{
+"a2": "SR",
+"name": "Suriname",
+"official": "Republic of Suriname"
+},
+{
+"a2": "SS",
+"name": "South Sudan",
+"official": "Republic of South Sudan"
+},
+{
+"a2": "ST",
+"name": "Sao Tome and Principe",
+"official": "Democratic Republic of Sao Tome and Principe"
+},
+{
+"a2": "SV",
+"name": "El Salvador",
+"official": "Republic of El Salvador"
+},
+{
+"a2": "SX",
+"name": "Sint Maarten (Dutch part)",
+"official": "Sint Maarten (Dutch part)"
+},
+{
+"a2": "SY",
+"name": "Syrian Arab Republic",
+"official": "Syrian Arab Republic"
+},
+{
+"a2": "SZ",
+"name": "Eswatini",
+"official": "Kingdom of Eswatini"
+},
+{
+"a2": "TC",
+"name": "Turks and Caicos Islands",
+"official": "Turks and Caicos Islands"
+},
+{
+"a2": "TD",
+"name": "Chad",
+"official": "Republic of Chad"
+},
+{
+"a2": "TF",
+"name": "French Southern Territories",
+"official": "French Southern Territories"
+},
+{
+"a2": "TG",
+"name": "Togo",
+"official": "Togolese Republic"
+},
+{
+"a2": "TH",
+"name": "Thailand",
+"official": "Kingdom of Thailand"
+},
+{
+"a2": "TJ",
+"name": "Tajikistan",
+"official": "Republic of Tajikistan"
+},
+{
+"a2": "TK",
+"name": "Tokelau",
+"official": "Tokelau"
+},
+{
+"a2": "TL",
+"name": "Timor-Leste",
+"official": "Democratic Republic of Timor-Leste"
+},
+{
+"a2": "TM",
+"name": "Turkmenistan",
+"official": "Turkmenistan"
+},
+{
+"a2": "TN",
+"name": "Tunisia",
+"official": "Republic of Tunisia"
+},
+{
+"a2": "TO",
+"name": "Tonga",
+"official": "Kingdom of Tonga"
+},
+{
+"a2": "TR",
+"name": "Türkiye",
+"official": "Republic of Türkiye"
+},
+{
+"a2": "TT",
+"name": "Trinidad and Tobago",
+"official": "Republic of Trinidad and Tobago"
+},
+{
+"a2": "TV",
+"name": "Tuvalu",
+"official": "Tuvalu"
+},
+{
+"a2": "TW",
+"name": "Taiwan, Province of China",
+"official": "Taiwan, Province of China"
+},
+{
+"a2": "TZ",
+"name": "Tanzania, United Republic of",
+"official": "United Republic of Tanzania"
+},
+{
+"a2": "UA",
+"name": "Ukraine",
+"official": "Ukraine"
+},
+{
+"a2": "UG",
+"name": "Uganda",
+"official": "Republic of Uganda"
+},
+{
+"a2": "UM",
+"name": "United States Minor Outlying Islands",
+"official": "United States Minor Outlying Islands"
+},
+{
+"a2": "US",
+"name": "United States",
+"official": "United States of America"
+},
+{
+"a2": "UY",
+"name": "Uruguay",
+"official": "Eastern Republic of Uruguay"
+},
+{
+"a2": "UZ",
+"name": "Uzbekistan",
+"official": "Republic of Uzbekistan"
+},
+{
+"a2": "VA",
+"name": "Holy See (Vatican City State)",
+"official": "Holy See (Vatican City State)"
+},
+{
+"a2": "VC",
+"name": "Saint Vincent and the Grenadines",
+"official": "Saint Vincent and the Grenadines"
+},
+{
+"a2": "VE",
+"name": "Venezuela, Bolivarian Republic of",
+"official": "Bolivarian Republic of Venezuela"
+},
+{
+"a2": "VG",
+"name": "Virgin Islands, British",
+"official": "British Virgin Islands"
+},
+{
+"a2": "VI",
+"name": "Virgin Islands, U.S.",
+"official": "Virgin Islands of the United States"
+},
+{
+"a2": "VN",
+"name": "Viet Nam",
+"official": "Socialist Republic of Viet Nam"
+},
+{
+"a2": "VU",
+"name": "Vanuatu",
+"official": "Republic of Vanuatu"
+},
+{
+"a2": "WF",
+"name": "Wallis and Futuna",
+"official": "Wallis and Futuna"
+},
+{
+"a2": "WS",
+"name": "Samoa",
+"official": "Independent State of Samoa"
+},
+{
+"a2": "YE",
+"name": "Yemen",
+"official": "Republic of Yemen"
+},
+{
+"a2": "YT",
+"name": "Mayotte",
+"official": "Mayotte"
+},
+{
+"a2": "ZA",
+"name": "South Africa",
+"official": "Republic of South Africa"
+},
+{
+"a2": "ZM",
+"name": "Zambia",
+"official": "Republic of Zambia"
+},
+{
+"a2": "ZW",
+"name": "Zimbabwe",
+"official": "Republic of Zimbabwe"
+}
+]
