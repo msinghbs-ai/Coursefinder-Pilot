@@ -41,7 +41,23 @@ select pg_temp.expect('kept: a description a person rejected is never read again
 insert into pipeline.manual_locks(entity, entity_id, field, mode) values ('course', pg_temp.cid(711), 'description', 'value');
 select pg_temp.expect('kept: a locked course is never read again', not pg_temp.picked(711));
 
--- ---- 2. "students" -----------------------------------------------------------------------------------------------------------------------------------------------------
+-- ---- 2. the course's own title and provider are left out of a sentence's tests (never quoted) ----------------------------------------------------------------------------------
+select pg_temp.newpage(721, 2);
+create function pg_temp.chk2(p1 text, q1 text) returns text language sql as $$
+  select security.course_description_check_v1(pg_temp.cid(721), jsonb_build_object('about_course', true, 'sentences', jsonb_build_array(
+    jsonb_build_object('text', p1, 'quote', q1, 'on_page', true),
+    jsonb_build_object('text', 'Studio units cover user research and usability testing.', 'quote', 'Studio units cover user research and usability testing over three years.', 'on_page', true))))->>'rule' $$;
+select pg_temp.expect('REGRESSION known: a sentence naming its course and provider is tested on its other words (0.5 with them, 1.0 without)',
+  pg_temp.chk2('Cm Course 721 at Cm Bravo College covers typography and prototyping.', 'The degree covers typography and prototyping in studio units.') = 'ok');
+select pg_temp.expect('kept: a sentence that only names its course and provider is still held (nothing on the page backs it)',
+  pg_temp.chk2('Cm Course 721 is offered by Cm Bravo College.', 'The degree covers typography and prototyping in studio units.') = 'unsupported_sentence');
+select pg_temp.expect('kept: an unsupported claim beside the course name is still held (QA of #1049: "prepares graduates for leadership")',
+  pg_temp.chk2('Cm Course 721 at Cm Bravo College prepares graduates for leadership.', 'The degree covers typography and prototyping in studio units.') = 'unsupported_sentence');
+select pg_temp.expect('helper: whole phrases only, Pty Ltd variant, names under 4 characters kept',
+  security.cdesc_known_strip_v1('The MBA at Torrens University Australia covers finance.', 'MBA', 'Torrens University Australia Pty Ltd') = 'The MBA at  covers finance.'
+  and security.cdesc_known_strip_v1('Course of Coursework', 'Course', 'X') = ' of Coursework');
+
+-- ---- 3. "students" -----------------------------------------------------------------------------------------------------------------------------------------------------
 select pg_temp.expect('REGRESSION students: "Students study ..." supported by its spans is no longer an unsupported claim',
   pg_temp.fault('Students study typography, user research and prototyping across three years of studio units.', 'The degree covers typography, user research and prototyping in studio units across three years.') = 'ok');
 select pg_temp.expect('kept: a ranking the spans do not hold is still unsupported_claim',

@@ -70,27 +70,31 @@ test('the answer: each sentence carries the exact text of the spans its claims c
   expect(r[0].value.sentences.map((s) => s.text).join(' ')).toBe(ans().description)
 })
 
-test('worker v0.72.1 (first-cycle check of #1047): a claim reaches every sentence holding half its words, an unreached sentence takes its closest claim, the catalogue record is evidence', () => {
+test('worker v0.72.1 (first-cycle check of #1047, QA of #1049): a page claim reaches every sentence sharing enough meaningful words, an unreached sentence takes its closest page claim, quotes are page text only', () => {
   const sp = [{ id: 's1', exact_text: 'You study first-year subjects and, after completing the Diploma, you are eligible for direct entry to the second year of an engineering degree.' },
               { id: 's2', exact_text: 'Core areas include biomedical engineering and project management.' }]
   const a = { course_id: 'c1', status: 'candidate', prompt_version: 'cdesc-source-grounded-v1', unverified_claims: [],
     description: 'The Diploma of Engineering is offered by La Trobe College. Students study first-year subjects in biomedical engineering and project management. Completion gives direct entry to second year of an engineering degree.',
     claims: [{ text: 'first-year subjects with direct entry to second year of an engineering degree', evidence_ids: ['s1'] }, { text: 'biomedical engineering and project management', evidence_ids: ['s2'] }, { text: 'Diploma of Engineering, La Trobe College', evidence_ids: ['catalogue'] }] }
-  const v = cdescValue(a, sp, 'c1', { title: 'Diploma of Engineering', provider: 'La Trobe College' })
-  expect(v.value.sentences.map((x) => x.evidence_ids)).toEqual([['catalogue'], ['s2'], ['s1']])
-  // a claim reaches every sentence holding half its words: the second claim backs sentences 2 and 4 (before v0.72.1 only its best one, so sentence 4 had no quote)
-  const two = cdescValue({ ...a, description: a.description + ' Project management and biomedical engineering units run in second year.' }, sp, 'c1', { title: 'Diploma of Engineering', provider: 'La Trobe College' })
-  expect(two.value.sentences[3].evidence_ids).toContain('s2')
-  // a sentence no claim reaches by half takes the claim closest to it
-  const near = cdescValue({ ...a, claims: a.claims.slice(0, 2) }, sp, 'c1', { title: 'Diploma of Engineering', provider: 'La Trobe College' })
-  expect(near.value.sentences[0].evidence_ids.length).toBeGreaterThan(0)
-  expect(v.value.sentences[0].quote).toBe('Catalogue record: Diploma of Engineering (La Trobe College).')
-  expect(v.value.sentences[2].quote).toBe(sp[0].exact_text + ' Catalogue record: Diploma of Engineering (La Trobe College).')
+  const v = cdescValue(a, sp, 'c1')
+  // "catalogue" is accepted evidence (not bad_evidence) but never quoted: a sentence backed only by the catalogue has no page quote and is held
   expect(v.value.bad_evidence).toBeUndefined()
-  // without the catalogue facts, "catalogue" is not evidence
-  expect(cdescValue(a, sp, 'c1').value.bad_evidence).toEqual(['catalogue'])
+  expect(v.value.sentences[0]).toMatchObject({ quote: '', on_page: false, evidence_ids: [] })
+  // the first claim shares 4 of its 8 meaningful words with sentence 2, so it backs sentence 2 as well as its best sentence 3
+  expect([...v.value.sentences[1].evidence_ids].sort()).toEqual(['s1', 's2'])
+  expect(v.value.sentences[2]).toMatchObject({ quote: sp[0].exact_text, on_page: true })
+  expect(v.value.sentences.every((x) => !x.quote.includes('Catalogue'))).toBe(true)
+  // a claim reaches every sentence sharing at least half its meaningful words (stop words do not count): the second claim backs sentences 2 and 4
+  const two = cdescValue({ ...a, description: a.description + ' Project management and biomedical engineering units run in second year.' }, sp, 'c1')
+  expect(two.value.sentences[3].evidence_ids).toContain('s2')
+  // the reach is a setting: share 1.0 ties the second claim only where all its words are
+  const strict = cdescValue({ ...a, description: a.description + ' Biomedical engineering runs in second year.' }, sp, 'c1', { reachShare: 1, reachMinWords: 2 })
+  expect(strict.value.sentences[3].evidence_ids).not.toContain('s2')
+  // the closest-claim fallback needs at least reachMinWords shared meaningful words: one shared word ("engineering") is not enough
+  const one = cdescValue({ ...a, description: 'Engineering is offered at La Trobe College.', claims: a.claims.slice(0, 2) }, sp, 'c1', { reachShare: 0.5, reachMinWords: 2 })
+  expect(one.value.sentences[0]).toMatchObject({ quote: '', on_page: false })
   // a sentence no claim shares a word with stays without a quote (held)
-  const lone = cdescValue({ ...a, description: a.description + ' Graduates join agencies.' }, sp, 'c1', { title: 'Diploma of Engineering', provider: 'La Trobe College' })
+  const lone = cdescValue({ ...a, description: a.description + ' Graduates join agencies.' }, sp, 'c1')
   expect(lone.value.sentences[3]).toMatchObject({ quote: '', on_page: false, evidence_ids: [] })
 })
 
@@ -99,7 +103,7 @@ test('worker v0.72.0: the description has its own call, the deadline keeps cours
   const t = IX.slice(IX.indexOf('const textRead = async'), IX.indexOf('const entryCall = async'))
   expect(t).toContain('cdescRequest(model, cdescUser({ course_id: String(pg.course_id), title: pg.title, provider: pg.provider')
   expect(t).toContain('cdescSpans(page, wsNum("enrich.course_description_min_quote_chars", 20))')
-  expect(t).toContain('cdescResults(ans.a, spans, String(pg.course_id), descIt, { model, worker: WORKER.slice(0, 40), cost: ans.cost }, { title: pg.title, provider: pg.provider })')
+  expect(t).toContain('{ reachShare: wsNum("enrich.course_description_claim_reach_share", 0.5), reachMinWords: wsNum("enrich.course_description_claim_reach_min_words", 2) }')
   expect(t).toContain('} catch (e) { fail(descIt.map((x: any) => Number(x.item_id)), e) }')
   expect(t).toContain('} catch (e) { fail(dlIt.map((x: any) => Number(x.item_id)), e) }')
   expect(t).toContain('returned model ${d.model}, not ${model}')
@@ -142,13 +146,20 @@ test('fixture: wired into the Course descriptions workflow and built on the live
   expect(RUN).toContain('[ "$FAILS" = "$EXPECTED" ]')
 })
 
-test('migration 20261112190000 (first-cycle check): one md5-guarded edit, "students" out of the claim words with a control event, only the v0.72.0 mapping holds marked reread:, held recovery, fixture wired', () => {
+test('migration 20261112190000 (first-cycle check): md5-guarded edits of the gap function and the check (title and provider left out of the tests), "students" out of the claim words with a control event, only the v0.72.0 mapping holds marked reread:, held recovery, fixture wired', () => {
   const M2 = fs.readFileSync('supabase/migrations/20261112190000_cf247_cdesc_first_cycle_reread.sql', 'utf8'), c2 = M2.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
   const H2 = fs.readFileSync('supabase/held/cdesc_reread_forward_recovery.sql', 'utf8')
   expect(M2).toContain('security.enrich_course_text_gaps_v1(text[])  ddba9b553a63a9e38c49782a0b0d29c9 -> d117edb4198b81a692e93af9a937110e')
   expect(c2).toContain("select pg_temp.edit_all('security.enrich_course_text_gaps_v1(text[])', 'ddba9b553a63a9e38c49782a0b0d29c9', 'd117edb4198b81a692e93af9a937110e',")
   expect(H2).toContain("select pg_temp.edit_all('security.enrich_course_text_gaps_v1(text[])', 'd117edb4198b81a692e93af9a937110e', 'ddba9b553a63a9e38c49782a0b0d29c9',")
   expect(c2).toContain("or e.reason like 'superseded:%' or e.reason like 'reread:%')) old_prompt")
+  expect(M2).toContain('security.course_description_check_with_v1(uuid,jsonb,jsonb,jsonb)  d310fa64f61f2243df1416d3e48f6bab -> b4d4dabd655afb9352003b87b2b4387d')
+  expect(c2).toContain("security.cdesc_sentence_fault_v1(security.cdesc_known_strip_v1(s->>'text', v_title, v_prov), s->>'quote',")
+  expect(H2).toContain("select pg_temp.edit_all('security.course_description_check_with_v1(uuid,jsonb,jsonb,jsonb)', 'b4d4dabd655afb9352003b87b2b4387d', 'd310fa64f61f2243df1416d3e48f6bab',")
+  expect(c2).toMatch(/'enrich\.course_description_claim_reach_share'[\s\S]*?'number', to_jsonb\(0\.5\), '0\.1', '1', 'share'/)
+  expect(c2).toMatch(/'enrich\.course_description_claim_reach_min_words'[\s\S]*?'number', to_jsonb\(2\), '1', '10', 'words'/)
+  expect(c2).toContain("if v_n > 2000 then raise exception 'relabel would mark % readings")
+  expect(H2).toMatch(/insert into pipeline\.admin_control_events[\s\S]*Forward recovery of migration 20261112190000/)
   expect(c2).toMatch(/insert into pipeline\.admin_control_events[\s\S]*'pipeline\.enrich\.course_description_claim_words'/)
   expect(c2).toContain("e.value->'reader'->>'worker' = 'coverage-sweep-worker-v0.72.0'")
   expect(c2).toContain("(e.reason like 'held: unsupported\\_sentence:%' or e.reason like 'held: quote\\_not\\_on\\_page:%')")
