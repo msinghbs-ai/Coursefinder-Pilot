@@ -12,7 +12,8 @@ import{supabase}from'./lib/supabase'
 import Card from'./Card'
 import{Button,Empty,Loading,fmtDateTime}from'./ui-kit'
 import{fmtNumber}from'./lib/format.js'
-import{listShown,parseList,listValid,listError,listPlaceholder}from'./lib/settings-list.js'
+import{listShown,parseList,listValid,listError,listPlaceholder,isProviderIdList}from'./lib/settings-list.js'
+import ProviderListPicker,{ProviderNames}from'./ProviderListPicker'
 import{plainError}from'./lib/errors'
 
 const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
@@ -36,6 +37,8 @@ function SettingRow({s,can,onSave}){
   useEffect(()=>{setV(shown(s.value))},[s.value])
   // v2.15.277: a yes/no setting (kind boolean) is chosen from Yes or No; numbers as before
   const yn=s.kind==='boolean',ls=s.kind==='list',n=Number(v)
+  // CF-247 F-OPS (11 Nov 2026): a list of provider ids is chosen by provider name, not typed as ids
+  const pv=isProviderIdList(s)
   const list=parseList(v)
   const changed=yn?v!==String(s.value):ls?v.trim()!==shown(s.value):v!==''&&n!==Number(s.value)
   const valid=yn||(ls?listValid(s,v):(Number.isFinite(n)&&(s.min==null||n>=Number(s.min))&&(s.max==null||n<=Number(s.max))))
@@ -45,14 +48,15 @@ function SettingRow({s,can,onSave}){
       {s.updated_at&&<small className="sr-meta">{s.reason||'—'} · {fmtDateTime(s.updated_at)}</small>}</div>
     <div className="sr-edit">
       {can?<>
-        <label className="sr-value"><span className="sr-hide">{s.label}</span>{yn?<select className="fv-input" value={v} onChange={e=>setV(e.target.value)}><option value="true">Yes</option><option value="false">No</option></select>
+        {pv?<div className="sr-value is-providers"><ProviderListPicker value={v} onChange={setV} label={s.label} emptyText={listPlaceholder(s)||undefined}/></div>
+        :<label className="sr-value"><span className="sr-hide">{s.label}</span>{yn?<select className="fv-input" value={v} onChange={e=>setV(e.target.value)}><option value="true">Yes</option><option value="false">No</option></select>
           :ls?<input className="fv-input" type="text" placeholder={listPlaceholder(s)||undefined} value={v} onChange={e=>setV(e.target.value)}/>
-          :<input className="fv-input" type="number" inputMode="numeric" min={s.min??undefined} max={s.max??undefined} value={v} onChange={e=>setV(e.target.value)}/>}{!yn&&!ls&&<span>{s.unit}</span>}</label>
+          :<input className="fv-input" type="number" inputMode="numeric" min={s.min??undefined} max={s.max??undefined} value={v} onChange={e=>setV(e.target.value)}/>}{!yn&&!ls&&<span>{s.unit}</span>}</label>}
         {changed&&<label className="sr-reason"><span className="sr-hide">Reason</span><input className="fv-input" placeholder="Reason (kept in the log)" value={reason} onChange={e=>setReason(e.target.value)}/></label>}
         {changed&&<Button compact variant="primary" disabled={busy||!valid||reason.trim().length<4} onClick={save}><Save size={13}/>Save</Button>}
         {changed&&!valid&&<small className="fr-error">{ls?listError(s):<>Between {fmtNumber(Number(s.min))} and {fmtNumber(Number(s.max))}.</>}</small>}
         {err&&<small className="fr-error" role="alert">{err}</small>}
-      </>:<strong>{yn?(String(s.value)==='true'?'Yes':'No'):ls?shown(s.value):<>{fmtNumber(Number(s.value))} {s.unit}</>}</strong>}
+      </>:<strong>{yn?(String(s.value)==='true'?'Yes':'No'):pv?<ProviderNames value={s.value}/>:ls?shown(s.value):<>{fmtNumber(Number(s.value))} {s.unit}</>}</strong>}
       <small className="sr-range">{!yn&&!ls&&s.min!=null?`${fmtNumber(Number(s.min))} to ${fmtNumber(Number(s.max))}`:''}</small>
     </div>
   </div>

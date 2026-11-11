@@ -855,3 +855,18 @@
 }
 /* CF-247 F-OPS.04 (9 Nov 2026): Operations › API usage on a phone. The six tables sit in a frame that does not scroll, so the keys table (about 1,200 px) ran past a 412 px screen; each frame now scrolls on its own at phone width. */
 @media (max-width:620px){.m-page-stack .dense-table-wrap:has(> table[class*="cf-api-"]){overflow-x:auto;max-width:100%}}
+/* CF-247 F-OPS (11 Nov 2026): provider list settings chosen by name (ProviderListPicker) */
+.plp{display:grid;gap:6px;width:100%;min-width:0}
+.plp-names{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.plp-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 4px 3px 9px;border-radius:999px;background:var(--cf-slate-100);color:var(--cf-slate-800);font-size:var(--cf-fs-xs);line-height:1.3;max-width:100%;overflow-wrap:anywhere}
+.plp-chip.is-static{padding:3px 9px}.plp-chip.is-unknown{background:var(--cf-warning-soft);color:var(--cf-warning-ink)}
+.plp-x{display:inline-flex;align-items:center;justify-content:center;min-width:24px;min-height:24px;border:0;border-radius:999px;background:transparent;color:inherit;cursor:pointer}
+.plp-x:hover,.plp-x:focus-visible{background:var(--cf-slate-200)}
+.plp-empty{font-size:var(--cf-fs-xs);color:var(--cf-slate-500)}
+.plp-search{display:flex;gap:6px;align-items:center;color:var(--cf-slate-500)}.plp-search input{width:100%;min-width:0}
+.sr-value .plp-search input{width:100%}
+.plp-found{list-style:none;margin:0;padding:4px;border:1px solid var(--cf-slate-150);border-radius:var(--cf-radius-sm);background:var(--cf-white);max-height:240px;overflow:auto}
+.plp-found button{display:flex;gap:6px;align-items:center;width:100%;min-height:36px;padding:6px 8px;border:0;border-radius:6px;background:transparent;text-align:left;font-size:var(--cf-fs-xs);color:var(--cf-slate-800);cursor:pointer}
+.plp-found button:hover,.plp-found button:focus-visible{background:var(--cf-slate-50)}
+.plp-none{padding:6px 8px;font-size:var(--cf-fs-xs);color:var(--cf-slate-500)}
+.sr-value.is-providers{width:100%}
