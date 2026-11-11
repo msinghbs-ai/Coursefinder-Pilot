@@ -1,4 +1,4 @@
-// Guards: CF-247 F-INT (Platform Admin 11 Nov 2026 20:40, option B): every university is qualified for Rule B by a rolled-back trial of the live planner and listed only by the Platform Admin's one approval of all qualified universities; a failing listed university is taken off (a stop, never a start).
+// Guards: CF-247 F-INT (Platform Admin 11 Nov 2026 20:40, option B; Decision 275): every university is qualified for Rule B by a rolled-back trial of the live planner and listed only by the Platform Admin's one approval of all qualified universities; a failing listed university is taken off (a stop, never a start).
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
@@ -37,7 +37,8 @@ test('the job never adds a university; only the approval does, with a reason, by
   expect(MIG).toMatch(/^-- Retires: nothing/m)
   expect(MIG).toContain("comment on table pipeline.intake_rule_b_qualifications is '")
   expect(MIG).toContain('alter table pipeline.intake_rule_b_qualifications enable row level security;')
-  expect(UI).toContain("rpc('admin_intake_rule_b_approve_v1',{p_reason:reason.trim(),p_exclude:[]})")
+  expect(UI).toContain("rpc('admin_intake_rule_b_approve_v1',{p_reason:reason.trim(),p_exclude:out})")
+  expect(UI).toContain('Leave out</label>')
 })
 
 test.describe('mocked browser', () => {
@@ -62,6 +63,9 @@ test.describe('mocked browser', () => {
     const reg = page.getByTestId('rule-b-register')
     await expect(reg).toContainText('Deakin University (Deakin)')
     await expect(reg).toContainText('nothing worth adding: 1 dates')
+    await reg.getByRole('checkbox', { name: 'Leave out' }).check()
+    await expect(reg.getByRole('button', { name: /Approve all qualified \(0 universities, about 0 dates\)/ })).toBeDisabled()
+    await reg.getByRole('checkbox', { name: 'Leave out' }).uncheck()
     const approve = reg.getByRole('button', { name: /Approve all qualified \(1 universities, about 101 dates\)/ })
     await expect(approve).toBeDisabled()
     await reg.getByLabel('Reason for approving all qualified universities').fill('Rule B for every qualified university, checked by the register')
