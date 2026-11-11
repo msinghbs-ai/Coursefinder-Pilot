@@ -11,7 +11,7 @@ import { PAGE_ID_CONTRACT, pageIdChecks, pageIdInput, pageIdRequest } from "./pa
 import { callRecord, pageHtml, readOutcome, scrapeBody, searchBody, searchCandidates, searchResults } from "./firecrawl.ts";
 import { applyAdapter, inspectPage, jsonAt, jsonFind, jsonShape, pageJson, patternValues, viewApplies, withView } from "./adapters.ts";
 import { CENTRAL_SEARCH, ENTRY_SEARCH, centralCandidates, entryCandidates, weakKinds } from "./central.ts";
-import { ENTRY_PROMPT_VERSION, ENTRY_TABLE_BASIS, NAMED_NOTE, PDF_NOTE, entryCellList, entryCompleteness, entryCountryAliases, entryDropNoMinimum, entryGlobalQualification, entrySubjectRows, entryManifestDetail, entryMatrixParsed, entryMatrixRequest, entryNoAnswerWhy, entryNonCountryShape, entrySlices, entryTables, entryUnscaledColumns } from "./entry.ts";
+import { ENTRY_PROMPT_VERSION, ENTRY_TABLE_BASIS, NAMED_NOTE, PDF_NOTE, entryCellList, entryCompleteness, entryCountryAliases, entryDropNoMinimum, entryGlobalQualification, entrySubjectRows, entryManifestDetail, entryMatrixParsed, entryMatrixRequest, entryNoAnswerWhy, entryNonCountryShape, entrySlices, entryTables, entryUnscaledColumns, entryQualificationCountries } from "./entry.ts";
 import { OPS_DIAGNOSE_CONTRACT, opsDiagnoseAnswer, opsDiagnoseLimit, opsDiagnoseRequest, opsDiagnoseUsable } from "./ops-diagnose.ts";
 import { linkSearchGroups, linkSearchShareOn } from "./link-share.ts";
 import type { EntryBandLine, EntryCountryRef, EntryLineSet, EntryManifest } from "./entry.ts";
@@ -2435,6 +2435,10 @@ async function handle(req: Request): Promise<Response> {
           const quals = await qualsP;
           const parseOpts = { countryAliases: Number(ws["reading.entry_country_aliases_on"]) >= 1 ? entryCountryAliases(ws["reading.entry_country_aliases"]) : {},
                               nullValue: Number(ws["reading.entry_value_null_on"]) >= 1,
+                              // v0.74.0 (F-AER.10): reader fixes, each under its own setting (entry.ts EntryParseOptions)
+                              ...(Number(ws["reading.entry_quote_parts_on"]) >= 1 ? { quoteParts: { window: Number(ws["reading.entry_quote_window_chars"]) || 600 } } : {}),
+                              bandLabelWords: Array.isArray(ws["reading.entry_band_label_words"]) ? ws["reading.entry_band_label_words"] : [],
+                              qualificationCountries: entryQualificationCountries(ws["reading.entry_qualification_countries"]),
                               ...(quals?.on && Array.isArray(quals.qualifications) ? { qualifications: quals.qualifications, globalTokens: Array.isArray(quals.global_tokens) ? quals.global_tokens : [] } : {}) };
           // v0.49.2: slice size and answer length from settings (entry.matrix_slice_chars, entry.matrix_max_tokens)
           const slices = entrySlices(page, Number(it.max_rows) || 400, Number(it.slice_chars) || 24000);

@@ -222,7 +222,16 @@ export function entryRangeLower(value: number | null, quote: string): number | n
 export type EntryParseOptions = { rangeLower?: boolean; countryAliases?: Record<string, string>; nullValue?: boolean;
   // v0.70.0 (12 Nov 2026, CF-247 F-AER.03 qualification-first, Platform Admin decision 11 Nov 2026 item 2): international qualifications (public.svc_aer_qualifications_v1)
   // and the words a page uses for every country (reading.entry_global_scope_tokens); with them, a row that names no ISO country is kept for a recognised qualification
-  qualifications?: EntryQualification[]; globalTokens?: string[] };
+  qualifications?: EntryQualification[]; globalTokens?: string[];
+  // v0.74.0 (12 Nov 2026, CF-247 F-AER.10 reader fixes, Platform Admin mandate 12 Nov 2026 09:23 "fix ... at the reader level", reusable):
+  //   quoteParts: a quote the model wrote as heading + cell ("China Entry Requirements Completion of ...", "COUNTRY: Uganda | Undergraduate Entry: ...") is proven
+  //     when every part is printed on the page, in order, within quoteParts.window characters (a "Label: value" part needs its value there and its label printed
+  //     on the page); the row records conditions.quote_proof "parts" (reading.entry_quote_parts_on, reading.entry_quote_window_chars);
+  //   bandLabelWords: a band the model gave with its column label ("ATAR equivalent: 98", "ATAR 80") is the printed number alone when the label names a rank
+  //     (reading.entry_band_label_words); the number must still be printed in the quote;
+  //   qualificationCountries: a row with no country whose qualification is a country's own framework ("AQF bachelor's degree") is that country's row
+  //     (reading.entry_qualification_countries, "AQF=AU"); recorded as conditions.country_from_qualification.
+  quoteParts?: { window: number }; bandLabelWords?: string[]; qualificationCountries?: Record<string, string> };
 export type EntryQualification = { code: string; aliases: string[] };
 // v0.70.0 (F-AER.03): the international qualification a row means, from its qualification name or its country token (the page printed "IB" where a country goes), by the
 // whole alias in letters and digits (never a part of a word): the longest alias wins, so "IB Diploma" is IB_DP and "IB Certificate" is IB_COURSES. Null when none matches.
@@ -247,6 +256,27 @@ export function entryApplicability(token: unknown, quote: unknown, globalTokens:
   if (EVERY_COUNTRY.test(String(quote || ""))) return { applicability: "global", basis: "the quote prints an every-country scope" };
   return { applicability: "unresolved", basis: "no every-country scope printed" };
 }
+// v0.74.0 (F-AER.10): "AQF=AU" entries of reading.entry_qualification_countries: the country whose own framework a qualification name names as whole words
+export function entryQualificationCountries(list: unknown): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const e of Array.isArray(list) ? list : []) { const m = /^\s*(.{2,40}?)\s*=\s*([A-Za-z]{2})\s*$/.exec(String(e)); if (m) out[m[1].toLowerCase()] = m[2].toUpperCase() }
+  return out;
+}
+export function entryQualificationCountry(name: unknown, map: Record<string, string> | undefined): string | null {
+  if (!map) return null;
+  const w = ` ${String(name || "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, " ").trim()} `;
+  const hits = [...new Set(Object.entries(map).filter(([k]) => w.includes(` ${k.replace(/[^a-z0-9]+/g, " ").trim()} `)).map(([, v]) => v))];
+  return hits.length === 1 ? hits[0] : null;  // two frameworks named: no country is guessed
+}
+// v0.74.0 (F-AER.10): a band given with its column label ("ATAR equivalent: 98", "Rank / ATAR 80") is the number alone when the label names a rank word;
+// any other band is returned as given (a band name such as "B2" or "Band 3" is never cut)
+export function entryBandNumber(band: string | null, words: string[] | undefined): string | null {
+  if (!band || !words?.length) return band;
+  const m = /^([A-Za-z][A-Za-z /.]*?)\s*:?\s*(\d{1,3}(?:\.\d{1,2})?)$/.exec(band.trim());
+  if (!m) return band;
+  const label = ` ${m[1].toLowerCase().replace(/[^a-z]+/g, " ").trim()} `;
+  return words.some((x) => { const k = String(x || "").toLowerCase().replace(/[^a-z]+/g, " ").trim(); return k.length >= 3 && label.includes(` ${k} `) }) ? m[2] : band;
+}
 // "UK=GB" entries of the aliases setting as a map; an entry that is not TOKEN=ISO2, or whose token is already an ISO code of the same letters, is ignored
 export function entryCountryAliases(list: unknown): Record<string, string> {
   const out: Record<string, string> = {};
@@ -268,11 +298,36 @@ export function entryCountryAliases(list: unknown): Record<string, string> {
 export function entryMatrixParsed(a: any, page: string, bandLines: EntryLineSet = [], opts: EntryParseOptions = {}) {
   const F = (bandLines.forms || []).map(flat), within = segmentCheck(page, bandLines.segments || []);
   const P = flat(page), on = (q: string) => flat(q).length >= 6 && ((P.includes(flat(q)) && within(flat(q))) || F.some((f) => f.includes(flat(q))));
+  // v0.74.0 (F-AER.10): the quote's parts, each printed on the page, in order, within `window` characters of the flat page (see EntryParseOptions.quoteParts)
+  const quoteInParts = (q: string, window: number): boolean => {
+    const at = (part: string, from: number): { i: number; n: number } | null => {
+      const f = flat(part); if (f.length < 2) return { i: from, n: 0 };
+      const i = P.indexOf(f, from); if (i >= 0 && within(f)) return { i, n: f.length };
+      const m = /^([^:]{2,60}):\s*(.+)$/.exec(part.trim());  // "Label: value": the value in order, the label printed anywhere on the page
+      if (m && P.includes(flat(m[1]))) { const v = flat(m[2]); const j = v.length >= 2 ? P.indexOf(v, from) : -1; if (j >= 0 && within(v)) return { i: j, n: v.length } }
+      return null;
+    };
+    const ordered = (parts: string[]): boolean => {
+      let pos = 0, first = -1, end = 0;
+      for (const p of parts) { const h = at(p, pos); if (!h) return false; if (h.n === 0) continue; if (first < 0) first = h.i; pos = h.i + h.n; end = pos }
+      return first >= 0 && end - first <= window;
+    };
+    const segs = q.split(/\s*\|\s*/).map((x) => x.trim()).filter(Boolean);
+    if (segs.length > 1 && ordered(segs)) return true;
+    const w = q.split(/\s+/);
+    for (let k = 1; k <= Math.min(6, w.length - 1); k++) {  // fixed: a heading prefix is at most six words (a country and "Entry Requirements")
+      const rest = w.slice(k).join(" ");
+      if (flat(rest).length >= 20 && on(rest) && ordered([w.slice(0, k).join(" ").replace(/[:|–-]+$/, ""), rest])) return true;  // fixed: a remainder shorter than 20 letters proves nothing
+    }
+    return false;
+  };
   const numIn = (n: number, q: string) => [String(n), String(n).replace(/\.0$/, ""), n.toFixed(1), n.toFixed(2)].some((d) => String(q || "").includes(d));
   const rows: any[] = [], dropped: EntryDrop[] = [], qrows: any[] = [];
   for (const x of (Array.isArray(a?.rows) ? a.rows : []) as any[]) {
     const quote = String(x?.quote || "").trim(), cc0 = String(x?.country_code || "").toUpperCase().trim();
-    const cc = opts.countryAliases?.[cc0] ?? cc0, aliased = cc !== cc0;  // v0.59.11: a governed alias (UK -> GB), recorded on the row
+    // v0.74.0: a country's own qualification framework names the country of a row that gives none (AQF=AU)
+    const fromQual = !/^[A-Z]{2}$/.test(opts.countryAliases?.[cc0] ?? cc0) ? entryQualificationCountry(x?.qualification_name, opts.qualificationCountries) : null;
+    const cc = fromQual ?? opts.countryAliases?.[cc0] ?? cc0, aliased = !fromQual && cc !== cc0;  // v0.59.11: a governed alias (UK -> GB), recorded on the row
     const d = (reason: string) => dropped.push({ reason, country: cc || String(x?.country_name || ""), quote: quote.slice(0, 120),
       value: typeof x?.min_value === "number" && Number.isFinite(x.min_value) ? x.min_value : null, grade: x?.min_grade == null ? null : String(x.min_grade).slice(0, 120),
       scale: x?.grade_scale == null ? null : String(x.grade_scale) });
@@ -283,7 +338,8 @@ export function entryMatrixParsed(a: any, page: string, bandLines: EntryLineSet 
     const qcode = !isCountry && opts.qualifications?.length ? entryQualificationCode(x?.qualification_name, cc0 || x?.country_name, opts.qualifications) : null;
     if (!isCountry && !qcode) { d(opts.qualifications?.length && opts.globalTokens?.some((g) => String(g).toUpperCase() === cc0) ? "unknown_qualification" : "unknown_country"); continue }
     if (flat(quote).length < 6) { d("quote_too_short"); continue }  // a bare cell ("70 10.5") proves nothing: the whole row is quoted
-    if (!on(quote)) { d("quote_not_on_page"); continue }
+    const partsProof = !on(quote) && !!opts.quoteParts && quoteInParts(quote, opts.quoteParts.window);
+    if (!on(quote) && !partsProof) { d("quote_not_on_page"); continue }
     if (ENGLISH_TEST.test(quote) && ENGLISH_TEST.test(String(x?.qualification_name || ""))) { d("english_test_row"); continue }
     const scale = ENTRY_SCALES.includes(x?.grade_scale) ? x.grade_scale : "none";
     const asked = typeof x?.min_value === "number" && Number.isFinite(x.min_value) ? x.min_value : null;
@@ -297,7 +353,7 @@ export function entryMatrixParsed(a: any, page: string, bandLines: EntryLineSet 
     if (value != null && !numIn(value, quote)) { if (!keepWithoutValue) { d("value_not_in_quote"); continue } valueRemoved = { reason: "value_not_in_quote", value }; value = null }
     const grade = x?.min_grade == null ? null : String(x.min_grade).trim() || null;
     if (grade && !flat(quote).includes(flat(grade))) { d("grade_not_in_quote"); continue }
-    const Q = flat(quote), given0 = x?.benchmark_band == null ? null : String(x.benchmark_band).trim() || null;
+    const Q = flat(quote), given0 = entryBandNumber(x?.benchmark_band == null ? null : String(x.benchmark_band).trim() || null, opts.bandLabelWords);
     const given = given0 && !Q.includes(flat(given0)) && !NA_BAND.test(given0) ? (headerBand(given0, Q, bandLines.heads || []) ?? given0) : given0;
     const published = [...new Set(bandLines.filter((l) => l.band && flat(l.band) && Q.includes(flat(l.band)) && (flat(l.line).includes(Q) || Q.includes(flat(l.line))))
       .map((l) => String(l.band)))];
@@ -314,13 +370,13 @@ export function entryMatrixParsed(a: any, page: string, bandLines: EntryLineSet 
       qrows.push({ qualification_code: qcode, qualification_name: String(x?.qualification_name || "").trim(), country_token: cc0 || String(x?.country_name || ""),
         applicability: ap.applicability, applicability_basis: ap.basis, study_level: x?.study_level ?? null, min_grade: grade, min_value: value, grade_scale: scale,
         benchmark_band: band, course_name: x?.course_name ?? null,
-        conditions: { ...(x?.conditions && typeof x.conditions === "object" && !Array.isArray(x.conditions) ? x.conditions : {}), ...(valueRemoved ? { value_removed: valueRemoved } : {}) },
+        conditions: { ...(x?.conditions && typeof x.conditions === "object" && !Array.isArray(x.conditions) ? x.conditions : {}), ...(partsProof ? { quote_proof: "parts" } : {}), ...(fromQual ? { country_from_qualification: String(x?.qualification_name || "").slice(0, 120) } : {}), ...(valueRemoved ? { value_removed: valueRemoved } : {}) },
         confidence: Number(x?.confidence ?? 0), quote: quote.slice(0, 300) });
       continue;
     }
     rows.push({ country_code: cc, country_name: String(x?.country_name || ""), study_level: x?.study_level ?? null, qualification_name: String(x?.qualification_name || "").trim(),
       min_grade: grade, min_value: value, grade_scale: scale, benchmark_band: band, course_name: x?.course_name ?? null,
-      conditions: { ...(x?.conditions && typeof x.conditions === "object" && !Array.isArray(x.conditions) ? x.conditions : {}), ...(aliased ? { country_token: cc0 } : {}), ...(valueRemoved ? { value_removed: valueRemoved } : {}) },
+      conditions: { ...(x?.conditions && typeof x.conditions === "object" && !Array.isArray(x.conditions) ? x.conditions : {}), ...(aliased ? { country_token: cc0 } : {}), ...(partsProof ? { quote_proof: "parts" } : {}), ...(fromQual ? { country_from_qualification: String(x?.qualification_name || "").slice(0, 120) } : {}), ...(valueRemoved ? { value_removed: valueRemoved } : {}) },
       confidence: Number(x?.confidence ?? 0), quote: quote.slice(0, 300) });
   }
   return { rows, qualification_rows: qrows, dropped, edition: a?.edition ?? null, intake_year: Number.isInteger(a?.intake_year) ? a.intake_year : null };
