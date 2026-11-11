@@ -12,7 +12,7 @@
 -- Retires: nothing
 
 update pipeline.platform_toolset_settings set value = '1500'::jsonb, updated_at = now(),
-       reason = 'CF-247 Layer 4 build-up (20261111220000), Platform Admin 11 Nov 15:21 "set it": new description readings pause while 1,500 wait for a person'
+       reason = 'CF-247 Layer 4 build-up (20261111235900), Platform Admin 11 Nov 15:21 "set it": new description readings pause while 1,500 wait for a person'
  where toolset_key = 'pipeline' and key = 'enrich.course_description_pending_global_max';
 
 do $post$
