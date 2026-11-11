@@ -150,6 +150,13 @@ export const SPECIALIST_TASKS = [
   { task: 'Check what reaches the website and Zoho', role: 'Integration owner (a responsibility; reading needs Viewer)', page: 'entry',
     source: 'Resolution inspection and the developer guide', evidence: 'Nothing is saved: read only', escalate: 'A Curator for a wrong value; the Platform Admin for a new field or a changed response',
     doc: 'docs/platform/AER-ROLE-GUIDES.md §6' },
+  // CF-247 F-PDESC (Platform Admin 11 Nov 2026 21:04): provider descriptions for the roles that act on them
+  { task: 'Fill a provider\'s description (Extract / refresh description now, then Fill description)', role: 'Curator (rank 3) and above', page: 'providers',
+    source: 'The provider\'s own About page, read by the AI with the active prompt; every sentence backed by a passage on the page', evidence: 'The read, its passages and the admission or Layer 4 decision; a description typed by hand is kept as written by hand', escalate: 'The Platform Admin when Fill is refused for a reason you cannot fix, or the wording is wrong for many providers (the prompt)',
+    doc: 'docs/platform/PROVIDER-DESCRIPTIONS-RUNBOOK.md §2 and §6' },
+  { task: 'Maintain the provider description prompt; speed up, slow down or stop provider descriptions', role: 'Platform Admin', page: 'services', tab: 'ai',
+    source: 'The Provider description prompt card (prompt, versions, status) and Settings › Pipeline settings › Provider descriptions', evidence: 'Each prompt version and each setting change with its reason', escalate: 'The platform engineer for a job that fails the same way after a fix (CF-247)',
+    doc: 'docs/platform/PROVIDER-DESCRIPTIONS-RUNBOOK.md; docs/platform/DATA-PIPELINE-OPERATING-MODEL.md §3.3.1' },
   { task: 'Respond to an alert or an incident', role: 'Person on call; the Platform Admin acts', page: 'health',
     source: 'Platform health and the alert', evidence: 'The acknowledgement with its reason; the incident record', escalate: 'Platform Admin; others report and stop',
     doc: 'docs/platform/AER-ROLE-GUIDES.md §7; docs/coursefinder-production-environment-runbook-v1.0.md; docs/platform/OPERATIONAL-LIMITS.md (alerts)' },

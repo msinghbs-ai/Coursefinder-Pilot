@@ -10,6 +10,9 @@ const MIG = fs.readFileSync('supabase/migrations/20261112011000_cf247_pdesc_prom
 const IX = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 const MIG4 = fs.readFileSync('supabase/migrations/20261112023700_cf247_pdesc_name_forms_prompt_v4.sql', 'utf8')
 const MIG5 = fs.readFileSync('supabase/migrations/20261112034500_cf247_pdesc_machine_gate_prompt_profile.sql', 'utf8')
+const MIG6 = fs.readFileSync('supabase/migrations/20261112051500_cf247_pdesc_catalogue_current.sql', 'utf8')
+const SOPS = fs.readFileSync('src/guide/sops.js', 'utf8')
+const GUIDE = fs.readFileSync('src/guide/platformGuide.js', 'utf8')
 const read = (f) => fs.readFileSync(f, 'utf8')
 
 test('the prompt is kept in the database, versioned, one active, and edited only as a new version by the Platform Admin with a reason', () => {
@@ -164,4 +167,24 @@ test('20261112034500: with the prompt, the automatic admission keeps refused top
   expect(MIG5).toContain("key = 'pdesc.machine_numbers_allowed' and value = '0'::jsonb")  // a recorded settings change, reversible on screen
   for (const c of ["'post-check: campus and students pass with the prompt'", "'post-check: marketing still goes to a person'", "'post-check: visas still go to a person'", "'post-check: French list for a French text'"]) expect(MIG5).toContain(c)
   expect(MIG5).toMatch(/-- Replaces: .+\n-- Retires: /)
+})
+
+test('Guide (Platform Admin 11 Nov 2026 21:04): provider descriptions for each role that acts: schedule, mechanism, pace and stop; the catalogue says the same', () => {
+  // Platform Admin SOP: the prompt, the schedule, the controls and how to stop
+  expect(SOPS).toContain("trigger: 'Provider descriptions: change how the AI writes them'")
+  expect(SOPS).toContain("trigger: 'Provider descriptions: too slow, too costly, or wrong (speed up, slow down or stop)'")
+  expect(SOPS).toContain('The reader runs every 5 minutes (Provider descriptions: find, read and propose, at :01, :06 … :56) and the self-heal every 10 minutes (at :03, :13 … :53)')
+  expect(SOPS).toContain('Stop: set Provider descriptions: reader on to 0 (the reader, the self-heal and Fill all stop; nothing is lost), or pause the job on Scheduled jobs › Automations')
+  // Operator SOP: Fill and the Layer 4 decision, never pace or pause
+  expect(SOPS).toContain("trigger: 'A provider with no description, or only the short register profile'")
+  expect(SOPS).toContain('press Extract / refresh description now, then Fill description')
+  expect(SOPS).toContain("trigger: 'Layer 4: Provider description waiting'")
+  // role tasks
+  expect(GUIDE).toContain("role: 'Curator (rank 3) and above', page: 'providers'")
+  expect(GUIDE).toContain("role: 'Platform Admin', page: 'services', tab: 'ai'")
+  expect(GUIDE).toContain('docs/platform/PROVIDER-DESCRIPTIONS-RUNBOOK.md')
+  // the automation catalogue matches the live schedule
+  expect(MIG6).toContain("'Every 5 minutes (at :01, :06 … :56) while Provider descriptions: reader on is 1")
+  expect(MIG6).toContain("'Every 10 minutes (at :03, :13 … :53), between the reader''s runs")
+  expect(MIG6).toMatch(/-- Replaces: .+\n-- Retires: /)
 })
