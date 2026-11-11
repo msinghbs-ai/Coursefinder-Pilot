@@ -1,0 +1,12 @@
+/* CF-247 F-PDESC (11 Nov 2026): provider description status and prompt editor. Colours and spacing come from the shared tokens; long words wrap and nothing forces the page sideways. */
+.pdp{display:grid;gap:var(--cf-space-3);min-width:0}
+.pdp-status{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--cf-space-2) var(--cf-space-4);margin:0;padding:var(--cf-space-3);background:var(--cf-surface-2);border-radius:var(--cf-radius-md)}
+.pdp-status-row{display:grid;gap:2px;min-width:0}
+.pdp-status dt{color:var(--cf-muted);font-size:var(--cf-fs-md)}
+.pdp-status dd{margin:0;overflow-wrap:anywhere;font-weight:600}
+.pdp-label{font-weight:600}
+.pdp-text{width:100%;max-width:100%;box-sizing:border-box;min-height:240px;resize:vertical;border:1px solid var(--cf-border-input);border-radius:var(--cf-radius-sm);padding:var(--cf-space-2);font:inherit;line-height:1.5}
+.pdp-note{margin:0;color:var(--cf-muted);font-size:var(--cf-fs-md);overflow-wrap:anywhere}
+.pdp-save{display:flex;flex-wrap:wrap;align-items:center;gap:var(--cf-space-3)}
+.pdp-save input{flex:1 1 260px;min-height:32px;min-width:0;border:1px solid var(--cf-border-input);border-radius:var(--cf-radius-sm);padding:0 var(--cf-space-2)}
+.pdp-history ul{margin:var(--cf-space-2) 0 0;padding-left:var(--cf-space-4);display:grid;gap:var(--cf-space-1);overflow-wrap:anywhere}

@@ -9,6 +9,7 @@ import { Overlay } from './Overlay'
 import { fmtDateTime, fmtNumber } from './lib/format.js'
 import { plainError } from './lib/errors'
 import { providerDescriptionRunApi } from './provider-description-run-api'
+import { providerDescriptionFillApi } from './provider-description-run-api' // CF-247 F-PDESC (11 Nov 2026): Fill description
 import { fieldWords, qualityOf } from './catalogue-columns.js'
 import { DISPATCH, SELECTION, classify, fieldOutcome, fillModeOf, isPermission, nextAction, selectionWords, stagesOf } from './provider-fill-stages.js'
 import './provider-fill-fields.css'
@@ -34,11 +35,12 @@ const OUTCOME_TITLE = {
 }
 const REASON_FALLBACK = { in_progress: 'in_progress', wait: 'wait', source: 'source', policy: 'policy', up_to_date: 'up_to_date', locked: 'locked', none: 'none' }
 
-export default function ProviderFillFields({ providerIds = [], rank = 0, onClose, onChanged, client = providerDescriptionRunApi, open = true }) {
+export default function ProviderFillFields({ providerIds = [], rank = 0, onClose, onChanged, client = providerDescriptionRunApi, fillClient = providerDescriptionFillApi, open = true }) {
   const ids = [...new Set(providerIds)].filter(Boolean)
   const [caps, setCaps] = useState(null), [status, setStatus] = useState(null), [mode, setMode] = useState(''), [preview, setPreview] = useState(null)
   const [saved, setSaved] = useState(null), [reason, setReason] = useState(''), [busy, setBusy] = useState('load'), [error, setError] = useState(''), [note, setNote] = useState('')
   const [pub, setPub] = useState(null), [unknown, setUnknown] = useState(false), [outcome, setOutcome] = useState(null), alive = useRef(true), inflight = useRef(false), key = ids.join(',')
+  const [promptOn, setPromptOn] = useState(false) // F-PDESC: the prompt from Settings is in use (the server says so); then the primary action is Fill description
   const fail = e => setError(plainError(e))
   const call = (action, args = {}) => client.call(action, args)
   const canPreview = Number(rank) >= 3
@@ -68,6 +70,7 @@ export default function ProviderFillFields({ providerIds = [], rank = 0, onClose
         const c = await call('fill_caps')
         if (!alive.current) return
         setCaps(c)
+        fillClient.promptOn().then(on => { if (alive.current) setPromptOn(on === true) }).catch(() => { if (alive.current) setPromptOn(false) }) // F-PDESC: the server says whether the prompt is in use
         if (ids.length > Number(c.max_size || 0)) { setStatus(null); return }
         const s = await call('provider_status', { provider_ids: ids, feeds: true })
         if (!alive.current) return
@@ -99,6 +102,24 @@ export default function ProviderFillFields({ providerIds = [], rank = 0, onClose
   const classes = providers.map(p => ({ p, cls: classify(p) }))
   const readable = classes.filter(c => c.cls === 'extractable')
   const resumable = saved?.cohort_id && saved.state === 'prepared' && !list(saved.runs).length
+  // ---- F-PDESC (Platform Admin 11 Nov 2026 14:57): Fill description, one click, no reason to type. Each provider is queued on demand and a read starts at once:
+  // not held by the lane AI and Firecrawl limits; a description written by hand, one already written by AI, one in progress or one waiting for a person is skipped.
+  const fillable = classes.filter(c => !['locked', 'up_to_date', 'in_progress', 'person'].includes(c.cls))
+  const FILL_WORD = { queued: 'queued: the read starts now', manual: 'written by hand, never replaced', has_description: 'already has a description', in_progress: 'already being read', not_live: 'not active and published', identity: 'its official page does not prove its name yet', not_found: 'not found' }
+  const doFill = async () => {
+    if (inflight.current) return
+    inflight.current = true
+    try {
+      await operate('fill', async () => {
+        setOutcome(null)
+        const data = await fillClient.fill(fillable.map(c => c.p.provider_id))
+        const rows = list(data?.providers)
+        if (alive.current) setOutcome({ category: Number(data?.queued) > 0 ? 'started' : 'none', lines: rows.map(r => `${r.name || r.provider_id}: ${FILL_WORD[r.outcome] || humanLabel(r.outcome)}`) })
+        await readStatus(false)
+        onChanged?.()
+      })
+    } finally { inflight.current = false }
+  }
   const doExtract = async () => {
     if (inflight.current) return
     inflight.current = true
@@ -188,7 +209,7 @@ export default function ProviderFillFields({ providerIds = [], rank = 0, onClose
   const rows = list(preview?.providers)
   const modeInfo = FILL_MODES.find(m => m.id === mode)
   const runnable = (mode === 'missing' || mode === 'upgrade_basic')
-  const title = ids.length === 1 ? (providers[0]?.name || 'Extract description') : `Extract / refresh description now: ${ids.length} providers`
+  const title = ids.length === 1 ? (providers[0]?.name || (promptOn ? 'Fill description' : 'Extract description')) : `${promptOn ? 'Fill description' : 'Extract / refresh description now'}: ${ids.length} providers`
   const readerState = !caps ? null : !caps.enabled ? ['paused', 'The reader is switched off. A request is saved and resumes when it is switched on.'] : !caps.job_active ? ['paused', 'The reader is paused. A request is saved and resumes when it is switched on.'] : !caps.run_now_allowed ? ['warning', 'Run Now is not switched on for this reader (the allowlist is off). A request is saved and the scheduled reader picks it up.'] : null
   const needReason = (readable.length > 0 && !resumable) || (Boolean(preview) && Number(preview.selected ?? 0) > 0 && (mode === 'missing' || mode === 'upgrade_basic'))
   const reasonShort = needReason && reason.trim().length < minReason
@@ -207,13 +228,18 @@ export default function ProviderFillFields({ providerIds = [], rank = 0, onClose
         </section>
         <p className="pff-note" data-other-fields-note>The reader produces the <strong>description</strong> only. Other missing fields shown above (website, phone and so on) are for information: nothing reads them yet, and this panel does not change them.</p>
 
+        {promptOn ? <section className="pff-primary" aria-label="Fill the description" data-primary data-fill-mode="prompt">
+          <Button variant="primary" data-fill-now disabled={Boolean(busy) || fillable.length === 0} onClick={doFill}>Fill description</Button>
+          <p className="pff-note">The AI reads the official About page and writes the description with the prompt on Models &amp; services › AI &amp; OpenRouter. It starts now and is not held by the regular scan&apos;s spending limits. A description written by hand is never replaced.</p>
+          {fillable.length === 0 && providers.length > 0 && <p className="pff-note" data-nothing-to-extract>Nothing here needs filling now; each provider says why.</p>}
+        </section> :
         <section className="pff-primary" aria-label="Extract or refresh the description" data-primary>
           {needReason && <label className="pff-reason">Reason (kept in the audit log)<input type="text" aria-label="Extract audit reason" value={reason} onChange={e => setReason(e.target.value)} disabled={Boolean(busy) || !canRun} placeholder="Why this description is being read now" maxLength={300}/></label>}
           <Button variant="primary" data-extract-now disabled={Boolean(busy) || !canRun || tooMany || reasonShort} onClick={doExtract} title={!canRun ? 'An authorised operator is required.' : undefined}>Extract / refresh description now</Button>
           {!canRun && <p className="pff-note" data-permission-note>Permission denied: your role can read each provider&apos;s state. An authorised operator must start an extraction.</p>}
           {canRun && reasonShort && <p className="pff-note">Type a short reason ({minReason} characters or more); it is recorded with the task.</p>}
           {canRun && readable.length === 0 && providers.length > 0 && !resumable && <p className="pff-note" data-nothing-to-extract>Nothing here needs extracting now; each provider says why and what happens next.</p>}
-        </section>
+        </section>}
         {outcome && <section aria-label="Result" role="status" className={`pff-card pff-outcome tone-${OUTCOME_TONE[outcome.category] || 'neutral'}`} data-extract-outcome={outcome.category}>
           <h4>{OUTCOME_TITLE[outcome.category] || humanLabel(outcome.category)}</h4>
           {list(outcome.lines).map((l, i) => <p key={i}>{l}</p>)}

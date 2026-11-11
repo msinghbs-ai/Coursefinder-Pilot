@@ -60,6 +60,7 @@ function lazyPage(load,name='default'){return React.lazy(()=>load().then(m=>({de
 const EvidenceWorkspace=lazyPage(()=>import('./EvidenceWorkspace'))
 const ModelsServices=lazyPage(()=>import('./ModelsServices'))
 const AiConfig=lazyPage(()=>import('./AiConfig'))
+const ProviderDescriptionPrompt=lazyPage(()=>import('./ProviderDescriptionPrompt')) // CF-247 F-PDESC (11 Nov 2026): the provider description prompt, maintained by the Platform Admin
 const StatisticsDatasets=lazyPage(()=>import('./StatisticsDatasets'))
 const ReferenceSources=lazyPage(()=>import('./ReferenceSources'))
 const KeyDates=lazyPage(()=>import('./KeyDates'))
@@ -398,7 +399,7 @@ function Page({pageKey,tab,requestedTab='',routeParams,rank,actorId,onError,navi
       // v2.15.300 (Platform Admin, 20 Oct 2026): Scrapers & fetchers is Models & services › Fetchers
       // v2.15.264: Models & services in three tabs (Services · AI & OpenRouter · Toolsets & limits)
       // v2.15.301: Scholarship extraction (was Scholarships › Extraction) under the AI configuration
-      case'services':return tab==='ai'?<div className="m-page-stack">{rank>=4&&<AiConfig onError={err}/>}{/* SS-020 step 3 (Decision 269): the AI model switches moved here from Services; Pipeline Operator and above, as before */}{rank>=4&&<ModelsServices part="models" onError={err}/>}<section data-scholarship-extraction-moved><SectionTitle title="Scholarship extraction" subtitle="The AI that reads each stored scholarship page: models, qualification, instructions and answers."/><ScholarshipExtraction onError={onError}/></section></div>:<ServicesLimits rank={rank} err={err}/>
+      case'services':return tab==='ai'?<div className="m-page-stack">{rank>=4&&<AiConfig onError={err}/>}{/* SS-020 step 3 (Decision 269): the AI model switches moved here from Services; Pipeline Operator and above, as before */}{rank>=4&&<ModelsServices part="models" onError={err}/>}{rank>=4&&<ProviderDescriptionPrompt onError={err}/>}<section data-scholarship-extraction-moved><SectionTitle title="Scholarship extraction" subtitle="The AI that reads each stored scholarship page: models, qualification, instructions and answers."/><ScholarshipExtraction onError={onError}/></section></div>:<ServicesLimits rank={rank} err={err}/>
       case'migration':return <div className="m-page-stack"><EnvironmentMigrationWorkspace rank={rank} onError={onError} view="migration"/><PlatformMaturity rank={rank} onError={onError} view="golive"/>{/* v2.15.301: Capacity (was Platform health › Capacity) */}<section data-golive-capacity><PlatformMaturity rank={rank} onError={onError} view="capacity"/></section>{/* v2.15.228: the Reset database control was retired (Platform Admin, 9 Oct 2026) */}</div>
       // v2.15.301 (Platform Admin, 20 Oct 2026): Data model retired (its address opens Coverage › Attributes); Storage & retention is a Platform health tab
       case'users':return <AccessRolesEmbedded actorId={actorId}/>
