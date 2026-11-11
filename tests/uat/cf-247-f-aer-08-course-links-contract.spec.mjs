@@ -97,7 +97,7 @@ test('production verification: the printed course is part of a row\'s identity (
   expect(r).not.toMatch(/^\s*(delete|drop)\b/im)
   // one stored PDF per worker call (the CPU allowance); a further PDF goes back without spending a try
   const ix = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-  expect(ix).toContain('const WORKER = "coverage-sweep-worker-v0.74.1"')
+  expect(ix).toMatch(/(?:const WORKER = "coverage-sweep-worker-v0\.74\.1"; |\/\/ was v0\.74\.1 )\/\/ v0\.74\.1 /)  // current, or kept as "was" by a later version (F-SCH.01 is v0.75.0)
   expect(ix).toMatch(/pdfTaken\+\+ >= Math\.max\(1, Number\(ws\["reading\.entry_pdf_per_call"\]\) \|\| 1\)\) \{ await rec\(\{ p_error: "time budget" \}\)/)
   expect(r).toContain("'reading.entry_pdf_per_call'")
 })
