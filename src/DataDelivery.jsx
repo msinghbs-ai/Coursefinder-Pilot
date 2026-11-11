@@ -284,7 +284,37 @@ function AerSources({a}){
         {rule.length>0&&<ul className="dd-reasons" data-dd-aer-parked>{rule.map(r=><li key={r.class} title={r.next_action||undefined}><span>{routeName(r.class)}: {r.reason||'reason Not measured'}</span> <strong>{fmtNumber(Number(r.items))}</strong></li>)}</ul>}
         <p data-dd-aer-last-run>{lr.ran_at?<>Last scheduled read <strong>{fmtDateTime(lr.ran_at)}</strong>: {num(lr.course_reads)} course reads, {num(lr.corrections)} corrections, {num(lr.matrix_pages)} entry pages; Layer 4 waiting {num(lr.layer4_waiting)}{lr.back_pressure?' (full)':''}{lr.parked_not_counted==null?'':`; parked not counted ${num(lr.parked_not_counted)}`}.</>:<Unknown reason="No scheduled read is on record" word="Not measured"/>}</p>
         {jobs.length>0&&<ul className="dd-reasons" data-dd-aer-jobs>{jobs.map(j=><li key={j.job}><span>{j.job} <small>{j.schedule}</small></span> <strong>{j.active?(j.next_run?`next ${fmtDateTime(j.next_run)}`:'next run Not measured'):'paused'}</strong></li>)}</ul>}</li>
+      <AerProgress/>
     </ol></div>
+}
+
+/** CF-247 F-AER.04 (decision delivery item 6, 11 Nov 2026): stage 4 of the AER panel, discovery and admission. Read on its own (public.admin_aer_delivery_progress, about
+ *  0.3 s) beside the panel's existing read, so it shows even when that read is slow; a figure the server did not send is Not measured, never 0. */
+function AerProgress(){
+  const[p,setP]=useState(null),[err,setErr]=useState('')
+  useEffect(()=>{let live=true;supabase.rpc('admin_aer_delivery_progress').then(({data,error})=>{if(!live)return;if(error)setErr(error.message||'Not available');else setP(data)}).catch(e=>{if(live)setErr(String(e?.message||e))});return()=>{live=false}},[])
+  if(err||p?.known===false)return <li data-dd-aer-stage="progress" data-dd-aer-progress="unknown"><h5>4. Discovery and admission</h5><Unknown reason={err||p?.reason||'Not available'} word="Not measured"/></li>
+  if(!p)return <li data-dd-aer-stage="progress"><h5>4. Discovery and admission</h5><p className="sl-sub">Loading…</p></li>
+  const c=p.campaign||{},mc=p.machine?.course||{},mm=p.machine?.matrix||{},cr=p.corrected_reads||{},g=p.gains_24h||{},f=p.failures||{}
+  const nm=x=>x==null?'Not measured':fmtNumber(Number(x))
+  const mode=m=>m==null?'Not measured':Number(m)>=2?'admitting':Number(m)>=1?'shadow (decides nothing)':'off'
+  return <li data-dd-aer-stage="progress" data-dd-aer-progress="known"><h5>4. Discovery and admission</h5>
+    <p className="sl-sub" data-dd-aer-progress-stamp>Counted live at {fmtDateTime(p.counted_at)}.</p>
+    <ul>
+      <Row k="aer_campaign_asked" label={`Discovery campaign (${c.state||'Not measured'}): providers asked`} v={c.providers_attempted}/>
+      <Row k="aer_campaign_usable" label="Usable sources found (read)" v={c.usable_sources}/>
+      <Row k="aer_campaign_not_found" label="No entry page on the provider's website" v={c.not_found}/>
+      <Row k="aer_campaign_credits" label={`Firecrawl credits used (ceiling ${nm(c.credit_cap)}${c.cost_per_usable_source!=null?`; ${c.cost_per_usable_source} a usable source`:''})`} v={c.credits}/>
+      <Row k="aer_campaign_spare" label={`Spare central credits taken today (room now ${nm(c.spare_room)}: ${c.spare_why||'Not measured'})`} v={c.spare_credits_today}/>
+      <Row k="aer_machine_course" label={`Course reads admitted by the machine rule (${mode(mc.mode)}), last 24 hours`} v={mc.admitted_24h}/>
+      <Row k="aer_machine_matrix" label={`Country tables and qualification rows admitted by the machine rule (${mode(mm.mode)}; ${nm(mm.providers)} providers)`} v={mm.admitted}/>
+      <Row k="aer_machine_matrix_shadow" label={`Shadow results (would admit ${nm(mm.shadow_would_admit)}; last validation ${mm.validation?(mm.validation.passed?'passed':'not passed'):'none'})`} v={mm.shadow}/>
+      <Row k="aer_corrected_open" label={`Corrected reads open (refused ${nm(cr.refused_24h)}, replaced ${nm(cr.replaced_24h)} in 24 hours)`} v={cr.open}/>
+      <Row k="aer_gains" label={`Rows made active in 24 hours: course (matrix ${nm(g.matrix_rows)}, qualification ${nm(g.qualification_rows)})`} v={g.course_rows}/>
+      <Row k="aer_failures" label={`Sources that cannot be fetched (reads held as unreadable ${nm(f.reads_held_unreadable)})`} v={f.sources_not_fetched}/>
+    </ul>
+    {(mm.declines||[]).length>0&&<ul className="dd-reasons" data-dd-aer-declines>{mm.declines.map((d,i)=><li key={i}><span>Kept with a person: {d.reason}</span> <strong>{fmtNumber(Number(d.n))}</strong></li>)}</ul>}
+  </li>
 }
 
 function Stream({s,now,providerFilters,open,onToggle}){
