@@ -4,6 +4,7 @@
   "functions": {
     "admin-evidence-access": true,
     "admin-user-management": true,
+    "aer-source-upload": true,
     "coverage-sweep": false,
     "evidence-link-index": false,
     "evidence-storage-dedupe": false,
