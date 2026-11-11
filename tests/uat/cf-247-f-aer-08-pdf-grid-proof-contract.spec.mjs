@@ -90,7 +90,7 @@ test('every printed minimum becomes one row for one course and one country or qu
     expect(read.columns.filter((c) => c.kind === 'unknown')).toEqual([])
     for (const x of parsed.rows) { expect(x.course_name).toBeTruthy(); expect(x.country_code).toMatch(/^[A-Z]{2}$/) }
   }
-  expect(counts).toEqual({ unsw: [1997, 260], sydney: [1869, 178], uq: [1268, 162] })
+  expect(counts).toEqual({ unsw: [1932, 260], sydney: [1780, 178], uq: [1214, 162] })  // 12 Nov 2026: the ATAR column is a course fact (the course record holds the ATAR), not an AU row
 })
 
 test('headings: boards, international qualifications, governed fallbacks and course facts', async () => {
