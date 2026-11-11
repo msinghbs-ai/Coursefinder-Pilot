@@ -75,3 +75,12 @@ test('worker v0.73.0 reads a proven grid only with its switch, before a PDF is h
   expect(ui).toMatch(/Suggestions are only suggestions/)
   expect(inbox).toContain('<AerCourseLinks providerId={aer.provider_id}')
 })
+
+test('recovery: the held UNSW, Sydney and UQ PDFs are read again only with the grid switch on, on the proven stored copies, never an item a person holds', () => {
+  const r = fs.readFileSync('supabase/migrations/20261112233100_cf247_aer_grid_reread.sql', 'utf8')
+  expect(r).toContain("pipeline_num_v1('reading.entry_grid_reader_on', 0) < 1")
+  for (const h of ['be64345329d911fcaa1fab3b261f4529f39b32cd73832f4962f657f84112b0a9', 'bb850ce1acc52800c2ee250233eb48ec58c8e1719c85c2d7373824c8eec198d1', 'b0f7b80368299d165fd90c501ce647cbb7a885661a8dfcf10e2b10acfc9cf62d']) expect(r).toContain(h)
+  expect(r).toMatch(/claimed_at is not null or li\.assigned_to is not null/)
+  expect(r).toContain('public.admin_entry_matrix_reread(ids,')
+  expect(r).not.toMatch(/^\s*(update|delete|insert|drop)\b/im)
+})
