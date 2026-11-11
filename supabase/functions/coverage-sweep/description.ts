@@ -494,10 +494,21 @@ export function promptRequest(model: string, system: string, provider: string, u
   };
 }
 // each sentence keeps its passages joined (" … ") as its quote; on_page only when every passage stands on the page (each proven on its own)
+// v0.69.1 (11 Nov 2026, CF-247 F-PDESC, first hour of prompt-based reads: about one AI answer in ten held as quote_not_on_page with a
+// passage the page does carry): the page text is built by turning every tag into a space, so a link or bold word inside a sentence reads
+// "IT , engineering" or "( CHT )" here while the model copies "IT, engineering"; pages also mix curly and straight quotes and dash shapes.
+// For the prompt's passages only, both sides are compared in one canonical form: compatibility Unicode (NFKC), curly quotes as straight,
+// dashes as "-", no space before , . ; : ! ? ) % or after ( $, and single spaces. Letters, digits, decimal points, signs and percentages
+// stay evidence exactly as before: "1.2%" never proves "12%". The built-in prompt v2 path (providerDescriptionSentences) is unchanged.
+export const passageCanonical = (s: string): string => String(s || "").normalize("NFKC")
+  .replace(/[\u2018\u2019\u201A\u201B\u2032\u00B4`]/g, "'").replace(/[\u201C\u201D\u201E\u201F\u2033]/g, '"')
+  .replace(/[\u2010-\u2015\u2212]/g, "-").replace(/\s+/g, " ")
+  .replace(/ ([,.;:!?)\]%])/g, "$1").replace(/([(\[$]) /g, "$1").trim();
 export function promptSentences(a: any, page: string, minQuoteChars = 20): { about_page: boolean; reason: string; sentences: { text: string; quote: string; on_page: boolean; sources: number }[] } {
+  const cp = passageCanonical(page);
   const out = (Array.isArray(a?.sentences) ? a.sentences : []).map((s: any) => {
     const sources: string[] = (Array.isArray(s?.sources) ? s.sources : []).map((x: unknown) => String(x || "").trim()).filter(Boolean);
-    const proven = sources.length > 0 && sources.every((q) => providerDescriptionSentences({ about_page: true, sentences: [{ text: q, quote: q }] }, page, minQuoteChars).sentences[0]?.on_page === true);
+    const proven = sources.length > 0 && sources.every((q) => { const cq = passageCanonical(q); return providerDescriptionSentences({ about_page: true, sentences: [{ text: cq, quote: cq }] }, cp, minQuoteChars).sentences[0]?.on_page === true });
     return { text: String(s?.text || "").trim(), quote: sources.join(" … "), on_page: proven, sources: sources.length };
   }).filter((s: any) => s.text);
   return { about_page: out.length > 0, reason: String(a?.reason || "").slice(0, 300), sentences: out };
