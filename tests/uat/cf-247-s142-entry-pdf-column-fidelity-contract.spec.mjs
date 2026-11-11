@@ -98,10 +98,12 @@ test('the worker holds anything not proven before any AI read, for every PDF (no
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   const ai = w.slice(w.indexOf('if (mode === "entry_ai") {'), w.indexOf('if (mode === "fee_ai") {'))
   expect(w).toContain('import { getDocumentProxy, getResolvedPDFJS } from "npm:unpdf@0.12.1";')
-  expect(w).toContain('const t = pdfTables(await pdfPages(doc, OPS, pdfMaxPages));')
+  expect(w).toContain('const pages = await pdfPages(doc, OPS, pdfMaxPages), t = pdfTables(pages);')
   expect(ai).toContain('const stored = await storedText(it.storage_path, it.mime, Number(it.pdf_max_pages) || 40, it.completeness_required !== true), page = stored.text;')
-  expect(ai).toContain('if (stored.pdf && stored.pdf.status !== "ok") {')
-  expect(ai).toContain('await rec({ p_error: `held_unparsed: PDF ${stored.pdf.reason}`.slice(0, 400)')
+  // F-AER.08 (v0.73.0): the one exception is a page proven by alignment (pdf-grid.ts, fail closed: status ok with tables), read without the model
+  expect(ai).toContain('const grid = gridAll && gridAll.status === "ok" && gridAll.tables.length > 0 ? gridAll : null;')
+  expect(ai).toContain('if (stored.pdf && stored.pdf.status !== "ok" && !grid) {')
+  expect(ai).toContain('await rec({ p_error: `held_unparsed: PDF ${stored.pdf.reason}')
   expect(ai).toContain('if (!stored.pdf && /\\.pdf($|[?#])/i.test(String(it.url || ""))) {')
   expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.([5-9]\d)\.\d+"/)
   // the PDF is read directly (robots.txt respected), never through Firecrawl, within a size cap from the settings
