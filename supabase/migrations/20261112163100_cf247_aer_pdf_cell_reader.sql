@@ -7,8 +7,12 @@
 --   29 Oct: 367 rows kept and 25 dropped (grade_not_in_quote 16, quote_not_on_page 2, unknown_country 7), so the read is held by D-R3 and its Layer 4 item 763ece39
 --   offers only Reject the read. The dropped rows are cells that name two education boards with a minimum each (Nepal HSC pre-2018 or NEB GPA; China Gao Er or
 --   specialised school) and the GAC and IB rows. pdfTables already proves the table (11 tables, 7 columns, one line per cell). Read cell by cell (worker v0.71.0,
---   entry-cells.ts) against that stored copy: 456 cells, 468 country rows across 72 countries (35 board rows, every cell's minimum and scale printed in its quote),
+--   entry-cells.ts) against that stored copy: 456 cells, 461 country rows across 72 countries (one row per board with its own minimum; a second minimum for the same qualification and the
+--   same requirement under several boards stay on one row, so no two rows share an identity; every cell's minimum and scale printed in its quote),
 --   8 qualification rows (GAC 3, IB Certificate 5), 4 "Not applicable" cells kept as no_minimum_published, 0 rows dropped by the parser.
+-- Re-checked 11 Nov 2026 22:25 AEDT after 20261112153700 read the same stored copy again with the model (worker v0.70.0, qualification-first): 368 country rows and
+--   7 qualification rows, but 21 rows dropped again (grade_not_in_quote 19: cells with two education boards in Bangladesh, China, Myanmar, Nepal, Philippines, Vietnam;
+--   quote_not_on_page 2: Taiwan), so its new item 4e5619d3 is again held by D-R3. The model cannot be relied on for these cells; the cell reader reads them.
 -- What:
 --   1. Settings: reading.entry_cell_reader_on (1), reading.entry_cell_min_levels (4), reading.entry_cell_min_lines (20).
 --   2. security.layer4_aer_recovery_state_v1 (md5-guarded edit): a provider-table item no longer fails with "record v_sup is not assigned yet" (the record is set

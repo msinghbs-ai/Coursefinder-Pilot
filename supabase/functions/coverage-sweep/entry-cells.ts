@@ -162,7 +162,13 @@ export function entryCellRead(page: string, refs: EntryCountryRef[], quals: Entr
       // the board's words without its minimum ("SMA3 50%" is SMA3); a stretch that is only a minimum ("or 5.0 GPA") is the board before it
       let own = entryCellQualification(min ? a.text.slice(0, min.start) + a.text.slice(min.end) : a.text).replace(/\s{2,}/g, " ").replace(/[\s,;:.]+$/, "").trim()
         .replace(/^(?:on|in|at|with)\s+/i, "").replace(/(?:[\s,]+(?:with|from|of|in|on|at|and|an?|the|minimum|overall))+$/i, "").trim();
-      if (!/[A-Za-z]{2}/.test(own) && prevQual) own = prevQual;
+      // a stretch that is only a further minimum for the same qualification ("SMA3 50% or 5.0 GPA") is one requirement printed two ways: it stays on the row
+      // before it as an equivalent minimum, never a second row with the same identity (the D-R3 gate holds two rows of one identity)
+      if (!/[A-Za-z]{2}/.test(own) && prevQual && rows.length && min) {
+        const prev = rows[rows.length - 1];
+        prev.conditions.equivalent_minimums = [...(prev.conditions.equivalent_minimums || []), { min_grade: min.grade, min_value: min.value, grade_scale: min.scale }];
+        bump("equivalent_minimums"); return;
+      }
       prevQual = own;
       // a board row's qualification is the board, unless the cell names a different award (a degree for postgraduate entry), which it then is
       const degree = /\b(bachelor|degree|diploma of|university studies|aqf)\b/i.test(own);
@@ -171,6 +177,13 @@ export function entryCellRead(page: string, refs: EntryCountryRef[], quals: Entr
       const others = alts.filter((_, j) => j !== i).map((b) => b.text.trim().slice(0, 200));
       // words after the minimum that the alternative still prints (a further pathway with no minimum of its own) are kept as conditions, as printed
       const rest = min ? a.text.slice(min.end).replace(/^[\s,;)]+/, "").trim() : "";
+      // the same requirement printed for several boards of one country (India's postgraduate cell under each board) is one row: the boards are listed on it
+      const same = rows.find((r) => r.country_code === (who.country || "") && r.study_level === l.level && r.qualification_name === qualName
+                                   && r.min_grade === (min ? min.grade : null) && r.conditions.reader === ENTRY_CELL_READER);
+      if (same) {
+        if (who.kind === "board") same.conditions.education_boards = [...new Set([...(same.conditions.education_boards || [same.conditions.education_board].filter(Boolean)), l.label])];
+        bump("same_requirement_boards"); return;
+      }
       rows.push({
         country_code: who.country || "", country_name: who.kind === "country" ? l.label : who.kind === "board" ? who.country : l.label,
         study_level: l.level, qualification_name: qualName,

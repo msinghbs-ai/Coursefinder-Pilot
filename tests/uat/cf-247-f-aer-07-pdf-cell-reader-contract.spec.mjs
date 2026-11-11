@@ -36,7 +36,7 @@ test('WSU: every cell is read; nothing the page prints is dropped', async () => 
   // the only cells with no row are the page's own "Not applicable" (GAC 3, IB 1), kept as no_minimum_published (ignored by the D-R3 gate setting)
   expect(read.dropped.map((d) => d.reason)).toEqual(['no_minimum_published', 'no_minimum_published', 'no_minimum_published', 'no_minimum_published'])
   expect(parsed.dropped).toEqual([])
-  expect(parsed.rows.length).toBe(468)
+  expect(parsed.rows.length).toBe(461)
   expect(new Set(parsed.rows.map((r) => r.country_code)).size).toBe(72)
   // every kept quote is at most 300 characters and every value is printed in its quote (the gate's flag rule)
   for (const r of parsed.rows) {
@@ -54,7 +54,10 @@ test('education boards: one row per board that prints its own minimum (Nepal, Ch
     ['Nepalese Higher Secondary Certificate', 80, 'percentage'], ['Nepalese Education Board Year 12', 2.9, 'gpa'], ['Nepalese Proficiency Certificate (10+3)', 75, 'percentage']])
   expect(np[0].conditions.alternatives.length).toBe(2)
   expect(at('CN', '3 Semester Diploma').map((r) => r.min_value)).toEqual([60, 65])
-  expect(at('ID', 'Undergraduate Degree').map((r) => [r.qualification_name, r.min_value, r.grade_scale])).toEqual([['SMA3', 75, 'percentage'], ['SMA3', 7.5, 'gpa']])
+  // one qualification printed with two minimums ("SMA3 75% or GPA 7.5") is one row with an equivalent minimum, never two rows of one identity
+  const id = at('ID', 'Undergraduate Degree')
+  expect(id.map((r) => [r.qualification_name, r.min_value, r.grade_scale])).toEqual([['SMA3', 75, 'percentage']])
+  expect(id[0].conditions.equivalent_minimums).toEqual([{ min_grade: 'GPA 7.5', min_value: 7.5, grade_scale: 'gpa' }])
 })
 
 test('a board that names its country is that country, with the board kept (India: State Boards, CBSE, ISC)', async () => {
@@ -64,7 +67,14 @@ test('a board that names its country is that country, with the board kept (India
     ['Indian Higher Secondary School Certificate (State Boards)', 70, 'percentage'], ['All India School Certificate (CBSE)', 6, 'gpa'], ['Indian School Certificate (ISC)', 6, 'gpa']])
   expect(ug.every((r) => !!r.conditions.education_board)).toBe(true)
   // postgraduate entry names a degree, not the school board
-  expect(parsed.rows.filter((r) => r.country_code === 'IN' && r.study_level === 'Postgraduate Degree').every((r) => /Bachelor degree/.test(r.qualification_name))).toBe(true)
+  // the same postgraduate requirement under each board is one row listing the boards
+  const pg = parsed.rows.filter((r) => r.country_code === 'IN' && r.study_level === 'Postgraduate Degree')
+  expect(pg.length).toBe(1)
+  expect(pg[0].qualification_name).toMatch(/Bachelor degree/)
+  expect(pg[0].conditions.education_boards).toEqual(['Indian Higher Secondary School Certificate (State Boards)', 'All India School Certificate (CBSE)', 'Indian School Certificate (ISC)'])
+  // no two rows share the identity the D-R3 gate checks (country, study level, qualification)
+  const ids = parsed.rows.map((r) => [r.country_code, r.study_level, r.qualification_name].join('|'))
+  expect(new Set(ids).size).toBe(ids.length)
 })
 
 test('international qualifications are kept by identity, never as a country (GAC, IB Certificate)', async () => {
@@ -108,7 +118,7 @@ test('worker and migration: switch and shape limits are settings; the recovery p
   expect(idx).toMatch(/Number\(ws\["reading\.entry_cell_reader_on"\]\) >= 1/)
   expect(idx).toContain('ws["reading.entry_cell_min_levels"]')
   expect(idx).toContain('ws["reading.entry_cell_min_lines"]')
-  const m1 = fs.readFileSync('supabase/migrations/20261112083100_cf247_aer_pdf_cell_reader.sql', 'utf8')
+  const m1 = fs.readFileSync('supabase/migrations/20261112163100_cf247_aer_pdf_cell_reader.sql', 'utf8')
   expect(m1).toContain("'caf0e61bfcf983fb421638afd3aea795'")
   expect(m1).toContain('null::uuid new_item_id into v_sup')
 })
