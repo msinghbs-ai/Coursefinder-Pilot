@@ -1,4 +1,27 @@
-# Provider Descriptions — Run & Validate
+# Provider Descriptions
+
+## Current design (11 Nov 2026, CF-247 F-PDESC prompt-based descriptions)
+
+Platform Admin direction 11 Nov 2026 14:51 and 14:57. Migration `20261112010000_cf247_pdesc_prompt_based.sql`, worker `coverage-sweep` v0.69.0.
+
+- **Prompt, not rules.** The AI writes each description from the provider's official About page following a prompt kept in
+  `pipeline.provider_description_prompts` (versioned, one active). The Platform Admin edits it on **Models & services › AI & OpenRouter ›
+  Provider description prompt**; a save is a new version with a reason. `pdesc.prompt_on` 0 returns to the worker's built-in prompt v2.
+- **Checks that always apply** (prompt profile of `security.provider_description_validate_v1`): own website and About page, identity before any
+  AI call, every supporting passage on the page, every number in its passage, complete sentences supported by their passages
+  (`pdesc.prompt_support_min_share`), never the words in `pdesc.prompt_refused_words`, the first sentence names the provider, length, age, not a
+  copy of another provider's description. The automatic admission gate and Layer 4 rules are unchanged.
+- **Operators: Fill description.** One click in the Provider Catalogue or Provider Detail panel (`admin_provider_description_fill_v1`): the
+  provider goes to the front of the queue and a read starts at once. On demand is not held by the lane AI ceiling, the lane daily guard, the
+  Firecrawl allowance or daily share, or the "same page already failed" memory; the platform-wide AI rule and the account's own limits apply.
+- **Regular scan.** `provider-description-read` every 5 minutes within `pdesc.ai_usd_max`, `openrouter.guard_provider_description`,
+  `pdesc.firecrawl_reads_max` (24-hour window) and `firecrawl.daily_share_pdesc`. `provider-description-self-heal` re-reads answers that failed
+  under an older prompt version once (`pdesc.prompt_reoffer_rules`).
+- **Written by hand wins.** Editing a description by hand sets a manual lock; Fill, the scan and the record never replace it.
+- **Retired:** the Run & Validate card (component `ProviderDescriptionRunValidate`, retiring; dropped by paste file after 14 days) and its
+  browser walk `tests/integration-provider-description`. The sections below describe the 4–10 Nov design and are kept as history.
+
+# Provider Descriptions — Run & Validate (history, 4–10 Nov 2026)
 
 Development branch: `codex/provider-description-autonomy`. Authority: Platform Admin's 4 November 2026 Codex Cloud mandate; canonical admin record `docs/platform/nz-enrichment-brief/2026-11-04-provider-description-autonomy-mandate.md`, extending the 2 November missing-field mandate. Claude remains the sole Integration Controller. This branch assigns no release and performs no deployment, production write or vendor call.
 

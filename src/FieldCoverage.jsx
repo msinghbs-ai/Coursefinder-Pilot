@@ -23,7 +23,7 @@ import{Button,Empty,Loading,StatusChip}from'./ui-kit'
 import{fmtNumber,fmtDateTime}from'./lib/format.js'
 import{plainError}from'./lib/errors'
 import{hrefFor}from'./nav-map'
-import ProviderDescriptionRunValidate from'./ProviderDescriptionRunValidate'
+import{ProviderDescriptionStatus,readPromptState}from'./ProviderDescriptionPrompt' // CF-247 F-PDESC (11 Nov 2026): Run & Validate retired; status, Fill description and the prompt
 import SnapshotStamp from'./SnapshotStamp' // CF-247 W35: every country's figures come from a cached snapshot; one university's are read live
 
 const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
@@ -195,15 +195,17 @@ function DeliveryWording({onError}){
   </Card>
 }
 
-// CF-247 Provider Description autonomy (4 Nov 2026): the Run & Validate workflow replaces
-// the retry-only card in this same Enrich fields workspace. The original metrics remain authoritative.
+// CF-247 F-PDESC prompt-based descriptions (Platform Admin 11 Nov 2026 14:57): the Run & Validate card is retired (component_register: retiring).
+// Operators use Fill description on a provider (Provider Catalogue or Provider Detail); the Platform Admin maintains the prompt on Models & services ›
+// AI & OpenRouter; the regular scan runs by itself within its AI and Firecrawl limits. This card shows the reader's spend, limits and progress.
 export function ProviderDescriptions({country,rank,onError}){
-  const[d,setD]=useState(null)
+  const[d,setD]=useState(null),[st,setSt]=useState(null)
   const load=()=>supabase.rpc('admin_provider_descriptions',{p_action:'metrics',p_args:country?{country}:{}}).then(({data,error})=>{if(error)throw error;setD(data)}).catch(e=>onError?.(errText(e)))
-  useEffect(()=>{load()},[country])
-  return <Card id="coverage.provider-descriptions" title="Provider Descriptions — Run & Validate" icon={ListChecks}
-    subtitle="Preview official evidence, save a bounded cohort, run the governed reader and verify admission and publication. Decisions remain in Layer 4."
+  useEffect(()=>{load();readPromptState().then(setSt).catch(e=>onError?.(errText(e)))},[country])
+  return <Card id="coverage.provider-descriptions" title="Provider descriptions" icon={ListChecks}
+    subtitle="Written by AI from each provider's official About page, following the prompt on Models & services › AI & OpenRouter. Operators click Fill description on a provider; the regular scan does the rest within its limits. A description written by hand is never replaced."
     meta={<span className="cf-chip tone-neutral" data-pdesc-switch>{d?.enabled&&d?.job_active?'Reader on':'Reader off'}</span>} data-provider-descriptions>
-    <ProviderDescriptionRunValidate country={country} rank={rank} onError={onError} metrics={d} onReloadMetrics={load}/>
+    {st?<ProviderDescriptionStatus state={st}/>:<p className="cf-muted">Reading the reader's status…</p>}
+    {d&&<p className="cf-muted" data-pdesc-coverage>{[['present','described'],['missing','missing'],['proposed','waiting in Layer 4'],['held','held']].map(([k,w])=>`${d[k]??'—'} ${w}`).join(' · ')}{country?` (${country})`:''}</p>}
   </Card>
 }

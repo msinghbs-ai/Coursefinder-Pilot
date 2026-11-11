@@ -474,6 +474,35 @@ export const DESCRIPTION_SCHEMA = {
   },
 } as const;
 
+// v0.69.0 (11 Nov 2026, CF-247 F-PDESC, Platform Admin 14:51/14:57: "prompt based ... easily modified rather than stringent rules"): the prompt is
+// kept in the database (pipeline.provider_description_prompts, edited on Models & services › AI & OpenRouter) and handed over by the lease as
+// w.prompt { version, system }. A sentence may draw on several passages of the page; every passage must stand on the page. The database
+// (security.provider_description_validate_v1, prompt profile) keeps the checks a machine applies reliably. Without w.prompt the built-in
+// prompt v2 below is used, exactly as before.
+export const PROMPT_SCHEMA = {
+  type: "object", additionalProperties: false, required: ["sentences", "reason"],
+  properties: {
+    sentences: { type: "array", items: { type: "object", additionalProperties: false, required: ["text", "sources"], properties: { text: { type: "string" }, sources: { type: "array", items: { type: "string" } } } } },
+    reason: { type: "string" },
+  },
+} as const;
+export function promptRequest(model: string, system: string, provider: string, url: string, page: string, maxTokens: number, length?: DescriptionLength) {
+  return {
+    model, temperature: 0, max_tokens: maxTokens, provider: { require_parameters: true },  // pinned: one model, never a router
+    response_format: { type: "json_schema", json_schema: { name: "provider_description_prompt", strict: true, schema: PROMPT_SCHEMA } },
+    messages: [{ role: "system", content: system }, { role: "user", content: `Provider: ${provider}\nPage: ${url}\n${lengthNote(length)}\nPage text:\n${page}` }],
+  };
+}
+// each sentence keeps its passages joined (" … ") as its quote; on_page only when every passage stands on the page (each proven on its own)
+export function promptSentences(a: any, page: string, minQuoteChars = 20): { about_page: boolean; reason: string; sentences: { text: string; quote: string; on_page: boolean; sources: number }[] } {
+  const out = (Array.isArray(a?.sentences) ? a.sentences : []).map((s: any) => {
+    const sources: string[] = (Array.isArray(s?.sources) ? s.sources : []).map((x: unknown) => String(x || "").trim()).filter(Boolean);
+    const proven = sources.length > 0 && sources.every((q) => providerDescriptionSentences({ about_page: true, sentences: [{ text: q, quote: q }] }, page, minQuoteChars).sentences[0]?.on_page === true);
+    return { text: String(s?.text || "").trim(), quote: sources.join(" … "), on_page: proven, sources: sources.length };
+  }).filter((s: any) => s.text);
+  return { about_page: out.length > 0, reason: String(a?.reason || "").slice(0, 300), sentences: out };
+}
+
 export type DescriptionLength = { min_sentences?: number; max_sentences?: number; min_chars?: number; max_chars?: number };
 // the limits the database validation applies (settings pdesc.min_sentences, max_sentences, min_chars, max_chars), stated to the model
 export function lengthNote(l: DescriptionLength | null | undefined): string {

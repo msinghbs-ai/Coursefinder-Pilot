@@ -14,7 +14,7 @@ test('the adapter keeps the end of its whole match as the intake wording, not th
   expect(AD).not.toContain('[`adapter pattern: ${pat.intakes}`.slice(0, 200)]')
   // the months read are unchanged: the value is still the bracketed part
   expect(AD).toContain('({ v: clean(m[1] ?? m[0]), w: clean(m[0]) })')
-  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v0.68.0";')
+  expect(IX).toMatch(/(const WORKER = "coverage-sweep-worker-v0\.68\.0";|\/\/ was v0\.68\.0 \/\/ v0\.68\.0 \(11 Nov 2026, CF-247 F-INT, RMIT Rule B switch-on\))/)  // v0.68.0, or a later worker that records it (v0.69.0: F-PDESC prompt-based descriptions)
 })
 
 test('Rule B holds the study levels the setting names; the setting is a governed list', () => {
