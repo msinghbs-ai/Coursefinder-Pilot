@@ -9,7 +9,8 @@ drop function security.aer_schedule_held_v1(int);
 create function security.aer_schedule_country_v1(p text) returns jsonb language sql stable as $$ select jsonb_build_object('on', true) $$;
 create function security.course_entry_gate_v1(p uuid) returns jsonb language sql stable as $$ select gate from fx.item_state where item_id = p $$;
 create function security.aer_recovery_rule_v1(p uuid) returns jsonb language sql stable as $$ select rule from fx.item_state where item_id = p $$;
-create function security.course_entry_correction_check_v1(p uuid, c uuid, u text) returns jsonb language sql stable as $$ select jsonb_build_object('ok', check_ok, 'why', case when not check_ok then 'fixture: not correctable' end) from fx.item_state where item_id = p $$;
+-- the live signature (uuid, uuid, text, jsonb, jsonb), the last two with defaults: the migration's precondition names it exactly
+create function security.course_entry_correction_check_v1(p uuid, c uuid, u text, p_rows jsonb default null, p_drop jsonb default null) returns jsonb language sql stable as $$ select jsonb_build_object('ok', check_ok, 'why', case when not check_ok then 'fixture: not correctable' end) from fx.item_state where item_id = p $$;
 -- security.aer_parked_items_v1 as migration 20261110160000 creates it (the tick counts parked holds apart)
 create function security.aer_parked_items_v1() returns table(item_id uuid, provider_id uuid, field_code text, failure_class text, reason text, next_action text, parked_since timestamptz)
 language sql stable as $f$
