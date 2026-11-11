@@ -101,3 +101,13 @@ test('production verification: the printed course is part of a row\'s identity (
   expect(ix).toMatch(/pdfTaken\+\+ >= Math\.max\(1, Number\(ws\["reading\.entry_pdf_per_call"\]\) \|\| 1\)\) \{ await rec\(\{ p_error: "time budget" \}\)/)
   expect(r).toContain("'reading.entry_pdf_per_call'")
 })
+
+test('the title rule is an index lookup (UNSW: statement timeout), added beside the consumer table without changing it; UNSW is read again', () => {
+  const r = fs.readFileSync('supabase/migrations/20261113023100_cf247_aer_course_link_index.sql', 'utf8')
+  expect(r).toContain('on catalogue.courses (provider_id, security.entry_course_title_key_v1(canonical_title))')
+  expect(r).toContain('on catalogue.courses (provider_id, security.entry_course_title_key_v1(display_title))')
+  expect(r).not.toMatch(/^\s*alter table catalogue\.courses/im)
+  expect(r).not.toMatch(/^\s*(delete|drop|update|insert)\b/im)
+  expect(r).toContain("public.admin_entry_matrix_reread(ids,")
+  expect(M).toContain("security.entry_course_title_key_v1(c.canonical_title) = v_key or security.entry_course_title_key_v1(c.display_title) = v_key")
+})
