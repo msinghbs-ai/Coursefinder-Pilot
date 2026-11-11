@@ -5,7 +5,6 @@
 // migration, reconciliation, sample, read-only proof). This spec holds the source contracts, the worker's pure functions and the screens (mocked admin).
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-import { COURSE_TEXT_PROMPT_VERSION, courseTextBreach, courseTextMergeReask, courseTextReaskMax, courseTextReaskNote, courseTextReaskUser, courseTextResults } from '../../supabase/functions/coverage-sweep/course-text.ts'
 import { mockAdmin } from './support/admin-mock.mjs'
 
 const MIG = fs.readFileSync('supabase/migrations/20261106500000_cf247_course_descriptions_complete.sql', 'utf8')
@@ -67,66 +66,9 @@ test('fixture runner proves identical outcomes before and after, a re-run-safe m
 })
 
 // ---- worker: one bounded re-ask, never a cut ----------------------------------------------------------------------------------------------
-const page = 'Queue Course covers planning. ' + 'You complete a capstone project in the final year with guidance from teaching staff in your area of study. '.repeat(1) + 'The first and second years cover core units and electives.'
-const S = (text, quote = text) => ({ text, quote })
-const L = { min_sentences: 1, max_sentences: 4, min_chars: 80, max_chars: 700 }
-const answer = (...ss) => ({ description: { about_course: true, sentences: ss } })
-
-test('course-text.ts: the breach is measured as the database measures it, and only a length or sentence-count breach is re-asked', () => {
-  expect(COURSE_TEXT_PROMPT_VERSION).toBe('course-text-v2')
-  const ok = answer(S('You complete a capstone project in the final year with guidance from teaching staff in your area of study.'), S('The first and second years cover core units and electives.'))
-  expect(courseTextBreach(ok, page, L)).toBeNull()
-  const five = answer(...Array.from({ length: 5 }, () => S('The first and second years cover core units and electives.')))
-  expect(courseTextBreach(five, page, L)).toMatchObject({ rule: 'sentence_count', sentences: 5 })
-  const long = answer(S('You complete a capstone project in the final year with guidance from teaching staff in your area of study.'), S('The first and second years cover core units and electives.'))
-  expect(courseTextBreach(long, page, { ...L, max_chars: 100 })).toMatchObject({ rule: 'length', sentences: 2, chars: 'You complete a capstone project in the final year with guidance from teaching staff in your area of study. The first and second years cover core units and electives.'.length })
-  // never re-asked: not about the course, no sentence, unknown limits
-  expect(courseTextBreach({ description: { about_course: false, sentences: [S('x')] } }, page, L)).toBeNull()
-  expect(courseTextBreach(answer(), page, L)).toBeNull()
-  expect(courseTextBreach(five, page, {})).toBeNull()
-  // D4 is an authority ceiling, not permission for a second paid re-ask if
-  // an out-of-policy or malformed setting leaks through an older control.
-  for (const [value, expected] of [[1, 1], [0, 0], [2, 0], [-1, 0], [1.5, 0], ['1', 0], [true, 0], [Infinity, 0], [NaN, 0], [null, 0], [undefined, 0]]) {
-    expect(courseTextReaskMax({ 'enrich.course_description_reask_max': value }), String(value)).toBe(expected)
-  }
-})
-
-test('course-text.ts: the re-ask states the limits and the previous text, asks for a rewrite (never a cut) and keeps the deadlines; the note records the first answer', () => {
-  const first = { description: answer(S('A.'), S('B.')).description, deadlines: [{ kind: 'rolling' }] }
-  const b = { rule: 'length', sentences: 2, chars: 910 }
-  const u = courseTextReaskUser('Queue University', 'Queue Course', 'PAGE', first, b, L)
-  expect(u).toContain('Provider: Queue University')
-  expect(u).toContain('Fields: description')
-  expect(u).toContain('910 characters')
-  expect(u).toContain('at most 700 characters')
-  expect(u).toContain('1. A.')
-  expect(u).toMatch(/Do not shorten by cutting/)
-  expect(courseTextMergeReask(first, answer(S('C.'))).deadlines).toEqual([{ kind: 'rolling' }])
-  expect(courseTextMergeReask(first, answer(S('C.'))).description.sentences[0].text).toBe('C.')
-  expect(courseTextMergeReask(first, {}).description.sentences).toHaveLength(2)
-  expect(courseTextReaskNote(b, 1)).toEqual({ n: 1, first: { rule: 'length', sentences: 2, chars: 910 } })
-  expect(courseTextReaskNote(b, 0, 'HTTP 500')).toMatchObject({ n: 0, error: 'HTTP 500' })
-  // the note rides in the description reading's value (stored as given by record_v1) and never touches the text
-  const r = courseTextResults(answer(S('You complete a capstone project in the final year with guidance from teaching staff in your area of study.')), page, [{ item_id: 7, field: 'description' }],
-    { model: 'm', worker: 'w', cost: 0.002, reask: courseTextReaskNote(b, 1) })
-  expect(r[0].value.reask).toEqual({ n: 1, first: { rule: 'length', sentences: 2, chars: 910 } })
-  expect(r[0].value.sentences[0].text).toBe('You complete a capstone project in the final year with guidance from teaching staff in your area of study.')
-  expect(courseTextResults(answer(S('You complete a capstone project in the final year with guidance from teaching staff in your area of study.')), page, [{ item_id: 7, field: 'description' }], { model: 'm', worker: 'w', cost: 0 })[0].value).not.toHaveProperty('reask')
-})
-
-test('worker v0.59.10: the re-ask is gated by the setting (ships 0), uses the same pinned model and page, keeps the first answer on failure and never cuts', () => {
-  expect(worker).toMatch(/(?:const WORKER = "coverage-sweep-worker-v0\.59\.10"; |\/\/ was v0\.59\.10 )\/\/ v0\.59\.10 \(6 Nov 2026/)
-  expect(worker).toContain('// was v0.59.8 // v0.59.8')
-  const t = worker.slice(worker.indexOf('const textRead = async'), worker.indexOf('const entryCall = async'))
-  expect(t).toContain('courseTextReaskMax(ws)')                             // one-authorised-call guard; setting from svc_worker_settings_v1 (G2)
-  expect(t).toContain('reaskMax > 0 ?')                                      // 0 = off: no second call
-  expect(t).toContain('courseTextReaskUser(pg.provider, pg.title, page, last, b, length)')
-  expect(t).toContain('courseTextRequest(model, user, w, maxTokens)')        // the same pinned central model and answer limit
-  expect(t).toContain('returned model ${d.model}, not ${model}')
-  expect(t).toContain('a failed re-ask keeps the first answer')
-  expect(t).not.toMatch(/\.slice\(0,\s*\w+\)|substring\(|\.truncate|firecrawl/i.source ? /substring\(|truncate|firecrawl/i : /x/) // no cutting and nothing fetched
-  expect(t.match(/reaskMax/g).length).toBeGreaterThan(2)
-})
+// The D4 length re-ask (worker v0.59.10, course-text.ts courseTextBreach / courseTextReask*) was retired by worker v0.72.0 and migration 20261112170000 (CF-247 F-CDESC,
+// Platform Admin 11 Nov 2026, Admin PR #430): the description has its own call with cdesc-source-grounded-v1, whose length band is an editorial target, not a reason for a
+// second paid call. Its three tests are retired in docs/test-retirement-log.md; the new behaviour is guarded by tests/uat/cf-247-cdesc-source-grounded-contract.spec.mjs.
 
 // ---- screens (mocked admin; nothing reaches a backend) -----------------------------------------------------------------------------------
 const SUMMARY = { provider_id: 'p1', pending: 3, by_class: { ready: 2, fails_now: 1 }, by_country: { AU: { pending: 3, ready: 2 } }, proposed_in_layer4: 3, admitted_by_person: 4, published_to_the_website: 3,

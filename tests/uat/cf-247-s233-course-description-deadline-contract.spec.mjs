@@ -106,9 +106,8 @@ test('worker v0.59.4: one call per course on the stored page, the central model,
   expect(worker).toMatch(/(?:const WORKER = "coverage-sweep-worker-v0\.59\.4"; |\n\/\/ was v0\.59\.4 )\/\/ v0\.59\.4 \(3 Nov 2026, CF-247 Workstream C/)
   expect(worker).toContain('// was v0.59.3 // v0.59.3 (3 Nov 2026, CF-247 Workstream F, hidden failures')
   const t = worker.slice(worker.indexOf('const textRead = async'), worker.indexOf('const entryCall = async'))
-  // v0.59.9: the one call is askText(user, fields); the first user message is unchanged
-  expect(t).toContain('courseTextRequest(model, user, w, maxTokens)')
-  expect(t).toContain('courseTextUser(pg.provider, pg.title, want, page, length)')
+  // v0.72.0 (CF-247 F-CDESC, Admin PR #430): the deadline keeps courseTextRequest in its own call; the description has its own call (cdescRequest, guarded by cf-247-cdesc-source-grounded-contract)
+  expect(t).toContain('courseTextRequest(model, courseTextUser(pg.provider, pg.title, ["deadline"], page, courseTextLength(ws)), ["deadline"], maxTokens)')
   expect(t).toContain('courseTextPage(raw, PAGE_CHARS)')
   expect(t).toContain('returned model ${d.model}, not ${model}')
   expect(t).not.toMatch(/firecrawl|useFc|readSch|fetch\(p\.|fetch\(u/i)
@@ -137,13 +136,14 @@ test('course-text.ts: schema per field asked, quotes on the page, dates never ma
       { text: 'It is ranked first.', quote: 'Ranked first in Australia for nursing graduates.' }] },
     deadlines: [{ intake: 'February 2027 intake', kind: 'date', date: '2026-11-30', quote: 'Applications for the February 2027 intake close 30 November 2026.' },
                 { intake: null, kind: 'date', date: '30 Nov', quote: 'close 30 November' }] }
+  // v0.72.0: courseTextResults records the deadline only (the description is recorded by cdescResults); the call's cost is shared by the items it answers
   const out = courseTextResults(a, page, [{ item_id: 1, field: 'description' }, { item_id: 2, field: 'deadline' }], { model: 'm', worker: 'w', cost: 0.002 })
-  expect(out[0].value.sentences.map((s) => s.on_page)).toEqual([true, false])
-  expect(out[0].reason).toBe("a sentence's quote is not on the page"); expect(out[0].cost).toBe(0.001)
-  expect(out[1].value.deadlines[0]).toEqual({ intake: 'February 2027 intake', kind: 'date', date: '2026-11-30', quote: 'Applications for the February 2027 intake close 30 November 2026.', on_page: true })
-  expect(out[1].value.deadlines[1].date).toBeNull()  // not YYYY-MM-DD: never completed here
+  expect(out).toHaveLength(1); expect(out[0].item_id).toBe(2); expect(out[0].prompt_version).toBe('course-text-v2'); expect(out[0].cost).toBe(0.002)
+  expect(out[0].value.deadlines[0]).toEqual({ intake: 'February 2027 intake', kind: 'date', date: '2026-11-30', quote: 'Applications for the February 2027 intake close 30 November 2026.', on_page: true })
+  expect(out[0].value.deadlines[1].date).toBeNull()  // not YYYY-MM-DD: never completed here
   expect(courseTextDeadlines({ deadlines: [] }, page)).toEqual([])
-  expect(courseTextResults({ description: { about_course: false, sentences: [] } }, page, [{ item_id: 3, field: 'description' }], { model: 'm', worker: 'w', cost: 0 })[0].reason).toBe('the page does not state it')
+  expect(courseTextResults({ deadlines: [] }, page, [{ item_id: 3, field: 'deadline' }], { model: 'm', worker: 'w', cost: 0 })[0].reason).toBe('the page does not state it')
+  expect(courseTextResults({ description: { about_course: true, sentences: [] } }, page, [{ item_id: 4, field: 'description' }], { model: 'm', worker: 'w', cost: 0 })).toEqual([])
   const cut = courseTextAnswer({ choices: [{ finish_reason: 'length', message: { content: '{"descr' } }], usage: { cost: 0.003 } }, 1500)
   expect(cut).toEqual({ ok: false, cost: 0.003, error: 'held_partial: output_truncated: course_text reached reading.answer_tokens.course_text (1500)' })
   expect(courseTextAnswer({ choices: [{ message: { content: '{"deadlines":[]}' } }] }, 1500)).toEqual({ ok: true, a: { deadlines: [] }, cost: 0 })

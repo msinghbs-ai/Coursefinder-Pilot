@@ -114,7 +114,7 @@ test('only a country-by-level grid is read by cells; any other shape goes to the
 
 test('worker and migration: switch and shape limits are settings; the recovery panel fix edits the live definition only', () => {
   const idx = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-  expect(idx).toContain('const WORKER = "coverage-sweep-worker-v0.71.0"')
+  expect(idx).toMatch(/(?:const WORKER = "coverage-sweep-worker-v0\.71\.0"; |\/\/ was v0\.71\.0 )\/\/ v0\.71\.0 /)
   expect(idx).toMatch(/Number\(ws\["reading\.entry_cell_reader_on"\]\) >= 1/)
   expect(idx).toContain('ws["reading.entry_cell_min_levels"]')
   expect(idx).toContain('ws["reading.entry_cell_min_lines"]')
