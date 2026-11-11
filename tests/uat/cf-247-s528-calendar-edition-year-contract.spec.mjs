@@ -79,10 +79,13 @@ test('the address gives the edition only when no section does and nothing on the
   expect(first(read(p, [start('Trimester 1', null, 3, 1, q)])).date).toBeNull()                                     // no address, no year
 })
 
-test('worker v0.66.0 (reader v2.3) passes the document address to the calendar reader', () => {
+test('worker v0.67.0 (reader v2.3) passes the document address to the calendar reader', () => {
   const IX = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v0.66.0";')
+  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v0.67.0";')
   expect(IX).toContain('calendarAiParsed(answers, md, `ai:${it.model_code}:${CALENDAR_READER}`, cut, String(it.url || ""))')
+  // v0.67.0: the re-read run size is the setting (batch.calendar_reread, maximum 100), not a fixed 60
+  expect(IX).toContain('p_limit: Math.min(Number(body.limit || 20), 100) /* fixed: guards a malformed call only')
+  expect(IX).not.toContain('p_limit: Math.min(Number(body.limit || 20), 60)')
 })
 
 test('QUT teaching periods: years printed in the quote stand as before', () => {

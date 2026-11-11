@@ -6,4 +6,5 @@ export const parseList = text => String(text ?? '').split(',').map(x => x.trim()
 export const listMin = s => (s && s.min != null && Number.isFinite(Number(s.min))) ? Math.max(0, Math.floor(Number(s.min))) : 1
 export const listValid = (s, text) => parseList(text).length >= listMin(s)
 export const listError = s => listMin(s) <= 0 ? '' : listMin(s) === 1 ? 'At least one value.' : `At least ${listMin(s)} values.`
-export const listPlaceholder = s => listMin(s) <= 0 ? 'Empty means all' : ''
+// an empty list means "none" where the setting's help says so (intake_dates.nearest_start_providers, Decision 271), otherwise "all" as before
+export const listPlaceholder = s => listMin(s) <= 0 ? (/\bempty\b[^.]*\bno provider\b/i.test(String(s?.help || '')) ? 'Empty means none' : 'Empty means all') : ''

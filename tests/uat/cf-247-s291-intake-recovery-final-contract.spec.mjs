@@ -26,7 +26,8 @@ test('R1 and §8: a reader change re-reads only needed calendars, most missing r
   expect(m).toContain('order by (v_rel->>s.provider_id::text)::int desc nulls last')
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   const rr = w.slice(w.indexOf('if (mode === "calendar_reread") {'), w.indexOf('// v0.47.0 (CF-247 Track C'))
-  expect(rr).toContain('rpc("svc_calendar_reread_next_v2", { p_limit: Math.min(Number(body.limit || 20), 60), p_reader: CALENDAR_READER })')
+  // v0.67.0 (11 Nov 2026): the run size is setting batch.calendar_reread (maximum 100); 100 guards a malformed call only
+  expect(rr).toContain('rpc("svc_calendar_reread_next_v2", { p_limit: Math.min(Number(body.limit || 20), 100) /* fixed: guards a malformed call only; the run size is setting batch.calendar_reread (maximum 100) */, p_reader: CALENDAR_READER })')
   expect(rr).toContain('rpc("svc_calendar_refresh_v1", { p_reader: CALENDAR_READER })')
   expect(rr).toContain('paid_reads: 0')
 })
