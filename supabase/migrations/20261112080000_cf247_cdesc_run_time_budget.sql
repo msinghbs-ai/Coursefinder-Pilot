@@ -7,7 +7,8 @@
 -- What this changes: two lines, one in each of two functions (md5-guarded body replacements); nothing else.
 --   - security.course_description_machine_settle_v1(): also stops taking another item once 85 s of the job's statement have passed (statement_timestamp()).
 --   - security.course_description_machine_consumer_recheck_v1(): also stops starting another read-back once 100 s of the statement have passed.
--- Worst case now about 102 s (settle's last admission about 5 s, the last read-back about 1.5 s) under the 120 s limit; what is left is taken next run (every 10 minutes), as before. The existing 40 s and 15 s boxes stay. Called from an
+-- Each step checks its bound before it starts the next item, so the end of a run is about max(85 s + the slowest single admission, 100 s + the slowest single read-back): about 102 s if no single item takes more than about 5 s
+-- (an estimate, not a measurement: per-function timing is not collected live); what is left is taken next run (every 10 minutes), as before. The existing 40 s and 15 s boxes stay. Called from an
 -- API request (statement limit 8 s) or by hand, the new bounds are never reached first. Technical safety time boxes, marked fixed (G2).
 --
 -- Live definitions this change edits (pg_proc.prosrc md5, read 11 Nov 2026 19:15 AEDT), before -> after (the migration stops, and applies nothing, if a live body is neither):
