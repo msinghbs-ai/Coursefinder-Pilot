@@ -1,0 +1,43 @@
+# Guards: F-AER.02 AER self-healing (decision delivery item 4, 11 Nov 2026: recover pending re-reads without duplicate Layer 4 items) and G4 database-backed tests: migration 20261112123700 (corrected reads skipped before reading are closed by the scheduled tick) on an isolated PostgreSQL 16 (fixtures only, never a Supabase project).
+name: AER corrected-read settle integration
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/20261112123700_cf247_aer_supersession_settle.sql'
+      - 'supabase/held/aer_supersession_settle_forward_recovery.sql'
+      - 'tests/fixtures/aer-supersession-settle/**'
+      - 'tests/fixtures/aer-self-healing/**'
+      - 'tests/fixtures/aer-source-recovery/**'
+      - 'supabase/migrations/20261111220000_cf247_aer_self_healing_corrections.sql'
+      - 'tests/fixtures/aer-source-recovery/stubs.sql'
+      - 'tests/fixtures/aer-source-recovery/data.sql'
+      - 'tests/fixtures/aer-source-recovery/seed_l4.sql'
+      - '.github/workflows/aer-supersession-settle-test.yml'
+  workflow_dispatch:
+jobs:
+  isolated-postgres:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: fixture-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: fixture-only
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash tests/fixtures/aer-supersession-settle/run.sh | tee aer-supersession-settle-results.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: aer-supersession-settle-database-evidence
+          path: aer-supersession-settle-results.log
