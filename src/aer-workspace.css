@@ -88,3 +88,13 @@
 @media (max-width:720px){[data-aer-coverage] [data-aer-providers] .dq-entity-link{min-height:44px;align-content:center}
 /* the opened drill-down is wider than the screen (the table is 1,080 px); keep it at the left edge at screen width so it reads without sideways scrolling */
 [data-aer-coverage] .aer-cov-detail .aer-cov-provider{position:sticky;left:0;box-sizing:border-box;width:calc(100vw - 32px);max-width:100%}}
+/* F-AER.04 D3: Attach a source and Source discovery, inside Sources, reads and holds */
+[data-aer-attach] .aer-attach-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;align-items:end}
+[data-aer-attach] .aer-attach-grid input,[data-aer-attach] .aer-attach-actions input{width:100%;box-sizing:border-box}
+.aer-attach-classes{display:flex;flex-wrap:wrap;gap:6px 16px;border:0;padding:8px 0;margin:0}
+.aer-attach-actions{display:flex;gap:8px;align-items:center;margin-top:8px}
+.aer-attach-check{margin-top:8px;padding:8px 12px;border-radius:8px;background:var(--surface-2,#f6f7f9)}
+.aer-attach-closed{display:flex;justify-content:flex-end}
+.aer-discovery-figures{display:flex;flex-wrap:wrap;gap:8px 20px;margin:4px 0 12px}
+.aer-discovery-table{width:100%}
+@media (max-width:720px){.aer-discovery-table{display:block;overflow-x:auto}}
