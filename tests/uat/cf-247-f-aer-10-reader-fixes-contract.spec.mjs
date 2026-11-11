@@ -79,7 +79,7 @@ test('a country\'s own framework names the country of a row that gives none, onl
 })
 
 test('every fix is a setting; the switches built for these cases are switched on with a reason; nothing is dropped', () => {
-  const m = fs.readFileSync('supabase/migrations/20261112223100_cf247_aer_reader_fixes.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations/20261113003100_cf247_aer_reader_fixes.sql', 'utf8')
   for (const k of ['reading.entry_quote_parts_on', 'reading.entry_quote_window_chars', 'reading.entry_band_label_words', 'reading.entry_qualification_countries']) expect(m).toContain(`'${k}'`)
   for (const k of ['reading.entry_range_lower_bound_on', 'reading.entry_subject_rows_on', 'reading.entry_value_null_on'])
     expect(m).toMatch(new RegExp(`reason = 'Platform Admin mandate 12 Nov 2026 09:23[^']*'\\n where toolset_key = 'pipeline' and key = '${k.replace(/\./g, '\\.')}'`))
@@ -87,6 +87,7 @@ test('every fix is a setting; the switches built for these cases are switched on
   expect(m).toContain("('BTEC_NED', 'Pearson BTEC'")
   expect(m).not.toMatch(/^\s*(drop|delete|truncate)\b/im)
   const ix = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
+  expect(ix).toContain('const WORKER = "coverage-sweep-worker-v0.74.0"')
   expect(ix).toMatch(/Number\(ws\["reading\.entry_quote_parts_on"\]\) >= 1 \? \{ quoteParts: \{ window: Number\(ws\["reading\.entry_quote_window_chars"\]\)/)
   expect(ix).toContain('qualificationCountries: entryQualificationCountries(ws["reading.entry_qualification_countries"])')
 })
