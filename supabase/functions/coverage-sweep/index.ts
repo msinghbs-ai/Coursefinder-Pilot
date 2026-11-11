@@ -2526,7 +2526,7 @@ async function handle(req: Request): Promise<Response> {
       const items: any[] = w?.items || [];
       if (!items.length) return j({ ok: true, mode, idle: true, reason: w?.reason || "nothing due", items: 0, worker: WORKER });
       const model = String(w.model || ""), pageChars = Number(w.page_chars) || 16000, minQuote = Number(w.min_quote_chars) || 20;
-      // v0.68.0: the prompt from Settings (a version string and its text), or null for the built-in prompt v2
+      // v0.69.0: the prompt from Settings (a version string and its text), or null for the built-in prompt v2
       const prompt = w.prompt && typeof w.prompt.system === "string" && w.prompt.system.trim().length >= 200 && w.prompt.version ? { version: String(w.prompt.version), system: String(w.prompt.system) } : null;  // fixed: the table's own minimum
       const buildRequest = (it: any, rec: any, page: string) => prompt ? promptRequest(model, prompt.system, String(it.provider || ""), String(rec.url || ""), page, maxTokens, w.length)
         : descriptionRequest(model, String(it.provider || ""), String(rec.url || ""), page, maxTokens, w.length, Number(w.verbatim_span_max_chars));
@@ -2561,7 +2561,7 @@ async function handle(req: Request): Promise<Response> {
         if (fcLeft <= 0) return { ok: false, why: `${d1.status}; Firecrawl ceiling reached`, http: d1.http };
         fcLeft -= 1; fcBy.set(String(it.item_id), (fcBy.get(String(it.item_id)) || 0) + 1);
         if (it.on_demand === true) {
-          // v0.68.0: Fill description (an operator asked): the daily shares do not apply; the account's monthly limit and credit reserve still do
+          // v0.69.0: Fill description (an operator asked): the daily shares do not apply; the account's monthly limit and credit reserve still do
           const g = await useFcWhy("provider_description_on_demand", it.provider_id, url, true);
           if (!g.ok) return { ok: false, why: String(g.why), http: d1.http, retry: true };
         } else {
@@ -2647,7 +2647,7 @@ async function handle(req: Request): Promise<Response> {
           if (d?.model && !String(d.model).startsWith(model)) { out.push({ ...base, ...rec, error: `returned model ${d.model}, not ${model}`, cost: ans.cost }); return }  // pinned: no other model's answer is used
           if (!ans.ok) { out.push({ ...base, ...rec, error: ans.error, cost: ans.cost }); return }
           if (prompt) {
-            // v0.68.0: the prompt carries the wording; every passage is checked against the page here and the database applies the prompt profile
+            // v0.69.0: the prompt carries the wording; every passage is checked against the page here and the database applies the prompt profile
             out.push({ ...base, ...rec, answer: promptSentences(ans.a, page, minQuote), cost: ans.cost });
             tally.read = (tally.read || 0) + 1; tally.prompt = (tally.prompt || 0) + 1;
             return;

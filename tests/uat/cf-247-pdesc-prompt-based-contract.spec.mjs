@@ -38,15 +38,21 @@ test('on demand: the operator Fill is not held by the lane AI ceiling, the lane 
   expect(MIG).toContain("jsonb_build_object('on_demand', jsonb_build_object('by', auth.uid(), 'at', now()))")
   expect(MIG).toContain("perform pipeline.svc_pilot_submit_nonce('coverage-sweep', jsonb_build_object('mode', 'provider_description'")  // the read starts at once
   expect(MIG).toContain("and not v_od then return jsonb_build_object('idle', true, 'reason', 'ai_ceiling'")
-  expect(MIG).toContain("if v_spent+v_reserved+p_max_cost>v_cap and not coalesce(r.checks ? 'on_demand', false) then")
-  expect(MIG).toContain("if v_today+v_reserved+p_max_cost>v_daily and not coalesce(r.checks ? 'on_demand', false) then")
+  expect(MIG).toContain("if v_spent+v_reserved+p_max_cost>v_cap and not security.pdesc_on_demand_live_v1(r.checks) then")
+  expect(MIG).toContain("if v_today+v_reserved+p_max_cost>v_daily and not security.pdesc_on_demand_live_v1(r.checks) then")
+  // the lane's own daily guard is not applied to on demand; the platform-wide rule (credit floor, platform daily ceiling) is
+  expect(MIG).toContain("security.ai_use_allowed_v1(case when security.pdesc_on_demand_live_v1(r.checks) then 'provider_description_on_demand' else 'provider_description' end)")
+  expect(MIG).toContain("security.ai_use_allowed_v1(case when security.pdesc_on_demand_due_v1() then 'provider_description_on_demand' else 'provider_description' end)")
   expect(MIG).toContain("elsif p_purpose = 'provider_description_on_demand' then")
   expect(MIG.indexOf("elsif security.fc_month_refusal_v1(p_units) is not null")).toBe(-1)  // the monthly plan limit stays first in svc_fc_spend (not edited)
-  expect(MIG).toContain("if not coalesce(r.checks ? 'on_demand', false) and not coalesce((security.ops_learning_retry_check_v1(")
-  // the platform-wide AI rule and the account's own limits still apply: the migration never touches them
-  expect(MIG).not.toContain('ai_use_allowed_v1(') ; expect(MIG).not.toContain('credit_floor')
+  expect(MIG).toContain("if not security.pdesc_on_demand_live_v1(r.checks) and not coalesce((security.ops_learning_retry_check_v1(")
+  expect(MIG).not.toContain('credit_floor')  // the platform-wide rule itself (security.ai_use_refusal_v1) is not edited
   // on demand never stalls the regular scan: its priority lasts pdesc.on_demand_minutes, and a provider that cannot be read is told so, not queued
   expect(MIG).toContain("make_interval(mins => security.pipeline_num_v1('pdesc.on_demand_minutes', 15)::int)")
+  // a mark counts only within the window (QA 11 Nov 2026 B1): every exemption asks security.pdesc_on_demand_live_v1, never the bare mark
+  expect(MIG).toContain('create or replace function security.pdesc_on_demand_live_v1(p_checks jsonb) returns boolean')
+  expect(MIG.match(/checks \? 'on_demand'/g)).toHaveLength(1)  // only inside the helper itself
+  expect(MIG).toContain("and x.tries < security.pipeline_num_v1('pdesc.tries', 3)")
   expect(MIG).toContain("then v_word := 'identity';")
   expect(MIG).toContain("then v_word := 'not_live';")
   expect(MIG).toContain('-- a new read: earlier reads stay as they are (the admission ledger refers to them)')

@@ -27,7 +27,8 @@
 --     (openrouter.guard_provider_description), the Firecrawl allowance (pdesc.firecrawl_reads_max) or the Firecrawl daily share (purpose
 --     provider_description_on_demand in svc_fc_spend), nor by the "same page already failed" memory. It still stops for: a manual lock, the
 --     provider's identity proof, the platform-wide AI rule (security.ai_use_allowed_v1: OpenRouter credit floor and platform daily ceiling) and
---     the Firecrawl monthly plan limit (the account's own limits). The scheduled scan keeps every limit.
+--     the Firecrawl monthly plan limit (the account's own limits). The mark counts only within pdesc.on_demand_minutes of the click
+--     (security.pdesc_on_demand_live_v1): after that the read is an ordinary read of the regular scan. The scheduled scan keeps every limit.
 --   5 A description written by hand (admin_provider_edit sets a manual lock) is never replaced: the lease, the record and the on-demand fill skip
 --     a locked provider (unchanged rules, now also stated on the fill result).
 --   6 security.provider_description_self_heal_v1 (c): a held read whose AI answer failed a check under an older prompt version is put back in the
@@ -103,12 +104,21 @@ $f$;
 comment on function security.provider_description_prompt_active_v1() is 'CF-247 F-PDESC (20261112010000): the active provider-description prompt and its version string, or null (built-in prompt v2) while pdesc.prompt_on is 0.';
 revoke all on function security.provider_description_prompt_active_v1() from public, anon, authenticated;
 
+create or replace function security.pdesc_on_demand_live_v1(p_checks jsonb) returns boolean
+language sql stable security definer set search_path to '' as $f$
+  -- CF-247 F-PDESC (20261112010000): a read's on-demand mark counts only within pdesc.on_demand_minutes of the click; after that the read is
+  -- an ordinary read of the regular scan with every limit (a mark left on a requeued read gives nothing)
+  select coalesce(p_checks ? 'on_demand' and (p_checks->'on_demand'->>'at')::timestamptz > now() - make_interval(mins => security.pipeline_num_v1('pdesc.on_demand_minutes', 15)::int), false)
+$f$;
+comment on function security.pdesc_on_demand_live_v1(jsonb) is 'CF-247 F-PDESC (20261112010000): true while a read''s Fill description mark is within pdesc.on_demand_minutes; every on-demand exemption uses it.';
+revoke all on function security.pdesc_on_demand_live_v1(jsonb) from public, anon, authenticated;
+
 create or replace function security.pdesc_on_demand_due_v1() returns boolean
 language sql stable security definer set search_path to '' as $f$
-  -- CF-247 F-PDESC (20261112010000): an on-demand read asked for within pdesc.on_demand_minutes is due
+  -- CF-247 F-PDESC (20261112010000): a live on-demand read is due (and can still be tried)
   select exists (select 1 from pipeline.provider_description_reads x
-                  where x.checks ? 'on_demand' and ((x.state = 'queued' and x.next_try_at <= now()) or (x.state = 'reading' and x.leased_until < now()))
-                    and coalesce((x.checks->'on_demand'->>'at')::timestamptz, x.updated_at) > now() - make_interval(mins => security.pipeline_num_v1('pdesc.on_demand_minutes', 15)::int))
+                  where security.pdesc_on_demand_live_v1(x.checks) and x.tries < security.pipeline_num_v1('pdesc.tries', 3)
+                    and ((x.state = 'queued' and x.next_try_at <= now()) or (x.state = 'reading' and x.leased_until < now())))
 $f$;
 comment on function security.pdesc_on_demand_due_v1() is 'CF-247 F-PDESC (20261112010000): true while a Fill description read asked for within pdesc.on_demand_minutes is due.';
 revoke all on function security.pdesc_on_demand_due_v1() from public, anon, authenticated;
@@ -172,7 +182,7 @@ select pg_temp.pdesc_swap('public.svc_provider_description_next(integer)'::regpr
   if v_od then v_fc_left := security.pipeline_num_v1('pdesc.firecrawl_per_call', 5)::int; end if; -- 20261112010000: on demand, the per-call share only (spent as purpose provider_description_on_demand)$n$);
 select pg_temp.pdesc_swap('public.svc_provider_description_next(integer)'::regprocedure,
   $o$    where x.state='queued' and not (x.provider_id = any(v_reoffer)) and not coalesce($o$,
-  $n$    where x.state='queued' and not (x.provider_id = any(v_reoffer)) and not coalesce(x.checks ? 'on_demand', false) and not coalesce($n$);
+  $n$    where x.state='queued' and not (x.provider_id = any(v_reoffer)) and not security.pdesc_on_demand_live_v1(x.checks) and not coalesce($n$);
 select pg_temp.pdesc_swap('public.svc_provider_description_next(integer)'::regprocedure,
   $o$security.provider_description_signature_v1(coalesce(a.content_hash,a.id::text),v_model,coalesce(x.prompt_version,'provider-description-v2')))$o$,
   $n$security.provider_description_signature_v1(coalesce(a.content_hash,a.id::text),v_model,coalesce(v_pv,x.prompt_version,'provider-description-v2')))$n$);
@@ -183,14 +193,14 @@ select pg_temp.pdesc_swap('public.svc_provider_description_next(integer)'::regpr
   $o$                   and r.tries < v_tries
                    and ((select$o$,
   $n$                   and r.tries < v_tries
-                   and (not v_over or r.checks ? 'on_demand')
+                   and (not v_over or security.pdesc_on_demand_live_v1(r.checks))
                    and ((select$n$);
 select pg_temp.pdesc_swap('public.svc_provider_description_next(integer)'::regprocedure,
   $o$                 order by case when v_mach then$o$,
-  $n$                 order by (r.checks ? 'on_demand') desc, case when v_mach then$n$);
+  $n$                 order by security.pdesc_on_demand_live_v1(r.checks) desc, case when v_mach then$n$);
 select pg_temp.pdesc_swap('public.svc_provider_description_next(integer)'::regprocedure,
   $o$                and (c.provider_id = any(v_reoffer) or coalesce($o$,
-  $n$                and (c.provider_id = any(v_reoffer) or c.checks ? 'on_demand' or coalesce($n$);
+  $n$                and (c.provider_id = any(v_reoffer) or security.pdesc_on_demand_live_v1(c.checks) or coalesce($n$);
 select pg_temp.pdesc_swap('public.svc_provider_description_next(integer)'::regprocedure,
   $o$security.provider_description_signature_v1((select coalesce(a.content_hash,a.id::text) from pipeline.evidence_artifacts a where a.id=(v_stored->>c.provider_id::text)::uuid),v_model,coalesce(c.prompt_version,'provider-description-v2')))$o$,
   $n$security.provider_description_signature_v1((select coalesce(a.content_hash,a.id::text) from pipeline.evidence_artifacts a where a.id=(v_stored->>c.provider_id::text)::uuid),v_model,coalesce(v_pv,c.prompt_version,'provider-description-v2')))$n$);
@@ -199,10 +209,22 @@ select pg_temp.pdesc_swap('public.svc_provider_description_next(integer)'::regpr
   $n$  upd as (update pipeline.provider_description_reads r set state = 'reading', tries = r.tries + 1, prompt_version = coalesce(v_pv, r.prompt_version), checks=$n$);
 select pg_temp.pdesc_swap('public.svc_provider_description_next(integer)'::regprocedure,
   $o$  select coalesce(jsonb_agg(jsonb_build_object('item_id', u.id, 'provider_id', u.provider_id,$o$,
-  $n$  select coalesce(jsonb_agg(jsonb_build_object('item_id', u.id, 'provider_id', u.provider_id, 'on_demand', coalesce(u.checks ? 'on_demand', false),$n$);
+  $n$  select coalesce(jsonb_agg(jsonb_build_object('item_id', u.id, 'provider_id', u.provider_id, 'on_demand', security.pdesc_on_demand_live_v1(u.checks),$n$);
 select pg_temp.pdesc_swap('public.svc_provider_description_next(integer)'::regprocedure,
   $o$  return jsonb_build_object('model', v_model,$o$,
   $n$  return jsonb_build_object('model', v_model, 'prompt', security.provider_description_prompt_active_v1(),$n$);
+
+-- on demand checks the platform-wide AI rule only (credit floor, platform daily ceiling): security.ai_use_refusal_v1 applies a lane's own guard
+-- only to a use that has one, and 'provider_description_on_demand' has none
+select pg_temp.pdesc_swap('public.svc_provider_description_next(integer)'::regprocedure,
+  $o$  if not security.ai_use_allowed_v1('provider_description') then return jsonb_build_object('idle', true, 'reason', 'ai_refused', 'items', '[]'::jsonb); end if;$o$,
+  $n$  if not security.ai_use_allowed_v1(case when security.pdesc_on_demand_due_v1() then 'provider_description_on_demand' else 'provider_description' end) then return jsonb_build_object('idle', true, 'reason', 'ai_refused', 'items', '[]'::jsonb); end if; -- 20261112010000$n$);
+select pg_temp.pdesc_swap('public.svc_provider_description_reserve_v1(uuid,text,numeric,text)'::regprocedure,
+  $o$ if security.pipeline_num_v1('pdesc.enabled',0)<1 or not security.ai_use_allowed_v1('provider_description') then$o$,
+  $n$ if security.pipeline_num_v1('pdesc.enabled',0)<1 or not security.ai_use_allowed_v1(case when security.pdesc_on_demand_live_v1(r.checks) then 'provider_description_on_demand' else 'provider_description' end) then -- 20261112010000$n$);
+select pg_temp.pdesc_swap('security.provider_description_fire_v1()'::regprocedure,
+  $o$  if not security.ai_use_allowed_v1('provider_description') then return jsonb_build_object('queued', v_q, 'ai', 'stopped', 'dead_letter', v_dead); end if;$o$,
+  $n$  if not security.ai_use_allowed_v1(case when security.pdesc_on_demand_due_v1() then 'provider_description_on_demand' else 'provider_description' end) then return jsonb_build_object('queued', v_q, 'ai', 'stopped', 'dead_letter', v_dead); end if; -- 20261112010000$n$);
 
 -- the fire: an on-demand read is dispatched even while the lane ceiling is reached
 select pg_temp.pdesc_swap('security.provider_description_fire_v1()'::regprocedure,
@@ -212,13 +234,13 @@ select pg_temp.pdesc_swap('security.provider_description_fire_v1()'::regprocedur
 -- the reservation: the active prompt's memory; on demand is not held by the lane ceiling or the lane daily guard
 select pg_temp.pdesc_swap('public.svc_provider_description_reserve_v1(uuid,text,numeric,text)'::regprocedure,
   $o$ if not coalesce((security.ops_learning_retry_check_v1($o$,
-  $n$ if not coalesce(r.checks ? 'on_demand', false) and not coalesce((security.ops_learning_retry_check_v1($n$);
+  $n$ if not security.pdesc_on_demand_live_v1(r.checks) and not coalesce((security.ops_learning_retry_check_v1($n$);
 select pg_temp.pdesc_swap('public.svc_provider_description_reserve_v1(uuid,text,numeric,text)'::regprocedure,
   $o$ if v_spent+v_reserved+p_max_cost>v_cap then$o$,
-  $n$ if v_spent+v_reserved+p_max_cost>v_cap and not coalesce(r.checks ? 'on_demand', false) then -- 20261112010000: on demand is not held by the lane ceiling$n$);
+  $n$ if v_spent+v_reserved+p_max_cost>v_cap and not security.pdesc_on_demand_live_v1(r.checks) then -- 20261112010000: on demand is not held by the lane ceiling$n$);
 select pg_temp.pdesc_swap('public.svc_provider_description_reserve_v1(uuid,text,numeric,text)'::regprocedure,
   $o$ if v_today+v_reserved+p_max_cost>v_daily then$o$,
-  $n$ if v_today+v_reserved+p_max_cost>v_daily and not coalesce(r.checks ? 'on_demand', false) then -- 20261112010000: nor by the lane daily guard$n$);
+  $n$ if v_today+v_reserved+p_max_cost>v_daily and not security.pdesc_on_demand_live_v1(r.checks) then -- 20261112010000: nor by the lane daily guard$n$);
 
 -- Firecrawl: an on-demand page read is not held by the daily shares (the monthly plan limit and the directory rule still apply)
 select pg_temp.pdesc_swap('public.svc_fc_spend(numeric,text,uuid,text)'::regprocedure,
@@ -315,10 +337,10 @@ grant execute on function public.admin_provider_description_fill_v1(uuid[]) to a
 -- the Platform Admin's prompt editor
 create or replace function public.admin_provider_description_prompt_v1(p_action text, p_args jsonb default '{}'::jsonb) returns jsonb
 language plpgsql security definer set search_path to '' as $fn$
--- CF-247 F-PDESC (20261112010000): read (rank 4 and above) and save (Platform Admin, with a reason). A save is a new active version.
+-- CF-247 F-PDESC (20261112010000): read (rank 3 and above, as Fill) and save (Platform Admin, with a reason). A save is a new active version.
 declare v_text text := btrim(coalesce(p_args->>'system_prompt', '')); v_reason text := btrim(coalesce(p_args->>'reason', '')); v_ver int;
 begin
-  if auth.uid() is null or coalesce(security.current_role_rank(), 0) < 4 then raise exception 'not allowed' using errcode = '42501'; end if;
+  if auth.uid() is null or coalesce(security.current_role_rank(), 0) < 3 then raise exception 'not allowed' using errcode = '42501'; end if; -- the same rank as Fill and the Enrich fields tab
   if p_action = 'read' then
     return jsonb_build_object(
       'prompt_on', security.pipeline_num_v1('pdesc.prompt_on', 0) >= 1,
@@ -341,7 +363,7 @@ begin
         'admitted_24h', (select count(*) from pipeline.provider_description_machine_admissions a where a.outcome = 'admitted' and a.created_at > now() - interval '24 hours'), -- fixed: a display window
         'described', (select count(*) from catalogue.providers p where nullif(btrim(p.description), '') is not null and p.lifecycle_status = 'active' and p.publication_status = 'published'),
         'queued', (select count(*) from pipeline.provider_description_reads x where x.state = 'queued'),
-        'on_demand_waiting', (select count(*) from pipeline.provider_description_reads x where x.state in ('queued', 'reading') and x.checks ? 'on_demand'),
+        'on_demand_waiting', (select count(*) from pipeline.provider_description_reads x where x.state in ('queued', 'reading') and security.pdesc_on_demand_live_v1(x.checks)),
         'held', (select count(*) from pipeline.provider_description_reads x where x.state = 'held'),
         'manual', (select count(*) from pipeline.manual_locks l where l.entity = 'provider' and l.field in ('description', 'p_description')),
         'self_heal_last', (select jsonb_build_object('at', d.start_time, 'status', d.status) from cron.job_run_details d join cron.job j on j.jobid = d.jobid where j.jobname = 'provider-description-self-heal' order by d.start_time desc limit 1),
