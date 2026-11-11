@@ -39,6 +39,9 @@
 -- Consumer API (G3): not touched. Nothing is dropped or deleted. No description is written by applying this migration.
 -- Forward recovery: supabase/held/pdesc_prompt_based_forward_recovery.sql sets pdesc.prompt_on to 0 (the built-in prompt v2 and every wording
 -- rule apply again; the on-demand exemptions act only on reads marked by Fill description).
+-- Deploy note (11 Nov 2026): first merged as 20261112010000, which Deploy on merge could not apply (a "--" comment added on the lease's
+-- one-line declare hid the variables after it; the whole request rolled back, live unchanged). The inline comments in the single-line
+-- replacements are now /* */ comments, and the file moves to this new version so Deploy on merge applies it. Release id stays 20261112010000.
 -- Replaces: the Run & Validate card (screen ProviderDescriptionRunValidate) and the built-in worker prompt v2 as the default.
 -- Retires: screen ProviderDescriptionRunValidate (retiring, replaced by the Fill description button and the provider description prompt).
 
@@ -165,7 +168,7 @@ update pipeline.platform_toolset_settings set value = '["visa","visas","migratio
 -- 2 -------------------------------------------------------------------------------------------------------------- the lease: prompt, prompt version, on demand
 select pg_temp.pdesc_swap('public.svc_provider_description_next(integer)'::regprocedure,
   $o$v_afford numeric;$o$,
-  $n$v_afford numeric; v_od boolean; v_over boolean := false; v_pv text := security.provider_description_prompt_active_v1()->>'version'; -- 20261112010000: on demand, over a lane limit, the active prompt version$n$);
+  $n$v_afford numeric; v_od boolean; v_over boolean := false; v_pv text := security.provider_description_prompt_active_v1()->>'version'; /* 20261112010000: on demand, over a lane limit, the active prompt version */$n$);
 select pg_temp.pdesc_swap('public.svc_provider_description_next(integer)'::regprocedure,
   $o$  if v_spent >= security.pipeline_num_v1('pdesc.ai_usd_max', 1) then return jsonb_build_object('idle', true, 'reason', 'ai_ceiling', 'spent_usd', v_spent, 'items', '[]'::jsonb); end if;$o$,
   $n$  -- 20261112010000: a read an operator asked for (checks.on_demand) is not held by the lane limits; while one is due, this call takes on-demand reads only
@@ -218,18 +221,18 @@ select pg_temp.pdesc_swap('public.svc_provider_description_next(integer)'::regpr
 -- only to a use that has one, and 'provider_description_on_demand' has none
 select pg_temp.pdesc_swap('public.svc_provider_description_next(integer)'::regprocedure,
   $o$  if not security.ai_use_allowed_v1('provider_description') then return jsonb_build_object('idle', true, 'reason', 'ai_refused', 'items', '[]'::jsonb); end if;$o$,
-  $n$  if not security.ai_use_allowed_v1(case when security.pdesc_on_demand_due_v1() then 'provider_description_on_demand' else 'provider_description' end) then return jsonb_build_object('idle', true, 'reason', 'ai_refused', 'items', '[]'::jsonb); end if; -- 20261112010000$n$);
+  $n$  if not security.ai_use_allowed_v1(case when security.pdesc_on_demand_due_v1() then 'provider_description_on_demand' else 'provider_description' end) then return jsonb_build_object('idle', true, 'reason', 'ai_refused', 'items', '[]'::jsonb); end if; /* 20261112010000 */$n$);
 select pg_temp.pdesc_swap('public.svc_provider_description_reserve_v1(uuid,text,numeric,text)'::regprocedure,
   $o$ if security.pipeline_num_v1('pdesc.enabled',0)<1 or not security.ai_use_allowed_v1('provider_description') then$o$,
-  $n$ if security.pipeline_num_v1('pdesc.enabled',0)<1 or not security.ai_use_allowed_v1(case when security.pdesc_on_demand_live_v1(r.checks) then 'provider_description_on_demand' else 'provider_description' end) then -- 20261112010000$n$);
+  $n$ if security.pipeline_num_v1('pdesc.enabled',0)<1 or not security.ai_use_allowed_v1(case when security.pdesc_on_demand_live_v1(r.checks) then 'provider_description_on_demand' else 'provider_description' end) then /* 20261112010000 */$n$);
 select pg_temp.pdesc_swap('security.provider_description_fire_v1()'::regprocedure,
   $o$  if not security.ai_use_allowed_v1('provider_description') then return jsonb_build_object('queued', v_q, 'ai', 'stopped', 'dead_letter', v_dead); end if;$o$,
-  $n$  if not security.ai_use_allowed_v1(case when security.pdesc_on_demand_due_v1() then 'provider_description_on_demand' else 'provider_description' end) then return jsonb_build_object('queued', v_q, 'ai', 'stopped', 'dead_letter', v_dead); end if; -- 20261112010000$n$);
+  $n$  if not security.ai_use_allowed_v1(case when security.pdesc_on_demand_due_v1() then 'provider_description_on_demand' else 'provider_description' end) then return jsonb_build_object('queued', v_q, 'ai', 'stopped', 'dead_letter', v_dead); end if; /* 20261112010000 */$n$);
 
 -- the fire: an on-demand read is dispatched even while the lane ceiling is reached
 select pg_temp.pdesc_swap('security.provider_description_fire_v1()'::regprocedure,
   $o$  if (select coalesce(sum(l.cost_usd), 0) from pipeline.ai_spend_ledger l where l.lane = 'provider_description' and l.source <> 'opening') >= security.pipeline_num_v1('pdesc.ai_usd_max', 1) then$o$,
-  $n$  if (select coalesce(sum(l.cost_usd), 0) from pipeline.ai_spend_ledger l where l.lane = 'provider_description' and l.source <> 'opening') >= security.pipeline_num_v1('pdesc.ai_usd_max', 1) and not security.pdesc_on_demand_due_v1() then -- 20261112010000$n$);
+  $n$  if (select coalesce(sum(l.cost_usd), 0) from pipeline.ai_spend_ledger l where l.lane = 'provider_description' and l.source <> 'opening') >= security.pipeline_num_v1('pdesc.ai_usd_max', 1) and not security.pdesc_on_demand_due_v1() then /* 20261112010000 */$n$);
 
 -- the reservation: the active prompt's memory; on demand is not held by the lane ceiling or the lane daily guard
 select pg_temp.pdesc_swap('public.svc_provider_description_reserve_v1(uuid,text,numeric,text)'::regprocedure,
@@ -237,10 +240,10 @@ select pg_temp.pdesc_swap('public.svc_provider_description_reserve_v1(uuid,text,
   $n$ if not security.pdesc_on_demand_live_v1(r.checks) and not coalesce((security.ops_learning_retry_check_v1($n$);
 select pg_temp.pdesc_swap('public.svc_provider_description_reserve_v1(uuid,text,numeric,text)'::regprocedure,
   $o$ if v_spent+v_reserved+p_max_cost>v_cap then$o$,
-  $n$ if v_spent+v_reserved+p_max_cost>v_cap and not security.pdesc_on_demand_live_v1(r.checks) then -- 20261112010000: on demand is not held by the lane ceiling$n$);
+  $n$ if v_spent+v_reserved+p_max_cost>v_cap and not security.pdesc_on_demand_live_v1(r.checks) then /* 20261112010000: on demand is not held by the lane ceiling */$n$);
 select pg_temp.pdesc_swap('public.svc_provider_description_reserve_v1(uuid,text,numeric,text)'::regprocedure,
   $o$ if v_today+v_reserved+p_max_cost>v_daily then$o$,
-  $n$ if v_today+v_reserved+p_max_cost>v_daily and not security.pdesc_on_demand_live_v1(r.checks) then -- 20261112010000: nor by the lane daily guard$n$);
+  $n$ if v_today+v_reserved+p_max_cost>v_daily and not security.pdesc_on_demand_live_v1(r.checks) then /* 20261112010000: nor by the lane daily guard */$n$);
 
 -- Firecrawl: an on-demand page read is not held by the daily shares (the monthly plan limit and the directory rule still apply)
 select pg_temp.pdesc_swap('public.svc_fc_spend(numeric,text,uuid,text)'::regprocedure,

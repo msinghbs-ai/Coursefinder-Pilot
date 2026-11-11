@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { promptSentences, promptRequest, PROMPT_SCHEMA } from '../../supabase/functions/coverage-sweep/description.ts'
 
-const MIG = fs.readFileSync('supabase/migrations/20261112010000_cf247_pdesc_prompt_based.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations/20261112011000_cf247_pdesc_prompt_based.sql', 'utf8')
 const IX = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 const read = (f) => fs.readFileSync(f, 'utf8')
 
