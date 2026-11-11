@@ -1,10 +1,10 @@
 // Guards: F-PDESC prompt-based provider descriptions (Platform Admin 11 Nov 2026 14:51 "prompt based ... easily modified rather than stringent rules" and 14:57 "simple button for operators, the Platform Admin maintains the prompt in the settings, on demand has no applicable limits, the regular scan honours the Firecrawl and AI limits, a description written by hand is never replaced")
-// Source contract for migrations 20261112010000 (file 20261112011000) and 20261112023700 (name forms, prompt v4), worker coverage-sweep v0.69.0 and the screens, plus the worker's passage check run on a real page
+// Source contract for migrations 20261112010000 (file 20261112011000) and 20261112023700 (name forms, prompt v4), worker coverage-sweep v0.69.0 and v0.69.1 (passage canonical form) and the screens, plus the worker's passage check run on a real page
 // text. The migration's guarded replacements were dry-run against the live bodies (every anchor once, every function compiled, all rolled back)
 // before merge; the live result is the release controller's check after deploy. Nothing here claims to have exercised the live database.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-import { promptSentences, promptRequest, PROMPT_SCHEMA } from '../../supabase/functions/coverage-sweep/description.ts'
+import { promptSentences, promptRequest, PROMPT_SCHEMA, passageCanonical } from '../../supabase/functions/coverage-sweep/description.ts'
 
 const MIG = fs.readFileSync('supabase/migrations/20261112011000_cf247_pdesc_prompt_based.sql', 'utf8')
 const IX = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
@@ -140,4 +140,17 @@ test('20261112023700: prompt version 4 asks for whole passages, is added only ov
   expect(MIG4).toMatch(/-- Replaces: .+\n-- Retires: /)
   expect(MIG).toContain('"quote_not_on_page"')
   expect(MIG).toContain('"first_sentence_no_name"')  // both in pdesc.prompt_reoffer_rules
+})
+
+test('v0.69.1: a passage is on the page despite tag spacing, quote and dash shapes; words, digits and numbers still must match exactly', () => {
+  // the page text as htmlToText builds it: a tag becomes a space ("<a>IT</a>, engineering" reads "IT , engineering")
+  const page = 'At Complete Hospitality Training ( CHT ), we believe it\u2019s more than a job \u2013 it is a career. Our schools cover computing and IT , engineering and health. Fees rose 1.2 % in 2025.'
+  const a = { sentences: [
+    { text: 'Complete Hospitality Training (CHT) sees hospitality as a career.', sources: ["Complete Hospitality Training (CHT), we believe it's more than a job - it is a career."] },
+    { text: 'It teaches computing, IT, engineering and health.', sources: ['Our schools cover computing and IT, engineering and health.'] },
+    { text: 'Fees rose.', sources: ['Fees rose 12% in 2025.'] },
+    { text: 'It teaches nursing.', sources: ['Our schools cover computing and nursing, engineering and health.'] }], reason: '' }
+  expect(promptSentences(a, page, 10).sentences.map((x) => x.on_page)).toEqual([true, true, false, false])
+  expect(passageCanonical('Fees rose 1.2 % ( approx )')).toBe('Fees rose 1.2% (approx)')
+  expect(IX).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(69\.[1-9]|[7-9]\d\.\d+)";/)
 })
