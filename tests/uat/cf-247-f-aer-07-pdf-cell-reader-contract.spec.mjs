@@ -122,3 +122,12 @@ test('worker and migration: switch and shape limits are settings; the recovery p
   expect(m1).toContain("'caf0e61bfcf983fb421638afd3aea795'")
   expect(m1).toContain('null::uuid new_item_id into v_sup')
 })
+
+test('WSU is read again only with the cell reader on, the same stored copy, and no person holding its item', () => {
+  const m = fs.readFileSync('supabase/migrations/20261112173100_cf247_aer_wsu_cell_reread.sql', 'utf8')
+  expect(m).toContain("pipeline_num_v1('reading.entry_cell_reader_on', 0)")
+  expect(m).toContain("content_hash = '92aadee2605f275c1502381c693b368a8f29b302905eaa2c0e7aed4b7fd37af6'")
+  expect(m).toMatch(/claimed_at is not null or li\.assigned_to is not null/)
+  expect(m).toContain("public.admin_entry_matrix_reread(array['926b1925-d209-4548-85d8-4cfdd4d6b125']::uuid[]")
+  expect(m).not.toMatch(/^\s*(update|delete|insert)\b/im)  // nothing is admitted or edited here; the governed re-read does the work
+})
