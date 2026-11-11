@@ -84,3 +84,15 @@ test('recovery: the held UNSW, Sydney and UQ PDFs are read again only with the g
   expect(r).toContain('public.admin_entry_matrix_reread(ids,')
   expect(r).not.toMatch(/^\s*(update|delete|insert|drop)\b/im)
 })
+
+test('production verification: the printed course is part of a row\'s identity (streams of one course), and the ATAR column is a course fact, read again', () => {
+  const r = fs.readFileSync('supabase/migrations/20261113013100_cf247_aer_grid_identity_and_atar.sql', 'utf8')
+  expect(r).toContain("'915df18ea188103fbf0f9978bdd25536'")
+  expect(r).toContain("jsonb_build_object('key', 'course: ' || btrim(new.course_label))")
+  expect(r).toMatch(/when 'ATAR=AU' then 'ATAR=fact'/)
+  const list = JSON.parse(fs.readFileSync('tests/fixtures/entry-cells/grid-heading-list.json', 'utf8'))
+  expect(list).toContain('ATAR=fact')
+  expect(list).not.toContain('ATAR=AU')
+  expect(r).toMatch(/claimed_at is not null or li\.assigned_to is not null/)
+  expect(r).not.toMatch(/^\s*(delete|drop|insert)\b/im)
+})
