@@ -81,7 +81,8 @@ test('the address gives the edition only when no section does and nothing on the
 
 test('worker v0.67.0 (reader v2.3) passes the document address to the calendar reader', () => {
   const IX = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v0.67.0";')
+  // v0.67.0 or later (v0.68.0, 11 Nov 2026: adapter intake wording; the reader is unchanged)
+  expect(IX).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(6[7-9]|[7-9]\d)\.\d+";/)
   expect(IX).toContain('calendarAiParsed(answers, md, `ai:${it.model_code}:${CALENDAR_READER}`, cut, String(it.url || ""))')
   // v0.67.0: the re-read run size is the setting (batch.calendar_reread, maximum 100), not a fixed 60
   expect(IX).toContain('p_limit: Math.min(Number(body.limit || 20), 100) /* fixed: guards a malformed call only')
