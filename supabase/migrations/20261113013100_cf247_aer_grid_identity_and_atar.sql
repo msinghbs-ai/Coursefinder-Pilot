@@ -12,9 +12,17 @@
 --      label already is; nothing else changes. Rows without a course label keep their identity.
 --   2. reading.entry_grid_headings: "ATAR" and "Tertiary Admission Rank" are course facts (were "=AU").
 --   3. The three grid reads are read again from their stored copies (no model, no Firecrawl), skipping any item a person has taken.
+--   4. Worker v0.74.1 reads at most reading.entry_pdf_per_call (1) stored PDFs per call: UNSW's read (2,257 rows) was stopped by the call's CPU limit
+--      ("CPU Time exceeded", 23:24:49 UTC) after Sydney and UQ were read in the same call; a further PDF returns to the queue without spending a try.
 -- Live definition this change edits (md5 of pg_get_functiondef, read 12 Nov 2026 08:57 AEDT): security.entry_matrix_identity_tg() 915df18ea188103fbf0f9978bdd25536
 -- Replaces: security.entry_matrix_identity_tg (same name; md5-guarded text edit). Retires: nothing.
 -- Reversal: reading.entry_grid_headings back to "ATAR=AU"; the identity edit only adds a key for rows that print a course.
+
+insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, section, used_by, reason) values
+ ('pipeline', 'reading.entry_pdf_per_call', 'Entry requirements: stored PDFs read in one worker call',
+  'A worker call reads at most this many stored PDFs; a further PDF in the same batch goes back to the queue without spending a try and is read by the next call (a large PDF grid uses most of one call''s CPU allowance).',
+  'number', to_jsonb(1), 1, 10, 'PDFs', 1536, 'Entry requirements', 'coverage-sweep entry_ai (worker v0.74.1)', 'F-AER.08 production verification 12 Nov 2026: UNSW''s grid read stopped by the CPU limit after Sydney and UQ in the same call')
+on conflict (toolset_key, key) do nothing;
 
 create or replace function pg_temp.edit_n(p_sig text, p_md5 text, p_edits text[][], p_times int[]) returns void language plpgsql as $f$
 declare v_def text := pg_get_functiondef(p_sig::regprocedure); i int; v_c int;

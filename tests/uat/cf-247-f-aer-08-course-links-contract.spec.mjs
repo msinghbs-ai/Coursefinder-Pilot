@@ -94,5 +94,10 @@ test('production verification: the printed course is part of a row\'s identity (
   expect(list).toContain('ATAR=fact')
   expect(list).not.toContain('ATAR=AU')
   expect(r).toMatch(/claimed_at is not null or li\.assigned_to is not null/)
-  expect(r).not.toMatch(/^\s*(delete|drop|insert)\b/im)
+  expect(r).not.toMatch(/^\s*(delete|drop)\b/im)
+  // one stored PDF per worker call (the CPU allowance); a further PDF goes back without spending a try
+  const ix = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
+  expect(ix).toContain('const WORKER = "coverage-sweep-worker-v0.74.1"')
+  expect(ix).toMatch(/pdfTaken\+\+ >= Math\.max\(1, Number\(ws\["reading\.entry_pdf_per_call"\]\) \|\| 1\)\) \{ await rec\(\{ p_error: "time budget" \}\)/)
+  expect(r).toContain("'reading.entry_pdf_per_call'")
 })

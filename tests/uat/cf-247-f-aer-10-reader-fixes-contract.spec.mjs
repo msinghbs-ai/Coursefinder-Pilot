@@ -87,7 +87,7 @@ test('every fix is a setting; the switches built for these cases are switched on
   expect(m).toContain("('BTEC_NED', 'Pearson BTEC'")
   expect(m).not.toMatch(/^\s*(drop|delete|truncate)\b/im)
   const ix = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-  expect(ix).toContain('const WORKER = "coverage-sweep-worker-v0.74.0"')
+  expect(ix).toMatch(/(?:const WORKER = "coverage-sweep-worker-v0\.74\.0"; |\/\/ was v0\.74\.0 )\/\/ v0\.74\.0 \(12 Nov 2026, CF-247 F-AER\.10/)
   expect(ix).toMatch(/Number\(ws\["reading\.entry_quote_parts_on"\]\) >= 1 \? \{ quoteParts: \{ window: Number\(ws\["reading\.entry_quote_window_chars"\]\)/)
   expect(ix).toContain('qualificationCountries: entryQualificationCountries(ws["reading.entry_qualification_countries"])')
 })
