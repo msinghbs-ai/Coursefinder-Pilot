@@ -219,7 +219,34 @@ export function entryRangeLower(value: number | null, quote: string): number | n
 // v0.59.11 (8 Nov 2026, CF-247 AER reader quality): countryAliases maps a non-ISO country token the page or the model prints to the ISO code it
 // unambiguously means (setting reading.entry_country_aliases, switch reading.entry_country_aliases_on); nullValue keeps a row whose verified
 // grade text is on the page when only its number has no printed basis (switch reading.entry_value_null_on), the number being the only thing left out
-export type EntryParseOptions = { rangeLower?: boolean; countryAliases?: Record<string, string>; nullValue?: boolean };
+export type EntryParseOptions = { rangeLower?: boolean; countryAliases?: Record<string, string>; nullValue?: boolean;
+  // v0.70.0 (12 Nov 2026, CF-247 F-AER.03 qualification-first, Platform Admin decision 11 Nov 2026 item 2): international qualifications (public.svc_aer_qualifications_v1)
+  // and the words a page uses for every country (reading.entry_global_scope_tokens); with them, a row that names no ISO country is kept for a recognised qualification
+  qualifications?: EntryQualification[]; globalTokens?: string[] };
+export type EntryQualification = { code: string; aliases: string[] };
+// v0.70.0 (F-AER.03): the international qualification a row means, from its qualification name or its country token (the page printed "IB" where a country goes), by the
+// whole alias in letters and digits (never a part of a word): the longest alias wins, so "IB Diploma" is IB_DP and "IB Certificate" is IB_COURSES. Null when none matches.
+export function entryQualificationCode(name: unknown, token: unknown, quals: EntryQualification[] = []): string | null {
+  const words = (s: unknown) => ` ${String(s || "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, " ").trim()} `;
+  let best: { code: string; n: number } | null = null;
+  for (const t of [words(name), words(token)]) {
+    if (t.trim() === "") continue;
+    for (const q of quals) for (const a of q.aliases || []) {
+      const w = words(a); if (w.trim().length < 2) continue;
+      if (t.includes(w) && (!best || w.length > best.n)) best = { code: q.code, n: w.length };
+    }
+  }
+  return best ? best.code : null;
+}
+// v0.70.0 (F-AER.03): applicability is global only when the page says every country: the country heading is one of the every-country words, or the quote itself prints
+// "all countries", "any country", "worldwide" or "regardless of country"; anything else is unresolved (never inferred from an empty country)
+const EVERY_COUNTRY = /\b(all|any)\s+countr(y|ies)\b|\bworld\s*wide\b|\bregardless\s+of\s+(the\s+)?(country|where)\b/i;
+export function entryApplicability(token: unknown, quote: unknown, globalTokens: string[] = []): { applicability: "global" | "unresolved"; basis: string } {
+  const t = String(token || "").toUpperCase().replace(/[^A-Z0-9]+/g, " ").trim();
+  if (t && globalTokens.some((g) => String(g || "").toUpperCase().replace(/[^A-Z0-9]+/g, " ").trim() === t)) return { applicability: "global", basis: `country heading "${String(token).slice(0, 60)}"` };
+  if (EVERY_COUNTRY.test(String(quote || ""))) return { applicability: "global", basis: "the quote prints an every-country scope" };
+  return { applicability: "unresolved", basis: "no every-country scope printed" };
+}
 // "UK=GB" entries of the aliases setting as a map; an entry that is not TOKEN=ISO2, or whose token is already an ISO code of the same letters, is ignored
 export function entryCountryAliases(list: unknown): Record<string, string> {
   const out: Record<string, string> = {};
@@ -242,14 +269,19 @@ export function entryMatrixParsed(a: any, page: string, bandLines: EntryLineSet 
   const F = (bandLines.forms || []).map(flat), within = segmentCheck(page, bandLines.segments || []);
   const P = flat(page), on = (q: string) => flat(q).length >= 6 && ((P.includes(flat(q)) && within(flat(q))) || F.some((f) => f.includes(flat(q))));
   const numIn = (n: number, q: string) => [String(n), String(n).replace(/\.0$/, ""), n.toFixed(1), n.toFixed(2)].some((d) => String(q || "").includes(d));
-  const rows: any[] = [], dropped: EntryDrop[] = [];
+  const rows: any[] = [], dropped: EntryDrop[] = [], qrows: any[] = [];
   for (const x of (Array.isArray(a?.rows) ? a.rows : []) as any[]) {
     const quote = String(x?.quote || "").trim(), cc0 = String(x?.country_code || "").toUpperCase().trim();
     const cc = opts.countryAliases?.[cc0] ?? cc0, aliased = cc !== cc0;  // v0.59.11: a governed alias (UK -> GB), recorded on the row
     const d = (reason: string) => dropped.push({ reason, country: cc || String(x?.country_name || ""), quote: quote.slice(0, 120),
       value: typeof x?.min_value === "number" && Number.isFinite(x.min_value) ? x.min_value : null, grade: x?.min_grade == null ? null : String(x.min_grade).slice(0, 120),
       scale: x?.grade_scale == null ? null : String(x.grade_scale) });
-    if (!/^[A-Z]{2}$/.test(cc)) { d("unknown_country"); continue }
+    // v0.70.0 (F-AER.03): a row with no ISO country is kept for a recognised international qualification (its identity and applicability are recorded); otherwise dropped
+    // a two-letter token that is exactly a qualification alias ("IB" printed where a country goes) is that qualification, not a country code
+    const tokenIsQual = /^[A-Z]{2}$/.test(cc) && !!opts.qualifications?.some((q) => (q.aliases || []).some((al) => String(al).toUpperCase() === cc));
+    const isCountry = /^[A-Z]{2}$/.test(cc) && !tokenIsQual;
+    const qcode = !isCountry && opts.qualifications?.length ? entryQualificationCode(x?.qualification_name, cc0 || x?.country_name, opts.qualifications) : null;
+    if (!isCountry && !qcode) { d(opts.qualifications?.length && opts.globalTokens?.some((g) => String(g).toUpperCase() === cc0) ? "unknown_qualification" : "unknown_country"); continue }
     if (flat(quote).length < 6) { d("quote_too_short"); continue }  // a bare cell ("70 10.5") proves nothing: the whole row is quoted
     if (!on(quote)) { d("quote_not_on_page"); continue }
     if (ENGLISH_TEST.test(quote) && ENGLISH_TEST.test(String(x?.qualification_name || ""))) { d("english_test_row"); continue }
@@ -277,12 +309,21 @@ export function entryMatrixParsed(a: any, page: string, bandLines: EntryLineSet 
     if (given && !givenNA && !Q.includes(flat(given))) { d("band_not_in_quote"); continue }
     if (given && !givenNA && published.length === 1 && flat(given) !== flat(published[0])) { d("band_mismatch"); continue }
     const band = published.length === 1 ? published[0] : (givenNA ? null : given);
+    if (qcode) {
+      const ap = entryApplicability(cc0 || x?.country_name, quote, opts.globalTokens || []);
+      qrows.push({ qualification_code: qcode, qualification_name: String(x?.qualification_name || "").trim(), country_token: cc0 || String(x?.country_name || ""),
+        applicability: ap.applicability, applicability_basis: ap.basis, study_level: x?.study_level ?? null, min_grade: grade, min_value: value, grade_scale: scale,
+        benchmark_band: band, course_name: x?.course_name ?? null,
+        conditions: { ...(x?.conditions && typeof x.conditions === "object" && !Array.isArray(x.conditions) ? x.conditions : {}), ...(valueRemoved ? { value_removed: valueRemoved } : {}) },
+        confidence: Number(x?.confidence ?? 0), quote: quote.slice(0, 300) });
+      continue;
+    }
     rows.push({ country_code: cc, country_name: String(x?.country_name || ""), study_level: x?.study_level ?? null, qualification_name: String(x?.qualification_name || "").trim(),
       min_grade: grade, min_value: value, grade_scale: scale, benchmark_band: band, course_name: x?.course_name ?? null,
       conditions: { ...(x?.conditions && typeof x.conditions === "object" && !Array.isArray(x.conditions) ? x.conditions : {}), ...(aliased ? { country_token: cc0 } : {}), ...(valueRemoved ? { value_removed: valueRemoved } : {}) },
       confidence: Number(x?.confidence ?? 0), quote: quote.slice(0, 300) });
   }
-  return { rows, dropped, edition: a?.edition ?? null, intake_year: Number.isInteger(a?.intake_year) ? a.intake_year : null };
+  return { rows, qualification_rows: qrows, dropped, edition: a?.edition ?? null, intake_year: Number.isInteger(a?.intake_year) ? a.intake_year : null };
 }
 // v0.52.0 (integrator review): with labelled lines on the page, a quote found in the page text must have one place where it does not run
 // across the start or end of a labelled line (closed: a quote that can only be read across such a boundary is not on the page). The page
