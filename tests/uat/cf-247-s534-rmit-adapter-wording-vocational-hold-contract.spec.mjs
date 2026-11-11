@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = fs.readFileSync('supabase/migrations/20261111235000_cf247_rule_b_vocational_hold.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations/20261111235900_cf247_rule_b_vocational_hold.sql', 'utf8')
 const AD = fs.readFileSync('supabase/functions/coverage-sweep/adapters.ts', 'utf8')
 const IX = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 

@@ -1,3 +1,5 @@
+-- Version 20261111235900 (re-issued 11 Nov 2026 15:1x AEDT): first merged as 20261111235000 (Pilot #1020), a version #1019 had already applied, so
+--   deploy-on-merge refused it and ran nothing. Same content under a free version; no other change.
 -- CF-247 F-INT: RMIT Rule B switch-on, validation findings (Platform Admin 11 Nov 2026 14:38 AEDT "RMIT added").
 -- Evidence (production, 11 Nov 2026 14:45 AEDT): with RMIT listed in intake_dates.nearest_start_providers, Rule B filled 14 RMIT intakes (Graduate Diploma and
 --   Certificate, 1 Mar 2027 and 19 Jul 2027; 2 University Pathways Fast Track rows, 4 Jan and 19 Jul 2027). 445 RMIT rows were held "the course page does not
