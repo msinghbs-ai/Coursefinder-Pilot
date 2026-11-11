@@ -93,7 +93,7 @@
 [data-aer-attach] .aer-attach-grid input,[data-aer-attach] .aer-attach-actions input{width:100%;box-sizing:border-box}
 .aer-attach-classes{display:flex;flex-wrap:wrap;gap:6px 16px;border:0;padding:8px 0;margin:0}
 .aer-attach-actions{display:flex;gap:8px;align-items:center;margin-top:8px}
-.aer-attach-check{margin-top:8px;padding:8px 12px;border-radius:8px;background:var(--surface-2,#f6f7f9)}
+.aer-attach-check{margin-top:8px;padding:8px 12px;border-radius:8px;background:var(--m-surface-2)}
 .aer-attach-closed{display:flex;justify-content:flex-end}
 .aer-discovery-figures{display:flex;flex-wrap:wrap;gap:8px 20px;margin:4px 0 12px}
 .aer-discovery-table{width:100%}
