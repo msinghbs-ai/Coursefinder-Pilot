@@ -1,0 +1,41 @@
+# Guards: F-OPS task runner (CF-247; Platform Admin 11 Nov 2026 13:45): migration 20261111230000 run in genuine PostgreSQL — a passing database error retried on the next run up to jobs.transient_retry_max,
+# any other error failing as before, the md5 guard and the byte-for-byte forward recovery. Isolated only: fixture-only schema, no production access.
+name: Task runner transient retry integration
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/20261111230000_cf247_jobs_transient_retry.sql'
+      - 'supabase/held/jobs_transient_retry_forward_recovery.sql'
+      - 'tests/fixtures/jobs-transient-retry/**'
+      - 'tests/uat/cf-247-jobs-transient-retry-contract.spec.mjs'
+      - '.github/workflows/jobs-transient-retry-test.yml'
+  workflow_dispatch:
+jobs:
+  isolated-postgres:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:17.6-alpine
+        env:
+          POSTGRES_PASSWORD: fixture-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: fixture-only
+    steps:
+      - uses: actions/checkout@v4
+      - run: mkdir -p uat-artifacts
+      - run: bash tests/fixtures/jobs-transient-retry/run.sh 2>&1 | tee uat-artifacts/jobs-transient-retry-results.log
+        shell: bash
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jobs-transient-retry-database-evidence
+          path: uat-artifacts
