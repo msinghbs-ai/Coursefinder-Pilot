@@ -29,3 +29,4 @@
 .rb-register h3{margin:0 0 6px;font-size:var(--cf-fs-md)}
 .rb-counts{display:flex;flex-wrap:wrap;gap:6px}
 .rb-approve{display:grid;gap:6px;margin:8px 0}.rb-approve label{display:grid;gap:4px}.rb-approve input{width:100%;min-width:0}
+.rb-out{display:inline-flex;gap:4px;align-items:center;margin-left:6px;font-size:var(--cf-fs-xs)}
