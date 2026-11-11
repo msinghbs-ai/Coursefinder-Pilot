@@ -870,3 +870,16 @@
 .plp-found button:hover,.plp-found button:focus-visible{background:var(--cf-slate-50)}
 .plp-none{padding:6px 8px;font-size:var(--cf-fs-xs);color:var(--cf-slate-500)}
 .sr-value.is-providers{width:100%}
+/* F-OPS.04 (phone): Fee schedules tap targets reach the 24 px floor (WCAG 2.2 AA 2.5.8, S121); phone only */
+@media(max-width:620px){.fs-panel .fs-review{min-height:24px;padding:6px 0;box-sizing:border-box}.fs-panel .cf-table input[type=checkbox]{width:24px;height:24px;margin:0}}
+/* CF-247 F-OPS.04 (9 Nov 2026): Reference data › Key dates on a phone. The source links were 12 px high, the Show cancelled box 13 px and the drawer's click-to-edit values 16 px (24 px floor, S121); each is raised at phone width only. */
+@media (max-width:620px){
+  [data-key-dates] a.cf-link,.kd-drawer a.cf-link{display:inline-flex;align-items:center;min-height:24px;min-width:24px}
+  .m-panel:has([data-key-dates]) .rs-check{min-height:32px}
+  .m-panel:has([data-key-dates]) .rs-check input{width:24px;height:24px;min-width:24px;flex:none}
+  .kd-drawer .le-btn,.kd-drawer .fv-filter,.kd-drawer .fv-input{min-height:32px;box-sizing:border-box}
+}
+/* CF-247 F-OPS.04 (9 Nov 2026): Reference data › Reference sources on a phone. Measured at 412 px: row open buttons 28x15, On switches 38x22 and the Show retired box 13x13, under the 24 px touch floor (WCAG 2.2 AA 2.5.8). Phone only, this list only; desktop unchanged. */
+@media (max-width:620px){[data-reference-sources] .xl-chev{min-width:24px;min-height:24px;align-items:center;justify-content:center}[data-reference-sources] .ms-switch{height:24px}[data-reference-sources] .ms-switch span{top:3px}[data-reference-sources] .rs-check{min-height:24px}[data-reference-sources] .rs-check input[type="checkbox"]{width:24px;height:24px}}
+/* CF-247 F-OPS.04 (9 Nov 2026): Models & services › AI & OpenRouter on a phone. Measured at 412 px: the profile "Show" opener was 31x10, under the 24 px touch floor (WCAG 2.2 AA 2.5.8). Phone only, this tab only; desktop unchanged. */
+@media (max-width:620px){[data-ai-config] .ai-ident summary{display:inline-flex;align-items:center;min-height:24px;min-width:24px}}
