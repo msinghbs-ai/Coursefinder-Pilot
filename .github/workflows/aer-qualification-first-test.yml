@@ -1,0 +1,37 @@
+# Guards: F-AER.03 (country and qualification variants) AER qualification-first storage (Platform Admin 11 Nov 2026 decisions, items 2 and 3) and G4 database-backed tests: migration 20261112060000 runs against its edits, refusal, behaviour and forward recovery on an isolated PostgreSQL 16 (fixtures only, never a Supabase project).
+name: AER qualification-first integration
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/20261112060000_cf247_aer_qualification_first.sql'
+      - 'supabase/held/aer_qualification_first_forward_recovery.sql'
+      - 'tests/fixtures/aer-qualification-first/**'
+      - '.github/workflows/aer-qualification-first-test.yml'
+  workflow_dispatch:
+jobs:
+  isolated-postgres:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: fixture-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: fixture-only
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash tests/fixtures/aer-qualification-first/run.sh | tee aer-qualification-first-results.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: aer-qualification-first-database-evidence
+          path: aer-qualification-first-results.log
