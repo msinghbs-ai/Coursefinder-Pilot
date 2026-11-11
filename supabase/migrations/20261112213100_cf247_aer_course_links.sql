@@ -12,7 +12,8 @@
 --   a person; the 26 others are listed for a person with the catalogue courses whose titles share most words (suggestions only, never linked by themselves).
 --   No course_minimum row has a course today (14 active, 181 proposed): the resolver's rule 2 (a per-course row) has never applied.
 -- What:
---   1. Settings: aer.course_link_on (1), aer.course_link_candidates (5), aer.course_link_candidate_min_overlap (0.5).
+--   1. Settings: aer.course_link_on (1), aer.course_link_candidates (5), aer.course_link_candidate_min_overlap (0.5); worker v0.73.0 route (step 4):
+--      reading.entry_grid_reader_on (1), reading.entry_grid_headings (the governed heading list), aer.grid_machine_admission_on (0: grid reads stay with a person).
 --   2. catalogue.entry_course_links: one link per provider and printed course label (its normalised key): confirmed (cricos, title or person), unresolved (with
 --      candidates) or rejected (a person found no catalogue course). A confirmed link is reused by every later read.
 --   3. security.entry_course_title_key_v1 (B -> Bachelor of, M -> Master of, Hons -> Honours, / and & -> and, footnote marks and "(Level n)" removed, words only) and
@@ -27,11 +28,14 @@
 --   8. public.admin_entry_course_links(provider) and public.admin_entry_course_link_decide(link, course, reason) for Layer 4 (rank 3, the Layer 4 reviewer):
 --      a person links a label to one of the provider's catalogue courses, or records that it has none; the waiting rows of that label take the decision.
 --   9. Waiting (proposed) rows that already carry a course label are linked now; admitted (active) rows are not changed here.
--- Not here: AI candidates (decision 2 step 3) come with the worker route (step 4), with a pinned model; until then the suggestions are by shared title words.
+-- Not here: AI candidates (decision 2 step 3) need a pinned, qualified model and come next; until then the suggestions are by shared title words.
+--   Reading the held UNSW, Sydney, UQ and Auckland PDFs again is a separate migration, merged after worker v0.73.0 is deployed and verified.
 -- Live definitions this change edits (md5 of pg_get_functiondef, read 12 Nov 2026 08:55 AEDT):
 --   public.svc_entry_matrix_record(uuid,jsonb,numeric,text) 2cdbd0a839cb928be0983509e3c68670
 --   security.entry_matrix_gate_v1(uuid,uuid[]) 78ca8d1f195a285c1736338768bfaa54
--- Replaces: public.svc_entry_matrix_record and security.entry_matrix_gate_v1 (same names and signatures; md5-guarded text edits).
+--   security.aer_review_read_v1(uuid) 9b4aed8b80471beaac513cdf0aa55e3d (Layer 4 AER card: each row's course and the item's university)
+--   security.aer_matrix_machine_check_v1(uuid) 4a18fbc05936dc6ae20b33c70345770c (rule D1 holds grid reads for a person until aer.grid_machine_admission_on)
+-- Replaces: public.svc_entry_matrix_record, security.entry_matrix_gate_v1 and security.aer_review_read_v1 (same names and signatures; md5-guarded text edits).
 -- Retires: nothing.
 -- Reversal without code: aer.course_link_on 0 (no new link is made, the gate no longer flags unlinked rows; links already made stay as recorded).
 
@@ -45,7 +49,16 @@ insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, ki
   'number', to_jsonb(5), 1, 20, 'courses', 1531, 'Entry requirements', 'security.entry_course_link_v1', 'CF-247 F-AER.08 step 3'),
  ('pipeline', 'aer.course_link_candidate_min_overlap', 'Entry requirements: shared title words for a course suggestion',
   'A catalogue course is suggested for an unlinked label only when at least this share of the two titles'' words is common to both (0.5 is half).',
-  'number', to_jsonb(0.5), 0.1, 1, 'share', 1532, 'Entry requirements', 'security.entry_course_link_v1', 'CF-247 F-AER.08 step 3')
+  'number', to_jsonb(0.5), 0.1, 1, 'share', 1532, 'Entry requirements', 'security.entry_course_link_v1', 'CF-247 F-AER.08 step 3'),
+ ('pipeline', 'reading.entry_grid_reader_on', 'Entry requirements: read aligned PDF course grids cell by cell',
+  '1 reads a stored PDF whose table has no drawn rules but prints an aligned course-by-qualification grid (a course per row, a country, education board or international qualification per column; UNSW, Sydney, UQ) without the model, once every value is proven to sit in exactly one column (otherwise the PDF stays held). Each cell gives one row for its course. 0 holds such PDFs as before.',
+  'number', to_jsonb(1), 0, 1, 'switch', 1533, 'Entry requirements', 'coverage-sweep entry_ai (pdf-grid.ts, entry-grid.ts)', 'Platform Admin 11 Nov 2026 decision 1 (aligned proof, fail closed)'),
+ ('pipeline', 'reading.entry_grid_headings', 'Entry requirements: grid column headings the standard rules cannot name',
+  'TOKEN=CC names a country (HKDSE=HK), TOKEN=@CODE an international qualification (EB=@EB), TOKEN=fact a course fact that is not a minimum (CRICOS, fee, English test). Read after the standard country, board and qualification rules; a heading neither names stays unknown and its cells are not read (the read is then held until it is named here).',
+  'list', '["CRICOS=fact", "Duration=fact", "Commencing semester=fact", "Start semester=fact", "tuition fee=fact", "indicative fee=fact", "IELTS=fact", "TOEFL=fact", "Higher than minimum English=fact", "See page=fact", "UFS GPA=fact", "USFP=fact", "ATAR=AU", "Tertiary Admission Rank=AU", "HKDSE=HK", "Gao Kao=CN", "GaoKao=CN", "SAT=US", "ACT=US", "USA=US", "British Columbia=CA", "Belgian=BE", "South African=ZA", "GCE AL=@GCE_A", "EB=@EB"]'::jsonb, null, null, 'headings', 1534, 'Entry requirements', 'coverage-sweep entry_ai (entry-grid.ts)', 'CF-247 F-AER.08 step 2: the UNSW, Sydney and UQ grid headings'),
+ ('pipeline', 'aer.grid_machine_admission_on', 'Entry requirements: let rule D1 admit grid reads',
+  '0 keeps every read of an aligned PDF grid (reader pdf-grid-v1) with a person in Layer 4, however well it passes, until its first reads are validated against the source (decision 1: shadow validation before admission). 1 lets rule D1 admit a complete grid read with every course linked. Switching on is a Platform Admin decision, never a side effect of a passing check.',
+  'number', to_jsonb(0), 0, 1, 'switch', 1535, 'Entry requirements', 'security.aer_matrix_machine_check_v1', 'Platform Admin 11 Nov 2026 decision 1 (shadow validation before admission)')
 on conflict (toolset_key, key) do nothing;
 
 create table if not exists catalogue.entry_course_links (
@@ -67,8 +80,7 @@ create table if not exists catalogue.entry_course_links (
   unique (provider_id, label_key),
   check (state <> 'confirmed' or course_id is not null)
 );
-comment on table catalogue.entry_course_links is
-  'CF-247 F-AER.08 step 3 (decision 2, 11 Nov 2026): the catalogue course of each course label an entry table prints, per provider. confirmed: by the CRICOS code on the row, the exact normalised title with a level the label names (one course only), or a person in Layer 4; unresolved: no single match, waiting for a person with suggested courses; rejected: a person found no catalogue course. Confirmed links are reused by every later read.';
+comment on table catalogue.entry_course_links is 'CF-247 F-AER.08 step 3 (decision 2, 11 Nov 2026): the catalogue course of each course label an entry table prints, per provider. confirmed: by the CRICOS code on the row, the exact normalised title with a level the label names (one course only), or a person in Layer 4; unresolved: no single match, waiting for a person with suggested courses; rejected: a person found no catalogue course. Confirmed links are reused by every later read.';
 alter table catalogue.entry_course_links enable row level security;
 
 alter table catalogue.provider_qualification_requirements add column if not exists course_label text;
@@ -161,10 +173,8 @@ begin
   return new;
 end $f$;
 -- named to fire before provider_entry_matrix_a_route and provider_entry_matrix_identity (triggers fire in name order), so the identity includes the course
-drop trigger if exists provider_entry_matrix_0_course_link on catalogue.provider_entry_matrix;
-create trigger provider_entry_matrix_0_course_link before insert on catalogue.provider_entry_matrix for each row execute function security.entry_course_link_tg();
-drop trigger if exists provider_qualification_requirements_0_course_link on catalogue.provider_qualification_requirements;
-create trigger provider_qualification_requirements_0_course_link before insert on catalogue.provider_qualification_requirements for each row execute function security.entry_course_link_tg();
+create or replace trigger provider_entry_matrix_0_course_link before insert on catalogue.provider_entry_matrix for each row execute function security.entry_course_link_tg();
+create or replace trigger provider_qualification_requirements_0_course_link before insert on catalogue.provider_qualification_requirements for each row execute function security.entry_course_link_tg();
 
 create or replace function pg_temp.edit_n(p_sig text, p_md5 text, p_edits text[][], p_times int[]) returns void language plpgsql as $f$
 declare v_def text := pg_get_functiondef(p_sig::regprocedure); i int; v_c int;
@@ -219,6 +229,23 @@ $n$],
   end if;
   select coalesce(jsonb_agg(g.ids), '[]'::jsonb) into v_dup$n$]
 ], array[1, 1, 1]);
+
+select pg_temp.edit_n('security.aer_review_read_v1(uuid)', '9b4aed8b80471beaac513cdf0aa55e3d', array[
+  array[$o$'level', m.level_label, 'qualification', m.qualification_name, 'band', m.benchmark_band,$o$,
+        $n$'level', m.level_label, 'qualification', m.qualification_name, 'course', m.course_label, 'course_linked', m.course_id is not null, 'band', m.benchmark_band,$n$],
+  array[$o$'lineage', security.aer_review_lineage_v1(p_item), 'rows', v_rows,$o$,
+        $n$'provider_id', (select case when li.entity_type = 'provider' then li.entity_id end from pipeline.layer4_review_items li where li.id = p_item),
+    'lineage', security.aer_review_lineage_v1(p_item), 'rows', v_rows,$n$]
+], array[1, 1]);
+
+select pg_temp.edit_n('security.aer_matrix_machine_check_v1(uuid)', '4a18fbc05936dc6ae20b33c70345770c', array[
+  array[$o$  if v_nm + v_nq = 0 then return jsonb_build_object('ok', false, 'rule', 'no_rows'$o$,
+        $n$  -- F-AER.08 (12 Nov 2026, decision 1): a read of an aligned PDF grid stays with a person until aer.grid_machine_admission_on (shadow validation first)
+  if coalesce(r.result->>'reader', '') = 'pdf-grid-v1' and security.pipeline_num_v1('aer.grid_machine_admission_on', 0) < 1 then
+    return jsonb_build_object('ok', false, 'rule', 'grid_reader_shadow', 'reason', 'A read of an aligned PDF grid stays with a person until its first reads are validated (aer.grid_machine_admission_on).',
+                              'next_action', decline, 'checks', v_checks); end if;
+  if v_nm + v_nq = 0 then return jsonb_build_object('ok', false, 'rule', 'no_rows'$n$]
+], array[1]);
 
 create or replace function public.admin_entry_course_links(p_provider uuid, p_state text default null) returns jsonb
 language plpgsql stable security definer set search_path to '' as $f$

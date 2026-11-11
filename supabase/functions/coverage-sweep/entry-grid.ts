@@ -78,6 +78,9 @@ export function entryGridRead(tables: GridTable[], refs: EntryCountryRef[], qual
     const kinds = new Map<string, HeadingKind[]>(t.heads.map((h) => [h, entryGridHeading(h, refs, quals, list, aliases)]));
     for (const [h, ks] of kinds) for (const k of ks) if (!columns.some((c) => c.head === h && c.kind === k.kind && c.country === k.country && c.qualification === k.qualification))
       columns.push({ head: h, kind: k.kind, country: k.country, qualification: k.qualification });
+    // the course's CRICOS code where the table prints one on the course's row (decision 2 step 1: the code links the course; kept beside the row, never a minimum)
+    const cricos = new Map<string, string>();
+    for (const c of t.cells) if (/\bcricos\b/i.test(c.head) && /^[0-9]{6}[0-9A-Z]$/.test(String(c.value || "").trim().toUpperCase())) cricos.set(c.label, String(c.value).trim().toUpperCase());
     for (const c of t.cells) {
       const quote = `| ${t.labelHead}: ${c.label} | ${c.head}: ${c.value} |`;
       for (const k of kinds.get(c.head) || []) {
@@ -91,7 +94,7 @@ export function entryGridRead(tables: GridTable[], refs: EntryCountryRef[], qual
           country_name: k.kind === "qualification" ? (quals.find((q) => q.code === k.qualification)?.aliases?.[0] || k.head) : k.country,
           study_level: /^(B|Bachelor)\b/.test(c.label) ? "Bachelor" : /^(M|Master)\b/.test(c.label) ? "Master" : /^(D|Doctor)\b/.test(c.label) ? "Doctor" : null,
           qualification_name: k.head, min_grade: min.grade, min_value: min.value, grade_scale: min.scale, benchmark_band: null, course_name: c.label,
-          conditions: { best_n: null, alternatives: [], subject_minimums: [], reader: ENTRY_GRID_READER, section: c.section || null,
+          conditions: { best_n: null, alternatives: [], subject_minimums: [], reader: ENTRY_GRID_READER, section: c.section || null, ...(cricos.has(c.label) ? { cricos_code: cricos.get(c.label) } : {}),
                         place: { page: c.page, x: Math.round(c.x * 10) / 10, y: Math.round(c.y * 10) / 10 }, ...(min.value == null ? { printed_without_single_number: true } : {}) },
           confidence: 1, quote: quote.slice(0, 300),
         });
