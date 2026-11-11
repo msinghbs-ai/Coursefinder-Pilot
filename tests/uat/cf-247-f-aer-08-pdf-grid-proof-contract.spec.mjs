@@ -64,3 +64,55 @@ test('fails closed: a value off its columns, two values in one cell, or a headin
   // a page of prose has no grid
   expect(g.pdfGridPage({ ...base, items: base.items.filter((i) => !g.GRID_VALUE.test(i.s.trim())) })).toBeNull()
 })
+
+// step 2: grid cells become requirement rows, each checked by the parser exactly as a model's answer
+const refs = JSON.parse(fs.readFileSync('tests/fixtures/entry-cells/country-refs.json', 'utf8'))
+const Q = JSON.parse(fs.readFileSync('tests/fixtures/entry-cells/qualifications.json', 'utf8'))
+const LIST = JSON.parse(fs.readFileSync('tests/fixtures/entry-cells/grid-heading-list.json', 'utf8'))  // the proposed reading.entry_grid_headings
+async function gridRows(f) {
+  const g = await load('supabase/functions/coverage-sweep/pdf-grid.ts', `g-${f}`)
+  const r = await load('supabase/functions/coverage-sweep/entry-grid.ts', `r-${f}`)
+  const e = await load('supabase/functions/coverage-sweep/entry.ts', `e-${f}`)
+  const grid = g.pdfGrids2(pages(f))
+  const aliases = e.entryCountryAliases(['UK=GB'])
+  const read = r.entryGridRead(grid.tables, refs, Q.qualifications, r.entryGridHeadingList(LIST), aliases)
+  const parsed = e.entryMatrixParsed(read.answer, grid.text, Object.assign([], { forms: [] }), { countryAliases: aliases, qualifications: Q.qualifications, globalTokens: Q.global_tokens })
+  return { read, parsed }
+}
+
+test('every printed minimum becomes one row for one course and one country or qualification; only N/A cells give none', async () => {
+  const counts = {}
+  for (const f of ['unsw', 'sydney', 'uq']) {
+    const { read, parsed } = await gridRows(f)
+    counts[f] = [parsed.rows.length, parsed.qualification_rows.length]
+    expect(parsed.dropped).toEqual([])  // the parser keeps every row (quote on the page, value in the quote, scale)
+    expect(read.dropped.every((d) => d.reason === 'no_minimum_published')).toBe(true)
+    expect(read.columns.filter((c) => c.kind === 'unknown')).toEqual([])
+    for (const x of parsed.rows) { expect(x.course_name).toBeTruthy(); expect(x.country_code).toMatch(/^[A-Z]{2}$/) }
+  }
+  expect(counts).toEqual({ unsw: [1997, 260], sydney: [1869, 178], uq: [1268, 162] })
+})
+
+test('headings: boards, international qualifications, governed fallbacks and course facts', async () => {
+  const { read } = await gridRows('unsw')
+  const col = (h) => read.columns.filter((c) => c.head === h || c.head.startsWith(h)).map((c) => `${c.kind}:${c.country || c.qualification || ''}`)
+  expect(col('India AISSCE')).toEqual(['board:IN'])
+  expect(col('IB')).toEqual(['qualification:IB_DP'])
+  expect(col('GCE AL')).toEqual(['qualification:GCE_A', 'qualification:NCUK_IFY'])  // "GCE AL or NCUK": one row for each
+  expect(col('Europe (EB)')).toEqual(['qualification:EB'])  // governed list EB=@EB
+  expect(col('Gao Kao')).toEqual(['board:CN'])               // governed list
+  expect(col('UFS GPA')).toEqual(['fact:'])                  // the university's own foundation program: not a country or recognised qualification
+  const s = await gridRows('sydney')
+  expect(s.read.columns.filter((c) => c.kind === 'fact').map((c) => c.head)).toContain('CRICOS')
+})
+
+test('values keep their printed words; a number only when the cell is one number', async () => {
+  const r = await load('supabase/functions/coverage-sweep/entry-grid.ts', 'v')
+  expect(r.entryGridValue('75%', 'China - Gaokao')).toEqual({ grade: '75%', value: 75, scale: 'percentage' })
+  expect(r.entryGridValue('3.4', 'British Columbia GPA')).toEqual({ grade: '3.4', value: 3.4, scale: 'gpa' })
+  expect(r.entryGridValue('80', 'INT ATAR')).toEqual({ grade: '80', value: 80, scale: 'rank' })
+  expect(r.entryGridValue('A2', 'Malaysia - UEC')).toEqual({ grade: 'A2', value: null, scale: 'letter' })
+  expect(r.entryGridValue('14/14', 'GCE 3/4 A Levels')).toEqual({ grade: '14/14', value: null, scale: 'none' })
+  expect(r.entryGridValue('3..6', 'Gao Kao')).toEqual({ grade: '3..6', value: null, scale: 'none' })  // a misprint is never read as a number
+  expect(r.entryGridValue('N/A', 'IB')).toBeNull()
+})
