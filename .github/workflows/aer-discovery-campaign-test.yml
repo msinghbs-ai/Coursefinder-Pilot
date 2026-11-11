@@ -1,0 +1,37 @@
+# Guards: F-AER.04 AER source discovery campaign (Platform Admin 11 Nov 2026 16:24 decisions) and G4 database-backed tests: migration 20261112040000 runs against its edits, refusal, behaviour and forward recovery on an isolated PostgreSQL 16 (fixtures only, never a Supabase project).
+name: AER discovery campaign integration
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/20261112040000_cf247_aer_discovery_campaign.sql'
+      - 'supabase/held/aer_discovery_campaign_forward_recovery.sql'
+      - 'tests/fixtures/aer-discovery-campaign/**'
+      - '.github/workflows/aer-discovery-campaign-test.yml'
+  workflow_dispatch:
+jobs:
+  isolated-postgres:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: fixture-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: fixture-only
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash tests/fixtures/aer-discovery-campaign/run.sh | tee aer-discovery-campaign-results.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: aer-discovery-campaign-database-evidence
+          path: aer-discovery-campaign-results.log
