@@ -1,7 +1,7 @@
-<!-- sop-export: id=operator-sop; version=2.19; reviewed-release=2.15.494; source-commit=3822a416144a+local; content-sha256=d5cd2d9e8bebd44395df3289612accf6c9f63d64ef920609306fe85a0d68418a -->
+<!-- sop-export: id=operator-sop; version=2.20; reviewed-release=2.15.494; source-commit=3a351bca52f6+local; content-sha256=6d7a4bee5dd27428c5f119ab0bbdb1b63a76ad41896bbeeb1c3563673ef7c3f6 -->
 # StudySearch – Operator SOP
 
-**Version:** 2.19 (reviewed for platform release v2.15.494)  
+**Version:** 2.20 (reviewed for platform release v2.15.494)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -86,6 +86,8 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | Website to find | Search the official site, confirm the university's name on its home page, enter and save it. | Layer 4 › Inbox (Website needed) |
 | An entry requirement that is wrong, missing or no longer published (v2.15.363) | Catalogue › Entry requirements: filter to the row and open it to read its quote and stored copy. Correct an active row with Edit in list (give the reason first); add a missing one with Add requirement from the provider's own source and its stored copy; Withdraw a row no longer published, or Quarantine one whose evidence is in doubt, with a reason. A waiting row is decided in Layer 4, not here. | Catalogue › Entry requirements |
 | Automation failing three runs in a row | Pipeline Operator: note the job, the error and when, and raise it with the PIM Admin. PIM Admin (the Platform Admin for an automation marked Platform Admin): pause it with a reason and raise it with the Platform Admin. | Scheduled jobs › Automations |
+| A provider with no description, or only the short register profile | Curator and above: open the provider (or tick several in the Providers list), press Extract / refresh description now, then Fill description (no reason needed; up to 25 providers in one click). The AI writes it from the provider's own About page within minutes, ahead of the regular reader; it passes the same checks and is admitted automatically or waits in Layer 4. Fill says why when it cannot start (written by hand, already described, not published, identity not proved, already in progress). A description you type yourself is kept as written by hand: Fill, the reader and the AI never replace it. The regular reader runs every 5 minutes by itself; changing its pace or stopping it is for the Platform Admin. | Providers record › Description; Providers list (ticked providers) |
+| Layer 4: Provider description waiting | Pipeline Operator and above: open the provider's stored About page and compare each sentence with its passage; Approve or Reject with a reason. These are the descriptions the automatic admission sent to a person: marketing wording, a refused topic, or words kept for human eyes ("accredited"). Curator: read it and correct the provider's description on the record if the page says otherwise. | Layer 4 › Inbox |
 | A value on a record is wrong | Correct it on the record: it is kept as entered by hand and automation will not overwrite it until released. | Courses or Providers record |
 | An admitted value that looks wrong on a course (Admitted automatically) | Correct it on the course record (kept as entered by hand) and tell the Platform Admin the university, field and course, so the adapter can be fixed or its Admit switched off. | Courses record; Layer 2/3 › Universities |
 | Onboarding stopped: no website, too few course pages | Enter the website, or add course pages in the Adapter builder (2.1); onboarding carries on or the Platform Admin retries. | Layer 2/3 › Universities; Layer 2/3 › Universities › Builder |
@@ -112,6 +114,7 @@ How operators keep the data flowing and decide what automation cannot: the revie
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.20 | 11 Nov 2026 | v2.15.494 | Provider descriptions: Fill description on a provider record; deciding the provider descriptions that wait in Layer 4; a description typed by hand is never replaced. |
 | 2.19 | 8 Nov 2026 | v2.15.494 | Operations shows each automated lane stage by stage; the Firecrawl card shows allowance, remaining credits and floor; Course description review shows capacity and a university-ordered pack. New spend paths ship switched off; no data gain, admission or publication is claimed. |
 | 2.18 | 6 Nov 2026 | v2.15.493 | English course-group approval and binding, same-family supersession and coverage holds; no automatic group admission or paid discovery activation. |
 | 2.17 | 6 Nov 2026 | v2.15.492 | Course description reviewer navigation, held-source evidence and separate proposal/admission/publication measures; human admission authority remains. |
