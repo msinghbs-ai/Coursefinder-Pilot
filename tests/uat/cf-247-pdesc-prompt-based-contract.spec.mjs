@@ -1,5 +1,5 @@
 // Guards: F-PDESC prompt-based provider descriptions (Platform Admin 11 Nov 2026 14:51 "prompt based ... easily modified rather than stringent rules" and 14:57 "simple button for operators, the Platform Admin maintains the prompt in the settings, on demand has no applicable limits, the regular scan honours the Firecrawl and AI limits, a description written by hand is never replaced")
-// Source contract for migration 20261112010000, worker coverage-sweep v0.69.0 and the screens, plus the worker's passage check run on a real page
+// Source contract for migrations 20261112010000 (file 20261112011000) and 20261112023700 (name forms, prompt v4), worker coverage-sweep v0.69.0 and the screens, plus the worker's passage check run on a real page
 // text. The migration's guarded replacements were dry-run against the live bodies (every anchor once, every function compiled, all rolled back)
 // before merge; the live result is the release controller's check after deploy. Nothing here claims to have exercised the live database.
 import { test, expect } from '@playwright/test'
@@ -8,6 +8,7 @@ import { promptSentences, promptRequest, PROMPT_SCHEMA } from '../../supabase/fu
 
 const MIG = fs.readFileSync('supabase/migrations/20261112011000_cf247_pdesc_prompt_based.sql', 'utf8')
 const IX = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
+const MIG4 = fs.readFileSync('supabase/migrations/20261112023700_cf247_pdesc_name_forms_prompt_v4.sql', 'utf8')
 const read = (f) => fs.readFileSync(f, 'utf8')
 
 test('the prompt is kept in the database, versioned, one active, and edited only as a new version by the Platform Admin with a reason', () => {
@@ -119,4 +120,24 @@ test('the screens: the prompt card on Models & services › AI, Fill description
   expect(panel).toContain('const data = await fillClient.fill(fillable.map(c => c.p.provider_id))')
   expect(panel).not.toMatch(/supabase\.(rpc|from)\(/)  // the panel reaches the database through its service module only
   expect(MIG).toContain("('screen', 'ProviderDescriptionRunValidate', 'Layer 2', 'Provider descriptions', 'Run & Validate card (cohort preview, prepare, run)', 'retiring'")
+})
+
+test('20261112023700: the first sentence may name the provider without its legal suffix, comma-listed trading names or "&"; the check is still the provider\'s own name', () => {
+  expect(MIG4).toContain("if md5(pg_get_functiondef('security.provider_description_validate_v1(uuid,text,timestamptz,jsonb)'::regprocedure)) <> '250c16ac119f7e16f48487dcc977970b'")
+  expect(MIG4).toContain('create or replace function security.pdesc_name_forms_v1(p_names text[]) returns text[]')
+  expect(MIG4).toContain("pty\\.?\\s*ltd\\.?|proprietary\\s+limited|limited|ltd\\.?|inc\\.?|incorporated|llc")
+  expect(MIG4).toContain("string_to_array(n, ',')")
+  expect(MIG4).toContain("unnest(security.pdesc_name_forms_v1(array[p.canonical_name, p.display_name, p.short_name])) nm")
+  expect(MIG4).toContain("order by o limit 1), '&', ' and '), btrim(nm))) then$n$")
+  for (const c of ["'INSTITUTE OF MANAGEMENT LEARNING' = any(", "'Leaders Institute' = any(", "'Elite Hairstyling and Esthetics Training Center' = any(", "'Nelson Marlborough Institute of Technology' = any("]) expect(MIG4).toContain(c)
+})
+
+test('20261112023700: prompt version 4 asks for whole passages, is added only over version 3, and self-heal reads held answers again once for it', () => {
+  expect(MIG4).toContain("where version = 3 and status = 'active'")
+  expect(MIG4).toContain("if v3 is null then raise notice")  // a version the Platform Admin saved on screen is never replaced
+  expect(MIG4).toContain('never shorten it, never join two passages into one')
+  expect(MIG4).toContain("values (4, v4, 'active',")
+  expect(MIG4).toMatch(/-- Replaces: .+\n-- Retires: /)
+  expect(MIG).toContain('"quote_not_on_page"')
+  expect(MIG).toContain('"first_sentence_no_name"')  // both in pdesc.prompt_reoffer_rules
 })
