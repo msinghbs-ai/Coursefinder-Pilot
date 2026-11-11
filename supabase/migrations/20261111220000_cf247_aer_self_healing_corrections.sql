@@ -33,7 +33,7 @@ do $g$
 declare r record;
 begin
   for r in select * from (values ('security.aer_schedule_tick_v1(boolean)'), ('security.aer_schedule_held_v1(integer)'), ('security.aer_recovery_rule_v1(uuid)'),
-                                 ('security.course_entry_correction_check_v1(uuid,uuid,text)'), ('security.pipeline_num_v1(text,numeric)')) v(sig) loop
+                                 ('security.course_entry_correction_check_v1(uuid,uuid,text,jsonb,jsonb)'), ('security.pipeline_num_v1(text,numeric)')) v(sig) loop
     if to_regprocedure(r.sig) is null then raise exception 'required % is missing', r.sig; end if;
   end loop;
   if to_regclass('pipeline.aer_schedule_runs') is null then raise exception 'pipeline.aer_schedule_runs is missing'; end if;
