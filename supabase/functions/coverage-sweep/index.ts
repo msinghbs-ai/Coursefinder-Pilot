@@ -2459,9 +2459,12 @@ async function handle(req: Request): Promise<Response> {
            } catch (e) { failed ??= e }
           });
           if (failed) throw failed;
-          for (const { parsed, nm } of parts) { rows.push(...nm.rows); dropped.push(...parsed.dropped, ...nm.dropped); edition ??= parsed.edition; intake_year ??= parsed.intake_year
-            // v0.70.0 (F-AER.03): a qualification row read twice in a slice overlap is kept once
-            for (const q of parsed.qualification_rows || []) { const k = [q.qualification_code, q.study_level, q.min_grade, q.min_value, q.quote].join("|"); if (!qrows.some((y) => [y.qualification_code, y.study_level, y.min_grade, y.min_value, y.quote].join("|") === k)) qrows.push(q) } }
+          for (const { parsed, nm } of parts) { rows.push(...nm.rows); dropped.push(...parsed.dropped, ...nm.dropped); edition ??= parsed.edition; intake_year ??= parsed.intake_year }
+          // v0.70.0 (F-AER.03): the slices' qualification rows, in slice order; a row read twice in a slice overlap is kept once
+          for (const { parsed } of parts) for (const q of parsed.qualification_rows || []) {
+            const k = [q.qualification_code, q.study_level, q.min_grade, q.min_value, q.quote].join("|");
+            if (!qrows.some((y) => [y.qualification_code, y.study_level, y.min_grade, y.min_value, y.quote].join("|") === k)) qrows.push(q);
+          }
           cost += c1;
           // v0.48.3: the whole read is compared with the source-table manifest; a read that is not complete proposes nothing (held, kept, retried
           // within entry.matrix_attempts by the database)
