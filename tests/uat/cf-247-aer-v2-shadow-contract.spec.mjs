@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { AER_V2_SCHEMA, aerFlat, aerNumbers, aerV2Answer, aerV2Refs, aerV2Request, aerV2Sha256, aerV2User, aerV2Verify } from '../../supabase/functions/coverage-sweep/aer-v2.ts'
 
-const MIG = 'supabase/migrations/20261113065000_cf247_aer_v2_shadow.sql'
+const MIG = 'supabase/migrations/20261113103100_cf247_aer_v2_shadow.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const mod = fs.readFileSync('supabase/functions/coverage-sweep/aer-v2.ts', 'utf8')
