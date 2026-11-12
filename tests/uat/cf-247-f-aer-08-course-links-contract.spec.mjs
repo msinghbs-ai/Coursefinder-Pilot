@@ -101,3 +101,21 @@ test('production verification: the printed course is part of a row\'s identity (
   expect(ix).toMatch(/pdfTaken\+\+ >= Math\.max\(1, Number\(ws\["reading\.entry_pdf_per_call"\]\) \|\| 1\)\) \{ await rec\(\{ p_error: "time budget" \}\)/)
   expect(r).toContain("'reading.entry_pdf_per_call'")
 })
+
+test('the title rule is an index lookup (UNSW: statement timeout), added beside the consumer table without changing it; UNSW is read again', () => {
+  const r = fs.readFileSync('supabase/migrations/20261113023100_cf247_aer_course_link_index.sql', 'utf8')
+  expect(r).toContain('on catalogue.courses (provider_id, security.entry_course_title_key_v1(canonical_title))')
+  expect(r).toContain('on catalogue.courses (provider_id, security.entry_course_title_key_v1(display_title))')
+  expect(r).not.toMatch(/^\s*alter table catalogue\.courses/im)
+  expect(r).not.toMatch(/^\s*(delete|drop|truncate)\b/im)
+  expect(r).toContain("public.admin_entry_matrix_reread(ids,")
+  expect(M).toContain("security.entry_course_title_key_v1(c.canonical_title) = v_key or security.entry_course_title_key_v1(c.display_title) = v_key")
+  // the stored decision is looked up before any setting or rule is read; suggestions are made in Layer 4, outside the statement that records a read
+  const link = r.slice(r.indexOf('create or replace function security.entry_course_link_v1'), r.indexOf('create or replace function security.entry_course_link_suggest_v1'))
+  expect(link.indexOf("if l.state = 'confirmed' then return l.course_id; end if;")).toBeLessThan(link.indexOf("pipeline_num_v1('aer.course_link_on'"))
+  expect(link).not.toContain('aer.course_link_candidates')
+  expect(link).toContain("'unresolved', 'none', nullif(v_code, ''), '[]'::jsonb")
+  expect(r).toMatch(/public\.admin_entry_course_links[\s\S]*?language plpgsql volatile[\s\S]*?perform security\.entry_course_link_suggest_v1\(l\.id\)/)
+  expect(r).toContain("'6b78fe97a66288f86d587db399e05567'")
+  expect(r).toContain("'c8a14456f2549ea0f81b80cc4f3c4a2f'")
+})
