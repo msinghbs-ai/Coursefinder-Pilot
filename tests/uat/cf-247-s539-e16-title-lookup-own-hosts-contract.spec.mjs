@@ -25,3 +25,15 @@ test('two md5-guarded edits: the title lookup (same provider) and the identity-p
   expect(mig).toMatch(/^-- Replaces: security\.course_page_check_v1/m)
   expect(mig).toMatch(/^-- Retires: nothing/m)
 })
+
+test('the intake wording lookup (same course) also reads the page under its variants, and the variants are taken once per call; md5-guarded', () => {
+  const w = fs.readFileSync('supabase/migrations/20261113182000_cf247_intake_wording_url_variants.sql', 'utf8')
+  expect(w).toContain("pg_temp.edit_all('security.intake_page_wording_v1(uuid,uuid,text)', 'daa96acbe87de1cf0a2bec523a911c7a', 'eb380f591dc17bf536c94d999f4f1b26'")
+  // speed: the variants come once per call from the function's own arguments, never per scanned page
+  const once = "or g.url = any ((select security.course_page_url_variants_v1(co.provider_id, p_url) from catalogue.courses co where co.id = p_course)::text[]))"
+  expect(w.split(once).length - 1).toBe(3)
+  expect(w).toContain("pg_temp.edit_all('security.course_page_check_v1(uuid,text,text,text)', '554d95af03219a28a2b7274914a46af6', '38c776ca90378d866167390f7d40d42b'")
+  expect(w).toMatch(/^-- Replaces: security\.intake_page_wording_v1/m)
+  expect(w).toMatch(/^-- Retires: nothing/m)
+  expect(w).not.toMatch(/^\s*(drop|delete|truncate)\b/im)
+})
