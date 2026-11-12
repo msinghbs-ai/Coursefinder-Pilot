@@ -10,7 +10,9 @@
 --      active intakes by label and year; the element is otherwise returned unchanged).
 --   3. public.website_v3_course (both forms), website_v3_course_search, website_v3_sync: call the frozen v2 function and return its answer with
 --      item 2 applied to each course item. Nothing else in the answer changes.
---   4. Edge function website-api-v3 (same key, rate limit and request log as website-api-v2; actions logged as "v3:<action>").
+--   4. public.website_v3_reference, _providers, _provider (both forms), _rankings, _scholarships, _scholarship: the v2 answer unchanged (WP-0.2).
+--   5. Edge function website-api-v3 (same key, rate limit and request log as website-api-v2; actions logged as "v3:<action>"); every action calls a
+--      website_v3_* function.
 -- Guards: G1 (no job), G2 (no operational value), G3 (website-api-v2, public.website_v2_*, api.* and their tables are only read: nothing is
 --   altered, dropped, renamed or retyped; v3 is outside the frozen surface until the website goes live on it, Decision 277), G4 (cf-247-s538).
 -- Replaces: nothing (v2 stays live and frozen).
@@ -121,6 +123,45 @@ grant execute on function public.website_v3_course(text) to service_role;
 grant execute on function public.website_v3_course(text, text) to service_role;
 grant execute on function public.website_v3_course_search(jsonb, integer, integer, text) to service_role;
 grant execute on function public.website_v3_sync(text, boolean, text[], integer) to service_role;
+
+
+-- WP-0.2 (build brief docs/integrations/api-v3/WEBSITE-API-V3-BUILD-BRIEF.md): every other action has its own v3 function, today the v2 answer
+-- unchanged, so later v3 additions change website_v3_* only and never the edge function's routing or v2.
+create or replace function public.website_v3_reference()
+returns jsonb language sql stable security definer set search_path = '' as $$ select public.website_v2_reference() $$;
+comment on function public.website_v3_reference() is 'Website API v3 (Decision 277): public.website_v2_reference unchanged (WP-0.2).';
+create or replace function public.website_v3_providers(p_filters jsonb, p_page integer, p_page_size integer, p_sort text)
+returns jsonb language sql stable security definer set search_path = '' as $$ select public.website_v2_providers(p_filters, p_page, p_page_size, p_sort) $$;
+comment on function public.website_v3_providers(jsonb, integer, integer, text) is 'Website API v3 (Decision 277): public.website_v2_providers unchanged (WP-0.2).';
+create or replace function public.website_v3_provider(p_provider_id text)
+returns jsonb language sql stable security definer set search_path = '' as $$ select public.website_v2_provider(p_provider_id) $$;
+comment on function public.website_v3_provider(text) is 'Website API v3 (Decision 277): public.website_v2_provider unchanged (WP-0.2).';
+create or replace function public.website_v3_provider(p_provider_id text, p_edu_country text)
+returns jsonb language sql stable security definer set search_path = '' as $$ select public.website_v2_provider(p_provider_id, p_edu_country) $$;
+comment on function public.website_v3_provider(text, text) is 'Website API v3 (Decision 277): public.website_v2_provider unchanged (WP-0.2).';
+create or replace function public.website_v3_rankings(p_filters jsonb, p_page integer, p_page_size integer)
+returns jsonb language sql stable security definer set search_path = '' as $$ select public.website_v2_rankings(p_filters, p_page, p_page_size) $$;
+comment on function public.website_v3_rankings(jsonb, integer, integer) is 'Website API v3 (Decision 277): public.website_v2_rankings unchanged (WP-0.2).';
+create or replace function public.website_v3_scholarships(p_filters jsonb, p_page integer, p_page_size integer)
+returns jsonb language sql stable security definer set search_path = '' as $$ select public.website_v2_scholarships(p_filters, p_page, p_page_size) $$;
+comment on function public.website_v3_scholarships(jsonb, integer, integer) is 'Website API v3 (Decision 277): public.website_v2_scholarships unchanged (WP-0.2).';
+create or replace function public.website_v3_scholarship(p_scholarship_id text)
+returns jsonb language sql stable security definer set search_path = '' as $$ select public.website_v2_scholarship(p_scholarship_id) $$;
+comment on function public.website_v3_scholarship(text) is 'Website API v3 (Decision 277): public.website_v2_scholarship unchanged (WP-0.2).';
+revoke all on function public.website_v3_reference() from public, anon, authenticated;
+grant execute on function public.website_v3_reference() to service_role;
+revoke all on function public.website_v3_providers(jsonb, integer, integer, text) from public, anon, authenticated;
+grant execute on function public.website_v3_providers(jsonb, integer, integer, text) to service_role;
+revoke all on function public.website_v3_provider(text) from public, anon, authenticated;
+grant execute on function public.website_v3_provider(text) to service_role;
+revoke all on function public.website_v3_provider(text, text) from public, anon, authenticated;
+grant execute on function public.website_v3_provider(text, text) to service_role;
+revoke all on function public.website_v3_rankings(jsonb, integer, integer) from public, anon, authenticated;
+grant execute on function public.website_v3_rankings(jsonb, integer, integer) to service_role;
+revoke all on function public.website_v3_scholarships(jsonb, integer, integer) from public, anon, authenticated;
+grant execute on function public.website_v3_scholarships(jsonb, integer, integer) to service_role;
+revoke all on function public.website_v3_scholarship(text) from public, anon, authenticated;
+grant execute on function public.website_v3_scholarship(text) to service_role;
 
 insert into pipeline.component_register(kind, name, layer, purpose, status, replaces, introduced_in) values
  ('edge_function', 'website-api-v3', 'Website API', 'Website API v3 (Decision 277): copy of website-api-v2 plus R28; open to additions until the website goes live on it', 'active', '{}', '20261113180000')

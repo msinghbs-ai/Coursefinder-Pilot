@@ -1,8 +1,8 @@
 // Website API v3 at its own URL (CF-247, Decision 277, Platform Admin 12 Nov 2026 20:59 / 21:00: "is it possible to create API v3 and keep the API
 // v2 intact ?"; "Build R28 in v3 instead of v2? yes"; "keep v3 open to additions until the website goes live on it, then freeze it").
 // A copy of website-api-v2 (which stays frozen under G3 and is not touched): the same key, rate limit and request log (actions logged as
-// "v3:<action>"), the same public.website_v2_* functions for every action, except course, search and sync, which call public.website_v3_*:
-// those return the v2 answer with intakes[].start_date_status added (R28). v3 is open to additions until the website goes live on it; then it
+// "v3:<action>"). Every action calls a public.website_v3_* function: course, search and sync return the v2 answer with
+// intakes[].start_date_status added (R28); the others return the v2 answer unchanged until a v3 addition changes them. v3 is open to additions until the website goes live on it; then it
 // joins the frozen consumer surface (G3).
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -129,11 +129,11 @@ Deno.serve(async (req: Request) => {
   // the same functions and arguments as the website-search-v2 contract path on wix-course-api
   let fn = ""; let args: Json = {};
   switch (action) {
-    case "reference": fn = "website_v2_reference"; break;
+    case "reference": fn = "website_v3_reference"; break;
     case "search": fn = "website_v3_course_search"; args = { p_filters: filters, p_page: page, p_page_size: pageSize, p_sort: sort }; break;
-    case "providers": fn = "website_v2_providers"; args = { p_filters: filters, p_page: page, p_page_size: pageSize, p_sort: sort }; break;
-    case "rankings": fn = "website_v2_rankings"; args = { p_filters: filters, p_page: page, p_page_size: pageSize }; break;
-    case "scholarships": fn = "website_v2_scholarships"; args = { p_filters: filters, p_page: page, p_page_size: pageSize }; break;
+    case "providers": fn = "website_v3_providers"; args = { p_filters: filters, p_page: page, p_page_size: pageSize, p_sort: sort }; break;
+    case "rankings": fn = "website_v3_rankings"; args = { p_filters: filters, p_page: page, p_page_size: pageSize }; break;
+    case "scholarships": fn = "website_v3_scholarships"; args = { p_filters: filters, p_page: page, p_page_size: pageSize }; break;
     case "course": {
       const c = cleanText(body.course_id) || cleanText(body.course_code);
       if (!c || c.length > 200) return fail(400, "INVALID_INPUT", {}, "course_id or course_code required");
@@ -145,12 +145,12 @@ Deno.serve(async (req: Request) => {
       const p = cleanText(body.provider_id);
       if (!p || p.length > 200) return fail(400, "INVALID_INPUT", {}, "provider_id required");
       const ec = eduCountry(body.edu_country); if (ec === false) return fail(400, "INVALID_INPUT", {}, "edu_country must be a two-letter country code");
-      fn = "website_v2_provider"; args = ec ? { p_provider_id: p, p_edu_country: ec } : { p_provider_id: p }; break;
+      fn = "website_v3_provider"; args = ec ? { p_provider_id: p, p_edu_country: ec } : { p_provider_id: p }; break;
     }
     case "scholarship": {
       const s = cleanText(body.scholarship_id);
       if (!s) return fail(400, "INVALID_INPUT", {}, "scholarship_id required");
-      fn = "website_v2_scholarship"; args = { p_scholarship_id: s }; break;
+      fn = "website_v3_scholarship"; args = { p_scholarship_id: s }; break;
     }
     case "sync": {
       // the same change stream as the contract path, so a cursor from either URL works on the other

@@ -8,19 +8,23 @@ const mig = fs.readFileSync('supabase/migrations/20261113180000_cf247_website_ap
 const STATUSES = ['known', 'no_official_calendar', 'month_only', 'not_on_course_page', 'course_page_not_verified', 'next_year_calendar_pending',
   'not_yet_read', 'own_calendar', 'conflicting_evidence', 'held_for_review', 'rolling']
 
-test('v3 is v2 with only course, search and sync routed to website_v3_*; same key, rate limit and log', () => {
+test('v3 is v2 with every action routed to website_v3_*; same key, rate limit and log', () => {
   expect(v3).toContain('const API_VERSION = "website-v3";')
   expect(v3).toContain('case "search": fn = "website_v3_course_search";')
   expect(v3).toContain('fn = "website_v3_course"; args = ec ? { p_identifier: c, p_edu_country: ec } : { p_identifier: c };')
   expect(v3).toContain('fn = "website_v3_sync";')
-  for (const f of ['website_v2_reference', 'website_v2_providers', 'website_v2_rankings', 'website_v2_scholarships', 'website_v2_provider', 'website_v2_scholarship'])
-    expect(v3, f).toContain(`"${f}"`)
+  // every action calls a website_v3_* function (WP-0.1); none calls a website_v2_* function directly
+  for (const f of ['reference', 'providers', 'rankings', 'scholarships', 'provider', 'scholarship']) {
+    expect(v3, f).toContain(`"website_v3_${f}"`)
+    expect(mig, f).toContain(`public.website_v2_${f}(`)
+  }
+  expect(v3).not.toMatch(/fn = "website_v2_/)
   for (const f of ['website_api_v2_auth', 'website_api_v2_rate', 'website_api_v2_log']) expect(v3).toContain(`svc.rpc("${f}"`)
   expect(v3).toContain('p_action: action ? `v3:${action}` : action')
   // the body below the header differs from v2 only in the routed lines
   const body = (s) => s.slice(s.indexOf('import "jsr:'))
   const diff = body(v3).split('\n').filter((l, i) => l !== body(v2).split('\n')[i])
-  expect(diff.length).toBeLessThanOrEqual(6)
+  expect(diff.length).toBeLessThanOrEqual(12)
   expect(v2).toContain('const API_VERSION = "website-v2";')
 })
 
