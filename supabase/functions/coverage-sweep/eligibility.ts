@@ -79,3 +79,15 @@ export function eligibilityOutcome(first: any | null, linked: { url: string; sta
   if (hit) return { outcome: "proven", source: "linked", judged: hit.judged, source_url: hit.url };
   return { outcome: "silent", source: null, judged: first, source_url: null };
 }
+
+// v0.76.0 (12 Nov 2026, F-SCH.01 shadow review): the re-check proof accepts any quote holding the word "international"; in the first 200 shadow reads 2 of
+// 5 international proofs were a course name ("Master of International Business", "an international business honours program"). For acting on a reader
+// answer, "international" must describe who may apply: international students or applicants, the "(international)" eligibility tag, domestic and
+// international, overseas students, a student visa, non-residents. A domestic proof is unchanged.
+export const INTL_APPLICANT = /\binternational\s+(?:students?|applicants?|candidates?|scholars?|offer[- ]holders?|learners?)\b|\(\s*international\s*\)|\b(?:domestic|local|australian|new zealand|canadian)\s+(?:students?\s+)?(?:and|or|&)\s+international\b|\boverseas\s+(?:students?|applicants?)\b|\bstudents?\s+from\s+overseas\b|\bstudent\s+visa\b|\bsubclass\s+500\b|\bnon[- ]?residents?\b/i;
+export function eligibilityProof(judged: any) {
+  if (!judged?.audience_proven || judged.audience === "domestic") return judged;
+  if (INTL_APPLICANT.test(String(judged.audience_quote || ""))) return judged;
+  return { ...judged, audience_proven: false, recommendation: "audience_not_stated", proof: "international_not_applicant",
+           why: "The sentence holds the word international but not as who may apply (for example a course name)." };
+}
