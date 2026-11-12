@@ -30,7 +30,7 @@ test('11200 + worker v0.20.3: proven value stands; nationality proves internatio
   expect(outside(b)).not.toMatch(/^\s*(drop|delete|truncate)\b/im)
   expect(w).toContain('v0.20.3 (12 Oct 2026, Platform Admin status review): an audience quote that names another country')
   expect(w).toContain('|| foreignNamed(a?.audience_quote, home))')
-  expect(w).toContain('const checks = checkScholarshipAnswer(a, `${title} ${h1} ${text}`, it.country || null);')
+  expect(w).toContain('const checks: Record<string, unknown> = checkScholarshipAnswer(a, `${title} ${h1} ${text}${linked ? " " + linked.text : ""}`, it.country || null);') // v0.77.0: the bundle's linked terms page counts
 })
 
 const c = fs.readFileSync('supabase/migrations/20261012011300_cf247_central_pages_ai.sql', 'utf8')

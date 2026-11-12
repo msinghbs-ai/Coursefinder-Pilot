@@ -1,4 +1,4 @@
-// Guards: CF-247 v2.15.243 (S9, Platform Admin 11 Oct 2026): scholarships read through the scraper only;
+// Guards: CF-247 v2.15.243 (S9, Platform Admin 11 Oct 2026): scholarship evidence journey, dates and course links (the scraper-only rule superseded by the F-SCH redesign, 12 Nov 2026);
 // CF-247 v2.15.243 (S9, Platform Admin 11 Oct 2026): scholarships read through the scraper only; dates, course links with proof,
 // the Evidence & extraction journey; Study Australia and national registers retired; legacy scholarship screens removed.
 import { test, expect } from '@playwright/test'
@@ -9,15 +9,12 @@ const reader = fs.readFileSync('supabase/functions/coverage-sweep/scholarship.ts
 const m84 = fs.readFileSync('supabase/migrations/20261011008400_cf247_scholarship_evidence_journey.sql', 'utf8')
 const m85 = fs.readFileSync('supabase/migrations/20261011008500_cf247_scholarship_course_exclusions.sql', 'utf8')
 
-test('scraper only: no direct read, no fallback, robots.txt not consulted for scholarship pages; a page waits for the scraper', () => {
-  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(18\.2|19\.\d+|[2-9]\d\.\d+)"/) // v0.19.0 keeps the scraper-only scholarship reading
+// 12 Nov 2026 (F-SCH production redesign, Platform Admin directive 12 Nov 2026 16:12 §6): the scraper-only rule for scholarship pages is superseded
+// (official page read directly first, Firecrawl when needed; guarded by cf-247-f-sch-04); the test "scraper only: ..." is retired (docs/test-retirement-log.md).
+test('site maps through the scraper; listing pages page by page; a page waiting for the scraper is tried again; register search retired', () => {
   expect(worker).toContain('const SCH_VERSION = "scholarship-sweep-v0.7.3"')
-  const fn = worker.slice(worker.indexOf('const readSch = async'), worker.indexOf('const readSch = async') + 1600)
-  expect(fn).toContain('if (!(await useFc("sch_scrape", providerId, url, true))) return none("waiting_scraper");')
-  expect(fn).not.toContain('readDirect(')
-  expect(fn).not.toContain('robotsAllows(')
   expect(worker).toContain('const pg = await readSchPage(it.url, it.provider_id);') // scholarship pages and candidates (v0.58.0: through readSch, with award sections and redirects)
-  expect(worker).toContain('const pg = await readSch(url, r.provider_id, wsNum("scholarship.catalogue_render_wait_ms", 5000));') // listing pages, page by page (v0.58.0)
+  expect(worker).toContain('const pg = await readSch(url, r.provider_id, wsNum("scholarship.catalogue_render_wait_ms", 5000), false);') // listing pages, page by page (v0.58.0), scraper first (v0.77.0)
   expect(worker).toContain('const gm = await useFcWhy("sch_map", p.provider_id, origin, true);') // site maps through the scraper (v0.58.0: each source of the provider)
   expect(worker).not.toContain('svc_scholarship_search_next') // register search phase retired
   expect(m84).toContain("when p_read_status='waiting_scraper' then now()+interval '1 hour'")
