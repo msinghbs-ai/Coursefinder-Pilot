@@ -102,7 +102,7 @@ test('today: the policy route has no provider-type scope, and deterministic read
 
 test('UNSW faculty rows: the stored cells are read as course groups by v0.3.0 (v0.2.5 dropped them), with no university default', async () => {
   const { englishPolicy, POLICY_PARSER } = await loadParser()
-  expect(POLICY_PARSER).toBe('provider-policy-v0.3.0')
+  expect(POLICY_PARSER).toBe('provider-policy-v0.3.1')
   const cells = unswStoredCells()
   expect(cells.faculty).toBe('Arts, Design & Architecture')
   expect(cells.ugCell).toBe('6.5 overall (min. 6.0 in each subtest)')
