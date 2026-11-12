@@ -91,3 +91,12 @@ test('every fix is a setting; the switches built for these cases are switched on
   expect(ix).toMatch(/Number\(ws\["reading\.entry_quote_parts_on"\]\) >= 1 \? \{ quoteParts: \{ window: Number\(ws\["reading\.entry_quote_window_chars"\]\)/)
   expect(ix).toContain('qualificationCountries: entryQualificationCountries(ws["reading.entry_qualification_countries"])')
 })
+
+test('the eight held country tables are read again only with the fixes on, from their stored copies, never an item a person holds', () => {
+  const m = fs.readFileSync('supabase/migrations/20261113033100_cf247_aer_reader_fix_reread.sql', 'utf8')
+  for (const s of ['74306034', '58c60102', '01139439', '7fd6e509', '30ceba77', '7675875e', 'c9a5c1d5', 'a84c16f4']) expect(m).toContain(s)
+  expect(m).toContain("pipeline_num_v1('reading.entry_quote_parts_on', 0) < 1")
+  expect(m).toMatch(/claimed_at is not null or li\.assigned_to is not null/)
+  expect(m).toContain('public.admin_entry_matrix_reread(ids,')
+  expect(m).not.toMatch(/^\s*(update|delete|insert|drop)\b/im)
+})
