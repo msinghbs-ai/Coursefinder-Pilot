@@ -48,7 +48,7 @@ do $$ declare g uuid; begin
   update pipeline.provider_policy_proposals set parser = 'ai:fixture-model' where id = g;
   perform security.policy_auto_approve_v1();
   perform pg_temp.ok((select status from pipeline.provider_policy_proposals where id = g) = 'proposed', 'D2: automatic approval does not approve a course-group reading, even one that carries an ai: parser name');
-  update pipeline.provider_policy_proposals set parser = 'provider-policy-v0.3.0' where id = g;
+  update pipeline.provider_policy_proposals set parser = 'provider-policy-v0.3.1' where id = g;
   -- an AI default reading for the same university is auto-approved as before, and does not close the waiting group reading
   insert into pipeline.provider_fact_sources(id, provider_id, kind, url, title, rank, found_via, status, content_hash) values ('00000000-0000-0000-0000-00000000f0a3', '00000000-0000-0000-0000-00000000b001', 'english_policy', 'https://www.fixture.example/default', 't', 5, 'search', 'read', 'hash-a3');
   perform public.svc_provider_policy_record('00000000-0000-0000-0000-00000000f0a3', '{"parser":"ai:fixture-model","style":"level_default","defaults":{"undergraduate":[{"test_code":"IELTS","overall_score":6.5,"component_scores":{},"quote":"6.5"}]},"exceptions":[]}'::jsonb);
