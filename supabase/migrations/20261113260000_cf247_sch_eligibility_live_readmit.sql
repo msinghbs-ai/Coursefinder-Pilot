@@ -1,3 +1,4 @@
+-- Version note: first merged as 20261113240000 (Pilot #1101), which another change had already taken; the deploy refused it and nothing was applied. Re-issued under this version.
 -- CF-247 F-SCH.01 follow-up (scheduled review 12 Nov 2026 23:15 AEDT; Platform Admin directive 12 Nov 16:12 "Do not introduce another indefinite
 -- manual activation checkpoint"). Two parts.
 --
@@ -81,11 +82,11 @@ revoke all on function security.scholarship_page_names_award_v1(text, text) from
 select pg_temp.edit_n('security.scholarship_eligibility_apply_v1(integer)', '45e52f66312824e4e7265814cb712728', array[
   array[$o$v_silent boolean := security.pipeline_num_v1('sch_elig.silent_resolves', 0) >= 1;$o$,
         $n$v_silent boolean := security.pipeline_num_v1('sch_elig.silent_resolves', 0) >= 1;
-        v_readmit boolean := security.pipeline_num_v1('sch_elig.readmit_on', 0) >= 1;  -- 20261113240000: re-admission path$n$],
+        v_readmit boolean := security.pipeline_num_v1('sch_elig.readmit_on', 0) >= 1;  -- 20261113260000: re-admission path$n$],
   array[$o$    v_act := case
       when r.admit_status is distinct from 'rejected'$o$,
         $n$    v_act := case
-      -- 20261113240000: a record withdrawn for a proof that was not specific, whose proof passes the current rule on the award's own page
+      -- 20261113260000: a record withdrawn for a proof that was not specific, whose proof passes the current rule on the award's own page
       when r.admit_status = 'withdrawn' and coalesce(r.admit_reasons, '{}'::text[]) = array['eligibility_proof_not_specific'] and r.admitted_scholarship_id is not null
            and r.outcome = 'proven' and coalesce((r.result->>'audience_proven')::boolean, false) and r.result->>'audience' in ('international', 'both') then
         case when not coalesce(security.url_on_provider_sites(v_url, r.provider_id), false) or security.third_party_host_v1(coalesce(v_url, ''))
@@ -116,7 +117,7 @@ update pipeline.platform_toolset_settings set value = to_jsonb(1), updated_at = 
 insert into pipeline.admin_control_events(area, action, target, detail, actor)
 values ('scholarships', 'setting_changed', 'sch_elig.apply_on 0 -> 1 (eligibility reader live again after the shadow review)',
         jsonb_build_object('key', 'sch_elig.apply_on', 'from', 0, 'to', 1, 'reviewed', 17, 'domestic', 9, 'linked_page_not_scholarship', 4, 'mixed_audience', 1, 'changed_since', 3,
-                           'readmit_on', 0, 'migration', '20261113240000'),
+                           'readmit_on', 0, 'migration', '20261113260000'),
         '63ba56cb-48d4-4169-98c2-7c4d1f72925b');
 update pipeline.scholarship_eligibility_reads set applied = null, updated_at = now()
  where outcome = 'proven' and applied->>'mode' = 'shadow';

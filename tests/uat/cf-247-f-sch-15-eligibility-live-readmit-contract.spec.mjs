@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261113240000_cf247_sch_eligibility_live_readmit.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations/20261113260000_cf247_sch_eligibility_live_readmit.sql', 'utf8')
 
 test('live again with a control event; only the reviewed shadow proofs are reset', () => {
   expect(m).toContain("set value = to_jsonb(1)")
