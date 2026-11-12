@@ -148,3 +148,11 @@ test('no admission: neither the migration nor the module or the worker mode writ
   expect(code).toMatch(/insert into pipeline\.aer_v2_shadow_results\(/)
   expect(code).not.toMatch(/^\s*(drop|delete|truncate)\b/im)
 })
+
+test('the sample reads courses with a Layer 4 decision alongside the priority providers, one for one, so agreement is measured from the first runs', () => {
+  const m = fs.readFileSync('supabase/migrations/20261113143100_cf247_aer_v2_shadow_labelled_sample.sql', 'utf8')
+  expect(m).toContain("'145904dd4d74e23314c7ca57198b68d3'")
+  expect(m).toContain('lab as materialized (select distinct l.course_id from pipeline.aer_labelled_rows_v1 l where l.course_id is not null)')
+  expect(m).toMatch(/row_number\(\) over \(order by \(ranked\.lane = 3\), ranked\.lane_rank, ranked\.lane\) sample_rank/)
+  expect(m).not.toMatch(/^\s*(delete|drop|truncate|update)\b/im)
+})
