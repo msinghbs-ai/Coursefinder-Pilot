@@ -32,6 +32,8 @@ These rules come from the Platform Admin and apply to every change.
   - `tests/uat/cf-247-s120-test-governance-contract.spec.mjs` fails the build otherwise. Quarterly prune with the docs budget; tests added, retired and net go in the Monday line.
 - **Nothing is dropped or deleted by an applied migration.** Drops and deletes go to the Platform Admin as a paste file.
 - **A passing qualification never switches anything on by itself.**
+- **On demand is not held by toolset limits; scheduled work is (Platform Admin 12 Nov 2026 21:07; admin operating model 3.3.2).** Only the account's own limits stop on-demand work (Firecrawl monthly plan and credit reserve, OpenRouter credit floor), plus policies that are not limits (directory sites, robots, manual locks, identity).
+  - Work a Claude session asks for (a re-read, a re-attach, a fetch) is opened first with `security.on_demand_open_v1('claude_session', reason, provider_ids, estimate)`: tell the Platform Admin the estimate and the credit left it returns. When the work has run, close it with `security.on_demand_close_v1(id)` and report the actual use and the credit left.
 - **AER v1 is frozen (Decision 276, Platform Admin 12 Nov 2026):** essential correctness and security fixes only; no new layout readers, word lists or recovery paths. New AER work goes to v2 (admin repo `docs/platform/AER-DESIGN-V2-PROPOSAL.md` v0.3, §9 amendments). Proven-structure readers (PDF cells, aligned grid) stay as v2 record sources.
 - Never create `package-lock.json`. Never commit the `node_modules` symlink.
 - **Housekeeping (Decision 260, 15 Oct 2026; admin repo `docs/platform/DATA-PIPELINE-OPERATING-MODEL.md`).**
