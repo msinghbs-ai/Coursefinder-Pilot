@@ -190,6 +190,19 @@ function admissionTitle(la) {
   const s = v => v == null ? '—' : (typeof v === 'string' ? v : JSON.stringify(v)).slice(0, 160)
   return [`Field: ${la.field}`, `Admitted: ${fmtDateTime(la.at)}`, `Source: ${SOURCE_WORDS[la.source] || la.source}`, la.rule && `Rule: ${la.rule}`, `Previous value: ${s(la.before)}`, `New value: ${s(la.after)}`, la.evidence_id && `Evidence: ${la.evidence_id}`].filter(Boolean).join('\n')
 }
+// 12 Nov 2026 (Platform Admin 20:50): the course description itself as wrapped text (five lines, then Show all), with when the description reader last wrote it.
+// A course with no description shows its field state as before (Missing, Pending extraction, Waiting for review, Held by validation...).
+function DescriptionText({ row }) {
+  const [open, setOpen] = useState(false)
+  const t = typeof row.description_text === 'string' ? row.description_text.trim() : ''
+  if (!t) return <FieldState fs={(row.field_states || {}).description} />
+  const at = row.description_updated_at
+  return <span className={`ccol-desc${open ? ' ccol-desc-open' : ''}`} data-description-text={t.length}>
+    <span className="ccol-desc-text">{t}</span>
+    {t.length > 180 && <button type="button" className="ccol-link ccol-desc-more" aria-expanded={open} onClick={e => { e.stopPropagation(); setOpen(x => !x) }}>{open ? 'Show less' : 'Show all'}</button>}
+    <small className="ccol-desc-meta" title={at ? 'When the description reader last wrote this description' : 'No description reading is recorded for this text (set by hand, or before readings were recorded)'}>{at ? `Updated ${fmtDateTime(at)}` : 'Reader time not recorded'}</small>
+  </span>
+}
 const FS = { duration: 'duration', delivery_mode: 'delivery', english: 'english', academic_entry: 'academic_entry', description: 'description', official_url: 'official_url', intl_fee_year: 'provider_tuition' }
 
 /** Cells of the columns this change adds. Existing columns keep their own cells. */
@@ -203,7 +216,8 @@ export function renderCourseCell(key, row, { navigate } = {}) {
     case 'delivery_mode': return row.delivery_mode ? String(row.delivery_mode).replaceAll('_', ' ') : <FieldState fs={fs.delivery} />
     case 'intl_fee_year': return row.intl_fee_year ? String(row.intl_fee_year) : <FieldState fs={fs.provider_tuition} />
     case 'intakes': case 'intake_month': case 'intake_year': case 'commencement_date': case 'deadline': return intakeCell(key, row)
-    case 'english': case 'academic_entry': case 'description': return <FieldState fs={fs[FS[key]]} />
+    case 'english': case 'academic_entry': return <FieldState fs={fs[FS[key]]} />
+    case 'description': return <DescriptionText row={row} />
     case 'last_published_at': return <Published row={row} />
     case 'official_url': return row.course_url ? <a className="ccol-link" href={row.course_url} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} title={row.course_url}>Open page</a> : <FieldState fs={fs.official_url} />
     case 'has_scholarship': return row.has_scholarship == null ? <Unknown /> : row.has_scholarship ? 'Linked' : 'None linked'

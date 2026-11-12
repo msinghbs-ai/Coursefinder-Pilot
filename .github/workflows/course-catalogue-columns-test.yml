@@ -11,6 +11,9 @@ on:
       - 'src/catalogue-columns.js'
       - 'src/catalogue-columns.css'
       - 'supabase/migrations/*course_catalogue_columns*'
+      - 'supabase/migrations/20261112210000_cf247_catalogue_course_description.sql'
+      - 'tests/fixtures/catalogue-course-description/**'
+      - 'tests/uat/cf-247-catalogue-course-description-contract.spec.mjs'
       - 'tests/fixtures/course-catalogue-columns/**'
       - 'tests/integration/course-columns-postgres.spec.mjs'
       - 'playwright.course-columns.config.mjs'
@@ -43,6 +46,7 @@ jobs:
       - run: npm install --package-lock=false --ignore-scripts
       - run: npx playwright install --with-deps chromium
       - run: CCOL_KEEP=1 bash tests/fixtures/course-catalogue-columns/run.sh | tee course-columns-sql-results.log
+      - run: bash tests/fixtures/catalogue-course-description/run.sh | tee -a course-columns-sql-results.log
       - run: npx playwright test --config=playwright.course-columns.config.mjs
       - uses: actions/upload-artifact@v4
         if: always()
