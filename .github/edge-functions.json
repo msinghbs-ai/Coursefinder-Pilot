@@ -69,9 +69,11 @@
     "statistics-edition-discovery": false,
     "toolset-runner": false,
     "website-api-v2": false,
+    "website-api-v3": false,
     "website-course-api": false,
     "wix-course-api": false,
     "zoho-api-v2": false,
+    "zoho-api-v3": false,
     "zoho-course-api": false
   }
 }
