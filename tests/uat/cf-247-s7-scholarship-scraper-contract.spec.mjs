@@ -1,4 +1,4 @@
-// Guards: CF-247 v2.15.242 (S7): scholarship pages and listing pages are read through the scraper first (Platform Admin, 11 Oct 2026: "Always use scraper for Scholarships ...
+// Guards: CF-247 v2.15.242 (S7): scholarship listing pages are read through the scraper first (Platform Admin, 11 Oct 2026: "Always use scraper for Scholarships ..."; single pages direct first since the F-SCH redesign, 12 Nov 2026)
 // CF-247 v2.15.242 (S7): scholarship pages and listing pages are read through the scraper first (Platform Admin, 11 Oct 2026:
 // "Always use scraper for Scholarships ... This can be controlled via ui"). Worker coverage-sweep v0.17.40; migration 20261011008200.
 import { test, expect } from '@playwright/test'
@@ -10,7 +10,8 @@ test('worker reads scholarship and listing pages through the scraper (rendered p
   expect(w).toContain('await useFc("sch_scrape", providerId, url, true)')
   // v0.58.0 (CF-247 scholarship recovery F10): the render wait is a setting; listing pages are read page by page (F6), still through the scraper
   expect(w).toContain('formats: ["rawHtml"], onlyMainContent: false, waitFor: waitMs')
-  expect(w).toContain('const pg = await readSch(url, r.provider_id, wsNum("scholarship.catalogue_render_wait_ms", 5000));')
+  // v0.77.0 (F-SCH redesign, 12 Nov 2026): a rendered listing catalogue keeps the scraper first (directFirst false); single pages are read directly first (cf-247-f-sch-04)
+  expect(w).toContain('const pg = await readSch(url, r.provider_id, wsNum("scholarship.catalogue_render_wait_ms", 5000), false);')
   expect(w).toContain('const pg = await readSchPage(it.url, it.provider_id);')
 })
 
