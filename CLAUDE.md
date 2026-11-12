@@ -31,6 +31,7 @@ These rules come from the Platform Admin and apply to every change.
   - `tests/uat/cf-247-s120-test-governance-contract.spec.mjs` fails the build otherwise. Quarterly prune with the docs budget; tests added, retired and net go in the Monday line.
 - **Nothing is dropped or deleted by an applied migration.** Drops and deletes go to the Platform Admin as a paste file.
 - **A passing qualification never switches anything on by itself.**
+- **AER v1 is frozen (Decision 276, Platform Admin 12 Nov 2026):** essential correctness and security fixes only; no new layout readers, word lists or recovery paths. New AER work goes to v2 (admin repo `docs/platform/AER-DESIGN-V2-PROPOSAL.md` v0.3, §9 amendments). Proven-structure readers (PDF cells, aligned grid) stay as v2 record sources.
 - Never create `package-lock.json`. Never commit the `node_modules` symlink.
 - **Housekeeping (Decision 260, 15 Oct 2026; admin repo `docs/platform/DATA-PIPELINE-OPERATING-MODEL.md`).**
   - Every migration from `20261015030000` on has `-- Replaces:` and `-- Retires:` lines (or "nothing"), a `comment on table` for each new table, and a catalogue row for each new job. `tests/uat/cf-247-s42-housekeeping-contract.spec.mjs` fails the build otherwise.
