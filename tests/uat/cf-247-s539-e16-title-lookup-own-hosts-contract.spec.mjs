@@ -25,3 +25,12 @@ test('two md5-guarded edits: the title lookup (same provider) and the identity-p
   expect(mig).toMatch(/^-- Replaces: security\.course_page_check_v1/m)
   expect(mig).toMatch(/^-- Retires: nothing/m)
 })
+
+test('the intake wording lookup (same course) also reads the page under its variants; md5-guarded', () => {
+  const w = fs.readFileSync('supabase/migrations/20261113182000_cf247_intake_wording_url_variants.sql', 'utf8')
+  expect(w).toContain("pg_temp.edit_all('security.intake_page_wording_v1(uuid,uuid,text)', 'daa96acbe87de1cf0a2bec523a911c7a', 'ea09f021603431e7c4eff2fc3d201553'")
+  expect(w).toContain('or g.url = any (security.course_page_url_variants_v1(g.provider_id, p_url)))')
+  expect(w).toMatch(/^-- Replaces: security\.intake_page_wording_v1/m)
+  expect(w).toMatch(/^-- Retires: nothing/m)
+  expect(w).not.toMatch(/^\s*(drop|delete|truncate)\b/im)
+})
