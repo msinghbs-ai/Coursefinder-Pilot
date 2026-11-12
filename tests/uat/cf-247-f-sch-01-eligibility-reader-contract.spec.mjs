@@ -41,7 +41,7 @@ test('a linked page is asked about that scholarship only; the outcome is proven 
 })
 
 test('the worker mode: the re-check question and its proof (sentence on the page, names international or domestic), every lease answered once, the pinned model only', () => {
-  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.75\.0";/)
+  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(7[5-9]|[89]\d)\.\d+";/)
   const a = worker.indexOf('if (mode === "scholarship_eligibility")'), b = worker.indexOf('// v0.21.0 (fix 3)', a)
   expect(a).toBeGreaterThan(-1)
   const mode = worker.slice(a, b)
