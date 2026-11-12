@@ -85,9 +85,26 @@ export function eligibilityOutcome(first: any | null, linked: { url: string; sta
 // answer, "international" must describe who may apply: international students or applicants, the "(international)" eligibility tag, domestic and
 // international, overseas students, a student visa, non-residents. A domestic proof is unchanged.
 export const INTL_APPLICANT = /\binternational\s+(?:students?|applicants?|candidates?|scholars?|offer[- ]holders?|learners?)\b|\(\s*international\s*\)|\b(?:domestic|local|australian|new zealand|canadian)\s+(?:students?\s+)?(?:and|or|&)\s+international\b|\boverseas\s+(?:students?|applicants?)\b|\bstudents?\s+from\s+overseas\b|\bstudent\s+visa\b|\bsubclass\s+500\b|\bnon[- ]?residents?\b/i;
+// v0.78.0 (12 Nov 2026, F-SCH.01 post-activation review): the first live run acted on sentences that name international students without saying
+// that THIS scholarship is open to them: a course title with "(International)" (UTS), the site-wide scholarship banner (Bond: "a broad offering
+// for both domestic and international applicants, our scholarship program ..."), a fee or deposit instruction (UNBC, NZQA) and a navigation tag
+// ("Prospective students (international)", on 75 Sydney pages). A proof now also needs, after course titles are taken out: an eligibility cue
+// (eligible, open to, available to, must be, applicants, student type, citizenship ...), no programme-wide wording, no search control, and, for a sentence about paying
+// or entering, an eligibility word. Fail closed: a sentence that does not meet these is "international not stated", never "domestic".
+export const COURSE_TITLE_INTL = /\b(?:master|bachelor|doctor|graduate certificate|graduate diploma|diploma|advanced diploma|associate degree|certificate [ivx]+)\s+(?:of|in)\s+[^().;]{2,80}?\s*\(\s*international\s*\)/gi;
+export const ELIGIBILITY_CUE = /\b(?:eligib\w*|open to|available (?:to|for)|must (?:be|hold|have)|applicants?|who (?:can|may) apply|may apply|can apply|student type|citizenship|residency|residents?|only for|is for|are for|offered to|awarded to|you are an?|be an?|be classified|commencing|applying|enrol(?:led|ling)? as|as an? (?:international|overseas))\b/i;
+export const PROGRAMME_WIDE = /\b(?:our scholarships?(?: program(?:me)?)?|most scholarships|a broad offering|range of scholarships|all (?:of )?our scholarships|scholarships? (?:program|programme) rewards)\b/i;
+const FORM_CONTROL = /(?:\*\s*)?\bselect\s*(?:\.\.\.|…)|\bplease select\b|\bfilter by\b/i;
+const PAY_OR_ENTER = /\b(?:pay|paid|payment|deposit|to enter|entry)\b/i;
+const PAY_ELIGIBILITY = /\b(?:eligib\w*|open to|available (?:to|for)|applicants?|may apply|can apply)\b/i;
 export function eligibilityProof(judged: any) {
   if (!judged?.audience_proven || judged.audience === "domestic") return judged;
-  if (INTL_APPLICANT.test(String(judged.audience_quote || ""))) return judged;
-  return { ...judged, audience_proven: false, recommendation: "audience_not_stated", proof: "international_not_applicant",
-           why: "The sentence holds the word international but not as who may apply (for example a course name)." };
+  const q = String(judged.audience_quote || "").replace(COURSE_TITLE_INTL, " ");
+  const down = (proof: string, why: string) => ({ ...judged, audience_proven: false, recommendation: "audience_not_stated", proof, why });
+  if (FORM_CONTROL.test(q)) return down("form_control", "The words are a search or filter control on the page, not who may apply.");
+  if (!INTL_APPLICANT.test(q)) return down("international_not_applicant", "The sentence holds the word international but not as who may apply (for example a course name).");
+  if (PROGRAMME_WIDE.test(q)) return down("programme_wide", "The sentence describes the provider's scholarship programme as a whole, not this scholarship.");
+  if (PAY_OR_ENTER.test(q) && !PAY_ELIGIBILITY.test(q)) return down("payment_instruction", "The sentence is about paying or entering, not about who may apply.");
+  if (!ELIGIBILITY_CUE.test(q)) return down("no_eligibility_cue", "The words name international students without saying who may apply (for example a menu item).");
+  return judged;
 }
