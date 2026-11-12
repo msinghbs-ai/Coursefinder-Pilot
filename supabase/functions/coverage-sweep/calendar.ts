@@ -26,7 +26,12 @@
 // calendar-v2.3 (11 Nov 2026, Decisions 270 and 270a, first live result): a teaching start resolved by its table column stands for its whole
 //    row, so every other column of that row whose first date maps to one year by the same rule (and agrees with any printed weekday) is a
 //    start too, with the same quote. gpt-4.1-mini reported only the 2026 column of Monash summary-dates under v2.2.
-export const CALENDAR_READER = "calendar-v2.3";
+// calendar-v2.4 (12 Nov 2026, Platform Admin 12 Nov 2026 20:57 "fix calendar readers", Griffith 2027 Academic Calendar PDF): a month-grid
+//    calendar prints the month once as a heading line ("March", "MARCH 2027") and each row under it as "1 Commencement of Trimester 1".
+//    A start whose quote has no month may take it from that heading (sectionMonth, month_basis "heading") only when all of these hold:
+//    the quote is on the page exactly once, its row begins with the start's day, the nearest month-only line above it names the month the
+//    reader reported, and no other month-only line lies between. Anything else stays month_not_in_quote. The year rules are unchanged.
+export const CALENDAR_READER = "calendar-v2.4";
 export const CALENDAR_PARSER_DATES = "provider-policy-calendar-dates-v2";
 const MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
 const flat = (s: string) => String(s || "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "");
@@ -71,13 +76,28 @@ export function calendarSlices(text: string, chars: number, max: number): { slic
 }
 
 type Finding = { code: string; detail: string; example?: string };
-type Dated = { year: number | null; month: number; day: number | null; date: string | null; quote: string; year_quote?: string; year_basis?: string; applies_to?: string; meaning?: string; rolling?: false };
+type Dated = { year: number | null; month: number; day: number | null; date: string | null; quote: string; year_quote?: string; year_basis?: string; month_quote?: string; month_basis?: string; applies_to?: string; meaning?: string; rolling?: false };
 const iso = (y: number | null, m: number, d: number | null) => {
   if (!y || !d) return null;
   const t = new Date(Date.UTC(y, m - 1, d));
   return t.getUTCFullYear() === y && t.getUTCMonth() === m - 1 && t.getUTCDate() === d ? t.toISOString().slice(0, 10) : null;
 };
 const monthIn = (m: number, q: string) => { const l = String(q || "").toLowerCase(); return l.includes(MONTHS[m - 1].slice(0, 3)) || new RegExp(`\\b0?${m}[/.-]`).test(l) };
+// v2.4: the month of a month-grid row, from the month-only heading line above it (see the calendar-v2.4 note)
+const MONTH_LINE = new RegExp(`^\\W*(${MONTHS.join("|")})\\W*(20\\d\\d)?\\W*$`, "i");
+export function sectionMonth(page: string, quote: string, m: number, day: number | null): string | null {
+  const fq = flat(quote); if (fq.length < 6 || !day) return null;
+  const lines = String(page || "").split("\n"), at: number[] = [];
+  lines.forEach((l, i) => { if (flat(l).includes(fq)) at.push(i) });
+  if (at.length !== 1 || flat(page).split(fq).length !== 2) return null;
+  const row = lines[at[0]].trim();
+  if (!new RegExp(`^\\W*0?${day}(?![0-9])`).test(row)) return null;
+  for (let i = at[0] - 1; i >= 0; i--) {
+    const h = lines[i].trim().match(MONTH_LINE); if (!h) continue;
+    return MONTHS.indexOf(h[1].toLowerCase()) === m - 1 ? lines[i].trim().slice(0, 200) : null;
+  }
+  return null;
+}
 const dayIn = (d: number, q: string) => new RegExp(`(^|[^0-9])0?${d}(st|nd|rd|th)?([^0-9]|$)`).test(String(q || ""));
 const yearIn = (y: number, q: string) => new RegExp(`\\b${y}\\b`).test(String(q || ""));
 
@@ -250,7 +270,11 @@ export function calendarAiParsed(answers: any[], page: string, parser: string, c
     const m = Number(x.month), q = String(x.quote || "");
     if (!(m >= 1 && m <= 12)) { found({ code: "no_month", detail: `${where} of ${period}`, example: q }); return null }
     if (!on(q)) { found({ code: "quote_not_on_page", detail: `${where} of ${period}`, example: q }); return null }
-    if (!monthIn(m, q)) { found({ code: "month_not_in_quote", detail: `${where} of ${period}`, example: q }); return null }
+    let mq = "";
+    if (!monthIn(m, q)) {
+      mq = (Number.isInteger(x.day) && dayIn(x.day, q) && sectionMonth(page, q, m, x.day)) || "";  // v2.4: month-grid heading
+      if (!mq) { found({ code: "month_not_in_quote", detail: `${where} of ${period}`, example: q }); return null }
+    }
     let day = Number.isInteger(x.day) ? x.day : null;
     if (day && !dayIn(day, q)) { found({ code: "day_not_in_quote", detail: `${where} of ${period}`, example: q }); day = null }
     // R1: a year printed in the quote stands; otherwise only the enclosing section's year, and the reader's claim must agree with it
@@ -285,7 +309,7 @@ export function calendarAiParsed(answers: any[], page: string, parser: string, c
       const wd = printedWeekdays(q, m, day);
       if (wd.length && (wd.length > 1 || wd[0] !== weekday(year, m, day))) { found({ code: "weekday_mismatch", detail: `${where} of ${period}: ${year}`, example: q }); year = null; yq = ""; basis = "" }
     }
-    return { year, month: m, day, date: iso(year, m, day), quote: q.slice(0, 300), ...(yq ? { year_quote: yq } : {}), ...(year && basis ? { year_basis: basis } : {}) };
+    return { year, month: m, day, date: iso(year, m, day), quote: q.slice(0, 300), ...(yq ? { year_quote: yq } : {}), ...(year && basis ? { year_basis: basis } : {}), ...(mq ? { month_quote: mq, month_basis: "heading" } : {}) };
   };
   for (const a of answers) {
     if (!a) continue;
