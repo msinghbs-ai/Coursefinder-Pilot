@@ -1,11 +1,13 @@
 -- CF-247 Website API v3, build brief WP-1.6 (O22, REQ-28: academic entry in search). Decision 277: v3 only; v2 and everything it reads
 -- are only read. (WP-1.5, O20, is Pilot #1093.)
---   O22  search items gain has_academic_entry: true when an admitted academic entry requirement is held for the course (an active course-page
---        requirement for international or all applicants) or for its provider (an active entry matrix row for the course, or one not tied
---        to a course). It says a requirement is published, not that the applicant meets it; the course action's entry.resolution gives the
---        rows. search takes two more filters: has_academic_entry (true keeps only those courses, as has_english does) and edu_country
---        (ISO alpha-2, the country of previous education): with it, has_academic_entry counts only requirements for that country (a
---        course-page requirement naming no country counts for every country). An unknown edu_country is refused (INVALID_INPUT).
+--   O22  search items gain has_academic_entry: true when some admitted academic entry requirement is held for the course (an active
+--        course-page requirement for international or all applicants) or for its provider (an active entry matrix row for the course, or
+--        one not tied to a course). It means "something is published", no more: it does not say the applicant meets it, and it does not
+--        promise rows for this course's study level. The course action with edu_country (entry.resolution) gives the rows that apply, and
+--        can still answer contact_provider for a course whose flag is true. search takes two more filters: has_academic_entry (true keeps
+--        only those courses, as has_english does) and edu_country (ISO alpha-2, the country of previous education, inside filters): with
+--        it, has_academic_entry counts only requirements for that country (a course-page requirement naming no country counts for every
+--        country). An unknown edu_country is refused (INVALID_INPUT).
 -- How: public.website_v3_course_search_core is made from the live public.website_v2_course_search by named edits (md5-guarded), so the v3
 --   search can never drift from v2 on a v2 filter, sort or key. public.website_v3_course_search is edited the same way to call it.
 -- Replaces: public.website_v3_course_search(jsonb,integer,integer,text) (same name and signature, by named edits, md5-guarded against the
@@ -26,7 +28,8 @@ end $$;
 
 -- O22: is an admitted academic entry requirement held for this course or its provider (for one country of previous education, when given)
 create or replace function security.course_has_academic_entry_v3(p_course uuid, p_provider uuid, p_country text)
-returns boolean language sql stable security definer set search_path = '' as $$
+-- no security definer and no search_path, so the planner can inline it into the search (every name is schema-qualified; its callers are definer functions)
+returns boolean language sql stable as $$
   select exists (select 1 from catalogue.course_entry_requirements r left join ref.countries k on k.id = r.country_id
                   where r.course_id = p_course and r.status = 'active' and r.audience in ('international', 'all')
                     and (p_country is null or r.country_id is null or k.iso_alpha2 = p_country))
@@ -35,7 +38,7 @@ returns boolean language sql stable security definer set search_path = '' as $$
                     and (p_country is null or m.country_code = p_country))
 $$;
 comment on function security.course_has_academic_entry_v3(uuid, uuid, text) is
-  'Website API v3 O22 (build brief WP-1.6): true when an active academic entry requirement is held for the course or its provider (for one country when given); read only.';
+  'Website API v3 O22 (build brief WP-1.6): true when some active academic entry requirement is held for the course or its provider (for one country when given). It does not promise entry.resolution rows for the course''s level. Read only.';
 
 -- O22: the v2 search with the two filters
 select pg_temp.v3_edit('public.website_v2_course_search(jsonb,integer,integer,text)', 'dcefed12a1e879aa1cc0f69e72d91428',
