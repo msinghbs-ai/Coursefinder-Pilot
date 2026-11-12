@@ -1,4 +1,4 @@
--- HELD forward recovery for migration 20261112210000_cf247_catalogue_course_description.sql. NOT a migration: run by hand only on the Platform Admin's decision.
+-- HELD forward recovery for migration 20261113153000_cf247_catalogue_course_description.sql. NOT a migration: run by hand only on the Platform Admin's decision.
 -- Restores the three edited bodies byte for byte (each md5-guarded; applying it twice changes nothing); security.course_completeness_v1 stays, unused. The screen then shows the field state again and ignores the filter.
 create or replace function pg_temp.edit_all(p_sig text, p_before text, p_after text, p_olds text[], p_news text[]) returns text language plpgsql as $f$
 declare v_def text := pg_get_functiondef(p_sig::regprocedure); v_src text := (select p.prosrc from pg_proc p where p.oid = p_sig::regprocedure); v_c int; i int;

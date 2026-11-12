@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Guards: Platform Admin 12 Nov 2026 20:50 (Course catalogue: filter for updated course descriptions; the description shown as wrapped text). Isolated PostgreSQL only
 # (never a Supabase project). Builds the course-catalogue-columns fixture (production parity, 35,700 courses, the live page functions md5-checked), then checks that
-# the three bodies migration 20261112210000 edits are live; applies it (only those three change, to the stated md5), applies it again (no change), refuses a
+# the three bodies migration 20261113153000 edits are live; applies it (only those three change, to the stated md5), applies it again (no change), refuses a
 # changed live body with nothing applied, restores the bodies from the held recovery (twice) and brings them back; runs scenarios.sql on the migrated database and
 # shows its first REGRESSION check failing on the database from before. CCD_KEEP=1 keeps the databases.
 set -euo pipefail
@@ -9,7 +9,7 @@ cd "$(dirname "$0")/../../.."
 export LC_ALL=C # fixed: one byte order for sort and comm
 case "${PGHOST:-127.0.0.1}" in 127.0.0.1|localhost|/tmp) ;; *) echo 'Refusing a remote database: use isolated local PostgreSQL' >&2; exit 1;; esac
 DB=${CCD_DB:-c_ccd_fixture}
-M=supabase/migrations/20261112210000_cf247_catalogue_course_description.sql
+M=supabase/migrations/20261113153000_cf247_catalogue_course_description.sql
 HELD=supabase/held/catalogue_course_description_forward_recovery.sql
 F=tests/fixtures/catalogue-course-description
 q() { psql -X -d "$1" -Atc "$2"; }

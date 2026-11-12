@@ -5,7 +5,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
-const MIG = fs.readFileSync('supabase/migrations/20261112210000_cf247_catalogue_course_description.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations/20261113153000_cf247_catalogue_course_description.sql', 'utf8')
 const code = MIG.split('\n').filter(l => !/^\s*--/.test(l)).join('\n')
 const HELD = fs.readFileSync('supabase/held/catalogue_course_description_forward_recovery.sql', 'utf8')
 const UI = fs.readFileSync('src/mature-main.jsx', 'utf8')
@@ -13,7 +13,7 @@ const COLS = fs.readFileSync('src/CatalogueColumns.jsx', 'utf8')
 const CSS = fs.readFileSync('src/catalogue-columns.css', 'utf8')
 const WF = fs.readFileSync('.github/workflows/course-catalogue-columns-test.yml', 'utf8')
 
-test('migration 20261112210000: three md5-guarded edits, housekeeping lines, nothing dropped, no consumer API, held recovery the other way', () => {
+test('migration 20261113153000: three md5-guarded edits, housekeeping lines, nothing dropped, no consumer API, held recovery the other way', () => {
   for (const [sig, b, a] of [['security.admin_course_page_fast(jsonb)', 'c4d2eb53d5ffb893217f3e408dd01fd0', '19d7dde7292e5707a7e1bc110c6106d8'],
                              ['security.admin_course_page_fast_base(jsonb)', '56bcf191ba8dd6da8f84c170c7c3c5f9', '3b6e10e4212aebc944abaac866e50f7a'],
                              ['security.course_list_with_extras_v1(jsonb)', '91e88067d293f13cf99a95fa2faa8f93', '2a0b931a4f8f3673f2dac447ee25dd2e']]) {

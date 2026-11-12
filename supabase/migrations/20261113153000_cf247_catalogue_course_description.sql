@@ -26,7 +26,7 @@ create or replace function security.course_completeness_v1(p_course uuid) return
           + (c.description is not null and length(trim(c.description)) > 0)::int) * 100.0 / 6.0, 2)
     from catalogue.courses c where c.id = p_course
 $f$;
-comment on function security.course_completeness_v1(uuid) is 'CF-247 Course catalogue (20261112210000): a course''s completeness score as courses_page shows it, for the completeness sort of the filtered path';
+comment on function security.course_completeness_v1(uuid) is 'CF-247 Course catalogue (20261113153000): a course''s completeness score as courses_page shows it, for the completeness sort of the filtered path';
 revoke all on function security.course_completeness_v1(uuid) from public;
 
 create or replace function pg_temp.edit_all(p_sig text, p_before text, p_after text, p_olds text[], p_news text[]) returns text language plpgsql as $f$

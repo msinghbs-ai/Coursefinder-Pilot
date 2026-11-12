@@ -11,7 +11,7 @@ on:
       - 'src/catalogue-columns.js'
       - 'src/catalogue-columns.css'
       - 'supabase/migrations/*course_catalogue_columns*'
-      - 'supabase/migrations/20261112210000_cf247_catalogue_course_description.sql'
+      - 'supabase/migrations/20261113153000_cf247_catalogue_course_description.sql'
       - 'tests/fixtures/catalogue-course-description/**'
       - 'tests/uat/cf-247-catalogue-course-description-contract.spec.mjs'
       - 'tests/fixtures/course-catalogue-columns/**'
