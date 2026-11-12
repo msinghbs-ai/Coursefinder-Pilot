@@ -150,7 +150,7 @@ Deno.serve(async (req: Request) => {
     case "scholarship": {
       const s = cleanText(body.scholarship_id);
       if (!s) return fail(400, "INVALID_INPUT", {}, "scholarship_id required");
-      fn = "website_v3_scholarship"; args = { p_scholarship_id: s }; break;
+      fn = "website_v3_scholarship"; args = { p_scholarship_id: s, p_courses: { page: body.courses_page ?? null, page_size: body.courses_page_size ?? null } }; break; // R29: linked-course paging, checked in SQL
     }
     case "sync": {
       // the same change stream as the contract path, so a cursor from either URL works on the other
