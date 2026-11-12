@@ -19,15 +19,20 @@
 // courses (admin_provider_english_groups_set_v1); nothing here is a default. `defaults`, `exceptions`, `named`, `caveats` and `signals` keep
 // their v0.2.5 meaning, so the add-tests job and the policy in force are unaffected, and a table is never read as a default where v0.2.5
 // did not.
-export const POLICY_PARSER = "provider-policy-v0.3.0";
-// The reading the add-tests job (policy-add-tests) is keyed on. Its rules did not change in v0.3.0, so approved policies are not read again for it.
-export const ADD_TESTS_PARSER = "provider-policy-v0.2.5";
+// v0.3.1 (12 Nov 2026, CF-247 Website API v3 build brief WP-2.1, O14; Platform Admin 12 Nov 2026 22:37): OET and CELPIP are read as tests.
+// OET is read only where the page prints its numeric score (200 to 500 in steps of 10); a letter grade ("B in each sub-test") is not turned
+// into a number and stays unread. CELPIP is read as its level (4 to 12, whole numbers). Nothing else changed: for IELTS, PTE, TOEFL iBT,
+// Cambridge and Duolingo every result is as in v0.3.0.
+export const POLICY_PARSER = "provider-policy-v0.3.1";
+// The reading the add-tests job (policy-add-tests) is keyed on. v0.3.1 adds OET and CELPIP, so each approved policy's stored page is read once
+// more by that job (stored copies; no Firecrawl, no AI) and the two tests are added under its existing rule (the IELTS must match).
+export const ADD_TESTS_PARSER = "provider-policy-v0.3.1";
 // The legacy calendar reader keeps its own parser string: the intake workstream owns the calendar side of the proposals.
 const CALENDAR_PARSER = "provider-policy-v0.2.5";
 // Tests the parser learnt after English policies were first approved: only these are added to an approved policy (job policy-add-tests).
-export const ADDED_TESTS: TestCode[] = ["DET"];
+export const ADDED_TESTS: TestCode[] = ["DET", "OET", "CELPIP"];
 
-export type TestCode = "IELTS" | "PTE" | "TOEFL_IBT" | "CAE" | "DET";
+export type TestCode = "IELTS" | "PTE" | "TOEFL_IBT" | "CAE" | "DET" | "OET" | "CELPIP";
 export type Req = { test_code: TestCode; overall_score: number; component_scores: Record<string, number>; quote: string };
 type Level = "undergraduate" | "postgraduate";
 export type Group = { group_name: string; level: Level | null; reqs: Req[] };
@@ -40,8 +45,11 @@ const TESTS: { code: TestCode; re: RegExp; range: [number, number]; comp: [numbe
   { code: "TOEFL_IBT", re: /TOEFL/i, range: [32, 120], comp: [1, 30], decimals: false },
   { code: "CAE", re: /Cambridge|C1 Advanced|\bCAE\b|C2 Proficiency/i, range: [140, 230], comp: [140, 230], decimals: false },
   { code: "DET", re: /Duolingo(?:\s+English\s+Test)?(?:\s*\(DET\))?|\bDET\b/i, range: [10, 160], comp: [10, 160], decimals: false, step: 5, overallOnly: true },
+  // v0.3.1: OET by its numeric score only (letter grades are not converted); CELPIP by level
+  { code: "OET", re: /\bOET\b|Occupational English Test/i, range: [200, 500], comp: [200, 500], decimals: false, step: 10 },
+  { code: "CELPIP", re: /\bCELPIP\b/i, range: [4, 12], comp: [4, 12], decimals: false },
 ];
-const OTHER_TEST = /\b(IELTS|PTE|Pearson|TOEFL|Cambridge|C1 Advanced|CAE|C2 Proficiency|Duolingo|DET|OET|Occupational English|LanguageCert|Michigan|MET)\b/i;
+const OTHER_TEST = /\b(IELTS|PTE|Pearson|TOEFL|Cambridge|C1 Advanced|CAE|C2 Proficiency|Duolingo|DET|OET|Occupational English|CELPIP|LanguageCert|Michigan|MET)\b/i;
 const SKILLS = ["listening", "reading", "writing", "speaking"];
 const ALT_HEAD = /\b(?:alternative|higher|additional|different|course-specific|faculty-specific)\b[^|]{0,60}?\b(?:english|language|requirements?|standards?|scores?)\b/i;
 const NUM = "(\\d{1,3}(?:\\.\\d)?)";
