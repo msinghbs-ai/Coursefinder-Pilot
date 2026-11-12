@@ -6,11 +6,12 @@ import { INTL_APPLICANT, eligibilityProof } from '../../supabase/functions/cover
 
 const proven = (audience, audience_quote) => ({ audience, audience_quote, audience_proven: true, recommendation: 'international_check_and_publish' })
 
-test('the two shadow false positives (course names) are no longer proofs; the three true ones and the domestic one stay', () => {
+test('the two shadow false positives (course names) are no longer proofs; the true sentence proofs and the domestic one stay', () => {
   expect(eligibilityProof(proven('both', 'Applicants who are currently enrolled either part or full-time in the Master of International Business at the University of Sydney Business School.')).audience_proven).toBe(false)
   expect(eligibilityProof(proven('international', 'This scholarship supports high-achieving students commencing an international business honours program in the University of Sydney Business School.')).audience_proven).toBe(false)
   expect(eligibilityProof(proven('both', 'Applicants must be an Australian or New Zealand citizen, holder of an Australian permanent resident or permanent humanitarian visa, or an International student.')).audience_proven).toBe(true)
-  expect(eligibilityProof(proven('both', 'Prospective students (domestic) Prospective students (international)')).audience_proven).toBe(true)
+  // v0.78.0 (post-activation review, cf-247-f-sch-08): the (domestic)/(international) pair is a menu tag on 75 Sydney pages, refused for no eligibility cue
+  expect(eligibilityProof(proven('both', 'Prospective students (domestic) Prospective students (international)')).proof).toBe('no_eligibility_cue')
   expect(eligibilityProof(proven('domestic', 'You must: be an Australian citizen or permanent resident, or New Zealand citizen')).audience_proven).toBe(true)
   const down = eligibilityProof(proven('both', 'Master of International Relations students'))
   expect([down.recommendation, down.proof]).toEqual(['audience_not_stated', 'international_not_applicant'])

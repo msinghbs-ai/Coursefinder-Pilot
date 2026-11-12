@@ -95,7 +95,7 @@ test('the request: version 2 keys unchanged, one strict detail object, sources f
 test('worker v0.77.0: direct official read first, scraper for a rendered listing; version 3 items read the bundle and check every detail field', () => {
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(w).toMatch(/(?:const WORKER = "coverage-sweep-worker-v0\.77\.0"; |\/\/ was v0\.77\.0 )\/\/ v0\.77\.0 \(12 Nov 2026, CF-247 F-SCH production redesign/)
-  expect(w).toContain('const WORKER = "coverage-sweep-worker-v0.77.1"; // v0.77.1 (12 Nov 2026, F-SCH redesign R1 first cohort)')
+  expect(w).toMatch(/(?:const WORKER = "coverage-sweep-worker-v0\.77\.1"; |\/\/ was v0\.77\.1 )\/\/ v0\.77\.1 \(12 Nov 2026, F-SCH redesign R1 first cohort\)/)
   expect(w).toContain('const dr = directFirst ? await readDirect(url) :')
   expect(w).toContain('if (directReadUsable(mt.length, mt)) return { status: "read"')
   expect(w).toContain('wsNum("scholarship.catalogue_render_wait_ms", 5000), false)')
