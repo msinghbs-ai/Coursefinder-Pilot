@@ -190,17 +190,19 @@ function admissionTitle(la) {
   const s = v => v == null ? '—' : (typeof v === 'string' ? v : JSON.stringify(v)).slice(0, 160)
   return [`Field: ${la.field}`, `Admitted: ${fmtDateTime(la.at)}`, `Source: ${SOURCE_WORDS[la.source] || la.source}`, la.rule && `Rule: ${la.rule}`, `Previous value: ${s(la.before)}`, `New value: ${s(la.after)}`, la.evidence_id && `Evidence: ${la.evidence_id}`].filter(Boolean).join('\n')
 }
-// 12 Nov 2026 (Platform Admin 20:50): the course description itself as wrapped text (five lines, then Show all), with when the description reader last wrote it.
-// A course with no description shows its field state as before (Missing, Pending extraction, Waiting for review, Held by validation...).
+// 12 Nov 2026 (Platform Admin 20:50): the course description itself as wrapped text (five lines, then Show all when it does not fit), with when the description
+// reader wrote the text held now (none for a description set or edited by hand). A course with no description shows its field state as before.
 function DescriptionText({ row }) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(false), [cut, setCut] = useState(false), ref = useRef(null)
   const t = typeof row.description_text === 'string' ? row.description_text.trim() : ''
+  useEffect(() => { const e = ref.current; if (!e || open) return; const check = () => setCut(e.scrollHeight > e.clientHeight + 1); check()
+    if (typeof ResizeObserver === 'undefined') return; const o = new ResizeObserver(check); o.observe(e); return () => o.disconnect() }, [t, open])
   if (!t) return <FieldState fs={(row.field_states || {}).description} />
   const at = row.description_updated_at
-  return <span className={`ccol-desc${open ? ' ccol-desc-open' : ''}`} data-description-text={t.length}>
-    <span className="ccol-desc-text">{t}</span>
-    {t.length > 180 && <button type="button" className="ccol-link ccol-desc-more" aria-expanded={open} onClick={e => { e.stopPropagation(); setOpen(x => !x) }}>{open ? 'Show less' : 'Show all'}</button>}
-    <small className="ccol-desc-meta" title={at ? 'When the description reader last wrote this description' : 'No description reading is recorded for this text (set by hand, or before readings were recorded)'}>{at ? `Updated ${fmtDateTime(at)}` : 'Reader time not recorded'}</small>
+  return <span className={`ccol-cdesc${open ? ' ccol-cdesc-open' : ''}`} data-description-text={t.length}>
+    <span className="ccol-cdesc-text" ref={ref}>{t}</span>
+    {(cut || open) && <button type="button" className="ccol-link ccol-cdesc-more" aria-expanded={open} onClick={e => { e.stopPropagation(); setOpen(x => !x) }}>{open ? 'Show less' : 'Show all'}</button>}
+    <small className="ccol-cdesc-meta">{at ? `Written by the reader ${fmtDateTime(at)}` : 'Set or edited by hand (no reader record for this text)'}</small>
   </span>
 }
 const FS = { duration: 'duration', delivery_mode: 'delivery', english: 'english', academic_entry: 'academic_entry', description: 'description', official_url: 'official_url', intl_fee_year: 'provider_tuition' }

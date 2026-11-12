@@ -174,7 +174,7 @@ const PUBLICATION_OPTIONS=['published','unpublished','draft','review','archived'
 // CF-247 Provider Catalogue columns (directive 9 Nov 2026): the Provider filters the server applies over the whole provider set (providers_page: description, admission, source_tier, website, zoho, provider_type)
 const DESCRIPTION_OPTIONS=[{value:'filled',label:'Filled'},{value:'missing',label:'Missing'}]
 // 12 Nov 2026 (Platform Admin 20:50): the Course catalogue's Course description filter (courses_page argument description)
-const COURSE_DESCRIPTION_OPTIONS=[{value:'updated_24h',label:'Updated in the last 24 hours'},{value:'updated_7d',label:'Updated in the last 7 days'},{value:'populated',label:'Has a description'},{value:'missing',label:'No description'}]
+const COURSE_DESCRIPTION_OPTIONS=[{value:'updated_24h',label:'Written by the reader in the last 24 hours'},{value:'updated_7d',label:'Written by the reader in the last 7 days'},{value:'populated',label:'Has a description'},{value:'missing',label:'No description'}]
 const ADMISSION_OPTIONS=[{value:'pending',label:'Pending'},{value:'held',label:'Held'},{value:'declined',label:'Declined'},{value:'admitted',label:'Admitted'}]
 const SOURCE_TIER_OPTIONS=[{value:'stored',label:'Stored page'},{value:'direct',label:'Direct page read'},{value:'firecrawl',label:'Firecrawl page read'},{value:'registry_factual',label:'Registry facts'},{value:'unknown',label:'Source not recorded'}]
 const FEED_OPTIONS=[{value:'matched',label:'Matched'},{value:'pending',label:'Pending'},{value:'missing',label:'Missing'},{value:'not_applicable',label:'Not applicable'}]

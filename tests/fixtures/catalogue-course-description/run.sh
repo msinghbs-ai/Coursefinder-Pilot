@@ -29,15 +29,15 @@ q $DB "$FNS" | sort > /tmp/ccd0.$$
 psql -X -q -v ON_ERROR_STOP=1 -d $DB -1 -At -f $M >/dev/null
 q $DB "$FNS" | sort > /tmp/ccd1.$$
 [ "$(comm -23 /tmp/ccd0.$$ /tmp/ccd1.$$ | sed 's/ .*//' | sort | tr '\n' ' ')" = "$(printf '%s\n' "${!LIVE[@]}" | sort | tr '\n' ' ')" ] || { echo 'FAIL the changed functions are not exactly the three'; comm -3 /tmp/ccd0.$$ /tmp/ccd1.$$; exit 1; }
-[ "$(comm -13 <(sed 's/ .*//' /tmp/ccd0.$$) <(sed 's/ .*//' /tmp/ccd1.$$) | wc -l)" = 0 ] || { echo 'FAIL a function was added'; exit 1; }
+[ "$(comm -13 <(sed 's/ .*//' /tmp/ccd0.$$) <(sed 's/ .*//' /tmp/ccd1.$$) | tr '\n' ' ')" = "security.course_completeness_v1(uuid) " ] || { echo 'FAIL the functions added are not exactly security.course_completeness_v1'; exit 1; }
 for sig in "${!LIVE[@]}"; do A=$(grep -oP -- "--   \Q$sig\E  ${LIVE[$sig]} -> \K[0-9a-f]{32}" $M); grep -qF "$sig $A" /tmp/ccd1.$$ || { echo "FAIL $sig is not at $A"; exit 1; }; done
 psql -X -q -v ON_ERROR_STOP=1 -d $DB -1 -At -f $M >/dev/null; q $DB "$FNS" | sort | cmp -s - /tmp/ccd1.$$ || { echo 'FAIL the second run changed a function'; exit 1; }
-echo 'PASS applied: only the three bodies changed, each to its stated md5; applied again: no change'
+echo 'PASS applied: only the three bodies changed, each to its stated md5, and security.course_completeness_v1 was added; applied again: no change'
 psql -X -q -d postgres -c "drop database if exists ${DB}_t" -c "create database ${DB}_t template ${DB}_old" >/dev/null
 psql -X -q -d ${DB}_t -c "create or replace function security.course_list_with_extras_v1(p_page jsonb) returns jsonb language sql as \$\$ select p_page \$\$"
 if O=$(psql -X -q -v ON_ERROR_STOP=1 -d ${DB}_t -1 -At -f $M 2>&1); then echo 'FAIL applied over a changed live body'; exit 1; fi
 grep -qF 'differs from the definition this change replaces' <<<"$O" || { echo "FAIL unexpected refusal: $O"; exit 1; }
-[ "$(q ${DB}_t "select md5(prosrc) from pg_proc where oid = 'security.admin_course_page_fast(jsonb)'::regprocedure")" = "${LIVE['security.admin_course_page_fast(jsonb)']}" ] || { echo 'FAIL the refused migration left an edit behind'; exit 1; }
+[ "$(q ${DB}_t "select md5(prosrc) from pg_proc where oid = 'security.admin_course_page_fast(jsonb)'::regprocedure")" = "${LIVE['security.admin_course_page_fast(jsonb)']}" ] && [ "$(q ${DB}_t "select to_regprocedure('security.course_completeness_v1(uuid)') is null")" = t ] || { echo 'FAIL the refused migration left an edit behind'; exit 1; }
 echo 'PASS refused: a changed live body stops the migration and nothing is applied'
 psql -X -q -d postgres -c "drop database if exists ${DB}_rf" -c "create database ${DB}_rf template $DB" >/dev/null
 psql -X -q -v ON_ERROR_STOP=1 -d ${DB}_rf -At -f $HELD >/dev/null; psql -X -q -v ON_ERROR_STOP=1 -d ${DB}_rf -At -f $HELD >/dev/null
