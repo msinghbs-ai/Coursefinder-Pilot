@@ -13,7 +13,7 @@ const s1 = 'Semester one<br>teaching period | **2 Mar – 26 Jun** | **1 Mar –
 const s2 = 'Semester two<br>teaching period | **27 Jul – 18 Nov** | **26 Jul – 19 Nov** | **24 Jul – 17 Nov**'
 
 test('Monash summary-dates: each start takes the year of its own column (Semester 1 = 1 Mar 2027, Semester 2 = 26 Jul 2027)', () => {
-  expect(CALENDAR_READER).toBe('calendar-v2.3')
+  expect(CALENDAR_READER).toBe('calendar-v2.4')
   const r = read(monash, [start('Semester one', null, 3, 1, s1), start('Semester one', null, 2, 28, s1), start('Semester two', null, 7, 26, s2)])
   const one = r.periods.find((p) => p.period === 'semester one').starts
   expect(one.map((s) => s.date).sort()).toEqual(['2026-03-02', '2027-03-01', '2028-02-28'])   // v2.3: the whole row

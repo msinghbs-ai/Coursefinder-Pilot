@@ -12,7 +12,7 @@ test('a refused PDF (401, 403, 406, 429) goes to Firecrawl only with its switch 
   expect(block).toMatch(/c\.storage\.from\("evidence"\)\.upload\(path, await gzip\(md\)/)
   expect(block.indexOf('storage.from("evidence")')).toBeLessThan(block.indexOf('p_status: "read", p_via: "firecrawl"'))
   expect(block).toContain('.md.gz')
-  expect(ix).toContain('const WORKER = "coverage-sweep-worker-v0.80.0"')
+  expect(ix).toMatch(/(const WORKER = "coverage-sweep-worker-v0\.80\.0"|\/\/ was v0\.80\.0 \/\/ v0\.80\.0 \(12 Nov 2026, CF-247 AER source recovery)/)  // v0.80.0 or later (v0.81.0: calendar reader v2.4)
   const m = fs.readFileSync('supabase/migrations/20261113123100_cf247_aer_pdf_firecrawl_fallback.sql', 'utf8')
   expect(m).toContain("'reading.entry_pdf_firecrawl_on'")
   expect(m).toMatch(/where s\.error = 'blocked_pdf' and s\.status in \('failed', 'found'\)/)
