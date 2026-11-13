@@ -883,3 +883,13 @@
 @media (max-width:620px){[data-reference-sources] .xl-chev{min-width:24px;min-height:24px;align-items:center;justify-content:center}[data-reference-sources] .ms-switch{height:24px}[data-reference-sources] .ms-switch span{top:3px}[data-reference-sources] .rs-check{min-height:24px}[data-reference-sources] .rs-check input[type="checkbox"]{width:24px;height:24px}}
 /* CF-247 F-OPS.04 (9 Nov 2026): Models & services › AI & OpenRouter on a phone. Measured at 412 px: the profile "Show" opener was 31x10, under the 24 px touch floor (WCAG 2.2 AA 2.5.8). Phone only, this tab only; desktop unchanged. */
 @media (max-width:620px){[data-ai-config] .ai-ident summary{display:inline-flex;align-items:center;min-height:24px;min-width:24px}}
+/* CF-247 F-SCH (13 Nov 2026): Coverage › All providers - filters and the provider funnel */
+.sc-cov-filters{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin:4px 0 10px}
+.sc-cov-filters label{display:grid;gap:2px}
+.sc-cov-filters small{font-size:var(--cf-fs-2xs);color:var(--cf-slate-500);font-weight:700}
+.sc-cov-filters select{min-height:32px;border:1px solid var(--cf-slate-200);border-radius:var(--cf-radius-md);padding:0 8px;background:var(--cf-white)}
+.sc-funnel{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px;margin:0 0 12px}
+.sc-funnel>div{border:1px solid var(--cf-slate-200);border-radius:var(--cf-radius-lg);padding:8px 10px;display:grid;gap:2px;background:var(--cf-white)}
+.sc-funnel small{font-size:var(--cf-fs-2xs);color:var(--cf-slate-500);font-weight:700}
+.sc-funnel strong{font-size:var(--cf-fs-lg)}
+@media (max-width:900px){.sc-funnel{grid-template-columns:repeat(2,minmax(0,1fr))}}
