@@ -11,7 +11,7 @@
 --       (a recovery item that fails its three tries is terminal and shown as such)
 --   security.scholarship_detail_backfill_v1   also queues recovery items within the same limit (sch_detail.recovery_on)
 --   public.svc_scholarship_ai_next             hands the worker the item's recovery variant and the recorded scholarship name
--- Settings: sch_detail.recovery_on (1), scholarship.recovery_section_chars (6,000), scholarship.recovery_linked_chars (4,000).
+-- Settings: sch_detail.recovery_on (1), reading.sch_recovery_section_chars (6,000), reading.sch_recovery_linked_chars (4,000).
 -- Replaces: security.scholarship_detail_backfill_v1(integer), public.svc_scholarship_ai_next(integer) (same names and signatures; md5-guarded
 --   edits). Retires: the whole-page retry of the 77 (none is queued again).
 
@@ -36,10 +36,10 @@ values
  ('pipeline', 'sch_detail.recovery_on', 'Scholarship details: recover long pages in sections',
   '1: an active scholarship whose whole-page reading was cut or unanswered is read once more from its stored page as the award''s own section in two smaller calls. 0: no recovery item is queued.',
   'number', '1'::jsonb, 0, 1, 'on (1) or off (0)', 1431, 'F-SCH 13 Nov 2026 (S2-Scholarship directive §2): 77 long-page failures', 'Scholarship details', 'security.scholarship_detail_backfill_v1, security.scholarship_detail_recovery_queue_v1'),
- ('pipeline', 'scholarship.recovery_section_chars', 'Scholarship details recovery: award section length',
+ ('pipeline', 'reading.sch_recovery_section_chars', 'Scholarship details recovery: award section length',
   'How much of the stored page, from just before the award name, a recovery reading sends.',
   'number', '6000'::jsonb, 1000, 14000, 'characters', 1432, 'F-SCH 13 Nov 2026: bounded award section', 'Scholarship details', 'worker coverage-sweep v0.83.0 (mode scholarship_ai, recovery items)'),
- ('pipeline', 'scholarship.recovery_linked_chars', 'Scholarship details recovery: linked terms page length',
+ ('pipeline', 'reading.sch_recovery_linked_chars', 'Scholarship details recovery: linked terms page length',
   'How much of the linked eligibility or terms page a recovery reading sends.',
   'number', '4000'::jsonb, 0, 8000, 'characters', 1433, 'F-SCH 13 Nov 2026: bounded linked terms', 'Scholarship details', 'worker coverage-sweep v0.83.0 (mode scholarship_ai, recovery items)')
 on conflict (toolset_key, key) do nothing;

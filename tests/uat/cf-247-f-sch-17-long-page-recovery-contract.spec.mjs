@@ -34,7 +34,7 @@ test('two parts cover every detail field exactly once, keep the strict shapes, a
 test('worker: only marked recovery items take the sectioned path; costs of both calls kept; same checks and record', () => {
   expect(RECOVERY_VARIANT).toBe('sectioned-v1')
   expect(w).toContain('const recovery = it.recovery === RECOVERY_VARIANT && Number(it.prompt_version || 0) >= 3;')
-  expect(w).toContain('wsNum("scholarship.recovery_section_chars", 6000)')
+  expect(w).toContain('wsNum("reading.sch_recovery_section_chars", 6000)')
   expect(w).toContain('c1 = pa.cost + pb.cost; cost += c1;')
   expect(w).toContain('if (!x.ans.ok) throw readError(`recovery ${nm}: ${x.ans.error}`, c1);')
   expect(w).toContain('checks.detail = checkScholarshipDetail(a.detail, parts, NAT_NAMES);')
