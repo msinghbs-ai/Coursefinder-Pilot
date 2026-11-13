@@ -7,6 +7,7 @@ import{ExternalLink,UsersRound}from'lucide-react'
 import{StatusChip}from'./ui-kit'
 import{fmtNumber,fmtDate,fmtMoney}from'./lib/format.js'
 import'./detail-summary.css'
+import CourseRecognition from'./CourseRecognition' // CF-247 RM1A-1 (O29): Recognition card
 
 const human=v=>String(v??'').replaceAll('_',' ').replace(/^./,c=>c.toUpperCase())
 const DELIVERY={on_campus:'On campus',online:'Online',blended:'Blended',mixed:'Blended'}
@@ -50,6 +51,7 @@ export function CourseSummary({data,feeUsed}){
       <FactCard id="intakes" label="Intakes"><Pills items={intakes} empty="No intake found yet"/></FactCard>
       <FactCard id="english" label="English"><Pills items={english} empty="No requirement found yet"/></FactCard>
       <FactCard id="campuses" label={`Campus${campuses.length===1?'':'es'}`}><Pills items={campuses} empty="—"/></FactCard>
+      <CourseRecognition courseId={data.id}/>
       <FactCard id="checked" label="Last checked" value={data.last_verified_at?fmtDate(data.last_verified_at):'—'} sub={data.course_url?<a className="cf-link" href={data.course_url} target="_blank" rel="noreferrer">Course page <ExternalLink size={11}/></a>:'No course page yet'}/>
     </FactCards>
   </section>}
