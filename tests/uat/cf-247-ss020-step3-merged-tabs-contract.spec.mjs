@@ -10,7 +10,7 @@ import { PAGES, resolveTarget, hrefFor } from '../../src/nav-map.js'
 const go = (addr) => { const [a, q] = addr.split('?'); const r = resolveTarget(a, new URLSearchParams(q || '')); return `${r.page}/${r.tab}${r.params.toString() ? '?' + r.params : ''}` }
 
 test('menu: the merged tabs keep the minimum roles of what they hold (the final count is guarded once SS-020 ends)', () => {
-  expect(PAGES.services.tabs.map((t) => [t.key, t.label, t.min])).toEqual([['services', 'Services & limits', 4], ['ai', 'AI', 4]]) // v2.16.0 (Platform Admin 13 Nov 2026 19:14): the AI tab; Scholarship extraction (rank 3) left it
+  expect(PAGES.services.tabs.map((t) => [t.key, t.label, t.min])).toEqual([['services', 'Services & limits', 4], ['ai', 'AI', 3]]) // v2.16.0 (Platform Admin 13 Nov 2026 19:14 and 22:10): the AI tab, read by Curator and above as before
   expect(PAGES.health.tabs.map((t) => [t.key, t.label, t.min])).toEqual([['checks', 'Health checks', 3], ['queues', 'Queues & yield', 3], ['integration', 'Integration queue', 5], ['storage', 'Storage & retention', 6]])
   // Pipeline yield keeps its PIM Admin minimum inside the tab; the AI model switches keep the Pipeline Operator minimum on the AI tab
   const main = fs.readFileSync('src/mature-main.jsx', 'utf8')

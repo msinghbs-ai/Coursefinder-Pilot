@@ -9,7 +9,7 @@ const read = p => fs.readFileSync(p, 'utf8')
 
 test('Models & services is a Platform settings page; switching is role-checked, logged, and a model off leaves every operation screen', () => {
   expect(SECTIONS.find(s => s.label === 'Platform settings').pages).toEqual(['environment', 'services', 'migration']) // v2.15.301: Data model retired, Storage & retention on Platform health
-  expect(PAGES.services.min).toBe(4) // v2.16.0: Scholarship extraction (Curator) is under Scholarships › Coverage; both tabs are Pipeline Operator and above
+  expect(PAGES.services.min).toBe(3) // Curator and above read the AI tab (Platform Admin 13 Nov 2026 22:10: "Do not silently remove role-3 read-only access"); changing needs PIM Admin or the Platform Admin
   const m = read('supabase/migrations-archive/20260930160000_cf247_models_services_toggles.sql')
   expect(m).toContain("if auth.uid() is null or security.current_role_rank() < 5 then raise exception 'PIM Operator role or above required'")
   expect(m).toContain('update pipeline.layer3_route_tiers set active = false, updated_at = now() where profile_id = p_id and active;')

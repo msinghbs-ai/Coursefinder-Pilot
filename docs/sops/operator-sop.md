@@ -1,4 +1,4 @@
-<!-- sop-export: id=operator-sop; version=2.21; reviewed-release=2.16.0; source-commit=26d3f0aea49d+local; content-sha256=69f5f321d67528e6b870da618236afbc81fc1aa8d7a30dad2eb13334c0987786 -->
+<!-- sop-export: id=operator-sop; version=2.21; reviewed-release=2.16.0; source-commit=651df313369f+local; content-sha256=c426b3eb982037c19916535af179d8362c40aefb60967501122844b0b50de71b -->
 # StudySearch – Operator SOP
 
 **Version:** 2.21 (reviewed for platform release v2.16.0)  
@@ -115,7 +115,7 @@ How operators keep the data flowing and decide what automation cannot: the revie
 
 | Version | Date | Release | Change |
 |---|---|---|---|
-| 2.21 | 13 Nov 2026 | v2.16.0 | Models & services › AI is one page of four panes; when AI work stops, read the state line and the service row there and tell the Platform Admin. Scholarship extraction is under Scholarships › Coverage. |
+| 2.21 | 13 Nov 2026 | v2.16.0 | Models & services › AI is one page of four panes; when AI work stops, read the state line and the service row there and tell the Platform Admin. Scholarship extraction is configured under the Scholarship pages service; its results stay on Scholarships › Coverage. |
 | 2.20 | 11 Nov 2026 | v2.15.494 | Provider descriptions: Fill description on a provider record; deciding the provider descriptions that wait in Layer 4; a description typed by hand is never replaced. |
 | 2.19 | 8 Nov 2026 | v2.15.494 | Operations shows each automated lane stage by stage; the Firecrawl card shows allowance, remaining credits and floor; Course description review shows capacity and a university-ordered pack. New spend paths ship switched off; no data gain, admission or publication is claimed. |
 | 2.18 | 6 Nov 2026 | v2.15.493 | English course-group approval and binding, same-family supersession and coverage holds; no automatic group admission or paid discovery activation. |

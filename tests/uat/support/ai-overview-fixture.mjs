@@ -5,6 +5,9 @@
 //   entry_requirements_v2_shadow  switched off
 //   course_matching          spend not measured (null)
 //   mimo-v2.6-flash          price and context not checked (null)
+//   migration_state         routed for most; entry_matrices, ops_diagnosis, scholarship_eligibility, provider_description and adapter_builder are
+//                           routed_single (one model, no fallback yet); page_identity is not_migrated (read-only, model in effect)
+//   qualification           per service: the models qualified for it (key names are this fixture's until the round 4 contract lands)
 // aiState() answers the two writes the way the server does (same refusals, same recomputed fields). Nothing reaches a real backend.
 const NOW = Date.now(), H = 3600e3, D = 86400e3
 const iso = t => new Date(t).toISOString()
@@ -12,6 +15,8 @@ const hourStart = Math.floor(NOW / H) * H, dayStart = Math.floor(NOW / D) * D
 
 const M = (code, family, label, model_identifier, i, o, ctx, status = 'allowed', note = '') => ({ code, family, label, model_identifier, input_usd_per_mtok: i, output_usd_per_mtok: o,
   price_checked_at: i == null ? null : iso(NOW - 2 * H), context_tokens: ctx, status, note, reason: status === 'allowed' ? 'seed 13 Nov 2026' : 'Platform Admin 13 Nov 2026 19:14', changed_at: iso(NOW - 2 * H), used_by: [] })
+const SINGLE = ['ops_diagnosis', 'scholarship_eligibility', 'provider_description', 'adapter_builder']
+const QUALIFIED = ['qwen3-30b', 'mistral-small-3.2', 'deepseek-v3.2']
 export const models = () => [
   M('qwen3-30b', 'qwen3', 'Qwen3 30B A3B Instruct (2507)', 'qwen/qwen3-30b-a3b-instruct-2507', 0.10, 0.30, 262144, 'allowed', 'In use: course fields, central pages, fees, scholarships, course-page matching, adapter proposals'),
   M('qwen3-235b', 'qwen3', 'Qwen3 235B A22B (2507)', 'qwen/qwen3-235b-a22b-2507', 0.14, 0.80, 262144),
@@ -49,14 +54,14 @@ export const services = () => [
   S('entry_requirements_v2_shadow', 'Entry requirements v2 (shadow trial)', 'Entry requirements', { lane: 'entry_matrix', cascade: ['qwen3-30b', 'mistral-small-3.2'], daily_usd_cap: 2, enabled: false, resolver: 'pipeline.aer_prompt_versions',
     prompt: { source: 'pipeline.aer_prompt_versions', version: 'aer-v2-course-v1', text: 'You read one course page and return its academic entry requirements by country of prior education. Quote the page for every fact.' },
     note: 'The model is pinned on the prompt version. The trial is switched off (aer.v2_shadow_on).' }),
-  S('provider_description', 'Provider description', 'Providers', { lane: 'provider_description', cascade: ['qwen3-30b', 'mistral-small-3.2'], daily_usd_cap: 1, prompt: { source: 'pipeline.provider_description_prompts', version: '4', text: 'You write a provider description from its official About page. Every sentence is supported by a passage on the page.' }, reason: 'old card' }),
+  S('provider_description', 'Provider description', 'Providers', { lane: 'provider_description', cascade: ['qwen3-30b'], daily_usd_cap: 1, prompt: { source: 'pipeline.provider_description_prompts', version: '4', text: 'You write a provider description from its official About page. Every sentence is supported by a passage on the page.' }, reason: 'old card' }),
   S('calendar_reading', 'Intake calendars (central pages)', 'Providers', { cascade: ['qwen3-30b', 'mistral-small-3.2'], daily_usd_cap: 2, spent_today: { usd: 0.4, calls: 6 }, prompt: { source: 'worker code', version: 'calendar-v2.4', text: null },
     settings: [num('pipeline', 'reading.calendar_max_slices', 'Calendar: slices a page', 6, 1, 20, 'slices')] }),
   S('central_english_policy', 'English policy pages (central pages)', 'Providers', { cascade: ['qwen3-30b', 'mistral-small-3.2'], prompt: { source: 'worker code', version: 'provider-policy-v0.3.1', text: null } }),
   S('scholarship_extraction', 'Scholarship pages', 'Scholarships', { lane: 'scholarship_ai', cascade: ['qwen3-30b', 'mistral-small-3.2'], daily_usd_cap: 6, spent_today: { usd: 2.2, calls: 140 }, resolver: 'pipeline.scholarship_ai_extract_settings',
     prompt: { source: 'pipeline.scholarship_ai_prompts', version: '7', text: 'You read one scholarship page. Answer with the scholarship\'s facts; every fact quotes the page.' }, note: 'The cascade is the reading order: an unproven fact goes to the next model, then to a person.' }),
   S('scholarship_eligibility', 'Scholarship eligibility', 'Scholarships', { lane: 'scholarship_ai', prompt: { source: 'worker code', version: 'eligibility.ts', text: null }, note: 'Uses the first model of the scholarship chain.' }),
-  S('fee_reader', 'Fees', 'Fees', { lane: 'fee_ai', cascade: ['qwen3-30b', 'mistral-small-3.2'], daily_usd_cap: 5, spent_today: { usd: 5.02, calls: 310 }, prompt: { source: 'worker code', version: 'fees.ts', text: null } }),
+  S('fee_reader', 'Fees', 'Fees', { lane: 'fee_ai', cascade: ['qwen3-30b', 'mistral-small-3.2'], daily_usd_cap: 5, spent_today: { usd: 5.02, calls: 310 }, last_call: { at: iso(NOW - 50 * 60e3), model: 'mistralai/mistral-small-3.2-24b-instruct', outcome: 'failed', error: 'time-out after 60 seconds' }, prompt: { source: 'worker code', version: 'fees.ts', text: null } }),
   S('course_matching', 'Course-page matching', 'Matching and identity', { lane: 'course_match', daily_usd_cap: 2, spent_today: { usd: null, calls: null }, prompt: { source: 'worker code', version: 'ai-match-v0.10.0', text: null }, note: null }),
   S('page_identity', 'Page identity (qualification only)', 'Matching and identity', { lane: 'page_identity', daily_usd_cap: 1, prompt: { source: 'worker code', version: 'page-identity-v1', text: null }, note: 'No scheduled reader: used for qualification only.' }),
   S('adapter_builder', 'Adapter proposals', 'Operations', { lane: 'adapter_builder', prompt: { source: 'worker code', version: 'builder-v3', text: null }, note: 'First model only; a provider\'s own model is used only when the cascade names it.',
@@ -66,7 +71,8 @@ export const services = () => [
 ]
 
 const usage = () => {
-  const row = (t, unit, service_code, lane, model, usd, calls) => ({ [unit]: unit === 'day' ? iso(t).slice(0, 10) : iso(t), service_code, lane, model, usd, calls })
+  const row = (t, unit, service_code, lane, model, usd, calls) => ({ [unit]: unit === 'day' ? iso(t).slice(0, 10) : iso(t), service_code, lane, model, usd, calls,
+    ...(model ? { tokens_in: calls * 4200, tokens_out: calls * 380, failures: service_code === 'fee_reader' ? 2 : 0, fallbacks: service_code === 'fee_reader' ? 1 : 0, evidence_href: service_code === 'fee_reader' ? '#scheduled-jobs?tab=jobs' : null } : {}) })
   const Q = 'qwen/qwen3-30b-a3b-instruct-2507', G = 'openai/gpt-4.1-mini', DS = 'deepseek/deepseek-v3.2'
   const by_hour_24h = [], by_day_14d = []
   for (const [h, svc, lane, model, usd, calls] of [[0, 'scholarship_extraction', 'scholarship_ai', Q, 0.4, 26], [0, 'fee_reader', 'fee_ai', Q, 0.9, 55], [1, 'fee_reader', 'fee_ai', Q, 1.6, 98], [2, 'course_description', 'enrich_fields', Q, 0.9, 1],
@@ -95,6 +101,11 @@ export function derive(o) {
     const reason = { off: 'switched off', no_model: 'no allowed model in the cascade', credit_floor: 'credit_floor', ceiling: 'the daily ceiling for all AI is reached', cap: 'its daily cap is reached' }[kind] || null
     Object.assign(s, { held: Boolean(kind), held_kind: kind, held_reason: reason, would_hold_now: Boolean(kind), on_demand_exempt: kind === 'cap' || kind === 'ceiling' })
     s.model = s.models[0]?.model_identifier || null; s.model_in_effect = s.model
+    s.migration_state = s.migration_state || (SINGLE.includes(s.service_code) ? 'routed_single' : s.service_code === 'page_identity' ? 'not_migrated' : 'routed')
+    if (s.migration_state === 'not_migrated') { s.enforced = false; s.model = 'qwen/qwen3-30b-a3b-instruct-2507'; s.model_in_effect = s.model }
+    s.qualification = s.qualification || o.models.filter(m => m.status === 'allowed' || s.cascade.includes(m.code)).map(m => ({ code: m.code, qualified: QUALIFIED.includes(m.code) || s.cascade.includes(m.code), evidence: null, at: null, by: null }))
+    if (s.last_call === undefined) s.last_call = Number(s.spent_today?.calls) > 0 ? { at: iso(NOW - 20 * 60e3), model: s.model, outcome: 'answered', error: null } : null
+    if (s.recovery_state === undefined) s.recovery_state = s.held_kind === 'cap' ? 'waiting for the next UTC day' : null
   }
   o.ceiling_usd = ceiling; o.caps_total_usd = +o.services.filter(s => s.enabled).reduce((n, s) => n + Number(s.daily_usd_cap || 0), 0).toFixed(2); o.caps_exceed_ceiling = o.caps_total_usd > ceiling
   return o
@@ -124,12 +135,13 @@ export function aiOverview(over = {}) {
 /** A stateful stand-in for the three calls. write(name, body) answers { data } or { error } exactly as the contract words its refusals. */
 export function aiState(over = {}, { rank = 6 } = {}) {
   let o = aiOverview(over); o.can_control = rank >= 5
+  const need = { admin_ai_model_set_v1: 6, admin_ai_qualification_set_v1: 6, admin_ai_route_set_v1: 5 }
   const refuse = message => ({ error: { code: 'P0001', message } })
   return {
     get overview() { return o },
     write(name, b = {}) {
       if (name === 'admin_ai_overview_v1') return { data: o }
-      if (rank < 5) return { error: { code: '42501', message: 'PIM Operator role or above required' } }
+      if (rank < (need[name] || 5)) return { error: { code: '42501', message: need[name] === 6 ? 'Platform Admin required' : 'PIM Operator role or above required' } }
       if (String(b.p_reason || '').trim().length < 4) return refuse('give a reason (kept in the log)')
       if (name === 'admin_ai_model_set_v1') {
         const m = o.models.find(x => x.code === b.p_code)
@@ -138,6 +150,12 @@ export function aiState(over = {}, { rank = 6 } = {}) {
         if (b.p_status === 'allowed' && m.family === 'other') return refuse('this model is not in a family the Platform Admin allows (Qwen3, MiMo, Mistral Small, Kimi K2, Gemini, Llama, DeepSeek); adding a family is a release')
         Object.assign(m, { status: b.p_status, reason: b.p_reason, changed_at: iso(Date.now()) })
         o.events = [{ at: iso(Date.now()), action: 'model_set', target: m.code, detail: { reason: b.p_reason }, by: 'admin@example.test' }, ...o.events]
+      } else if (name === 'admin_ai_qualification_set_v1') {
+        const s = o.services.find(x => x.service_code === b.p_service), q = s?.qualification.find(x => x.code === b.p_code)
+        if (!s) return refuse(`service ${b.p_service} is not in the list`)
+        if (!q) return refuse(`model ${b.p_code} is not in the list`)
+        if (String(b.p_evidence || '').trim().length < 4) return refuse('give the evidence')
+        Object.assign(q, { qualified: true, evidence: b.p_evidence, at: iso(Date.now()), by: 'admin@example.test' })
       } else if (name === 'admin_ai_route_set_v1') {
         const s = o.services.find(x => x.service_code === b.p_service), c = b.p_cascade || []
         if (!s) return refuse(`service ${b.p_service} is not in the list`)
@@ -147,6 +165,10 @@ export function aiState(over = {}, { rank = 6 } = {}) {
         const unknown = c.filter(x => !o.models.some(m => m.code === x)), out = c.filter(x => o.models.find(m => m.code === x)?.status === 'not_allowed')
         if (unknown.length) return refuse(`unknown model in the cascade: ${unknown.join(', ')}`)
         if (out.length) return refuse(`not an allowed model: ${out.join(', ')} (Models & services › Models)`)
+        const unq = c.filter(x => s.qualification.find(q => q.code === x)?.qualified === false)
+        if (unq.length) return refuse(`not qualified for this service: ${unq.join(', ')}`)
+        if (s.migration_state === 'routed_single' && c.length > 1) return refuse('this service uses one model: fallback is not available yet')
+        if (s.migration_state === 'not_migrated') return refuse('this service is not migrated: its route is read-only')
         if (b.p_daily_usd_cap == null) return refuse('give a daily US$ cap (every service has one)')
         if (Number(b.p_daily_usd_cap) < 0 || Number(b.p_daily_calls_cap) < 0) return refuse('a cap cannot be negative (leave it empty for no cap)')
         s.cascade = [...c]
@@ -162,7 +184,7 @@ export function aiState(over = {}, { rank = 6 } = {}) {
 /** Route the three calls on a page (after mockAdmin). Returns the state and the list of calls made. */
 export async function mockAi(page, over = {}, opts = {}) {
   const state = aiState(over, opts), calls = []
-  await page.route(/\/rest\/v1\/rpc\/admin_ai_(overview_v1|model_set_v1|route_set_v1)$/, async route => {
+  await page.route(/\/rest\/v1\/rpc\/admin_ai_(overview_v1|model_set_v1|route_set_v1|qualification_set_v1)$/, async route => {
     const name = new URL(route.request().url()).pathname.split('/').pop(), body = route.request().postDataJSON() || {}
     if (name !== 'admin_ai_overview_v1') calls.push({ name, ...body })
     const r = state.write(name, body)

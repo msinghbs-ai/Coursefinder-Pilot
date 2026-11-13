@@ -1,4 +1,6 @@
 // Guards: Platform Admin 13 Nov 2026 19:14–19:36 — Models & services redesign (one model list, service cascades, caps, prompts, usage; no blank model)
+// Platform Admin written review 13 Nov 2026 22:10: "Default to expanded panes on desktop. Allow collapsing, but keep warnings visible." On a
+// phone the cards start closed, as every card does, and still show their warnings.
 // Phone acceptance of the page (F-OPS.04 pattern; S121/G4: phone tests are @responsive and first assert phone width). It replaces
 // cf-247-f-ops-04-ai-config-phone, whose screen (AI & OpenRouter) is retired. Mocked REST; nothing is saved, verified or switched.
 import { test, expect } from '@playwright/test'
@@ -42,6 +44,18 @@ async function boxes(page, selector) {
 }
 
 test.describe('Models & services › AI on a phone @responsive', () => {
+  test('on a phone the four cards start closed and still show their warnings', async ({ page }) => {
+    await atPhoneWidth(page)
+    await mockAdmin(page, { rank: 6 }); await mockAi(page)
+    await page.goto('/#models-services?tab=ai')
+    await expect(page.locator('[data-ai-page="ready"]')).toBeVisible({ timeout: 30_000 })
+    await expect(page.locator('[data-ai-pane]')).toHaveCount(4)
+    await expect(page.locator('[data-ai-pane] .cf-card-toggle[aria-expanded="true"]')).toHaveCount(0)
+    await expect(page.locator('[data-ai-pane="services"] [data-ai-no-model-chip]')).toHaveText('1 with no model')
+    await expect(page.locator('[data-ai-pane="openrouter"] [data-ai-caps-chip]')).toBeVisible()
+    expect(await pageOverflow(page)).toBeLessThanOrEqual(1)
+  })
+
   test('the four panes, their stacked rows and an open service sit inside the screen, and nothing scrolls sideways', async ({ page }) => {
     const w = await atPhoneWidth(page)
     await mount(page)

@@ -76,6 +76,30 @@ export function accountState(or = {}) {
   return { key: 'running', label: 'Running', tone: 'success', text: 'Credit is above the floor and today\'s spend is under the ceiling.' }
 }
 
+// ---- what the worker really does with a service (Platform Admin written review 13 Nov 2026 22:10: "Do not display a model cascade as
+// operational unless the worker actually executes it") ---------------------------------------------------------------------------------
+// migration_state: routed (the worker runs the cascade), routed_single (it uses one model: no fallback yet), not_migrated (its reader does
+// not ask the route). A row that does not say is read from the older keys: enforced false is not_migrated, otherwise routed.
+export const migrationOf = s => (['routed', 'routed_single', 'not_migrated'].includes(s?.migration_state) ? s.migration_state : s?.enforced === false || s?.wired === false ? 'not_migrated' : 'routed')
+/** Qualification of models for one service: Map(code → { qualified, evidence, at, by }), or null when the service carries no qualification data. */
+export function qualification(s) {
+  const q = s?.qualification ?? s?.qualified_models ?? s?.qualified
+  if (q == null) return null
+  const out = new Map(), put = (code, v) => { if (code) out.set(code, typeof v === 'object' && v ? { qualified: v.qualified ?? (v.status ? v.status === 'qualified' : true), evidence: v.evidence ?? null, at: v.at ?? v.qualified_at ?? null, by: v.by ?? v.qualified_by ?? null } : { qualified: v !== false, evidence: null, at: null, by: null }) }
+  if (Array.isArray(q)) for (const x of q) (typeof x === 'string' ? put(x, true) : put(x?.code ?? x?.model_code, x))
+  else if (typeof q === 'object') for (const [code, v] of Object.entries(q)) put(code, v)
+  return out
+}
+/** true or false when the service says; null when it carries no qualification data (the server then decides). */
+export const isQualified = (s, code) => { const q = qualification(s); return q == null ? null : Boolean(q.get(code)?.qualified) }
+/** The most recent call of a service, however the answer names it; null when it gives none (shown as Not measured). */
+export function lastCall(s) {
+  const l = s?.last_call ?? s?.last ?? null
+  if (!l || typeof l !== 'object') return null
+  return { at: l.at ?? l.called_at ?? null, model: l.model ?? l.model_identifier ?? null, outcome: l.outcome ?? l.status ?? null, error: l.error ?? l.error_message ?? null }
+}
+export const recoveryOf = s => s?.recovery_state ?? s?.recovery ?? null
+
 // ---- usage -------------------------------------------------------------------------------------------------------------------------------
 const sum = (rows, k) => { const known = rows.filter(r => r[k] != null); return known.length ? known.reduce((n, r) => n + Number(r[k] || 0), 0) : null }
 /** Rows grouped by service or model. A null figure stays null (Not measured), never 0. */
@@ -87,7 +111,9 @@ export function usageBy(rows, by, { services = [], models = [] } = {}) {
   return keys.map(k => {
     const mine = rows.filter(r => keyOf(r) === k)
     const label = by === 'model' ? (k ? (mLabel[k] || k) : 'Model not recorded') : (sLabel[k] || k || 'Service not recorded')
-    return { key: k || '(none)', label, sub: by === 'model' && k && mLabel[k] ? k : '', usd: sum(mine, 'usd'), calls: sum(mine, 'calls') }
+    const tok = mine.map(r => (r.tokens != null ? Number(r.tokens) : r.tokens_in != null || r.tokens_out != null ? Number(r.tokens_in || 0) + Number(r.tokens_out || 0) : null)).filter(v => v != null)
+    const evidence = mine.map(r => r.evidence_href ?? r.evidence_url ?? r.evidence ?? null).find(v => typeof v === 'string' && /^(#|https:\/\/)/.test(v)) || null
+    return { key: k || '(none)', label, sub: by === 'model' && k && mLabel[k] ? k : '', usd: sum(mine, 'usd'), calls: sum(mine, 'calls'), tokens: tok.length ? tok.reduce((a, b) => a + b, 0) : null, failures: sum(mine, 'failures'), fallbacks: sum(mine, 'fallbacks'), evidence }
   }).sort((a, b) => (b.usd ?? -1) - (a.usd ?? -1))
 }
 /** One total per hour (24) or day (14), oldest first; a bucket with no row is "nothing recorded" (null), not a measured zero. */
@@ -120,6 +146,8 @@ const REFUSALS = [
   [/give a daily US\$ cap/i, 'Give a daily US$ cap: every service has one.'],
   [/cap cannot be negative/i, 'A cap cannot be negative. Leave it empty for no cap.'],
   [/not in a family the Platform Admin allows/i, 'This model is not in a family the Platform Admin allows (Qwen3, MiMo, Mistral Small, Kimi K2, Gemini, Llama, DeepSeek). Adding a family is a release.'],
+  [/not qualified for this service: ?(.*)/i, (m) => `Not qualified for this service: ${m[1]}. Record its qualification first.`],
+  [/Platform Admin required/i, 'Platform Admin is needed for this.'],
   [/status must be/i, 'A model is either allowed or not allowed.'],
   [/(PIM Operator|Pipeline Operator) role or above required/i, (m) => `${m[1]} role or above is needed for this.`],
 ]

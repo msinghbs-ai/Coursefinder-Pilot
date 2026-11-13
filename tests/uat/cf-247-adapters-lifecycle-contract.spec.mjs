@@ -53,18 +53,21 @@ test('every card starts collapsed and is remembered for the browser session only
 })
 
 test.describe('mocked browser', () => {
-  test('Models & services: every card collapsed, one opens, and stays open after a reload in the same session', async ({ page }) => {
+  // v2.16.0 (Platform Admin written review 13 Nov 2026 22:10: "Default to expanded panes on desktop. Allow collapsing, but keep warnings
+  // visible."): Models & services › AI is the stated exception to cards-start-closed; every other screen's cards still start closed.
+  test('Models & services: Services & limits cards start closed; the four AI cards start open on desktop, and a closed one stays closed after a reload', async ({ page }) => {
     await mockAdmin(page)
-    await page.goto('/#models-services?tab=ai') // v2.16.0: Models & services › AI is four cards (OpenRouter key and usage, Models, Services, Recent usage)
-    const toggles = page.locator('.cf-card-toggle')
-    await toggles.first().waitFor()
+    await page.goto('/#models-services')
+    await page.locator('.cf-card-toggle').first().waitFor()
     expect(await page.locator('.cf-card-toggle[aria-expanded="true"]').count()).toBe(0)
-    await expect(page.locator('[data-ai-model]')).toHaveCount(0) // a closed card draws no body
-    await page.locator('[data-card="services.ai.models"] .cf-card-toggle').click()
+    await page.goto('/#models-services?tab=ai')
+    await expect(page.locator('[data-ai-pane] .cf-card-toggle[aria-expanded="true"]')).toHaveCount(4)
     await expect(page.locator('[data-ai-model="qwen3-30b"]')).toBeVisible()
+    await page.locator('[data-card="services.ai.models"] .cf-card-toggle').click()
+    await expect(page.locator('[data-ai-model]')).toHaveCount(0) // a closed card draws no body
     await page.reload()
-    await expect(page.locator('[data-card="services.ai.models"] .cf-card-toggle')).toHaveAttribute('aria-expanded', 'true')
-    await expect(page.locator('[data-card="services.ai.openrouter"] .cf-card-toggle')).toHaveAttribute('aria-expanded', 'false')
+    await expect(page.locator('[data-card="services.ai.models"] .cf-card-toggle')).toHaveAttribute('aria-expanded', 'false')
+    await expect(page.locator('[data-card="services.ai.openrouter"] .cf-card-toggle')).toHaveAttribute('aria-expanded', 'true')
   })
 
   test('Adapters: filters, one collapsed row per university, open a row, read schedule and switch consequences', async ({ page }) => {

@@ -42,9 +42,9 @@ test('role gates are unchanged from the screens they came from', () => {
   // v2.15.300: Universities opens to Curators (they saw Onboarding); the adapter detail inside a row stays Operator and above (admin_adapters)
   // v2.15.301 (menu review): Layer 1 is one Sources page (rank 4, as both before); Scholarships (was Layer 1, rank 4) is Layer 2/3 › Scholarships (rank 4);
   // API usage (rank 4) is Settings › API usage; Storage & retention (rank 6) is Platform health › Storage; Capacity (rank 6) is on the Go-live checklist (rank 6);
-  // v2.16.0 (Platform Admin 13 Nov 2026 19:14): Scholarship extraction (rank 3) left Models & services › AI for Scholarships › Coverage (rank 3); the AI tab is rank 4, as its configuration always was
+  // Scholarship extraction (rank 3) is on Models & services › AI (now rank 3; the AI configuration inside stays rank 4)
   expect([min('layer1'), min('layer2', 'scholarships') + 2, min('layer2', 'universities'), min('layer4', 'inbox'), min('jobs', 'jobs'), min('evidence')]).toEqual([4, 6, 3, 3, 4, 3])
-  expect([min('users'), min('environment', 'settings'), min('migration'), 6, min('environment', 'api'), min('services', 'services') /* SS-020 step 3: Fetchers is in Services & limits */, min('health', 'storage'), min('services', 'ai'), min('layer2', 'flags')]).toEqual([6, 6, 6, 6, 4, 4, 6, 4, 3])
+  expect([min('users'), min('environment', 'settings'), min('migration'), 6, min('environment', 'api'), min('services', 'services') /* SS-020 step 3: Fetchers is in Services & limits */, min('health', 'storage'), min('services', 'ai'), min('layer2', 'flags')]).toEqual([6, 6, 6, 6, 4, 4, 6, 3, 3])
   expect(canOpen('users', 5)).toBe(false)
   // v2.15.112: Key dates and Key links moved to Reference data, Onboarding to Providers (still rank 3)
   expect(canOpen('layer1', 3)).toBe(false)

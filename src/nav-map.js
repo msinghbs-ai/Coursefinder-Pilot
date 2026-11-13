@@ -26,10 +26,8 @@ export const PAGES = {
     // v2.15.240 (Platform Admin, 11 Oct 2026): each provider measured against its own scholarship listing page
     { key: 'coverage', label: 'Coverage', min: 3 },
     // v2.15.249 (Platform Admin bugs 11/10-6): AI reads each stored scholarship page; models, qualification, instructions, answers.
-    // v2.15.301 (Platform Admin, 20 Oct 2026) moved Extraction to Models & services › AI. v2.16.0 (Platform Admin 13 Nov 2026 19:14): that tab is
-    // one page of four panes, so the extraction workspace (sample pages, qualification, instructions, page results) is a section of Coverage
-    // (Curator and above, as it always was; no tab is added). Its old address opens it (resolveTarget). Which models may be used, and the
-    // Scholarship pages service (cascade, cap, spend), are on Models & services › AI.
+    // v2.15.301 (Platform Admin, 20 Oct 2026): Extraction is on Models & services › AI (old address redirects). v2.16.0 (Platform Admin written
+    // review 13 Nov 2026 22:10): its configuration is under the Scholarship pages service there; its operational results are a section of Coverage.
     // v2.15.174 (Platform Admin, 4 Oct 2026 01:57): Course links retired — links come from each scholarship's page (Layer 2)
     // v2.15.169 (Decision 249): Publishing moved to Layer 4 Review; v2.15.253: that tab retired, publishing is on Coverage
   ] },
@@ -142,8 +140,10 @@ export const PAGES = {
     // SS-020 step 3 (Decision 269, 3 Nov 2026): Services, Toolsets & limits and Fetchers are one tab, Services & limits (same minimum role,
     // Pipeline Operator); their old addresses open it (resolveTarget). The AI model switches moved to AI & OpenRouter.
     { key: 'services', label: 'Services & limits', min: 4 },
-    // v2.16.0: Pipeline Operator and above (the overview's own minimum); Scholarship extraction, which made this tab Curator, left it
-    { key: 'ai', label: 'AI', min: 4 },
+    // v2.16.0 (Platform Admin written review 13 Nov 2026 22:10, "Do not silently remove role-3 read-only access"): Curator and above read it
+    // (health, model in effect, errors, budget, usage; the key as present or absent). Routes, caps and switches need PIM Admin; the model list,
+    // qualification, the daily ceiling and the key need the Platform Admin.
+    { key: 'ai', label: 'AI', min: 3 },
   ] },
   // v2.15.301 (Platform Admin, 20 Oct 2026): Capacity (was Platform health › Capacity) is part of the checklist
   migration: { label: 'Go-live checklist', slug: 'environment-migration', icon: 'shield', min: 6, subtitle: 'What must be set up and pass before Production is switched on, and the capacity it needs.' },
@@ -304,8 +304,8 @@ export function resolveTarget(target, params = new URLSearchParams()) {
   if (hit.page === 'layer1') return { page: 'layer1', tab: '', params: p }
   if (hit.page === 'reference' && tab === 'imports') return { page: 'rankings', tab: 'datasets', params: p }
   if (hit.page === 'reference' && ['dates', 'links'].includes(tab)) { if (!p.get('type')) p.set('type', tab); return { page: 'reference', tab: '', params: p } }
-  // v2.16.0: Scholarship extraction (on Models & services › AI from v2.15.301) is a section of Scholarships › Coverage
-  if (hit.page === 'scholarships' && tab === 'extraction') { if (!p.get('at')) p.set('at', 'sch-extraction'); return { page: 'scholarships', tab: 'coverage', params: p } }
+  // v2.15.301: Scholarships › Extraction is on Models & services › AI; v2.16.0: under the Scholarship pages service (its results are on Coverage)
+  if (hit.page === 'scholarships' && tab === 'extraction') { for (const [k, v] of [['card', 'services.ai.services'], ['at', 'services.ai.services'], ['service', 'scholarship_extraction']]) if (!p.get(k)) p.set(k, v); return { page: 'services', tab: 'ai', params: p } }
   // v2.16.0: a retired AI card (on either Models & services tab) opens the AI tab at the pane that replaced it
   if (hit.page === 'services') {
     const asked = [...String(p.get('card') || '').split(','), p.get('at') || ''].filter(Boolean)

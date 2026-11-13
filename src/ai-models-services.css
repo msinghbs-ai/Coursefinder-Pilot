@@ -2,6 +2,7 @@
    switches; the aim- classes only lay those out. On a phone each table row becomes a stacked block, and nothing forces the page sideways. */
 .aim{min-width:0}
 .aim-pane{min-width:0}
+.aim a.cf-link{display:inline-flex;align-items:center;min-height:24px}
 .aim-hide{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .aim-quiet{color:var(--cf-muted);font-size:var(--cf-fs-sm)}
 .aim-sub{display:block;margin-top:2px;color:var(--cf-muted);font-size:var(--cf-fs-xs);line-height:1.4;overflow-wrap:anywhere}
@@ -65,7 +66,7 @@
 .aim-table .aim-group th small{font-weight:400;color:var(--cf-muted);font-size:var(--cf-fs-sm)}
 .aim-table tr.aim-off td:not(:last-child)>*{opacity:.6}
 .aim-table tbody tr.aim-editrow:hover td,.aim-table tbody tr.aim-detailrow:hover td,.aim-table tbody tr.aim-group:hover th{background:var(--cf-surface)}
-@media (min-width:761px){.aim-models th:nth-child(1){width:24%}.aim-models th:nth-child(2){width:21%}.aim-models th:nth-child(3){width:15%}.aim-models th:nth-child(4){width:7%}.aim-models th:nth-child(6){width:15%}.aim-models{table-layout:fixed}.aim-models th{white-space:normal}
+@media (min-width:761px){.aim-models th:nth-child(1){width:22%}.aim-models th:nth-child(2){width:19%}.aim-models th:nth-child(3){width:13%}.aim-models th:nth-child(4){width:7%}.aim-models th:nth-child(6){width:9%}.aim-models th:nth-child(7){width:14%}.aim-models{table-layout:fixed}.aim-models th{white-space:normal}
 .aim-services{table-layout:fixed}.aim-services th:nth-child(1){width:27%}.aim-services th:nth-child(3){width:6%}.aim-services th:nth-child(4){width:10%}.aim-services th:nth-child(5){width:15%}.aim-services th:nth-child(6){width:14%}}
 .aim-usedby{display:flex;flex-wrap:wrap;gap:4px}.aim-usedby .cf-chip{white-space:normal;text-align:left;border-radius:var(--cf-radius-md)}
 .aim-allow{display:inline-flex;flex-wrap:wrap;gap:6px 8px;align-items:center;font-size:var(--cf-fs-sm)}
@@ -84,6 +85,11 @@
 .aim-chip b{display:inline-grid;place-items:center;min-width:16px;height:16px;border-radius:50%;background:var(--cf-indigo-600);color:var(--cf-white);font-size:var(--cf-fs-xs)}
 .aim-chip.is-out{border-color:var(--cf-red-200);background:var(--cf-danger-soft);color:var(--cf-danger-ink);text-decoration:line-through}
 .aim-chip.is-out b{background:var(--cf-danger)}
+.aim-chip.is-plain{padding-left:9px;border-color:var(--cf-border-strong);background:var(--cf-surface-2)}
+.aim-need{display:inline-flex;align-items:center;min-height:24px;color:var(--cf-muted);font-size:var(--cf-fs-sm);font-style:italic}
+.aim-unq{margin-top:8px}.aim-unq ul{list-style:none;margin:4px 0 0;padding:0;display:grid;gap:6px}.aim-unq li{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:var(--cf-fs-base)}
+.aim-qualify{flex:1 1 100%;display:grid;grid-template-columns:minmax(0,1fr);gap:6px}
+.aim-sxconfig{margin-top:10px;min-width:0}
 .aim-chip em{font-style:normal;font-weight:400;text-decoration:none;display:inline-block}
 
 .aim-detail{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;padding:6px 4px 10px 21px;min-width:0}
@@ -102,7 +108,7 @@
 .aim-steps li.aim-empty-step{justify-content:flex-start;border-style:dashed}
 .aim-step-acts{display:inline-flex;gap:4px;flex:none}
 .aim-icon{display:inline-grid;place-items:center;width:28px;height:28px;border:1px solid var(--cf-border-input);border-radius:var(--cf-radius-sm);background:var(--cf-surface);color:var(--cf-text-2);cursor:pointer}
-.aim-icon:disabled{opacity:.4;cursor:not-allowed}
+.aim-icon:disabled{opacity:.4;cursor:not-allowed}.aim-icon[hidden]{display:none}
 .aim-add{display:grid;grid-template-columns:minmax(0,1fr);gap:3px;max-width:560px;font-size:var(--cf-fs-sm);color:var(--cf-text-2)}
 .aim-add>span{display:inline-flex;gap:4px;align-items:center}
 .aim-add select{width:100%;min-width:0}

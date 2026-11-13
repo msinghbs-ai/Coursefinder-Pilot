@@ -42,7 +42,7 @@ test('worker v0.20.1: the model is pinned, answers are strict JSON, and every fa
 test('mocked browser: Extraction shows models with qualification scores, the sample, and proven answers', async ({ page }) => {
   await mockAdmin(page)
   await page.goto('/#scholarships?tab=extraction')
-  const x = page.locator('[data-scholarship-extraction]')
+  let x = page.locator('[data-scholarship-extraction="config"]')
   await expect(x.locator('[data-sx-admission]')).toContainText('Off')
   const q = x.locator('[data-sx-model="qwen3-30b"]')
   await expect(q).toContainText('38 / 41')
@@ -53,6 +53,11 @@ test('mocked browser: Extraction shows models with qualification scores, the sam
   await expect(x.locator('[data-model-line="scholarship"] a')).toHaveAttribute('href', /#models-services\?tab=ai/)
   await expect(x.locator('[data-sx-action="admission-on"]')).toBeDisabled()
   await expect(x.locator('[data-sx-sample-row="31"] [data-sx-answer="gpt-4.1-mini"]')).toContainText('differs')
+  // v2.16.0 (Platform Admin 13 Nov 2026 22:10): the configuration is on Models & services; the recent answers (results) stay on Scholarships › Coverage
+  await expect(x.locator('[data-sx-recent-row]')).toHaveCount(0)
+  await page.goto('/#scholarships?tab=coverage&at=sch-extraction')
+  x = page.locator('[data-scholarship-extraction="results"]')
+  await expect(x.locator('[data-sx-config-link] a')).toHaveAttribute('href', /#models-services\?tab=ai/)
   await x.locator('[data-sx-recent-row="501"]').click()
   await expect(x.locator('.sx-detail')).toContainText('valued at $15,548')
   await expect(x.locator('.sx-detail')).toContainText('Bachelor of Engineering (Honours)')

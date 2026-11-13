@@ -1,4 +1,12 @@
 // Guards: Platform Admin 13 Nov 2026 19:14–19:36 — Models & services redesign (one model list, service cascades, caps, prompts, usage; no blank model)
+// Platform Admin written review, 13 Nov 2026 22:10 (the final UI decisions this spec holds the page to):
+//   "Default to expanded panes on desktop. Allow collapsing, but keep warnings visible." (this page is the stated, narrow exception to
+//       cards-start-closed, Decision 254; on a phone the cards start closed)
+//   "Do not silently remove role-3 read-only access."
+//   "Scholarship Extraction configuration belongs in Models & Services. Scholarships › Coverage links to the same configuration and retains
+//       scholarship-specific operational results."
+//   "Reconcile the Adapter Builder model picker. Do not leave competing model controls."
+//   "Do not display a model cascade as operational unless the worker actually executes it."
 // Mocked browser (chromium-desktop) and the address map. The three calls are answered by tests/uat/support/ai-overview-fixture.mjs in the shape of
 // docs/platform/AI-MODELS-SERVICES-CONTRACT.md, with the server's own refusals; nothing reaches a real backend.
 import { test, expect } from '@playwright/test'
@@ -7,13 +15,12 @@ import { mockAdmin } from './support/admin-mock.mjs'
 import { mockAi, services as seedServices } from './support/ai-overview-fixture.mjs'
 import { resolveTarget, PAGES, RETIRED_AI_CARDS } from '../../src/nav-map.js'
 
-// every card starts closed and remembers being opened for the session (Decision 254): open the four before the page loads
+// the four cards are open by default at desktop width; a test that needs another card open (Settings) opens it before the page loads
 const CARDS = ['services.ai.openrouter', 'services.ai.models', 'services.ai.services', 'services.ai.usage']
 const openCards = (page, more = []) => page.addInitScript((ids) => { try { for (const id of ids) window.sessionStorage.setItem(`cf.card.${id}`, '1') } catch { /* storage unavailable */ } }, [...CARDS, ...more])
 async function open(page, over = {}, opts = {}) {
   await mockAdmin(page, { rank: opts.rank ?? 6 })
   const ai = await mockAi(page, over, opts)
-  if (opts.closed !== true) await openCards(page)
   await page.goto('/#models-services?tab=ai')
   await expect(page.locator('[data-ai-page="ready"]')).toBeVisible({ timeout: 30_000 })
   return ai
@@ -48,6 +55,7 @@ test.describe('Models & services › AI, mocked browser', () => {
     await expect(page.locator('[data-ai-model="mimo-v2.6-flash"] [data-ai-price]')).toHaveText('not checked')
     await expect(page.locator('[data-ai-model="qwen3-30b"] [data-ai-price="known"]')).toContainText('US$0.10 / US$0.30')
     await expect(page.locator('[data-ai-model="deepseek-v3.2"]')).toContainText('Course entry requirements')
+    await expect(page.locator('[data-ai-model="deepseek-v3.2"] [data-ai-qualified-for]')).toContainText('Qualified for:')
     // nothing hidden: places outside the services that still name a model that is not allowed, and the retired Layer 3 profiles
     await expect(page.locator('[data-ai-guard="1"]')).toContainText('One place outside the services still names')
     await expect(page.locator('[data-ai-layer3] summary')).toContainText('2 model profiles still switched on')
@@ -62,19 +70,34 @@ test.describe('Models & services › AI, mocked browser', () => {
     await expect(row(page, 'course_description').locator('[data-ai-state-pill]')).toHaveText('Running')
   })
 
-  test('the four panes are cards, closed until opened, and a closed card still says its state (a service with no model is flagged before anything is opened)', async ({ page }) => {
-    await open(page, {}, { closed: true })
+  test('the four panes are open by default on desktop; each can be collapsed, stays collapsed, and a collapsed pane still shows its warnings', async ({ page }) => {
+    const base = (await import('./support/ai-overview-fixture.mjs')).aiOverview().openrouter
+    await open(page, { openrouter: { ...base, balance_usd: 0.4 } }) // at the credit floor, with caps over the ceiling and a service with no model
+    await expect(page.locator('[data-ai-pane] .cf-card-toggle[aria-expanded="true"]')).toHaveCount(4)
+    await expect(page.locator('[data-ai-services]')).toBeVisible()
+    for (const pane of ['openrouter', 'models', 'services', 'usage']) await page.locator(`[data-ai-pane="${pane}"] .cf-card-toggle`).click()
     await expect(page.locator('[data-ai-pane] .cf-card-toggle[aria-expanded="true"]')).toHaveCount(0)
-    await expect(page.locator('[data-ai-services], [data-ai-models]')).toHaveCount(0) // a closed card draws no body
-    await expect(page.locator('[data-ai-pane="openrouter"] [data-ai-account-chip="running"]')).toHaveText('Running')
+    await expect(page.locator('[data-ai-services], [data-ai-models]')).toHaveCount(0) // a collapsed card draws no body
+    // the warnings stay on the collapsed cards: no credit, caps over the ceiling, places to check, no model, held
+    await expect(page.locator('[data-ai-pane="openrouter"] [data-ai-account-chip="no_credit"]')).toHaveText('No credit')
+    await expect(page.locator('[data-ai-pane="openrouter"] [data-ai-caps-chip]')).toHaveText('Caps over the ceiling')
     await expect(page.locator('[data-ai-pane="openrouter"] .cf-card-meta')).toContainText('US$9.27 of US$14.00 today')
-    await expect(page.locator('[data-ai-pane="models"] [data-ai-models-count]')).toHaveText('12 of 15 allowed')
+    await expect(page.locator('[data-ai-pane="models"] .cf-card-meta')).toContainText('12 of 15 allowed')
+    await expect(page.locator('[data-ai-pane="models"] .cf-card-meta')).toContainText('1 to check')
     await expect(page.locator('[data-ai-pane="services"] [data-ai-no-model-chip]')).toHaveText('1 with no model')
+    await expect(page.locator('[data-ai-pane="services"] .cf-card-meta')).toContainText('held')
+    await page.reload()
+    await expect(page.locator('[data-ai-page="ready"]')).toBeVisible()
+    await expect(page.locator('[data-ai-pane] .cf-card-toggle[aria-expanded="true"]')).toHaveCount(0) // a collapsed choice is remembered for the session
     await page.locator('[data-ai-pane="services"] .cf-card-toggle').click()
     await expect(row(page, 'entry_matrices').locator('[data-ai-no-model]').first()).toBeVisible()
-    await page.reload()
-    await expect(page.locator('[data-ai-pane="services"] .cf-card-toggle')).toHaveAttribute('aria-expanded', 'true')
-    await expect(page.locator('[data-ai-pane="models"] .cf-card-toggle')).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  test('a balance with no reading is "Balance not measured" on the collapsed card too', async ({ page }) => {
+    const base = (await import('./support/ai-overview-fixture.mjs')).aiOverview().openrouter
+    await open(page, { openrouter: { ...base, balance_usd: null, balance_observed_at: null, balance_known: false, balance_note: 'No balance has been read: the credit floor holds nothing.' } })
+    await page.locator('[data-ai-pane="openrouter"] .cf-card-toggle').click()
+    await expect(page.locator('[data-ai-pane="openrouter"] [data-ai-account-chip="unread"]')).toHaveText('Balance not measured')
   })
 
   test('a model cell is never blank: no model is a red "No model", and unknown figures say so instead of 0', async ({ page }) => {
@@ -235,17 +258,153 @@ test.describe('Models & services › AI, mocked browser', () => {
     await expect(ceil.locator('[data-ai-confirm]')).toHaveCount(0)
   })
 
-  test('roles: a Pipeline Operator reads everything and can change nothing, and sees the credit in words', async ({ page }) => {
-    const { calls } = await open(page, {}, { rank: 4 })
-    await expect(page.locator('[data-ai-pane="models"]')).toContainText('A PIM Admin or above allows or disallows a model')
+  for (const rank of [3, 4]) test(`rank ${rank} (${rank === 3 ? 'Curator' : 'Pipeline Operator'}) reads the whole page and can change nothing; each control says the role it needs`, async ({ page }) => {
+    const { calls } = await open(page, {}, { rank })
+    // read: health, model in effect, errors, budget and usage; the key only as present or absent; the credit in words
+    await expect(page.locator('[data-ai-account-state]')).toBeVisible()
+    await expect(page.locator('[data-ai-key]')).toContainText('Present')
+    await expect(page.locator('[data-ai-key-readonly]')).toContainText('The key is present')
+    await expect(page.locator('[data-ai-key-controls], [data-ai-page] input[type="password"]')).toHaveCount(0)
+    await expect(page.locator('[data-ai-balance="words"]')).toContainText('Within budget')
+    await expect(page.locator('[data-ai-ceiling]')).toContainText('US$9.27 of US$14.00')
+    await expect(row(page, 'course_entry_requirements').locator('[data-ai-cascade]')).toHaveText('1 DeepSeek V3.2→2 Qwen3 30B')
+    await expect(row(page, 'fee_reader').locator('[data-ai-state-pill]')).toHaveText('Held: cap reached')
+    await expect(page.locator('[data-ai-usage="hour-service"] [data-ai-usage-row="fee_reader"]')).toContainText('US$5.02')
+    // change: nothing, with the role named
+    await expect(page.locator('[data-ai-pane="openrouter"] [data-ai-needs="6"]')).toContainText('needs Platform Admin')
+    await expect(page.locator('[data-ai-pane="models"] [data-ai-needs="6"]')).toContainText('Allow or disallow a model: needs Platform Admin')
     await expect(page.locator('[data-ai-model="qwen3-30b"]').getByRole('switch')).toBeDisabled()
     await expect(row(page, 'course_description').getByRole('switch')).toBeDisabled()
-    await expect(page.locator('[data-ai-key-controls]')).toHaveCount(0)
-    await expect(page.locator('[data-ai-balance="words"]')).toContainText('Within budget')
+    await row(page, 'fee_reader').locator('.aim-toggle').click()
+    const d = detail(page, 'fee_reader')
+    await expect(d.locator('[data-ai-edit]')).toHaveCount(0)
+    await expect(d.locator('[data-ai-route] [data-ai-needs="5"]')).toContainText('Change the cascade, switch or cap: needs PIM Admin')
+    await expect(d.locator('[data-ai-last-error]')).toContainText('Last error')
+    await expect(d.locator('[data-ai-unqualified] [data-ai-needs="6"]').first()).toContainText('Record qualification: needs Platform Admin')
+    await expect(d.locator('[data-ai-qualify]')).toHaveCount(0)
     await row(page, 'course_description').locator('.aim-toggle').click()
-    await expect(detail(page, 'course_description').locator('[data-ai-edit]')).toHaveCount(0)
     await expect(detail(page, 'course_description').locator('[data-ai-setting] input')).toHaveCount(0)
+    await expect(detail(page, 'course_description').locator('[data-ai-service-settings] [data-ai-needs="6"]')).toBeVisible()
+    await expect(page.locator('[data-ai-page] input:not([disabled]), [data-ai-page] select:not([disabled])')).toHaveCount(0)
     expect(calls).toEqual([])
+  })
+
+  test('rank 5 (PIM Admin) changes a route, cap and switch; the model list, qualification, the ceiling and the key need the Platform Admin', async ({ page }) => {
+    const { calls } = await open(page, {}, { rank: 5 })
+    await expect(page.locator('[data-ai-model="qwen3-30b"]').getByRole('switch')).toBeDisabled()
+    await expect(page.locator('[data-ai-pane="models"] [data-ai-needs="6"]')).toBeVisible()
+    await expect(page.locator('[data-ai-key-controls]')).toHaveCount(0)
+    await expect(page.locator('[data-ai-openrouter-settings] input')).toHaveCount(0) // the floor and the daily ceiling
+    await row(page, 'course_entry_requirements').locator('.aim-toggle').click()
+    const d = detail(page, 'course_entry_requirements')
+    await expect(d.locator('[data-ai-setting] input')).toHaveCount(0)
+    await expect(d.locator('[data-ai-qualify]')).toHaveCount(0)
+    await d.locator('[data-ai-edit="course_entry_requirements"]').click()
+    await d.getByLabel('Daily cap in US dollars for Course entry requirements').fill('4')
+    await d.getByLabel('Reason: route-course_entry_requirements').fill('a little more room')
+    await d.locator('[data-ai-confirm="route-course_entry_requirements"]').click()
+    await expect(d.locator('[data-ai-saved]')).toContainText('Daily cap (US$): US$3.00 becomes US$4.00')
+    expect(calls.map(c => c.name)).toEqual(['admin_ai_route_set_v1'])
+  })
+
+  test('rank 6 (Platform Admin) has every control: key, ceiling, model list, qualification, routes and settings', async ({ page }) => {
+    await open(page, {}, { rank: 6 })
+    await expect(page.locator('[data-ai-key-controls] input[type="password"]')).toBeEnabled()
+    await expect(page.locator('[data-ai-key-controls]').getByRole('button', { name: 'Verify' })).toBeEnabled()
+    await expect(page.locator('[data-ai-balance="figure"]')).toContainText('US$53.00')
+    await expect(page.locator('[data-ai-balance-age]')).toHaveText(/^(\d+ min ago|\d+ h ago)$/) // the credit balance with its age
+    await expect(page.locator('[data-ai-mode]')).toContainText('enforcing')
+    await expect(page.locator('[data-ai-mode]')).toContainText('observing (Observe only)')
+    await expect(page.locator('[data-ai-openrouter-settings] [data-ai-setting="pipeline.budgets.ai_daily_ceiling_usd"] input')).toBeEnabled()
+    await expect(page.locator('[data-ai-model="qwen3-30b"]').getByRole('switch')).toBeEnabled()
+    await expect(page.locator('[data-ai-page] [data-ai-needs]')).toHaveCount(0)
+    await row(page, 'course_entry_requirements').locator('.aim-toggle').click()
+    await expect(detail(page, 'course_entry_requirements').locator('[data-ai-edit]')).toBeVisible()
+    await expect(detail(page, 'course_entry_requirements').locator('[data-ai-setting] input')).toBeEnabled()
+    await expect(detail(page, 'course_entry_requirements').locator('[data-ai-qualify]').first()).toBeVisible()
+  })
+
+  test('a cascade is shown as the worker runs it: one model where there is no fallback yet, read-only where the service is not migrated, and only qualified models can be added', async ({ page }) => {
+    const { calls } = await open(page)
+    // routed_single: exactly one model and the note
+    const one = row(page, 'ops_diagnosis')
+    await expect(one.locator('[data-ai-model-cell]')).toHaveAttribute('data-ai-migration', 'routed_single')
+    await expect(one.locator('[data-ai-cascade-model]')).toHaveCount(1)
+    await expect(one.locator('[data-ai-single]')).toHaveText('Fallback not available for this service yet')
+    await one.locator('.aim-toggle').click()
+    const od = detail(page, 'ops_diagnosis')
+    await od.locator('[data-ai-edit="ops_diagnosis"]').click()
+    await od.getByLabel('Model of Operations diagnosis').selectOption('mistral-small-3.2') // replaces, never adds a second
+    await expect(od.locator('[data-ai-step]')).toHaveCount(1)
+    await expect(od.locator('[data-ai-changes]')).toContainText('Cascade: 1 Qwen3 30B becomes 1 Mistral Small 3.2')
+    await expect(od.locator('button[aria-label^="Move "]:visible')).toHaveCount(0)
+    // not_migrated: a pill, the model in effect, nothing to change
+    const nm = row(page, 'page_identity')
+    await expect(nm.locator('[data-ai-not-migrated]')).toHaveText('Not migrated')
+    await expect(nm.locator('[data-ai-model-cell]')).toContainText('Qwen3 30B')
+    await expect(nm.locator('[data-ai-cascade-model]')).toHaveCount(0) // no numbered cascade is drawn for it
+    await expect(nm.getByRole('switch')).toBeDisabled()
+    await nm.locator('.aim-toggle').click()
+    await expect(detail(page, 'page_identity').locator('[data-ai-edit]')).toHaveCount(0)
+    await expect(detail(page, 'page_identity').locator('[data-ai-unwired]')).toContainText('Not migrated')
+    // routed: a model that is allowed but not qualified for the service cannot be added
+    await row(page, 'course_description').locator('.aim-toggle').click()
+    const cd = detail(page, 'course_description')
+    await expect(cd.locator('[data-ai-unqualified-model="kimi-k2-0905"]')).toContainText('Kimi K2 (0905)')
+    await cd.locator('[data-ai-edit="course_description"]').click()
+    const add = cd.getByLabel('Add a model to Course description')
+    await expect(add.locator('option:disabled', { hasText: 'Kimi K2 (0905) · Not qualified for this service' })).toHaveCount(1)
+    await expect(add.locator('option:not(:disabled)', { hasText: 'Kimi K2' })).toHaveCount(0)
+    await cd.getByRole('button', { name: 'Cancel' }).click()
+    // the Platform Admin records a qualification with evidence and a reason; it adds the model to nothing
+    await cd.locator('[data-ai-qualify="kimi-k2-0905"]').click()
+    const bar = cd.locator('[data-ai-save="qualify-course_description-kimi-k2-0905"]')
+    await expect(bar.locator('[data-ai-blocked]')).toContainText('Say where the evidence is')
+    await cd.getByLabel('Evidence that Kimi K2 (0905) is qualified for Course description').fill('qualification run 41, 38 of 40 right')
+    await bar.getByLabel(/^Reason:/).fill('passed the sample')
+    await bar.locator('[data-ai-confirm]').click()
+    await expect(cd.locator('[data-ai-saved]')).toContainText('Kimi K2 (0905) is recorded as qualified for Course description')
+    expect(calls).toEqual([{ name: 'admin_ai_qualification_set_v1', p_service: 'course_description', p_code: 'kimi-k2-0905', p_evidence: 'qualification run 41, 38 of 40 right', p_reason: 'passed the sample' }])
+    await expect(cd.locator('[data-ai-unqualified-model="kimi-k2-0905"]')).toHaveCount(0)
+    await expect(row(page, 'course_description').locator('[data-ai-cascade-model]')).toHaveCount(1)
+    await expect(page.locator('[data-ai-model="kimi-k2-0905"] [data-ai-qualified-for]')).toContainText('Course description')
+  })
+
+  test('each service shows the model it used most recently, its last outcome or error and its recovery; usage shows tokens, failures, fallbacks and evidence', async ({ page }) => {
+    await open(page)
+    await expect(row(page, 'fee_reader').locator('[data-ai-last]')).toContainText('Last used: Mistral Small 3.2')
+    await expect(row(page, 'fee_reader').locator('[data-ai-last]')).toContainText('Failed')
+    await expect(row(page, 'provider_description').locator('[data-ai-last]')).toHaveText('Last used: not measured')
+    await row(page, 'fee_reader').locator('.aim-toggle').click()
+    const d = detail(page, 'fee_reader').locator('[data-ai-last-call]')
+    await expect(d).toContainText('mistralai/mistral-small-3.2-24b-instruct')
+    await expect(d.locator('[data-ai-last-error]')).toContainText('time-out after 60 seconds')
+    await expect(d).toContainText('Recovery: Waiting for the next UTC day')
+    const u = page.locator('[data-ai-usage="hour-service"] [data-ai-usage-row="fee_reader"]')
+    await expect(u.locator('td[data-label="Failures"]')).toHaveText('6')
+    await expect(u.locator('td[data-label="Fallbacks"]')).toHaveText('3')
+    await expect(u.locator('td[data-label="Tokens"]')).toHaveText('1,419,800')
+    await expect(u.locator('[data-ai-usage-evidence]')).toHaveAttribute('href', '#scheduled-jobs?tab=jobs')
+    // a row recorded without a model has no token count: Not measured, not 0
+    await expect(page.locator('[data-ai-usage="hour-service"] [data-ai-usage-row="course_other_fields"] td[data-label="Tokens"]')).toHaveText('Not measured')
+    await expect(page.locator('[data-ai-model="qwen3-30b"] [data-ai-model-spend]')).toContainText('US$')
+    await expect(page.locator('[data-ai-model="kimi-k2-0905"] [data-ai-model-spend]')).toHaveText('none recorded')
+  })
+
+  test('Scholarship extraction is configured under the Scholarship pages service; Scholarships › Coverage keeps its results and links to it', async ({ page }) => {
+    await open(page)
+    await row(page, 'scholarship_extraction').locator('.aim-toggle').click()
+    const cfg = detail(page, 'scholarship_extraction').locator('[data-ai-scholarship-config] [data-scholarship-extraction="config"]')
+    await expect(cfg.locator('[data-sx-admission]')).toContainText('AI admission')
+    await expect(cfg.locator('[data-sx-models]')).toBeVisible()
+    await expect(cfg.locator('[data-sx-sample-row]').first()).toBeVisible()
+    await expect(cfg.locator('[data-sx-recent-row], [data-sx-action="backfill"], [data-sx-chain-editor], [data-sx-action^="activate-"]')).toHaveCount(0)
+    await page.goto('/#scholarships?tab=coverage&at=sch-extraction')
+    const res = page.locator('[data-fold="scholarship-extraction"] [data-scholarship-extraction="results"]')
+    await expect(res.locator('[data-sx-recent-row]').first()).toBeVisible()
+    await expect(res.locator('[data-sx-config-link] a')).toHaveAttribute('href', '#models-services?tab=ai&card=services.ai.services&at=services.ai.services&service=scholarship_extraction')
+    // no second set of controls: the switch, models, sample and instructions are not drawn here
+    await expect(res.locator('[data-sx-admission], [data-sx-models], [data-sx-sample-row], [data-sx-action="admission-on"], [data-sx-action="admission-off"]')).toHaveCount(0)
   })
 
   test('at the daily ceiling the account says so and the services read Held: ceiling', async ({ page }) => {
@@ -336,11 +495,11 @@ test.describe('Models & services › AI, mocked browser', () => {
     const card = page.locator('[data-service-card="openrouter"]')
     await expect(card.locator('[data-ai-moved="openrouter"] a')).toHaveAttribute('href', '#models-services?tab=ai')
     await expect(card.locator('[data-toolset="openrouter"], [data-openrouter]')).toHaveCount(0)
-    // Scholarship extraction left the AI tab: its old address opens it under Scholarships › Coverage; it names its model with a link and
-    // no longer sets the order or makes a model active (the cascade of the Scholarship pages service does)
+    // the old Scholarships › Extraction address opens the configuration under the Scholarship pages service; it names its model with a link
+    // and no longer sets the order or makes a model active (the cascade of the service does)
     await page.goto('/#scholarships?tab=extraction')
-    await expect(page).toHaveURL(/#scholarships\?tab=coverage&at=sch-extraction$/)
-    await expect(page.locator('[data-scholarship-extraction]')).toBeVisible()
+    await expect(page).toHaveURL(/#models-services\?tab=ai&card=services\.ai\.services&at=services\.ai\.services&service=scholarship_extraction$/)
+    await expect(page.locator('[data-ai-scholarship-config] [data-scholarship-extraction="config"]')).toBeVisible()
     await expect(page.locator('[data-model-line="scholarship"]')).toContainText('Model:')
     await expect(page.locator('[data-model-line="scholarship"] a')).toHaveAttribute('href', /#models-services\?tab=ai&card=services\.ai\.services/)
     await expect(page.locator('[data-sx-chain-editor], [data-sx-action^="activate-"]')).toHaveCount(0)
@@ -352,16 +511,15 @@ async function mockAiAt(page) {
   await mockAdmin(page, { rank: 6 })
   const base = (await import('./support/ai-overview-fixture.mjs')).aiOverview().openrouter
   const ai = await mockAi(page, { openrouter: { ...base, spent_today_usd: 14.2 } })
-  await openCards(page)
   await page.goto('/#models-services?tab=ai')
   await expect(page.locator('[data-ai-page="ready"]')).toBeVisible({ timeout: 30_000 })
   return ai
 }
 
 test.describe('Models & services › AI, source and address map', () => {
-  test('the address map: one AI tab, the retired cards redirect, Scholarship extraction opens under Scholarships › Coverage', () => {
+  test('the address map: one AI tab, the retired cards redirect, Scholarship extraction opens under the Scholarship pages service', () => {
     const tabs = PAGES.services.tabs.map(t => [t.key, t.label, t.min])
-    expect(tabs).toEqual([['services', 'Services & limits', 4], ['ai', 'AI', 4]])
+    expect(tabs).toEqual([['services', 'Services & limits', 4], ['ai', 'AI', 3]]) // Curator and above read the AI tab
     for (const [card, pane] of Object.entries(RETIRED_AI_CARDS)) {
       const r = resolveTarget('models-services', new URLSearchParams({ card }))
       expect([r.page, r.tab, r.params.get('at'), r.params.get('card')], card).toEqual(['services', 'ai', pane, pane])
@@ -375,7 +533,7 @@ test.describe('Models & services › AI, source and address map', () => {
     // older addresses that led to the old AI screens
     expect(resolveTarget('layer-3-ai', new URLSearchParams({ tab: 'models' })).page).toBe('services')
     const sx = resolveTarget('scholarships', new URLSearchParams({ tab: 'extraction' }))
-    expect([sx.page, sx.tab, sx.params.get('at')]).toEqual(['scholarships', 'coverage', 'sch-extraction'])
+    expect([sx.page, sx.tab, sx.params.get('service')]).toEqual(['services', 'ai', 'scholarship_extraction'])
     expect(PAGES.scholarships.tabs.map(t => t.key)).toEqual(['list', 'coverage']) // no tab was added: the menu keeps its count
   })
 

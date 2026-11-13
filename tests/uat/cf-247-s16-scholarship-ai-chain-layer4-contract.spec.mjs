@@ -39,11 +39,13 @@ test('migration: parked course items go to the adapter only for a field it admit
 test('mocked browser: Extraction shows the reading order read only and links to the pages no model could settle', async ({ page }) => {
   await mockAdmin(page)
   await page.goto('/#scholarships?tab=extraction')
-  const x = page.locator('[data-scholarship-extraction]')
+  let x = page.locator('[data-scholarship-extraction="config"]')
   await expect(x.locator('[data-sx-chain-editor]')).toHaveCount(0)
   await expect(x.locator('[data-model-line="scholarship"]')).toContainText('Model:')
   await expect(x.locator('[data-model-line="scholarship"] a')).toHaveText('change in Models & services')
   expect(page.l3calls.some(c => c.scholarshipAi?.p_action === 'set_chain')).toBe(false)
+  await page.goto('/#scholarships?tab=coverage&at=sch-extraction') // v2.16.0: the results (held pages, recent answers) stay on Coverage
+  x = page.locator('[data-scholarship-extraction="results"]')
   await expect(x.locator('[data-sx-reviews-link]')).toHaveAttribute('href', '#layer-4-review?kind=held_scholarship') // v2.15.300: the Inbox kind
 })
 
