@@ -34,7 +34,7 @@ test('extra domains, widened AI match, mislabel fix; housekeeping', () => {
   expect(w).toContain('for (const dom of ((p as any).extra_domains || []) as string[]) {')
   expect(m).toContain("or security.bind_match_scope_v1(co.provider_id))  -- SP-1")
   expect(m).toContain("if p_reason not in ('target_list_refused', 'credits_reserve', 'scholarship_share', 'no_firecrawl_key')")
-  expect(w).toContain('if (!anyProvider && !isTarget(providerId)) { await noteRefusal(purpose, providerId, "target_list_refused"); return { ok: false, why: "target_list_refused" } }')
+  expect(w).toContain('if (!anyProvider && !isTarget(providerId) && !(await onDemandCovers(providerId, purpose))) { await noteRefusal(purpose, providerId, "target_list_refused"); return { ok: false, why: "target_list_refused" } }')
   expect(w).not.toMatch(/p_error: "budget"|error: "budget"|"map:budget"/) // the old label is gone from the worker
   expect(m).toContain("('no-page-propose', 'Course pages', 36,")
   expect(m).toMatch(/^-- Replaces: nothing\n-- Retires: nothing$/m)
