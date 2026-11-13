@@ -1,6 +1,6 @@
 -- CF-247 Lean AI Input, Phase 1 (Platform Admin 13 Nov 2026 22:51 "StudySearch — Lean AI Input and Evidence Optimisation"; admin
 -- docs/platform/SHARED-SOURCE-TO-PUBLISHED-ENRICHMENT-DESIGN.md §11 and docs/platform/LEAN-AI-INPUT-PHASE0-BASELINE-2026-11-13.md §4).
--- Observe first, change nothing that admits. Worker coverage-sweep v0.85.0 (mode enrich_ai) records, for every course-page read, what the
+-- Observe first, change nothing that admits. Worker coverage-sweep v0.87.0 (mode enrich_ai) records, for every course-page read, what the
 -- reader was sent and what it was not sent: the source text length, the characters sent, whether and where the text was cut, a high-recall
 -- preflight on the text sent and on the whole page, the sent-input SHA-256 and a content/prompt/model/schema fingerprint (lean-input.ts).
 -- This migration adds the table they go to, the insert the worker calls, two settings and a read-only report. Nothing else:
@@ -42,7 +42,7 @@ create table if not exists pipeline.ai_input_observations (
   input_sha256    text,
   fingerprint     text
 );
-comment on table pipeline.ai_input_observations is 'CF-247 Lean AI Input Phase 1 (Platform Admin 13 Nov 2026 22:51; admin docs/platform/LEAN-AI-INPUT-PHASE0-BASELINE-2026-11-13.md §4): one row per course-page AI read of the Enrich fields reader (worker coverage-sweep v0.85.0, lean-input.ts lean-input-observation-v1): source text length, characters sent, whether and where the text was cut (a description, deadline or course-fields read sends at most enrich.page_chars; an entry read longer than its page size is held, sent 0), the structured-text size (lean-md-v1: headings, table rows with their headers), a high-recall preflight on the text sent and on the whole page (shadow: never used to skip a read), the sent-input SHA-256 and the content/prompt/model/schema fingerprint. Measurement only: nothing reads it to decide a value. Joined to pipeline.field_enrich_items by item_id for outcomes and to pipeline.ai_invocations (#1128) for tokens and cost. Kept reading.input_observation_retention_days.';
+comment on table pipeline.ai_input_observations is 'CF-247 Lean AI Input Phase 1 (Platform Admin 13 Nov 2026 22:51; admin docs/platform/LEAN-AI-INPUT-PHASE0-BASELINE-2026-11-13.md §4): one row per course-page AI read of the Enrich fields reader (worker coverage-sweep v0.87.0, lean-input.ts lean-input-observation-v1): source text length, characters sent, whether and where the text was cut (a description, deadline or course-fields read sends at most enrich.page_chars; an entry read longer than its page size is held, sent 0), the structured-text size (lean-md-v1: headings, table rows with their headers), a high-recall preflight on the text sent and on the whole page (shadow: never used to skip a read), the sent-input SHA-256 and the content/prompt/model/schema fingerprint. Measurement only: nothing reads it to decide a value. Joined to pipeline.field_enrich_items by item_id for outcomes and to pipeline.ai_invocations (#1128) for tokens and cost. Kept reading.input_observation_retention_days.';
 create index if not exists ai_input_observations_at_idx on pipeline.ai_input_observations (observed_at);
 create index if not exists ai_input_observations_item_idx on pipeline.ai_input_observations (item_id);
 create index if not exists ai_input_observations_fp_idx on pipeline.ai_input_observations (fingerprint);
@@ -52,7 +52,7 @@ insert into pipeline.platform_toolset_settings (toolset_key, key, label, help, k
 values
  ('pipeline', 'reading.input_observe_on', 'Lean AI input: observe what each AI read is sent',
   '1: every course-page read of Enrich fields records its source length, what was sent, whether the text was cut, a shadow preflight and the input fingerprint (pipeline.ai_input_observations). 0: nothing is recorded. Reads, values and admissions are the same either way.',
-  'number', '1'::jsonb, 0, 1, 'on (1) or off (0)', 1440, 'Lean AI Input Phase 1, Platform Admin 13 Nov 2026 22:51 (measure actual AI inputs first)', 'Enrich fields', 'worker coverage-sweep v0.85.0 (mode enrich_ai)'),
+  'number', '1'::jsonb, 0, 1, 'on (1) or off (0)', 1440, 'Lean AI Input Phase 1, Platform Admin 13 Nov 2026 22:51 (measure actual AI inputs first)', 'Enrich fields', 'worker coverage-sweep v0.87.0 (mode enrich_ai)'),
  ('pipeline', 'reading.input_observation_retention_days', 'Lean AI input: keep observations for',
   'Observations older than this are removed by the insert itself, a batch at a time (reading.input_observation_purge_batch).',
   'number', '30'::jsonb, 7, 365, 'days', 1441, 'Lean AI Input Phase 1: bounded measurement history', 'Enrich fields', 'public.svc_ai_input_observe_v1'),
