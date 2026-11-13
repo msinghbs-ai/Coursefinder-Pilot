@@ -40,6 +40,8 @@ on:
       - 'supabase/held/cdesc_shorten_forward_recovery.sql'
       - 'tests/fixtures/cdesc-shorten/**'
       - 'tests/uat/cf-247-cdesc-shorten-contract.spec.mjs'
+      - 'tests/fixtures/cdesc-opening/**'
+      - 'tests/uat/cf-247-cdesc-opening-contract.spec.mjs'
       - 'tests/uat/cf-247-cdesc-source-grounded-contract.spec.mjs'
       - 'supabase/functions/coverage-sweep/index.ts'
       - 'tests/uat/cf-247-s527-course-description-machine-admission-contract.spec.mjs'
@@ -103,6 +105,7 @@ jobs:
           bash tests/fixtures/cdesc-reread/run.sh 2>&1 | tee -a course-description-results.log
           bash tests/fixtures/cdesc-recovery/run.sh 2>&1 | tee -a course-description-results.log
           bash tests/fixtures/cdesc-shorten/run.sh 2>&1 | tee -a course-description-results.log
+          bash tests/fixtures/cdesc-opening/run.sh 2>&1 | tee -a course-description-results.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
