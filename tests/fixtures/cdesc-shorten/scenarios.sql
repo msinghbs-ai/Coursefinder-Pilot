@@ -47,7 +47,9 @@ select pg_temp.held(911, 1, pg_temp.arr(pg_temp.ok(911, 1), jsonb_build_object('
 select pg_temp.held(912, 1, pg_temp.arr(pg_temp.lng(912, 1, 20), pg_temp.thin(), jsonb_build_object('text', 'Students attend weekly workshops.', 'quote', 'All students attend weekly workshops on campus.', 'on_page', true), pg_temp.lng(912, 4, 36)));
 -- 913 the second says little and the third says "these skills" in the middle of the sentence: the third is never left without the second
 select pg_temp.held(913, 1, pg_temp.arr(pg_temp.ok(913, 1), pg_temp.thin(), jsonb_build_object('text', 'Students apply these skills in a final project.', 'quote', 'Students apply these practical skills in a final industry project.', 'on_page', true), pg_temp.ok(913, 4), pg_temp.ok(913, 5)));
-create temporary table crs_before as select n, (select value->'sentences' from pipeline.field_enrich_items where id = pg_temp.rd(n)) s from generate_series(901, 913) n;
+-- 914 the second says little; the fourth says "these skills" and is not next to it: the second is not set aside while the fourth stays
+select pg_temp.held(914, 1, pg_temp.arr(pg_temp.ok(914, 1), pg_temp.thin(), pg_temp.ok(914, 3), jsonb_build_object('text', 'Students apply these skills in a final project.', 'quote', 'Students apply these practical skills in a final industry project.', 'on_page', true), pg_temp.ok(914, 5)));
+create temporary table crs_before as select n, (select value->'sentences' from pipeline.field_enrich_items where id = pg_temp.rd(n)) s from generate_series(901, 914) n;
 select pg_temp.expect('holds: 911 and 913 are held for the sentence count, 912 for its length', (select bool_and(value->'check'->>'rule' = 'sentence_count') from pipeline.field_enrich_items where id in (pg_temp.rd(911), pg_temp.rd(913))) and (select value->'check'->>'rule' = 'length' from pipeline.field_enrich_items where id = pg_temp.rd(912)));
 
 select pg_temp.expect('holds: the readings are held for their size (901 to 904, 907 and 908 sentence count; 905 and 906 length)',
@@ -66,6 +68,7 @@ select pg_temp.expect('REGRESSION plan: sentences that lean on a thin one are no
 select pg_temp.expect('plan: when every choice would remove a protected sentence nothing is set aside and the reading stays held (911 over_length_needs_decision)', pg_temp.plan(911)->>'rule' = 'over_length_needs_decision');
 select pg_temp.expect('REGRESSION plan: the choice that fits at once is taken, not the shortest sentences first (912: 4 over_limit; 1 to 3 kept)', (pg_temp.plan(912)->>'ok')::boolean and pg_temp.kept(912) = '[1, 2, 3]' and pg_temp.dcause(912) = '4:over_limit');
 select pg_temp.expect('REGRESSION plan: a sentence that says "these skills" is not left behind without the sentence it refers to (913: 2 and 3 both kept, one other set aside)', (pg_temp.plan(913)->>'ok')::boolean and pg_temp.kept(913) like '[1, 2, 3,%' and jsonb_array_length(pg_temp.plan(913)->'subset'->'kept') = 4);
+select pg_temp.expect('REGRESSION plan: a sentence is not set aside while a later kept sentence may refer to it from inside (914: 2 kept; one of 4 and 5 set aside)', (pg_temp.plan(914)->>'ok')::boolean and pg_temp.kept(914) like '[1, 2, 3,%' and jsonb_array_length(pg_temp.plan(914)->'subset'->'kept') = 4);
 select pg_temp.expect('plan: every kept sentence is one of the reading''s own sentences, whole and in order (901, 902, 904)',
   pg_temp.plan(901)->>'text' = pg_temp.pick(901, 1, 2, 3, 4) and pg_temp.plan(902)->>'text' = pg_temp.pick(902, 1, 3, 4, 5) and pg_temp.plan(904)->>'text' = pg_temp.pick(904, 1, 2, 3, 4));
 create temporary table crs_run as select pg_temp.recover() r;

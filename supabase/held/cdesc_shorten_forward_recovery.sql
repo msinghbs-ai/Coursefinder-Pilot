@@ -1,6 +1,6 @@
 -- HELD forward recovery for migration 20261113310000_cf247_cdesc_shorten_by_sentence.sql. Not applied by deploy.
 -- Puts security.cdesc_subset_plan_v1 back to the body that migration edited (reverse edits, md5-guarded): no reading is shortened for size again.
--- security.cdesc_sentence_substance_v1 and security.cdesc_refers_back_v1 stay (nothing calls them afterwards). Descriptions already admitted are not touched.
+-- security.cdesc_sentence_substance_v1, security.cdesc_refers_back_v1 and security.cdesc_refers_within_v1 stay (nothing calls them afterwards). Descriptions already admitted are not touched.
 -- Replaces: the body named above. Retires: nothing.
 
 create or replace function pg_temp.edit_all(p_sig text, p_before text, p_after text, p_olds text[], p_news text[]) returns text language plpgsql as $f$
@@ -22,7 +22,7 @@ begin
   return p_sig || ': applied';
 end $f$;
 
-select pg_temp.edit_all('security.cdesc_subset_plan_v1(uuid,uuid,jsonb)', 'cc54bd91d7a58f522af3ef7b9141e3eb', '3c263a1984a33a133a331883cc6f8eae',
+select pg_temp.edit_all('security.cdesc_subset_plan_v1(uuid,uuid,jsonb)', '2fd1a050b0e70c0ae9298a0d7419b075', '3c263a1984a33a133a331883cc6f8eae',
   array[$o0$v_page text; v_title text; v_prov text; v_cnt int; v_tot int; v_first int; v_victim int; v_c int; v_bc int; v_p boolean; v_bp boolean; v_rc int; v_rl int; v_f boolean; v_bf boolean;
 begin$o0$,
         $o1$  -- 1c. (Platform Admin 13 Nov 2026 12:16, conditional approval) a reading whose ONLY fault is its size (no sentence failed a test) and that is over the sentence or
@@ -30,7 +30,8 @@ begin$o0$,
   --     with the sentences after it that refer back to it (security.cdesc_refers_back_v1: they would dangle, so they go with it), and sets aside the choice that
   --     (a) by itself brings the reading within the limits, before one that does not, then (b) loses least course-specific substance
   --     (security.cdesc_sentence_substance_v1), the later sentence on a tie. A choice that would remove a sentence about a qualification, registration, recognition,
-  --     pathway, placement or entry condition is never taken: if only such choices are left, nothing more is set aside and the reading stays held below.
+  --     pathway, placement or entry condition is never taken, nor one that a later kept sentence may refer to (security.cdesc_refers_within_v1): if only such
+  --     choices are left, nothing more is set aside and the reading stays held below.
   --     Repeated until the reading fits. A reading that cannot fit stays held. A reading with a failing sentence AND a size problem is outside the approval:
   --     it is not shortened here and stays held (over_length_needs_decision).
   if not exists (select 1 from unnest(v_fault) x(f) where x.f is not null) then
@@ -49,6 +50,8 @@ begin$o0$,
           i := i + 1;
           exit when i > n or v_fault[i] is not null or not security.cdesc_refers_back_v1(v_s->(i - 1)->>'text');
         end loop;
+        -- a later sentence that stays and says "these", "those", "such" or "this" may refer to this choice: the choice is then not taken (as a protected one)
+        v_p := v_p or exists (select 1 from generate_series(i, n) j where v_fault[j] is null and security.cdesc_refers_within_v1(v_s->(j - 1)->>'text'));
         -- does the reading still not fit once this choice is set aside
         v_f := not (v_cnt - v_rc <= v_max and v_tot - v_rl <= v_maxc);
         if v_victim is null or (v_p, v_f, v_c) < (v_bp, v_bf, v_bc) then v_victim := k; v_bp := v_p; v_bf := v_f; v_bc := v_c; end if;

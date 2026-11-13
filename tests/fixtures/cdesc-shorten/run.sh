@@ -10,7 +10,7 @@ case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 M=supabase/migrations/20261113310000_cf247_cdesc_shorten_by_sentence.sql
 HELD=supabase/held/cdesc_shorten_forward_recovery.sql
 F=tests/fixtures/cdesc-shorten
-SIG='security.cdesc_subset_plan_v1(uuid,uuid,jsonb)'; BEFORE=3c263a1984a33a133a331883cc6f8eae; AFTER=cc54bd91d7a58f522af3ef7b9141e3eb
+SIG='security.cdesc_subset_plan_v1(uuid,uuid,jsonb)'; BEFORE=3c263a1984a33a133a331883cc6f8eae; AFTER=2fd1a050b0e70c0ae9298a0d7419b075
 q() { psql -X -d "$1" -Atc "$2"; }
 W=$(mktemp -d)
 cleanup() { local code=$?; trap - EXIT; rm -rf "$W"; if [ -z "${CRS_KEEP:-}" ]; then for d in "$DB" "${DB}_old" "${DB}_crt" "${DB}_t" "${DB}_rf" "${DB}_s"; do dropdb --if-exists "$d" >/dev/null 2>&1 || true; done; fi; exit "$code"; }
@@ -30,9 +30,9 @@ snap "$W/0"
 psql -X -q -v ON_ERROR_STOP=1 -d $DB -1 -At -f $M >/dev/null 2>&1
 snap "$W/1"
 [ "$(comm -23 "$W/0.fn" "$W/1.fn" | sed 's/ .*//' | tr '\n' ' ')" = "$SIG " ] && grep -qF "$SIG $AFTER" "$W/1.fn" || { echo "the changed functions are not exactly the plan at the stated md5"; comm -3 "$W/0.fn" "$W/1.fn"; exit 1; }
-[ "$(comm -13 <(sed 's/ .*//' "$W/0.fn" | sort -u) <(sed 's/ .*//' "$W/1.fn" | sort -u) | tr '\n' ' ')" = "security.cdesc_refers_back_v1(text) security.cdesc_sentence_substance_v1(text,text) " ] || { echo "unexpected functions added"; exit 1; }
+[ "$(comm -13 <(sed 's/ .*//' "$W/0.fn" | sort -u) <(sed 's/ .*//' "$W/1.fn" | sort -u) | tr '\n' ' ')" = "security.cdesc_refers_back_v1(text) security.cdesc_refers_within_v1(text) security.cdesc_sentence_substance_v1(text,text) " ] || { echo "unexpected functions added"; exit 1; }
 for f in set items rows cron; do cmp -s "$W/0.$f" "$W/1.$f" || { echo "the migration changed $f"; exit 1; }; done
-echo "applied: only the plan changed (to the stated md5) and two functions were added; no setting, reading, Layer 4 item, course or job changed (so the check, the wording policy and the machine rule are what they were)"
+echo "applied: only the plan changed (to the stated md5) and three functions were added; no setting, reading, Layer 4 item, course or job changed (so the check, the wording policy and the machine rule are what they were)"
 psql -X -q -v ON_ERROR_STOP=1 -d $DB -1 -At -f $M >/dev/null 2>&1; snap "$W/2"
 for f in fn set items rows cron; do cmp -s "$W/1.$f" "$W/2.$f" || { echo "the second run changed $f"; exit 1; }; done
 echo "applied again: no change"

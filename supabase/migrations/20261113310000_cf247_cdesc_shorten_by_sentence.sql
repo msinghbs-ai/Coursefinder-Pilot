@@ -3,11 +3,11 @@
 -- sentence-count-only held descriptions, using the existing subset recovery", on conditions: complete, independent, supported sentences are kept; not simply the
 -- first N; no cut inside a sentence; no filler; dangling references removed; every existing check applies to the final text; the machine admission policy and the
 -- evidence thresholds are not changed; stored answers are reused with no AI call; the original and final text, the reason and the machine decision are recorded.
--- What: security.cdesc_subset_plan_v1  3c263a1984a33a133a331883cc6f8eae -> cc54bd91d7a58f522af3ef7b9141e3eb
+-- What: security.cdesc_subset_plan_v1  3c263a1984a33a133a331883cc6f8eae -> 2fd1a050b0e70c0ae9298a0d7419b075
 --   New step 1c, only for a reading whose only fault is its size (no sentence failed a test). While the reading is over
 --   enrich.course_description_max_sentences or _max_chars, one choice is set aside per pass. A choice is a kept sentence (never the first) together with the
 --   sentences after it that refer back to it (new security.cdesc_refers_back_v1: an opener that points back, or "these", "those", "such", "this" about something
---   other than the course; they go with it, so nothing dangles). The choice that by itself brings the reading within the limits is taken before one that does not;
+--   other than the course; they go with it). A choice that a later kept sentence may refer to from inside it (security.cdesc_refers_within_v1) is not taken. The choice that by itself brings the reading within the limits is taken before one that does not;
 --   then the one that loses least course-specific substance (new security.cdesc_sentence_substance_v1: the distinct words of four or more letters of a sentence
 --   that are also in its own quote); the later sentence on a tie. A choice that would remove a sentence about a qualification, registration, recognition, pathway,
 --   placement or entry condition is never taken: when only such choices are left the reading stays held (over_length_needs_decision). So does a reading that
@@ -51,17 +51,24 @@ comment on function security.cdesc_sentence_substance_v1(text, text) is
   'Course description shortening: how many distinct words of a sentence (four or more letters, compared on their first five) are also in its own quote. Used only to choose which whole sentence is set aside when a reading is over its size limits.';
 revoke all on function security.cdesc_sentence_substance_v1(text, text) from public, anon, authenticated;
 
+create or replace function security.cdesc_refers_within_v1(p_text text) returns boolean language sql immutable set search_path = '' as $rw$
+  -- fixed: a structural test of the grammar: the sentence says "these", "those", "such" (not "such as") or "this" (not "this course", "this program" and the
+  -- like, which mean the course itself) anywhere in it. What it refers to may be any earlier sentence, not only the one before
+  select coalesce(p_text, '') ~* '\m(these|those)\M|\msuch\s+(?!\s|as\M)|\mthis\s+(?!\s|(course|program|programme|qualification|degree|diploma|certificate|award|major|specialisation|specialization|master|bachelor|unit|subject)\M)'
+$rw$;
+comment on function security.cdesc_refers_within_v1(text) is
+  'Course description shortening: true when a sentence says these, those, such or this about something other than the course, anywhere in it. Used only to decide which sentences may be set aside when a size-only reading is shortened.';
+revoke all on function security.cdesc_refers_within_v1(text) from public, anon, authenticated;
+
 create or replace function security.cdesc_refers_back_v1(p_text text) returns boolean language sql immutable set search_path = '' as $rb$
-  -- fixed: a structural test of the grammar: the sentence opens by pointing back (security.cdesc_points_back_v1), or says "these", "those", "such" (not "such as")
-  -- or "this" (not "this course", "this program" and the like, which mean the course itself) anywhere in it
-  select security.cdesc_points_back_v1(p_text)
-      or coalesce(p_text, '') ~* '\m(these|those)\M|\msuch\s+(?!as\M)|\mthis\s+(?!(course|program|programme|qualification|degree|diploma|certificate|award|major|specialisation|specialization|master|bachelor|unit|subject)\M)'
+  -- fixed: a structural test of the grammar: the sentence opens by pointing back (security.cdesc_points_back_v1) or refers to something earlier inside it
+  select security.cdesc_points_back_v1(p_text) or security.cdesc_refers_within_v1(p_text)
 $rb$;
 comment on function security.cdesc_refers_back_v1(text) is
   'Course description shortening: true when a sentence refers back to an earlier one (it opens by pointing back, or says these, those, such or this about something other than the course). Used only to decide which sentences go together when a size-only reading is shortened.';
 revoke all on function security.cdesc_refers_back_v1(text) from public, anon, authenticated;
 
-select pg_temp.edit_all('security.cdesc_subset_plan_v1(uuid,uuid,jsonb)', '3c263a1984a33a133a331883cc6f8eae', 'cc54bd91d7a58f522af3ef7b9141e3eb',
+select pg_temp.edit_all('security.cdesc_subset_plan_v1(uuid,uuid,jsonb)', '3c263a1984a33a133a331883cc6f8eae', '2fd1a050b0e70c0ae9298a0d7419b075',
   array[$o0$v_page text; v_title text; v_prov text;
 begin$o0$,
         $o1$  -- 2. every sentence that passes is kept, in its original order. Nothing is cut for length or sentence count: a reading whose only fault is its size stays held (the Platform Admin decides that separately)
@@ -75,7 +82,8 @@ begin$n0$,
   --     with the sentences after it that refer back to it (security.cdesc_refers_back_v1: they would dangle, so they go with it), and sets aside the choice that
   --     (a) by itself brings the reading within the limits, before one that does not, then (b) loses least course-specific substance
   --     (security.cdesc_sentence_substance_v1), the later sentence on a tie. A choice that would remove a sentence about a qualification, registration, recognition,
-  --     pathway, placement or entry condition is never taken: if only such choices are left, nothing more is set aside and the reading stays held below.
+  --     pathway, placement or entry condition is never taken, nor one that a later kept sentence may refer to (security.cdesc_refers_within_v1): if only such
+  --     choices are left, nothing more is set aside and the reading stays held below.
   --     Repeated until the reading fits. A reading that cannot fit stays held. A reading with a failing sentence AND a size problem is outside the approval:
   --     it is not shortened here and stays held (over_length_needs_decision).
   if not exists (select 1 from unnest(v_fault) x(f) where x.f is not null) then
@@ -94,6 +102,8 @@ begin$n0$,
           i := i + 1;
           exit when i > n or v_fault[i] is not null or not security.cdesc_refers_back_v1(v_s->(i - 1)->>'text');
         end loop;
+        -- a later sentence that stays and says "these", "those", "such" or "this" may refer to this choice: the choice is then not taken (as a protected one)
+        v_p := v_p or exists (select 1 from generate_series(i, n) j where v_fault[j] is null and security.cdesc_refers_within_v1(v_s->(j - 1)->>'text'));
         -- does the reading still not fit once this choice is set aside
         v_f := not (v_cnt - v_rc <= v_max and v_tot - v_rl <= v_maxc);
         if v_victim is null or (v_p, v_f, v_c) < (v_bp, v_bf, v_bc) then v_victim := k; v_bp := v_p; v_bf := v_f; v_bc := v_c; end if;
@@ -132,4 +142,5 @@ begin
   if security.cdesc_sentence_substance_v1('Students study marine engines and hull design.', 'The course covers marine engines, hull design and safety.') <> 4 then raise exception 'post-check: substance'; end if;
   if security.cdesc_sentence_substance_v1(null, null) <> 0 then raise exception 'post-check: substance of nothing'; end if;
   if not security.cdesc_refers_back_v1('Students apply these skills in a final project.') or security.cdesc_refers_back_v1('Students in this program study topics such as anatomy.') then raise exception 'post-check: refers back'; end if;
+  if security.cdesc_refers_within_v1('Students in this  course study topics such  as anatomy.') or not security.cdesc_refers_within_v1('It builds on this foundation.') then raise exception 'post-check: refers within'; end if;
 end $post$;
