@@ -44,7 +44,7 @@ test('student nationality: a proven rule naming the country or proven open to al
   expect(m).toContain("coalesce(cx.value_json->'excluded', '[]'::jsonb) ? upper(p_args->>'nationality_country')")
   expect(m).toContain("or (coalesce((p_args->>'nationality_unknown_too')::boolean, false) and l4.entity_id is null")
   expect(m).toContain("'nationality_countries',(select")
-  expect(ui).toContain("['nationalityCountry','nationality_country'],['nationalityUnknownToo','nationality_unknown_too']")
+  expect(ui).toContain("['nationalityCountry','nationality_country'],['nationalityUnknownToo','nationality_unknown_too']]")
   expect(ui).toContain('<FilterSelect label="Student nationality" value={filters.nationalityCountry||\'\'}')
 })
 
