@@ -58,7 +58,7 @@
 --   public.svc_provider_description_next(integer)  16d8baa4faf83ec9c6471d63774c2531 -> f7b463e1df56305e32404c73493781b6
 --   public.svc_provider_description_reserve_v1(uuid,text,numeric,text)  10abae09be0f865d0eba4d45a6da6049 -> df2ef6b8fc11e845525f2f49f7a145d9
 --   security.provider_description_selection_v1(jsonb)  55924745a938cd02dfdb52d2bff606fe -> fc03bf02372ce16efd9c12e5cea55ae0
---   public.svc_scholarship_ai_next(integer)  8b24b21a104963db0e2a9429ca03b627 -> b563f09b94dda390caac48f2c1e9a8a6
+--   public.svc_scholarship_ai_next(integer)  e2596cacd875dd3438fc77b7ecc0d9a0 -> b563f09b94dda390caac48f2c1e9a8a6
 --   public.svc_scholarship_ai_record(bigint,jsonb,jsonb,text,numeric,integer,integer,numeric,text,text,text,text,jsonb,boolean)  736fe3f1d0eb22407eb4d5c586df3bd5 -> cbcf286f7d5cdd916aee7bb34ca52bc4
 --   public.svc_scholarship_eligibility_next(integer)  309668330f2c434ff7ef047b5941a0a3 -> c6d57cba0c9101d080e682599af32e9b
 --   public.svc_scholarship_recheck_next(integer)  ccfaf9a9c6bbba4ce5fde64a3d7738af -> 5a0aba814bfda17a7da7ba8273fd1cb4
@@ -98,7 +98,7 @@ begin
       ('public.svc_provider_description_next(integer)', '16d8baa4faf83ec9c6471d63774c2531', 'f7b463e1df56305e32404c73493781b6'),
       ('public.svc_provider_description_reserve_v1(uuid,text,numeric,text)', '10abae09be0f865d0eba4d45a6da6049', 'df2ef6b8fc11e845525f2f49f7a145d9'),
       ('security.provider_description_selection_v1(jsonb)', '55924745a938cd02dfdb52d2bff606fe', 'fc03bf02372ce16efd9c12e5cea55ae0'),
-      ('public.svc_scholarship_ai_next(integer)', '8b24b21a104963db0e2a9429ca03b627', 'b563f09b94dda390caac48f2c1e9a8a6'),
+      ('public.svc_scholarship_ai_next(integer)', 'e2596cacd875dd3438fc77b7ecc0d9a0', 'b563f09b94dda390caac48f2c1e9a8a6'),
       ('public.svc_scholarship_ai_record(bigint,jsonb,jsonb,text,numeric,integer,integer,numeric,text,text,text,text,jsonb,boolean)', '736fe3f1d0eb22407eb4d5c586df3bd5', 'cbcf286f7d5cdd916aee7bb34ca52bc4'),
       ('public.svc_scholarship_eligibility_next(integer)', '309668330f2c434ff7ef047b5941a0a3', 'c6d57cba0c9101d080e682599af32e9b'),
       ('public.svc_scholarship_recheck_next(integer)', 'ccfaf9a9c6bbba4ce5fde64a3d7738af', '5a0aba814bfda17a7da7ba8273fd1cb4'),

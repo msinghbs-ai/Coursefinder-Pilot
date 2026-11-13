@@ -14,8 +14,9 @@ begin
   -- (the due items are put in order first and the per-item checks run only until the window is full: offset 0 keeps them out of the sort)
   select array_agg(w.id) into v_win from (
     select o.id from (select q.id, q.provider_id, q.run_kind from pipeline.scholarship_ai_queue q
+                       left join pipeline.scholarship_page_candidates cd on cd.id = q.candidate_id  -- F-SCH.15: never-decided pages first
                        where ((q.state = 'queued' and q.next_try_at <= now()) or (q.state = 'leased' and q.leased_until < now())) and q.attempts < 3
-                       order by (q.run_kind = 'test') desc, (q.run_kind = 'qualify') desc, q.step desc, q.id offset 0) o
+                       order by (q.run_kind = 'test') desc, (q.run_kind = 'qualify') desc, q.step desc, (cd.admit_status is not null), q.id offset 0) o
      where (o.provider_id is null or o.run_kind in ('test', 'qualify') or not exists (select 1 from security.provider_hidden_v1 h where h.provider_id = o.provider_id))
        and (v_paid or security.scholarship_ai_has_copy_v1(o.id))
      limit greatest(20, least(v_scan, 2000))) w;
