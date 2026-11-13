@@ -21,7 +21,7 @@ test('classified universities are legitimate sources without loaded courses; the
 test('only technical reviews are read again; reviewer questions stay pending; nothing is admitted or published here', () => {
   expect(m).toContain("where r.status = 'pending' and (r.reason like 'the model''s reply failed%' or r.reason like 'Approved read: the page could not be read%')")
   expect(m).toContain('rv.url, true')
-  expect(m).not.toMatch(/publication_status\s*=\s*'published'/)
+  expect(m).not.toMatch(/update scholarship\.scholarships/)
   expect(m).not.toMatch(/insert into scholarship\.scholarships/)
   expect(m).not.toMatch(/create or replace function (api\.|public\.website_|public\.zoho_)/i)
 })
