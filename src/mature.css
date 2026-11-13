@@ -606,5 +606,5 @@ header.cf-layer-header[data-layer-header] button{background:var(--cf-white);colo
 .m-table tbody tr.m-skeleton-row,.m-table tbody tr.m-empty-row{cursor:default}.m-table tbody tr.m-skeleton-row:hover td,.m-table tbody tr.m-empty-row:hover td{background:var(--cf-white)}
 /* 13 Nov 2026 (S2-Scholarship §6): scholarship detail drawer, data delivery facts */
 .sch-delivery{margin-bottom:12px}
-.sch-delivery-row{display:grid;grid-template-columns:180px 1fr;gap:8px;padding:4px 0;border-bottom:1px solid var(--m-line,#eee);font-size:13px;align-items:center}
+.sch-delivery-row{display:grid;grid-template-columns:180px 1fr;gap:8px;padding:4px 0;border-bottom:1px solid var(--cf-slate-200);font-size:13px;align-items:center}
 .sch-delivery-row:last-child{border-bottom:0}

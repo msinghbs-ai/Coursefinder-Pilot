@@ -21,5 +21,8 @@ test('the catalogue: published by default, a State filter for the rest, the new 
   for (const k of ['sch_round', 'sch_source', 'sch_links', 'sch_recovery', 'sch_consumers']) { expect(ui).toContain(`{key:'${k}'`); expect(ui).toContain(`if(key==='${k}')`) }
   expect(ui).toContain("label=\"Zoho v3: not verified\"")
   expect(ui).toContain('{row&&row.id===data.id?<SchDeliveryPanel r={row}/>:null}')
+  // the drawer hands the row to DetailBody, where the scholarship record is rendered (a missing prop is a render error)
+  expect(ui).toContain('<DetailBody type={type} data={data} row={row} rank={rank}')
+  expect(ui).toContain('function DetailBody({type,data,row=null,rank=0,')
   expect(ui).toContain("{key:'sch_name',label:'Scholarship',width:260,sortKey:'scholarship'}")
 })
