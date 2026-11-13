@@ -16,7 +16,7 @@ import{listShown,parseList,listValid,listError,listPlaceholder,isProviderIdList}
 import ProviderListPicker,{ProviderNames}from'./ProviderListPicker'
 import{plainError}from'./lib/errors'
 import{hrefFor}from'./nav-map'
-import{isAiHome,loadAiHomeKeys}from'./lib/ai-overview'
+import{isAiHome}from'./lib/ai-overview'
 
 const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const slug=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')
@@ -86,8 +86,7 @@ function SectionRows({settings,can,onSave}){
 }
 
 export default function SettingsRegister({onError}){
-  const[d,setD]=useState(null),[failed,setFailed]=useState(''),[aiKeys,setAiKeys]=useState(null)
-  useEffect(()=>{loadAiHomeKeys().then(setAiKeys)},[])
+  const[d,setD]=useState(null),[failed,setFailed]=useState('')
   const load=async()=>{try{const{data,error}=await supabase.rpc('admin_settings_register_read');if(error)throw error;setD(data||{})}catch(e){setFailed(errText(e));onError?.(errText(e))}}
   useEffect(()=>{load()},[])
   const save=async(key,value,reason)=>{const{error}=await supabase.rpc('admin_toolsets_write',{p_action:'setting',p_args:{toolset:'pipeline',key,value,reason}});if(error)throw error;await load()}
@@ -95,7 +94,7 @@ export default function SettingsRegister({onError}){
   const can=Boolean(d.can_manage),check=d.check||[]
   // v2.16.0 (Platform Admin 13 Nov 2026 19:23): a setting whose home is Models & services is listed and changed there only. Every other
   // setting stays here; a section left with none is not drawn.
-  const sections=(d.sections||[]).map(sec=>({...sec,settings:(sec.settings||[]).filter(x=>!isAiHome(x,'pipeline',aiKeys))})).filter(sec=>sec.settings.length)
+  const sections=(d.sections||[]).map(sec=>({...sec,settings:(sec.settings||[]).filter(x=>!isAiHome(x))})).filter(sec=>sec.settings.length)
   return <div className="m-page-stack" data-settings-register data-anchor="settings-register">
     <div className={`sr-check ${check.length?'is-bad':'is-ok'}`} data-controls-check={check.length?'fixed':'ok'} role="status">
       {check.length?<TriangleAlert size={16} aria-hidden/>:<ShieldCheck size={16} aria-hidden/>}

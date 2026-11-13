@@ -2,7 +2,6 @@
 // Kept apart from the screen so the Settings screens can ask one question of it (which settings now live on Models & services) and so the
 // rules that must never fail quietly (no blank model, unknown is never 0) are in one place. Nothing here is an operational value: the family
 // and area orders are the display order the Platform Admin gave.
-import { supabase } from './supabase'
 
 // Platform Admin 13 Nov 2026 19:14: "Model classified that can be used - Qwen3, Mimo, mistral small, Kimi K2, Gemini, LLama, deepseek"
 export const FAMILIES = [
@@ -20,14 +19,10 @@ export function modelGroups(models = []) {
   return [...groups.filter(g => g.models.length), ...(rest.length ? [{ key: 'not_allowed', label: NOT_ALLOWED_GROUP, models: rest }] : [])]
 }
 
-// The areas the services are listed under, in the order asked for. The server names an area in its own words ("Course fields", "Central
-// pages"); each is placed under the heading it belongs to. An area this list does not know keeps its own name and comes last.
+// The areas the services are listed under, in the order asked for. The server names each area in these words; an area this list does not
+// know keeps its own name and comes last.
 export const AREAS = ['Courses', 'Entry requirements', 'Providers', 'Scholarships', 'Fees', 'Matching and identity', 'Operations']
-const AREA_OF = [
-  [/^course (field|description)|^courses?$/i, 'Courses'], [/^entry/i, 'Entry requirements'], [/^provider|^central/i, 'Providers'],
-  [/^scholarship/i, 'Scholarships'], [/^fee/i, 'Fees'], [/match|identity|^course page/i, 'Matching and identity'], [/^operation|^adapter|^platform/i, 'Operations'],
-]
-export const areaOf = s => { const a = String(s?.area || '').trim(); return (AREA_OF.find(([re]) => re.test(a)) || [])[1] || a || 'Other' }
+export const areaOf = s => String(s?.area || '').trim() || 'Other'
 export function serviceGroups(services = []) {
   const names = [...AREAS]
   for (const s of services) if (!names.includes(areaOf(s))) names.push(areaOf(s))
@@ -53,19 +48,19 @@ export function cascadeOf(service, models = []) {
   })
 }
 
-/** One state for a service row. Off beats everything; then no allowed model; then a limit (the day's ceiling or the service's own cap). */
-export function serviceState(s, openrouter = {}) {
-  const allowed = (s?.models || []).length
-  if (s?.enabled === false) return { key: 'off', label: 'Off', tone: 'neutral', why: s.held_reason || 'Switched off.' }
-  if (!allowed) return { key: 'no_model', label: 'No allowed model', tone: 'danger', why: s?.held_reason || 'No model in its cascade is allowed.' }
-  if (s?.held && s.held_kind === 'limit') {
-    const ceiling = Number(openrouter.daily_ceiling_usd), spent = Number(openrouter.spent_today_usd)
-    const atCeiling = /ceiling/i.test(String(s.held_reason || '')) || (ceiling > 0 && spent >= ceiling)
-    return atCeiling ? { key: 'ceiling', label: 'Held: ceiling', tone: 'warning', why: s.held_reason || 'Today\'s spend ceiling is reached.' }
-      : { key: 'cap', label: 'Held: cap reached', tone: 'warning', why: s.held_reason || 'Its daily cap is reached.' }
-  }
-  if (s?.held) return { key: 'off', label: 'Off', tone: 'neutral', why: s.held_reason || 'Held.' }
-  return { key: 'running', label: 'Running', tone: 'success', why: '' }
+// One state for a service row, from the server's own held_kind (cap, ceiling, credit_floor, off, no_model or null). Nothing is inferred.
+const STATES = {
+  off: ['Off', 'neutral', 'Switched off.'], no_model: ['No allowed model', 'danger', 'No model in its cascade is allowed.'],
+  cap: ['Held: cap reached', 'warning', 'Its daily cap is reached.'], ceiling: ['Held: ceiling', 'warning', 'Today\'s spend ceiling for all AI is reached.'],
+  credit_floor: ['Held: no credit', 'danger', 'The OpenRouter balance is at or below the credit floor. All AI work is stopped, including Run now.'],
+}
+export function serviceState(s) {
+  // a row with no allowed model is never shown as running, whatever else the answer says
+  const key = s?.held_kind && STATES[s.held_kind] ? s.held_kind : s?.enabled === false ? 'off' : !(s?.models || []).length ? 'no_model' : s?.held ? 'held' : 'running'
+  if (key === 'running') return { key, label: 'Running', tone: 'success', why: '' }
+  if (key === 'held') return { key, label: 'Held', tone: 'warning', why: s.held_reason || 'Held.' }
+  const [label, tone, why] = STATES[key], said = s?.held_reason && s.held_reason !== key ? s.held_reason : why
+  return { key, label, tone, why: said + (s?.on_demand_exempt ? ' Work asked for under an open request is still let through.' : '') }
 }
 
 /** The one line for the OpenRouter pane. */
@@ -73,10 +68,11 @@ export function accountState(or = {}) {
   const bal = or.balance_usd == null ? null : Number(or.balance_usd), floor = Number(or.floor_usd || 0), warn = Number(or.low_warn_usd || 0)
   const ceiling = Number(or.daily_ceiling_usd || 0), spent = Number(or.spent_today_usd || 0)
   if (!or.key_present) return { key: 'no_key', label: 'No key seen', tone: 'danger', text: 'No balance has been read with the key lately. Replace or verify the key below.' }
-  if (bal != null && bal <= floor) return { key: 'no_credit', label: 'No credit', tone: 'danger', text: 'The balance is at or below the credit floor. Top up the OpenRouter account.' }
+  if (or.balance_known === false) return { key: 'unread', label: 'Balance not measured', tone: 'warning', text: or.balance_note || 'There is no balance reading, so the credit floor holds nothing. Check the key and the job that reads the balance.' }
+  if (bal != null && bal <= floor) return { key: 'no_credit', label: 'No credit', tone: 'danger', text: 'The balance is at or below the credit floor. All AI work is stopped, including Run now. Top up the OpenRouter account.' }
   if (ceiling > 0 && spent >= ceiling) return { key: 'ceiling', label: 'Held: today\'s ceiling reached', tone: 'warning', text: 'Every service is held until the UTC day changes, or until the ceiling is raised. Work an operator asked for under an open request is not held.' }
   if (bal != null && warn > 0 && bal < warn) return { key: 'low', label: 'Low credit', tone: 'warning', text: 'The balance is below the low-balance warning. Top up soon.' }
-  if (bal == null) return { key: 'unread', label: 'Balance not read', tone: 'warning', text: 'The balance has not been read yet.' }
+  if (bal == null) return { key: 'unread', label: 'Balance not measured', tone: 'warning', text: 'The balance has not been read yet.' }
   return { key: 'running', label: 'Running', tone: 'success', text: 'Credit is above the floor and today\'s spend is under the ceiling.' }
 }
 
@@ -109,24 +105,9 @@ export function usageBuckets(rows, unit, now = Date.now()) {
 }
 
 // ---- which settings now live on Models & services ------------------------------------------------------------------------------------------
-// A setting marked home = 'models_services' (pipeline.platform_toolset_settings.home, migration 20261113380000) is shown and changed on
-// Models & services only. The settings reads may not carry `home` yet, so the keys the overview lists under OpenRouter and under each service
-// count too. If the overview cannot be read, nothing is hidden.
-export function aiHomeKeys(overview) {
-  const out = new Set()
-  if (!overview || typeof overview !== 'object' || Array.isArray(overview)) return out
-  const add = s => { if (s?.key) out.add(`${s.toolset || 'pipeline'}.${s.key}`) }
-  for (const s of overview.openrouter?.settings || []) add(s)
-  for (const svc of overview.services || []) for (const s of svc.settings || []) add(s)
-  return out
-}
-export const isAiHome = (s, toolset, keys) => s?.home === 'models_services' || Boolean(keys?.has(`${toolset || s?.toolset || 'pipeline'}.${s?.key}`))
-let pending = null
-/** The keys, read once per page load (and again after `fresh`). Never throws. */
-export function loadAiHomeKeys(fresh = false) {
-  if (!pending || fresh) pending = supabase.rpc('admin_ai_overview_v1').then(({ data, error }) => (error ? new Set() : aiHomeKeys(data))).catch(() => new Set())
-  return pending
-}
+// A setting marked home = 'models_services' (pipeline.platform_toolset_settings.home; the settings reads return it) is shown and changed on
+// Models & services only.
+export const isAiHome = s => s?.home === 'models_services'
 
 // The contract's refusals, said plainly. Anything else goes through the app's one plain reading (lib/errors).
 const REFUSALS = [
@@ -138,6 +119,7 @@ const REFUSALS = [
   [/not an allowed model: ?([^()]*)/i, (m) => `Not an allowed model: ${m[1].trim()}. Allow it in Models first, or remove it.`],
   [/give a daily US\$ cap/i, 'Give a daily US$ cap: every service has one.'],
   [/cap cannot be negative/i, 'A cap cannot be negative. Leave it empty for no cap.'],
+  [/not in a family the Platform Admin allows/i, 'This model is not in a family the Platform Admin allows (Qwen3, MiMo, Mistral Small, Kimi K2, Gemini, Llama, DeepSeek). Adding a family is a release.'],
   [/status must be/i, 'A model is either allowed or not allowed.'],
   [/(PIM Operator|Pipeline Operator) role or above required/i, (m) => `${m[1]} role or above is needed for this.`],
 ]

@@ -25,7 +25,7 @@ import{plainError}from'./lib/errors'
 import SnapshotStamp from'./SnapshotStamp'
 import{gateFor}from'./guide/operatingWords'
 import{RETIRED_TOOLSETS}from'./retired-services'
-import{isAiHome,loadAiHomeKeys}from'./lib/ai-overview'
+import{isAiHome}from'./lib/ai-overview'
 
 const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const ask=t=>{const r=window.prompt(`${t}\n\nReason (kept in the log):`);return r&&r.trim().length>=4?r.trim():null}
@@ -147,8 +147,7 @@ function NoticeItems({n,mode,onDone}){
 // ---- Models & services › Toolsets and limits ------------------------------------------------------------------------
 // SS-020 step 3 cards (Final board F41): only=[keys] draws just those toolset cards ('notices' = the notices card), for one card per service
 export default function Toolsets({onError,only=null}){
-  const[d,setD]=useState(null),[n,setN]=useState(null),[failed,setFailed]=useState(''),[busy,setBusy]=useState(false),[aiKeys,setAiKeys]=useState(null)
-  useEffect(()=>{loadAiHomeKeys().then(setAiKeys)},[])
+  const[d,setD]=useState(null),[n,setN]=useState(null),[failed,setFailed]=useState(''),[busy,setBusy]=useState(false)
   const load=async()=>{setFailed('');try{const[a,b]=await Promise.all([supabase.rpc('admin_toolsets_read'),supabase.rpc('admin_platform_notices_read',{p_layer:null})]);if(a.error)throw a.error;setD(a.data||{});setN(b.data||{})}catch(e){setFailed(errText(e))}}
   useEffect(()=>{load()},[])
   const write=async(action,args,question)=>{const reason=ask(question);if(!reason)return;setBusy(true);try{const{error}=await supabase.rpc('admin_toolsets_write',{p_action:action,p_args:{...args,reason}});if(error)throw error;await load()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
@@ -165,7 +164,7 @@ export default function Toolsets({onError,only=null}){
       <div className="tn-all" data-toolset-notices>{notices.length?notices.map(x=><Notice key={x.key} n={x} onDone={load}/>):<p className="sl-sub">No notices on any layer.</p>}</div>
     </Card>}
     {/* v2.16.0 (Platform Admin 13 Nov 2026 19:23): the OpenRouter card and every setting whose home is Models & services are on Models & services › AI */}
-    {(d.toolsets||[]).filter(t=>!RETIRED_TOOLSETS.has(t.key)&&t.key!=='openrouter'&&want(t.key)).map(t=><React.Fragment key={t.key}><Toolset t={{...t,settings:(t.settings||[]).filter(x=>!isAiHome(x,t.key,aiKeys))}} moved={(t.settings||[]).filter(x=>isAiHome(x,t.key,aiKeys)).length} can={can} write={write}/>{t.key==='firecrawl'&&<><FirecrawlAcceptance onError={onError}/><FirecrawlCredits onError={onError}/><FirecrawlWork onError={onError}/></>}</React.Fragment>)}
+    {(d.toolsets||[]).filter(t=>!RETIRED_TOOLSETS.has(t.key)&&t.key!=='openrouter'&&want(t.key)).map(t=><React.Fragment key={t.key}><Toolset t={{...t,settings:(t.settings||[]).filter(x=>!isAiHome(x))}} moved={(t.settings||[]).filter(x=>isAiHome(x)).length} can={can} write={write}/>{t.key==='firecrawl'&&<><FirecrawlAcceptance onError={onError}/><FirecrawlCredits onError={onError}/><FirecrawlWork onError={onError}/></>}</React.Fragment>)}
   </div>
 }
 

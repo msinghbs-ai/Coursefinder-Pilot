@@ -181,8 +181,9 @@ test.describe('Models & services › AI, mocked browser', () => {
     await bar.locator('[data-ai-confirm]').click()
     await expect(page.locator('[data-ai-model="deepseek-v3.2"]')).toHaveAttribute('data-ai-model-status', 'not_allowed')
     expect(calls[1]).toEqual({ name: 'admin_ai_model_set_v1', p_code: 'deepseek-v3.2', p_status: 'not_allowed', p_reason: 'costs more than Qwen3' })
-    // GPT and Claude cannot be allowed from the screen
+    // GPT and Claude cannot be allowed from the screen, and the row says why in the server's words
     await expect(page.locator('[data-ai-model="gpt-4.1-mini"]').getByRole('switch')).toBeDisabled()
+    await expect(page.locator('[data-ai-model="gpt-4.1-mini"] [data-ai-family-refused]')).toContainText('Not in a family the Platform Admin allows; adding a family is a release')
     // the server's refusal, in plain words (the page's own check is bypassed by a refusing server)
     await page.route(/\/rest\/v1\/rpc\/admin_ai_route_set_v1$/, r => r.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ code: 'P0001', message: 'a cascade holds 4 models at most' }) }))
     await row(page, 'ops_diagnosis').locator('.aim-toggle').click()
@@ -218,6 +219,9 @@ test.describe('Models & services › AI, mocked browser', () => {
     await expect(text).not.toContainText('Between')
     await expect(s.locator('[data-ai-setting="pipeline.ops.ai_diagnosis_model"]')).toContainText('Not read any more')
     await expect(s.locator('[data-ai-setting="pipeline.ops.ai_diagnosis_model"] input')).toHaveCount(0)
+    await row(page, 'adapter_builder').locator('.aim-toggle').click() // marked not_read by the server: shown with its value, not editable
+    await expect(detail(page, 'adapter_builder').locator('[data-ai-setting="firecrawl.builder_model"]')).toContainText('qwen/qwen3-30b-a3b-instruct-2507')
+    await expect(detail(page, 'adapter_builder').locator('[data-ai-setting="firecrawl.builder_model"] input')).toHaveCount(0)
     await text.locator('input').fill('qwen/qwen3-30b-a3b-instruct-2507')
     await expect(text.locator('[data-ai-changes]')).toContainText('Health repair: escalation model: qwen/qwen3-235b-a22b-2507 becomes qwen/qwen3-30b-a3b-instruct-2507')
     await expect(text.locator('[data-ai-confirm]')).toBeDisabled()
@@ -250,15 +254,41 @@ test.describe('Models & services › AI, mocked browser', () => {
     await expect(page.locator('[data-ai-account-state="ceiling"]')).toContainText('Held: today\'s ceiling reached')
     await expect(row(page, 'course_description').locator('[data-ai-state-pill]')).toHaveText('Held: ceiling')
     await expect(row(page, 'entry_requirements_v2_shadow').locator('[data-ai-state-pill]')).toHaveText('Off')
+    await expect(row(page, 'course_description').locator('[data-ai-would-hold]')).toContainText('Would be held now')
+    await expect(row(page, 'course_description')).toContainText('Work asked for under an open request is still let through')
+  })
+
+  test('the credit floor stops everything (Held: no credit); caps over the ceiling and a balance that was not measured are said plainly', async ({ page }) => {
+    const base = (await import('./support/ai-overview-fixture.mjs')).aiOverview().openrouter
+    await open(page, { openrouter: { ...base, balance_usd: 0.4 } })
+    await expect(page.locator('[data-ai-account-state="no_credit"]')).toContainText('No credit')
+    await expect(page.locator('[data-ai-account-state="no_credit"]')).toContainText('including Run now')
+    await expect(row(page, 'course_description').locator('[data-ai-state-pill]')).toHaveText('Held: no credit')
+    await expect(row(page, 'course_description')).not.toContainText('still let through') // the floor holds on-demand work too
+    await expect(row(page, 'course_description').locator('[data-ai-would-hold]')).toBeVisible()
+    await expect(row(page, 'entry_matrices').locator('[data-ai-state-pill]')).toHaveText('No allowed model')
+    // the fixture's caps (US$35.00 for the services that are on) are over the US$14.00 ceiling
+    await expect(page.locator('[data-ai-caps-exceed]')).toContainText('Service caps add up to US$35.00 a day, more than the US$14.00 ceiling: the ceiling will stop work first.')
+    // no balance reading: said so, never shown as a figure or as no credit
+    await page.route(/\/rest\/v1\/rpc\/admin_ai_overview_v1$/, async r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify((await import('./support/ai-overview-fixture.mjs')).aiOverview({ openrouter: { ...base, balance_usd: null, balance_observed_at: null, balance_known: false, balance_note: 'No balance has been read: the credit floor holds nothing.' } })) }))
+    await page.reload()
+    await expect(page.locator('[data-ai-account-state="unread"]')).toContainText('Balance not measured')
+    await expect(page.locator('[data-ai-account-state="unread"]')).toContainText('the credit floor holds nothing')
+    await expect(page.locator('[data-ai-balance]')).toContainText('Balance not measured')
+    await expect(page.locator('[data-ai-balance]')).not.toContainText('US$0')
+    await expect(row(page, 'course_description').locator('[data-ai-state-pill]')).toHaveText('Running')
+    await expect(row(page, 'course_description').locator('[data-ai-would-hold]')).toHaveCount(0)
   })
 
   test('Settings no longer lists the AI settings, points to Models & services, and draws a text setting as a text box', async ({ page }) => {
     await mockAdmin(page, { rank: 6 }); await mockAi(page)
     const set = (key, label, o = {}) => ({ key, label, help: 'help', used_by: 'a job', kind: 'number', value: 10, min: 1, max: 500, unit: 'items', updated_at: '2026-11-08T22:00:00Z', reason: 'set', ...o })
     const register = { can_manage: true, jobs: 61, check: [], sections: [
-      { section: 'Job sizes', settings: [set('batch.job_1', 'Job 1 size'), set('enrich.ai_calls_at_once', 'AI calls at once'), set('entry.course_page_chars', 'Entry page characters', { home: 'models_services' }),
-        set('reading.fresh_marker', 'Marker read on a fresh page', { kind: 'text', value: 'updated', min: 0, max: 0, unit: null }), set('har.ai_escalation_model', 'Health repair: escalation model', { kind: 'text', value: 'qwen/qwen3-235b-a22b-2507', min: 0, max: 0, unit: null })] },
+      { section: 'Job sizes', settings: [set('batch.job_1', 'Job 1 size'), set('enrich.ai_calls_at_once', 'AI calls at once', { home: 'models_services', home_group: 'course_other_fields' }), set('entry.course_page_chars', 'Entry page characters', { home: 'models_services' }),
+        set('reading.fresh_marker', 'Marker read on a fresh page', { kind: 'text', value: 'updated', min: 0, max: 0, unit: null }), set('har.ai_escalation_model', 'Health repair: escalation model', { kind: 'text', value: 'qwen/qwen3-235b-a22b-2507', min: 0, max: 0, unit: null, home: 'models_services', home_group: 'ops_diagnosis' })] },
       { section: 'Admission checks', settings: [set('only.marked_by_home', 'Marked by its home only', { home: 'models_services' })] }] }
+    let overviewCalls = 0
+    page.on('request', q => { if (/rpc\/admin_ai_overview_v1$/.test(q.url())) overviewCalls++ })
     await page.route(/\/rest\/v1\/rpc\/admin_settings_register_read$/, r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(register) }))
     await openCards(page, ['settings.register.job-sizes'])
     await page.goto('/#environment')
@@ -268,10 +298,11 @@ test.describe('Models & services › AI, mocked browser', () => {
     const moved = reg.locator('[data-ai-settings-moved] a')
     await expect(moved).toHaveText('AI models, prompts, caps and the OpenRouter key are in Models & services')
     await expect(moved).toHaveAttribute('href', '#models-services?tab=ai')
-    // listed on Models & services (by the overview) or marked home = models_services: not listed here; a section left empty is not drawn
+    // marked home = models_services by the settings read: not listed here (no second call is made for it); a section left empty is not drawn
     for (const k of ['enrich.ai_calls_at_once', 'entry.course_page_chars', 'har.ai_escalation_model', 'only.marked_by_home']) await expect(reg.locator(`[data-register-setting="${k}"]`)).toHaveCount(0)
     await expect(reg.locator('[data-register-section="Admission checks"]')).toHaveCount(0)
     await expect(reg.locator('[data-register-section="Job sizes"]')).toContainText('2 settings')
+    expect(overviewCalls, 'Settings does not read the AI overview').toBe(0)
     // every other setting stays, and a text setting is a text box with no number range
     const text = reg.locator('[data-register-setting="reading.fresh_marker"]')
     await expect(text.locator('input[data-setting-kind="text"]')).toHaveAttribute('type', 'text')
@@ -359,7 +390,7 @@ test.describe('Models & services › AI, source and address map', () => {
     expect(fs.readFileSync('src/ScholarshipExtraction.jsx', 'utf8')).not.toContain('ScholarshipAiModels')
     const pageSrc = fs.readFileSync('src/AiModelsServices.jsx', 'utf8')
     const rpcs = [...new Set([...pageSrc.matchAll(/rpc\('([a-z0-9_]+)'/g)].map(m => m[1]))].sort()
-    expect(rpcs).toEqual(['admin_ai_config_read', 'admin_ai_overview_v1', 'admin_toolsets_write'])
+    expect(rpcs).toEqual(['admin_ai_overview_v1', 'admin_toolsets_write']) // the key's profile id comes with the overview
     expect(pageSrc).toMatch(/act\('admin_ai_model_set_v1'/); expect(pageSrc).toMatch(/act\('admin_ai_route_set_v1'/)
     expect(pageSrc).not.toMatch(/window\.(prompt|confirm)\(/) // a reason is typed on the page, beside what changes
     expect(pageSrc).not.toMatch(/\?\?\s*'—'|\|\|\s*'—'/) // no dash stands in for a model or a figure

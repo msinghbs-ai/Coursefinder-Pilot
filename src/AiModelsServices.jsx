@@ -11,7 +11,7 @@
 // account, AI uses and daily guards, central pages model, adapter proposal model, scholarship models, model profiles) and the AI model switches
 // of ModelsServices.jsx. Two rules the page never breaks: a model cell is never blank (no model is a red "No model"), and an unknown figure is
 // never 0 ("Not measured", "not checked").
-// Reads public.admin_ai_overview_v1(). Writes public.admin_ai_model_set_v1 and public.admin_ai_route_set_v1 (PIM Admin and above), the existing
+// Reads public.admin_ai_overview_v1() and nothing else. Writes public.admin_ai_model_set_v1 and public.admin_ai_route_set_v1 (PIM Admin and above), the existing
 // public.admin_toolsets_write for a setting or the OpenRouter mode, and the existing layer3-provider-control for the key (Platform Admin).
 // Every save takes a reason and says what changed. Contract: docs/platform/AI-MODELS-SERVICES-CONTRACT.md.
 import React, { useEffect, useMemo, useState } from 'react'
@@ -31,9 +31,8 @@ const say = e => refusal(e) || plainError(e)
 const NOT_MEASURED = 'Not measured'
 const money = v => usd(v) ?? NOT_MEASURED
 const count = v => (v == null ? NOT_MEASURED : fmtNumber(Number(v)))
-// The two model settings the contract says are no longer read (the cascade decides); a setting may also say so itself.
-const NOT_READ = new Set(['pipeline.entry.matrix_model', 'pipeline.ops.ai_diagnosis_model'])
-const notRead = s => Boolean(s.read_only || s.not_read) || NOT_READ.has(`${s.toolset}.${s.key}`)
+// A setting the server marks as no longer read (replaced by the routes) is shown with its value and cannot be changed here.
+const notRead = s => Boolean(s.read_only || s.not_read)
 
 // The four cards. An old link to a retired AI card opens the one that replaced it (nav-map RETIRED_AI_CARDS).
 export const PANES = { openrouter: 'services.ai.openrouter', models: 'services.ai.models', services: 'services.ai.services', usage: 'services.ai.usage' }
@@ -92,9 +91,8 @@ const Meter = ({ value, max, label }) => {
 // ---- 1 OpenRouter key and usage -----------------------------------------------------------------------------------------------------------
 function OpenRouterPane({ d, admin, saveSetting, reload, onError }) {
   const or = d.openrouter || {}, state = accountState(or)
-  const [key, setKey] = useState(''), [keyMode, setKeyMode] = useState(''), [profile, setProfile] = useState(null), [busy, setBusy] = useState(false), [msg, setMsg] = useState(''), [mode, setMode] = useState(false)
-  // The key's model profile comes from the existing read (the same one the old screen used); the key itself is never returned by anything.
-  useEffect(() => { if (!admin) return; supabase.rpc('admin_ai_config_read').then(({ data }) => setProfile(data?.openrouter?.key?.profile_id || null)).catch(() => {}) }, [admin])
+  const [key, setKey] = useState(''), [keyMode, setKeyMode] = useState(''), [busy, setBusy] = useState(false), [msg, setMsg] = useState(''), [mode, setMode] = useState(false)
+  const profile = or.key?.profile_id || null // what Replace and Verify need; the key itself is never returned by anything
   const run = async (fn) => { setBusy(true); setMsg(''); try { await fn() } catch (e) { onError?.(say(e)) } finally { setBusy(false) } }
   const saveKey = reason => run(async () => {
     const { data: r, error } = await supabase.functions.invoke('layer3-provider-control', { body: { action: 'set_credential', profile_id: profile, credential: key, reason } })
@@ -119,15 +117,17 @@ function OpenRouterPane({ d, admin, saveSetting, reload, onError }) {
       meta={<><span className={`cf-chip tone-${state.tone}`} data-ai-account-chip={state.key}>{state.label}</span><span className="aim-quiet">{money(or.spent_today_usd)} of {usd(or.daily_ceiling_usd) ?? 'no ceiling'} today</span></>}
       action={<Button compact onClick={reload} disabled={busy}><RefreshCw size={14}/>Refresh</Button>}>
     <p className={`aim-state tone-${state.tone}`} data-ai-account-state={state.key} role="status"><span className={`cf-chip tone-${state.tone}`}>{state.label}</span><span>{state.text}</span></p>
+    {or.balance_known === false && state.key !== 'unread' && <p className="aim-state tone-warning" role="status" data-ai-balance-unknown><span className="cf-chip tone-warning">Balance not measured</span><span>{or.balance_note || 'There is no balance reading, so the credit floor holds nothing.'}</span></p>}
+    {d.caps_exceed_ceiling && <p className="aim-state tone-warning" role="status" data-ai-caps-exceed><span className="cf-chip tone-warning">Caps over the ceiling</span><span>Service caps add up to {money(d.caps_total_usd)} a day, more than the {money(d.ceiling_usd ?? or.daily_ceiling_usd)} ceiling: the ceiling will stop work first.</span></p>}
     <div className="aim-tiles">
       <div className="aim-tile" data-ai-key>
         <small><KeyRound size={12} aria-hidden/> Key</small>
         <strong>{or.key_present ? 'Present' : 'Not seen'}</strong>
-        <span>{or.key_secret_name || 'OPENROUTER_API_KEY'} · never shown</span>
+        <span>{or.key?.secret || or.key_secret_name || 'OPENROUTER_API_KEY'} · never shown{or.key?.shared_by_profiles ? ` · shared by ${fmtNumber(Number(or.key.shared_by_profiles))} model profiles` : ''}</span>
       </div>
       <div className="aim-tile" data-ai-balance={admin ? 'figure' : 'words'}>
         <small>Credit balance</small>
-        <strong>{admin ? (usd(bal) ?? 'Not read yet') : balanceWords(bal, or.floor_usd)}</strong>
+        <strong>{or.balance_known === false ? 'Balance not measured' : admin ? (usd(bal) ?? 'Not read yet') : balanceWords(bal, or.floor_usd)}</strong>
         <span>{admin && or.total_credits_usd != null ? `of ${usd(or.total_credits_usd)} bought · ` : ''}read {or.balance_observed_at ? fmtDateTime(or.balance_observed_at) : 'never'}</span>
       </div>
       <div className="aim-tile" data-ai-floor>
@@ -151,7 +151,7 @@ function OpenRouterPane({ d, admin, saveSetting, reload, onError }) {
         <input className="fv-input" type="password" autoComplete="new-password" aria-label="New OpenRouter key" placeholder="Paste the new key; it replaces the old one" value={key} disabled={busy} onChange={e => { setKey(e.target.value); setKeyMode('') }}/></label>
       {keyMode !== 'save' && <Button compact variant="primary" disabled={busy || key.trim().length < 20 || !profile} onClick={() => setKeyMode('save')}>Replace key</Button>}
       <Button compact disabled={busy || !profile} onClick={verify}>Verify</Button>
-      {!profile && <small className="aim-quiet">The key controls are loading, or no model profile holds the key.</small>}
+      {!profile && <small className="aim-quiet">No model profile holds the key, so it cannot be replaced or verified from here.</small>}
     </div> : <p className="l3v-note">Only a Platform Admin can replace or verify the key and change these limits.</p>}
     {keyMode === 'save' && <SaveBar what="key" label="Replace key" busy={busy} changes={['The OpenRouter key used by every AI model is replaced. The key is never shown again.']} onSave={saveKey} onCancel={() => setKeyMode('')}/>}
     {msg && <p role="status" className="aim-done" data-ai-msg>{msg}</p>}
@@ -190,6 +190,7 @@ function ModelsPane({ d, can, act }) {
             <td data-label="Used by">{(m.used_by || []).length ? <span className="aim-usedby">{m.used_by.map(c => <span key={c} className="cf-chip tone-neutral">{sLabel[c] || humanLabel(c)}</span>)}</span> : <span className="aim-quiet">No service</span>}</td>
             <td data-label="Allowed"><span className="aim-allow"><Switch on={on} label={`${on ? 'Disallow' : 'Allow'} ${m.label || m.code}`} disabled={!can || busy || (!on && !family)} onChange={() => { setErr(''); setEdit(m) }}/>
               <span className={on ? '' : 'aim-quiet'}>{on ? 'Allowed' : 'Not allowed'}</span>{on && !family && <span className="cf-chip tone-warning">Outside the families</span>}</span>
+              {!on && !family && <small className="aim-sub" data-ai-family-refused>Not in a family the Platform Admin allows; adding a family is a release.</small>}
               {(m.reason || m.changed_at) && <small className="aim-sub">{m.reason}{m.changed_at ? ` · ${fmtDateTime(m.changed_at)}` : ''}</small>}</td>
           </tr>
           {edit?.code === m.code && <tr className="aim-editrow"><td colSpan={6}><SaveBar what={`model-${m.code}`} busy={busy} onSave={save} onCancel={() => setEdit(null)}
@@ -221,7 +222,7 @@ const capWords = (v, unit) => (v == null ? 'no cap' : unit === 'usd' ? usd(v) : 
 const sameList = (a, b) => a.length === b.length && a.every((x, i) => x === b[i])
 
 function ServiceRow({ s, d, can, admin, act, saveSetting, open, onToggle, onError }) {
-  const models = d.models || [], items = cascadeOf(s, models), state = serviceState(s, d.openrouter)
+  const models = d.models || [], items = cascadeOf(s, models), state = serviceState(s)
   const [draft, setDraft] = useState(null), [busy, setBusy] = useState(false), [err, setErr] = useState(''), [done, setDone] = useState(''), [promptEdit, setPromptEdit] = useState(false)
   const byCode = Object.fromEntries(models.map(m => [m.code, m]))
   const begin = (patch = {}) => { setErr(''); setDone(''); setDraft({ cascade: [...(s.cascade || [])], usd: s.daily_usd_cap == null ? '' : String(s.daily_usd_cap), calls: s.daily_calls_cap == null ? '' : String(s.daily_calls_cap), enabled: s.enabled !== false, ...patch }); if (!open) onToggle(true) }
@@ -266,7 +267,8 @@ function ServiceRow({ s, d, can, admin, act, saveSetting, open, onToggle, onErro
       <td data-label="Spent today" data-ai-spent><span>{money(spent.usd)}{s.daily_usd_cap != null ? ` of ${usd(s.daily_usd_cap)}` : ''}</span>
         {s.daily_usd_cap != null && <Meter value={spent.usd} max={s.daily_usd_cap} label={`${s.label}: today's spend against its cap`}/>}
         <small className="aim-sub">{spent.calls == null ? 'calls not measured' : `${fmtNumber(Number(spent.calls))} call${Number(spent.calls) === 1 ? '' : 's'}`}{s.daily_calls_cap != null ? ` of ${fmtNumber(Number(s.daily_calls_cap))}` : ''}</small></td>
-      <td data-label="State"><span className={`cf-chip tone-${state.tone}`} title={state.why} data-ai-state-pill>{state.label}</span>{state.why && state.key !== 'running' && <small className="aim-sub">{state.why}</small>}</td>
+      <td data-label="State"><span className={`cf-chip tone-${state.tone}`} title={state.why} data-ai-state-pill>{state.label}</span>{state.why && state.key !== 'running' && <small className="aim-sub">{state.why}</small>}
+        {s.would_hold_now && <small className="aim-sub" data-ai-would-hold>Would be held now: no scheduled work is handed out.</small>}</td>
     </tr>
     {open && <tr className="aim-detailrow" id={`aim-d-${s.service_code}`} data-ai-service-detail={s.service_code}><td colSpan={6}><div className="aim-detail">
       {done && <p className="aim-done" role="status" data-ai-saved>{done}</p>}{err && <p className="fr-error" role="alert" data-ai-error>{err}</p>}
@@ -323,7 +325,7 @@ function ServicesPane({ d, can, admin, act, saveSetting, focus, onError }) {
   const [open, setOpen] = useState(() => (focus ? { [focus]: true } : {}))
   useEffect(() => { if (focus) setOpen(o => ({ ...o, [focus]: true })) }, [focus])
   const noModel = (d.services || []).filter(s => !(s.models || []).length)
-  const held = (d.services || []).filter(s => ['cap', 'ceiling'].includes(serviceState(s, d.openrouter).key)).length
+  const held = (d.services || []).filter(s => ['cap', 'ceiling', 'credit_floor', 'held'].includes(serviceState(s).key)).length
   return <Card id={PANES.services} level={2} className="aim-pane" data-ai-pane="services" title="3 · Services" subtitle="What the platform uses AI for, one row each: its model cascade, switch, daily cap and today's spend. Open a row for its prompt and its other AI settings."
       meta={<><span className="aim-quiet">{fmtNumber((d.services || []).length)} services</span>{noModel.length > 0 && <span className="cf-chip tone-danger" data-ai-no-model-chip>{fmtNumber(noModel.length)} with no model</span>}{held > 0 && <span className="cf-chip tone-warning">{fmtNumber(held)} held</span>}</>}>
     {noModel.length > 0 && <p className="aim-state tone-danger" role="alert" data-ai-no-model-warning><span className="cf-chip tone-danger">No model</span><span>{noModel.map(s => s.label).join(', ')}: no allowed model. {noModel.length === 1 ? 'It does' : 'They do'} not run until a cascade names one.</span></p>}

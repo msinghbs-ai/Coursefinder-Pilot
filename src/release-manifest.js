@@ -15,11 +15,18 @@ export const RELEASE={
     'Services: one row for each AI use, by area, with its model cascade in order, on/off switch, daily cap in US$ and calls, today\'s spend and a state. Open a row for its prompt and its other AI settings. A service with no model shows a red "No model", never a blank.',
     'Recent usage: spend and calls by service and by model, for the last 24 hours by hour and the last 14 days by day. A figure that was not recorded says "Not measured", not 0.',
     'Every change on the page asks for a reason and shows what will change before it is saved.',
+    'A service\'s model is chosen in one place only: its row on Models & services > AI. Every AI reader asks that row before it hands out work.',
+    'A cascade moves to the next model only when a call fails technically (an error, a time-out, an unreadable answer), never because of what a model answered.',
+    'The daily spend ceiling for all AI and each service\'s daily cap are enforced. Work held by a cap or the ceiling carries on when the UTC day changes; work an operator asked for under an open request is still let through.',
+    'The credit floor stops all AI work when the OpenRouter balance is at or below it, including Run now.',
+    'GPT and Claude models are not allowed, and cannot be allowed from the screen: adding a family is a release.',
+    'A guard reports any place outside the services that still names a model that is not allowed; a build check does the same for the code.',
     'Settings: the AI settings moved to Models & services, with one line pointing there. Scholarship extraction (sample pages, qualification, instructions) is under Scholarships › Coverage.',
     'Since v2.15.494: scholarships show delivery state, more detail columns and filters, provider coverage for all providers and a nationality filter; entry requirements have Read / refresh now, machine approval and a v2 trial reader; providers have Fill description with a prompt the Platform Admin maintains; the Provider and Course catalogues have chosen columns and a description filter; and the screens operated from a phone were made usable there.',
     'Since v2.15.494: Website API v3 and Zoho API v3 run beside v2 (v2 is unchanged); work an operator asks for is not held by toolset limits and reports its estimate before and its use after.'
   ],
   bugFixes:[
+    'GPT-4.1 mini was pinned by build sessions on 12 Oct (central pages) and 26 Oct (entry requirements), outside the Platform Admin\'s model cascade; nothing checked a service\'s model against the cascade. From this release a build check and a database guard do.',
     'A text setting (for example a model name) is a text box. It used to be drawn as a number box that said "Between 0 and 0" and could not be changed.',
     'The old table showed a dash in the Model column for four AI uses, which hid the model they ran on. Every service now names its model.',
     'Since v2.15.494: intake dates are read from more calendar layouts and never take a later year\'s start; course and provider descriptions held for size or one weak sentence are recovered; scholarship reading no longer stalls on a long queue; several jobs that ran past their time limit were fixed at the source.'

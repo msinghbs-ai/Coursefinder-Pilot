@@ -1,5 +1,5 @@
-// Mocked public.admin_ai_overview_v1() for local admin UAT, in the shape of docs/platform/AI-MODELS-SERVICES-CONTRACT.md (phase 2: migrations
-// 20261113380000 and 20261113390000; every service is enforced by its route and has a daily US$ cap). Models and services follow the migration's seed; a few rows are bent on purpose so the screen's hard cases are on show:
+// Mocked public.admin_ai_overview_v1() for local admin UAT, in the shape of docs/platform/AI-MODELS-SERVICES-CONTRACT.md (round 3: every service is
+// enforced by its route and has a daily US$ cap; held_kind is cap, ceiling, credit_floor, off, no_model or null). Models and services follow the migration's seed; a few rows are bent on purpose so the screen's hard cases are on show:
 //   entry_matrices           its cascade names only GPT-4.1 mini (not allowed) → no allowed model, model_in_effect null
 //   fee_reader               held at its own daily cap
 //   entry_requirements_v2_shadow  switched off
@@ -31,38 +31,38 @@ export const models = () => [
 ]
 
 const num = (toolset, key, label, value, min, max, unit, help = null) => ({ toolset, key, label, help, value, kind: 'number', min, max, unit })
-const txt = (toolset, key, label, value, help = null) => ({ toolset, key, label, help, value, kind: 'text', min: null, max: null, unit: null })
+const txt = (toolset, key, label, value, help = null, gone = false) => ({ toolset, key, label, help, value, kind: 'text', min: null, max: null, unit: null, not_read: gone, read_only: gone })
 const S = (service_code, label, area, o = {}) => ({ service_code, label, area, field: null, lane: 'central_ai', ledger_match: null, cascade: ['qwen3-30b'], daily_usd_cap: 2, daily_calls_cap: null, enabled: true,
   spent_today: { usd: 0, calls: 0 }, resolver: 'route', prompt: { source: 'worker code', version: `${service_code}-v1`, text: null }, settings: [], note: null, reason: 'seed 13 Nov 2026 (Platform Admin 19:14)',
   changed_at: iso(NOW - 2 * H), changed_by: null, ...o })
 export const services = () => [
-  S('course_description', 'Course description', 'Course fields', { field: 'course_description', lane: 'enrich_fields', spent_today: { usd: 1.1, calls: 2 }, prompt: { source: 'worker code', version: 'cdesc-source-grounded-v1', text: null },
+  S('course_description', 'Course description', 'Courses', { field: 'course_description', lane: 'enrich_fields', spent_today: { usd: 1.1, calls: 2 }, prompt: { source: 'worker code', version: 'cdesc-source-grounded-v1', text: null },
     settings: [num('pipeline', 'enrich.course_text_items_per_day', 'Course descriptions: items a day', 400, 0, 5000, 'items'), num('pipeline', 'reading.answer_tokens.course_text', 'Course description: answer tokens', 900, 100, 4000, 'tokens')] }),
-  S('course_entry_requirements', 'Course entry requirements', 'Course fields', { field: 'course_entry_requirements', lane: 'enrich_fields', cascade: ['deepseek-v3.2', 'qwen3-30b'], daily_usd_cap: 3, daily_calls_cap: 500, spent_today: { usd: 0.301, calls: 2 },
+  S('course_entry_requirements', 'Course entry requirements', 'Courses', { field: 'course_entry_requirements', lane: 'enrich_fields', cascade: ['deepseek-v3.2', 'qwen3-30b'], daily_usd_cap: 3, daily_calls_cap: 500, spent_today: { usd: 0.301, calls: 2 },
     prompt: { source: 'worker code', version: 'course-entry-v1', text: null }, note: 'Was GPT-4.1 mini (setting entry.matrix_model). qwen3-30b has not been qualified on this prompt.', reason: 'fixture: cheaper first', changed_by: 'admin@example.test',
     settings: [num('pipeline', 'entry.course_page_chars', 'Course entry requirements: page characters', 100000, 1000, 400000, 'characters')] }),
-  S('course_other_fields', 'Other course fields (deadline, intakes, duration, campus, delivery, English)', 'Course fields', { field: 'course_other_fields', lane: 'enrich_fields', spent_today: { usd: 0.2, calls: 1 },
+  S('course_other_fields', 'Other course fields (deadline, intakes, duration, campus, delivery, English)', 'Courses', { field: 'course_other_fields', lane: 'enrich_fields', spent_today: { usd: 0.2, calls: 1 },
     prompt: { source: 'worker code', version: 'course-fields-v1 (deadline: course-text-v2)', text: null },
     settings: [num('pipeline', 'enrich.ai_calls_at_once', 'AI calls at once', 4, 1, 20, 'calls'), num('pipeline', 'enrich.ai_items_per_call', 'Items a call', 6, 1, 20, 'items')] }),
   S('entry_matrices', 'Entry requirement matrices (provider pages)', 'Entry requirements', { lane: 'entry_matrix', cascade: ['gpt-4.1-mini'], daily_usd_cap: 4, prompt: { source: 'worker code', version: 'entry-matrix-v0.1.4', text: null },
-    note: 'Was GPT-4.1 mini (setting entry.matrix_model).', settings: [txt('pipeline', 'entry.matrix_model', 'Entry matrices: model', 'openai/gpt-4.1-mini'), num('pipeline', 'entry.matrix_slice_chars', 'Entry matrices: slice characters', 24000, 2000, 100000, 'characters')] }),
+    note: 'Was GPT-4.1 mini (setting entry.matrix_model).', settings: [txt('pipeline', 'entry.matrix_model', 'Entry matrices: model', 'openai/gpt-4.1-mini', null, true), num('pipeline', 'entry.matrix_slice_chars', 'Entry matrices: slice characters', 24000, 2000, 100000, 'characters')] }),
   S('entry_requirements_v2_shadow', 'Entry requirements v2 (shadow trial)', 'Entry requirements', { lane: 'entry_matrix', cascade: ['qwen3-30b', 'mistral-small-3.2'], daily_usd_cap: 2, enabled: false, resolver: 'pipeline.aer_prompt_versions',
     prompt: { source: 'pipeline.aer_prompt_versions', version: 'aer-v2-course-v1', text: 'You read one course page and return its academic entry requirements by country of prior education. Quote the page for every fact.' },
     note: 'The model is pinned on the prompt version. The trial is switched off (aer.v2_shadow_on).' }),
   S('provider_description', 'Provider description', 'Providers', { lane: 'provider_description', cascade: ['qwen3-30b', 'mistral-small-3.2'], daily_usd_cap: 1, prompt: { source: 'pipeline.provider_description_prompts', version: '4', text: 'You write a provider description from its official About page. Every sentence is supported by a passage on the page.' }, reason: 'old card' }),
-  S('calendar_reading', 'Intake calendars (central pages)', 'Central pages', { cascade: ['qwen3-30b', 'mistral-small-3.2'], daily_usd_cap: 2, spent_today: { usd: 0.4, calls: 6 }, prompt: { source: 'worker code', version: 'calendar-v2.4', text: null },
+  S('calendar_reading', 'Intake calendars (central pages)', 'Providers', { cascade: ['qwen3-30b', 'mistral-small-3.2'], daily_usd_cap: 2, spent_today: { usd: 0.4, calls: 6 }, prompt: { source: 'worker code', version: 'calendar-v2.4', text: null },
     settings: [num('pipeline', 'reading.calendar_max_slices', 'Calendar: slices a page', 6, 1, 20, 'slices')] }),
-  S('central_english_policy', 'English policy pages (central pages)', 'Central pages', { cascade: ['qwen3-30b', 'mistral-small-3.2'], prompt: { source: 'worker code', version: 'provider-policy-v0.3.1', text: null } }),
+  S('central_english_policy', 'English policy pages (central pages)', 'Providers', { cascade: ['qwen3-30b', 'mistral-small-3.2'], prompt: { source: 'worker code', version: 'provider-policy-v0.3.1', text: null } }),
   S('scholarship_extraction', 'Scholarship pages', 'Scholarships', { lane: 'scholarship_ai', cascade: ['qwen3-30b', 'mistral-small-3.2'], daily_usd_cap: 6, spent_today: { usd: 2.2, calls: 140 }, resolver: 'pipeline.scholarship_ai_extract_settings',
     prompt: { source: 'pipeline.scholarship_ai_prompts', version: '7', text: 'You read one scholarship page. Answer with the scholarship\'s facts; every fact quotes the page.' }, note: 'The cascade is the reading order: an unproven fact goes to the next model, then to a person.' }),
   S('scholarship_eligibility', 'Scholarship eligibility', 'Scholarships', { lane: 'scholarship_ai', prompt: { source: 'worker code', version: 'eligibility.ts', text: null }, note: 'Uses the first model of the scholarship chain.' }),
   S('fee_reader', 'Fees', 'Fees', { lane: 'fee_ai', cascade: ['qwen3-30b', 'mistral-small-3.2'], daily_usd_cap: 5, spent_today: { usd: 5.02, calls: 310 }, prompt: { source: 'worker code', version: 'fees.ts', text: null } }),
-  S('course_matching', 'Course-page matching', 'Course pages', { lane: 'course_match', daily_usd_cap: 2, spent_today: { usd: null, calls: null }, prompt: { source: 'worker code', version: 'ai-match-v0.10.0', text: null }, note: null }),
+  S('course_matching', 'Course-page matching', 'Matching and identity', { lane: 'course_match', daily_usd_cap: 2, spent_today: { usd: null, calls: null }, prompt: { source: 'worker code', version: 'ai-match-v0.10.0', text: null }, note: null }),
   S('page_identity', 'Page identity (qualification only)', 'Matching and identity', { lane: 'page_identity', daily_usd_cap: 1, prompt: { source: 'worker code', version: 'page-identity-v1', text: null }, note: 'No scheduled reader: used for qualification only.' }),
-  S('adapter_builder', 'Adapter proposals', 'Adapters', { lane: 'adapter_builder', prompt: { source: 'worker code', version: 'builder-v3', text: null }, note: 'First model only; a provider\'s own model is used only when the cascade names it.',
-    settings: [txt('firecrawl', 'builder_model', 'Adapter proposals: model', 'qwen/qwen3-30b-a3b-instruct-2507', 'Pinned by name; no automatic routing.'), num('firecrawl', 'builder_proposals_per_day', 'Adapter proposals a day', 40, 0, 500, 'proposals')] }),
+  S('adapter_builder', 'Adapter proposals', 'Operations', { lane: 'adapter_builder', prompt: { source: 'worker code', version: 'builder-v3', text: null }, note: 'First model only; a provider\'s own model is used only when the cascade names it.',
+    settings: [txt('firecrawl', 'builder_model', 'Adapter proposals: model', 'qwen/qwen3-30b-a3b-instruct-2507', 'Kept with its value; replaced by the route.', true), num('firecrawl', 'builder_proposals_per_day', 'Adapter proposals a day', 40, 0, 500, 'proposals')] }),
   S('ops_diagnosis', 'Operations diagnosis', 'Operations', { lane: 'ops_diagnosis', cascade: ['qwen3-30b'], daily_usd_cap: 1, spent_today: { usd: 0.05, calls: 3 }, prompt: { source: 'worker code', version: 'ops-diagnosis-v1', text: null },
-    settings: [txt('pipeline', 'har.ai_escalation_model', 'Health repair: escalation model', 'qwen/qwen3-235b-a22b-2507', 'The model asked when the first diagnosis is not sure.'), txt('pipeline', 'ops.ai_diagnosis_model', 'Operations diagnosis: model', 'openai/gpt-4.1-mini')] }),
+    settings: [txt('pipeline', 'har.ai_escalation_model', 'Health repair: escalation model', 'qwen/qwen3-235b-a22b-2507', 'The model asked when the first diagnosis is not sure.'), txt('pipeline', 'ops.ai_diagnosis_model', 'Operations diagnosis: model', 'openai/gpt-4.1-mini', null, true)] }),
 ]
 
 const usage = () => {
@@ -84,23 +84,26 @@ const usage = () => {
 export function derive(o) {
   const by = Object.fromEntries(o.models.map(m => [m.code, m]))
   for (const m of o.models) m.used_by = o.services.filter(s => s.cascade.includes(m.code)).map(s => s.service_code)
-  const ceiling = o.openrouter.daily_ceiling_usd, atCeiling = ceiling > 0 && o.openrouter.spent_today_usd >= ceiling
+  const or = o.openrouter, ceiling = or.daily_ceiling_usd, atCeiling = ceiling > 0 && or.spent_today_usd >= ceiling
+  const noCredit = or.balance_known !== false && or.balance_usd != null && or.balance_usd <= or.floor_usd
   for (const s of o.services) {
     s.cascade_detail = s.cascade.map(c => ({ code: c, label: by[c]?.label || c, model_identifier: by[c]?.model_identifier || null, status: by[c]?.status || 'not_allowed' }))
     s.models = s.cascade_detail.filter(x => x.status === 'allowed').map(x => ({ code: x.code, model_identifier: x.model_identifier }))
-    s.wired = true; s.enforced = true; s.resolver = 'route'
-    const overCap = (s.daily_usd_cap != null && Number(s.spent_today?.usd) >= s.daily_usd_cap) || (s.daily_calls_cap != null && Number(s.spent_today?.calls) >= s.daily_calls_cap)
-    Object.assign(s, !s.enabled ? { held: true, held_kind: 'off', held_reason: 'switched off' } : !s.models.length ? { held: true, held_kind: 'off', held_reason: 'no allowed model in the cascade' }
-      : atCeiling ? { held: true, held_kind: 'limit', held_reason: 'the daily ceiling for all AI is reached' } : overCap ? { held: true, held_kind: 'limit', held_reason: 'its daily cap is reached' } : { held: false, held_kind: null, held_reason: null })
+    s.wired = true; s.enforced = true; s.resolver = 'route'; s.purpose_group = s.purpose_group || 'other'
+    const overCap = Number(s.spent_today?.usd) >= s.daily_usd_cap || (s.daily_calls_cap != null && Number(s.spent_today?.calls) >= s.daily_calls_cap)
+    const kind = !s.enabled ? 'off' : !s.models.length ? 'no_model' : noCredit ? 'credit_floor' : atCeiling ? 'ceiling' : overCap ? 'cap' : null
+    const reason = { off: 'switched off', no_model: 'no allowed model in the cascade', credit_floor: 'credit_floor', ceiling: 'the daily ceiling for all AI is reached', cap: 'its daily cap is reached' }[kind] || null
+    Object.assign(s, { held: Boolean(kind), held_kind: kind, held_reason: reason, would_hold_now: Boolean(kind), on_demand_exempt: kind === 'cap' || kind === 'ceiling' })
     s.model = s.models[0]?.model_identifier || null; s.model_in_effect = s.model
   }
+  o.ceiling_usd = ceiling; o.caps_total_usd = +o.services.filter(s => s.enabled).reduce((n, s) => n + Number(s.daily_usd_cap || 0), 0).toFixed(2); o.caps_exceed_ceiling = o.caps_total_usd > ceiling
   return o
 }
 
 export function aiOverview(over = {}) {
   const o = {
     can_control: true, day_start: iso(dayStart),
-    openrouter: { key_present: true, key_secret_name: 'OPENROUTER_API_KEY', mode: 'observe', balance_usd: 53, balance_observed_at: iso(NOW - 9 * 60e3), total_credits_usd: 100, floor_usd: 0.5, low_warn_usd: 10, daily_ceiling_usd: 14, spent_today_usd: 9.27,
+    openrouter: { key_present: true, key_secret_name: 'OPENROUTER_API_KEY', key: { secret: 'OPENROUTER_API_KEY', profile_id: 'prof-1', profile_code: 'openrouter-shared', shared_by_profiles: 9 }, balance_known: true, balance_note: null, mode: 'observe', balance_usd: 53, balance_observed_at: iso(NOW - 9 * 60e3), total_credits_usd: 100, floor_usd: 0.5, low_warn_usd: 10, daily_ceiling_usd: 14, spent_today_usd: 9.27,
       settings: [num('openrouter', 'credit_floor_usd', 'Credit floor', 0.5, 0, 500, 'US$', 'AI stops when the balance is at or below this.'), num('openrouter', 'low_balance_warn_usd', 'Low-balance warning', 10, 0, 500, 'US$'),
         num('pipeline', 'budgets.ai_daily_ceiling_usd', 'Daily spend ceiling, all AI', 14, 0, 500, 'US$', 'Every service is held once the day\'s total reaches it.'), num('openrouter', 'balance_stale_minutes', 'Warn when the balance has not been read for', 30, 5, 1440, 'minutes')] },
     models: models(), services: services(),
@@ -132,6 +135,7 @@ export function aiState(over = {}, { rank = 6 } = {}) {
         const m = o.models.find(x => x.code === b.p_code)
         if (!m) return refuse(`model ${b.p_code} is not in the list`)
         if (!['allowed', 'not_allowed'].includes(b.p_status)) return refuse('status must be allowed or not_allowed')
+        if (b.p_status === 'allowed' && m.family === 'other') return refuse('this model is not in a family the Platform Admin allows (Qwen3, MiMo, Mistral Small, Kimi K2, Gemini, Llama, DeepSeek); adding a family is a release')
         Object.assign(m, { status: b.p_status, reason: b.p_reason, changed_at: iso(Date.now()) })
         o.events = [{ at: iso(Date.now()), action: 'model_set', target: m.code, detail: { reason: b.p_reason }, by: 'admin@example.test' }, ...o.events]
       } else if (name === 'admin_ai_route_set_v1') {
