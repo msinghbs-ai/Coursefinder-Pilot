@@ -6,8 +6,7 @@
 //   19:15 "Keep prompt respective for each service as well"
 //   19:23 "all settings corresponding to model using AI model/prompt or services should be defined in Model & services."
 //   19:36 the old table showed "—" in the Model column for four AI uses, which hid that they ran on GPT-4.1 mini.
-// One page, four panes (each a card, closed until opened and remembered for the session, as every card is: Decision 254; the closed card says
-// its state), in this order: 1 OpenRouter key and usage, 2 Models, 3 Services, 4 Recent usage. It replaces AiConfig.jsx (OpenRouter
+// One page, four panes (each a card that can be collapsed; a collapsed card still says its state and its warnings), in this order: 1 OpenRouter key and usage, 2 Models, 3 Services, 4 Recent usage. It replaces AiConfig.jsx (OpenRouter
 // account, AI uses and daily guards, central pages model, adapter proposal model, scholarship models, model profiles) and the AI model switches
 // of ModelsServices.jsx. Two rules the page never breaks: a model cell is never blank (no model is a red "No model"), and an unknown figure is
 // never 0 ("Not measured", "not checked").

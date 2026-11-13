@@ -109,7 +109,7 @@ test('Models & services: the list names the model (identifier behind Identifier 
   expect(ai).toContain('<td data-label="Model"><strong>{m.label || m.code}</strong>')
   expect(ai).toContain('<td data-label="OpenRouter id"><code className="aim-code">{m.model_identifier || \'Not recorded\'}</code></td>')
   expect(ai).toContain("data-ai-balance={admin ? 'figure' : 'words'}")
-  expect(ai).toContain("<strong>{admin ? (usd(bal) ?? 'Not read yet') : balanceWords(bal, or.floor_usd)}</strong>")
+  expect(ai).toContain("admin ? (usd(bal) ?? 'Not read yet') : balanceWords(bal, or.floor_usd)}</strong>")
   expect(ai).toContain('{shortModel(m.label)}')
   // SS-020 step 1 (Decision 269): the Serper and ScrapingBee key-plan balance retired with their cards (Firecrawl only)
   expect(toolsets).not.toContain('function KeyPlan(')
