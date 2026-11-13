@@ -76,3 +76,8 @@
 @media (max-width:640px){.dd .dd-stages,.dd .dd-stages.dd-stages-3{grid-template-columns:minmax(0,1fr)}}
 /* a chip wraps instead of being clipped (the shared chip is one line with an ellipsis) */
 .dd .cf-chip{white-space:normal;overflow:visible;text-overflow:clip;align-self:flex-start}
+/* CF-247 RM1A-1 (O29): Course recognition panel below the streams */
+.dd .dd-recognition{margin:12px 0 4px;padding:10px 12px;border:1px solid var(--cf-border);border-radius:var(--cf-radius-md);background:var(--cf-white)}
+.dd .dd-recognition h4{margin:0 0 4px;font-size:var(--cf-fs-md)}
+.dd .dd-recognition ul{margin:6px 0 0;padding-left:0;list-style:none;display:grid;gap:3px}
+.dd .dd-recognition li{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}

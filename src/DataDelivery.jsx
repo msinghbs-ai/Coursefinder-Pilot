@@ -317,6 +317,29 @@ function AerProgress(){
   </li>
 }
 
+/** CF-247 RM1A-1 (O29, Admin destination data design v1.1 §6): Course recognition on Website API v3 course detail. Read on its own
+ *  (public.admin_course_recognition_delivery, about 0.2 s): searchable courses, courses served with a CRICOS recognition, and the courses held with the
+ *  exact reason and next action. A figure the server did not send is Not measured, never 0. */
+export function RecognitionDelivery({rpc}){
+  const[p,setP]=useState(null),[err,setErr]=useState('')
+  useEffect(()=>{let live=true;Promise.resolve(rpc('admin_course_recognition_delivery',{})).then(({data,error})=>{if(!live)return;if(error)setErr(error.message||'Not available');else setP(data)}).catch(e=>{if(live)setErr(String(e?.message||e))});return()=>{live=false}},[])
+  const head=<h4>Course recognition (Website API v3 course detail)</h4>
+  if(err||p?.known===false)return <section className="dd-recognition" data-dd-recognition="unknown">{head}<Unknown reason={err||p?.reason||'Not available'} word="Not measured"/></section>
+  if(!p)return <section className="dd-recognition" data-dd-recognition="loading">{head}<p className="sl-sub">Loading…</p></section>
+  const au=p.au||{},nz=p.nz||{}
+  return <section className="dd-recognition" data-dd-recognition="known">{head}
+    <p className="sl-sub" data-dd-recognition-stamp>Counted live at {fmtDateTime(p.counted_at)}. Website v3 only; Zoho v3 follows after the Zoho developer is told. An empty list is never &ldquo;not recognised&rdquo;.</p>
+    <ul>
+      <Row k="rec_au_searchable" label="Australian courses in search" v={au.searchable}/>
+      <Row k="rec_au_served" label="Served with a CRICOS registration" v={au.served} actor="machine"/>
+      <Row k="rec_au_held_dates" label="Held: registration active but its end date has passed (F-DISC to reconcile)" v={au.held_dates_inconsistent}/>
+      <Row k="rec_au_held_source" label="Held: no active public source for the registration" v={au.held_source_missing}/>
+      <Row k="rec_nz_searchable" label={`New Zealand courses in search (held: ${nz.held_reason||'reason Not measured'})`} v={nz.searchable}/>
+    </ul>
+    {p.next_action&&<p className="sl-sub" data-dd-recognition-next>Next action: {p.next_action}</p>}
+  </section>
+}
+
 function Stream({s,now,providerFilters,open,onToggle}){
   const dr=s.drill||{}
   const lanes=hrefFor('layer2','operations',{lane:s.lane})
@@ -415,6 +438,7 @@ export default function DataDelivery({rank=0,onError,client=null}){
     {(flagged.length>0||failing.length>0||unknownAdm.length>0)&&<p className="dd-summary" data-dd-summary>{flagged.length>0&&<><strong>{flagged.length}</strong> stream{flagged.length===1?'':'s'} ran green but admitted nothing in {hoursText(d.windows?.short_hours)} ({flagged.map(s=>s.title).join(', ')}). </>}{unknownAdm.length>0&&<><strong>{unknownAdm.length}</strong> ran green with what they admitted unknown ({unknownAdm.map(s=>s.title).join(', ')}). </>}{failing.length>0&&<><strong>{failing.length}</strong> with a failed run ({failing.map(s=>s.title).join(', ')}).</>}</p>}
     <div className="dd-head" aria-hidden="true"><span>Stream</span><span>Coverage</span><span>Net {hoursText(d.windows?.short_hours)}</span><span>Net {hoursText(d.windows?.long_hours)}</span><span>Website</span><span>Zoho</span><span>Queue</span><span>Holds and reasons</span><span>Speed</span><span>Last and next run</span><span>Automatic recovery</span></div>
     <div className="dd-streams">{streams.map(s=><Stream key={s.stream} s={s} now={now} providerFilters={Boolean(d.provider_filters_available)} open={open[s.stream]??Boolean(s.stages||s.provider_ai||s.aer_sources)} onToggle={o=>setOpen(x=>({...x,[s.stream]:o}))}/>)}</div>
+    <RecognitionDelivery rpc={rpc}/>
     <p className="sl-sub">Net = admitted minus withdrawn, from each stream&rsquo;s own ledger timestamps. A job the scheduler reports as OK says nothing about data: the flag shows when it admitted nothing. Reload interval, windows and the number of reasons are settings (Settings &rsaquo; Pipeline settings &rsaquo; Data delivery).</p>
   </section>
 }
