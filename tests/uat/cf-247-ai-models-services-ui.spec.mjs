@@ -97,7 +97,7 @@ test.describe('Models & services › AI, mocked browser', () => {
     const base = (await import('./support/ai-overview-fixture.mjs')).aiOverview().openrouter
     await open(page, { openrouter: { ...base, balance_usd: null, balance_observed_at: null, balance_known: false, balance_note: 'No balance has been read: the credit floor holds nothing.' } })
     await page.locator('[data-ai-pane="openrouter"] .cf-card-toggle').click()
-    await expect(page.locator('[data-ai-pane="openrouter"] [data-ai-account-chip="unread"]')).toHaveText('Balance not measured')
+    await expect(page.locator('[data-ai-pane="openrouter"] [data-ai-account-chip="unread"]')).toHaveText('Held: balance not measured')
   })
 
   test('a model cell is never blank: no model is a red "No model", and unknown figures say so instead of 0', async ({ page }) => {
@@ -225,12 +225,20 @@ test.describe('Models & services › AI, mocked browser', () => {
     const w = detail(page, 'course_entry_requirements').locator('[data-ai-prompt]')
     await expect(w).toContainText('Source: worker code')
     await expect(w).toContainText('Version: course-entry-v1')
-    await expect(w.locator('[data-ai-prompt-kept]')).toContainText('kept in the worker')
+    await expect(w.locator('[data-ai-prompt-kept]')).toContainText('Kept in the worker')
+    // its complete text, version and sha256 come from the generated docs/platform/ai-prompts.json, read only
+    const file = JSON.parse(fs.readFileSync('docs/platform/ai-prompts.json', 'utf8')).services.course_entry_requirements
+    await expect(w.locator('[data-ai-prompt-text="worker"] pre').first()).toHaveText(file.prompts[0].text)
+    await expect(w.locator('[data-ai-prompt-text="worker"]')).toContainText(file.prompts[0].sha256)
+    await expect(w.locator('[data-ai-prompt-text="worker"]')).toContainText(`version ${file.prompts[0].version}`)
+    await expect(w.locator('textarea')).toHaveCount(0)
+    await expect(page.locator('[data-ai-page]')).not.toContainText('4,000 characters')
     // a prompt held in the database: its text, read only
     await row(page, 'provider_description').locator('.aim-toggle').click()
     const p = detail(page, 'provider_description').locator('[data-ai-prompt]')
     await expect(p).toContainText('Version: 4')
-    await expect(p.locator('pre')).toContainText('You write a provider description')
+    await expect(p.locator('pre[data-ai-prompt-text="database"]')).toContainText('You write a provider description')
+    await expect(p.locator('[data-ai-prompt-sha]')).toHaveText(/^[0-9a-f]{64}$/)
     await expect(p.locator('textarea')).toHaveCount(0)
     // settings: a number with its range, a text setting as a text box, an old model setting read only
     await row(page, 'ops_diagnosis').locator('.aim-toggle').click()
@@ -313,8 +321,8 @@ test.describe('Models & services › AI, mocked browser', () => {
     await expect(page.locator('[data-ai-key-controls]').getByRole('button', { name: 'Verify' })).toBeEnabled()
     await expect(page.locator('[data-ai-balance="figure"]')).toContainText('US$53.00')
     await expect(page.locator('[data-ai-balance-age]')).toHaveText(/^(\d+ min ago|\d+ h ago)$/) // the credit balance with its age
-    await expect(page.locator('[data-ai-mode]')).toContainText('enforcing')
-    await expect(page.locator('[data-ai-mode]')).toContainText('observing (Observe only)')
+    await expect(page.locator('[data-ai-mode="stop"]')).toContainText('Enforcing')
+    await expect(page.locator('[data-ai-mode="stop"]')).toContainText('always stop a service, Run now included')
     await expect(page.locator('[data-ai-openrouter-settings] [data-ai-setting="pipeline.budgets.ai_daily_ceiling_usd"] input')).toBeEnabled()
     await expect(page.locator('[data-ai-model="qwen3-30b"]').getByRole('switch')).toBeEnabled()
     await expect(page.locator('[data-ai-page] [data-ai-needs]')).toHaveCount(0)
@@ -347,6 +355,12 @@ test.describe('Models & services › AI, mocked browser', () => {
     await nm.locator('.aim-toggle').click()
     await expect(detail(page, 'page_identity').locator('[data-ai-edit]')).toHaveCount(0)
     await expect(detail(page, 'page_identity').locator('[data-ai-unwired]')).toContainText('Not migrated')
+    // a provisional qualification is said, in amber, with its evidence; the model a service ran on before is a muted line
+    await row(page, 'fee_reader').locator('.aim-toggle').click()
+    await expect(detail(page, 'fee_reader').locator('[data-ai-qualified-model="qwen3-30b"][data-ai-provisional="true"]')).toContainText('Provisional: Platform Admin 13 Nov 19:09: regression qualification pending')
+    await expect(detail(page, 'fee_reader').locator('[data-ai-qualified-model="qwen3-30b"]')).toHaveClass(/tone-warning/)
+    await expect(row(page, 'fee_reader').locator('[data-ai-was-on]')).toHaveText('Was on: GPT-4.1 mini')
+    await expect(row(page, 'course_description').locator('[data-ai-was-on]')).toHaveCount(0) // unchanged: nothing to say
     // routed: a model that is allowed but not qualified for the service cannot be added
     await row(page, 'course_description').locator('.aim-toggle').click()
     const cd = detail(page, 'course_description')
@@ -359,18 +373,18 @@ test.describe('Models & services › AI, mocked browser', () => {
     // the Platform Admin records a qualification with evidence and a reason; it adds the model to nothing
     await cd.locator('[data-ai-qualify="kimi-k2-0905"]').click()
     const bar = cd.locator('[data-ai-save="qualify-course_description-kimi-k2-0905"]')
-    await expect(bar.locator('[data-ai-blocked]')).toContainText('Say where the evidence is')
+    await expect(bar.locator('[data-ai-blocked]')).toContainText('Say what the qualification rests on (the evidence), in at least 10 characters')
     await cd.getByLabel('Evidence that Kimi K2 (0905) is qualified for Course description').fill('qualification run 41, 38 of 40 right')
     await bar.getByLabel(/^Reason:/).fill('passed the sample')
     await bar.locator('[data-ai-confirm]').click()
     await expect(cd.locator('[data-ai-saved]')).toContainText('Kimi K2 (0905) is recorded as qualified for Course description')
-    expect(calls).toEqual([{ name: 'admin_ai_qualification_set_v1', p_service: 'course_description', p_code: 'kimi-k2-0905', p_evidence: 'qualification run 41, 38 of 40 right', p_reason: 'passed the sample' }])
+    expect(calls).toEqual([{ name: 'admin_ai_qualification_set_v1', p_service: 'course_description', p_code: 'kimi-k2-0905', p_evidence: 'qualification run 41, 38 of 40 right', p_reason: 'passed the sample', p_status: 'qualified' }])
     await expect(cd.locator('[data-ai-unqualified-model="kimi-k2-0905"]')).toHaveCount(0)
     await expect(row(page, 'course_description').locator('[data-ai-cascade-model]')).toHaveCount(1)
     await expect(page.locator('[data-ai-model="kimi-k2-0905"] [data-ai-qualified-for]')).toContainText('Course description')
   })
 
-  test('each service shows the model it used most recently, its last outcome or error and its recovery; usage shows tokens, failures, fallbacks and evidence', async ({ page }) => {
+  test('each service shows the model it used most recently, its last outcome or error and its recovery; the per-call record shows tokens, failures and fallbacks', async ({ page }) => {
     await open(page)
     await expect(row(page, 'fee_reader').locator('[data-ai-last]')).toContainText('Last used: Mistral Small 3.2')
     await expect(row(page, 'fee_reader').locator('[data-ai-last]')).toContainText('Failed')
@@ -378,15 +392,22 @@ test.describe('Models & services › AI, mocked browser', () => {
     await row(page, 'fee_reader').locator('.aim-toggle').click()
     const d = detail(page, 'fee_reader').locator('[data-ai-last-call]')
     await expect(d).toContainText('mistralai/mistral-small-3.2-24b-instruct')
-    await expect(d.locator('[data-ai-last-error]')).toContainText('time-out after 60 seconds')
-    await expect(d).toContainText('Recovery: Waiting for the next UTC day')
+    await expect(d.locator('[data-ai-last-error]')).toHaveText('Last error: the call timed out (attempt 2)')
+    await expect(d.locator('[data-ai-recovery="held"]')).toContainText('Recovery: Held: nothing is handed out')
+    await row(page, 'provider_description').locator('.aim-toggle').click()
+    await expect(detail(page, 'provider_description').locator('[data-ai-recovery="no_calls"]')).toContainText('No call on record yet')
+    // the spend ledger has usd and calls only: tokens, failures and fallbacks there are Not measured, never 0
     const u = page.locator('[data-ai-usage="hour-service"] [data-ai-usage-row="fee_reader"]')
-    await expect(u.locator('td[data-label="Failures"]')).toHaveText('6')
-    await expect(u.locator('td[data-label="Fallbacks"]')).toHaveText('3')
-    await expect(u.locator('td[data-label="Tokens"]')).toHaveText('1,419,800')
-    await expect(u.locator('[data-ai-usage-evidence]')).toHaveAttribute('href', '#scheduled-jobs?tab=jobs')
-    // a row recorded without a model has no token count: Not measured, not 0
-    await expect(page.locator('[data-ai-usage="hour-service"] [data-ai-usage-row="course_other_fields"] td[data-label="Tokens"]')).toHaveText('Not measured')
+    for (const col of ['Tokens', 'Failures', 'Fallbacks']) await expect(u.locator(`td[data-label="${col}"]`)).toHaveText('Not measured')
+    // the per-call record carries them
+    const c = page.locator('[data-ai-calls] [data-ai-calls-row="fee_reader:mistralai/mistral-small-3.2-24b-instruct"]')
+    await expect(c.locator('td[data-label="Attempts"]')).toHaveText('6')
+    await expect(c.locator('td[data-label="Failures"]')).toHaveText('1')
+    await expect(c.locator('td[data-label="Fallbacks"]')).toHaveText('6')
+    await expect(c.locator('td[data-label="Tokens in / out"]')).toHaveText('25,200 / 2,280')
+    await expect(page.locator('[data-ai-calls] [data-ai-calls-row="course_description:qwen/qwen3-30b-a3b-instruct-2507"] td[data-label="Tokens in / out"]')).toHaveText('Not measured')
+    await expect(page.locator('[data-ai-usage-evidence]')).toHaveCount(0) // the contract gives no evidence link yet
+    await expect(page.locator('[data-ai-fallbacks] summary')).toContainText('Failed attempts in the last 24 hours (2)')
     await expect(page.locator('[data-ai-model="qwen3-30b"] [data-ai-model-spend]')).toContainText('US$')
     await expect(page.locator('[data-ai-model="kimi-k2-0905"] [data-ai-model-spend]')).toHaveText('none recorded')
   })
@@ -395,6 +416,7 @@ test.describe('Models & services › AI, mocked browser', () => {
     await open(page)
     await row(page, 'scholarship_extraction').locator('.aim-toggle').click()
     const cfg = detail(page, 'scholarship_extraction').locator('[data-ai-scholarship-config] [data-scholarship-extraction="config"]')
+    await expect(detail(page, 'scholarship_extraction').locator('[data-ai-config-summary]')).toContainText('AI admission: Off. Instruction versions: 7 (current), 6')
     await expect(cfg.locator('[data-sx-admission]')).toContainText('AI admission')
     await expect(cfg.locator('[data-sx-models]')).toBeVisible()
     await expect(cfg.locator('[data-sx-sample-row]').first()).toBeVisible()
@@ -413,30 +435,49 @@ test.describe('Models & services › AI, mocked browser', () => {
     await expect(page.locator('[data-ai-account-state="ceiling"]')).toContainText('Held: today\'s ceiling reached')
     await expect(row(page, 'course_description').locator('[data-ai-state-pill]')).toHaveText('Held: ceiling')
     await expect(row(page, 'entry_requirements_v2_shadow').locator('[data-ai-state-pill]')).toHaveText('Off')
-    await expect(row(page, 'course_description').locator('[data-ai-would-hold]')).toContainText('Would be held now')
     await expect(row(page, 'course_description')).toContainText('Work asked for under an open request is still let through')
+    await expect(row(page, 'course_description').locator('[data-ai-would-hold]')).toHaveCount(0) // it is held: nothing is "would be"
   })
 
-  test('the credit floor stops everything (Held: no credit); caps over the ceiling and a balance that was not measured are said plainly', async ({ page }) => {
+  test('observing: limits are reported, not enforced. A service over its cap or the ceiling runs and says "Would be held"; what always holds still holds', async ({ page }) => {
+    const base = (await import('./support/ai-overview-fixture.mjs')).aiOverview().openrouter
+    await open(page, { mode: 'observe', openrouter: { ...base, mode: 'observe', spent_today_usd: 14.2 } })
+    await expect(page.locator('[data-ai-mode="observe"]')).toContainText('Observing: limits are reported, not enforced')
+    await expect(page.locator('[data-ai-account-state="ceiling_observed"]')).toContainText('nothing is held by it')
+    const r = row(page, 'course_description')
+    await expect(r.locator('[data-ai-state-pill]')).toHaveText('Running')
+    await expect(r.locator('[data-ai-would-hold="ceiling"]')).toContainText('Would be held')
+    await expect(r.locator('[data-ai-would-hold="ceiling"]')).toContainText('Limits are observed, not enforced, so it runs')
+    await expect(page.locator('[data-ai-caps-exceed]')).toContainText('the ceiling would stop work first if limits were enforced')
+    // off and no model hold in both modes
+    await expect(row(page, 'entry_requirements_v2_shadow').locator('[data-ai-state-pill]')).toHaveText('Off')
+    await expect(row(page, 'entry_matrices').locator('[data-ai-state-pill]')).toHaveText('No allowed model')
+    await expect(row(page, 'entry_matrices').locator('[data-ai-would-hold]')).toHaveCount(0)
+  })
+
+  test('the credit floor stops everything (Held: no credit); a balance that is not measured or too old holds everything too; caps over the ceiling are said plainly', async ({ page }) => {
     const base = (await import('./support/ai-overview-fixture.mjs')).aiOverview().openrouter
     await open(page, { openrouter: { ...base, balance_usd: 0.4 } })
     await expect(page.locator('[data-ai-account-state="no_credit"]')).toContainText('No credit')
     await expect(page.locator('[data-ai-account-state="no_credit"]')).toContainText('including Run now')
     await expect(row(page, 'course_description').locator('[data-ai-state-pill]')).toHaveText('Held: no credit')
     await expect(row(page, 'course_description')).not.toContainText('still let through') // the floor holds on-demand work too
-    await expect(row(page, 'course_description').locator('[data-ai-would-hold]')).toBeVisible()
     await expect(row(page, 'entry_matrices').locator('[data-ai-state-pill]')).toHaveText('No allowed model')
     // the fixture's caps (US$35.00 for the services that are on) are over the US$14.00 ceiling
     await expect(page.locator('[data-ai-caps-exceed]')).toContainText('Service caps add up to US$35.00 a day, more than the US$14.00 ceiling: the ceiling will stop work first.')
-    // no balance reading: said so, never shown as a figure or as no credit
-    await page.route(/\/rest\/v1\/rpc\/admin_ai_overview_v1$/, async r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify((await import('./support/ai-overview-fixture.mjs')).aiOverview({ openrouter: { ...base, balance_usd: null, balance_observed_at: null, balance_known: false, balance_note: 'No balance has been read: the credit floor holds nothing.' } })) }))
+    // no balance reading: fail closed. Every service is held; the balance is "not measured", never a figure and never "no credit"
+    await page.route(/\/rest\/v1\/rpc\/admin_ai_overview_v1$/, async r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify((await import('./support/ai-overview-fixture.mjs')).aiOverview({ openrouter: { ...base, balance_usd: null, balance_observed_at: null, balance_known: false, balance_note: 'No balance has been read.' } })) }))
     await page.reload()
-    await expect(page.locator('[data-ai-account-state="unread"]')).toContainText('Balance not measured')
-    await expect(page.locator('[data-ai-account-state="unread"]')).toContainText('the credit floor holds nothing')
+    await expect(page.locator('[data-ai-account-state="unread"]')).toContainText('Held: balance not measured')
+    await expect(page.locator('[data-ai-account-state="unread"]')).toContainText('including Run now')
     await expect(page.locator('[data-ai-balance]')).toContainText('Balance not measured')
     await expect(page.locator('[data-ai-balance]')).not.toContainText('US$0')
-    await expect(row(page, 'course_description').locator('[data-ai-state-pill]')).toHaveText('Running')
-    await expect(row(page, 'course_description').locator('[data-ai-would-hold]')).toHaveCount(0)
+    await expect(row(page, 'course_description').locator('[data-ai-state-pill]')).toHaveText('Held: balance not measured')
+    // a reading older than the allowed age: held too
+    await page.route(/\/rest\/v1\/rpc\/admin_ai_overview_v1$/, async r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify((await import('./support/ai-overview-fixture.mjs')).aiOverview({ openrouter: { ...base, balance_observed_at: new Date(Date.now() - 4 * 3600e3).toISOString() } })) }))
+    await page.reload()
+    await expect(page.locator('[data-ai-account-state="stale"]')).toContainText('Held: balance reading too old')
+    await expect(row(page, 'course_description').locator('[data-ai-state-pill]')).toHaveText('Held: balance reading too old')
   })
 
   test('Settings no longer lists the AI settings, points to Models & services, and draws a text setting as a text box', async ({ page }) => {

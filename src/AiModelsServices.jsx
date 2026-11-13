@@ -31,7 +31,7 @@ import { plainError } from './lib/errors'
 import { listShown, parseList, listValid, listError } from './lib/settings-list.js'
 import { useViewerRank, PLATFORM_ADMIN_RANK, balanceWords } from './lib/viewer'
 import { Switch } from './ModelsServices'
-import { modelGroups, inAllowedFamily, serviceGroups, shortModel, usd, tokens, cascadeOf, serviceState, accountState, usageBy, usageBuckets, refusal, migrationOf, qualification, isQualified, lastCall, recoveryOf } from './lib/ai-overview'
+import { modelGroups, inAllowedFamily, serviceGroups, shortModel, usd, tokens, cascadeOf, serviceState, accountState, usageBy, usageBuckets, refusal, migrationOf, qualification, isQualified, lastCall, recoveryOf, wouldHold, recoveryWords, callErrorWords } from './lib/ai-overview'
 import './ai-models-services.css'
 
 const say = e => refusal(e) || plainError(e)
@@ -101,7 +101,7 @@ const Meter = ({ value, max, label }) => {
 
 // ---- 1 OpenRouter key and usage -----------------------------------------------------------------------------------------------------------
 function OpenRouterPane({ d, admin, saveSetting, reload, onError }) {
-  const or = d.openrouter || {}, state = accountState(or)
+  const or = d.openrouter || {}, limitMode = d.mode ?? or.mode ?? null, state = accountState({ ...or, mode: limitMode })
   const [key, setKey] = useState(''), [keyMode, setKeyMode] = useState(''), [busy, setBusy] = useState(false), [msg, setMsg] = useState(''), [mode, setMode] = useState(false)
   const profile = or.key?.profile_id || null // what Replace and Verify need; the key itself is never returned by anything
   const run = async (fn) => { setBusy(true); setMsg(''); try { await fn() } catch (e) { onError?.(say(e)) } finally { setBusy(false) } }
@@ -116,7 +116,7 @@ function OpenRouterPane({ d, admin, saveSetting, reload, onError }) {
     setMsg(r?.ok ? `Key verified: ${r.provider_model || 'the model'} answered.` : `Key not accepted: ${r?.message || r?.error || 'no answer'}`)
   })
   const flip = reason => run(async () => {
-    const next = or.mode === 'observe' ? 'stop' : 'observe'
+    const next = limitMode === 'observe' ? 'stop' : 'observe'
     const { error } = await supabase.rpc('admin_toolsets_write', { p_action: 'enforcement', p_args: { toolset: 'openrouter', enforcement: next, reason } })
     if (error) throw error
     setMode(false); setMsg(`Saved. Mode: ${next === 'stop' ? 'Stop at limits' : 'Observe only'}.`); await reload()
@@ -128,17 +128,16 @@ function OpenRouterPane({ d, admin, saveSetting, reload, onError }) {
       meta={<><span className={`cf-chip tone-${state.tone}`} data-ai-account-chip={state.key}>{state.label}</span>{d.caps_exceed_ceiling && <span className="cf-chip tone-warning" data-ai-caps-chip>Caps over the ceiling</span>}<span className="aim-quiet">{money(or.spent_today_usd)} of {usd(or.daily_ceiling_usd) ?? 'no ceiling'} today</span></>}
       action={<Button compact onClick={reload} disabled={busy}><RefreshCw size={14}/>Refresh</Button>}>
     <p className={`aim-state tone-${state.tone}`} data-ai-account-state={state.key} role="status"><span className={`cf-chip tone-${state.tone}`}>{state.label}</span><span>{state.text}</span></p>
-    {or.balance_known === false && state.key !== 'unread' && <p className="aim-state tone-warning" role="status" data-ai-balance-unknown><span className="cf-chip tone-warning">Balance not measured</span><span>{or.balance_note || 'There is no balance reading, so the credit floor holds nothing.'}</span></p>}
-    {d.caps_exceed_ceiling && <p className="aim-state tone-warning" role="status" data-ai-caps-exceed><span className="cf-chip tone-warning">Caps over the ceiling</span><span>Service caps add up to {money(d.caps_total_usd)} a day, more than the {money(d.ceiling_usd ?? or.daily_ceiling_usd)} ceiling: the ceiling will stop work first.</span></p>}
+    {d.caps_exceed_ceiling && <p className="aim-state tone-warning" role="status" data-ai-caps-exceed><span className="cf-chip tone-warning">Caps over the ceiling</span><span>Service caps add up to {money(d.caps_total_usd)} a day, more than the {money(d.ceiling_usd ?? or.daily_ceiling_usd)} ceiling: {limitMode === 'observe' ? 'the ceiling would stop work first if limits were enforced.' : 'the ceiling will stop work first.'}</span></p>}
     <div className="aim-tiles">
       <div className="aim-tile" data-ai-key>
         <small><KeyRound size={12} aria-hidden/> Key</small>
-        <strong>{or.key_present ? 'Present' : 'Not seen'}</strong>
-        <span>{or.key?.secret || or.key_secret_name || 'OPENROUTER_API_KEY'} · never shown{or.key?.shared_by_profiles ? ` · shared by ${fmtNumber(Number(or.key.shared_by_profiles))} model profiles` : ''}</span>
+        <strong>{(or.key?.present ?? or.key_present) ? 'Present' : 'Not seen'}</strong>
+        <span>{or.key?.secret || or.key_secret_name || 'The key'} · never shown{or.key?.shared_by_profiles ? ` · shared by ${fmtNumber(Number(or.key.shared_by_profiles))} model profiles` : ''}</span>
       </div>
       <div className="aim-tile" data-ai-balance={admin ? 'figure' : 'words'}>
         <small>Credit balance</small>
-        <strong>{or.balance_known === false ? 'Balance not measured' : admin ? (usd(bal) ?? 'Not read yet') : balanceWords(bal, or.floor_usd)}</strong>
+        <strong>{or.balance_known === false || bal == null ? 'Balance not measured' : admin ? (usd(bal) ?? 'Not read yet') : balanceWords(bal, or.floor_usd)}</strong>
         <span>{admin && or.total_credits_usd != null ? `of ${usd(or.total_credits_usd)} bought · ` : ''}read {or.balance_observed_at ? <span title={fmtDateTime(or.balance_observed_at)} data-ai-balance-age>{fmtRelative(or.balance_observed_at)}</span> : 'never'}</span>
       </div>
       <div className="aim-tile" data-ai-floor>
@@ -153,17 +152,18 @@ function OpenRouterPane({ d, admin, saveSetting, reload, onError }) {
         <span>All services together. At the ceiling every service is held until the UTC day changes.</span>
       </div>
     </div>
-    <p className="aim-line" data-ai-mode={or.mode || 'unknown'}><strong>Limits:</strong> the daily ceiling, each service's cap and the credit floor are <strong>enforcing</strong>. <strong>Older guards:</strong> {or.mode === 'stop' ? 'enforcing (Stop at limits)' : or.mode === 'observe' ? 'observing (Observe only)' : 'not recorded'}
-      <span className="aim-quiet"> {or.mode === 'stop' ? 'The older daily guards and the credit floor stop AI.' : or.mode === 'observe' ? 'The older daily guards raise notices only. The daily ceiling and each service\'s cap still hold.' : ''}</span>
-      {admin && or.mode && !mode && <Button compact disabled={busy} onClick={() => setMode(true)}>{or.mode === 'observe' ? 'Switch to stop at limits' : 'Switch to observe only'}</Button>}</p>
-    {mode && <SaveBar what="mode" busy={busy} changes={[`Mode: ${or.mode === 'observe' ? 'Observe only becomes Stop at limits' : 'Stop at limits becomes Observe only'}`]} onSave={flip} onCancel={() => setMode(false)}/>}
+    <p className={`aim-state tone-${limitMode === 'stop' ? 'success' : 'warning'}`} data-ai-mode={limitMode || 'unknown'} role="status">
+      <span className={`cf-chip tone-${limitMode === 'stop' ? 'success' : 'warning'}`}>{limitMode === 'stop' ? 'Enforcing' : limitMode === 'observe' ? 'Observing' : 'Mode not recorded'}</span>
+      <span>{limitMode === 'stop' ? 'Enforcing: the daily ceiling and each service\'s cap stop scheduled work when reached.' : limitMode === 'observe' ? 'Observing: limits are reported, not enforced. The daily ceiling and the caps stop nothing; a service that is over one says "Would be held".' : ''} In both modes these always stop a service, Run now included: switched off, no allowed or qualified model, no credit, and a balance that is not measured or too old.</span>
+      {admin && limitMode && !mode && <Button compact disabled={busy} onClick={() => setMode(true)}>{limitMode === 'observe' ? 'Switch to enforcing (stop at limits)' : 'Switch to observing only'}</Button>}</p>
+    {mode && <SaveBar what="mode" busy={busy} changes={[`Limits: ${limitMode === 'observe' ? 'Observing (reported, not enforced) becomes Enforcing (stop at limits)' : 'Enforcing (stop at limits) becomes Observing (reported, not enforced)'}`]} onSave={flip} onCancel={() => setMode(false)}/>}
     {admin ? <div className="aim-keyrow" data-ai-key-controls>
       <label className="aim-keyfield"><span>Replace the key (write-only)</span>
         <input className="fv-input" type="password" autoComplete="new-password" aria-label="New OpenRouter key" placeholder="Paste the new key; it replaces the old one" value={key} disabled={busy} onChange={e => { setKey(e.target.value); setKeyMode('') }}/></label>
       {keyMode !== 'save' && <Button compact variant="primary" disabled={busy || key.trim().length < 20 || !profile} onClick={() => setKeyMode('save')}>Replace key</Button>}
       <Button compact disabled={busy || !profile} onClick={verify}>Verify</Button>
       {!profile && <small className="aim-quiet">No model profile holds the key, so it cannot be replaced or verified from here.</small>}
-    </div> : <p className="l3v-note" data-ai-key-readonly>The key is {or.key_present ? 'present' : 'absent'}. <Needs rank={6} what="Replace or verify the key, change the floor or the daily ceiling"/></p>}
+    </div> : <p className="l3v-note" data-ai-key-readonly>The key is {(or.key?.present ?? or.key_present) ? 'present' : 'absent'}. <Needs rank={6} what="Replace or verify the key, change the floor or the daily ceiling"/></p>}
     {keyMode === 'save' && <SaveBar what="key" label="Replace key" busy={busy} changes={['The OpenRouter key used by every AI model is replaced. The key is never shown again.']} onSave={saveKey} onCancel={() => setKeyMode('')}/>}
     {msg && <p role="status" className="aim-done" data-ai-msg>{msg}</p>}
     <div className="aim-settings" data-ai-openrouter-settings>
@@ -239,7 +239,7 @@ const capWords = (v, unit) => (v == null ? 'no cap' : unit === 'usd' ? usd(v) : 
 const sameList = (a, b) => a.length === b.length && a.every((x, i) => x === b[i])
 
 function ServiceRow({ s, d, can, admin, act, saveSetting, open, onToggle, onError }) {
-  const models = d.models || [], mig = migrationOf(s), all = cascadeOf(s, models), items = mig === 'routed_single' ? all.slice(0, 1) : mig === 'not_migrated' ? [] : all, state = serviceState(s), last = lastCall(s), recovery = recoveryOf(s)
+  const models = d.models || [], mig = migrationOf(s), all = cascadeOf(s, models), items = mig === 'routed_single' ? all.slice(0, 1) : mig === 'not_migrated' ? [] : all, state = serviceState(s), last = lastCall(s), recovery = recoveryOf(s), would = wouldHold(s), quals = qualification(s)
   const [draft, setDraft] = useState(null), [busy, setBusy] = useState(false), [err, setErr] = useState(''), [done, setDone] = useState(''), [promptEdit, setPromptEdit] = useState(false), [qualify, setQualify] = useState(null)
   const byCode = Object.fromEntries(models.map(m => [m.code, m]))
   const begin = (patch = {}) => { setErr(''); setDone(''); setDraft({ cascade: [...(s.cascade || [])], usd: s.daily_usd_cap == null ? '' : String(s.daily_usd_cap), calls: s.daily_calls_cap == null ? '' : String(s.daily_calls_cap), enabled: s.enabled !== false, ...patch }); if (!open) onToggle(true) }
@@ -274,7 +274,7 @@ function ServiceRow({ s, d, can, admin, act, saveSetting, open, onToggle, onErro
   const addable = models.filter(m => m.status === 'allowed' && isQualified(s, m.code) !== false && !(draft?.cascade || []).includes(m.code))
   const single = mig === 'routed_single'
   const saveQualify = async reason => { setBusy(true); setErr(''); setDone('')
-    try { const m = byCode[qualify.code]; await act('admin_ai_qualification_set_v1', { p_service: s.service_code, p_code: qualify.code, p_evidence: qualify.evidence.trim(), p_reason: reason }); setDone(`Saved. ${m?.label || qualify.code} is recorded as qualified for ${s.label}.`); setQualify(null) } catch (e) { setErr(say(e)) } finally { setBusy(false) } }
+    try { const m = byCode[qualify.code]; await act('admin_ai_qualification_set_v1', { p_service: s.service_code, p_code: qualify.code, p_evidence: qualify.evidence.trim(), p_reason: reason, p_status: 'qualified' }); setDone(`Saved. ${m?.label || qualify.code} is recorded as qualified for ${s.label}.`); setQualify(null) } catch (e) { setErr(say(e)) } finally { setBusy(false) } }
   const move = (i, by) => { const c = [...draft.cascade], j = i + by; if (j < 0 || j >= c.length) return; [c[i], c[j]] = [c[j], c[i]]; set({ cascade: c }) }
   const spent = s.spent_today || {}
   return <>
@@ -286,6 +286,8 @@ function ServiceRow({ s, d, can, admin, act, saveSetting, open, onToggle, onErro
         {mig === 'not_migrated' && <small className="aim-sub">The model in effect. This service does not take its model from here yet.</small>}
         {mig !== 'not_migrated' && items.length > 0 && !(s.models || []).length && <NoModel what="No allowed model"/>}
         <small className="aim-sub" data-ai-last>Last used: {last?.model ? <span title={last.model}>{shortModel(models.find(m => m.model_identifier === last.model)?.label || last.model)}</span> : 'not measured'}{last?.at ? `, ${fmtRelative(last.at)}` : ''}{last?.outcome ? ` · ${humanLabel(last.outcome)}` : ''}</small>
+        {s.previous_model && s.previous_model !== inUse && <small className="aim-sub aim-was" data-ai-was-on>Was on: <span title={s.previous_model}>{shortModel(models.find(m => m.model_identifier === s.previous_model)?.label || s.previous_model)}</span></small>}
+        {(s.skipped || []).length > 0 && mig !== 'not_migrated' && <small className="aim-sub" data-ai-skipped>Not handed out: {s.skipped.map(x => `${shortModel(byCode[x.code]?.label || x.code)} (${x.why})`).join(', ')}</small>}
         {(s.models || []).length > 0 && !inUse && <small className="aim-sub" data-ai-in-effect>In use today: <NoModel/></small>}
         {inUse && inUse !== firstAllowed && <small className="aim-sub" data-ai-in-effect>In use today: <strong title={inUse}>{shortModel(effect)}</strong></small>}
 </td>
@@ -295,7 +297,7 @@ function ServiceRow({ s, d, can, admin, act, saveSetting, open, onToggle, onErro
         {s.daily_usd_cap != null && <Meter value={spent.usd} max={s.daily_usd_cap} label={`${s.label}: today's spend against its cap`}/>}
         <small className="aim-sub">{spent.calls == null ? 'calls not measured' : `${fmtNumber(Number(spent.calls))} call${Number(spent.calls) === 1 ? '' : 's'}`}{s.daily_calls_cap != null ? ` of ${fmtNumber(Number(s.daily_calls_cap))}` : ''}</small></td>
       <td data-label="State"><span className={`cf-chip tone-${state.tone}`} title={state.why} data-ai-state-pill>{state.label}</span>{mig === 'not_migrated' && <span className="cf-chip tone-neutral" data-ai-not-migrated>Not migrated</span>}{state.why && state.key !== 'running' && <small className="aim-sub">{state.why}</small>}
-        {s.would_hold_now && <small className="aim-sub" data-ai-would-hold>Would be held now: no scheduled work is handed out.</small>}</td>
+        {would && <small className="aim-sub aim-would" data-ai-would-hold={would.kind || 'yes'}><span className="cf-chip tone-warning">Would be held</span> {would.label.replace(/^Held: /, '')}: {would.reason} Limits are observed, not enforced, so it runs.</small>}</td>
     </tr>
     {open && <tr className="aim-detailrow" id={`aim-d-${s.service_code}`} data-ai-service-detail={s.service_code}><td colSpan={6}><div className="aim-detail">
       {done && <p className="aim-done" role="status" data-ai-saved>{done}</p>}{err && <p className="fr-error" role="alert" data-ai-error>{err}</p>}
@@ -307,13 +309,14 @@ function ServiceRow({ s, d, can, admin, act, saveSetting, open, onToggle, onErro
           {mig === 'not_migrated' && <p className="aim-note" data-ai-unwired>Not migrated: this service does not take its model, cap or switch from here yet, so nothing is changed here. The model shown is the one in effect.</p>}
           {s.note && <p className="aim-note">{s.note}</p>}
           {mig === 'not_migrated' ? null : can ? <Button compact onClick={() => begin()} data-ai-edit={s.service_code}>{mig === 'routed_single' ? 'Change model, switch or cap' : 'Change cascade, switch or cap'}</Button> : <p className="l3v-note"><Needs rank={5} what="Change the cascade, switch or cap"/></p>}
+          {quals && <p className="aim-line" data-ai-qualified><strong>Qualified for this service:</strong> {[...quals].filter(([, q]) => q.qualified).length ? [...quals].filter(([, q]) => q.qualified).map(([code, q]) => <span key={code} className={`cf-chip tone-${q.provisional ? 'warning' : 'success'}`} data-ai-qualified-model={code} data-ai-provisional={q.provisional ? 'true' : undefined} title={q.evidence || undefined}>{shortModel(byCode[code]?.label || code)}{q.provisional ? ` · Provisional: ${q.evidence || 'evidence not recorded'}` : ''}</span>) : <NoModel what="No qualified model"/>}</p>}
           {unq.length > 0 && <div className="aim-unq" data-ai-unqualified>
             <p className="aim-quiet">Not qualified for this service (allowed, but cannot be added to its cascade):</p>
-            <ul>{unq.map(m => <li key={m.code} data-ai-unqualified-model={m.code}><span>{m.label}</span>
+            <ul>{unq.map(m => <li key={m.code} data-ai-unqualified-model={m.code}><span>{m.label}{quals?.get(m.code)?.status === 'pending' ? ' (qualification pending)' : ''}</span>
               {admin ? (qualify?.code === m.code ? null : <Button compact onClick={() => { setErr(''); setQualify({ code: m.code, evidence: '' }) }} data-ai-qualify={m.code}>Record qualification</Button>) : <Needs rank={6} what="Record qualification"/>}
               {qualify?.code === m.code && <div className="aim-qualify"><label className="aim-add"><span>Evidence (where the test results are: a run, a document, a link)</span>
                 <input className="fv-input aim-text" aria-label={`Evidence that ${m.label} is qualified for ${s.label}`} value={qualify.evidence} onChange={e => setQualify({ ...qualify, evidence: e.target.value })}/></label>
-                <SaveBar what={`qualify-${s.service_code}-${m.code}`} label="Record qualification" busy={busy} blocked={qualify.evidence.trim().length < 4 ? 'Say where the evidence is.' : ''} changes={[`${m.label} is recorded as qualified for ${s.label}. It can then be added to the cascade; this adds it to nothing.`]} onSave={saveQualify} onCancel={() => setQualify(null)}/></div>}</li>)}</ul></div>}</>
+                <SaveBar what={`qualify-${s.service_code}-${m.code}`} label="Record qualification" busy={busy} blocked={qualify.evidence.trim().length < 10 ? 'Say what the qualification rests on (the evidence), in at least 10 characters.' : ''} changes={[`${m.label} is recorded as qualified for ${s.label}. It can then be added to the cascade; this adds it to nothing.`]} onSave={saveQualify} onCancel={() => setQualify(null)}/></div>}</li>)}</ul></div>}</>
         : <div className="aim-editor" data-ai-editor={s.service_code}>
           <ol className="aim-steps">{draft.cascade.map((c, i) => { const m = byCode[c], ok = m?.status === 'allowed'
             return <li key={c} className={ok ? '' : 'is-out'} data-ai-step={c}><span><b>{i + 1}</b> {m?.label || c}{!ok && <em> not allowed</em>}</span>
@@ -339,19 +342,20 @@ function ServiceRow({ s, d, can, admin, act, saveSetting, open, onToggle, onErro
         <h4>Most recent call</h4>
         {last ? <p className="aim-line"><strong>Model used:</strong> {last.model ? <code className="aim-code">{last.model}</code> : NOT_MEASURED} <strong>When:</strong> {last.at ? fmtDateTime(last.at) : NOT_MEASURED} <strong>Outcome:</strong> {last.outcome ? humanLabel(last.outcome) : NOT_MEASURED}</p>
           : <p className="aim-quiet">{NOT_MEASURED}: no call of this service is recorded here.</p>}
-        {last?.error && <p className="fr-error" data-ai-last-error>Last error: {plainError(last.error)}</p>}
-        <p className="aim-line"><strong>Recovery:</strong> {recovery ? (typeof recovery === 'string' ? humanLabel(recovery) : recovery.text || humanLabel(recovery.state || '')) : NOT_MEASURED}</p>
+        {last?.error && <p className="fr-error" data-ai-last-error>Last error: {callErrorWords(last.error)}{last.attempt_no > 1 ? ` (attempt ${last.attempt_no})` : ''}</p>}
+        <p className="aim-line" data-ai-recovery={recovery || 'not-measured'}><strong>Recovery:</strong> {recoveryWords(recovery) || NOT_MEASURED}</p>
       </div>
       <div className="aim-block" data-ai-prompt={s.service_code}>
         <h4>Prompt</h4>
-        <p className="aim-line"><strong>Source:</strong> <span title={prompt.source || undefined}>{promptSource(prompt.source)}</span> <strong>Version:</strong> {prompt.version || 'Not recorded'}</p>
-        {prompt.text ? <pre className="aim-prompt" tabIndex={0} aria-label={`Prompt of ${s.label} (read only)`}>{prompt.text}</pre>
-          : <p className="aim-note" data-ai-prompt-kept>{inWorker || prompt.version ? 'The prompt text is kept in the worker. It changes with a worker release, as a new version.' : 'The prompt text is not held here.'}</p>}
+        <p className="aim-line"><strong>Source:</strong> <span title={prompt.source || undefined}>{promptSource(prompt.source)}</span> <strong>Version:</strong> {prompt.version || 'Not recorded'}{prompt.sha256 && <> <strong>sha256:</strong> <code className="aim-code" data-ai-prompt-sha>{prompt.sha256}</code></>}</p>
+        {prompt.text ? <pre className="aim-prompt" tabIndex={0} data-ai-prompt-text="database" aria-label={`Prompt of ${s.label} (read only, complete)`}>{prompt.text}</pre>
+          : <WorkerPrompts service={s.service_code} label={s.label} textRef={prompt.text_ref} inWorker={inWorker || Boolean(prompt.version)}/>}
         {prompt.source === 'pipeline.provider_description_prompts' && admin && (promptEdit
           ? <React.Suspense fallback={<Loading compact label="Reading the prompt…"/>}><PromptEditor onError={onError}/></React.Suspense>
           : <Button compact onClick={() => setPromptEdit(true)}>Edit this prompt as a new version</Button>)}
-        {String(prompt.text || '').length >= 4000 && <p className="aim-quiet">The first 4,000 characters are shown.</p>}
-        {s.service_code === 'scholarship_extraction' && <div className="aim-sxconfig" data-ai-scholarship-config>
+        {s.config && <div className="aim-note" data-ai-config-summary><strong>AI admission:</strong> {s.config.ai_admission ? 'On' : 'Off'}. <strong>Instruction versions:</strong> {(s.config.prompts || []).length ? s.config.prompts.map(p => `${p.version}${p.current ? ' (current)' : ''}`).join(', ') : 'none recorded'}.
+          {(s.config.prompts || []).filter(p => !p.current && p.text).map(p => <details key={p.version} className="aim-more"><summary>Version {p.version}{p.sha256 ? ` · sha256 ${String(p.sha256).slice(0, 12)}…` : ''}</summary><pre className="aim-prompt">{p.text}</pre></details>)}</div>}
+        {(s.service_code === 'scholarship_extraction' || s.config?.write === 'public.admin_scholarship_ai') && <div className="aim-sxconfig" data-ai-scholarship-config>
           <React.Suspense fallback={<Loading compact label="Reading the scholarship extraction configuration…"/>}><ScholarshipConfig part="config" onError={onError}/></React.Suspense></div>}
       </div>
       <div className="aim-block" data-ai-service-settings={s.service_code}>
@@ -364,6 +368,23 @@ function ServiceRow({ s, d, can, admin, act, saveSetting, open, onToggle, onErro
   </>
 }
 const PromptEditor = React.lazy(() => import('./ProviderDescriptionPrompt'))
+// A prompt written in the worker: its complete text comes from docs/platform/ai-prompts.json, generated from the worker source and checked in
+// (scripts/ai-prompts-export.mjs; a test fails when it is stale). Read at build time, loaded when a service is opened. Read only.
+let promptFile = null
+function WorkerPrompts({ service, label, textRef, inWorker }) {
+  const [f, setF] = useState(promptFile), [failed, setFailed] = useState(false)
+  useEffect(() => { if (f) return; import('../docs/platform/ai-prompts.json').then(m => { promptFile = m.default || m; setF(promptFile) }).catch(() => setFailed(true)) }, [])
+  const key = String(textRef || '').split('#')[1] || service, entry = f?.services?.[key]
+  if (!f && !failed) return <Loading compact label="Reading the prompt…"/>
+  if (!entry || !(entry.prompts || []).length) return <p className="aim-note" data-ai-prompt-kept>{inWorker ? 'The prompt text is kept in the worker and is not in this build\'s prompt file. It changes with a worker release, as a new version.' : 'The prompt text is not held here.'}</p>
+  return <div className="aim-wprompts" data-ai-prompt-text="worker">
+    <p className="aim-quiet" data-ai-prompt-kept>Kept in the worker ({f.worker}); complete text, read only. It changes with a worker release, as a new version. <span>sha256 of this service's prompts: <code className="aim-code">{entry.sha256}</code></span></p>
+    {entry.prompts.map(p => <details key={p.name} className="aim-more" open={entry.prompts.length === 1} data-ai-worker-prompt={p.name}>
+      <summary>{humanLabel(p.name)} · version {p.version}</summary>
+      <p className="aim-quiet">{p.where} · sha256 <code className="aim-code">{p.sha256}</code>{p.complete === false ? ' · goes on with the data of the request (shown as <data of the request>)' : ''}{p.note ? ` · ${p.note}` : ''}</p>
+      <pre className="aim-prompt" tabIndex={0} aria-label={`Prompt ${p.name} of ${label} (read only, complete)`}>{p.text}</pre></details>)}
+  </div>
+}
 // Platform Admin 13 Nov 2026 22:10: "Scholarship Extraction configuration belongs in Models & Services": AI admission and its settings,
 // qualification on the sample, instructions and a test page, drawn once, here (its results stay on Scholarships › Coverage)
 const ScholarshipConfig = React.lazy(() => import('./ScholarshipExtraction'))
@@ -392,7 +413,8 @@ function ServicesPane({ d, can, admin, act, saveSetting, focus, onError }) {
 // ---- 4 Recent usage -----------------------------------------------------------------------------------------------------------------------
 function UsagePane({ d }) {
   const [unit, setUnit] = useState('hour'), [by, setBy] = useState('service')
-  const rows = unit === 'hour' ? d.usage?.by_hour_24h : d.usage?.by_day_14d
+  const rows = unit === 'hour' ? d.usage?.by_hour_24h : d.usage?.by_day_14d, per = d.usage?.by_model_24h
+  const sLabel = Object.fromEntries((d.services || []).map(s => [s.service_code, s.label])), mLabel = Object.fromEntries((d.models || []).map(m => [m.model_identifier, m.label]))
   const groups = useMemo(() => usageBy(rows, by, d), [rows, by, d]), buckets = useMemo(() => usageBuckets(rows, unit), [rows, unit])
   const top = Math.max(0, ...(groups || []).map(g => Number(g.usd || 0))), peak = Math.max(0, ...(buckets || []).map(b => Number(b.usd || 0)))
   const total = groups && groups.some(g => g.usd != null) ? groups.reduce((n, g) => n + Number(g.usd || 0), 0) : null
@@ -421,13 +443,33 @@ function UsagePane({ d }) {
           <td data-label="Share"><span className="aim-hbar" aria-hidden><span style={{ width: `${g.usd != null && top > 0 ? Math.max(2, Math.round(100 * g.usd / top)) : 0}%` }}/></span></td>
         </tr>)}</tbody>
       </table></div>}
+      {unit !== 'calls' && <p className="aim-quiet">Spend and calls here come from the spend ledger, which does not record tokens, failures or fallbacks; those are in the per-call record below.</p>}
     </>}
+    <div className="aim-block" data-ai-calls-24h>
+      <h4>Calls in the last 24 hours, from the per-call record</h4>
+      {!Array.isArray(per) ? <p className="aim-note">{NOT_MEASURED}: no per-call record was returned.</p>
+        : !per.length ? <p className="aim-note" data-ai-calls-empty>No call is on record yet. Rows appear once the worker that records each call is deployed.</p>
+        : <div className="cf-table-wrap aim-wrap"><table className="cf-table aim-table" data-no-resize data-ai-calls>
+          <thead><tr><th>Service</th><th>Model</th><th className="num">Attempts</th><th className="num">Answered</th><th className="num">Failures</th><th className="num">Fallbacks</th><th className="num">Tokens in / out</th><th className="num">Spend</th></tr></thead>
+          <tbody>{per.map((r, i) => <tr key={i} data-ai-calls-row={`${r.service_code}:${r.model || ''}`}>
+            <td data-label="Service"><strong>{sLabel[r.service_code] || r.service_code || 'Service not recorded'}</strong>{r.evidence_href && <small className="aim-sub"><a className="cf-link" href={r.evidence_href} data-ai-usage-evidence>Evidence</a></small>}</td>
+            <td data-label="Model"><span>{r.model ? (mLabel[r.model] || r.model) : 'Model not recorded'}</span></td>
+            <td data-label="Attempts" className="num"><span>{count(r.attempts)}</span></td>
+            <td data-label="Answered" className="num"><span>{count(r.answered)}</span></td>
+            <td data-label="Failures" className="num"><span>{count(r.failures)}</span></td>
+            <td data-label="Fallbacks" className="num"><span>{count(r.fallbacks)}</span></td>
+            <td data-label="Tokens in / out" className="num"><span>{r.tokens_in == null && r.tokens_out == null ? NOT_MEASURED : `${count(r.tokens_in)} / ${count(r.tokens_out)}`}</span></td>
+            <td data-label="Spend" className="num"><span>{money(r.usd)}</span></td>
+          </tr>)}</tbody></table></div>}
+      {Array.isArray(d.usage?.fallbacks_24h) && d.usage.fallbacks_24h.length > 0 && <details className="aim-more" data-ai-fallbacks><summary>Failed attempts in the last 24 hours ({fmtNumber(d.usage.fallbacks_24h.length)})</summary>
+        <ul className="aim-events">{d.usage.fallbacks_24h.map((e, i) => <li key={i}><small>{fmtDateTime(e.at)}</small> <strong>{sLabel[e.service_code] || e.service_code}</strong> {mLabel[e.model] || e.model || 'model not recorded'} · attempt {e.attempt_no ?? 'not recorded'} · {callErrorWords(e.failure_kind) || 'kind not recorded'}</li>)}</ul></details>}
+    </div>
   </Card>
 }
 
 // ---- the page -----------------------------------------------------------------------------------------------------------------------------
 export default function AiModelsServices({ onError, focusService = '' }) {
-  const rank = useViewerRank(), admin = rank >= PLATFORM_ADMIN_RANK
+  const viewerRank = useViewerRank()
   const [d, setD] = useState(null), [failed, setFailed] = useState('')
   const load = async () => { setFailed(''); try { const { data, error } = await supabase.rpc('admin_ai_overview_v1'); if (error) throw error; if (!data || Array.isArray(data) || !data.openrouter) throw new Error('The AI overview is not available yet.'); setD(data) } catch (e) { setFailed(say(e)) } }
   useEffect(() => { load() }, [])
@@ -437,6 +479,8 @@ export default function AiModelsServices({ onError, focusService = '' }) {
   const saveSetting = async (s, value, reason) => { const { error } = await supabase.rpc('admin_toolsets_write', { p_action: 'setting', p_args: { toolset: s.toolset, key: s.key, value, reason } }); if (error) throw error; await load() }
   if (failed && !d) return <section className="m-panel" data-ai-page="failed"><Empty text={`Models and services could not be loaded: ${failed}`}/><Button compact onClick={load}><RefreshCw size={14}/>Try again</Button></section>
   if (!d) return <section className="m-panel" data-ai-page="loading"><Loading label="Loading models and services…"/></section>
+  // the overview says who may do what (rank, can_control from 5, can_admin at 6); the signed-in rank is the fallback
+  const rank = Number(d.rank ?? viewerRank), admin = d.can_admin ?? rank >= PLATFORM_ADMIN_RANK
   const can = Boolean(d.can_control) && rank >= 5 // routes, caps and switches: PIM Admin; the model list, qualification, ceiling and key: Platform Admin
   return <div className="m-page-stack aim" data-ai-page="ready">
     <OpenRouterPane d={d} admin={admin} saveSetting={saveSetting} reload={load} onError={onError}/>

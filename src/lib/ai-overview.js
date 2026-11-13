@@ -48,31 +48,50 @@ export function cascadeOf(service, models = []) {
   })
 }
 
-// One state for a service row, from the server's own held_kind (cap, ceiling, credit_floor, off, no_model or null). Nothing is inferred.
+// One state for a service row, from the server's own held_kind. Nothing is inferred. Six kinds hold in both modes, on-demand work included
+// (off, no model, no qualified model, balance unknown, balance stale, credit floor); the cap and the ceiling hold only when limits are enforced.
 const STATES = {
   off: ['Off', 'neutral', 'Switched off.'], no_model: ['No allowed model', 'danger', 'No model in its cascade is allowed.'],
+  no_qualified_model: ['No qualified model', 'danger', 'No model in its cascade is qualified for this service. The Platform Admin records a qualification first.'],
   cap: ['Held: cap reached', 'warning', 'Its daily cap is reached.'], ceiling: ['Held: ceiling', 'warning', 'Today\'s spend ceiling for all AI is reached.'],
   credit_floor: ['Held: no credit', 'danger', 'The OpenRouter balance is at or below the credit floor. All AI work is stopped, including Run now.'],
+  balance_unknown: ['Held: balance not measured', 'danger', 'There is no OpenRouter balance reading, so all AI work is stopped, including Run now.'],
+  balance_stale: ['Held: balance reading too old', 'danger', 'The last OpenRouter balance reading is too old, so all AI work is stopped, including Run now.'],
 }
+export const ALWAYS_HOLD = ['off', 'no_model', 'no_qualified_model', 'balance_unknown', 'balance_stale', 'credit_floor']
+export const holdWords = kind => (STATES[kind] ? STATES[kind][0] : null)
 export function serviceState(s) {
-  // a row with no allowed model is never shown as running, whatever else the answer says
   const key = s?.held_kind && STATES[s.held_kind] ? s.held_kind : s?.enabled === false ? 'off' : !(s?.models || []).length ? 'no_model' : s?.held ? 'held' : 'running'
   if (key === 'running') return { key, label: 'Running', tone: 'success', why: '' }
   if (key === 'held') return { key, label: 'Held', tone: 'warning', why: s.held_reason || 'Held.' }
   const [label, tone, why] = STATES[key], said = s?.held_reason && s.held_reason !== key ? s.held_reason : why
   return { key, label, tone, why: said + (s?.on_demand_exempt ? ' Work asked for under an open request is still let through.' : '') }
 }
+/** What would hold a service that is running only because limits are observed, not enforced; null when nothing would. */
+export function wouldHold(s) {
+  if (!s?.would_hold_now || s?.held) return null
+  const kind = s.would_hold_kind || null
+  return { kind, label: holdWords(kind) || 'Would be held', reason: s.would_hold_reason && s.would_hold_reason !== kind ? s.would_hold_reason : (STATES[kind] || [])[2] || '' }
+}
+// recovery_state as served: held | failing | fallback | ok | no_calls
+const RECOVERY = { held: 'Held: nothing is handed out', failing: 'Failing: the last call failed', fallback: 'On fallback: the last answer came from a later model of the cascade', ok: 'Working: the last call answered', no_calls: 'No call on record yet' }
+export const recoveryWords = v => (v == null ? null : RECOVERY[v] || String(v))
+// last_call.error as served: http | timeout | empty | cut | non_json | refused
+const CALL_ERRORS = { http: 'the AI service answered with an error', timeout: 'the call timed out', empty: 'the answer was empty', cut: 'the answer was cut short', non_json: 'the answer could not be read', refused: 'the AI service refused the call' }
+export const callErrorWords = v => (v == null ? null : CALL_ERRORS[v] || String(v))
 
 /** The one line for the OpenRouter pane. */
 export function accountState(or = {}) {
   const bal = or.balance_usd == null ? null : Number(or.balance_usd), floor = Number(or.floor_usd || 0), warn = Number(or.low_warn_usd || 0)
   const ceiling = Number(or.daily_ceiling_usd || 0), spent = Number(or.spent_today_usd || 0)
   if (!or.key_present) return { key: 'no_key', label: 'No key seen', tone: 'danger', text: 'No balance has been read with the key lately. Replace or verify the key below.' }
-  if (or.balance_known === false) return { key: 'unread', label: 'Balance not measured', tone: 'warning', text: or.balance_note || 'There is no balance reading, so the credit floor holds nothing. Check the key and the job that reads the balance.' }
+  if (or.balance_known === false || bal == null) return { key: 'unread', label: 'Held: balance not measured', tone: 'danger', text: 'There is no OpenRouter balance reading, so all AI work is stopped, including Run now. Check the key and the job that reads the balance.' }
+  const age = or.balance_observed_at ? (Date.now() - new Date(or.balance_observed_at).getTime()) / 60000 : null, maxAge = Number(or.balance_max_age_minutes)
+  if (age != null && maxAge > 0 && age > maxAge) return { key: 'stale', label: 'Held: balance reading too old', tone: 'danger', text: `The last balance reading is older than ${maxAge} minutes, so all AI work is stopped, including Run now. Check the job that reads the balance.` }
   if (bal != null && bal <= floor) return { key: 'no_credit', label: 'No credit', tone: 'danger', text: 'The balance is at or below the credit floor. All AI work is stopped, including Run now. Top up the OpenRouter account.' }
-  if (ceiling > 0 && spent >= ceiling) return { key: 'ceiling', label: 'Held: today\'s ceiling reached', tone: 'warning', text: 'Every service is held until the UTC day changes, or until the ceiling is raised. Work an operator asked for under an open request is not held.' }
+  if (ceiling > 0 && spent >= ceiling) return or.mode === 'observe' ? { key: 'ceiling_observed', label: 'Over today\'s ceiling (observing)', tone: 'warning', text: 'Today\'s spend is over the daily ceiling. Limits are reported, not enforced, so nothing is held by it.' }
+    : { key: 'ceiling', label: 'Held: today\'s ceiling reached', tone: 'warning', text: 'Every service is held until the UTC day changes, or until the ceiling is raised. Work an operator asked for under an open request is not held.' }
   if (bal != null && warn > 0 && bal < warn) return { key: 'low', label: 'Low credit', tone: 'warning', text: 'The balance is below the low-balance warning. Top up soon.' }
-  if (bal == null) return { key: 'unread', label: 'Balance not measured', tone: 'warning', text: 'The balance has not been read yet.' }
   return { key: 'running', label: 'Running', tone: 'success', text: 'Credit is above the floor and today\'s spend is under the ceiling.' }
 }
 
@@ -85,7 +104,7 @@ export const migrationOf = s => (['routed', 'routed_single', 'not_migrated'].inc
 export function qualification(s) {
   const q = s?.qualification ?? s?.qualified_models ?? s?.qualified
   if (q == null) return null
-  const out = new Map(), put = (code, v) => { if (code) out.set(code, typeof v === 'object' && v ? { qualified: v.qualified ?? (v.status ? v.status === 'qualified' : true), evidence: v.evidence ?? null, at: v.at ?? v.qualified_at ?? null, by: v.by ?? v.qualified_by ?? null } : { qualified: v !== false, evidence: null, at: null, by: null }) }
+  const out = new Map(), put = (code, v) => { if (code) out.set(code, typeof v === 'object' && v ? { qualified: v.status ? v.status === 'qualified' : v.qualified !== false, status: v.status ?? (v.qualified === false ? 'unqualified' : 'qualified'), provisional: Boolean(v.provisional), prompt_version: v.prompt_version ?? null, note: v.note ?? null, evidence: v.evidence ?? null, at: v.at ?? v.qualified_at ?? null, by: v.by ?? v.qualified_by ?? null } : { qualified: v !== false, evidence: null, at: null, by: null }) }
   if (Array.isArray(q)) for (const x of q) (typeof x === 'string' ? put(x, true) : put(x?.code ?? x?.model_code, x))
   else if (typeof q === 'object') for (const [code, v] of Object.entries(q)) put(code, v)
   return out
@@ -96,9 +115,9 @@ export const isQualified = (s, code) => { const q = qualification(s); return q =
 export function lastCall(s) {
   const l = s?.last_call ?? s?.last ?? null
   if (!l || typeof l !== 'object') return null
-  return { at: l.at ?? l.called_at ?? null, model: l.model ?? l.model_identifier ?? null, outcome: l.outcome ?? l.status ?? null, error: l.error ?? l.error_message ?? null }
+  return { at: l.at ?? null, model: l.model ?? null, outcome: l.outcome ?? null, error: l.error ?? null, attempt_no: l.attempt_no ?? null }
 }
-export const recoveryOf = s => s?.recovery_state ?? s?.recovery ?? null
+export const recoveryOf = s => s?.recovery_state ?? null
 
 // ---- usage -------------------------------------------------------------------------------------------------------------------------------
 const sum = (rows, k) => { const known = rows.filter(r => r[k] != null); return known.length ? known.reduce((n, r) => n + Number(r[k] || 0), 0) : null }
@@ -148,6 +167,9 @@ const REFUSALS = [
   [/not in a family the Platform Admin allows/i, 'This model is not in a family the Platform Admin allows (Qwen3, MiMo, Mistral Small, Kimi K2, Gemini, Llama, DeepSeek). Adding a family is a release.'],
   [/not qualified for this service: ?(.*)/i, (m) => `Not qualified for this service: ${m[1]}. Record its qualification first.`],
   [/Platform Admin required/i, 'Platform Admin is needed for this.'],
+  [/uses one model: a fallback is not available/i, 'This service uses one model: a fallback is not available for it yet.'],
+  [/say what the qualification rests on/i, 'Say what the qualification rests on (the evidence), in at least 10 characters.'],
+  [/assigned StudySearch role required/i, 'An assigned StudySearch role is needed to read this page.'],
   [/status must be/i, 'A model is either allowed or not allowed.'],
   [/(PIM Operator|Pipeline Operator) role or above required/i, (m) => `${m[1]} role or above is needed for this.`],
 ]
