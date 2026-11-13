@@ -1,6 +1,6 @@
 -- HELD forward recovery for migration 20261113310000_cf247_cdesc_shorten_by_sentence.sql. Not applied by deploy.
 -- Puts security.cdesc_subset_plan_v1 back to the body that migration edited (reverse edits, md5-guarded): no reading is shortened for size again.
--- security.cdesc_sentence_substance_v1 stays (nothing calls it afterwards). Descriptions already admitted are not touched.
+-- security.cdesc_sentence_substance_v1 and security.cdesc_refers_back_v1 stay (nothing calls them afterwards). Descriptions already admitted are not touched.
 -- Replaces: the body named above. Retires: nothing.
 
 create or replace function pg_temp.edit_all(p_sig text, p_before text, p_after text, p_olds text[], p_news text[]) returns text language plpgsql as $f$
@@ -22,14 +22,17 @@ begin
   return p_sig || ': applied';
 end $f$;
 
-select pg_temp.edit_all('security.cdesc_subset_plan_v1(uuid,uuid,jsonb)', '0045a951b5d039915d2310e4b973569e', '3c263a1984a33a133a331883cc6f8eae',
-  array[$o0$  -- 1c. (Platform Admin 13 Nov 2026 12:16, conditional approval) a reading whose ONLY fault is its size (no sentence failed a test) and that is over the sentence or
-  --     character limit is shortened by whole sentences, never inside one. Each pass sets aside the sentence whose removal loses least: for every kept sentence but
-  --     the first (it says what the course is), the loss is the course-specific substance (security.cdesc_sentence_substance_v1) of that sentence and of the
-  --     sentences after it that open by pointing back to it (they would dangle, so they go with it). A sentence about a qualification, registration, recognition,
-  --     pathway or placement is set aside only when no other choice is left. The least loss wins, the later sentence on a tie. Repeated until the reading fits.
-  --     If it cannot fit (one sentence left and still too long) nothing more is set aside and the reading stays held below. A reading with a failing sentence
-  --     AND a size problem is outside the approval: it is not shortened here and stays held (over_length_needs_decision).
+select pg_temp.edit_all('security.cdesc_subset_plan_v1(uuid,uuid,jsonb)', 'cc54bd91d7a58f522af3ef7b9141e3eb', '3c263a1984a33a133a331883cc6f8eae',
+  array[$o0$v_page text; v_title text; v_prov text; v_cnt int; v_tot int; v_first int; v_victim int; v_c int; v_bc int; v_p boolean; v_bp boolean; v_rc int; v_rl int; v_f boolean; v_bf boolean;
+begin$o0$,
+        $o1$  -- 1c. (Platform Admin 13 Nov 2026 12:16, conditional approval) a reading whose ONLY fault is its size (no sentence failed a test) and that is over the sentence or
+  --     character limit is shortened by whole sentences, never inside one. Each pass looks at every kept sentence but the first (it says what the course is) together
+  --     with the sentences after it that refer back to it (security.cdesc_refers_back_v1: they would dangle, so they go with it), and sets aside the choice that
+  --     (a) by itself brings the reading within the limits, before one that does not, then (b) loses least course-specific substance
+  --     (security.cdesc_sentence_substance_v1), the later sentence on a tie. A choice that would remove a sentence about a qualification, registration, recognition,
+  --     pathway, placement or entry condition is never taken: if only such choices are left, nothing more is set aside and the reading stays held below.
+  --     Repeated until the reading fits. A reading that cannot fit stays held. A reading with a failing sentence AND a size problem is outside the approval:
+  --     it is not shortened here and stays held (over_length_needs_decision).
   if not exists (select 1 from unnest(v_fault) x(f) where x.f is not null) then
     loop
       select count(*), coalesce(sum(length(btrim(coalesce(v_s->(k - 1)->>'text', '')))), 0) + greatest(count(*) - 1, 0), min(k) into v_cnt, v_tot, v_first from generate_series(1, n) k where v_fault[k] is null;
@@ -37,29 +40,35 @@ select pg_temp.edit_all('security.cdesc_subset_plan_v1(uuid,uuid,jsonb)', '0045a
       v_victim := null;
       for k in reverse n .. v_first + 1 loop
         continue when v_fault[k] is not null;
-        v_c := 0; v_p := false; i := k;
+        v_c := 0; v_p := false; v_rc := 0; v_rl := 0; i := k;
         loop
           v_c := v_c + security.cdesc_sentence_substance_v1(v_s->(i - 1)->>'text', v_s->(i - 1)->>'quote');
-          -- fixed: a structural test of what a sentence is about (a qualification, registration, recognition, pathway or placement), not a tunable limit
-          v_p := v_p or coalesce(v_s->(i - 1)->>'text', '') ~* '\m(regist|licen|qualif|recogni|certif|accredit|pathway|eligib|prerequisit|placement|practicum|internship)';
+          v_rc := v_rc + 1; v_rl := v_rl + length(btrim(coalesce(v_s->(i - 1)->>'text', ''))) + 1;
+          -- fixed: a structural test of what a sentence is about (a qualification, registration, recognition, pathway, placement or entry condition), not a tunable limit
+          v_p := v_p or coalesce(v_s->(i - 1)->>'text', '') ~* '\m(regist|licen|qualif|recogni|endors|certif|accredit|pathway|eligib|pre-?requisit|placement|practicum|internship|admission|entry requirement|must (hold|have|be|complete))';
           i := i + 1;
-          exit when i > n or v_fault[i] is not null or not security.cdesc_points_back_v1(v_s->(i - 1)->>'text');
+          exit when i > n or v_fault[i] is not null or not security.cdesc_refers_back_v1(v_s->(i - 1)->>'text');
         end loop;
-        if v_victim is null or (v_p, v_c) < (v_bp, v_bc) then v_victim := k; v_bp := v_p; v_bc := v_c; end if;
+        -- does the reading still not fit once this choice is set aside
+        v_f := not (v_cnt - v_rc <= v_max and v_tot - v_rl <= v_maxc);
+        if v_victim is null or (v_p, v_f, v_c) < (v_bp, v_bf, v_bc) then v_victim := k; v_bp := v_p; v_bf := v_f; v_bc := v_c; end if;
       end loop;
-      exit when v_victim is null;
+      -- only protected choices are left: nothing more is set aside, the reading stays held
+      exit when v_victim is null or v_bp;
       v_fault[v_victim] := 'over_limit';
       for i in v_victim + 1 .. n loop
-        exit when v_fault[i] is not null or not security.cdesc_points_back_v1(v_s->(i - 1)->>'text');
+        exit when v_fault[i] is not null or not security.cdesc_refers_back_v1(v_s->(i - 1)->>'text');
         v_fault[i] := 'depends_on_dropped_sentence';
       end loop;
     end loop;
   end if;
   -- 2. every sentence that passes and was not set aside for size is kept, in its original order. No sentence is ever cut inside: a reading that cannot be brought within the limits by whole sentences stays held
-$o0$,
-        $o1$v_page text; v_title text; v_prov text; v_cnt int; v_tot int; v_first int; v_victim int; v_c int; v_bc int; v_p boolean; v_bp boolean;
-begin$o1$],
-  array[$n0$  -- 2. every sentence that passes is kept, in its original order. Nothing is cut for length or sentence count: a reading whose only fault is its size stays held (the Platform Admin decides that separately)
-$n0$,
-        $n1$v_page text; v_title text; v_prov text;
-begin$n1$]);
+$o1$,
+        $o2$'every sentence passes; the reading is over the set sentence or character limit and cannot be brought within it by setting whole sentences aside without losing a protected sentence; it is held whole'$o2$,
+        $o3$'the reading is still over the set sentence or character limit (a reading with a failing sentence is not shortened; a size-only reading could not be brought within it by whole sentences); it is held whole'$o3$],
+  array[$n0$v_page text; v_title text; v_prov text;
+begin$n0$,
+        $n1$  -- 2. every sentence that passes is kept, in its original order. Nothing is cut for length or sentence count: a reading whose only fault is its size stays held (the Platform Admin decides that separately)
+$n1$,
+        $n2$'every sentence passes; the reading is over the set sentence or character limit and is held whole (a decision to cut is not taken here)'$n2$,
+        $n3$'after the failing sentences are set aside the remainder is still over the set sentence or character limit; it is held whole (a decision to cut is not taken here)'$n3$]);

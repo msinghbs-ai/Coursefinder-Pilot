@@ -6,7 +6,7 @@ const M = fs.readFileSync('supabase/migrations/20261113310000_cf247_cdesc_shorte
 const H = fs.readFileSync('supabase/held/cdesc_shorten_forward_recovery.sql', 'utf8')
 const RUN = fs.readFileSync('tests/fixtures/cdesc-shorten/run.sh', 'utf8')
 const WF = fs.readFileSync('.github/workflows/course-descriptions-test.yml', 'utf8')
-const P = ['security.cdesc_subset_plan_v1(uuid,uuid,jsonb)', '3c263a1984a33a133a331883cc6f8eae', '0045a951b5d039915d2310e4b973569e']
+const P = ['security.cdesc_subset_plan_v1(uuid,uuid,jsonb)', '3c263a1984a33a133a331883cc6f8eae', 'cc54bd91d7a58f522af3ef7b9141e3eb']
 
 test('only the subset plan is edited (md5-guarded) and the held file reverses it; the check, the wording policy and the machine rule are not touched', () => {
   expect(M).toContain(`select pg_temp.edit_all('${P[0]}', '${P[1]}', '${P[2]}',`)
@@ -25,9 +25,13 @@ test('the conditions of the approval are in the rule: whole sentences, size-only
   expect(M).toContain('for k in reverse n .. v_first + 1 loop')
   // the loss of a candidate counts the sentences that would dangle; a protected kind of sentence loses to any other; the later sentence wins a tie
   expect(M).toContain("v_c := v_c + security.cdesc_sentence_substance_v1(v_s->(i - 1)->>'text', v_s->(i - 1)->>'quote');")
-  expect(M).toContain('if v_victim is null or (v_p, v_c) < (v_bp, v_bc) then v_victim := k; v_bp := v_p; v_bc := v_c; end if;')
+  expect(M).toContain('v_f := not (v_cnt - v_rc <= v_max and v_tot - v_rl <= v_maxc);')
+  expect(M).toContain('if v_victim is null or (v_p, v_f, v_c) < (v_bp, v_bf, v_bc) then v_victim := k; v_bp := v_p; v_bf := v_f; v_bc := v_c; end if;')
+  // a choice that would remove a protected sentence is never taken: the reading stays held
+  expect(M).toContain('exit when v_victim is null or v_bp;')
+  expect(M).toContain('create or replace function security.cdesc_refers_back_v1(p_text text) returns boolean language sql immutable')
   expect(M).toContain("v_fault[v_victim] := 'over_limit';")
-  expect(M).toContain("exit when v_fault[i] is not null or not security.cdesc_points_back_v1(v_s->(i - 1)->>'text');")
+  expect(M).toContain("exit when v_fault[i] is not null or not security.cdesc_refers_back_v1(v_s->(i - 1)->>'text');")
   // the limits are the existing settings (read by the plan as v_max and v_maxc); no text function cuts inside a sentence
   expect(M).not.toMatch(/\b(left|substr|substring)\(\s*(t|v_text|s->>'text')/)
 })

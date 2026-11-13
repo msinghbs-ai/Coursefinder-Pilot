@@ -38,7 +38,17 @@ select pg_temp.held(908, 1, pg_temp.arr(pg_temp.ok(908, 1), pg_temp.bad(908, 2, 
 select pg_temp.held(909, 1, pg_temp.arr(pg_temp.ok(909, 1), jsonb_build_object('text', 'Graduates can apply for registration.', 'quote', 'Graduates can apply for professional registration after the course.', 'on_page', true), pg_temp.ok(909, 3), pg_temp.ok(909, 4), pg_temp.ok(909, 5)));
 -- 910 five sentences: the second says little and the third and fourth lean on it ("It ..."): setting the second aside would take three, so the fourth alone goes
 select pg_temp.held(910, 1, pg_temp.arr(pg_temp.ok(910, 1), pg_temp.thin(), pg_temp.back(910, 3), pg_temp.back(910, 4), pg_temp.ok(910, 5)));
-create temporary table crs_before as select n, (select value->'sentences' from pipeline.field_enrich_items where id = pg_temp.rd(n)) s from generate_series(901, 910) n;
+-- 911 five sentences, every one after the first about a registration, placement, qualification or pathway: no choice is left that keeps them, so it stays held
+select pg_temp.held(911, 1, pg_temp.arr(pg_temp.ok(911, 1), jsonb_build_object('text', 'Graduates can apply for registration.', 'quote', 'Graduates can apply for professional registration after the course.', 'on_page', true),
+  jsonb_build_object('text', 'A work placement is part of study.', 'quote', 'A supervised work placement is part of your study.', 'on_page', true),
+  jsonb_build_object('text', 'Entry needs a prior qualification.', 'quote', 'Entry needs a prior qualification in a related field.', 'on_page', true),
+  jsonb_build_object('text', 'Graduates gain a pathway to further study.', 'quote', 'Graduates gain a pathway to further study at degree level.', 'on_page', true)));
+-- 912 over the character limit only: two short sentences and a long last one. Setting the long one aside fits at once; the short ones are not taken first
+select pg_temp.held(912, 1, pg_temp.arr(pg_temp.lng(912, 1, 20), pg_temp.thin(), jsonb_build_object('text', 'Students attend weekly workshops.', 'quote', 'All students attend weekly workshops on campus.', 'on_page', true), pg_temp.lng(912, 4, 36)));
+-- 913 the second says little and the third says "these skills" in the middle of the sentence: the third is never left without the second
+select pg_temp.held(913, 1, pg_temp.arr(pg_temp.ok(913, 1), pg_temp.thin(), jsonb_build_object('text', 'Students apply these skills in a final project.', 'quote', 'Students apply these practical skills in a final industry project.', 'on_page', true), pg_temp.ok(913, 4), pg_temp.ok(913, 5)));
+create temporary table crs_before as select n, (select value->'sentences' from pipeline.field_enrich_items where id = pg_temp.rd(n)) s from generate_series(901, 913) n;
+select pg_temp.expect('holds: 911 and 913 are held for the sentence count, 912 for its length', (select bool_and(value->'check'->>'rule' = 'sentence_count') from pipeline.field_enrich_items where id in (pg_temp.rd(911), pg_temp.rd(913))) and (select value->'check'->>'rule' = 'length' from pipeline.field_enrich_items where id = pg_temp.rd(912)));
 
 select pg_temp.expect('holds: the readings are held for their size (901 to 904, 907 and 908 sentence count; 905 and 906 length)',
   (select bool_and(reason like 'held: sentence_count:%') from pipeline.field_enrich_items where id in (pg_temp.rd(901), pg_temp.rd(902), pg_temp.rd(903), pg_temp.rd(904), pg_temp.rd(907), pg_temp.rd(908)))
@@ -53,6 +63,9 @@ select pg_temp.expect('plan: a single sentence over the character limit cannot f
 select pg_temp.expect('plan: a reading with a failing sentence and a size problem is not shortened and stays held (908 over_length_needs_decision)', pg_temp.plan(908)->>'rule' = 'over_length_needs_decision');
 select pg_temp.expect('REGRESSION plan: a sentence about registration is not the one set aside though it is the shortest (909: 5 over_limit; 2 kept)', (pg_temp.plan(909)->>'ok')::boolean and pg_temp.kept(909) = '[1, 2, 3, 4]' and pg_temp.dcause(909) = '5:over_limit');
 select pg_temp.expect('REGRESSION plan: sentences that lean on a thin one are not swept away with it (910: one sentence set aside, four kept)', (pg_temp.plan(910)->>'ok')::boolean and jsonb_array_length(pg_temp.plan(910)->'subset'->'kept') = 4 and pg_temp.kept(910) like '[1, 2,%');
+select pg_temp.expect('plan: when every choice would remove a protected sentence nothing is set aside and the reading stays held (911 over_length_needs_decision)', pg_temp.plan(911)->>'rule' = 'over_length_needs_decision');
+select pg_temp.expect('REGRESSION plan: the choice that fits at once is taken, not the shortest sentences first (912: 4 over_limit; 1 to 3 kept)', (pg_temp.plan(912)->>'ok')::boolean and pg_temp.kept(912) = '[1, 2, 3]' and pg_temp.dcause(912) = '4:over_limit');
+select pg_temp.expect('REGRESSION plan: a sentence that says "these skills" is not left behind without the sentence it refers to (913: 2 and 3 both kept, one other set aside)', (pg_temp.plan(913)->>'ok')::boolean and pg_temp.kept(913) like '[1, 2, 3,%' and jsonb_array_length(pg_temp.plan(913)->'subset'->'kept') = 4);
 select pg_temp.expect('plan: every kept sentence is one of the reading''s own sentences, whole and in order (901, 902, 904)',
   pg_temp.plan(901)->>'text' = pg_temp.pick(901, 1, 2, 3, 4) and pg_temp.plan(902)->>'text' = pg_temp.pick(902, 1, 3, 4, 5) and pg_temp.plan(904)->>'text' = pg_temp.pick(904, 1, 2, 3, 4));
 create temporary table crs_run as select pg_temp.recover() r;
@@ -62,4 +75,5 @@ select pg_temp.expect('REGRESSION recovery: 901, 902, 904, 905 and 909 are admit
 select pg_temp.expect('REGRESSION recovery: the reading keeps its original text, and the machine admission records the sentence set aside for size with its cause and the reason the reading was held (902)',
   (select value->'subset_of_reading'->'original'->>'text' from pipeline.field_enrich_items where id = pg_temp.rd(902)) = pg_temp.pick(902, 1, 2, 3, 4, 5) and pg_temp.sub(902)->'dropped'->0->>'cause' = 'over_limit' and pg_temp.sub(902)->'dropped'->0->>'text' = 'Graduates gain practical skills.' and pg_temp.sub(902)->>'cause' = 'sentence_count');
 select pg_temp.expect('recovery: 906 (cannot fit), 907 (locked by hand) and 908 (a failing sentence and a size problem) are not admitted and no Layer 4 item is made for them', pg_temp.descr(906) is null and pg_temp.descr(907) is null and pg_temp.descr(908) is null and pg_temp.l4(906) = 0 and pg_temp.l4(907) = 0 and pg_temp.l4(908) = 0);
+select pg_temp.expect('recovery: 911 (only protected choices) is not admitted and no Layer 4 item is made; 912 is admitted with its first three sentences', pg_temp.descr(911) is null and pg_temp.l4(911) = 0 and pg_temp.descr(912) = pg_temp.pick(912, 1, 2, 3));
 do $$ begin if exists (select 1 from g_t where not ok) then raise notice 'crs: FAILURES'; else raise notice 'crs: all % checks pass', (select count(*) from g_t); end if; end $$;
