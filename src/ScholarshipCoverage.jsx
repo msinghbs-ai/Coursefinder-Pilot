@@ -31,7 +31,7 @@ export default function ScholarshipCoverage({rank=3,onError,navigate}){
   const readFinding=async()=>{try{const{data:d,error}=await supabase.rpc('admin_jobs',{p_action:'read',p_args:{}});if(error)throw error;const ids=new Set();for(const j of d?.jobs||[])if(j.kind==='scholarship_provider_scan')for(const id of (j.args?.providers||j.args?.provider_ids||[]))ids.add(String(id));setFinding(prev=>{if(prev.size&&!ids.size)load();return ids})}catch{}}
   useEffect(()=>{if(!canRun)return;readFinding();const t=setInterval(()=>{if(document.visibilityState==='visible')readFinding()},finding.size?8000:30000);return()=>clearInterval(t)},[canRun,finding.size])
   useEffect(()=>{const t=setTimeout(()=>setQ(query.trim()),280);return()=>clearTimeout(t)},[query])
-  const load=async()=>{setBusy(true);try{const{data:d,error}=await supabase.rpc('admin_scholarship_coverage_read',{p_scope:scope,p_query:q||null,p_limit:300,p_offset:0});if(error)throw error;setData(d)}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
+  const load=async()=>{if(scope==='providers')return;setBusy(true);try{const{data:d,error}=await supabase.rpc('admin_scholarship_coverage_read',{p_scope:scope,p_query:q||null,p_limit:300,p_offset:0});if(error)throw error;setData(d)}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
   useEffect(()=>{load()},[scope,q])
   const t=data?.totals||{},ap=data?.auto_publish||{},rows=data?.rows||[]
   return <div className="m-page-stack sc-cov" data-scholarship-coverage>
@@ -49,13 +49,14 @@ export default function ScholarshipCoverage({rank=3,onError,navigate}){
         <div className="ar-tabs" role="tablist" aria-label="Which providers">
           <button role="tab" aria-selected={scope==='watch'} className={scope==='watch'?'active':''} onClick={()=>setScope('watch')}>Watch list</button>
           <button role="tab" aria-selected={scope==='all'} className={scope==='all'?'active':''} onClick={()=>setScope('all')}>All with scholarships</button>
+          <button role="tab" aria-selected={scope==='providers'} className={scope==='providers'?'active':''} onClick={()=>setScope('providers')} data-cov-tab-providers>All providers</button>
         </div>
         <label className="m-searchbox"><Search size={16}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search provider" aria-label="Search provider"/></label>
       </div>
       {canRun&&<div className="ar-bulk" data-cov-bulk><span>{picked.size?`${fmtNumber(picked.size)} selected`:'Tick providers to find their scholarships now'}</span>{picked.size>0&&<><Button compact variant="primary" disabled={starting||picked.size>50} onClick={async()=>{setStarting(true);setNote('');setFail('');try{const r=await startProviderScans([...picked],picked.size);if(r){setNote(`Started "${r.title}". The providers show Finding… until it finishes; progress is also in Scheduled jobs › Task manager.`);setPicked(new Set());await readFinding()}}catch(e){setFail(e.message||String(e))}finally{setStarting(false)}}}>{starting?'Starting…':`Find scholarships now (${fmtNumber(picked.size)})`}</Button><Button compact onClick={()=>setPicked(new Set())}>Clear</Button>{picked.size>50&&<small className="sc-sub">At most 50 in one task</small>}</>}</div>}
       {note&&<p role="status" className="sc-note" data-cov-note>{note} <a href="#scheduled-jobs?tab=tasks">Open Task manager</a></p>}
       {fail&&<p role="alert" className="sc-note sc-bad" data-cov-fail>Could not start: {fail}</p>}
-      {busy&&!data?<Loading label="Loading coverage…"/>:<div className="cf-table-wrap"><table className="cf-table sc-table">
+      {scope==='providers'?<AllProviders query={q} open={open} setOpen={setOpen} onError={onError}/>:busy&&!data?<Loading label="Loading coverage…"/>:<div className="cf-table-wrap"><table className="cf-table sc-table">
         <thead><tr>{canRun&&<th className="ar-check"><input type="checkbox" aria-label="Select all providers shown" checked={rows.length>0&&rows.every(r=>picked.has(r.provider_id))} onChange={e=>setPicked(e.target.checked?new Set(rows.map(r=>r.provider_id)):new Set())}/></th>}<th>Provider</th><th className="num" title="Scholarships named on the provider's listing page">Listed</th><th className="num" title="Listed scholarships we hold a record for">Found</th><th className="num">Published</th><th className="num" title="Listed with no record of ours">Missing</th><th className="num" title="Our records the listing page does not name">Other records</th><th>State</th></tr></thead>
         <tbody>{rows.length===0?<tr><td colSpan={8}>{busy?'Loading…':'No providers match.'}</td></tr>:rows.map(r=>{const[sl,st]=STATE[r.state]||[r.state,'neutral'];return <tr key={r.provider_id} data-cov-row={r.provider_id} className={open===r.provider_id?'is-selected':''} onClick={()=>setOpen(r.provider_id)} style={{cursor:'pointer'}}>
           {canRun&&<td className="ar-check" onClick={e=>e.stopPropagation()}><input type="checkbox" aria-label={`Select ${r.name}`} checked={picked.has(r.provider_id)} onChange={()=>setPicked(x=>{const n=new Set(x);n.has(r.provider_id)?n.delete(r.provider_id):n.add(r.provider_id);return n})}/></td>}
@@ -70,6 +71,42 @@ export default function ScholarshipCoverage({rank=3,onError,navigate}){
     {open&&<ProviderCoverage providerId={open} rank={rank} onClose={()=>setOpen(null)} onError={onError} onChanged={load}/>}
     {/* SS-020 step 4 (Decision 269, 3 Nov 2026): the "Settings and jobs" fold moved to Layer 2/3 › Scholarships (ScholarshipSettings below) */}
     <p className="sc-note" data-scholarship-controls-moved>Scholarship settings and jobs are on <a className="cf-link" href="#layer-2-discovery?tab=scholarships">Layer 2/3 › Scholarships</a>.</p>
+  </div>
+}
+
+// CF-247 F-SCH (Platform Admin 13 Nov 2026 §5/§6): every provider in the scholarship population - classified universities and every provider with
+// discovery, candidate pages, listings or scholarships - with its source, read, admission, publication and Layer 4 state, one disposition and the
+// next action. A snapshot rebuilt after each hourly classification (pipeline.scholarship_provider_coverage). Read: admin_scholarship_provider_coverage.
+const DISPOSITION={published:['Published','success'],admitted_not_published:['Admitted, not published','warning'],protected_hold:['Waiting for a reviewer','warning'],
+  source_found_unprocessed:['Source found, not read yet','info'],evidence_insufficient:['Read, not proven','warning'],current_awards_ineligible_or_domestic:['Domestic only','neutral'],
+  searched_none_evidenced:['Searched, none found','neutral'],website_unknown:['No official website','danger'],not_yet_attempted_or_vendor_failure:['Not searched yet','info']}
+const FUNNEL=[['providers','Providers'],['searched','Searched'],['official_source','Official source found'],['candidate_pages','Pages found'],['pages_read','Pages read'],
+  ['candidates_admitted','Admitted from pages'],['scholarships_published','Scholarships published'],['providers_published','Providers with published']]
+function AllProviders({query,open,setOpen,onError}){
+  const[f,setF]=useState({country:'',universities:'true',disposition:'',has_published:''}),[sort,setSort]=useState('provider'),[data,setData]=useState(null),[busy,setBusy]=useState(false)
+  const load=async()=>{setBusy(true);try{const args={...f,query:query||null,sort,limit:500};const{data:d,error}=await supabase.rpc('admin_scholarship_provider_coverage',{p_args:args});if(error)throw error;setData(d)}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
+  useEffect(()=>{load()},[f,sort,query])
+  const set=k=>e=>setF(x=>({...x,[k]:e.target.value})),fu=data?.funnel||{},ds=data?.dispositions||{},rows=data?.rows||[]
+  return <div data-cov-providers>
+    <div className="sc-cov-filters">
+      <label><small>Country</small><select value={f.country} onChange={set('country')} aria-label="Country"><option value="">All countries</option>{(data?.countries||[]).map(c=><option key={c.code} value={c.code}>{c.code} ({fmtNumber(c.n)})</option>)}</select></label>
+      <label><small>Providers</small><select value={f.universities} onChange={set('universities')} aria-label="Providers"><option value="true">Universities</option><option value="false">Other providers</option><option value="">All</option></select></label>
+      <label><small>Published scholarships</small><select value={f.has_published} onChange={set('has_published')} aria-label="Published scholarships"><option value="">Any</option><option value="true">With published</option><option value="false">Without published</option></select></label>
+      <label><small>State</small><select value={f.disposition} onChange={set('disposition')} aria-label="State"><option value="">All states</option>{Object.entries(DISPOSITION).map(([k,[l]])=><option key={k} value={k}>{l}{ds[k]!=null?` (${fmtNumber(ds[k])})`:''}</option>)}</select></label>
+      <label><small>Sort</small><select value={sort} onChange={e=>setSort(e.target.value)} aria-label="Sort"><option value="provider">Provider</option><option value="country">Country</option><option value="published">Published</option><option value="candidates">Pages found</option><option value="discovered">Last searched</option><option value="retry">Next retry</option></select></label>
+      <small className="sc-sub">{data?.refreshed_at?`Snapshot ${fmtDateTime(data.refreshed_at)}`:'Snapshot builds at the next hourly classification'}</small>
+    </div>
+    <div className="sc-funnel" data-cov-funnel>{FUNNEL.map(([k,l])=><div key={k}><small>{l}</small><strong>{fmtNumber(fu[k]||0)}</strong></div>)}</div>
+    {busy&&!data?<Loading label="Loading providers…"/>:<div className="cf-table-wrap"><table className="cf-table sc-table">
+      <thead><tr><th>Provider</th><th>Country</th><th>State</th><th className="num" title="Candidate pages found / read">Pages</th><th className="num">Admitted</th><th className="num">Published</th><th className="num" title="Layer 4 cases and AI reviews waiting">Layer 4</th><th>Last searched</th><th>Next action</th><th>Next retry</th></tr></thead>
+      <tbody>{rows.length===0?<tr><td colSpan={10}>{busy?'Loading…':'No providers match.'}</td></tr>:rows.map(r=>{const[dl,dt]=DISPOSITION[r.disposition]||[r.disposition,'neutral'];return <tr key={r.provider_id} data-cov-provider={r.provider_id} className={open===r.provider_id?'is-selected':''} onClick={()=>setOpen(r.provider_id)} style={{cursor:'pointer'}}>
+        <td><strong>{r.provider}</strong>{r.website&&<small className="sc-sub"> {host(r.website)}</small>}</td><td>{r.country}</td>
+        <td><StatusChip value={r.disposition} tone={dt} label={dl}/></td>
+        <td className="num">{fmtNumber(r.candidates)} / {fmtNumber(r.candidates_read)}</td><td className="num">{fmtNumber(r.scholarships_active)}</td><td className="num">{fmtNumber(r.scholarships_published)}</td>
+        <td className="num">{r.layer4_open+r.ai_reviews_pending?<b className="sc-bad">{fmtNumber(r.layer4_open+r.ai_reviews_pending)}</b>:'0'}</td>
+        <td>{r.discovered_at?fmtDateTime(r.discovered_at):'Never'}{r.discovery_status?<small className="sc-sub"> {r.discovery_status}</small>:null}</td>
+        <td><small>{r.next_action}</small></td><td>{r.next_retry?fmtDateTime(r.next_retry):'—'}</td></tr>})}</tbody>
+    </table></div>}
   </div>
 }
 
