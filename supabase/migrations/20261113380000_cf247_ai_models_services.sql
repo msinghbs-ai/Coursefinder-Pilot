@@ -325,7 +325,7 @@ language plpgsql stable security definer set search_path = '' as $function$
 --   (budgets.ai_daily_ceiling_usd) and cap (the service's own). In Stop at limits they hold scheduled work (on_demand_exempt: an open on-demand
 --   request of the purpose group is let through). In Observe only they are computed and reported (would_hold, would_hold_kind) and stop nothing.
 declare r pipeline.ai_service_routes%rowtype; v_models jsonb; v_skipped jsonb; v_allowed int; v_usd numeric; v_calls bigint; v_all numeric; v_ceiling numeric;
-        v_kind text; v_detail text; v_lk text; v_ld text; v_bal numeric; v_at timestamptz; v_floor numeric;
+        v_kind text; v_detail text; v_lk text; v_ld text; v_bal numeric; v_at timestamptz; v_floor numeric; v_since numeric := 0; v_est numeric;
         v_age int := coalesce((security.toolset_setting('openrouter', 'balance_max_age_minutes'))::text::numeric, 90)::int;
         v_stop boolean := security.toolset_enforced('openrouter');
         v_day timestamptz := date_trunc('day', now() at time zone 'UTC') at time zone 'UTC';  -- fixed: the UTC day the AI guards count (security.ai_spend_today_v1)
@@ -349,13 +349,18 @@ begin
   v_ceiling := security.pipeline_num_v1('budgets.ai_daily_ceiling_usd', 14);
   select o.remaining_usd, o.observed_at into v_bal, v_at from pipeline.layer3_openrouter_observations o where o.kind = 'credits' and o.remaining_usd is not null order by o.observed_at desc limit 1;
   v_floor := coalesce((security.toolset_setting('openrouter', 'credit_floor_usd'))::text::numeric, 0);
+  -- the balance is read every 15 minutes: the spend recorded since the reading is taken off it, so a burst between two readings cannot run through the floor
+  if v_at is not null then select coalesce(sum(l.cost_usd), 0) into v_since from pipeline.ai_spend_ledger l where l.at > v_at; end if;
+  v_est := v_bal - v_since;
   if not r.enabled then v_kind := 'off'; v_detail := 'switched off (Models & services)';
   elsif v_allowed = 0 then v_kind := 'no_model'; v_detail := 'no allowed model in the cascade';
   elsif jsonb_array_length(v_models) = 0 then v_kind := 'no_qualified_model'; v_detail := 'no model in the cascade is qualified for this service';
   elsif v_bal is null then v_kind := 'balance_unknown'; v_detail := 'no OpenRouter balance reading: AI work is held until one is recorded';
   elsif v_at < now() - make_interval(mins => v_age) then v_kind := 'balance_stale';
     v_detail := format('the last OpenRouter balance reading is %s minutes old (limit %s, openrouter.balance_max_age_minutes): AI work is held until a new one is recorded', floor(extract(epoch from now() - v_at) / 60), v_age);
-  elsif v_bal <= v_floor then v_kind := 'credit_floor'; v_detail := 'credit_floor';
+  elsif v_est <= v_floor then v_kind := 'credit_floor';
+    v_detail := format('the OpenRouter balance is at or below the credit floor: about US$%s left (US$%s at the last reading, less US$%s spent since), floor US$%s. All AI work is held, Run now included, until credit is added or the floor is lowered',
+                       round(v_est, 2), round(v_bal, 2), round(v_since, 2), v_floor);
   end if;
   if v_ceiling > 0 and v_all >= v_ceiling then v_lk := 'ceiling';
     v_ld := format('daily ceiling: US$%s spent today (UTC) across all AI services, ceiling US$%s (budgets.ai_daily_ceiling_usd)', round(v_all, 2), v_ceiling);
@@ -372,7 +377,7 @@ begin
                             'on_demand_exempt', v_kind is null and v_stop and v_lk is not null,
                             'would_hold', v_kind is not null or v_lk is not null, 'would_hold_kind', coalesce(v_kind, v_lk), 'would_hold_reason', coalesce(v_detail, v_ld),
                             'enforcing', v_stop, 'mode', case when v_stop then 'stop' else 'observe' end,
-                            'balance', jsonb_build_object('usd', v_bal, 'floor_usd', v_floor, 'known', v_bal is not null, 'observed_at', v_at, 'max_age_minutes', v_age));
+                            'balance', jsonb_build_object('usd', v_bal, 'spent_since_usd', round(v_since, 4), 'estimated_usd', round(v_est, 4), 'floor_usd', v_floor, 'known', v_bal is not null, 'observed_at', v_at, 'max_age_minutes', v_age));
 end $function$;
 create or replace function security.ai_on_demand_providers_v1(p_service text) returns uuid[]
 language sql stable security definer set search_path = '' as $function$

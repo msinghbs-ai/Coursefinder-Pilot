@@ -53,6 +53,8 @@ declare -A LIVE2=(
   ["public.admin_toolsets_read()"]=c54f956cedc46cb6e18d8122d2d14c9b
   ["security.ledger_retention_v1()"]=d9f7df569b5bd1a975fc13fee5ef0b55
   ["public.admin_provider_description_run_v1(text,jsonb)"]=74ea2ec5577cef7370c03327881d6cb8
+  ["public.admin_adapter_autobuild(text,jsonb)"]=e65b54a01d66ba1247bed20f6e80c4bb
+  ["public.admin_enrich_fields(text,jsonb)"]=cc28b7990d693d3d273b23b67e47d71c
   ["security.scholarship_ai_active_v1()"]=74a1d5993a35b209ffbaa177ee6eec13
   ["security.scholarship_ai_next_model_v1(text)"]=e69e857eff40d3d2d1c1e03d981ee1cd
   ["security.adapter_builder_model_for_v1(uuid)"]=eaf3a8ba8ba0d21e3f03795773ad12f3
@@ -130,9 +132,13 @@ echo "phase 2: refused without phase 1 and over a drifted live body, nothing lef
 EDITED2="$(printf "'%s'," "${!LIVE2[@]}" | sed 's/public\.//g; s/,$//')"
 OTHERS2="select md5(string_agg(p.oid::regprocedure::text || md5(pg_get_functiondef(p.oid)), '|' order by p.oid::regprocedure::text)) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
   where n.nspname in ('security', 'public', 'auth') and p.prokind = 'f' and p.oid::regprocedure::text not in ($EDITED2)
-    and p.proname not in ('ai_route_gate_v1', 'ai_route_open_v1', 'svc_ai_model_answered_v1', 'ai_route_guard_v1', 'ai_service_model_v1', 'ai_central_sync_v1', 'ai_route_central_trg', 'ai_central_settings_trg', 'admin_ai_overview_v1', 'admin_ai_route_set_v1', 'ai_settings_not_read_v1', 'ai_model_status_trg', 'svc_ai_model_answered_v1', 'admin_ai_qualification_set_v1')"
+    and p.proname not in ('ai_route_gate_v1', 'ai_route_open_v1', 'svc_ai_model_answered_v1', 'ai_route_guard_v1', 'ai_service_model_v1', 'ai_central_sync_v1', 'ai_route_central_trg', 'ai_central_settings_trg', 'admin_ai_overview_v1', 'admin_ai_route_set_v1', 'ai_settings_not_read_v1', 'ai_model_status_trg', 'svc_ai_model_answered_v1', 'admin_ai_qualification_set_v1', 'svc_ai_model_allowed_v1')"
 G0=$(q $DB "$OTHERS2")
+# round 5 (note e): a cost row written by a running job while phase 1 was being applied has no service; phase 2 gives today's rows theirs once more
+$P -d $DB -qc "update pipeline.ai_spend_ledger set service_code = null where id in (select id from pipeline.ai_spend_ledger where at >= date_trunc('day', now() at time zone 'UTC') at time zone 'UTC' order by id limit 2)"
+[ "$($P -d $DB -Atc 'select count(*) from pipeline.ai_spend_ledger where service_code is null')" = 2 ] || { echo 'the fixture has no cost rows of today to un-attribute'; exit 1; }
 OUT=$($P -d $DB -1 -At -f $MIG2 2>&1) || { echo "$OUT" | tail -5; exit 1; }
+[ "$($P -d $DB -Atc 'select count(*) from pipeline.ai_spend_ledger where service_code is null')" = 0 ] || { echo 'phase 2 left a cost row of today without its service'; exit 1; }
 [ "$(grep -c ': applied$' <<<"$OUT")" = ${#LIVE2[@]} ] || { echo "phase 2 did not apply its ${#LIVE2[@]} guarded edits"; echo "$OUT" | tail -5; exit 1; }
 [ "$(q $DB "$OTHERS2")" = "$G0" ] || { echo "phase 2 changed a function it does not declare"; exit 1; }
 for s in "${!LIVE2[@]}"; do A=$(hdr "$s" | cut -d' ' -f2); [ -n "$A" ] && [ "$(md5of $DB "$s")" = "$A" ] || { echo "after md5 of $s: $(md5of $DB "$s") (header: $A)"; exit 1; }; done

@@ -1,5 +1,18 @@
 # AI models and services: page contract
 
+## Changes for the UI (round 5)
+
+Backend head after the second independent QA (13 Nov 2026). Not approved to merge; nothing is applied to live.
+
+1. **changed: five services are seeded switched off** (`enabled: false`, `held_kind: "off"`): `course_entry_requirements`, `entry_matrices`, `entry_requirements_v2_shadow`, `ops_diagnosis`, `page_identity`. Round 4 seeded them on and held as `no_qualified_model`. `skipped` and `qualification` still say why no model is handed out.
+2. **Recording a qualification never changes `enabled`.** Switching on is `admin_ai_route_set_v1(..., p_enabled => true, p_reason)` (rank 5), its own step.
+3. **changed: `admin_ai_route_set_v1` refusals** (plain messages, `error.message`):
+   - `not qualified for this service: <codes> (the Platform Admin records a qualification first)` when the cascade adds a model that is not qualified for the service. A model already in the cascade may stay.
+   - `this service cannot be switched on yet: no model in its cascade is qualified for it` when `p_enabled` is true, the service is off and no model of the cascade is qualified.
+4. **changed: the credit floor.** `held_reason` for `credit_floor` is a sentence (it was the bare code); keep matching on `held_kind`. The floor is checked against an estimate: the last reading less the spend recorded since it. New: `openrouter.balance_spent_since_usd`, `openrouter.balance_estimated_usd` (beside `balance_usd`, the reading), and per route `balance.spent_since_usd`, `balance.estimated_usd`.
+5. **Key check.** The edge function `layer3-provider-control` (`verify_credential`) answers HTTP 409 `{ error: "model_not_allowed", message }` for a profile whose model is not on the allowed list. Its calls appear in `usage.by_model_24h` under service `key_verify` (no route).
+6. `admin_adapter_autobuild('read')` and `admin_enrich_fields('read')` return the route's model in their existing `model` key (display only).
+
 ## Changes for the UI (round 4)
 
 Backend head after the Platform Admin's review of 13 Nov 2026 22:10. Not approved to merge; nothing is applied to live. Additive unless marked **changed**. The key names are the ones the UI branch (`cf247-ai-models-services-ui` @ 7d137e5a) already uses; where this backend differs it says **differs**.

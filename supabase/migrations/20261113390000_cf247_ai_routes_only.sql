@@ -70,6 +70,8 @@
 --   public.admin_toolsets_read()  c54f956cedc46cb6e18d8122d2d14c9b -> df2380c6d541db3756bcc88c5e62641a
 --   security.ledger_retention_v1()  d9f7df569b5bd1a975fc13fee5ef0b55 -> 3c2e418e4cb7451d616efde45f2c9861
 --   public.admin_provider_description_run_v1(text,jsonb)  74ea2ec5577cef7370c03327881d6cb8 -> 225892e00395b3c03a8532b47d4ccfbb
+--   public.admin_adapter_autobuild(text,jsonb)  e65b54a01d66ba1247bed20f6e80c4bb -> 095294a77d8965ab880c24809ae52714
+--   public.admin_enrich_fields(text,jsonb)  cc28b7990d693d3d273b23b67e47d71c -> f9cc383932373881bc50734fa2addfee
 --   security.scholarship_ai_active_v1()  74a1d5993a35b209ffbaa177ee6eec13 -> 4984eaf9195e1e6da5007af84856faf4
 --   security.scholarship_ai_next_model_v1(text)  e69e857eff40d3d2d1c1e03d981ee1cd -> 061cb6e6bfe5d85a6f747d0b96b15a5d
 --   security.adapter_builder_model_for_v1(uuid)  eaf3a8ba8ba0d21e3f03795773ad12f3 -> 2aa0c60d8bd996394b3fa2674aa3b122
@@ -108,6 +110,8 @@ begin
       ('public.admin_toolsets_read()', 'c54f956cedc46cb6e18d8122d2d14c9b', 'df2380c6d541db3756bcc88c5e62641a'),
       ('security.ledger_retention_v1()', 'd9f7df569b5bd1a975fc13fee5ef0b55', '3c2e418e4cb7451d616efde45f2c9861'),
       ('public.admin_provider_description_run_v1(text,jsonb)', '74ea2ec5577cef7370c03327881d6cb8', '225892e00395b3c03a8532b47d4ccfbb'),
+      ('public.admin_adapter_autobuild(text,jsonb)', 'e65b54a01d66ba1247bed20f6e80c4bb', '095294a77d8965ab880c24809ae52714'),
+      ('public.admin_enrich_fields(text,jsonb)', 'cc28b7990d693d3d273b23b67e47d71c', 'f9cc383932373881bc50734fa2addfee'),
       ('security.scholarship_ai_active_v1()', '74a1d5993a35b209ffbaa177ee6eec13', '4984eaf9195e1e6da5007af84856faf4'),
       ('security.scholarship_ai_next_model_v1(text)', 'e69e857eff40d3d2d1c1e03d981ee1cd', '061cb6e6bfe5d85a6f747d0b96b15a5d'),
       ('security.adapter_builder_model_for_v1(uuid)', 'eaf3a8ba8ba0d21e3f03795773ad12f3', '2aa0c60d8bd996394b3fa2674aa3b122'),
@@ -1217,6 +1221,269 @@ begin
  raise exception 'unknown provider-description action %',p_action using errcode='22023';
 end $function$;
 
+CREATE OR REPLACE FUNCTION public.admin_adapter_autobuild(p_action text, p_args jsonb DEFAULT '{}'::jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare v_rank int := security.current_role_rank(); v_pid uuid := nullif(p_args->>'provider_id', '')::uuid; v_reason text := btrim(coalesce(p_args->>'reason', ''));
+        v_today int; v_cap int; v_id uuid; v jsonb;
+begin
+  if auth.uid() is null or coalesce(v_rank, 0) < 5 then raise exception 'PIM Operator or Platform Admin required' using errcode = '42501'; end if;
+  if p_action = 'states' then
+    select coalesce(jsonb_object_agg(x.id, security.adapter_autobuild_state_v1(x.id::uuid)), '{}'::jsonb) into v
+      from (select distinct jsonb_array_elements_text(coalesce(p_args->'provider_ids', '[]'::jsonb)) id limit 200) x;
+    return v;
+  end if;
+  if p_action = 'read' then
+    return security.adapter_autobuild_state_v1(v_pid) || jsonb_build_object('can_manage', v_rank >= 6,
+      'today', (select count(*) from pipeline.adapter_autobuilds b where (b.created_at at time zone 'Australia/Melbourne')::date = (now() at time zone 'Australia/Melbourne')::date),
+      'per_day', (security.firecrawl_setting('autobuild_per_day') #>> '{}')::int,
+      'model', security.ai_route_v1('adapter_builder')->>'model');
+  end if;
+  if v_rank < 6 then raise exception 'Platform Admin required' using errcode = '42501'; end if;
+  if length(v_reason) < 4 then raise exception 'give a reason (kept in the log)'; end if;
+  if p_action = 'start' then
+    if not exists (select 1 from catalogue.providers where id = v_pid) then raise exception 'unknown provider'; end if;
+    if exists (select 1 from pipeline.uni_adapters u where u.provider_id = v_pid and u.admit) then raise exception 'this provider already has an admitting adapter: change it in the builder instead'; end if;
+    if exists (select 1 from pipeline.adapter_autobuilds b where b.provider_id = v_pid and b.status not in ('done', 'failed', 'stopped')) then raise exception 'a build is already running for this provider'; end if;
+    v_today := (select count(*) from pipeline.adapter_autobuilds b where (b.created_at at time zone 'Australia/Melbourne')::date = (now() at time zone 'Australia/Melbourne')::date);
+    v_cap := coalesce((security.firecrawl_setting('autobuild_per_day') #>> '{}')::int, 25);
+    if v_today >= v_cap then raise exception 'the automatic builds for today are used (% of %). It is a setting under Adapter builder', v_today, v_cap; end if;
+    insert into pipeline.adapter_autobuilds(provider_id, credits_cap, requested_by, reason, note)
+    values (v_pid, coalesce((security.firecrawl_setting('autobuild_credits') #>> '{}')::int, 150), auth.uid(), v_reason, 'Waiting to start (within 2 minutes).')
+    returning id into v_id;
+    insert into pipeline.admin_control_events(area, action, target, detail, actor) values ('toolsets', 'adapter_autobuild_start', v_pid::text, jsonb_build_object('build_id', v_id, 'reason', v_reason), auth.uid());
+    return jsonb_build_object('ok', true, 'build_id', v_id);
+  elsif p_action = 'stop' then
+    update pipeline.adapter_autobuilds set status = 'stopped', note = 'Stopped by a Platform Admin: ' || v_reason, updated_at = now()
+     where provider_id = v_pid and status not in ('done', 'failed', 'stopped') returning id into v_id;
+    insert into pipeline.admin_control_events(area, action, target, detail, actor) values ('toolsets', 'adapter_autobuild_stop', v_pid::text, jsonb_build_object('build_id', v_id, 'reason', v_reason), auth.uid());
+    return jsonb_build_object('ok', v_id is not null);
+  end if;
+  raise exception 'unknown action';
+end $function$;
+
+CREATE OR REPLACE FUNCTION public.admin_enrich_fields(p_action text, p_args jsonb DEFAULT '{}'::jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare v_rank int := security.current_role_rank(); v_cc text[]; v_pids uuid[]; v_fields text[]; v_job uuid; v_reason text; v_n int; v_title text; v_src pipeline.admin_jobs%rowtype;
+begin
+  if auth.uid() is null or coalesce(v_rank, 0) < 3 then raise exception 'Curator role or above required' using errcode = '42501'; end if;
+  v_cc := array(select upper(x) from jsonb_array_elements_text(coalesce(p_args->'countries', '[]'::jsonb)) x);
+  v_pids := array(select x::uuid from jsonb_array_elements_text(coalesce(p_args->'provider_ids', '[]'::jsonb)) x);
+  v_fields := array(select x from jsonb_array_elements_text(coalesce(p_args->'fields', '[]'::jsonb)) x where x in (select f.field from security.enrich_fields_v1() f));
+  -- CF-247 F-CDESC.06 (Platform Admin 10 Nov 2026): Fill description / Recheck description for chosen courses or one university, and the read-back of what they delivered, run through this same task engine
+  if p_action in ('verify', 'description_tasks') or (p_action in ('preview', 'start') and (p_args ? 'course_ids' or p_args ? 'mode')) then
+    return security.cdesc_on_demand_v1(p_action, p_args, v_rank, auth.uid());
+  end if;
+  if p_action = 'fields' then
+    return jsonb_build_object('fields', (select jsonb_agg(jsonb_build_object('field', f.field, 'label', f.label, 'level', f.level, 'allowed', f.sources) order by f.sort) from security.enrich_fields_v1() f),
+      'rules', (select coalesce(jsonb_agg(jsonb_build_object('country', r.country_code, 'field', r.field, 'sources', r.sources, 'reason', r.reason, 'updated_at', r.updated_at) order by r.country_code, r.field), '[]'::jsonb) from pipeline.field_source_rules r),
+      'countries', (select jsonb_agg(c order by c) from unnest(security.catalogue_country_codes_v1()) c),
+      'can_start', v_rank >= 4, 'can_manage', v_rank >= 6);
+  elsif p_action = 'preview' then
+    if coalesce(array_length(v_fields, 1), 0) = 0 then raise exception 'choose at least one field'; end if;
+    return (with scope as (
+              select c.id, c.provider_id, c.study_level_id, c.primary_field_id, c.duration_value, c.delivery_mode, c.open_to_international, k.iso_alpha2::text cc
+                from catalogue.courses c join catalogue.providers p on p.id = c.provider_id join ref.countries k on k.id = p.country_id
+               where c.lifecycle_status = 'active' and (cardinality(v_cc) = 0 or k.iso_alpha2::text = any (v_cc)) and (cardinality(v_pids) = 0 or c.provider_id = any (v_pids))),
+            f as (select x field from unnest(v_fields) x)
+            select jsonb_build_object('courses', (select count(*) from scope), 'universities', (select count(distinct provider_id) from scope),
+              'fields', jsonb_agg(jsonb_build_object('field', f.field,
+                'missing', case f.field when 'campus' then (select count(*) from scope s where not exists (select 1 from catalogue.course_campuses x where x.course_id = s.id))
+                                        when 'duration' then (select count(*) from scope s where s.duration_value is null)
+                                        when 'level' then (select count(*) from scope s where s.study_level_id is null)
+                                        when 'delivery' then (select count(*) from scope s where nullif(btrim(s.delivery_mode), '') is null)
+                                        when 'field_of_study' then (select count(*) from scope s where s.primary_field_id is null)
+                                        when 'international' then (select count(*) from scope s where s.open_to_international is null)
+                                        when 'english' then (select count(*) from scope s where not exists (select 1 from catalogue.course_english_requirements x where x.course_id = s.id and coalesce(x.status, 'active') = 'active'))
+                                        when 'intakes' then (select count(*) from scope s where not exists (select 1 from catalogue.course_intakes x where x.course_id = s.id and x.status = 'active'))
+                                        when 'campus_region' then (select count(*) from catalogue.campuses k where k.provider_id in (select provider_id from scope) and k.status = 'active' and k.subdivision_id is null and nullif(btrim(k.city), '') is not null)
+                                        when 'provider_address' then (select count(*) from catalogue.providers p where p.id in (select provider_id from scope) and nullif(btrim(p.address_line1), '') is null)
+                                        -- CF-247 Workstream C (3 Nov 2026): course description; application deadline (active intakes, none dated)
+                                        when 'description' then (select count(*) from scope s join catalogue.courses c on c.id = s.id where nullif(btrim(c.description), '') is null)
+                                        when 'deadline' then (select count(*) from scope s where security.enrich_deadline_missing_v1(s.id)) end,
+                'stored_page', case when f.field = 'provider_address' then (select count(distinct s2.provider_id) from pipeline.evidence_artifacts e join pipeline.sources s2 on s2.id = e.source_id
+                                                                             where s2.provider_id in (select provider_id from scope) and e.evidence_type in ('provider_contact_html_snapshot', 'enrich_home_page'))
+                                    else (select count(*) from scope s join pipeline.coverage_course_pages g on g.course_id = s.id where g.evidence_id is not null) end,
+                'adapter_value', case f.field when 'campus' then (select count(*) from scope s where exists (select 1 from pipeline.uni_adapter_results r where r.course_id = s.id and coalesce(r.fields->'extra'->>'campus', r.fields->'extra'->>'location') is not null))
+                                              when 'duration' then (select count(*) from scope s where s.duration_value is null and exists (select 1 from pipeline.uni_adapter_results r where r.course_id = s.id and r.fields->'extra'->>'duration' is not null))
+                                              when 'delivery' then (select count(*) from scope s where nullif(btrim(s.delivery_mode), '') is null and exists (select 1 from pipeline.uni_adapter_results r where r.course_id = s.id and r.fields->'extra'->>'mode' is not null))
+                                              when 'level' then (select count(*) from scope s where s.study_level_id is null and exists (select 1 from pipeline.uni_adapter_results r where r.course_id = s.id and r.fields->'extra'->>'study_level' is not null))
+                                              else null end) order by f.field))
+              from f)
+           -- 3 Nov 2026 (Platform Admin 09:32 §3): what Start would queue and its estimated spend
+           || security.enrich_fields_estimate_v1(v_cc, v_pids, v_fields, coalesce((p_args->>'ai')::boolean, true), coalesce((p_args->>'scraper')::boolean, false));
+  elsif p_action = 'start' then
+    if v_rank < 4 then raise exception 'Pipeline Operator role or above required' using errcode = '42501'; end if;
+    v_reason := btrim(coalesce(p_args->>'reason', ''));
+    if length(v_reason) < 4 then raise exception 'give a reason (it is kept with the task)'; end if;
+    if coalesce(array_length(v_fields, 1), 0) = 0 then raise exception 'choose at least one field'; end if;
+    if cardinality(v_cc) = 0 and cardinality(v_pids) = 0 then raise exception 'choose countries or universities'; end if;
+    v_title := 'Enrich ' || (select string_agg(lower(f.label), ', ' order by f.sort) from security.enrich_fields_v1() f where f.field = any (v_fields)) || ' · ' || case when cardinality(v_pids) > 0 then cardinality(v_pids) || ' universit' || case when cardinality(v_pids) = 1 then 'y' else 'ies' end else array_to_string(v_cc, ', ') end;
+    insert into pipeline.admin_jobs(kind, lane, state, title, args, progress, requested_by, reason, scope)
+    values ('enrich_fields', 'enrich', 'queued', left(v_title, 200),
+            jsonb_build_object('countries', to_jsonb(v_cc), 'provider_ids', to_jsonb(v_pids), 'fields', to_jsonb(v_fields),
+                               'ai', coalesce((p_args->>'ai')::boolean, true), 'scraper', coalesce((p_args->>'scraper')::boolean, false)),
+            jsonb_build_object('done', 0, 'total', 0), auth.uid(), v_reason, coalesce(nullif(array_to_string(v_cc, ', '), ''), cardinality(v_pids) || ' universities'))
+    returning id into v_job;
+    -- one item per course and missing field; one per university for its address and its campus list
+    insert into pipeline.field_enrich_items(job_id, provider_id, course_id, field)
+    select v_job, c.provider_id, c.id, f.x
+      from catalogue.courses c join catalogue.providers p on p.id = c.provider_id join ref.countries k on k.id = p.country_id
+      cross join unnest(v_fields) f(x)
+     where c.lifecycle_status = 'active' and f.x <> 'provider_address'
+       -- 3 Nov 2026 (Platform Admin 09:32 §6): the standing queue's rules; unpublished providers wait, and an item another open task holds is left to it
+       and not exists (select 1 from security.provider_hidden_v1 h where h.provider_id = c.provider_id)
+       and not security.enrich_item_in_flight_v1(c.provider_id, c.id, f.x)
+       and (cardinality(v_cc) = 0 or k.iso_alpha2::text = any (v_cc)) and (cardinality(v_pids) = 0 or c.provider_id = any (v_pids))
+       and case f.x when 'campus' then not exists (select 1 from catalogue.course_campuses x where x.course_id = c.id)
+                    when 'duration' then c.duration_value is null when 'level' then c.study_level_id is null
+                    when 'delivery' then nullif(btrim(c.delivery_mode), '') is null when 'field_of_study' then c.primary_field_id is null
+                    when 'international' then c.open_to_international is null
+                    when 'english' then not exists (select 1 from catalogue.course_english_requirements x where x.course_id = c.id and coalesce(x.status, 'active') = 'active')
+                    when 'intakes' then not exists (select 1 from catalogue.course_intakes x where x.course_id = c.id and x.status = 'active')
+                    when 'description' then nullif(btrim(c.description), '') is null when 'deadline' then security.enrich_deadline_missing_v1(c.id) else false end
+    on conflict do nothing;
+    -- 23 Oct 2026: campus regions, one item per university with campus cities that have no region
+    perform security.campus_regions_apply_v1();
+    insert into pipeline.field_enrich_items(job_id, provider_id, course_id, field)
+    select v_job, p.id, null::uuid, 'campus_region'
+      from catalogue.providers p join ref.countries k on k.id = p.country_id
+     where 'campus_region' = any (v_fields)
+       and not exists (select 1 from security.provider_hidden_v1 h where h.provider_id = p.id) and not security.enrich_item_in_flight_v1(p.id, null, 'campus_region')
+       and (cardinality(v_cc) = 0 or k.iso_alpha2::text = any (v_cc)) and (cardinality(v_pids) = 0 or p.id = any (v_pids))
+       and exists (select 1 from catalogue.campuses k2 where k2.provider_id = p.id and k2.status = 'active' and k2.subdivision_id is null and nullif(btrim(k2.city), '') is not null)
+    on conflict do nothing;
+    insert into pipeline.field_enrich_items(job_id, provider_id, course_id, field, state)
+    select distinct v_job, e.provider_id, null::uuid, 'campus_list', 'waiting' from pipeline.field_enrich_items e where e.job_id = v_job and e.field = 'campus'
+    on conflict do nothing;
+    if 'provider_address' = any (v_fields) then
+      insert into pipeline.field_enrich_items(job_id, provider_id, course_id, field)
+      select v_job, p.id, null::uuid, 'provider_address'
+        from catalogue.providers p join ref.countries k on k.id = p.country_id
+       where nullif(btrim(p.address_line1), '') is null and coalesce(p.lifecycle_status, 'active') = 'active'
+         and not exists (select 1 from security.provider_hidden_v1 h where h.provider_id = p.id) and not security.enrich_item_in_flight_v1(p.id, null, 'provider_address')
+         and exists (select 1 from catalogue.courses c where c.provider_id = p.id and c.lifecycle_status = 'active')
+         and (cardinality(v_cc) = 0 or k.iso_alpha2::text = any (v_cc)) and (cardinality(v_pids) = 0 or p.id = any (v_pids))
+      on conflict do nothing;
+    end if;
+    select count(*) into v_n from pipeline.field_enrich_items where job_id = v_job;
+    update pipeline.admin_jobs set progress = jsonb_build_object('done', 0, 'total', v_n) where id = v_job;
+    insert into pipeline.admin_job_events(job_id, note) values (v_job, v_n || ' item(s) to settle');
+    return jsonb_build_object('job_id', v_job, 'items', v_n);
+  elsif p_action = 'retry' then
+    -- 3 Nov 2026 (Platform Admin 09:32 §3 "Retry failed items"): the failed items of a finished task go into a new task of the same engine,
+    -- with a reason; items another open task holds and unpublished providers are left out, as at Start
+    if v_rank < 4 then raise exception 'Pipeline Operator role or above required' using errcode = '42501'; end if;
+    v_reason := btrim(coalesce(p_args->>'reason', ''));
+    if length(v_reason) < 4 then raise exception 'give a reason (it is kept with the task)'; end if;
+    select * into v_src from pipeline.admin_jobs j where j.id = nullif(p_args->>'job_id', '')::uuid and j.kind = 'enrich_fields';
+    if v_src.id is null then raise exception 'unknown task'; end if;
+    if v_src.state not in ('done', 'failed', 'cancelled') then raise exception 'the task is still open; retry its failed items when it has finished'; end if;
+    select count(*) into v_n from (select 1 from pipeline.field_enrich_items e
+      where e.job_id = v_src.id and e.state = 'failed' and e.field <> 'campus_list'
+        and not exists (select 1 from security.provider_hidden_v1 h where h.provider_id = e.provider_id)
+        and not security.enrich_item_in_flight_v1(e.provider_id, e.course_id, e.field)
+      limit security.pipeline_num_v1('enrich.retry_items_max', 5000)::int) z;
+    if v_n = 0 then raise exception 'no failed item to retry (or each is already in another open task)'; end if;
+    insert into pipeline.admin_jobs(kind, lane, state, title, args, progress, requested_by, reason, scope)
+    values ('enrich_fields', 'enrich', 'queued', left('Retry failed · ' || v_src.title, 200), (v_src.args - 'standing') || jsonb_build_object('retry_of', v_src.id),
+            jsonb_build_object('done', 0, 'total', 0), auth.uid(), v_reason, v_src.scope)
+    returning id into v_job;
+    insert into pipeline.field_enrich_items(job_id, provider_id, course_id, field)
+    select v_job, e.provider_id, e.course_id, e.field from pipeline.field_enrich_items e
+     where e.job_id = v_src.id and e.state = 'failed' and e.field <> 'campus_list'
+       and not exists (select 1 from security.provider_hidden_v1 h where h.provider_id = e.provider_id)
+       and not security.enrich_item_in_flight_v1(e.provider_id, e.course_id, e.field)
+     order by e.id limit security.pipeline_num_v1('enrich.retry_items_max', 5000)::int
+    on conflict do nothing;
+    insert into pipeline.field_enrich_items(job_id, provider_id, course_id, field, state)
+    select distinct v_job, e.provider_id, null::uuid, 'campus_list', 'waiting' from pipeline.field_enrich_items e where e.job_id = v_job and e.field = 'campus'
+    on conflict do nothing;
+    select count(*) into v_n from pipeline.field_enrich_items where job_id = v_job;
+    update pipeline.admin_jobs set progress = jsonb_build_object('done', 0, 'total', v_n) where id = v_job;
+    insert into pipeline.admin_job_events(job_id, note, detail) values (v_job, v_n || ' failed item(s) to settle again', jsonb_build_object('retry_of', v_src.id, 'reason', v_reason));
+    insert into pipeline.admin_control_events(area, action, target, detail, actor)
+    values ('enrich_fields', 'retry_failed', v_src.id::text, jsonb_build_object('job_id', v_job, 'items', v_n, 'reason', v_reason), auth.uid());
+    return jsonb_build_object('job_id', v_job, 'items', v_n, 'retry_of', v_src.id);
+  elsif p_action = 'export' then
+    -- 3 Nov 2026 (Platform Admin 09:32 §3 "Export execution and evidence results"): every item of a task with its source, quote and evidence,
+    -- in pages (pass the last id as after)
+    return (select jsonb_build_object('rows', coalesce(jsonb_agg(z.x order by z.id), '[]'::jsonb), 'page_rows', security.pipeline_num_v1('enrich.export_page_rows', 2000)) from (
+      select e.id, jsonb_build_object('id', e.id, 'university', coalesce(p.display_name, p.canonical_name), 'course', c.canonical_title, 'course_code', c.course_code,
+               'course_id', e.course_id, 'provider_id', e.provider_id, 'field', e.field, 'state', e.state, 'source', e.source, 'value', e.value, 'quote', e.quote,
+               'reason', e.reason, 'evidence_id', e.evidence_id, 'attempts', e.attempts, 'cost_usd', e.cost_usd, 'updated_at', e.updated_at) x
+        from pipeline.field_enrich_items e join catalogue.providers p on p.id = e.provider_id left join catalogue.courses c on c.id = e.course_id
+       where e.job_id = nullif(p_args->>'job_id', '')::uuid and e.id > coalesce(nullif(p_args->>'after', '')::bigint, 0)
+       order by e.id limit security.pipeline_num_v1('enrich.export_page_rows', 2000)::int) z);
+  elsif p_action = 'rule_set' then
+    if v_rank < 6 then raise exception 'Platform Admin role required' using errcode = '42501'; end if;
+    v_reason := btrim(coalesce(p_args->>'reason', ''));
+    if length(v_reason) < 4 then raise exception 'give a reason (kept in the log)'; end if;
+    if not exists (select 1 from security.enrich_fields_v1() f where f.field = p_args->>'field') then raise exception 'unknown field'; end if;
+    if exists (select 1 from jsonb_array_elements_text(coalesce(p_args->'sources', '[]'::jsonb)) s
+                where s not in (select unnest(f.sources) from security.enrich_fields_v1() f where f.field = p_args->>'field')) then
+      raise exception 'a source that cannot fill this field';
+    end if;
+    insert into pipeline.field_source_rules(country_code, field, sources, reason, updated_by, updated_at)
+    values (upper(coalesce(nullif(p_args->>'country', ''), 'ALL')), p_args->>'field', array(select jsonb_array_elements_text(p_args->'sources')), v_reason, auth.uid(), now())
+    on conflict (country_code, field) do update set sources = excluded.sources, reason = excluded.reason, updated_by = excluded.updated_by, updated_at = now();
+    insert into pipeline.admin_control_events(area, action, target, detail, actor)
+    values ('field_sources', 'set', upper(coalesce(nullif(p_args->>'country', ''), 'ALL')) || '.' || (p_args->>'field'), jsonb_build_object('sources', p_args->'sources', 'reason', v_reason), auth.uid());
+    return public.admin_enrich_fields('fields', '{}'::jsonb);
+  elsif p_action = 'stats' then
+    -- v2.15.275: coverage over time and the job's telemetry, with the limits in force and where they are changed
+    return jsonb_build_object(
+      'coverage', (with s as (select * from pipeline.enrich_coverage_snapshots),
+                        last as (select max(at) t from s), first as (select min(at) t from s),
+                        dayago as (select max(at) t from s where at <= now() - make_interval(hours => 24))
+                   select coalesce(jsonb_agg(jsonb_build_object('country', n.country_code, 'field', n.field, 'courses', n.courses, 'filled', n.filled,
+                            'first', (select x.filled from s x, first where x.at = first.t and x.country_code = n.country_code and x.field = n.field),
+                            'day_ago', (select x.filled from s x, dayago where x.at = dayago.t and x.country_code = n.country_code and x.field = n.field))
+                            order by n.country_code, n.field), '[]'::jsonb)
+                     from s n, last where n.at = last.t and (cardinality(v_cc) = 0 or n.country_code = any (v_cc))),
+      'snapshot_at', (select max(at) from pipeline.enrich_coverage_snapshots),
+      'first_snapshot_at', (select min(at) from pipeline.enrich_coverage_snapshots),
+      'last_24h', jsonb_build_object(
+        'settled', (select count(*) from pipeline.field_enrich_items where state in ('filled', 'review', 'skipped', 'failed') and updated_at > now() - make_interval(hours => 24)),
+        'filled', (select count(*) from pipeline.field_enrich_items where state = 'filled' and updated_at > now() - make_interval(hours => 24)),
+        'last_hour', (select count(*) from pipeline.field_enrich_items where state in ('filled', 'review', 'skipped', 'failed') and updated_at > now() - make_interval(hours => 1)),
+        'ai_calls', (select count(*) from pipeline.edge_request_log l where l.mode = 'enrich_ai' and l.created_at > now() - make_interval(hours => 24)),
+        'ai_failed', (select count(*) from pipeline.edge_request_log l join net._http_response r on r.id = l.request_id where l.mode = 'enrich_ai' and l.created_at > now() - make_interval(hours => 24) and r.status_code <> 200),
+        'ai_cost_usd', (select round(coalesce(sum(cost_usd), 0), 3) from pipeline.field_enrich_items where updated_at > now() - make_interval(hours => 24)),
+        'scraper_credits', (select coalesce(sum(u.units), 0) from pipeline.coverage_vendor_usage u where u.purpose = 'enrich_address' and u.at > now() - make_interval(hours => 24)),
+        'pages_requested', (select count(*) from pipeline.field_enrich_items where reason = 'course page asked to be read' and updated_at > now() - make_interval(hours => 24))),
+      'limits', jsonb_build_object(
+        'model', (select security.ai_route_v1('course_other_fields')->>'model'),
+        'ai_guard_usd', (select (value #>> '{}')::numeric from pipeline.platform_toolset_settings where toolset_key = 'openrouter' and key = 'guard_enrich_fields'),
+        'ai_spent_today_usd', (select x.spent from security.ai_spend_today_v1() x where x.use = 'enrich_fields'),
+        'openrouter_mode', (select enforcement from pipeline.platform_toolsets where key = 'openrouter'),
+        'calls_at_once', security.pipeline_num_v1('enrich.ai_calls_at_once', 2), 'items_per_call', security.pipeline_num_v1('enrich.ai_items_per_call', 30),
+        'items_a_minute', security.pipeline_num_v1('batch.enrich_fields', 400), 'campus_min_pages', security.pipeline_num_v1('enrich.campus_min_pages', 2),
+        'scraper_share', (select (value #>> '{}')::numeric from pipeline.platform_toolset_settings where toolset_key = 'firecrawl' and key = 'daily_share_other'),
+        'reads_share', (select (value #>> '{}')::numeric from pipeline.platform_toolset_settings where toolset_key = 'firecrawl' and key = 'daily_share_reads')));
+  elsif p_action = 'jobs' then
+    return (select jsonb_build_object('jobs', coalesce(jsonb_agg(jsonb_build_object('id', j.id, 'title', j.title, 'state', j.state, 'progress', j.progress, 'result', j.result, 'reason', j.reason,
+                     'args', j.args, 'created_at', j.created_at, 'finished_at', j.finished_at) order by j.created_at desc), '[]'::jsonb))
+              from (select * from pipeline.admin_jobs where kind = 'enrich_fields' order by created_at desc limit 20) j);
+  elsif p_action = 'items' then
+    return (select jsonb_build_object('items', coalesce(jsonb_agg(x order by x->>'id' desc), '[]'::jsonb)) from (
+      select jsonb_build_object('id', e.id, 'field', e.field, 'state', e.state, 'source', e.source, 'value', e.value, 'quote', e.quote, 'reason', e.reason,
+               'provider', coalesce(p.display_name, p.canonical_name), 'course', c.canonical_title, 'course_id', e.course_id, 'provider_id', e.provider_id) x
+        from pipeline.field_enrich_items e join catalogue.providers p on p.id = e.provider_id left join catalogue.courses c on c.id = e.course_id
+       where e.job_id = (p_args->>'job_id')::uuid and (nullif(p_args->>'field', '') is null or e.field = p_args->>'field')
+         and (nullif(p_args->>'state', '') is null or e.state = p_args->>'state')
+       order by e.id desc limit least(greatest(coalesce((p_args->>'limit')::int, 50), 1), 200)) z);
+  end if;
+  raise exception 'unknown action %', p_action using errcode = '22023';
+end $function$;
+
 -- 5 functions rewritten whole (short; md5-guarded above) ---------------------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION security.scholarship_ai_active_v1()
  RETURNS TABLE(model_code text, model_identifier text, prompt_version integer, ai_admission boolean)
@@ -1447,6 +1714,9 @@ begin
       'balance_note', case when v_bal.remaining_usd is null then 'No OpenRouter balance reading: every AI service is held until one is recorded.' end,
       'mode', (select t.enforcement from pipeline.platform_toolsets t where t.key = 'openrouter'),
       'balance_usd', round(v_bal.remaining_usd, 2), 'balance_observed_at', v_bal.observed_at,
+      -- the floor is checked against the estimate: the last reading less the spend recorded since it
+      'balance_spent_since_usd', (select round(coalesce(sum(l.cost_usd), 0), 4) from pipeline.ai_spend_ledger l where l.at > v_bal.observed_at),
+      'balance_estimated_usd', round(v_bal.remaining_usd - (select coalesce(sum(l.cost_usd), 0) from pipeline.ai_spend_ledger l where l.at > v_bal.observed_at), 2),
       'total_credits_usd', (coalesce(v_bal.payload->>'total_credits', v_bal.payload#>>'{data,total_credits}'))::numeric,
       'floor_usd', (security.toolset_setting('openrouter', 'credit_floor_usd'))::text::numeric,
       'low_warn_usd', (security.toolset_setting('openrouter', 'low_balance_warn_usd'))::text::numeric,
@@ -1555,6 +1825,14 @@ begin
   if v_bad is not null then raise exception 'unknown model in the cascade: %', v_bad; end if;
   select string_agg(c.code, ', ') into v_bad from unnest(p_cascade) c(code) join pipeline.ai_model_catalogue m on m.code = c.code and m.status <> 'allowed';
   if v_bad is not null then raise exception 'not an allowed model: % (Models & services › Models)', v_bad; end if;
+  -- a model can be added to a cascade only once it is qualified for this service (a model already in the cascade may stay)
+  select string_agg(c.code, ', ') into v_bad from unnest(p_cascade) c(code)
+   where c.code <> all (r.cascade) and not exists (select 1 from pipeline.ai_route_qualifications q where q.service_code = p_service and q.model_code = c.code and q.status = 'qualified');
+  if v_bad is not null then raise exception 'not qualified for this service: % (the Platform Admin records a qualification first)', v_bad; end if;
+  -- switching a service on is this step, with its reason: never a side effect of a qualification. It needs a qualified model in the cascade.
+  if coalesce(p_enabled, false) and not r.enabled and not exists (select 1 from unnest(p_cascade) c(code) join pipeline.ai_route_qualifications q on q.service_code = p_service and q.model_code = c.code and q.status = 'qualified') then
+    raise exception 'this service cannot be switched on yet: no model in its cascade is qualified for it';
+  end if;
   if p_daily_usd_cap is null then raise exception 'give a daily US$ cap (every service has one)'; end if;
   if p_daily_usd_cap < 0 or p_daily_calls_cap < 0 then raise exception 'a cap cannot be negative (leave it empty for no cap)'; end if;
   update pipeline.ai_service_routes set cascade = p_cascade, daily_usd_cap = p_daily_usd_cap, daily_calls_cap = p_daily_calls_cap, enabled = coalesce(p_enabled, enabled),
@@ -1569,8 +1847,9 @@ end $function$;
 
 create or replace function public.admin_ai_qualification_set_v1(p_service text, p_code text, p_evidence text, p_reason text, p_status text default 'qualified') returns jsonb
 language plpgsql security definer set search_path = '' as $function$
--- Records whether a model is qualified for a service, with the evidence. Platform Admin only; logged. It switches nothing on: a qualified model is
--- handed out only if the route's cascade names it and the route is on.
+-- Records whether a model is qualified for a service, with the evidence. Platform Admin only; logged. It switches nothing on and never changes a
+-- route's switch: a service with no qualified model is seeded switched off, and switching it on is its own step (public.admin_ai_route_set_v1,
+-- rank 5, with a reason). A qualified model is handed out only if the route's cascade names it and the route is on.
 declare v_reason text := btrim(coalesce(p_reason, '')); v_before jsonb;
 begin
   if auth.uid() is null or security.current_role_rank() < 6 then raise exception 'Platform Admin required' using errcode = '42501'; end if;
@@ -1606,6 +1885,36 @@ values ('function', 'public.admin_ai_config(text,jsonb)', 'Platform', 'Models & 
         current_date + security.pipeline_num_v1('hygiene.retire_after_days', 14)::int)
 on conflict (kind, name) do update set status = 'retiring', replaced_by = excluded.replaced_by, retire_after = excluded.retire_after, updated_at = now();
 
+-- the key check of the edge function layer3-provider-control sends one short call with a profile's model: it asks here first, so a model that is
+-- not allowed is never called, and no model is named in that function
+create or replace function public.svc_ai_model_allowed_v1(p_model text) returns boolean
+language plpgsql stable security definer set search_path = '' as $function$
+begin
+  if current_user <> 'postgres' and coalesce(auth.role(), '') <> 'service_role' then raise exception 'service_role required' using errcode = '42501'; end if;
+  return coalesce(security.ai_model_pinned_ok_v1(p_model), false);
+end $function$;
+revoke all on function public.svc_ai_model_allowed_v1(text) from public, anon, authenticated;
+grant execute on function public.svc_ai_model_allowed_v1(text) to service_role;
+
+insert into pipeline.component_register (kind, name, layer, area, purpose, status, introduced_in)
+values ('table', 'pipeline.ai_route_qualifications', 'Platform', 'Models & services', 'Which model is qualified for which AI service, with the evidence; only a qualified model is handed out (security.ai_route_v1)', 'active', '20261113380000'),
+       ('table', 'pipeline.ai_invocations', 'Platform', 'Models & services', 'One row per model call attempt (service, model, outcome, tokens, cost), written by the worker through public.svc_ai_model_answered_v1; kept retention.ai_invocations_days', 'active', '20261113380000')
+on conflict (kind, name) do nothing;
+
+-- a service with no qualified model starts switched off (Platform Admin review, round 5): recording a qualification must not start it. Switching
+-- on is public.admin_ai_route_set_v1, with a reason. Only routes nobody has changed are touched, so a second run never undoes a person's switch.
+update pipeline.ai_service_routes r set enabled = false, reason = 'seeded off: no model is qualified for this service yet (20261113390000)'
+ where r.enabled and r.changed_by is null
+   and not exists (select 1 from unnest(r.cascade) c(code) join pipeline.ai_route_qualifications q on q.service_code = r.service_code and q.model_code = c.code and q.status = 'qualified');
+
+-- cost rows written by running jobs while migration 20261113380000 was being applied carry no service: today's rows get theirs once more (row locks)
+update pipeline.ai_spend_ledger l
+   set service_code = security.ai_ledger_service_v1(l.lane, l.source, case
+         when l.source = 'field_enrich_items' and l.source_id ~ '^\d+$' then coalesce((select jsonb_build_object('field', e.field) from pipeline.field_enrich_items e where e.id = l.source_id::bigint), '{}'::jsonb)
+         when l.source = 'central_ai_queue' and l.source_id ~ '^\d+$' then coalesce((select jsonb_build_object('kind', q.kind) from pipeline.central_ai_queue q where q.id = l.source_id::bigint), '{}'::jsonb)
+         else '{}'::jsonb end)
+ where l.service_code is null and l.at >= date_trunc('day', now() at time zone 'UTC') at time zone 'UTC';  -- fixed: the UTC day the AI guards count
+
 do $post$
 declare v text;
 begin
@@ -1617,6 +1926,9 @@ begin
                             'scholarship_extraction', 'scholarship_eligibility', 'course_matching', 'adapter_builder')
      and security.ai_route_v1(r.service_code)->>'model' is null;
   if v is not null then raise exception 'post-check: a service that runs today has no qualified model: %', v; end if;
+  select string_agg(r.service_code, ', ') into v from pipeline.ai_service_routes r where r.enabled
+     and not exists (select 1 from unnest(r.cascade) c(code) join pipeline.ai_route_qualifications q on q.service_code = r.service_code and q.model_code = c.code and q.status = 'qualified');
+  if v is not null then raise notice 'a service is switched on with no qualified model (a person switched it): %', v; end if;
   if (security.ai_route_guard_v1()->'cascades') <> '[]'::jsonb then raise exception 'post-check: a cascade names a model that is not allowed'; end if;
   select string_agg(c.code, ', ') into v from pipeline.ai_model_catalogue c where c.status = 'allowed' and not exists (select 1 from pipeline.scholarship_ai_models x where x.code = c.code);
   if v is not null then raise exception 'post-check: an allowed model has no row in pipeline.scholarship_ai_models: %', v; end if;

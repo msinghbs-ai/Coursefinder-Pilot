@@ -184,7 +184,7 @@ declare o jsonb := public.admin_ai_overview_v1(); s jsonb;
 begin
   assert (select array_agg(k order by k) from jsonb_object_keys(o) k) = array['can_admin', 'can_control', 'caps_exceed_ceiling', 'caps_total_usd', 'ceiling_usd', 'day_start', 'events', 'guard', 'legacy', 'legacy_controls', 'mode', 'models', 'openrouter', 'rank', 'services', 'usage'];
   assert (select array_agg(k order by k) from jsonb_object_keys(o->'openrouter') k)
-         = array['balance_known', 'balance_max_age_minutes', 'balance_note', 'balance_observed_at', 'balance_usd', 'daily_ceiling_usd', 'floor_usd', 'key', 'key_present', 'key_secret_name', 'low_warn_usd', 'mode', 'settings', 'spent_today_usd', 'total_credits_usd'];
+         = array['balance_estimated_usd', 'balance_known', 'balance_max_age_minutes', 'balance_note', 'balance_observed_at', 'balance_spent_since_usd', 'balance_usd', 'daily_ceiling_usd', 'floor_usd', 'key', 'key_present', 'key_secret_name', 'low_warn_usd', 'mode', 'settings', 'spent_today_usd', 'total_credits_usd'];
   assert (o#>>'{openrouter,key_present}')::boolean and (o#>>'{openrouter,balance_usd}')::numeric = 53 and (o#>>'{openrouter,daily_ceiling_usd}')::numeric = 14 and (o#>>'{openrouter,floor_usd}')::numeric = 0.5;
   assert o::text !~* 'sk-or-|bearer', 'no key in the read';
   assert jsonb_array_length(o->'services') = 15 and jsonb_array_length(o->'models') = 18;
@@ -355,7 +355,7 @@ begin
   -- the account's own limit: the last observed balance at or below the floor holds every hand-out, on-demand included
   insert into pipeline.layer3_openrouter_observations (kind, payload, remaining_usd, observed_at) values ('credits', '{}', 0.4, now() + interval '1 second');
   r := security.ai_route_v1('calendar_reading');
-  assert (r->>'held')::boolean and r->>'held_kind' = 'credit_floor' and r->>'held_reason' = 'credit_floor' and not (r->>'on_demand_exempt')::boolean, r::text;
+  assert (r->>'held')::boolean and r->>'held_kind' = 'credit_floor' and r->>'held_reason' like 'the OpenRouter balance is at or below the credit floor%' and not (r->>'on_demand_exempt')::boolean, r::text;
   assert public.svc_central_ai_next(6) = '[]'::jsonb, 'on-demand stops at the credit floor';
   update pipeline.layer3_openrouter_observations set remaining_usd = null where remaining_usd = 0.4;
   update pipeline.layer3_openrouter_observations set kind = 'old' where kind = 'credits';   -- no balance reading at all: round 4 holds (fail closed), and the page says so

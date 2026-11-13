@@ -6,9 +6,16 @@ outside the routes. Line numbers are for worker `coverage-sweep-worker-v0.86.0` 
 
 ## 1. Who calls OpenRouter
 
-Only one edge function calls OpenRouter: `coverage-sweep` (searched: every `.ts` file under `supabase/functions` for `openrouter.ai/api`). The other
-files that mention OpenRouter (`aer-v2.ts`, `answer.ts`, `course-entry.ts`, `course-text.ts`, `description.ts`, `entry.ts`, `ops-diagnose.ts`) build
-or read requests; the call itself is always made in `index.ts`, through `cascade.ts`.
+Two edge functions call a model (searched: every `.ts` file under `supabase/functions` for `openrouter.ai/api`, `chat/completions` and `base_url`):
+
+- `coverage-sweep`, the worker: every reading call (section 2). The other files of the worker that mention OpenRouter (`aer-v2.ts`, `answer.ts`,
+  `course-entry.ts`, `course-text.ts`, `description.ts`, `entry.ts`, `ops-diagnose.ts`) build or read requests; the call itself is always made in
+  `index.ts`, through `cascade.ts`.
+- `layer3-provider-control`, action `verify_credential` (Platform Admin only): the key check sends one 8-token call ("Reply with exactly OK.") with
+  the model of the chosen Layer 3 profile, to the profile's `base_url`. Round 2 of this document said only the worker calls a model; that was
+  wrong. From round 5 the function asks `public.svc_ai_model_allowed_v1` first and refuses a profile whose model is not on the allowed list
+  (`model_not_allowed`), names no model itself, and records the call in `pipeline.ai_invocations` under service `key_verify` (it has no route,
+  no cap and no cascade: one call for each press of Verify).
 
 Two calls are not model calls: the balance read (`index.ts:730`, `GET /credits`, job `openrouter-balance`, every 15 minutes) and the price list
 (`index.ts:2803`, `GET /models`, used to reserve a price for a provider description).
@@ -49,6 +56,8 @@ Readers found on the live database by searching every function's text (13 Nov 20
 | `pipeline` / `entry.matrix_model` | `public.svc_enrich_ai_next`, `public.svc_entry_matrix_next` | none |
 | `pipeline` / `ops.ai_diagnosis_model` | `public.svc_ops_diagnosis_next`, `public.admin_provider_description_run_v1` | none |
 
+Two screens showed a model from the old places without choosing one (display only); from round 5 both show the route's model: `public.admin_adapter_autobuild` (it showed the setting `firecrawl.builder_model`; now the `adapter_builder` route) and `public.admin_enrich_fields` (it showed `pipeline.central_ai_settings`; now the `course_other_fields` route).
+
 `public.admin_provider_description_run_v1` was found in round 4 (it was not in the earlier list). It asked the setting whether a diagnosis model
 exists and wrote the setting's value on a queued diagnosis request; the reader replaced that value at lease, so no call used it. It now asks the
 route (`security.ai_route_v1('ops_diagnosis')`), and its "model" for provider descriptions is the provider description route's. The check after
@@ -66,4 +75,5 @@ on Models & services (`legacy.layer3`) and is not wired to the routes. The worke
 ## 5. Not verified
 
 - The worker was bundled and its cascade and attempt record were run with a scripted fetch; it was not type-checked with Deno and not deployed.
+- `layer3-provider-control` was bundled for syntax only; its new check and record were not run and it was not deployed. It must be deployed after migration 20261113390000 (it calls `svc_ai_model_allowed_v1`).
 - The "after" column of section 3 was verified on a copy of the live schema, not on live: nothing has been applied to live.

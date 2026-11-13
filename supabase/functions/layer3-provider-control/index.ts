@@ -39,6 +39,11 @@ Deno.serve(async(req:Request)=>{
     if(profilesError) return reply(req,400,{error:profilesError.message});
     const profile=(Array.isArray(profiles)?profiles:[]).find((p:any)=>String(p.id)===profileId);
     if(!profile) return reply(req,404,{error:'profile_not_found'});
+    // CF-247 (13 Nov 2026, AI spend control): the check sends one short call with this profile's model, so the model must be on the allowed list
+    // (pipeline.ai_model_catalogue, asked through public.svc_ai_model_allowed_v1). No model is named here.
+    const{data:modelAllowed,error:allowedError}=await svc.rpc('svc_ai_model_allowed_v1',{p_model:String(profile.model_identifier||'')});
+    if(allowedError) return reply(req,400,{error:allowedError.message});
+    if(modelAllowed!==true) return reply(req,409,{error:'model_not_allowed',message:'The model of this profile is not on the allowed list (Models & services, Models). The key is checked with an allowed model only.'});
     const{data:key,error:keyError}=await svc.rpc('layer3_provider_credential_resolve_service',{p_profile_id:profileId});
     if(keyError||!key) return reply(req,409,{error:'provider_credential_not_configured'});
     let ok=false,providerModel:string|null=null,message='',externalCallCount=0,inputTokens:number|null=null,outputTokens:number|null=null,estimatedCostUsd:number|null=null,latencyMs:number|null=null;
@@ -63,6 +68,8 @@ Deno.serve(async(req:Request)=>{
       message=ok?'Provider credential verified; full quality benchmark still required.':`Provider returned HTTP ${res.status}`;
       if(!ok&&payload?.error?.message) message+=`: ${String(payload.error.message).slice(0,300)}`;
     }catch(e){latencyMs=Math.round(performance.now()-callStarted);message=e instanceof Error?e.message:String(e)}
+    // the call is kept with every other model call (pipeline.ai_invocations, service key_verify); a failure to keep it never fails the check
+    try{await svc.rpc('svc_ai_model_answered_v1',{p_source:null,p_source_id:null,p_model:null,p_worker:'layer3-provider-control',p_attempts:[{service:'key_verify',model:String(profile.model_identifier||''),attempt_no:1,outcome:ok?'answered':'failed',failure_kind:ok?null:(/abort|timed? ?out/i.test(message)?'timeout':'http'),input_tokens:inputTokens,output_tokens:outputTokens,cost:estimatedCostUsd,source:'layer3_model_profiles',source_id:profileId}]})}catch{/* the record never fails the check */}
     await svc.rpc('layer3_provider_validation_record_service',{p_actor:String(ctx.user_id),p_profile_id:profileId,p_ok:ok,p_provider_model:providerModel,p_message:message,p_external_call_count:externalCallCount,p_input_tokens:inputTokens,p_output_tokens:outputTokens,p_estimated_cost_usd:estimatedCostUsd,p_latency_ms:latencyMs});
     return reply(req,ok?200:409,{ok,profile_id:profileId,provider_model:providerModel,state:ok?'credential_verified_pending_benchmark':'credential_verification_failed',message,usage:{external_call_count:externalCallCount,input_tokens:inputTokens,output_tokens:outputTokens,estimated_cost_usd:estimatedCostUsd,latency_ms:latencyMs}});
   }

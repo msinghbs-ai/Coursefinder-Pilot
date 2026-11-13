@@ -90,7 +90,7 @@ test('the route: allowed models in cascade order, held by the switch, the cascad
   expect(r).toContain("order by c.ord) filter (where m.status = 'allowed' and q.status = 'qualified')")   // round 4: allowed AND qualified for the service
   expect(r).toContain("v_day timestamptz := date_trunc('day', now() at time zone 'UTC') at time zone 'UTC';  -- fixed: the UTC day the AI guards count")
   expect(r).toContain("v_ceiling := security.pipeline_num_v1('budgets.ai_daily_ceiling_usd', 14);")
-  for (const reason of ['switched off (Models & services)', 'no allowed model in the cascade', "v_kind := 'credit_floor'; v_detail := 'credit_floor';", 'daily ceiling: US$%s spent today (UTC) across all AI services', 'service cap: US$%s spent today (UTC), cap US$%s', 'service cap: %s calls today (UTC), cap %s'])
+  for (const reason of ['switched off (Models & services)', 'no allowed model in the cascade', "elsif v_est <= v_floor then v_kind := 'credit_floor';", 'daily ceiling: US$%s spent today (UTC) across all AI services', 'service cap: US$%s spent today (UTC), cap US$%s', 'service cap: %s calls today (UTC), cap %s'])
     expect(r, reason).toContain(reason)
   // round 4 (Platform Admin review 13 Nov 2026 22:10). Fail closed on the balance: no reading, or one older than the setting, holds everything,
   // on-demand included, in both modes; so does the credit floor, a switched-off route and a cascade with no allowed or no qualified model
@@ -217,9 +217,9 @@ test('the central readers keep one model with their routes, both ways, and canno
 const body2 = (name) => MIG2.match(new RegExp(`CREATE OR REPLACE FUNCTION ${name.replace('.', '\\.')}\\([\\s\\S]*?\\$function\\$;`))?.[0] ?? ''
 const fn2 = (name) => MIG2.match(new RegExp(`create or replace function ${name.replace('.', '\\.')}\\([\\s\\S]*?\\$function\\$;`))?.[0] ?? ''
 
-test('phase 2: twenty-three live definitions are replaced, each md5-guarded both ways from the live text the fixture loads; phase 1 must be applied first', () => {
+test('phase 2: twenty-five live definitions are replaced, each md5-guarded both ways from the live text the fixture loads; phase 1 must be applied first', () => {
   const rows = [...MIG2.matchAll(/^      \('((?:public|security)\.[a-z0-9_]+\([a-z0-9_ ,\[\]]*\))', '([0-9a-f]{32})', '([0-9a-f]{32})'\),?$/gm)].map((m) => ({ sig: m[1], before: m[2], after: m[3] }))
-  expect(rows).toHaveLength(23)
+  expect(rows).toHaveLength(25)
   for (const r of rows) {
     const file = r.sig.replace(/^(public|security)\./, '').replace(/\(.*/, '')
     expect(md5(fs.readFileSync(`${FX}/live2/${file}.sql`, 'utf8')), r.sig).toBe(r.before)
@@ -496,11 +496,61 @@ test('round 4: roles, the mode on the page, and the documents (call paths, setti
   // only the worker calls OpenRouter
   const callers = fs.readdirSync('supabase/functions', { recursive: true }).map(String).filter((f) => f.endsWith('.ts') && fs.readFileSync(`supabase/functions/${f}`, 'utf8').includes('openrouter.ai/api'))
   expect(callers.map((f) => f.split(/[\\/]/)[0]).filter((v, i, a) => a.indexOf(v) === i)).toEqual(['coverage-sweep'])
+  // round 5: one more edge function sends a model call (the key check, to a profile's base_url): it asks the allowed list first, names no model and
+  // records the call; the call paths document lists it
+  const callsModel = fs.readdirSync('supabase/functions', { recursive: true }).map(String).filter((f) => f.endsWith('.ts') && /chat\/completions/.test(fs.readFileSync(`supabase/functions/${f}`, 'utf8')))
+    .map((f) => f.split(/[\\/]/)[0]).filter((v, i, a) => a.indexOf(v) === i).sort()
+  expect(callsModel).toEqual(['coverage-sweep', 'layer3-provider-control'])
+  const l3 = fs.readFileSync('supabase/functions/layer3-provider-control/index.ts', 'utf8')
+  expect(l3.indexOf("svc.rpc('svc_ai_model_allowed_v1'")).toBeGreaterThan(0)
+  expect(l3.indexOf("svc.rpc('svc_ai_model_allowed_v1'")).toBeLessThan(l3.indexOf('/chat/completions'))
+  expect(l3).toContain("if(modelAllowed!==true) return reply(req,409,{error:'model_not_allowed'")
+  expect(l3).toContain("service:'key_verify'")
+  expect(l3).not.toMatch(/['"`](openai|anthropic|qwen|mistralai|google|deepseek|meta-llama|moonshotai|xiaomi)\//)
+  expect(fn2('public.svc_ai_model_allowed_v1')).toContain('return coalesce(security.ai_model_pinned_ok_v1(p_model), false);')
+  expect(paths).toContain('layer3-provider-control')
   expect(doc.indexOf('## Changes for the UI (round 4)')).toBeGreaterThan(0)
   expect(doc.indexOf('## Changes for the UI (round 4)')).toBeLessThan(doc.indexOf('## Changes for the UI (round 3)'))
   for (const t of ['balance_unknown', 'balance_stale', 'no_qualified_model', 'would_hold_kind', 'enforcing', 'migration_state', 'routed_single', 'admin_ai_qualification_set_v1', 'by_model_24h', 'fallbacks_24h', 'ai-prompts.json', 'Who can do what']) expect(doc, t).toContain(t)
   const inv = fs.readFileSync('docs/platform/SETTINGS-INVENTORY-2026-11-13.md', 'utf8')
   for (const t of ['direct read', 'dynamic read', 'display only', 'none found', 'operator', 'models_services', 'engineering_default', 'retire_review', 'control_class']) expect(inv, t).toContain(t)
   expect((inv.match(/^\| `[a-z_0-9-]+` \| [^|]+ \| \d+ \| /gm) || []).length).toBe(78)   // one row per (toolset, section)
+})
+
+// ---- round 5 (second independent QA, 13 Nov 2026) --------------------------------------------------------------------------------------------------
+
+test('round 5: recording a qualification switches nothing on; a service with no qualified model starts off; the route write refuses an unqualified model', () => {
+  const qf = fn2('public.admin_ai_qualification_set_v1')
+  expect(qf.replace(/^--.*$/gm, '')).not.toMatch(/ai_service_routes\s+(r\s+)?set|\benabled\b/)   // it never touches a route
+  // seeded off: every route nobody has changed whose cascade has no qualified model
+  expect(MIG2).toMatch(/update pipeline\.ai_service_routes r set enabled = false, reason = 'seeded off: no model is qualified for this service yet \(20261113390000\)'\n where r\.enabled and r\.changed_by is null\n   and not exists \(select 1 from unnest\(r\.cascade\) c\(code\) join pipeline\.ai_route_qualifications q on q\.service_code = r\.service_code and q\.model_code = c\.code and q\.status = 'qualified'\);/)
+  const rs = fn2('public.admin_ai_route_set_v1')
+  expect(rs).toContain("if v_bad is not null then raise exception 'not qualified for this service: % (the Platform Admin records a qualification first)', v_bad; end if;")
+  expect(rs).toContain("raise exception 'this service cannot be switched on yet: no model in its cascade is qualified for it';")
+  expect(rs).toContain("if auth.uid() is null or security.current_role_rank() < 5 then raise exception 'PIM Operator role or above required' using errcode = '42501'; end if;")
+  // the case the second QA ran: qualify, still nothing handed out, switch on (rank 5, a reason, logged), handed out
+  const seeded = fs.readFileSync(`${FX}/seeded.sql`, 'utf8')
+  for (const t of ["'the qualification left the switch alone'", "'qualified, still switched off: no entry item is handed out'", "'false>true|fixture: switch on'", "'this service cannot be switched on yet: no model in its cascade is qualified for it'",
+    "'not qualified for this service: mistral-small-3.2 (the Platform Admin records a qualification first)'", "= 'course_entry_requirements entry_matrices entry_requirements_v2_shadow ops_diagnosis page_identity'"]) expect(seeded, t).toContain(t)
+})
+
+test('round 5: the credit floor counts the spend since the last reading and says so in plain words; today\'s cost rows get their service once more; the register lists the new tables', () => {
+  const r = fn('security.ai_route_v1')
+  expect(r).toContain('if v_at is not null then select coalesce(sum(l.cost_usd), 0) into v_since from pipeline.ai_spend_ledger l where l.at > v_at; end if;')
+  expect(r).toContain("elsif v_est <= v_floor then v_kind := 'credit_floor';")
+  expect(r).toContain("v_detail := format('the OpenRouter balance is at or below the credit floor: about US$%s left (US$%s at the last reading, less US$%s spent since), floor US$%s.")
+  expect(r).not.toContain("v_detail := 'credit_floor'")
+  const o = fn2('public.admin_ai_overview_v1')
+  for (const k of ["'balance_spent_since_usd'", "'balance_estimated_usd'"]) expect(o, k).toContain(k)
+  expect(MIG2).toMatch(/where l\.service_code is null and l\.at >= date_trunc\('day', now\(\) at time zone 'UTC'\) at time zone 'UTC';/)
+  expect(run).toContain("phase 2 left a cost row of today without its service")
+  for (const t of ["('table', 'pipeline.ai_route_qualifications', 'Platform', 'Models & services',", "('table', 'pipeline.ai_invocations', 'Platform', 'Models & services',"]) expect(MIG2, t).toContain(t)
+  // two screens show the route's model (display only), md5-guarded like every other edit
+  expect(body2('public.admin_adapter_autobuild')).toContain("'model', security.ai_route_v1('adapter_builder')->>'model');")
+  expect(body2('public.admin_enrich_fields')).toContain("'model', (select security.ai_route_v1('course_other_fields')->>'model'),")
+  // the scholarship end of chain is the live text: the record function differs from live by its one model lookup line
+  const live = fs.readFileSync(`${FX}/live2/svc_scholarship_ai_record.sql`, 'utf8').split('\n'), now = body2('public.svc_scholarship_ai_record').replace(/;$/, '').split('\n')
+  expect(now.filter((l, i) => l !== live[i])).toHaveLength(1)
+  expect(doc.indexOf('## Changes for the UI (round 5)')).toBeLessThan(doc.indexOf('## Changes for the UI (round 4)'))
 })
 

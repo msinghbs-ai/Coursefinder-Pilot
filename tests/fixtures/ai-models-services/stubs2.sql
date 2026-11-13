@@ -35,3 +35,5 @@ alter table pipeline.layer3_model_profiles add column secret_env_key text defaul
 create table pipeline.mode_outcome_ledger (run_at timestamptz); create table pipeline.zero_yield_snapshots (at timestamptz); create table pipeline.health_snapshots (at timestamptz); create table pipeline.ui_error_log (at timestamptz);
 -- round 4: row types named by public.admin_provider_description_run_v1 (edited: it asks the route, not the old setting; not run here)
 create table pipeline.automation_catalogue (key text, control_rank int); create table pipeline.provider_description_cohorts (id bigint, snapshot jsonb);
+-- round 5: the row type named by public.admin_enrich_fields (edited: the model it shows is the route's; not run here)
+create table if not exists pipeline.admin_jobs (id uuid, kind text, state text);
