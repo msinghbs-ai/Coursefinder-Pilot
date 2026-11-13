@@ -72,7 +72,7 @@ revoke all on function security.scholarship_value_from_benefits_v1(uuid) from pu
 select pg_temp.edit_n('security.scholarship_detail_apply_v1(bigint)', 'a9288404514058b9d126baf5511b827d', array[
   array[$o$  v_done := v_done || security.scholarship_detail_extend_v1(e.id, s.id);  -- 20261113068000: award type, sponsor, rolling, benefits
 $o$, $n$  v_done := v_done || security.scholarship_detail_extend_v1(e.id, s.id);  -- 20261113068000: award type, sponsor, rolling, benefits
-  v_done := v_done || security.scholarship_value_from_benefits_v1(s.id);  -- 20261113320000: an empty stated value from the verified benefits
+  v_done := v_done || security.scholarship_value_from_benefits_v1(s.id);  -- 20261113335000: an empty stated value from the verified benefits
 $n$]
 ], array[1]);
 
@@ -85,6 +85,6 @@ do $b$ declare r record; n int := 0; begin
   end loop;
   insert into pipeline.admin_control_events(area, action, target, detail, actor)
   values ('scholarships', 'value_from_verified_benefits_backfill', 'scholarship.scholarships',
-          jsonb_build_object('filled', n, 'migration', '20261113320000', 'directive', 'S2-Scholarship 13 Nov 2026 14:50 §4'), null);
+          jsonb_build_object('filled', n, 'migration', '20261113335000', 'directive', 'S2-Scholarship 13 Nov 2026 14:50 §4'), null);
   raise notice 'value filled for % scholarships', n;
 end $b$;
