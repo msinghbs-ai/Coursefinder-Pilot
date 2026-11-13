@@ -2,10 +2,10 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261113381500_cf247_aer_v2_reader_qwen.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations/20261113391500_cf247_aer_v2_reader_qwen.sql', 'utf8')
 
 test('prompt v2 is pinned to the chosen model, with the quote rules the v1 trial failed on', () => {
-  expect(M).toContain("'aer-v2-course-v2', 'course_page', t, encode(sha256(convert_to(t, 'UTF8')), 'hex'), 'qwen/qwen3-30b-a3b-instruct-2507', 300, 'trial', 'migration 20261113381500'")
+  expect(M).toContain("'aer-v2-course-v2', 'course_page', t, encode(sha256(convert_to(t, 'UTF8')), 'hex'), 'qwen/qwen3-30b-a3b-instruct-2507', 300, 'trial', 'migration 20261113391500'")
   expect(M).toContain('Copy each quote character for character from ONE place in the page text')
   expect(M).toContain('at most 200 characters')
   expect(M).toContain('When min_grade is filled, give a quote with value min_grade whose text contains min_grade exactly as printed')
