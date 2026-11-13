@@ -23,8 +23,14 @@ begin
   return p_sig || ': applied';
 end $f$;
 
-select pg_temp.edit_all('security.cdesc_subset_plan_v1(uuid,uuid,jsonb)', 'ae9aa0765db9a4f2ede501041a774204', '1350a9c8f46331a5469cabbd60acf660',
-  array[$o0$if security.cdesc_points_back_v1(v_s->(i - 1)->>'text') then$o0$,
+select pg_temp.edit_all('security.cdesc_subset_plan_v1(uuid,uuid,jsonb)', '3c263a1984a33a133a331883cc6f8eae', '1350a9c8f46331a5469cabbd60acf660',
+  array[$o9$    -- a ten-word run of the page is copied wording whether or not it runs through the course's title: the copy test is also run on the sentence as written
+    if f is null then
+      f := security.cdesc_sentence_fault_v1(s->>'text', s->>'quote', coalesce((s->>'on_page')::boolean, false), v_claim, v_mkt, v_sup);
+      if f->>'rule' is distinct from 'copied_sentence' then f := null; end if;
+    end if;
+    if f is not null then v_fault[i] := f->>'rule';$o9$,
+        $o0$if security.cdesc_points_back_v1(v_s->(i - 1)->>'text') then$o0$,
         $o1$  -- 1b. a passing sentence that opens by pointing back to the sentence before it, which is set aside, is set aside with it (it would be published as a fragment of it).
   --     In order, so a chain is followed. Only sentences are removed: what is kept is unchanged and goes through the same full check below
   for i in 2 .. n loop
@@ -38,7 +44,8 @@ select pg_temp.edit_all('security.cdesc_subset_plan_v1(uuid,uuid,jsonb)', 'ae9aa
 $o3$,
         $o4$v_chk jsonb; v_orig text; v_page text; v_title text; v_prov text;
 begin$o4$],
-  array[$n0$if btrim(coalesce(v_s->(i - 1)->>'text', '')) ~* '^\s*(((this|these|that|those|it|its|they|their|them|he|she|his|her|such|both|also|however|therefore|thus|moreover|furthermore|additionally|in addition|as a result|another|alternatively|further|and|which|here|each|but|or|so|yet|then|instead|otherwise|similarly|likewise|meanwhile|for example|for instance|in particular|the (program|programme|course|degree|qualification|major))\M)|["''“‘(\[«])' then$n0$,
+  array[$n9$    if f is not null then v_fault[i] := f->>'rule';$n9$,
+        $n0$if btrim(coalesce(v_s->(i - 1)->>'text', '')) ~* '^\s*(((this|these|that|those|it|its|they|their|them|he|she|his|her|such|both|also|however|therefore|thus|moreover|furthermore|additionally|in addition|as a result|another|alternatively|further|and|which|here|each|but|or|so|yet|then|instead|otherwise|similarly|likewise|meanwhile|for example|for instance|in particular|the (program|programme|course|degree|qualification|major))\M)|["''“‘(\[«])' then$n0$,
         $n1$  -- 2. every sentence that passes is kept, in its original order.$n1$,
         $n2$    f := security.cdesc_sentence_fault_v1(s->>'text', s->>'quote',$n2$,
         $n3$  -- 1. the sentences that fail a per-sentence test or the machine wording policy

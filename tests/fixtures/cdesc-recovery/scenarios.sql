@@ -34,6 +34,15 @@ select pg_temp.held(807, 1, pg_temp.arr(pg_temp.ok(807, 1), pg_temp.ok(807, 2), 
 -- 808 as 801, but the course is locked by hand
 select pg_temp.held(808, 1, pg_temp.arr(pg_temp.bad(808, 1, 'claim'), pg_temp.back(808, 2), pg_temp.ok(808, 3), pg_temp.ok(808, 4)));
 insert into pipeline.manual_locks(entity, entity_id, field, mode) values ('course', pg_temp.cid(808), 'description', 'value');
+-- 809 a claim, then a sentence that leans on it with an opener the first list missed ("Students then ..."), then two clean sentences
+select pg_temp.held(809, 1, pg_temp.arr(pg_temp.bad(809, 1, 'claim'),
+  jsonb_build_object('text', 'Students then apply ' || pg_temp.w(809, 2) || ' in later units.', 'quote', 'In later units students then apply ' || pg_temp.w(809, 2) || ' and are assessed.', 'on_page', true), pg_temp.ok(809, 3), pg_temp.ok(809, 4)));
+-- 810 a sentence that copies ten words of the page in a run that goes through the course's own title (the title is left out of the other tests, not of the copy test), then a claim, then two clean sentences
+select pg_temp.mkc(810, 1);
+update catalogue.courses set canonical_title = 'Advanced Diploma of Marine Engineering Practice' where id = pg_temp.cid(810);
+select pg_temp.reading(810, 1, 'skipped', 'held: unsupported_claim: x', pg_temp.arr(
+  jsonb_build_object('text', 'The Advanced Diploma of Marine Engineering Practice explores hull design and propulsion systems.', 'quote', 'In depth, the Advanced Diploma of Marine Engineering Practice explores hull design and propulsion systems for vessels.', 'on_page', true),
+  pg_temp.bad(810, 2, 'claim'), pg_temp.ok(810, 3), pg_temp.ok(810, 4)), true);
 
 select pg_temp.expect('holds: the readings are held by the reader''s check for the expected reasons (801 claim, 804 unsupported sentence, 805 copied sentence, 807 sentence count)',
   (select reason from pipeline.field_enrich_items where id = pg_temp.rd(801)) like 'held: unsupported_claim:%' and (select reason from pipeline.field_enrich_items where id = pg_temp.rd(804)) like 'held: unsupported_sentence:%'
@@ -50,7 +59,11 @@ select pg_temp.expect('plan: nothing left stays held (806 remainder_below_minimu
   pg_temp.plan(806)->>'rule' = 'remainder_below_minimum' and pg_temp.plan(807)->>'rule' = 'over_length_needs_decision');
 select pg_temp.expect('plan: what is kept is the reading''s own sentences, unchanged and in order (801 text is sentences 3 and 4)',
   pg_temp.plan(801)->>'text' = (select string_agg(btrim(x->>'text'), ' ' order by o) from jsonb_array_elements((select value->'sentences' from pipeline.field_enrich_items where id = pg_temp.rd(801))) with ordinality e(x, o) where o in (3, 4)));
-create temporary table crt_before as select n, (select value->'sentences' from pipeline.field_enrich_items where id = pg_temp.rd(n)) s from generate_series(801, 808) n;
+select pg_temp.expect('REGRESSION plan: a sentence that leans on a sentence set aside with "Students then ..." is set aside with it (809: 3 and 4 kept)',
+  (pg_temp.plan(809)->>'ok')::boolean and pg_temp.kept(809) = '[3, 4]' and pg_temp.dcause(809) = '1:unsupported_claim,2:depends_on_dropped_sentence');
+select pg_temp.expect('plan: ten words copied from the page in a run through the course''s title are still copied wording (810: sentence 1 set aside as copied_sentence, 3 and 4 kept)',
+  (pg_temp.plan(810)->>'ok')::boolean and pg_temp.kept(810) = '[3, 4]' and pg_temp.dcause(810) = '1:copied_sentence,2:unsupported_claim');
+create temporary table crt_before as select n, (select value->'sentences' from pipeline.field_enrich_items where id = pg_temp.rd(n)) s from generate_series(801, 810) n;
 create temporary table crt_run as select pg_temp.recover() r;
 select pg_temp.expect('REGRESSION recovery: 801, 802 and 804 are admitted by the machine rule with exactly the kept sentences, via subset_of_reading',
   pg_temp.descr(801) = (select string_agg(btrim(x->>'text'), ' ' order by o) from crt_before b, jsonb_array_elements(b.s) with ordinality e(x, o) where b.n = 801 and o in (3, 4)) and pg_temp.via(801) = 'subset_of_reading'
@@ -64,9 +77,10 @@ select pg_temp.expect('recovery: the admitted text holds no sentence that was se
   pg_temp.descr(801) !~ 'highly employed|It also builds' and pg_temp.descr(802) !~ 'highly employed|It also builds' and pg_temp.descr(805) !~ 'within the programme\.');
 create function pg_temp.pb() returns boolean language plpgsql as $$
 begin
-  return security.cdesc_points_back_v1('It also builds on x.') and security.cdesc_points_back_v1('  The program covers x.') and security.cdesc_points_back_v1('"Quoted" opening.')
+  return security.cdesc_points_back_v1('Students then apply x.') and security.cdesc_points_back_v1('As such, x is covered.') and security.cdesc_points_back_v1('Finally, x.') and not security.cdesc_points_back_v1('Thenar anatomy is covered.')
+     and security.cdesc_points_back_v1('It also builds on x.') and security.cdesc_points_back_v1('  The program covers x.') and security.cdesc_points_back_v1('"Quoted" opening.')
      and not security.cdesc_points_back_v1('Students explore x.') and not security.cdesc_points_back_v1('Italian is taught.') and not security.cdesc_points_back_v1(null);
 exception when undefined_function then return false;
 end $$;
-select pg_temp.expect('REGRESSION points back: the one definition answers as the plan''s test did (pronoun, "the program", a quote; not an ordinary opening, not a word that only starts like one)', pg_temp.pb());
+select pg_temp.expect('REGRESSION points back: the one definition answers as the plan''s test did (pronoun, "the program", "<subject> then", "as such", a quote; not an ordinary opening, not a word that only starts like one)', pg_temp.pb());
 do $$ begin if exists (select 1 from g_t where not ok) then raise notice 'crt: FAILURES'; else raise notice 'crt: all % checks pass', (select count(*) from g_t); end if; end $$;

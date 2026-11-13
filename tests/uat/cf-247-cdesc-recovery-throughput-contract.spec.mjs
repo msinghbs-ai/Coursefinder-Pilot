@@ -6,7 +6,7 @@ const M = fs.readFileSync('supabase/migrations/20261113280000_cf247_cdesc_recove
 const H = fs.readFileSync('supabase/held/cdesc_recovery_throughput_forward_recovery.sql', 'utf8')
 const RUN = fs.readFileSync('tests/fixtures/cdesc-recovery/run.sh', 'utf8')
 const WF = fs.readFileSync('.github/workflows/course-descriptions-test.yml', 'utf8')
-const P = ['security.cdesc_subset_plan_v1(uuid,uuid,jsonb)', '1350a9c8f46331a5469cabbd60acf660', 'ae9aa0765db9a4f2ede501041a774204']
+const P = ['security.cdesc_subset_plan_v1(uuid,uuid,jsonb)', '1350a9c8f46331a5469cabbd60acf660', '3c263a1984a33a133a331883cc6f8eae']
 const R = ['security.cdesc_subset_recover_v1()', '5f73026bc5ed0350107a97a0953f7588', '1652bacc1954b2a9d51ef28d6b411f35']
 
 test('two bodies are edited by md5-guarded named edits, and the held file reverses them', () => {
@@ -23,9 +23,12 @@ test('the plan tests a sentence as the check does and sets a pointing-back sente
   expect(M).toContain("f := security.cdesc_sentence_fault_v1(security.cdesc_known_strip_v1(s->>'text', v_title, v_prov), s->>'quote',")
   expect(M).toContain("if v_fault[i] is null and v_fault[i - 1] is not null and security.cdesc_points_back_v1(v_s->(i - 1)->>'text') then v_fault[i] := 'depends_on_dropped_sentence'; end if;")
   // the pointing-back test is one definition: the plan's own literal is replaced by the function, whose body carries the same literal
-  const re = M.match(/select btrim\(coalesce\(p_text, ''\)\) ~\* ('\^[^\n]+')\n\$pb\$/)[1]
+  const re = M.match(/select btrim\(coalesce\(p_text, ''\)\) ~\* ('\^[^\n]+')\n/)[1]
   expect(M).toContain(`if btrim(coalesce(v_s->(i - 1)->>'text', '')) ~* ${re} then$o4$`)
   expect(M).toContain("$n4$if security.cdesc_points_back_v1(v_s->(i - 1)->>'text') then$n4$")
+  // the copy test is also run on the sentence as written (a run through the course's title is still copied wording)
+  expect(M).toContain("if f->>'rule' is distinct from 'copied_sentence' then f := null; end if;")
+  expect(M).toContain("|\\S+\\s+then\\M)'")
   // the check, the wording policy, the machine rule and the size rule are not edited
   for (const fn of ['course_description_check_with_v1', 'cdesc_sentence_fault_v1', 'cdesc_machine_text_check_v1', 'course_description_machine_check_v1', 'course_description_machine_admit_v1']) expect(M).not.toContain(`pg_temp.edit_all('security.${fn}`)
   expect(M).not.toMatch(/insert into pipeline\.platform_toolset_settings|update pipeline\.platform_toolset_settings/)

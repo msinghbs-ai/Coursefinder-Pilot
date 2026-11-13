@@ -10,7 +10,7 @@ case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 M=supabase/migrations/20261113280000_cf247_cdesc_recovery_throughput.sql
 HELD=supabase/held/cdesc_recovery_throughput_forward_recovery.sql
 F=tests/fixtures/cdesc-recovery
-SIG='security.cdesc_subset_plan_v1(uuid,uuid,jsonb)'; BEFORE=1350a9c8f46331a5469cabbd60acf660; AFTER=ae9aa0765db9a4f2ede501041a774204
+SIG='security.cdesc_subset_plan_v1(uuid,uuid,jsonb)'; BEFORE=1350a9c8f46331a5469cabbd60acf660; AFTER=3c263a1984a33a133a331883cc6f8eae
 SIG2='security.cdesc_subset_recover_v1()'; BEFORE2=5f73026bc5ed0350107a97a0953f7588; AFTER2=1652bacc1954b2a9d51ef28d6b411f35
 OLD_S='4,14,24,34,44,54 * * * *'; NEW_S='0-34/2,44,50-58/2 * * * *'
 q() { psql -X -d "$1" -Atc "$2"; }
