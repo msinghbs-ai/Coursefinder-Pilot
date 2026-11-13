@@ -1,0 +1,76 @@
+# F-SCH per-provider scholarship coverage evidence (read-only). Platform Admin S2-Scholarship directive 13 Nov 2026 14:50 §1 ("a dated,
+# reproducible per-provider CSV evidence export with source URLs, current states, reason codes, actions and next retry, without creating
+# another mutable task register") and Developer Requirements v2.26 F-SCH.11.
+# Runs scripts/export/sch-provider-coverage-evidence.sql once, in one READ ONLY transaction, through the Supabase pooler in session mode (as
+# the AU catalogue export), and commits the dated CSV and its md5 to the branch sch-coverage-evidence (never merged; copied into the admin
+# repository beside the F-SCH Execution Register). Provider-level institution data and public official URLs only; no personal data.
+# Safety: the typed project ref must equal the repository variable SUPABASE_PROJECT_REF (never the demo project).
+name: Scholarship provider coverage evidence
+on:
+  workflow_dispatch:
+    inputs:
+      project_ref:
+        description: "Type the target project ref to confirm"
+        required: true
+      statement_timeout_s:
+        description: "statement_timeout for the query, seconds (10-120)"
+        required: true
+        default: "90"
+concurrency:
+  group: sch-provider-coverage-evidence
+  cancel-in-progress: false
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      PROJECT_REF: ${{ inputs.project_ref }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Confirm target project
+        run: |
+          if [ -z "${{ vars.SUPABASE_PROJECT_REF }}" ]; then echo "Repository variable SUPABASE_PROJECT_REF is not set"; exit 1; fi
+          if [ "$PROJECT_REF" != "${{ vars.SUPABASE_PROJECT_REF }}" ]; then echo "Typed project ref does not match SUPABASE_PROJECT_REF"; exit 1; fi
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ] || [ -z "$PGPASSWORD" ]; then echo "Database secrets are not set"; exit 1; fi
+          case "${{ inputs.statement_timeout_s }}" in ''|*[!0-9]*) echo "statement_timeout_s must be a number"; exit 1;; esac
+          if [ "${{ inputs.statement_timeout_s }}" -lt 10 ] || [ "${{ inputs.statement_timeout_s }}" -gt 120 ]; then echo "statement_timeout_s must be 10-120"; exit 1; fi
+      - name: Tools
+        run: |
+          command -v psql >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client >/dev/null; }
+          psql --version
+      - name: Resolve the session pooler (port 5432)
+        run: |
+          cfg=$(curl -sS --fail -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" "https://api.supabase.com/v1/projects/$PROJECT_REF/config/database/pooler")
+          host=$(jq -r '[.[] | select((.database_type // "PRIMARY") == "PRIMARY")][0].db_host // empty' <<<"$cfg")
+          user=$(jq -r '[.[] | select((.database_type // "PRIMARY") == "PRIMARY")][0].db_user // empty' <<<"$cfg")
+          name=$(jq -r '[.[] | select((.database_type // "PRIMARY") == "PRIMARY")][0].db_name // "postgres"' <<<"$cfg")
+          if [ -z "$host" ] || [ -z "$user" ]; then echo "::error::the pooler configuration did not give a host and user"; exit 1; fi
+          case "$user" in *".$PROJECT_REF") ;; *) echo "::error::the pooler user is not for the confirmed project"; exit 1;; esac
+          { echo "PGHOST=$host"; echo "PGPORT=5432"; echo "PGUSER=$user"; echo "PGDATABASE=$name"; echo "PGSSLMODE=require"; } >> "$GITHUB_ENV"
+      - name: Export (one READ ONLY transaction)
+        env:
+          PGAPPNAME: sch-provider-coverage-evidence
+          PGOPTIONS: "-c default_transaction_read_only=on -c statement_timeout=${{ inputs.statement_timeout_s }}s"
+        run: |
+          d=$(TZ=Australia/Melbourne date +%Y-%m-%d)
+          mkdir -p out
+          psql -X -v ON_ERROR_STOP=1 --csv -f scripts/export/sch-provider-coverage-evidence.sql > "out/sch-provider-coverage-$d.csv"
+          rows=$(($(wc -l < "out/sch-provider-coverage-$d.csv") - 1))
+          md5=$(md5sum "out/sch-provider-coverage-$d.csv" | cut -c1-32)
+          echo "$md5  sch-provider-coverage-$d.csv" > "out/sch-provider-coverage-$d.csv.md5"
+          { echo "## Scholarship provider coverage evidence"; echo; echo "Date $d; rows $rows; md5 $md5; source commit ${GITHUB_SHA}"; } >> "$GITHUB_STEP_SUMMARY"
+          echo "D=$d" >> "$GITHUB_ENV"
+      - name: Commit to the evidence branch
+        run: |
+          git config user.name "github-actions"; git config user.email "github-actions@users.noreply.github.com"
+          cp out/* /tmp/
+          git fetch origin sch-coverage-evidence 2>/dev/null && git checkout -B sch-coverage-evidence origin/sch-coverage-evidence || git checkout --orphan sch-coverage-evidence
+          git rm -rq --cached . 2>/dev/null || true
+          mkdir -p evidence && cp /tmp/sch-provider-coverage-$D.csv /tmp/sch-provider-coverage-$D.csv.md5 evidence/
+          git add evidence/sch-provider-coverage-$D.csv evidence/sch-provider-coverage-$D.csv.md5
+          git commit -m "Scholarship provider coverage evidence $D (source ${GITHUB_SHA})" || echo "No change"
+          git push origin sch-coverage-evidence
