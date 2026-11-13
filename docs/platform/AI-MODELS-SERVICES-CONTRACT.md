@@ -1,17 +1,21 @@
 # AI models and services: page contract
 
-For the agent building the Models & services page. Backend: migration `20261113380000_cf247_ai_models_services.sql` (Platform Admin 13 Nov 2026 19:14, 19:15 and 19:23). The page needs three calls of its own and one existing call for settings. All are `supabase.rpc(...)` as a signed-in user.
+For the agent building the Models & services page. Backend: migrations `20261113380000` (phase 1) and `20261113390000` (phase 2: the route is the only place a model is chosen). Platform Admin 13 Nov 2026 19:14, 19:15 and 19:23. The page needs three calls of its own and one existing call for settings. All are `supabase.rpc(...)` as a signed-in user.
+
+**Changed in phase 2 (this issue of the contract):** every service is enforced (`enforced: true`, `resolver: "route"`); each service row has `model` (its first model); the daily US$ cap is required on every route; there is a 15th service, `page_identity`; `legacy.layer3` and `guard` are new; `legacy_controls` are read-only copies now (`write: null`). `wired` and `model_in_effect` are kept so a page built on the first issue keeps working; they now always equal `enforced` and `model`.
 
 | Call | Who | What |
 |---|---|---|
 | `admin_ai_overview_v1()` | Pipeline Operator and above (rank 4) | everything the page shows |
 | `admin_ai_model_set_v1(p_code, p_status, p_reason)` | PIM Operator and above (rank 5) | allow or disallow a model |
 | `admin_ai_route_set_v1(p_service, p_cascade, p_daily_usd_cap, p_daily_calls_cap, p_enabled, p_reason)` | rank 5 | save one service's cascade, caps and switch |
-| `admin_toolsets_write('setting', {toolset, key, value, reason})` (existing) | as today | save a setting shown under a service. This is the existing audited write `src/Toolsets.jsx` uses; there is no second save path |
+| `admin_toolsets_write('setting', {toolset, key, value, reason})` (existing) | **Platform Admin (rank 6)** | save a setting shown under a service. This is the existing audited write `src/Toolsets.jsx` uses; there is no second save path |
 
-Both writes return the same object as `admin_ai_overview_v1()`, so the page can replace its state from the answer. `can_control` is true from rank 5.
+`admin_toolsets_write` **accepts text settings** (`kind: "text"`): the value is trimmed and must not be empty. Numbers are checked against `min` and `max`, booleans are cast, lists must be arrays. It needs rank 6, one rank above the two route writes, so show a service's settings read-only to a rank 5 user (`can_control` is true from rank 5; the overview does not say whether the user is rank 6, so let the call's error decide: `Platform Admin required`).
 
-Errors are raised as exceptions (`error.message`): `Pipeline Operator role or above required` / `PIM Operator role or above required` (code 42501), `give a reason (kept in the log)` (a reason has at least 4 characters), `status must be allowed or not_allowed`, `model <code> is not in the list`, `service <code> is not in the list`, `the cascade is empty: name at least one allowed model`, `a cascade holds 4 models at most`, `the cascade names a model twice`, `unknown model in the cascade: <codes>`, `not an allowed model: <codes> (Models & services › Models)`, `a cap cannot be negative (leave it empty for no cap)`.
+Both route writes return the same object as `admin_ai_overview_v1()`, so the page can replace its state from the answer.
+
+Errors are raised as exceptions (`error.message`): `Pipeline Operator role or above required` / `PIM Operator role or above required` (code 42501), `give a reason (kept in the log)` (a reason has at least 4 characters), `status must be allowed or not_allowed`, `model <code> is not in the list`, `service <code> is not in the list`, `the cascade is empty: name at least one allowed model`, `a cascade holds 4 models at most`, `the cascade names a model twice`, `unknown model in the cascade: <codes>`, `not an allowed model: <codes> (Models & services › Models)`, `give a daily US$ cap (every service has one)`, `a cap cannot be negative (leave it empty for no cap)` (the calls cap may be empty).
 
 ## 1. `admin_ai_overview_v1()` returns
 
@@ -39,21 +43,26 @@ Errors are raised as exceptions (`error.message`): `Pipeline Operator role or ab
     cascade: [code],                           // as saved, 1 to 4 codes, first is tried first
     cascade_detail: [{ code, label, model_identifier, status }],
     models: [{ code, model_identifier }],      // the cascade with models that are not allowed left out: what the reader is given
-    daily_usd_cap: number | null, daily_calls_cap: number | null,   // null = no cap
+    daily_usd_cap: number, daily_calls_cap: number | null,          // the US$ cap is required; a null calls cap = none
     enabled: boolean,
     spent_today: { usd, calls },
     held: boolean, held_kind: "off" | "limit" | null, held_reason: string | null,
              // off: switched off or no allowed model. limit: the daily ceiling or a cap; on-demand work of an open request is not held by a limit
-    resolver: string, wired: boolean,          // wired = (resolver is "route"): the service's reader asks the route. See section 4
-    model_in_effect: string | null,            // the OpenRouter id actually used today (from the route, or from where the reader still reads it)
+    enforced: true,                            // every service's reader asks its route (phase 2). resolver is "route" for all
+    model: string | null,                      // the OpenRouter id of the first allowed model of the cascade: the model in use
+    resolver: "route", wired: true, model_in_effect: string | null,   // kept from the first issue; equal to enforced and model
     prompt: { source, version, text },         // text is the first 4000 characters, or null when the prompt lives in worker code or a function
     settings: Setting[],                       // the settings that belong to this service
     note, reason, changed_at, changed_by       // changed_by is an email or null
   }],
-  legacy_controls: {                           // read-only here; each names its existing write
-    central_ai_settings: { enabled, calls_at_once, model_code, model_identifier, reason, changed_at, write: "public.admin_ai_config" },
-    scholarship_chain: { chain: [code], reason, changed_at, write: "public.admin_scholarship_ai" }
+  legacy_controls: {                           // read-only copies kept for the older screens; nothing chooses a model from them
+    central_ai_settings: { enabled, calls_at_once, model_code, model_identifier, reason, changed_at, write: null, copy_of: "route calendar_reading" },
+    scholarship_chain: { chain: [code], reason, changed_at, write: null, copy_of: "route scholarship_extraction" }
   },
+  legacy: { layer3: {                          // Layer 3 was retired on 12 Oct 2026 and is not wired to the routes: shown so nothing is hidden
+    note, last_call_at, jobs: [jobname],       // jobs = active scheduled jobs whose command names layer3 (none on live)
+    profiles_switched_on: [{ code, model_identifier, tasks, in_active_tier, catalogue_status }] } },
+  guard: number,                               // how many places name a model that is not allowed outside the routes (security.ai_route_guard_v1); 0 is clean
   usage: {
     by_day_14d:  [{ day, service_code, lane, model, usd, calls }],    // UTC days, today and the 13 before, newest first
     by_hour_24h: [{ hour, service_code, lane, model, usd, calls }]    // the current hour and the 23 before
@@ -67,13 +76,14 @@ Setting = { toolset, key, label, help, value, kind: "number" | "text" | "boolean
 Notes for the page:
 
 - `model` in usage rows is null for spend recorded before the migration, and `service_code` is filled for all rows. Group nulls as "not recorded".
-- A service with `wired: false` can still be saved; show `model_in_effect` and `note` so it is clear where its model really comes from today.
+- Every service is enforced. `note` carries a plain remark where one helps (for example the scholarship cascade is its chain).
 - Save a setting with `admin_toolsets_write('setting', {toolset: s.toolset, key: s.key, value, reason})`, then reload the overview. Text settings (`kind: "text"`) include the two old model keys (`entry.matrix_model`, `ops.ai_diagnosis_model`); they are no longer read, so show them read-only or leave them out.
 
-### Example (from the test fixture, shortened: 2 of 18 models, 2 of 14 services)
+### Example (from the test fixture, shortened: 2 of 18 models, 2 of 15 services)
 
 ```json
 {
+  "guard": 3,
   "usage": {
     "by_day_14d": [
       {
@@ -104,7 +114,7 @@ Notes for the page:
     "by_hour_24h": [
       {
         "usd": 0.9,
-        "hour": "2026-11-13T08:00:00+00:00",
+        "hour": "2026-11-13T09:00:00+00:00",
         "lane": "enrich_fields",
         "calls": 1,
         "model": "qwen/qwen3-30b-a3b-instruct-2507",
@@ -112,7 +122,7 @@ Notes for the page:
       },
       {
         "usd": 0.3,
-        "hour": "2026-11-13T08:00:00+00:00",
+        "hour": "2026-11-13T09:00:00+00:00",
         "lane": "enrich_fields",
         "calls": 1,
         "model": null,
@@ -122,7 +132,34 @@ Notes for the page:
   },
   "events": [
     {
-      "at": "2026-11-13T08:48:38.531156+00:00",
+      "at": "2026-11-13T09:17:54.4449+00:00",
+      "by": "admin@example.test",
+      "action": "route_set",
+      "detail": {
+        "after": {
+          "cascade": [
+            "qwen3-30b"
+          ],
+          "enabled": true,
+          "daily_usd_cap": 5,
+          "daily_calls_cap": null
+        },
+        "before": {
+          "cascade": [
+            "mistral-small-3.2",
+            "qwen3-30b"
+          ],
+          "enabled": true,
+          "daily_usd_cap": 5,
+          "daily_calls_cap": null
+        },
+        "reason": "fixture: back",
+        "resolver": "route"
+      },
+      "target": "fee_reader"
+    },
+    {
+      "at": "2026-11-13T09:17:54.4449+00:00",
       "by": "admin@example.test",
       "action": "route_set",
       "detail": {
@@ -141,49 +178,49 @@ Notes for the page:
             "mistral-small-3.2"
           ],
           "enabled": true,
-          "daily_usd_cap": null,
+          "daily_usd_cap": 5,
           "daily_calls_cap": null
         },
         "reason": "fixture: cheaper first",
         "resolver": "route"
       },
       "target": "course_entry_requirements"
-    },
-    {
-      "at": "2026-11-13T08:48:38.531156+00:00",
-      "by": "admin@example.test",
-      "action": "route_set",
-      "detail": {
-        "after": {
-          "cascade": [
-            "mistral-small-3.2",
-            "qwen3-30b"
-          ],
-          "enabled": true,
-          "daily_usd_cap": 5,
-          "daily_calls_cap": null
-        },
-        "before": {
-          "cascade": [
-            "qwen3-30b"
-          ],
-          "enabled": true,
-          "daily_usd_cap": 5,
-          "daily_calls_cap": null
-        },
-        "reason": "fixture: central model",
-        "resolver": "pipeline.central_ai_settings"
-      },
-      "target": "fee_reader"
     }
   ],
+  "legacy": {
+    "layer3": {
+      "jobs": [],
+      "note": "Layer 3 was retired on 12 Oct 2026 and is not wired to the routes. A profile listed here is switched on in its own table; in_active_tier says whether a Layer 3 step would still use it.",
+      "last_call_at": "2026-10-11T21:55:27+00:00",
+      "profiles_switched_on": [
+        {
+          "code": "openrouter-intake-l3c-qwen3-30b-a3b-2507-v1",
+          "tasks": [
+            "provider_intake_validation"
+          ],
+          "in_active_tier": true,
+          "catalogue_status": "allowed",
+          "model_identifier": "qwen/qwen3-30b-a3b-instruct-2507"
+        },
+        {
+          "code": "openrouter-intake-l3r-claude-haiku-4-5-v1",
+          "tasks": [
+            "provider_intake_validation"
+          ],
+          "in_active_tier": false,
+          "catalogue_status": "not_allowed",
+          "model_identifier": "anthropic/claude-haiku-4.5"
+        }
+      ]
+    }
+  },
   "models": [
     {
       "code": "qwen3-30b",
       "note": "In use: course fields, central pages, fees, scholarships, course-page matching, adapter proposals",
       "label": "Qwen3 30B A3B Instruct (2507)",
       "family": "qwen3",
-      "reason": "fixture: on again",
+      "reason": "seed 13 Nov 2026",
       "status": "allowed",
       "used_by": [
         "course_description",
@@ -198,13 +235,14 @@ Notes for the page:
         "central_english_policy",
         "fee_reader",
         "course_matching",
+        "page_identity",
         "adapter_builder",
         "ops_diagnosis"
       ],
-      "changed_at": "2026-11-13T08:48:38.531156+00:00",
+      "changed_at": "2026-11-13T09:17:51.966414+00:00",
       "context_tokens": 262144,
       "model_identifier": "qwen/qwen3-30b-a3b-instruct-2507",
-      "price_checked_at": "2026-11-13T08:48:37.662912+00:00",
+      "price_checked_at": "2026-11-13T09:17:51.966414+00:00",
       "input_usd_per_mtok": 0.1,
       "output_usd_per_mtok": 0.3
     },
@@ -216,10 +254,10 @@ Notes for the page:
       "reason": "Platform Admin 13 Nov 2026 19:14",
       "status": "not_allowed",
       "used_by": [],
-      "changed_at": "2026-11-13T08:48:37.662912+00:00",
+      "changed_at": "2026-11-13T09:17:51.966414+00:00",
       "context_tokens": 1047576,
       "model_identifier": "openai/gpt-4.1-mini",
-      "price_checked_at": "2026-11-13T08:48:37.662912+00:00",
+      "price_checked_at": "2026-11-13T09:17:51.966414+00:00",
       "input_usd_per_mtok": 0.4,
       "output_usd_per_mtok": 1.6
     }
@@ -232,6 +270,7 @@ Notes for the page:
       "note": "Was GPT-4.1 mini (setting entry.matrix_model). qwen3-30b has not been qualified on this prompt.",
       "field": "course_entry_requirements",
       "label": "Course entry requirements",
+      "model": "deepseek/deepseek-v3.2",
       "wired": true,
       "models": [
         {
@@ -254,6 +293,7 @@ Notes for the page:
         "qwen3-30b"
       ],
       "enabled": true,
+      "enforced": true,
       "resolver": "route",
       "settings": [
         {
@@ -269,7 +309,7 @@ Notes for the page:
         }
       ],
       "held_kind": null,
-      "changed_at": "2026-11-13T08:48:38.531156+00:00",
+      "changed_at": "2026-11-13T09:17:54.4449+00:00",
       "changed_by": "admin@example.test",
       "held_reason": null,
       "spent_today": {
@@ -306,18 +346,15 @@ Notes for the page:
       "area": "Providers",
       "held": false,
       "lane": "provider_description",
-      "note": "Shares one model with the other central readers until its reader asks the route.",
+      "note": null,
       "field": null,
       "label": "Provider description",
-      "wired": false,
+      "model": "qwen/qwen3-30b-a3b-instruct-2507",
+      "wired": true,
       "models": [
         {
           "code": "qwen3-30b",
           "model_identifier": "qwen/qwen3-30b-a3b-instruct-2507"
-        },
-        {
-          "code": "mistral-small-3.2",
-          "model_identifier": "mistralai/mistral-small-3.2-24b-instruct"
         }
       ],
       "prompt": {
@@ -325,16 +362,16 @@ Notes for the page:
         "source": "pipeline.provider_description_prompts",
         "version": "4"
       },
-      "reason": "old card",
+      "reason": "seed 13 Nov 2026 (Platform Admin 19:14)",
       "cascade": [
-        "qwen3-30b",
-        "mistral-small-3.2"
+        "qwen3-30b"
       ],
       "enabled": true,
-      "resolver": "pipeline.central_ai_settings",
+      "enforced": true,
+      "resolver": "route",
       "settings": [],
       "held_kind": null,
-      "changed_at": "2026-11-13T08:48:38.531156+00:00",
+      "changed_at": "2026-11-13T09:17:51.966414+00:00",
       "changed_by": null,
       "held_reason": null,
       "spent_today": {
@@ -350,12 +387,6 @@ Notes for the page:
           "label": "Qwen3 30B A3B Instruct (2507)",
           "status": "allowed",
           "model_identifier": "qwen/qwen3-30b-a3b-instruct-2507"
-        },
-        {
-          "code": "mistral-small-3.2",
-          "label": "Mistral Small 3.2 24B",
-          "status": "allowed",
-          "model_identifier": "mistralai/mistral-small-3.2-24b-instruct"
         }
       ],
       "daily_calls_cap": null,
@@ -394,10 +425,10 @@ Notes for the page:
     "key_present": true,
     "low_warn_usd": 10,
     "key_secret_name": "OPENROUTER_API_KEY",
-    "spent_today_usd": 1.602,
+    "spent_today_usd": 1.607,
     "daily_ceiling_usd": 14,
     "total_credits_usd": 100,
-    "balance_observed_at": "2026-11-13T08:48:35.969786+00:00"
+    "balance_observed_at": "2026-11-13T09:17:46.231413+00:00"
   },
   "can_control": true,
   "legacy_controls": {
@@ -405,17 +436,19 @@ Notes for the page:
       "chain": [
         "qwen3-30b"
       ],
-      "write": "public.admin_scholarship_ai",
-      "reason": "Platform Admin 13 Nov 2026 19:23: GPT-4.1 mini is not used any more (migration 20261113380000)",
-      "changed_at": "2026-11-13T08:48:37.662912+00:00"
+      "write": null,
+      "reason": "copy of the scholarship route (Models & services)",
+      "copy_of": "route scholarship_extraction",
+      "changed_at": "2026-11-13T09:17:54.584335+00:00"
     },
     "central_ai_settings": {
-      "write": "public.admin_ai_config",
-      "reason": "Models & services: the central readers route",
+      "write": null,
+      "reason": "copy of the intake calendar route (Models & services)",
+      "copy_of": "route calendar_reading",
       "enabled": true,
-      "changed_at": "2026-11-13T08:48:38.531156+00:00",
+      "changed_at": "2026-11-13T09:17:54.4449+00:00",
       "model_code": "qwen3-30b",
-      "calls_at_once": 2,
+      "calls_at_once": 3,
       "model_identifier": "qwen/qwen3-30b-a3b-instruct-2507"
     }
   }
@@ -432,7 +465,7 @@ const { data, error } = await supabase.rpc('admin_ai_model_set_v1', { p_code: 'k
 
 ## 3. `admin_ai_route_set_v1(p_service text, p_cascade text[], p_daily_usd_cap numeric, p_daily_calls_cap integer, p_enabled boolean, p_reason text)`
 
-Saves the route whole: send the full cascade and both caps every time (`null` cap = no cap). `p_enabled: null` keeps the switch as it is.
+Saves the route whole: send the full cascade and both caps every time. The daily US$ cap is required; a `null` calls cap means none. `p_enabled: null` keeps the switch as it is.
 
 ```js
 const { data, error } = await supabase.rpc('admin_ai_route_set_v1', {
@@ -440,16 +473,26 @@ const { data, error } = await supabase.rpc('admin_ai_route_set_v1', {
   p_daily_usd_cap: 5, p_daily_calls_cap: null, p_enabled: true, p_reason: 'cap the entry requirements read at US$5 a day' })
 ```
 
-## 4. What a route controls today
+## 4. What a route controls
 
-| resolver | Services | Effect of saving the route |
+Every service's reader asks `security.ai_route_v1(service)` before it hands out work, so a saved route takes effect on the next reader call: the model, the switch, the daily US$ cap, the calls cap and the daily ceiling. A cap or the ceiling (`held_kind: "limit"`) does not hold work of a provider with an open on-demand request; a switch or a cascade with no allowed model (`held_kind: "off"`) holds everything.
+
+| Service | Reader | The cascade beyond the first model |
 |---|---|---|
-| `route` | course_description, course_entry_requirements, course_other_fields, entry_matrices, ops_diagnosis | Model, caps and switch take effect on the next reader call. The deployed worker uses the first model only (the cascade is handed to it as `models` for a later worker change). The description and the other course fields share one model in the deployed worker: the description route's first model while that route flows |
-| `pipeline.central_ai_settings` | provider_description, calendar_reading, central_english_policy, fee_reader | These four readers still read one shared model. Saving one of them copies its cascade to the other three and sets the shared model to the first allowed one. Their caps and switch are stored but not yet enforced by their readers |
-| `pipeline.scholarship_ai_extract_settings` | scholarship_extraction, scholarship_eligibility | Stored only. The reader follows its own chain (`legacy_controls.scholarship_chain`) |
-| `firecrawl.builder_model` | adapter_builder | Stored only. The model is the setting `firecrawl.builder_model`, shown under the service's settings |
-| `pipeline.aer_prompt_versions` | entry_requirements_v2_shadow | Stored only. The model is pinned on the prompt version |
-| `worker code` | course_matching | Stored only. The model is fixed in the worker |
+| course_description, course_entry_requirements, course_other_fields | `svc_enrich_ai_next` | the worker tries the next model on a technical failure |
+| fee_reader | `svc_fee_ai_next` | the worker tries the next model on a technical failure |
+| calendar_reading, central_english_policy | `svc_central_ai_next` (each kind of page has its own route) | the worker tries the next model on a technical failure |
+| course_matching | `svc_coverage_ai_match_next` | the worker tries the next model on a technical failure |
+| entry_requirements_v2_shadow | `aer_v2_shadow_hold_v1` (the prompt version keeps its text and sha) | the worker tries the next model on a technical failure |
+| scholarship_extraction | `svc_scholarship_ai_next`, re-check `svc_scholarship_recheck_next` | the cascade is the chain: an unproven fact goes to the next model, then to a person. The re-check also tries the next model on a technical failure |
+| scholarship_eligibility | `svc_scholarship_eligibility_next` | first model only |
+| provider_description | `svc_provider_description_next` | first model only (each read reserves a price for one model) |
+| adapter_builder | `adapter_builder_model_for_v1`, `adapter_builder_budget` | first model only; a provider's own model is used only when the cascade names it |
+| entry_matrices | `svc_entry_matrix_next` | first model only |
+| ops_diagnosis | `svc_ops_diagnosis_next` | first model only |
+| page_identity | none scheduled | qualification only |
+
+The worker moves to the next model only on a technical failure (an HTTP error, a time-out, an unreadable, empty, cut or non-JSON answer). It never moves on because of what a model answered. Usage rows name the model that answered.
 
 ## 5. What a reader gets: `security.ai_route_v1(service)` (not callable from the page)
 

@@ -16,8 +16,10 @@ const page = (h1, title) => `<html><head><title>${title}</title></head><body><h1
 
 test('matcher: one pinned model; a choice must be one of the prepared candidates; refusals return to the queue', async () => {
   const idx = await fs.readFile('supabase/functions/coverage-sweep/index.ts', 'utf8')
-  expect(idx).toContain('export const AI_MATCH_MODEL = "qwen/qwen3-30b-a3b-instruct-2507";')
-  expect(idx).toContain('if (d?.model && d.model !== AI_MATCH_MODEL) throw Error(`returned model ${d.model}`);')
+  // worker v0.85.0 (13 Nov 2026, AI spend control): the model is handed out by public.svc_coverage_ai_match_next from the route course_matching; none is named in the worker
+  expect(idx).not.toContain('AI_MATCH_MODEL =')
+  expect(idx).toContain('    model: String(it.model || ""), temperature: 0, max_tokens: maxTokens, usage: { include: true }, provider: { require_parameters: true },')
+  expect(idx).toContain('if (d?.model && !String(d.model).startsWith(sentModel(d, String((it as any).model || "")))) throw Error(`returned model ${d.model}`);')
   const m = await fs.readFile('supabase/migrations-archive/20261002184400_cf247_ai_link_matcher.sql', 'utf8')
   expect(m).toContain("chosen address is not one of the candidates")
   expect(m).toContain("coalesce(pipeline.coverage_course_pages.basis, '') <> 'manual'")
