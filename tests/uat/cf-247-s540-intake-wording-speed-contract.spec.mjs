@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const mig = fs.readFileSync('supabase/migrations/20261113290000_cf247_intake_wording_speed.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations/20261113302500_cf247_intake_wording_speed.sql', 'utf8')
 const body = (name) => mig.slice(mig.indexOf(`create or replace function security.${name}`), mig.indexOf('$function$;', mig.indexOf(`create or replace function security.${name}`)))
 
 test('both functions keep their signatures, run as PL/pgSQL, security definer with an empty search path', () => {
