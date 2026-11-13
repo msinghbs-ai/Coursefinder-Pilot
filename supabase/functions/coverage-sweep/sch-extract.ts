@@ -194,3 +194,69 @@ export function directReadUsable(mainTextLength: number, text: string) {
   if (mainTextLength >= 800) return true;
   return mainTextLength >= 300 && /\b(scholarships?|burs(?:ary|aries)|awards?|grants?|stipends?|fee (?:waiver|discount|reduction))\b/i.test(text) && /\b(eligib\w*|apply|application|value|worth)\b/i.test(text);
 }
+
+// ---------- long-page recovery (13 Nov 2026, Platform Admin S2-Scholarship directive §2; Operating Model v1.19 S2-Scholarship 2) ----------
+// 77 active scholarships never got a version 3 reading: the whole-page answer was cut at its token limit (50) or the model returned no answer
+// (44; the two overlap). Whole-page retries were not effective. The recovery reads the same stored official evidence in a bounded way:
+//   1. the award's own section: the stored page text from just before where the recorded award name appears, at most `sectionChars` long
+//      (an umbrella page's other awards are left out, so their facts cannot be merged into this one); when the name is not on the page the
+//      start of the page is used and that is recorded (section.found = false);
+//   2. the linked eligibility or terms page, at most `linkedChars`;
+//   3. two smaller calls over that same bundle, each returning several fields at once with the same strict schema shapes and quote rules:
+//      part A the identity, eligibility and availability fields plus the version 2 keys; part B the benefits, payment, application,
+//      duration and summary. The parts are merged into the one version 3 answer and checked exactly as a whole-page answer
+//      (checkScholarshipDetail); a failed part fails the read named, with the cost of both calls recorded.
+export const RECOVERY_VARIANT = "sectioned-v1";
+export const DETAIL_PART_A = ["award_code", "sponsor", "programme", "identity_quote", "award_type", "award_type_quote", "residency", "residency_quote",
+  "nationality", "course_scope", "course_scope_quote", "criteria", "criteria_conjunction", "availability", "availability_quote"] as const;
+export const DETAIL_PART_B = ["benefits", "payment_basis", "payment_quote", "application", "duration", "summary", "missing"] as const;
+
+const squash = (s: string) => String(s || "").toLowerCase().normalize("NFKD").replace(/\s+/g, " ");
+// the award's own section of a page's text (see above); offsets are into the text given
+export function awardSection(text: string, name: string | null | undefined, sectionChars: number): { text: string; found: boolean; start: number; chars: number } {
+  const t = String(text || ""), max = Math.max(500, Math.floor(sectionChars || 0));  // fixed: never below 500 characters, a usable section
+  const T = squash(t);
+  const tries: string[] = [];
+  const n = squash(String(name || "")).trim();
+  if (n) {
+    tries.push(n, n.replace(/\s*\([^)]*\)\s*/g, " ").trim());
+    const words = n.split(/[^a-z0-9]+/).filter((w) => w.length >= 4 && !/^(scholarships?|awards?|bursar(y|ies)|grants?|prizes?|university|program(me)?)$/.test(w));
+    if (words.length >= 2) tries.push(words.slice(0, 3).join(" "));
+  }
+  let at = -1;
+  for (const q of tries) { if (q.length >= 6) { const i = T.indexOf(q); if (i >= 0) { at = i; break } } }
+  // squash keeps one character per character except collapsed spaces: map the squashed offset back to the original text
+  let start = 0;
+  if (at >= 0) {
+    let si = 0, oi = 0;
+    while (oi < t.length && si < at) { const ch = t[oi]; if (/\s/.test(ch)) { while (oi < t.length && /\s/.test(t[oi])) oi++; si++ } else { oi++; si++ } }
+    start = Math.max(0, oi - 300);  // fixed: a little before the name, so a heading or label in front of it is kept
+  }
+  const out = t.slice(start, start + max);
+  return { text: out, found: at >= 0, start, chars: out.length };
+}
+
+function subsetSchema(keys: readonly string[]) {
+  const props: Record<string, unknown> = {};
+  for (const k of keys) props[k] = (DETAIL_SCHEMA.properties as Record<string, unknown>)[k];
+  return { type: "object", additionalProperties: false, required: [...keys], properties: props };
+}
+
+// one part of the recovery reading: the same governed prompt and fenced evidence as scholarshipExtractRequest, a smaller strict schema
+export function scholarshipExtractPartRequest(model: string, prompt: string, p: { provider: string; country: string | null; currency: string | null; scholarship?: string | null; parts: BundlePart[] }, part: "a" | "b", maxTokens = 3000) {
+  const base = scholarshipExtractRequest(model, prompt, p, maxTokens) as any;
+  const detail = subsetSchema(part === "a" ? DETAIL_PART_A : DETAIL_PART_B);
+  const schema = part === "a"
+    ? { type: "object", additionalProperties: false, required: [...V2_REQUIRED, "detail"], properties: { ...V2_PROPERTIES, detail } }
+    : { type: "object", additionalProperties: false, required: ["detail"], properties: { detail } };
+  base.response_format = { type: "json_schema", json_schema: { name: `scholarship_extract_v3_part_${part}`, strict: true, schema } };
+  base.messages[1].content += `\n\nAnswer only the fields of this part (${part === "a" ? "identity, eligibility and availability" : "benefits, payment, application, duration and summary"}); the other fields are read separately. Keep each quote to the shortest exact passage that proves the fact.`;
+  return base;
+}
+
+// the two parts as one version 3 answer (part A's top-level keys; part B's detail fields added to part A's)
+export function mergeRecoveryParts(a: any, b: any): any {
+  const out = { ...(a || {}) };
+  out.detail = { ...((a && a.detail) || {}), ...((b && b.detail) || {}) };
+  return out;
+}
