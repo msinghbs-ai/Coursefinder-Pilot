@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261113321500_cf247_sch_provider_coverage_recovery.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations/20261113336500_cf247_sch_provider_coverage_recovery.sql', 'utf8')
 
 test('rebranded domains: the catalogue website is mapped again, the old host stays allowed, own-host register entries are handed to the reader', () => {
   expect(m).toContain('allowed_hosts = (select array_agg(distinct h) from unnest(coalesce(d.allowed_hosts, \'{}\') || m.old_host) h where h is not null)')

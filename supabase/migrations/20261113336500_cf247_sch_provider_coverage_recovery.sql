@@ -53,7 +53,7 @@ update pipeline.scholarship_discovery_providers d
    set website = m.new_site, site_origin = substring(m.new_site from '^(https?://[^/]+)'),
        allowed_hosts = (select array_agg(distinct h) from unnest(coalesce(d.allowed_hosts, '{}') || m.old_host) h where h is not null),
        status = 'pending', attempts = 0, next_discover_at = now(), last_error = null,
-       reason = left(coalesce(d.reason, '') || ' | 20261113321500: website moved from ' || coalesce(m.old_site, '?'), 300), updated_at = now()
+       reason = left(coalesce(d.reason, '') || ' | 20261113336500: website moved from ' || coalesce(m.old_site, '?'), 300), updated_at = now()
   from moved m where m.provider_id = d.provider_id;
 
 select public.svc_scholarship_register_match(r.code) from scholarship.registers r where r.role = 'index';
@@ -79,7 +79,7 @@ select pg_temp.edit_n('security.scholarship_discovery_refill_v1(integer)', 'aa26
 ], array[1]);
 
 insert into pipeline.scholarship_discovery_providers(provider_id, website, priority, reason, status)
-select p.id, p.website, security.pipeline_num_v1('scholarship.refill_priority_focus', 4)::int, 'university_without_courses (20261113321500)', 'pending'
+select p.id, p.website, security.pipeline_num_v1('scholarship.refill_priority_focus', 4)::int, 'university_without_courses (20261113336500)', 'pending'
   from catalogue.providers p
  where security.scholarship_university(p.id) and nullif(btrim(p.website), '') is not null
    and not exists (select 1 from pipeline.scholarship_discovery_providers d where d.provider_id = p.id)
@@ -92,7 +92,7 @@ on conflict do nothing;
 with a as (select * from security.scholarship_ai_active_v1()),
 rv as (
   update pipeline.scholarship_ai_reviews r
-     set status = 'superseded', decided_at = now(), note = 'Technical failure, read again fresh by the machine (20261113321500, S2-Scholarship 13 Nov 2026 §3)'
+     set status = 'superseded', decided_at = now(), note = 'Technical failure, read again fresh by the machine (20261113336500, S2-Scholarship 13 Nov 2026 §3)'
    where r.status = 'pending' and (r.reason like 'the model''s reply failed%' or r.reason like 'Approved read: the page could not be read%')
   returning r.*)
 insert into pipeline.scholarship_ai_queue(model_code, prompt_version, run_kind, candidate_id, scholarship_id, provider_id, url, fresh_read)
@@ -108,8 +108,8 @@ update pipeline.platform_toolset_settings set value = '1500'::jsonb
 
 insert into pipeline.admin_control_events(area, action, target, detail, actor)
 values ('scholarships', 'provider_coverage_recovery', 'pipeline.scholarship_discovery_providers',
-        jsonb_build_object('migration', '20261113321500', 'directive', 'S2-Scholarship 13 Nov 2026 14:50',
-                           'moved_domains', (select count(*) from pipeline.scholarship_discovery_providers where reason like '%20261113321500: website moved%'),
-                           'universities_queued', (select count(*) from pipeline.scholarship_discovery_providers where reason = 'university_without_courses (20261113321500)'),
-                           'technical_reviews_reread', (select count(*) from pipeline.scholarship_ai_reviews where note like 'Technical failure, read again fresh by the machine (20261113321500%'),
+        jsonb_build_object('migration', '20261113336500', 'directive', 'S2-Scholarship 13 Nov 2026 14:50',
+                           'moved_domains', (select count(*) from pipeline.scholarship_discovery_providers where reason like '%20261113336500: website moved%'),
+                           'universities_queued', (select count(*) from pipeline.scholarship_discovery_providers where reason = 'university_without_courses (20261113336500)'),
+                           'technical_reviews_reread', (select count(*) from pipeline.scholarship_ai_reviews where note like 'Technical failure, read again fresh by the machine (20261113336500%'),
                            'firecrawl_daily_share_scholarships', jsonb_build_object('from', 800, 'to', 1500, 'day_total_unchanged', 4000)), null);
