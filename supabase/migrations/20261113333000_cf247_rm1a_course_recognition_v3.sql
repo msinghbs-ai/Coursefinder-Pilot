@@ -185,9 +185,9 @@ comment on function public.admin_course_recognition_read(uuid) is
   'CF-247 RM1A-1 (O29): Course detail Recognition card: registrations with source, evidence and dates, and what Website v3 shows and why not. Any StudySearch role; read only.';
 
 insert into pipeline.component_register(kind, name, layer, purpose, status, replaces, introduced_in) values
- ('function', 'security.course_recognition_v1', 'Platform', 'O29 CRICOS course recognition with held reason (Website v3 course, Admin)', 'active', '{}', '20261113330000'),
- ('function', 'security.course_recognition_item_v1', 'Platform', 'Website v3 course item with recognition[]', 'active', '{}', '20261113330000'),
- ('function', 'security.course_recognition_delivery_v1', 'Platform', 'Data Delivery: course recognition coverage and holds', 'active', '{}', '20261113330000'),
- ('function', 'public.admin_course_recognition_delivery', 'Platform', 'Data Delivery Course recognition panel read (Curator and above)', 'active', '{}', '20261113330000'),
- ('function', 'public.admin_course_recognition_read', 'Platform', 'Course detail Recognition card read', 'active', '{}', '20261113330000')
+ ('function', 'security.course_recognition_v1', 'Platform', 'O29 CRICOS course recognition with held reason (Website v3 course, Admin)', 'active', '{}', '20261113333000'),
+ ('function', 'security.course_recognition_item_v1', 'Platform', 'Website v3 course item with recognition[]', 'active', '{}', '20261113333000'),
+ ('function', 'security.course_recognition_delivery_v1', 'Platform', 'Data Delivery: course recognition coverage and holds', 'active', '{}', '20261113333000'),
+ ('function', 'public.admin_course_recognition_delivery', 'Platform', 'Data Delivery Course recognition panel read (Curator and above)', 'active', '{}', '20261113333000'),
+ ('function', 'public.admin_course_recognition_read', 'Platform', 'Course detail Recognition card read', 'active', '{}', '20261113333000')
 on conflict do nothing;
