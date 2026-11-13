@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261113320000_cf247_sch_value_from_verified_benefits.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations/20261113335000_cf247_sch_value_from_verified_benefits.sql', 'utf8')
 const fn = m.slice(m.indexOf('create or replace function security.scholarship_value_from_benefits_v1'), m.indexOf('comment on function security.scholarship_value_from_benefits_v1'))
 
 test('only an empty value, never over a lock, only the scholarship\'s own verified reader benefits', () => {
