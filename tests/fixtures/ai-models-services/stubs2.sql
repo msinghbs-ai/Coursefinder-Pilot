@@ -31,3 +31,7 @@ alter table pipeline.scholarship_ai_models add constraint scholarship_ai_models_
 alter table pipeline.scholarship_ai_queue add constraint scholarship_ai_queue_model_code_fkey foreign key (model_code) references pipeline.scholarship_ai_models(code);
 alter table pipeline.on_demand_requests add column purpose_groups text[];
 alter table pipeline.layer3_model_profiles add column secret_env_key text default 'OPENROUTER_API_KEY';
+-- round 4: the daily retention job's tables (security.ledger_retention_v1 is edited to remove old model call attempts too)
+create table pipeline.mode_outcome_ledger (run_at timestamptz); create table pipeline.zero_yield_snapshots (at timestamptz); create table pipeline.health_snapshots (at timestamptz); create table pipeline.ui_error_log (at timestamptz);
+-- round 4: row types named by public.admin_provider_description_run_v1 (edited: it asks the route, not the old setting; not run here)
+create table pipeline.automation_catalogue (key text, control_rank int); create table pipeline.provider_description_cohorts (id bigint, snapshot jsonb);

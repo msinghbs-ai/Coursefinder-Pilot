@@ -1,5 +1,64 @@
 # AI models and services: page contract
 
+## Changes for the UI (round 4)
+
+Backend head after the Platform Admin's review of 13 Nov 2026 22:10. Not approved to merge; nothing is applied to live. Additive unless marked **changed**. The key names are the ones the UI branch (`cf247-ai-models-services-ui` @ 7d137e5a) already uses; where this backend differs it says **differs**.
+
+### Who can do what
+
+| Call | Rank | Notes |
+|---|---|---|
+| `admin_ai_overview_v1()` | 3 and above (**changed**, was 4) | read-only. Below rank 4, `openrouter.key` is `{ present }` only (no secret name, profile or sharing details). Refusal: `assigned StudySearch role required`. |
+| `admin_scholarship_ai('read')` | 3 and above (as it is on live today: `Curator role or above required` below 3) | not changed by this PR; its other actions stay rank 6 (`review_decide` excepted, as today). |
+| `admin_ai_route_set_v1(...)` | 5 | cascade, caps, switch of one service. |
+| `admin_ai_model_set_v1(p_code, p_status, p_reason)` | 6 (**changed**, was 5) | the allow-list. Refusal: `Platform Admin required`. |
+| `admin_ai_qualification_set_v1(p_service, p_code, p_evidence, p_reason, p_status default 'qualified')` | 6 | new. `p_status` is `qualified`, `unqualified` or `pending`. `qualified` needs evidence of at least 10 characters (`say what the qualification rests on (the evidence)`); a reason of at least 4 characters always. Logged as `route_qualification`. Returns the overview. It switches nothing on. |
+| `admin_toolsets_write('setting', ...)` (existing) | 6 | the daily ceiling, the credit floor, `openrouter.balance_max_age_minutes`. |
+| key replace / verify (existing `admin_ai_config`) | 6 | unchanged. |
+
+Top level: `rank` (the caller's), `can_control` (rank 5 and above), `can_admin` (rank 6).
+
+### Mode: Observe only or Stop at limits
+
+1. Top-level `mode` and `openrouter.mode` are the existing OpenRouter mode (`observe` or `stop`, `pipeline.platform_toolsets.enforcement`). The migrations do not change the mode, the ceiling or any cap. Live is `observe` today.
+2. Per service: `enforcing` (boolean: the limits are enforced, i.e. the mode is `stop`), `would_hold_now`, `would_hold_kind`, `would_hold_reason` (what would hold the service if limits were enforced; equal to `held*` in `stop`).
+3. The daily ceiling and the service caps follow the mode: in `observe` they are reported through `would_hold_*` and stop nothing (`held` false); in `stop` they hold (`held_kind` `ceiling` or `cap`, `on_demand_exempt` true).
+4. **Always enforced, in both modes, on-demand included** (`on_demand_exempt` false): `off`, `no_model`, `no_qualified_model`, `balance_unknown`, `balance_stale`, `credit_floor`.
+5. **changed: `held_kind`** is now one of `cap`, `ceiling`, `credit_floor`, `off`, `no_model`, `no_qualified_model`, `balance_unknown`, `balance_stale` or null.
+
+### Balance: fail closed (**changed**; round 3 said an unknown balance does not hold)
+
+6. With no OpenRouter balance reading, every service is held (`balance_unknown`). With a reading older than `openrouter.balance_max_age_minutes` (new setting, default 90, range 15 to 1440, shown with the OpenRouter settings) every service is held (`balance_stale`; `held_reason` gives the age). `openrouter.balance_max_age_minutes` and `openrouter.balance_observed_at` are in the read; `openrouter.balance_note` is set when there is no reading. The balance job runs every 15 minutes; the longest gap in the last 14 days was 44.7 minutes.
+
+### Qualification
+
+7. Per service `qualification: [{ code, qualified, status, provisional, prompt_version, evidence, at, by, note }]` (`status`: `qualified`, `unqualified`, `pending`; `by` is a user id or null for a seed). Only a model that is allowed **and** qualified for the service is handed out.
+8. Per service `skipped: [{ code, why }]`: cascade entries that are not handed out (`not in the list`, `not allowed`, `not qualified for this service`). `models` holds only what is handed out.
+9. Seeds: Qwen3 30B is qualified for the ten services that run today (six of them `provisional: true` on the Platform Admin's decision of 13 Nov 19:09, "regression qualification pending"). Nothing is qualified for `course_entry_requirements`, `entry_matrices`, `entry_requirements_v2_shadow`, `ops_diagnosis` and `page_identity`: they are held `no_qualified_model` until the Platform Admin qualifies a model.
+
+### One model or a cascade
+
+10. Per service `migration_state`: `routed` (the cascade is executed), `routed_single` (the route chooses the model; the call uses one model) or `not_migrated` (`page_identity`: no call). For `routed_single` and `not_migrated`, `models` holds one model at most and `admin_ai_route_set_v1` refuses a second: `this service uses one model: a fallback is not available for it yet`.
+11. Per service `previous_model`: the model identifier the service ran on before this release (`openai/gpt-4.1-mini` for ten services, Qwen3 30B for four, null for `page_identity`), for a "Was on" line. Data only.
+
+### Calls and usage
+
+12. Per service `last_call: { at, model, outcome, error, attempt_no }` or null (`outcome`: `answered` or `failed`; `error`: `http`, `timeout`, `empty`, `cut`, `non_json`, `refused` or null).
+13. Per service `recovery_state`: `held` (nothing is handed out), `failing` (the last call failed), `fallback` (the last answer came from a later model of the cascade), `ok`, or `no_calls` (no call on record yet). **differs** if the UI meant something else by this key: this is the definition served.
+14. `usage.by_model_24h: [{ service_code, model, attempts, answered, failures, fallbacks, tokens_in, tokens_out, usd, evidence_href }]` from the per-call record (`pipeline.ai_invocations`, written by worker v0.86.0). `fallbacks` counts attempts made on a later model. `evidence_href` is always null today (no per-call evidence link exists). **differs:** `usage.by_day_14d` and `usage.by_hour_24h` come from the spend ledger and keep `usd` and `calls` only; they do not carry tokens, failures or fallbacks.
+15. `usage.fallbacks_24h: [{ at, service_code, model, attempt_no, failure_kind }]`: the last 100 failed attempts.
+16. Rows appear only after the worker v0.86.0 is deployed; until then these lists are empty and `last_call` is null.
+
+### Prompts (complete)
+
+17. Per service `prompt: { source, version, text, text_ref, sha256 }`. For a prompt held in the database (provider descriptions, scholarship extraction, entry requirements v2) `text` is the **complete** text and `sha256` its hash (**changed:** the phase 1 read cut it at 4,000 characters). For a prompt written in the worker, `text` is null and `text_ref` is `ai-prompts.json#<service_code>`.
+18. `docs/platform/ai-prompts.json` is generated from the worker source by `node scripts/ai-prompts-export.mjs` and checked in; a test fails when it is stale. Shape: `{ worker, services: { <service_code>: { sha256, prompts: [{ name, where, version, text, sha256, complete, note? }] } } }`. Import it in the page to show the complete text. `complete: false` marks the two course-field instructions that go on with data of the request (shown as `<data of the request>`). **differs:** there is no `admin_ai_prompt_v1` RPC, because the database does not hold the worker's text; the file is the source.
+19. Scholarship configuration is read here: for `scholarship_extraction`, `config: { write: "public.admin_scholarship_ai", ai_admission, prompts: [{ version, text, sha256, current }] }`. `admin_scholarship_ai` stays the one write path.
+
+### Settings
+
+20. `home` / `home_group` (round 3) stay as they are. The existing `control_class` column is not reused for this: its check allows only `human`, `automatic`, `retiring`, and widening it means dropping a constraint. `docs/platform/SETTINGS-INVENTORY-2026-11-13.md` section 7 proposes a home per section; nothing is hidden or retired by this PR.
+
 ## Changes for the UI (round 3)
 
 Backend head after independent QA and the page's own gaps (13 Nov 2026). Everything below is additive unless marked **changed**.
@@ -22,8 +81,9 @@ For the agent building the Models & services page. Backend: migrations `20261113
 
 | Call | Who | What |
 |---|---|---|
-| `admin_ai_overview_v1()` | Pipeline Operator and above (rank 4) | everything the page shows |
-| `admin_ai_model_set_v1(p_code, p_status, p_reason)` | PIM Operator and above (rank 5) | allow or disallow a model |
+| `admin_ai_overview_v1()` | rank 3 and above (round 4; key details from rank 4) | everything the page shows |
+| `admin_ai_model_set_v1(p_code, p_status, p_reason)` | Platform Admin (rank 6, round 4) | allow or disallow a model |
+| `admin_ai_qualification_set_v1(p_service, p_code, p_evidence, p_reason, p_status)` | Platform Admin (rank 6) | record a model as qualified (or not) for a service |
 | `admin_ai_route_set_v1(p_service, p_cascade, p_daily_usd_cap, p_daily_calls_cap, p_enabled, p_reason)` | rank 5 | save one service's cascade, caps and switch |
 | `admin_toolsets_write('setting', {toolset, key, value, reason})` (existing) | **Platform Admin (rank 6)** | save a setting shown under a service. This is the existing audited write `src/Toolsets.jsx` uses; there is no second save path |
 

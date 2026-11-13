@@ -1,0 +1,69 @@
+# AI call paths (13 November 2026)
+
+Platform Admin review 13 Nov 2026 22:10, item 5. This lists every place the platform calls a model, where the model comes from, and what is left
+outside the routes. Line numbers are for worker `coverage-sweep-worker-v0.86.0` on branch `cf247-ai-models-services`; the test
+`cf-247-ai-models-services-contract` fails if a worker call is not listed here at its line.
+
+## 1. Who calls OpenRouter
+
+Only one edge function calls OpenRouter: `coverage-sweep` (searched: every `.ts` file under `supabase/functions` for `openrouter.ai/api`). The other
+files that mention OpenRouter (`aer-v2.ts`, `answer.ts`, `course-entry.ts`, `course-text.ts`, `description.ts`, `entry.ts`, `ops-diagnose.ts`) build
+or read requests; the call itself is always made in `index.ts`, through `cascade.ts`.
+
+Two calls are not model calls: the balance read (`index.ts:730`, `GET /credits`, job `openrouter-balance`, every 15 minutes) and the price list
+(`index.ts:2803`, `GET /models`, used to reserve a price for a provider description).
+
+## 2. Every model call in the worker
+
+All fifteen go through `cascadeFetch` (`cascade.ts`), which keeps one row per attempt in `pipeline.ai_invocations`. The model is never named in the
+worker: each reader hands it out from `security.ai_route_v1(<service>)`.
+
+| Call | Worker mode | Database reader that hands out the model | Service (route) | State | How the model is used |
+|---|---|---|---|---|---|
+| `index.ts:2106` | `scholarship_ai` | `public.svc_scholarship_ai_next` | scholarship_extraction | `routed` | the database escalation chain (the route's cascade); the call names one model |
+| `index.ts:2216` | `scholarship_recheck` | `public.svc_scholarship_recheck_next` | scholarship_extraction | `routed` | worker cascade |
+| `index.ts:2258` | `scholarship_eligibility` | `public.svc_scholarship_eligibility_next` | scholarship_eligibility | `routed_single` | one model |
+| `index.ts:2316` | `ops_diagnose` | `public.svc_ops_diagnosis_next` | ops_diagnosis | `routed_single` | one model (pinned on the request at lease) |
+| `index.ts:2358` | `ops_diagnose (entry requirements v2 trial)` | `public.svc_aer_v2_shadow_next, security.aer_v2_shadow_hold_v1` | entry_requirements_v2_shadow | `routed` | worker cascade |
+| `index.ts:2396` | `central_ai (calendar, sliced read)` | `public.svc_central_ai_next` | calendar_reading (kind intake_calendar) | `routed` | worker cascade |
+| `index.ts:2412` | `central_ai` | `public.svc_central_ai_next` | central_english_policy or calendar_reading, by the item's kind | `routed` | worker cascade |
+| `index.ts:2690` | `entry_ai` | `public.svc_entry_matrix_next` | entry_matrices | `routed_single` | one model |
+| `index.ts:2756` | `fee_ai` | `public.svc_fee_ai_next` | fee_reader | `routed` | worker cascade |
+| `index.ts:2903` | `provider_description` | `public.svc_provider_description_lease_v1, public.svc_provider_description_next, public.svc_provider_description_reserve_v1` | provider_description | `routed_single` | one model (a price is reserved for that model) |
+| `index.ts:2957` | `enrich_ai (course fields: ask)` | `public.svc_enrich_ai_next` | course_other_fields | `routed` | worker cascade |
+| `index.ts:2981` | `enrich_ai (description and deadline: askText)` | `public.svc_enrich_ai_next` | course_description (description), course_other_fields (deadline) | `routed` | worker cascade |
+| `index.ts:3009` | `enrich_ai (entry requirements)` | `public.svc_enrich_ai_next` | course_entry_requirements | `routed` | worker cascade |
+| `index.ts:3267` | `ai_match` | `public.svc_coverage_ai_match_next` | course_matching | `routed` | worker cascade |
+| `index.ts:3407` | `adapter_propose` | `security.adapter_builder_model_for_v1 (through public.svc_adapter_draft_get)` | adapter_builder | `routed_single` | one model |
+
+State: `routed` means the route's cascade is executed (a later model is asked only on a technical failure). `routed_single` means the route
+chooses the model but the call uses one model; Models & services shows one model and refuses a second one for these. `not_migrated` is
+`page_identity` only: it has a route and a prompt (`pageid.ts`) but the worker makes no call for it (qualification only; no job).
+
+## 3. The two old model settings
+
+Readers found on the live database by searching every function's text (13 Nov 2026):
+
+| Setting | Read before this change | Read after this change |
+|---|---|---|
+| `pipeline` / `entry.matrix_model` | `public.svc_enrich_ai_next`, `public.svc_entry_matrix_next` | none |
+| `pipeline` / `ops.ai_diagnosis_model` | `public.svc_ops_diagnosis_next`, `public.admin_provider_description_run_v1` | none |
+
+`public.admin_provider_description_run_v1` was found in round 4 (it was not in the earlier list). It asked the setting whether a diagnosis model
+exists and wrote the setting's value on a queued diagnosis request; the reader replaced that value at lease, so no call used it. It now asks the
+route (`security.ai_route_v1('ops_diagnosis')`), and its "model" for provider descriptions is the provider description route's. The check after
+the change was made on a copy of the live schema with the five migrations applied: the only function whose text still holds either key is
+`security.ai_settings_not_read_v1`, which lists them as not read. Both settings keep their rows and values; nothing is deleted.
+
+The worker does not read either setting (searched `supabase/functions` for `matrix_model` and `ai_diagnosis_model`: comments only).
+
+## 4. Layer 3
+
+Layer 3 (routing profiles, `pipeline.layer3_model_profiles`) made its last model call on 11 October 2026 and has no scheduled job. It is reported
+on Models & services (`legacy.layer3`) and is not wired to the routes. The worker still asks `layer3_routing_profile_service` and
+`layer3_provider_credential_resolve_service` for the OpenRouter credential (the key), not for a model.
+
+## 5. Not verified
+
+- The worker was bundled and its cascade and attempt record were run with a scripted fetch; it was not type-checked with Deno and not deployed.
+- The "after" column of section 3 was verified on a copy of the live schema, not on live: nothing has been applied to live.
