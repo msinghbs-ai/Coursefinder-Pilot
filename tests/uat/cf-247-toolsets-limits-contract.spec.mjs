@@ -78,16 +78,14 @@ test('browser: notices on the layer page, acknowledged with a reason', async ({ 
   await expect(page.locator('[data-layer-notices="3"]')).toHaveCount(0)
 })
 
-test('browser: Models & services — OpenRouter observe only; Serper, ScrapingBee, Search pass and Sample runs cards retired (SS-020 step 1)', async ({ page }) => {
+test('browser: Models & services — the OpenRouter card points to the AI tab (v2.16.0); Serper, ScrapingBee, Search pass and Sample runs cards retired (SS-020 step 1)', async ({ page }) => {
   await mockAdmin(page)
   page.on('dialog', d => d.accept('Decision 252 sample'))
   await page.goto('/#models-services?tab=limits')
   await openCards(page) // v2.15.200: cards start collapsed
-  const or = page.locator('[data-toolset="openrouter"]')
-  await expect(or.locator('[data-toolset-mode="openrouter"]')).toContainText('Observe only')
-  await expect(or.locator('[data-openrouter]')).toContainText('Balance US$27.67')
-  await or.getByRole('button', { name: 'Switch to stop at limits' }).click()
-  await expect.poll(() => page.l3calls.find(c => c.toolsets === 'enforcement')?.args).toMatchObject({ toolset: 'openrouter', enforcement: 'stop' })
+  // v2.16.0 (Platform Admin 13 Nov 2026 19:14): the OpenRouter mode, balance and guards are on Models & services › AI (cf-247-ai-models-services-ui)
+  await expect(page.locator('[data-toolset="openrouter"]')).toHaveCount(0)
+  await expect(page.locator('[data-service-card="openrouter"] [data-ai-moved="openrouter"]')).toContainText('AI models, prompts, caps and the OpenRouter key are in Models & services')
   await expect(page.locator('[data-services-limits]')).not.toContainText(/trial/i) // SS-020 step 3: one card per service
   // SS-020 step 1 (Decision 269, 3 Nov 2026): Firecrawl only (4 Oct); the rows and their history stay in the database
   for (const k of ['serper', 'scrapingbee']) {

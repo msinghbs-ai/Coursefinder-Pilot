@@ -45,13 +45,13 @@ test.describe('CF-061 QILT PRISMS comparison source/server contract',()=>{
   expect(shell).toContain("navigate?.('Compare',{type,ids:data.id})")
   // v2.15.291: the shell has no fixed fallback version (it imports the manifest); the legacy history keeps its baseline.
   const candidateVersion=manifest.match(/export const UI_VERSION='([^']+)'/)?.[1]
-  expect(shell).not.toMatch(/const UI_VERSION='2\.15\.\d+'/)
+  expect(shell).not.toMatch(/const UI_VERSION='2\.\d+\.\d+'/)
   expect(shell).toContain("import{UI_VERSION}from'./release-manifest.js'")
-  expect(candidateVersion).toMatch(/^2\.15\.\d+$/)
-  expect(manifest).toMatch(/version:(UI_VERSION|'2\.15\.\d+')/) // the manifest drives the pill and the shell
+  expect(candidateVersion).toMatch(/^2\.\d+\.\d+$/)
+  expect(manifest).toMatch(/version:(UI_VERSION|'2\.\d+\.\d+')/) // the manifest drives the pill and the shell
   expect(current).toContain("from'./release-manifest.js'")
   expect(index).toContain('<title>StudySearch PIM Admin</title>')
-  expect(index).not.toMatch(/StudySearch PIM Admin v2\.15\.\d+/)
+  expect(index).not.toMatch(/StudySearch PIM Admin v2\.\d+\.\d+/)
 
   expect(migration).toContain('security.admin_contextual_insights_v2')
   expect(migration).toContain('security.admin_contextual_compare')

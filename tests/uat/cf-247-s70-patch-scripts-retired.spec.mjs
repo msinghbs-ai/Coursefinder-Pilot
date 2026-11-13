@@ -25,7 +25,7 @@ test('index.html loads only the React entry; the patch scripts are gone and noth
 test('one version source: the shell and the pill import the manifest; the legacy notes are data for the release history', () => {
   const shell = fs.readFileSync('src/mature-main.jsx', 'utf8'), pill = fs.readFileSync('src/ReleaseNotes.jsx', 'utf8')
   expect(shell).toContain("import{UI_VERSION}from'./release-manifest.js'")
-  expect(shell).not.toMatch(/const UI_VERSION='2\.15\.\d+'/)
+  expect(shell).not.toMatch(/const UI_VERSION='2\.\d+\.\d+'/)
   expect(pill).toContain("import{UI_VERSION,RELEASE}from'./release-manifest.js'")
   expect(LEGACY_BASELINE).toBe('2.15.78')
   expect(LEGACY_RELEASES[0].version).toBe('2.15.78')

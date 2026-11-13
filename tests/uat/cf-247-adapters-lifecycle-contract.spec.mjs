@@ -55,15 +55,15 @@ test('every card starts collapsed and is remembered for the browser session only
 test.describe('mocked browser', () => {
   test('Models & services: every card collapsed, one opens, and stays open after a reload in the same session', async ({ page }) => {
     await mockAdmin(page)
-    await page.goto('/#models-services?tab=ai') // SS-020 step 3: the AI model switches are on AI & OpenRouter
+    await page.goto('/#models-services?tab=ai') // v2.16.0: Models & services › AI is four cards (OpenRouter key and usage, Models, Services, Recent usage)
     const toggles = page.locator('.cf-card-toggle')
     await toggles.first().waitFor()
     expect(await page.locator('.cf-card-toggle[aria-expanded="true"]').count()).toBe(0)
-    await expect(page.locator('[data-model]')).toHaveCount(0) // a closed card draws no body
-    await page.locator('[data-card="services.ai-models"] .cf-card-toggle').click()
-    await expect(page.locator('[data-model="sonnet-english"]')).toBeVisible()
+    await expect(page.locator('[data-ai-model]')).toHaveCount(0) // a closed card draws no body
+    await page.locator('[data-card="services.ai.models"] .cf-card-toggle').click()
+    await expect(page.locator('[data-ai-model="qwen3-30b"]')).toBeVisible()
     await page.reload()
-    await expect(page.locator('[data-card="services.ai-models"] .cf-card-toggle')).toHaveAttribute('aria-expanded', 'true')
+    await expect(page.locator('[data-card="services.ai.models"] .cf-card-toggle')).toHaveAttribute('aria-expanded', 'true')
     await expect(page.locator('[data-card="services.ai.openrouter"] .cf-card-toggle')).toHaveAttribute('aria-expanded', 'false')
   })
 

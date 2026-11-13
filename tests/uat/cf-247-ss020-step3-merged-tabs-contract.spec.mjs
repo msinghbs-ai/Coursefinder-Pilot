@@ -10,12 +10,12 @@ import { PAGES, resolveTarget, hrefFor } from '../../src/nav-map.js'
 const go = (addr) => { const [a, q] = addr.split('?'); const r = resolveTarget(a, new URLSearchParams(q || '')); return `${r.page}/${r.tab}${r.params.toString() ? '?' + r.params : ''}` }
 
 test('menu: the merged tabs keep the minimum roles of what they hold (the final count is guarded once SS-020 ends)', () => {
-  expect(PAGES.services.tabs.map((t) => [t.key, t.label, t.min])).toEqual([['services', 'Services & limits', 4], ['ai', 'AI & OpenRouter', 3]])
+  expect(PAGES.services.tabs.map((t) => [t.key, t.label, t.min])).toEqual([['services', 'Services & limits', 4], ['ai', 'AI', 4]]) // v2.16.0 (Platform Admin 13 Nov 2026 19:14): the AI tab; Scholarship extraction (rank 3) left it
   expect(PAGES.health.tabs.map((t) => [t.key, t.label, t.min])).toEqual([['checks', 'Health checks', 3], ['queues', 'Queues & yield', 3], ['integration', 'Integration queue', 5], ['storage', 'Storage & retention', 6]])
   // Pipeline yield keeps its PIM Admin minimum inside the tab; the AI model switches keep the Pipeline Operator minimum on the AI tab
   const main = fs.readFileSync('src/mature-main.jsx', 'utf8')
   expect(main).toContain('{rank>=5&&<PipelineYield onError={onError}/>}')
-  expect(main).toContain('{rank>=4&&<ModelsServices part="models" onError={err}/>}')
+  expect(main).not.toContain('<ModelsServices part="models"') // v2.16.0: the AI model switches are retired; the one model list is Models & services › AI
   expect(main).toContain("<ModelsServices part=\"services\" only={['firecrawl']} onError={err}/>")
   expect(fs.readFileSync('src/IntegrationQueue.jsx', 'utf8')).not.toContain('<PipelineYield onError={onError}/>')
 })
@@ -33,20 +33,21 @@ test('LEGACY: every old address of a merged tab lands on its new home', () => {
   for (const f of ['src/CreditBanner.jsx', 'src/FirecrawlWork.jsx', 'src/EnvironmentMigrationWorkspace.jsx', 'src/ModelsServices.jsx']) expect(fs.readFileSync(f, 'utf8')).not.toMatch(/models-services\?tab=(limits|fetchers)/)
 })
 
-test('browser: Services & limits is one card per service (Final board F41); AI & OpenRouter holds the model switches', async ({ page }) => {
+test('browser: Services & limits is one card per service (Final board F41); the AI tab holds the model list', async ({ page }) => {
   await mockAdmin(page)
   await page.goto('/#models-services?tab=limits')
   await expect(page).toHaveURL(/#models-services/)
   const tab = page.locator('[data-services-limits]')
   for (const id of ['firecrawl', 'direct', 'openrouter', 'platform', 'notices']) await expect(tab.locator(`[data-service-card="${id}"]`)).toBeVisible()
   await expect(tab.locator('[data-service-card="firecrawl"] [data-search-cap]')).toBeVisible()
-  await expect(tab.locator('[data-service-card="openrouter"] [data-toolset="openrouter"]')).toHaveCount(1)
-  await expect(tab.locator('[data-toolset="openrouter"]')).toHaveCount(1) // drawn once
+  // v2.16.0: the OpenRouter card only points to the AI tab; its balance, guards and settings are drawn once, there
+  await expect(tab.locator('[data-service-card="openrouter"] [data-ai-moved="openrouter"] a')).toHaveAttribute('href', '#models-services?tab=ai')
+  await expect(tab.locator('[data-toolset="openrouter"]')).toHaveCount(0)
   await expect(tab.locator('[data-card="services.ai-models"]')).toHaveCount(0)
   await expect(page.getByRole('tab', { name: 'Toolsets & limits' })).toHaveCount(0)
   await expect(page.getByRole('tab', { name: 'Fetchers' })).toHaveCount(0)
   await page.goto('/#models-services?tab=ai')
-  await expect(page.locator('[data-card="services.ai-models"]')).toBeVisible()
+  await expect(page.locator('[data-card="services.ai.models"]')).toBeVisible()
   await expect(page.locator('[data-services-limits]')).toHaveCount(0)
 })
 

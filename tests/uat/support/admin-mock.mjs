@@ -1,6 +1,7 @@
 // Mocked Supabase for local admin UAT: a signed-in Platform Admin and live-shaped reads.
 // Only for the local dev server (VITE_SUPABASE_URL=https://example.supabase.co); nothing reaches a real backend.
 import * as F from './admin-fixtures.mjs'
+import { aiState } from './ai-overview-fixture.mjs'
 
 // CF-247 decision W33 (30 Oct 2026): public.admin_layer23('universities_page') as the server answers it: the filters, the name search and the
 // order (by name) applied to every row, one page answered with the counts and the country and state choices; mode 'ticks' answers every
@@ -54,6 +55,7 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     layer3_queue_status: F.layer3Queue, campuses_page: F.campusesPage, enrichment_operations: F.enrichmentOps, layer2_ops_overview: F.layer2Overview, layer2_parent_runs: F.layer2Parents, layer2_ops_alerts: [], layer2_acquisition_providers: F.environmentRead.layer2_providers,
   }
   const calls = []; page.l3calls = calls
+  const ai = aiState({}, { rank })
   const rpc = {
     // v2.15.319/320: Platform health › Work queues and its 15-minute stats
     admin_course_sources: { countries: [{ country_code: 'AU', enabled: true, reason: 'Platform finds course sources itself' }, { country_code: 'CA', enabled: true, reason: 'Platform finds course sources itself' }],
@@ -153,6 +155,10 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     admin_adapter_builder: b => { calls.push({ builder: b.p_action, args: b.p_args }); return F.adapterBuilder },
     admin_uni_adapter_control: b => { calls.push({ adapterControl: b.p_action, args: b.p_args }); return { ok: true, id: 2 } },
     admin_uni_adapter_write: b => { calls.push({ adapter: b.p_action, args: b.p_args }); return { ok: true, preview_id: 'pv2', pages_read_again: 66 } },
+    // v2.16.0 (Platform Admin 13 Nov 2026 19:14): Models & services › AI. A spec that needs refusals as errors routes these itself (mockAi).
+    admin_ai_overview_v1: () => ai.overview,
+    admin_ai_model_set_v1: b => { calls.push({ aiModel: b }); return ai.write('admin_ai_model_set_v1', b).data || ai.overview },
+    admin_ai_route_set_v1: b => { calls.push({ aiRoute: b }); return ai.write('admin_ai_route_set_v1', b).data || ai.overview },
     admin_ai_config_read: F.aiConfig,
     admin_ai_config: b => { calls.push({ aiConfig: b.p_action, args: b.p_args }); return F.aiConfig },
     admin_firecrawl_credits: b => { calls.push({ fcCredits: b.p_hours }); return F.firecrawlCredits },

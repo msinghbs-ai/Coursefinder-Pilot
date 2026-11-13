@@ -26,7 +26,7 @@ test('menu: 20 pages (was 23; v2.15.363 added Catalogue › Entry requirements);
 })
 
 test('old addresses open the new places', () => {
-  expect(to('scholarships', { tab: 'extraction' })).toEqual(['services', 'ai', {}])
+  expect(to('scholarships', { tab: 'extraction' })).toEqual(['scholarships', 'coverage', { at: 'sch-extraction' }]) // v2.16.0: it left Models & services › AI
   expect(to('reference-data', { tab: 'imports', system: 'qs' })).toEqual(['rankings', 'datasets', { system: 'qs' }])
   expect(to('reference-data', { tab: 'dates' })).toEqual(['reference', '', { type: 'dates' }])
   expect(to('reference-data', { tab: 'links' })).toEqual(['reference', '', { type: 'links' }])
@@ -50,12 +50,14 @@ test('role gates are kept: Operators see API usage only on Settings; Curators se
   expect(canOpen('environment', 3)).toBe(false)
   expect(allowedTabs(PAGES.health, 5).map(t => t.key)).toEqual(['checks', 'queues', 'integration'])  // CF-247 2 Nov 2026: Integration queue, PIM Admin and above
   expect(allowedTabs(PAGES.health, 4).map(t => t.key)).toEqual(['checks', 'queues'])
-  expect(allowedTabs(PAGES.services, 3).map(t => t.key)).toEqual(['ai'])
+  // v2.16.0 (Platform Admin 13 Nov 2026 19:14): the AI tab is Pipeline Operator and above; Scholarship extraction (Curator) is under Scholarships › Coverage
+  expect(allowedTabs(PAGES.services, 3).map(t => t.key)).toEqual([])
+  expect(allowedTabs(PAGES.scholarships, 3).map(t => t.key)).toContain('coverage')
   expect(canOpen('reference', 3)).toBe(true)
   expect(canOpen('layer1', 3)).toBe(false)
   expect(allowedTabs(PAGES.layer2, 3).map(t => t.key)).toContain('flags')
   const main = read('src/mature-main.jsx')
-  expect(main).toContain('{rank>=4&&<AiConfig onError={err}/>}')
+  expect(main).toContain("tab==='ai'?<AiModelsServices onError={err}")
   expect(main).toContain('{rank>=4&&<section data-ranking-imports>')
   expect(main).not.toContain("case'dataModel'")
   expect(main).not.toContain('function Attributes(')
@@ -107,12 +109,13 @@ test.describe('mocked browser', () => {
     await expect(m.locator('[data-sl-countries]')).toBeVisible()
   })
 
-  test('a Curator sees Scholarship extraction on Models & services › AI, without the AI configuration', async ({ page }) => {
+  // v2.16.0 (Platform Admin 13 Nov 2026 19:14): Scholarship extraction left Models & services › AI for Scholarships › Coverage; a Curator still reaches it
+  test('a Curator sees Scholarship extraction under Scholarships › Coverage, and cannot open Models & services', async ({ page }) => {
     await mockAdmin(page, { rank: 3 })
     await page.goto('/#scholarships?tab=extraction')
-    await expect(page).toHaveURL(/#models-services\?tab=ai$/)
-    await expect(page.locator('[data-scholarship-extraction-moved]')).toBeVisible()
-    await expect(page.locator('[data-ai-config]')).toHaveCount(0)
+    await expect(page).toHaveURL(/#scholarships\?tab=coverage&at=sch-extraction$/)
+    await expect(page.locator('[data-fold="scholarship-extraction"] [data-scholarship-extraction]')).toBeVisible()
+    await expect(page.locator('[data-ai-page]')).toHaveCount(0)
   })
 
   test('Platform health › Work queues shows the 15-minute stats, gaps and the queues', async ({ page }) => {

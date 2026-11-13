@@ -8,10 +8,10 @@
 // (migration 20260930160000_cf247_models_services_toggles).
 // v2.15.200 (Decision 254, Platform Admin 6 Oct): each panel is a collapsed card, remembered for the browser session.
 import React,{useEffect,useState}from'react'
-import{BrainCircuit,Globe,History,Power,RefreshCw}from'lucide-react'
+import{Globe,History,RefreshCw}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import Card from'./Card'
-import{Button,Empty,Loading,Metric,StatusChip,fmtDateTime,fmtNumber,humanLabel}from'./ui-kit'
+import{Button,Loading,Metric,StatusChip,fmtDateTime,fmtNumber,humanLabel}from'./ui-kit'
 import{plainError}from'./lib/errors'
 import{isRetiredFetcher}from'./retired-services'
 
@@ -20,57 +20,39 @@ const usd=v=>`US$${Number(v||0).toFixed(2)}`
 
 // UI audit Phase 1 (24 Oct 2026): a model identifier ("qwen/qwen3-30b-a3b-instruct-2507") reads as a name in lists; the identifier
 // sits behind the row's Show fold and on hover. Nothing about which model is called changes.
-const VENDOR={qwen:'Qwen',anthropic:'Anthropic',mistralai:'Mistral AI',google:'Google',openai:'OpenAI','meta-llama':'Meta','deepseek':'DeepSeek','x-ai':'xAI'}
 const WORD={gpt:'GPT',ai:'AI',llm:'LLM',vl:'VL',moe:'MoE'}
 export function modelLabel(id){const s=String(id||'').trim();if(!s)return'—';const name=s.split('/').pop().split(':')[0]
   return name.split('-').filter(Boolean).map(w=>WORD[w.toLowerCase()]||(/^\d+(\.\d+)?[bBkKmM]$/.test(w)?w.toUpperCase():/^[a-z]\d+[a-z]$/i.test(w)?w.toUpperCase():/^\d/.test(w)?w:w.charAt(0).toUpperCase()+w.slice(1))).join(' ')}
-export function modelVendor(id){const s=String(id||'');const v=s.includes('/')?s.split('/')[0]:'';return VENDOR[v]||(v?v.charAt(0).toUpperCase()+v.slice(1):'')}
 export function Switch({on,label,disabled,onChange}){
   return <button type="button" role="switch" aria-checked={on} aria-label={label} className={`ms-switch${on?' on':''}`} disabled={disabled} onClick={()=>onChange(!on)}><span/></button>
 }
 
-// SS-020 step 3 (Decision 269, 3 Nov 2026): part='services' draws the page-service switches on Services & limits; part='models' draws the AI
-// model switches on AI & OpenRouter. Same read, same write, same role checks; nothing is drawn twice.
-export default function ModelsServices({onError,part='all',only=null,except=null}){
+// SS-020 step 3 (Decision 269, 3 Nov 2026): draws the page-service switches on Services & limits.
+// v2.16.0 (Platform Admin 13 Nov 2026 19:14): the AI model switches (the "AI models" card: models that read scholarship pages, cascade steps,
+// tests, retired models) are retired from this screen. The one model list, allowed or not, is Models & services › AI (AiModelsServices.jsx).
+export default function ModelsServices({onError,only=null,except=null}){
   const[data,setData]=useState(null),[busy,setBusy]=useState(false),[done,setDone]=useState('')
   const load=async()=>{setBusy(true);try{const{data:d,error}=await supabase.rpc('admin_services_read');if(error)throw error;setData(d||{})}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
   useEffect(()=>{load()},[])
   if(!data)return <section className="m-panel"><Loading label="Loading models and services…"/></section>
-  const can=Boolean(data.can_control),models=data.models||[],services=(data.services||[]).filter(x=>!isRetiredFetcher({provider_key:x.key})&&(!only||only.includes(x.key))&&(!except||!except.includes(x.key)))
-  const showServices=part!=='models',showModels=part!=='services'
-  const live=models.filter(m=>!m.retired),retired=models.filter(m=>m.retired)
-  const flip=async(kind,x,on)=>{
-    const name=kind==='model'?x.model:x.name
-    const active=(x.steps||[]).filter(s=>s.active)
-    const msg=on?`Switch on ${name}?${kind==='model'?' It will be offered again, but is not added back to any cascade.':''}`
-      :kind==='model'?`Switch off ${name}?${active.length?` It is used in ${active.length} active cascade step${active.length===1?'':'s'} (${active.map(s=>`${humanLabel(s.task)} step ${s.step}`).join(', ')}); ${active.length===1?'that step':'those steps'} will be switched off too.`:''} It will not be offered in any operation screen.`
-      :`Switch off ${name}?${x.routes?` ${fmtNumber(x.routes)} source routes use it; pages will be fetched by the next service on each route.`:''}`
+  const can=Boolean(data.can_control),services=(data.services||[]).filter(x=>!isRetiredFetcher({provider_key:x.key})&&(!only||only.includes(x.key))&&(!except||!except.includes(x.key)))
+  const flip=async(x,on)=>{
+    const msg=on?`Switch on ${x.name}?`:`Switch off ${x.name}?${x.routes?` ${fmtNumber(x.routes)} source routes use it; pages will be fetched by the next service on each route.`:''}`
     const reason=window.prompt(`${msg}\n\nReason (optional, kept in the change log):`,'')
     if(reason===null)return
     setBusy(true);setDone('')
-    try{const{data:d,error}=await supabase.rpc('admin_services_control',{p_kind:kind,p_id:x.id,p_enabled:on,p_reason:reason.trim()||null});if(error)throw error
-      setData(d||{});setDone(`${name} switched ${on?'on':'off'}${d?.steps_switched_off?`; ${d.steps_switched_off} cascade step${d.steps_switched_off===1?'':'s'} switched off`:''}.`)}
+    try{const{data:d,error}=await supabase.rpc('admin_services_control',{p_kind:'service',p_id:x.id,p_enabled:on,p_reason:reason.trim()||null});if(error)throw error
+      setData(d||{});setDone(`${x.name} switched ${on?'on':'off'}.`)}
     catch(e){onError?.(errText(e))}finally{setBusy(false)}
   }
-  const modelRow=m=><tr key={m.id} className={m.enabled?'':'ms-off'} data-model={m.code}>
-    <td title={m.model}><strong>{modelLabel(m.model)}</strong><span className="l3v-code">{[modelVendor(m.model),m.provider].filter(Boolean).join(' · ')}</span><details className="ms-ident" data-model-id={m.model}><summary>Identifier</summary><code>{m.model}</code></details></td>
-    <td>{(m.tasks||[]).length?(m.tasks||[]).map(t=><span key={t} className="ms-task">{humanLabel(t)}</span>):'—'}</td>
-    <td>{(m.steps||[]).length?(m.steps||[]).map(s=><StatusChip key={s.task+s.step} value={s.active?'active':'off'} tone={s.active?'success':'neutral'} label={`${humanLabel(s.task)} · step ${s.step}`}/>):<span className="l3v-code">Not in a cascade</span>}</td>
-    <td className="num">{fmtNumber(m.calls_7d||0)}<span className="l3v-code">{usd(m.cost_7d_usd)}</span></td>
-    <td>{m.qualified?<StatusChip value="passed" tone="success" label="Passed"/>:<span className="l3v-code">Not tested</span>}</td>
-    <td>{m.retired?<span className="l3v-code">{m.retired_reason||'Retired'}</span>:<><Switch on={Boolean(m.enabled)} label={`${m.enabled?'Switch off':'Switch on'} ${m.model}`} disabled={!can||busy||(!m.enabled&&!m.qualified)} onChange={on=>flip('model',m,on)}/>{!m.enabled&&!m.qualified&&<span className="l3v-code">Pass its test first</span>}</>}</td>
-  </tr>
-  const head=<thead><tr><th>Model</th><th>Used for</th><th>Cascade steps</th><th className="num">Last 7 days</th><th>Tests</th><th>On</th></tr></thead>
   return <>
     {!only&&!except&&<div className="cf-metric-grid">
-      {showModels&&<Metric label="AI models on" value={`${live.filter(m=>m.enabled).length} of ${live.length}`} icon={BrainCircuit}/>}
-      {showServices&&<Metric label="Page services on" value={`${services.filter(s=>s.enabled).length} of ${services.length}`} icon={Globe}/>}
-      {showModels&&<Metric label="Retired models" value={retired.length} icon={Power}/>}
+      <Metric label="Page services on" value={`${services.filter(s=>s.enabled).length} of ${services.length}`} icon={Globe}/>
     </div>}
     {!can&&<p className="l3v-note">You can view these. A PIM Operator or above can switch them on or off.</p>}
     {done&&<p className="sb-done" role="status">{done}</p>}
-    {showServices&&(only||except)&&<div className="cf-table-wrap" data-service-switches={(only||[]).join(' ')||'other'}><table className="cf-table ms-table"><tbody>{services.map(s=><tr key={s.id} className={s.enabled?'':'ms-off'} data-service={s.key}><td><strong>{s.name}</strong><span className="l3v-code">{s.credential?'Key saved':'No key'} · {fmtNumber(s.routes||0)} routes</span></td><td><Switch on={Boolean(s.enabled)} label={`${s.enabled?'Switch off':'Switch on'} ${s.name}`} disabled={!can||busy} onChange={on=>flip('service',s,on)}/></td></tr>)}</tbody></table></div>}
-    {showServices&&!only&&!except&&<Card id="services.fetching" icon={Globe} title="Page-fetching services" subtitle="External services that fetch web pages for Layer 2. A service that is off is skipped on every route and is not offered anywhere else."
+    {(only||except)&&<div className="cf-table-wrap" data-service-switches={(only||[]).join(' ')||'other'}><table className="cf-table ms-table"><tbody>{services.map(s=><tr key={s.id} className={s.enabled?'':'ms-off'} data-service={s.key}><td><strong>{s.name}</strong><span className="l3v-code">{s.credential?'Key saved':'No key'} · {fmtNumber(s.routes||0)} routes</span></td><td><Switch on={Boolean(s.enabled)} label={`${s.enabled?'Switch off':'Switch on'} ${s.name}`} disabled={!can||busy} onChange={on=>flip(s,on)}/></td></tr>)}</tbody></table></div>}
+    {!only&&!except&&<Card id="services.fetching" icon={Globe} title="Page-fetching services" subtitle="External services that fetch web pages for Layer 2. A service that is off is skipped on every route and is not offered anywhere else."
       meta={<span>{services.filter(s=>s.enabled).length} of {services.length} on</span>} action={<Button compact onClick={load} disabled={busy}><RefreshCw size={14}/>{busy?'Updating…':'Refresh'}</Button>}>
       <div className="cf-table-wrap"><table className="cf-table ms-table"><thead><tr><th>Service</th><th>Type</th><th>Key</th><th className="num">Routes</th><th>Last test</th><th>On</th></tr></thead><tbody>
         {services.map(s=><tr key={s.id} className={s.enabled?'':'ms-off'} data-service={s.key}>
@@ -79,16 +61,10 @@ export default function ModelsServices({onError,part='all',only=null,except=null
           <td>{s.credential?'Saved':<span className="l3v-code">None</span>}</td>
           <td className="num">{fmtNumber(s.routes||0)}</td>
           <td>{s.last_test?.at?<><StatusChip value={s.last_test.status||'unknown'}/><span className="l3v-code">{fmtDateTime(s.last_test.at)}</span></>:<span className="l3v-code">Never</span>}</td>
-          <td><Switch on={Boolean(s.enabled)} label={`${s.enabled?'Switch off':'Switch on'} ${s.name}`} disabled={!can||busy} onChange={on=>flip('service',s,on)}/></td>
+          <td><Switch on={Boolean(s.enabled)} label={`${s.enabled?'Switch off':'Switch on'} ${s.name}`} disabled={!can||busy} onChange={on=>flip(s,on)}/></td>
         </tr>)}
       </tbody></table></div>
       <p className="l3v-note">Keys are on <a href="#environment">Settings</a>. Address, limits and routing are under Fetchers below.</p>
-    </Card>}
-    {showModels&&<Card id="services.ai-models" icon={BrainCircuit} title="AI models" subtitle="Models the platform can use to read scholarship pages. This is the only place to switch a model on or off. A model can be switched on only after it has passed its test. Switching it off also switches off its cascade steps."
-      meta={<span>{live.filter(m=>m.enabled).length} of {live.length} on{retired.length?` · ${retired.length} retired`:''}</span>}>
-      {live.length?<div className="cf-table-wrap"><table className="cf-table ms-table">{head}<tbody>{live.map(modelRow)}</tbody></table></div>:<Empty text="No models."/>}
-      {retired.length>0&&<details className="ms-retired"><summary>Retired models ({retired.length}) — failed their tests and cannot be switched on</summary>
-        <div className="cf-table-wrap"><table className="cf-table ms-table">{head}<tbody>{retired.map(modelRow)}</tbody></table></div></details>}
     </Card>}
     {(data.events||[]).length>0&&<Card id="services.recent-changes" icon={History} title="Recent changes" meta={<span>{data.events.length}</span>}>
       <ul className="ms-events">{data.events.map((e,i)=><li key={i}><strong>{e.target}</strong> switched {e.action==='switch_on'?'on':'off'}<span className="l3v-code">{[e.by,fmtDateTime(e.at)].filter(Boolean).join(' · ')}</span></li>)}</ul>

@@ -22,16 +22,15 @@ import FirecrawlAcceptance from'./FirecrawlAcceptance'
 import Card,{rememberOpen}from'./Card'
 import{hrefFor}from'./nav-map'
 import{plainError}from'./lib/errors'
-import{useIsPlatformAdmin,balanceWords}from'./lib/viewer'
 import SnapshotStamp from'./SnapshotStamp'
 import{gateFor}from'./guide/operatingWords'
 import{RETIRED_TOOLSETS}from'./retired-services'
+import{isAiHome,loadAiHomeKeys}from'./lib/ai-overview'
 
 const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const ask=t=>{const r=window.prompt(`${t}\n\nReason (kept in the log):`);return r&&r.trim().length>=4?r.trim():null}
 const LAYER={0:'Platform',1:'Layer 1',2:'Layer 2',3:'Layer 3',4:'Layer 4'}
 const SEV={high:'danger',warning:'warning',info:'neutral'}
-const money=v=>v==null?'—':`US$${Number(v).toFixed(2)}`
 
 // ---- notices on each layer page -------------------------------------------------------------------------------------
 // v2.15.268 (Platform Admin, 13 Oct 2026 14:56: "these notification are asking for cant be fixed and if followed the link its doesnt open
@@ -47,7 +46,8 @@ export function noticePlan(n){
   // v2.15.327 (Platform Admin 23 Oct 2026 13:26: "go to openrouter settings doesn't open, check rest of the link"): every Go to names the
   // card it scrolls to (at); goToCard also opens the Toolsets and limits card the toolset cards sit in
   const fc=go('Firecrawl settings',LIMITS.page,LIMITS.tab,'services.toolset.firecrawl','services.toolset.firecrawl')
-  const or=go('OpenRouter settings',LIMITS.page,LIMITS.tab,'services.toolset.openrouter','services.toolset.openrouter')
+  // v2.16.0 (Platform Admin 13 Nov 2026 19:14): everything about OpenRouter and AI is on Models & services › AI (four panes)
+  const or=go('OpenRouter key and usage','services','ai','services.ai.openrouter','services.ai.openrouter')
   switch(k){
     case'firecrawl:daily_budget':return{need:'info',say:used?'Nothing to do: this work carries on by itself after midnight, Melbourne time.':'Nothing to do yet: this work stops for the day only if the share is used up.',
       go:go('Daily budget settings',LIMITS.page,LIMITS.tab,'services.toolset.firecrawl','firecrawl:Daily budget')}
@@ -64,7 +64,7 @@ export function noticePlan(n){
     case'openrouter:low_balance':return{need:'outside',say:'Top up the OpenRouter account.',go:or}
     case'openrouter:not_observed':return{need:'action',say:'Check the job “Read the OpenRouter balance”.',go:go('Task manager','jobs','tasks','','')}
     // SS-016 UR-10 (1 Nov 2026): security.platform_notices_v1 raises this at severity info in Observe only (nothing stopped), warning in Stop at limits
-    case'openrouter:over_guard':return{need:'info',say:n.severity==='info'?'Nothing to do: Observe only, so nothing has stopped; it is recorded for the top-up review.':'Nothing to do: it carries on when the UTC day changes. Raise the guard if it should carry on today.',go:go('Daily guards',LIMITS.page,LIMITS.tab,'services.toolset.openrouter','openrouter:Daily guards')}
+    case'openrouter:over_guard':return{need:'info',say:n.severity==='info'?'Nothing to do: Observe only, so nothing has stopped; it is recorded for the top-up review.':'Nothing to do: it carries on when the UTC day changes. Raise the cap if it should carry on today.',go:go('Services and their daily caps','services','ai','services.ai.services','services.ai.services')}
     case'scheduled_jobs:timeout':return{need:'action',say:'Lower the job’s batch size so each run finishes inside the limit.',go:go('Jobs','jobs','jobs','','')}
     case'scheduled_jobs:failed':return{need:n.severity==='high'?'action':'info',say:n.severity==='high'?'It keeps failing: the job needs a fix.':'Nothing to do unless it repeats.',go:go('Jobs','jobs','jobs','','')}
     case'pipeline:hygiene':return{need:'action',say:'Retire what is unused, fix the security items, and run the drop paste file for what is ready (component register).',go:go('Jobs','jobs','jobs','','')}
@@ -147,7 +147,8 @@ function NoticeItems({n,mode,onDone}){
 // ---- Models & services › Toolsets and limits ------------------------------------------------------------------------
 // SS-020 step 3 cards (Final board F41): only=[keys] draws just those toolset cards ('notices' = the notices card), for one card per service
 export default function Toolsets({onError,only=null}){
-  const[d,setD]=useState(null),[n,setN]=useState(null),[failed,setFailed]=useState(''),[busy,setBusy]=useState(false)
+  const[d,setD]=useState(null),[n,setN]=useState(null),[failed,setFailed]=useState(''),[busy,setBusy]=useState(false),[aiKeys,setAiKeys]=useState(null)
+  useEffect(()=>{loadAiHomeKeys().then(setAiKeys)},[])
   const load=async()=>{setFailed('');try{const[a,b]=await Promise.all([supabase.rpc('admin_toolsets_read'),supabase.rpc('admin_platform_notices_read',{p_layer:null})]);if(a.error)throw a.error;setD(a.data||{});setN(b.data||{})}catch(e){setFailed(errText(e))}}
   useEffect(()=>{load()},[])
   const write=async(action,args,question)=>{const reason=ask(question);if(!reason)return;setBusy(true);try{const{error}=await supabase.rpc('admin_toolsets_write',{p_action:action,p_args:{...args,reason}});if(error)throw error;await load()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
@@ -163,13 +164,13 @@ export default function Toolsets({onError,only=null}){
       <SnapshotStamp meta={n?.snapshot} label="Notices checked" what="toolset-notices"/>
       <div className="tn-all" data-toolset-notices>{notices.length?notices.map(x=><Notice key={x.key} n={x} onDone={load}/>):<p className="sl-sub">No notices on any layer.</p>}</div>
     </Card>}
-    {(d.toolsets||[]).filter(t=>!RETIRED_TOOLSETS.has(t.key)&&want(t.key)).map(t=><React.Fragment key={t.key}><Toolset t={t} d={d} can={can} write={write}/>{t.key==='firecrawl'&&<><FirecrawlAcceptance onError={onError}/><FirecrawlCredits onError={onError}/><FirecrawlWork onError={onError}/></>}</React.Fragment>)}
+    {/* v2.16.0 (Platform Admin 13 Nov 2026 19:23): the OpenRouter card and every setting whose home is Models & services are on Models & services › AI */}
+    {(d.toolsets||[]).filter(t=>!RETIRED_TOOLSETS.has(t.key)&&t.key!=='openrouter'&&want(t.key)).map(t=><React.Fragment key={t.key}><Toolset t={{...t,settings:(t.settings||[]).filter(x=>!isAiHome(x,t.key,aiKeys))}} moved={(t.settings||[]).filter(x=>isAiHome(x,t.key,aiKeys)).length} can={can} write={write}/>{t.key==='firecrawl'&&<><FirecrawlAcceptance onError={onError}/><FirecrawlCredits onError={onError}/><FirecrawlWork onError={onError}/></>}</React.Fragment>)}
   </div>
 }
 
 const SECTION_ORDER=['Key and plan limits','How the service is used','Daily guards','Target universities','Read pages','Find pages','Runs','Daily budget','Search pass','Sample runs','Notices']
-function Toolset({t,d,can,write}){
-  const or=t.key==='openrouter'?d.openrouter||{}:null
+function Toolset({t,moved=0,can,write}){
   const sections=SECTION_ORDER.filter(x=>(t.settings||[]).some(s=>(s.section||'Notices')===x))
   return <Card id={`services.toolset.${t.key}`} title={t.label} subtitle={`${(t.layers||[]).map(l=>LAYER[l]).join(', ')}. ${t.help}`} data-toolset={t.key}
     meta={<>{t.enforcement&&<span className={`cf-chip tone-${t.enforcement==='observe'?'warning':'success'}`}>{t.enforcement==='observe'?'Observe only':'Stops at limits'}</span>}{t.plan?.at_reserve&&<span className="cf-chip tone-danger">At its reserve</span>}</>}>
@@ -178,7 +179,7 @@ function Toolset({t,d,can,write}){
       <span className={`cf-chip tone-${t.enforcement==='observe'?'warning':'success'}`}>{t.enforcement==='observe'?'Observe only — not stopped by the platform':'Stop at limits'}</span>
       {can&&<Button compact onClick={()=>write('enforcement',{toolset:t.key,enforcement:t.enforcement==='observe'?'stop':'observe'},t.enforcement==='observe'?`Make ${t.label} stop at its spend guards and credit floor?`:`Let ${t.label} run past its spend guards and credit floor (observe only)?`)}>{t.enforcement==='observe'?'Switch to stop at limits':'Switch to observe only'}</Button>}
       <small className="sl-sub">{t.reason}{t.updated_at?` · ${fmtDateTime(t.updated_at)}`:''}</small></div>}
-    {or&&<OpenRouter or={or}/>}
+    {moved>0&&<p className="l3v-note" data-ai-moved={t.key}><a className="cf-link" href={hrefFor('services','ai')}>AI models, prompts, caps and the OpenRouter key are in Models &amp; services › AI</a> ({fmtNumber(moved)} AI setting{moved===1?'':'s'} of this toolset moved there).</p>}
     {sections.map(sec=><Settings key={sec} title={sec} t={t} rows={t.settings.filter(s=>(s.section||'Notices')===sec)} can={can} write={write}/>)}
   </Card>
 }
@@ -192,27 +193,14 @@ function Settings({title,t,rows,can,write}){
         return <tr key={s.key} data-toolset-setting={`${t.key}.${s.key}`}><td><strong>{s.label}</strong><small className="sl-sub">{s.help}</small></td>
           <td><span className="sl-val tn-val">{s.kind==='boolean'?<select aria-label={s.label} value={v} disabled={!can} onChange={e=>setVals(x=>({...x,[s.key]:e.target.value}))}><option value="true">Yes</option><option value="false">No</option></select>
             :<input aria-label={s.label} className={s.kind==='number'?'':'tn-wide'} inputMode={s.kind==='number'?'decimal':'text'} value={v} disabled={!can} onChange={e=>setVals(x=>({...x,[s.key]:e.target.value}))}/>}
-            <small>{s.unit}{s.kind==='number'&&s.min!=null?` (${fmtNumber(s.min)} to ${fmtNumber(s.max)})`:''}</small>
+            <small>{s.kind==='text'?'':s.unit}{s.kind==='number'&&s.min!=null?` (${fmtNumber(s.min)} to ${fmtNumber(s.max)})`:''}</small>
             {can&&changed&&<Button compact variant="primary" onClick={()=>write('setting',{toolset:t.key,key:s.key,value},`Change "${s.label}" to ${v}?`)}>Save</Button>}</span></td>
           <td><small>{s.reason||'—'}{s.updated_at?` · ${fmtDateTime(s.updated_at)}`:''}</small></td></tr>})}
     </tbody></table></div></div>
 }
 
-// v2.15.258 (bug 12/10-01): the AI uses that run now (Layer 3 retired), spend today against each daily guard, and the credit floor.
-// Guards and the floor are edited in "Daily guards" below; the mode (Observe only / Stop at limits) is the switch above.
-function OpenRouter({or}){
-  const admin=useIsPlatformAdmin()
-  const b=or.balance||{},floor=Number(or.credit_floor_usd||0),low=b.remaining_usd!=null&&Number(b.remaining_usd)<floor
-  return <div className="tn-or" data-openrouter>
-    <p data-balance={admin?'figure':'words'}>{admin?<><strong>Balance {money(b.remaining_usd)}</strong> of {money(b.total_credits)} bought · </>:<><strong>Credit: {balanceWords(b.remaining_usd,floor)}</strong> · </>}read {b.observed_at?fmtDateTime(b.observed_at):'never'} (every 15 minutes){admin?<> · credit floor {money(floor)}</>:null}{low&&<span className="cf-chip tone-danger"> Below the floor</span>}</p>
-    <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>AI use</th><th className="num">Calls today (UTC)</th><th className="num">Spent today</th><th className="num">Daily guard</th><th>State</th></tr></thead><tbody>
-      {(or.uses||[]).map(g=>{const over=Number(g.guard)>0&&Number(g.spent_today)>=Number(g.guard)
-        return <tr key={g.use} data-or-use={g.use}><td>{g.label}</td><td className="num">{fmtNumber(g.calls||0)}</td><td className="num">{money(g.spent_today)}</td><td className="num">{money(g.guard)}</td>
-          <td>{g.allowed===false?<span className="cf-chip tone-danger">Stopped (stop at limits)</span>:over?<span className="cf-chip tone-warning">Past its guard (observed)</span>:<span className="cf-chip tone-success">Running</span>}</td></tr>})}
-    </tbody></table></div>
-    <small className="sl-sub">Change the guards and the floor under Daily guards below. Spend by day (UTC, last 14 days): {(or.spend_by_day||[]).map(x=>`${x.day} ${money(x.usd)} (${fmtNumber(x.calls)} calls)`).join(' · ')||'none'}</small>
-  </div>
-}
+// v2.16.0 (Platform Admin 13 Nov 2026 19:14): the OpenRouter block (balance, AI uses and daily guards) is retired; Models & services › AI
+// shows the key, credit, ceiling, each service's cap and spend, and usage (AiModelsServices.jsx).
 
 // SS-020 step 1 (Decision 269, 3 Nov 2026): the Sample runs and Search pass cards retired with the Serper and ScrapingBee cards (Firecrawl
 // only, 4 Oct 2026). Their history stays in pipeline.toolset_sample_runs, toolset_sample_items and search_pass_links; the functions and the

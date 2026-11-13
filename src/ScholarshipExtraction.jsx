@@ -77,16 +77,18 @@ export default function ScholarshipExtraction({onError}){
   </div>
 }
 
-// v2.15.264 (Platform Admin, 13 Oct 2026): the scholarship AI models (order, qualify, make active) are also shown and edited on
-// Models & services › AI & OpenRouter; both places use this section and the same admin_scholarship_ai actions.
+// v2.16.0 (Platform Admin 13 Nov 2026 19:14): the scholarship reader asks its service route, so the model order is the cascade of the
+// "Scholarship pages" service on Models & services › AI and nowhere else. The order editor and Make active are retired from this screen (and its
+// copy on Models & services); the order is shown read only with a link. Qualifying a model on the sample stays here: it is evidence, and it
+// never makes a model active.
 export function ModelsSection({d,act}){
   const can=d.can_manage,models=d.models||[],scores=d.scores||{},runs=d.qualify_runs||[]
   const lastRun=code=>runs.find(r=>r.model_code===code&&String(r.prompt_version)===String(d.prompt_version))
   return <>
   <section className="m-panel" data-sx-models>
       <h3>Models</h3>
-      <p className="sc-sub">Each model is qualified on the sample below with the current instructions. Qualifying never makes a model active; that is a separate step. The first model reads every page; the next reads it again only when the first one's reply fails or a fact it states is not proven on the page; a page no model can settle goes to Layer 4.</p>
-      {can&&<ChainEditor models={models} chain={d.chain||[]} qualified={code=>{const r=lastRun(code);return r&&r.state==='done'}} act={act}/>}
+      <p className="sc-sub mdl-line" data-model-line="scholarship">Model: <strong>{(d.chain||[]).map(c=>models.find(m=>m.code===c)?.label||c).join(' → ')||'No model'}</strong> <a className="cf-link" href="#models-services?tab=ai&card=services.ai.services&at=services.ai.services&service=scholarship_extraction">change in Models &amp; services</a></p>
+      <p className="sc-sub">Each model is qualified on the sample below with the current instructions. Qualifying never makes a model active: the order is set, as a separate step, on the Scholarship pages service in Models &amp; services. The first model reads every page; the next reads it again only when the first one's reply fails or a fact it states is not proven on the page; a page no model can settle goes to Layer 4.</p>
       <div className="cf-table-wrap"><table className="cf-table">
         <thead><tr><th>Model</th><th>Status</th><th className="num" title="Scholarship or not, as expected">Scholarship right</th><th className="num">International right</th><th className="num">Offered right</th><th className="num" title="Answers whose quotes failed the page check">Proofs failed</th><th className="num">Failed</th><th className="num">Cost a page</th><th>Last qualification</th>{can&&<th/>}</tr></thead>
         <tbody>{models.map(m=>{const s=scores[m.code]||{},run=lastRun(m.code);return <tr key={m.code} data-sx-model={m.code}>
@@ -99,42 +101,14 @@ export function ModelsSection({d,act}){
           <td className="num">{s.pages?fmtNumber(s.errors):'—'}</td>
           <td className="num">{s.pages?`US$${Number(s.cost_per_page||0).toFixed(4)}`:'—'}</td>
           <td>{run?<><StatusChip value={run.state}/> <small className="sc-sub">{fmtNumber(run.progress?.done||0)} of {fmtNumber(run.progress?.total||0)} · {fmtDateTime(run.at)}</small></>:<span className="sc-sub">Not yet</span>}</td>
-          {can&&<td className="sx-actions"><ReasonAction label="Qualify" testid={`qualify-${m.code}`} disabled={run&&['queued','running'].includes(run.state)} onDo={r=>act('qualify',{model_code:m.code,reason:r},`Qualifying ${m.label} on ${fmtNumber((d.sample||[]).filter(x=>x.active).length)} pages.`)}/>
-            {m.status!=='active'&&<ReasonAction label="Make active" testid={`activate-${m.code}`} disabled={!run||run.state!=='done'} onDo={r=>act('activate',{model_code:m.code,reason:r},`${m.label} is the active model. AI admission is unchanged.`)}/>}</td>}
+          {can&&<td className="sx-actions"><ReasonAction label="Qualify" testid={`qualify-${m.code}`} disabled={run&&['queued','running'].includes(run.state)} onDo={r=>act('qualify',{model_code:m.code,reason:r},`Qualifying ${m.label} on ${fmtNumber((d.sample||[]).filter(x=>x.active).length)} pages.`)}/></td>}
         </tr>})}</tbody>
       </table></div>
     </section>
   </>
 }
 
-// Self-loading for Models & services › AI & OpenRouter (v2.15.264)
-export function ScholarshipAiModels({onError}){
-  const[d,setD]=useState(null),[msg,setMsg]=useState(''),[fail,setFail]=useState('')
-  const load=async()=>{try{const{data,error}=await supabase.rpc('admin_scholarship_ai',{p_action:'read',p_args:{}});if(error)throw error;setD(data)}catch(e){onError?.(errText(e))}}
-  const act=async(action,args,done)=>{setFail('');setMsg('');try{const{data,error}=await supabase.rpc('admin_scholarship_ai',{p_action:action,p_args:args});if(error)throw error;setD(data);if(done)setMsg(done)}catch(e){setFail(errText(e));throw e}}
-  useEffect(()=>{load()},[])
-  if(!d)return <Loading label="Loading scholarship models…"/>
-  return <div className="sx" data-ai-scholarship-models>
-    <p className="sc-sub">AI admission is {d.ai_admission?'on':'off'}; sample pages, instructions and page results are on <a className="cf-link" href="#models-services?tab=ai">Models &amp; services › AI &amp; OpenRouter</a>.</p>
-    <ModelsSection d={d} act={act}/>
-    {msg&&<p role="status" className="sc-note" data-sx-note>{msg}</p>}
-    {fail&&<p role="alert" className="sc-note sc-bad" data-sx-fail>{fail}</p>}
-  </div>
-}
 
-// v2.15.250: the order the models read in (each qualified with the current instructions)
-function ChainEditor({models,chain,qualified,act}){
-  const usable=models.filter(m=>m.status!=='retired'),[first,setFirst]=useState(chain[0]||''),[then,setThen]=useState(chain[1]||'')
-  useEffect(()=>{setFirst(chain[0]||'');setThen(chain[1]||'')},[chain.join(',')])
-  const order=[first,then].filter(Boolean),ok=order.length>0&&new Set(order).size===order.length&&order.every(qualified),same=order.join(',')===chain.join(',')
-  return <div className="sx-row" data-sx-chain-editor>
-    <label>Reads first <select value={first} onChange={e=>setFirst(e.target.value)} aria-label="Model that reads first"><option value="">Choose</option>{usable.map(m=><option key={m.code} value={m.code}>{m.label}</option>)}</select></label>
-    <label>Then <select value={then} onChange={e=>setThen(e.target.value)} aria-label="Model that reads next"><option value="">No second model</option>{usable.filter(m=>m.code!==first).map(m=><option key={m.code} value={m.code}>{m.label}</option>)}</select></label>
-    <span className="sc-sub">then Layer 4</span>
-    <ReasonAction label="Set the order" testid="set-chain" disabled={!ok||same} onDo={r=>act('set_chain',{models:order,reason:r},'Order set. AI admission is unchanged.')}/>
-    {order.length>0&&!order.every(qualified)&&<small className="sc-sub">Qualify each model with the current instructions first.</small>}
-  </div>
-}
 
 function Sample({d,can,act}){
   const rows=d.sample||[],models=(d.models||[]).filter(m=>m.status!=='retired'),[show,setShow]=useState('all')

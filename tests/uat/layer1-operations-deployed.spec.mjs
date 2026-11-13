@@ -46,7 +46,7 @@ test.describe('M2.4.1 Layer 1 regulatory operations @deployed',()=>{
   test('Administration preserves the Platform Admin boundary for Layer 1 source configuration',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
     await page.goto(new URL('/#administration?section=layer1-sources',process.env.UAT_BASE_URL).toString())
-    await expect(page.locator('.m-release-pill')).toContainText(/^v2\.15\.\d+$/)
+    await expect(page.locator('.m-release-pill')).toContainText(/^v2\.\d+\.\d+$/)
     // v2.15.246: the old address opens Layer 1 › Sources; editing a source's settings stays Platform Admin only (rank 6), so the
     // UAT operator (rank 4) opens a row and sees its facts and Check source but no settings form.
     const page1=page.locator('main h1').filter({hasText:/^Layer 1 Register$/});await expect(page1).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})

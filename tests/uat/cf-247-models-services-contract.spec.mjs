@@ -1,7 +1,6 @@
 // Guards: CF-247 models services: v2.15.118 Platform settings › Models & services: on/off switch for every AI model and page-fetching service.
 // v2.15.118 Platform settings › Models & services: on/off switch for every AI model and page-fetching service.
 import { test, expect } from '@playwright/test'
-import { openCards } from './support/cards.mjs'
 import fs from 'node:fs'
 import { PAGES, SECTIONS } from '../../src/nav-map.js'
 import { mockAdmin } from './support/admin-mock.mjs'
@@ -10,7 +9,7 @@ const read = p => fs.readFileSync(p, 'utf8')
 
 test('Models & services is a Platform settings page; switching is role-checked, logged, and a model off leaves every operation screen', () => {
   expect(SECTIONS.find(s => s.label === 'Platform settings').pages).toEqual(['environment', 'services', 'migration']) // v2.15.301: Data model retired, Storage & retention on Platform health
-  expect(PAGES.services.min).toBe(3) // v2.15.301: Scholarship extraction (Curator) on the AI tab; the AI configuration inside stays Operator and above
+  expect(PAGES.services.min).toBe(4) // v2.16.0: Scholarship extraction (Curator) is under Scholarships › Coverage; both tabs are Pipeline Operator and above
   const m = read('supabase/migrations-archive/20260930160000_cf247_models_services_toggles.sql')
   expect(m).toContain("if auth.uid() is null or security.current_role_rank() < 5 then raise exception 'PIM Operator role or above required'")
   expect(m).toContain('update pipeline.layer3_route_tiers set active = false, updated_at = now() where profile_id = p_id and active;')
@@ -24,23 +23,11 @@ test('Models & services is a Platform settings page; switching is role-checked, 
 })
 
 test.describe('mocked browser', () => {
-  test('switch a model off (its steps go too), switch a service on; off items are greyed, retired ones cannot be switched', async ({ page }) => {
+  // v2.16.0 (Platform Admin 13 Nov 2026 19:14): the AI model switches left this screen (the one model list is Models & services › AI, guarded by
+  // cf-247-ai-models-services-ui); the model half of this test is retired with them. The page-service switch stays.
+  test('switch a page service on from Services & limits, with the reason kept', async ({ page }) => {
     await mockAdmin(page)
-    const prompts = []
-    page.on('dialog', d => { prompts.push(d.message()); d.accept('Too slow') })
-    await page.goto('/#models-services?tab=ai') // SS-020 step 3: the AI model switches are on AI & OpenRouter
-    await openCards(page) // v2.15.200: cards start collapsed
-    await expect(page.locator('[data-model="sonnet-english"]')).toHaveClass(/ms-off/)
-    await expect(page.locator('[data-model="old-model"] [role="switch"]')).toHaveCount(0)
-    await expect(page.locator('.ms-retired > summary')).toContainText('Retired models (1)') // Phase 1: each row also has an Identifier fold
-    // v2.15.122: a model that has not passed its test cannot be switched on.
-    await expect(page.getByRole('switch', { name: 'Switch on vendor/new-candidate' })).toBeDisabled()
-    await expect(page.locator('[data-model="new-candidate"]')).toContainText('Pass its test first')
-    await page.getByRole('switch', { name: 'Switch off qwen/qwen3-30b-a3b' }).click()
-    await expect.poll(() => page.l3calls.find(c => c.p_kind === 'model')).toEqual({ p_kind: 'model', p_id: 'm1', p_enabled: false, p_reason: 'Too slow' })
-    expect(prompts[0]).toContain('English step 1, Intake step 1')
-    await expect(page.getByRole('status')).toContainText('qwen/qwen3-30b-a3b switched off; 2 cascade steps switched off.')
-    await expect(page.locator('[data-model="qwen3-30b"]')).toHaveClass(/ms-off/)
+    page.on('dialog', d => d.accept('Too slow'))
     await page.goto('/#models-services') // the page-service switches are on Services & limits, one card per service
     await page.locator('[data-fold="other-services"] > summary').click() // a gateway that is neither Firecrawl nor direct read
     await page.getByRole('switch', { name: 'Switch on Custom gateway' }).click()

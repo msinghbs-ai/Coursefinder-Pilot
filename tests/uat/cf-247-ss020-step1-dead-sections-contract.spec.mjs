@@ -34,7 +34,7 @@ test('retired services: one list for Toolsets, Fetchers, Settings and the Go-liv
 })
 
 test('step 1 changes no role: the pages it touched keep their minimum roles', () => {
-  expect(PAGES.services.min).toBe(3)
+  expect(PAGES.services.min).toBe(4) // v2.16.0 (Platform Admin 13 Nov 2026 19:14): Scholarship extraction (rank 3) left the AI tab; step 1 itself changed no role
   expect(PAGES.migration.min).toBe(6)
   expect(PAGES.health.tabs.find((t) => t.key === 'checks').min).toBe(3)
   expect(PAGES.coverage.tabs.find((t) => t.key === 'attributes').min).toBe(1)

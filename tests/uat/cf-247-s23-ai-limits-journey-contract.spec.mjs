@@ -6,7 +6,6 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
-import { openCards } from './support/cards.mjs'
 import { resolveTarget } from '../../src/nav-map.js'
 
 const m14 = fs.readFileSync('supabase/migrations/20261012011400_cf247_ai_limits_onboarding_pace.sql', 'utf8')
@@ -76,13 +75,6 @@ test.describe('mocked browser', () => {
     await expect(start).toBeDisabled()
   })
 
-  test('Models & services › OpenRouter: each AI use against its daily guard, and the credit floor', async ({ page }) => {
-    await mockAdmin(page)
-    await page.goto('/#models-services?tab=limits')
-    await openCards(page) // cards start collapsed
-    const or = page.locator('[data-openrouter]')
-    await expect(or).toContainText('credit floor US$5')
-    await expect(or.locator('[data-or-use="scholarship_ai"]')).toContainText('Running')
-    await expect(or.locator('[data-or-use="central_ai"]')).toContainText('Past its guard (observed)')
-  })
+  // v2.16.0 (Platform Admin 13 Nov 2026 19:14): "Models & services › OpenRouter: each AI use against its daily guard, and the credit floor" is retired
+  // with the OpenRouter block of Toolsets; each service's spend against its cap, the floor and the ceiling are guarded by cf-247-ai-models-services-ui.
 })

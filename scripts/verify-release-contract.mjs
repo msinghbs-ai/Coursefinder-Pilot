@@ -14,7 +14,8 @@ const pill=read('src/ReleaseNotes.jsx')
 const shell=read('src/mature-main.jsx')
 const html=read('index.html')
 
-if(!/^2\.15\.\d+$/.test(UI_VERSION))fail(`invalid UI_VERSION ${UI_VERSION}`)
+// v2.16.0 (Platform Admin 13 Nov 2026 19:27): the minor number moves with a major redesign, so any 2.x.y is a valid version
+if(!/^2\.\d+\.\d+$/.test(UI_VERSION))fail(`invalid UI_VERSION ${UI_VERSION}`)
 if(!['candidate','accepted'].includes(RELEASE_STATE))fail(`invalid RELEASE_STATE ${RELEASE_STATE}`)
 if(RELEASE?.version!==UI_VERSION)fail(`RELEASE version ${RELEASE?.version||'missing'} != UI_VERSION ${UI_VERSION}`)
 if(RELEASE?.packageVersion!==PACKAGE_VERSION)fail(`RELEASE package ${RELEASE?.packageVersion||'missing'} != PACKAGE_VERSION ${PACKAGE_VERSION}`)
@@ -40,11 +41,11 @@ for(const gone of['pim-version-entry.js','release-currentness-entry.js','Statist
   if(html.includes(`/src/${gone}`))fail(`index.html loads retired page-patch script ${gone}`)
 }
 if((html.match(/<script\b/g)||[]).length!==1||!html.includes('<script type="module" src="/src/mature-main.jsx"></script>'))fail('index.html must load only the React entry (src/mature-main.jsx)')
-if(/const UI_VERSION='2\.15\.\d+'/.test(shell))fail('mature-main.jsx defines a competing version literal; import UI_VERSION from release-manifest.js')
+if(/const UI_VERSION='2\.\d+\.\d+'/.test(shell))fail('mature-main.jsx defines a competing version literal; import UI_VERSION from release-manifest.js')
 if(!shell.includes("import{UI_VERSION}from'./release-manifest.js'"))fail('mature-main.jsx must take UI_VERSION from the canonical manifest')
 if(!pill.includes("import{UI_VERSION,RELEASE}from'./release-manifest.js'"))fail('ReleaseNotes.jsx must import the canonical manifest')
-if(/const UI_VERSION='2\.15\.\d+'/.test(pill))fail('ReleaseNotes.jsx defines a competing current-version literal')
-if(/StudySearch PIM Admin v2\.15\.\d+/.test(html))fail('index.html contains a duplicate current-version literal')
+if(/const UI_VERSION='2\.\d+\.\d+'/.test(pill))fail('ReleaseNotes.jsx defines a competing current-version literal')
+if(/StudySearch PIM Admin v2\.\d+\.\d+/.test(html))fail('index.html contains a duplicate current-version literal')
 if(!html.includes('<title>StudySearch PIM Admin</title>'))fail('index.html must keep a version-neutral bootstrap title')
 if(!pill.includes('`StudySearch PIM Admin v${UI_VERSION}`')||!pill.includes('document.title=RELEASE_TITLE'))fail('runtime title is not set from the canonical manifest')
 // Decision 209: the in-app Platform guide is reviewed with every release.

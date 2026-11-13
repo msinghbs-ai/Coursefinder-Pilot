@@ -14,7 +14,7 @@ const autos = fs.readFileSync('src/Automations.jsx', 'utf8')
 // SS-020 follow-up (4 Nov 2026): the Refresh schedules section (ScheduledJobsWorkspace.jsx) is retired; its target-id assertion went with it
 const evidence = fs.readFileSync('src/EvidenceWorkspace.jsx', 'utf8')
 const models = fs.readFileSync('src/ModelsServices.jsx', 'utf8')
-const ai = fs.readFileSync('src/AiConfig.jsx', 'utf8')
+const ai = fs.readFileSync('src/AiModelsServices.jsx', 'utf8') // v2.16.0: AiConfig.jsx is retired; Models & services › AI is this page
 const toolsets = fs.readFileSync('src/Toolsets.jsx', 'utf8')
 const fcWork = fs.readFileSync('src/FirecrawlWork.jsx', 'utf8')
 const nav = fs.readFileSync('src/nav-map.js', 'utf8')
@@ -104,15 +104,16 @@ test('Models & services: the list names the model (identifier behind Identifier 
   expect(ui).toContain("import{ViewerContext}from'./lib/viewer'")
   expect(ui).toContain('<ViewerContext.Provider value={{rank}}>')
   expect(models).toContain('export function modelLabel(id)')
-  expect(models).toContain('<td title={m.model}><strong>{modelLabel(m.model)}</strong>')
-  expect(models).toContain('<details className="ms-ident" data-model-id={m.model}><summary>Identifier</summary><code>{m.model}</code></details>')
-  expect(models).not.toContain('<td><strong>{m.model}</strong>')
-  expect(ai).toContain("data-balance={admin?'figure':'words'}>{admin?`${money(b.remaining_usd)} left`:words}")
-  expect(ai).toContain('<strong>{admin?money(b.remaining_usd):words}</strong>')
-  expect(ai).toContain('title={m.model}>{modelLabel(m.model)}')
+  // v2.16.0 (Platform Admin 13 Nov 2026 19:14): the model list and the balance are on Models & services › AI. A model reads as its name; its
+  // OpenRouter id has its own column and sits on hover on a cascade chip. The balance is a figure for the Platform Admin, words for everyone else.
+  expect(ai).toContain('<td data-label="Model"><strong>{m.label || m.code}</strong>')
+  expect(ai).toContain('<td data-label="OpenRouter id"><code className="aim-code">{m.model_identifier || \'Not recorded\'}</code></td>')
+  expect(ai).toContain("data-ai-balance={admin ? 'figure' : 'words'}")
+  expect(ai).toContain("<strong>{admin ? (usd(bal) ?? 'Not read yet') : balanceWords(bal, or.floor_usd)}</strong>")
+  expect(ai).toContain('{shortModel(m.label)}')
   // SS-020 step 1 (Decision 269): the Serper and ScrapingBee key-plan balance retired with their cards (Firecrawl only)
   expect(toolsets).not.toContain('function KeyPlan(')
-  expect(toolsets).toContain("<p data-balance={admin?'figure':'words'}>{admin?<><strong>Balance {money(b.remaining_usd)}</strong>")
+  expect(toolsets).not.toContain('data-balance=') // v2.16.0: the OpenRouter block left Toolsets; the balance is drawn once, on Models & services › AI
   expect(fcWork).toContain("{admin?`${fmtNumber(v.remaining)} of ${fmtNumber(v.plan_credits)} credits left`:`Credits: ${balanceWords(v.remaining,b.stop_at_remaining_units)}`}")
 })
 
