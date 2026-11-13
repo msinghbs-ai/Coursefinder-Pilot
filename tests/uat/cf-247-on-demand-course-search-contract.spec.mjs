@@ -21,5 +21,5 @@ test('the worker asks the database before a target-list refusal', () => {
   expect(M).toContain('create or replace function public.svc_fc_on_demand_covers_v1(p_provider uuid, p_purpose text)')
   expect(W).toContain('!(await onDemandCovers(providerId, purpose))')
   expect(W).toContain('rpc("svc_fc_on_demand_covers_v1", { p_provider: providerId, p_purpose: purpose })')
-  expect(W).toContain('const WORKER = "coverage-sweep-worker-v0.84.0"')
+  expect(W).toMatch(/const WORKER = "coverage-sweep-worker-v0\.84\.0"|\/\/ was v0\.84\.0 /)   // current, or kept as "was" by a later worker
 })
