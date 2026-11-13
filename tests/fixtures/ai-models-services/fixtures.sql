@@ -87,7 +87,7 @@ begin
   assert (select count(*) from pipeline.field_enrich_items where state <> 'ai') = 0 and (select count(*) from pipeline.entry_matrix_runs where state <> 'queued') = 0;
   -- on-demand work is not held by a limit (operating model 3.3.2): an open request for the provider lets its items through; switched off still holds
   insert into pipeline.on_demand_requests (provider_ids, expires_at) values (array['00000000-0000-0000-0000-00000000b001'::uuid], now() + interval '1 hour');
-  assert security.ai_route_v1('course_description')->>'held_kind' = 'limit';
+  assert security.ai_route_v1('course_description')->>'held_kind' = 'ceiling' and (security.ai_route_v1('course_description')->>'on_demand_exempt')::boolean;
   w := public.svc_enrich_ai_next(10);
   assert (select count(*) from jsonb_array_elements(w->'pages') p, jsonb_array_elements(p->'items') i) = 5 and w->>'model' = 'qwen/qwen3-30b-a3b-instruct-2507', w::text;
   assert jsonb_array_length(public.svc_entry_matrix_next(4)) = 1;
@@ -169,16 +169,16 @@ end $$;
 do $$  -- 7 the page read
 declare o jsonb := public.admin_ai_overview_v1(); s jsonb;
 begin
-  assert (select array_agg(k order by k) from jsonb_object_keys(o) k) = array['can_control', 'day_start', 'events', 'guard', 'legacy', 'legacy_controls', 'models', 'openrouter', 'services', 'usage'];
+  assert (select array_agg(k order by k) from jsonb_object_keys(o) k) = array['can_control', 'caps_exceed_ceiling', 'caps_total_usd', 'ceiling_usd', 'day_start', 'events', 'guard', 'legacy', 'legacy_controls', 'models', 'openrouter', 'services', 'usage'];
   assert (select array_agg(k order by k) from jsonb_object_keys(o->'openrouter') k)
-         = array['balance_observed_at', 'balance_usd', 'daily_ceiling_usd', 'floor_usd', 'key_present', 'key_secret_name', 'low_warn_usd', 'mode', 'settings', 'spent_today_usd', 'total_credits_usd'];
+         = array['balance_known', 'balance_note', 'balance_observed_at', 'balance_usd', 'daily_ceiling_usd', 'floor_usd', 'key', 'key_present', 'key_secret_name', 'low_warn_usd', 'mode', 'settings', 'spent_today_usd', 'total_credits_usd'];
   assert (o#>>'{openrouter,key_present}')::boolean and (o#>>'{openrouter,balance_usd}')::numeric = 53 and (o#>>'{openrouter,daily_ceiling_usd}')::numeric = 14 and (o#>>'{openrouter,floor_usd}')::numeric = 0.5;
   assert o::text !~* 'sk-or-|bearer', 'no key in the read';
   assert jsonb_array_length(o->'services') = 15 and jsonb_array_length(o->'models') = 18;
   assert (select count(*) from jsonb_array_elements(o#>'{openrouter,settings}') x where x->>'key' in ('credit_floor_usd', 'budgets.ai_daily_ceiling_usd')) = 2;
   select x into s from jsonb_array_elements(o->'services') x where x->>'service_code' = 'entry_matrices';
   assert (select array_agg(k order by k) from jsonb_object_keys(s) k) = array['area', 'cascade', 'cascade_detail', 'changed_at', 'changed_by', 'daily_calls_cap', 'daily_usd_cap', 'enabled', 'enforced', 'field', 'held', 'held_kind', 'held_reason',
-         'label', 'lane', 'ledger_match', 'model', 'model_in_effect', 'models', 'note', 'prompt', 'reason', 'resolver', 'service_code', 'settings', 'spent_today', 'wired'], (select string_agg(k, ',' order by k) from jsonb_object_keys(s) k);
+         'label', 'lane', 'ledger_match', 'model', 'model_in_effect', 'models', 'note', 'on_demand_exempt', 'prompt', 'purpose_group', 'reason', 'resolver', 'service_code', 'settings', 'spent_today', 'wired', 'would_hold_now'], (select string_agg(k, ',' order by k) from jsonb_object_keys(s) k);
   assert (s->>'wired')::boolean and s#>>'{prompt,source}' = 'worker code' and s#>>'{prompt,version}' = 'entry-matrix-v0.1.4' and s#>'{prompt,text}' = 'null'::jsonb;
   assert (select array_agg(x->>'key' order by x->>'key') from jsonb_array_elements(s->'settings') x) = array['entry.matrix_enabled', 'entry.matrix_model'];
   select x into s from jsonb_array_elements(o->'services') x where x->>'service_code' = 'provider_description';
@@ -279,4 +279,76 @@ begin
   assert n = 1 and (select model from pipeline.ai_spend_ledger where source = 'central_ai_queue' and source_id = '1' order by id desc limit 1) = 'mistralai/mistral-small-3.2-24b-instruct';
   assert public.svc_ai_model_answered_v1('central_ai_queue', '1', 'not/a-model') = 0;
   raise notice 'ok 10 the guard names what pins a model outside the routes; Layer 3 is reported, not wired; the ledger carries the model that answered';
+end $$;
+
+do $$  -- 11 round 3 (QA B1): the scholarship queue's model has a foreign key; every allowed model has its row there, the first of the route is active
+declare v_next text; n int;
+begin
+  assert (select count(*) from pipeline.ai_model_catalogue c where c.status = 'allowed' and not exists (select 1 from pipeline.scholarship_ai_models x where x.code = c.code)) = 0;
+  assert (select string_agg(code, ',' order by code) from pipeline.scholarship_ai_models where status = 'active') = 'qwen3-30b';
+  assert (select status from pipeline.scholarship_ai_models where code = 'mistral-small-3.2') = 'candidate' and (select status from pipeline.scholarship_ai_models where code = 'gpt-4.1-mini') = 'candidate';
+  -- a cascade of two: the escalation insert (public.svc_scholarship_ai_record: the next model's queue row) succeeds
+  update pipeline.ai_service_routes set cascade = array['qwen3-30b', 'mistral-small-3.2'] where service_code = 'scholarship_extraction';
+  v_next := security.scholarship_ai_next_model_v1('qwen3-30b');
+  assert v_next = 'mistral-small-3.2';
+  insert into pipeline.scholarship_ai_queue (model_code, provider_id, state) values (v_next, '00000000-0000-0000-0000-00000000b001', 'queued');
+  -- the route's first model changes: the copy says which model is active; nothing else is activated
+  update pipeline.ai_service_routes set cascade = array['mistral-small-3.2', 'qwen3-30b'] where service_code = 'scholarship_extraction';
+  assert (select string_agg(code, ',' order by code) from pipeline.scholarship_ai_models where status = 'active') = 'mistral-small-3.2';
+  assert (select chain from pipeline.scholarship_ai_extract_settings where id = 1) = array['mistral-small-3.2', 'qwen3-30b'];
+  -- a model added to the catalogue as allowed, or allowed later, gets its row at once
+  insert into pipeline.ai_model_catalogue (code, family, label, model_identifier, status) values ('fx-qwen-new', 'qwen3', 'Qwen new', 'qwen/qwen-new', 'allowed'), ('fx-gemini-later', 'gemini', 'Gemini later', 'google/gemini-later', 'not_allowed');
+  assert exists (select 1 from pipeline.scholarship_ai_models where code = 'fx-qwen-new' and status = 'candidate') and not exists (select 1 from pipeline.scholarship_ai_models where code = 'fx-gemini-later');
+  update pipeline.ai_model_catalogue set status = 'allowed' where code = 'fx-gemini-later';
+  assert exists (select 1 from pipeline.scholarship_ai_models where code = 'fx-gemini-later' and status = 'candidate');
+  update pipeline.ai_model_catalogue set status = 'not_allowed' where code = 'fx-gemini-later';
+  assert exists (select 1 from pipeline.scholarship_ai_models where code = 'fx-gemini-later'), 'nothing is deleted';
+  -- a model outside the Platform Admin's families cannot be allowed from the page
+  perform pg_temp.expect_error($q$select public.admin_ai_model_set_v1('gpt-4.1-mini', 'allowed', 'try it')$q$, 'this model is not in a family the Platform Admin allows%');
+  assert (select count(*) from pipeline.ai_model_catalogue where model_identifier ~ '^(openai|anthropic)/' and family <> 'other') = 0;
+  update pipeline.ai_service_routes set cascade = array['qwen3-30b'] where service_code = 'scholarship_extraction';
+  raise notice 'ok 11 scholarship models: every allowed model has a row (the queue foreign key holds), the route''s first is active, escalation to a second model inserts';
+end $$;
+
+do $$  -- 12 round 3 (QA B3): on-demand is waived by purpose group only, and stops at the account's credit floor; the page read says what would hold
+declare r jsonb; o jsonb; w jsonb;
+begin
+  assert (select string_agg(service_code || ':' || purpose_group, ' ' order by service_code) from pipeline.ai_service_routes where service_code in ('course_description', 'fee_reader', 'scholarship_extraction', 'provider_description', 'course_matching', 'ops_diagnosis'))
+         = 'course_description:reads course_matching:course_search fee_reader:central ops_diagnosis:other provider_description:pdesc scholarship_extraction:scholarships';
+  update pipeline.on_demand_requests set state = 'closed';
+  insert into pipeline.on_demand_requests (provider_ids, expires_at, purpose_groups) values (array['00000000-0000-0000-0000-00000000b001'::uuid], now() + interval '1 hour', array['central']);
+  assert security.ai_on_demand_providers_v1('fee_reader') = array['00000000-0000-0000-0000-00000000b001'::uuid] and security.ai_on_demand_providers_v1('calendar_reading') = array['00000000-0000-0000-0000-00000000b001'::uuid];
+  assert security.ai_on_demand_providers_v1('course_description') = '{}' and security.ai_on_demand_providers_v1('scholarship_extraction') = '{}' and security.ai_on_demand_providers_v1('course_matching') = '{}', 'a central request waives nothing for other groups';
+  -- the ceiling is reached: the central request lets central pages through, and nothing else
+  update pipeline.platform_toolset_settings set value = '1' where toolset_key = 'pipeline' and key = 'budgets.ai_daily_ceiling_usd';
+  perform set_config('fx.role', 'service_role', false);
+  update pipeline.central_ai_queue set state = 'queued', attempts = 0, leased_until = null;
+  assert jsonb_array_length(public.svc_central_ai_next(6)) = 2;
+  assert public.svc_enrich_ai_next(10)->'pages' = '[]'::jsonb and public.svc_coverage_ai_match_next(5) = '[]'::jsonb, 'course fields and matching stay held';
+  update pipeline.central_ai_queue set state = 'queued', attempts = 0, leased_until = null;
+  -- the account's own limit: the last observed balance at or below the floor holds every hand-out, on-demand included
+  insert into pipeline.layer3_openrouter_observations (kind, payload, remaining_usd, observed_at) values ('credits', '{}', 0.4, now() + interval '1 second');
+  r := security.ai_route_v1('calendar_reading');
+  assert (r->>'held')::boolean and r->>'held_kind' = 'credit_floor' and r->>'held_reason' = 'credit_floor' and not (r->>'on_demand_exempt')::boolean, r::text;
+  assert public.svc_central_ai_next(6) = '[]'::jsonb, 'on-demand stops at the credit floor';
+  update pipeline.layer3_openrouter_observations set remaining_usd = null where remaining_usd = 0.4;
+  update pipeline.layer3_openrouter_observations set kind = 'old' where kind = 'credits';   -- no balance reading at all: unknown is not zero
+  update pipeline.platform_toolset_settings set value = '14' where toolset_key = 'pipeline' and key = 'budgets.ai_daily_ceiling_usd';
+  r := security.ai_route_v1('calendar_reading');
+  assert not (r->>'held')::boolean and r#>'{balance,known}' = 'false'::jsonb, r::text;
+  o := public.admin_ai_overview_v1();
+  assert o#>'{openrouter,balance_known}' = 'false'::jsonb and o#>>'{openrouter,balance_note}' like 'No balance reading yet%';
+  update pipeline.layer3_openrouter_observations set kind = 'credits' where kind = 'old';
+  update pipeline.on_demand_requests set state = 'closed';
+  -- the page read: the caps against the ceiling, and what would hold now
+  o := public.admin_ai_overview_v1();
+  assert (o->>'ceiling_usd')::numeric = 14 and (o->>'caps_total_usd')::numeric = (select sum(daily_usd_cap) from pipeline.ai_service_routes where enabled) and (o->>'caps_exceed_ceiling')::boolean;
+  assert (select bool_and(x ? 'would_hold_now' and (x->>'would_hold_now')::boolean = (x->>'held')::boolean and (x->>'held_kind' is null or x->>'held_kind' in ('cap', 'ceiling', 'credit_floor', 'off', 'no_model')))
+            from jsonb_array_elements(o->'services') x);
+  assert (select array_agg(distinct x->>'area' order by x->>'area') from jsonb_array_elements(o->'services') x) = array['Courses', 'Entry requirements', 'Fees', 'Matching and identity', 'Operations', 'Providers', 'Scholarships'];
+  assert o#>'{openrouter,key}' ? 'profile_id' and o#>>'{openrouter,key,secret}' = 'OPENROUTER_API_KEY';
+  assert (select bool_and((x->>'not_read')::boolean and (x->>'read_only')::boolean) from jsonb_array_elements(o->'services') s, jsonb_array_elements(s->'settings') x where x->>'key' in ('entry.matrix_model', 'ops.ai_diagnosis_model', 'builder_model'));
+  assert (select count(*) from jsonb_array_elements(o->'services') s, jsonb_array_elements(s->'settings') x where (x->>'not_read')::boolean) = 3;
+  assert (select cascade from pipeline.ai_service_routes where service_code = 'entry_matrices') = array['qwen3-30b'] and (select cascade from pipeline.ai_service_routes where service_code = 'ops_diagnosis') = array['qwen3-30b'], 'first-model-only services are seeded with one model';
+  raise notice 'ok 12 on-demand is waived by purpose group only and stops at the credit floor; the page read gives caps against the ceiling and what would hold now';
 end $$;

@@ -24,3 +24,10 @@ create function security.coverage_country(uuid) returns text language sql stable
 create table pipeline.provider_description_reads (id uuid primary key, provider_id uuid, state text, model text, cost_usd numeric);  -- for a %rowtype in the reserve function
 create table pipeline.scholarship_ai_queue (id bigint generated always as identity primary key, model_code text, provider_id uuid, state text);  -- for a %rowtype in the record function
 alter table pipeline.scholarship_ai_extract_settings add column ai_admission boolean default true;
+-- round 3 (independent QA, 13 Nov 2026): the live constraints that matter to the scholarship chain and to on-demand scope
+alter table pipeline.scholarship_ai_models add column activated_at timestamptz, add column activated_by uuid, add column reason text;
+alter table pipeline.scholarship_ai_models alter column status set default 'candidate', alter column sort set default 100, alter column label set not null, alter column model_identifier set not null;
+alter table pipeline.scholarship_ai_models add constraint scholarship_ai_models_status_check check (status = any (array['candidate', 'active', 'retired']));
+alter table pipeline.scholarship_ai_queue add constraint scholarship_ai_queue_model_code_fkey foreign key (model_code) references pipeline.scholarship_ai_models(code);
+alter table pipeline.on_demand_requests add column purpose_groups text[];
+alter table pipeline.layer3_model_profiles add column secret_env_key text default 'OPENROUTER_API_KEY';

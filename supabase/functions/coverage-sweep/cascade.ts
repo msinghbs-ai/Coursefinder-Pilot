@@ -4,6 +4,8 @@
 //   an HTTP error, a time-out or network failure, an unreadable body, an error object, no answer, a cut answer (finish_reason length) or, when
 //   JSON was asked for, an answer that is not JSON.
 // It never moves on because of what a model answered ("not stated", no value, a low confidence): that answer is the answer.
+// A later model is asked only while the caller's time budget lasts (deadline): with too little time left the last failure is returned as it came,
+// so a cascade can never outlive the worker call or the lease of the item.
 // The answer that is returned names the model that gave it (cf_model_sent) and carries the cost of every attempt, so the caller's pinned-model
 // check compares with the model that was actually asked and the cost of a failed first attempt is not lost.
 
@@ -38,8 +40,11 @@ export function technicalFailure(status: number, d: any, wantsJson: boolean): st
 export const sentModel = (d: any, asked: string): string => String(d?.cf_model_sent || asked || "");
 
 const RETRY_TIMEOUT_MS = 90000; // fixed: API time-out of one later attempt (the first attempt keeps the caller's own time-out)
+const MIN_ATTEMPT_MS = 15000;   // fixed: a later attempt is not started with less time than this left in the caller's budget
+export type Cascade = { models: unknown; deadline?: number } | null | undefined;
 
-export async function cascadeFetch(doFetch: FetchFn, models: unknown, url: string, init: RequestInit): Promise<Response> {
+export async function cascadeFetch(doFetch: FetchFn, cascade: Cascade, url: string, init: RequestInit): Promise<Response> {
+  const models = cascade?.models, deadline = Number(cascade?.deadline) || 0;
   // deno-lint-ignore no-explicit-any
   let body: any; try { body = JSON.parse(String(init.body)) } catch { return doFetch(url, init) }
   const list = cascadeModels(String(body?.model || ""), models);
@@ -47,9 +52,11 @@ export async function cascadeFetch(doFetch: FetchFn, models: unknown, url: strin
   const wantsJson = !!body.response_format, tried: { model: string; why: string }[] = [];
   let spent = 0, lastError: unknown = null;
   for (let i = 0; i < list.length; i++) {
-    const last = i === list.length - 1, model = list[i];
+    const model = list[i], left = deadline ? deadline - Date.now() : Infinity;
+    // no time for another attempt after this one: this is the last
+    const last = i === list.length - 1 || (deadline > 0 && left < 2 * MIN_ATTEMPT_MS);
     try {
-      const r = await doFetch(url, { ...init, body: JSON.stringify({ ...body, model }), signal: i === 0 ? init.signal : AbortSignal.timeout(RETRY_TIMEOUT_MS) });
+      const r = await doFetch(url, { ...init, body: JSON.stringify({ ...body, model }), signal: i === 0 ? init.signal : AbortSignal.timeout(Math.max(1000, Math.min(RETRY_TIMEOUT_MS, left))) });
       // deno-lint-ignore no-explicit-any
       const d: any = await r.json().catch((e) => ({ unreadable: e instanceof Error ? e.message : String(e) }));
       const cost = Number(d?.usage?.cost || 0), why = technicalFailure(r.status, d, wantsJson);
@@ -60,6 +67,7 @@ export async function cascadeFetch(doFetch: FetchFn, models: unknown, url: strin
       lastError = e; tried.push({ model, why: e instanceof Error ? e.message.slice(0, 120) : String(e).slice(0, 120) });
       if (last) throw (spent > 0 && e && typeof e === "object" ? Object.assign(e, { cost: spent }) : e);
     }
+    if (last) break;
   }
   throw lastError ?? Error("no model in the cascade");
 }

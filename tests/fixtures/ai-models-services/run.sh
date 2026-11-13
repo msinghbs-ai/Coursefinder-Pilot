@@ -12,13 +12,14 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 DB=${AIMS_DB:-ai_models_services_fixtures}
 P="psql -v ON_ERROR_STOP=1 -q -X"
+MIG0="supabase/migrations/20261113377000_cf247_ai_ledger_columns.sql supabase/migrations/20261113378000_cf247_ai_settings_home_columns.sql supabase/migrations/20261113379000_cf247_ai_item_model_column.sql"
 MIG=supabase/migrations/20261113380000_cf247_ai_models_services.sql
 MIG2=supabase/migrations/20261113390000_cf247_ai_routes_only.sql
 FX=tests/fixtures/ai-models-services
 q() { $P -d "$1" -Atc "$2"; }
 md5of() { q "$1" "select md5(pg_get_functiondef('$2'::regprocedure))"; }
 hdr() { grep -hF -- "--   $1 " $MIG $MIG2 | head -1 | sed 's/.*  \([0-9a-f]\{32\}\) -> \([0-9a-f]\{32\}\).*/\1 \2/'; }
-DBS="$DB ${DB}_before ${DB}_drift"
+DBS="$DB ${DB}_before ${DB}_drift ${DB}_load"
 for d in $DBS; do $P -d postgres -c "drop database if exists $d" -c "create database $d" >/dev/null 2>&1; done
 [ -n "${AIMS_KEEP:-}" ] || trap 'for d in $DBS; do $P -d postgres -c "drop database if exists $d" >/dev/null 2>&1; done' EXIT
 
@@ -47,6 +48,8 @@ declare -A LIVE2=(
   ["public.svc_aer_v2_shadow_record(uuid,text,text,uuid,text,jsonb,jsonb,jsonb,numeric,text,text)"]=43cceaf0ca4e33f7dc9a724eb5b2f22a
   ["public.svc_coverage_ai_match_next(integer)"]=5a8176270c18994ef3564a5f59a9ff60
   ["public.svc_enrich_ai_record(jsonb)"]=bcbfc91ce997b1516d90b1320264fa12
+  ["public.admin_settings_register_read()"]=4fb9bae7b10132e965a39c9cc8d04b4b
+  ["public.admin_toolsets_read()"]=c54f956cedc46cb6e18d8122d2d14c9b
   ["security.scholarship_ai_active_v1()"]=74a1d5993a35b209ffbaa177ee6eec13
   ["security.scholarship_ai_next_model_v1(text)"]=e69e857eff40d3d2d1c1e03d981ee1cd
   ["security.adapter_builder_model_for_v1(uuid)"]=eaf3a8ba8ba0d21e3f03795773ad12f3
@@ -70,7 +73,14 @@ done
 echo "definitions this change edits or calls (loaded = live): ${#LIVE[@]} (phase 1) and ${#LIVE2[@]} (phase 2)"
 for s in "${EDITED[@]}"; do [ "$(hdr "$s" | cut -d' ' -f1)" = "${LIVE[$s]}" ] || { echo "header before md5 of $s is not the live md5"; exit 1; }; done
 
-# 2 a drifted live body is refused, and nothing is left behind
+# 2 the columns first (their own short migration); phase 1 refuses without them; a drifted live body is refused, and nothing is left behind
+if OUT=$($P -d ${DB}_drift -1 -At -f $MIG 2>&1); then echo "phase 1 applied without the columns migration"; exit 1; fi
+grep -q "migrations 20261113377000 and 20261113378000 (the columns) must be applied before this change" <<<"$OUT" || { echo "$OUT" | tail -3; exit 1; }
+for d in $DB ${DB}_drift; do for f in $MIG0 $MIG0; do $P -d $d -1 -f $f 2>/dev/null; done; done   # twice: a second run changes nothing
+[ "$(q $DB "select string_agg(table_name || '.' || column_name, ',' order by table_name || '.' || column_name) from information_schema.columns where table_schema = 'pipeline' and (table_name, column_name) in (('ai_spend_ledger','service_code'),('ai_spend_ledger','model'),('platform_toolset_settings','home'),('platform_toolset_settings','home_group'),('field_enrich_items','model'))")" = "ai_spend_ledger.model,ai_spend_ledger.service_code,field_enrich_items.model,platform_toolset_settings.home,platform_toolset_settings.home_group" ] || { echo "the columns migration did not add its five columns"; exit 1; }
+for f in $MIG0; do grep -q "^set local lock_timeout = '3s';" $f || { echo "$f has no lock_timeout"; exit 1; }; [ "$(grep -Eo "^alter table pipeline\.[a-z_]+" $f | sort -u | wc -l)" = 1 ] || { echo "$f alters more than one table"; exit 1; }; done
+for f in $MIG $MIG2; do if grep -Eiq "^\s*alter table pipeline\.(ai_spend_ledger|platform_toolset_settings|field_enrich_items)\b|create index[^;]* on pipeline\.ai_spend_ledger" $f; then echo "$f alters a hot table"; exit 1; fi; done
+echo "columns: three small migrations, one table each (lock_timeout 3s, re-runnable); phase 1 refuses without them; no later migration alters the ledger, the settings or the items table"
 $P -d ${DB}_drift -c "$(q ${DB}_drift "select replace(pg_get_functiondef('public.svc_entry_matrix_next(integer)'::regprocedure), 'limit greatest(1, least(coalesce(p_limit, 4), 20))', 'limit greatest(1, least(coalesce(p_limit, 5), 20))')")"
 if OUT=$($P -d ${DB}_drift -1 -At -f $MIG 2>&1); then echo "the migration applied over a drifted definition"; exit 1; fi
 grep -q "live public.svc_entry_matrix_next(integer) differs from the definition this change replaces" <<<"$OUT" || { echo "$OUT" | tail -3; exit 1; }
@@ -117,7 +127,7 @@ echo "phase 2: refused without phase 1 and over a drifted live body, nothing lef
 EDITED2="$(printf "'%s'," "${!LIVE2[@]}" | sed 's/public\.//g; s/,$//')"
 OTHERS2="select md5(string_agg(p.oid::regprocedure::text || md5(pg_get_functiondef(p.oid)), '|' order by p.oid::regprocedure::text)) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
   where n.nspname in ('security', 'public', 'auth') and p.prokind = 'f' and p.oid::regprocedure::text not in ($EDITED2)
-    and p.proname not in ('ai_route_gate_v1', 'ai_route_open_v1', 'svc_ai_model_answered_v1', 'ai_route_guard_v1', 'ai_service_model_v1', 'ai_central_sync_v1', 'ai_route_central_trg', 'ai_central_settings_trg', 'admin_ai_overview_v1', 'admin_ai_route_set_v1')"
+    and p.proname not in ('ai_route_gate_v1', 'ai_route_open_v1', 'svc_ai_model_answered_v1', 'ai_route_guard_v1', 'ai_service_model_v1', 'ai_central_sync_v1', 'ai_route_central_trg', 'ai_central_settings_trg', 'admin_ai_overview_v1', 'admin_ai_route_set_v1', 'ai_settings_not_read_v1', 'ai_model_status_trg')"
 G0=$(q $DB "$OTHERS2")
 OUT=$($P -d $DB -1 -At -f $MIG2 2>&1) || { echo "$OUT" | tail -5; exit 1; }
 [ "$(grep -c ': applied$' <<<"$OUT")" = ${#LIVE2[@]} ] || { echo "phase 2 did not apply its ${#LIVE2[@]} guarded edits"; echo "$OUT" | tail -5; exit 1; }
@@ -151,5 +161,8 @@ echo "after: no reader hands out an OpenAI or Anthropic model (as live: entry re
 # 5 behaviour
 OUT=$($P -d $DB -f $FX/fixtures.sql 2>&1) || { echo "$OUT" | tail -6; exit 1; }
 sed -n "s/^.*NOTICE:  //p" <<<"$OUT"
-[ "$(grep -c "NOTICE:  ok " <<<"$OUT")" = 10 ] || { echo "not every fixture block passed"; exit 1; }
-echo "fixtures: 10 of 10"
+[ "$(grep -c "NOTICE:  ok " <<<"$OUT")" = 12 ] || { echo "not every fixture block passed"; exit 1; }
+echo "fixtures: 12 of 12"
+
+# 6 the migrations applied while writers keep recording costs and reading settings (independent QA B2): no deadlock, no lock time-out
+AIMS_LEDGER_ROWS=${AIMS_LEDGER_ROWS:-40000} bash $FX/concurrent.sh ${DB}_load

@@ -1,8 +1,24 @@
 # AI models and services: page contract
 
+## Changes for the UI (round 3)
+
+Backend head after independent QA and the page's own gaps (13 Nov 2026). Everything below is additive unless marked **changed**.
+
+1. **Settings reads return `home` and `home_group`.** `admin_settings_register_read()` and `admin_toolsets_read()` now carry both keys on every setting, so the Settings page can hide rows with `home === 'models_services'` without calling the overview.
+2. **`openrouter.key`** is `{ secret, profile_id, profile_code, shared_by_profiles }`, the same object `admin_ai_config_read()` gives under `openrouter.key`. Replace and Verify can use `openrouter.key.profile_id`; `admin_ai_config_read` still works.
+3. **Scholarship admission.** In `admin_scholarship_ai('read')` the first model of the `scholarship_extraction` route is the one with status `active`; every other allowed model is `candidate`. This is kept in step by the route (saving the route, or allowing or disallowing a model). It is a copy of the route: it switches nothing on, AI admission keeps its own switch.
+4. **Settings rows carry `not_read` and `read_only`** (both true for `pipeline.entry.matrix_model`, `pipeline.ops.ai_diagnosis_model` and `firecrawl.builder_model`: kept with their values, replaced by the routes). Show them read-only or leave them out.
+5. **Families.** OpenAI and Claude models have family `other` in the data, as this contract said. **changed:** `admin_ai_model_set_v1` refuses to allow a model of family `other`: `this model is not in a family the Platform Admin allows (Qwen3, MiMo, Mistral Small, Kimi K2, Gemini, Llama, DeepSeek); adding a family is a release`.
+6. **changed: `held_kind`** is one of `cap`, `ceiling`, `credit_floor`, `off`, `no_model` or null (it was `off` / `limit`). `on_demand_exempt` (boolean) says whether an open on-demand request is let through (`cap` and `ceiling` only). `held_reason` for the credit floor is exactly `credit_floor`. **changed: `area`** uses these names: Courses, Entry requirements, Providers, Scholarships, Fees, Matching and identity, Operations.
+7. **Ceiling against caps:** top-level `ceiling_usd`, `caps_total_usd` (sum of the caps of the services that are switched on) and `caps_exceed_ceiling`; per service `would_hold_now` (the service would hand out no scheduled work right now). At apply, every scheduled AI service is held until the next UTC day unless the ceiling is raised first: show it.
+8. **Credit floor:** when the last observed OpenRouter balance is at or below `openrouter.floor_usd`, every service is held, on-demand included. `openrouter.balance_known` is false when there is no balance reading; the floor then holds nothing (`openrouter.balance_note` says so).
+9. **On-demand** is waived per purpose group: each service has `purpose_group` (`reads`, `central`, `scholarships`, `pdesc`, `course_search`, `other`), and an open request lets through only the services of the groups it covers.
+10. **Seeds changed:** `entry_matrices` and `ops_diagnosis` start with one model (their calls use the first model only). Every service has a daily US$ cap from the first migration.
+11. **Retiring:** `public.admin_ai_config` (its `central_model` action is refused; nothing on the page calls it). `public.admin_services_control` is still called by `src/ModelsServices.jsx` with kind `service` on the UI branch, so it is not marked.
+
 For the agent building the Models & services page. Backend: migrations `20261113380000` (phase 1) and `20261113390000` (phase 2: the route is the only place a model is chosen). Platform Admin 13 Nov 2026 19:14, 19:15 and 19:23. The page needs three calls of its own and one existing call for settings. All are `supabase.rpc(...)` as a signed-in user.
 
-**Changed in phase 2 (this issue of the contract):** every service is enforced (`enforced: true`, `resolver: "route"`); each service row has `model` (its first model); the daily US$ cap is required on every route; there is a 15th service, `page_identity`; `legacy.layer3` and `guard` are new; `legacy_controls` are read-only copies now (`write: null`). `wired` and `model_in_effect` are kept so a page built on the first issue keeps working; they now always equal `enforced` and `model`.
+**Changed in phase 2:** every service is enforced (`enforced: true`, `resolver: "route"`); each service row has `model` (its first model); the daily US$ cap is required on every route; there is a 15th service, `page_identity`; `legacy.layer3` and `guard` are new; `legacy_controls` are read-only copies now (`write: null`). `wired` and `model_in_effect` are kept so a page built on the first issue keeps working; they now always equal `enforced` and `model`.
 
 | Call | Who | What |
 |---|---|---|
@@ -22,10 +38,13 @@ Errors are raised as exceptions (`error.message`): `Pipeline Operator role or ab
 ```
 {
   can_control: boolean,
+  ceiling_usd: number, caps_total_usd: number, caps_exceed_ceiling: boolean,   // the daily ceiling against the sum of the caps of services that are on
   day_start: timestamptz,            // start of the UTC day the spend figures count from
   openrouter: {
     key_present: boolean,            // true when a balance was read inside openrouter.balance_stale_minutes; the key itself is an edge function secret and is never returned
     key_secret_name: "OPENROUTER_API_KEY",
+    key: { secret, profile_id, profile_code, shared_by_profiles },   // as admin_ai_config_read gives it; profile_id is what Replace and Verify need
+    balance_known: boolean, balance_note: string | null,          // no balance reading: the credit floor holds nothing (unknown is not zero)
     mode: "observe" | "stop",        // the OpenRouter toolset mode (existing guards). Routes hold whatever this is
     balance_usd: number | null, balance_observed_at: timestamptz | null, total_credits_usd: number | null,
     floor_usd: number,               // openrouter.credit_floor_usd
@@ -38,7 +57,8 @@ Errors are raised as exceptions (`error.message`): `Pipeline Operator role or ab
              status: "allowed" | "not_allowed", note, reason, changed_at, used_by: [service_code] }],
              // family is one of qwen3, mimo, mistral_small, kimi_k2, gemini, llama, deepseek, other. Allowed models come first
   services: [{
-    service_code, label, area, field,          // field is set for the three course field groups, else null
+    service_code, label, area, field,          // area: Courses | Entry requirements | Providers | Scholarships | Fees | Matching and identity | Operations
+    purpose_group,                             // the on-demand purpose group whose open requests are not held by this service's cap or the ceiling
     lane, ledger_match,                        // where its spend is counted (for information)
     cascade: [code],                           // as saved, 1 to 4 codes, first is tried first
     cascade_detail: [{ code, label, model_identifier, status }],
@@ -46,8 +66,9 @@ Errors are raised as exceptions (`error.message`): `Pipeline Operator role or ab
     daily_usd_cap: number, daily_calls_cap: number | null,          // the US$ cap is required; a null calls cap = none
     enabled: boolean,
     spent_today: { usd, calls },
-    held: boolean, held_kind: "off" | "limit" | null, held_reason: string | null,
-             // off: switched off or no allowed model. limit: the daily ceiling or a cap; on-demand work of an open request is not held by a limit
+    held: boolean, held_kind: "cap" | "ceiling" | "credit_floor" | "off" | "no_model" | null, held_reason: string | null,
+    would_hold_now: boolean,                   // no scheduled work would be handed out right now (the same as held)
+    on_demand_exempt: boolean,                 // true for cap and ceiling: an open on-demand request of the purpose group is still let through
     enforced: true,                            // every service's reader asks its route (phase 2). resolver is "route" for all
     model: string | null,                      // the OpenRouter id of the first allowed model of the cascade: the model in use
     resolver: "route", wired: true, model_in_effect: string | null,   // kept from the first issue; equal to enforced and model
@@ -70,7 +91,7 @@ Errors are raised as exceptions (`error.message`): `Pipeline Operator role or ab
   events: [{ at, action, target, detail, by }]                        // the last 20 changes made through the two writes (area ai_models)
 }
 
-Setting = { toolset, key, label, help, value, kind: "number" | "text" | "boolean" | "list", min, max, unit }
+Setting = { toolset, key, label, help, value, kind: "number" | "text" | "boolean" | "list", min, max, unit, not_read: boolean, read_only: boolean }
 ```
 
 Notes for the page:
@@ -114,7 +135,7 @@ Notes for the page:
     "by_hour_24h": [
       {
         "usd": 0.9,
-        "hour": "2026-11-13T09:00:00+00:00",
+        "hour": "2026-11-13T10:00:00+00:00",
         "lane": "enrich_fields",
         "calls": 1,
         "model": "qwen/qwen3-30b-a3b-instruct-2507",
@@ -122,7 +143,7 @@ Notes for the page:
       },
       {
         "usd": 0.3,
-        "hour": "2026-11-13T09:00:00+00:00",
+        "hour": "2026-11-13T10:00:00+00:00",
         "lane": "enrich_fields",
         "calls": 1,
         "model": null,
@@ -132,7 +153,7 @@ Notes for the page:
   },
   "events": [
     {
-      "at": "2026-11-13T09:17:54.4449+00:00",
+      "at": "2026-11-13T10:06:08.587793+00:00",
       "by": "admin@example.test",
       "action": "route_set",
       "detail": {
@@ -159,7 +180,7 @@ Notes for the page:
       "target": "fee_reader"
     },
     {
-      "at": "2026-11-13T09:17:54.4449+00:00",
+      "at": "2026-11-13T10:06:08.587793+00:00",
       "by": "admin@example.test",
       "action": "route_set",
       "detail": {
@@ -239,10 +260,10 @@ Notes for the page:
         "adapter_builder",
         "ops_diagnosis"
       ],
-      "changed_at": "2026-11-13T09:17:51.966414+00:00",
+      "changed_at": "2026-11-13T10:06:06.258646+00:00",
       "context_tokens": 262144,
       "model_identifier": "qwen/qwen3-30b-a3b-instruct-2507",
-      "price_checked_at": "2026-11-13T09:17:51.966414+00:00",
+      "price_checked_at": "2026-11-13T10:06:06.258646+00:00",
       "input_usd_per_mtok": 0.1,
       "output_usd_per_mtok": 0.3
     },
@@ -254,29 +275,25 @@ Notes for the page:
       "reason": "Platform Admin 13 Nov 2026 19:14",
       "status": "not_allowed",
       "used_by": [],
-      "changed_at": "2026-11-13T09:17:51.966414+00:00",
+      "changed_at": "2026-11-13T10:06:06.258646+00:00",
       "context_tokens": 1047576,
       "model_identifier": "openai/gpt-4.1-mini",
-      "price_checked_at": "2026-11-13T09:17:51.966414+00:00",
+      "price_checked_at": "2026-11-13T10:06:06.258646+00:00",
       "input_usd_per_mtok": 0.4,
       "output_usd_per_mtok": 1.6
     }
   ],
   "services": [
     {
-      "area": "Course fields",
+      "area": "Entry requirements",
       "held": false,
-      "lane": "enrich_fields",
+      "lane": "entry_matrix",
       "note": "Was GPT-4.1 mini (setting entry.matrix_model). qwen3-30b has not been qualified on this prompt.",
-      "field": "course_entry_requirements",
-      "label": "Course entry requirements",
-      "model": "deepseek/deepseek-v3.2",
+      "field": null,
+      "label": "Entry requirement matrices (provider pages)",
+      "model": "qwen/qwen3-30b-a3b-instruct-2507",
       "wired": true,
       "models": [
-        {
-          "code": "deepseek-v3.2",
-          "model_identifier": "deepseek/deepseek-v3.2"
-        },
         {
           "code": "qwen3-30b",
           "model_identifier": "qwen/qwen3-30b-a3b-instruct-2507"
@@ -285,11 +302,10 @@ Notes for the page:
       "prompt": {
         "text": null,
         "source": "worker code",
-        "version": "course-entry-v1"
+        "version": "entry-matrix-v0.1.4"
       },
-      "reason": "fixture: cheaper first",
+      "reason": "seed 13 Nov 2026 (Platform Admin 19:14)",
       "cascade": [
-        "deepseek-v3.2",
         "qwen3-30b"
       ],
       "enabled": true,
@@ -297,41 +313,49 @@ Notes for the page:
       "resolver": "route",
       "settings": [
         {
-          "key": "entry.course_page_chars",
-          "max": 400000,
-          "min": 1000,
+          "key": "entry.matrix_enabled",
+          "max": 1,
+          "min": 0,
           "help": null,
           "kind": "number",
-          "unit": "characters",
-          "label": "Course entry requirements: page characters",
-          "value": 100000,
-          "toolset": "pipeline"
+          "unit": null,
+          "label": "Entry matrices: on",
+          "value": 1,
+          "toolset": "pipeline",
+          "not_read": false,
+          "read_only": false
+        },
+        {
+          "key": "entry.matrix_model",
+          "max": null,
+          "min": null,
+          "help": null,
+          "kind": "text",
+          "unit": null,
+          "label": "Entry matrices: pinned model",
+          "value": "openai/gpt-4.1-mini",
+          "toolset": "pipeline",
+          "not_read": true,
+          "read_only": true
         }
       ],
       "held_kind": null,
-      "changed_at": "2026-11-13T09:17:54.4449+00:00",
-      "changed_by": "admin@example.test",
+      "changed_at": "2026-11-13T10:06:06.258646+00:00",
+      "changed_by": null,
       "held_reason": null,
       "spent_today": {
-        "usd": 0.301,
-        "calls": 2
+        "usd": 0.02,
+        "calls": 1
       },
       "ledger_match": {
-        "where": {
-          "field": [
-            "entry_requirements"
-          ]
-        }
+        "source": [
+          "entry_matrix_runs"
+        ]
       },
-      "service_code": "course_entry_requirements",
-      "daily_usd_cap": 3,
+      "service_code": "entry_matrices",
+      "daily_usd_cap": 20,
+      "purpose_group": "central",
       "cascade_detail": [
-        {
-          "code": "deepseek-v3.2",
-          "label": "DeepSeek V3.2",
-          "status": "allowed",
-          "model_identifier": "deepseek/deepseek-v3.2"
-        },
         {
           "code": "qwen3-30b",
           "label": "Qwen3 30B A3B Instruct (2507)",
@@ -339,8 +363,10 @@ Notes for the page:
           "model_identifier": "qwen/qwen3-30b-a3b-instruct-2507"
         }
       ],
-      "daily_calls_cap": 500,
-      "model_in_effect": "deepseek/deepseek-v3.2"
+      "would_hold_now": false,
+      "daily_calls_cap": null,
+      "model_in_effect": "qwen/qwen3-30b-a3b-instruct-2507",
+      "on_demand_exempt": false
     },
     {
       "area": "Providers",
@@ -371,7 +397,7 @@ Notes for the page:
       "resolver": "route",
       "settings": [],
       "held_kind": null,
-      "changed_at": "2026-11-13T09:17:51.966414+00:00",
+      "changed_at": "2026-11-13T10:06:06.258646+00:00",
       "changed_by": null,
       "held_reason": null,
       "spent_today": {
@@ -381,6 +407,7 @@ Notes for the page:
       "ledger_match": null,
       "service_code": "provider_description",
       "daily_usd_cap": 1,
+      "purpose_group": "pdesc",
       "cascade_detail": [
         {
           "code": "qwen3-30b",
@@ -389,12 +416,20 @@ Notes for the page:
           "model_identifier": "qwen/qwen3-30b-a3b-instruct-2507"
         }
       ],
+      "would_hold_now": false,
       "daily_calls_cap": null,
-      "model_in_effect": "qwen/qwen3-30b-a3b-instruct-2507"
+      "model_in_effect": "qwen/qwen3-30b-a3b-instruct-2507",
+      "on_demand_exempt": false
     }
   ],
   "day_start": "2026-11-13T00:00:00+00:00",
   "openrouter": {
+    "key": {
+      "secret": "OPENROUTER_API_KEY",
+      "profile_id": "8ded0bb7-3994-432c-a5a1-2bd9c1716264",
+      "profile_code": "openrouter-intake-l3c-qwen3-30b-a3b-2507-v1",
+      "shared_by_profiles": 4
+    },
     "mode": "observe",
     "settings": [
       {
@@ -406,7 +441,9 @@ Notes for the page:
         "unit": "minutes",
         "label": "Warn when the balance has not been read for",
         "value": 30,
-        "toolset": "openrouter"
+        "toolset": "openrouter",
+        "not_read": false,
+        "read_only": false
       },
       {
         "key": "credit_floor_usd",
@@ -417,20 +454,26 @@ Notes for the page:
         "unit": "US$",
         "label": "Credit floor",
         "value": 0.5,
-        "toolset": "openrouter"
+        "toolset": "openrouter",
+        "not_read": false,
+        "read_only": false
       }
     ],
     "floor_usd": 0.5,
-    "balance_usd": 53.0,
+    "balance_usd": null,
     "key_present": true,
+    "balance_note": "No balance reading yet: the credit floor cannot hold anything until one is recorded (unknown is not zero).",
     "low_warn_usd": 10,
+    "balance_known": false,
     "key_secret_name": "OPENROUTER_API_KEY",
     "spent_today_usd": 1.607,
     "daily_ceiling_usd": 14,
-    "total_credits_usd": 100,
-    "balance_observed_at": "2026-11-13T09:17:46.231413+00:00"
+    "total_credits_usd": null,
+    "balance_observed_at": "2026-11-13T10:06:09.785064+00:00"
   },
   "can_control": true,
+  "ceiling_usd": 14,
+  "caps_total_usd": 181.5,
   "legacy_controls": {
     "scholarship_chain": {
       "chain": [
@@ -439,25 +482,26 @@ Notes for the page:
       "write": null,
       "reason": "copy of the scholarship route (Models & services)",
       "copy_of": "route scholarship_extraction",
-      "changed_at": "2026-11-13T09:17:54.584335+00:00"
+      "changed_at": "2026-11-13T10:06:08.77921+00:00"
     },
     "central_ai_settings": {
       "write": null,
       "reason": "copy of the intake calendar route (Models & services)",
       "copy_of": "route calendar_reading",
       "enabled": true,
-      "changed_at": "2026-11-13T09:17:54.4449+00:00",
+      "changed_at": "2026-11-13T10:06:08.587793+00:00",
       "model_code": "qwen3-30b",
       "calls_at_once": 3,
       "model_identifier": "qwen/qwen3-30b-a3b-instruct-2507"
     }
-  }
+  },
+  "caps_exceed_ceiling": true
 }
 ```
 
 ## 2. `admin_ai_model_set_v1(p_code text, p_status text, p_reason text)`
 
-`p_status` is `allowed` or `not_allowed`. A model that is switched to not allowed stays in the cascades that name it and is skipped; a service whose cascade then has no allowed model shows `held: true, held_kind: "off", held_reason: "no allowed model in the cascade"`. The log row carries the services that name the model.
+`p_status` is `allowed` or `not_allowed`. A model that is switched to not allowed stays in the cascades that name it and is skipped; a service whose cascade then has no allowed model shows `held: true, held_kind: "no_model", held_reason: "no allowed model in the cascade"`. The log row carries the services that name the model.
 
 ```js
 const { data, error } = await supabase.rpc('admin_ai_model_set_v1', { p_code: 'kimi-k2-0905', p_status: 'not_allowed', p_reason: 'costs more than the others' })
@@ -475,7 +519,7 @@ const { data, error } = await supabase.rpc('admin_ai_route_set_v1', {
 
 ## 4. What a route controls
 
-Every service's reader asks `security.ai_route_v1(service)` before it hands out work, so a saved route takes effect on the next reader call: the model, the switch, the daily US$ cap, the calls cap and the daily ceiling. A cap or the ceiling (`held_kind: "limit"`) does not hold work of a provider with an open on-demand request; a switch or a cascade with no allowed model (`held_kind: "off"`) holds everything.
+Every service's reader asks `security.ai_route_v1(service)` before it hands out work, so a saved route takes effect on the next reader call: the model, the switch, the daily US$ cap, the calls cap and the daily ceiling. A cap or the ceiling (`held_kind` `cap` or `ceiling`) does not hold work of a provider with an open on-demand request that covers the service's purpose group. A switch (`off`), a cascade with no allowed model (`no_model`) and the account's credit floor (`credit_floor`) hold everything, on-demand included.
 
 | Service | Reader | The cascade beyond the first model |
 |---|---|---|
@@ -488,11 +532,11 @@ Every service's reader asks `security.ai_route_v1(service)` before it hands out 
 | scholarship_eligibility | `svc_scholarship_eligibility_next` | first model only |
 | provider_description | `svc_provider_description_next` | first model only (each read reserves a price for one model) |
 | adapter_builder | `adapter_builder_model_for_v1`, `adapter_builder_budget` | first model only; a provider's own model is used only when the cascade names it |
-| entry_matrices | `svc_entry_matrix_next` | first model only |
-| ops_diagnosis | `svc_ops_diagnosis_next` | first model only |
+| entry_matrices | `svc_entry_matrix_next` | first model only (seeded with one model) |
+| ops_diagnosis | `svc_ops_diagnosis_next` | first model only (seeded with one model) |
 | page_identity | none scheduled | qualification only |
 
-The worker moves to the next model only on a technical failure (an HTTP error, a time-out, an unreadable, empty, cut or non-JSON answer). It never moves on because of what a model answered. Usage rows name the model that answered.
+The worker moves to the next model only on a technical failure (an HTTP error, a time-out, an unreadable, empty, cut or non-JSON answer). It never moves on because of what a model answered, and it asks a later model only while the call's time budget lasts. Usage rows name the model that answered.
 
 ## 5. What a reader gets: `security.ai_route_v1(service)` (not callable from the page)
 
@@ -514,12 +558,18 @@ The worker moves to the next model only on a technical failure (an HTTP error, a
       "model_identifier": "qwen/qwen3-30b-a3b-instruct-2507"
     }
   ],
+  "balance": {
+    "usd": 53,
+    "known": true,
+    "floor_usd": 0.5
+  },
   "service": "course_entry_requirements",
   "held_kind": null,
   "held_reason": null,
   "spent_today": {
     "usd": 0.301,
     "calls": 2
-  }
+  },
+  "on_demand_exempt": false
 }
 ```

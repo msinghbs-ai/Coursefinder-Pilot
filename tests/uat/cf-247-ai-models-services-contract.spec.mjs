@@ -12,6 +12,7 @@ import crypto from 'node:crypto'
 
 const MIG = fs.readFileSync('supabase/migrations/20261113380000_cf247_ai_models_services.sql', 'utf8')
 const MIG2 = fs.readFileSync('supabase/migrations/20261113390000_cf247_ai_routes_only.sql', 'utf8')
+const COLS = ['20261113377000_cf247_ai_ledger_columns', '20261113378000_cf247_ai_settings_home_columns', '20261113379000_cf247_ai_item_model_column'].map((f) => fs.readFileSync(`supabase/migrations/${f}.sql`, 'utf8'))
 const WORKER_DIR = 'supabase/functions/coverage-sweep'
 const worker = fs.readFileSync(`${WORKER_DIR}/index.ts`, 'utf8')
 const FX = 'tests/fixtures/ai-models-services'
@@ -66,11 +67,16 @@ test('one route per service: every spend lane is covered, a cascade holds 1 to 4
     'scholarship_eligibility', 'provider_description', 'calendar_reading', 'central_english_policy', 'fee_reader', 'course_matching', 'adapter_builder', 'ops_diagnosis'])
   for (const lane of ['enrich_fields', 'scholarship_ai', 'entry_matrix', 'course_match', 'central_ai', 'fee_ai', 'provider_description', 'adapter_builder', 'ops_diagnose']) expect(seed, lane).toContain(`'${lane}'`)
   expect(seed).not.toMatch(/gpt-4|claude/)
-  for (const s of ['course_entry_requirements', 'entry_matrices', 'ops_diagnosis']) {   // the services that were on GPT-4.1 mini: qwen3-30b first, then a second allowed model
-    const row = seed.slice(seed.indexOf(`('${s}'`)); expect(row.slice(0, row.indexOf('\n  (', 5) > 0 ? row.indexOf('\n  (', 5) : row.length), s).toContain("array['qwen3-30b', 'mistral-small-3.2']")
-  }
-  // caps are read from the existing settings, never written as a number
-  expect(seed).not.toMatch(/array\[[^\]]+\], \d/)
+  // the services that were on GPT-4.1 mini start on qwen3-30b; a second model only where the call honours a cascade (entry matrices and the
+  // operations diagnosis use the first model only, so they are seeded with one)
+  const rowOf = (s) => { const row = seed.slice(seed.indexOf(`('${s}'`)); return row.slice(0, row.indexOf('\n  (', 5) > 0 ? row.indexOf('\n  (', 5) : row.length) }
+  expect(rowOf('course_entry_requirements')).toContain("array['qwen3-30b', 'mistral-small-3.2']")
+  for (const s of ['entry_matrices', 'ops_diagnosis']) { expect(rowOf(s), s).toContain("array['qwen3-30b'], "); expect(rowOf(s), s).not.toContain('mistral') }
+  // caps are read from the existing settings; the five services with no setting of their own carry the integrator's seeds, stated as such
+  expect([...seed.matchAll(/array\[[^\]]+\], (\d+)(?:::numeric)?, null/g)].map((m) => Number(m[1]))).toEqual([5, 5, 2, 2, 2])
+  expect(MIG).toContain("their caps are seeds chosen by the integrator, pending the Platform Admin's own values on the page: course_description 5,")
+  expect(MIG).toContain('daily_usd_cap numeric not null check (daily_usd_cap >= 0),')
+  expect(MIG).toContain("purpose_group text not null default 'other',")
   expect(seed).toContain("s.toolset_key = 'openrouter' and s.key = 'guard_entry_matrix'")
   expect(seed).toContain("s.toolset_key = 'pipeline' and s.key = 'ops.ai_diagnosis_usd_per_day'")
   // the course field reader is one route per field group, split by the item's field
@@ -85,10 +91,13 @@ test('the route: allowed models in cascade order, held by the switch, the cascad
   expect(r).toContain('order by c.ord')
   expect(r).toContain("v_day timestamptz := date_trunc('day', now() at time zone 'UTC') at time zone 'UTC';  -- fixed: the UTC day the AI guards count")
   expect(r).toContain("v_ceiling := security.pipeline_num_v1('budgets.ai_daily_ceiling_usd', 14);")
-  for (const reason of ['switched off (Models & services)', 'no allowed model in the cascade', 'daily ceiling: US$%s spent today (UTC) across all AI services', 'service cap: US$%s spent today (UTC), cap US$%s', 'service cap: %s calls today (UTC), cap %s'])
+  for (const reason of ['switched off (Models & services)', 'no allowed model in the cascade', "v_kind := 'credit_floor'; v_detail := 'credit_floor';", 'daily ceiling: US$%s spent today (UTC) across all AI services', 'service cap: US$%s spent today (UTC), cap US$%s', 'service cap: %s calls today (UTC), cap %s'])
     expect(r, reason).toContain(reason)
+  // the account's own limit holds everything, on-demand included; with no balance reading it does not hold (unknown is not zero)
+  expect(r).toContain('elsif v_bal is not null and v_bal <= v_floor then')
+  expect(r.indexOf("v_kind := 'credit_floor'")).toBeLessThan(r.indexOf("v_kind := 'ceiling'"))
   expect(r).not.toContain('platform_toolsets')   // held whatever the OpenRouter mode is (it was Observe only, so the ceiling stopped nothing)
-  expect(r).toContain("'held_kind', case when v_reason is null then null when not r.enabled or jsonb_array_length(v_models) = 0 then 'off' else 'limit' end")
+  expect(r).toContain("'held', v_kind is not null, 'held_kind', v_kind, 'on_demand_exempt', coalesce(v_kind in ('ceiling', 'cap'), false),")
 })
 
 test('the three readers ask the route; the keys the deployed worker reads stay; the old model settings are no longer read', () => {
@@ -116,14 +125,26 @@ test('the three readers ask the route; the keys the deployed worker reads stay; 
 })
 
 test('on-demand work is not held by a cap or the ceiling; a switched-off route holds it too (operating model 3.3.2)', () => {
-  expect(fn('security.ai_on_demand_providers_v1')).toContain("where r.state = 'open' and r.expires_at > now() and 'openrouter' = any (r.toolsets)")
-  expect(body('public.svc_entry_matrix_next')).toContain("if v_model is null or v_route->>'held_kind' = 'off' or (coalesce((v_route->>'held')::boolean, true) and cardinality(v_od) = 0) then return '[]'::jsonb; end if;")
+  // waived by purpose group only (as security.on_demand_request_for_v2 reads a request's scope), never for every service
+  const od = fn('security.ai_on_demand_providers_v1')
+  expect(od).toContain("r.state = 'open' and r.expires_at > now() and 'openrouter' = any (r.toolsets)")
+  expect(od).toContain('and (r.purpose_groups is null or s.purpose_group = any (r.purpose_groups))')
+  expect(MIG).not.toContain('security.ai_on_demand_providers_v1()')
+  expect(body('public.svc_entry_matrix_next')).toContain("if v_model is null or (coalesce((v_route->>'held')::boolean, true) and not (coalesce((v_route->>'on_demand_exempt')::boolean, false) and cardinality(v_od) > 0)) then return '[]'::jsonb; end if;")
+  expect(fixtures).toContain('on-demand is waived by purpose group only and stops at the credit floor')
   expect(fixtures).toContain('an on-demand provider is not held by a limit, but is by a switch')
 })
 
 test('usage by service and model: two columns beside, filled by the one writer; a failure there never stops the cost being recorded', () => {
-  expect(MIG).toContain('alter table pipeline.ai_spend_ledger add column if not exists service_code text;')
-  expect(MIG).toContain('alter table pipeline.ai_spend_ledger add column if not exists model text;')
+  // the columns come from their own one-table migrations (QA B2): a short lock that fails fast, and no later migration alters a hot table
+  expect(COLS[0]).toContain('alter table pipeline.ai_spend_ledger add column if not exists service_code text;')
+  expect(COLS[0]).toContain('alter table pipeline.ai_spend_ledger add column if not exists model text;')
+  for (const c of COLS) { expect(c).toContain("set local lock_timeout = '3s';"); expect(new Set([...c.matchAll(/^alter table (pipeline\.[a-z_]+)/gm)].map((m) => m[1])).size).toBe(1); expect(c).toMatch(/^-- Replaces: nothing\./m) }
+  for (const m of [MIG, MIG2]) expect(m).not.toMatch(/^\s*alter table pipeline\.(ai_spend_ledger|platform_toolset_settings|field_enrich_items)\b|create index[^;]* on pipeline\.ai_spend_ledger/im)
+  expect(MIG).toContain("raise exception 'migrations 20261113377000 and 20261113378000 (the columns) must be applied before this change';")
+  expect(MIG).toContain('-- Locks this migration takes on tables that exist before it (no ACCESS EXCLUSIVE on any of them; it adds no column):')
+  expect(MIG2).toContain('-- Locks this migration takes on tables that exist before it (no ACCESS EXCLUSIVE; it adds no column):')
+  expect(fs.readFileSync(`${FX}/concurrent.sh`, 'utf8')).toContain('concurrent writers: no deadlock, no lock time-out, no wait of 3 seconds')
   const c = body('security.ai_spend_capture_v1')
   expect(c).toContain("v_svc := security.ai_ledger_service_v1(tg_argv[0], tg_table_name, v_new);")
   expect(c).toContain("v_model := coalesce(nullif(v_new->>'model', ''), nullif(v_new->>'model_identifier', ''), nullif(v_new->>'model_code', ''), security.ai_service_model_v1(v_svc));")
@@ -156,8 +177,8 @@ test('the page: one read and two writes, role-checked as the Services tab is, ev
 })
 
 test('settings that belong to Models & services are marked, not moved or hidden; GPT-4.1 mini leaves the scholarship chain', () => {
-  expect(MIG).toContain('alter table pipeline.platform_toolset_settings add column if not exists home text;')
-  expect(MIG).toContain('alter table pipeline.platform_toolset_settings add column if not exists home_group text;')
+  expect(COLS[1]).toContain('alter table pipeline.platform_toolset_settings add column if not exists home text;')
+  expect(COLS[1]).toContain('alter table pipeline.platform_toolset_settings add column if not exists home_group text;')
   expect(MIG).toContain("update pipeline.platform_toolset_settings s set home = 'models_services', home_group = m.grp")
   for (const p of ["('openrouter', '.', 'openrouter')", "'^budgets\\.ai_', 'openrouter'", "'^(ops|har)\\.ai_', 'ops_diagnosis'", "'^enrich\\.course_entry_', 'course_entry_requirements'"]) expect(MIG, p).toContain(p)
   expect(MIG).toContain("update pipeline.scholarship_ai_extract_settings s set chain = array_remove(s.chain, 'gpt-4.1-mini')")
@@ -172,17 +193,17 @@ test('the central readers keep one model with their routes, both ways, and canno
   expect(fn('security.ai_central_settings_trg')).toContain("raise exception 'model % is not an allowed model (Models & services › Models)', new.model_identifier using errcode = '23514';")
   // phase 2 ends the shared model: each central service has its own cascade and the old copy cannot be set
   expect(fixtures).toContain('each central service has its own cascade and the old copy cannot be set')
-  expect((fixtures.match(/raise notice 'ok \d+ /g) || []).length).toBe(10)
-  expect(run).toContain('grep -c "NOTICE:  ok " <<<"$OUT")" = 10')
+  expect((fixtures.match(/raise notice 'ok \d+ /g) || []).length).toBe(12)
+  expect(run).toContain('grep -c "NOTICE:  ok " <<<"$OUT")" = 12')
 })
 
 // ---- phase 2 (migration 20261113390000): the route is the only place a model is chosen ----
 const body2 = (name) => MIG2.match(new RegExp(`CREATE OR REPLACE FUNCTION ${name.replace('.', '\\.')}\\([\\s\\S]*?\\$function\\$;`))?.[0] ?? ''
 const fn2 = (name) => MIG2.match(new RegExp(`create or replace function ${name.replace('.', '\\.')}\\([\\s\\S]*?\\$function\\$;`))?.[0] ?? ''
 
-test('phase 2: nineteen live definitions are replaced, each md5-guarded both ways from the live text the fixture loads; phase 1 must be applied first', () => {
+test('phase 2: twenty-one live definitions are replaced, each md5-guarded both ways from the live text the fixture loads; phase 1 must be applied first', () => {
   const rows = [...MIG2.matchAll(/^      \('((?:public|security)\.[a-z0-9_]+\([a-z0-9_ ,\[\]]*\))', '([0-9a-f]{32})', '([0-9a-f]{32})'\),?$/gm)].map((m) => ({ sig: m[1], before: m[2], after: m[3] }))
-  expect(rows).toHaveLength(19)
+  expect(rows).toHaveLength(21)
   for (const r of rows) {
     const file = r.sig.replace(/^(public|security)\./, '').replace(/\(.*/, '')
     expect(md5(fs.readFileSync(`${FX}/live2/${file}.sql`, 'utf8')), r.sig).toBe(r.before)
@@ -216,7 +237,8 @@ test('phase 2: every reader takes its model from its route and is held by it; no
   expect(body2('security.aer_v2_shadow_hold_v1')).toContain("'version', v.version, 'system_text', v.system_text, 'system_sha256', v.system_sha256,")   // the prompt version keeps its text and sha
   expect(body2('security.aer_v2_shadow_hold_v1')).toContain("'model', v_rt->>'model', 'models', v_rt->'models', 'quote_max_chars', v.quote_max_chars) end,")
   // held as phase 1 holds: the gate; a cap or the ceiling does not hold an on-demand provider, a switch does
-  expect(fn2('security.ai_route_open_v1')).toContain("select not coalesce((p_route->>'held')::boolean, true)\n      or (p_route->>'held_kind' = 'limit' and p_provider is not null and coalesce(p_route->'on_demand_providers' ? p_provider::text, false))")
+  expect(fn2('security.ai_route_open_v1')).toContain("select not coalesce((p_route->>'held')::boolean, true)\n      or (coalesce((p_route->>'on_demand_exempt')::boolean, false) and p_provider is not null and coalesce(p_route->'on_demand_providers' ? p_provider::text, false))")
+  expect(fn2('security.ai_route_gate_v1')).toContain('security.ai_on_demand_providers_v1(p_service)')
   for (const name of ['public.svc_fee_ai_next', 'public.svc_scholarship_ai_next', 'public.svc_scholarship_eligibility_next', 'public.svc_scholarship_recheck_next', 'public.svc_coverage_ai_match_next'])
     expect(body2(name), name).toContain('security.ai_route_open_v1(v_rt, ')
   // the scholarship chain: unproven goes to the next model of the cascade, then a person (the record function is unchanged but for the model lookup)
@@ -227,9 +249,7 @@ test('phase 2: every reader takes its model from its route and is held by it; no
 })
 
 test('phase 2: every route has a cap (integrator seeds, stated as such); the old copies cannot be set; the page read says enforced', () => {
-  expect(MIG2).toContain("from (values ('course_description', 5), ('course_entry_requirements', 5), ('course_other_fields', 2), ('scholarship_eligibility', 2), ('central_english_policy', 2)) v(service_code, usd)")
-  expect(MIG2).toMatch(/seeded by the integrator, pending the Platform\n--   Admin's own values on the page/)
-  expect(MIG2).toContain('alter table pipeline.ai_service_routes alter column daily_usd_cap set not null;')
+  expect(MIG2).not.toMatch(/alter table pipeline\.ai_service_routes/)   // the cap is required by the table since phase 1; phase 2 alters nothing
   expect(fn2('public.admin_ai_route_set_v1')).toContain("if p_daily_usd_cap is null then raise exception 'give a daily US$ cap (every service has one)'; end if;")
   expect(fn2('security.ai_central_settings_trg')).toContain("raise exception 'the model is chosen on Models & services (each service has its own route); it can no longer be set here' using errcode = '23514';")
   expect(MIG2).toContain('create trigger ai_scholarship_chain_copy before update of chain on pipeline.scholarship_ai_extract_settings')
@@ -239,7 +259,9 @@ test('phase 2: every route has a cap (integrator seeds, stated as such); the old
   expect(o).toContain("from pipeline.layer3_model_profiles p where p.enabled and not p.paused and p.retired_at is null")
   expect(MIG2).not.toMatch(/layer3_route_tiers set|update pipeline\.layer3_model_profiles/)   // Layer 3 is reported, not wired or changed
   expect(MIG2).not.toMatch(/^\s*(drop|delete|truncate)\b/im)
-  for (const s of ['enforced', 'legacy', 'layer3', 'page_identity', 'Platform Admin (rank 6)', 'accepts text settings']) expect(doc, s).toContain(s)
+  for (const s of ['enforced', 'legacy', 'layer3', 'page_identity', 'Platform Admin (rank 6)', 'accepts text settings', 'Changes for the UI (round 3)', 'caps_total_usd', 'caps_exceed_ceiling', 'would_hold_now', 'credit_floor', 'not_read', 'profile_id', 'purpose_group', 'Matching and identity']) expect(doc, s).toContain(s)
+  for (const k of ["'ceiling_usd'", "'caps_total_usd'", "'caps_exceed_ceiling'", "'would_hold_now'", "'balance_known'", "'profile_id'", "'not_read'", "'read_only'"]) expect(o, k).toContain(k)
+  expect(o).toContain('limit 20) e  -- fixed: the page shows the last 20 changes')
 })
 
 test('phase 2: the guard lists what names a model outside the routes; no model is named in worker or app code outside the allow-list', () => {
@@ -288,20 +310,55 @@ test('phase 2 worker: models come from the readers; the cascade moves on only on
   const scripted = (script) => async (_url, i) => { const m = JSON.parse(i.body).model; calls.push(m); const r = script[m]; if (r instanceof Error) throw r; return r() }
   expect(cascadeModels('v/b', models)).toEqual(['v/b', 'v/c']); expect(cascadeModels('x/y', models)).toEqual(['x/y'])
   // the first model answered "not stated": that is the answer, no other model is asked
-  let d = await (await cascadeFetch(scripted({ 'v/a': () => ans('v/a', '{"value":null,"stated":false}') }), models, 'u', init)).json()
+  let d = await (await cascadeFetch(scripted({ 'v/a': () => ans('v/a', '{"value":null,"stated":false}') }), { models }, 'u', init)).json()
   expect(calls).toEqual(['v/a']); expect(sentModel(d, 'v/a')).toBe('v/a'); expect(d.usage.cost).toBe(0.01)
   // an HTTP error: the next model is asked; the answer names it and carries both costs
-  calls = []; d = await (await cascadeFetch(scripted({ 'v/a': () => new Response(JSON.stringify({ error: { message: 'down' }, usage: { cost: 0.002 } }), { status: 503 }), 'v/b': () => ans('v/b', '{"ok":1}') }), models, 'u', init)).json()
+  calls = []; d = await (await cascadeFetch(scripted({ 'v/a': () => new Response(JSON.stringify({ error: { message: 'down' }, usage: { cost: 0.002 } }), { status: 503 }), 'v/b': () => ans('v/b', '{"ok":1}') }), { models }, 'u', init)).json()
   expect(calls).toEqual(['v/a', 'v/b']); expect(d.cf_model_sent).toBe('v/b'); expect(d.usage.cost).toBeCloseTo(0.012, 9); expect(d.cf_cascade_tried).toEqual([{ model: 'v/a', why: 'HTTP 503' }])
   // a time-out, then a cut answer, then an answer
-  calls = []; d = await (await cascadeFetch(scripted({ 'v/a': Object.assign(Error('timed out'), { name: 'TimeoutError' }), 'v/b': () => ans('v/b', '{"a":', { choices: [{ finish_reason: 'length', message: { content: '{"a":' } }] }), 'v/c': () => ans('v/c', '{"ok":1}') }), models, 'u', init)).json()
+  calls = []; d = await (await cascadeFetch(scripted({ 'v/a': Object.assign(Error('timed out'), { name: 'TimeoutError' }), 'v/b': () => ans('v/b', '{"a":', { choices: [{ finish_reason: 'length', message: { content: '{"a":' } }] }), 'v/c': () => ans('v/c', '{"ok":1}') }), { models }, 'u', init)).json()
   expect(calls).toEqual(['v/a', 'v/b', 'v/c']); expect(d.cf_model_sent).toBe('v/c')
   // malformed JSON moves on; every model failing returns the last failure as it came
-  calls = []; await cascadeFetch(scripted({ 'v/a': () => ans('v/a', 'not json'), 'v/b': () => ans('v/b', '{}') }), models, 'u', init); expect(calls).toEqual(['v/a', 'v/b'])
-  calls = []; const r = await cascadeFetch(scripted({ 'v/a': () => new Response('{}', { status: 500 }), 'v/b': () => new Response('{}', { status: 429 }), 'v/c': () => new Response('{}', { status: 502 }) }), models, 'u', init)
+  calls = []; await cascadeFetch(scripted({ 'v/a': () => ans('v/a', 'not json'), 'v/b': () => ans('v/b', '{}') }), { models }, 'u', init); expect(calls).toEqual(['v/a', 'v/b'])
+  calls = []; const r = await cascadeFetch(scripted({ 'v/a': () => new Response('{}', { status: 500 }), 'v/b': () => new Response('{}', { status: 429 }), 'v/c': () => new Response('{}', { status: 502 }) }), { models }, 'u', init)
   expect(r.status).toBe(502); expect(calls).toHaveLength(3)
   // one model: the call exactly as it was
   let seen = null; await cascadeFetch(async (_u, i) => { seen = i; return ans('v/a', '{}') }, null, 'u', init); expect(seen).toBe(init)
+  // the caller's time budget: with too little time left no later model is asked and the failure is returned as it came
+  calls = []; const late = await cascadeFetch(scripted({ 'v/a': () => new Response('{}', { status: 503 }), 'v/b': () => ans('v/b', '{}') }), { models, deadline: Date.now() + 5000 }, 'u', init)
+  expect(calls).toEqual(['v/a']); expect(late.status).toBe(503)
+  expect(worker.match(/deadline: t0 \+ BUDGET_MS - 25000 \}, "https:\/\/openrouter/g)).toHaveLength(9)
+  // no model handed out: the item is left alone (not recorded as an error)
+  expect(worker).toContain('if (!(it as any).model) { tally.no_model = (tally.no_model || 0) + 1; return }')
+  expect(worker).not.toContain('no model handed out by the route course_matching')
   expect(technicalFailure(200, { choices: [{ finish_reason: 'stop', message: { content: '{"stated":false}' } }] }, true)).toBeNull()
   fs.rmSync(out, { force: true })
+})
+
+test('round 3 (independent QA and the page): scholarship models follow the catalogue; settings reads say where a setting belongs; the old write path is retiring', () => {
+  // B1: scholarship_ai_queue.model_code refers to scholarship_ai_models, so every allowed model has a row there; the first of the route is active
+  const sync = fn2('security.ai_central_sync_v1')
+  expect(sync).toContain("insert into pipeline.scholarship_ai_models (code, label, model_identifier, status, sort)")
+  expect(sync).toContain("where c.status = 'allowed' and not exists (select 1 from pipeline.scholarship_ai_models x where x.code = c.code);")
+  expect(sync).toContain("update pipeline.scholarship_ai_models x set status = 'active', activated_at = now(), reason = 'first model of the scholarship route (Models & services)'")
+  expect(MIG2).toContain('create trigger ai_model_added after insert on pipeline.ai_model_catalogue for each row execute function security.ai_model_status_trg();')
+  expect(MIG2).toContain("raise exception 'post-check: an allowed model has no row in pipeline.scholarship_ai_models: %', v;")
+  expect(fixtures).toContain("the queue foreign key holds")
+  expect(fs.readFileSync(`${FX}/stubs2.sql`, 'utf8')).toContain('foreign key (model_code) references pipeline.scholarship_ai_models(code)')
+  // queued reads naming a model that is not allowed are re-pointed (an update, counted; nothing deleted)
+  expect(MIG2).toContain("raise notice 'scholarship queue: % queued read(s) naming a model that is not allowed re-pointed to %', n, v_first;")
+  // a model outside the Platform Admin's families cannot be allowed from the page; the seed stores those families as other
+  expect(fn('public.admin_ai_model_set_v1')).toContain("raise exception 'this model is not in a family the Platform Admin allows (Qwen3, MiMo, Mistral Small, Kimi K2, Gemini, Llama, DeepSeek); adding a family is a release';")
+  expect(MIG).not.toMatch(/'(openai|anthropic)', '(GPT|Claude)/)
+  // the two settings reads return home and home_group (additive)
+  expect(body2('public.admin_settings_register_read')).toContain("'unit', s.unit, 'home', s.home, 'home_group', s.home_group, 'used_by', s.used_by,")
+  expect(body2('public.admin_toolsets_read')).toContain("'unit', s.unit, 'home', s.home, 'home_group', s.home_group, 'section', s.section,")
+  expect(fn2('security.ai_settings_not_read_v1')).toContain("values ('pipeline', 'entry.matrix_model', 'routes entry_matrices and course_entry_requirements'), ('pipeline', 'ops.ai_diagnosis_model', 'route ops_diagnosis'),")
+  // areas as the page names them
+  const areas = new Set([...MIG.slice(MIG.indexOf('insert into pipeline.ai_service_routes'), MIG.indexOf('on conflict (service_code) do nothing;')).matchAll(/^  \('[a-z0-9_]+', '[^']+', '([A-Za-z ]+)', /gm)].map((m) => m[1])); areas.add('Matching and identity')
+  expect([...areas].sort()).toEqual(['Courses', 'Entry requirements', 'Fees', 'Matching and identity', 'Operations', 'Providers', 'Scholarships'])
+  // the old model write path is marked retiring; N1: a provider's own model must be switched on
+  expect(MIG2).toContain("values ('function', 'public.admin_ai_config(text,jsonb)', 'Platform', 'Models & services', 'Old AI configuration card: central model and switch', 'retiring', '{}',")
+  expect(MIG2).toContain("current_date + security.pipeline_num_v1('hygiene.retire_after_days', 14)::int)")
+  expect(body2('security.adapter_builder_model_for_v1')).toContain('where a.provider_id = p_provider_id and m.enabled and not m.paused and m.retired_at is null')
 })

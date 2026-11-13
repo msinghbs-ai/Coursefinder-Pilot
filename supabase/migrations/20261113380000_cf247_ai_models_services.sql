@@ -18,19 +18,20 @@
 --                                 guards count it) and whether the service is held (switched off, no allowed model, the daily ceiling
 --                                 budgets.ai_daily_ceiling_usd reached, or its own cap reached). A held route holds whatever the OpenRouter
 --                                 toolset mode is: the mode was Observe only, so the ceiling of US$14 stopped nothing (US$37 on 12 Nov).
---                                 A cap or the ceiling (held_kind limit) does not hold a provider of an open on-demand request (operating model
---                                 3.3.2, Platform Admin 12 Nov 2026 21:07); switched off or no allowed model (held_kind off) holds everything.
---   pipeline.ai_spend_ledger      two new columns beside the old ones: service_code and model. Filled by the one writer,
+--                                 A cap or the ceiling does not hold a provider of an open on-demand request of the route's purpose group
+--                                 (operating model 3.3.2, Platform Admin 12 Nov 2026 21:07). Switched off, no allowed model and the account's
+--                                 credit floor (last observed balance at or below openrouter.credit_floor_usd) hold everything.
+--   pipeline.ai_spend_ledger      service_code and model (the columns are added by migration 20261113377000) are filled by the one writer,
 --                                 security.ai_spend_capture_v1. service_code is also filled for the rows already there (so today's spend counts
 --                                 from the first minute); model is filled going forward only.
---   pipeline.platform_toolset_settings  two new columns, home and home_group: a setting about an AI model, prompt, cap, switch or the OpenRouter
---                                 credit is marked home = 'models_services' with the service it belongs to. Nothing is hidden or removed.
+--   pipeline.platform_toolset_settings  home and home_group (columns from 20261113378000): a setting about an AI model, prompt, cap, switch or the
+--                                 OpenRouter credit is marked home = 'models_services' with the service it belongs to. Nothing is hidden or removed.
 --   public.admin_ai_overview_v1, admin_ai_model_set_v1, admin_ai_route_set_v1   the page's read and its two audited writes.
 --
 -- What this changes in existing functions (each md5-guarded; only the model and budget lines; every key the deployed worker reads keeps its name
 -- and type; `models`, `routes` and `held` are new keys beside them)
 --   public.svc_enrich_ai_next(integer)      e4bdf62857d011458e3293006a7e7426 -> 91b15e0d47ea762d391f3a937b49f72c
---   public.svc_entry_matrix_next(integer)   3eb6ca3bb909cda113e2c1ee79704a42 -> 93cc870630625dd8c2a215cae4cc1601
+--   public.svc_entry_matrix_next(integer)   3eb6ca3bb909cda113e2c1ee79704a42 -> edc670b607489b5b4a372ddc83c73f9f
 --   public.svc_ops_diagnosis_next(integer)  adc209ebf9196c613e3dd82fa76fed61 -> 8a2b8a50b0fd640365b3dab7a2d372aa
 --   security.ai_spend_capture_v1()          5b78fa074a9480d4f127ecc4fe93dcf3 -> 13a35f446d15bc3ce06fe0d0e4725284
 --
@@ -38,6 +39,13 @@
 --   mistral-small-3.2. The scholarship chain loses gpt-4.1-mini as its second step (an unproven fact then goes to a person, as it does when the
 --   chain ends). No switch is turned on by this change: entry.matrix_enabled, aer.*, ops.ai_diagnosis_on keep their values.
 --
+-- Locks this migration takes on tables that exist before it (no ACCESS EXCLUSIVE on any of them; it adds no column):
+--   pipeline.ai_spend_ledger            ROW EXCLUSIVE (one UPDATE of the rows without a service; rows are never updated by anything else, and
+--                                       inserts by the cost trigger are not blocked)
+--   pipeline.platform_toolset_settings  ROW EXCLUSIVE (UPDATE of the marked rows and of two used_by lines); readers are not blocked
+--   pipeline.central_ai_settings        SHARE ROW EXCLUSIVE (create trigger: writes wait for the commit, reads do not), then ROW EXCLUSIVE
+--   pipeline.scholarship_ai_extract_settings, pipeline.component_register, pipeline.admin_control_events   ROW EXCLUSIVE
+--   everything else is read (ACCESS SHARE) or is new in this migration. The four replaced functions take no table lock.
 -- Replaces: the model choice of settings pipeline entry.matrix_model and ops.ai_diagnosis_model, and of pipeline.central_ai_settings.model_* for the
 --   course field reader (public.svc_enrich_ai_next), with pipeline.ai_service_routes. The two settings stay and are no longer read.
 --   pipeline.central_ai_settings.model_* is still read by the central pages, fee, calendar and provider description readers, so it is kept
@@ -48,9 +56,13 @@
 do $guard$
 declare r record;
 begin
+  if not exists (select 1 from information_schema.columns where table_schema = 'pipeline' and table_name = 'ai_spend_ledger' and column_name = 'service_code')
+     or not exists (select 1 from information_schema.columns where table_schema = 'pipeline' and table_name = 'platform_toolset_settings' and column_name = 'home_group') then
+    raise exception 'migrations 20261113377000 and 20261113378000 (the columns) must be applied before this change';
+  end if;
   for r in select * from (values
       ('public.svc_enrich_ai_next(integer)', 'e4bdf62857d011458e3293006a7e7426', '91b15e0d47ea762d391f3a937b49f72c'),
-      ('public.svc_entry_matrix_next(integer)', '3eb6ca3bb909cda113e2c1ee79704a42', '93cc870630625dd8c2a215cae4cc1601'),
+      ('public.svc_entry_matrix_next(integer)', '3eb6ca3bb909cda113e2c1ee79704a42', 'edc670b607489b5b4a372ddc83c73f9f'),
       ('public.svc_ops_diagnosis_next(integer)', 'adc209ebf9196c613e3dd82fa76fed61', '8a2b8a50b0fd640365b3dab7a2d372aa'),
       ('security.ai_spend_capture_v1()', '5b78fa074a9480d4f127ecc4fe93dcf3', '13a35f446d15bc3ce06fe0d0e4725284')) v(sig, before, after) loop
     if md5(pg_get_functiondef(r.sig::regprocedure)) not in (r.before, r.after) then
@@ -107,11 +119,11 @@ insert into pipeline.ai_model_catalogue (code, family, label, model_identifier, 
   ('llama-4-scout', 'llama', 'Llama 4 Scout', 'meta-llama/llama-4-scout', 0.10, 0.30, now(), 1310720, 'allowed', 'Not used yet; not qualified on any platform prompt', 61, 'seed 13 Nov 2026'),
   ('deepseek-v3.2', 'deepseek', 'DeepSeek V3.2', 'deepseek/deepseek-v3.2', 0.26, 0.38, now(), 163840, 'allowed', 'Layer 3 profiles retired after their tests', 70, 'seed 13 Nov 2026'),
   ('deepseek-v4-flash', 'deepseek', 'DeepSeek V4 Flash', 'deepseek/deepseek-v4-flash', 0.09, 0.18, now(), 1048576, 'allowed', 'Not used yet; not qualified on any platform prompt', 71, 'seed 13 Nov 2026'),
-  ('gpt-4.1-mini', 'openai', 'GPT-4.1 mini', 'openai/gpt-4.1-mini', 0.40, 1.60, now(), 1047576, 'not_allowed', 'Platform Admin 13 Nov 2026 19:14: too expensive, it exhausted the AI credit. Kept so history resolves', 900, 'Platform Admin 13 Nov 2026 19:14'),
-  ('gpt-4.1', 'openai', 'GPT-4.1', 'openai/gpt-4.1', 2.00, 8.00, now(), 1047576, 'not_allowed', 'Not in the families the Platform Admin allows. Kept so history resolves', 901, 'Platform Admin 13 Nov 2026 19:14'),
-  ('gpt-4.1-nano', 'openai', 'GPT-4.1 nano', 'openai/gpt-4.1-nano', 0.10, 0.40, now(), 1047576, 'not_allowed', 'Not in the families the Platform Admin allows. Kept so history resolves', 902, 'Platform Admin 13 Nov 2026 19:14'),
-  ('claude-haiku-4.5', 'anthropic', 'Claude Haiku 4.5', 'anthropic/claude-haiku-4.5', 1.00, 5.00, now(), 200000, 'not_allowed', 'Not in the families the Platform Admin allows. Kept so history resolves', 910, 'Platform Admin 13 Nov 2026 19:14'),
-  ('claude-sonnet-4.6', 'anthropic', 'Claude Sonnet 4.6', 'anthropic/claude-sonnet-4.6', 3.00, 15.00, now(), 1000000, 'not_allowed', 'Not in the families the Platform Admin allows. Still switched on in Layer 3 English validation (its own tiers). Kept so history resolves', 911, 'Platform Admin 13 Nov 2026 19:14')
+  ('gpt-4.1-mini', 'other', 'GPT-4.1 mini', 'openai/gpt-4.1-mini', 0.40, 1.60, now(), 1047576, 'not_allowed', 'Platform Admin 13 Nov 2026 19:14: too expensive, it exhausted the AI credit. Kept so history resolves', 900, 'Platform Admin 13 Nov 2026 19:14'),
+  ('gpt-4.1', 'other', 'GPT-4.1', 'openai/gpt-4.1', 2.00, 8.00, now(), 1047576, 'not_allowed', 'Not in the families the Platform Admin allows. Kept so history resolves', 901, 'Platform Admin 13 Nov 2026 19:14'),
+  ('gpt-4.1-nano', 'other', 'GPT-4.1 nano', 'openai/gpt-4.1-nano', 0.10, 0.40, now(), 1047576, 'not_allowed', 'Not in the families the Platform Admin allows. Kept so history resolves', 902, 'Platform Admin 13 Nov 2026 19:14'),
+  ('claude-haiku-4.5', 'other', 'Claude Haiku 4.5', 'anthropic/claude-haiku-4.5', 1.00, 5.00, now(), 200000, 'not_allowed', 'Not in the families the Platform Admin allows. Kept so history resolves', 910, 'Platform Admin 13 Nov 2026 19:14'),
+  ('claude-sonnet-4.6', 'other', 'Claude Sonnet 4.6', 'anthropic/claude-sonnet-4.6', 3.00, 15.00, now(), 1000000, 'not_allowed', 'Not in the families the Platform Admin allows. Still switched on in Layer 3 English validation (its own tiers). Kept so history resolves', 911, 'Platform Admin 13 Nov 2026 19:14')
 on conflict (code) do nothing;
 
 -- 2 the service routes --------------------------------------------------------------------------------------------------------------------------
@@ -123,40 +135,47 @@ create table if not exists pipeline.ai_service_routes (
   lane text not null,
   ledger_match jsonb,
   cascade text[] not null check (cardinality(cascade) between 1 and 4),
-  daily_usd_cap numeric check (daily_usd_cap is null or daily_usd_cap >= 0),
+  daily_usd_cap numeric not null check (daily_usd_cap >= 0),
   daily_calls_cap integer check (daily_calls_cap is null or daily_calls_cap >= 0),
   prompt_source text not null,
   enabled boolean not null default true,
   resolver text not null default 'route',
+  purpose_group text not null default 'other',
   note text,
   sort integer not null default 100,
   reason text,
   changed_at timestamptz not null default now(),
   changed_by uuid);
-comment on table pipeline.ai_service_routes is 'One row per AI service (Models & services): its spend lane in pipeline.ai_spend_ledger (ledger_match splits a shared lane by source table or row value), its cascade of 1 to 4 models from pipeline.ai_model_catalogue, its daily US$ and calls caps (null = none), where its prompt is kept, and whether it is on. resolver = route: the reader asks security.ai_route_v1; anything else names where the model is still chosen until that reader is moved. Platform Admin 13 Nov 2026.';
+comment on table pipeline.ai_service_routes is 'One row per AI service (Models & services): its spend lane in pipeline.ai_spend_ledger (ledger_match splits a shared lane by source table or row value), its cascade of 1 to 4 models from pipeline.ai_model_catalogue, its daily US$ cap and calls cap (null = no calls cap), where its prompt is kept, and whether it is on. purpose_group is the on-demand purpose group (security.fc_purpose_group_v1) whose open requests are not held by the cap of this route or the daily ceiling. resolver = route: the reader asks security.ai_route_v1; anything else names where the model is still chosen until that reader is moved. Platform Admin 13 Nov 2026.';
 alter table pipeline.ai_service_routes enable row level security;
 revoke all on pipeline.ai_service_routes from anon, authenticated;
 
--- Seeds: the model each service uses today; a service on GPT-4.1 mini gets qwen3-30b first, then mistral-small-3.2. Caps come from the existing
--- per-lane settings where one exists (read here, not written as numbers); a lane shared by several services gives its guard to none of them
--- when the split has no setting of its own (null = no cap; the daily ceiling still holds every route).
-insert into pipeline.ai_service_routes (service_code, label, area, field, lane, ledger_match, cascade, daily_usd_cap, daily_calls_cap, prompt_source, resolver, note, sort, reason)
-select v.service_code, v.label, v.area, v.field, v.lane, v.ledger_match::jsonb, v.cascade, v.usd, v.calls, v.prompt_source, v.resolver, v.note, v.sort, 'seed 13 Nov 2026 (Platform Admin 19:14)'
+-- Seeds: the model each service uses today; a service on GPT-4.1 mini gets qwen3-30b first (and mistral-small-3.2 second where its calls honour a
+-- cascade). Caps come from the existing per-lane settings where one exists (read here, not written as numbers). Five services have no setting
+-- of their own: their caps are seeds chosen by the integrator, pending the Platform Admin's own values on the page: course_description 5,
+-- course_entry_requirements 5, course_other_fields 2, scholarship_eligibility 2, central_english_policy 2 (US$ a day).
+insert into pipeline.ai_service_routes (service_code, label, area, field, lane, ledger_match, cascade, daily_usd_cap, daily_calls_cap, prompt_source, resolver, note, sort, reason, purpose_group)
+select v.service_code, v.label, v.area, v.field, v.lane, v.ledger_match::jsonb, v.cascade, v.usd, v.calls, v.prompt_source, v.resolver, v.note, v.sort, 'seed 13 Nov 2026 (Platform Admin 19:14)',
+       case when v.service_code in ('course_description', 'course_entry_requirements', 'course_other_fields', 'entry_requirements_v2_shadow', 'adapter_builder') then 'reads'
+            when v.service_code in ('scholarship_extraction', 'scholarship_eligibility') then 'scholarships'
+            when v.service_code = 'provider_description' then 'pdesc'
+            when v.service_code in ('calendar_reading', 'central_english_policy', 'fee_reader', 'entry_matrices') then 'central'
+            when v.service_code = 'course_matching' then 'course_search' else 'other' end
 from (select coalesce((select m.code from pipeline.central_ai_settings c join pipeline.ai_model_catalogue m on m.model_identifier = c.model_identifier and m.status = 'allowed' where c.id = 1), 'qwen3-30b') central,
              coalesce((select m.code from pipeline.ai_model_catalogue m where m.status = 'allowed' and m.model_identifier = (select s.value #>> '{}' from pipeline.platform_toolset_settings s where s.toolset_key = 'firecrawl' and s.key = 'builder_model')), 'qwen3-30b') builder) d
 cross join lateral (values
-  ('course_description', 'Course description', 'Course fields', 'course_description', 'enrich_fields', '{"where": {"field": ["description"]}}',
-     array[d.central], null::numeric, null::int, 'worker code: cdesc-source-grounded-v1', 'route',
+  ('course_description', 'Course description', 'Courses', 'course_description', 'enrich_fields', '{"where": {"field": ["description"]}}',
+     array[d.central], 5::numeric, null::int, 'worker code: cdesc-source-grounded-v1', 'route',
      'The deployed worker reads one model for the description and the other course fields: while both flow it is this route''s first model.', 10),
-  ('course_entry_requirements', 'Course entry requirements', 'Course fields', 'course_entry_requirements', 'enrich_fields', '{"where": {"field": ["entry_requirements"]}}',
-     array['qwen3-30b', 'mistral-small-3.2'], null, null, 'worker code: course-entry-v1', 'route',
+  ('course_entry_requirements', 'Course entry requirements', 'Courses', 'course_entry_requirements', 'enrich_fields', '{"where": {"field": ["entry_requirements"]}}',
+     array['qwen3-30b', 'mistral-small-3.2'], 5, null, 'worker code: course-entry-v1', 'route',
      'Was GPT-4.1 mini (setting entry.matrix_model). qwen3-30b has not been qualified on this prompt.', 20),
-  ('course_other_fields', 'Other course fields (deadline, intakes, duration, campus, delivery, English)', 'Course fields', 'course_other_fields', 'enrich_fields',
+  ('course_other_fields', 'Other course fields (deadline, intakes, duration, campus, delivery, English)', 'Courses', 'course_other_fields', 'enrich_fields',
      '{"where_not": {"field": ["description", "entry_requirements"]}}',
-     array[d.central], null, null, 'worker code: course-fields-v1 (deadline: course-text-v2)', 'route',
+     array[d.central], 2, null, 'worker code: course-fields-v1 (deadline: course-text-v2)', 'route',
      'The deployed worker reads one model for the description and the other course fields: this route''s model is used when the description route is held.', 30),
   ('entry_matrices', 'Entry requirement matrices (provider pages)', 'Entry requirements', null, 'entry_matrix', '{"source": ["entry_matrix_runs"]}',
-     array['qwen3-30b', 'mistral-small-3.2'], (select (s.value #>> '{}')::numeric from pipeline.platform_toolset_settings s where s.toolset_key = 'openrouter' and s.key = 'guard_entry_matrix'), null,
+     array['qwen3-30b'], (select (s.value #>> '{}')::numeric from pipeline.platform_toolset_settings s where s.toolset_key = 'openrouter' and s.key = 'guard_entry_matrix'), null,
      'worker code: entry-matrix-v0.1.4', 'route', 'Was GPT-4.1 mini (setting entry.matrix_model). qwen3-30b has not been qualified on this prompt.', 40),
   ('entry_requirements_v2_shadow', 'Entry requirements v2 (shadow trial)', 'Entry requirements', null, 'entry_matrix', '{"source": ["aer_v2_shadow_results"]}',
      array['qwen3-30b', 'mistral-small-3.2'], (select (s.value #>> '{}')::numeric from pipeline.platform_toolset_settings s where s.toolset_key = 'pipeline' and s.key = 'aer.v2_shadow_daily_usd'), null,
@@ -165,36 +184,31 @@ cross join lateral (values
      array['qwen3-30b', 'mistral-small-3.2'], (select (s.value #>> '{}')::numeric from pipeline.platform_toolset_settings s where s.toolset_key = 'openrouter' and s.key = 'guard_scholarship_ai'), null,
      'pipeline.scholarship_ai_prompts', 'pipeline.scholarship_ai_extract_settings', 'The reader follows its own chain (Scholarships › AI reading). GPT-4.1 mini is taken out of that chain by this change.', 60),
   ('scholarship_eligibility', 'Scholarship eligibility', 'Scholarships', null, 'scholarship_ai', '{"source": ["scholarship_eligibility_reads"]}',
-     array['qwen3-30b'], null, null, 'worker code: eligibility.ts', 'pipeline.scholarship_ai_extract_settings', 'Uses the first model of the scholarship chain.', 70),
+     array['qwen3-30b'], 2, null, 'worker code: eligibility.ts', 'pipeline.scholarship_ai_extract_settings', 'Uses the first model of the scholarship chain.', 70),
   ('provider_description', 'Provider description', 'Providers', null, 'provider_description', null,
      array[d.central], (select (s.value #>> '{}')::numeric from pipeline.platform_toolset_settings s where s.toolset_key = 'openrouter' and s.key = 'guard_provider_description'), null,
      'pipeline.provider_description_prompts', 'pipeline.central_ai_settings', 'Shares one model with the other central readers until its reader asks the route.', 80),
-  ('calendar_reading', 'Intake calendars (central pages)', 'Central pages', null, 'central_ai', '{"where": {"kind": ["intake_calendar"]}}',
+  ('calendar_reading', 'Intake calendars (central pages)', 'Providers', null, 'central_ai', '{"where": {"kind": ["intake_calendar"]}}',
      array[d.central], (select (s.value #>> '{}')::numeric from pipeline.platform_toolset_settings s where s.toolset_key = 'openrouter' and s.key = 'guard_central_ai'), null,
      'worker code: calendar-v2.4', 'pipeline.central_ai_settings', 'Shares one model with the other central readers until its reader asks the route.', 90),
-  ('central_english_policy', 'English policy pages (central pages)', 'Central pages', null, 'central_ai', '{"where_not": {"kind": ["intake_calendar"]}}',
-     array[d.central], null, null, 'worker code: provider-policy-v0.3.1', 'pipeline.central_ai_settings', 'Shares one model with the other central readers until its reader asks the route.', 100),
+  ('central_english_policy', 'English policy pages (central pages)', 'Providers', null, 'central_ai', '{"where_not": {"kind": ["intake_calendar"]}}',
+     array[d.central], 2, null, 'worker code: provider-policy-v0.3.1', 'pipeline.central_ai_settings', 'Shares one model with the other central readers until its reader asks the route.', 100),
   ('fee_reader', 'Fees', 'Fees', null, 'fee_ai', null,
      array[d.central], (select (s.value #>> '{}')::numeric from pipeline.platform_toolset_settings s where s.toolset_key = 'openrouter' and s.key = 'guard_fee_ai'), null,
      'worker code: fees.ts', 'pipeline.central_ai_settings', 'Shares one model with the other central readers until its reader asks the route.', 110),
-  ('course_matching', 'Course-page matching', 'Course pages', null, 'course_match', null,
+  ('course_matching', 'Course-page matching', 'Matching and identity', null, 'course_match', null,
      array['qwen3-30b'], (select (s.value #>> '{}')::numeric from pipeline.platform_toolset_settings s where s.toolset_key = 'openrouter' and s.key = 'guard_course_match'), null,
      'worker code: ai-match-v0.10.0', 'worker code', 'qwen/qwen3-30b-a3b-instruct-2507 is fixed in the worker (AI_MATCH_MODEL).', 120),
-  ('adapter_builder', 'Adapter proposals', 'Adapters', null, 'adapter_builder', null,
+  ('adapter_builder', 'Adapter proposals', 'Providers', null, 'adapter_builder', null,
      array[d.builder], (select (s.value #>> '{}')::numeric from pipeline.platform_toolset_settings s where s.toolset_key = 'firecrawl' and s.key = 'builder_ai_daily_usd'),
      (select (s.value #>> '{}')::int from pipeline.platform_toolset_settings s where s.toolset_key = 'firecrawl' and s.key = 'builder_proposals_per_day'),
      'worker code: builder.ts', 'firecrawl.builder_model', 'The model is the setting firecrawl.builder_model (a provider may have its own in pipeline.uni_adapter_models).', 130),
   ('ops_diagnosis', 'Operations diagnosis', 'Operations', null, 'ops_diagnose', null,
-     array['qwen3-30b', 'mistral-small-3.2'], (select (s.value #>> '{}')::numeric from pipeline.platform_toolset_settings s where s.toolset_key = 'pipeline' and s.key = 'ops.ai_diagnosis_usd_per_day'),
+     array['qwen3-30b'], (select (s.value #>> '{}')::numeric from pipeline.platform_toolset_settings s where s.toolset_key = 'pipeline' and s.key = 'ops.ai_diagnosis_usd_per_day'),
      (select (s.value #>> '{}')::int from pipeline.platform_toolset_settings s where s.toolset_key = 'pipeline' and s.key = 'ops.ai_requests_per_day'),
      'function public.svc_ops_diagnosis_next: ops-diagnose-v1', 'route', 'Was GPT-4.1 mini (setting ops.ai_diagnosis_model). Switched off (ops.ai_diagnosis_on).', 140)
 ) v(service_code, label, area, field, lane, ledger_match, cascade, usd, calls, prompt_source, resolver, note, sort)
 on conflict (service_code) do nothing;
-
--- 3 the ledger: service and model beside the lane ---------------------------------------------------------------------------------------------
-alter table pipeline.ai_spend_ledger add column if not exists service_code text;
-alter table pipeline.ai_spend_ledger add column if not exists model text;
-create index if not exists ai_spend_ledger_service_at_idx on pipeline.ai_spend_ledger (service_code, at);
 
 -- 4 functions ------------------------------------------------------------------------------------------------------------------------------------
 create or replace function security.ai_ledger_service_v1(p_lane text, p_source text, p_row jsonb) returns text
@@ -212,43 +226,52 @@ $function$;
 create or replace function security.ai_route_v1(p_service text) returns jsonb
 language plpgsql stable security definer set search_path = '' as $function$
 -- What a reader asks before it hands out AI work for a service. Held routes hand out nothing; what is already claimed finishes and records its cost.
-declare r pipeline.ai_service_routes%rowtype; v_models jsonb; v_usd numeric; v_calls bigint; v_all numeric; v_ceiling numeric; v_reason text;
+-- held_kind: off (switched off), no_model (no allowed model in the cascade), credit_floor (the account's own limit: the last observed OpenRouter
+-- balance is at or below openrouter.credit_floor_usd; it holds every hand-out, on-demand included; with no observation it does not hold: unknown
+-- is not zero), ceiling (budgets.ai_daily_ceiling_usd), cap (the service's own cap). on_demand_exempt: a ceiling or a cap does not hold work of
+-- an open on-demand request (Platform Admin 12 Nov 2026 21:07, operating model 3.3.2); nothing else is waived for it.
+declare r pipeline.ai_service_routes%rowtype; v_models jsonb; v_usd numeric; v_calls bigint; v_all numeric; v_ceiling numeric; v_kind text; v_detail text;
+        v_bal numeric; v_floor numeric;
         v_day timestamptz := date_trunc('day', now() at time zone 'UTC') at time zone 'UTC';  -- fixed: the UTC day the AI guards count (security.ai_spend_today_v1)
 begin
   select * into r from pipeline.ai_service_routes where service_code = p_service;
   if not found then
     return jsonb_build_object('service', p_service, 'models', '[]'::jsonb, 'model', null, 'cap', jsonb_build_object('usd', null, 'calls', null),
-                              'spent_today', jsonb_build_object('usd', 0, 'calls', 0), 'held', true, 'held_kind', 'off', 'held_reason', 'unknown service: ' || coalesce(p_service, ''));
+                              'spent_today', jsonb_build_object('usd', 0, 'calls', 0), 'held', true, 'held_kind', 'off', 'on_demand_exempt', false,
+                              'held_reason', 'unknown service: ' || coalesce(p_service, ''));
   end if;
   select coalesce(jsonb_agg(jsonb_build_object('code', m.code, 'model_identifier', m.model_identifier) order by c.ord), '[]'::jsonb) into v_models
     from unnest(r.cascade) with ordinality c(code, ord) join pipeline.ai_model_catalogue m on m.code = c.code and m.status = 'allowed';
   select coalesce(sum(l.cost_usd), 0), coalesce(sum(l.calls), 0) into v_usd, v_calls from pipeline.ai_spend_ledger l where l.at >= v_day and l.service_code = r.service_code;
   select coalesce(sum(l.cost_usd), 0) into v_all from pipeline.ai_spend_ledger l where l.at >= v_day;
   v_ceiling := security.pipeline_num_v1('budgets.ai_daily_ceiling_usd', 14);
-  v_reason := case
-    when not r.enabled then 'switched off (Models & services)'
-    when jsonb_array_length(v_models) = 0 then 'no allowed model in the cascade'
-    when v_ceiling > 0 and v_all >= v_ceiling then format('daily ceiling: US$%s spent today (UTC) across all AI services, ceiling US$%s (budgets.ai_daily_ceiling_usd)', round(v_all, 2), v_ceiling)
-    when r.daily_usd_cap is not null and v_usd >= r.daily_usd_cap then format('service cap: US$%s spent today (UTC), cap US$%s', round(v_usd, 2), r.daily_usd_cap)
-    when r.daily_calls_cap is not null and v_calls >= r.daily_calls_cap then format('service cap: %s calls today (UTC), cap %s', v_calls, r.daily_calls_cap)
-  end;
+  select o.remaining_usd into v_bal from pipeline.layer3_openrouter_observations o where o.kind = 'credits' and o.remaining_usd is not null order by o.observed_at desc limit 1;
+  v_floor := coalesce((security.toolset_setting('openrouter', 'credit_floor_usd'))::text::numeric, 0);
+  if not r.enabled then v_kind := 'off'; v_detail := 'switched off (Models & services)';
+  elsif jsonb_array_length(v_models) = 0 then v_kind := 'no_model'; v_detail := 'no allowed model in the cascade';
+  elsif v_bal is not null and v_bal <= v_floor then v_kind := 'credit_floor'; v_detail := 'credit_floor';
+  elsif v_ceiling > 0 and v_all >= v_ceiling then v_kind := 'ceiling';
+    v_detail := format('daily ceiling: US$%s spent today (UTC) across all AI services, ceiling US$%s (budgets.ai_daily_ceiling_usd)', round(v_all, 2), v_ceiling);
+  elsif v_usd >= r.daily_usd_cap then v_kind := 'cap'; v_detail := format('service cap: US$%s spent today (UTC), cap US$%s', round(v_usd, 2), r.daily_usd_cap);
+  elsif r.daily_calls_cap is not null and v_calls >= r.daily_calls_cap then v_kind := 'cap'; v_detail := format('service cap: %s calls today (UTC), cap %s', v_calls, r.daily_calls_cap);
+  end if;
   return jsonb_build_object('service', r.service_code, 'models', v_models, 'model', v_models#>>'{0,model_identifier}',
                             'cap', jsonb_build_object('usd', r.daily_usd_cap, 'calls', r.daily_calls_cap),
                             'spent_today', jsonb_build_object('usd', round(v_usd, 4), 'calls', v_calls),
-                            'held', v_reason is not null,
-                            -- off: switched off or no allowed model (holds everything). limit: the ceiling or a cap (holds scheduled work; on-demand work
-                            -- is not held by limits, Platform Admin 12 Nov 2026 21:07, operating model 3.3.2)
-                            'held_kind', case when v_reason is null then null when not r.enabled or jsonb_array_length(v_models) = 0 then 'off' else 'limit' end,
-                            'held_reason', v_reason);
+                            'held', v_kind is not null, 'held_kind', v_kind, 'on_demand_exempt', coalesce(v_kind in ('ceiling', 'cap'), false),
+                            'held_reason', v_detail,
+                            'balance', jsonb_build_object('usd', v_bal, 'floor_usd', v_floor, 'known', v_bal is not null));
 end $function$;
-
-create or replace function security.ai_on_demand_providers_v1() returns uuid[]
+create or replace function security.ai_on_demand_providers_v1(p_service text) returns uuid[]
 language sql stable security definer set search_path = '' as $function$
-  -- the providers of the on-demand requests open now for AI work (pipeline.on_demand_requests): their work is not held by a cap or the ceiling
-  select coalesce(array_agg(distinct p.id), '{}'::uuid[]) from pipeline.on_demand_requests r cross join lateral unnest(r.provider_ids) p(id)
-   where r.state = 'open' and r.expires_at > now() and 'openrouter' = any (r.toolsets)
+  -- the providers of the on-demand requests open now for AI work of this service's purpose group (pipeline.on_demand_requests.purpose_groups;
+  -- null covers every group, as security.on_demand_request_for_v2 reads it): their work is not held by a cap or the ceiling
+  select coalesce(array_agg(distinct p.id), '{}'::uuid[])
+    from pipeline.ai_service_routes s join pipeline.on_demand_requests r on r.state = 'open' and r.expires_at > now() and 'openrouter' = any (r.toolsets)
+         and (r.purpose_groups is null or s.purpose_group = any (r.purpose_groups))
+    cross join lateral unnest(r.provider_ids) p(id)
+   where s.service_code = p_service
 $function$;
-
 create or replace function security.ai_service_model_v1(p_service text) returns text
 language sql stable security definer set search_path = '' as $function$
   -- the model in effect for a service today: from its route, or from the place its reader still reads (resolver)
@@ -266,7 +289,8 @@ create or replace function security.ai_enrich_routes_v1() returns jsonb
 language plpgsql stable security definer set search_path = '' as $function$
 -- The routes of the course field reader (lane enrich_fields) for public.svc_enrich_ai_next: each route as security.ai_route_v1 gives it, and
 -- which fields are held. A route matched by where.field holds those fields; the route matched by where_not.field holds every other field
--- (rest). off_*: held for everything (switched off, no allowed model). limit_*: held by a cap or the ceiling (not for on-demand providers).
+-- (rest). off_*: held for everything (switched off, no allowed model, the credit floor). limit_*: held by a cap or the ceiling (not for the
+-- providers of an open on-demand request of the course reads purpose group).
 -- top: the route whose model the deployed worker uses for the description and the other fields (the first that is not switched off).
 declare r record; v_rt jsonb; v_routes jsonb := '{}'::jsonb; v_held jsonb := '{}'::jsonb; v_off jsonb := '[]'::jsonb; v_lim jsonb := '[]'::jsonb; v_except jsonb := '[]'::jsonb;
         v_off_rest boolean := false; v_lim_rest boolean := false; v_top jsonb; v_top_free jsonb; v_f jsonb;
@@ -278,21 +302,21 @@ begin
     if v_f is null then v_except := coalesce(r.ledger_match #> '{where_not,field}', '[]'::jsonb); end if;
     if (v_rt->>'held')::boolean then
       v_held := v_held || jsonb_build_object(r.service_code, v_rt->>'held_reason');
-      if v_rt->>'held_kind' = 'off' then
+      if not coalesce((v_rt->>'on_demand_exempt')::boolean, false) then
         if v_f is not null then v_off := v_off || v_f; else v_off_rest := true; end if;
       else
         if v_f is not null then v_lim := v_lim || v_f; else v_lim_rest := true; end if;
       end if;
     elsif v_top_free is null and r.service_code <> 'course_entry_requirements' then v_top_free := v_rt;
     end if;
-    if v_top is null and r.service_code <> 'course_entry_requirements' and coalesce(v_rt->>'held_kind', '') <> 'off' then v_top := v_rt; end if;
+    if v_top is null and r.service_code <> 'course_entry_requirements' and v_rt->>'model' is not null then v_top := v_rt; end if;
   end loop;
   return jsonb_build_object('routes', v_routes, 'held', v_held, 'off_fields', v_off, 'off_rest', v_off_rest, 'limit_fields', v_lim, 'limit_rest', v_lim_rest,
-                            'rest_except', v_except, 'on_demand_providers', to_jsonb(security.ai_on_demand_providers_v1()),
+                            'rest_except', v_except, 'on_demand_providers', to_jsonb(security.ai_on_demand_providers_v1('course_description')),
                             'top', coalesce(v_top_free, v_top, v_routes->'course_description', '{}'::jsonb));
 end $function$;
 
-revoke all on function security.ai_ledger_service_v1(text, text, jsonb), security.ai_route_v1(text), security.ai_service_model_v1(text), security.ai_enrich_routes_v1(), security.ai_on_demand_providers_v1(), security.ai_model_family_trg() from public, anon, authenticated;
+revoke all on function security.ai_ledger_service_v1(text, text, jsonb), security.ai_route_v1(text), security.ai_service_model_v1(text), security.ai_enrich_routes_v1(), security.ai_on_demand_providers_v1(text), security.ai_model_family_trg() from public, anon, authenticated;
 
 -- 5 the four guarded edits -------------------------------------------------------------------------------------------------------------------------
 
@@ -373,12 +397,12 @@ CREATE OR REPLACE FUNCTION public.svc_entry_matrix_next(p_limit integer)
  SET search_path TO ''
 AS $function$
 declare v jsonb; v_route jsonb := security.ai_route_v1('entry_matrices'); v_model text := v_route->>'model';  -- 13 Nov 2026: the route (pipeline.ai_service_routes)
-        v_od uuid[] := security.ai_on_demand_providers_v1();
+        v_od uuid[] := security.ai_on_demand_providers_v1('entry_matrices');
 begin
   if current_user <> 'postgres' and coalesce(auth.role(), '') <> 'service_role' then raise exception 'service_role required'; end if;
   if security.pipeline_num_v1('entry.matrix_enabled', 0) < 1 or not security.ai_use_allowed_v1('entry_matrix') then return '[]'::jsonb; end if;
-  -- the route: switched off or no allowed model holds everything; a cap or the daily ceiling holds all but on-demand providers
-  if v_model is null or v_route->>'held_kind' = 'off' or (coalesce((v_route->>'held')::boolean, true) and cardinality(v_od) = 0) then return '[]'::jsonb; end if;
+  -- the route: switched off, no allowed model or the credit floor holds everything; a cap or the daily ceiling holds all but on-demand providers
+  if v_model is null or (coalesce((v_route->>'held')::boolean, true) and not (coalesce((v_route->>'on_demand_exempt')::boolean, false) and cardinality(v_od) > 0)) then return '[]'::jsonb; end if;
   with pick as (select r.id from pipeline.entry_matrix_runs r
                  where (r.state = 'queued' or (r.state = 'leased' and r.leased_until < now()))
                    and r.attempts < security.pipeline_num_v1('entry.matrix_attempts', 3)
@@ -608,7 +632,8 @@ begin
                                 from pipeline.ai_spend_ledger l where l.at >= date_trunc('hour', now()) - interval '23 hours'  -- fixed: the page's 24-hour usage window
                                group by 1, 2, 3, 4) u)),
     'events', (select coalesce(jsonb_agg(jsonb_build_object('at', e.created_at, 'action', e.action, 'target', e.target, 'detail', e.detail, 'by', u.email) order by e.created_at desc), '[]'::jsonb)
-                 from (select * from pipeline.admin_control_events where area = 'ai_models' order by created_at desc limit 20) e left join auth.users u on u.id = e.actor));
+                 from (select * from pipeline.admin_control_events where area = 'ai_models' order by created_at desc limit 20) e  -- fixed: the page shows the last 20 changes
+                 left join auth.users u on u.id = e.actor));
 end $function$;
 
 create or replace function public.admin_ai_model_set_v1(p_code text, p_status text, p_reason text) returns jsonb
@@ -620,6 +645,9 @@ begin
   if p_status is null or p_status not in ('allowed', 'not_allowed') then raise exception 'status must be allowed or not_allowed'; end if;
   select m.status into v_before from pipeline.ai_model_catalogue m where m.code = p_code for update;
   if v_before is null then raise exception 'model % is not in the list', p_code; end if;
+  if p_status = 'allowed' and (select m.family from pipeline.ai_model_catalogue m where m.code = p_code) = 'other' then
+    raise exception 'this model is not in a family the Platform Admin allows (Qwen3, MiMo, Mistral Small, Kimi K2, Gemini, Llama, DeepSeek); adding a family is a release';
+  end if;
   update pipeline.ai_model_catalogue set status = p_status, reason = v_reason, changed_at = now(), changed_by = auth.uid() where code = p_code;
   insert into pipeline.admin_control_events(area, action, target, detail, actor)
   values ('ai_models', 'model_status', p_code, jsonb_build_object('before', v_before, 'after', p_status, 'reason', v_reason,
@@ -680,11 +708,7 @@ update pipeline.ai_spend_ledger l
          else '{}'::jsonb end)
  where l.service_code is null;
 
--- 9c the settings that belong to Models & services: two columns beside (taken last, so the lock on the settings table is short), then the marks
-alter table pipeline.platform_toolset_settings add column if not exists home text;
-alter table pipeline.platform_toolset_settings add column if not exists home_group text;
-comment on column pipeline.platform_toolset_settings.home is 'The screen a setting belongs to when it is not the Settings register: models_services = shown and edited on Models & services (13 Nov 2026). Null = Settings.';
-comment on column pipeline.platform_toolset_settings.home_group is 'With home = models_services: the service (pipeline.ai_service_routes.service_code) the setting belongs to, or openrouter for the key, credit and ceiling.';
+-- 9c the settings that belong to Models & services (the columns come from migration 20261113378000)
 -- marked, not moved: the Settings register still lists them until the page change
 with m(toolset, pat, grp) as (values
   ('openrouter', '.', 'openrouter'),
