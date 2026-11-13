@@ -387,7 +387,7 @@ const MONTH =["january", "february", "march", "april", "may", "june", "july", "a
 const MON_RE = "(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)";
 const monthNo = (s: string) => MONTH.findIndex((m) => m.startsWith(s.toLowerCase().slice(0, 3))) + 1;
 export function calendarStarts(md: string) {
-  type Dated = { year: number | null; month: number; day: number | null; date: string | null; quote: string };
+  type Dated = { year: number | null; month: number; day: number | null; date: string | null; quote: string; year_quote?: string; year_basis?: "heading" };
   const found: Record<string, { months: Set<number>; quotes: string[]; years: Set<number>; starts: Dated[]; deadlines: (Dated & { rolling: false })[]; rolling: string[] }> = {};
   const slot = (period: string) => found[period] ||= { months: new Set(), quotes: [], years: new Set(), starts: [], deadlines: [], rolling: [] };
   // a date only when the day, the month and the year are all printed and form a real day
@@ -423,6 +423,12 @@ export function calendarStarts(md: string) {
     // applies to the "Start date | Monday 16 February" rows that follow it until the next period is named (Curtin's layout).
     const hp = b.heading.match(PERIOD); let section: string | null = hp ? keyOf(hp) : null;
     const headYear = Number((b.heading.match(/\b(20\d\d)\b/) || [])[1] || 0) || null;
+    // 13 Nov 2026 (Platform Admin, Massey "Semester One 2027" tables): when the row prints no year and the block's own heading names this same
+    // period with its year, that heading is kept as year_quote (year_basis "heading"), so the year is proved by printed text. A heading that does
+    // not name the period ("Trimester dates 2027") still gives no proof. Starts only: a deadline row's year is not proved this way (a closing date
+    // printed under "Semester One 2027" usually falls in the year before).
+    const headYearQuote = (rowYr: number | null, period: string) =>
+      !rowYr && headYear && hp && keyOf(hp) === period ? { year_quote: quoteOf(b.heading), year_basis: "heading" as const } : {};
     for (const row of rows) {
       const p = row.match(PERIOD);
       const d = row.match(DATE);
@@ -434,7 +440,8 @@ export function calendarStarts(md: string) {
         const after = row.slice((dl.index || 0) + dl[0].length);
         const dd = after.match(DATE) || row.match(DATE);
         if (dd) {
-          const yr = Number(dd[5] || (row.match(/\b(20\d\d)\b/) || [])[1] || headYear || 0) || null;
+          const rowYr = Number(dd[5] || (row.match(/\b(20\d\d)\b/) || [])[1] || 0) || null;
+          const yr = rowYr || headYear;
           const x = dated(dd, yr, row); if (x) pushOnce(slot(period).deadlines, { ...x, rolling: false as const });
         } else if (ROLLING.test(row)) { const f = slot(period); if (f.rolling.length < 3) f.rolling.push(quoteOf(row)) }
       }
@@ -442,10 +449,12 @@ export function calendarStarts(md: string) {
       if (/\b(census|exams?|examinations?|results|holidays?|break|recess|ends?|finish(?:es)?|last day|deadline|closing|closes?|orientation)\b/i.test(row) && !startWords.test(row)) continue;
       if (!d) continue;
       const mon = monthNo(d[2] || d[3]); if (mon < 1) continue;
-      const yr = Number(d[5] || (row.match(/\b(20\d\d)\b/) || [])[1] || (b.heading.match(/\b(20\d\d)\b/) || [])[1] || 0) || null;
+      const rowYr = Number(d[5] || (row.match(/\b(20\d\d)\b/) || [])[1] || 0) || null;
+      const yr = rowYr || headYear;
       // calendar-dates-v1: a row about exams, census, results or a break gives its month as before, but never a start date
       // a day range ("18 – 20 January 2027"): the year counts, the day does not
-      const dx = NOT_START.test(row) ? null : dated(d, yr, row);
+      const d0 = NOT_START.test(row) ? null : dated(d, yr, row);
+      const dx = d0 ? { ...d0, ...headYearQuote(rowYr, period) } : null;
       add(period, mon, yr, row, dx && DAY_RANGE.test(row) ? { ...dx, day: null, date: null } : dx);
     }
   }
