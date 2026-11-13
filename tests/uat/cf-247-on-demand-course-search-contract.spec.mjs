@@ -21,5 +21,5 @@ test('the worker asks the database before a target-list refusal', () => {
   expect(M).toContain('create or replace function public.svc_fc_on_demand_covers_v1(p_provider uuid, p_purpose text)')
   expect(W).toContain('!(await onDemandCovers(providerId, purpose))')
   expect(W).toContain('rpc("svc_fc_on_demand_covers_v1", { p_provider: providerId, p_purpose: purpose })')
-  expect(W).toContain('const WORKER = "coverage-sweep-worker-v0.84.0"')
+  expect(W).toContain('// was v0.84.0 // v0.84.0 (13 Nov 2026, CF-247 operating model 3.3.2')  // v0.85.0 (Lean AI Input Phase 1) keeps this release's behaviour
 })
