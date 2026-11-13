@@ -604,3 +604,7 @@ header.cf-layer-header[data-layer-header] button{background:var(--cf-white);colo
 
 /* CF-247 A5 (29 Oct 2026): loading rows and the empty row of the shared table are not record rows: no tap cursor, no hover */
 .m-table tbody tr.m-skeleton-row,.m-table tbody tr.m-empty-row{cursor:default}.m-table tbody tr.m-skeleton-row:hover td,.m-table tbody tr.m-empty-row:hover td{background:var(--cf-white)}
+/* 13 Nov 2026 (S2-Scholarship §6): scholarship detail drawer, data delivery facts */
+.sch-delivery{margin-bottom:12px}
+.sch-delivery-row{display:grid;grid-template-columns:180px 1fr;gap:8px;padding:4px 0;border-bottom:1px solid var(--cf-slate-200);font-size:13px;align-items:center}
+.sch-delivery-row:last-child{border-bottom:0}
