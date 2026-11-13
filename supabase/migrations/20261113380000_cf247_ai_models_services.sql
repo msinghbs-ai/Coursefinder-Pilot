@@ -39,10 +39,16 @@
 --   mistral-small-3.2. The scholarship chain loses gpt-4.1-mini as its second step (an unproven fact then goes to a person, as it does when the
 --   chain ends). No switch is turned on by this change: entry.matrix_enabled, aer.*, ops.ai_diagnosis_on keep their values.
 --
+-- Round 4 (Platform Admin review 13 Nov 2026 22:10, not approved to release): a route hands out a model only where it is QUALIFIED for the service
+--   (pipeline.ai_route_qualifications; seeds cite live evidence, the central services are provisional on the Platform Admin's own decision of
+--   19:09); an unknown or stale OpenRouter balance HOLDS every service (new setting openrouter.balance_max_age_minutes, 90; the balance job runs
+--   every 15 minutes and the longest gap in 14 days was 45 minutes); the daily ceiling and the service caps FOLLOW the existing OpenRouter mode
+--   (Observe only: reported, nothing stopped; Stop at limits: enforced), so applying this stops no scheduled service by a new budget gate; the
+--   mode, the ceiling and the caps are not changed here. pipeline.ai_invocations keeps every model call attempt.
 -- Locks this migration takes on tables that exist before it (no ACCESS EXCLUSIVE on any of them; it adds no column):
 --   pipeline.ai_spend_ledger            ROW EXCLUSIVE (one UPDATE of the rows without a service; rows are never updated by anything else, and
 --                                       inserts by the cost trigger are not blocked)
---   pipeline.platform_toolset_settings  ROW EXCLUSIVE (UPDATE of the marked rows and of two used_by lines); readers are not blocked
+--   pipeline.platform_toolset_settings  ROW EXCLUSIVE (one new row, UPDATE of the marked rows and of two used_by lines); readers are not blocked
 --   pipeline.central_ai_settings        SHARE ROW EXCLUSIVE (create trigger: writes wait for the commit, reads do not), then ROW EXCLUSIVE
 --   pipeline.scholarship_ai_extract_settings, pipeline.component_register, pipeline.admin_control_events   ROW EXCLUSIVE
 --   everything else is read (ACCESS SHARE) or is new in this migration. The four replaced functions take no table lock.
@@ -141,12 +147,14 @@ create table if not exists pipeline.ai_service_routes (
   enabled boolean not null default true,
   resolver text not null default 'route',
   purpose_group text not null default 'other',
+  migration_state text not null default 'not_migrated' check (migration_state in ('routed', 'routed_single', 'not_migrated')),
+  previous_model text,  -- the model the service ran on before this release (shown as "Was on"); data, not read by any reader
   note text,
   sort integer not null default 100,
   reason text,
   changed_at timestamptz not null default now(),
   changed_by uuid);
-comment on table pipeline.ai_service_routes is 'One row per AI service (Models & services): its spend lane in pipeline.ai_spend_ledger (ledger_match splits a shared lane by source table or row value), its cascade of 1 to 4 models from pipeline.ai_model_catalogue, its daily US$ cap and calls cap (null = no calls cap), where its prompt is kept, and whether it is on. purpose_group is the on-demand purpose group (security.fc_purpose_group_v1) whose open requests are not held by the cap of this route or the daily ceiling. resolver = route: the reader asks security.ai_route_v1; anything else names where the model is still chosen until that reader is moved. Platform Admin 13 Nov 2026.';
+comment on table pipeline.ai_service_routes is 'One row per AI service (Models & services): its spend lane in pipeline.ai_spend_ledger (ledger_match splits a shared lane by source table or row value), its cascade of 1 to 4 models from pipeline.ai_model_catalogue, its daily US$ cap and calls cap (null = no calls cap), where its prompt is kept, and whether it is on. migration_state: routed = model, cap and switch come from the route and the worker executes the cascade; routed_single = from the route, but the call uses the first model only (no fallback yet); not_migrated = still on an older path. purpose_group is the on-demand purpose group (security.fc_purpose_group_v1) whose open requests are not held by the cap of this route or the daily ceiling. resolver = route: the reader asks security.ai_route_v1; anything else names where the model is still chosen until that reader is moved. Platform Admin 13 Nov 2026.';
 alter table pipeline.ai_service_routes enable row level security;
 revoke all on pipeline.ai_service_routes from anon, authenticated;
 
@@ -154,13 +162,14 @@ revoke all on pipeline.ai_service_routes from anon, authenticated;
 -- cascade). Caps come from the existing per-lane settings where one exists (read here, not written as numbers). Five services have no setting
 -- of their own: their caps are seeds chosen by the integrator, pending the Platform Admin's own values on the page: course_description 5,
 -- course_entry_requirements 5, course_other_fields 2, scholarship_eligibility 2, central_english_policy 2 (US$ a day).
-insert into pipeline.ai_service_routes (service_code, label, area, field, lane, ledger_match, cascade, daily_usd_cap, daily_calls_cap, prompt_source, resolver, note, sort, reason, purpose_group)
+insert into pipeline.ai_service_routes (service_code, label, area, field, lane, ledger_match, cascade, daily_usd_cap, daily_calls_cap, prompt_source, resolver, note, sort, reason, purpose_group, migration_state)
 select v.service_code, v.label, v.area, v.field, v.lane, v.ledger_match::jsonb, v.cascade, v.usd, v.calls, v.prompt_source, v.resolver, v.note, v.sort, 'seed 13 Nov 2026 (Platform Admin 19:14)',
        case when v.service_code in ('course_description', 'course_entry_requirements', 'course_other_fields', 'entry_requirements_v2_shadow', 'adapter_builder') then 'reads'
             when v.service_code in ('scholarship_extraction', 'scholarship_eligibility') then 'scholarships'
             when v.service_code = 'provider_description' then 'pdesc'
             when v.service_code in ('calendar_reading', 'central_english_policy', 'fee_reader', 'entry_matrices') then 'central'
-            when v.service_code = 'course_matching' then 'course_search' else 'other' end
+            when v.service_code = 'course_matching' then 'course_search' else 'other' end,
+       'not_migrated'  -- phase 2 (20261113390000) sets routed / routed_single as each reader moves to its route
 from (select coalesce((select m.code from pipeline.central_ai_settings c join pipeline.ai_model_catalogue m on m.model_identifier = c.model_identifier and m.status = 'allowed' where c.id = 1), 'qwen3-30b') central,
              coalesce((select m.code from pipeline.ai_model_catalogue m where m.status = 'allowed' and m.model_identifier = (select s.value #>> '{}' from pipeline.platform_toolset_settings s where s.toolset_key = 'firecrawl' and s.key = 'builder_model')), 'qwen3-30b') builder) d
 cross join lateral (values
@@ -210,6 +219,87 @@ cross join lateral (values
 ) v(service_code, label, area, field, lane, ledger_match, cascade, usd, calls, prompt_source, resolver, note, sort)
 on conflict (service_code) do nothing;
 
+-- 3 qualification: a route hands out a model only where it is qualified for that service --------------------------------------------------------
+create table if not exists pipeline.ai_route_qualifications (
+  service_code text not null references pipeline.ai_service_routes(service_code),
+  model_code text not null references pipeline.ai_model_catalogue(code),
+  prompt_version text,
+  status text not null default 'pending' check (status in ('qualified', 'unqualified', 'pending')),
+  provisional boolean not null default false,
+  evidence text,
+  evidence_detail jsonb,
+  qualified_at timestamptz,
+  qualified_by uuid,
+  note text,
+  changed_at timestamptz not null default now(),
+  primary key (service_code, model_code));
+comment on table pipeline.ai_route_qualifications is 'Which model is qualified for which AI service (Models & services), with the evidence. security.ai_route_v1 hands out a model only when its row here is qualified; an allowed model without one is skipped and reported. provisional = running on a recorded decision while its regression qualification is pending. A qualification never switches a service on by itself. Platform Admin review 13 Nov 2026.';
+alter table pipeline.ai_route_qualifications enable row level security;
+revoke all on pipeline.ai_route_qualifications from anon, authenticated;
+-- Seeds: qualified only where live evidence exists (read 13 Nov 2026). Everything else an allowed cascade names is unqualified.
+insert into pipeline.ai_route_qualifications (service_code, model_code, prompt_version, status, provisional, evidence, qualified_at, note)
+select v.service_code, v.model_code, v.prompt_version, v.status, v.provisional, v.evidence, case when v.status = 'qualified' then now() end, v.note
+from (values
+  ('scholarship_extraction', 'qwen3-30b', 'scholarship instructions v2', 'qualified', false,
+     'pipeline.scholarship_ai_models, Platform Admin 11 Oct 2026: "Qwen 3 then GPT-4.1 mini then Layer 4 (both qualified on instructions v2)"; first model of the scholarship chain in production since',
+     'Qualified on instructions v2; the active instructions are a later version.'),
+  ('scholarship_eligibility', 'qwen3-30b', null, 'qualified', false,
+     'In production: the eligibility reader has used the first model of the scholarship chain (qwen3-30b) since F-SCH.01', null),
+  ('course_matching', 'qwen3-30b', 'ai-match-v0.10.0', 'qualified', false,
+     'In production: 63,784 decided rows of pipeline.coverage_ai_match on qwen/qwen3-30b-a3b-instruct-2507 (the pinned matcher model since 2 Oct 2026)', null),
+  ('adapter_builder', 'qwen3-30b', null, 'qualified', false,
+     'In production: the setting firecrawl.builder_model and 735 adapter drafts on qwen/qwen3-30b-a3b-instruct-2507', null),
+  ('course_description', 'qwen3-30b', 'cdesc-source-grounded-v1', 'qualified', true, 'Platform Admin decision 13 Nov 2026 19:09 (central model set to Qwen3 30B); regression qualification pending', null),
+  ('course_other_fields', 'qwen3-30b', 'course-fields-v1', 'qualified', true, 'Platform Admin decision 13 Nov 2026 19:09 (central model set to Qwen3 30B); regression qualification pending', null),
+  ('provider_description', 'qwen3-30b', null, 'qualified', true, 'Platform Admin decision 13 Nov 2026 19:09 (central model set to Qwen3 30B); regression qualification pending', null),
+  ('fee_reader', 'qwen3-30b', null, 'qualified', true, 'Platform Admin decision 13 Nov 2026 19:09 (central model set to Qwen3 30B); regression qualification pending', null),
+  ('calendar_reading', 'qwen3-30b', 'calendar-v2.4', 'qualified', true, 'Platform Admin decision 13 Nov 2026 19:09 (central model set to Qwen3 30B); regression qualification pending', null),
+  ('central_english_policy', 'qwen3-30b', 'provider-policy-v0.3.1', 'qualified', true, 'Platform Admin decision 13 Nov 2026 19:09 (central model set to Qwen3 30B); regression qualification pending', null),
+  ('course_entry_requirements', 'qwen3-30b', 'course-entry-v1', 'unqualified', false, null, 'Ran on GPT-4.1 mini until 13 Nov 2026; not tested on this prompt. The entry readers were switched off by the Platform Admin at 19:25.'),
+  ('course_entry_requirements', 'mistral-small-3.2', 'course-entry-v1', 'unqualified', false, null, 'Not tested on this prompt.'),
+  ('entry_matrices', 'qwen3-30b', 'entry-matrix-v0.1.4', 'unqualified', false, null, 'Ran on GPT-4.1 mini until 13 Nov 2026; not tested on this prompt.'),
+  ('entry_requirements_v2_shadow', 'qwen3-30b', 'aer-v2-course-v1', 'unqualified', false, null, 'The trial prompt was pinned to GPT-4.1 mini; not tested on this prompt.'),
+  ('entry_requirements_v2_shadow', 'mistral-small-3.2', 'aer-v2-course-v1', 'unqualified', false, null, 'Not tested on this prompt.'),
+  ('ops_diagnosis', 'qwen3-30b', 'ops-diagnose-v1', 'unqualified', false, null, 'Ran on GPT-4.1 mini; not tested on this contract.')
+) v(service_code, model_code, prompt_version, status, provisional, evidence, note)
+where exists (select 1 from pipeline.ai_service_routes r where r.service_code = v.service_code and v.model_code = any (r.cascade))
+on conflict (service_code, model_code) do nothing;
+-- a service whose central model was something else when this ran: that model is what runs today, by the same recorded decision
+insert into pipeline.ai_route_qualifications (service_code, model_code, status, provisional, evidence, qualified_at)
+select r.service_code, c.code, 'qualified', true, 'The central model in use when migration 20261113380000 was applied (pipeline.central_ai_settings, ' || coalesce(s.reason, '') || '); regression qualification pending', now()
+  from pipeline.ai_service_routes r cross join lateral unnest(r.cascade) c(code), pipeline.central_ai_settings s
+ where s.id = 1 and r.service_code in ('course_description', 'course_other_fields', 'provider_description', 'fee_reader', 'calendar_reading', 'central_english_policy')
+   and c.code = (select m.code from pipeline.ai_model_catalogue m where m.model_identifier = s.model_identifier)
+on conflict (service_code, model_code) do nothing;
+
+-- every model call, attempt by attempt (the worker reports them): which model was asked, whether it answered, why not, tokens and cost
+create table if not exists pipeline.ai_invocations (
+  id bigint generated always as identity primary key,
+  at timestamptz not null default now(),
+  service_code text,
+  model text not null,
+  attempt_no integer not null default 1,
+  outcome text not null check (outcome in ('answered', 'failed')),
+  failure_kind text check (failure_kind in ('http', 'timeout', 'empty', 'cut', 'non_json', 'refused')),
+  input_tokens integer,
+  output_tokens integer,
+  cost_usd numeric,
+  source text,
+  source_id text,
+  worker text);
+comment on table pipeline.ai_invocations is 'One row per model call attempt reported by the worker (Models & services, Recent usage): the service, the model asked, the attempt number within the cascade, answered or failed and why, tokens and cost. Shows which model actually answered and when and why a fallback happened. Platform Admin review 13 Nov 2026. Kept for retention.ai_invocations_days (removed by security.ledger_retention_v1, job ledger-retention, from migration 20261113390000).';
+create index if not exists ai_invocations_at_idx on pipeline.ai_invocations (at);
+alter table pipeline.ai_invocations enable row level security;
+revoke all on pipeline.ai_invocations from anon, authenticated;
+
+-- the balance must be known and fresh before anything is spent
+insert into pipeline.platform_toolset_settings (toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, reason, section, used_by, home, home_group)
+values ('openrouter', 'balance_max_age_minutes', 'Hold AI work when the balance reading is older than',
+        'The OpenRouter balance is read every 15 minutes (job openrouter-balance). When there is no reading, or the last one is older than this, every AI service is held, on-demand included: an unknown balance is not permission to spend.',
+        'number', to_jsonb(90), 15, 1440, 'minutes', 15, 'Platform Admin review 13 Nov 2026: fail closed on an unknown or stale balance', 'Daily guards',
+        'security.ai_route_v1 (every AI service route)', 'models_services', 'openrouter')
+on conflict (toolset_key, key) do nothing;
+
 -- 4 functions ------------------------------------------------------------------------------------------------------------------------------------
 create or replace function security.ai_ledger_service_v1(p_lane text, p_source text, p_row jsonb) returns text
 language sql stable security definer set search_path = '' as $function$
@@ -226,41 +316,63 @@ $function$;
 create or replace function security.ai_route_v1(p_service text) returns jsonb
 language plpgsql stable security definer set search_path = '' as $function$
 -- What a reader asks before it hands out AI work for a service. Held routes hand out nothing; what is already claimed finishes and records its cost.
--- held_kind: off (switched off), no_model (no allowed model in the cascade), credit_floor (the account's own limit: the last observed OpenRouter
--- balance is at or below openrouter.credit_floor_usd; it holds every hand-out, on-demand included; with no observation it does not hold: unknown
--- is not zero), ceiling (budgets.ai_daily_ceiling_usd), cap (the service's own cap). on_demand_exempt: a ceiling or a cap does not hold work of
--- an open on-demand request (Platform Admin 12 Nov 2026 21:07, operating model 3.3.2); nothing else is waived for it.
-declare r pipeline.ai_service_routes%rowtype; v_models jsonb; v_usd numeric; v_calls bigint; v_all numeric; v_ceiling numeric; v_kind text; v_detail text;
-        v_bal numeric; v_floor numeric;
+-- models: the cascade's models that are allowed (pipeline.ai_model_catalogue) AND qualified for this service (pipeline.ai_route_qualifications),
+--   in order; one model only unless the worker executes the cascade for this service (migration_state routed). skipped says why the others are out.
+-- Always enforced, whatever the OpenRouter mode, on-demand included:
+--   off (switched off), no_model (no allowed model), no_qualified_model, balance_unknown (no balance reading: unknown is not permission to
+--   spend), balance_stale (the last reading is older than openrouter.balance_max_age_minutes), credit_floor (at or below openrouter.credit_floor_usd).
+-- Limits, which follow the existing OpenRouter mode (pipeline.platform_toolsets.enforcement, security.toolset_enforced): ceiling
+--   (budgets.ai_daily_ceiling_usd) and cap (the service's own). In Stop at limits they hold scheduled work (on_demand_exempt: an open on-demand
+--   request of the purpose group is let through). In Observe only they are computed and reported (would_hold, would_hold_kind) and stop nothing.
+declare r pipeline.ai_service_routes%rowtype; v_models jsonb; v_skipped jsonb; v_allowed int; v_usd numeric; v_calls bigint; v_all numeric; v_ceiling numeric;
+        v_kind text; v_detail text; v_lk text; v_ld text; v_bal numeric; v_at timestamptz; v_floor numeric;
+        v_age int := coalesce((security.toolset_setting('openrouter', 'balance_max_age_minutes'))::text::numeric, 90)::int;
+        v_stop boolean := security.toolset_enforced('openrouter');
         v_day timestamptz := date_trunc('day', now() at time zone 'UTC') at time zone 'UTC';  -- fixed: the UTC day the AI guards count (security.ai_spend_today_v1)
 begin
   select * into r from pipeline.ai_service_routes where service_code = p_service;
   if not found then
     return jsonb_build_object('service', p_service, 'models', '[]'::jsonb, 'model', null, 'cap', jsonb_build_object('usd', null, 'calls', null),
                               'spent_today', jsonb_build_object('usd', 0, 'calls', 0), 'held', true, 'held_kind', 'off', 'on_demand_exempt', false,
-                              'held_reason', 'unknown service: ' || coalesce(p_service, ''));
+                              'held_reason', 'unknown service: ' || coalesce(p_service, ''), 'would_hold', true, 'would_hold_kind', 'off', 'enforcing', v_stop);
   end if;
-  select coalesce(jsonb_agg(jsonb_build_object('code', m.code, 'model_identifier', m.model_identifier) order by c.ord), '[]'::jsonb) into v_models
-    from unnest(r.cascade) with ordinality c(code, ord) join pipeline.ai_model_catalogue m on m.code = c.code and m.status = 'allowed';
+  select coalesce(jsonb_agg(jsonb_build_object('code', m.code, 'model_identifier', m.model_identifier) order by c.ord) filter (where m.status = 'allowed' and q.status = 'qualified'), '[]'::jsonb),
+         coalesce(jsonb_agg(jsonb_build_object('code', c.code, 'why', case when m.code is null then 'not in the list' when m.status <> 'allowed' then 'not allowed' else 'not qualified for this service' end) order by c.ord)
+                    filter (where m.status is distinct from 'allowed' or q.status is distinct from 'qualified'), '[]'::jsonb),
+         count(*) filter (where m.status = 'allowed')
+    into v_models, v_skipped, v_allowed
+    from unnest(r.cascade) with ordinality c(code, ord) left join pipeline.ai_model_catalogue m on m.code = c.code
+    left join pipeline.ai_route_qualifications q on q.service_code = r.service_code and q.model_code = c.code;
+  if r.migration_state <> 'routed' and jsonb_array_length(v_models) > 1 then v_models := jsonb_build_array(v_models->0); end if;  -- the call uses one model: no fallback is advertised
   select coalesce(sum(l.cost_usd), 0), coalesce(sum(l.calls), 0) into v_usd, v_calls from pipeline.ai_spend_ledger l where l.at >= v_day and l.service_code = r.service_code;
   select coalesce(sum(l.cost_usd), 0) into v_all from pipeline.ai_spend_ledger l where l.at >= v_day;
   v_ceiling := security.pipeline_num_v1('budgets.ai_daily_ceiling_usd', 14);
-  select o.remaining_usd into v_bal from pipeline.layer3_openrouter_observations o where o.kind = 'credits' and o.remaining_usd is not null order by o.observed_at desc limit 1;
+  select o.remaining_usd, o.observed_at into v_bal, v_at from pipeline.layer3_openrouter_observations o where o.kind = 'credits' and o.remaining_usd is not null order by o.observed_at desc limit 1;
   v_floor := coalesce((security.toolset_setting('openrouter', 'credit_floor_usd'))::text::numeric, 0);
   if not r.enabled then v_kind := 'off'; v_detail := 'switched off (Models & services)';
-  elsif jsonb_array_length(v_models) = 0 then v_kind := 'no_model'; v_detail := 'no allowed model in the cascade';
-  elsif v_bal is not null and v_bal <= v_floor then v_kind := 'credit_floor'; v_detail := 'credit_floor';
-  elsif v_ceiling > 0 and v_all >= v_ceiling then v_kind := 'ceiling';
-    v_detail := format('daily ceiling: US$%s spent today (UTC) across all AI services, ceiling US$%s (budgets.ai_daily_ceiling_usd)', round(v_all, 2), v_ceiling);
-  elsif v_usd >= r.daily_usd_cap then v_kind := 'cap'; v_detail := format('service cap: US$%s spent today (UTC), cap US$%s', round(v_usd, 2), r.daily_usd_cap);
-  elsif r.daily_calls_cap is not null and v_calls >= r.daily_calls_cap then v_kind := 'cap'; v_detail := format('service cap: %s calls today (UTC), cap %s', v_calls, r.daily_calls_cap);
+  elsif v_allowed = 0 then v_kind := 'no_model'; v_detail := 'no allowed model in the cascade';
+  elsif jsonb_array_length(v_models) = 0 then v_kind := 'no_qualified_model'; v_detail := 'no model in the cascade is qualified for this service';
+  elsif v_bal is null then v_kind := 'balance_unknown'; v_detail := 'no OpenRouter balance reading: AI work is held until one is recorded';
+  elsif v_at < now() - make_interval(mins => v_age) then v_kind := 'balance_stale';
+    v_detail := format('the last OpenRouter balance reading is %s minutes old (limit %s, openrouter.balance_max_age_minutes): AI work is held until a new one is recorded', floor(extract(epoch from now() - v_at) / 60), v_age);
+  elsif v_bal <= v_floor then v_kind := 'credit_floor'; v_detail := 'credit_floor';
   end if;
-  return jsonb_build_object('service', r.service_code, 'models', v_models, 'model', v_models#>>'{0,model_identifier}',
+  if v_ceiling > 0 and v_all >= v_ceiling then v_lk := 'ceiling';
+    v_ld := format('daily ceiling: US$%s spent today (UTC) across all AI services, ceiling US$%s (budgets.ai_daily_ceiling_usd)', round(v_all, 2), v_ceiling);
+  elsif v_usd >= r.daily_usd_cap then v_lk := 'cap'; v_ld := format('service cap: US$%s spent today (UTC), cap US$%s', round(v_usd, 2), r.daily_usd_cap);
+  elsif r.daily_calls_cap is not null and v_calls >= r.daily_calls_cap then v_lk := 'cap'; v_ld := format('service cap: %s calls today (UTC), cap %s', v_calls, r.daily_calls_cap);
+  end if;
+  return jsonb_build_object('service', r.service_code, 'models', v_models, 'model', v_models#>>'{0,model_identifier}', 'skipped', v_skipped,
+                            'migration_state', r.migration_state,
                             'cap', jsonb_build_object('usd', r.daily_usd_cap, 'calls', r.daily_calls_cap),
                             'spent_today', jsonb_build_object('usd', round(v_usd, 4), 'calls', v_calls),
-                            'held', v_kind is not null, 'held_kind', v_kind, 'on_demand_exempt', coalesce(v_kind in ('ceiling', 'cap'), false),
-                            'held_reason', v_detail,
-                            'balance', jsonb_build_object('usd', v_bal, 'floor_usd', v_floor, 'known', v_bal is not null));
+                            'held', v_kind is not null or (v_stop and v_lk is not null),
+                            'held_kind', coalesce(v_kind, case when v_stop then v_lk end),
+                            'held_reason', coalesce(v_detail, case when v_stop then v_ld end),
+                            'on_demand_exempt', v_kind is null and v_stop and v_lk is not null,
+                            'would_hold', v_kind is not null or v_lk is not null, 'would_hold_kind', coalesce(v_kind, v_lk), 'would_hold_reason', coalesce(v_detail, v_ld),
+                            'enforcing', v_stop, 'mode', case when v_stop then 'stop' else 'observe' end,
+                            'balance', jsonb_build_object('usd', v_bal, 'floor_usd', v_floor, 'known', v_bal is not null, 'observed_at', v_at, 'max_age_minutes', v_age));
 end $function$;
 create or replace function security.ai_on_demand_providers_v1(p_service text) returns uuid[]
 language sql stable security definer set search_path = '' as $function$
@@ -572,7 +684,7 @@ declare v_rank int := security.current_role_rank();
         v_day timestamptz := date_trunc('day', now() at time zone 'UTC') at time zone 'UTC';  -- fixed: the UTC day the AI guards count
         v_bal record;
 begin
-  if auth.uid() is null or v_rank < 4 then raise exception 'Pipeline Operator role or above required' using errcode = '42501'; end if;
+  if auth.uid() is null or v_rank < 3 then raise exception 'assigned StudySearch role required' using errcode = '42501'; end if;
   select o.remaining_usd, o.observed_at, o.payload into v_bal from pipeline.layer3_openrouter_observations o where o.kind = 'credits' order by o.observed_at desc limit 1;
   return jsonb_build_object(
     'can_control', v_rank >= 5,
@@ -606,11 +718,11 @@ begin
                 'note', r.note, 'reason', r.reason, 'changed_at', r.changed_at, 'changed_by', (select u.email from auth.users u where u.id = r.changed_by),
                 'models', rt.j->'models', 'spent_today', rt.j->'spent_today', 'held', rt.j->'held', 'held_kind', rt.j->'held_kind', 'held_reason', rt.j->'held_reason',
                 'prompt', case
-                  when r.prompt_source = 'pipeline.provider_description_prompts' then (select jsonb_build_object('source', r.prompt_source, 'version', p.version::text, 'text', left(p.system_prompt, 4000))  -- fixed: the page shows the first 4000 characters
+                  when r.prompt_source = 'pipeline.provider_description_prompts' then (select jsonb_build_object('source', r.prompt_source, 'version', p.version::text, 'text', left(p.system_prompt, 4000))
                           from pipeline.provider_description_prompts p where p.status = 'active' order by p.version desc limit 1)
-                  when r.prompt_source = 'pipeline.scholarship_ai_prompts' then (select jsonb_build_object('source', r.prompt_source, 'version', p.version::text, 'text', left(p.text, 4000))  -- fixed: as above
+                  when r.prompt_source = 'pipeline.scholarship_ai_prompts' then (select jsonb_build_object('source', r.prompt_source, 'version', p.version::text, 'text', left(p.text, 4000))
                           from pipeline.scholarship_ai_prompts p where p.active order by p.version desc limit 1)
-                  when r.prompt_source = 'pipeline.aer_prompt_versions' then (select jsonb_build_object('source', r.prompt_source, 'version', p.version, 'text', left(p.system_text, 4000))  -- fixed: as above
+                  when r.prompt_source = 'pipeline.aer_prompt_versions' then (select jsonb_build_object('source', r.prompt_source, 'version', p.version, 'text', left(p.system_text, 4000))
                           from pipeline.aer_prompt_versions p where p.status <> 'retired' order by p.created_at desc limit 1)
                   else jsonb_build_object('source', split_part(r.prompt_source, ': ', 1), 'version', nullif(split_part(r.prompt_source, ': ', 2), ''), 'text', null) end,
                 'settings', (select coalesce(jsonb_agg(jsonb_build_object('toolset', s.toolset_key, 'key', s.key, 'label', s.label, 'help', s.help, 'value', s.value, 'kind', s.kind,
@@ -640,7 +752,7 @@ create or replace function public.admin_ai_model_set_v1(p_code text, p_status te
 language plpgsql security definer set search_path = '' as $function$
 declare v_before text; v_reason text := btrim(coalesce(p_reason, ''));
 begin
-  if auth.uid() is null or security.current_role_rank() < 5 then raise exception 'PIM Operator role or above required' using errcode = '42501'; end if;
+  if auth.uid() is null or security.current_role_rank() < 6 then raise exception 'Platform Admin required' using errcode = '42501'; end if;  -- the model allow-list is the Platform Admin's
   if length(v_reason) < 4 then raise exception 'give a reason (kept in the log)'; end if;
   if p_status is null or p_status not in ('allowed', 'not_allowed') then raise exception 'status must be allowed or not_allowed'; end if;
   select m.status into v_before from pipeline.ai_model_catalogue m where m.code = p_code for update;
@@ -759,8 +871,10 @@ begin
   select string_agg(r.service_code || ':' || c.code, ', ') into v from pipeline.ai_service_routes r cross join lateral unnest(r.cascade) c(code)
    where not exists (select 1 from pipeline.ai_model_catalogue m where m.code = c.code and m.status = 'allowed');
   if v is not null then raise exception 'post-check: a seeded cascade names a model that is not allowed: %', v; end if;
-  if exists (select 1 from pipeline.ai_service_routes r where r.resolver = 'route' and security.ai_route_v1(r.service_code)->>'model' is null) then
-    raise exception 'post-check: a wired route resolves to no model';
+  -- the course description and the other course fields run today: they must still resolve to a model (the entry readers, switched off, have no
+  -- qualified model yet and stay held)
+  if exists (select 1 from pipeline.ai_service_routes r where r.service_code in ('course_description', 'course_other_fields') and security.ai_route_v1(r.service_code)->>'model' is null) then
+    raise exception 'post-check: a course field route that runs today resolves to no qualified model';
   end if;
   select string_agg(distinct m.model_identifier, ', ') into v from pipeline.ai_service_routes r cross join lateral unnest(r.cascade) c(code)
     join pipeline.ai_model_catalogue m on m.code = c.code where m.model_identifier ~ '^(openai|anthropic)/';

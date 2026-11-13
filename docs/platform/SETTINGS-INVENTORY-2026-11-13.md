@@ -218,7 +218,7 @@ Both vendors were dropped on 4 Oct 2026 (Firecrawl only) and their cards, the se
 
 ### 4c. The two model settings this change stops reading
 
-`pipeline.entry.matrix_model` and `pipeline.ops.ai_diagnosis_model` (both `openai/gpt-4.1-mini`) are no longer read after migration 20261113380000; the model is chosen on Models & services. `pipeline.har.ai_escalation_model` is empty and its switch is off. All three are text settings the Settings screen cannot edit.
+`pipeline.entry.matrix_model` and `pipeline.ops.ai_diagnosis_model` (both `openai/gpt-4.1-mini`) are no longer read after migrations 20261113380000 and 20261113390000 (the fourth reader, `public.admin_provider_description_run_v1`, was found in round 4 and asks the route from 20261113390000); the model is chosen on Models & services. `pipeline.har.ai_escalation_model` is empty and its switch is off. All three are text settings the Settings screen cannot edit.
 
 ### 4d. Named only in the worker or the admin app (59)
 
@@ -1787,3 +1787,103 @@ No live function or job names these; the match is text in `supabase/functions` o
 | serper | `sample_seconds_per_call` | Sample runs | in_use | worker | 2026-10-04 |
 | serper | `title_match_min` | How the service is used | in_use | worker | 2026-10-04 |
 | serper | `usd_per_1k_credits` | Key and plan limits | in_use | 1 function(s) | 2026-10-04 |
+
+## 7. Evidence and proposed home, per section (round 4)
+
+Asked for by the Platform Admin's review of 13 Nov 2026 22:10 (item 9). One row for each of the 78 (toolset, section) pairs of the live settings. **Nothing is moved, hidden or retired by this PR**: the last two columns are a proposal for the Platform Admin.
+
+Evidence class of a setting (each setting is counted once, in the first class that applies):
+
+- **direct read**: its full name is quoted in a live function, in a scheduled job command or in the worker.
+- **dynamic read**: its name is not quoted in full, but live code builds it from parts or a policy row names it. Searched for on purpose: `'har.' || case || …` (72 settings), `'guard_' || lane` (5), `like 'enrich.%'` (3), `'website.' || … || '_display_approved'` (2), `'daily_share_' || …` (1), and names held in rows of `pipeline.ops_remedies` and `pipeline.work_recovery_policies` (22).
+- **display only**: named only in the admin app (`src/`) or in a script: shown, but no reader found.
+- **none found**: no reader of any kind.
+
+Totals: direct read 1304, dynamic read 105, display only 1, none found 4 (1,414 settings). The method is a text search, with the limits stated under "How it was measured".
+
+Proposed home: `operator` (stays on Settings for the people who run the pipeline), `models_services` (shown on Models & services), `engineering_default` (kept, shown under an engineering heading or read-only), `retire_review` (a decision to retire is due; nothing is retired here). Proposed sections per home: engineering_default 36, models_services 3, operator 32, retire_review 7. The split between `operator` and `engineering_default` is a first proposal by section name and content; it was not reviewed with the people who use the screen.
+
+| Toolset | Section | Settings | direct read | dynamic read | display only | none found | Proposed home | Why, and exceptions |
+|---|---|---:|---:|---:|---:|---:|---|---|
+| `edge_functions` | Notices | 2 | 2 | 0 | 0 | 0 | operator | limits, switches and targets a person sets |
+| `firecrawl` | Adapter builder | 7 | 7 | 0 | 0 | 0 | engineering_default | reader tuning; changed with a release or an investigation; 4 to models_services |
+| `firecrawl` | Adapter evaluation | 4 | 4 | 0 | 0 | 0 | engineering_default | reader tuning; changed with a release or an investigation |
+| `firecrawl` | Daily budget | 16 | 15 | 1 | 0 | 0 | operator | limits, switches and targets a person sets |
+| `firecrawl` | Find pages | 14 | 14 | 0 | 0 | 0 | engineering_default | reader tuning; changed with a release or an investigation |
+| `firecrawl` | Notices | 1 | 1 | 0 | 0 | 0 | operator | limits, switches and targets a person sets |
+| `firecrawl` | Read pages | 9 | 9 | 0 | 0 | 0 | engineering_default | reader tuning; changed with a release or an investigation |
+| `firecrawl` | Runs | 3 | 3 | 0 | 0 | 0 | operator | limits, switches and targets a person sets |
+| `firecrawl` | Target universities | 7 | 7 | 0 | 0 | 0 | operator | limits, switches and targets a person sets |
+| `openrouter` | Daily guards | 10 | 5 | 5 | 0 | 0 | models_services | every setting is about AI |
+| `openrouter` | Notices | 3 | 3 | 0 | 0 | 0 | models_services | every setting is about AI |
+| `pipeline` | AI answer limits | 14 | 14 | 0 | 0 | 0 | models_services | every setting is about AI |
+| `pipeline` | AI evaluation | 18 | 18 | 0 | 0 | 0 | engineering_default | reader tuning; changed with a release or an investigation |
+| `pipeline` | Admission | 4 | 2 | 2 | 0 | 0 | operator | limits, switches and targets a person sets |
+| `pipeline` | Admission checks | 13 | 13 | 0 | 0 | 0 | engineering_default | reader tuning; changed with a release or an investigation |
+| `pipeline` | Alerts | 16 | 16 | 0 | 0 | 0 | operator | limits, switches and targets a person sets |
+| `pipeline` | Cost and yield | 22 | 20 | 2 | 0 | 0 | operator | limits, switches and targets a person sets |
+| `pipeline` | Course catalogue | 6 | 6 | 0 | 0 | 0 | operator | limits, switches and targets a person sets |
+| `pipeline` | Course description and deadline | 32 | 29 | 3 | 0 | 0 | engineering_default | reader tuning; changed with a release or an investigation; 1 to models_services |
+| `pipeline` | Course page search | 13 | 13 | 0 | 0 | 0 | engineering_default | reader tuning; changed with a release or an investigation |
+| `pipeline` | Course pages | 31 | 31 | 0 | 0 | 0 | engineering_default | reader tuning; changed with a release or an investigation; 1 to models_services |
+| `pipeline` | Coverage reconciliation | 25 | 23 | 2 | 0 | 0 | engineering_default | reader tuning; changed with a release or an investigation |
+| `pipeline` | Data delivery | 10 | 10 | 0 | 0 | 0 | operator | limits, switches and targets a person sets |
+| `pipeline` | English policies | 6 | 6 | 0 | 0 | 0 | engineering_default | reader tuning; changed with a release or an investigation |
+| `pipeline` | Enrichment | 66 | 64 | 2 | 0 | 0 | engineering_default | reader tuning; changed with a release or an investigation; 1 to models_services |
+| `pipeline` | Enrichment lanes | 5 | 5 | 0 | 0 | 0 | operator | limits, switches and targets a person sets |
+| `pipeline` | Entry requirements | 167 | 165 | 1 | 0 | 1 | engineering_default | reader tuning; changed with a release or an investigation; 21 to models_services, 1 to retire_review |
+| `pipeline` | Field absence (D2, D3) | 3 | 3 | 0 | 0 | 0 | engineering_default | reader tuning; changed with a release or an investigation |
+| `pipeline` | First-run verification and progress | 25 | 24 | 0 | 0 | 1 | engineering_default | reader tuning; changed with a release or an investigation; 1 to retire_review |
+| `pipeline` | Flags | 10 | 10 | 0 | 0 | 0 | operator | limits, switches and targets a person sets |
+| `pipeline` | Gap queue | 7 | 7 | 0 | 0 | 0 | engineering_default | reader tuning; changed with a release or an investigation |
+| `pipeline` | Governed actions | 2 | 2 | 0 | 0 | 0 | operator | limits, switches and targets a person sets |
+| `pipeline` | Health report | 9 | 9 | 0 | 0 | 0 | operator | limits, switches and targets a person sets |
+| `pipeline` | Housekeeping | 13 | 12 | 0 | 1 | 0 | engineering_default | reader tuning; changed with a release or an investigation |
+| `pipeline` | Human-assisted recovery | 92 | 20 | 72 | 0 | 0 | operator | limits, switches and targets a person sets; 5 to models_services |
+| `pipeline` | Intake dates | 38 | 38 | 0 | 0 | 0 | engineering_default | reader tuning; changed with a release or an investigation; 3 to models_services |
+| `pipeline` | Integration queue | 18 | 18 | 0 | 0 | 0 | engineering_default | reader tuning; changed with a release or an investigation |
+| `pipeline` | Job sizes | 79 | 79 | 0 | 0 | 0 | operator | limits, switches and targets a person sets; 6 to models_services |
+| `pipeline` | Lane funnels | 12 | 12 | 0 | 0 | 0 | engineering_default | reader tuning; changed with a release or an investigation |
+| `pipeline` | Layer 4 | 28 | 28 | 0 | 0 | 0 | operator | limits, switches and targets a person sets |
+| `pipeline` | Layer 4 readiness | 33 | 31 | 2 | 0 | 0 | engineering_default | reader tuning; changed with a release or an investigation |
+| `pipeline` | Logos | 4 | 4 | 0 | 0 | 0 | operator | limits, switches and targets a person sets |
+| `pipeline` | Official link | 7 | 7 | 0 | 0 | 0 | engineering_default | reader tuning; changed with a release or an investigation |
+| `pipeline` | On demand | 1 | 1 | 0 | 0 | 0 | operator | limits, switches and targets a person sets |
+| `pipeline` | Onboarding | 31 | 31 | 0 | 0 | 0 | operator | limits, switches and targets a person sets |
+| `pipeline` | Operating targets | 7 | 7 | 0 | 0 | 0 | operator | limits, switches and targets a person sets; 1 to models_services |
+| `pipeline` | Operations controller | 27 | 25 | 2 | 0 | 0 | operator | limits, switches and targets a person sets; 6 to models_services |
+| `pipeline` | Platform upkeep | 83 | 80 | 3 | 0 | 0 | engineering_default | reader tuning; changed with a release or an investigation; 1 to models_services |
+| `pipeline` | Process results | 9 | 9 | 0 | 0 | 0 | engineering_default | reader tuning; changed with a release or an investigation |
+| `pipeline` | Provider descriptions | 72 | 72 | 0 | 0 | 0 | operator | limits, switches and targets a person sets; 7 to models_services |
+| `pipeline` | Provider descriptions › built-in prompt only | 4 | 4 | 0 | 0 | 0 | engineering_default | reader tuning; changed with a release or an investigation |
+| `pipeline` | Re-read and retry | 32 | 32 | 0 | 0 | 0 | engineering_default | reader tuning; changed with a release or an investigation; 1 to models_services |
+| `pipeline` | Re-reads and retries | 4 | 4 | 0 | 0 | 0 | engineering_default | reader tuning; changed with a release or an investigation |
+| `pipeline` | Register | 7 | 7 | 0 | 0 | 0 | operator | limits, switches and targets a person sets |
+| `pipeline` | Retention | 1 | 1 | 0 | 0 | 0 | operator | limits, switches and targets a person sets |
+| `pipeline` | Run now | 7 | 7 | 0 | 0 | 0 | operator | limits, switches and targets a person sets |
+| `pipeline` | Scholarship coverage recovery | 15 | 15 | 0 | 0 | 0 | engineering_default | reader tuning; changed with a release or an investigation |
+| `pipeline` | Scholarship details | 4 | 4 | 0 | 0 | 0 | engineering_default | reader tuning; changed with a release or an investigation |
+| `pipeline` | Scholarship discovery | 5 | 5 | 0 | 0 | 0 | engineering_default | reader tuning; changed with a release or an investigation |
+| `pipeline` | Scholarship eligibility reader | 13 | 13 | 0 | 0 | 0 | engineering_default | reader tuning; changed with a release or an investigation |
+| `pipeline` | Scholarship flow guard | 6 | 6 | 0 | 0 | 0 | engineering_default | reader tuning; changed with a release or an investigation |
+| `pipeline` | Scholarships | 32 | 32 | 0 | 0 | 0 | operator | limits, switches and targets a person sets; 3 to models_services |
+| `pipeline` | Source proof | 20 | 18 | 2 | 0 | 0 | engineering_default | reader tuning; changed with a release or an investigation |
+| `pipeline` | Storage | 1 | 1 | 0 | 0 | 0 | operator | limits, switches and targets a person sets |
+| `pipeline` | Storage & retention | 5 | 4 | 0 | 0 | 1 | operator | limits, switches and targets a person sets; 1 to retire_review |
+| `pipeline` | Waste rules | 11 | 11 | 0 | 0 | 0 | engineering_default | reader tuning; changed with a release or an investigation |
+| `pipeline` | Website API | 10 | 7 | 2 | 0 | 1 | operator | limits, switches and targets a person sets; 1 to retire_review |
+| `pipeline` | Work continuity | 36 | 32 | 4 | 0 | 0 | engineering_default | reader tuning; changed with a release or an investigation |
+| `pipeline` | Zero-yield pages | 13 | 13 | 0 | 0 | 0 | engineering_default | reader tuning; changed with a release or an investigation |
+| `pipeline` | Zoho API | 13 | 13 | 0 | 0 | 0 | operator | limits, switches and targets a person sets |
+| `scheduled_jobs` | Notices | 2 | 2 | 0 | 0 | 0 | operator | limits, switches and targets a person sets |
+| `scrapingbee` | How the service is used | 4 | 4 | 0 | 0 | 0 | retire_review | vendor dropped 4 Oct 2026; screens already retiring |
+| `scrapingbee` | Key and plan limits | 7 | 7 | 0 | 0 | 0 | retire_review | vendor dropped 4 Oct 2026; screens already retiring |
+| `scrapingbee` | Sample runs | 5 | 5 | 0 | 0 | 0 | retire_review | vendor dropped 4 Oct 2026; screens already retiring |
+| `serper` | How the service is used | 6 | 6 | 0 | 0 | 0 | retire_review | vendor dropped 4 Oct 2026; screens already retiring |
+| `serper` | Key and plan limits | 7 | 7 | 0 | 0 | 0 | retire_review | vendor dropped 4 Oct 2026; screens already retiring |
+| `serper` | Sample runs | 5 | 5 | 0 | 0 | 0 | retire_review | vendor dropped 4 Oct 2026; screens already retiring |
+| `serper` | Search pass | 5 | 5 | 0 | 0 | 0 | retire_review | vendor dropped 4 Oct 2026; screens already retiring |
+
+### The existing `control_class` column
+
+`pipeline.platform_toolset_settings.control_class` exists already (live: 1,335 empty, 54 `automatic`, 25 `human`; one reader, `admin_settings_register_read`). Its check allows only `human`, `automatic` and `retiring`. This PR does **not** reuse it for the home of a setting: the four homes above do not fit the three values, and widening the check means dropping and re-adding a constraint on a table every job reads (a drop goes to the Platform Admin as a paste file). `home` and `home_group` (migration 20261113378000) stay beside it. The two are consistent in meaning and can be brought together in one later, approved change: `operator` is `human`, `engineering_default` is `automatic`, `retire_review` is `retiring`, and `models_services` is a place, not a class (its settings are `human`).

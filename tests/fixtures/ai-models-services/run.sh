@@ -33,6 +33,7 @@ declare -A LIVE=(
   ["security.ai_use_refusal_v1(text)"]=60c782e5aec7eb218c1149a3ad85dde2
   ["security.pipeline_num_v1(text,numeric)"]=09f9b1551daf42b4a0c9795e6f30c6d4
   ["security.toolset_setting(text,text)"]=678dbbc416c5188ab99b3526e68b0c4d
+  ["security.toolset_enforced(text)"]=26f0e943333bfd5f94fa885bc2f0c1f7
 )
 declare -A LIVE2=(
   ["public.svc_fee_ai_next(integer)"]=f18fa0ef8454803ef0990e42c2e653d7
@@ -50,6 +51,8 @@ declare -A LIVE2=(
   ["public.svc_enrich_ai_record(jsonb)"]=bcbfc91ce997b1516d90b1320264fa12
   ["public.admin_settings_register_read()"]=4fb9bae7b10132e965a39c9cc8d04b4b
   ["public.admin_toolsets_read()"]=c54f956cedc46cb6e18d8122d2d14c9b
+  ["security.ledger_retention_v1()"]=d9f7df569b5bd1a975fc13fee5ef0b55
+  ["public.admin_provider_description_run_v1(text,jsonb)"]=74ea2ec5577cef7370c03327881d6cb8
   ["security.scholarship_ai_active_v1()"]=74a1d5993a35b209ffbaa177ee6eec13
   ["security.scholarship_ai_next_model_v1(text)"]=e69e857eff40d3d2d1c1e03d981ee1cd
   ["security.adapter_builder_model_for_v1(uuid)"]=eaf3a8ba8ba0d21e3f03795773ad12f3
@@ -127,7 +130,7 @@ echo "phase 2: refused without phase 1 and over a drifted live body, nothing lef
 EDITED2="$(printf "'%s'," "${!LIVE2[@]}" | sed 's/public\.//g; s/,$//')"
 OTHERS2="select md5(string_agg(p.oid::regprocedure::text || md5(pg_get_functiondef(p.oid)), '|' order by p.oid::regprocedure::text)) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
   where n.nspname in ('security', 'public', 'auth') and p.prokind = 'f' and p.oid::regprocedure::text not in ($EDITED2)
-    and p.proname not in ('ai_route_gate_v1', 'ai_route_open_v1', 'svc_ai_model_answered_v1', 'ai_route_guard_v1', 'ai_service_model_v1', 'ai_central_sync_v1', 'ai_route_central_trg', 'ai_central_settings_trg', 'admin_ai_overview_v1', 'admin_ai_route_set_v1', 'ai_settings_not_read_v1', 'ai_model_status_trg')"
+    and p.proname not in ('ai_route_gate_v1', 'ai_route_open_v1', 'svc_ai_model_answered_v1', 'ai_route_guard_v1', 'ai_service_model_v1', 'ai_central_sync_v1', 'ai_route_central_trg', 'ai_central_settings_trg', 'admin_ai_overview_v1', 'admin_ai_route_set_v1', 'ai_settings_not_read_v1', 'ai_model_status_trg', 'svc_ai_model_answered_v1', 'admin_ai_qualification_set_v1')"
 G0=$(q $DB "$OTHERS2")
 OUT=$($P -d $DB -1 -At -f $MIG2 2>&1) || { echo "$OUT" | tail -5; exit 1; }
 [ "$(grep -c ': applied$' <<<"$OUT")" = ${#LIVE2[@]} ] || { echo "phase 2 did not apply its ${#LIVE2[@]} guarded edits"; echo "$OUT" | tail -5; exit 1; }
@@ -138,6 +141,11 @@ OUT=$($P -d $DB -1 -At -f $MIG2 2>&1) || { echo "$OUT" | tail -5; exit 1; }
 [ "$(grep -c ': unchanged$' <<<"$OUT")" = ${#LIVE2[@]} ] || { echo "the second phase 2 run did not find its edits in place"; exit 1; }
 [ "$(q $DB "$SNAP")" = "$S1" ] || { echo "the second phase 2 run changed something"; exit 1; }
 echo "phase 2 applied: only its ${#LIVE2[@]} guarded definitions changed among existing functions; a second run changes nothing"
+
+# 3c round 4: the state as seeded (qualification, the mode rule, the balance), then the fixture's own qualifications for the older blocks
+OUT=$($P -d $DB -f $FX/seeded.sql 2>&1) || { echo "$OUT" | tail -6; exit 1; }
+sed -n "s/^.*NOTICE:  //p" <<<"$OUT"
+[ "$(grep -c "NOTICE:  ok " <<<"$OUT")" = 3 ] || { echo "not every seeded-state block passed"; exit 1; }
 
 # 4 the keys the deployed worker reads keep their names and types (same rows, before and after; new keys only beside them)
 shape() { $P -d "$1" -At -c "begin" -c "select set_config('fx.role', 'service_role', false)" -c "select s from public.fx_shape($2) s order by 1" -c "rollback" | grep '^\.\|^\[' || true; }
@@ -161,7 +169,7 @@ echo "after: no reader hands out an OpenAI or Anthropic model (as live: entry re
 # 5 behaviour
 OUT=$($P -d $DB -f $FX/fixtures.sql 2>&1) || { echo "$OUT" | tail -6; exit 1; }
 sed -n "s/^.*NOTICE:  //p" <<<"$OUT"
-[ "$(grep -c "NOTICE:  ok " <<<"$OUT")" = 12 ] || { echo "not every fixture block passed"; exit 1; }
+[ "$(grep -c "NOTICE:  ok " <<<"$OUT")" = 13 ] || { echo "not every fixture block passed"; exit 1; }
 echo "fixtures: 12 of 12"
 
 # 6 the migrations applied while writers keep recording costs and reading settings (independent QA B2): no deadlock, no lock time-out

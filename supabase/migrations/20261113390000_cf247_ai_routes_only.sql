@@ -14,12 +14,17 @@
 --   chain is; it activates nothing by itself). Queued scholarship reads that name a model that is not allowed are re-pointed to the route's
 --   first model (counted in a notice; nothing is deleted).
 -- 7 public.admin_settings_register_read and public.admin_toolsets_read return home and home_group with each setting (additive keys).
+-- 8 Round 4 (Platform Admin review 13 Nov 2026 22:10): every service has a migration_state (routed, routed_single, not_migrated) and a
+--   routed_single service cannot be saved with more than one model; public.admin_ai_qualification_set_v1 records a qualification (Platform Admin,
+--   audited; it switches nothing on); public.svc_ai_model_answered_v1 also keeps every model call attempt (pipeline.ai_invocations), removed
+--   after retention.ai_invocations_days by the existing daily job (security.ledger_retention_v1); the page read is open to rank 3 (read-only,
+--   no key details), says the mode and what would hold, and carries the scholarship reading configuration.
 -- Locks this migration takes on tables that exist before it (no ACCESS EXCLUSIVE; it adds no column):
 --   pipeline.scholarship_ai_extract_settings   SHARE ROW EXCLUSIVE (create trigger: writes wait for the commit, reads do not), then ROW EXCLUSIVE
 --   pipeline.ai_model_catalogue                 SHARE ROW EXCLUSIVE (create trigger; the table is new in phase 1)
 --   pipeline.ai_service_routes, pipeline.scholarship_ai_models, pipeline.scholarship_ai_queue (the few rows naming a model that is not allowed),
---   pipeline.central_ai_settings, pipeline.platform_toolset_settings (one used_by line), pipeline.component_register   ROW EXCLUSIVE
---   everything else is read (ACCESS SHARE). The 21 replaced functions take no table lock.
+--   pipeline.central_ai_settings, pipeline.platform_toolset_settings (one new row, one used_by line), pipeline.component_register   ROW EXCLUSIVE
+--   everything else is read (ACCESS SHARE). The 22 replaced functions take no table lock.
 --
 -- 1 The nine services that did not ask the route now do (each md5-guarded; worker-facing keys keep their names and types; `models` is new beside
 --   them; each is held by its route's switch, its cap and the daily ceiling as phase 1 holds; a cap or the ceiling does not hold on-demand work):
@@ -63,6 +68,8 @@
 --   public.svc_enrich_ai_record(jsonb)  bcbfc91ce997b1516d90b1320264fa12 -> bbd61b2798896f1e592577766ffaab02
 --   public.admin_settings_register_read()  4fb9bae7b10132e965a39c9cc8d04b4b -> c3e4f273e08c7b348da6de1764205fc8
 --   public.admin_toolsets_read()  c54f956cedc46cb6e18d8122d2d14c9b -> df2380c6d541db3756bcc88c5e62641a
+--   security.ledger_retention_v1()  d9f7df569b5bd1a975fc13fee5ef0b55 -> 3c2e418e4cb7451d616efde45f2c9861
+--   public.admin_provider_description_run_v1(text,jsonb)  74ea2ec5577cef7370c03327881d6cb8 -> 225892e00395b3c03a8532b47d4ccfbb
 --   security.scholarship_ai_active_v1()  74a1d5993a35b209ffbaa177ee6eec13 -> 4984eaf9195e1e6da5007af84856faf4
 --   security.scholarship_ai_next_model_v1(text)  e69e857eff40d3d2d1c1e03d981ee1cd -> 061cb6e6bfe5d85a6f747d0b96b15a5d
 --   security.adapter_builder_model_for_v1(uuid)  eaf3a8ba8ba0d21e3f03795773ad12f3 -> 2aa0c60d8bd996394b3fa2674aa3b122
@@ -99,6 +106,8 @@ begin
       ('public.svc_enrich_ai_record(jsonb)', 'bcbfc91ce997b1516d90b1320264fa12', 'bbd61b2798896f1e592577766ffaab02'),
       ('public.admin_settings_register_read()', '4fb9bae7b10132e965a39c9cc8d04b4b', 'c3e4f273e08c7b348da6de1764205fc8'),
       ('public.admin_toolsets_read()', 'c54f956cedc46cb6e18d8122d2d14c9b', 'df2380c6d541db3756bcc88c5e62641a'),
+      ('security.ledger_retention_v1()', 'd9f7df569b5bd1a975fc13fee5ef0b55', '3c2e418e4cb7451d616efde45f2c9861'),
+      ('public.admin_provider_description_run_v1(text,jsonb)', '74ea2ec5577cef7370c03327881d6cb8', '225892e00395b3c03a8532b47d4ccfbb'),
       ('security.scholarship_ai_active_v1()', '74a1d5993a35b209ffbaa177ee6eec13', '4984eaf9195e1e6da5007af84856faf4'),
       ('security.scholarship_ai_next_model_v1(text)', 'e69e857eff40d3d2d1c1e03d981ee1cd', '061cb6e6bfe5d85a6f747d0b96b15a5d'),
       ('security.adapter_builder_model_for_v1(uuid)', 'eaf3a8ba8ba0d21e3f03795773ad12f3', '2aa0c60d8bd996394b3fa2674aa3b122'),
@@ -142,34 +151,61 @@ update pipeline.ai_service_routes r
  where s.id = 1 and r.service_code = 'scholarship_extraction' and r.resolver <> 'route'
    and exists (select 1 from unnest(s.chain) c(code) join pipeline.ai_model_catalogue m on m.code = c.code and m.status = 'allowed');
 update pipeline.ai_service_routes r set resolver = 'route',
+       -- routed: the worker executes the cascade. routed_single: the call uses the first model only (no fallback yet). page_identity has no call.
+       migration_state = case when r.service_code in ('course_description', 'course_entry_requirements', 'course_other_fields', 'fee_reader', 'calendar_reading', 'central_english_policy',
+                                                     'course_matching', 'entry_requirements_v2_shadow', 'scholarship_extraction') then 'routed'
+                              when r.service_code = 'page_identity' then 'not_migrated' else 'routed_single' end,
+       -- what each service ran on before this release (live, 13 Nov 2026): GPT-4.1 mini through pipeline.central_ai_settings (until 19:09), the settings
+       -- entry.matrix_model and ops.ai_diagnosis_model and the trial's prompt version; Qwen3 30B for the scholarship chain, the matcher and adapter proposals
+       previous_model = case when r.service_code in ('scholarship_extraction', 'scholarship_eligibility', 'course_matching', 'adapter_builder') then 'qwen/qwen3-30b-a3b-instruct-2507'
+                             when r.service_code = 'page_identity' then null else 'openai/gpt-4.1-mini' end,
        note = case r.service_code
          when 'course_description' then null when 'course_other_fields' then null
          when 'entry_requirements_v2_shadow' then 'The prompt version keeps its text and sha; the model is this route''s. The trial is switched off (aer.v2_shadow_on).'
-         when 'scholarship_extraction' then 'The cascade is the chain: an unproven fact goes to the next model, then to a person.'
+         when 'scholarship_extraction' then 'The cascade is the escalation chain: an unproven fact goes to the next qualified model, then to a person. A technical failure retries the same model.'
          when 'scholarship_eligibility' then null
          when 'adapter_builder' then 'A provider''s own model (pipeline.uni_adapter_models) is used only when this cascade names it.'
          when 'course_matching' then null
          when 'provider_description' then null when 'calendar_reading' then null when 'central_english_policy' then null when 'fee_reader' then null
          else r.note end
- where r.resolver <> 'route' or r.service_code in ('course_description', 'course_other_fields');
+ where r.resolver <> 'route' or r.migration_state = 'not_migrated';
 
 -- 3 the worker can correct the ledger's model when a later model of the cascade answered ---------------------------------------------------------
-create or replace function public.svc_ai_model_answered_v1(p_source text, p_source_id text, p_model text) returns integer
+insert into pipeline.platform_toolset_settings (toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, reason, section, used_by)
+values ('pipeline', 'retention.ai_invocations_days', 'AI call attempts: kept for', 'Rows of pipeline.ai_invocations (one per model call attempt) older than this are removed by the daily ledger-retention job.',
+        'number', to_jsonb(90), 14, 365, 'days', 781, 'Platform Admin review 13 Nov 2026: per-invocation trace', 'Platform upkeep', 'job ledger-retention (security.ledger_retention_v1)')
+on conflict (toolset_key, key) do nothing;
+insert into pipeline.ai_route_qualifications (service_code, model_code, prompt_version, status, note)
+values ('page_identity', 'qwen3-30b', 'cf247-page-identity-v1.0.2', 'pending', 'Qualification only; no scheduled call.')
+on conflict (service_code, model_code) do nothing;
+
+create or replace function public.svc_ai_model_answered_v1(p_source text, p_source_id text, p_model text, p_attempts jsonb default null, p_worker text default null) returns integer
 language plpgsql security definer set search_path = '' as $function$
--- The worker calls this after a record when a later model of the cascade answered, so the latest ledger row of that source row names the model
--- that did the work. Only a model of the catalogue is accepted.
-declare n int;
+-- The worker reports what its model calls did.
+--   p_attempts: one object per call attempt {service, model, attempt_no, outcome answered|failed, failure_kind, input_tokens, output_tokens, cost,
+--   source, source_id}: kept in pipeline.ai_invocations (which model was asked, whether it answered, when and why a fallback happened).
+--   p_source, p_source_id, p_model: when a later model of the cascade answered, the latest ledger row of that source row is corrected to it.
+declare n int := 0;
 begin
   if current_user <> 'postgres' and coalesce(auth.role(), '') <> 'service_role' then raise exception 'service_role required'; end if;
-  if not exists (select 1 from pipeline.ai_model_catalogue m where m.model_identifier = p_model) then return 0; end if;
-  update pipeline.ai_spend_ledger l set model = p_model
-   where l.id = (select max(x.id) from pipeline.ai_spend_ledger x where x.source = p_source and x.source_id = p_source_id and x.at > now() - interval '15 minutes')  -- fixed: the record of the same worker call
-     and l.model is distinct from p_model;
-  get diagnostics n = row_count;
+  if jsonb_typeof(p_attempts) = 'array' then
+    insert into pipeline.ai_invocations (service_code, model, attempt_no, outcome, failure_kind, input_tokens, output_tokens, cost_usd, source, source_id, worker)
+    select nullif(x->>'service', ''), x->>'model', coalesce((x->>'attempt_no')::int, 1), case when x->>'outcome' = 'answered' then 'answered' else 'failed' end,
+           case when x->>'failure_kind' in ('http', 'timeout', 'empty', 'cut', 'non_json', 'refused') then x->>'failure_kind' end,
+           (x->>'input_tokens')::int, (x->>'output_tokens')::int, (x->>'cost')::numeric, nullif(x->>'source', ''), nullif(x->>'source_id', ''), left(p_worker, 60)
+      from jsonb_array_elements(p_attempts) x where nullif(x->>'model', '') is not null;
+    get diagnostics n = row_count;
+  end if;
+  if p_model is not null and p_source is not null and exists (select 1 from pipeline.ai_model_catalogue m where m.model_identifier = p_model) then
+    update pipeline.ai_spend_ledger l set model = p_model
+     where l.id = (select max(x.id) from pipeline.ai_spend_ledger x where x.source = p_source and x.source_id = p_source_id and x.at > now() - interval '15 minutes')  -- fixed: the record of the same worker call
+       and l.model is distinct from p_model;
+    if p_attempts is null then get diagnostics n = row_count; end if;
+  end if;
   return n;
 end $function$;
-revoke all on function public.svc_ai_model_answered_v1(text, text, text) from public, anon, authenticated;
-grant execute on function public.svc_ai_model_answered_v1(text, text, text) to service_role;
+revoke all on function public.svc_ai_model_answered_v1(text, text, text, jsonb, text) from public, anon, authenticated;
+grant execute on function public.svc_ai_model_answered_v1(text, text, text, jsonb, text) to service_role;
 
 -- 4 the guarded edits (live text with the model and budget lines changed) ----------------------------------------------------------------------------
 
@@ -979,6 +1015,208 @@ begin
     'job_layers', (select coalesce(jsonb_object_agg(l.jobname, l.layer), '{}'::jsonb) from pipeline.platform_job_layers l));
 end $function$;
 
+CREATE OR REPLACE FUNCTION security.ledger_retention_v1()
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare n_ledger int; n_zy int; n_h int; n_ui int; n_ai int;
+begin
+  delete from pipeline.mode_outcome_ledger where run_at < now() - make_interval(days => security.pipeline_num_v1('retention.mode_outcome_ledger_days', 90)::int);
+  get diagnostics n_ledger = row_count;
+  delete from pipeline.zero_yield_snapshots where at < now() - make_interval(days => security.pipeline_num_v1('retention.zero_yield_snapshots_days', 90)::int);
+  get diagnostics n_zy = row_count;
+  delete from pipeline.health_snapshots where at < now() - make_interval(days => security.pipeline_num_v1('retention.health_snapshots_days', 90)::int);
+  get diagnostics n_h = row_count;
+  delete from pipeline.ui_error_log where at < now() - make_interval(days => security.pipeline_num_v1('retention.ui_error_log_days', 90)::int);
+  get diagnostics n_ui = row_count;
+  delete from pipeline.ai_invocations where at < now() - make_interval(days => security.pipeline_num_v1('retention.ai_invocations_days', 90)::int);
+  get diagnostics n_ai = row_count;
+  return jsonb_build_object('mode_outcome_ledger', n_ledger, 'zero_yield_snapshots', n_zy, 'health_snapshots', n_h, 'ui_error_log', n_ui, 'ai_invocations', n_ai);
+end $function$;
+
+CREATE OR REPLACE FUNCTION public.admin_provider_description_run_v1(p_action text, p_args jsonb DEFAULT '{}'::jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare v_actor uuid:=auth.uid(); v_rank int:=security.current_role_rank(); c pipeline.provider_description_cohorts%rowtype;
+ v_res jsonb; v_preview jsonb; v_fresh jsonb; x jsonb; v_id uuid; v_reason text:=btrim(coalesce(p_args->>'reason','')); v_n int:=0; v_run uuid; v_why text;
+ v_mode text; v_args jsonb; v_ids uuid[]; v_history jsonb; v_rule text; v_diagnosis jsonb; v_context jsonb; v_issue bigint; v_ai_request bigint; v_ai_model text; v_ai_why text; v_job pipeline.automation_catalogue%rowtype; v_dispatch_error text; v_dispatch_sqlstate text;
+begin
+ if v_actor is null or v_rank<3 then raise exception 'curator role required' using errcode='42501'; end if;
+ select * into v_job from pipeline.automation_catalogue where jobname='provider-description-read';
+ if p_action='verify' and v_rank<coalesce(v_job.control_rank,6) then raise exception 'your role cannot verify this job publication' using errcode='42501'; end if;
+ if p_action='capabilities' then
+ return jsonb_build_object('contract','provider-description-run-v1','can_run',v_rank>=coalesce(v_job.control_rank,6),'control_rank',coalesce(v_job.control_rank,6),'reason_min_chars',security.pipeline_num_v1('pdesc.reason_min_chars',5)::int,
+ 'can_explain',v_rank>=coalesce(v_job.control_rank,6),'can_diagnose',security.pipeline_num_v1('ops.ai_diagnosis_on',0)>=1 and security.ai_use_allowed_v1('ops_diagnose') and nullif(security.ai_route_v1('ops_diagnosis')->>'model','') is not null,'ai_diagnosis_reason','AI assistance requires the existing approved Operations diagnosis switch, model and spending guards plus an existing open issue linked to this exact provider and evidence. Explain evidence always uses stored checks.',
+ 'countries',coalesce((select jsonb_agg(jsonb_build_object('code',k.iso_alpha2,'label',coalesce(to_jsonb(k)->>'name',to_jsonb(k)->>'country_name',k.iso_alpha2::text),'enabled',coalesce(security.toolset_setting('pipeline','pdesc.countries'),'[]')?k.iso_alpha2::text)) from ref.countries k where k.iso_alpha2 in ('AU','NZ','CA')),'[]'),
+ 'provider_types',coalesce((select jsonb_agg(jsonb_build_object('code',t.code,'label',coalesce(to_jsonb(t)->>'label',to_jsonb(t)->>'name',t.code),'enabled',coalesce(security.toolset_setting('pipeline','pdesc.provider_types'),'[]')?t.code)) from ref.provider_types t),'[]'),
+ 'providers',coalesce((select jsonb_agg(jsonb_build_object('provider_id',p.id,'name',coalesce(p.display_name,p.canonical_name),'country',k.iso_alpha2,'type',t.code) order by coalesce(p.display_name,p.canonical_name)) from catalogue.providers p join ref.countries k on k.id=p.country_id left join ref.provider_types t on t.id=p.provider_type_id where security.provider_description_scope_v1(p.id)),'[]'),
+ 'min_size',1,'max_size',security.provider_description_cohort_cap_v1(),'default_size',security.pipeline_num_v1('batch.provider_description',3)::int,
+ 'modes',jsonb_build_array(jsonb_build_object('id','stored','label','Stored official evidence + approved AI','allowed',true),jsonb_build_object('id','approved','label','Existing authorised acquisition + approved AI','allowed',security.pipeline_num_v1('pdesc.acquire_direct',0)>=1)),
+ 'model',(select security.ai_route_v1('provider_description')->>'model'),'enabled',security.pipeline_num_v1('pdesc.enabled',0)>=1,
+ 'job_active',coalesce((select active from cron.job where jobname='provider-description-read'),false),
+ 'policy',jsonb_build_object('countries',security.toolset_setting('pipeline','pdesc.countries'),'types',security.toolset_setting('pipeline','pdesc.provider_types'),'provider_keys',security.toolset_setting('pipeline','pdesc.provider_keys'),'ai_usd_max',security.pipeline_num_v1('pdesc.ai_usd_max',1),'pending_max',security.pipeline_num_v1('pdesc.pending_max',10),'reserved_usd',(select coalesce(sum(reserved_usd),0) from pipeline.provider_description_reads),'remaining_usd',greatest(0,security.pipeline_num_v1('pdesc.ai_usd_max',1)-(select coalesce(sum(cost_usd),0) from pipeline.ai_spend_ledger where lane='provider_description' and source<>'opening')-(select coalesce(sum(reserved_usd),0) from pipeline.provider_description_reads)),'actual_ai_calls',(select coalesce(sum(ai_calls),0) from pipeline.provider_description_reads),'recorded_billable_calls',(select coalesce(sum(calls),0) from pipeline.ai_spend_ledger where lane='provider_description' and source<>'opening'),'recorded_cost_usd',(select coalesce(sum(cost_usd),0) from pipeline.ai_spend_ledger where lane='provider_description' and source<>'opening'),'ai_call_counter_scope','reported model calls since provider-description-autonomy instrumentation; ledger calls are separate recorded billable calls','budget_period','lifetime pilot','required_approval','Individual human Layer 4 decision'));
+ elsif p_action='preview' then
+ v_args:=p_args||jsonb_build_object('mode',coalesce(nullif(p_args->>'mode',''),'stored'));
+ -- Fill fields (Provider Catalogue and Provider Detail): the screen names what it wants to do; the governed selection gets the same description state it always had.
+ if nullif(p_args->>'fill_mode','') is not null then
+  if p_args->>'fill_mode' not in ('missing','upgrade_basic') then raise exception 'unsupported fill mode' using errcode='22023'; end if;
+  v_args:=v_args||jsonb_build_object('description_state',case p_args->>'fill_mode' when 'upgrade_basic' then 'stale' else 'missing' end,'upgrade',p_args->>'fill_mode'='upgrade_basic');
+ end if;
+ v_res:=security.provider_description_selection_multi_v1(v_args);
+ insert into pipeline.provider_description_cohorts(requested_by,selection,snapshot,expires_at)
+ values(v_actor,v_args,v_res,now()+make_interval(mins=>security.pipeline_num_v1('pdesc.ui_preview_minutes',10)::int)) returning id into v_id;
+ return v_res||jsonb_build_object('token',v_id,'preview_token',v_id,'expires_at',now()+make_interval(mins=>security.pipeline_num_v1('pdesc.ui_preview_minutes',10)::int));
+ elsif p_action='prepare' then
+ if v_rank<coalesce(v_job.control_rank,6) then raise exception 'your role cannot prepare this job' using errcode='42501'; end if;
+ if length(v_reason)<security.pipeline_num_v1('pdesc.reason_min_chars',5) then raise exception 'audit reason is shorter than the governed minimum' using errcode='22023'; end if;
+ select * into c from pipeline.provider_description_cohorts where id=nullif(p_args->>'preview_token','')::uuid and requested_by=v_actor for update;
+ if c.id is null then raise exception 'unknown owned preview' using errcode='42501'; end if;
+ if c.state in ('prepared','started') then return security.provider_description_run_result_v1(c.id); end if;
+ if c.expires_at<now() then raise exception 'preview expired; preview again' using errcode='22023'; end if;
+ v_fresh:=security.provider_description_selection_multi_v1(c.selection);
+ for x in select * from jsonb_array_elements(c.snapshot->'providers') where (value->>'eligible')::boolean loop
+  if not exists(select 1 from jsonb_array_elements(v_fresh->'providers') f where f->>'provider_id'=x->>'provider_id' and (f->>'eligible')::boolean and f->>'evidence_id' is not distinct from x->>'evidence_id' and f->>'source_hash' is not distinct from x->>'source_hash' and f->>'current_description' is not distinct from x->>'current_description' and f->>'last_read_id' is not distinct from x->>'last_read_id') then raise exception 'preview changed; preview again' using errcode='22023'; end if;
+  v_n:=v_n+1;
+  insert into pipeline.provider_description_cohort_members(cohort_id,provider_id,evidence_id,pick,snapshot) values(c.id,(x->>'provider_id')::uuid,(x->>'evidence_id')::uuid,v_n,x);
+ end loop;
+ if v_n=0 then raise exception 'no eligible provider with approved evidence in this preview' using errcode='22023'; end if;
+ update pipeline.provider_description_cohorts set state='prepared',reason=v_reason,prepared_at=now() where id=c.id;
+ insert into pipeline.admin_control_events(area,action,target,detail,actor) values('provider_descriptions','cohort_prepare',c.id::text,jsonb_build_object('selected',v_n,'reason',v_reason,'selection',c.selection),v_actor);
+ return security.provider_description_run_result_v1(c.id);
+ elsif p_action='run' then
+ if v_rank<coalesce(v_job.control_rank,6) then raise exception 'your role cannot start this job' using errcode='42501'; end if;
+ select * into c from pipeline.provider_description_cohorts where id=nullif(p_args->>'cohort_id','')::uuid and requested_by=v_actor for update;
+ if c.id is null or c.state='preview' then raise exception 'unknown owned fixed cohort' using errcode='42501'; end if;
+ if c.run_id is not null then return security.provider_description_run_result_v1(c.id)||jsonb_build_object('repeat',true); end if;
+ if (select count(*) from pipeline.provider_description_cohort_members where cohort_id=c.id)>security.provider_description_cohort_cap_v1() then
+   raise exception 'current_cap_changed: the fixed cohort exceeds the current governed cap; prepare a new cohort' using errcode='22023';
+ end if;
+ -- Same task kind, catalogue permission, pause/spend/review rules and provider-description job. Never a second scheduler.
+ v_why:=case when not coalesce(security.toolset_setting('pipeline','run_now.jobs'),'[]'::jsonb)?'provider-description-read' then 'job_not_allowlisted'
+ when v_job.jobname is null then 'job_not_catalogued'
+ when not exists(select 1 from cron.job where jobname='provider-description-read' and active) then 'job_paused'
+ when security.pipeline_num_v1('pdesc.enabled',0)<1 then 'reader_off'
+ when not security.ai_use_allowed_v1('provider_description') then 'ai_refused'
+ when (select coalesce(sum(cost_usd),0) from pipeline.ai_spend_ledger where lane='provider_description' and source<>'opening')>=security.pipeline_num_v1('pdesc.ai_usd_max',1) then 'ai_ceiling'
+ when (select count(*) from pipeline.layer4_review_items where field_code='provider_description' and status='pending')>=security.pipeline_num_v1('pdesc.pending_max',10) then 'review_full' end;
+ -- Policy/capacity holds are durable: the fixed cohort stays recoverable and the existing scheduled job resumes it.
+ for x in select m.snapshot from pipeline.provider_description_cohort_members m where m.cohort_id=c.id order by m.pick loop
+   v_fresh:=security.provider_description_selection_v1(c.selection||jsonb_build_object('provider_id',x->>'provider_id','size',1));
+   if not exists(select 1 from jsonb_array_elements(v_fresh->'providers') f where (f->>'eligible')::boolean and f->>'evidence_id' is not distinct from x->>'evidence_id' and f->>'source_hash' is not distinct from x->>'source_hash' and f->>'current_description' is not distinct from x->>'current_description') then
+     update pipeline.provider_description_cohort_members set snapshot=snapshot||jsonb_build_object('eligibility_reason','selection_changed_before_run','eligible',false) where cohort_id=c.id and provider_id=(x->>'provider_id')::uuid; continue;
+   end if;
+   insert into pipeline.provider_description_reads(provider_id) values((x->>'provider_id')::uuid) on conflict do nothing returning id into v_id;
+   if v_id is null then select id into v_id from pipeline.provider_description_reads where provider_id=(x->>'provider_id')::uuid and state in ('queued','reading','proposed') order by created_at desc limit 1; end if;
+   update pipeline.provider_description_cohort_members set read_id=v_id where cohort_id=c.id and provider_id=(x->>'provider_id')::uuid;
+   v_n:=v_n+1; v_id:=null;
+ end loop;
+ update pipeline.provider_description_cohorts set state='started' where id=c.id;
+ if v_why is null and v_n>0 then
+   perform set_config('cf.pdesc_run_now',c.id::text,true);
+   begin
+     v_res:=security.provider_description_fire_v1();
+   exception when others then
+     -- OTHERS deliberately excludes query cancellation: the caller's statement/lock limits remain authoritative.
+     get stacked diagnostics v_dispatch_error=message_text,v_dispatch_sqlstate=returned_sqlstate;
+     v_res:=jsonb_build_object('sent',0,'parked',true,'reason','reader_dispatch_failed','error',v_dispatch_error,'sqlstate',v_dispatch_sqlstate,'retry_strategy','existing provider-description-read schedule resumes this saved queued cohort');
+   end;
+ else v_res:=jsonb_build_object('sent',0,'parked',true,'reason',coalesce(v_why,'selection_changed_before_run')); end if;
+ insert into pipeline.admin_jobs(kind,lane,state,title,args,result,error,requested_by,reason,started_at,finished_at,scope,outcome)
+ values('job_run_now','run_now',case when v_dispatch_error is not null then 'failed' when v_why is null then 'done' else 'cancelled' end,'Provider descriptions: bounded Run Now',jsonb_build_object('job','provider-description-read','cohort_id',c.id,'idempotency_key',c.request_key),v_res||jsonb_build_object('selected',v_n,'admitted',0,'publication_measured_separately',true),v_dispatch_error,v_actor,c.reason,now(),clock_timestamp(),'cohort:'||c.id,case when v_dispatch_error is not null then 'failed_retryable' when v_why is not null then 'blocked_policy' else 'succeeded_no_movement' end) returning id into v_run;
+ update pipeline.provider_description_cohorts set run_id=v_run where id=c.id;
+ insert into pipeline.admin_control_events(area,action,target,detail,actor) values('provider_descriptions','run_now','provider-description-read',jsonb_build_object('cohort_id',c.id,'run_id',v_run,'dispatch',v_res,'reason',c.reason),v_actor);
+ return security.provider_description_run_result_v1(c.id)||jsonb_build_object('dispatch',v_res);
+  elsif p_action='fill_caps' then
+ -- Fill fields: what the panel needs to know before it asks anything. No provider list (capabilities carries every provider in scope; the panel does not need it).
+ return jsonb_build_object('contract','provider-description-fill-v1','can_run',v_rank>=coalesce(v_job.control_rank,6),'control_rank',coalesce(v_job.control_rank,6),'reason_min_chars',security.pipeline_num_v1('pdesc.reason_min_chars',5)::int,
+  'min_size',1,'max_size',security.provider_description_cohort_cap_v1(),
+  'cap',jsonb_build_object('queue_per_run',security.pipeline_num_v1('pdesc.queue_per_run',10),'pending_max',security.pipeline_num_v1('pdesc.pending_max',10),'pilot_cap',security.pipeline_num_v1('run_now.pilot_cap',20),'queue_cap',security.pipeline_num_v1('pdesc.queue_cap',60),'effective',security.provider_description_cohort_cap_v1()),
+  'enabled',security.pipeline_num_v1('pdesc.enabled',0)>=1,'job_active',coalesce((select active from cron.job where jobname='provider-description-read'),false),
+  'run_now_allowed',coalesce(security.toolset_setting('pipeline','run_now.jobs'),'[]'::jsonb)?'provider-description-read',
+  'poll_seconds',greatest(30,security.pipeline_num_v1('pdesc.every_minutes',60)::int*15) /* fixed: a quarter of the reader's own window (minutes x 60 / 4), never faster than twice a minute */,'status_max',security.provider_description_cohort_cap_v1(),
+  'modes',jsonb_build_array(jsonb_build_object('id','stored','label','Stored official evidence + approved AI','allowed',true),jsonb_build_object('id','approved','label','Existing authorised acquisition + approved AI','allowed',security.pipeline_num_v1('pdesc.acquire_direct',0)>=1)),
+  'fill_modes',jsonb_build_array('missing','upgrade_basic','preview_only','verify_publication'),
+  'upgrade_basic_on',security.pipeline_num_v1('pdesc.registry_upgrade_on',0)>=1 and security.pipeline_num_v1('pdesc.machine_admit_on',0)>=1,
+  'quality_classes',to_jsonb(security.provider_description_quality_classes_v1()));
+ elsif p_action in ('provider_status','provider_publication') then
+ -- Fill fields, read only: the state of up to the governed number of providers, and the task that last included each. Needs no saved cohort, so it works after the browser was closed.
+ select coalesce(array_agg(distinct (e)::uuid),array[]::uuid[]) into v_ids from jsonb_array_elements_text(case when jsonb_typeof(p_args->'provider_ids')='array' then p_args->'provider_ids' else '[]'::jsonb end) e;
+ if cardinality(v_ids)=0 or cardinality(v_ids)>security.provider_description_cohort_cap_v1() then raise exception 'name between 1 and % providers',security.provider_description_cohort_cap_v1() using errcode='22023'; end if;
+ if p_action='provider_publication' then
+  if v_rank<coalesce(v_job.control_rank,6) then raise exception 'your role cannot verify this job publication' using errcode='42501'; end if;
+  v_res:=security.provider_description_publication_read_v1(v_ids);
+  insert into pipeline.admin_control_events(area,action,target,detail,actor) values('provider_descriptions','verify_provider_publication',array_to_string(v_ids,','),jsonb_build_object('providers',cardinality(v_ids),'as_at',now(),'reason','Operator requested actual catalogue and consumer read-back from Fill fields'),v_actor);
+  return v_res;
+ end if;
+ return security.provider_description_fill_status_v1(v_ids,coalesce((p_args->>'feeds')::boolean,false),v_actor);
+ elsif p_action='quality_counts' then
+ return security.provider_description_quality_counts_v1();
+ elsif p_action='quality_refresh' then
+ if v_rank<coalesce(v_job.control_rank,6) then raise exception 'your role cannot refresh the quality snapshot' using errcode='42501'; end if;
+ select array_agg(distinct (e)::uuid) into v_ids from jsonb_array_elements_text(case when jsonb_typeof(p_args->'provider_ids')='array' then p_args->'provider_ids' else '[]'::jsonb end) e;
+ return security.provider_description_quality_refresh_v1(v_ids);
+ elsif p_action in ('saved','verify','diagnose') then
+ if p_action='diagnose' and nullif(p_args->>'preview_token','') is not null then select * into c from pipeline.provider_description_cohorts where id=(p_args->>'preview_token')::uuid and requested_by=v_actor;
+ elsif nullif(p_args->>'cohort_id','') is not null then select * into c from pipeline.provider_description_cohorts where id=(p_args->>'cohort_id')::uuid and requested_by=v_actor;
+ else select * into c from pipeline.provider_description_cohorts where requested_by=v_actor order by created_at desc,id desc limit 1; end if;
+ if p_action='diagnose' then
+   if v_rank<coalesce(v_job.control_rank,6) then raise exception 'your role cannot diagnose this job' using errcode='42501'; end if;
+   if length(v_reason)<security.pipeline_num_v1('pdesc.reason_min_chars',5) then raise exception 'audit reason required'; end if;
+   if c.id is null and nullif(p_args->>'preview_token','') is not null then select * into c from pipeline.provider_description_cohorts where id=(p_args->>'preview_token')::uuid and requested_by=v_actor; end if;
+   if c.id is null then raise exception 'owned saved evidence required' using errcode='42501'; end if;
+   select coalesce(r.rule,m.snapshot->>'eligibility_reason'),coalesce(r.reason,m.snapshot->>'reason') into v_rule,v_why from pipeline.provider_description_cohort_members m left join pipeline.provider_description_reads r on r.id=m.read_id where m.cohort_id=c.id and m.provider_id=(p_args->>'provider_id')::uuid;
+   if v_rule is null then select x->>'eligibility_reason',x->>'reason' into v_rule,v_why from jsonb_array_elements(c.snapshot->'providers') x where x->>'provider_id'=p_args->>'provider_id'; end if;
+   if v_rule is null then raise exception 'provider is not in owned saved evidence' using errcode='42501'; end if;
+   v_diagnosis:=jsonb_build_object('method','stored_checks','rule',v_rule,'explanation',coalesce(v_why,case v_rule when 'no_verified_stored_source' then 'A current official About/Overview page stored against this exact provider is needed.' when 'unchanged_unsuitable_evidence' then 'The same evidence previously failed or was rejected. A changed approved source is needed before another AI read.' when 'review_full' then 'The validated proposal is parked until Layer 4 capacity becomes available; no further AI read is needed.' else 'Inspect the official source, identity references and validation checks. Only the existing human Layer 4 decision can authorise admission.' end),'ai_used',false,'cost_usd',0,'ai_reason','Provider-description AI diagnostics have no approved existing route.','at',now());
+   -- AI is advice through the existing Operations lane only, bound to an already recorded issue and the exact stored source.
+   select coalesce((select m.snapshot||jsonb_build_object('evidence_id',coalesce(r.evidence_id,m.evidence_id),'source_hash',coalesce(r.content_hash,m.snapshot->>'source_hash'),'checks',r.checks,'sentences',r.proposal->'sentences') from pipeline.provider_description_cohort_members m left join pipeline.provider_description_reads r on r.id=m.read_id where m.cohort_id=c.id and m.provider_id=(p_args->>'provider_id')::uuid),
+     (select z from jsonb_array_elements(c.snapshot->'providers') z where z->>'provider_id'=p_args->>'provider_id')) into v_context;
+   v_ai_model:=nullif(security.ai_route_v1('ops_diagnosis')->>'model','');
+   v_ai_why:=case when security.pipeline_num_v1('ops.ai_diagnosis_on',0)<1 then 'ops.ai_diagnosis_on is 0'
+      when v_ai_model is null then 'no approved Operations diagnosis model'
+      when not security.ai_use_allowed_v1('ops_diagnose') then 'existing Operations AI spending guard refuses assistance'
+      when nullif(v_context->>'evidence_id','') is null then 'no exact stored evidence reference for an existing issue' end;
+   if v_ai_why is null then
+    select i.id into v_issue from pipeline.integration_issues i where i.status not in ('closed','superseded') and (p_args->>'provider_id')::uuid=any(i.provider_ids)
+      and jsonb_path_exists(i.evidence,'$.**.evidence_id ? (@ == $id)',jsonb_build_object('id',v_context->>'evidence_id')) order by i.id desc limit 1;
+    if v_issue is null then v_ai_why:='no existing open integration issue links this exact provider and stored evidence'; end if;
+   end if;
+   if v_ai_why is null then
+    perform pg_advisory_xact_lock(hashtext('cf247 pdesc diagnosis '||v_issue::text)); -- fixed: duplicate request suppression for the existing issue/evidence.
+    select q.id into v_ai_request from pipeline.ops_ai_diagnosis_requests q where q.issue_id=v_issue and q.context->>'provider_description_evidence_id'=v_context->>'evidence_id' and q.state in ('queued','leased','answered','refused') order by q.id desc limit 1;
+    if v_ai_request is null then
+     insert into pipeline.ops_ai_diagnosis_requests(issue_id,context,model,note)
+     values(v_issue,jsonb_build_object('issue',v_issue,'provider_id',p_args->>'provider_id','provider_description_evidence_id',v_context->>'evidence_id','evidence',v_context,'question','Explain why this official source or claim is unsuitable and which evidence is missing. Advice only; do not authorise a description or change any setting.',
+       'deterministic',v_diagnosis,'root_causes',(select jsonb_agg(jsonb_build_object('code',rc.code,'class',rc.class,'title',rc.title,'description',rc.description)) from pipeline.ops_root_causes rc)),v_ai_model,'Provider description evidence explanation; advice through existing Operations diagnosis') returning id into v_ai_request;
+    end if;
+    v_diagnosis:=v_diagnosis||jsonb_build_object('request_id',v_ai_request,'request_status','queued','integration_issue_id',v_issue,'model',v_ai_model,'ai_reason','Queued through the existing Operations diagnosis worker; no approval or settings authority.');
+   else v_diagnosis:=v_diagnosis||jsonb_build_object('ai_reason',v_ai_why); end if;
+   update pipeline.provider_description_cohort_members set snapshot=snapshot||jsonb_build_object('diagnosis',v_diagnosis) where cohort_id=c.id and provider_id=(p_args->>'provider_id')::uuid;
+   update pipeline.provider_description_cohorts set snapshot=jsonb_set(snapshot,'{providers}',(select jsonb_agg(case when z->>'provider_id'=p_args->>'provider_id' then z||jsonb_build_object('diagnosis',v_diagnosis) else z end) from jsonb_array_elements(snapshot->'providers') z)) where id=c.id;
+   insert into pipeline.admin_control_events(area,action,target,detail,actor) values('provider_descriptions','explain_evidence',c.id::text,jsonb_build_object('provider_id',p_args->>'provider_id','reason',v_reason,'diagnosis',v_diagnosis),v_actor);
+   return v_diagnosis;
+ end if;
+ select coalesce(jsonb_agg(jsonb_build_object('cohort_id',h.id,'state',h.state,'created_at',h.created_at,'reason',h.reason,'run_id',h.run_id) order by h.created_at desc),'[]') into v_history from (select * from pipeline.provider_description_cohorts where requested_by=v_actor order by created_at desc limit security.pipeline_num_v1('pdesc.queue_per_run',10)::int) h;
+ if c.state='preview' then
+   v_preview:=jsonb_set(c.snapshot,'{providers}',coalesce((select jsonb_agg(z||case when z->'diagnosis'->>'request_id' is not null then jsonb_build_object('diagnosis',(z->'diagnosis')||coalesce((select jsonb_build_object('request_status',q.state,'ai_used',q.state='answered','explanation',coalesce(q.answer->>'reasoning',z->'diagnosis'->>'explanation'),'answer',q.answer,'model',q.model,'cost_usd',q.cost_usd,'answered_at',q.answered_at) from pipeline.ops_ai_diagnosis_requests q where q.id=(z->'diagnosis'->>'request_id')::bigint),'{}'::jsonb)) else '{}'::jsonb end) from jsonb_array_elements(c.snapshot->'providers') z),'[]'::jsonb));
+   return jsonb_build_object('preview',v_preview||jsonb_build_object('token',c.id,'expires_at',c.expires_at),'scope',c.selection,'history',v_history);
+ end if;
+ if c.id is null then return jsonb_build_object('history',v_history,'providers','[]'::jsonb,'runs','[]'::jsonb); end if;
+ v_res:=security.provider_description_run_result_v1(c.id);
+ if p_action='verify' then
+   update pipeline.provider_description_cohorts set verified_at=now(),verification=v_res-'last_verification' where id=c.id;
+   insert into pipeline.admin_control_events(area,action,target,detail,actor) values('provider_descriptions','verify',c.id::text,jsonb_build_object('totals',v_res->'totals','as_at',now(),'reason','Operator requested actual catalogue and consumer read-back'),v_actor);
+ end if;
+ return v_res||jsonb_build_object('history',v_history);
+ end if;
+ raise exception 'unknown provider-description action %',p_action using errcode='22023';
+end $function$;
+
 -- 5 functions rewritten whole (short; md5-guarded above) ---------------------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION security.scholarship_ai_active_v1()
  RETURNS TABLE(model_code text, model_identifier text, prompt_version integer, ai_admission boolean)
@@ -1186,10 +1424,13 @@ declare v_rank int := security.current_role_rank();
         v_day timestamptz := date_trunc('day', now() at time zone 'UTC') at time zone 'UTC';  -- fixed: the UTC day the AI guards count
         v_bal record;
 begin
-  if auth.uid() is null or v_rank < 4 then raise exception 'Pipeline Operator role or above required' using errcode = '42501'; end if;
+  if auth.uid() is null or v_rank < 3 then raise exception 'assigned StudySearch role required' using errcode = '42501'; end if;  -- rank 3 reads (no key details)
   select o.remaining_usd, o.observed_at, o.payload into v_bal from pipeline.layer3_openrouter_observations o where o.kind = 'credits' order by o.observed_at desc limit 1;
   return jsonb_build_object(
-    'can_control', v_rank >= 5,
+    'can_control', v_rank >= 5, 'can_admin', v_rank >= 6, 'rank', v_rank,
+    -- the daily ceiling and the service caps follow this mode (Observe only: reported, nothing stopped); the balance checks, the switch and
+    -- qualification hold in both
+    'mode', case when security.toolset_enforced('openrouter') then 'stop' else 'observe' end,
     'ceiling_usd', security.pipeline_num_v1('budgets.ai_daily_ceiling_usd', 14),
     'caps_total_usd', (select coalesce(sum(r.daily_usd_cap), 0) from pipeline.ai_service_routes r where r.enabled),
     'caps_exceed_ceiling', (select coalesce(sum(r.daily_usd_cap), 0) from pipeline.ai_service_routes r where r.enabled) > security.pipeline_num_v1('budgets.ai_daily_ceiling_usd', 14),
@@ -1198,11 +1439,12 @@ begin
       -- the key is an edge function secret (OPENROUTER_API_KEY); the database never holds it. A balance read inside the stale window proves it works.
       'key_present', coalesce(v_bal.observed_at > now() - make_interval(mins => coalesce((security.toolset_setting('openrouter', 'balance_stale_minutes'))::text::int, 30)), false),
       'key_secret_name', 'OPENROUTER_API_KEY',
-      'key', jsonb_build_object('secret', 'OPENROUTER_API_KEY', 'shared_by_profiles', (select count(*) from pipeline.layer3_model_profiles p where p.secret_env_key = 'OPENROUTER_API_KEY'),
+      'key', case when v_rank < 4 then jsonb_build_object('present', v_bal.observed_at is not null) else jsonb_build_object('present', v_bal.observed_at is not null, 'secret', 'OPENROUTER_API_KEY', 'shared_by_profiles', (select count(*) from pipeline.layer3_model_profiles p where p.secret_env_key = 'OPENROUTER_API_KEY'),
                                 'profile_id', (select p.id from pipeline.layer3_model_profiles p where p.code = (security.toolset_setting('firecrawl', 'builder_model_profile') #>> '{}')),
-                                'profile_code', security.toolset_setting('firecrawl', 'builder_model_profile') #>> '{}'),
+                                'profile_code', security.toolset_setting('firecrawl', 'builder_model_profile') #>> '{}') end,
+      'balance_max_age_minutes', coalesce((security.toolset_setting('openrouter', 'balance_max_age_minutes'))::text::numeric, 90),
       'balance_known', v_bal.remaining_usd is not null,
-      'balance_note', case when v_bal.remaining_usd is null then 'No balance reading yet: the credit floor cannot hold anything until one is recorded (unknown is not zero).' end,
+      'balance_note', case when v_bal.remaining_usd is null then 'No OpenRouter balance reading: every AI service is held until one is recorded.' end,
       'mode', (select t.enforcement from pipeline.platform_toolsets t where t.key = 'openrouter'),
       'balance_usd', round(v_bal.remaining_usd, 2), 'balance_observed_at', v_bal.observed_at,
       'total_credits_usd', (coalesce(v_bal.payload->>'total_credits', v_bal.payload#>>'{data,total_credits}'))::numeric,
@@ -1228,16 +1470,32 @@ begin
                 'daily_usd_cap', r.daily_usd_cap, 'daily_calls_cap', r.daily_calls_cap, 'enabled', r.enabled,
                 'resolver', r.resolver, 'wired', r.resolver = 'route', 'enforced', r.resolver = 'route', 'model', rt.j->>'model', 'model_in_effect', security.ai_service_model_v1(r.service_code),
                 'note', r.note, 'reason', r.reason, 'changed_at', r.changed_at, 'changed_by', (select u.email from auth.users u where u.id = r.changed_by),
-                'models', rt.j->'models', 'spent_today', rt.j->'spent_today', 'held', rt.j->'held', 'held_kind', rt.j->'held_kind', 'held_reason', rt.j->'held_reason', 'would_hold_now', rt.j->'held',
+                'models', rt.j->'models', 'spent_today', rt.j->'spent_today', 'held', rt.j->'held', 'held_kind', rt.j->'held_kind', 'held_reason', rt.j->'held_reason', 'would_hold_now', rt.j->'would_hold', 'would_hold_kind', rt.j->'would_hold_kind', 'would_hold_reason', rt.j->'would_hold_reason',
+                'enforcing', rt.j->'enforcing', 'migration_state', r.migration_state, 'skipped', rt.j->'skipped',
+                'qualification', (select coalesce(jsonb_agg(jsonb_build_object('code', q.model_code, 'qualified', q.status = 'qualified', 'status', q.status, 'provisional', q.provisional,
+                                      'prompt_version', q.prompt_version, 'evidence', q.evidence, 'at', q.qualified_at, 'by', q.qualified_by, 'note', q.note) order by q.model_code), '[]'::jsonb)
+                                    from pipeline.ai_route_qualifications q where q.service_code = r.service_code),
+                'previous_model', r.previous_model,
+                'last_call', (select jsonb_build_object('at', i.at, 'model', i.model, 'outcome', i.outcome, 'error', i.failure_kind, 'attempt_no', i.attempt_no)
+                                from pipeline.ai_invocations i where i.service_code = r.service_code order by i.at desc, i.id desc limit 1),
+                -- held: nothing is handed out. failing: the last call failed. fallback: the last answer came from a later model of the cascade.
+                -- ok: the last call was answered by the first model asked. no_calls: no call is on record yet.
+                'recovery_state', case when coalesce((rt.j->>'held')::boolean, false) then 'held'
+                                       else coalesce((select case when i.outcome = 'failed' then 'failing' when i.attempt_no > 1 then 'fallback' else 'ok' end
+                                                        from pipeline.ai_invocations i where i.service_code = r.service_code order by i.at desc, i.id desc limit 1), 'no_calls') end,
+                'config', case when r.service_code = 'scholarship_extraction' then (select jsonb_build_object('write', 'public.admin_scholarship_ai', 'ai_admission', s.ai_admission,
+                                      'prompts', (select coalesce(jsonb_agg(jsonb_build_object('version', p.version, 'current', p.active, 'text', p.text, 'sha256', encode(sha256(convert_to(p.text, 'UTF8')), 'hex')) order by p.version desc), '[]'::jsonb)
+                                                    from pipeline.scholarship_ai_prompts p)) from pipeline.scholarship_ai_extract_settings s where s.id = 1) end,
                 'on_demand_exempt', rt.j->'on_demand_exempt', 'purpose_group', r.purpose_group,
                 'prompt', case
-                  when r.prompt_source = 'pipeline.provider_description_prompts' then (select jsonb_build_object('source', r.prompt_source, 'version', p.version::text, 'text', left(p.system_prompt, 4000))  -- fixed: the page shows the first 4000 characters
+                  when r.prompt_source = 'pipeline.provider_description_prompts' then (select jsonb_build_object('source', r.prompt_source, 'version', p.version::text, 'text', p.system_prompt, 'text_ref', null, 'sha256', encode(sha256(convert_to(p.system_prompt, 'UTF8')), 'hex'))
                           from pipeline.provider_description_prompts p where p.status = 'active' order by p.version desc limit 1)
-                  when r.prompt_source = 'pipeline.scholarship_ai_prompts' then (select jsonb_build_object('source', r.prompt_source, 'version', p.version::text, 'text', left(p.text, 4000))  -- fixed: as above
+                  when r.prompt_source = 'pipeline.scholarship_ai_prompts' then (select jsonb_build_object('source', r.prompt_source, 'version', p.version::text, 'text', p.text, 'text_ref', null, 'sha256', encode(sha256(convert_to(p.text, 'UTF8')), 'hex'))
                           from pipeline.scholarship_ai_prompts p where p.active order by p.version desc limit 1)
-                  when r.prompt_source = 'pipeline.aer_prompt_versions' then (select jsonb_build_object('source', r.prompt_source, 'version', p.version, 'text', left(p.system_text, 4000))  -- fixed: as above
+                  when r.prompt_source = 'pipeline.aer_prompt_versions' then (select jsonb_build_object('source', r.prompt_source, 'version', p.version, 'text', p.system_text, 'text_ref', null, 'sha256', encode(sha256(convert_to(p.system_text, 'UTF8')), 'hex'))
                           from pipeline.aer_prompt_versions p where p.status <> 'retired' order by p.created_at desc limit 1)
-                  else jsonb_build_object('source', split_part(r.prompt_source, ': ', 1), 'version', nullif(split_part(r.prompt_source, ': ', 2), ''), 'text', null) end,
+                  else jsonb_build_object('source', split_part(r.prompt_source, ': ', 1), 'version', nullif(split_part(r.prompt_source, ': ', 2), ''), 'text', null,
+                                          'text_ref', 'ai-prompts.json#' || r.service_code, 'sha256', null) end,  -- the full text and its sha are in the generated file (scripts/ai-prompts-export.mjs)
                 'settings', (select coalesce(jsonb_agg(jsonb_build_object('toolset', s.toolset_key, 'key', s.key, 'label', s.label, 'help', s.help, 'value', s.value, 'kind', s.kind,
                                'not_read', exists (select 1 from security.ai_settings_not_read_v1() nr where nr.toolset_key = s.toolset_key and nr.key = s.key),
                                'read_only', exists (select 1 from security.ai_settings_not_read_v1() nr where nr.toolset_key = s.toolset_key and nr.key = s.key),
@@ -1259,6 +1517,15 @@ begin
                                  from pipeline.layer3_model_profiles p where p.enabled and not p.paused and p.retired_at is null))),
     'guard', security.ai_route_guard_v1()->'not_allowed_named',
     'usage', jsonb_build_object(
+      'by_model_24h', (select coalesce(jsonb_agg(to_jsonb(u) order by u.service_code, u.attempts desc), '[]'::jsonb)
+                         from (select i.service_code, i.model, count(*) attempts, count(*) filter (where i.outcome = 'answered') answered, count(*) filter (where i.outcome = 'failed') failures,
+                                      count(*) filter (where i.attempt_no > 1) fallbacks, coalesce(sum(i.input_tokens), 0) tokens_in, coalesce(sum(i.output_tokens), 0) tokens_out,
+                                      round(coalesce(sum(i.cost_usd), 0), 4) usd, null::text evidence_href
+                                 from pipeline.ai_invocations i where i.at >= now() - interval '24 hours'  -- fixed: the page's 24-hour usage window
+                                group by 1, 2) u),
+      'fallbacks_24h', (select coalesce(jsonb_agg(to_jsonb(f) order by f.at desc), '[]'::jsonb)
+                          from (select i.at, i.service_code, i.model, i.attempt_no, i.failure_kind from pipeline.ai_invocations i
+                                 where i.outcome = 'failed' and i.at >= now() - interval '24 hours' order by i.at desc limit 100) f),  -- fixed: the page's 24-hour window and its last 100 failed attempts
       'by_day_14d', (select coalesce(jsonb_agg(jsonb_build_object('day', u.d, 'service_code', u.svc, 'lane', u.lane, 'model', u.model, 'usd', u.usd, 'calls', u.calls) order by u.d desc, u.usd desc), '[]'::jsonb)
                        from (select (l.at at time zone 'UTC')::date d, l.service_code svc, l.lane, l.model, round(sum(l.cost_usd), 4) usd, sum(l.calls) calls
                                from pipeline.ai_spend_ledger l where l.at >= v_day - interval '13 days'  -- fixed: the page's 14-day usage window
@@ -1282,6 +1549,7 @@ begin
   if not found then raise exception 'service % is not in the list', p_service; end if;
   if p_cascade is null or cardinality(p_cascade) = 0 then raise exception 'the cascade is empty: name at least one allowed model'; end if;
   if cardinality(p_cascade) > 4 then raise exception 'a cascade holds 4 models at most'; end if;  -- fixed: the table check
+  if r.migration_state <> 'routed' and cardinality(p_cascade) > 1 then raise exception 'this service uses one model: a fallback is not available for it yet'; end if;
   if (select count(distinct c) from unnest(p_cascade) c) <> cardinality(p_cascade) then raise exception 'the cascade names a model twice'; end if;
   select string_agg(c.code, ', ') into v_bad from unnest(p_cascade) c(code) where not exists (select 1 from pipeline.ai_model_catalogue m where m.code = c.code);
   if v_bad is not null then raise exception 'unknown model in the cascade: %', v_bad; end if;
@@ -1298,6 +1566,30 @@ begin
             'resolver', r.resolver, 'reason', v_reason), auth.uid());
   return public.admin_ai_overview_v1();
 end $function$;
+
+create or replace function public.admin_ai_qualification_set_v1(p_service text, p_code text, p_evidence text, p_reason text, p_status text default 'qualified') returns jsonb
+language plpgsql security definer set search_path = '' as $function$
+-- Records whether a model is qualified for a service, with the evidence. Platform Admin only; logged. It switches nothing on: a qualified model is
+-- handed out only if the route's cascade names it and the route is on.
+declare v_reason text := btrim(coalesce(p_reason, '')); v_before jsonb;
+begin
+  if auth.uid() is null or security.current_role_rank() < 6 then raise exception 'Platform Admin required' using errcode = '42501'; end if;
+  if length(v_reason) < 4 then raise exception 'give a reason (kept in the log)'; end if;
+  if p_status is null or p_status not in ('qualified', 'unqualified', 'pending') then raise exception 'status must be qualified, unqualified or pending'; end if;
+  if not exists (select 1 from pipeline.ai_service_routes r where r.service_code = p_service) then raise exception 'service % is not in the list', p_service; end if;
+  if not exists (select 1 from pipeline.ai_model_catalogue m where m.code = p_code) then raise exception 'model % is not in the list', p_code; end if;
+  if p_status = 'qualified' and length(btrim(coalesce(p_evidence, ''))) < 10 then raise exception 'say what the qualification rests on (the evidence)'; end if;
+  select to_jsonb(q) into v_before from pipeline.ai_route_qualifications q where q.service_code = p_service and q.model_code = p_code;
+  insert into pipeline.ai_route_qualifications (service_code, model_code, status, provisional, evidence, qualified_at, qualified_by, note, changed_at)
+  values (p_service, p_code, p_status, false, nullif(btrim(coalesce(p_evidence, '')), ''), case when p_status = 'qualified' then now() end, case when p_status = 'qualified' then auth.uid() end, v_reason, now())
+  on conflict (service_code, model_code) do update set status = excluded.status, provisional = false, evidence = coalesce(excluded.evidence, pipeline.ai_route_qualifications.evidence),
+        qualified_at = excluded.qualified_at, qualified_by = excluded.qualified_by, note = excluded.note, changed_at = now();
+  insert into pipeline.admin_control_events(area, action, target, detail, actor)
+  values ('ai_models', 'route_qualification', p_service || ' / ' || p_code, jsonb_build_object('before', v_before - 'evidence_detail', 'after', p_status, 'evidence', p_evidence, 'reason', v_reason), auth.uid());
+  return public.admin_ai_overview_v1();
+end $function$;
+revoke all on function public.admin_ai_qualification_set_v1(text, text, text, text, text) from public, anon;
+grant execute on function public.admin_ai_qualification_set_v1(text, text, text, text, text) to authenticated, service_role;
 
 -- 9 the register and the settings that are now copies ------------------------------------------------------------------------------------------------
 update pipeline.platform_toolset_settings s
@@ -1317,8 +1609,14 @@ on conflict (kind, name) do update set status = 'retiring', replaced_by = exclud
 do $post$
 declare v text;
 begin
-  select string_agg(r.service_code, ', ') into v from pipeline.ai_service_routes r where r.resolver <> 'route' or security.ai_route_v1(r.service_code)->>'model' is null;
+  select string_agg(r.service_code, ', ') into v from pipeline.ai_service_routes r where r.resolver <> 'route';
   if v is not null then raise exception 'post-check: a service is not resolved by its route: %', v; end if;
+  -- nothing that runs today may stop for want of a qualification: the services that were running before this change still resolve to a model
+  select string_agg(r.service_code, ', ') into v from pipeline.ai_service_routes r
+   where r.service_code in ('course_description', 'course_other_fields', 'fee_reader', 'calendar_reading', 'central_english_policy', 'provider_description',
+                            'scholarship_extraction', 'scholarship_eligibility', 'course_matching', 'adapter_builder')
+     and security.ai_route_v1(r.service_code)->>'model' is null;
+  if v is not null then raise exception 'post-check: a service that runs today has no qualified model: %', v; end if;
   if (security.ai_route_guard_v1()->'cascades') <> '[]'::jsonb then raise exception 'post-check: a cascade names a model that is not allowed'; end if;
   select string_agg(c.code, ', ') into v from pipeline.ai_model_catalogue c where c.status = 'allowed' and not exists (select 1 from pipeline.scholarship_ai_models x where x.code = c.code);
   if v is not null then raise exception 'post-check: an allowed model has no row in pipeline.scholarship_ai_models: %', v; end if;
