@@ -25,6 +25,7 @@
 --   3. The technical reviews are superseded (machine, with a note) and their pages are read again fresh (a new official copy through the scraper);
 --      the 89 reviews about an unproven audience, value or name stay with people.
 --   4. firecrawl.daily_share_scholarships 800 -> 1,500 within the unchanged 4,000 day total; a control event records it.
+--   5. Four active scholarships linked to an artefact with no stored copy are linked to the latest stored artefact of the same URL (kept, not deleted).
 --   Admission, publication and Layer 4 policy are unchanged; nothing is admitted or published here.
 -- Replaces: security.scholarship_legitimacy_v1(uuid), security.scholarship_discovery_refill_v1(integer) (same names and signatures;
 --   md5-guarded edits of the live text).
@@ -101,6 +102,18 @@ select a.model_code, a.prompt_version, case when rv.scholarship_id is not null t
  where rv.url is not null
    and not exists (select 1 from pipeline.scholarship_ai_queue q where q.state in ('queued', 'leased')
                     and (q.candidate_id = rv.candidate_id or q.scholarship_id = rv.scholarship_id));
+
+-- 5. evidence chain: an active scholarship whose linked artefact has no stored copy (four, first-party verification of 4 Sep 2026) is linked to
+--    the latest stored, hashed artefact of the same official URL; the earlier artefact is kept (nothing deleted) and the change recorded
+with nx as (
+  select s.id, s.evidence_id old_ev,
+         (select e3.id from pipeline.evidence_artifacts e3 where e3.source_url = s.source_url and e3.storage_path is not null and e3.content_hash is not null
+           order by e3.captured_at desc limit 1) new_ev
+    from scholarship.scholarships s join pipeline.evidence_artifacts e on e.id = s.evidence_id
+   where s.lifecycle_status = 'active' and e.storage_path is null),
+up as (update scholarship.scholarships s set evidence_id = nx.new_ev, updated_at = now() from nx where nx.id = s.id and nx.new_ev is not null returning s.id, nx.old_ev, nx.new_ev)
+insert into pipeline.scholarship_sweep_changes(scholarship_id, field, before_value, after_value, evidence_id)
+select up.id, 'evidence_id', to_jsonb(up.old_ev), jsonb_build_object('by', '20261113336500', 'rule', 'latest_stored_artefact_same_url', 'evidence_id', up.new_ev), up.new_ev from up;
 
 -- 4. the scholarship share within the unchanged day total
 update pipeline.platform_toolset_settings set value = '1500'::jsonb

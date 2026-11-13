@@ -31,3 +31,9 @@ test('the scholarship Firecrawl share is raised inside the unchanged day total, 
   expect(m).not.toMatch(/key = 'daily_budget_total'/)
   expect(m).toContain("'firecrawl_daily_share_scholarships', jsonb_build_object('from', 800, 'to', 1500, 'day_total_unchanged', 4000)")
 })
+
+test('evidence chain: an artefact with no stored copy is replaced by the latest stored, hashed artefact of the same URL; nothing is deleted', () => {
+  expect(m).toContain('where e3.source_url = s.source_url and e3.storage_path is not null and e3.content_hash is not null')
+  expect(m).toContain("'rule', 'latest_stored_artefact_same_url'")
+  expect(m).not.toMatch(/delete from/i)
+})
