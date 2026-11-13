@@ -3,11 +3,16 @@
 -- sentence-count-only held descriptions, using the existing subset recovery", on conditions: complete, independent, supported sentences are kept; not simply the
 -- first N; no cut inside a sentence; no filler; dangling references removed; every existing check applies to the final text; the machine admission policy and the
 -- evidence thresholds are not changed; stored answers are reused with no AI call; the original and final text, the reason and the machine decision are recorded.
--- What: security.cdesc_subset_plan_v1  3c263a1984a33a133a331883cc6f8eae -> 3d6fc72b6736b7c58a0eaf85e93dc460
---   New step 1c. After the failing sentences are set aside, while the reading is over enrich.course_description_max_sentences or _max_chars, the kept sentence with
---   the least course-specific substance is set aside (new security.cdesc_sentence_substance_v1: the distinct words of four or more letters of the sentence that are
---   also in its own quote; the later sentence on a tie), never the first kept sentence, and a sentence that then opens by pointing back to it goes with it
---   (security.cdesc_points_back_v1). If one sentence is left and the reading is still too long, nothing more is set aside and it stays held (over_length_needs_decision).
+-- What: security.cdesc_subset_plan_v1  3c263a1984a33a133a331883cc6f8eae -> 0045a951b5d039915d2310e4b973569e
+--   New step 1c, only for a reading whose only fault is its size (no sentence failed a test). While the reading is over
+--   enrich.course_description_max_sentences or _max_chars, the sentence whose removal loses least is set aside: the loss is the course-specific substance (new
+--   security.cdesc_sentence_substance_v1: the distinct words of four or more letters of a sentence that are also in its own quote) of that sentence and of the
+--   sentences after it that open by pointing back to it (security.cdesc_points_back_v1; they go with it). Never the first kept sentence. A sentence about a
+--   qualification, registration, recognition, pathway or placement goes only when no other choice is left. The later sentence on a tie. If one sentence is left and
+--   the reading is still too long, nothing more is set aside and it stays held (over_length_needs_decision). A reading with a failing sentence and a size problem
+--   is outside the approval and is not shortened.
+-- Known limit of the rule (QA of this change): "substance" counts supported words, so among ordinary sentences the shortest goes first. It cannot judge meaning;
+--   the protected sentence kinds and the dangling-reference cost are the guard against losing what matters.
 --   The remainder goes through the same full check (security.course_description_check_v1), the wording policy and the machine rule as before: none of them is edited.
 --   The record of a recovery already holds the original sentences and text, the sentences set aside with their cause (now also over_limit), the kept ones and the
 --   machine decision (pipeline.course_description_machine_admissions.checks -> subset_of_reading).
@@ -45,31 +50,45 @@ comment on function security.cdesc_sentence_substance_v1(text, text) is
   'Course description shortening: how many distinct words of a sentence (four or more letters, compared on their first five) are also in its own quote. Used only to choose which whole sentence is set aside when a reading is over its size limits.';
 revoke all on function security.cdesc_sentence_substance_v1(text, text) from public, anon, authenticated;
 
-select pg_temp.edit_all('security.cdesc_subset_plan_v1(uuid,uuid,jsonb)', '3c263a1984a33a133a331883cc6f8eae', '3d6fc72b6736b7c58a0eaf85e93dc460',
+select pg_temp.edit_all('security.cdesc_subset_plan_v1(uuid,uuid,jsonb)', '3c263a1984a33a133a331883cc6f8eae', '0045a951b5d039915d2310e4b973569e',
   array[$o0$v_page text; v_title text; v_prov text;
 begin$o0$,
         $o1$  -- 2. every sentence that passes is kept, in its original order. Nothing is cut for length or sentence count: a reading whose only fault is its size stays held (the Platform Admin decides that separately)
 $o1$],
-  array[$n0$v_page text; v_title text; v_prov text; v_cnt int; v_tot int; v_victim int;
+  array[$n0$v_page text; v_title text; v_prov text; v_cnt int; v_tot int; v_first int; v_victim int; v_c int; v_bc int; v_p boolean; v_bp boolean;
 begin$n0$,
-        $n1$  -- 1c. (Platform Admin 13 Nov 2026 12:16, conditional approval) a reading still over the sentence or character limit is shortened by whole sentences, never inside one.
-  --     The kept sentence with the least course-specific substance (security.cdesc_sentence_substance_v1: the fewest distinct words that are also in its own quote) is set aside,
-  --     the later one on a tie, and never the first kept sentence (it says what the course is). A sentence that then points back to it goes with it, as in 1b.
-  --     Repeated until the reading fits. If it cannot fit (one sentence left and still too long) nothing more is set aside and the reading stays held below.
-  loop
-    select count(*), coalesce(sum(length(btrim(coalesce(v_s->(k - 1)->>'text', '')))), 0) + greatest(count(*) - 1, 0) into v_cnt, v_tot from generate_series(1, n) k where v_fault[k] is null;
-    exit when v_cnt <= 1 or (v_cnt <= v_max and v_tot <= v_maxc);
-    v_victim := null;
-    select k into v_victim from generate_series(1, n) k
-     where v_fault[k] is null and k > (select min(k2) from generate_series(1, n) k2 where v_fault[k2] is null)
-     order by security.cdesc_sentence_substance_v1(v_s->(k - 1)->>'text', v_s->(k - 1)->>'quote'), k desc limit 1;
-    exit when v_victim is null;
-    v_fault[v_victim] := 'over_limit';
-    for i in v_victim + 1 .. n loop
-      exit when v_fault[i] is not null or not security.cdesc_points_back_v1(v_s->(i - 1)->>'text');
-      v_fault[i] := 'depends_on_dropped_sentence';
+        $n1$  -- 1c. (Platform Admin 13 Nov 2026 12:16, conditional approval) a reading whose ONLY fault is its size (no sentence failed a test) and that is over the sentence or
+  --     character limit is shortened by whole sentences, never inside one. Each pass sets aside the sentence whose removal loses least: for every kept sentence but
+  --     the first (it says what the course is), the loss is the course-specific substance (security.cdesc_sentence_substance_v1) of that sentence and of the
+  --     sentences after it that open by pointing back to it (they would dangle, so they go with it). A sentence about a qualification, registration, recognition,
+  --     pathway or placement is set aside only when no other choice is left. The least loss wins, the later sentence on a tie. Repeated until the reading fits.
+  --     If it cannot fit (one sentence left and still too long) nothing more is set aside and the reading stays held below. A reading with a failing sentence
+  --     AND a size problem is outside the approval: it is not shortened here and stays held (over_length_needs_decision).
+  if not exists (select 1 from unnest(v_fault) x(f) where x.f is not null) then
+    loop
+      select count(*), coalesce(sum(length(btrim(coalesce(v_s->(k - 1)->>'text', '')))), 0) + greatest(count(*) - 1, 0), min(k) into v_cnt, v_tot, v_first from generate_series(1, n) k where v_fault[k] is null;
+      exit when v_cnt <= 1 or (v_cnt <= v_max and v_tot <= v_maxc);
+      v_victim := null;
+      for k in reverse n .. v_first + 1 loop
+        continue when v_fault[k] is not null;
+        v_c := 0; v_p := false; i := k;
+        loop
+          v_c := v_c + security.cdesc_sentence_substance_v1(v_s->(i - 1)->>'text', v_s->(i - 1)->>'quote');
+          -- fixed: a structural test of what a sentence is about (a qualification, registration, recognition, pathway or placement), not a tunable limit
+          v_p := v_p or coalesce(v_s->(i - 1)->>'text', '') ~* '\m(regist|licen|qualif|recogni|certif|accredit|pathway|eligib|prerequisit|placement|practicum|internship)';
+          i := i + 1;
+          exit when i > n or v_fault[i] is not null or not security.cdesc_points_back_v1(v_s->(i - 1)->>'text');
+        end loop;
+        if v_victim is null or (v_p, v_c) < (v_bp, v_bc) then v_victim := k; v_bp := v_p; v_bc := v_c; end if;
+      end loop;
+      exit when v_victim is null;
+      v_fault[v_victim] := 'over_limit';
+      for i in v_victim + 1 .. n loop
+        exit when v_fault[i] is not null or not security.cdesc_points_back_v1(v_s->(i - 1)->>'text');
+        v_fault[i] := 'depends_on_dropped_sentence';
+      end loop;
     end loop;
-  end loop;
+  end if;
   -- 2. every sentence that passes and was not set aside for size is kept, in its original order. No sentence is ever cut inside: a reading that cannot be brought within the limits by whole sentences stays held
 $n1$]);
 

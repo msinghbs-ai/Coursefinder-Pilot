@@ -6,7 +6,7 @@ const M = fs.readFileSync('supabase/migrations/20261113310000_cf247_cdesc_shorte
 const H = fs.readFileSync('supabase/held/cdesc_shorten_forward_recovery.sql', 'utf8')
 const RUN = fs.readFileSync('tests/fixtures/cdesc-shorten/run.sh', 'utf8')
 const WF = fs.readFileSync('.github/workflows/course-descriptions-test.yml', 'utf8')
-const P = ['security.cdesc_subset_plan_v1(uuid,uuid,jsonb)', '3c263a1984a33a133a331883cc6f8eae', '3d6fc72b6736b7c58a0eaf85e93dc460']
+const P = ['security.cdesc_subset_plan_v1(uuid,uuid,jsonb)', '3c263a1984a33a133a331883cc6f8eae', '0045a951b5d039915d2310e4b973569e']
 
 test('only the subset plan is edited (md5-guarded) and the held file reverses it; the check, the wording policy and the machine rule are not touched', () => {
   expect(M).toContain(`select pg_temp.edit_all('${P[0]}', '${P[1]}', '${P[2]}',`)
@@ -18,10 +18,14 @@ test('only the subset plan is edited (md5-guarded) and the held file reverses it
   expect(RUN).toContain(P[1]); expect(RUN).toContain(P[2])
 })
 
-test('the conditions of the approval are in the rule: whole sentences, least substance first, never the first, dangling openers go too, cannot fit stays held', () => {
+test('the conditions of the approval are in the rule: whole sentences, size-only readings, least loss first, never the first, protected kinds last, dangling openers counted and removed, cannot fit stays held', () => {
   expect(M).toContain('exit when v_cnt <= 1 or (v_cnt <= v_max and v_tot <= v_maxc);')
-  expect(M).toContain('where v_fault[k] is null and k > (select min(k2) from generate_series(1, n) k2 where v_fault[k2] is null)')
-  expect(M).toContain("order by security.cdesc_sentence_substance_v1(v_s->(k - 1)->>'text', v_s->(k - 1)->>'quote'), k desc limit 1;")
+  // only a reading with no failing sentence is shortened; the first kept sentence is never a candidate
+  expect(M).toContain('if not exists (select 1 from unnest(v_fault) x(f) where x.f is not null) then')
+  expect(M).toContain('for k in reverse n .. v_first + 1 loop')
+  // the loss of a candidate counts the sentences that would dangle; a protected kind of sentence loses to any other; the later sentence wins a tie
+  expect(M).toContain("v_c := v_c + security.cdesc_sentence_substance_v1(v_s->(i - 1)->>'text', v_s->(i - 1)->>'quote');")
+  expect(M).toContain('if v_victim is null or (v_p, v_c) < (v_bp, v_bc) then v_victim := k; v_bp := v_p; v_bc := v_c; end if;')
   expect(M).toContain("v_fault[v_victim] := 'over_limit';")
   expect(M).toContain("exit when v_fault[i] is not null or not security.cdesc_points_back_v1(v_s->(i - 1)->>'text');")
   // the limits are the existing settings (read by the plan as v_max and v_maxc); no text function cuts inside a sentence

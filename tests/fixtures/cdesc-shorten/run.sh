@@ -10,7 +10,7 @@ case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 M=supabase/migrations/20261113310000_cf247_cdesc_shorten_by_sentence.sql
 HELD=supabase/held/cdesc_shorten_forward_recovery.sql
 F=tests/fixtures/cdesc-shorten
-SIG='security.cdesc_subset_plan_v1(uuid,uuid,jsonb)'; BEFORE=3c263a1984a33a133a331883cc6f8eae; AFTER=3d6fc72b6736b7c58a0eaf85e93dc460
+SIG='security.cdesc_subset_plan_v1(uuid,uuid,jsonb)'; BEFORE=3c263a1984a33a133a331883cc6f8eae; AFTER=0045a951b5d039915d2310e4b973569e
 q() { psql -X -d "$1" -Atc "$2"; }
 W=$(mktemp -d)
 cleanup() { local code=$?; trap - EXIT; rm -rf "$W"; if [ -z "${CRS_KEEP:-}" ]; then for d in "$DB" "${DB}_old" "${DB}_crt" "${DB}_t" "${DB}_rf" "${DB}_s"; do dropdb --if-exists "$d" >/dev/null 2>&1 || true; done; fi; exit "$code"; }
