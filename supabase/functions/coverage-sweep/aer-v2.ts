@@ -285,3 +285,33 @@ export function aerV3Verify(a: any, b: AerBlocks, refs: AerV2Refs, quoteMax: num
   const passed = checks.filter((c) => c.pass).length;
   return { records, checks, seen_not_mapped: seen, passed, failed: checks.length - passed };
 }
+
+// v0.94.0 (14 Nov 2026, CF-247 S1-AER benchmark report, Platform Admin 14 Nov 2026 17:21 "noting whether any multi-block quotes fail single-block
+// citation checks"): where a quote that failed its block check is found on the page. Diagnostic only: it never changes a check, a verdict or a score.
+//   cited_block      inside the block it cites (the check failed for another reason)
+//   adjacent_blocks  only across the cited block and its neighbours (a quote that spans blocks: the single-block rule refused it)
+//   other_block      inside one other block (the wrong block was cited)
+//   page             only across blocks elsewhere on the page
+//   not_on_page      nowhere on the page (paraphrased or joined from separate places)
+export type AerQuoteWhere = "cited_block" | "adjacent_blocks" | "other_block" | "page" | "not_on_page" | "no_quote";
+const ADJACENT_SPAN = 3;  // fixed: how many neighbouring blocks a spanning quote is looked for across, a diagnostic window, not a rule
+export function aerV3QuoteWhere(b: AerBlocks, quote: unknown, cited: unknown): AerQuoteWhere {
+  const f = aerFlat(quote);
+  if (f.length < QUOTE_FLOOR) return "no_quote";
+  const n = Number.isInteger(cited) ? (cited as number) : 0, flats = b.blocks.map((x) => aerFlat(x.text));
+  if (n >= 1 && n <= flats.length && flats[n - 1].includes(f)) return "cited_block";
+  if (flats.some((x) => x.includes(f))) return "other_block";  // inside one block: not a spanning quote
+  if (n >= 1 && n <= flats.length) {
+    // the cited block and up to ADJACENT_SPAN blocks on each side, joined; the quote must run across the cited block's own text
+    const s = Math.max(1, n - ADJACENT_SPAN), e = Math.min(flats.length, n + ADJACENT_SPAN), joined = flats.slice(s - 1, e).join("");
+    const from = flats.slice(s - 1, n - 1).join("").length, to = from + flats[n - 1].length;
+    for (let at = joined.indexOf(f); at >= 0; at = joined.indexOf(f, at + 1)) if (at < to && at + f.length > from) return "adjacent_blocks";
+  }
+  return flats.join("").includes(f) ? "page" : "not_on_page";
+}
+// one line per record that failed its check: where its exact quote and its lead-in were found
+export function aerV3QuoteDiag(records: any[], b: AerBlocks, checks: AerV3Check[]) {
+  return records.map((r, i) => ({ r, i, c: checks[i] })).filter((x) => x.c && !x.c.pass).map((x) => ({
+    record: x.i, reasons: x.c.reasons, exact: aerV3QuoteWhere(b, x.r?.exact_quote, x.r?.exact_block),
+    lead_in: x.r?.lead_in_quote == null ? null : aerV3QuoteWhere(b, x.r.lead_in_quote, x.r?.lead_in_block) }));
+}
