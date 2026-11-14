@@ -19,6 +19,17 @@
 .aim-state.tone-warning{border-color:var(--cf-amber-200);background:var(--cf-warning-soft)}
 .aim-state.tone-success{border-color:var(--cf-green-200);background:var(--cf-success-soft)}
 .aim-state .cf-chip{font-size:var(--cf-fs-sm);padding:4px 9px;background:var(--cf-surface)}
+/* the limits banner: above the four cards, so a collapsed card never hides whether limits are enforced (Platform Admin 14 Nov 2026) */
+.aim-banner{margin:0;padding:12px 14px;border-left-width:4px;font-size:var(--cf-fs-base)}
+.aim-banner.tone-warning{border-left-color:var(--cf-amber-500)}
+.aim-banner.tone-success{border-left-color:var(--cf-success)}
+.aim-banner.tone-danger{border-left-color:var(--cf-danger)}
+.aim-banner .cf-chip{font-weight:700}
+.aim-banner-text{flex:1 1 320px;min-width:0;overflow-wrap:anywhere}
+.aim-banner-text strong{color:var(--cf-text)}
+/* why a service is not running: every reason, in words */
+.aim-why{margin:4px 0 0;padding:0 0 0 16px;color:var(--cf-text-2);font-size:var(--cf-fs-xs);line-height:1.45;overflow-wrap:anywhere}
+.aim-why li+li{margin-top:2px}
 
 /* 1 OpenRouter */
 .aim-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
