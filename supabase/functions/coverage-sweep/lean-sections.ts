@@ -73,8 +73,15 @@ export function selectSections(ab: AerBlocks, field: string, opt: SectionOptions
   const idx = [...keep].sort((a, b) => a - b);
   const text = idx.map((k) => lines[k]).join("\n");
   const pageBlocks = idx.filter((k) => B[k].kind !== "data");
-  return { selector: LEAN_SECTIONS, input: ab.input, field, block_ids: idx.map((k) => `B${B[k].n}`), blocks: idx.length, chars: text.length, text, no_selection: pageBlocks.length === 0 };
+  return { selector: LEAN_SECTIONS, input: ab.input, field, block_ids: idx.map((k) => `B${B[k].n}`), blocks: idx.length, chars: text.length, text,
+    plain: plainOf(idx.map((k) => B[k])), no_selection: pageBlocks.length === 0 };
 }
+
+// v0.91.0 (Platform Admin 14 Nov 2026 13:25, recall matcher fix): the words of blocks without their "[B<n> @<offset>]" labels and line marks, joined
+// in page order. A quote that runs across adjacent blocks (a lead-in and its paragraph, a sentence and its list) is matched against this, never
+// against the labelled lines, where the label between two blocks broke the match. Measurement only: what a reader is sent is the labelled text.
+export function plainOf(blocks: AerBlock[]): string { return blocks.map((b) => b.text).join("\n") }
+export function blockPlain(ab: AerBlocks): string { return plainOf(ab.blocks) }
 
 // the canonical flat form used by every quote check of the worker (letters and digits only, lower case, accents and spacing ignored)
 export const flatForm = (s: string) => String(s || "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "");

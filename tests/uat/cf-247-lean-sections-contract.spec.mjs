@@ -4,12 +4,13 @@
 // reader (Layer 4 accepted rows, tested adapters): no AI call, no scraper credit, nothing admitted, no reader's request changed; a page with no selection is never treated as lacking the field.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-import { BLOCK_INPUT, LEAN_SECTIONS, holds, selectSections } from '../../supabase/functions/coverage-sweep/lean-sections.ts'
+import { BLOCK_INPUT, LEAN_SECTIONS, blockPlain, holds, selectSections } from '../../supabase/functions/coverage-sweep/lean-sections.ts'
 import { AER_V3_INPUT, aerV3Blocks } from '../../supabase/functions/coverage-sweep/aer-v2.ts'
 import { leanText } from '../../supabase/functions/coverage-sweep/lean-input.ts'
 
 const IX = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 const MIG = fs.readFileSync('supabase/migrations/20261114031500_cf247_lean_sections_eval.sql', 'utf8')
+const MIGB = fs.readFileSync('supabase/migrations/20261114051500_cf247_lean_sections_eval_run_b.sql', 'utf8')
 const SEL = fs.readFileSync('supabase/functions/coverage-sweep/lean-sections.ts', 'utf8')
 const filler = '<p>' + 'Graduates work across many industries and roles. '.repeat(12) + '</p>'
 const page = `<html><header>Site menu Apply now</header><body><main><h1>Bachelor of Science</h1><p>The Bachelor of Science builds skills in research.</p>` +
@@ -69,8 +70,9 @@ test('gold matching: flat form, every part needed', () => {
 
 test('worker mode lean_sections_eval: stored copies only, no AI, no Firecrawl, nothing admitted; no reader uses the selector', () => {
   expect(IX).toMatch(/const WORKER = "coverage-sweep-worker-v0\.89\.0";|\/\/ was v0\.89\.0 \(#1136\) \/\/ v0\.89\.0 \(14 Nov 2026, numbered after #1137/)  // current, or kept as "was" by a later worker (v0.90.0 merges #1128)
-  expect(IX).toContain('import { BLOCK_INPUT, LEAN_SECTIONS, holds, selectSections } from "./lean-sections.ts";')
-  expect(IX).toContain('const ab = aerV3Blocks(leanText(raw), di), whole = ab.text, sel = selectSections(ab, f);')
+  expect(IX).toContain('import { BLOCK_INPUT, LEAN_SECTIONS, blockPlain, holds, selectSections } from "./lean-sections.ts";')
+  expect(IX).toContain('const ab = aerV3Blocks(leanText(raw), di), whole = blockPlain(ab), sel = selectSections(ab, f);')
+  expect(IX).toContain('const selText = sel.plain;')
   const a = IX.indexOf('if (mode === "lean_sections_eval")'), b = IX.indexOf('if (mode === "central_ai")')
   expect(a).toBeGreaterThan(0)
   const body = IX.slice(a, b)
@@ -97,4 +99,25 @@ test('the migration: independent labels only, settings for switch, batch and sam
   expect(MIG).toContain("'ai_calls', 0, 'firecrawl_credits', 0")
   expect(MIG).not.toMatch(/^\s*(drop|truncate|delete)\b/im)
   expect(MIG).not.toMatch(/website_v2_|website_edge_|website_api_v2_|zoho_edge_|svc_website_settings_v1|\bapi\./)
+})
+
+test('recall matcher (v0.91.0): a quote that runs across adjacent blocks is held by the blocks\' words, never broken by the [B#] labels; the reader still gets labelled lines', () => {
+  const html = '<main>' + '<p>Intro text for the course page.</p>'.repeat(60) + '<h2>Entry requirements</h2><p>Academic admission requirements may be satisfied through completion of one of the following:</p><ul><li>AQF Diploma or equivalent;</li><li>Undergraduate Certificate</li></ul></main>'
+  const ab = blocks(html, '')
+  const quote = ['Academic admission requirements may be satisfied through completion of one of the following: AQF Diploma or equivalent; Undergraduate Certificate']
+  expect(holds(ab.text, quote)).toBe(false)          // the labelled lines break a cross-block quote (the run phase1b-step1 artefact)
+  expect(holds(blockPlain(ab), quote)).toBe(true)
+  const sel = selectSections(ab, 'entry_requirements')
+  expect(holds(sel.plain, quote)).toBe(true)
+  expect(sel.text).toMatch(/^\[B\d+ @\d+\] /m)       // what a reader would be sent keeps its labels
+  expect(sel.plain).not.toMatch(/\[B\d+ @/)
+})
+
+test('run b migration: run a kept as recorded, its unread cases closed as superseded, the same cases seeded again and held for the release window; nothing deleted', () => {
+  expect(MIGB).toMatch(/^-- Replaces: nothing\.$/m)
+  expect(MIGB).toMatch(/^-- Retires: nothing\.$/m)
+  expect(MIGB).toContain("where run_label = 'phase1b-step1-2026-11-14' and state = 'pending';")
+  expect(MIGB).toContain("select security.lean_sections_eval_seed_v1('phase1b-step1b-2026-11-14');")
+  expect(MIGB).toContain("set leased_until = now() + interval '10 minutes'")
+  expect(MIGB).not.toMatch(/^\s*(drop|truncate|delete)\b/im)
 })
