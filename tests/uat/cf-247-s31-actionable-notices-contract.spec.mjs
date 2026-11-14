@@ -62,18 +62,19 @@ test.describe('mocked browser', () => {
 
 // v2.15.327 (Platform Admin 23 Oct 2026 13:26: "go to openrouter settings doesn't open, check rest of the link and streamline it")
 test.describe('v2.15.327 notice links', () => {
-  test('Go to OpenRouter settings on Toolsets and limits opens and scrolls to the OpenRouter card', async ({ page }) => {
+  // v2.16.0 (Platform Admin 13 Nov 2026 19:14): the OpenRouter card is the first card of Models & services › AI
+  test('Go to OpenRouter key and usage on Toolsets and limits opens and scrolls to the OpenRouter card on the AI tab', async ({ page }) => {
     await mockAdmin(page)
     await page.goto('/#models-services?tab=limits')
     await page.locator('[data-card="services.toolsets"] .cf-card-toggle').click()
     await page.locator('[data-toolset-notices] [data-notice="openrouter:3:low_balance"] [data-notice-go]').click()
-    await expect(page).toHaveURL(/at=services\.toolset\.openrouter/)
-    await expect(page.locator('[data-card="services.toolset.openrouter"]')).toHaveAttribute('data-card-open', 'true')
-    await expect(page.locator('[data-card="services.toolset.openrouter"]')).toBeInViewport()
-    // the same link again (already on that address) still opens it
-    await page.locator('[data-card="services.toolset.openrouter"] .cf-card-toggle').click()
-    await page.locator('[data-toolset-notices] [data-notice="openrouter:3:low_balance"] [data-notice-go]').click()
-    await expect(page.locator('[data-card="services.toolset.openrouter"]')).toHaveAttribute('data-card-open', 'true')
+    await expect(page).toHaveURL(/tab=ai&card=services\.ai\.openrouter&at=services\.ai\.openrouter/)
+    await expect(page.locator('[data-card="services.ai.openrouter"]')).toHaveAttribute('data-card-open', 'true')
+    await expect(page.locator('[data-card="services.ai.openrouter"]')).toBeInViewport()
+    // an old link to the retired card (a bookmark, an alert e-mail) still opens it
+    await page.locator('[data-card="services.ai.openrouter"] .cf-card-toggle').click()
+    await page.goto('/#models-services?card=services.toolsets,services.toolset.openrouter&at=services.toolset.openrouter')
+    await expect(page.locator('[data-card="services.ai.openrouter"]')).toHaveAttribute('data-card-open', 'true')
   })
 
   test('every Go to target names a page, and every scroll target exists on screen code', () => {

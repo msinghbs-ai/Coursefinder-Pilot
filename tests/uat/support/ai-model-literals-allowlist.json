@@ -1,0 +1,6 @@
+{
+  "_what": "Model identifiers that may be written in supabase/functions or src (cf-247-ai-models-services-contract.spec.mjs). A model is chosen in pipeline.ai_service_routes only; an entry here is display text or a test value, never a choice, and never a model the catalogue lists as not allowed.",
+  "allowed": [
+    { "file": "src/ModelsServices.jsx", "model": "qwen/qwen3-30b-a3b-instruct-2507", "why": "example text on the old Services tab; the tab is replaced by the Models & services page" }
+  ]
+}

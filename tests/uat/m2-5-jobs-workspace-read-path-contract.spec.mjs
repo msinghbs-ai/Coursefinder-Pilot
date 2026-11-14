@@ -50,12 +50,12 @@ test.describe('M2.5 Jobs workspace read-path source contract',()=>{
 
     // v2.15.291: the shell has no fixed fallback version (it imports the manifest); the legacy history keeps its baseline.
     const candidateVersion=manifest.match(/export const UI_VERSION='([^']+)'/)?.[1]
-    expect(shell).not.toMatch(/const UI_VERSION='2\.15\.\d+'/)
+    expect(shell).not.toMatch(/const UI_VERSION='2\.\d+\.\d+'/)
     expect(shell).toContain("import{UI_VERSION}from'./release-manifest.js'")
-    expect(candidateVersion).toMatch(/^2\.15\.\d+$/)
+    expect(candidateVersion).toMatch(/^2\.\d+\.\d+$/)
     expect(current).toContain("from'./release-manifest.js'")
     expect(index).toContain('<title>StudySearch PIM Admin</title>')
-    expect(index).not.toMatch(/StudySearch PIM Admin v2\.15\.\d+/)
+    expect(index).not.toMatch(/StudySearch PIM Admin v2\.\d+\.\d+/)
     expect(versionEntry).toContain('Pipeline Jobs workspace restoration')
     expect(releaseTest).toContain('release notes @deployed')
 

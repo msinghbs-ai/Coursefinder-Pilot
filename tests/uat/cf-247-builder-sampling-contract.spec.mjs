@@ -27,7 +27,8 @@ test.describe('mocked browser', () => {
     pages: [{ course: 'Bachelor of Accounting', code: '085834K', url: 'https://x/acc', read: true }, { course: 'Bachelor of 3D Art and Animation', code: '075731M', url: 'https://x/3d', read: false }],
     drafts: [{ id: 'd1', status: 'proposed', samples: [{ course: 'Bachelor of Accounting', url: 'https://x/acc' }], captures: [{ course: 'Bachelor of Accounting', url: 'https://x/acc' }], marks: [],
       proposals: [{ at: '2026-10-08T00:00:00Z', model: 'qwen/qwen3-30b-a3b-instruct-2507', cost: 0.001, reason: 'r', adapter: { patterns: { fee: 'x' } }, output: [{ course: 'Bachelor of Accounting', fee: 30000, intakes: [], extra: { duration: '3 years' } }] }] }] }
-  test('Platform Admin picks a model, adds a course as a sample and sees attributes not found', async ({ page }) => {
+  // v2.16.0 (integrator's improvement with the Models & services redesign, 13 Nov 2026): the per-adapter model picker is a read-only line
+  test('Platform Admin sees the model with a link to Models & services, adds a course as a sample and sees attributes not found', async ({ page }) => {
     const { mockAdmin } = await import('./support/admin-mock.mjs')
     await mockAdmin(page, { rank: 6 })
     const calls = []
@@ -38,8 +39,9 @@ test.describe('mocked browser', () => {
     page.on('dialog', d => d.accept('Trial sampling'))
     await page.goto('/#layer-2-discovery?tab=builder&provider=p-nd')
     const g = page.locator('[data-adapter-builder-tab]') // v2.15.245: the builder is one numbered page
-    await g.getByLabel('Model for this adapter').selectOption('h')
-    await expect.poll(() => calls.find(c => c.p_action === 'model')?.p_args).toEqual({ provider_id: 'p-nd', profile_code: 'h', reason: expect.stringMatching(/^Adapter builder: /) })
+    await expect(g.locator('[data-model-line="adapter"]')).toContainText('Model: qwen/qwen3-30b-a3b-instruct-2507')
+    await expect(g.locator('[data-model-line="adapter"] a')).toHaveAttribute('href', /#models-services\?tab=ai&card=services\.ai\.services.*service=adapter_builder/)
+    await expect(g.getByLabel('Model for this adapter')).toHaveCount(0)
     await g.getByLabel('Add a course as a sample').fill('3d art')
     await g.getByRole('button', { name: /Bachelor of 3D Art and Animation/ }).click()
     await expect.poll(() => calls.find(c => c.p_action === 'add_sample')?.p_args).toEqual({ provider_id: 'p-nd', url: 'https://x/3d', reason: expect.stringMatching(/^Adapter builder: /) })

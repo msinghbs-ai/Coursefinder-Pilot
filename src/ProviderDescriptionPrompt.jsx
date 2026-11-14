@@ -6,7 +6,6 @@
 // new version with a reason (public.admin_provider_description_prompt_v1). A save is never an edit in place.
 import React, { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
-import Card from './Card'
 import { Button, Loading, StatusChip } from './ui-kit'
 import { fmtDateTime, fmtNumber } from './lib/format.js'
 import { plainError } from './lib/errors'
@@ -55,9 +54,10 @@ export default function ProviderDescriptionPrompt({ onError }) {
       setReason(''); await load()
     } catch (e) { onError?.(plainError(e)) } finally { setBusy(false) }
   }
-  return <Card id="services.ai.provider-description-prompt" title="Provider description prompt" data-pdesc-prompt
-    subtitle="The instructions the AI follows to write a provider's description from its official About page. The checks that always apply are listed below the prompt."
-    meta={d ? <StatusChip value={d.prompt_on ? 'enabled' : 'paused'} label={d.prompt_on ? `In use · version ${d.active?.version ?? '—'}` : 'Built-in prompt in use'}/> : null}>
+  // v2.16.0 (Platform Admin 13 Nov 2026 19:15, "Keep prompt respective for each service"): drawn inside the Provider description service on
+  // Models & services › AI, not as a card of its own.
+  return <div data-pdesc-prompt>
+    {d && <p className="pdp-note"><StatusChip value={d.prompt_on ? 'enabled' : 'paused'} label={d.prompt_on ? `In use · version ${d.active?.version ?? 'not recorded'}` : 'Built-in prompt in use'}/></p>}
     {!d ? <Loading label="Reading the prompt…"/> : <div className="pdp">
       <ProviderDescriptionStatus state={d}/>
       <label className="pdp-label" htmlFor="pdp-text">Prompt{d.can_edit ? '' : ' (read only: the Platform Admin edits it)'}</label>
@@ -72,5 +72,5 @@ export default function ProviderDescriptionPrompt({ onError }) {
         <ul>{d.history.map(h => <li key={h.version}><strong>Version {h.version}</strong> · {h.status} · {when(h.activated_at || h.created_at)} · {h.reason}</li>)}</ul>
       </details>}
     </div>}
-  </Card>
+  </div>
 }

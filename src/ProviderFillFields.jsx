@@ -230,7 +230,7 @@ export default function ProviderFillFields({ providerIds = [], rank = 0, onClose
 
         {promptOn ? <section className="pff-primary" aria-label="Fill the description" data-primary data-fill-mode="prompt">
           <Button variant="primary" data-fill-now disabled={Boolean(busy) || fillable.length === 0} onClick={doFill}>Fill description</Button>
-          <p className="pff-note">The AI reads the official About page and writes the description with the prompt on Models &amp; services › AI &amp; OpenRouter. It starts now and is not held by the regular scan&apos;s spending limits. A description written by hand is never replaced.</p>
+          <p className="pff-note">The AI reads the official About page and writes the description with the prompt on Models &amp; services › AI. It starts now and is not held by the regular scan&apos;s spending limits. A description written by hand is never replaced.</p>
           {fillable.length === 0 && providers.length > 0 && <p className="pff-note" data-nothing-to-extract>Nothing here needs filling now; each provider says why.</p>}
         </section> :
         <section className="pff-primary" aria-label="Extract or refresh the description" data-primary>

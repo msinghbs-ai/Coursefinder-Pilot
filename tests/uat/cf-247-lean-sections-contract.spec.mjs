@@ -68,7 +68,7 @@ test('gold matching: flat form, every part needed', () => {
 })
 
 test('worker mode lean_sections_eval: stored copies only, no AI, no Firecrawl, nothing admitted; no reader uses the selector', () => {
-  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v0.89.0";')
+  expect(IX).toMatch(/const WORKER = "coverage-sweep-worker-v0\.89\.0";|\/\/ was v0\.89\.0 \(#1136\) \/\/ v0\.89\.0 \(14 Nov 2026, numbered after #1137/)  // current, or kept as "was" by a later worker (v0.90.0 merges #1128)
   expect(IX).toContain('import { BLOCK_INPUT, LEAN_SECTIONS, holds, selectSections } from "./lean-sections.ts";')
   expect(IX).toContain('const ab = aerV3Blocks(leanText(raw), di), whole = ab.text, sel = selectSections(ab, f);')
   const a = IX.indexOf('if (mode === "lean_sections_eval")'), b = IX.indexOf('if (mode === "central_ai")')

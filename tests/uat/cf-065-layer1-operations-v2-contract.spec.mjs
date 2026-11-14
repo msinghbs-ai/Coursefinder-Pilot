@@ -39,13 +39,13 @@ test.describe('CF-065 Layer 1 operations v2 source contract',()=>{
     expect(layer1).toContain('const set=k=>e=>setForm(f=>({...f,[k]:e.target.value})),canEdit=rank>=6')
     // v2.15.291: the shell has no fixed fallback version (it imports the manifest); the legacy history keeps its baseline.
     const candidateVersion=manifest.match(/export const UI_VERSION='([^']+)'/)?.[1]
-    expect(shell).not.toMatch(/const UI_VERSION='2\.15\.\d+'/)
+    expect(shell).not.toMatch(/const UI_VERSION='2\.\d+\.\d+'/)
     expect(shell).toContain("import{UI_VERSION}from'./release-manifest.js'")
-    expect(candidateVersion).toMatch(/^2\.15\.\d+$/)
+    expect(candidateVersion).toMatch(/^2\.\d+\.\d+$/)
     expect(manifest).toContain('version:UI_VERSION') // 7 Oct 2026: the manifest is the single version authority
     expect(current).toContain("from'./release-manifest.js'")
     expect(index).toContain('<title>StudySearch PIM Admin</title>')
-    expect(index).not.toMatch(/StudySearch PIM Admin v2\.15\.\d+/)
+    expect(index).not.toMatch(/StudySearch PIM Admin v2\.\d+\.\d+/)
     expect(versionEntry).toContain('Layer 1 source configuration UI restoration')
     const output=buildOnce()
     expect(output).toContain('built in')

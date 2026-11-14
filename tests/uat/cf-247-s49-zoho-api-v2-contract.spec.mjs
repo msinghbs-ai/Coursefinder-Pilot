@@ -49,7 +49,7 @@ test('every call is logged and summed daily; limits are settings', () => {
   expect(mig).toContain("'zoho.sync_countries', 'Countries in the Zoho change stream and CSV'")
   expect(nav).toContain("{ key: 'api', label: 'API usage', min: 4 },") // v2.15.301: Settings › API usage
   expect(nav).toContain("'api-usage': { page: 'environment', tab: 'api' },")
-  expect(settingsUi).toContain("const yn=s.kind==='boolean',ls=s.kind==='list',n=Number(v)")
+  expect(settingsUi).toContain("const yn=s.kind==='boolean',ls=s.kind==='list',tx=s.kind==='text',n=Number(v)")
 })
 
 test('what Zoho asked for: details in search results, provider by name or CRICOS, English bands, CRICOS-keyed stream and CSV', () => {

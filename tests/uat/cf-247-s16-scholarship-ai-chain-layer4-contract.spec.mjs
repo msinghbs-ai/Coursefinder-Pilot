@@ -34,21 +34,18 @@ test('migration: parked course items go to the adapter only for a field it admit
   expect(s).not.toMatch(/when 'official_course_url' then '/)
 })
 
-test('mocked browser: Extraction sets the reading order and links to the pages no model could settle', async ({ page }) => {
+// v2.16.0 (Platform Admin 13 Nov 2026 19:14): the reading order is the cascade of the Scholarship pages service on Models & services › AI
+// (guarded by cf-247-ai-models-services-ui); the order editor is retired from Extraction, which shows the order read only with a link.
+test('mocked browser: Extraction shows the reading order read only and links to the pages no model could settle', async ({ page }) => {
   await mockAdmin(page)
   await page.goto('/#scholarships?tab=extraction')
-  const x = page.locator('[data-scholarship-extraction]')
-  await expect(x.locator('[data-sx-chain-editor]')).toBeVisible()
-  await x.getByLabel('Model that reads first').selectOption('qwen3-30b')
-  // GPT-4.1 mini is still qualifying in the fixture, so it cannot be put in the chain yet
-  await x.getByLabel('Model that reads next').selectOption('gpt-4.1-mini')
-  await expect(x.locator('[data-sx-action="set-chain"]')).toBeDisabled()
-  await x.getByLabel('Model that reads next').selectOption('')
-  await x.locator('[data-sx-action="set-chain"]').click()
-  await x.getByLabel('Reason: Set the order').fill('Qwen first after qualification')
-  await x.locator('[data-sx-confirm="set-chain"]').click()
-  await expect(x.locator('[data-sx-note]')).toContainText('AI admission is unchanged')
-  expect(page.l3calls.find(c => c.scholarshipAi?.p_action === 'set_chain').scholarshipAi.p_args.models).toEqual(['qwen3-30b'])
+  let x = page.locator('[data-scholarship-extraction="config"]')
+  await expect(x.locator('[data-sx-chain-editor]')).toHaveCount(0)
+  await expect(x.locator('[data-model-line="scholarship"]')).toContainText('Model:')
+  await expect(x.locator('[data-model-line="scholarship"] a')).toHaveText('change in Models & services')
+  expect(page.l3calls.some(c => c.scholarshipAi?.p_action === 'set_chain')).toBe(false)
+  await page.goto('/#scholarships?tab=coverage&at=sch-extraction') // v2.16.0: the results (held pages, recent answers) stay on Coverage
+  x = page.locator('[data-scholarship-extraction="results"]')
   await expect(x.locator('[data-sx-reviews-link]')).toHaveAttribute('href', '#layer-4-review?kind=held_scholarship') // v2.15.300: the Inbox kind
 })
 

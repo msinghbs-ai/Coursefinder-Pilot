@@ -101,7 +101,7 @@ test('worker v0.72.1 (first-cycle check of #1047, QA of #1049): a page claim rea
 test('worker v0.72.0: the description has its own call, the deadline keeps course-text-v2, each failed call fails only its items, the re-ask is gone', () => {
   expect(IX).toMatch(/(?:const WORKER = "coverage-sweep-worker-v0\.72\.0"; |\/\/ was v0\.72\.0 )\/\/ v0\.72\.0 \(12 Nov 2026, CF-247 F-CDESC/)
   const t = IX.slice(IX.indexOf('const textRead = async'), IX.indexOf('const entryCall = async'))
-  expect(t).toContain('cdescRequest(model, cdescUser({ course_id: String(pg.course_id), title: pg.title, provider: pg.provider')
+  expect(t).toContain('cdescRequest(descModel, cdescUser({ course_id: String(pg.course_id), title: pg.title, provider: pg.provider')
   expect(t).toContain('cdescSpans(page, wsNum("enrich.course_description_min_quote_chars", 20))')
   expect(t).toContain('{ reachShare: wsNum("enrich.course_description_claim_reach_share", 0.5), reachMinWords: wsNum("enrich.course_description_claim_reach_min_words", 2) }')
   expect(t).toContain('} catch (e) { fail(descIt.map((x: any) => Number(x.item_id)), e) }')

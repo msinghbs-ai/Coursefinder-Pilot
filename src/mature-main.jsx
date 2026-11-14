@@ -59,8 +59,8 @@ import './provider-fill-fields.css' // small: the Provider row's tick box and bu
 function lazyPage(load,name='default'){return React.lazy(()=>load().then(m=>({default:m[name]})).catch(e=>{let again=false;try{again=sessionStorage.getItem('cf-chunk-reload')!==String(location.pathname+location.hash)}catch{}if(again&&/dynamically imported module|Importing a module script failed|Failed to fetch/i.test(String(e?.message||e))){try{sessionStorage.setItem('cf-chunk-reload',String(location.pathname+location.hash))}catch{}location.reload();return new Promise(()=>{})}throw e}))}
 const EvidenceWorkspace=lazyPage(()=>import('./EvidenceWorkspace'))
 const ModelsServices=lazyPage(()=>import('./ModelsServices'))
-const AiConfig=lazyPage(()=>import('./AiConfig'))
-const ProviderDescriptionPrompt=lazyPage(()=>import('./ProviderDescriptionPrompt')) // CF-247 F-PDESC (11 Nov 2026): the provider description prompt, maintained by the Platform Admin
+// v2.16.0 (Platform Admin 13 Nov 2026 19:14): Models & services › AI is one page of four panes; AiConfig.jsx is retired
+const AiModelsServices=lazyPage(()=>import('./AiModelsServices'))
 const StatisticsDatasets=lazyPage(()=>import('./StatisticsDatasets'))
 const ReferenceSources=lazyPage(()=>import('./ReferenceSources'))
 const KeyDates=lazyPage(()=>import('./KeyDates'))
@@ -128,7 +128,8 @@ function ServicesLimits({rank,err}){
   return <div className="m-page-stack" data-services-limits>
     {svc('firecrawl','Firecrawl','Switch, monthly cap and reserve, course-page search budget, credits today and its daily shares.',<><ModelsServices part="services" only={['firecrawl']} onError={err}/><SearchCapCard/><Toolsets only={['firecrawl']} onError={err}/>{/* SS-020 step 4: Firecrawl and AI today (was Coverage › Progress) */}<Progress part="services" onError={err}/><Layer2ProviderConfig rank={rank} embedded only={['firecrawl']}/></>)}
     {svc('direct','Direct read','Switch, rate, calls at once and time limit for reading pages directly.',<><ModelsServices part="services" only={['direct-http']} onError={err}/><Layer2ProviderConfig rank={rank} embedded only={['direct-http']}/></>)}
-    {svc('openrouter','OpenRouter','Balance, spend today against each daily guard, the credit floor and the mode. Models and the key are on AI & OpenRouter.',<Toolsets only={['openrouter']} onError={err}/>)}
+    {/* v2.16.0 (Platform Admin 13 Nov 2026 19:23): everything about AI is on the AI tab; this card only points there */}
+    {svc('openrouter','OpenRouter','The OpenRouter key, credit, floor, daily spend ceiling, models, service caps and AI usage are on the AI tab.',<p className="l3v-note" data-ai-moved="openrouter"><a className="cf-link" href={hrefFor('services','ai')}>AI models, prompts, caps and the OpenRouter key are in Models &amp; services › AI</a></p>)}
     {svc('platform','Database jobs and edge calls','Scheduled jobs, edge function calls and the pipeline job sizes, re-reads and retries.',<Toolsets only={['scheduled_jobs','edge_functions','pipeline']} onError={err}/>)}
     {svc('notices','Notices','Every toolset notice on every layer, and what each one asks.',<Toolsets only={['notices']} onError={err}/>)}
     {/* anything else still registered (for example a custom gateway kept switched off) stays reachable here */}
@@ -347,7 +348,7 @@ function Page({pageKey,tab,requestedTab='',routeParams,rank,actorId,onError,navi
         return <Catalogue key="provider" type="provider" onError={onError} navigate={navigate} initialId={focusId} rank={rank} preset={presetOf(routeParams)}/>
       // v2.15.301: Extraction is on Models & services › AI (old address redirects)
       case'entry':return <AerWorkspace tab={tab} rank={rank} onError={onError} navigate={navigate} routeParams={routeParams}/>
-      case'scholarships':if(tab==='coverage')return <ScholarshipCoverage rank={rank} onError={onError} navigate={navigate}/>;return <ScholarshipWorkspace rank={rank} onError={onError} navigate={navigate} initialId={focusId}/>
+      case'scholarships':if(tab==='coverage')return <div className="m-page-stack"><ScholarshipCoverage rank={rank} onError={onError} navigate={navigate}/>{/* v2.16.0 (Platform Admin written review 13 Nov 2026 22:10): Coverage keeps the extraction's operational results and links to its configuration on Models & services › AI */}<LazyFold className="m-panel" data="scholarship-extraction" open={routeParams?.get?.('at')==='sch-extraction'} summary={<><strong data-anchor="sch-extraction">Extraction results</strong> <small>Pages waiting, cost today, re-check and re-read, and the AI's recent answers. Its configuration is in Models &amp; services</small></>}>{()=><ScholarshipExtraction part="results" onError={onError}/>}</LazyFold></div>;return <ScholarshipWorkspace rank={rank} onError={onError} navigate={navigate} initialId={focusId}/>
       case'rankings':
         if(tab==='compare')return <ComparisonWorkspace routeParams={routeParams} navigate={navigate} onError={onError}/>
         // v2.15.301 (Platform Admin, 20 Oct 2026): Ranking imports moved here from Reference data
@@ -399,9 +400,9 @@ function Page({pageKey,tab,requestedTab='',routeParams,rank,actorId,onError,navi
       case'environment':if(tab==='api')return <ApiUsagePanel onError={onError}/>;if(tab==='backup')return rank>=6?<SettingsBackup onError={err}/>:null;return <><PipelineSettings onError={err}/><EnvironmentMigrationWorkspace rank={rank} onError={onError} view="integrations"/></>
       // Clean-up batch 2 (9 Oct 2026): Source profiles and the Layer 2 workload defaults were retired; the provider registry and keys stay.
       // v2.15.300 (Platform Admin, 20 Oct 2026): Scrapers & fetchers is Models & services › Fetchers
-      // v2.15.264: Models & services in three tabs (Services · AI & OpenRouter · Toolsets & limits)
-      // v2.15.301: Scholarship extraction (was Scholarships › Extraction) under the AI configuration
-      case'services':return tab==='ai'?<div className="m-page-stack">{rank>=4&&<AiConfig onError={err}/>}{/* SS-020 step 3 (Decision 269): the AI model switches moved here from Services; Pipeline Operator and above, as before */}{rank>=4&&<ModelsServices part="models" onError={err}/>}{rank>=4&&<ProviderDescriptionPrompt onError={err}/>}<section data-scholarship-extraction-moved><SectionTitle title="Scholarship extraction" subtitle="The AI that reads each stored scholarship page: models, qualification, instructions and answers."/><ScholarshipExtraction onError={onError}/></section></div>:<ServicesLimits rank={rank} err={err}/>
+      // v2.16.0 (Platform Admin 13 Nov 2026 19:14 to 19:36): the AI tab is one page of four panes (OpenRouter key and usage, Models, Services,
+      // Recent usage). The scholarship extraction workspace (sample pages, qualification, instructions) is a section of Scholarships › Coverage.
+      case'services':return tab==='ai'?<AiModelsServices onError={err} focusService={routeParams?.get?.('service')||''}/>:rank>=4?<ServicesLimits rank={rank} err={err}/>:null
       case'migration':return <div className="m-page-stack"><EnvironmentMigrationWorkspace rank={rank} onError={onError} view="migration"/><PlatformMaturity rank={rank} onError={onError} view="golive"/>{/* v2.15.301: Capacity (was Platform health › Capacity) */}<section data-golive-capacity><PlatformMaturity rank={rank} onError={onError} view="capacity"/></section>{/* v2.15.228: the Reset database control was retired (Platform Admin, 9 Oct 2026) */}</div>
       // v2.15.301 (Platform Admin, 20 Oct 2026): Data model retired (its address opens Coverage › Attributes); Storage & retention is a Platform health tab
       case'users':return <AccessRolesEmbedded actorId={actorId}/>

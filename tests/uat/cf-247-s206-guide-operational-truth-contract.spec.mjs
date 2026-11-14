@@ -388,7 +388,7 @@ test('UR-03: after a squash merge the reviewed release decides; a mirror from an
   try {
     const at = (release) => { for (const s of SOPS) fs.writeFileSync(path.join(tmp, `${s.id}.md`), sopDocument(s, '0123456789ab').replace(`reviewed-release=${SOP_REVIEWED_FOR};`, `reviewed-release=${release};`)) }
     const [maj, min, pat] = SOP_REVIEWED_FOR.split('.').map(Number)
-    at(`${maj}.${min}.${pat - 1}`)                  // an earlier release from a commit this clone has never seen (a squashed branch)
+    at(pat > 0 ? `${maj}.${min}.${pat - 1}` : `${maj}.${min - 1}.999`) // an earlier release from a commit this clone has never seen (a squashed branch); v2.16.0 is the first with patch 0
     expect(mirrorGuard(tmp).every((r) => r.ok && /older than/.test(r.detail))).toBe(true)
     at(`${maj}.${min}.${pat + 1}`)                  // a later release: this source is behind
     const later = mirrorGuard(tmp)

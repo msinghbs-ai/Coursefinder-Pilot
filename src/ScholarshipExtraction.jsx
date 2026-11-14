@@ -31,7 +31,13 @@ function ReasonAction({label,confirm='Confirm',variant,disabled,onDo,placeholder
     <Button compact onClick={()=>{setOpen(false);setR('')}}>Cancel</Button></span>
 }
 
-export default function ScholarshipExtraction({onError}){
+// v2.16.0 (Platform Admin written review, 13 Nov 2026 22:10: "Scholarship Extraction configuration belongs in Models & Services. Scholarships ›
+// Coverage links to the same configuration and retains scholarship-specific operational results."). One component, two parts, no control drawn
+// twice: part="config" (the AI admission switch and its settings, qualification on the sample, instructions, a test page) is drawn inside the
+// Scholarship pages service on Models & services › AI; part="results" (pages waiting, cost, re-check and re-read, held pages, recent answers)
+// is drawn on Scholarships › Coverage with a link to the configuration.
+export const SX_CONFIG_HREF='#models-services?tab=ai&card=services.ai.services&at=services.ai.services&service=scholarship_extraction'
+export default function ScholarshipExtraction({onError,part='config'}){
   const[d,setD]=useState(null),[busy,setBusy]=useState(false),[msg,setMsg]=useState(''),[fail,setFail]=useState('')
   const load=async()=>{setBusy(true);try{const{data,error}=await supabase.rpc('admin_scholarship_ai',{p_action:'read',p_args:{}});if(error)throw error;setD(data)}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
   const act=async(action,args,done)=>{setFail('');setMsg('');try{const{data,error}=await supabase.rpc('admin_scholarship_ai',{p_action:action,p_args:args});if(error)throw error;setD(data);if(done)setMsg(done)}catch(e){setFail(errText(e));throw e}}
@@ -41,52 +47,55 @@ export default function ScholarshipExtraction({onError}){
   if(!d)return <div className="m-page-stack"><section className="m-panel">{busy?<Loading label="Loading extraction…"/>:<p>Could not load.</p>}</section></div>
   const can=d.can_manage,models=d.models||[],scores=d.scores||{},runs=d.qualify_runs||[],active=models.find(m=>m.status==='active'),chain=(d.chain||[]).map(c=>models.find(m=>m.code===c)).filter(Boolean)
   const lastRun=code=>runs.find(r=>r.model_code===code&&String(r.prompt_version)===String(d.prompt_version))
-  return <div className="m-page-stack sx" data-scholarship-extraction>
+  const cfg=part!=='results',res=part!=='config'
+  return <div className="m-page-stack sx" data-scholarship-extraction={part}>
     <section className="m-panel">
-      <div className="m-workspace-head"><div><h2>Extraction</h2><p>Code reads each scholarship page through the scraper and keeps a copy; an AI model then reads the copy and answers with the scholarship's facts. Every fact must quote the page, and the quote is checked.</p></div>
+      <div className="m-workspace-head"><div><h2>{cfg?'Scholarship extraction: configuration':'Extraction results'}</h2><p>Code reads each scholarship page through the scraper and keeps a copy; an AI model then reads the copy and answers with the scholarship's facts. Every fact must quote the page, and the quote is checked.</p></div>
         <Button compact onClick={load} disabled={busy}><RefreshCw size={14}/>Refresh</Button></div>
       <div className="sc-tiles">
-        <div data-sx-admission><small>AI admission</small><strong>{d.ai_admission?'On':'Off'}</strong><span>{d.ai_admission?'AI answers decide which pages are admitted':'Rules decide; AI answers are recorded only'}</span></div>
-        <div data-sx-chain><small>Models, in order</small><strong>{chain.length?chain.map(m=>m.label.split(' ').slice(0,2).join(' ')).join(' → '):'None'}</strong><span>{chain.length?`then Layer 4 › AI could not decide (${fmtNumber(d.reviews_pending||0)} waiting)`:'qualify models, then set the order'}</span></div>
-        <div><small>Pages waiting</small><strong>{fmtNumber(waiting)}</strong><span>{fmtNumber(d.queue?.done_today||0)} read today</span></div>
-        <div><small>AI cost today</small><strong>US${Number(d.cost_today||0).toFixed(2)}</strong><span>instructions v{d.prompt_version||1}</span></div>
+        {cfg&&<div data-sx-admission><small>AI admission</small><strong>{d.ai_admission?'On':'Off'}</strong><span>{d.ai_admission?'AI answers decide which pages are admitted':'Rules decide; AI answers are recorded only'}</span></div>}
+        {cfg&&<div data-sx-chain><small>Models, in order</small><strong>{chain.length?chain.map(m=>m.label.split(' ').slice(0,2).join(' ')).join(' → '):'None'}</strong><span>{chain.length?`then Layer 4 › AI could not decide (${fmtNumber(d.reviews_pending||0)} waiting)`:'qualify models, then set the order'}</span></div>}
+        {res&&<div><small>Pages waiting</small><strong>{fmtNumber(waiting)}</strong><span>{fmtNumber(d.queue?.done_today||0)} read today</span></div>}
+        {res&&<div><small>AI cost today</small><strong>US${Number(d.cost_today||0).toFixed(2)}</strong><span>instructions v{d.prompt_version||1}</span></div>}
       </div>
       {can&&<div className="sx-row">
-        {d.ai_admission
+        {cfg&&(d.ai_admission
           ?<ReasonAction label="Switch AI admission off" testid="admission-off" onDo={r=>act('set_admission',{on:false,reason:r},'AI admission is off. Rules decide again.')}/>
-          :<ReasonAction label="Switch AI admission on" variant="primary" disabled={!active} testid="admission-on" onDo={r=>act('set_admission',{on:true,reason:r},'AI admission is on. New and re-read pages are decided by the AI answer.')}/>}
-        <ReasonAction label="Re-check the watch list with AI" disabled={!active} testid="backfill" onDo={r=>act('backfill',{scope:'watch',reason:r},'Queued. Progress is in Scheduled jobs › Task manager.')}/>
-        {d.settings?.confirm_admissions!==false
+          :<ReasonAction label="Switch AI admission on" variant="primary" disabled={!active} testid="admission-on" onDo={r=>act('set_admission',{on:true,reason:r},'AI admission is on. New and re-read pages are decided by the AI answer.')}/>)}
+        {res&&<ReasonAction label="Re-check the watch list with AI" disabled={!active} testid="backfill" onDo={r=>act('backfill',{scope:'watch',reason:r},'Queued. Progress is in Scheduled jobs › Task manager.')}/>}
+        {cfg&&(d.settings?.confirm_admissions!==false
           ?<ReasonAction label="Second model confirms admissions: On" testid="confirm-off" confirm="Switch off" onDo={r=>act('set_confirm',{on:false,reason:r},'The first model now admits on its own answer.')}/>
-          :<ReasonAction label="Second model confirms admissions: Off" testid="confirm-on" confirm="Switch on" onDo={r=>act('set_confirm',{on:true,reason:r},'Each admission by the first model is now confirmed by the next model.')}/>}
-        <ReasonAction label="Re-read parked scholarships with AI" disabled={!active} testid="reroute" onDo={r=>act('reroute_parked',{reason:r},'Queued: active scholarships not published, and held ones, are read again by the AI. A hold a person made stays. Progress is in Scheduled jobs › Task manager.')}/>
+          :<ReasonAction label="Second model confirms admissions: Off" testid="confirm-on" confirm="Switch on" onDo={r=>act('set_confirm',{on:true,reason:r},'Each admission by the first model is now confirmed by the next model.')}/>)}
+        {res&&<ReasonAction label="Re-read parked scholarships with AI" disabled={!active} testid="reroute" onDo={r=>act('reroute_parked',{reason:r},'Queued: active scholarships not published, and held ones, are read again by the AI. A hold a person made stays. Progress is in Scheduled jobs › Task manager.')}/>}
         {/* v2.15.300: the held pages are decided in Layer 4 › Inbox (AI could not decide retired) */}
-        <a className="cf-link" href="#layer-4-review?kind=held_scholarship" data-sx-reviews-link>Held for a person (Layer 4 › Inbox): {fmtNumber(d.reviews_pending||0)}</a>
-        {!active&&<small className="sc-sub">Both need an active model.</small>}
+        {res&&<a className="cf-link" href="#layer-4-review?kind=held_scholarship" data-sx-reviews-link>Held for a person (Layer 4 › Inbox): {fmtNumber(d.reviews_pending||0)}</a>}
+        {!active&&<small className="sc-sub">{cfg?'Switching AI admission on needs an active model: the first model of the Scholarship pages cascade.':'Re-checking needs an active model.'}</small>}
       </div>}
+      {res&&<p className="sc-sub mdl-line" data-sx-config-link>Models, AI admission, instructions and qualification: <a className="cf-link" href={SX_CONFIG_HREF}>Scholarship extraction configuration is in Models &amp; services</a></p>}
       {msg&&<p role="status" className="sc-note" data-sx-note>{msg}</p>}
       {fail&&<p role="alert" className="sc-note sc-bad" data-sx-fail>{fail}</p>}
     </section>
 
-    <ModelsSection d={d} act={act}/>
-
-    <Sample d={d} can={can} act={act}/>
-    <Instructions d={d} can={can} act={act}/>
-    <TestPage d={d} can={can} act={act} models={models}/>
-    <Recent rows={d.recent||[]}/>
+    {cfg&&<ModelsSection d={d} act={act}/>}
+    {cfg&&<Sample d={d} can={can} act={act}/>}
+    {cfg&&<Instructions d={d} can={can} act={act}/>}
+    {cfg&&<TestPage d={d} can={can} act={act} models={models}/>}
+    {res&&<Recent rows={d.recent||[]}/>}
   </div>
 }
 
-// v2.15.264 (Platform Admin, 13 Oct 2026): the scholarship AI models (order, qualify, make active) are also shown and edited on
-// Models & services › AI & OpenRouter; both places use this section and the same admin_scholarship_ai actions.
+// v2.16.0 (Platform Admin 13 Nov 2026 19:14): the scholarship reader asks its service route, so the model order is the cascade of the
+// "Scholarship pages" service on Models & services › AI and nowhere else. The order editor and Make active are retired from this screen (and its
+// copy on Models & services); the order is shown read only with a link. Qualifying a model on the sample stays here: it is evidence, and it
+// never makes a model active.
 export function ModelsSection({d,act}){
   const can=d.can_manage,models=d.models||[],scores=d.scores||{},runs=d.qualify_runs||[]
   const lastRun=code=>runs.find(r=>r.model_code===code&&String(r.prompt_version)===String(d.prompt_version))
   return <>
   <section className="m-panel" data-sx-models>
       <h3>Models</h3>
-      <p className="sc-sub">Each model is qualified on the sample below with the current instructions. Qualifying never makes a model active; that is a separate step. The first model reads every page; the next reads it again only when the first one's reply fails or a fact it states is not proven on the page; a page no model can settle goes to Layer 4.</p>
-      {can&&<ChainEditor models={models} chain={d.chain||[]} qualified={code=>{const r=lastRun(code);return r&&r.state==='done'}} act={act}/>}
+      <p className="sc-sub mdl-line" data-model-line="scholarship">Model: <strong>{(d.chain||[]).map(c=>models.find(m=>m.code===c)?.label||c).join(' → ')||'No model'}</strong> <a className="cf-link" href="#models-services?tab=ai&card=services.ai.services&at=services.ai.services&service=scholarship_extraction">change in Models &amp; services</a></p>
+      <p className="sc-sub">Each model is qualified on the sample below with the current instructions. Qualifying never makes a model active: the order is set, as a separate step, on the Scholarship pages service in Models &amp; services. The first model reads every page; the next reads it again only when the first one's reply fails or a fact it states is not proven on the page; a page no model can settle goes to Layer 4.</p>
       <div className="cf-table-wrap"><table className="cf-table">
         <thead><tr><th>Model</th><th>Status</th><th className="num" title="Scholarship or not, as expected">Scholarship right</th><th className="num">International right</th><th className="num">Offered right</th><th className="num" title="Answers whose quotes failed the page check">Proofs failed</th><th className="num">Failed</th><th className="num">Cost a page</th><th>Last qualification</th>{can&&<th/>}</tr></thead>
         <tbody>{models.map(m=>{const s=scores[m.code]||{},run=lastRun(m.code);return <tr key={m.code} data-sx-model={m.code}>
@@ -99,42 +108,14 @@ export function ModelsSection({d,act}){
           <td className="num">{s.pages?fmtNumber(s.errors):'—'}</td>
           <td className="num">{s.pages?`US$${Number(s.cost_per_page||0).toFixed(4)}`:'—'}</td>
           <td>{run?<><StatusChip value={run.state}/> <small className="sc-sub">{fmtNumber(run.progress?.done||0)} of {fmtNumber(run.progress?.total||0)} · {fmtDateTime(run.at)}</small></>:<span className="sc-sub">Not yet</span>}</td>
-          {can&&<td className="sx-actions"><ReasonAction label="Qualify" testid={`qualify-${m.code}`} disabled={run&&['queued','running'].includes(run.state)} onDo={r=>act('qualify',{model_code:m.code,reason:r},`Qualifying ${m.label} on ${fmtNumber((d.sample||[]).filter(x=>x.active).length)} pages.`)}/>
-            {m.status!=='active'&&<ReasonAction label="Make active" testid={`activate-${m.code}`} disabled={!run||run.state!=='done'} onDo={r=>act('activate',{model_code:m.code,reason:r},`${m.label} is the active model. AI admission is unchanged.`)}/>}</td>}
+          {can&&<td className="sx-actions"><ReasonAction label="Qualify" testid={`qualify-${m.code}`} disabled={run&&['queued','running'].includes(run.state)} onDo={r=>act('qualify',{model_code:m.code,reason:r},`Qualifying ${m.label} on ${fmtNumber((d.sample||[]).filter(x=>x.active).length)} pages.`)}/></td>}
         </tr>})}</tbody>
       </table></div>
     </section>
   </>
 }
 
-// Self-loading for Models & services › AI & OpenRouter (v2.15.264)
-export function ScholarshipAiModels({onError}){
-  const[d,setD]=useState(null),[msg,setMsg]=useState(''),[fail,setFail]=useState('')
-  const load=async()=>{try{const{data,error}=await supabase.rpc('admin_scholarship_ai',{p_action:'read',p_args:{}});if(error)throw error;setD(data)}catch(e){onError?.(errText(e))}}
-  const act=async(action,args,done)=>{setFail('');setMsg('');try{const{data,error}=await supabase.rpc('admin_scholarship_ai',{p_action:action,p_args:args});if(error)throw error;setD(data);if(done)setMsg(done)}catch(e){setFail(errText(e));throw e}}
-  useEffect(()=>{load()},[])
-  if(!d)return <Loading label="Loading scholarship models…"/>
-  return <div className="sx" data-ai-scholarship-models>
-    <p className="sc-sub">AI admission is {d.ai_admission?'on':'off'}; sample pages, instructions and page results are on <a className="cf-link" href="#models-services?tab=ai">Models &amp; services › AI &amp; OpenRouter</a>.</p>
-    <ModelsSection d={d} act={act}/>
-    {msg&&<p role="status" className="sc-note" data-sx-note>{msg}</p>}
-    {fail&&<p role="alert" className="sc-note sc-bad" data-sx-fail>{fail}</p>}
-  </div>
-}
 
-// v2.15.250: the order the models read in (each qualified with the current instructions)
-function ChainEditor({models,chain,qualified,act}){
-  const usable=models.filter(m=>m.status!=='retired'),[first,setFirst]=useState(chain[0]||''),[then,setThen]=useState(chain[1]||'')
-  useEffect(()=>{setFirst(chain[0]||'');setThen(chain[1]||'')},[chain.join(',')])
-  const order=[first,then].filter(Boolean),ok=order.length>0&&new Set(order).size===order.length&&order.every(qualified),same=order.join(',')===chain.join(',')
-  return <div className="sx-row" data-sx-chain-editor>
-    <label>Reads first <select value={first} onChange={e=>setFirst(e.target.value)} aria-label="Model that reads first"><option value="">Choose</option>{usable.map(m=><option key={m.code} value={m.code}>{m.label}</option>)}</select></label>
-    <label>Then <select value={then} onChange={e=>setThen(e.target.value)} aria-label="Model that reads next"><option value="">No second model</option>{usable.filter(m=>m.code!==first).map(m=><option key={m.code} value={m.code}>{m.label}</option>)}</select></label>
-    <span className="sc-sub">then Layer 4</span>
-    <ReasonAction label="Set the order" testid="set-chain" disabled={!ok||same} onDo={r=>act('set_chain',{models:order,reason:r},'Order set. AI admission is unchanged.')}/>
-    {order.length>0&&!order.every(qualified)&&<small className="sc-sub">Qualify each model with the current instructions first.</small>}
-  </div>
-}
 
 function Sample({d,can,act}){
   const rows=d.sample||[],models=(d.models||[]).filter(m=>m.status!=='retired'),[show,setShow]=useState('all')

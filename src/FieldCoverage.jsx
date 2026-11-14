@@ -197,13 +197,13 @@ function DeliveryWording({onError}){
 
 // CF-247 F-PDESC prompt-based descriptions (Platform Admin 11 Nov 2026 14:57): the Run & Validate card is retired (component_register: retiring).
 // Operators use Fill description on a provider (Provider Catalogue or Provider Detail); the Platform Admin maintains the prompt on Models & services ›
-// AI & OpenRouter; the regular scan runs by itself within its AI and Firecrawl limits. This card shows the reader's spend, limits and progress.
+// AI (v2.16.0); the regular scan runs by itself within its AI and Firecrawl limits. This card shows the reader's spend, limits and progress.
 export function ProviderDescriptions({country,rank,onError}){
   const[d,setD]=useState(null),[st,setSt]=useState(null)
   const load=()=>supabase.rpc('admin_provider_descriptions',{p_action:'metrics',p_args:country?{country}:{}}).then(({data,error})=>{if(error)throw error;setD(data)}).catch(e=>onError?.(errText(e)))
   useEffect(()=>{load();readPromptState().then(setSt).catch(e=>onError?.(errText(e)))},[country])
   return <Card id="coverage.provider-descriptions" title="Provider descriptions" icon={ListChecks}
-    subtitle="Written by AI from each provider's official About page, following the prompt on Models & services › AI & OpenRouter. Operators click Fill description on a provider; the regular scan does the rest within its limits. A description written by hand is never replaced."
+    subtitle="Written by AI from each provider's official About page, following the prompt on Models & services › AI. Operators click Fill description on a provider; the regular scan does the rest within its limits. A description written by hand is never replaced."
     meta={<span className="cf-chip tone-neutral" data-pdesc-switch>{d?.enabled&&d?.job_active?'Reader on':'Reader off'}</span>} data-provider-descriptions>
     {st?<ProviderDescriptionStatus state={st}/>:<p className="cf-muted">Reading the reader's status…</p>}
     {d&&<p className="cf-muted" data-pdesc-coverage>{[['present','described'],['missing','missing'],['proposed','waiting in Layer 4'],['held','held']].map(([k,w])=>`${d[k]??'—'} ${w}`).join(' · ')}{country?` (${country})`:''}</p>}

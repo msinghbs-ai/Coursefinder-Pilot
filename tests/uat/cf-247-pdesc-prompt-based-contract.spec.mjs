@@ -114,7 +114,9 @@ test('a sentence counts as on the page only when every supporting passage is on 
 
 test('the screens: the prompt card on Models & services › AI, Fill description in the panel, and Run & Validate retired from Enrich fields', () => {
   const card = read('src/ProviderDescriptionPrompt.jsx'), cov = read('src/FieldCoverage.jsx'), panel = read('src/ProviderFillFields.jsx'), main = read('src/mature-main.jsx')
-  expect(main).toContain('{rank>=4&&<ProviderDescriptionPrompt onError={err}/>}')
+  // v2.16.0 (Platform Admin 13 Nov 2026 19:15, "Keep prompt respective for each service"): the editor opens inside the Provider description service
+  expect(read('src/AiModelsServices.jsx')).toContain("const PromptEditor = React.lazy(() => import('./ProviderDescriptionPrompt'))")
+  expect(read('src/AiModelsServices.jsx')).toContain("prompt.source === 'pipeline.provider_description_prompts' && admin")
   expect(card).toContain("supabase.rpc('admin_provider_description_prompt_v1', { p_action: 'save', p_args: { system_prompt: text, reason } })")
   expect(card).toContain("reason.trim().length < 4")
   expect(card).toContain('data-pdesc-status')  // AI spend, Firecrawl use, controls and progress (Platform Admin 11 Nov 2026 06:11)

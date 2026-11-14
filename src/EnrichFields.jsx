@@ -14,6 +14,7 @@ import Card from'./Card'
 import{Button,Empty,Loading,StatusChip,fmtDateTime}from'./ui-kit'
 import{fmtNumber}from'./lib/format.js'
 import{plainError}from'./lib/errors'
+import{modelLabel}from'./ModelsServices' // v2.16.0: the model by name, with a link to where it is changed
 import{CourseDescriptionsView}from'./CourseDescriptionPanel' // CF-247 course descriptions (6 Nov 2026): reconciliation, held reasons, claim words, sample
 
 const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
@@ -193,7 +194,7 @@ function Telemetry({label}){
         <span><b>{fmtNumber(h.last_hour||0)}</b>settled in the last hour</span><span><b>{fmtNumber(h.filled||0)}</b>values filled (24 h)</span>
         <span><b>{fmtNumber(h.ai_calls||0)}</b>AI calls · {fmtNumber(h.ai_failed||0)} failed</span><span><b>US${Number(h.ai_cost_usd||0).toFixed(2)}</b>AI spend (24 h)</span>
         <span><b>{fmtNumber(h.scraper_credits||0)}</b>scraper credits · {fmtNumber(h.pages_requested||0)} pages asked to be read</span></div>
-      <p className="l3v-note" data-enrich-limits>Model {l.model||'—'} (Models &amp; services › AI &amp; OpenRouter, central pages model) · AI daily guard US${l.ai_guard_usd??'—'}, spent today US${Number(l.ai_spent_today_usd||0).toFixed(2)}, OpenRouter {l.openrouter_mode==='stop'?'stops at limits':'observes only'} (Toolsets › OpenRouter) · {l.calls_at_once} AI calls at once, {l.items_per_call} items a call, {l.items_a_minute} items a minute, campus admitted at {l.campus_min_pages} pages (Settings › Pipeline settings) · scraper shares: other {fmtNumber(l.scraper_share||0)}, reads {fmtNumber(l.reads_share||0)} credits a day (Toolsets › Firecrawl).</p>
+      <p className="l3v-note" data-enrich-limits><span className="mdl-line" data-model-line="enrich">Model: <strong>{l.model?modelLabel(l.model):'No model'}</strong> <a className="cf-link" href="#models-services?tab=ai&card=services.ai.services&at=services.ai.services">change in Models &amp; services</a></span> · AI daily guard US${l.ai_guard_usd??'—'}, spent today US${Number(l.ai_spent_today_usd||0).toFixed(2)}, OpenRouter {l.openrouter_mode==='stop'?'stops at limits':'observes only'} (Models &amp; services › AI) · {l.calls_at_once} AI calls at once, {l.items_per_call} items a call, {l.items_a_minute} items a minute, campus admitted at {l.campus_min_pages} pages (Settings › Pipeline settings) · scraper shares: other {fmtNumber(l.scraper_share||0)}, reads {fmtNumber(l.reads_share||0)} credits a day (Toolsets › Firecrawl).</p>
     </>}
   </Card>
 }

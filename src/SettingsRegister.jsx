@@ -15,6 +15,8 @@ import{fmtNumber}from'./lib/format.js'
 import{listShown,parseList,listValid,listError,listPlaceholder,isProviderIdList}from'./lib/settings-list.js'
 import ProviderListPicker,{ProviderNames}from'./ProviderListPicker'
 import{plainError}from'./lib/errors'
+import{hrefFor}from'./nav-map'
+import{isAiHome}from'./lib/ai-overview'
 
 const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const slug=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')
@@ -36,13 +38,15 @@ function SettingRow({s,can,onSave}){
   const[v,setV]=useState(shown(s.value)),[reason,setReason]=useState(''),[busy,setBusy]=useState(false),[err,setErr]=useState('')
   useEffect(()=>{setV(shown(s.value))},[s.value])
   // v2.15.277: a yes/no setting (kind boolean) is chosen from Yes or No; numbers as before
-  const yn=s.kind==='boolean',ls=s.kind==='list',n=Number(v)
+  // v2.16.0 (Platform Admin 13 Nov 2026 19:23): a text setting (kind 'text', for example a model name) is a text box. It used to be drawn as a
+  // number box with "Between 0 and 0", so it could not be changed.
+  const yn=s.kind==='boolean',ls=s.kind==='list',tx=s.kind==='text',n=Number(v)
   // CF-247 F-OPS (11 Nov 2026): a list of provider ids is chosen by provider name, not typed as ids
   const pv=isProviderIdList(s)
   const list=parseList(v)
-  const changed=yn?v!==String(s.value):ls?v.trim()!==shown(s.value):v!==''&&n!==Number(s.value)
-  const valid=yn||(ls?listValid(s,v):(Number.isFinite(n)&&(s.min==null||n>=Number(s.min))&&(s.max==null||n<=Number(s.max))))
-  const save=async()=>{setBusy(true);setErr('');try{await onSave(s.key,yn?v==='true':ls?list:n,reason.trim());setReason('')}catch(e){setErr(errText(e))}finally{setBusy(false)}}
+  const changed=yn?v!==String(s.value):ls?v.trim()!==shown(s.value):tx?v.trim()!==String(s.value??'').trim():v!==''&&n!==Number(s.value)
+  const valid=yn||(ls?listValid(s,v):tx?v.trim()!=='':(Number.isFinite(n)&&(s.min==null||n>=Number(s.min))&&(s.max==null||n<=Number(s.max))))
+  const save=async()=>{setBusy(true);setErr('');try{await onSave(s.key,yn?v==='true':ls?list:tx?v.trim():n,reason.trim());setReason('')}catch(e){setErr(errText(e))}finally{setBusy(false)}}
   return <div className="sr-row" data-register-setting={s.key}>
     <div className="sr-text"><strong>{s.label}</strong>{s.help&&<small>{s.help}</small>}<small className="sr-used">Used by: {s.used_by||'—'}</small>
       {s.updated_at&&<small className="sr-meta">{s.reason||'—'} · {fmtDateTime(s.updated_at)}</small>}</div>
@@ -51,13 +55,14 @@ function SettingRow({s,can,onSave}){
         {pv?<div className="sr-value is-providers"><ProviderListPicker value={v} onChange={setV} label={s.label} emptyText={listPlaceholder(s)||undefined}/></div>
         :<label className="sr-value"><span className="sr-hide">{s.label}</span>{yn?<select className="fv-input" value={v} onChange={e=>setV(e.target.value)}><option value="true">Yes</option><option value="false">No</option></select>
           :ls?<input className="fv-input" type="text" placeholder={listPlaceholder(s)||undefined} value={v} onChange={e=>setV(e.target.value)}/>
-          :<input className="fv-input" type="number" inputMode="numeric" min={s.min??undefined} max={s.max??undefined} value={v} onChange={e=>setV(e.target.value)}/>}{!yn&&!ls&&<span>{s.unit}</span>}</label>}
+          :tx?<input className="fv-input sr-text" type="text" data-setting-kind="text" value={v} onChange={e=>setV(e.target.value)}/>
+          :<input className="fv-input" type="number" inputMode="numeric" min={s.min??undefined} max={s.max??undefined} value={v} onChange={e=>setV(e.target.value)}/>}{!yn&&!ls&&!tx&&<span>{s.unit}</span>}</label>}
         {changed&&<label className="sr-reason"><span className="sr-hide">Reason</span><input className="fv-input" placeholder="Reason (kept in the log)" value={reason} onChange={e=>setReason(e.target.value)}/></label>}
         {changed&&<Button compact variant="primary" disabled={busy||!valid||reason.trim().length<4} onClick={save}><Save size={13}/>Save</Button>}
-        {changed&&!valid&&<small className="fr-error">{ls?listError(s):<>Between {fmtNumber(Number(s.min))} and {fmtNumber(Number(s.max))}.</>}</small>}
+        {changed&&!valid&&<small className="fr-error">{ls?listError(s):tx?'Enter a value.':<>Between {fmtNumber(Number(s.min))} and {fmtNumber(Number(s.max))}.</>}</small>}
         {err&&<small className="fr-error" role="alert">{err}</small>}
-      </>:<strong>{yn?(String(s.value)==='true'?'Yes':'No'):pv?<ProviderNames value={s.value}/>:ls?shown(s.value):<>{fmtNumber(Number(s.value))} {s.unit}</>}</strong>}
-      <small className="sr-range">{!yn&&!ls&&s.min!=null?`${fmtNumber(Number(s.min))} to ${fmtNumber(Number(s.max))}`:''}</small>
+      </>:<strong>{yn?(String(s.value)==='true'?'Yes':'No'):pv?<ProviderNames value={s.value}/>:ls?shown(s.value):tx?(String(s.value??'')||'Not set'):<>{fmtNumber(Number(s.value))} {s.unit}</>}</strong>}
+      <small className="sr-range">{!yn&&!ls&&!tx&&s.min!=null?`${fmtNumber(Number(s.min))} to ${fmtNumber(Number(s.max))}`:''}</small>
     </div>
   </div>
 }
@@ -87,6 +92,9 @@ export default function SettingsRegister({onError}){
   const save=async(key,value,reason)=>{const{error}=await supabase.rpc('admin_toolsets_write',{p_action:'setting',p_args:{toolset:'pipeline',key,value,reason}});if(error)throw error;await load()}
   if(!d)return <section className="m-panel" data-settings-register>{failed?<Empty text={`Settings could not be loaded: ${failed}`}/>:<Loading label="Loading settings…"/>}</section>
   const can=Boolean(d.can_manage),check=d.check||[]
+  // v2.16.0 (Platform Admin 13 Nov 2026 19:23): a setting whose home is Models & services is listed and changed there only. Every other
+  // setting stays here; a section left with none is not drawn.
+  const sections=(d.sections||[]).map(sec=>({...sec,settings:(sec.settings||[]).filter(x=>!isAiHome(x))})).filter(sec=>sec.settings.length)
   return <div className="m-page-stack" data-settings-register data-anchor="settings-register">
     <div className={`sr-check ${check.length?'is-bad':'is-ok'}`} data-controls-check={check.length?'fixed':'ok'} role="status">
       {check.length?<TriangleAlert size={16} aria-hidden/>:<ShieldCheck size={16} aria-hidden/>}
@@ -94,7 +102,8 @@ export default function SettingsRegister({onError}){
         :<span><strong>Controls check: all {fmtNumber(Number(d.jobs||0))} running jobs read their sizes from settings.</strong> Nothing is fixed in a job.</span>}
     </div>
     {!can&&<p className="l3v-note">You can see every setting. Only a Platform Admin can change one.</p>}
-    {(d.sections||[]).map(sec=><Card key={sec.section} id={`settings.register.${slug(sec.section)}`} title={sec.section} subtitle={SECTION_HELP[sec.section]||''}
+    <p className="l3v-note" data-ai-settings-moved><a className="cf-link" href={hrefFor('services','ai')}>AI models, prompts, caps and the OpenRouter key are in Models &amp; services</a></p>
+    {sections.map(sec=><Card key={sec.section} id={`settings.register.${slug(sec.section)}`} title={sec.section} subtitle={SECTION_HELP[sec.section]||''}
         data-register-section={sec.section} data-anchor={`register:${sec.section}`} meta={<span className="cf-chip tone-neutral">{fmtNumber(sec.settings.length)} settings</span>}>
       <SectionRows settings={sec.settings} can={can} onSave={save}/>
     </Card>)}

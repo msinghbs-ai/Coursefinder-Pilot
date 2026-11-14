@@ -43,8 +43,8 @@ export const ADMISSION_PATHS = [
 // `notices` are the toolset:kind pairs of security.platform_notices_v1 that this gate raises; Models & services shows the gate beside them.
 export const BUDGET_GATES = [
   { key: 'openrouter-guard', gate: 'StudySearch AI guard (daily guard per AI use, credit floor)', notices: ['openrouter:over_guard', 'openrouter:low_balance'],
-    mode: 'Observe only: notices only, nothing stops. Stop at limits: an AI use stops at its daily guard until the UTC day changes, and the AI stops below the credit floor. The mode is shown on Models & services › AI & OpenRouter.',
-    where: 'Models & services › AI & OpenRouter (mode, credit floor, Daily guards)', who: 'Change: Platform Admin' },
+    mode: 'Observe only: notices only, nothing stops. Stop at limits: an AI use stops at its daily guard until the UTC day changes, and the AI stops below the credit floor. The mode is shown on Models & services › AI.',
+    where: 'Models & services › AI (mode, credit floor, daily ceiling, each service\'s cap)', who: 'Change: Platform Admin' },
   { key: 'openrouter-refused', gate: 'Refused by OpenRouter (outside StudySearch)', notices: ['openrouter:refused'],
     mode: 'In either mode: out of credit, the key\'s own spending limit, a rate limit or a key not accepted. The refused pages are read again later.',
     where: 'The OpenRouter account (Workspaces › Keys); the key on Models & services', who: 'Platform Admin (top up or change the key\'s limit at OpenRouter)' },

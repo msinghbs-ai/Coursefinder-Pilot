@@ -47,12 +47,12 @@ test.describe('M2.5 Platform maturity Administration source/server contract',()=
     expect(await fs.readFile('src/nav-map.js','utf8')).toContain("'data-model': { page: 'coverage', tab: 'attributes' },") // v2.15.301: Data model retired
     // v2.15.291: the shell has no fixed fallback version (it imports the manifest); the legacy history keeps its baseline.
     const candidateVersion=manifest.match(/export const UI_VERSION='([^']+)'/)?.[1]
-    expect(shell).not.toMatch(/const UI_VERSION='2\.15\.\d+'/)
+    expect(shell).not.toMatch(/const UI_VERSION='2\.\d+\.\d+'/)
     expect(shell).toContain("import{UI_VERSION}from'./release-manifest.js'")
-    expect(candidateVersion).toMatch(/^2\.15\.\d+$/)
+    expect(candidateVersion).toMatch(/^2\.\d+\.\d+$/)
     expect(current).toContain("from'./release-manifest.js'")
     expect(index).toContain('<title>StudySearch PIM Admin</title>')
-    expect(index).not.toMatch(/StudySearch PIM Admin v2\.15\.\d+/)
+    expect(index).not.toMatch(/StudySearch PIM Admin v2\.\d+\.\d+/)
     expect(versionEntry).toContain("version:'2.15.18'")
     expect(versionEntry).toContain('Platform maturity Administration workspace')
     expect(releaseTest).toContain('release notes @deployed')

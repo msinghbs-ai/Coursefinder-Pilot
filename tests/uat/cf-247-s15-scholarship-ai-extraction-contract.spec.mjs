@@ -42,31 +42,26 @@ test('worker v0.20.1: the model is pinned, answers are strict JSON, and every fa
 test('mocked browser: Extraction shows models with qualification scores, the sample, and proven answers', async ({ page }) => {
   await mockAdmin(page)
   await page.goto('/#scholarships?tab=extraction')
-  const x = page.locator('[data-scholarship-extraction]')
+  let x = page.locator('[data-scholarship-extraction="config"]')
   await expect(x.locator('[data-sx-admission]')).toContainText('Off')
   const q = x.locator('[data-sx-model="qwen3-30b"]')
   await expect(q).toContainText('38 / 41')
   await expect(q).toContainText('22 / 29')
   await expect(x.locator('[data-sx-model="gpt-4.1-mini"]')).toContainText('40 / 41')
-  // a model still qualifying cannot be made active; switching admission on needs an active model
-  await expect(x.locator('[data-sx-model="gpt-4.1-mini"] [data-sx-action="activate-gpt-4.1-mini"]')).toBeDisabled()
+  // v2.16.0: a model is made active by the cascade of the Scholarship pages service (Models & services › AI), not here; switching admission on needs an active model
+  await expect(x.locator('[data-sx-action^="activate-"]')).toHaveCount(0)
+  await expect(x.locator('[data-model-line="scholarship"] a')).toHaveAttribute('href', /#models-services\?tab=ai/)
   await expect(x.locator('[data-sx-action="admission-on"]')).toBeDisabled()
   await expect(x.locator('[data-sx-sample-row="31"] [data-sx-answer="gpt-4.1-mini"]')).toContainText('differs')
+  // v2.16.0 (Platform Admin 13 Nov 2026 22:10): the configuration is on Models & services; the recent answers (results) stay on Scholarships › Coverage
+  await expect(x.locator('[data-sx-recent-row]')).toHaveCount(0)
+  await page.goto('/#scholarships?tab=coverage&at=sch-extraction')
+  x = page.locator('[data-scholarship-extraction="results"]')
+  await expect(x.locator('[data-sx-config-link] a')).toHaveAttribute('href', /#models-services\?tab=ai/)
   await x.locator('[data-sx-recent-row="501"]').click()
   await expect(x.locator('.sx-detail')).toContainText('valued at $15,548')
   await expect(x.locator('.sx-detail')).toContainText('Bachelor of Engineering (Honours)')
 })
 
-test('mocked browser: making a qualified model active asks for a reason and leaves AI admission off', async ({ page }) => {
-  await mockAdmin(page)
-  await page.goto('/#scholarships?tab=extraction')
-  const x = page.locator('[data-scholarship-extraction]')
-  await x.locator('[data-sx-action="activate-qwen3-30b"]').click()
-  await expect(x.locator('[data-sx-confirm="activate-qwen3-30b"]')).toBeDisabled()
-  await x.getByLabel('Reason: Make active').fill('Best scores on the sample')
-  await x.locator('[data-sx-confirm="activate-qwen3-30b"]').click()
-  await expect(x.locator('[data-sx-note]')).toContainText('AI admission is unchanged')
-  const call = page.l3calls.find(c => c.scholarshipAi?.p_action === 'activate')
-  expect(call.scholarshipAi.p_args).toEqual({ model_code: 'qwen3-30b', reason: 'Best scores on the sample' })
-  expect(page.l3calls.some(c => c.scholarshipAi?.p_action === 'set_admission')).toBe(false)
-})
+// v2.16.0 (Platform Admin 13 Nov 2026 19:14): "making a qualified model active asks for a reason and leaves AI admission off" is retired with the
+// Make active button; the order of the models is the cascade of the Scholarship pages service, saved with a reason on Models & services › AI.

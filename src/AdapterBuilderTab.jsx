@@ -207,14 +207,11 @@ export function readyFields(q){const f=q?.fields||{},ready=[],held={}
     const why=!x.pass?(x.why||'does not pass'):Number(x.read||0)<5?'read on fewer than 5 pages':(Number(x.agree||0)<3||x.agree_share==null)?'not enough held values to check against (needs 3 agreeing courses)':Number(x.agree_share)<0.9?'agrees on under 90% of checked courses':null
     if(why)held[k]=why;else ready.push(k)}
   return{ready,held}}
-// v2.15.218 (Platform Admin, 8 Oct 2026 10:31): the model for this adapter, chosen by a Platform Admin from the models enabled and qualified for
-// intake work (Models & services). One fixed model per adapter; the default is the builder setting.
-function ModelPick({r,pid,name,busy,onDone,onError}){
-  const m=r?.model,list=r?.models||[]
-  if(!m)return null
-  const change=async code=>{const reason=ask(`Use ${code?list.find(x=>x.code===code)?.model:'the default model'} for ${name}'s adapter proposals`);try{const{error}=await supabase.rpc('admin_adapter_builder',{p_action:'model',p_args:{provider_id:pid,profile_code:code,reason}});if(error)throw error;await onDone()}catch(e){onError?.(errText(e))}}
-  return <div className="ab-model" data-adapter-model><small className="sl-sub">Model: <strong>{m.model}</strong> {m.chosen?'(chosen for this adapter)':'(default)'}</small>
-    {r.can_manage&&list.length>0&&<select aria-label="Model for this adapter" disabled={busy} value={m.chosen?m.code:''} onChange={e=>change(e.target.value)}><option value="">Default ({list.find(x=>x.code===m.code)?.model||m.model})</option>{list.map(x=><option key={x.code} value={x.code}>{x.model}</option>)}</select>}</div>
+// v2.16.0 (integrator's improvement with the Models & services redesign, 13 Nov 2026): the per-adapter model picker is retired. The model
+// of adapter proposals is the first model of the Adapter proposals service; this line names it and links to where it is changed.
+function ModelLine({r}){
+  const m=r?.model
+  return <div className="ab-model" data-adapter-model><small className="sl-sub mdl-line" data-model-line="adapter">Model: <strong>{m?.model||'No model'}</strong> <a className="cf-link" href="#models-services?tab=ai&card=services.ai.services&at=services.ai.services&service=adapter_builder">change in Models &amp; services</a></small></div>
 }
 // v2.15.218: pick any of the provider's stored course pages as a sample (Platform Admin), e.g. a course whose page prints the fee
 function SamplePick({r,pid,busy,onDone,onError}){
@@ -367,7 +364,7 @@ function GuidedBuild({b,find,onChanged,onError,onStage}){
     <Step n="3" title="Adapter" hint={`The model for this adapter (${r?.model?.model||r?.budget?.model||'not set'}) proposes the settings; you run every step and admit only the fields that pass the checks. AI today US$ ${Number(r?.budget?.used_usd||0).toFixed(3)} of ${r?.budget?.limit_usd??'—'}.`}>
       {!can&&<p className="ab-text">Running the steps is for Platform Admins; you can follow the progress here.</p>}
       <SubStep n="3.1" title="Model proposes the settings" state={st.propose}>
-        <ModelPick r={r} pid={pid} name={b.name} busy={Boolean(busy)} onDone={loadDraft} onError={onError}/>
+        <ModelLine r={r}/>
         <p className={`ab-text${last?.kind==='error'?' ab-error':''}`} data-proposal-status>{last?(last.kind==='error'?<>Last proposal failed: {last.error}</>:`${last.model} · US$ ${Number(last.cost||0).toFixed(4)} · ${last.reason||''}`):'The pinned model reads the samples and suggests where each attribute is.'}</p>
         {att.length>0&&<p className="ab-muted" data-proposal-attempts>{att.map((a,i)=>`${i?'then ':''}limit ${fmtNumber(a.max_tokens)} tokens: ${a.finish==='length'?'cut off':a.finish||'no answer'}${a.completion_tokens!=null?`, ${fmtNumber(a.completion_tokens)} answer tokens`:''}`).join('; ')} · US$ {Number(att.reduce((t,a)=>t+Number(a.cost||0),0)).toFixed(4)} in all. A cut-off answer is asked again once, automatically, with a larger limit.</p>}
         {can&&st.propose!=='wait'&&<Button compact disabled={Boolean(busy)||st.propose==='busy'} onClick={()=>run('propose',`Ask the pinned model to propose settings for ${b.name} from the captured samples (uses the AI allowance)?`,async reason=>{await rpc('admin_adapter_builder',{p_action:'propose',p_args:{provider_id:pid,draft_id:dr.id,marks:dr.marks||[],comments:dr.comments||'Propose settings that read international intakes (months), IELTS overall, the international annual fee and delivery from these course pages.',reason}});await loadDraft()})}>{proposalOk?'Propose again':'Ask for a proposal'}</Button>}

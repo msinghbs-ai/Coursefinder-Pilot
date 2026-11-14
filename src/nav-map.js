@@ -26,7 +26,8 @@ export const PAGES = {
     // v2.15.240 (Platform Admin, 11 Oct 2026): each provider measured against its own scholarship listing page
     { key: 'coverage', label: 'Coverage', min: 3 },
     // v2.15.249 (Platform Admin bugs 11/10-6): AI reads each stored scholarship page; models, qualification, instructions, answers.
-    // v2.15.301 (Platform Admin, 20 Oct 2026, "Move to Models & services › AI"): Extraction is on Models & services › AI (old address redirects).
+    // v2.15.301 (Platform Admin, 20 Oct 2026): Extraction is on Models & services › AI (old address redirects). v2.16.0 (Platform Admin written
+    // review 13 Nov 2026 22:10): its configuration is under the Scholarship pages service there; its operational results are a section of Coverage.
     // v2.15.174 (Platform Admin, 4 Oct 2026 01:57): Course links retired — links come from each scholarship's page (Layer 2)
     // v2.15.169 (Decision 249): Publishing moved to Layer 4 Review; v2.15.253: that tab retired, publishing is on Coverage
   ] },
@@ -131,12 +132,18 @@ export const PAGES = {
   ] },
   // v2.15.300 (Platform Admin, 20 Oct 2026): Scrapers & fetchers is the Fetchers tab of Models & services (old addresses redirect).
   // v2.15.264 (Platform Admin, 13 Oct 2026 00:09): three tabs; the AI configuration Layer 3 used to hold is back as AI & OpenRouter.
-  services: { label: 'Models & services', slug: 'models-services', icon: 'ai', min: 4, subtitle: 'Page services, their switches, keys and limits; the AI models, their switches and OpenRouter.', tabs: [
+  // v2.16.0 (Platform Admin 13 Nov 2026 19:14 to 19:36): the AI tab is one page of four panes: OpenRouter key and usage, Models, Services (each
+  // with its model cascade, cap, prompt and AI settings) and Recent usage. It replaces the AI & OpenRouter tab (OpenRouter account, AI uses and
+  // daily guards, central pages model, adapter proposal model, scholarship models, model profiles, AI model switches); the old cards' addresses
+  // open the pane that replaced them (RETIRED_AI_CARDS).
+  services: { label: 'Models & services', slug: 'models-services', icon: 'ai', min: 4, subtitle: 'Page services, their switches, keys and limits; and AI: the OpenRouter key and credit, the models that may be used, each service\'s model cascade, cap and prompt, and recent usage.', tabs: [
     // SS-020 step 3 (Decision 269, 3 Nov 2026): Services, Toolsets & limits and Fetchers are one tab, Services & limits (same minimum role,
     // Pipeline Operator); their old addresses open it (resolveTarget). The AI model switches moved to AI & OpenRouter.
     { key: 'services', label: 'Services & limits', min: 4 },
-    // v2.15.301: Scholarship extraction (was Scholarships › Extraction, Curator and above) is on this tab; the AI configuration stays Operator and above
-    { key: 'ai', label: 'AI & OpenRouter', min: 3 },
+    // v2.16.0 (Platform Admin written review 13 Nov 2026 22:10, "Do not silently remove role-3 read-only access"): Curator and above read it
+    // (health, model in effect, errors, budget, usage; the key as present or absent). Routes, caps and switches need PIM Admin; the model list,
+    // qualification, the daily ceiling and the key need the Platform Admin.
+    { key: 'ai', label: 'AI', min: 3 },
   ] },
   // v2.15.301 (Platform Admin, 20 Oct 2026): Capacity (was Platform health › Capacity) is part of the checklist
   migration: { label: 'Go-live checklist', slug: 'environment-migration', icon: 'shield', min: 6, subtitle: 'What must be set up and pass before Production is switched on, and the capacity it needs.' },
@@ -239,6 +246,16 @@ export const LEGACY_ADMIN_SECTIONS = {
   'statistics-datasets': { page: 'rankings', tab: 'datasets' },
 }
 
+// v2.16.0 (Platform Admin 13 Nov 2026 19:14): cards of the retired AI screens → the pane of Models & services › AI that replaced each. An old
+// link (?card=… or ?at=…, as the notices' Go to buttons and bookmarks carry) opens the AI tab, opens that card and scrolls to it. The
+// OpenRouter card keeps its address (services.ai.openrouter).
+export const RETIRED_AI_CARDS = {
+  'services.toolset.openrouter': 'services.ai.openrouter', 'openrouter:Key and plan limits': 'services.ai.openrouter',
+  'openrouter:Daily guards': 'services.ai.services', 'services.ai.uses': 'services.ai.services', 'services.ai.scholarship-models': 'services.ai.services',
+  'services.ai.provider-description-prompt': 'services.ai.services', 'services.ai.events': 'services.ai.services',
+  'services.ai.profiles': 'services.ai.models', 'services.ai-models': 'services.ai.models',
+}
+
 const MOVED_L1 = { imports: { page: 'rankings', tab: 'datasets' }, dates: { page: 'reference', tab: '', set: { type: 'dates' } }, links: { page: 'reference', tab: '', set: { type: 'links' } }, onboarding: { page: 'layer2', tab: 'universities' }, scholarships: { page: 'layer2', tab: 'scholarships' } }
 
 const BY_SLUG = Object.fromEntries(Object.values(PAGES).map(p => [p.slug, p.key]))
@@ -287,7 +304,18 @@ export function resolveTarget(target, params = new URLSearchParams()) {
   if (hit.page === 'layer1') return { page: 'layer1', tab: '', params: p }
   if (hit.page === 'reference' && tab === 'imports') return { page: 'rankings', tab: 'datasets', params: p }
   if (hit.page === 'reference' && ['dates', 'links'].includes(tab)) { if (!p.get('type')) p.set('type', tab); return { page: 'reference', tab: '', params: p } }
-  if (hit.page === 'scholarships' && tab === 'extraction') return { page: 'services', tab: 'ai', params: p }
+  // v2.15.301: Scholarships › Extraction is on Models & services › AI; v2.16.0: under the Scholarship pages service (its results are on Coverage)
+  if (hit.page === 'scholarships' && tab === 'extraction') { for (const [k, v] of [['card', 'services.ai.services'], ['at', 'services.ai.services'], ['service', 'scholarship_extraction']]) if (!p.get(k)) p.set(k, v); return { page: 'services', tab: 'ai', params: p } }
+  // v2.16.0: a retired AI card (on either Models & services tab) opens the AI tab at the pane that replaced it
+  if (hit.page === 'services') {
+    const asked = [...String(p.get('card') || '').split(','), p.get('at') || ''].filter(Boolean)
+    const pane = asked.map(c => RETIRED_AI_CARDS[c]).filter(Boolean).pop()
+    if (pane) {
+      if (asked.includes('services.ai.provider-description-prompt') && !p.get('service')) p.set('service', 'provider_description')
+      p.set('card', pane); p.set('at', pane)
+      return { page: 'services', tab: 'ai', params: p }
+    }
+  }
   if (hit.page === 'coverage' && tab === 'flags') return { page: 'layer2', tab: 'flags', params: p }
   if (hit.page === 'coverage' && tab === 'progress' && p.get('view') === 'running') { p.delete('view'); return { page: 'jobs', tab: 'tasks', params: p } }
   if (hit.page === 'coverage' && tab === 'progress' && p.get('view') === 'levers') { p.delete('view'); return { page: 'environment', tab: 'settings', params: p } }
