@@ -31,7 +31,10 @@ const detail = (page, code) => page.locator(`[data-ai-service-detail="${code}"]`
 test.describe('Models & services › AI, mocked browser', () => {
   test('one page, exactly four panes, in the order asked: OpenRouter key and usage, Models, Services, Recent usage', async ({ page }) => {
     await open(page)
-    await expect(page.locator('[data-ai-page] > *')).toHaveCount(4)
+    // four panes, and above them the limits banner (Platform Admin 14 Nov 2026: "unmissable at the top of the page"): a status line, not a pane
+    await expect(page.locator('[data-ai-page] > [data-ai-pane]')).toHaveCount(4)
+    await expect(page.locator('[data-ai-page] > *')).toHaveCount(5)
+    await expect(page.locator('[data-ai-page] > :first-child')).toHaveAttribute('data-ai-mode-banner', 'stop')
     const panes = await page.locator('[data-ai-pane]').evaluateAll(els => els.map(e => e.getAttribute('data-ai-pane')))
     expect(panes).toEqual(['openrouter', 'models', 'services', 'usage'])
     await expect(page.locator('[data-ai-pane] h2')).toHaveText(['1 · OpenRouter key and usage', '2 · Models', '3 · Services', '4 · Recent usage'])
@@ -545,6 +548,75 @@ test.describe('Models & services › AI, mocked browser', () => {
     await expect(page.locator('[data-model-line="scholarship"] a')).toHaveAttribute('href', /#models-services\?tab=ai&card=services\.ai\.services/)
     await expect(page.locator('[data-sx-chain-editor], [data-sx-action^="activate-"]')).toHaveCount(0)
     await expect(page.locator('[data-sx-action^="qualify-"]').first()).toBeVisible()
+  })
+
+  // Platform Admin 14 Nov 2026 (follow-ups after the live check of v2.16.0): "Make the Observe vs. Stop mode banner clearer and unmissable at the
+  // top of the page", "Display explicit, human-readable held reasons directly on held services", "Surface per-call failures clearly in the Usage view"
+  test('the limits banner sits above the four cards and says whether limits are enforced, even with every card closed', async ({ page }) => {
+    await open(page)
+    const b = page.locator('[data-ai-mode-banner="stop"]')
+    await expect(b).toContainText('Limits enforced')
+    await expect(b).toContainText('Enforcing (stop at limits).')
+    await expect(b).toContainText('1 service held by a cap or the ceiling now.')
+    const [top, first] = await Promise.all([b.boundingBox(), page.locator('[data-ai-pane="openrouter"]').boundingBox()])
+    expect(top.y).toBeLessThan(first.y)
+    for (const id of ['openrouter', 'models', 'services', 'usage']) await page.locator(`[data-ai-pane="${id}"] .cf-card-toggle`).click()
+    await expect(page.locator('[data-ai-pane] .cf-card-toggle[aria-expanded="true"]')).toHaveCount(0)
+    await expect(b).toBeVisible()
+  })
+
+  test('observing, the banner says limits are not enforced and how many services would be held now', async ({ page }) => {
+    const base = (await import('./support/ai-overview-fixture.mjs')).aiOverview().openrouter
+    await open(page, { mode: 'observe', openrouter: { ...base, mode: 'observe', spent_today_usd: 14.2 } })
+    const o = page.locator('[data-ai-mode-banner="observe"]')
+    await expect(o).toContainText('Limits not enforced')
+    await expect(o).toContainText('Observing only: limits are reported, not enforced.')
+    await expect(o).toContainText(/\d+ services? would be held now if limits were enforced\./)
+    await expect(page.locator('[data-ai-mode-banner]')).toHaveCount(1)
+  })
+
+  test('a service switched off with no qualified model (live, round 5) is Off with its reasons, not a "no allowed model" alarm', async ({ page }) => {
+    const unq = c => ({ code: c, qualified: false, status: 'unqualified' })
+    const off = seedServices().map(s => (s.service_code === 'course_entry_requirements' ? { ...s, enabled: false, cascade: ['qwen3-30b', 'mistral-small-3.2'], qualification: [unq('qwen3-30b'), unq('mistral-small-3.2')] } : s))
+    await open(page, { services: off })
+    const r = row(page, 'course_entry_requirements')
+    await expect(r.locator('[data-ai-state-pill]')).toHaveText('Off')
+    await expect(r.locator('[data-ai-held-reasons]')).toContainText('Switched off on this page.')
+    await expect(r.locator('[data-ai-held-reasons]')).toContainText('It cannot be switched on yet: no model in its cascade is qualified for it.')
+    await expect(r.locator('[data-ai-model-cell] [data-ai-no-model]').first()).toHaveText('No qualified model')
+    await expect(r.locator('[data-ai-in-effect]')).toHaveCount(0) // nothing is handed out, so nothing is "in use today"
+    // the alarm is for services that are switched on and get no model: the matrices still are, and say why
+    const warn = page.locator('[data-ai-no-model-warning]')
+    await expect(warn).not.toContainText('Course entry requirements')
+    await expect(warn).toContainText('Entry requirement matrices (provider pages) (no allowed model)')
+    await expect(page.locator('[data-ai-pane="services"] [data-ai-no-model-chip]')).toHaveText('1 with no model')
+    // a cap holding in stop mode still says so in words
+    await expect(row(page, 'fee_reader').locator('[data-ai-held-reasons]')).toContainText('Its daily cap is reached. Work asked for under an open request is still let through.')
+  })
+
+  test('failed calls show beside spend: a count on the Usage card, the rate and the kinds, the failures highlighted, the failed attempts open', async ({ page }) => {
+    await open(page)
+    const u = page.locator('[data-ai-pane="usage"]')
+    await expect(u.locator('[data-ai-failures-chip]')).toHaveText('7 failed calls, 24 h')
+    const sum = u.locator('[data-ai-failures-summary="7"]')
+    await expect(sum).toContainText('7 of 458 attempts failed (2%)')
+    await expect(sum).toContainText('By kind, of the 2 most recent failed attempts: the call timed out 1, the AI service answered with an error 1.')
+    await expect(sum).toContainText('What failed attempts cost is included in Spend.')
+    await expect(u.locator('[data-ai-calls-row="fee_reader:qwen/qwen3-30b-a3b-instruct-2507"] [data-ai-calls-failures="some"] .cf-chip')).toHaveText('6')
+    await expect(u.locator('[data-ai-calls-row="scholarship_extraction:qwen/qwen3-30b-a3b-instruct-2507"] [data-ai-calls-failures="none"]')).toHaveText('0')
+    await expect(u.locator('[data-ai-fallbacks]')).toHaveAttribute('open', '')
+    await u.locator('.cf-card-toggle').click()
+    await expect(u.locator('[data-ai-failures-chip]')).toBeVisible() // a closed card still says it
+  })
+
+  test('a running service whose last call failed says so on its row, with the kind of failure', async ({ page }) => {
+    const svc = seedServices().map(s => (s.service_code === 'course_matching' ? { ...s, last_call: { at: new Date(Date.now() - 39 * 60e3).toISOString(), model: 'qwen/qwen3-30b-a3b-instruct-2507', outcome: 'failed', error: 'cut', attempt_no: 1 } } : s))
+    await open(page, { services: svc })
+    const r = row(page, 'course_matching')
+    await expect(r.locator('[data-ai-state-pill]')).toHaveText('Running')
+    await expect(r.locator('[data-ai-row-failing]')).toContainText('Last call failed')
+    await expect(r.locator('[data-ai-row-failing]')).toContainText('the answer was cut short')
+    await expect(row(page, 'course_description').locator('[data-ai-row-failing]')).toHaveCount(0)
   })
 })
 
