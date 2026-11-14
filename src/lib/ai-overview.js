@@ -168,6 +168,7 @@ const REFUSALS = [
   [/not qualified for this service: ?(.*)/i, (m) => `Not qualified for this service: ${m[1]}. Record its qualification first.`],
   [/Platform Admin required/i, 'Platform Admin is needed for this.'],
   [/uses one model: a fallback is not available/i, 'This service uses one model: a fallback is not available for it yet.'],
+  [/cannot be switched on yet: no model in its cascade is qualified/i, 'This service cannot be switched on yet: record a qualification for at least one model in its cascade first.'],
   [/say what the qualification rests on/i, 'Say what the qualification rests on (the evidence), in at least 10 characters.'],
   [/assigned StudySearch role required/i, 'An assigned StudySearch role is needed to read this page.'],
   [/status must be/i, 'A model is either allowed or not allowed.'],
