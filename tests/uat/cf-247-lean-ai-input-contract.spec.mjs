@@ -72,7 +72,9 @@ test('an observation names the cut and the field signalled only beyond it; the f
 test('the worker observes in shadow: every read observed, nothing skipped or changed, a failure never fails the read, off by setting', () => {
   expect(IX).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(8[7-9]|9\d)\.\d+";/)  // v0.87.0 or a later worker that keeps the observation
   expect(IX).toContain('import { leanText, observation, sha256Hex } from "./lean-input.ts";')
-  expect(IX).toContain('const OBSERVE = wsNum("reading.input_observe_on", 1) > 0, observed: any[] = [];')
+  // v0.92.0: the switch is read as a switch, so 0 turns observing off (wsNum read a 0 as the default 1)
+  expect(IX).toContain('const OBSERVE = wsOn("reading.input_observe_on", 1), observed: any[] = [];')
+  expect(IX).toContain('const wsOn = (k: string, d: 0 | 1) => { const n = Number(ws[k] ?? d); return Number.isFinite(n) ? n > 0 : d > 0; };')
   expect(IX).toContain('if (OBSERVE) await observeReads(pg, raw, data).catch(() => {});  // shadow only: never fails or changes the read')
   expect(IX).toContain('rpc("svc_ai_input_observe_v1", { p_rows: noNul(observed) }).catch(')
   // the observer mirrors each read's own text and limit

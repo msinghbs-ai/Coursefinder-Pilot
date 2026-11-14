@@ -27,21 +27,21 @@ worker: each reader hands it out from `security.ai_route_v1(<service>)`.
 
 | Call | Worker mode | Database reader that hands out the model | Service (route) | State | How the model is used |
 |---|---|---|---|---|---|
-| `index.ts:2114` | `scholarship_ai` | `public.svc_scholarship_ai_next` | scholarship_extraction | `routed` | the database escalation chain (the route's cascade); the call names one model |
-| `index.ts:2224` | `scholarship_recheck` | `public.svc_scholarship_recheck_next` | scholarship_extraction | `routed` | worker cascade |
-| `index.ts:2266` | `scholarship_eligibility` | `public.svc_scholarship_eligibility_next` | scholarship_eligibility | `routed_single` | one model |
-| `index.ts:2324` | `ops_diagnose` | `public.svc_ops_diagnosis_next` | ops_diagnosis | `routed_single` | one model (pinned on the request at lease) |
-| `index.ts:2372` | `ops_diagnose (entry requirements v2 trial)` | `public.svc_aer_v2_shadow_next, security.aer_v2_shadow_hold_v1` | entry_requirements_v2_shadow | `routed` | worker cascade; one model only when the version pins its providers (v0.89.0, #1137 routing) |
-| `index.ts:2446` | `central_ai (calendar, sliced read)` | `public.svc_central_ai_next` | calendar_reading (kind intake_calendar) | `routed` | worker cascade |
-| `index.ts:2462` | `central_ai` | `public.svc_central_ai_next` | central_english_policy or calendar_reading, by the item's kind | `routed` | worker cascade |
-| `index.ts:2740` | `entry_ai` | `public.svc_entry_matrix_next` | entry_matrices | `routed_single` | one model |
-| `index.ts:2806` | `fee_ai` | `public.svc_fee_ai_next` | fee_reader | `routed` | worker cascade |
-| `index.ts:2953` | `provider_description` | `public.svc_provider_description_lease_v1, public.svc_provider_description_next, public.svc_provider_description_reserve_v1` | provider_description | `routed_single` | one model (a price is reserved for that model) |
-| `index.ts:3007` | `enrich_ai (course fields: ask)` | `public.svc_enrich_ai_next` | course_other_fields | `routed` | worker cascade |
-| `index.ts:3031` | `enrich_ai (description and deadline: askText)` | `public.svc_enrich_ai_next` | course_description (description), course_other_fields (deadline) | `routed` | worker cascade |
-| `index.ts:3059` | `enrich_ai (entry requirements)` | `public.svc_enrich_ai_next` | course_entry_requirements | `routed` | worker cascade |
-| `index.ts:3340` | `ai_match` | `public.svc_coverage_ai_match_next` | course_matching | `routed` | worker cascade |
-| `index.ts:3480` | `adapter_propose` | `security.adapter_builder_model_for_v1 (through public.svc_adapter_draft_get)` | adapter_builder | `routed_single` | one model |
+| `index.ts:2120` | `scholarship_ai` | `public.svc_scholarship_ai_next` | scholarship_extraction | `routed` | the database escalation chain (the route's cascade); the call names one model |
+| `index.ts:2230` | `scholarship_recheck` | `public.svc_scholarship_recheck_next` | scholarship_extraction | `routed` | worker cascade |
+| `index.ts:2272` | `scholarship_eligibility` | `public.svc_scholarship_eligibility_next` | scholarship_eligibility | `routed_single` | one model |
+| `index.ts:2330` | `ops_diagnose` | `public.svc_ops_diagnosis_next` | ops_diagnosis | `routed_single` | one model (pinned on the request at lease) |
+| `index.ts:2378` | `ops_diagnose (entry requirements v2 trial)` | `public.svc_aer_v2_shadow_next, security.aer_v2_shadow_hold_v1` | entry_requirements_v2_shadow | `routed` | worker cascade; one model only when the version pins its providers (v0.89.0, #1137 routing) |
+| `index.ts:2453` | `central_ai (calendar, sliced read)` | `public.svc_central_ai_next` | calendar_reading (kind intake_calendar) | `routed` | worker cascade |
+| `index.ts:2469` | `central_ai` | `public.svc_central_ai_next` | central_english_policy or calendar_reading, by the item's kind | `routed` | worker cascade |
+| `index.ts:2747` | `entry_ai` | `public.svc_entry_matrix_next` | entry_matrices | `routed_single` | one model |
+| `index.ts:2813` | `fee_ai` | `public.svc_fee_ai_next` | fee_reader | `routed` | worker cascade |
+| `index.ts:2960` | `provider_description` | `public.svc_provider_description_lease_v1, public.svc_provider_description_next, public.svc_provider_description_reserve_v1` | provider_description | `routed_single` | one model (a price is reserved for that model) |
+| `index.ts:3014` | `enrich_ai (course fields: ask)` | `public.svc_enrich_ai_next` | course_other_fields | `routed` | worker cascade |
+| `index.ts:3038` | `enrich_ai (description and deadline: askText)` | `public.svc_enrich_ai_next` | course_description (description), course_other_fields (deadline) | `routed` | worker cascade |
+| `index.ts:3066` | `enrich_ai (entry requirements)` | `public.svc_enrich_ai_next` | course_entry_requirements | `routed` | worker cascade |
+| `index.ts:3364` | `ai_match` | `public.svc_coverage_ai_match_next` | course_matching | `routed` | worker cascade |
+| `index.ts:3504` | `adapter_propose` | `security.adapter_builder_model_for_v1 (through public.svc_adapter_draft_get)` | adapter_builder | `routed_single` | one model |
 
 State: `routed` means the route's cascade is executed (a later model is asked only on a technical failure). `routed_single` means the route
 chooses the model but the call uses one model; Models & services shows one model and refuses a second one for these. `not_migrated` is
