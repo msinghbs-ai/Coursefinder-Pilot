@@ -82,8 +82,9 @@ test('worker mode lean_sections_eval: stored copies only, no AI, no Firecrawl, n
   expect(body).toContain('readEvidenceCopy(c, String(it.storage_path))')
   expect(body).toContain('ai_calls: 0')
   expect(body).not.toMatch(/openrouter|chat\/completions|fcScrape|firecrawl|svc_fc_spend|fetch\(/i)
-  // the selector is used by the recall check and (v0.92.0, Phase 1b step 2) by the shadow beside live reads, nowhere else
-  expect(IX.split('selectSections(').length - 1).toBe(2)
+  // the selector is used by the recall check, (v0.92.0, Phase 1b step 2) by the shadow beside live reads and (v0.94.0, 1b-3) by the
+  // fees and intakes qualification on stored pages, nowhere else: no reader that admits values is sent the selection
+  expect(IX.split('selectSections(').length - 1).toBe(3)
 })
 
 test('the migration: independent labels only, settings for switch, batch and sample, catalogued job, read-only report; nothing dropped', () => {
@@ -124,7 +125,7 @@ test('run b migration: run a kept as recorded, its unread cases closed as supers
 })
 
 test('lean-sections-v2 (Phase 1b step 2): entry requirements under "Assumed knowledge", "Advanced standing" and literacy checks are selected; labels with HTML entities match', () => {
-  expect(LEAN_SECTIONS).toBe('lean-sections-v2')
+  expect(['lean-sections-v2', 'lean-sections-v3']).toContain(LEAN_SECTIONS)  // v3 keeps v2's headings
   const pad = '<p>Intro text for the course page.</p>'.repeat(40)
   for (const [h, v] of [['Assumed knowledge', 'Mathematical Methods (Units 3 and 4, C)'], ['Advanced standing', 'Candidates with a cognate bachelor degree get four units of credit'], ['Language, literacy and numeracy', 'Complete an LLND assessment before enrolment'], ['Who can apply', 'Must be 18 years of age or above']]) {
     const ab = blocks(`<main>${pad}<h2>Overview</h2><p>About the course.</p><h2>${h}</h2><p>${v}</p><h2>Careers</h2><p>Jobs.</p></main>`, '')
@@ -158,4 +159,17 @@ test('Phase 1b step 2 shadow: the enrich read records what the selector would se
   expect(MIGC).toContain("select security.lean_sections_eval_seed_v1('phase1b-step1c-2026-11-14');")
   expect(MIGC).toContain("count(*) filter (where j.preflight_full in ('likely', 'unknown') and j.preflight_selection = 'no_signal')")
   expect(MIGC).not.toMatch(/^\s*(drop|truncate)\b/im)
+})
+
+test('lean-sections-v3 (1b-3 bundle): an entry score line is an entry requirement wherever it stands (the Swinburne "Guaranteed Entry ATAR" misses)', () => {
+  expect(LEAN_SECTIONS).toBe('lean-sections-v3')
+  const pad = '<p>Intro text for the course page.</p>'.repeat(40)
+  for (const line of ['70.0 Guaranteed Entry ATAR or more entry options', 'Lowest selection rank to receive an offer 65.05', 'Minimum ATAR 80']) {
+    const ab = blocks(`<main>${pad}<h2>Overview</h2><p>About the course.</p><div class="stat">${line}</div><h2>Careers</h2><p>Jobs.</p></main>`, '')
+    const sel = selectSections(ab, 'entry_requirements')
+    expect(holds(sel.plain, [line]), line).toBe(true)
+  }
+  // the score line selects only itself and its short neighbours, not the unrelated sections around it
+  const ab = blocks(`<main>${pad}<h2>Overview</h2><p>About the course.</p><div class="stat">70.0 Guaranteed Entry ATAR</div><h2>Careers</h2><p>${'Graduates work in many fields. '.repeat(20)}</p></main>`, '')
+  expect(holds(selectSections(ab, 'entry_requirements').plain, ['Graduates work in many fields'])).toBe(false)
 })
