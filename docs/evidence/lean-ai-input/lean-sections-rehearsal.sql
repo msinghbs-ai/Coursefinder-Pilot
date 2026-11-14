@@ -1,5 +1,5 @@
 begin isolation level repeatable read;
--- Lean AI Input Phase 1b step 1 rolled-back rehearsal of 20261114010000. Forced rollback: the final DO block always raises.
+-- Lean AI Input Phase 1b step 1 rolled-back rehearsal of 20261114031500. Forced rollback: the final DO block always raises.
 create temp table _rh_pre on commit drop as select
   (select count(*) from pipeline.platform_toolset_settings) settings_total,
   (select md5(string_agg(toolset_key||key||value::text, ',' order by toolset_key,key)) from pipeline.platform_toolset_settings) settings_md5,
@@ -7,7 +7,7 @@ create temp table _rh_pre on commit drop as select
   (select count(*) from pipeline.aer_labelled_rows_v1) labels;
 -- CF-247 Lean AI Input Phase 1b step 1 (Platform Admin 14 Nov 2026 11:37, approving admin docs/platform/LEAN-AI-INPUT-PHASE1B-SECTION-SELECTION-DESIGN.md
 -- step 1: "build the deterministic section selector / header-preserving Markdown converter ... and run the offline recall validation (zero AI spend)").
--- The offline recall check of the section selector (worker coverage-sweep v0.88.0 mode lean_sections_eval, lean-sections.ts):
+-- The offline recall check of the section selector (worker coverage-sweep v0.89.0 mode lean_sections_eval, lean-sections.ts):
 --   * labelled cases, independent of the AI reader: rows a person ACCEPTED in Layer 4 for academic entry requirements (pipeline.aer_labelled_rows_v1,
 --     course pages, with the exact stored page the person judged) and values read by tested university adapters (pipeline.uni_adapter_results:
 --     duration, campus, delivery mode, entry requirement, intakes, fee) on the course's stored page;
@@ -55,7 +55,7 @@ create table if not exists pipeline.lean_section_eval_cases (
   error              text,
   unique (run_label, field, gold_source, source_ref)
 );
-comment on table pipeline.lean_section_eval_cases is 'CF-247 Lean AI Input Phase 1b step 1 (Platform Admin 14 Nov 2026 11:37; admin docs/platform/LEAN-AI-INPUT-PHASE1B-SECTION-SELECTION-DESIGN.md §4): labelled cases for the offline recall check of the section selector (worker coverage-sweep v0.88.0 mode lean_sections_eval). Each case is a stored course page and a value taken from it independently of the AI reader (gold_source aer_accepted: a Layer 4 row a person accepted; adapter: a tested university adapter reading). The worker records whether the value is on the page, inside the first enrich.page_chars characters the current reader is sent, in the converted page (lean-blocks-v1) and in the selected sections (lean-sections-v1). Measurement only: nothing reads it to decide a value. Seeded by security.lean_sections_eval_seed_v1; report security.lean_sections_eval_report_v1.';
+comment on table pipeline.lean_section_eval_cases is 'CF-247 Lean AI Input Phase 1b step 1 (Platform Admin 14 Nov 2026 11:37; admin docs/platform/LEAN-AI-INPUT-PHASE1B-SECTION-SELECTION-DESIGN.md §4): labelled cases for the offline recall check of the section selector (worker coverage-sweep v0.89.0 mode lean_sections_eval). Each case is a stored course page and a value taken from it independently of the AI reader (gold_source aer_accepted: a Layer 4 row a person accepted; adapter: a tested university adapter reading). The worker records whether the value is on the page, inside the first enrich.page_chars characters the current reader is sent, in the converted page (lean-blocks-v1) and in the selected sections (lean-sections-v1). Measurement only: nothing reads it to decide a value. Seeded by security.lean_sections_eval_seed_v1; report security.lean_sections_eval_report_v1.';
 create index if not exists lean_section_eval_cases_pending_idx on pipeline.lean_section_eval_cases (state, id) where state = 'pending';
 alter table pipeline.lean_section_eval_cases enable row level security;
 
@@ -214,8 +214,8 @@ begin
 end $j$;
 
 insert into pipeline.component_register(kind, name, layer, area, purpose, status, replaces, introduced_in) values
- ('job', 'lean-sections-eval', 'Layer 2', 'Enrich fields', 'Lean AI Input Phase 1b step 1: offline recall check of the section selector on independent labels (no AI, no Firecrawl)', 'active', '{}', '20261114010000'),
- ('table', 'pipeline.lean_section_eval_cases', 'Layer 2', 'Enrich fields', 'Labelled cases and results of the section selector recall check', 'active', '{}', '20261114010000')
+ ('job', 'lean-sections-eval', 'Layer 2', 'Enrich fields', 'Lean AI Input Phase 1b step 1: offline recall check of the section selector on independent labels (no AI, no Firecrawl)', 'active', '{}', '20261114031500'),
+ ('table', 'pipeline.lean_section_eval_cases', 'Layer 2', 'Enrich fields', 'Labelled cases and results of the section selector recall check', 'active', '{}', '20261114031500')
 on conflict do nothing;
 
 -- the first run's labelled cases
@@ -239,7 +239,7 @@ begin
   declare q text := current_query(); a int; b int; begin
     a := strpos(q, '-- CF-247 Lean AI Input Phase 1b step 1 (Platform Admin 14 Nov'); b := strpos(q, E'\n-- end of migration');
     r := r || jsonb_build_object('X1_migration_md5', md5(substr(q, a, b - a)));
-    if md5(substr(q, a, b - a)) <> 'd45d9e6e7b16576d858969e76387065f' then f := f || 'X1 executed migration differs from the file'; end if;
+    if md5(substr(q, a, b - a)) <> '3ed1b03e2ba4c964ee0053c5084be8e8' then f := f || 'X1 executed migration differs from the file'; end if;
   end;
   r := r || jsonb_build_object('S_cases_by_source', (select jsonb_object_agg(z.k, z.cnt) from (select gold_source||':'||field k, count(*) cnt from pipeline.lean_section_eval_cases group by 1) z));
   select count(*) into n from pipeline.lean_section_eval_cases; if n < 1000 then f := f || 'S1 fewer than 1000 cases seeded'; end if;

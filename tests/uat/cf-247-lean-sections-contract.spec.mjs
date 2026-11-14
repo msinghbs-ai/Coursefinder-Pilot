@@ -1,63 +1,62 @@
-// Guards: CF-247 Lean AI Input Phase 1b step 1 (Platform Admin 14 Nov 2026 11:37, approving admin docs/platform/LEAN-AI-INPUT-PHASE1B-SECTION-SELECTION-DESIGN.md step 1): the deterministic,
-// header-preserving block converter (lean-blocks-v1: numbered [B#] blocks with source offsets and heading paths, tables whole with their header rows) and the high-recall section selector
-// (lean-sections-v1) used only by the offline recall check (worker mode lean_sections_eval) on labels independent of the AI reader (Layer 4 accepted rows, tested adapters): no AI call, no
-// Firecrawl, nothing admitted, no reader's request changed; a page with no selection is never treated as lacking the field.
+// Guards: CF-247 Lean AI Input Phase 1b step 1 (Platform Admin 14 Nov 2026 11:37 and 12:29, admin docs/platform/LEAN-AI-INPUT-PHASE1B-SECTION-SELECTION-DESIGN.md step 1): the high-recall section selector
+// (lean-sections-v1) has no block format of its own: it selects from the platform's one [B#] block contract (aer-v2.ts aerV3Blocks, AER_V3_INPUT lean-blocks-v1, built on lean-input.ts leanText lean-md-v1),
+// whole tables with their header-carrying rows, the heading path and page data; it is used only by the offline recall check (worker mode lean_sections_eval) on labels independent of the AI
+// reader (Layer 4 accepted rows, tested adapters): no AI call, no scraper credit, nothing admitted, no reader's request changed; a page with no selection is never treated as lacking the field.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-import { LEAN_BLOCKS, LEAN_SECTIONS, blockMap, holds, leanBlocks, renderBlock, renderBlocks, selectSections } from '../../supabase/functions/coverage-sweep/lean-sections.ts'
+import { BLOCK_INPUT, LEAN_SECTIONS, holds, selectSections } from '../../supabase/functions/coverage-sweep/lean-sections.ts'
+import { AER_V3_INPUT, aerV3Blocks } from '../../supabase/functions/coverage-sweep/aer-v2.ts'
+import { leanText } from '../../supabase/functions/coverage-sweep/lean-input.ts'
 
 const IX = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 const MIG = fs.readFileSync('supabase/migrations/20261114031500_cf247_lean_sections_eval.sql', 'utf8')
+const SEL = fs.readFileSync('supabase/functions/coverage-sweep/lean-sections.ts', 'utf8')
 const filler = '<p>' + 'Graduates work across many industries and roles. '.repeat(12) + '</p>'
-const page = `<html><header>Site menu Apply now</header><body><h1>Bachelor of Science</h1><p>The Bachelor of Science builds skills in research.</p>` +
-  `<dl><dt>Duration</dt><dd>3 years full-time</dd><dt>Campus</dt><dd>Townsville Bebegu Yumba</dd><dt>Start</dt><dd>February, July</dd></dl>${filler.repeat(60)}` +
-  `<h2>Fees</h2><table><caption>International fees</caption><thead><tr><th>Year</th><th>Annual fee</th></tr></thead><tbody><tr><td>2027</td><td>A$47,990</td></tr></tbody></table><p>* Indicative, per year.</p>` +
+const page = `<html><header>Site menu Apply now</header><body><main><h1>Bachelor of Science</h1><p>The Bachelor of Science builds skills in research.</p>` +
+  `<div>Duration</div><div>3 years full-time</div><div>Location</div><div>Townsville Bebegu Yumba</div><div>Start dates</div><div>February, July</div>${filler.repeat(60)}` +
+  `<h2>Fees</h2><table><thead><tr><th>Year</th><th>Annual fee</th></tr></thead><tbody><tr><td>2026</td><td>A$46,500</td></tr><tr><td>2027</td><td>A$47,990</td></tr></tbody></table><p>* Indicative, per year.</p>` +
   `<h2>Entry requirements</h2><h3>International students</h3><p>A completed secondary qualification equivalent to Year 12 with ATAR 70.</p><ul><li>IELTS 6.5 overall, no band below 6.0</li></ul>` +
-  `<h2>How to apply</h2><p>Applications close 30 November 2026.</p><script>var x = "Applications close never";</script><footer>Contact us</footer></body></html>`
+  `<h2>How to apply</h2><p>Applications close 30 November 2026.</p><script>var x = "Applications close never";</script></main><footer>Contact us</footer></body></html>`
+const blocks = (html, data = 'Duration: 3 years') => aerV3Blocks(leanText(html), data)
 
-test('lean-blocks-v1: numbered [B#] blocks in page order with offsets into the stored page and heading paths; tables whole with caption and header row; chrome and scripts left out', () => {
-  const lb = leanBlocks(page)
-  expect(lb.converter).toBe(LEAN_BLOCKS)
-  expect(LEAN_BLOCKS).toBe('lean-blocks-v1')
-  lb.blocks.forEach((b, i) => { expect(b.id).toBe(`B${i + 1}`); expect(b.src_end).toBeGreaterThan(b.src_start) })
-  const t = lb.blocks.find((b) => b.kind === 'table')
-  expect(t.table.header).toEqual(['Year', 'Annual fee'])
-  expect(t.table.caption).toBe('International fees')
-  expect(t.text).toBe('Table: International fees\n| Year | Annual fee |\n| --- | --- |\n| 2027 | A$47,990 |')
-  expect(page.slice(t.src_start, t.src_start + 6)).toBe('<table')
-  expect(page.slice(t.src_end - 8, t.src_end)).toBe('</table>')
-  const ielts = lb.blocks.find((b) => /IELTS/.test(b.text))
-  expect(ielts.path).toEqual(['Bachelor of Science', 'Entry requirements', 'International students'])
-  expect(renderBlock(ielts)).toMatch(/^\[B\d+ @\d+-\d+\] - IELTS 6\.5 overall/)
-  expect(lb.blocks.some((b) => /Site menu|Contact us|Applications close never/.test(b.text))).toBe(false)
-  const map = blockMap(lb.blocks)
-  expect(map[ielts.id]).toEqual({ kind: 'item', level: 0, src_start: ielts.src_start, src_end: ielts.src_end, path: ielts.path })
-  expect(leanBlocks(page)).toEqual(lb)  // deterministic
+test('one [B#] contract: the selector uses the AER v2 blocks (lean-blocks-v1 over lean-md-v1) and defines no block format of its own', () => {
+  expect(BLOCK_INPUT).toBe(AER_V3_INPUT)
+  expect(AER_V3_INPUT).toBe('lean-blocks-v1')
+  expect(SEL).not.toMatch(/export function (leanBlocks|renderBlocks?|blockMap)\b/)
+  expect(SEL).not.toMatch(/\[B\$\{/)  // no block line written here
+  const ab = blocks(page)
+  const sel = selectSections(ab, 'fees')
+  expect(sel.input).toBe(ab.input)
+  // every selected line is the block's own line, unchanged, with its id and source offset
+  const lines = new Set(ab.text.split('\n'))
+  for (const l of sel.text.split('\n')) { expect(lines.has(l)).toBe(true); expect(l).toMatch(/^\[B\d+ @(\d+|data)\] /) }
+  for (const id of sel.block_ids) expect(sel.text).toContain(`[${id} @`)
+  expect(selectSections(blocks(page), 'fees')).toEqual(sel)  // deterministic
 })
 
-test('lean-sections-v1: a field takes its whole section, whole tables with header rows, label/value pairs, the heading path; facts far beyond a 24,000-character cut are kept', () => {
-  const lb = leanBlocks(page)
-  expect(lb.chars).toBeGreaterThan(24000)
-  const fees = selectSections(lb, 'fees')
+test('lean-sections-v1: sections, every row of a matching table with its headers, label/value pairs, page data; facts beyond a 24,000-character cut are kept', () => {
+  const ab = blocks(page)
+  expect(ab.text.length).toBeGreaterThan(24000)
+  const fees = selectSections(ab, 'fees')
   expect(fees.selector).toBe(LEAN_SECTIONS)
-  expect(fees.text).toContain('| Year | Annual fee |')
-  expect(fees.text).toContain('| 2027 | A$47,990 |')
+  expect(fees.text).toContain('## Fees')
+  expect(fees.text).toContain('Year: 2026 | Annual fee: A$46,500')
+  expect(fees.text).toContain('Year: 2027 | Annual fee: A$47,990')
   expect(fees.text).toContain('* Indicative, per year.')
-  expect(holds(fees.text, ['47990'])).toBe(true)
-  expect(fees.chars).toBeLessThan(2000)
-  expect(holds(selectSections(lb, 'duration').text, ['3 years full-time'])).toBe(true)
-  expect(holds(selectSections(lb, 'campus').text, ['Townsville Bebegu Yumba'])).toBe(true)
-  expect(holds(selectSections(lb, 'intakes').text, ['February', 'July'])).toBe(true)
-  const entry = selectSections(lb, 'entry_requirements')
+  expect(fees.text).toContain('@data] Duration: 3 years')  // page data always travels
+  expect(fees.chars).toBeLessThan(3000)
+  expect(holds(selectSections(ab, 'duration').text, ['3 years full-time'])).toBe(true)
+  expect(holds(selectSections(ab, 'campus').text, ['Townsville Bebegu Yumba'])).toBe(true)
+  expect(holds(selectSections(ab, 'intakes').text, ['February', 'July'])).toBe(true)
+  const entry = selectSections(ab, 'entry_requirements')
   expect(entry.text).toContain('## Entry requirements')
-  expect(entry.text).toContain('### International students')
+  expect(entry.text).toContain('## International students')
   expect(holds(entry.text, ['ATAR 70'])).toBe(true)
-  expect(holds(selectSections(lb, 'english').text, ['IELTS 6.5 overall'])).toBe(true)
-  expect(holds(selectSections(lb, 'deadline').text, ['Applications close 30 November 2026'])).toBe(true)
-  // every selected line is a whole block of the page, with its id and offsets
-  for (const line of entry.text.split('\n').filter((l) => l.startsWith('[B'))) expect(line).toMatch(/^\[B\d+ @\d+-\d+\] /)
+  expect(holds(selectSections(ab, 'english').text, ['IELTS 6.5 overall'])).toBe(true)
+  expect(holds(selectSections(ab, 'deadline').text, ['Applications close 30 November 2026'])).toBe(true)
+  expect(holds(selectSections(ab, 'deadline').text, ['Applications close never'])).toBe(false)
   // no selection is reported, never acted on
-  const none = selectSections(leanBlocks('<p>Nothing about the course here.</p>'), 'english')
+  const none = selectSections(blocks('<main><p>Nothing about the course here.</p></main>', ''), 'english')
   expect(none.no_selection).toBe(true)
 })
 
@@ -70,7 +69,8 @@ test('gold matching: flat form, every part needed', () => {
 
 test('worker mode lean_sections_eval: stored copies only, no AI, no Firecrawl, nothing admitted; no reader uses the selector', () => {
   expect(IX).toContain('const WORKER = "coverage-sweep-worker-v0.89.0";')
-  expect(IX).toContain('import { LEAN_BLOCKS, LEAN_SECTIONS, holds, leanBlocks, renderBlocks, selectSections } from "./lean-sections.ts";')
+  expect(IX).toContain('import { BLOCK_INPUT, LEAN_SECTIONS, holds, selectSections } from "./lean-sections.ts";')
+  expect(IX).toContain('const ab = aerV3Blocks(leanText(raw), di), whole = ab.text, sel = selectSections(ab, f);')
   const a = IX.indexOf('if (mode === "lean_sections_eval")'), b = IX.indexOf('if (mode === "central_ai")')
   expect(a).toBeGreaterThan(0)
   const body = IX.slice(a, b)

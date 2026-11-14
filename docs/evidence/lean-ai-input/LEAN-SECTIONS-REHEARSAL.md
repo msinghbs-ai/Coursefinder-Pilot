@@ -1,8 +1,17 @@
-# PR #1136: rolled-back rehearsal on Pilot (14 Nov 2026, 11:58 AEDT)
+# PR #1136: rolled-back rehearsal on Pilot (final: 14 Nov 2026, 12:30 AEDT)
 
-**Verdict: PASS.** No assertion failed. The transaction was aborted (txid 17161597), and an independent read confirms nothing persisted.
+**Verdict: PASS.** No assertion failed. The transaction was aborted (txid 17172230), and an independent read confirms nothing persisted.
 
-- **Migration:** `20261114010000_cf247_lean_sections_eval.sql`, md5 `d45d9e6e7b16576d858969e76387065f`. Inside the transaction, `md5(substr(current_query()))` proves the executed text is byte-identical to the PR file.
+**This is the final run on the final head.** #1137 took worker v0.88.0 on main, so #1136 was rebased and renumbered:
+- worker **v0.89.0**;
+- migration renamed to **`20261114031500`** (after #1137's `20261114011500` and `…021500`);
+- the migration text changed only in the worker version and the register's `introduced_in`.
+
+The earlier run of 11:58 AEDT on the `20261114010000` text (md5 `d45d9e6e…`, txid 17161597) also passed and also aborted. It is superseded by this run.
+
+**Reconciled with #1137:** the selector now uses #1137's `[B#]` blocks (`aerV3Blocks`, `AER_V3_INPUT` "lean-blocks-v1") and has no block format of its own. The migration text did not change for this.
+
+- **Migration:** `20261114031500_cf247_lean_sections_eval.sql`, md5 `3ed1b03e2ba4c964ee0053c5084be8e8`. Inside the transaction, `md5(substr(current_query()))` proves the executed text is byte-identical to the PR file.
 - **Script:** [`lean-sections-rehearsal.sql`](lean-sections-rehearsal.sql). **Raw result:** [`lean-sections-rehearsal-result.json`](lean-sections-rehearsal-result.json).
 - **First attempt:** at 11:56 AEDT it stopped on an ambiguous column alias in the check block, after every migration statement had already succeeded. That transaction aborted and nothing persisted. The alias was fixed and the script run again.
 
