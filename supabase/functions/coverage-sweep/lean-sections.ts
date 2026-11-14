@@ -11,7 +11,7 @@
 import { preflight } from "./lean-input.ts";
 import { AER_V3_INPUT, type AerBlock, type AerBlocks } from "./aer-v2.ts";
 
-export const LEAN_SECTIONS = "lean-sections-v2";  // v2 (14 Nov 2026): wider entry-requirement headings; v1 ran in runs phase1b-step1 and step1b  // never edited in place once released: a different selection is a new version
+export const LEAN_SECTIONS = "lean-sections-v3";  // v3 (14 Nov 2026): entry score lines are signals; v2: wider entry-requirement headings (runs step1c, step1d); v1: runs step1, step1b  // never edited in place once released: a different selection is a new version
 export const BLOCK_INPUT = AER_V3_INPUT;           // the one [B#] contract (aer-v2.ts); not redefined here
 
 // headings that name the part of a course page a field lives in (wider than the words a value uses)
@@ -31,8 +31,12 @@ const HEADINGS: Record<string, RegExp> = {
 const FEE_TEXT = /(\$|aud|nzd|cad|usd|\bfee|\btuition|per (year|annum|credit|unit|point))/i;
 // a short block that names a field and is followed by its value ("Duration", "Location:") acts as a label
 const LABEL_MAX_CHARS = 40;  // fixed: the shape of a label, not an operational limit
+// v3 (run phase1b-step1d-curtin-swinburne-2026-11-14: 54 of Swinburne's 62 selector misses): a line that gives an entry score with its number
+// ("70.0 Guaranteed Entry ATAR or more entry options", "Lowest selection rank 65.05") is an entry requirement wherever it stands on the page
+const ENTRY_SCORE = /\b(atar|selection rank|guaranteed entry|lowest (rank|atar|score)|minimum (atar|entry score|selection rank)|entry score|ib (score|diploma))\b/i;
 export function fieldHit(field: string, text: string): "likely" | "unknown" | "no_signal" {
   if (field === "fees") return FEE_TEXT.test(text) ? "likely" : "no_signal";
+  if (field === "entry_requirements" && ENTRY_SCORE.test(text) && /\d/.test(text)) return "likely";
   const p = preflight(field, text);
   return p === "not_measured" ? "no_signal" : p;
 }
