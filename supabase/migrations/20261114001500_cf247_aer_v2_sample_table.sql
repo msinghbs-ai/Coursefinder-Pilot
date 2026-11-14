@@ -1,6 +1,6 @@
--- CF-247 AER v2 reader: the page selector runs well inside the worker's 8 s statement limit (Platform Admin 14 Nov 2026 00:10, item 1: "fix the 8.9s
+-- CF-247 AER v2 reader: the page selector runs well inside the worker's 8 s statement limit (Platform Admin 14 Nov 2026, item 1: "fix the 8.9s
 --   cold-start page selector so it runs well under the 8s DB limit").
--- Evidence (13 Nov 2026 23:50-00:05 AEDT): public.svc_aer_v2_shadow_next failed with "canceling statement due to statement timeout" (worker call 700433);
+-- Evidence (13 Nov 2026 Qwen trial): public.svc_aer_v2_shadow_next failed with "canceling statement due to statement timeout" (worker call 700433);
 --   security.aer_v2_shadow_candidates_v1 measured 8.9 s cold, 4.6 s and 1.2 s warm. It rebuilt the whole sample on every call: the AER-eligible pool,
 --   pipeline.aer_labelled_rows_v1 (2.4 s on its own) and the gate_incomplete lane, then ranked all of them.
 -- What:
@@ -10,11 +10,11 @@
 --   2. security.aer_v2_shadow_candidates_v1 reads the stored sample: the next courses in rank order that still have a bound, stored official page and
 --      are not yet read by the prompt version (the same tries rule as before). Same signature, same columns, same order of lanes.
 --   3. security.aer_v2_shadow_fire_v1 (md5-guarded edit): refreshes the sample when it is older than the setting, then fires as before.
--- The v2 reader stays paused (aer.v2_shadow_on 0, Platform Admin 14 Nov 2026 00:10); nothing here reads, spends or admits. The 1,912-page queue and
+-- The v2 reader stays paused (aer.v2_shadow_on 0, Platform Admin 14 Nov 2026); nothing here reads, spends or admits. The 1,912-page queue and
 --   every page's tries are unchanged (the tries rule reads pipeline.aer_v2_shadow_results exactly as before).
 -- Guards: G1 (no new job; the existing aer-v2-shadow job refreshes), G2 (refresh age is a setting), G3 (no consumer API object), AER v1 frozen, nothing
 --   deleted.
--- Live definitions this change replaces or edits (md5 of pg_get_functiondef, read 14 Nov 2026 00:20 AEDT):
+-- Live definitions this change replaces or edits (md5 of pg_get_functiondef, read 14 Nov 2026):
 --   security.aer_v2_shadow_candidates_v1 9e2c10d3cf4c412b05cde408bea8604d (replaced), security.aer_v2_shadow_fire_v1 d5abb3cd4e78834c9406ffa7f8bd26fe (edited).
 -- Replaces: the per-call sample build in security.aer_v2_shadow_candidates_v1. Retires: nothing.
 
@@ -41,7 +41,7 @@ insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, ki
  ('pipeline', 'aer.v2_sample_refresh_minutes', 'Entry requirements v2: rebuild the reader sample after',
   'The aer-v2-shadow job rebuilds the ranked course sample (pipeline.aer_v2_sample) when it is older than this, before it fires the reader. The worker''s page selector only reads the stored sample.',
   'number', to_jsonb(60), 5, 1440, 'minutes', 1545, 'Entry requirements', 'security.aer_v2_shadow_fire_v1 (job aer-v2-shadow), security.aer_v2_sample_refresh_v1',
-  'Platform Admin 14 Nov 2026 00:10 item 1: the page selector timed out at 8.9 s')
+  'Platform Admin 14 Nov 2026 item 1: the page selector timed out at 8.9 s')
 on conflict (toolset_key, key) do nothing;
 
 create or replace function security.aer_v2_sample_refresh_v1() returns jsonb
@@ -88,7 +88,7 @@ revoke all on function security.aer_v2_sample_refresh_v1() from public, anon, au
 create or replace function security.aer_v2_shadow_candidates_v1(p_version text, p_limit integer)
  returns table(course_id uuid, provider_id uuid, title text, level text, provider text, provider_country text, url text, evidence_id uuid, content_hash text, storage_path text, priority bigint, sample_rank bigint)
  language sql stable security definer set search_path to '' as $function$
-  -- 14 Nov 2026 (Platform Admin 00:10 item 1): reads the stored sample (pipeline.aer_v2_sample, built by security.aer_v2_sample_refresh_v1) in rank order;
+  -- 14 Nov 2026 (Platform Admin item 1): reads the stored sample (pipeline.aer_v2_sample, built by security.aer_v2_sample_refresh_v1) in rank order;
   -- only the current page and the tries rule are looked up per course, so the call stays well inside the worker's 8 s statement limit
   with cfg as materialized (select security.pipeline_num_v1('aer.v2_shadow_tries', 2) tries,
                             coalesce(security.toolset_setting('pipeline', 'aer.retry_now_error_pattern') #>> '{}', '') refused),
@@ -144,5 +144,5 @@ begin
   if v_ms > 2000 then raise exception 'post-check: the page selector took % ms (must stay well under 8 s)', v_ms; end if;
   select count(*) into v_lane0 from pipeline.aer_v2_sample where in_sample and lane = 0;
   if v_lane0 < 1 then raise exception 'post-check: lane 0 (gate_incomplete) is empty'; end if;
-  if security.pipeline_num_v1('aer.v2_shadow_on', 0) <> 0 then raise exception 'post-check: the v2 reader must stay paused (Platform Admin 14 Nov 00:10)'; end if;
+  if security.pipeline_num_v1('aer.v2_shadow_on', 0) <> 0 then raise exception 'post-check: the v2 reader must stay paused (Platform Admin 14 Nov 2026)'; end if;
 end $c$;

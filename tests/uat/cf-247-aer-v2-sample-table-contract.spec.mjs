@@ -1,4 +1,4 @@
-// Guards: Platform Admin 14 Nov 2026 00:10 item 1 "fix the 8.9s cold-start page selector so it runs well under the 8s DB limit": the AER v2 page selector reads a stored, ranked sample (pipeline.aer_v2_sample) rebuilt by the aer-v2-shadow job, keeps the same courses, lanes and tries rule, and leaves the reader paused
+// Guards: Platform Admin 14 Nov 2026 item 1 "fix the 8.9s cold-start page selector so it runs well under the 8s DB limit": the AER v2 page selector reads a stored, ranked sample (pipeline.aer_v2_sample) rebuilt by the aer-v2-shadow job, keeps the same courses, lanes and tries rule, and leaves the reader paused
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
