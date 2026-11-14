@@ -25,7 +25,7 @@ test('server: md5-guarded, checks queued and read by the worker, change saved on
 })
 
 test('worker v0.31.0: mode site_check reads the home page and records what it shows', () => {
-  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(3[1-9]|[4-9]\d)\.\d+";/)
+  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v(?:[1-9]\d*\.\d+\.\d+|0\.(3[1-9]|[4-9]\d)\.\d+)";/)
   expect(worker).toContain('if (mode === "site_check") {')
   expect(worker).toContain('await rpc("svc_provider_website_check_next"')
   expect(worker).toContain('await rpc("svc_provider_website_check_record"')

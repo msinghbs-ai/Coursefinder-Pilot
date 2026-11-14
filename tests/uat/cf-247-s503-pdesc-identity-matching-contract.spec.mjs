@@ -102,6 +102,6 @@ test('NEGATIVE: a third-party host (ranking or news site) never proves a provide
 test('G2: the change adds no setting, no migration and no operational number; the worker passes the lease\'s hosts and the final address', () => {
   const ix = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(ix).toMatch(/\{ url: String\(rec\.url \|\| ""\), hosts \}(?:, proofTrace)?\)/)   // v0.63.0 also passes the diagnostics trace
-  expect(ix).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(?:59\.(1[3-9]|[2-9]\d)|[6-9]\d\.\d+)"/)  // v0.59.13 or a later reader: this change's own worker version is checked by its own spec
+  expect(ix).toMatch(/const WORKER = "coverage-sweep-worker-v(?:[1-9]\d*\.\d+\.\d+|0\.(?:59\.(1[3-9]|[2-9]\d)|[6-9]\d\.\d+))"/)  // v0.59.13 or a later reader: this change's own worker version is checked by its own spec
   expect(fs.readdirSync('supabase/migrations').filter((f) => f.endsWith('.sql') && f >= '20261109130000' && f < '20261109140000')).toEqual([])
 })

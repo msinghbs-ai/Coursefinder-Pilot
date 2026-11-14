@@ -93,7 +93,7 @@ test('the request: strict v3 schema, require_parameters always, the version rout
 
 test('the worker reads a v3 version over the whole page as blocks; v1 versions as before', () => {
   expect(IX).toContain('const v3 = String(ver.answer_contract || "") === AER_V3_CONTRACT, gapMax = wsNum("reading.aer_v3_lead_in_max_blocks", 3);')
-  expect(IX).toContain('const blocks = v3 ? aerV3Blocks(leanText(raw), di) : null;')
+  expect(IX).toContain('const blocks = v3 ? aerV3Blocks(md ? leanTextFromMarkdown(md) : leanText(raw), di) : null;')  // v1.0.0: the stored markdown when reading.markdown_input is 1
   expect(IX).toContain('aerV3Request(model, system, aerV3User(')
   expect(IX).toContain('aerV3Verify(ans.a, blocks, refs, quoteMax, gapMax) : aerV2Verify(ans.a, text, refs, quoteMax)')
   expect(IX).toContain('a cut page is never read')

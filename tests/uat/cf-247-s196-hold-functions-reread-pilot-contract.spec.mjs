@@ -33,7 +33,7 @@ test('D13: bounded pilot: 25 a day at most, 30 days at least, once per page, hol
 })
 
 test('worker v0.55.0: a direct_only page is never read through Firecrawl (fallback and international view)', () => {
-  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(5[5-9]|[6-9]\d)\.\d+";/)
+  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v(?:[1-9]\d*\.\d+\.\d+|0\.(5[5-9]|[6-9]\d)\.\d+)";/)
   expect(w).toContain('const fcTrusted = it.direct_only !== true && (FC_TRUSTED_BASIS.includes(it.basis || "") || it.manual === true || it.render_ok === true);')
   expect(w).toContain('direct_only?: boolean')
 })

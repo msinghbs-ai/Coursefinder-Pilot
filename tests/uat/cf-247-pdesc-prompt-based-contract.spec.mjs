@@ -88,7 +88,7 @@ test('a new prompt is new knowledge: the lease stamps the active version and sel
 })
 
 test('worker v0.69.0 uses the prompt the lease hands over, stamps its version and spends on-demand Firecrawl under its own purpose', () => {
-  expect(IX).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(69|[7-9]\d)\.\d+";/)
+  expect(IX).toMatch(/const WORKER = "coverage-sweep-worker-v(?:[1-9]\d*\.\d+\.\d+|0\.(69|[7-9]\d)\.\d+)";/)
   expect(IX).toContain('prompt_version: prompt ? prompt.version : DESCRIPTION_PROMPT_VERSION')
   expect(IX).toContain('const buildRequest = (it: any, rec: any, page: string) => prompt ? promptRequest(model, prompt.system,')
   expect(IX).toContain('answer: promptSentences(ans.a, page, minQuote)')
@@ -158,7 +158,7 @@ test('v0.69.1: a passage is on the page despite tag spacing, quote and dash shap
     { text: 'It teaches nursing.', sources: ['Our schools cover computing and nursing, engineering and health.'] }], reason: '' }
   expect(promptSentences(a, page, 10).sentences.map((x) => x.on_page)).toEqual([true, true, false, false])
   expect(passageCanonical('Fees rose 1.2 % ( approx )')).toBe('Fees rose 1.2% (approx)')
-  expect(IX).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(69\.[1-9]|[7-9]\d\.\d+)";/)
+  expect(IX).toMatch(/const WORKER = "coverage-sweep-worker-v(?:[1-9]\d*\.\d+\.\d+|0\.(69\.[1-9]|[7-9]\d\.\d+))";/)
 })
 
 test('20261112034500: with the prompt, the automatic admission keeps refused topics, marketing words and figures proved in quotes; the built-in-only lists no longer decline', () => {

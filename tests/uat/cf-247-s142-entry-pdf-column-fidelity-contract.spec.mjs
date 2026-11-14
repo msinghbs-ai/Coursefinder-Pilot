@@ -106,7 +106,7 @@ test('the worker holds anything not proven before any AI read, for every PDF (no
   expect(ai).toContain('await rec({ p_error: `held_unparsed: PDF ${stored.pdf.reason}')
   // Platform Admin 12 Nov 2026 20:23: a refused PDF's Firecrawl text (text/markdown) is read as text; any other non-PDF copy of a PDF is held
   expect(ai).toContain('if (!stored.pdf && /\\.pdf($|[?#])/i.test(String(it.url || "")) && !/markdown/i.test(String(it.mime || ""))) {')
-  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.([5-9]\d)\.\d+"/)
+  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v(?:[1-9]\d*\.\d+\.\d+|0\.([5-9]\d)\.\d+)"/)
   // the PDF is read directly first (robots.txt respected), within a size cap from the settings; readPdf itself never calls Firecrawl. Only a PDF the server
   // refuses goes to Firecrawl afterwards (Platform Admin 12 Nov 2026 20:23, reading.entry_pdf_firecrawl_on), stored as text and never column-proven
   expect(ai).toContain('const readPdf = async (url: string, maxBytes: number) => {')

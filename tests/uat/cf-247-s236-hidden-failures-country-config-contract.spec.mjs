@@ -64,7 +64,7 @@ test('(b) nz_cop: the picker reads the latest batch once; worker v0.59.3 reports
   expect(m).toContain('               and e.captured_at > m.latest')
   // the v0.59.3 note stays in the version chain once a later worker is released ("// was v0.59.3 // ...")
   expect(worker).toMatch(/(?:const WORKER = "coverage-sweep-worker-v0\.59\.3"; |\n\/\/ was v0\.59\.3 )\/\/ v0\.59\.3 \(3 Nov 2026, CF-247 Workstream F, hidden failures/)
-  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(?:59\.([3-9]|[1-9]\d)|[6-9]\d\.\d+)";/)
+  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v(?:[1-9]\d*\.\d+\.\d+|0\.(?:59\.([3-9]|[1-9]\d)|[6-9]\d\.\d+))";/)
   expect(worker).toContain('\n// was v0.59.1 // v0.59.1 (3 Nov 2026, CF-247 Workstream D, intake wording)')
   expect(worker).toContain('return j({ ok: true, mode, files: out, read: out.length, failed: nzFailed, worker: WORKER });')
   expect(fixtures).toContain("'NZ Code of Practice picker: the same files as before'")

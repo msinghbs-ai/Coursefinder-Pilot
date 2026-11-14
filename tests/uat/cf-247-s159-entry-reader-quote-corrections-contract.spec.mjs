@@ -158,7 +158,7 @@ test('off under the completeness guard and wherever the caller does not ask: the
 test('worker v0.52.0 passes the structure with the band lines, read only outside the completeness guard; the gate call is unchanged', () => {
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   const ai = w.slice(w.indexOf('if (mode === "entry_ai") {'), w.indexOf('if (mode === "fee_ai") {'))
-  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(5[2-9]|[6-9]\d)\.\d+"/)
+  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v(?:[1-9]\d*\.\d+\.\d+|0\.(5[2-9]|[6-9]\d)\.\d+)"/)
   expect(ai).toContain('lines: Object.assign([] as EntryBandLine[], { forms: t.forms }) as EntryLineSet')
   expect(ai).toContain('const tb = entryTables(t, htmlToText, nameNumbers), md = entryManifestDetail(t, htmlToText); return { text: tb.text, lines: tb.lines, manifest: md.manifest')
   const t = entryTables(html('uow-country-matrix'), htmlToText, true)

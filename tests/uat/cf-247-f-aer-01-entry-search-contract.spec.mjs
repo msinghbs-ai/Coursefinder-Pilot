@@ -57,7 +57,7 @@ test('G2: the switch is a labelled setting with a range, unit and used_by; no nu
 })
 
 test('worker v0.64.0 asks the database before a targeted search and records it with the entry-only record', () => {
-  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(6[4-9]|[7-9]\d)\.\d+"/)   // v0.64.0 or a later worker (v0.65.0: calendar-v2.2, no entry-search change)
+  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v(?:[1-9]\d*\.\d+\.\d+|0\.(6[4-9]|[7-9]\d)\.\d+)"/)   // v0.64.0 or a later worker (v0.65.0: calendar-v2.2, no entry-search change)
   expect(worker).toContain('// was v0.64.0 // v0.64.0 (11 Nov 2026, CF-247 F-AER.01')
   expect(worker).toContain('rpc("svc_aer_entry_search_wanted", { p_provider_id: p.provider_id })')
   expect(worker).toContain('useFc("central_entry_search", p.provider_id, site.origin, true)')

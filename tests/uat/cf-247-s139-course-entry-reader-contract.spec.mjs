@@ -22,7 +22,7 @@ test('the existing lane, a new field outside the registry, stored page only, str
 })
 
 test('worker: own call with the pinned entry model; every row quoted on the page; no band from a score; no English tests', () => {
-  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(49\.[1-9]\d*|[5-9]\d\.\d+)";/)
+  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v(?:[1-9]\d*\.\d+\.\d+|0\.(49\.[1-9]\d*|[5-9]\d\.\d+))";/)
   expect(entry).toContain('htmlToText(raw.replace(/<(nav|header|footer)\\b[\\s\\S]*?<\\/\\1>/gi, " "))')  // v0.49.1: the whole page, not only <main>
   expect(entry).toContain('const em = String(w?.entry?.model || ""), chars = Number(w?.entry?.page_chars || 0);')
   // v0.59.11: the whole quote on the slice is still the first proof; a joined quote is proven by fragments only behind a switch (course-entry.ts proveQuote)
