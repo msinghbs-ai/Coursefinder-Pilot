@@ -1,7 +1,7 @@
 // Guards: CF-247 R7 (admin docs/audits/studysearch-ingestion-validation-report.md §5.3 R7, §7 recommendations 4 and 8): one Firecrawl client; a rendered 4xx/5xx page is never a read; the page's own status is kept with the evidence
 // 7 days to 14 Nov 2026: pipeline.firecrawl_calls held 74 calls against 29,695 credits of Firecrawl use, because 35 inline call sites in
 // coverage-sweep/index.ts bypassed the governed client, and the course read fallback, view render and entry_ai renders took a rendered error page
-// as the page. Worker v0.94.0 sends every call through fcClient (firecrawl.ts); migration 20261114091500 keeps page_status in the evidence metadata.
+// as the page. Worker v0.94.0 sends every call through fcClient (firecrawl.ts); migration 20261114193000 keeps page_status in the evidence metadata.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import os from 'node:os'
@@ -10,7 +10,7 @@ import { execFileSync } from 'node:child_process'
 
 const DIR = 'supabase/functions/coverage-sweep'
 const ix = fs.readFileSync(`${DIR}/index.ts`, 'utf8')
-const mig = fs.readFileSync('supabase/migrations/20261114091500_cf247_r7_firecrawl_page_status.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations/20261114193000_cf247_r7_firecrawl_page_status.sql', 'utf8')
 
 async function loadFc() {
   const out = path.join(os.tmpdir(), `firecrawl-s543-${process.pid}.mjs`)
