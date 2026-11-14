@@ -321,9 +321,11 @@ test('phase 2 worker: models come from the readers; the cascade moves on only on
   expect(worker).toContain('model: String(it.model || ""), temperature: 0, max_tokens: maxTokens, usage: { include: true }, provider: { require_parameters: true },')
   // round 4 (v0.86.0): every model call goes through cascade.ts so that each attempt is kept. Nine calls carry the route's cascade; six name their
   // service only (one model, the call as it was), each for a stated reason (the database chain, a reserved price, a pinned record): scholarship pages
-  // and eligibility, provider descriptions, adapter proposals, operations diagnosis, entry matrices
-  expect((worker.match(/await cascadeFetch\(/g) || []).length).toBe(15)
-  expect((worker.match(/await cascadeFetch\((ors\.)?fetch, \{ models: /g) || []).length).toBe(9)
+  // and eligibility, provider descriptions, adapter proposals, operations diagnosis, entry matrices. v0.92.0 (S1-AER benchmark): a tenth call carries
+  // models: null, the one pinned candidate of an opened ai_eval run (mode aer_v3_eval), never the cascade
+  expect((worker.match(/await cascadeFetch\(/g) || []).length).toBe(16)
+  expect((worker.match(/await cascadeFetch\((ors\.)?fetch, \{ models: /g) || []).length).toBe(10)
+  expect((worker.match(/await cascadeFetch\(ors\.fetch, \{ models: null, deadline: t0 \+ BUDGET_MS - 25000, service: "entry_requirements_v2_shadow" \}/g) || []).length).toBe(1)
   expect([...worker.matchAll(/await cascadeFetch\((?:ors\.)?fetch, \{ service: "([a-z_0-9]+)" \}, /g)].map((m) => m[1]).sort())
     .toEqual(['adapter_builder', 'entry_matrices', 'ops_diagnosis', 'provider_description', 'scholarship_eligibility', 'scholarship_extraction'])
   expect((worker.match(/await (ors\.)?fetch\("https:\/\/openrouter\.ai\/api\/v1\/chat\/completions"/g) || []).length).toBe(0)
@@ -367,7 +369,7 @@ test('phase 2 worker: models come from the readers; the cascade moves on only on
   // the caller's time budget: with too little time left no later model is asked and the failure is returned as it came
   calls = []; const late = await cascadeFetch(scripted({ 'v/a': () => new Response('{}', { status: 503 }), 'v/b': () => ans('v/b', '{}') }), { models, deadline: Date.now() + 5000 }, 'u', init)
   expect(calls).toEqual(['v/a']); expect(late.status).toBe(503)
-  expect(worker.match(/deadline: t0 \+ BUDGET_MS - 25000, service[^}]*\}, "https:\/\/openrouter/g)).toHaveLength(9)
+  expect(worker.match(/deadline: t0 \+ BUDGET_MS - 25000, service[^}]*\}, "https:\/\/openrouter/g)).toHaveLength(10)  // v0.92.0: the benchmark call (mode aer_v3_eval) has the same deadline
   // no model handed out: the item is left alone (not recorded as an error)
   expect(worker).toContain('if (!(it as any).model) { tally.no_model = (tally.no_model || 0) + 1; return }')
   expect(worker).not.toContain('no model handed out by the route course_matching')
@@ -502,7 +504,7 @@ test('round 4: roles, the mode on the page, and the documents (call paths, setti
   const paths = fs.readFileSync('docs/platform/AI-CALL-PATHS-2026-11-13.md', 'utf8')
   const lines = worker.split('\n')
   const sites = lines.map((l, i) => (l.includes('await cascadeFetch(') ? i + 1 : 0)).filter(Boolean)
-  expect(sites).toHaveLength(15)
+  expect(sites).toHaveLength(16)
   for (const n of sites) expect(paths, `index.ts:${n}`).toContain(`index.ts:${n}`)   // every call the worker makes is listed at its line
   for (const t of ['admin_provider_description_run_v1', 'svc_entry_matrix_next', 'svc_ops_diagnosis_next', 'svc_enrich_ai_next', 'Layer 3', 'routed_single', 'not_migrated']) expect(paths, t).toContain(t)
   // only the worker calls OpenRouter
