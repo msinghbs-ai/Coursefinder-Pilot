@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261114061500_cf247_aer_v3_eval_framework.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations/20261114081500_cf247_aer_v3_eval_framework.sql', 'utf8')
 const IX = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 const AER = fs.readFileSync('supabase/functions/coverage-sweep/aer-v2.ts', 'utf8')
 const mode = IX.slice(IX.indexOf('    if (mode === AER_V3_EVAL_MODE) {'), IX.indexOf('    if (mode === AER_V2_MODE) {'))

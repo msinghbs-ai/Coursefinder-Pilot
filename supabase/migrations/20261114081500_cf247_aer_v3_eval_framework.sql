@@ -347,7 +347,7 @@ select v.version, 'entry_requirements', 'prompt', 'release', 'AER v2 course page
                           'min_recall_pct_setting', 'ai_eval.aer_v3_min_recall_pct', 'max_usd_setting', 'ai_eval.aer_v3_max_usd',
                           'calls', jsonb_build_object('proposed', 150, 'max', 300, 'retry', 'one retry of a call that returned no answer'),
                           'note', 'Passing is evidence only: the Platform Admin qualifies a model; nothing switches on by itself'),
-       'proposed', md5('aer-v2-course-v3|' || v.version || '|' || coalesce(v.spec->>'system_sha256', '')), 'migration 20261114061500'
+       'proposed', md5('aer-v2-course-v3|' || v.version || '|' || coalesce(v.spec->>'system_sha256', '')), 'migration 20261114081500'
   from pipeline.ai_instruction_versions v
  where v.code = 'aer-v2-course' and v.version in ('aer-v2-course-v3-qwen3-30b', 'aer-v2-course-v3-mistral-small-3.2', 'aer-v2-course-v3-mimo-v2.6-flash')
 on conflict (code) do nothing;
@@ -357,15 +357,15 @@ update pipeline.aer_v2_eval_plans set status = 'closed' where eval_set = 'aer-v2
 update pipeline.component_register set status = 'retiring', updated_at = now(),
        replaced_by = 'pipeline.ai_eval_sets (entry_requirements, aer-v2-course-v3 benchmark) and pipeline.ai_improvement_proposals aer-v2-course-v3-*',
        retire_after = current_date + security.pipeline_num_v1('hygiene.retire_after_days', 14)::int,
-       note = 'Retired by migration 20261114061500: the AER benchmark runs on the platform AI evaluation framework (Platform Admin 14 Nov 2026).'
+       note = 'Retired by migration 20261114081500: the AER benchmark runs on the platform AI evaluation framework (Platform Admin 14 Nov 2026).'
  where name in ('pipeline.aer_v2_eval_cases', 'pipeline.aer_v2_eval_plans') and status = 'active';
-comment on table pipeline.aer_v2_eval_cases is 'RETIRING (migration 20261114061500): replaced by the aer-v2-course-v3 benchmark set in pipeline.ai_eval_sets (trusted labels only); the unlabelled probe courses moved to setting aer.v2_shadow_probe_courses. Kept until dropped by a paste file.';
-comment on table pipeline.aer_v2_eval_plans is 'RETIRING (migration 20261114061500): replaced by pipeline.ai_improvement_proposals aer-v2-course-v3-* (acceptance criteria and call plan) and setting ai_eval.aer_v3_max_usd. Kept until dropped by a paste file.';
+comment on table pipeline.aer_v2_eval_cases is 'RETIRING (migration 20261114081500): replaced by the aer-v2-course-v3 benchmark set in pipeline.ai_eval_sets (trusted labels only); the unlabelled probe courses moved to setting aer.v2_shadow_probe_courses. Kept until dropped by a paste file.';
+comment on table pipeline.aer_v2_eval_plans is 'RETIRING (migration 20261114081500): replaced by pipeline.ai_improvement_proposals aer-v2-course-v3-* (acceptance criteria and call plan) and setting ai_eval.aer_v3_max_usd. Kept until dropped by a paste file.';
 
 insert into pipeline.component_register(kind, name, layer, area, purpose, status, replaces, introduced_in) values
- ('function', 'public.svc_aer_v3_eval_next_v1', 'Layer 2', 'Entry requirements', 'AER v3 benchmark: leases an opened run for worker mode aer_v3_eval (behind ai_eval.offline_runs_on, ai_eval.aer_v3_runs_on and the spend cap)', 'active', '{pipeline.aer_v2_eval_plans}', '20261114061500'),
- ('function', 'security.aer_v3_eval_pair_v1', 'Layer 2', 'Entry requirements', 'AER v3 benchmark: scores a multi-record answer in the framework''s metrics', 'active', '{pipeline.aer_v2_eval_cases}', '20261114061500'),
- ('table', 'pipeline.aer_v3_eval_gold', 'Layer 2', 'Entry requirements', 'AER v3 benchmark: gold rows frozen with the entry_requirements benchmark set', 'active', '{pipeline.aer_v2_eval_cases}', '20261114061500')
+ ('function', 'public.svc_aer_v3_eval_next_v1', 'Layer 2', 'Entry requirements', 'AER v3 benchmark: leases an opened run for worker mode aer_v3_eval (behind ai_eval.offline_runs_on, ai_eval.aer_v3_runs_on and the spend cap)', 'active', '{pipeline.aer_v2_eval_plans}', '20261114081500'),
+ ('function', 'security.aer_v3_eval_pair_v1', 'Layer 2', 'Entry requirements', 'AER v3 benchmark: scores a multi-record answer in the framework''s metrics', 'active', '{pipeline.aer_v2_eval_cases}', '20261114081500'),
+ ('table', 'pipeline.aer_v3_eval_gold', 'Layer 2', 'Entry requirements', 'AER v3 benchmark: gold rows frozen with the entry_requirements benchmark set', 'active', '{pipeline.aer_v2_eval_cases}', '20261114081500')
 on conflict do nothing;
 
 -- 8. post-checks ----------------------------------------------------------------------------------------------------------------------------------------

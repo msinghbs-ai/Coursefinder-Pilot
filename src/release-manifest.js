@@ -1,40 +1,26 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.0'
-export const PACKAGE_VERSION='0.1.422'
+export const UI_VERSION='2.16.1'
+export const PACKAGE_VERSION='0.1.423'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'13 Nov 2026',
-  title:'Models & services redesigned: one model list, a model cascade and cap for each service, prompts and usage',
+  date:'14 Nov 2026',
+  title:'Models & services: limits banner, held reasons in words, failed calls in Recent usage',
   changes:[
-    'Models & services > AI is one page with four panes: OpenRouter key and usage, Models, Services and Recent usage. It replaces the AI & OpenRouter screens, which had grown card by card.',
-    'OpenRouter key and usage: whether the key is there (it is never shown), the credit and when it was read, the low-balance warning and floor, and one daily spend ceiling for all AI with today\'s spend against it.',
-    'Models: one list by family (Qwen3, MiMo, Mistral Small, Kimi K2, Gemini, Llama, DeepSeek) with price, context and the services using each. GPT and Claude models are listed as not allowed. GPT-4.1 mini is no longer used: it exhausted the AI credit.',
-    'Services: one row for each AI use, by area, with its model cascade in order, on/off switch, daily cap in US$ and calls, today\'s spend and a state. Open a row for its prompt and its other AI settings. A service with no model shows a red "No model", never a blank.',
-    'Recent usage: spend and calls by service and by model, for the last 24 hours by hour and the last 14 days by day. A figure that was not recorded says "Not measured", not 0.',
-    'Every change on the page asks for a reason and shows what will change before it is saved.',
-    'The four panes are open on a desktop and can be collapsed; a collapsed pane still shows its warnings. Curator and above read the page; a control you cannot use says which role it needs.',
-    'A cascade is shown as the worker runs it: one model where there is no fallback yet, read only where a service is not migrated, and only models qualified for a service can be added to it.',
-    'A service\'s model is chosen in one place only: its row on Models & services > AI. Every AI reader asks that row before it hands out work.',
-    'A cascade moves to the next model only when a call fails technically (an error, a time-out, an unreadable answer), never because of what a model answered.',
-    'The daily spend ceiling for all AI and each service\'s daily cap follow the OpenRouter limits mode. While it is Observe they are reported on the page and stop nothing; they are enforced when the Platform Admin switches the mode to Stop. Work held by a cap or the ceiling carries on when the UTC day changes; work an operator asked for under an open request is still let through.',
-    'All AI work is held, including Run now, when there is no OpenRouter balance reading, when the last reading is more than 90 minutes old, or when the balance is at or below the credit floor. The floor is checked against the last reading less the spend recorded since it.',
-    'Five services stay switched off until a model is qualified for them and someone switches them on: course entry requirements, entry matrices, the entry requirements v2 trial, operations diagnosis and page identity. They ran on GPT-4.1 mini or had no call.',
-    'Recording a qualification switches nothing on. Switching a service on is its own step, with a reason.',
-    'Every AI call attempt is recorded with its model, outcome, tokens and cost, the failed attempts too.',
-    'GPT and Claude models are not allowed, and cannot be allowed from the screen: adding a family is a release.',
-    'A guard reports any place outside the services that still names a model that is not allowed; a build check does the same for the code.',
-    'Settings: the AI settings moved to Models & services, with one line pointing there. Scholarship extraction is configured under the Scholarship pages service on Models & services; its results stay on Scholarships › Coverage.',
-    'Since v2.15.494: scholarships show delivery state, more detail columns and filters, provider coverage for all providers and a nationality filter; entry requirements have Read / refresh now, machine approval and a v2 trial reader; providers have Fill description with a prompt the Platform Admin maintains; the Provider and Course catalogues have chosen columns and a description filter; and the screens operated from a phone were made usable there.',
-    'Since v2.15.494: Website API v3 and Zoho API v3 run beside v2 (v2 is unchanged); work an operator asks for is not held by toolset limits and reports its estimate before and its use after.'
+    'Models & services > AI: a limits banner at the top of the page, above the four panes, says whether limits are enforced. Limits enforced: the daily ceiling and each service\'s cap stop scheduled work when reached. Limits not enforced: they are only reported. It gives today\'s spend and how many services are held, or would be held now, and it stays in view when every pane is closed.',
+    'A service that is not running lists its reasons under its state, in words: switched off, no allowed model, no model qualified for it yet, not migrated, or a cap, the ceiling or the credit.',
+    'A running service whose last call failed says so on its row, with the kind of failure (cut short, timed out, an error from the AI service, and so on).',
+    'Recent usage: the failed calls of the last 24 hours are counted on the card (shown when it is closed too), with their rate and their kinds above the per-call table; a failure count is highlighted, and the list of failed attempts is open.',
+    'Since v2.16.0: every AI call goes through its service\'s route with its cascade and caps (worker v0.86.0 to v0.91.0); course page reads are measured in shadow for Lean AI Input, with no change to what is read or sent; the entry requirements v2 trial gained a stored ranked sample and evaluation prompt versions, all held off.'
   ],
   bugFixes:[
-    'GPT-4.1 mini was pinned by build sessions on 12 Oct (central pages) and 26 Oct (entry requirements), outside the Platform Admin\'s model cascade; nothing checked a service\'s model against the cascade. From this release a build check and a database guard do.',
-    'A text setting (for example a model name) is a text box. It used to be drawn as a number box that said "Between 0 and 0" and could not be changed.',
-    'The old table showed a dash in the Model column for four AI uses, which hid the model they ran on. Every service now names its model.',
-    'Since v2.15.494: intake dates are read from more calendar layouts and never take a later year\'s start; course and provider descriptions held for size or one weak sentence are recovered; scholarship reading no longer stalls on a long queue; several jobs that ran past their time limit were fixed at the source.'
+    'Services: the five services switched off until a model is qualified for them were listed in a red alert as having "no allowed model". Their cascades name an allowed model; none is qualified yet. They now show Off with that reason, and the red alert is only for services that are switched on and get no model.',
+    'A service row said "In use today" with a model when nothing was handed out to the service. It no longer does.',
+    'A switched-off row\'s model cell said "No allowed model" when the reason was that no model is qualified for the service. It now says "No qualified model".',
+    'On a phone, the note under the Not allowed group of Models ran past the edge of the screen; it now wraps.',
+    'Since v2.16.0: the scholarship page picker keeps never-decided pages first, and the entry requirements v2 trial keeps its prompt version\'s settings, after the move to service routes.'
   ]
 }
 

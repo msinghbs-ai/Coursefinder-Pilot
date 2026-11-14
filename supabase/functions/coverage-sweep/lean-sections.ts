@@ -11,7 +11,7 @@
 import { preflight } from "./lean-input.ts";
 import { AER_V3_INPUT, type AerBlock, type AerBlocks } from "./aer-v2.ts";
 
-export const LEAN_SECTIONS = "lean-sections-v1";  // never edited in place once released: a different selection is a new version
+export const LEAN_SECTIONS = "lean-sections-v2";  // v2 (14 Nov 2026): wider entry-requirement headings; v1 ran in runs phase1b-step1 and step1b  // never edited in place once released: a different selection is a new version
 export const BLOCK_INPUT = AER_V3_INPUT;           // the one [B#] contract (aer-v2.ts); not redefined here
 
 // headings that name the part of a course page a field lives in (wider than the words a value uses)
@@ -19,7 +19,8 @@ const HEADINGS: Record<string, RegExp> = {
   deadline: /\b(deadlines?|key dates|important dates|dates|how to apply|apply|applications?|closing|when to apply|admission)\b/i,
   intakes: /\b(intakes?|start(s|ing)?( dates?)?|commenc\w*|key dates|important dates|dates|entry points?|semesters?|trimesters?|terms?|study periods?|when)\b/i,
   english: /\b(english|language( requirements?)?|ielts|toefl|pte)\b/i,
-  entry_requirements: /\b(entry|admissions?|requirements?|prerequisites?|eligib\w*|how to apply|selection|atar|international (students|applicants))\b/i,
+  // v0.92.0 (run phase1b-step1b-2026-11-14 misses): assumed knowledge, credit and advanced standing, literacy and numeracy checks, who can apply
+  entry_requirements: /\b(entry|admissions?|requirements?|prerequisites?|eligib\w*|how to apply|selection|atar|international (students|applicants)|assumed knowledge|recommended (studies|knowledge)|advanced standing|credit (for prior (learning|study)|transfer)|recognition of prior learning|language,? literacy|literacy and numeracy|llnd?|who can apply|admission criteria|inherent requirements|before you (apply|enrol))\b/i,
   duration: /\b(duration|length|how long|study load|time ?frame|course (length|load)|full[- ]?time|part[- ]?time|key (facts|information|details)|at a glance|course (details|summary|overview)|quick facts)\b/i,
   campus: /\b(campus(es)?|locations?|where|study (at|location)|delivered at|key (facts|information|details)|at a glance|quick facts)\b/i,
   delivery: /\b(delivery|mode|study (mode|options|method)|attendance|how you('ll| will)? study|on campus|online|key (facts|information|details)|at a glance|quick facts)\b/i,
@@ -74,7 +75,9 @@ export function selectSections(ab: AerBlocks, field: string, opt: SectionOptions
   const text = idx.map((k) => lines[k]).join("\n");
   const pageBlocks = idx.filter((k) => B[k].kind !== "data");
   return { selector: LEAN_SECTIONS, input: ab.input, field, block_ids: idx.map((k) => `B${B[k].n}`), blocks: idx.length, chars: text.length, text,
-    plain: plainOf(idx.map((k) => B[k])), no_selection: pageBlocks.length === 0 };
+    plain: plainOf(idx.map((k) => B[k])), no_selection: pageBlocks.length === 0,
+    // v0.92.0: the high-recall preflight on the selection's words, recorded beside the read (shadow); it decides nothing
+    signal: preflight(field, plainOf(idx.map((k) => B[k]))) };
 }
 
 // v0.91.0 (Platform Admin 14 Nov 2026 13:25, recall matcher fix): the words of blocks without their "[B<n> @<offset>]" labels and line marks, joined
@@ -86,7 +89,13 @@ export function blockPlain(ab: AerBlocks): string { return plainOf(ab.blocks) }
 // the canonical flat form used by every quote check of the worker (letters and digits only, lower case, accents and spacing ignored)
 export const flatForm = (s: string) => String(s || "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "");
 // a gold value is held by a text when its flat form is inside the text's flat form; a value given as several parts (months) needs all of them
+// v0.92.0: a label stored with HTML entities ("&#8211;", "&amp;") is compared as the character it names, as the converted text carries it
+const ENTITY: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", ndash: "–", mdash: "—", rsquo: "’", lsquo: "‘", hellip: "…" };
+export const unEntity = (s: string) => String(s || "").replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (m, e: string) => {
+  if (e[0] === "#") { const n = e[1] === "x" || e[1] === "X" ? parseInt(e.slice(2), 16) : parseInt(e.slice(1), 10); return Number.isFinite(n) && n > 0 && n < 0x110000 ? String.fromCodePoint(n) : m }
+  return ENTITY[e.toLowerCase()] ?? m;
+});
 export function holds(text: string, gold: string[]): boolean {
-  const t = flatForm(text), parts = gold.map(flatForm).filter((g) => g.length >= 3);
+  const t = flatForm(text), parts = gold.map((g) => flatForm(unEntity(g))).filter((g) => g.length >= 3);
   return parts.length > 0 && parts.every((g) => t.includes(g));
 }

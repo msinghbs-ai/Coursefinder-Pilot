@@ -1,0 +1,6 @@
+{"rehearsal": {"at": "2026-11-14T04:19:21.495243+00:00", "txid": 17223165, "verdict": "PASS", "failed": [],
+  "S_new": {"batch.lean_sections_eval": 40, "reading.section_max_chars": 8000, "reading.selection_shadow_on": 1, "reading.section_intro_blocks": 12, "reading.section_neighbour_chars": 240, "reading.selection_shadow_max_chars": 200000},
+  "O1_insert": {"kept": 3, "expired_removed": 0}, "obs_md5_before": "3f6d4ed98c8055bdbd18adae4e09edf0", "obs_md5_after": "d191e1915b62541536b0e162da07c705",
+  "X1_migration_md5": "b37c27e01117d96e42987b56212b130d",
+  "Q_report_rows": 2},
+ "independent_read": {"at": "2026-11-14 04:19:39.801755+00", "tx": "aborted", "obs_md5": "3f6d4ed98c8055bdbd18adae4e09edf0", "sel_cols": 0, "run_c": 0, "batch": 120, "obs_rows": 0, "report_function": null}}
