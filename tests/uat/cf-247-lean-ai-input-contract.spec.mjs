@@ -13,10 +13,10 @@ const page = `<html><nav>Menu Courses Fees Deadline</nav><main>${'<p>About the c
   `<tbody><tr><td>2026</td><td>A$45,000</td></tr><tr><td>2027</td><td>A$46,500</td></tr></tbody></table><h2>Key dates</h2><ul><li>Applications close 30 November</li><li>Semester 1 starts February</li></ul>` +
   `<script>var applicationsClose = "never";</script><p>IELTS 6.5 overall with no band below 6.0.</p></main><footer>Apply by tomorrow</footer></html>`
 
-test('lean-md-v1: headings, table rows with their column headers, list items, offsets back into the text and the stored page; navigation, footer and scripts left out', () => {
+test('lean-md (lean-md-v2 from worker v0.93.0): headings, table rows with their column headers, list items, offsets back into the text and the stored page; navigation, footer and scripts left out', () => {
   const l = leanText(page)
   expect(l.converter).toBe(LEAN_CONVERTER)
-  expect(LEAN_CONVERTER).toBe('lean-md-v1')
+  expect(LEAN_CONVERTER).toBe('lean-md-v2')
   expect(l.tables).toBe(1)
   expect(l.table_rows).toBe(2)
   expect(l.text).toContain('## Fees\nYear: 2026 | International fee: A$45,000\nYear: 2027 | International fee: A$46,500\n## Key dates\n- Applications close 30 November\n- Semester 1 starts February')

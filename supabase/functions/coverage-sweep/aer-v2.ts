@@ -12,7 +12,7 @@
 // Pure functions only (no network), so the contract spec can read them.
 
 export const AER_V2_MODE = "aer_v2_shadow";
-// v0.92.0 (14 Nov 2026, Platform Admin 14 Nov 2026 option 1): the AER v2 prompt v3 benchmark on the platform AI evaluation framework (svc_aer_v3_eval_next_v1 leases,
+// v0.93.0 (14 Nov 2026, Platform Admin 14 Nov 2026 option 1): the AER v2 prompt v3 benchmark on the platform AI evaluation framework (svc_aer_v3_eval_next_v1 leases,
 // svc_ai_eval_answer_record_v1 records, security.ai_eval_score_v1 scores). No job fires it; it answers only an opened run behind ai_eval.offline_runs_on,
 // ai_eval.aer_v3_runs_on and the spend cap ai_eval.aer_v3_max_usd.
 export const AER_V3_EVAL_MODE = "aer_v3_eval";
@@ -138,7 +138,7 @@ export function aerV2Verify(a: any, pageText: string, refs: AerV2Refs, quoteMax:
 
 // ---------------------------------------------------------------------------------------------------------------------------------------------
 // v0.88.0 (14 Nov 2026, CF-247 AER v2 prompt v3, Platform Admin 14 Nov 2026 item 2): answer contract aer-v2-answer-v3 over input lean-blocks-v1.
-//   input:    the WHOLE stored page (never cut, never section-selected) as the Lean AI Input lean-md-v1 blocks (lean-input.ts; the block form Phase 1b
+//   input:    the WHOLE stored page (never cut, never section-selected) as the Lean AI Input lean-md blocks (lean-md-v2 from v0.93.0) (lean-input.ts; the block form Phase 1b
 //             selects from), each on its own line as "[B<n> @<source_at>] <block>": headings kept as "## ...", list items as "- ...", every table row
 //             with its column headers ("Header: cell | Header: cell"). Page data fields come first as "[B<n> @data] ...". <n> is the block's number
 //             in this rendering (1, 2, 3 ... in page order); <source_at> is its offset in the stored page (Phase 1b's "[§n @source_at]", here

@@ -11,7 +11,15 @@
 //                 sent-input hash and the content/prompt/model/schema fingerprint for change-based re-reading.
 // Page content is data: nothing here follows an instruction found on a page.
 
-export const LEAN_CONVERTER = "lean-md-v1";  // never edited in place: a different conversion is a new version
+export const LEAN_CONVERTER = "lean-md-v2";  // never edited in place: a different conversion is a new version
+// lean-md-v2 (14 Nov 2026, CF-247 S1-AER, Lean AI Phase 1b Run B recall audit: 20 of 51 entry requirement misses were score lines such as
+// "70 Guaranteed ATAR or equivalent" lost in conversion). Changes from lean-md-v1, block line format unchanged:
+//   1. the region is the page today's reader sends (the whole page without navigation, site header, footer and non-text), not <main> only and
+//      not without <aside>: a course's key-facts panel (score, duration, campus) is often an <aside> or sits outside <main>;
+//   2. numeric character references are decoded (&#8211; is a dash, not a space);
+//   3. a short value-only line ("70", "80.0", "58.25 65.05") is kept with the score label printed next to it ("Guaranteed ATAR or equivalent"),
+//      as one block: the label after it first, else the label before it; only a score label (ATAR, rank, score, GPA, IB, ...) is joined, so a
+//      value never moves onto an unrelated line, and a value with no score label beside it stays a block of its own.
 export const OBSERVATION_CONTRACT = "lean-input-observation-v1";
 
 type Block = { kind: "heading" | "table_row" | "item" | "text"; text: string; start: number; end: number; source_at: number };
@@ -19,15 +27,17 @@ export type LeanText = { converter: string; text: string; blocks: Block[]; table
 
 const ENT: Record<string, string> = { "&nbsp;": " ", "&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": '"', "&#39;": "'", "&rsquo;": "'", "&lsquo;": "'",
   "&ldquo;": '"', "&rdquo;": '"', "&ndash;": "-", "&mdash;": "-", "&#36;": "$", "&dollar;": "$" };
-const decode = (s: string) => s.replace(/&[a-z#0-9]+;/gi, (m) => ENT[m.toLowerCase()] ?? " ");
+const decode = (s: string) => s.replace(/&[a-z#0-9]+;/gi, (m) => {
+  const n = /^&#x([0-9a-f]+);$/i.exec(m) ? parseInt(m.slice(3, -1), 16) : /^&#([0-9]+);$/.exec(m) ? parseInt(m.slice(2, -1), 10) : NaN;
+  if (Number.isFinite(n) && n > 0 && n <= 0x10ffff) { const ch = String.fromCodePoint(n); return /[\u2000-\u200b\u00a0]/.test(ch) ? " " : ch }  // v2: numeric references decoded
+  return ENT[m.toLowerCase()] ?? " ";
+});
 // the visible words of a piece of markup, on one line
 const words = (h: string) => decode(h.replace(/<br\s*\/?>/gi, " ").replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim();
 
-// the region of the page a reader reads: <main> when it is a real body, without navigation, header, footer and side panels
+// the region of the page a reader reads (v2): the whole page, as today's reader sends it; navigation, site header and footer are blanked below
 function bodyOf(html: string): { h: string; base: number } {
-  const m = html.match(/<main[\s\S]*?<\/main>/i);
-  const useMain = !!m && m[0].length > 1500;
-  return { h: useMain ? m![0] : html, base: useMain ? m!.index! : 0 };
+  return { h: html, base: 0 };
 }
 const blank = (s: string) => " ".repeat(s.length);  // keeps every offset into the stored page true
 
@@ -45,10 +55,32 @@ function tableRows(t: string): string[] {
   return out;
 }
 
+
+// v2: a short line that is only a value (a number, a few letters at most) and the score label printed beside it are one statement
+const VALUE_ONLY_MAX = 20, LABEL_MAX = 200;  // fixed: the shape of a key-facts value and its label, not an operational limit
+const valueOnly = (t: string) => t.length <= VALUE_ONLY_MAX && /\d/.test(t) && (t.match(/[a-z]/gi) || []).length <= 3;
+const SCORE_LABEL = /\b(atar|selection rank|rank|entry score|score|gpa|ib|minimum|guaranteed|lowest|threshold|points?|band|grade|ncea|percent|%)\b|%/i;
+const labelFor = (b: Block | undefined) => !!b && (b.kind === "text" || b.kind === "item") && b.text.length <= LABEL_MAX && !valueOnly(b.text) && SCORE_LABEL.test(b.text);
+function keepScoreLines(blocks: Block[]): Block[] {
+  const out: Block[] = [];
+  let labelText: string | null = null;  // the label words of the last block when values were added after it ("Lowest rank to receive an offer" + "58.25" + "65.05")
+  for (let i = 0; i < blocks.length; i++) {
+    const b = blocks[i];
+    if (b.kind === "text" && valueOnly(b.text)) {
+      const next = blocks[i + 1], prev = out[out.length - 1];
+      if (labelFor(next)) { blocks[i + 1] = { ...next, text: `${b.text} ${next.text}`, source_at: b.source_at }; labelText = null; continue }  // "70" + "Guaranteed ATAR or equivalent"
+      const label = labelText ?? prev?.text ?? "";
+      if (prev && labelFor({ ...prev, text: label }) && !/\d/.test(label)) { out[out.length - 1] = { ...prev, text: `${prev.text} ${b.text}` }; labelText = label; continue }  // "Guaranteed ATAR" + "70"
+    }
+    out.push({ ...b }); labelText = null;
+  }
+  return out;
+}
+
 export function leanText(html: string): LeanText {
   const { h: body, base } = bodyOf(String(html || ""));
   // remove what is never page text, keeping offsets (blanked, not cut)
-  let h = body.replace(/<(script|style|noscript|svg|template|nav|header|footer|aside)\b[\s\S]*?<\/\1>/gi, blank).replace(/<!--[\s\S]*?-->/g, blank);
+  let h = body.replace(/<(script|style|noscript|svg|template|nav|header|footer)\b[\s\S]*?<\/\1>/gi, blank).replace(/<!--[\s\S]*?-->/g, blank);  // v2: <aside> kept
   const blocks: Block[] = [];
   let text = "", tables = 0, tableRowsN = 0;
   const push = (kind: Block["kind"], t: string, at: number) => {
@@ -72,7 +104,14 @@ export function leanText(html: string): LeanText {
     else if (/^<(p|dd|dt|div|section)\b/i.test(tag)) { flushText(m.index); last = m.index }
   }
   flushText(h.length);
-  return { converter: LEAN_CONVERTER, text, blocks, tables, table_rows: tableRowsN };
+  // v2: a value-only line is kept with the score label beside it, then the text is laid out again (offsets into the stored page unchanged)
+  const kept = keepScoreLines(blocks);
+  let out = "";
+  for (const b of kept) {
+    const line = b.kind === "heading" ? `## ${b.text}` : b.kind === "item" ? `- ${b.text}` : b.text;
+    const start = out.length + (out ? 1 : 0); out += (out ? "\n" : "") + line; b.start = start; b.end = out.length;
+  }
+  return { converter: LEAN_CONVERTER, text: out, blocks: kept, tables, table_rows: tableRowsN };
 }
 
 // High-recall signals per field. A word list can miss a page (tables, aliases, implicit headings), so the verdict is three-way and only
