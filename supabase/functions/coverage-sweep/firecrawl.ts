@@ -220,9 +220,11 @@ export function fcClient(o: { headers: Record<string, string>; log: (p: Record<s
     const fresh = !!rp && (ctx.fresh === true || (o.fresh ? await Promise.resolve(o.fresh(ctx)).catch(() => false) : false));
     const body = applyProfile(laneBody, rp?.profile ?? null, fresh);
     // a profile's time allowed never outlasts the lane's API time-out: Firecrawl is given 5 s less, so it answers before the call is cut
-    if (rp?.profile.timeout != null && typeof body.timeout === "number" && typeof opts.timeoutMs === "number") {
-      body.timeout = Math.max(1000, Math.min(body.timeout, opts.timeoutMs - 5000));  // fixed: API time-out margin
-      if (typeof body.waitFor === "number" && body.waitFor >= body.timeout) body.waitFor = Math.max(0, body.timeout - 1000);
+    const askT = body.timeout, askW = body.waitFor;
+    if (rp?.profile.timeout != null && typeof askT === "number" && typeof opts.timeoutMs === "number") {
+      const t = Math.max(1000, Math.min(askT, opts.timeoutMs - 5000));  // fixed: API time-out margin
+      body.timeout = t;
+      if (typeof askW === "number" && askW >= t) body.waitFor = Math.max(0, t - 1000);
     }
     const profile = { key: rp?.key ?? LANE_OWN, version: o.profiles?.version ?? null, formats: formatNames(body), max_age_ms: typeof body.maxAge === "number" ? body.maxAge : null, fresh };
     const { http, d, rec } = await call("scrape", body, opts);
