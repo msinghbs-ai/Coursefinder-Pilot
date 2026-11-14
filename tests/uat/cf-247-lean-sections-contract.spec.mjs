@@ -11,6 +11,7 @@ import { leanText } from '../../supabase/functions/coverage-sweep/lean-input.ts'
 const IX = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 const MIG = fs.readFileSync('supabase/migrations/20261114031500_cf247_lean_sections_eval.sql', 'utf8')
 const MIGB = fs.readFileSync('supabase/migrations/20261114051500_cf247_lean_sections_eval_run_b.sql', 'utf8')
+const MIGC = fs.readFileSync('supabase/migrations/20261114071500_cf247_lean_selection_shadow.sql', 'utf8')
 const SEL = fs.readFileSync('supabase/functions/coverage-sweep/lean-sections.ts', 'utf8')
 const filler = '<p>' + 'Graduates work across many industries and roles. '.repeat(12) + '</p>'
 const page = `<html><header>Site menu Apply now</header><body><main><h1>Bachelor of Science</h1><p>The Bachelor of Science builds skills in research.</p>` +
@@ -70,9 +71,9 @@ test('gold matching: flat form, every part needed', () => {
 
 test('worker mode lean_sections_eval: stored copies only, no AI, no Firecrawl, nothing admitted; no reader uses the selector', () => {
   expect(IX).toMatch(/const WORKER = "coverage-sweep-worker-v0\.89\.0";|\/\/ was v0\.89\.0 \(#1136\) \/\/ v0\.89\.0 \(14 Nov 2026, numbered after #1137/)  // current, or kept as "was" by a later worker (v0.90.0 merges #1128)
-  expect(IX).toContain('import { BLOCK_INPUT, LEAN_SECTIONS, blockPlain, holds, selectSections } from "./lean-sections.ts";')
-  expect(IX).toContain('const ab = aerV3Blocks(leanText(raw), di), whole = blockPlain(ab), sel = selectSections(ab, f);')
-  expect(IX).toContain('const selText = sel.plain;')
+  expect(IX).toContain('import { BLOCK_INPUT, LEAN_SECTIONS, SECTION_DEFAULTS, blockPlain, holds, selectSections } from "./lean-sections.ts";')
+  expect(IX).toContain('const ab = aerV3Blocks(leanText(raw), di), whole = blockPlain(ab), sel = selectSections(ab, f, SEC_OPT);')
+  expect(IX).toContain('const selText = sel.no_selection ? whole : sel.plain;')  // v0.92.0: nothing selected means the page is sent whole (design §3)
   const a = IX.indexOf('if (mode === "lean_sections_eval")'), b = IX.indexOf('if (mode === "central_ai")')
   expect(a).toBeGreaterThan(0)
   const body = IX.slice(a, b)
@@ -81,8 +82,8 @@ test('worker mode lean_sections_eval: stored copies only, no AI, no Firecrawl, n
   expect(body).toContain('readEvidenceCopy(c, String(it.storage_path))')
   expect(body).toContain('ai_calls: 0')
   expect(body).not.toMatch(/openrouter|chat\/completions|fcScrape|firecrawl|svc_fc_spend|fetch\(/i)
-  // the selector is used only by the recall check
-  expect(IX.split('selectSections(').length - 1).toBe(1)
+  // the selector is used by the recall check and (v0.92.0, Phase 1b step 2) by the shadow beside live reads, nowhere else
+  expect(IX.split('selectSections(').length - 1).toBe(2)
 })
 
 test('the migration: independent labels only, settings for switch, batch and sample, catalogued job, read-only report; nothing dropped', () => {
@@ -120,4 +121,41 @@ test('run b migration: run a kept as recorded, its unread cases closed as supers
   expect(MIGB).toContain("select security.lean_sections_eval_seed_v1('phase1b-step1b-2026-11-14');")
   expect(MIGB).toContain("set leased_until = now() + interval '10 minutes'")
   expect(MIGB).not.toMatch(/^\s*(drop|truncate|delete)\b/im)
+})
+
+test('lean-sections-v2 (Phase 1b step 2): entry requirements under "Assumed knowledge", "Advanced standing" and literacy checks are selected; labels with HTML entities match', () => {
+  expect(LEAN_SECTIONS).toBe('lean-sections-v2')
+  const pad = '<p>Intro text for the course page.</p>'.repeat(40)
+  for (const [h, v] of [['Assumed knowledge', 'Mathematical Methods (Units 3 and 4, C)'], ['Advanced standing', 'Candidates with a cognate bachelor degree get four units of credit'], ['Language, literacy and numeracy', 'Complete an LLND assessment before enrolment'], ['Who can apply', 'Must be 18 years of age or above']]) {
+    const ab = blocks(`<main>${pad}<h2>Overview</h2><p>About the course.</p><h2>${h}</h2><p>${v}</p><h2>Careers</h2><p>Jobs.</p></main>`, '')
+    const sel = selectSections(ab, 'entry_requirements')
+    expect(holds(sel.plain, [v]), h).toBe(true)
+    expect(holds(sel.plain, ['Jobs.']), h).toBe(false)
+  }
+  expect(holds('To enter FNS40222 – Certificate IV in Accounting', ['To enter FNS40222 &#8211; Certificate IV'])).toBe(true)
+  expect(holds('Fees & charges', ['Fees &amp; charges'])).toBe(true)
+  const sel = selectSections(blocks('<main><h2>Careers</h2><p>Jobs.</p></main>', ''), 'entry_requirements')
+  expect(sel.no_selection).toBe(true)
+  expect(['likely', 'unknown', 'no_signal', 'not_measured']).toContain(sel.signal)
+})
+
+test('Phase 1b step 2 shadow: the enrich read records what the selector would send beside what is sent; the request is unchanged; bounded and switchable by settings', () => {
+  const enrich = IX.slice(IX.indexOf('if (mode === "enrich_ai")'), IX.indexOf('if (mode === "scholarship_inspect")'))
+  expect(enrich).toContain('const SEL_SHADOW = wsOn("reading.selection_shadow_on", 1), SEL_MAX = wsNum("reading.selection_shadow_max_chars", 200000);')
+  expect(enrich).toContain('const big = SEL_SHADOW && lean.text.length > SEL_MAX, t1 = Date.now(), ab = SEL_SHADOW && !big ? aerV3Blocks(lean, di) : null, blocksMs = Date.now() - t1;')
+  // the selection goes only into the observation row: its text is hashed, never placed in a request
+  const shadow = enrich.slice(enrich.indexOf('const shadowSel = async'), enrich.indexOf('const readStored ='))
+  expect(shadow).toContain('sel_sha256: await sha256Hex(s.text)')
+  expect(shadow).not.toMatch(/cascadeFetch|messages|content:\s*s\.|chat\/completions/)
+  expect(enrich.match(/shadowSel\(/g)?.length).toBe(1)  // one call, in observeReads
+  expect(enrich).not.toMatch(/sel\.(text|plain)\b[^\n]*(cascadeFetch|messages)/)
+  // the selector's sizes come from settings, the same for the recall check and the shadow
+  expect(IX).toContain('const SEC_OPT = { section_max_chars: wsNum("reading.section_max_chars", SECTION_DEFAULTS.section_max_chars),')
+  expect(MIGC).toMatch(/^-- Replaces: public\.svc_ai_input_observe_v1\(jsonb\) \(same name; replaced only from the definition it was written against, md5 3f6d4ed98c8055bdbd18adae4e09edf0\)\.$/m)
+  expect(MIGC).toMatch(/^-- Retires: nothing\.$/m)
+  expect(MIGC).toContain("if md5(pg_get_functiondef('public.svc_ai_input_observe_v1(jsonb)'::regprocedure)) <> '3f6d4ed98c8055bdbd18adae4e09edf0' then")
+  for (const k of ['reading.selection_shadow_on', 'reading.section_max_chars', 'reading.section_neighbour_chars', 'reading.section_intro_blocks', 'reading.selection_shadow_max_chars']) expect(MIGC).toContain(`('pipeline', '${k}',`)
+  expect(MIGC).toContain("select security.lean_sections_eval_seed_v1('phase1b-step1c-2026-11-14');")
+  expect(MIGC).toContain("count(*) filter (where j.preflight_full in ('likely', 'unknown') and j.preflight_selection = 'no_signal')")
+  expect(MIGC).not.toMatch(/^\s*(drop|truncate)\b/im)
 })
