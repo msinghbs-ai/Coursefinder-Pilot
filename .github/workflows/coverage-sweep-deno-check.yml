@@ -30,9 +30,9 @@ jobs:
             # DENO_NO_PACKAGE_JSON: the repository's package.json is the admin site's; the worker's npm: imports resolve as the edge runtime does
             (cd "$1" && DENO_NO_PACKAGE_JSON=1 deno check --no-lock supabase/functions/coverage-sweep/index.ts 2>&1 || true) | sed -E 's/\x1b\[[0-9;]*m//g' > "$2"
             # a check that could not run (a module not found, a download failure) is a failure, never "no errors"
-            if grep -E '^error: ' "$2" | grep -vq 'Type checking failed'; then echo "deno check could not run in $1:" >&2; cat "$2" >&2; exit 1; fi
+            if grep -E '^error: ' "$2" | grep -vEq 'Type checking failed|^error: TS[0-9]+ \[ERROR\]'; then echo "deno check could not run in $1:" >&2; cat "$2" >&2; exit 1; fi
             awk '
-              /^TS[0-9]+ \[ERROR\]:/ { msg = $0; sub(/ \[ERROR\]:/, "", msg); next }
+              /^(error: )?TS[0-9]+ \[ERROR\]:/ { msg = $0; sub(/^error: /, "", msg); sub(/ \[ERROR\]:/, "", msg); next }
               msg != "" && /^ +at file:\/\// { f = $0; sub(/.*supabase\/functions\//, "", f); sub(/:[0-9]+:[0-9]+$/, "", f); print msg " | " f; msg = "" }' "$2" | sort
           }
           git worktree add -q /tmp/base "$BASE"
