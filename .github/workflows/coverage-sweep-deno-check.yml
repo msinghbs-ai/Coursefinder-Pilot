@@ -1,0 +1,49 @@
+# Coverage-sweep type check (CF-247 R7, 14 Nov 2026): `deno check` on the coverage-sweep worker at the pull request's head and at its base, and
+# the job fails when the head has a type error the base does not have. The base is not error-free (Deno's library types differ from the edge
+# runtime's in a few places), so the gate is "no new errors", compared by error code, message and file, not by line. Informational: it is not a
+# required check and it deploys nothing.
+name: Coverage-sweep type check
+on:
+  pull_request:
+    paths:
+      - 'supabase/functions/coverage-sweep/**'
+      - 'supabase/functions/_shared/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  deno-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.1.4  # pinned, like the Supabase CLI; the edge runtime's Deno 2 line
+      - name: deno check at head and base; no new errors
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || 'origin/main' }}
+        run: |
+          errs() {  # one line per error: "TS<code> <message> | <file under supabase/functions>"; $2 keeps the raw output
+            # DENO_NO_PACKAGE_JSON: the repository's package.json is the admin site's; the worker's npm: imports resolve as the edge runtime does
+            (cd "$1" && DENO_NO_PACKAGE_JSON=1 deno check --no-lock supabase/functions/coverage-sweep/index.ts 2>&1 || true) | sed -E 's/\x1b\[[0-9;]*m//g' > "$2"
+            # a check that could not run (a module not found, a download failure) is a failure, never "no errors"
+            if grep -E '^error: ' "$2" | grep -vEq 'Type checking failed|^error: TS[0-9]+ \[ERROR\]'; then echo "deno check could not run in $1:" >&2; cat "$2" >&2; exit 1; fi
+            awk '
+              /^(error: )?TS[0-9]+ \[ERROR\]:/ { msg = $0; sub(/^error: /, "", msg); sub(/ \[ERROR\]:/, "", msg); next }
+              msg != "" && /^ +at file:\/\// { f = $0; sub(/.*supabase\/functions\//, "", f); sub(/:[0-9]+:[0-9]+$/, "", f); print msg " | " f; msg = "" }' "$2" | sort
+          }
+          git worktree add -q /tmp/base "$BASE"
+          errs "$PWD" head.raw > head.txt
+          errs /tmp/base base.raw > base.txt
+          echo "## coverage-sweep deno check" >> "$GITHUB_STEP_SUMMARY"
+          echo "Base: $(wc -l < base.txt) errors; head: $(wc -l < head.txt) errors." | tee -a "$GITHUB_STEP_SUMMARY"
+          comm -13 base.txt head.txt > new.txt
+          if [ -s new.txt ]; then
+            echo "New type errors at head:" | tee -a "$GITHUB_STEP_SUMMARY"
+            sed 's/^/- /' new.txt | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "No new type errors." | tee -a "$GITHUB_STEP_SUMMARY"

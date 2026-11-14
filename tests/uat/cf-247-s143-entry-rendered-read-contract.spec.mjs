@@ -23,5 +23,7 @@ test('worker: robots first, the Firecrawl budget check, rawHtml with the set wai
   expect(render).toContain('await frec({ p_status: "read", p_via: "firecrawl", p_http: http, p_storage_path: path, p_sha256: sha, p_mime: "text/html" });')
   expect(render.indexOf('robotsAllows')).toBeLessThan(render.indexOf('useFcWhy'))
   // a refusal or an empty render is recorded and retried only within entry.matrix_attempts (a budget refusal does not use a try)
-  expect(render).toContain('await frec({ p_http: http, p_error: d?.error || "no rendered content" });')
+  // v0.94.0 (R7): the render goes through the one Firecrawl client; a page rendered with a 4xx/5xx status is recorded as failed with that status
+  expect(render).toContain('{ use_case: "entry_render", provider_id: it.provider_id }, { timeoutMs: 90000 });')
+  expect(render).toContain('await frec({ p_http: http, p_error: d?.error || (sc.soft_error ? `page status ${sc.page_status}` : "no rendered content") });')
 })
