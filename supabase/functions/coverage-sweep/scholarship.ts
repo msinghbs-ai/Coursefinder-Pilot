@@ -5,12 +5,14 @@ import { clean, htmlToText } from "./extract.ts";
 
 const MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
 
-// Main content only: prefer <main>, drop navigation, header, footer and side panels (menus list every level/field).
+// Main content only: prefer <main>, drop navigation, header and footer (menus list every level/field).
+// v1.0.1: <aside> is kept, as lean-md-v2 keeps it: course pages put fees and intake dates in a side panel (Unitec, UFV);
+// a menu inside a side panel is still dropped with its <nav>.
 export function mainText(html: string) {
   let h = html;
   const m = h.match(/<main[\s\S]*?<\/main>/i);
   if (m && m[0].length > 1500) h = m[0];
-  h = h.replace(/<(nav|header|footer|aside)\b[\s\S]*?<\/\1>/gi, " ");
+  h = h.replace(/<(nav|header|footer)\b[\s\S]*?<\/\1>/gi, " ");
   return htmlToText(h);
 }
 
