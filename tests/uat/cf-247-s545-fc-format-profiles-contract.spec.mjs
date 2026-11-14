@@ -63,7 +63,7 @@ test('the server check refuses the same, every save goes through it, and the mig
   expect(mig).toMatch(/admin_fc_profiles_set_v1[\s\S]{0,600}coalesce\(v_rank, 0\) < 6[\s\S]{0,200}length\(v_reason\) < 4/)
   expect(mig).toContain("if v_set.kind = 'json' or (v_set.toolset_key = 'firecrawl' and v_set.key = 'scrape_profiles_version') then")
   // md5-guarded edits of the live text, nothing dropped or deleted, Replaces/Retires lines
-  expect(mig).toContain("select pg_temp.edit_once('public.svc_worker_settings_v1()', '5ef1c297c311ea346d95d04b2d430c34',")
+  expect(mig).toContain("select pg_temp.edit_once('public.svc_worker_settings_v1()', 'e4e3292858516d1d29c877921be29b76',")
   expect(mig).toContain("select pg_temp.edit_once('public.admin_toolsets_write(text,jsonb)', '531d48c1adce92dd78d44a4650d19061',")
   expect(mig).not.toMatch(/^\s*(drop|delete|truncate)\b/im)
 })

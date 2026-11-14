@@ -279,7 +279,7 @@ begin
   execute replace(v_def, p_old, p_new);
 end $f$;
 
-select pg_temp.edit_once('public.svc_worker_settings_v1()', '5ef1c297c311ea346d95d04b2d430c34',
+select pg_temp.edit_once('public.svc_worker_settings_v1()', 'e4e3292858516d1d29c877921be29b76',
   $o$'search_results_scholarship_search', 'search_results_scholarship_discover'))$o$,
   $n$'search_results_scholarship_search', 'search_results_scholarship_discover',
                                                           -- CF-247 Firecrawl format profiles (worker v0.99.0)
