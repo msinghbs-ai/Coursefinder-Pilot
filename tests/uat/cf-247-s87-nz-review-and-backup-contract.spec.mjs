@@ -343,7 +343,7 @@ test('v0.40.0 course source finder: the platform finds each university\'s course
 
 test('v0.40.1 source finder: every host in the map, a searched second map, time-outs left for the next run', () => {
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-  expect(w).toContain('const fcMap = async (url: string, providerId: string | null, search: string | null = null) => {')
+  expect(w).toContain('const fcMap = async (url: string, providerId: string | null, search: string | null = null, lane = "course_site_map") => {')  // v0.94.0 (R7): the lane names the call in pipeline.firecrawl_calls
   expect(w).toContain('const k = h + "|" + sg.slice(0, i + 1).join("/")')
   expect(w).toContain('const STEP_MS = 55_000;')
 })

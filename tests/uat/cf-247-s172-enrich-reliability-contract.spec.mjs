@@ -83,7 +83,8 @@ test('adapter capture failure: a boot failure is named, a working capture is no 
   // the capture's Firecrawl spend is still recorded per page before the call, as before
   const cap = worker.slice(worker.indexOf('if (mode === "adapter_capture") {'), worker.indexOf('if (mode === "adapter_propose") {'))
   expect(cap.indexOf('svc_coverage_usage')).toBeGreaterThan(-1)
-  expect(cap).toContain('outcome: rec.success ? "captured" : "fc_error"')
+  // v0.94.0 (R7): the capture is logged by the one Firecrawl client (svc_fc_call_log, outcome from readOutcome), not by a call of its own
+  expect(cap).toContain('const sc = await fcx.scrape(reqBody, { use_case: "adapter_builder", provider_id: dr.provider_id, course_id: sm.course_id || null, url: sm.url }, { timeoutMs: 90000, estimate: 1 });')
 })
 
 test('slow course-list reads: the 110-second budget plus one in-flight scrape; every list taken is recorded', () => {
@@ -96,7 +97,7 @@ test('slow course-list reads: the 110-second budget plus one in-flight scrape; e
   const clr = worker.slice(worker.indexOf('if (mode === "course_list_read") {'), worker.indexOf('if (mode === "source_find") {'))
   // a list not started inside the budget goes back as due (never recorded as read), and every path records its list
   expect(clr).toContain('if (Date.now() - t0 > BUDGET_MS) { await rpc("svc_course_list_record", { p_id: it.id, p_status: "due"')
-  expect(clr).toContain('signal: AbortSignal.timeout(60000)')
+  expect(clr).toContain('{ use_case: "course_list_read", provider_id: providerId }, { timeoutMs: 60000 });')  // v0.94.0 (R7): the one Firecrawl client, same API time-out
 })
 
 test('md5-guarded edits only; no new status, setting, job or binding; consumer API untouched; nothing dropped', () => {
