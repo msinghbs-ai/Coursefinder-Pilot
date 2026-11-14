@@ -39,6 +39,7 @@ import { awardSections, mapOutcome, nextPage, pagingState, redirectOutcome, sect
 import { COURSE_TEXT_FIELDS, cdescRequest, cdescResults, cdescSpans, cdescUser, courseTextAnswer, courseTextAnswerLimit, courseTextLength, courseTextPage, courseTextRequest, courseTextResults, courseTextUser, COURSE_TEXT_PROMPT_VERSION, CDESC_PROMPT_VERSION } from "./course-text.ts";
 import { leanText, observation, sha256Hex } from "./lean-input.ts";
 import { preflight as leanPreflight } from "./lean-input.ts";
+import { ADMISSION_GATE, OPENED_COPY_REQUIRED, admit, decisionRow, openCopy, type ArtifactManifest, type Decision, type GateSettings, type Reason } from "./admission-gate.ts";  // v0.97.0: pre-AI admission gate, shadow (Decision 278)
 import { BLOCK_INPUT, LEAN_SECTIONS, SECTION_DEFAULTS, blockPlain, holds, selectSections } from "./lean-sections.ts";
 import { FEE_CANDIDATE_PROMPT, INTAKE_BASELINE_PROMPT, INTAKE_CANDIDATE_PROMPT, LEAN_QUALIFY, feeFound, feeRequest, intakeFound, intakeRequest, quoteHeld } from "./lean-qualify.ts";
 import { DESCRIPTION_ANSWER_KEY, DESCRIPTION_PROMPT_VERSION, promptRequest, promptSentences, DESCRIPTION_WORKER_PROTOCOL, aboutLinks, aboutPageCheck, descriptionAnswer, descriptionClaimCheck, descriptionCostQuote, descriptionPageText, descriptionIdentitySeen, descriptionRequest, descriptionSourceIdentity, type IdentityTrace, ownHost, providerDescriptionSentences } from "./description.ts";
@@ -86,7 +87,7 @@ const VERSION = "coverage-sweep-v0.5.6"; // extractor version (unchanged by v0.6
 // v0.38.1 (22 Oct 2026, NZ course list pages): a page the AI page match chose from the university's own site addresses (its course list or
 // site map) is listed on the university's own site, so it may be read through the scraper when the direct read is blocked (Otago, Lincoln, AUT).
 const FC_TRUSTED_BASIS = ["cricos_search", "cricos_code", "cricos_code_on_page", "nzqa_code", "adapter_code", "title_match", "cms_path_public", "manual", "firecrawl_upgrade", "ai_match", "programme_list"]; // v0.45.0: a page bound by its NZ or CA code is as trusted as one bound by a CRICOS code
-const WORKER = "coverage-sweep-worker-v0.96.0"; // v0.96.0 (14 Nov 2026, numbered after #1144 v0.95.0, CF-247 S1-AER benchmark run): mode aer_v3_eval waits for one answer only for the time the worker call has left (at most 90 s, never past the budget less a 10 s margin to record), skips starting a call with less than 20 s left (the example is leased again), and records a reply whose body was cut by the wait as "timeout: no complete answer within N s" instead of an empty answer. Measured on the benchmark (run 8, Qwen3 30B): a late slow answer ran the call past the platform wall-clock limit and lost every answer of that call. Other modes unchanged. // was v0.95.0 // v0.95.0 (14 Nov 2026, numbered after #1142 v0.94.0, CF-247 Lean AI Input Phase 1b-3: new mode lean_qualify, the fees and intakes qualification of the selected input on stored pages under a US$2.00 ceiling, nothing admitted; lean-sections-v3 entry score lines) // was v0.94.0 // v0.94.0 (14 Nov 2026, CF-247 S1-AER benchmark report, Platform Admin 14 Nov 2026 17:21): mode aer_v3_eval also records, for each record that failed the v3 verifier, where its exact quote and lead-in are found on the page (aer-v2.ts aerV3QuoteDiag: cited block, adjacent blocks, another block, across blocks elsewhere, or not on the page), so a quote that spans blocks is told apart from a quote not on the page. Diagnostic only: no prompt, verifier, check, verdict or score changes. // was v0.93.0 // v0.93.0 (14 Nov 2026, numbered after #1139 v0.92.0, CF-247 S1-AER): the [B#] blocks are converted by lean-md-v2 (lean-input.ts: the page today's reader sends, <aside> and content outside <main> kept; numeric character references decoded; a value-only line kept with the score label beside it, e.g. "70 Guaranteed ATAR or equivalent"; Lean AI Phase 1b Run B: 20 of 51 entry requirement misses), block line format unchanged. Also (14 Nov 2026, CF-247 S1-AER, Platform Admin 14 Nov 2026 option 1): new mode aer_v3_eval answers an opened AER v2 prompt v3 benchmark run of the platform AI evaluation framework (public.svc_aer_v3_eval_next_v1 leases it behind ai_eval.offline_runs_on, ai_eval.aer_v3_runs_on and the spend cap ai_eval.aer_v3_max_usd; answers through public.svc_ai_eval_answer_record_v1; scored by security.ai_eval_score_v1 on frozen gold rows): each frozen stored page as the [B#] blocks of aerV3Blocks (unchanged, never cut), the version's pinned model, provider pins and require_parameters (aerV3Request), the v3 verifier (aerV3Verify), one retry of a call that returned no answer. No job fires it. Other modes unchanged. // was v0.92.0 (#1139) // v0.92.0 (14 Nov 2026, CF-247 Lean AI Input Phase 1b step 2, shadow selection: each observed course-page read also records what the section selector would send, beside what is sent; no request, prompt, model, value or admission change) // was v0.91.0 // v0.91.0 (14 Nov 2026, numbered after #1128 v0.90.0, CF-247 Lean AI Input Phase 1b step 1 recall matcher fix, Platform Admin 14 Nov 2026 13:25): mode lean_sections_eval matches each labelled value against the blocks' words without their "[B<n> @<offset>]" labels (lean-sections.ts blockPlain, selectSections plain), so a quote that runs across adjacent blocks is found; the selected-chars measure stays the labelled text a reader would be sent. Measurement only; no other mode changes. // was v0.90.0 // v0.90.0 (14 Nov 2026, CF-247 merge of #1128 AI models and services with #1136 Lean AI Input Phase 1b step 1; both were numbered v0.89.0): both releases together, nothing else. #1136 adds the offline section selector and makes no AI call; every model call still goes through cascade.ts on its own service route (#1128). No request, prompt, model choice, skip, value, admission, setting or ceiling changes.
+const WORKER = "coverage-sweep-worker-v0.97.0"; // v0.97.0 (14 Nov 2026, numbered after #1146 v0.96.0, CF-247 pre-AI admission gate pre-ai-admission-v1, Decision 278 D3/D4; admin docs/audits/studysearch-pre-ai-admission-gate-design.md): mode scholarship_ai judges each read before it is sent (admission-gate.ts admit) and records the decision (public.svc_pre_ai_admission_record_v1), only while admission.gate_on is 1 (ships 0); a reason stops a read only when its admission.enforce.<reason> is 1 (all ship 0), and a park is never enforced here (no park route yet), so with the shipped settings every read, request, prompt, model, value and admission is unchanged. The input fingerprint covers the stored copy's byte hash, the selected text, the linked eligibility page's hash (or "none") and the request context; a stored copy is opened as bytes and hashed before decoding (openCopy). Also R5 (D4): a paid answer whose record failed keeps its cost (errorCost(e) || spent), the fallback record cannot fail the batch, and every attempt names its queue item in pipeline.ai_invocations (source scholarship_ai_queue), which is written outside the queue tables at the end of the call. Other modes unchanged. // was v0.96.0 // v0.96.0 (14 Nov 2026, numbered after #1144 v0.95.0, CF-247 S1-AER benchmark run): mode aer_v3_eval waits for one answer only for the time the worker call has left (at most 90 s, never past the budget less a 10 s margin to record), skips starting a call with less than 20 s left (the example is leased again), and records a reply whose body was cut by the wait as "timeout: no complete answer within N s" instead of an empty answer. Measured on the benchmark (run 8, Qwen3 30B): a late slow answer ran the call past the platform wall-clock limit and lost every answer of that call. Other modes unchanged. // was v0.95.0 // v0.95.0 (14 Nov 2026, numbered after #1142 v0.94.0, CF-247 Lean AI Input Phase 1b-3: new mode lean_qualify, the fees and intakes qualification of the selected input on stored pages under a US$2.00 ceiling, nothing admitted; lean-sections-v3 entry score lines) // was v0.94.0 // v0.94.0 (14 Nov 2026, CF-247 S1-AER benchmark report, Platform Admin 14 Nov 2026 17:21): mode aer_v3_eval also records, for each record that failed the v3 verifier, where its exact quote and lead-in are found on the page (aer-v2.ts aerV3QuoteDiag: cited block, adjacent blocks, another block, across blocks elsewhere, or not on the page), so a quote that spans blocks is told apart from a quote not on the page. Diagnostic only: no prompt, verifier, check, verdict or score changes. // was v0.93.0 // v0.93.0 (14 Nov 2026, numbered after #1139 v0.92.0, CF-247 S1-AER): the [B#] blocks are converted by lean-md-v2 (lean-input.ts: the page today's reader sends, <aside> and content outside <main> kept; numeric character references decoded; a value-only line kept with the score label beside it, e.g. "70 Guaranteed ATAR or equivalent"; Lean AI Phase 1b Run B: 20 of 51 entry requirement misses), block line format unchanged. Also (14 Nov 2026, CF-247 S1-AER, Platform Admin 14 Nov 2026 option 1): new mode aer_v3_eval answers an opened AER v2 prompt v3 benchmark run of the platform AI evaluation framework (public.svc_aer_v3_eval_next_v1 leases it behind ai_eval.offline_runs_on, ai_eval.aer_v3_runs_on and the spend cap ai_eval.aer_v3_max_usd; answers through public.svc_ai_eval_answer_record_v1; scored by security.ai_eval_score_v1 on frozen gold rows): each frozen stored page as the [B#] blocks of aerV3Blocks (unchanged, never cut), the version's pinned model, provider pins and require_parameters (aerV3Request), the v3 verifier (aerV3Verify), one retry of a call that returned no answer. No job fires it. Other modes unchanged. // was v0.92.0 (#1139) // v0.92.0 (14 Nov 2026, CF-247 Lean AI Input Phase 1b step 2, shadow selection: each observed course-page read also records what the section selector would send, beside what is sent; no request, prompt, model, value or admission change) // was v0.91.0 // v0.91.0 (14 Nov 2026, numbered after #1128 v0.90.0, CF-247 Lean AI Input Phase 1b step 1 recall matcher fix, Platform Admin 14 Nov 2026 13:25): mode lean_sections_eval matches each labelled value against the blocks' words without their "[B<n> @<offset>]" labels (lean-sections.ts blockPlain, selectSections plain), so a quote that runs across adjacent blocks is found; the selected-chars measure stays the labelled text a reader would be sent. Measurement only; no other mode changes. // was v0.90.0 // v0.90.0 (14 Nov 2026, CF-247 merge of #1128 AI models and services with #1136 Lean AI Input Phase 1b step 1; both were numbered v0.89.0): both releases together, nothing else. #1136 adds the offline section selector and makes no AI call; every model call still goes through cascade.ts on its own service route (#1128). No request, prompt, model choice, skip, value, admission, setting or ceiling changes.
 // was v0.89.0 (#1136) // v0.89.0 (14 Nov 2026, numbered after #1137 v0.88.0, CF-247 Lean AI Input Phase 1b step 1, Platform Admin 14 Nov 2026 11:37; admin docs/platform/LEAN-AI-INPUT-PHASE1B-SECTION-SELECTION-DESIGN.md): new mode lean_sections_eval, the offline recall check of the section selector (lean-sections.ts lean-sections-v1, selecting a field's sections from the platform's one [B#] block form, aer-v2.ts aerV3Blocks / BLOCK_INPUT lean-blocks-v1, the same blocks the AER v2 reader sees; no block format of its own) on labelled stored pages handed over by public.svc_lean_sections_eval_next_v1, recorded with public.svc_lean_sections_eval_record_v1. Stored copies only: no AI, no Firecrawl, no live fetch, nothing admitted. No other mode changes.
 // was v0.89.0 (#1128 merge) // v0.89.0 (14 Nov 2026, CF-247 merge of #1128 AI models and services with #1137 AER v2 prompt v3; both were numbered v0.88.0): mode aer_v2_shadow builds the v3 request over numbered lean-md-v1 blocks (#1137) and sends it through cascade.ts on the entry_requirements_v2_shadow route (#1128); the version's answer contract, routing and params come from the version, the model and its cascade from the route. No request, prompt, model choice, skip, value, admission, setting or ceiling changes.
 // was v0.88.0 (#1137) // v0.88.0 (14 Nov 2026, CF-247 AER v2 prompt v3, Platform Admin 14 Nov 2026 item 2): mode aer_v2_shadow reads a prompt version whose answer contract is aer-v2-answer-v3 over the whole stored page as numbered lean-md-v1 blocks (aer-v2.ts aerV3Blocks: "[B<n> @<source_at>]", headings, list items, table rows with their column headers; never cut), with the version's pinned provider routing and require_parameters (aerV3Request), and checks each record with the v3 verifier (aerV3Verify: exact_quote inside its cited block and holding the minimum; lead_in_quote separate, before it, within reading.aer_v3_lead_in_max_blocks and no heading between). Versions with the v1 contract read exactly as before.
@@ -2067,6 +2068,8 @@ async function handle(req: Request): Promise<Response> {
       return j({ ok: true, mode, rows: rows.length, done, failed, changes, ms: Date.now() - t0, workerVersion: VERSION, scholarshipExtractor: SCH_VERSION });
     }
     const storedHtml = async (path: string) => { const { data, error } = await c.storage.from("evidence").download(path); if (error || !data) throw Error(error?.message || "missing"); return await new Response(data.stream().pipeThrough(new DecompressionStream("gzip"))).text() };
+    // v0.97.0: the same stored copy as bytes (admission-gate.ts openCopy: decompressed, hashed over its bytes, then decoded as storedHtml decodes it)
+    const storedCopy = async (path: string) => { const { data, error } = await c.storage.from("evidence").download(path); if (error || !data) throw Error(error?.message || "missing"); return await openCopy(new Uint8Array(await data.arrayBuffer()), "gzip") };
     // v0.20.0 (Platform Admin bugs 11/10-6, 11 Oct 2026: "scholarship to be read by code using Firecrawl but then use AI to extract
     // attributes"): each queued scholarship page (stored copy, or read now through the scraper and kept) is sent to the model and
     // instructions it was queued with. Every fact must quote the page; the quotes are checked here, and an unproven fact counts as not
@@ -2078,14 +2081,22 @@ async function handle(req: Request): Promise<Response> {
       const items: any[] = await rpc("svc_scholarship_ai_next", { p_limit: Math.min(Number(body.limit || 8), 12) });
       const schTokens = answerLimit(ws, "scholarship_page");
       const tally: Record<string, number> = {}; let cost = 0;
+      // v0.97.0 (pre-ai-admission-v1, Decision 278; admin docs/audits/studysearch-pre-ai-admission-gate-design.md §4): each read is judged before it is
+      // sent and the decision recorded (public.svc_pre_ai_admission_record_v1). Off unless admission.gate_on; with every admission.enforce.<reason> at 0
+      // nothing changes. A park (duplicate_input, over_budget_split) is not enforced here: this lane has no route for parked items yet.
+      const GATE_ON = wsNum("admission.gate_on", 0) > 0, admissions: unknown[] = [];
+      const gateSettings: GateSettings = { min_main_chars: wsNum("admission.min_main_chars", 300), sch_min_score: wsNum("admission.scholarship_min_score", 2), park_routed: false,
+        enforce: Object.fromEntries(Object.keys(ws).filter((k) => k.startsWith("admission.enforce.")).map((k) => [k.slice(18), Number(ws[k]) >= 1])) as Partial<Record<Reason, boolean>> };
       await pool(items, 4, async (it) => {
         const t1 = Date.now();
         const rec = (x: Record<string, unknown>) => rpc("svc_scholarship_ai_record", { p_queue_id: it.queue_id, p_answer: null, p_checks: null, p_verdict: null, p_cost: 0, p_tokens_in: null, p_tokens_out: null, p_seconds: (Date.now() - t1) / 1000, p_error: null, p_storage_path: null, p_sha256: null, p_final_url: null, p_rule_facts: null, p_retry: false, ...x });
         // v0.78.0: a version 3 read may take up to SCH_V3_TIMEOUT_MS, so it starts only early in the call (the rest wait, no try used)
         if (Date.now() - t0 > BUDGET_MS - (Number(it.prompt_version || 0) >= 3 ? SCH_V3_TIMEOUT_MS : 25000)) { await rec({ p_retry: true }); tally.later = (tally.later || 0) + 1; return }
         let html = "", finalUrl = it.url, path: string | null = null, sha: string | null = null, ruleFacts: Record<string, unknown> | null = null;
+        let spent = 0;  // v0.97.0 (R5): what this item's model calls cost, kept for the catch (a record that failed after a paid answer recorded 0: audit A4)
+        let rawBytes: Uint8Array | null = null, storedBytes = 0;  // v0.97.0: the copy's decompressed bytes and stored size, for the gate (only while admission.gate_on)
         try {
-          if (it.storage_path) html = await storedHtml(it.storage_path);
+          if (it.storage_path) { if (GATE_ON) { const cp = await storedCopy(it.storage_path); html = cp.text; rawBytes = cp.bytes; storedBytes = cp.stored_bytes } else html = await storedHtml(it.storage_path) }
           else {
             const pg = await readSch(it.url, it.provider_id || null);
             if (pg.status === "waiting_scraper") { await rec({ p_retry: true }); tally.waiting_scraper = (tally.waiting_scraper || 0) + 1; return }
@@ -2095,6 +2106,7 @@ async function handle(req: Request): Promise<Response> {
               path = `layer2/AU/scholarships/${it.provider_id || "none"}/ai/${it.queue_id}/${sha}.html.gz`;
               const up = await c.storage.from("evidence").upload(path, gz, { contentType: "application/gzip", upsert: true });
               if (up.error) { path = null; sha = null }
+              else if (GATE_ON) { rawBytes = new TextEncoder().encode(html); storedBytes = gz.length }  // the bytes stored are the bytes hashed
             }
             if (it.candidate_id) {
               let facts: Record<string, unknown> | null = null;
@@ -2118,8 +2130,37 @@ async function handle(req: Request): Promise<Response> {
           }
           const parts: BundlePart[] = [{ id: "page", url: finalUrl, title, h1, text }, ...(linked ? [linked] : [])];
           const bundleIn = { provider: it.provider || "", country: it.country || null, currency: it.currency || null, scholarship: recovery ? (it.scholarship_name || null) : undefined, parts };
+          let gateDec: Decision | null = null;
+          if (GATE_ON) try {
+            // judged after the linked page is read (a direct read, no credit) and before any paid call: the fingerprint is the whole bundle (the stored
+            // copy's byte hash, the linked page's hash or "none", the request context, the prompt text, the model and the answer shape), so a changed
+            // linked page is a different input and never a duplicate. The gate never fails a read: an error in it is counted and the read goes ahead.
+            const gatePath: string | null = it.storage_path || path, pathSha = gatePath?.match(/([0-9a-f]{64})\.[a-z.]+$/)?.[1] || null;
+            const manifest: Partial<ArtifactManifest> | null = gatePath && rawBytes ? { evidence_id: null, bucket: "evidence", storage_path: gatePath, container: "gzip", content_mime: "text/html",
+              content_sha256: pathSha || sha || undefined, stored_bytes: storedBytes, source_url: it.url, final_url: finalUrl, ...(it.storage_path ? {} : { captured_at: new Date().toISOString() }) } : null;
+            const seen: string[] = [];
+            const pv = Number(it.prompt_version || 0), promptKey = `scholarship-prompt-v${pv}${recovery ? `+${RECOVERY_VARIANT}` : ""}:${(await sha256Hex(String(it.prompt || ""))).slice(0, 16)}`;
+            const gateIn = { lane: "scholarship" as const, html, url: finalUrl, manifest, raw_bytes: rawBytes, manifest_require: it.storage_path ? OPENED_COPY_REQUIRED : undefined,
+              prompt_key: promptKey, model: String(it.model || ""), schema_key: v3 ? SCH_EXTRACT_CONTRACT : "scholarship_page_v2",
+              linked_sha256: linked ? await sha256(new TextEncoder().encode(linked.text)) : null,
+              context: { provider: it.provider || "", country: it.country || null, currency: it.currency || null, scholarship: recovery ? (it.scholarship_name || null) : null,
+                         section: section ? { start: section.start, chars: section.chars } : null, linked_url: linked?.url || null } };
+            let dec = await admit(gateIn, gateSettings);
+            // duplicate_input is measured against answers already recorded for the same fingerprint (public.svc_pre_ai_admission_seen_v1); never fails the read
+            if (dec.fingerprint) { const hit = await rpc("svc_pre_ai_admission_seen_v1", { p_fingerprints: [dec.fingerprint] }).catch(() => null); if (Array.isArray(hit)) seen.push(...hit.map(String)) }
+            if (seen.length) dec = await admit({ ...gateIn, seen_fingerprints: new Set(seen) }, gateSettings);
+            admissions.push(decisionRow(dec, { lane_item: "scholarship_ai_queue", item_id: it.queue_id, evidence_id: null, storage_path: gatePath, worker: WORKER }));
+            gateDec = dec;
+          } catch { tally.gate_error = (tally.gate_error || 0) + 1 }
+          // only a reason the Platform Admin switched on stops a read, and only those codes are written (never a shadow or park code); nothing is spent
+          if (gateDec?.decision === "reject" && gateDec.enforced.length > 0) {
+            await rec({ p_error: `rejected_admission: ${gateDec.enforced.join(",")}`.slice(0, 400), p_storage_path: path, p_sha256: sha, p_final_url: finalUrl, p_rule_facts: ruleFacts });
+            tally.rejected_admission = (tally.rejected_admission || 0) + 1; return;
+          }
           const ask = async (reqBody: unknown, where: string) => {
-            const r = await cascadeFetch(fetch, { service: "scholarship_extraction" }, "https://openrouter.ai/api/v1/chat/completions", { method: "POST", headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
+            // v0.97.0 (R5): each attempt names its queue item in pipeline.ai_invocations, written once at the end of this call by public.svc_ai_model_answered_v1,
+            // outside the queue and extraction tables: a paid answer's cost is kept there even when svc_scholarship_ai_record cannot write it
+            const r = await cascadeFetch(fetch, { service: "scholarship_extraction", source: "scholarship_ai_queue", source_id: it.queue_id }, "https://openrouter.ai/api/v1/chat/completions", { method: "POST", headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
               body: JSON.stringify(reqBody), signal: AbortSignal.timeout(v3 ? SCH_V3_TIMEOUT_MS : 60000) });
             const d = await r.json().catch(() => ({}));
             // v0.54.0 (W32): a cut answer is named before anything else (an empty cut answer was "no answer") and the call's cost is kept on the error
@@ -2133,7 +2174,7 @@ async function handle(req: Request): Promise<Response> {
             const [pa, pb] = await Promise.all([
               ask(scholarshipExtractPartRequest(it.model, it.prompt, bundleIn, "a", schTokens), "scholarship_page_part_a"),
               ask(scholarshipExtractPartRequest(it.model, it.prompt, bundleIn, "b", schTokens), "scholarship_page_part_b")]);
-            c1 = pa.cost + pb.cost; cost += c1;
+            c1 = pa.cost + pb.cost; cost += c1; spent = c1;
             for (const [x, nm] of [[pa, "part a"], [pb, "part b"]] as const) {
               if (!x.r.ok) throw readError(`recovery ${nm}: HTTP ${x.r.status}: ${JSON.stringify(x.d?.error || x.d).slice(0, 160)}`, c1);
               if (x.d?.model && !String(x.d.model).startsWith(it.model)) throw readError(`recovery ${nm}: returned model ${x.d.model}, not ${it.model}`, c1);
@@ -2145,7 +2186,7 @@ async function handle(req: Request): Promise<Response> {
           } else {
             const reqBody = v3 ? scholarshipExtractRequest(it.model, it.prompt, bundleIn, schTokens)
                                : scholarshipAiRequest(it.model, it.prompt, { provider: it.provider || "", url: finalUrl, title, h1, text }, schTokens);
-            const x = await ask(reqBody, "scholarship_page"); c1 = x.cost; cost += c1;
+            const x = await ask(reqBody, "scholarship_page"); c1 = x.cost; cost += c1; spent = c1;
             if (!x.r.ok) throw readError(`HTTP ${x.r.status}: ${JSON.stringify(x.d?.error || x.d).slice(0, 200)}`, c1);
             if (x.d?.model && !String(x.d.model).startsWith(it.model)) throw readError(`returned model ${x.d.model}, not ${it.model}`, c1);
             if (!x.ans.ok) throw readError(x.ans.error, c1);
@@ -2166,11 +2207,17 @@ async function handle(req: Request): Promise<Response> {
                       p_storage_path: path, p_sha256: sha, p_final_url: finalUrl, p_rule_facts: ruleFacts });
           tally[verdict] = (tally[verdict] || 0) + 1;
         } catch (e) {
-          await rec({ p_error: (e instanceof Error ? e.message : String(e)).slice(0, 400), p_cost: errorCost(e), p_storage_path: path, p_sha256: sha, p_final_url: finalUrl, p_rule_facts: ruleFacts });  // v0.54.0 (W32): cost recorded on a failed read
+          // v0.54.0 (W32): cost recorded on a failed read. v0.97.0 (R5): also when the record itself failed after a paid answer (errorCost is 0 for a
+          // record error, so the paid cost is spent). That fallback goes to the same svc_scholarship_ai_record, which locks the same queue row: if it fails
+          // too it is counted (record_failed) and never fails the batch; the cost then stays in pipeline.ai_invocations (source_id = this queue item).
+          try {
+            await rec({ p_error: (e instanceof Error ? e.message : String(e)).slice(0, 400), p_cost: errorCost(e) || spent, p_storage_path: path, p_sha256: sha, p_final_url: finalUrl, p_rule_facts: ruleFacts });
+          } catch { tally.record_failed = (tally.record_failed || 0) + 1 }
           tally.error = (tally.error || 0) + 1;
         }
       });
-      return j({ ok: true, mode, items: items.length, tally, cost_usd: cost, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER });
+      const admitted = admissions.length ? await rpc("svc_pre_ai_admission_record_v1", { p_rows: noNul(admissions) }).catch((e) => ({ error: (e instanceof Error ? e.message : String(e)).slice(0, 200) })) : null;  // never fails the call
+      return j({ ok: true, mode, items: items.length, tally, cost_usd: cost, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER, ...(GATE_ON ? { admission: { gate: ADMISSION_GATE, judged: admissions.length, recorded: admitted } } : {}) });
     }
     // v0.34.0 (20 Oct 2026, Platform Admin "NZQA Code signatory (Recommended)"): New Zealand providers that enrol international students. Each
     // provider page NZQA publishes (stored by the Layer 1 NZQA reader in its batch files) says whether the organisation is a signatory to the

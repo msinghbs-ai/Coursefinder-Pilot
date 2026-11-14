@@ -83,7 +83,7 @@ test('worker v0.54.0: every reader takes its limit from its setting, reads its a
   expect(worker).toContain('centralAiRequest(it.model, it.kind, { provider: it.provider || "", url: it.url, text }, centralTokens)')
   expect(worker).toContain('aiMatchRequest(it, matchTokens)')
   expect(worker).toContain('course_page: it.course_page === true }, text, feeTokens)')
-  expect(worker).toContain('p_cost: errorCost(e), p_storage_path: path')  // scholarship page failure
+  expect(worker).toContain('p_cost: errorCost(e) || spent, p_storage_path: path')  // scholarship page failure (also a record that failed after a paid answer)
   expect((worker.match(/await rec\(\{ p_error: \(e instanceof Error \? e\.message : String\(e\)\)\.slice\(0, 400\), p_cost: errorCost\(e\) \}\)/g) || []).length).toBe(2)  // central and fee failures
   // adapter proposal: the two-step ladder from settings
   expect(worker).toContain('const firstTokens = answerLimit(ws, "adapter_proposal"), retryTokens = answerLimit(ws, "adapter_proposal_retry");')
