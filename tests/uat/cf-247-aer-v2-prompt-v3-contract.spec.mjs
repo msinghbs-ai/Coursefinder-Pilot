@@ -23,7 +23,7 @@ const rec = (over) => ({ scope: 'course', course_name: null, audience: 'internat
 
 test('the whole page as numbered blocks: page data first, headings, items and table rows with their column headers, each with its stored-page offset', () => {
   expect(AER_V3_INPUT).toBe('lean-blocks-v1')
-  expect(B.input).toBe('lean-blocks-v1/lean-md-v1')
+  expect(B.input).toBe('lean-blocks-v1/lean-md-v2')
   expect(B.blocks.length).toBe(lean.blocks.length + 1)
   expect(B.text.split('\n')[0]).toBe('[B1 @data] courseCode: B123')
   expect(B.text).toContain(`[B${n('Entry requirements')} @${B.blocks[n('Entry requirements') - 1].source_at}] ## Entry requirements`)

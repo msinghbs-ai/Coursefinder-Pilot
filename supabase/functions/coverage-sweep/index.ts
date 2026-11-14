@@ -21,7 +21,7 @@ import { ENTRY_GRID_READER, entryGridHeadingList, entryGridRead } from "./entry-
 import { pdfGrids2 } from "./pdf-grid.ts";
 import { COURSE_ENTRY_PROMPT_VERSION, courseEntryAnswer, courseEntryMerge, courseEntryPlan, courseEntryRequest, courseEntrySliceRows, courseEntryUser } from "./course-entry.ts";
 import type { CourseSliceOutcome } from "./course-entry.ts";
-import { AER_V2_MODE, AER_V3_CONTRACT, aerV2Answer, aerV2Refs, aerV2Request, aerV2Sha256, aerV2User, aerV2Verify, aerV3Blocks, aerV3Request, aerV3User, aerV3Verify } from "./aer-v2.ts";
+import { AER_V2_MODE, AER_V3_CONTRACT, AER_V3_EVAL_MODE, aerV2Answer, aerV2Refs, aerV2Request, aerV2Sha256, aerV2User, aerV2Verify, aerV3Blocks, aerV3Request, aerV3User, aerV3Verify } from "./aer-v2.ts";
 import { PDF_METHOD, pdfPages, pdfTables } from "./pdf.ts";
 import type { PdfResult } from "./pdf.ts";
 import { getDocumentProxy, getResolvedPDFJS } from "npm:unpdf@0.12.1";
@@ -84,7 +84,7 @@ const VERSION = "coverage-sweep-v0.5.6"; // extractor version (unchanged by v0.6
 // v0.38.1 (22 Oct 2026, NZ course list pages): a page the AI page match chose from the university's own site addresses (its course list or
 // site map) is listed on the university's own site, so it may be read through the scraper when the direct read is blocked (Otago, Lincoln, AUT).
 const FC_TRUSTED_BASIS = ["cricos_search", "cricos_code", "cricos_code_on_page", "nzqa_code", "adapter_code", "title_match", "cms_path_public", "manual", "firecrawl_upgrade", "ai_match", "programme_list"]; // v0.45.0: a page bound by its NZ or CA code is as trusted as one bound by a CRICOS code
-const WORKER = "coverage-sweep-worker-v0.92.0"; // v0.92.0 (14 Nov 2026, CF-247 Lean AI Input Phase 1b step 2, shadow selection: each observed course-page read also records what the section selector would send, beside what is sent; no request, prompt, model, value or admission change) // was v0.91.0 // v0.91.0 (14 Nov 2026, numbered after #1128 v0.90.0, CF-247 Lean AI Input Phase 1b step 1 recall matcher fix, Platform Admin 14 Nov 2026 13:25): mode lean_sections_eval matches each labelled value against the blocks' words without their "[B<n> @<offset>]" labels (lean-sections.ts blockPlain, selectSections plain), so a quote that runs across adjacent blocks is found; the selected-chars measure stays the labelled text a reader would be sent. Measurement only; no other mode changes. // was v0.90.0 // v0.90.0 (14 Nov 2026, CF-247 merge of #1128 AI models and services with #1136 Lean AI Input Phase 1b step 1; both were numbered v0.89.0): both releases together, nothing else. #1136 adds the offline section selector and makes no AI call; every model call still goes through cascade.ts on its own service route (#1128). No request, prompt, model choice, skip, value, admission, setting or ceiling changes.
+const WORKER = "coverage-sweep-worker-v0.93.0"; // v0.93.0 (14 Nov 2026, numbered after #1139 v0.92.0, CF-247 S1-AER): the [B#] blocks are converted by lean-md-v2 (lean-input.ts: the page today's reader sends, <aside> and content outside <main> kept; numeric character references decoded; a value-only line kept with the score label beside it, e.g. "70 Guaranteed ATAR or equivalent"; Lean AI Phase 1b Run B: 20 of 51 entry requirement misses), block line format unchanged. Also (14 Nov 2026, CF-247 S1-AER, Platform Admin 14 Nov 2026 option 1): new mode aer_v3_eval answers an opened AER v2 prompt v3 benchmark run of the platform AI evaluation framework (public.svc_aer_v3_eval_next_v1 leases it behind ai_eval.offline_runs_on, ai_eval.aer_v3_runs_on and the spend cap ai_eval.aer_v3_max_usd; answers through public.svc_ai_eval_answer_record_v1; scored by security.ai_eval_score_v1 on frozen gold rows): each frozen stored page as the [B#] blocks of aerV3Blocks (unchanged, never cut), the version's pinned model, provider pins and require_parameters (aerV3Request), the v3 verifier (aerV3Verify), one retry of a call that returned no answer. No job fires it. Other modes unchanged. // was v0.92.0 (#1139) // v0.92.0 (14 Nov 2026, CF-247 Lean AI Input Phase 1b step 2, shadow selection: each observed course-page read also records what the section selector would send, beside what is sent; no request, prompt, model, value or admission change) // was v0.91.0 // v0.91.0 (14 Nov 2026, numbered after #1128 v0.90.0, CF-247 Lean AI Input Phase 1b step 1 recall matcher fix, Platform Admin 14 Nov 2026 13:25): mode lean_sections_eval matches each labelled value against the blocks' words without their "[B<n> @<offset>]" labels (lean-sections.ts blockPlain, selectSections plain), so a quote that runs across adjacent blocks is found; the selected-chars measure stays the labelled text a reader would be sent. Measurement only; no other mode changes. // was v0.90.0 // v0.90.0 (14 Nov 2026, CF-247 merge of #1128 AI models and services with #1136 Lean AI Input Phase 1b step 1; both were numbered v0.89.0): both releases together, nothing else. #1136 adds the offline section selector and makes no AI call; every model call still goes through cascade.ts on its own service route (#1128). No request, prompt, model choice, skip, value, admission, setting or ceiling changes.
 // was v0.89.0 (#1136) // v0.89.0 (14 Nov 2026, numbered after #1137 v0.88.0, CF-247 Lean AI Input Phase 1b step 1, Platform Admin 14 Nov 2026 11:37; admin docs/platform/LEAN-AI-INPUT-PHASE1B-SECTION-SELECTION-DESIGN.md): new mode lean_sections_eval, the offline recall check of the section selector (lean-sections.ts lean-sections-v1, selecting a field's sections from the platform's one [B#] block form, aer-v2.ts aerV3Blocks / BLOCK_INPUT lean-blocks-v1, the same blocks the AER v2 reader sees; no block format of its own) on labelled stored pages handed over by public.svc_lean_sections_eval_next_v1, recorded with public.svc_lean_sections_eval_record_v1. Stored copies only: no AI, no Firecrawl, no live fetch, nothing admitted. No other mode changes.
 // was v0.89.0 (#1128 merge) // v0.89.0 (14 Nov 2026, CF-247 merge of #1128 AI models and services with #1137 AER v2 prompt v3; both were numbered v0.88.0): mode aer_v2_shadow builds the v3 request over numbered lean-md-v1 blocks (#1137) and sends it through cascade.ts on the entry_requirements_v2_shadow route (#1128); the version's answer contract, routing and params come from the version, the model and its cascade from the route. No request, prompt, model choice, skip, value, admission, setting or ceiling changes.
 // was v0.88.0 (#1137) // v0.88.0 (14 Nov 2026, CF-247 AER v2 prompt v3, Platform Admin 14 Nov 2026 item 2): mode aer_v2_shadow reads a prompt version whose answer contract is aer-v2-answer-v3 over the whole stored page as numbered lean-md-v1 blocks (aer-v2.ts aerV3Blocks: "[B<n> @<source_at>]", headings, list items, table rows with their column headers; never cut), with the version's pinned provider routing and require_parameters (aerV3Request), and checks each record with the v3 verifier (aerV3Verify: exact_quote inside its cited block and holding the minimum; lead_in_quote separate, before it, within reading.aer_v3_lead_in_max_blocks and no heading between). Versions with the v1 contract read exactly as before.
@@ -2345,6 +2345,66 @@ async function handle(req: Request): Promise<Response> {
     // v0.79.0 (13 Nov 2026, CF-247 Decision 276 AER v2 step 1): the shadow course-page reader. The database picks the courses (sample, priority
     // providers, budget, switch aer.v2_shadow_on) and hands over the trial prompt version; each stored page is read once with the pinned model,
     // every record is checked by the verifier (aer-v2.ts) and the result is recorded in pipeline.aer_v2_shadow_results. Nothing is admitted.
+    // v0.93.0 (14 Nov 2026, CF-247 S1-AER, Platform Admin 14 Nov 2026 option 1): the AER v2 prompt v3 benchmark on the platform AI evaluation framework.
+    // The database leases one opened run (public.svc_aer_v3_eval_next_v1: both switches on, under the spend cap) with the version (text, sha-256, pinned model,
+    // provider pins, params) and the unanswered examples, each with its frozen stored page. Each page is read as the platform's one [B#] block form
+    // (aerV3Blocks over leanText, never cut), sent once to the pinned model with require_parameters, and every record checked by the v3 verifier. The answers
+    // go back through the framework (public.svc_ai_eval_answer_record_v1); security.ai_eval_score_v1 scores them against the frozen gold rows. Nothing is admitted.
+    if (mode === AER_V3_EVAL_MODE) {
+      const w: any = await rpc("svc_aer_v3_eval_next_v1", {});
+      if (!w?.run) return j({ ok: true, mode, run: null, why: w?.why ?? null, worker: WORKER });
+      const ver = w?.version || {}, spec = ver.spec || {}, system = String(ver.body || ""), model = String(ver.model || "");
+      if (!system || !model || String(spec.answer_contract || "") !== AER_V3_CONTRACT || (await aerV2Sha256(system)) !== String(spec.system_sha256 || "")) {
+        return j({ ok: false, mode, run: w.run, error: "the benchmark version is not an AER v3 prompt whose text matches its recorded sha-256 (or has no pinned model)", worker: WORKER }, 409);
+      }
+      let key = Deno.env.get("OPENROUTER_API_KEY") || "";
+      if (!key) { const prof = await rpc("layer3_routing_profile_service", { p_code: AI_MATCH_PROFILE }).catch(() => null); const { data } = await c.rpc("layer3_provider_credential_resolve_service", { p_profile_id: prof?.id }); key = typeof data === "string" ? data : "" }
+      if (!key) return j({ ok: false, mode, run: w.run, error: "OpenRouter credential unavailable", worker: WORKER }, 503);
+      const refs = aerV2Refs(w?.countries, w?.qualifications), quals = (Array.isArray(w?.qualifications) ? w.qualifications : []).map((q: any) => ({ code: String(q.code), name: String(q.name) }));
+      const pageChars = wsNum("reading.aer_v2_page_chars", 60000), maxTokens = wsNum("reading.aer_v2_max_tokens", 6000), gapMax = wsNum("reading.aer_v3_lead_in_max_blocks", 3);
+      const quoteMax = Number(spec.quote_max_chars) || 300;  // fixed: the prompt's own quote limit when the version has none
+      const routing = spec.routing && typeof spec.routing === "object" ? spec.routing : null, params = spec.params && typeof spec.params === "object" ? spec.params : null;
+      const cap = Number(w?.budget?.cap_usd) || 0; let spent = Number(w?.budget?.spent_usd) || 0;
+      const examples: any[] = Array.isArray(w?.examples) ? w.examples : [], answers: any[] = [], ors = orStats(), tally: Record<string, number> = {};
+      const late = () => Date.now() - t0 > BUDGET_MS - 25000;  // fixed: time left for the last call and the record
+      await pool(examples, Math.max(1, Math.min(wsNum("reading.aer_v2_concurrency", 4), 8)), async (x: any) => {  // fixed: the setting's upper bound (reading.aer_v2_concurrency)
+        if (late()) { tally.time_budget = (tally.time_budget || 0) + 1; return }  // not answered: the run is leased again
+        if (spent >= cap) { tally.spend_cap = (tally.spend_cap || 0) + 1; return }
+        const ans: any = { example_id: x.example_id, verdict: null, value: null, quote: null, quote_on_page: false, tokens_in: null, tokens_out: null, cost_usd: 0, error: null };
+        try {
+          const raw = await readEvidenceCopy(c, String(x.storage_path)), blocks = aerV3Blocks(leanText(raw), pageDataItems(raw));
+          if (blocks.text.length > pageChars) ans.error = `page_too_long: ${blocks.text.length} characters, more than reading.aer_v2_page_chars (${pageChars}); a cut page is never read`;
+          else {
+            const user = aerV3User({ title: x.title, provider: x.provider, provider_country: x.provider_country, level: x.level, url: x.url }, quals, blocks);
+            for (let attempt = 1; attempt <= 2; attempt++) {  // fixed: the plan's one retry of a call that returned no answer
+              const r = await cascadeFetch(ors.fetch, { models: null, deadline: t0 + BUDGET_MS - 25000, service: "entry_requirements_v2_shadow" }, "https://openrouter.ai/api/v1/chat/completions", { method: "POST", headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
+                body: JSON.stringify(aerV3Request(model, system, user, maxTokens, routing, params)), signal: AbortSignal.timeout(90000) });  // fixed: API time-out of one call
+              const d: any = await r.json().catch((e) => ({ unreadable: e instanceof Error ? e.message : String(e) }));
+              const a = aerV2Answer(d, sentModel(d, model));
+              ans.cost_usd += a.cost; spent += a.cost;
+              ans.tokens_in = (ans.tokens_in || 0) + (Number(d?.usage?.prompt_tokens) || 0); ans.tokens_out = (ans.tokens_out || 0) + (Number(d?.usage?.completion_tokens) || 0);
+              const noAnswer = !r.ok ? r.status >= 500 : !a.ok && /^no_answer/.test(a.error);
+              if (!r.ok) ans.error = `HTTP ${r.status}: ${JSON.stringify(d?.error || d).slice(0, 200)}`;
+              else if (!a.ok) ans.error = a.error;
+              else {
+                const v = aerV3Verify(a.a, blocks, refs, quoteMax, gapMax);
+                ans.error = null; ans.verdict = v.passed > 0 ? "accept" : "no_value"; ans.quote_on_page = v.failed === 0 && v.passed > 0;
+                ans.value = { records: v.records, checks: v.checks, seen: v.seen_not_mapped, passed: v.passed, failed: v.failed, input: blocks.input, input_chars: blocks.text.length, blocks: blocks.blocks.length, model: sentModel(d, model), attempt };
+                break;
+              }
+              if (!noAnswer || attempt === 2 || spent >= cap || late()) break;
+              tally.retried = (tally.retried || 0) + 1;
+            }
+          }
+        } catch (e) { ans.error = `read failed: ${(e instanceof Error ? e.message : String(e)).slice(0, 200)}` }
+        tally[ans.error ? "error" : "answered"] = (tally[ans.error ? "error" : "answered"] || 0) + 1;
+        answers.push(ans);
+      });
+      let rec: any = null;
+      try { rec = await rpc("svc_ai_eval_answer_record_v1", { p_run: w.run, p_answers: { answers, worker: WORKER } }) } catch (e) { tally.record_failed = 1; rec = { error: e instanceof Error ? e.message : String(e) } }
+      return j({ ok: true, mode, run: w.run, version: ver.version, model, examples: examples.length, tally, recorded: rec, cost_usd: answers.reduce((t, a) => t + (Number(a.cost_usd) || 0), 0),
+        spent_usd: spent, cap_usd: cap, openrouter: ors.summary(), ms: Date.now() - t0, worker: WORKER });
+    }
     if (mode === AER_V2_MODE) {
       const w: any = await rpc("svc_aer_v2_shadow_next", { p_limit: Math.max(1, Math.min(Number(body.limit) || 1, 40)) });  // fixed: the setting batch.aer_v2_shadow's upper bound
       const items: any[] = Array.isArray(w?.items) ? w.items : [];

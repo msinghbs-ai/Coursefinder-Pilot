@@ -17,12 +17,12 @@ Two edge functions call a model (searched: every `.ts` file under `supabase/func
   (`model_not_allowed`), names no model itself, and records the call in `pipeline.ai_invocations` under service `key_verify` (it has no route,
   no cap and no cascade: one call for each press of Verify).
 
-Two calls are not model calls: the balance read (`index.ts:738`, `GET /credits`, job `openrouter-balance`, every 15 minutes) and the price list
-(`index.ts:2853`, `GET /models`, used to reserve a price for a provider description).
+Two calls are not model calls: the balance read (`index.ts:744`, `GET /credits`, job `openrouter-balance`, every 15 minutes) and the price list
+(`index.ts:2920`, `GET /models`, used to reserve a price for a provider description).
 
 ## 2. Every model call in the worker
 
-All fifteen go through `cascadeFetch` (`cascade.ts`), which keeps one row per attempt in `pipeline.ai_invocations`. The model is never named in the
+All sixteen go through `cascadeFetch` (`cascade.ts`), which keeps one row per attempt in `pipeline.ai_invocations`. The model is never named in the
 worker: each reader hands it out from `security.ai_route_v1(<service>)`.
 
 | Call | Worker mode | Database reader that hands out the model | Service (route) | State | How the model is used |
@@ -31,17 +31,18 @@ worker: each reader hands it out from `security.ai_route_v1(<service>)`.
 | `index.ts:2230` | `scholarship_recheck` | `public.svc_scholarship_recheck_next` | scholarship_extraction | `routed` | worker cascade |
 | `index.ts:2272` | `scholarship_eligibility` | `public.svc_scholarship_eligibility_next` | scholarship_eligibility | `routed_single` | one model |
 | `index.ts:2330` | `ops_diagnose` | `public.svc_ops_diagnosis_next` | ops_diagnosis | `routed_single` | one model (pinned on the request at lease) |
-| `index.ts:2378` | `ops_diagnose (entry requirements v2 trial)` | `public.svc_aer_v2_shadow_next, security.aer_v2_shadow_hold_v1` | entry_requirements_v2_shadow | `routed` | worker cascade; one model only when the version pins its providers (v0.89.0, #1137 routing) |
-| `index.ts:2453` | `central_ai (calendar, sliced read)` | `public.svc_central_ai_next` | calendar_reading (kind intake_calendar) | `routed` | worker cascade |
-| `index.ts:2469` | `central_ai` | `public.svc_central_ai_next` | central_english_policy or calendar_reading, by the item's kind | `routed` | worker cascade |
-| `index.ts:2747` | `entry_ai` | `public.svc_entry_matrix_next` | entry_matrices | `routed_single` | one model |
-| `index.ts:2813` | `fee_ai` | `public.svc_fee_ai_next` | fee_reader | `routed` | worker cascade |
-| `index.ts:2960` | `provider_description` | `public.svc_provider_description_lease_v1, public.svc_provider_description_next, public.svc_provider_description_reserve_v1` | provider_description | `routed_single` | one model (a price is reserved for that model) |
-| `index.ts:3014` | `enrich_ai (course fields: ask)` | `public.svc_enrich_ai_next` | course_other_fields | `routed` | worker cascade |
-| `index.ts:3038` | `enrich_ai (description and deadline: askText)` | `public.svc_enrich_ai_next` | course_description (description), course_other_fields (deadline) | `routed` | worker cascade |
-| `index.ts:3066` | `enrich_ai (entry requirements)` | `public.svc_enrich_ai_next` | course_entry_requirements | `routed` | worker cascade |
-| `index.ts:3364` | `ai_match` | `public.svc_coverage_ai_match_next` | course_matching | `routed` | worker cascade |
-| `index.ts:3504` | `adapter_propose` | `security.adapter_builder_model_for_v1 (through public.svc_adapter_draft_get)` | adapter_builder | `routed_single` | one model |
+| `index.ts:2380` | `aer_v3_eval` (entry requirements v3 benchmark, v0.93.0) | `public.svc_aer_v3_eval_next_v1` (the candidate instruction version of an opened `pipeline.ai_eval_runs` run) | entry_requirements_v2_shadow (the route the candidates are measured for; spend capped by `ai_eval.aer_v3_max_usd`) | `evaluation` | one pinned candidate model with its provider pins, never the cascade: the benchmark is how a model earns a qualification on the route, so the model comes from the candidate version, not from `security.ai_route_v1`; behind `ai_eval.offline_runs_on` and `ai_eval.aer_v3_runs_on`; no job fires it |
+| `index.ts:2438` | `ops_diagnose (entry requirements v2 trial)` | `public.svc_aer_v2_shadow_next, security.aer_v2_shadow_hold_v1` | entry_requirements_v2_shadow | `routed` | worker cascade; one model only when the version pins its providers (v0.89.0, #1137 routing) |
+| `index.ts:2513` | `central_ai (calendar, sliced read)` | `public.svc_central_ai_next` | calendar_reading (kind intake_calendar) | `routed` | worker cascade |
+| `index.ts:2529` | `central_ai` | `public.svc_central_ai_next` | central_english_policy or calendar_reading, by the item's kind | `routed` | worker cascade |
+| `index.ts:2807` | `entry_ai` | `public.svc_entry_matrix_next` | entry_matrices | `routed_single` | one model |
+| `index.ts:2873` | `fee_ai` | `public.svc_fee_ai_next` | fee_reader | `routed` | worker cascade |
+| `index.ts:3020` | `provider_description` | `public.svc_provider_description_lease_v1, public.svc_provider_description_next, public.svc_provider_description_reserve_v1` | provider_description | `routed_single` | one model (a price is reserved for that model) |
+| `index.ts:3074` | `enrich_ai (course fields: ask)` | `public.svc_enrich_ai_next` | course_other_fields | `routed` | worker cascade |
+| `index.ts:3098` | `enrich_ai (description and deadline: askText)` | `public.svc_enrich_ai_next` | course_description (description), course_other_fields (deadline) | `routed` | worker cascade |
+| `index.ts:3126` | `enrich_ai (entry requirements)` | `public.svc_enrich_ai_next` | course_entry_requirements | `routed` | worker cascade |
+| `index.ts:3424` | `ai_match` | `public.svc_coverage_ai_match_next` | course_matching | `routed` | worker cascade |
+| `index.ts:3564` | `adapter_propose` | `security.adapter_builder_model_for_v1 (through public.svc_adapter_draft_get)` | adapter_builder | `routed_single` | one model |
 
 State: `routed` means the route's cascade is executed (a later model is asked only on a technical failure). `routed_single` means the route
 chooses the model but the call uses one model; Models & services shows one model and refuses a second one for these. `not_migrated` is
