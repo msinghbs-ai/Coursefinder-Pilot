@@ -95,7 +95,101 @@ export const fcFailed = (r: { rec: FcRec }) => r.rec.http === null;
 const plainLen = (h: string) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, " ").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().length;
 const callOutcome = (rec: FcRec, okOutcome: string) => rec.error && rec.http === null && /time(d)? ?out|timeout|aborted/i.test(rec.error) ? "timeout" : rec.http === 429 ? "rate_limited" : !rec.success || rec.http === null || rec.http >= 400 ? "fc_error" : okOutcome;
 
-export function fcClient(o: { headers: Record<string, string>; log: (p: Record<string, unknown>) => Promise<unknown>; textLen?: (html: string) => number }) {
+// ---- Format profiles (Platform Admin 14 Nov 2026; worker v0.98.0): what every scrape asks Firecrawl for, set in Platform settings ›
+// Models & services › Toolsets and limits › Firecrawl › Format profiles (settings scrape_profiles, scrape_profile_lanes,
+// scrape_profile_overrides, scrape_profiles_version). A lane keeps its own request (address, proxy, location, and its wait and time
+// allowed unless the profile sets them); the profile decides the formats and the content filters. The server checks the same rules
+// (security.fc_scrape_profiles_check_v1) before anything is saved; the worker checks again before anything is sent.
+// Only these formats can be asked for: the others add credits per page or run an AI pass with no pinned model (json, summary, question,
+// highlights, changeTracking, branding, ...), and onlyCleanContent is an AI pass too. A format Firecrawl adds later is refused as well.
+export const FC_FORMATS = ["markdown", "rawHtml", "html", "links", "screenshot"];
+export const FC_ACTION_TYPES = ["click", "wait", "scroll", "press", "write"];
+export const LANE_OWN = "lane_own";  // a lane mapped here sends its own request unchanged (AER v1 lanes: Decision 276)
+const PROFILE_KEYS = new Set(["name", "about", "formats", "onlyMainContent", "includeTags", "excludeTags", "maxAgeMs", "waitFor", "timeout", "actions", "screenshotFullPage", "crawl"]);
+const CRAWL_KEYS = new Set(["limit", "maxDiscoveryDepth", "includePaths", "excludePaths", "sitemap"]);
+const tagOk = (t: unknown) => typeof t === "string" && /^[a-zA-Z][a-zA-Z0-9-]{0,40}$|^[.#][A-Za-z0-9_-]{1,60}$/.test(t);
+const intIn = (v: unknown, lo: number, hi: number) => typeof v === "number" && Number.isInteger(v) && v >= lo && v <= hi;
+export type ScrapeProfile = { name?: string; about?: string; formats: string[]; onlyMainContent?: boolean; includeTags?: string[]; excludeTags?: string[];
+  maxAgeMs?: number | null; waitFor?: number | null; timeout?: number | null; actions?: Record<string, unknown>[] | null; screenshotFullPage?: boolean;
+  crawl?: { limit?: number; maxDiscoveryDepth?: number; includePaths?: string[]; excludePaths?: string[]; sitemap?: string } };
+export type FcProfiles = { version: number; profiles: Record<string, ScrapeProfile>; lanes: Record<string, string>; overrides: { provider_id: string; lane: string; profile: string; why?: string }[] };
+/** Every problem with one profile, in words; [] when it can be saved and sent. */
+export function checkProfile(p: any, name = "profile"): string[] {
+  const e: string[] = [];
+  if (!p || typeof p !== "object" || Array.isArray(p)) return [`${name}: not a profile`];
+  for (const k of Object.keys(p)) if (!PROFILE_KEYS.has(k)) e.push(k === "onlyCleanContent" ? `${name}: onlyCleanContent is never sent (an AI pass over the page)` : `${name}: ${k} is not a profile setting`);
+  if (!Array.isArray(p.formats) || !p.formats.length) e.push(`${name}: choose at least one format`);
+  else {
+    for (const f of p.formats) if (!FC_FORMATS.includes(String(f))) e.push(`${name}: format ${typeof f === "string" ? f : JSON.stringify(f)} is never sent (only ${FC_FORMATS.join(", ")})`);
+    if (new Set(p.formats).size !== p.formats.length) e.push(`${name}: a format is named twice`);
+    if (!p.formats.some((f: string) => ["markdown", "rawHtml", "html", "links"].includes(f))) e.push(`${name}: a screenshot alone is not a page read; add markdown, rawHtml, html or links`);
+  }
+  if (p.onlyMainContent !== undefined && typeof p.onlyMainContent !== "boolean") e.push(`${name}: onlyMainContent is yes or no`);
+  for (const k of ["includeTags", "excludeTags"]) if (p[k] !== undefined && (!Array.isArray(p[k]) || p[k].length > 40 || !p[k].every(tagOk))) e.push(`${name}: ${k} is a list of tag names or .class/#id selectors`);
+  if (p.maxAgeMs != null && !intIn(p.maxAgeMs, 0, 30 * 86400000)) e.push(`${name}: the Firecrawl copy age is 0 to 30 days`);
+  if (p.waitFor != null && !intIn(p.waitFor, 0, 60000)) e.push(`${name}: wait after load is 0 to 60,000 ms`);
+  if (p.timeout != null && !intIn(p.timeout, 1000, 300000)) e.push(`${name}: time allowed is 1,000 to 300,000 ms`);
+  if (p.waitFor != null && p.timeout != null && p.waitFor >= p.timeout) e.push(`${name}: wait after load must be shorter than the time allowed`);
+  if (p.actions != null) {
+    if (!Array.isArray(p.actions) || p.actions.length > 20) e.push(`${name}: actions are a list of at most 20 steps`);
+    else for (const a of p.actions) if (!a || typeof a !== "object" || !FC_ACTION_TYPES.includes(String((a as any).type))) e.push(`${name}: action ${JSON.stringify((a as any)?.type ?? a)} is not allowed (only ${FC_ACTION_TYPES.join(", ")})`);
+  }
+  if (p.screenshotFullPage !== undefined && typeof p.screenshotFullPage !== "boolean") e.push(`${name}: full-page screenshot is yes or no`);
+  if (p.crawl !== undefined) {
+    const c = p.crawl;
+    if (!c || typeof c !== "object" || Array.isArray(c)) e.push(`${name}: crawl options are a set of values`);
+    else {
+      for (const k of Object.keys(c)) if (!CRAWL_KEYS.has(k)) e.push(`${name}: crawl ${k} is not a crawl option (maxDiscoveryDepth, not maxDepth)`);
+      if (c.limit !== undefined && !intIn(c.limit, 1, 1000)) e.push(`${name}: crawl pages at most is 1 to 1,000`);
+      if (c.maxDiscoveryDepth !== undefined && !intIn(c.maxDiscoveryDepth, 0, 10)) e.push(`${name}: crawl link depth is 0 to 10`);
+      for (const k of ["includePaths", "excludePaths"]) if (c[k] !== undefined && (!Array.isArray(c[k]) || c[k].length > 50 || !c[k].every((x: unknown) => typeof x === "string" && x.length > 0 && x.length <= 200))) e.push(`${name}: crawl ${k} is a list of path patterns`);
+      if (c.sitemap !== undefined && !["include", "skip", "only"].includes(c.sitemap)) e.push(`${name}: crawl site map is include, skip or only`);
+    }
+  }
+  return e;
+}
+/** Every problem with the whole set (profiles, lane map, overrides); [] when it can be saved and sent. */
+export function checkProfiles(all: any): string[] {
+  if (!all || typeof all !== "object") return ["profiles: not set"];
+  const e: string[] = [], P = all.profiles || {};
+  if (typeof P !== "object" || Array.isArray(P) || !Object.keys(P).length) e.push("profiles: at least one profile");
+  for (const [k, p] of Object.entries(P)) { if (!/^[a-z][a-z0-9_]{0,40}$/.test(k) || k === LANE_OWN) e.push(`profile name ${k} is not allowed`); e.push(...checkProfile(p, k)) }
+  for (const [lane, prof] of Object.entries(all.lanes || {})) if (prof !== LANE_OWN && !P[prof as string]) e.push(`lane ${lane}: profile ${prof} does not exist`);
+  for (const o of Array.isArray(all.overrides) ? all.overrides : []) if (!o?.provider_id || !o?.lane || !(o.profile === LANE_OWN || P[o.profile])) e.push(`override for ${o?.provider_id ?? "?"}: needs a university, a lane and an existing profile`);
+  return e;
+}
+/** The profile a call uses: a provider override for this lane, else the lane's profile, else default. null: the lane's own request. */
+export function resolveProfile(all: FcProfiles | null, lane: string, providerId?: string | null): { key: string; profile: ScrapeProfile } | null {
+  if (!all?.profiles) return null;
+  const ov = providerId ? (all.overrides || []).find((o) => o.provider_id === providerId && o.lane === lane) : null;
+  const key = ov?.profile ?? all.lanes?.[lane] ?? LANE_OWN;  // a lane not in the map sends its own request
+  if (key === LANE_OWN || !all.profiles[key]) return null;
+  return { key, profile: all.profiles[key] };
+}
+/** The request a lane sends, with its profile applied. Without a profile the lane's own request goes as it is, minus anything never sent. */
+export function applyProfile(body: Record<string, unknown>, prof: ScrapeProfile | null, fresh: boolean): Record<string, unknown> {
+  const b: Record<string, unknown> = { ...body };
+  if (prof) {
+    b.formats = prof.formats.map((f) => (f === "screenshot" ? { type: "screenshot", fullPage: prof.screenshotFullPage ?? false } : f));
+    if (prof.onlyMainContent !== undefined) b.onlyMainContent = prof.onlyMainContent;
+    if (prof.includeTags?.length) b.includeTags = prof.includeTags; else delete b.includeTags;
+    if (prof.excludeTags?.length) b.excludeTags = prof.excludeTags; else delete b.excludeTags;
+    if (prof.maxAgeMs != null) b.maxAge = prof.maxAgeMs;
+    if (prof.waitFor != null) b.waitFor = prof.waitFor;
+    if (prof.timeout != null) b.timeout = prof.timeout;
+    if (prof.actions?.length) b.actions = prof.actions;
+  }
+  if (fresh && prof) b.maxAge = 0;  // on demand: always a fresh page, never Firecrawl's stored copy (a lane sending its own request keeps it)
+  // never sent, whoever asked: a format outside the allow-list (string or object) and onlyCleanContent
+  if (Array.isArray(b.formats)) b.formats = (b.formats as unknown[]).filter((f) => (typeof f === "string" ? FC_FORMATS.includes(f) : !!f && typeof f === "object" && (f as any).type === "screenshot"));
+  delete b.onlyCleanContent;
+  return b;
+}
+/** The formats a request asks for, as names. */
+export const formatNames = (b: Record<string, unknown>) => (Array.isArray(b.formats) ? b.formats : []).map((f: any) => (typeof f === "string" ? f : String(f?.type || "")));
+
+export function fcClient(o: { headers: Record<string, string>; log: (p: Record<string, unknown>) => Promise<unknown>; textLen?: (html: string) => number;
+                              profiles?: FcProfiles | null; fresh?: (ctx: FcCtx) => boolean | Promise<boolean> }) {
   const textLen = o.textLen ?? plainLen;
   const call = async (endpoint: "scrape" | "map" | "search", body: Record<string, unknown>, opts: FcOpts) => {
     const started = Date.now(); let http: number | null = null, d: any = null, hdrs: Headers | null = null, err: string | null = null;
@@ -120,7 +214,17 @@ export function fcClient(o: { headers: Record<string, string>; log: (p: Record<s
     return log;
   };
   // POST /scrape: html (rawHtml, else html), markdown and links only for a page Firecrawl answered whose own status is not 4xx or 5xx.
-  const scrape = async (body: Record<string, unknown>, ctx: FcCtx, opts: FcOpts) => {
+  const scrape = async (laneBody: Record<string, unknown>, ctx: FcCtx & { fresh?: boolean }, opts: FcOpts) => {
+    // v0.98.0: the lane's request with its format profile applied (lane, then a provider override); on demand asks for a fresh page
+    const rp = resolveProfile(o.profiles ?? null, ctx.use_case, ctx.provider_id);
+    const fresh = !!rp && (ctx.fresh === true || (o.fresh ? await Promise.resolve(o.fresh(ctx)).catch(() => false) : false));
+    const body = applyProfile(laneBody, rp?.profile ?? null, fresh);
+    // a profile's time allowed never outlasts the lane's API time-out: Firecrawl is given 5 s less, so it answers before the call is cut
+    if (rp?.profile.timeout != null && typeof body.timeout === "number" && typeof opts.timeoutMs === "number") {
+      body.timeout = Math.max(1000, Math.min(body.timeout, opts.timeoutMs - 5000));  // fixed: API time-out margin
+      if (typeof body.waitFor === "number" && body.waitFor >= body.timeout) body.waitFor = Math.max(0, body.timeout - 1000);
+    }
+    const profile = { key: rp?.key ?? LANE_OWN, version: o.profiles?.version ?? null, formats: formatNames(body), max_age_ms: typeof body.maxAge === "number" ? body.maxAge : null, fresh };
     const { http, d, rec } = await call("scrape", body, opts);
     const ps = rec.page_status;
     const raw = pageHtml(d), md = String(d?.data?.markdown || "");
@@ -128,7 +232,9 @@ export function fcClient(o: { headers: Record<string, string>; log: (p: Record<s
     const accepted = rec.success && pageOk(ps) && !!(raw || md || (Array.isArray(d?.data?.links) && d.data.links.length));
     const log = await write("scrape", body, ctx, rec, outcome, opts);
     return {
-      d, rec, http, outcome, log, accepted, page_status: ps, soft_error: rec.success && !pageOk(ps),
+      d, rec, http, outcome, log, accepted, page_status: ps, soft_error: rec.success && !pageOk(ps), profile, body,
+      // the screenshot Firecrawl returned (a link it keeps for 24 hours), only for an accepted page that asked for one
+      screenshot: accepted && typeof d?.data?.screenshot === "string" ? String(d.data.screenshot) : null,
       code: ps ?? http,  // the page's own status when Firecrawl reported it, otherwise the API's
       html: accepted ? raw : "", markdown: accepted ? md : "", links: accepted && Array.isArray(d?.data?.links) ? (d.data.links as unknown[]).map(String) : [] as string[],
       finalUrl: String(d?.data?.metadata?.url || d?.data?.metadata?.sourceURL || body.url || ""),
