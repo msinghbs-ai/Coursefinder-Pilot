@@ -12,6 +12,10 @@
 // Pure functions only (no network), so the contract spec can read them.
 
 export const AER_V2_MODE = "aer_v2_shadow";
+// v0.92.0 (14 Nov 2026, Platform Admin 14 Nov 2026 option 1): the AER v2 prompt v3 benchmark on the platform AI evaluation framework (svc_aer_v3_eval_next_v1 leases,
+// svc_ai_eval_answer_record_v1 records, security.ai_eval_score_v1 scores). No job fires it; it answers only an opened run behind ai_eval.offline_runs_on,
+// ai_eval.aer_v3_runs_on and the spend cap ai_eval.aer_v3_max_usd.
+export const AER_V3_EVAL_MODE = "aer_v3_eval";
 
 // the same canonical form as course-entry.ts and entry.ts (flat): letters and digits compared, case, accents and spacing ignored
 export const aerFlat = (s: unknown) => String(s ?? "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "");
