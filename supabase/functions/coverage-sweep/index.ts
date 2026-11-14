@@ -9,7 +9,7 @@ import { ADD_TESTS_PARSER, ADDED_TESTS, calendarStarts, englishPolicy, POLICY_PA
 import { CALENDAR_PARSER_DATES, CALENDAR_READER, calendarAiParsed, calendarAiRequest, calendarSafe, calendarSlices } from "./calendar.ts";
 import { PAGE_ID_CONTRACT, pageIdChecks, pageIdInput, pageIdRequest } from "./pageid.ts";
 import { cascadeFetch, sentModel, takeAiTrace } from "./cascade.ts";
-import { callRecord, pageHtml, readOutcome, scrapeBody, searchBody, searchCandidates, searchResults } from "./firecrawl.ts";
+import { callRecord, fcClient, fcFailed, pageHtml, readOutcome, scrapeBody, searchBody, searchCandidates, searchResults } from "./firecrawl.ts";
 import { applyAdapter, inspectPage, jsonAt, jsonFind, jsonShape, pageJson, patternValues, viewApplies, withView } from "./adapters.ts";
 import { CENTRAL_SEARCH, ENTRY_SEARCH, centralCandidates, entryCandidates, weakKinds } from "./central.ts";
 import { ENTRY_PROMPT_VERSION, ENTRY_TABLE_BASIS, NAMED_NOTE, PDF_NOTE, entryCellList, entryCompleteness, entryCountryAliases, entryDropNoMinimum, entryGlobalQualification, entrySubjectRows, entryManifestDetail, entryMatrixParsed, entryMatrixRequest, entryNoAnswerWhy, entryNonCountryShape, entrySlices, entryTables, entryUnscaledColumns, entryQualificationCountries } from "./entry.ts";
@@ -84,7 +84,7 @@ const VERSION = "coverage-sweep-v0.5.6"; // extractor version (unchanged by v0.6
 // v0.38.1 (22 Oct 2026, NZ course list pages): a page the AI page match chose from the university's own site addresses (its course list or
 // site map) is listed on the university's own site, so it may be read through the scraper when the direct read is blocked (Otago, Lincoln, AUT).
 const FC_TRUSTED_BASIS = ["cricos_search", "cricos_code", "cricos_code_on_page", "nzqa_code", "adapter_code", "title_match", "cms_path_public", "manual", "firecrawl_upgrade", "ai_match", "programme_list"]; // v0.45.0: a page bound by its NZ or CA code is as trusted as one bound by a CRICOS code
-const WORKER = "coverage-sweep-worker-v0.93.0"; // v0.93.0 (14 Nov 2026, numbered after #1139 v0.92.0, CF-247 S1-AER): the [B#] blocks are converted by lean-md-v2 (lean-input.ts: the page today's reader sends, <aside> and content outside <main> kept; numeric character references decoded; a value-only line kept with the score label beside it, e.g. "70 Guaranteed ATAR or equivalent"; Lean AI Phase 1b Run B: 20 of 51 entry requirement misses), block line format unchanged. Also (14 Nov 2026, CF-247 S1-AER, Platform Admin 14 Nov 2026 option 1): new mode aer_v3_eval answers an opened AER v2 prompt v3 benchmark run of the platform AI evaluation framework (public.svc_aer_v3_eval_next_v1 leases it behind ai_eval.offline_runs_on, ai_eval.aer_v3_runs_on and the spend cap ai_eval.aer_v3_max_usd; answers through public.svc_ai_eval_answer_record_v1; scored by security.ai_eval_score_v1 on frozen gold rows): each frozen stored page as the [B#] blocks of aerV3Blocks (unchanged, never cut), the version's pinned model, provider pins and require_parameters (aerV3Request), the v3 verifier (aerV3Verify), one retry of a call that returned no answer. No job fires it. Other modes unchanged. // was v0.92.0 (#1139) // v0.92.0 (14 Nov 2026, CF-247 Lean AI Input Phase 1b step 2, shadow selection: each observed course-page read also records what the section selector would send, beside what is sent; no request, prompt, model, value or admission change) // was v0.91.0 // v0.91.0 (14 Nov 2026, numbered after #1128 v0.90.0, CF-247 Lean AI Input Phase 1b step 1 recall matcher fix, Platform Admin 14 Nov 2026 13:25): mode lean_sections_eval matches each labelled value against the blocks' words without their "[B<n> @<offset>]" labels (lean-sections.ts blockPlain, selectSections plain), so a quote that runs across adjacent blocks is found; the selected-chars measure stays the labelled text a reader would be sent. Measurement only; no other mode changes. // was v0.90.0 // v0.90.0 (14 Nov 2026, CF-247 merge of #1128 AI models and services with #1136 Lean AI Input Phase 1b step 1; both were numbered v0.89.0): both releases together, nothing else. #1136 adds the offline section selector and makes no AI call; every model call still goes through cascade.ts on its own service route (#1128). No request, prompt, model choice, skip, value, admission, setting or ceiling changes.
+const WORKER = "coverage-sweep-worker-v0.94.0"; // v0.94.0 (14 Nov 2026, CF-247 R7, ingestion validation report §7 recommendations 4 and 8): one Firecrawl client. Every Firecrawl call of every lane (about 40 inline /v2/scrape, /v2/map, /v2/search and /v1/search call sites, readSch, fcMap, the course read fallback, the view render, the entry_ai renders, adapter_capture, fc_probe and fc_run) goes through fcClient in firecrawl.ts: each call is described by callRecord and written to pipeline.firecrawl_calls (svc_fc_call_log) with its lane as use_case and its outcome (readOutcome for a scrape; fc_run still writes its own row after the identity check). A page Firecrawl rendered with its own 4xx/5xx status (data.metadata.statusCode) is never accepted as a read: the client returns no page for it (readOutcome "server_error" for 5xx, "page_error" for other 4xx), so a rendered error page is no longer stored as a course page, view, entry-requirement page, About page, provider-facts document or adapter sample. The page status the lane already passes is now kept in evidence_artifacts.metadata.page_status (migration 20261114091500). Spending (useFc, svc_fc_spend) and every read rule are unchanged; fc_run tries a 5xx page once more like a Firecrawl error. // was v0.93.0 // v0.93.0 (14 Nov 2026, numbered after #1139 v0.92.0, CF-247 S1-AER): the [B#] blocks are converted by lean-md-v2 (lean-input.ts: the page today's reader sends, <aside> and content outside <main> kept; numeric character references decoded; a value-only line kept with the score label beside it, e.g. "70 Guaranteed ATAR or equivalent"; Lean AI Phase 1b Run B: 20 of 51 entry requirement misses), block line format unchanged. Also (14 Nov 2026, CF-247 S1-AER, Platform Admin 14 Nov 2026 option 1): new mode aer_v3_eval answers an opened AER v2 prompt v3 benchmark run of the platform AI evaluation framework (public.svc_aer_v3_eval_next_v1 leases it behind ai_eval.offline_runs_on, ai_eval.aer_v3_runs_on and the spend cap ai_eval.aer_v3_max_usd; answers through public.svc_ai_eval_answer_record_v1; scored by security.ai_eval_score_v1 on frozen gold rows): each frozen stored page as the [B#] blocks of aerV3Blocks (unchanged, never cut), the version's pinned model, provider pins and require_parameters (aerV3Request), the v3 verifier (aerV3Verify), one retry of a call that returned no answer. No job fires it. Other modes unchanged. // was v0.92.0 (#1139) // v0.92.0 (14 Nov 2026, CF-247 Lean AI Input Phase 1b step 2, shadow selection: each observed course-page read also records what the section selector would send, beside what is sent; no request, prompt, model, value or admission change) // was v0.91.0 // v0.91.0 (14 Nov 2026, numbered after #1128 v0.90.0, CF-247 Lean AI Input Phase 1b step 1 recall matcher fix, Platform Admin 14 Nov 2026 13:25): mode lean_sections_eval matches each labelled value against the blocks' words without their "[B<n> @<offset>]" labels (lean-sections.ts blockPlain, selectSections plain), so a quote that runs across adjacent blocks is found; the selected-chars measure stays the labelled text a reader would be sent. Measurement only; no other mode changes. // was v0.90.0 // v0.90.0 (14 Nov 2026, CF-247 merge of #1128 AI models and services with #1136 Lean AI Input Phase 1b step 1; both were numbered v0.89.0): both releases together, nothing else. #1136 adds the offline section selector and makes no AI call; every model call still goes through cascade.ts on its own service route (#1128). No request, prompt, model choice, skip, value, admission, setting or ceiling changes.
 // was v0.89.0 (#1136) // v0.89.0 (14 Nov 2026, numbered after #1137 v0.88.0, CF-247 Lean AI Input Phase 1b step 1, Platform Admin 14 Nov 2026 11:37; admin docs/platform/LEAN-AI-INPUT-PHASE1B-SECTION-SELECTION-DESIGN.md): new mode lean_sections_eval, the offline recall check of the section selector (lean-sections.ts lean-sections-v1, selecting a field's sections from the platform's one [B#] block form, aer-v2.ts aerV3Blocks / BLOCK_INPUT lean-blocks-v1, the same blocks the AER v2 reader sees; no block format of its own) on labelled stored pages handed over by public.svc_lean_sections_eval_next_v1, recorded with public.svc_lean_sections_eval_record_v1. Stored copies only: no AI, no Firecrawl, no live fetch, nothing admitted. No other mode changes.
 // was v0.89.0 (#1128 merge) // v0.89.0 (14 Nov 2026, CF-247 merge of #1128 AI models and services with #1137 AER v2 prompt v3; both were numbered v0.88.0): mode aer_v2_shadow builds the v3 request over numbered lean-md-v1 blocks (#1137) and sends it through cascade.ts on the entry_requirements_v2_shadow route (#1128); the version's answer contract, routing and params come from the version, the model and its cascade from the route. No request, prompt, model choice, skip, value, admission, setting or ceiling changes.
 // was v0.88.0 (#1137) // v0.88.0 (14 Nov 2026, CF-247 AER v2 prompt v3, Platform Admin 14 Nov 2026 item 2): mode aer_v2_shadow reads a prompt version whose answer contract is aer-v2-answer-v3 over the whole stored page as numbered lean-md-v1 blocks (aer-v2.ts aerV3Blocks: "[B<n> @<source_at>]", headings, list items, table rows with their column headers; never cut), with the version's pinned provider routing and require_parameters (aerV3Request), and checks each record with the v3 verifier (aerV3Verify: exact_quote inside its cited block and holding the minimum; lead_in_quote separate, before it, within reading.aer_v3_lead_in_max_blocks and no heading between). Versions with the v1 contract read exactly as before.
@@ -556,6 +556,9 @@ async function handle(req: Request): Promise<Response> {
     const wsOn = (k: string, d: 0 | 1) => { const n = Number(ws[k] ?? d); return Number.isFinite(n) ? n > 0 : d > 0; };
     const wsProxy = String(ws.read_proxy ?? "basic").toLowerCase();
     const FC_PROXY = ["basic", "auto", "stealth", "enhanced"].includes(wsProxy) ? wsProxy : "basic";
+    // v0.94.0 (R7, CF-247 ingestion validation report 14 Nov 2026): every Firecrawl call of every lane goes through the one client in firecrawl.ts:
+    // logged to pipeline.firecrawl_calls with its lane and outcome, and a rendered 4xx/5xx page is never accepted as a read
+    const fcx = fcClient({ headers: fcHeaders, log: (p) => rpc("svc_fc_call_log", { p }), textLen: (h) => htmlToText(h).length });
     // v0.6.2 (Decision 251): scholarship work (purposes sch_*) stays inside its own cap; the cap and the reserve kept for
     // re-reading held scholarships' pages are Layer 2 settings read each run. If they cannot be read, nothing is spent.
     const schBudget = mode.startsWith("scholarship") ? await rpc("svc_scholarship_fc_budget", {}).catch(() => null) : null;
@@ -614,13 +617,12 @@ async function handle(req: Request): Promise<Response> {
     };
     // v0.40.0 (Platform Admin 22 Oct 2026 23:53 "use the ai or firecrawl to fasten up the process"): one Firecrawl map lists a site's
     // addresses with their page titles (1 credit, sub-sites included); within the daily budget
-    const fcMap = async (url: string, providerId: string | null, search: string | null = null) => {
+    const fcMap = async (url: string, providerId: string | null, search: string | null = null, lane = "course_site_map") => {
       if (!(await useFc("map", providerId, url, true))) return null;
-      const r = await fetch("https://api.firecrawl.dev/v2/map", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url, limit: wsNum("map_limit_course_site", 30000), sitemap: "include", includeSubdomains: true, ...(search ? { search } : {}) }), signal: AbortSignal.timeout(60000) }).catch(() => null);
-      if (!r) return { ok: false, status: 0, links: [] as { url: string; title: string }[] };
-      const d = await r.json().catch(() => ({}));
-      const links = (d.links || d.data?.links || []).map((x: any) => typeof x === "string" ? { url: x, title: "" } : { url: String(x?.url || ""), title: String(x?.title || "") }).filter((x: { url: string }) => /^https?:\/\//.test(x.url));
-      return { ok: r.ok && d?.success !== false, status: r.status, links };
+      const m = await fcx.map({ url, limit: wsNum("map_limit_course_site", 30000), sitemap: "include", includeSubdomains: true, ...(search ? { search } : {}) }, { use_case: lane, provider_id: providerId }, { timeoutMs: 60000 });  // fixed: API time-out
+      if (fcFailed(m)) return { ok: false, status: 0, links: [] as { url: string; title: string }[] };
+      const links = m.raw.map((x: any) => typeof x === "string" ? { url: x, title: "" } : { url: String(x?.url || ""), title: String(x?.title || "") }).filter((x: { url: string }) => /^https?:\/\//.test(x.url));
+      return { ok: m.ok, status: m.http ?? 0, links };
     };
     // v0.18.0 (Platform Admin, 11 Oct 2026): every scholarship page is read through the scraper only. University sites are treated
     // as gatekept: no direct read, no fallback, and robots.txt is not consulted for scholarship pages (Platform Admin decision).
@@ -637,11 +639,11 @@ async function handle(req: Request): Promise<Response> {
       if (dr.html && (dr.status === "read" || dr.status === "too_thin")) { const mt = mainText(dr.html); if (directReadUsable(mt.length, mt)) return { status: "read", http: dr.http, html: dr.html, finalUrl: dr.finalUrl, via: "direct" as string | null } }
       if (dr.status === "gone") return { ...none("gone", dr.http), finalUrl: dr.finalUrl };
       if (!(await useFc("sch_scrape", providerId, url, true))) return none("waiting_scraper");
-      const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: FC_PROXY, url, formats: ["rawHtml"], onlyMainContent: false, waitFor: waitMs, timeout: 30000 }), signal: AbortSignal.timeout(45000) }).catch(() => null);
-      const d = r ? await r.json().catch(() => ({})) : {};
-      const code = Number(d?.data?.metadata?.statusCode ?? (r?.ok ? 200 : r?.status ?? 0)) || null;
-      const html = r?.ok && code !== null && code < 400 ? pageHtml(d) : "";
-      const finalUrl = String(d?.data?.metadata?.url || d?.data?.metadata?.sourceURL || url);
+      // v0.94.0 (R7): through the one client (logged; a rendered 4xx/5xx page is not accepted, as before)
+      const sc = await fcx.scrape({ proxy: FC_PROXY, url, formats: ["rawHtml"], onlyMainContent: false, waitFor: waitMs, timeout: 30000 }, { use_case: "scholarship_read", provider_id: providerId }, { timeoutMs: 45000 });  // fixed: API time-out
+      const code = Number(sc.page_status ?? (sc.http !== null && sc.http < 400 ? 200 : sc.http ?? 0)) || null;
+      const html = sc.html;
+      const finalUrl = sc.finalUrl || url;
       if (html) return { status: mainText(html).length >= 300 ? "read" : "too_thin", http: code, html, finalUrl, via: "firecrawl" as string | null };
       if (code === 404 || code === 410) return { ...none("gone", code), finalUrl };
       if (code && [401, 403, 406, 429].includes(code)) return { ...none("blocked", code), finalUrl };
@@ -683,10 +685,10 @@ async function handle(req: Request): Promise<Response> {
           for (const search of [null, "course"]) {
             if (found.size >= target) break;
             { const g = await useFcWhy("map", p.provider_id, site.origin); if (!g.ok) { methods.push(`map:${g.why}`); break } }
-            const r = await fetch("https://api.firecrawl.dev/v2/map", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: site.origin, limit: wsNum("map_limit_course_site", 30000), sitemap: "include", includeSubdomains: true, ...(search ? { search } : {}) }), signal: AbortSignal.timeout(60000) });
-            const d = await r.json().catch(() => ({}));
-            if (!r.ok || d?.success === false) { methods.push(`map:${r.status}`); break }
-            const links = (d.links || d.data?.links || []).map((x: any) => typeof x === "string" ? { url: x } : { url: x.url, title: x.title });
+            const m = await fcx.map({ url: site.origin, limit: wsNum("map_limit_course_site", 30000), sitemap: "include", includeSubdomains: true, ...(search ? { search } : {}) }, { use_case: "course_discover", provider_id: p.provider_id }, { timeoutMs: 60000 });  // fixed: API time-out
+            if (fcFailed(m)) throw new Error(m.rec.error || "map failed");
+            if (!m.ok) { methods.push(`map:${m.http}`); break }
+            const links = m.raw.map((x: any) => typeof x === "string" ? { url: x } : { url: x.url, title: x.title });
             methods.push(search ? `map_search(${links.length})` : `map(${links.length})`); total += links.length;
             for (const u of links) if (u.url && keepUrl(u, site.hostname) && (!found.has(u.url) || u.title)) found.set(u.url, u);
           }
@@ -699,9 +701,8 @@ async function handle(req: Request): Promise<Response> {
             if (n < 5) {
               const g = await useFcWhy("map", p.provider_id, ds.origin);
               if (!g.ok) { methods.push(`${dom}:map:${g.why}`); continue }
-              const r = await fetch("https://api.firecrawl.dev/v2/map", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: ds.origin, limit: wsNum("map_limit_course_site", 30000), sitemap: "include", includeSubdomains: true }), signal: AbortSignal.timeout(60000) }).catch(() => null);
-              const d = r ? await r.json().catch(() => ({})) : {};
-              const links = ((d as any).links || (d as any).data?.links || []).map((x: any) => typeof x === "string" ? { url: x } : { url: x.url, title: x.title });
+              const m = await fcx.map({ url: ds.origin, limit: wsNum("map_limit_course_site", 30000), sitemap: "include", includeSubdomains: true }, { use_case: "course_discover", provider_id: p.provider_id }, { timeoutMs: 60000 });  // fixed: API time-out
+              const links = m.raw.map((x: any) => typeof x === "string" ? { url: x } : { url: x.url, title: x.title });
               for (const u of links) if (u.url && keepUrl(u, ds.hostname) && (!found.has(u.url) || u.title)) { found.set(u.url, u); n++ }
               total += links.length;
             }
@@ -961,8 +962,9 @@ async function handle(req: Request): Promise<Response> {
             const raw = dr && dr.ok ? await dr.text() : "";
             if (/Principal Executive Officer/i.test(raw)) md = htmlToText(raw).replace(/\s{2,}/g, "\n");
             else if (await spend(1, "peo_scrape", p.provider_id, u)) {
-              const sc = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: FC_PROXY, url: u, formats: ["markdown"], onlyMainContent: false, timeout: 40000 }), signal: AbortSignal.timeout(55000) });
-              const sd = await sc.json().catch(() => ({})); md = String(sd?.data?.markdown || "");
+              const sc = await fcx.scrape({ proxy: FC_PROXY, url: u, formats: ["markdown"], onlyMainContent: false, timeout: 40000 }, { use_case: "cricos_peo", provider_id: p.provider_id }, { timeoutMs: 55000 });  // fixed: API time-out
+              if (fcFailed(sc)) throw new Error(sc.rec.error || "scrape failed");
+              md = sc.markdown;
             } else { tried.push({ url: u, budget: true }); break }
             const hasCode = new RegExp("(^|[^0-9A-Z])" + code + "([^0-9A-Z]|$)", "i").test(md) || new RegExp(code, "i").test(raw);
             const i = md.search(/Principal Executive Officer/i);
@@ -989,10 +991,10 @@ async function handle(req: Request): Promise<Response> {
         const entrySearch = async (): Promise<string> => {
           if (!(await useFc("central_entry_search", p.provider_id, site.origin, true))) return "entry_search_refused";
           try {
-            const q = await fetch("https://api.firecrawl.dev/v2/map", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: site.origin, search: ENTRY_SEARCH, limit: wsNum("map_limit_central_search", 200), sitemap: "include", includeSubdomains: true }), signal: AbortSignal.timeout(45000) });
-            const qd = await q.json().catch(() => ({}));
-            if (!q.ok || qd?.success === false) { await rpc("svc_central_entry_record", { p_provider_id: p.provider_id, p_found: [], p_evidence: { error: `entry search ${q.status}`, worker: WORKER } }); return "entry_search_failed" }
-            const ls = (qd.links || qd.data?.links || []).map((x: any) => typeof x === "string" ? { url: x } : { url: x?.url, title: x?.title }).filter((x: any) => typeof x.url === "string");
+            const q = await fcx.map({ url: site.origin, search: ENTRY_SEARCH, limit: wsNum("map_limit_central_search", 200), sitemap: "include", includeSubdomains: true }, { use_case: "central_entry_search", provider_id: p.provider_id }, { timeoutMs: 45000 });  // fixed: API time-out
+            if (fcFailed(q)) throw new Error(q.rec.error || "entry search failed");
+            if (!q.ok) { await rpc("svc_central_entry_record", { p_provider_id: p.provider_id, p_found: [], p_evidence: { error: `entry search ${q.http}`, worker: WORKER } }); return "entry_search_failed" }
+            const ls = q.raw.map((x: any) => typeof x === "string" ? { url: x } : { url: x?.url, title: x?.title }).filter((x: any) => typeof x.url === "string");
             const ef = entryCandidates(ls, site.hostname);
             await rpc("svc_central_entry_record", { p_provider_id: p.provider_id, p_found: ef, p_evidence: { site: site.origin, search: ENTRY_SEARCH, addresses: ls.length, worker: WORKER } });
             return ef.length ? "entry_found" : "entry_none";
@@ -1003,17 +1005,17 @@ async function handle(req: Request): Promise<Response> {
             if (wantEntry) { out.push({ provider_id: p.provider_id, status: await entrySearch() }); return }
             await rpc("svc_central_find_record", { p_provider_id: p.provider_id, p_found: null, p_evidence: { note: `Firecrawl refused: ${g.why}`, refusal: g.why, worker: WORKER } }); out.push({ provider_id: p.provider_id, status: g.why }); return } }
         try {
-          const r = await fetch("https://api.firecrawl.dev/v2/map", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: site.origin, limit: wsNum("map_limit_central", 5000), sitemap: "include", includeSubdomains: true }), signal: AbortSignal.timeout(60000) });
-          const d = await r.json().catch(() => ({}));
-          if (!r.ok || d?.success === false) { await rpc("svc_central_find_record", { p_provider_id: p.provider_id, p_found: [], p_evidence: { error: `map ${r.status}`, worker: WORKER } }); out.push({ provider_id: p.provider_id, status: "map_failed" }); return }
-          const links = (d.links || d.data?.links || []).map((x: any) => typeof x === "string" ? { url: x } : { url: x.url, title: x.title }).filter((x: any) => typeof x.url === "string");
+          const mp = await fcx.map({ url: site.origin, limit: wsNum("map_limit_central", 5000), sitemap: "include", includeSubdomains: true }, { use_case: "central_map", provider_id: p.provider_id }, { timeoutMs: 60000 });  // fixed: API time-out
+          if (fcFailed(mp)) throw new Error(mp.rec.error || "map failed");
+          if (!mp.ok) { await rpc("svc_central_find_record", { p_provider_id: p.provider_id, p_found: [], p_evidence: { error: `map ${mp.http}`, worker: WORKER } }); out.push({ provider_id: p.provider_id, status: "map_failed" }); return }
+          const links = mp.raw.map((x: any) => typeof x === "string" ? { url: x } : { url: x.url, title: x.title }).filter((x: any) => typeof x.url === "string");
           let found = centralCandidates(links, site.hostname); const searched: string[] = [];
           // a targeted map (about 1 credit) for each kind the whole-site map found no strong page of
           for (const kind of weakKinds(found)) {
             if (!(await useFc("central_map", p.provider_id, site.origin, true))) break;
-            const q = await fetch("https://api.firecrawl.dev/v2/map", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: site.origin, search: CENTRAL_SEARCH[kind], limit: wsNum("map_limit_central_search", 200), sitemap: "include", includeSubdomains: true }), signal: AbortSignal.timeout(45000) }).catch(() => null);
-            const qd = q ? await q.json().catch(() => ({})) : {}; searched.push(`${kind}:${q?.status ?? "error"}`);
-            for (const x of (qd.links || qd.data?.links || [])) { const l = typeof x === "string" ? { url: x } : { url: x?.url, title: x?.title }; if (typeof l.url === "string") links.push(l) }
+            const q = await fcx.map({ url: site.origin, search: CENTRAL_SEARCH[kind], limit: wsNum("map_limit_central_search", 200), sitemap: "include", includeSubdomains: true }, { use_case: "central_map", provider_id: p.provider_id }, { timeoutMs: 45000 });  // fixed: API time-out
+            searched.push(`${kind}:${q.http ?? "error"}`);
+            for (const x of q.raw) { const l = typeof x === "string" ? { url: x } : { url: x?.url, title: x?.title }; if (typeof l.url === "string") links.push(l) }
           }
           if (searched.length) found = centralCandidates(links, site.hostname);
           await rpc("svc_central_find_record", { p_provider_id: p.provider_id, p_found: found, p_evidence: { site: site.origin, addresses: links.length, searched, worker: WORKER } });
@@ -1047,12 +1049,11 @@ async function handle(req: Request): Promise<Response> {
           http = r.status; finalUrl = r.url || finalUrl; html = r.ok ? await r.text() : "";
         } catch (e) { res.fetch_error = e instanceof Error ? e.message.slice(0, 200) : String(e).slice(0, 200) }
         if ((!html || (http !== null && [401, 403, 429, 503].includes(http))) && (await useFc("site_verify", it.provider_id, origin + "/", true))) {
-          try {
-            const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: FC_PROXY, url: origin + "/", formats: ["rawHtml"], onlyMainContent: false, waitFor: 1500, ...(/^[A-Z]{2}$/.test(cc) ? { location: { country: cc } } : {}) }), signal: AbortSignal.timeout(60000) });
-            const d = await r.json().catch(() => ({}));
-            const h2 = String(d?.data?.rawHtml || d?.data?.html || "");
-            if (h2) { html = h2; via = "scraper"; finalUrl = String(d?.data?.metadata?.url || d?.data?.metadata?.sourceURL || finalUrl) }
-          } catch (e) { res.scraper_error = e instanceof Error ? e.message.slice(0, 200) : String(e).slice(0, 200) }
+          // v0.94.0 (R7): a home page the scraper rendered with a 4xx/5xx status is not taken as the site answering
+          const sc = await fcx.scrape({ proxy: FC_PROXY, url: origin + "/", formats: ["rawHtml"], onlyMainContent: false, waitFor: 1500, ...(/^[A-Z]{2}$/.test(cc) ? { location: { country: cc } } : {}) }, { use_case: "site_check", provider_id: it.provider_id }, { timeoutMs: 60000 });  // fixed: API time-out
+          if (fcFailed(sc)) res.scraper_error = String(sc.rec.error || "").slice(0, 200);
+          else if (sc.soft_error) res.scraper_page_status = sc.page_status;
+          if (sc.html) { html = sc.html; via = "scraper"; finalUrl = sc.finalUrl || finalUrl }
         }
         let host = bare(new URL(origin).hostname);
         try { host = bare(new URL(finalUrl).hostname); res.final_url = new URL(finalUrl).origin } catch { res.final_url = origin }
@@ -1088,12 +1089,9 @@ async function handle(req: Request): Promise<Response> {
       // (about 1 credit), so a provider behind a gatekeeper can still be verified (George Brown, georgebrown.ca answered 403).
       const viaScraper = async (providerId: string, url: string, cc: string): Promise<{ html: string; finalUrl: string } | null> => {
         if (!(await useFc("site_verify", providerId, url, true))) return null;
-        try {
-          const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: FC_PROXY, url, formats: ["rawHtml"], onlyMainContent: false, waitFor: 1500, ...(/^[A-Z]{2}$/.test(cc) ? { location: { country: cc } } : {}) }), signal: AbortSignal.timeout(60000) });
-          const d = await r.json().catch(() => ({}));
-          const html = String(d?.data?.rawHtml || d?.data?.html || "");
-          return html ? { html, finalUrl: String(d?.data?.metadata?.url || d?.data?.metadata?.sourceURL || url) } : null;
-        } catch { return null }
+        // v0.94.0 (R7): through the one client; a home page rendered with a 4xx/5xx status is not a site answering
+        const sc = await fcx.scrape({ proxy: FC_PROXY, url, formats: ["rawHtml"], onlyMainContent: false, waitFor: 1500, ...(/^[A-Z]{2}$/.test(cc) ? { location: { country: cc } } : {}) }, { use_case: "find_site", provider_id: providerId }, { timeoutMs: 60000 });  // fixed: API time-out
+        return sc.html ? { html: sc.html, finalUrl: sc.finalUrl || url } : null;
       };
       const tldOk = (host: string, cc: string) => cc === "CA" ? host.endsWith(".ca") : cc === "NZ" ? host.endsWith(".nz") : cc === "AU" ? host.endsWith(".au") : true;
       const findCanadianSite = async (p: { provider_id: string; name: string; dli?: string }, cc = "CA") => {
@@ -1101,9 +1099,9 @@ async function handle(req: Request): Promise<Response> {
         if (!(await useFc("search", p.provider_id, p.name, true))) { await rpc("svc_coverage_site_record", { p_provider_id: p.provider_id, p_website: null, p_evidence: { note: "Firecrawl budget reserve reached" } }); return { provider_id: p.provider_id, status: "budget" } }
         let accepted: string | null = null, basis: string | null = null; const tried: unknown[] = [];
         try {
-          const r = await fetch("https://api.firecrawl.dev/v2/search", { method: "POST", headers: fcHeaders, body: JSON.stringify({ query, limit: wsNum("search_results_website", 8), ...(/^[A-Z]{2}$/.test(cc) ? { country: cc } : {}) }), signal: AbortSignal.timeout(45000) });
-          const d = await r.json().catch(() => ({}));
-          const results = (d?.data?.web || d?.data || []).map((x: any) => ({ url: x.url })).filter((x: any) => typeof x.url === "string");
+          const sr = await fcx.search({ query, limit: wsNum("search_results_website", 8), ...(/^[A-Z]{2}$/.test(cc) ? { country: cc } : {}) }, { use_case: "find_site", provider_id: p.provider_id }, { timeoutMs: 45000 });  // fixed: API time-out
+          if (fcFailed(sr)) throw new Error(sr.rec.error || "search failed");
+          const results = sr.raw.map((x: any) => ({ url: x.url })).filter((x: any) => typeof x.url === "string");
           const seenHosts = new Set<string>();
           for (const res of results) {
             let u: URL; try { u = new URL(res.url) } catch { continue }
@@ -1137,9 +1135,9 @@ async function handle(req: Request): Promise<Response> {
           if (!(await useFc("search", p.provider_id, `"${p.name}" site:${reg.site}`, true))) return { accepted: null, basis: null, register: null, rto, tried, budget: true };
           let regPage: string | null = null;
           try {
-            const r = await fetch("https://api.firecrawl.dev/v2/search", { method: "POST", headers: fcHeaders, body: JSON.stringify({ query: `"${p.name}" site:${reg.site}`, limit: wsNum("search_results_register", 5), country: "AU" }), signal: AbortSignal.timeout(45000) });
-            const d = await r.json().catch(() => ({}));
-            const urls: string[] = (d?.data?.web || d?.data || []).map((x: any) => String(x?.url || "")).filter(Boolean);
+            const sr = await fcx.search({ query: `"${p.name}" site:${reg.site}`, limit: wsNum("search_results_register", 5), country: "AU" }, { use_case: "find_site_register", provider_id: p.provider_id }, { timeoutMs: 45000 });  // fixed: API time-out
+            if (fcFailed(sr)) throw new Error(sr.rec.error || "search failed");
+            const urls: string[] = sr.raw.map((x: any) => String(x?.url || "")).filter(Boolean);
             regPage = urls.find((u) => reg.page.test(u)) || null;
             tried.push({ register: reg.key, results: urls.length, page: regPage });
           } catch (e) { tried.push({ register: reg.key, error: e instanceof Error ? e.message : String(e) }) }
@@ -1148,11 +1146,13 @@ async function handle(req: Request): Promise<Response> {
           // the register page is rendered by script: read it through the scraper (1 credit), links only
           if (!(await useFc("site_verify", p.provider_id, regPage, true))) return { accepted: null, basis: null, register: reg.key, rto, tried, budget: true };
           let links: string[] = [], text = "";
-          try {
-            const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: FC_PROXY, url: regPage, formats: ["links", "markdown"], onlyMainContent: true, waitFor: 2500, location: { country: "AU" } }), signal: AbortSignal.timeout(60000) });
-            const d = await r.json().catch(() => ({}));
-            links = (d?.data?.links || []).map(String); text = String(d?.data?.markdown || "");
-          } catch (e) { tried.push({ register: reg.key, page: regPage, error: e instanceof Error ? e.message : String(e) }); continue }
+          {
+            // v0.94.0 (R7): a register page rendered with a 4xx/5xx status gives no links and no text
+            const sc = await fcx.scrape({ proxy: FC_PROXY, url: regPage, formats: ["links", "markdown"], onlyMainContent: true, waitFor: 2500, location: { country: "AU" } }, { use_case: "find_site_register", provider_id: p.provider_id }, { timeoutMs: 60000 });  // fixed: API time-out
+            if (fcFailed(sc)) { tried.push({ register: reg.key, page: regPage, error: sc.rec.error }); continue }
+            links = sc.links; text = sc.markdown;
+            if (sc.soft_error) tried.push({ register: reg.key, page: regPage, page_status: sc.page_status });
+          }
           // the register must be about this provider: its CRICOS code or its name on the page
           const about = codeRe.test(text) || siteNorm(text).includes(siteNorm(p.name)) || (p.trading ? siteNorm(text).includes(siteNorm(p.trading)) : false);
           const hosts: string[] = [];
@@ -1201,9 +1201,9 @@ async function handle(req: Request): Promise<Response> {
         if (!(await useFc("search", p.provider_id, p.name, true))) { out.push({ provider_id: p.provider_id, status: "budget" }); await rpc("svc_coverage_site_record", { p_provider_id: p.provider_id, p_website: null, p_evidence: { note: "Firecrawl budget reserve reached" } }); return }
         let accepted: string | null = null; const tried: unknown[] = [...regFind.tried];
         try {
-          const r = await fetch("https://api.firecrawl.dev/v2/search", { method: "POST", headers: fcHeaders, body: JSON.stringify({ query: `${p.name} CRICOS ${code}`, limit: wsNum("search_results_cricos", 8), country: "AU" }), signal: AbortSignal.timeout(45000) });
-          const d = await r.json().catch(() => ({}));
-          const results = (d?.data?.web || d?.data || []).map((x: any) => ({ url: x.url, title: x.title })).filter((x: any) => typeof x.url === "string");
+          const sr = await fcx.search({ query: `${p.name} CRICOS ${code}`, limit: wsNum("search_results_cricos", 8), country: "AU" }, { use_case: "find_site", provider_id: p.provider_id }, { timeoutMs: 45000 });  // fixed: API time-out
+          if (fcFailed(sr)) throw new Error(sr.rec.error || "search failed");
+          const results = sr.raw.map((x: any) => ({ url: x.url, title: x.title })).filter((x: any) => typeof x.url === "string");
           const seenHosts = new Set<string>();
           for (const res of results) {
             let u: URL; try { u = new URL(res.url) } catch { continue }
@@ -1302,11 +1302,11 @@ async function handle(req: Request): Promise<Response> {
             if (!u.ok) { await recordAll(g, 0, [], u.why === "target_list_refused" ? "target_list_refused" : "credit budget"); return } }
           let http = 0, urls: string[] = [], err: string | null = null;
           try {
-            const r = await fetch("https://api.firecrawl.dev/v1/search", { method: "POST", headers: fcHeaders, body: JSON.stringify({ query: g.query, limit: wsNum("search_results_scholarship_search", 5) }), signal: AbortSignal.timeout(45000) });  // fixed: API time-out
-            http = r.status;
-            const d = await r.json().catch(() => ({}));
-            urls = Array.isArray(d?.data) ? d.data.map((x: { url?: string }) => String(x?.url || "")).filter(Boolean) : [];
-            if (!r.ok) err = String(d?.error || `HTTP ${r.status}`);
+            const sr = await fcx.search({ query: g.query, limit: wsNum("search_results_scholarship_search", 5) }, { use_case: "link_search", provider_id: g.items[0]?.provider_id ?? null }, { timeoutMs: 45000, version: "v1" });  // fixed: API time-out
+            if (fcFailed(sr)) throw new Error(sr.rec.error || "search failed");
+            http = sr.http ?? 0;
+            urls = Array.isArray(sr.d?.data) ? sr.d.data.map((x: { url?: string }) => String(x?.url || "")).filter(Boolean) : [];
+            if (!(sr.http !== null && sr.http < 400)) err = String(sr.d?.error || `HTTP ${sr.http}`);
           } catch (e) { err = e instanceof Error ? e.message : String(e) }
           searched++; if (err) failed++; shared += g.items.length - 1;
           await recordAll(g, http, urls, err);
@@ -1320,11 +1320,11 @@ async function handle(req: Request): Promise<Response> {
           if (!g.ok) { await rpc("svc_course_link_search_record", { p_course_id: it.course_id, p_http: 0, p_urls: [], p_error: g.why === "target_list_refused" ? "target_list_refused" : "credit budget" }); return } }
         let http = 0, urls: string[] = [], err: string | null = null;
         try {
-          const r = await fetch("https://api.firecrawl.dev/v1/search", { method: "POST", headers: fcHeaders, body: JSON.stringify({ query: it.query, limit: wsNum("search_results_scholarship_search", 5) }), signal: AbortSignal.timeout(45000) });
-          http = r.status;
-          const d = await r.json().catch(() => ({}));
-          urls = Array.isArray(d?.data) ? d.data.map((x: { url?: string }) => String(x?.url || "")).filter(Boolean) : [];
-          if (!r.ok) err = String(d?.error || `HTTP ${r.status}`);
+          const sr = await fcx.search({ query: it.query, limit: wsNum("search_results_scholarship_search", 5) }, { use_case: "link_search", provider_id: it.provider_id ?? null, course_id: it.course_id }, { timeoutMs: 45000, version: "v1" });  // fixed: API time-out
+          if (fcFailed(sr)) throw new Error(sr.rec.error || "search failed");
+          http = sr.http ?? 0;
+          urls = Array.isArray(sr.d?.data) ? sr.d.data.map((x: { url?: string }) => String(x?.url || "")).filter(Boolean) : [];
+          if (!(sr.http !== null && sr.http < 400)) err = String(sr.d?.error || `HTTP ${sr.http}`);
         } catch (e) { err = e instanceof Error ? e.message : String(e) }
         searched++; if (err) failed++;
         if (await rpc("svc_course_link_search_record", { p_course_id: it.course_id, p_http: http, p_urls: urls, p_error: err }) === "found") found++;
@@ -1361,10 +1361,9 @@ async function handle(req: Request): Promise<Response> {
         if (!html && it.via !== "direct") {
           if (await useFc("companion_read", it.provider_id, it.url)) {
             via = "firecrawl";
-            const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: FC_PROXY, url: it.url, formats: ["rawHtml"], onlyMainContent: false, waitFor: 1500, timeout: 30000 }), signal: AbortSignal.timeout(45000) }).catch(() => null);
-            const d = r ? await r.json().catch(() => ({})) : {};
-            http = Number(d?.data?.metadata?.statusCode ?? (r?.ok ? 200 : r?.status ?? 0)) || null;
-            html = r?.ok && http !== null && http < 400 ? pageHtml(d) : "";
+            const sc = await fcx.scrape({ proxy: FC_PROXY, url: it.url, formats: ["rawHtml"], onlyMainContent: false, waitFor: 1500, timeout: 30000 }, { use_case: "companion_read", provider_id: it.provider_id }, { timeoutMs: 45000 });  // fixed: API time-out
+            http = Number(sc.page_status ?? (sc.http !== null && sc.http < 400 ? 200 : sc.http ?? 0)) || null;
+            html = sc.html;
             st = html ? "read" : http === 404 || http === 410 ? "gone" : http && [401, 403, 406, 429].includes(http) ? "blocked" : "failed";
           } else if (!html) st = "waiting_scraper";
         }
@@ -1460,10 +1459,9 @@ async function handle(req: Request): Promise<Response> {
         const d = await readDirect(url);
         let html = d.html && !/Pardon Our Interruption|Just a moment\.\.\./i.test(d.html) ? d.html : "", via = "direct", http = d.http;
         if ((!html || under(linksOf(html, url), url).length < minLinks) && await useFc("list_scrape", providerId, url)) {
-          const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: FC_PROXY, url, formats: ["rawHtml"], onlyMainContent: false, waitFor: 3000, timeout: 45000 }), signal: AbortSignal.timeout(60000) }).catch(() => null);
-          const j2 = r ? await r.json().catch(() => ({})) : {};
-          const code = Number(j2?.data?.metadata?.statusCode ?? (r?.ok ? 200 : r?.status ?? 0)) || null;
-          const h2 = r?.ok && code !== null && code < 400 ? pageHtml(j2) : "";
+          const sc = await fcx.scrape({ proxy: FC_PROXY, url, formats: ["rawHtml"], onlyMainContent: false, waitFor: 3000, timeout: 45000 }, { use_case: "course_list_read", provider_id: providerId }, { timeoutMs: 60000 });  // fixed: API time-out
+          const code = Number(sc.page_status ?? (sc.http !== null && sc.http < 400 ? 200 : sc.http ?? 0)) || null;
+          const h2 = sc.html;
           if (h2 && under(linksOf(h2, url), url).length >= under(linksOf(html, url), url).length) { html = h2; via = "firecrawl"; http = code }
         }
         return { html, via, http, status: d.status };
@@ -1695,9 +1693,8 @@ async function handle(req: Request): Promise<Response> {
               const count = (h: string) => { const set = new Set<string>(); for (const m of h.matchAll(/<a\b[^>]*?href\s*=\s*["']([^"'#]+)["']/gi)) { try { const u = new URL(m[1].replace(/&amp;/g, "&"), url); const k = u.toString(); if (re ? re.test(k) : (bare(u.hostname) === bare(host) && u.pathname.split("/").filter(Boolean).some((x) => wordFolder.test(x)) && u.pathname.split("/").filter(Boolean).length >= 2)) set.add(norm(k)) } catch { /* bad link */ } } return set.size };
               let n = d.html ? count(d.html) : 0;
               if (n < S.min_links && ["read", "too_thin", "blocked"].includes(d.status) && await useFc("list_scrape", it.provider_id, url)) {
-                const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: FC_PROXY, url, formats: ["rawHtml"], onlyMainContent: false, waitFor: 3000, timeout: 40000 }), signal: AbortSignal.timeout(45000) }).catch(() => null);
-                const j2 = r ? await r.json().catch(() => ({})) : {}; const code = Number(j2?.data?.metadata?.statusCode ?? (r?.ok ? 200 : r?.status ?? 0)) || null;
-                const h2 = r?.ok && code !== null && code < 400 ? pageHtml(j2) : ""; const n2 = h2 ? count(h2) : 0;
+                const sc = await fcx.scrape({ proxy: FC_PROXY, url, formats: ["rawHtml"], onlyMainContent: false, waitFor: 3000, timeout: 40000 }, { use_case: "source_find", provider_id: it.provider_id }, { timeoutMs: 45000 });  // fixed: API time-out
+                const h2 = sc.html; const n2 = h2 ? count(h2) : 0;
                 if (n2 > n) { n = n2; via = "firecrawl" }
               }
               tried.push({ kind: "list", url, http: d.http, status: d.status, via, matches: n });
@@ -1777,10 +1774,9 @@ async function handle(req: Request): Promise<Response> {
             return out };
           let got = html ? grab(html) : new Map<string, string>();
           if (got.size < 5 && await useFc("list_scrape", it.provider_id, it.url)) {
-            const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: FC_PROXY, url: it.url, formats: ["rawHtml"], onlyMainContent: false, waitFor: 3000, timeout: 45000 }), signal: AbortSignal.timeout(60000) }).catch(() => null);
-            const j2 = r ? await r.json().catch(() => ({})) : {};
-            const code = Number(j2?.data?.metadata?.statusCode ?? (r?.ok ? 200 : r?.status ?? 0)) || null;
-            const h2 = r?.ok && code !== null && code < 400 ? pageHtml(j2) : "";
+            const sc = await fcx.scrape({ proxy: FC_PROXY, url: it.url, formats: ["rawHtml"], onlyMainContent: false, waitFor: 3000, timeout: 45000 }, { use_case: "programme_discover", provider_id: it.provider_id }, { timeoutMs: 60000 });  // fixed: API time-out
+            const code = Number(sc.page_status ?? (sc.http !== null && sc.http < 400 ? 200 : sc.http ?? 0)) || null;
+            const h2 = sc.html;
             const g2 = h2 ? grab(h2) : new Map<string, string>();
             if (g2.size > got.size) { got = g2; html = h2; via = "firecrawl"; http = code; st = "read" }
           }
@@ -1799,11 +1795,10 @@ async function handle(req: Request): Promise<Response> {
         if (Date.now() - t0 > BUDGET_MS) return;
         let d: { status: string; http: number | null; html: string; finalUrl: string } = await readDirect(it.url), via = "direct";
         if (d.status === "blocked" && await useFc("list_scrape", it.provider_id, it.url)) {
-          const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: FC_PROXY, url: it.url, formats: ["rawHtml"], onlyMainContent: false, waitFor: 1500, timeout: 30000 }), signal: AbortSignal.timeout(45000) }).catch(() => null);
-          const j2 = r ? await r.json().catch(() => ({})) : {};
-          const code = Number(j2?.data?.metadata?.statusCode ?? (r?.ok ? 200 : r?.status ?? 0)) || null;
-          const h2 = r?.ok && code !== null && code < 400 ? pageHtml(j2) : "";
-          if (h2) { d = { status: "read", http: code, html: h2, finalUrl: String(j2?.data?.metadata?.url || it.url) }; via = "firecrawl" }
+          const sc = await fcx.scrape({ proxy: FC_PROXY, url: it.url, formats: ["rawHtml"], onlyMainContent: false, waitFor: 1500, timeout: 30000 }, { use_case: "programme_read", provider_id: it.provider_id }, { timeoutMs: 45000 });  // fixed: API time-out
+          const code = Number(sc.page_status ?? (sc.http !== null && sc.http < 400 ? 200 : sc.http ?? 0)) || null;
+          const h2 = sc.html;
+          if (h2) { d = { status: "read", http: code, html: h2, finalUrl: String(sc.d?.data?.metadata?.url || it.url) }; via = "firecrawl" }
         }
         const html = d.html || "";
         const og = (html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)/i) || [])[1] || null;
@@ -1884,8 +1879,9 @@ async function handle(req: Request): Promise<Response> {
           if (!g.ok) { await rpc("svc_provider_facts_search_record", { p_provider_id: it.provider_id, p_kind: it.kind, p_http: 0, p_results: [], p_error: g.why }); return } }
         let http = 0, results: { url: string; title: string }[] = [];
         try {
-          const r = await fetch("https://api.firecrawl.dev/v1/search", { method: "POST", headers: fcHeaders, body: JSON.stringify({ query: it.query, limit: wsNum("search_results_scholarship_discover", 6) }), signal: AbortSignal.timeout(45000) });
-          http = r.status; const d = await r.json().catch(() => ({}));
+          const sr = await fcx.search({ query: it.query, limit: wsNum("search_results_scholarship_discover", 6) }, { use_case: "provider_facts_search", provider_id: it.provider_id }, { timeoutMs: 45000, version: "v1" });  // fixed: API time-out
+          if (fcFailed(sr)) throw new Error(sr.rec.error || "search failed");
+          http = sr.http ?? 0; const d = sr.d;
           results = Array.isArray(d?.data) ? d.data.map((x: { url?: string; title?: string }) => ({ url: String(x?.url || ""), title: String(x?.title || "") })).filter((x: { url: string }) => x.url) : [];
         } catch { http = 0 }
         found += Number(await rpc("svc_provider_facts_search_record", { p_provider_id: it.provider_id, p_kind: it.kind, p_http: http, p_results: results, p_error: null }) || 0);
@@ -1898,13 +1894,15 @@ async function handle(req: Request): Promise<Response> {
           await rpc("svc_provider_facts_read_record", { p_id: it.id, p_status: "failed", p_http: null, p_storage_path: null, p_sha256: null, p_mime: null, p_rows: [], p_summary: { error: g.why } }); return
         }
         try {
-          const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: FC_PROXY, url: it.url, formats: ["markdown"], onlyMainContent: true }), signal: AbortSignal.timeout(90000) });
-          const d = await r.json().catch(() => ({}));
-          const md: string = d?.data?.markdown || "";
-          const http = Number(d?.data?.metadata?.statusCode ?? r.status);
+          // v0.94.0 (R7): through the one client; a document rendered with a 4xx/5xx status has no content and is recorded as failed with that status
+          const sc = await fcx.scrape({ proxy: FC_PROXY, url: it.url, formats: ["markdown"], onlyMainContent: true }, { use_case: "provider_facts_read", provider_id: it.provider_id }, { timeoutMs: 90000 });  // fixed: API time-out
+          if (fcFailed(sc)) throw new Error(sc.rec.error || "scrape failed");
+          const d = sc.d;
+          const md: string = sc.markdown;
+          const http = Number(sc.page_status ?? sc.http);
           const extra = Math.max(0, Number(d?.data?.metadata?.creditsUsed ?? d?.creditsUsed ?? 1) - 1);
           if (extra > 0) await rpc("svc_coverage_usage", { p_units: extra, p_purpose: "provider_facts_scrape", p_provider_id: it.provider_id, p_url: it.url });
-          if (!r.ok || md.length < 200) { await rpc("svc_provider_facts_read_record", { p_id: it.id, p_status: "failed", p_http: http, p_storage_path: null, p_sha256: null, p_mime: null, p_rows: [], p_summary: { error: d?.error || "no content", chars: md.length } }); tally.failed = (tally.failed || 0) + 1; return }
+          if (!sc.accepted || md.length < 200) { await rpc("svc_provider_facts_read_record", { p_id: it.id, p_status: "failed", p_http: http, p_storage_path: null, p_sha256: null, p_mime: null, p_rows: [], p_summary: { error: d?.error || (sc.soft_error ? `page status ${sc.page_status}` : "no content"), chars: md.length } }); tally.failed = (tally.failed || 0) + 1; return }
           const sha = await sha256(new TextEncoder().encode(md));
           let path: string | null = `layer2/${it.country || "XX"}/provider-facts/${it.provider_id}/${it.id}/${sha}.md.gz`;
           const up = await c.storage.from("evidence").upload(path, await gzip(md), { contentType: "application/gzip", upsert: true });
@@ -1954,11 +1952,10 @@ async function handle(req: Request): Promise<Response> {
               try { const su = new URL(src); origin = su.pathname.length > 1 ? su.origin + su.pathname : su.origin; hostname = su.hostname } catch { continue }
               const gm = await useFcWhy("sch_map", p.provider_id, origin, true);
               if (gm.ok) {
-                const r = await fetch("https://api.firecrawl.dev/v2/map", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: origin, search: "scholarship", limit: wsNum("map_limit_scholarships", 5000), sitemap: "include", includeSubdomains: true }), signal: AbortSignal.timeout(60000) }).catch(() => null);
-                const d = r ? await r.json().catch(() => ({})) : {};
-                if (!r || !r.ok || d?.success === false) methods.push(`map:${r ? r.status : "timeout"}`);
+                const m = await fcx.map({ url: origin, search: "scholarship", limit: wsNum("map_limit_scholarships", 5000), sitemap: "include", includeSubdomains: true }, { use_case: "scholarship_discover", provider_id: p.provider_id }, { timeoutMs: 60000 });  // fixed: API time-out
+                if (!m.ok) methods.push(`map:${fcFailed(m) ? "timeout" : m.http}`);
                 else {
-                  const links = (d.links || d.data?.links || []).map((x: any) => typeof x === "string" ? { url: x } : { url: x.url, title: x.title });
+                  const links = m.raw.map((x: any) => typeof x === "string" ? { url: x } : { url: x.url, title: x.title });
                   methods.push(`map_search(${links.length})`); total += links.length;
                   for (const u of links) if (u.url && keepScholarshipUrl(u.url, [site.hostname, hostname, ...(p.hosts || [])])) found.set(normUrl(u.url), { url: u.url, title: u.title, source: "map" });
                 }
@@ -2626,12 +2623,14 @@ async function handle(req: Request): Promise<Response> {
             if (!p.bytes && p.status === "blocked_pdf" && Number(ws["reading.entry_pdf_firecrawl_on"]) >= 1) {
               const g = await useFcWhy("fc_read", it.provider_id, it.url, true);  // v0.80.1: the reads share (reading one page), not the central discovery share
               if (!g.ok) { await frec({ p_http: p.http, p_error: `blocked_pdf; firecrawl: ${g.why}` }); fetchTally[String(g.why)] = (fetchTally[String(g.why)] || 0) + 1; return }
-              const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify(scrapeBody(it.url, { read_formats: ["markdown"], read_proxy: FC_PROXY }, String(it.country || ""))), signal: AbortSignal.timeout(90000) });  // fixed: API time-out
-              const d = await r.json().catch(() => ({}));
+              // v0.94.0 (R7): through the one client; a document rendered with a 4xx/5xx status is not stored as entry evidence
+              const sc = await fcx.scrape(scrapeBody(it.url, { read_formats: ["markdown"], read_proxy: FC_PROXY }, String(it.country || "")), { use_case: "entry_pdf_render", provider_id: it.provider_id }, { timeoutMs: 90000 });  // fixed: API time-out
+              if (fcFailed(sc)) throw new Error(sc.rec.error || "scrape failed");
+              const d = sc.d;
               const extra = Math.max(0, Number(d?.data?.metadata?.creditsUsed ?? d?.creditsUsed ?? 1) - 1);
               if (extra > 0) await rpc("svc_coverage_usage", { p_units: extra, p_purpose: "fc_read", p_provider_id: it.provider_id, p_url: it.url });
-              const md = String(d?.data?.markdown || ""), http = Number(d?.data?.metadata?.statusCode ?? r.status);
-              if (!r.ok || md.length < 200) { await frec({ p_http: http, p_error: `blocked_pdf; firecrawl: ${d?.error || "no content"}`.slice(0, 400) }); fetchTally.failed = (fetchTally.failed || 0) + 1; return }
+              const md = sc.markdown, http = Number(sc.page_status ?? sc.http);
+              if (!sc.accepted || md.length < 200) { await frec({ p_http: http, p_error: `blocked_pdf; firecrawl: ${d?.error || (sc.soft_error ? `page status ${sc.page_status}` : "no content")}`.slice(0, 400) }); fetchTally.failed = (fetchTally.failed || 0) + 1; return }
               const sha = await sha256(new TextEncoder().encode(md));
               const path = `layer2/${it.country || "XX"}/entry-matrix/${it.provider_id}/${it.source_id}/${sha}.md.gz`;
               const up = await c.storage.from("evidence").upload(path, await gzip(md), { contentType: "application/gzip", upsert: true });
@@ -2655,12 +2654,14 @@ async function handle(req: Request): Promise<Response> {
             if (!robotsAllows(await robotsFor(u), u.pathname + u.search)) { await frec({ p_status: "robots_disallowed" }); fetchTally.robots = (fetchTally.robots || 0) + 1; return }
             const g = await useFcWhy("provider_facts_scrape", it.provider_id, it.url, true);
             if (!g.ok) { await frec({ p_error: g.why }); fetchTally[String(g.why)] = (fetchTally[String(g.why)] || 0) + 1; return }
-            const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify(scrapeBody(it.url, { read_formats: ["rawHtml"], read_proxy: FC_PROXY, read_wait_ms: Number(it.render_wait_ms) || 5000 }, String(it.country || ""))), signal: AbortSignal.timeout(90000) });  // fixed: API time-out
-            const d = await r.json().catch(() => ({}));
+            // v0.94.0 (R7): through the one client; a page rendered with a 4xx/5xx status is not stored as entry evidence
+            const sc = await fcx.scrape(scrapeBody(it.url, { read_formats: ["rawHtml"], read_proxy: FC_PROXY, read_wait_ms: Number(it.render_wait_ms) || 5000 }, String(it.country || "")), { use_case: "entry_render", provider_id: it.provider_id }, { timeoutMs: 90000 });  // fixed: API time-out
+            if (fcFailed(sc)) throw new Error(sc.rec.error || "scrape failed");
+            const d = sc.d;
             const extra = Math.max(0, Number(d?.data?.metadata?.creditsUsed ?? d?.creditsUsed ?? 1) - 1);
             if (extra > 0) await rpc("svc_coverage_usage", { p_units: extra, p_purpose: "provider_facts_scrape", p_provider_id: it.provider_id, p_url: it.url });
-            const html = pageHtml(d), http = Number(d?.data?.metadata?.statusCode ?? r.status);
-            if (!r.ok || html.length < 200) { await frec({ p_http: http, p_error: d?.error || "no rendered content" }); fetchTally.failed = (fetchTally.failed || 0) + 1; return }
+            const html = sc.html, http = Number(sc.page_status ?? sc.http);
+            if (!sc.accepted || html.length < 200) { await frec({ p_http: http, p_error: d?.error || (sc.soft_error ? `page status ${sc.page_status}` : "no rendered content") }); fetchTally.failed = (fetchTally.failed || 0) + 1; return }
             const sha = await sha256(new TextEncoder().encode(html));
             const path = `layer2/${it.country || "XX"}/entry-matrix/${it.provider_id}/${it.source_id}/${sha}.html.gz`;
             const up = await c.storage.from("evidence").upload(path, await gzip(html), { contentType: "application/gzip", upsert: true });
@@ -2678,12 +2679,14 @@ async function handle(req: Request): Promise<Response> {
             // v0.50.2 (AER programme, HTML Firecrawl-fallback route): the page's own HTML is kept (rawHtml), not markdown, so its tables are read
             // row by row (table-rows-v1) and quotes are checked against the same lines as a direct read (AUT, Wintec, Lincoln, Otago lost rows
             // as quote_not_on_page against markdown tables)
-            const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify(scrapeBody(it.url, { read_formats: ["rawHtml"], read_proxy: FC_PROXY }, String(it.country || ""))), signal: AbortSignal.timeout(90000) });  // fixed: API time-out
-            const d = await r.json().catch(() => ({}));
+            // v0.94.0 (R7): through the one client; a page rendered with a 4xx/5xx status is not stored as entry evidence
+            const sc = await fcx.scrape(scrapeBody(it.url, { read_formats: ["rawHtml"], read_proxy: FC_PROXY }, String(it.country || "")), { use_case: "entry_fallback", provider_id: it.provider_id }, { timeoutMs: 90000 });  // fixed: API time-out
+            if (fcFailed(sc)) throw new Error(sc.rec.error || "scrape failed");
+            const d = sc.d;
             const extra = Math.max(0, Number(d?.data?.metadata?.creditsUsed ?? d?.creditsUsed ?? 1) - 1);
             if (extra > 0) await rpc("svc_coverage_usage", { p_units: extra, p_purpose: "provider_facts_scrape", p_provider_id: it.provider_id, p_url: it.url });
-            http = Number(d?.data?.metadata?.statusCode ?? r.status); body1 = pageHtml(d); via = "firecrawl"; mime = "text/html";
-            if (!r.ok || body1.length < 200) { await frec({ p_http: http, p_error: d?.error || "no content" }); fetchTally.failed = (fetchTally.failed || 0) + 1; return }
+            http = Number(sc.page_status ?? sc.http); body1 = sc.html; via = "firecrawl"; mime = "text/html";
+            if (!sc.accepted || body1.length < 200) { await frec({ p_http: http, p_error: d?.error || (sc.soft_error ? `page status ${sc.page_status}` : "no content") }); fetchTally.failed = (fetchTally.failed || 0) + 1; return }
           } else { await frec({ p_http: http, p_error: d1.status }); fetchTally.failed = (fetchTally.failed || 0) + 1; return }
           const sha = await sha256(new TextEncoder().encode(body1));
           const path = `layer2/${it.country || "XX"}/entry-matrix/${it.provider_id}/${it.source_id}/${sha}.${mime === "text/html" ? "html" : "md"}.gz`;
@@ -2947,12 +2950,14 @@ async function handle(req: Request): Promise<Response> {
         const g = await useFcWhy("provider_description", it.provider_id, url, true);
         if (!g.ok) return { ok: false, why: String(g.why), http: d1.http, retry: true };
         }
-        const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify(scrapeBody(url, { read_formats: ["rawHtml"], read_proxy: FC_PROXY }, String(it.country || ""))), signal: AbortSignal.timeout(90000) });  // fixed: API time-out
-        const d = await r.json().catch(() => ({}));
+        // v0.94.0 (R7): through the one client; an about page rendered with a 4xx/5xx status is not a read
+        const sc = await fcx.scrape(scrapeBody(url, { read_formats: ["rawHtml"], read_proxy: FC_PROXY }, String(it.country || "")), { use_case: "provider_description", provider_id: it.provider_id }, { timeoutMs: 90000 });  // fixed: API time-out
+        if (fcFailed(sc)) throw new Error(sc.rec.error || "scrape failed");
+        const d = sc.d;
         const extra = Math.max(0, Number(d?.data?.metadata?.creditsUsed ?? d?.creditsUsed ?? 1) - 1);
         if (extra > 0) await rpc("svc_coverage_usage", { p_units: extra, p_purpose: it.on_demand === true ? "provider_description_on_demand" : "provider_description", p_provider_id: it.provider_id, p_url: url });
-        const html = pageHtml(d), http = Number(d?.data?.metadata?.statusCode ?? r.status);
-        return r.ok && html.length >= 200 ? { ok: true, html, via: "firecrawl", http, url: String(d?.data?.metadata?.url || d?.data?.metadata?.sourceURL || url) } : { ok: false, why: String(d?.error || "no content"), http, retry: true };
+        const html = sc.html, http = Number(sc.page_status ?? sc.http);
+        return sc.accepted && html.length >= 200 ? { ok: true, html, via: "firecrawl", http, url: sc.finalUrl || url } : { ok: false, why: String(d?.error || (sc.soft_error ? `page status ${sc.page_status}` : "no content")), http, retry: true };
       };
       await pool(items, 2, async (it: any) => {
         const base = { item_id: it.item_id, model, prompt_version: prompt ? prompt.version : DESCRIPTION_PROMPT_VERSION, worker: WORKER.slice(0, 60) };
@@ -3343,10 +3348,10 @@ async function handle(req: Request): Promise<Response> {
           if (p.storage_path) text = mainText(await readStored(p.storage_path));
           else if (p.website) {
             if (!(await useFc("enrich_address", p.provider_id, p.website, true))) { out.push({ item_id: Number(p.item_id), retry: true, reason: "no scraper credit" }); return }
-            const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: FC_PROXY, url: p.website, formats: ["markdown"], onlyMainContent: false, timeout: 30000 }), signal: AbortSignal.timeout(45000) });
-            const d = await r.json().catch(() => ({}));
-            text = String(d?.data?.markdown || "");
-            if (!r.ok || !text) throw Error(`home page not read (HTTP ${r.status})`);
+            const sc = await fcx.scrape({ proxy: FC_PROXY, url: p.website, formats: ["markdown"], onlyMainContent: false, timeout: 30000 }, { use_case: "enrich_address", provider_id: p.provider_id }, { timeoutMs: 45000 });  // fixed: API time-out
+            if (fcFailed(sc)) throw new Error(sc.rec.error || "scrape failed");
+            text = sc.markdown;
+            if (!sc.accepted || !text) throw Error(`home page not read (HTTP ${sc.page_status ?? sc.http})`);
             const sha = await sha256(new TextEncoder().encode(text)), path = `layer2/${p.country || "XX"}/enrich/${p.provider_id}/${sha}.md.gz`;
             const up = await c.storage.from("evidence").upload(path, await gzip(text), { contentType: "application/gzip", upsert: true });
             if (up.error) throw Error(`copy not stored: ${up.error.message}`);
@@ -3504,18 +3509,15 @@ async function handle(req: Request): Promise<Response> {
         // v0.17.15: a sample added to the draft is captured on its own; pages already captured are kept, not paid for again
         const kept = prior.find((x: any) => x && x.url === sm.url && !x.error && x.html_path);
         if (kept) { caps.push(kept); continue }
-        const started = Date.now(); let http: number | null = null, d: any = null, hdrs: Headers | null = null, err: string | null = null;
         // v0.17.4: the builder captures the international view when the university's adapter names one
         const capPv = capAdapters?.[dr.provider_id]?.page_view;
         const reqBody = { proxy: FC_PROXY, url: viewApplies(sm.url, capPv) ? withView(sm.url, capPv) : sm.url, formats: ["rawHtml", { type: "screenshot", fullPage: true }], onlyMainContent: false, waitFor: Math.max(3000, Math.min(Number(capPv?.wait_ms ?? 3000), 8000)), timeout: 60000 };
-        try { const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify(reqBody), signal: AbortSignal.timeout(90000) }); http = r.status; hdrs = r.headers; d = await r.json().catch(() => null) } catch (e) { err = e instanceof Error ? e.message : String(e) }
-        const rec = callRecord(http, d, hdrs, Date.now() - started, err);
-        const used = rec.credits_used ?? 1;
+        // v0.94.0 (R7): through the one client (logged as before); a sample page rendered with a 4xx/5xx status is not captured
+        const sc = await fcx.scrape(reqBody, { use_case: "adapter_builder", provider_id: dr.provider_id, course_id: sm.course_id || null, url: sm.url }, { timeoutMs: 90000, estimate: 1 });  // fixed: API time-out
+        const d = sc.d, rec = sc.rec, used = rec.credits_used ?? 1;
         await rpc("svc_coverage_usage", { p_units: used, p_purpose: "adapter_builder", p_provider_id: dr.provider_id, p_url: sm.url }).catch(() => null);
-        const { url: _u, ...opts } = reqBody;
-        await rpc("svc_fc_call_log", { p: { run_id: null, item_id: null, use_case: "adapter_builder", endpoint: "scrape", provider_id: dr.provider_id, course_id: sm.course_id || null, url: sm.url, request: opts, ...rec, credits_used: used, outcome: rec.success ? "captured" : "fc_error" } }).catch(() => null);
-        const html = pageHtml(d);
-        if (!html) { caps.push({ ...sm, error: rec.error || "no page returned", credits: used }); continue }
+        const html = sc.html;
+        if (!html) { caps.push({ ...sm, error: rec.error || (sc.soft_error ? `page status ${sc.page_status}` : "no page returned"), credits: used }); continue }
         const cc = ["NZ", "CA"].includes(dr.country) ? dr.country : "AU";
         const htmlPath = `layer2/${cc}/adapters/${dr.provider_id}/${dr.id}/${i + 1}.html.gz`;
         await c.storage.from("evidence").upload(htmlPath, await gzip(html), { contentType: "application/gzip", upsert: true });
@@ -3709,15 +3711,14 @@ async function handle(req: Request): Promise<Response> {
         if (!isTarget(pg.provider_id || null) && pg.provider_id) { out.push({ url: pg.url, skipped: "not a target university" }); return }
         const reqBody: Record<string, unknown> = scrapeBody(pg.url, s, pg.country || "");
         if (Array.isArray(s.actions)) reqBody.actions = s.actions;
-        const started = Date.now(); let http: number | null = null, d: any = null, hdrs: Headers | null = null, err: string | null = null;
-        try { const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify(reqBody), signal: AbortSignal.timeout(100000) }); http = r.status; hdrs = r.headers; d = await r.json().catch(() => null) } catch (e) { err = e instanceof Error ? e.message : String(e) }
-        const rec = callRecord(http, d, hdrs, Date.now() - started, err);
+        // v0.94.0 (R7): through the one client (logged with readOutcome as before). The probe shows what Firecrawl returned, error pages included;
+        // it stores nothing, so it reads the reply's page itself (pageHtml) rather than the client's accepted page.
+        const sc = await fcx.scrape(reqBody, { use_case: "probe", provider_id: pg.provider_id || null, course_id: pg.course_id || null, url: pg.url }, { timeoutMs: 100000, estimate: 1 });  // fixed: API time-out
+        const d = sc.d, rec = sc.rec, http = sc.http;
         const html = pageHtml(d), text = html ? htmlToText(html) : "";
         const idb = html ? identity(html, text, String(pg.course || ""), String(pg.code || ""), false, pg.country || "") : null;
         const used = rec.credits_used ?? 1;
         await rpc("svc_coverage_usage", { p_units: used, p_purpose: "fc_probe", p_provider_id: pg.provider_id || null, p_url: pg.url }).catch(() => null);
-        const { url: _u, ...opts } = reqBody;
-        await rpc("svc_fc_call_log", { p: { run_id: null, item_id: null, use_case: "probe", endpoint: "scrape", provider_id: pg.provider_id || null, course_id: pg.course_id || null, url: pg.url, request: opts, ...rec, credits_used: used, outcome: readOutcome(rec, html, text.length) } }).catch(() => null);
         out.push({ url: pg.url, http, page_status: rec.page_status, error: rec.error, credits: used, proxy: rec.proxy_used, scrape_id: rec.scrape_id, title: titleOf(html).slice(0, 160) || d?.data?.metadata?.title || null, h1: h1Of(html).slice(0, 160), text_chars: text.length,
                    page: html ? inspectPage(html) : null, text_found: html && s.text_find ? (() => { let r: RegExp; try { r = new RegExp(String(s.text_find), "gi") } catch { return null } return [...text.matchAll(r)].slice(0, 12).map((m) => text.slice(Math.max(0, (m.index || 0) - 120), (m.index || 0) + 240)) })() : null, json_shape: html && s.json_source ? (s.json_find ? jsonFind(s.json_root ? jsonAt(pageJson(html, String(s.json_source)), String(s.json_root)) : pageJson(html, String(s.json_source)), String(s.json_find), Number(s.json_limit || 80)) : jsonShape(pageJson(html, String(s.json_source)), 5)) : null,
                    code_found: !!(pg.code && text.includes(String(pg.code))), identity: idb, warning: d?.data?.warning || rec.meta?.warning || null, intakes: idb ? intakes(text) : null, english: idb ? english(text) : null, fee: idb ? fee(text, currencyFor(pg.country)).value : null });
@@ -3730,20 +3731,16 @@ async function handle(req: Request): Promise<Response> {
       if (!fc?.secret) return j({ error: "no Firecrawl key", workerVersion: WORKER }, 500);
       const tally: Record<string, number> = {}; let credits = 0, calls = 0, stopReason: string | null = null;
       const WALL_MS = 95000; // under the database's 120-second wait for a worker call, so other scheduled calls are not held up
+      // v0.94.0 (R7): through the one client; the run writes each call's log itself after the identity check (defer), with its final outcome
       const fcCall = async (endpoint: "scrape" | "search", reqBody: Record<string, unknown>, ctx: { run_id: string; item_id: string; use_case: string; provider_id: string | null; course_id: string | null; url: string | null }, estimate: number) => {
-        const started = Date.now(); let http: number | null = null, d: any = null, hdrs: Headers | null = null, err: string | null = null;
-        try {
-          const left = WALL_MS - (Date.now() - t0);
-          if (reqBody.timeout) reqBody.timeout = Math.max(10000, Math.min(Number(reqBody.timeout), left - 15000));
-          const r = await fetch(`https://api.firecrawl.dev/v2/${endpoint}`, { method: "POST", headers: fcHeaders, body: JSON.stringify(reqBody), signal: AbortSignal.timeout(Math.max(5000, Math.min(Number(reqBody.timeout || 45000) + 15000, left - 3000))) });
-          http = r.status; hdrs = r.headers; d = await r.json().catch(() => null);
-        } catch (e) { err = e instanceof Error ? `${e.name}: ${e.message}` : String(e) }
-        const rec = callRecord(http, d, hdrs, Date.now() - started, err);
-        const used = rec.credits_used ?? (http !== null && http < 500 && http !== 429 ? estimate : 0);
+        const left = WALL_MS - (Date.now() - t0);
+        if (reqBody.timeout) reqBody.timeout = Math.max(10000, Math.min(Number(reqBody.timeout), left - 15000));
+        const timeoutMs = Math.max(5000, Math.min(Number(reqBody.timeout || 45000) + 15000, left - 3000));  // fixed: API time-out inside the worker call's wall clock
+        const res = endpoint === "scrape" ? await fcx.scrape(reqBody, { ...ctx, url: ctx.url || null }, { timeoutMs, estimate, defer: true }) : await fcx.search(reqBody, { ...ctx, url: ctx.url || null }, { timeoutMs, estimate, defer: true });
+        const used = res.rec.credits_used ?? 0;
         calls++; credits += used; fcRemaining -= used;
         if (used > 0) await rpc("svc_coverage_usage", { p_units: used, p_purpose: ctx.use_case === "read_page" ? "fc_read" : "fc_search", p_provider_id: ctx.provider_id, p_url: ctx.url || String(reqBody.query || "") }).catch(() => null);
-        const { url: _u, query: _q, ...opts } = reqBody as Record<string, unknown>;
-        return { d, rec: { ...rec, credits_used: used }, log: { ...ctx, endpoint, url: ctx.url || null, request: { ...opts, ...(endpoint === "search" ? { query: reqBody.query } : {}) }, ...rec, credits_used: used } };
+        return { d: res.d, rec: res.rec, log: res.log };
       };
       while (Date.now() - t0 < WALL_MS - 60000) {
         const next = await rpc("svc_fc_run_next", { p_run_id: runId, p_limit: 0 });
@@ -3821,7 +3818,7 @@ async function handle(req: Request): Promise<Response> {
               await rpc("svc_fc_call_log", { p: { ...log, outcome } }).catch(() => null);
             }
           } catch (e) { outcome = "error"; result = { error: e instanceof Error ? e.message : String(e) } }
-          const retry = ["rate_limited", "timeout", "fc_error", "error"].includes(outcome) && !(Number(it.result?.tries || 0) >= 1);
+          const retry = ["rate_limited", "timeout", "fc_error", "error", "server_error"].includes(outcome) && !(Number(it.result?.tries || 0) >= 1);  // v0.94.0 (R7): a page Firecrawl rendered with a 5xx status is tried once more, like a Firecrawl error
           if (retry) { result.tries = 1 }
           await rpc("svc_fc_run_record", { p_item_id: it.id, p_outcome: retry ? "retry" : outcome, p_result: result, p_credits: used });
           tally[outcome] = (tally[outcome] || 0) + 1;
@@ -3856,10 +3853,10 @@ async function handle(req: Request): Promise<Response> {
           else if (viewRender) {
             const viewUrl = withView(it.url, pv);
             if (await useFc("scrape", it.provider_id, viewUrl)) {
-              const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: FC_PROXY, url: viewUrl, formats: ["rawHtml"], onlyMainContent: false, waitFor: Math.max(0, Math.min(Number(pv?.wait_ms ?? 3000), 8000)) }), signal: AbortSignal.timeout(90000) }).catch(() => null);
-              const d = r ? await r.json().catch(() => ({})) : {};
-              if (r?.ok && pageHtml(d)) { html = pageHtml(d); via = "firecrawl"; http = d.data?.metadata?.statusCode ?? 200; finalUrl = viewUrl }
-              else http = r?.status ?? null;
+              // v0.94.0 (R7): through the one client; a view rendered with a 4xx/5xx status is not a read (it was stored as one before)
+              const sc = await fcx.scrape({ proxy: FC_PROXY, url: viewUrl, formats: ["rawHtml"], onlyMainContent: false, waitFor: Math.max(0, Math.min(Number(pv?.wait_ms ?? 3000), 8000)) }, { use_case: "course_read_view", provider_id: it.provider_id, course_id: it.course_id }, { timeoutMs: 90000 });  // fixed: API time-out
+              if (sc.html) { html = sc.html; via = "firecrawl"; http = sc.page_status ?? 200; finalUrl = viewUrl }
+              else http = sc.page_status ?? sc.http;
               status = html ? "read" : http && [401, 403, 406, 429].includes(http) ? "blocked" : "fetch_failed";
             } else status = "needs_render";
           }
@@ -3875,9 +3872,10 @@ async function handle(req: Request): Promise<Response> {
             // v0.15.1: no Firecrawl call when the university's adapter already reads the page's own data from the plain fetch
             const adDirect = thin && adapters[it.provider_id] ? applyAdapter(adapters[it.provider_id], html, { title: it.title, code: it.code, country: it.country || "", status: it.status }, VERSION) : null;
             if (fcTrusted && (!searchCandidate || searchFound) && !(adDirect?.json_found && adDirect.identity) && (!html || thin) && (it.status === "bound" || it.priority === true || searchFound) && (http === null || [401, 403, 406, 429, 503].includes(http) || thin) && await useFc("scrape", it.provider_id, it.url)) {
-              const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: FC_PROXY, url: it.url, formats: ["rawHtml"], onlyMainContent: false }), signal: AbortSignal.timeout(60000) });
-              const d = await r.json().catch(() => ({}));
-              if (r.ok && pageHtml(d)) { html = pageHtml(d); via = "firecrawl"; http = d.data?.metadata?.statusCode ?? 200; finalUrl = d.data?.metadata?.sourceURL || it.url }
+              // v0.94.0 (R7): through the one client; a page rendered with a 4xx/5xx status is not a read (it was stored as one before)
+              const sc = await fcx.scrape({ proxy: FC_PROXY, url: it.url, formats: ["rawHtml"], onlyMainContent: false }, { use_case: "course_read", provider_id: it.provider_id, course_id: it.course_id }, { timeoutMs: 60000 });  // fixed: API time-out
+              if (fcFailed(sc)) throw new Error(sc.rec.error || "scrape failed");
+              if (sc.html) { html = sc.html; via = "firecrawl"; http = sc.page_status ?? 200; finalUrl = sc.d.data?.metadata?.sourceURL || it.url }
             }
             if (html && via === "direct" && htmlToText(html).length < 1500) status = "needs_render";
             else if (html) status = "read";
@@ -3910,10 +3908,10 @@ async function handle(req: Request): Promise<Response> {
           // v0.6.2: a priority page read directly without the code may be a script-rendered handbook (UNSW, Melbourne):
           // render it once through Firecrawl before calling it a mismatch.
           if (!identityBasis && via === "direct" && it.priority === true && !searchCandidate && fcTrusted && await useFc("scrape", it.provider_id, it.url)) {
-            const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: FC_PROXY, url: it.url, formats: ["rawHtml"], onlyMainContent: false }), signal: AbortSignal.timeout(60000) }).catch(() => null);
-            const d = r ? await r.json().catch(() => ({})) : {};
-            if (r?.ok && pageHtml(d)) {
-              html = pageHtml(d); via = "firecrawl"; http = d.data?.metadata?.statusCode ?? http; finalUrl = d.data?.metadata?.sourceURL || finalUrl;
+            // v0.94.0 (R7): through the one client; a page rendered with a 4xx/5xx status does not replace the direct copy
+            const sc = await fcx.scrape({ proxy: FC_PROXY, url: it.url, formats: ["rawHtml"], onlyMainContent: false }, { use_case: "course_read_priority", provider_id: it.provider_id, course_id: it.course_id }, { timeoutMs: 60000 });  // fixed: API time-out
+            if (sc.html) {
+              html = sc.html; via = "firecrawl"; http = sc.page_status ?? http; finalUrl = sc.d.data?.metadata?.sourceURL || finalUrl;
               text = htmlToText(html); identityBasis = identity(html, text, it.title, it.code, it.status === "ambiguous", it.country || "");
             }
           }

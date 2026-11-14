@@ -59,14 +59,100 @@ export function callRecord(http: number | null, d: any, headers: Headers | null,
 }
 
 // The result of one page read through Firecrawl, before the identity check.
+// R7 (CF-247 ingestion validation report, 14 Nov 2026): a page Firecrawl rendered with its own 4xx or 5xx status is a soft error, never a read:
+// "server_error" for 5xx, "page_error" for any other 4xx not named above.
 export function readOutcome(rec: { success: boolean; error: string | null; page_status: number | null; http: number | null }, html: string, textLen: number) {
   if (rec.error && /time(d)? ?out|timeout|aborted/i.test(rec.error) && !html) return "timeout";
   if (!rec.success && !html) return rec.http === 429 ? "rate_limited" : "fc_error";
   const ps = rec.page_status;
   if (ps === 404 || ps === 410) return "not_found";
   if (ps !== null && [401, 403, 406, 429].includes(ps)) return "blocked";
+  if (ps !== null && ps >= 500) return "server_error";
+  if (ps !== null && ps >= 400) return "page_error";
   if (!html) return "no_content";
   if (/captcha|cf-chl|access denied|are you a robot|verify you are human|request unsuccessful|incapsula/i.test(html.slice(0, 20000)) && textLen < 4000) return "blocked";
   if (textLen < 300) return "thin";
   return "read";
 }
+
+// R7 (CF-247 ingestion validation report, 14 Nov 2026, recommendations 4 and 8): one Firecrawl client. Every call the worker makes to Firecrawl
+// (scrape, map, search; v1 search kept where a lane used it) goes through fcClient, so each call is:
+//   - described by callRecord and written to pipeline.firecrawl_calls (svc_fc_call_log) with its lane (use_case) and outcome;
+//   - for a scrape, judged by readOutcome, and its page accepted only when the page's own status (data.metadata.statusCode) is not 4xx or 5xx.
+//     A rendered error page comes back with no html or markdown (accepted false, soft_error true), so it is never stored as a read; page_status
+//     is returned for the lane to record with its evidence.
+// The client does not decide spending: each lane still asks useFc / svc_fc_spend before calling. It never throws; a network failure or
+// time-out comes back as rec.http null with rec.error set (fcFailed). Logging failures never stop the lane.
+export type FcCtx = { use_case: string; provider_id?: string | null; course_id?: string | null; run_id?: string | null; item_id?: string | null; url?: string | null };
+// timeoutMs: API time-out only (technical safety value). defer: the lane writes the call log itself (with \`log\` and its own final outcome), as
+// fc_run does after the identity check; every other lane lets the client write it.
+export type FcOpts = { timeoutMs: number; version?: "v1" | "v2"; estimate?: number; defer?: boolean };
+export type FcRec = ReturnType<typeof callRecord>;
+// A page status Firecrawl reported that can be a page: unknown (not reported) or below 400.
+export const pageOk = (ps: number | null) => ps === null || ps < 400;
+// The call never reached Firecrawl or never answered (network error or time-out).
+export const fcFailed = (r: { rec: FcRec }) => r.rec.http === null;
+const plainLen = (h: string) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, " ").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().length;
+const callOutcome = (rec: FcRec, okOutcome: string) => rec.error && rec.http === null && /time(d)? ?out|timeout|aborted/i.test(rec.error) ? "timeout" : rec.http === 429 ? "rate_limited" : !rec.success || rec.http === null || rec.http >= 400 ? "fc_error" : okOutcome;
+
+export function fcClient(o: { headers: Record<string, string>; log: (p: Record<string, unknown>) => Promise<unknown>; textLen?: (html: string) => number }) {
+  const textLen = o.textLen ?? plainLen;
+  const call = async (endpoint: "scrape" | "map" | "search", body: Record<string, unknown>, opts: FcOpts) => {
+    const started = Date.now(); let http: number | null = null, d: any = null, hdrs: Headers | null = null, err: string | null = null;
+    try {
+      const r = await fetch(`https://api.firecrawl.dev/${opts.version ?? "v2"}/${endpoint}`, { method: "POST", headers: o.headers, body: JSON.stringify(body), signal: AbortSignal.timeout(opts.timeoutMs) });
+      http = r.status; hdrs = r.headers; d = await r.json().catch(() => null);
+    } catch (e) { err = e instanceof Error ? `${e.name}: ${e.message}` : String(e) }
+    const rec = callRecord(http, d, hdrs, Date.now() - started, err);
+    // the credits Firecrawl reported; otherwise the lane's estimate for a call Firecrawl answered (the fc_run rule)
+    const credits = rec.credits_used ?? (http !== null && http < 500 && http !== 429 ? (opts.estimate ?? 1) : 0);
+    return { http, d: (d ?? {}) as any, rec: { ...rec, credits_used: credits } };
+  };
+  // the pipeline.firecrawl_calls row (svc_fc_call_log): the request without its address or query text (kept in url, or in request.query for a search)
+  const row = (endpoint: string, body: Record<string, unknown>, ctx: FcCtx, rec: FcRec, outcome: string) => {
+    const { url: _u, query: _q, ...request } = body;
+    return { run_id: ctx.run_id ?? null, item_id: ctx.item_id ?? null, use_case: ctx.use_case, endpoint, provider_id: ctx.provider_id ?? null, course_id: ctx.course_id ?? null,
+             url: ctx.url ?? (typeof body.url === "string" ? body.url : null), request: { ...request, ...(endpoint === "search" ? { query: body.query } : {}) }, ...rec, outcome } as Record<string, unknown>;
+  };
+  const write = async (endpoint: string, body: Record<string, unknown>, ctx: FcCtx, rec: FcRec, outcome: string, opts: FcOpts) => {
+    const log = row(endpoint, body, ctx, rec, outcome);
+    if (!opts.defer) await o.log(log).catch(() => null);
+    return log;
+  };
+  // POST /scrape: html (rawHtml, else html), markdown and links only for a page Firecrawl answered whose own status is not 4xx or 5xx.
+  const scrape = async (body: Record<string, unknown>, ctx: FcCtx, opts: FcOpts) => {
+    const { http, d, rec } = await call("scrape", body, opts);
+    const ps = rec.page_status;
+    const raw = pageHtml(d), md = String(d?.data?.markdown || "");
+    const outcome = readOutcome(rec, raw || md, raw ? textLen(raw) : md.trim().length);
+    const accepted = rec.success && pageOk(ps) && !!(raw || md || (Array.isArray(d?.data?.links) && d.data.links.length));
+    const log = await write("scrape", body, ctx, rec, outcome, opts);
+    return {
+      d, rec, http, outcome, log, accepted, page_status: ps, soft_error: rec.success && !pageOk(ps),
+      code: ps ?? http,  // the page's own status when Firecrawl reported it, otherwise the API's
+      html: accepted ? raw : "", markdown: accepted ? md : "", links: accepted && Array.isArray(d?.data?.links) ? (d.data.links as unknown[]).map(String) : [] as string[],
+      finalUrl: String(d?.data?.metadata?.url || d?.data?.metadata?.sourceURL || body.url || ""),
+    };
+  };
+  // POST /map: the addresses as Firecrawl returned them (strings or { url, title }); each lane keeps its own filter.
+  const map = async (body: Record<string, unknown>, ctx: FcCtx, opts: FcOpts) => {
+    const { http, d, rec } = await call("map", body, opts);
+    const raw: any[] = Array.isArray(d?.links) ? d.links : Array.isArray(d?.data?.links) ? d.data.links : [];
+    const ok = rec.success && http !== null && http < 400;
+    const outcome = callOutcome(rec, raw.length ? "mapped" : "no_links");
+    const log = await write("map", body, ctx, rec, outcome, opts);
+    return { d, rec, http, ok, outcome, raw, log };
+  };
+  // POST /search: the results as Firecrawl returned them (v2 data.web, v1 data).
+  const search = async (body: Record<string, unknown>, ctx: FcCtx, opts: FcOpts) => {
+    opts = { estimate: 2, ...opts };
+    const { http, d, rec } = await call("search", body, opts);
+    const raw: any[] = Array.isArray(d?.data?.web) ? d.data.web : Array.isArray(d?.data) ? d.data : [];
+    const ok = rec.success && http !== null && http < 400;
+    const outcome = callOutcome(rec, raw.length ? "results" : "no_results");
+    const log = await write("search", body, ctx, rec, outcome, opts);
+    return { d, rec, http, ok, outcome, raw, log };
+  };
+  return { scrape, map, search };
+}
+export type FcClient = ReturnType<typeof fcClient>;
