@@ -1,5 +1,5 @@
 // Guards: Decision 278 (Platform Admin 14 Nov 2026 16:10) pre-AI admission gate pre-ai-admission-v1 ships in shadow: D1 manifest checked on the stored copy's bytes, D2 scholarship score measured only, linked page in the fingerprint, admission.gate_on = 0
-// CF-247 S543. Design: admin docs/audits/studysearch-pre-ai-admission-gate-design.md (D1-D4, section 9). Worker coverage-sweep v0.97.0, module
+// CF-247 S544. Design: admin docs/audits/studysearch-pre-ai-admission-gate-design.md (D1-D4, section 9). Worker coverage-sweep v0.97.0, module
 // supabase/functions/coverage-sweep/admission-gate.ts; migration 20261114101500_cf247_pre_ai_admission_shadow.sql; harness scripts/admission-harness.mjs.
 // Storage housekeeping in the same bundle: migration 20261114103000_cf247_adapter_captures_bucket_hardening.sql.
 import { test, expect } from '@playwright/test'

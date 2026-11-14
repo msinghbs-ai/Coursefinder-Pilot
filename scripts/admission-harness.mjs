@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // CF-247 pre-AI admission harness for pre-ai-admission-v1 (Decision 278; admin docs/audits/studysearch-pre-ai-admission-gate-design.md §6).
-// Guarded by tests/uat/cf-247-s543-pre-ai-admission-gate-contract.spec.mjs (it runs --self-test).
+// Guarded by tests/uat/cf-247-s544-pre-ai-admission-gate-contract.spec.mjs (it runs --self-test).
 // Validates a sample of stored evidence copies end to end against the storage contract and the shadow admission gates, using the worker's own
 // pure modules, so what it reports is what the worker would decide. READ ONLY: it downloads objects, never writes, deletes, calls AI or Firecrawl.
 //
