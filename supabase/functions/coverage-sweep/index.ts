@@ -38,6 +38,7 @@ import { RECOVERY_VARIANT, SCH_EXTRACT_CONTRACT, awardSection, checkScholarshipD
 import { awardSections, mapOutcome, nextPage, pagingState, redirectOutcome, sectionCode, sectionHtml, statedTotal } from "./catalogue.ts";
 import { COURSE_TEXT_FIELDS, cdescRequest, cdescResults, cdescSpans, cdescUser, courseTextAnswer, courseTextAnswerLimit, courseTextLength, courseTextPage, courseTextRequest, courseTextResults, courseTextUser, COURSE_TEXT_PROMPT_VERSION, CDESC_PROMPT_VERSION } from "./course-text.ts";
 import { leanText, observation, sha256Hex } from "./lean-input.ts";
+import { BLOCK_INPUT, LEAN_SECTIONS, holds, selectSections } from "./lean-sections.ts";
 import { DESCRIPTION_ANSWER_KEY, DESCRIPTION_PROMPT_VERSION, promptRequest, promptSentences, DESCRIPTION_WORKER_PROTOCOL, aboutLinks, aboutPageCheck, descriptionAnswer, descriptionClaimCheck, descriptionCostQuote, descriptionPageText, descriptionIdentitySeen, descriptionRequest, descriptionSourceIdentity, type IdentityTrace, ownHost, providerDescriptionSentences } from "./description.ts";
 const SCH_VERSION = "scholarship-sweep-v0.7.3"; // v0.7.3 (11 Oct 2026, Platform Admin bugs 11/10-6): a "while places last" condition is not an ended scholarship; an amount the student pays (deposit, bond, fee) is never the award and a "valued at" amount counts; courses listed after "one of the following courses" are read. v0.7.2 (11 Oct 2026): course titles end at bullets (•, ⦁) and at the next capitalised word or sentence. v0.7.1 (11 Oct 2026): courses named after "excluding" are exclusions; course titles keep their bracketed specialisation; numeric dates read in the provider country's day/month order; date proofs start at their label. v0.7.0 (11 Oct 2026): application open and close dates (with rounds), study start, courses the page names, and the sentence behind each level and field. v0.6.3 (11 Oct 2026): academic-result percentages (CWA, WAM, ATAR) are not award values; the value text is a whole sentence. v0.6.2: Firecrawl cap and reserve read from Layer 2 settings; v0.6.1: // v0.6.1: numeric character references in titles decoded; // v0.6.0 (Decision 250): amounts in the provider country's currency; NZ and Canadian domestic wording
 // v0.5.4 (2 Oct 2026, Decision 212 check): a listed value ("Residency Australian Citizen, New Zealand Citizen, International
@@ -83,7 +84,9 @@ const VERSION = "coverage-sweep-v0.5.6"; // extractor version (unchanged by v0.6
 // v0.38.1 (22 Oct 2026, NZ course list pages): a page the AI page match chose from the university's own site addresses (its course list or
 // site map) is listed on the university's own site, so it may be read through the scraper when the direct read is blocked (Otago, Lincoln, AUT).
 const FC_TRUSTED_BASIS = ["cricos_search", "cricos_code", "cricos_code_on_page", "nzqa_code", "adapter_code", "title_match", "cms_path_public", "manual", "firecrawl_upgrade", "ai_match", "programme_list"]; // v0.45.0: a page bound by its NZ or CA code is as trusted as one bound by a CRICOS code
-const WORKER = "coverage-sweep-worker-v0.89.0"; // v0.89.0 (14 Nov 2026, CF-247 merge of #1128 AI models and services with #1137 AER v2 prompt v3; both were numbered v0.88.0): mode aer_v2_shadow builds the v3 request over numbered lean-md-v1 blocks (#1137) and sends it through cascade.ts on the entry_requirements_v2_shadow route (#1128); the version's answer contract, routing and params come from the version, the model and its cascade from the route. No request, prompt, model choice, skip, value, admission, setting or ceiling changes.
+const WORKER = "coverage-sweep-worker-v0.90.0"; // v0.90.0 (14 Nov 2026, CF-247 merge of #1128 AI models and services with #1136 Lean AI Input Phase 1b step 1; both were numbered v0.89.0): both releases together, nothing else. #1136 adds the offline section selector and makes no AI call; every model call still goes through cascade.ts on its own service route (#1128). No request, prompt, model choice, skip, value, admission, setting or ceiling changes.
+// was v0.89.0 (#1136) // v0.89.0 (14 Nov 2026, numbered after #1137 v0.88.0, CF-247 Lean AI Input Phase 1b step 1, Platform Admin 14 Nov 2026 11:37; admin docs/platform/LEAN-AI-INPUT-PHASE1B-SECTION-SELECTION-DESIGN.md): new mode lean_sections_eval, the offline recall check of the section selector (lean-sections.ts lean-sections-v1, selecting a field's sections from the platform's one [B#] block form, aer-v2.ts aerV3Blocks / BLOCK_INPUT lean-blocks-v1, the same blocks the AER v2 reader sees; no block format of its own) on labelled stored pages handed over by public.svc_lean_sections_eval_next_v1, recorded with public.svc_lean_sections_eval_record_v1. Stored copies only: no AI, no Firecrawl, no live fetch, nothing admitted. No other mode changes.
+// was v0.89.0 (#1128 merge) // v0.89.0 (14 Nov 2026, CF-247 merge of #1128 AI models and services with #1137 AER v2 prompt v3; both were numbered v0.88.0): mode aer_v2_shadow builds the v3 request over numbered lean-md-v1 blocks (#1137) and sends it through cascade.ts on the entry_requirements_v2_shadow route (#1128); the version's answer contract, routing and params come from the version, the model and its cascade from the route. No request, prompt, model choice, skip, value, admission, setting or ceiling changes.
 // was v0.88.0 (#1137) // v0.88.0 (14 Nov 2026, CF-247 AER v2 prompt v3, Platform Admin 14 Nov 2026 item 2): mode aer_v2_shadow reads a prompt version whose answer contract is aer-v2-answer-v3 over the whole stored page as numbered lean-md-v1 blocks (aer-v2.ts aerV3Blocks: "[B<n> @<source_at>]", headings, list items, table rows with their column headers; never cut), with the version's pinned provider routing and require_parameters (aerV3Request), and checks each record with the v3 verifier (aerV3Verify: exact_quote inside its cited block and holding the minimum; lead_in_quote separate, before it, within reading.aer_v3_lead_in_max_blocks and no heading between). Versions with the v1 contract read exactly as before.
 // was v0.88.0 (#1128 merge) // v0.88.0 (14 Nov 2026, CF-247 merge of #1128 AI models and services with #1131 Lean AI Input Phase 1): both releases together. Every model call still goes through cascade.ts on its own service route (#1128), and mode enrich_ai still observes every course-page read in shadow (#1131); the observation of a course description names the course_description route model the read is sent to. No request, prompt, model choice, skip, value, admission, setting or ceiling changes.
 // was v0.87.0 // v0.87.0 (13 Nov 2026, numbered after #1128 v0.85.0 and v0.86.0, CF-247 Lean AI Input Phase 1, Platform Admin 13 Nov 2026 22:51; admin docs/platform/LEAN-AI-INPUT-PHASE0-BASELINE-2026-11-13.md §4): mode enrich_ai observes every course-page read in shadow (lean-input.ts lean-md-v1): source text length, characters sent, whether and where the text was cut, a high-recall preflight on the text sent and on the whole page, the sent-input SHA-256 and a content/prompt/model/schema fingerprint, recorded through public.svc_ai_input_observe_v1 (reading.input_observe_on). No request, prompt, model, skip, value or admission changes.
@@ -2386,6 +2389,40 @@ async function handle(req: Request): Promise<Response> {
         } catch { tally.record_failed = (tally.record_failed || 0) + 1 }
       });
       return j({ ok: true, mode, version, model, items: items.length, tally, records_passed: passed, records_failed: failed, cost_usd: cost, openrouter: ors.summary(), ms: Date.now() - t0, worker: WORKER });
+    }
+    // v0.88.0 (14 Nov 2026, CF-247 Lean AI Input Phase 1b step 1, Platform Admin 14 Nov 2026 11:37; admin LEAN-AI-INPUT-PHASE1B-SECTION-SELECTION-DESIGN.md
+    // §4): the offline recall check of the section selector. The database hands over labelled cases (a stored page and a value a person or a
+    // tested adapter took from it); each page is turned into the platform's one [B#] block form (aer-v2.ts aerV3Blocks over leanText, BLOCK_INPUT lean-blocks-v1, the same blocks the AER v2 reader sees), the field's sections are selected (lean-sections-v1)
+    // and the case records whether the value is on the page at all, inside the first enrich.page_chars characters the current reader sends, in the
+    // converted page and in the selected sections. Stored copies only: no AI call, no scraper credit, no live fetch; nothing is admitted or changed.
+    if (mode === "lean_sections_eval") {
+      const items: any[] = await rpc("svc_lean_sections_eval_next_v1", { p_limit: Math.max(1, Math.min(Number(body.limit) || 1, 200)) });  // fixed: the setting batch.lean_sections_eval's upper bound
+      if (!Array.isArray(items) || !items.length) return j({ ok: true, mode, items: 0, worker: WORKER });
+      const cut = Number(ws?.["enrich.page_chars"] ?? 24000) || 24000;
+      const rows: any[] = [], tally: Record<string, number> = {};
+      await pool(items, 4, async (it) => {  // fixed: stored-copy reads at once (storage only)
+        const row: any = { case_id: it.case_id, selector: LEAN_SECTIONS, converter: BLOCK_INPUT, worker: WORKER };
+        try {
+          if (Date.now() - t0 > BUDGET_MS - 15000) { row.error = "time budget"; return }
+          const raw = await readEvidenceCopy(c, String(it.storage_path));
+          const gold: string[] = Array.isArray(it.gold) ? it.gold.map(String) : [], f = String(it.field);
+          const di = pageDataItems(raw), stripped = raw.replace(/<(nav|header|footer)\b[\s\S]*?<\/\1>/gi, " ");
+          // the text the current reader of this field is given, before its cut
+          const current = f === "entry_requirements" ? (di ? `Page data fields:\n${di}\n\n` : "") + htmlToText(stripped)
+            : f === "description" || f === "deadline" ? courseTextPage(raw, Number.MAX_SAFE_INTEGER)
+            : (di ? `Page data fields:\n${di}\n\n` : "") + mainText(raw);
+          const ab = aerV3Blocks(leanText(raw), di), whole = ab.text, sel = selectSections(ab, f);
+          const selText = sel.text;  // page data lines are blocks of their own and always travel (design §3.5)
+          Object.assign(row, { page_chars: current.length, cut_chars: cut, lean_chars: whole.length, lean_blocks: ab.blocks.length,
+            gold_in_page: holds(current, gold) || holds(whole, gold) || holds(raw, gold), gold_in_current: holds(current, gold),
+            gold_in_first_cut: holds(current.slice(0, cut), gold), gold_in_lean: holds(whole, gold), gold_in_selection: holds(selText, gold),
+            no_selection: sel.no_selection, selected_blocks: sel.blocks, selected_chars: selText.length, block_ids: sel.block_ids.slice(0, 400) });
+          tally[row.gold_in_selection ? "held" : row.gold_in_page ? "missed" : "not_on_page"] = (tally[row.gold_in_selection ? "held" : row.gold_in_page ? "missed" : "not_on_page"] || 0) + 1;
+        } catch (e) { row.error = (e instanceof Error ? e.message : String(e)).slice(0, 200); tally.error = (tally.error || 0) + 1 }
+        finally { rows.push(row) }
+      });
+      const rec = await rpc("svc_lean_sections_eval_record_v1", { p_rows: noNul(rows) });
+      return j({ ok: true, mode, items: items.length, tally, recorded: rec, selector: LEAN_SECTIONS, converter: BLOCK_INPUT, ai_calls: 0, ms: Date.now() - t0, worker: WORKER });
     }
     if (mode === "central_ai") {
       let key = Deno.env.get("OPENROUTER_API_KEY") || "";
