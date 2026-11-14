@@ -1,0 +1,2 @@
+{"rehearsal": {"at": "2026-11-14T02:32:04.168356+00:00", "pre": {"a_done": 720, "a_total": 2800, "a_failed": 0, "a_pending": 2080}, "txid": 17191547, "failed": [], "B_run_b": {"fees": 400, "campus": 400, "intakes": 400, "delivery": 400, "duration": 400, "entry_requirements": 800}, "verdict": "PASS", "Q_ai_calls": 0, "Q_report_run": "phase1b-step1b-2026-11-14", "X1_migration_md5": "b18783b29d549acc8e2e71fed07ab58e"},
+ "independent_read": {"at": "2026-11-14 02:32:38.135623+00", "tx": "aborted", "run_b_rows": 0, "superseded": 0, "run_a": {"done": 720, "pending": 2080}}}
