@@ -26,4 +26,6 @@ The earlier run of 11:58 AEDT on the `20261114010000` text (md5 `d45d9e6e…`, t
 | Switch off | The fire sends nothing and the lease hands over nothing |
 | Regression | `field_enrich_items` and the AER labels unchanged; exactly one cron job added |
 
-**Independent read afterwards (11:58:52):** table absent, 0 functions, 0 settings (total still 1,420), no cron, catalogue or register rows. `txid_status` = aborted.
+**Independent reads afterwards:**
+- **12:38:35 AEDT, for the final run:** table absent, 0 functions, 0 `lean_sections_eval` settings, no cron, catalogue or register rows. `txid_status(17172230)` = aborted. The settings total was 1,422; it moved from 1,420 between the two runs because of #1137's own deploy, and none of the new settings are this PR's.
+- **11:58:52, for the earlier run:** all the same, with a total of 1,420 and `txid_status(17161597)` = aborted.
