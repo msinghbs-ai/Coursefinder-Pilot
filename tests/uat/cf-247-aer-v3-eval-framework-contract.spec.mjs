@@ -83,7 +83,7 @@ test('the worker answers through the framework with the unchanged [B#] blocks, p
   expect(mode).not.toMatch(/svc_aer_v2_shadow_record|course_entry_review_apply|svc_pilot_submit_nonce/)
   // the [B#] contract Lean AI consumes is unchanged (Platform Admin 14 Nov 2026 14:34)
   expect(AER).toContain('const show = (b: AerBlock) => `[B${b.n} @${b.source_at === null ? "data" : b.source_at}] ${b.kind === "heading" ? "## " : b.kind === "item" ? "- " : ""}${b.text}`;')
-  expect(IX).toMatch(/(?:const WORKER = "coverage-sweep-worker-v0\.93\.0"; |\/\/ was v0\.93\.0 )\/\/ v0\.93\.0 \(14 Nov 2026/)  // current, or kept as "was" by a later version (R7 is v0.94.0)
+  expect(IX).toMatch(/(?:const WORKER = "coverage-sweep-worker-v0\.94\.0"; |\/\/ was v0\.94\.0 )\/\/ v0\.94\.0 \(14 Nov 2026/)  // current, or kept as "was" by a later version (R7 is v0.96.0)
 })
 
 test('one evaluation path: the #1137 tables retire, the probes move to the paused shadow reader; nothing is dropped and the queue is untouched', () => {
