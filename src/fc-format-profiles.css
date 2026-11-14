@@ -1,0 +1,51 @@
+/* Toolsets and limits › Firecrawl › Format profiles (v2.16.2). Shared tokens only; the fcp- classes lay out the list, the editor, the lane
+   table and the save bar. On a phone the list sits above the editor and every row wraps, so nothing forces the page sideways. */
+.fcp{min-width:0;display:flex;flex-direction:column;gap:14px}
+.fcp code{font-family:var(--cf-font-mono);font-size:var(--cf-fs-xs)}
+.fcp-never{margin:0;padding:8px 10px;border-radius:var(--cf-radius-md);background:var(--cf-surface-2);color:var(--cf-text-2);font-size:var(--cf-fs-sm);line-height:1.5;overflow-wrap:anywhere}
+.fcp-alert{margin:0;padding:9px 12px;border-radius:var(--cf-radius-md);border:1px solid var(--cf-red-200);background:var(--cf-danger-soft);font-size:var(--cf-fs-sm);overflow-wrap:anywhere}
+.fcp-grid{display:grid;grid-template-columns:minmax(180px,240px) minmax(0,1fr);gap:14px;align-items:start}
+.fcp-list{display:flex;flex-direction:column;gap:6px;min-width:0}
+.fcp-tab{font:inherit;text-align:left;display:flex;flex-direction:column;gap:2px;padding:8px 10px;border:1px solid transparent;border-radius:var(--cf-radius-md);background:transparent;color:var(--cf-text);cursor:pointer;min-height:44px}
+.fcp-tab small{color:var(--cf-muted);font-size:var(--cf-fs-xs);overflow-wrap:anywhere}
+.fcp-tab:hover{background:var(--cf-surface-2)}
+.fcp-tab.is-on{background:var(--cf-brand-soft);border-color:var(--cf-border)}
+.fcp-edit{min-width:0;display:flex;flex-direction:column;gap:12px}
+.fcp-fs{margin:0;min-width:0;padding:10px 12px;border:1px solid var(--cf-border);border-radius:var(--cf-radius-md);display:flex;flex-direction:column;gap:8px}
+.fcp-fs legend,.fcp-fs>summary{font-weight:600;font-size:var(--cf-fs-sm);padding:0 4px}
+.fcp-crawl>summary{cursor:pointer;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.fcp-row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;min-width:0}
+.fcp-between{justify-content:space-between;align-items:center}
+.fcp-field{display:flex;flex-direction:column;gap:4px;min-width:0;flex:0 1 200px;font-size:var(--cf-fs-sm)}
+.fcp-field>span{font-size:var(--cf-fs-xs);font-weight:600;color:var(--cf-text-2)}
+.fcp-field small{color:var(--cf-muted);font-size:var(--cf-fs-xs);line-height:1.4}
+.fcp-wide{flex:1 1 260px}
+.fcp-fs>.fcp-field,.fcp-fs>label.fcp-field{flex:none}
+.fcp-field input,.fcp-field select,.fcp-fs textarea{font:inherit;font-size:var(--cf-fs-sm);min-width:0;width:100%;box-sizing:border-box}
+.fcp-fs textarea{font-family:var(--cf-font-mono);font-size:var(--cf-fs-xs)}
+.fcp-check{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;font-size:var(--cf-fs-sm);min-height:28px}
+.fcp-check small{color:var(--cf-muted);font-size:var(--cf-fs-xs)}
+.fcp-err{color:var(--cf-danger)}
+.fcp-pre{margin:0;padding:10px;border-radius:var(--cf-radius-md);background:var(--cf-surface-2);font-family:var(--cf-font-mono);font-size:var(--cf-fs-xs);overflow-x:auto;max-height:280px}
+.fcp-seg{display:inline-flex;border:1px solid var(--cf-border);border-radius:var(--cf-radius-pill);overflow:hidden}
+.fcp-seg button{font:inherit;font-size:var(--cf-fs-xs);padding:6px 12px;border:0;background:var(--cf-surface);color:var(--cf-text);cursor:pointer;min-height:32px}
+.fcp-seg button.is-on{background:var(--cf-brand-soft);color:var(--cf-brand-ink);font-weight:600}
+.fcp-section{min-width:0}
+.fcp-add{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-top:10px}
+.fcp-shot{padding-top:4px}
+.fcp-save{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border:1px solid var(--cf-border);border-radius:var(--cf-radius-md);background:var(--cf-surface)}
+.fcp-save.is-dirty{position:sticky;bottom:0;z-index:1;box-shadow:var(--cf-shadow-md)}
+.fcp-save-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:flex-end}
+.fcp-save-row .sl-sub{margin-right:auto}
+.fcp-reason{display:flex;flex-direction:column;gap:4px;font-size:var(--cf-fs-xs);font-weight:600;color:var(--cf-text-2)}
+.fcp-reason input{font:inherit;font-weight:400;font-size:var(--cf-fs-sm)}
+.fcp-problems{margin:0;padding:8px 10px 8px 26px;border-radius:var(--cf-radius-md);background:var(--cf-danger-soft);font-size:var(--cf-fs-sm);overflow-wrap:anywhere}
+.fcp-history{font-size:var(--cf-fs-xs);color:var(--cf-text-2)}
+@media (max-width:720px){
+  .fcp-grid{grid-template-columns:minmax(0,1fr)}
+  .fcp-list{flex-direction:row;flex-wrap:wrap}
+  .fcp-tab{flex:1 1 140px}
+  .fcp-field{flex:1 1 100%}
+  .fcp-save.is-dirty{position:static;box-shadow:none}
+}
+.fcp-fs .fcp-row{align-items:flex-start}

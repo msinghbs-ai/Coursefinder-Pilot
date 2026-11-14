@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.424 — 14 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.2** (Platform Admin 14 Nov 2026 19:19; mock-up accepted 20:13). Models & services › Services & limits › Firecrawl › Format profiles: what every Firecrawl page read asks for, by profile (formats markdown, rawHtml, html, links, screenshot; main content only; tags; copy age; wait; time allowed; actions; crawl options checked only), each lane mapped to a profile with university overrides, saved with a reason as a new version. json, summary, question, highlights and onlyCleanContent are never sent. Worker coverage-sweep keeps markdown beside stored course pages, Run now pages and About pages and records the request on the same evidence row (migration 20261114201500). AER v1 lanes and adapter capture keep their own request; course pages stay whole page.
+
 ## 0.1.423 — 14 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.1** (Platform Admin 14 Nov 2026, after the live check of v2.16.0). Models & services › AI: a limits banner above the four panes says whether the ceiling and caps are enforced or only reported; a service that is not running lists its reasons in words, and the five services switched off until a model is qualified for them are Off rather than a red "no allowed model" alert; Recent usage counts failed calls with their rate and kinds. Screen only.

@@ -8,6 +8,8 @@
 // Reads: admin_toolsets_read(), admin_platform_notices_read(layer).
 // CF-247 W35 (Platform Admin 30 Oct 2026 06:53): notices come from a cached snapshot; its time, age and Stale marker are shown (SnapshotStamp).
 // Writes: admin_toolsets_write(action,args) — Platform Admin with a reason.
+// v2.16.2 (Platform Admin 14 Nov 2026 19:19): Firecrawl › Format profiles is its own card under the Firecrawl card (FirecrawlFormatProfiles.jsx);
+// its settings (section Format profiles) are not in SECTION_ORDER, so the generic editor never shows them as text.
 // v2.15.180 (Decision 253): Firecrawl settings by section (Target universities, Read pages, Find pages, Runs) and the
 // Firecrawl work panel (FirecrawlWork.jsx): runs by use case, target universities and the report for Firecrawl support.
 // v2.15.200 (Decision 254, Platform Admin 6 Oct 15:38 "Services, keys and limits only, every card collapsed"): every
@@ -19,6 +21,7 @@ import{Button,Empty,Loading,fmtDateTime,fmtNumber}from'./ui-kit'
 import FirecrawlWork from'./FirecrawlWork'
 import FirecrawlCredits from'./FirecrawlCredits'
 import FirecrawlAcceptance from'./FirecrawlAcceptance'
+import FirecrawlFormatProfiles from'./FirecrawlFormatProfiles'
 import Card,{rememberOpen}from'./Card'
 import{hrefFor}from'./nav-map'
 import{plainError}from'./lib/errors'
@@ -164,7 +167,7 @@ export default function Toolsets({onError,only=null}){
       <div className="tn-all" data-toolset-notices>{notices.length?notices.map(x=><Notice key={x.key} n={x} onDone={load}/>):<p className="sl-sub">No notices on any layer.</p>}</div>
     </Card>}
     {/* v2.16.0 (Platform Admin 13 Nov 2026 19:23): the OpenRouter card and every setting whose home is Models & services are on Models & services › AI */}
-    {(d.toolsets||[]).filter(t=>!RETIRED_TOOLSETS.has(t.key)&&t.key!=='openrouter'&&want(t.key)).map(t=><React.Fragment key={t.key}><Toolset t={{...t,settings:(t.settings||[]).filter(x=>!isAiHome(x))}} moved={(t.settings||[]).filter(x=>isAiHome(x)).length} can={can} write={write}/>{t.key==='firecrawl'&&<><FirecrawlAcceptance onError={onError}/><FirecrawlCredits onError={onError}/><FirecrawlWork onError={onError}/></>}</React.Fragment>)}
+    {(d.toolsets||[]).filter(t=>!RETIRED_TOOLSETS.has(t.key)&&t.key!=='openrouter'&&want(t.key)).map(t=><React.Fragment key={t.key}><Toolset t={{...t,settings:(t.settings||[]).filter(x=>!isAiHome(x))}} moved={(t.settings||[]).filter(x=>isAiHome(x)).length} can={can} write={write}/>{t.key==='firecrawl'&&<><FirecrawlAcceptance onError={onError}/><FirecrawlCredits onError={onError}/><FirecrawlWork onError={onError}/><FirecrawlFormatProfiles onError={onError}/></>}</React.Fragment>)}
   </div>
 }
 
