@@ -16,23 +16,15 @@
 -- G2: the profiles and the screenshot size limit are settings; Firecrawl's own API bounds in the check are marked fixed.
 -- G3: no consumer API object is read or changed (evidence metadata gains keys beside the existing ones; no column changes).
 -- Replaces: public.svc_worker_settings_v1() and public.admin_toolsets_write(text,jsonb) (same names and signatures; md5-guarded edits of the live
---   text); the kind check of pipeline.platform_toolset_settings (same name, json added). The firecrawl setting read_formats stays: lanes mapped to
+--   text). The firecrawl setting read_formats stays: lanes mapped to
 --   lane_own and the probe still read it.
 -- Retires: nothing.
 
 set local lock_timeout = '3s';
 
--- 1. A setting can hold a set of values (kind json). It is changed only on its own screen, never as text.
-do $c$
-declare v_def text;
-begin
-  select pg_get_constraintdef(c.oid) into v_def from pg_constraint c
-   where c.conrelid = 'pipeline.platform_toolset_settings'::regclass and c.conname = 'platform_toolset_settings_kind_check';
-  if position('json' in coalesce(v_def, '')) = 0 then
-    execute format('alter table pipeline.platform_toolset_settings drop constraint %I, add constraint %I check (kind = any (array[%L::text, %L::text, %L::text, %L::text, %L::text]))',
-                   'platform_toolset_settings_kind_check', 'platform_toolset_settings_kind_check', 'number', 'text', 'boolean', 'list', 'json');
-  end if;
-end $c$;
+-- 1. No table change. The three sets of values are stored as setting values (jsonb) with kind text; they are not shown in the generic setting
+--    table (their section, Format profiles, has its own card) and admin_toolsets_write refuses them by key (section 6). Changing the kind check
+--    would need an exclusive lock on pipeline.platform_toolset_settings, which the jobs read every minute (a rehearsal hit the 3 s lock timeout).
 
 -- 2. The check every save and the worker make (the same rules as firecrawl.ts checkProfile / checkProfiles). Returns every problem in words.
 -- Type tests first, in a case, so a wrong type is a problem in words and never a cast error.
@@ -157,7 +149,7 @@ insert into pipeline.platform_toolset_settings (toolset_key, key, label, help, k
 values
  ('firecrawl', 'scrape_profiles', 'Format profiles',
   'What a Firecrawl page read asks for, by profile: formats (markdown, rawHtml, html, links, screenshot), main content only, tags kept or left out, copy age, wait, time allowed, actions, crawl options. Changed on Format profiles with a reason.',
-  'json', $j${
+  'text', $j${
     "page_html":      {"name": "Page HTML and markdown", "about": "Course pages, lists, About pages and site checks: the raw page for the readers and markdown kept beside it, one credit.", "formats": ["rawHtml", "markdown"], "onlyMainContent": false, "maxAgeMs": 172800000},
     "aer_hub_page":   {"name": "AER hub page", "about": "Country and entry-band tables in side panels: the whole page, never main content only. Not mapped while AER v1 is frozen (Decision 276).", "formats": ["rawHtml", "markdown"], "onlyMainContent": false, "maxAgeMs": 172800000},
     "text_full":      {"name": "Whole page as text", "about": "Register and address pages read as text.", "formats": ["markdown"], "onlyMainContent": false, "maxAgeMs": 172800000},
@@ -167,7 +159,7 @@ values
   'worker coverage-sweep v0.99.0: every scrape through fcClient (firecrawl.ts); public.admin_fc_profiles_set_v1', 'human'),
  ('firecrawl', 'scrape_profile_lanes', 'Profile each lane uses',
   'Which profile each worker lane sends. lane_own: the lane sends its own request unchanged (AER v1 lanes, adapter capture, the probe). A lane not listed sends its own request.',
-  'json', $j${
+  'text', $j${
     "course_read": "page_html", "course_read_view": "page_html", "course_read_priority": "page_html", "read_page": "page_html",
     "companion_read": "page_html", "course_list_read": "page_html", "source_find": "page_html", "programme_discover": "page_html", "programme_read": "page_html",
     "provider_description": "page_html", "site_check": "page_html", "find_site": "page_html", "scholarship_read": "page_html",
@@ -177,7 +169,7 @@ values
   'worker coverage-sweep v0.99.0: resolveProfile (firecrawl.ts)', 'human'),
  ('firecrawl', 'scrape_profile_overrides', 'University overrides',
   'A university that needs another profile for one lane (for example a site that hides its entry bands outside the main content).',
-  'json', '[]'::jsonb, null, null, 'overrides', 202, 'Firecrawl format profiles, Platform Admin 14 Nov 2026 19:19 (none yet)', 'Format profiles',
+  'text', '[]'::jsonb, null, null, 'overrides', 202, 'Firecrawl format profiles, Platform Admin 14 Nov 2026 19:19 (none yet)', 'Format profiles',
   'worker coverage-sweep v0.99.0: resolveProfile (firecrawl.ts)', 'human'),
  ('firecrawl', 'scrape_profiles_version', 'Format profiles version',
   'Goes up by one with every saved change; recorded on each evidence row the profiles produced.',
@@ -220,19 +212,17 @@ grant execute on function public.admin_fc_profiles_set_v1(jsonb, jsonb, jsonb, t
 
 create or replace function public.admin_fc_profiles_read_v1() returns jsonb
 language plpgsql stable security definer set search_path to '' as $function$
-declare v jsonb;
+declare s jsonb; v jsonb; v_at timestamptz; v_reason text;
 begin
   if auth.uid() is null or coalesce(security.current_role_rank(), 0) < 3 then raise exception 'Curator role or above required' using errcode = '42501'; end if;
-  select jsonb_build_object(
-    'profiles', max(case when key = 'scrape_profiles' then value end), 'lanes', max(case when key = 'scrape_profile_lanes' then value end),
-    'overrides', max(case when key = 'scrape_profile_overrides' then value end),
-    'version', max(case when key = 'scrape_profiles_version' then (value #>> '{}')::int end),
-    'screenshot_max_mb', max(case when key = 'screenshot_max_mb' then (value #>> '{}')::numeric end),
-    'saved_at', max(updated_at) filter (where key = 'scrape_profiles_version'), 'reason', max(reason) filter (where key = 'scrape_profiles_version'),
-    'formats', '["markdown","rawHtml","html","links","screenshot"]'::jsonb, 'never_sent', '["json","summary","question","highlights","onlyCleanContent"]'::jsonb,
-    'can_edit', coalesce(security.current_role_rank(), 0) >= 6)
-    into v from pipeline.platform_toolset_settings
+  select jsonb_object_agg(key, value), max(updated_at) filter (where key = 'scrape_profiles_version'), max(reason) filter (where key = 'scrape_profiles_version')
+    into s, v_at, v_reason from pipeline.platform_toolset_settings
    where toolset_key = 'firecrawl' and key in ('scrape_profiles', 'scrape_profile_lanes', 'scrape_profile_overrides', 'scrape_profiles_version', 'screenshot_max_mb');
+  v := jsonb_build_object(
+    'profiles', s->'scrape_profiles', 'lanes', s->'scrape_profile_lanes', 'overrides', s->'scrape_profile_overrides',
+    'version', (s->>'scrape_profiles_version')::int, 'screenshot_max_mb', (s->>'screenshot_max_mb')::numeric, 'saved_at', v_at, 'reason', v_reason,
+    'formats', '["markdown","rawHtml","html","links","screenshot"]'::jsonb, 'never_sent', '["json","summary","question","highlights","onlyCleanContent"]'::jsonb,
+    'can_edit', coalesce(security.current_role_rank(), 0) >= 6);
   v := v || jsonb_build_object('problems', to_jsonb(security.fc_scrape_profiles_check_v1(v->'profiles', v->'lanes', v->'overrides')),
     'history', coalesce((select jsonb_agg(jsonb_build_object('at', e.created_at, 'version', e.detail->'version', 'reason', e.detail->>'reason') order by e.created_at desc)
                            from (select * from pipeline.admin_control_events where area = 'toolsets' and action = 'fc_profiles' order by created_at desc limit 10) e), '[]'::jsonb));
@@ -289,7 +279,7 @@ select pg_temp.edit_once('public.admin_toolsets_write(text,jsonb)', '531d48c1adc
   $o$    if v_set.key is null then raise exception 'unknown setting'; end if;$o$,
   $n$    if v_set.key is null then raise exception 'unknown setting'; end if;
     -- CF-247 Firecrawl format profiles: a set of values, and the version it carries, change only on their own screen (checked, versioned)
-    if v_set.kind = 'json' or (v_set.toolset_key = 'firecrawl' and v_set.key = 'scrape_profiles_version') then
+    if v_set.toolset_key = 'firecrawl' and v_set.key in ('scrape_profiles', 'scrape_profile_lanes', 'scrape_profile_overrides', 'scrape_profiles_version') then
       raise exception 'this setting is changed on Toolsets and limits › Firecrawl › Format profiles'; end if;$n$);
 
 insert into pipeline.component_register(kind, name, layer, area, purpose, status, replaces, introduced_in) values
@@ -304,10 +294,11 @@ on conflict do nothing;
 
 -- 7. Post-checks: the seeds pass the check, no surcharge format is accepted, nothing else moved.
 do $c$
-declare v_p jsonb; v_l jsonb; v_o jsonb;
+declare s jsonb; v_p jsonb; v_l jsonb; v_o jsonb;
 begin
-  select max(case when key = 'scrape_profiles' then value end), max(case when key = 'scrape_profile_lanes' then value end), max(case when key = 'scrape_profile_overrides' then value end)
-    into v_p, v_l, v_o from pipeline.platform_toolset_settings where toolset_key = 'firecrawl';
+  select jsonb_object_agg(key, value) into s from pipeline.platform_toolset_settings
+   where toolset_key = 'firecrawl' and key in ('scrape_profiles', 'scrape_profile_lanes', 'scrape_profile_overrides');
+  v_p := s->'scrape_profiles'; v_l := s->'scrape_profile_lanes'; v_o := s->'scrape_profile_overrides';
   if cardinality(security.fc_scrape_profiles_check_v1(v_p, v_l, v_o)) <> 0 then raise exception 'post-check: the seeded profiles pass the check: %', security.fc_scrape_profiles_check_v1(v_p, v_l, v_o); end if;
   if cardinality(security.fc_scrape_profile_check_v1('{"formats":["rawHtml","json"]}', 't')) = 0 or cardinality(security.fc_scrape_profile_check_v1('{"formats":["summary"]}', 't')) = 0
      or cardinality(security.fc_scrape_profile_check_v1('{"formats":["markdown","question"]}', 't')) = 0 or cardinality(security.fc_scrape_profile_check_v1('{"formats":["markdown","highlights"]}', 't')) = 0
