@@ -83,7 +83,7 @@ test('the worker answers through the framework with the unchanged [B#] blocks, p
   expect(mode).not.toMatch(/svc_aer_v2_shadow_record|course_entry_review_apply|svc_pilot_submit_nonce/)
   // the [B#] contract Lean AI consumes is unchanged (Platform Admin 14 Nov 2026 14:34)
   expect(AER).toContain('const show = (b: AerBlock) => `[B${b.n} @${b.source_at === null ? "data" : b.source_at}] ${b.kind === "heading" ? "## " : b.kind === "item" ? "- " : ""}${b.text}`;')
-  expect(IX).toMatch(/const WORKER = "coverage-sweep-worker-v0\.94\.0";/)
+  expect(IX).toMatch(/const WORKER = "coverage-sweep-worker-v0\.95\.0";/)
 })
 
 test('one evaluation path: the #1137 tables retire, the probes move to the paused shadow reader; nothing is dropped and the queue is untouched', () => {
@@ -98,4 +98,13 @@ test('one evaluation path: the #1137 tables retire, the probes move to the pause
   expect(M).not.toMatch(/key\s*=\s*'aer\.v2_shadow_on'|aer_v2_shadow_results\s+(set|where)|insert into catalogue\.|course_entry_review_apply_v1/i)
   expect(M).toContain("if security.pipeline_num_v1('aer.v2_shadow_on', 0) <> 0 or security.pipeline_num_v1('ai_eval.offline_runs_on', 0) <> 0 or security.pipeline_num_v1('ai_eval.aer_v3_runs_on', 0) <> 0 then")
   expect(M).toMatch(/^-- Replaces: .+\. Retires: pipeline\.aer_v2_eval_cases, pipeline\.aer_v2_eval_plans\.$/m)
+})
+
+test('worker v0.95.0: each wait is bounded by the time the call has left, a late start is skipped, and a cut reply is a timeout, not an empty answer', () => {
+  expect(mode).toContain('const callMs = Math.min(90000, t0 + BUDGET_MS - 10000 - Date.now());')
+  expect(mode).toContain('signal: AbortSignal.timeout(callMs) });')
+  expect(mode).not.toContain('signal: AbortSignal.timeout(90000)')
+  expect(mode).toContain('if (callMs < 20000) {')
+  expect(mode).toContain('ans.error = `timeout: no complete answer within ${Math.round(callMs / 1000)} s')
+  expect(mode).toContain('if (ans.skip) return;  // not answered: leased again by a later call')
 })

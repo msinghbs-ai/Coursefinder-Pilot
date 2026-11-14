@@ -32,5 +32,5 @@ test('only records that failed are listed, and the checks are unchanged by the d
 test('worker v0.94.0 stores the diagnostic beside the answer; the verdict and quote_on_page come from the checks as before', () => {
   expect(IX).toContain('quote_diag: aerV3QuoteDiag(v.records, blocks, v.checks) };')
   expect(IX).toContain('ans.error = null; ans.verdict = v.passed > 0 ? "accept" : "no_value"; ans.quote_on_page = v.failed === 0 && v.passed > 0;')
-  expect(IX).toMatch(/const WORKER = "coverage-sweep-worker-v0\.94\.0";/)
+  expect(IX).toMatch(/const WORKER = "coverage-sweep-worker-v0\.95\.0";/)
 })
