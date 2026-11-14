@@ -10,7 +10,7 @@
 -- The seeds keep today's requests (each lane's formats and onlyMainContent, no waitFor or timeout so each lane keeps its own, Firecrawl's own
 -- 2-day copy age) and add markdown to the page reads: rawHtml and markdown in one 1-credit call. Course pages keep onlyMainContent false
 -- until a read shows rawHtml is unchanged by it (today's reader needs content outside <main>).
--- Worker coverage-sweep v0.98.0 keeps the markdown (and a screenshot only when a profile asks) beside the stored page and records them on the
+-- Worker coverage-sweep v0.99.0 keeps the markdown (and a screenshot only when a profile asks) beside the stored page and records them on the
 -- same evidence row (public.svc_evidence_formats_attach_v1): files, profile, profile version, formats, copy age, cache state, page status, credits.
 -- No route switch, ceiling, Observe/Stop mode, model route or paused queue changes; aer.v2_shadow_on is not read or written.
 -- G2: the profiles and the screenshot size limit are settings; Firecrawl's own API bounds in the check are marked fixed.
@@ -164,7 +164,7 @@ values
     "text_main":      {"name": "Main content as text", "about": "Provider facts documents.", "formats": ["markdown"], "onlyMainContent": true, "maxAgeMs": 172800000},
     "register_links": {"name": "Register links and text", "about": "Register search pages: the links and the text.", "formats": ["links", "markdown"], "onlyMainContent": true, "maxAgeMs": 172800000}
   }$j$::jsonb, null, null, 'profiles', 200, 'Firecrawl format profiles, Platform Admin 14 Nov 2026 19:19: today''s requests plus markdown on page reads', 'Format profiles',
-  'worker coverage-sweep v0.98.0: every scrape through fcClient (firecrawl.ts); public.admin_fc_profiles_set_v1', 'human'),
+  'worker coverage-sweep v0.99.0: every scrape through fcClient (firecrawl.ts); public.admin_fc_profiles_set_v1', 'human'),
  ('firecrawl', 'scrape_profile_lanes', 'Profile each lane uses',
   'Which profile each worker lane sends. lane_own: the lane sends its own request unchanged (AER v1 lanes, adapter capture, the probe). A lane not listed sends its own request.',
   'json', $j${
@@ -174,19 +174,19 @@ values
     "cricos_peo": "text_full", "enrich_address": "text_full", "provider_facts_read": "text_main", "find_site_register": "register_links",
     "entry_render": "lane_own", "entry_fallback": "lane_own", "entry_pdf_render": "lane_own", "adapter_builder": "lane_own", "probe": "lane_own"
   }$j$::jsonb, null, null, 'lanes', 201, 'Firecrawl format profiles, Platform Admin 14 Nov 2026 19:19', 'Format profiles',
-  'worker coverage-sweep v0.98.0: resolveProfile (firecrawl.ts)', 'human'),
+  'worker coverage-sweep v0.99.0: resolveProfile (firecrawl.ts)', 'human'),
  ('firecrawl', 'scrape_profile_overrides', 'University overrides',
   'A university that needs another profile for one lane (for example a site that hides its entry bands outside the main content).',
   'json', '[]'::jsonb, null, null, 'overrides', 202, 'Firecrawl format profiles, Platform Admin 14 Nov 2026 19:19 (none yet)', 'Format profiles',
-  'worker coverage-sweep v0.98.0: resolveProfile (firecrawl.ts)', 'human'),
+  'worker coverage-sweep v0.99.0: resolveProfile (firecrawl.ts)', 'human'),
  ('firecrawl', 'scrape_profiles_version', 'Format profiles version',
   'Goes up by one with every saved change; recorded on each evidence row the profiles produced.',
   'number', '1'::jsonb, 1, 1000000, 'version', 203, 'Firecrawl format profiles, first version', 'Format profiles',
-  'worker coverage-sweep v0.98.0: evidence metadata firecrawl.profile_version; public.admin_fc_profiles_set_v1', 'automatic'),
+  'worker coverage-sweep v0.99.0: evidence metadata firecrawl.profile_version; public.admin_fc_profiles_set_v1', 'automatic'),
  ('firecrawl', 'screenshot_max_mb', 'Largest screenshot kept',
   'A screenshot a profile asks for is kept as received up to this size; a larger one is noted on the evidence row and not kept. No profile asks for screenshots today.',
   'number', '15'::jsonb, 1, 50, 'MB', 204, 'Firecrawl format profiles: screenshots off by default (Platform Admin 14 Nov 2026)', 'Format profiles',
-  'worker coverage-sweep v0.98.0: keepFormats', 'human')
+  'worker coverage-sweep v0.99.0: keepFormats', 'human')
 on conflict (toolset_key, key) do nothing;
 
 -- 4. Save and read the profiles (Toolsets and limits › Firecrawl › Format profiles).
@@ -265,7 +265,7 @@ begin
   end loop;
   return v_n;
 end $function$;
-comment on function public.svc_evidence_formats_attach_v1(jsonb) is 'CF-247 Firecrawl format profiles (worker coverage-sweep v0.98.0): records on the newest evidence row of a stored page the other formats kept beside it (metadata.formats: stored, markdown, screenshot) and the request (metadata.firecrawl: profile, profile_version, formats, max_age_ms, fresh, cache_state, cached_at, page_status, credits_used, scrape_id). Only files stored beside that page are recorded.';
+comment on function public.svc_evidence_formats_attach_v1(jsonb) is 'CF-247 Firecrawl format profiles (worker coverage-sweep v0.99.0): records on the newest evidence row of a stored page the other formats kept beside it (metadata.formats: stored, markdown, screenshot) and the request (metadata.firecrawl: profile, profile_version, formats, max_age_ms, fresh, cache_state, cached_at, page_status, credits_used, scrape_id). Only files stored beside that page are recorded.';
 revoke all on function public.svc_evidence_formats_attach_v1(jsonb) from public, anon, authenticated;
 grant execute on function public.svc_evidence_formats_attach_v1(jsonb) to service_role;
 
@@ -282,7 +282,7 @@ end $f$;
 select pg_temp.edit_once('public.svc_worker_settings_v1()', '5ef1c297c311ea346d95d04b2d430c34',
   $o$'search_results_scholarship_search', 'search_results_scholarship_discover'))$o$,
   $n$'search_results_scholarship_search', 'search_results_scholarship_discover',
-                                                          -- CF-247 Firecrawl format profiles (worker v0.98.0)
+                                                          -- CF-247 Firecrawl format profiles (worker v0.99.0)
                                                           'scrape_profiles', 'scrape_profile_lanes', 'scrape_profile_overrides', 'scrape_profiles_version', 'screenshot_max_mb'))$n$);
 
 select pg_temp.edit_once('public.admin_toolsets_write(text,jsonb)', '531d48c1adce92dd78d44a4650d19061',

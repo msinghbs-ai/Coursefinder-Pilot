@@ -95,7 +95,7 @@ export const fcFailed = (r: { rec: FcRec }) => r.rec.http === null;
 const plainLen = (h: string) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, " ").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().length;
 const callOutcome = (rec: FcRec, okOutcome: string) => rec.error && rec.http === null && /time(d)? ?out|timeout|aborted/i.test(rec.error) ? "timeout" : rec.http === 429 ? "rate_limited" : !rec.success || rec.http === null || rec.http >= 400 ? "fc_error" : okOutcome;
 
-// ---- Format profiles (Platform Admin 14 Nov 2026; worker v0.98.0): what every scrape asks Firecrawl for, set in Platform settings ›
+// ---- Format profiles (Platform Admin 14 Nov 2026; worker v0.99.0): what every scrape asks Firecrawl for, set in Platform settings ›
 // Models & services › Toolsets and limits › Firecrawl › Format profiles (settings scrape_profiles, scrape_profile_lanes,
 // scrape_profile_overrides, scrape_profiles_version). A lane keeps its own request (address, proxy, location, and its wait and time
 // allowed unless the profile sets them); the profile decides the formats and the content filters. The server checks the same rules
@@ -215,7 +215,7 @@ export function fcClient(o: { headers: Record<string, string>; log: (p: Record<s
   };
   // POST /scrape: html (rawHtml, else html), markdown and links only for a page Firecrawl answered whose own status is not 4xx or 5xx.
   const scrape = async (laneBody: Record<string, unknown>, ctx: FcCtx & { fresh?: boolean }, opts: FcOpts) => {
-    // v0.98.0: the lane's request with its format profile applied (lane, then a provider override); on demand asks for a fresh page
+    // v0.99.0: the lane's request with its format profile applied (lane, then a provider override); on demand asks for a fresh page
     const rp = resolveProfile(o.profiles ?? null, ctx.use_case, ctx.provider_id);
     const fresh = !!rp && (ctx.fresh === true || (o.fresh ? await Promise.resolve(o.fresh(ctx)).catch(() => false) : false));
     const body = applyProfile(laneBody, rp?.profile ?? null, fresh);

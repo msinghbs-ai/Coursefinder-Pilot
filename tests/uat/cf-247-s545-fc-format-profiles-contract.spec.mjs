@@ -1,6 +1,6 @@
 // Guards: CF-247 Firecrawl format profiles (Platform Admin 14 Nov 2026 19:19; screen v2.16.2, mock-up accepted 20:13): surcharge formats and onlyCleanContent never sent; rawHtml and markdown from one call kept under one evidence row; stored HTML still converted locally by lean-md-v2
 // What a Firecrawl scrape asks for is set per profile on Toolsets and limits › Firecrawl › Format profiles (settings scrape_profiles,
-// scrape_profile_lanes, scrape_profile_overrides). Worker v0.98.0 applies the profile inside fcClient (firecrawl.ts); migration 20261114201500
+// scrape_profile_lanes, scrape_profile_overrides). Worker v0.99.0 applies the profile inside fcClient (firecrawl.ts); migration 20261114201500
 // seeds today's requests plus markdown, checks every save with the same rules, and records the kept formats on the page's evidence row.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
@@ -142,7 +142,7 @@ test('guardrails: no route switch, ceiling, Observe/Stop mode, model route or AE
   expect(top).not.toMatch(/^\s*update\b/im)
   const code = mig.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n').toLowerCase()
   for (const s of ['aer.v2_shadow_on', 'gpt-4.1-mini', 'held_kind', 'enforcement', 'ceiling', 'max_usd', 'route_on', 'paused']) expect(code, s).not.toContain(s)
-  expect(ix).toMatch(/const WORKER = "coverage-sweep-worker-v0\.98\.0";/)
+  expect(ix).toMatch(/const WORKER = "coverage-sweep-worker-v0\.99\.0";/)
 })
 
 // ---- the screen: Models & services › Toolsets and limits › Firecrawl › Format profiles (v2.16.2) ----
