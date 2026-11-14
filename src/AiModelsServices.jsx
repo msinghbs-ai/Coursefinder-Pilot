@@ -31,7 +31,7 @@ import { plainError } from './lib/errors'
 import { listShown, parseList, listValid, listError } from './lib/settings-list.js'
 import { useViewerRank, PLATFORM_ADMIN_RANK, balanceWords } from './lib/viewer'
 import { Switch } from './ModelsServices'
-import { modelGroups, inAllowedFamily, serviceGroups, shortModel, usd, tokens, cascadeOf, serviceState, accountState, usageBy, usageBuckets, refusal, migrationOf, qualification, isQualified, lastCall, recoveryOf, wouldHold, recoveryWords, callErrorWords } from './lib/ai-overview'
+import { modelGroups, inAllowedFamily, serviceGroups, shortModel, usd, tokens, cascadeOf, serviceState, accountState, usageBy, usageBuckets, refusal, migrationOf, qualification, isQualified, lastCall, recoveryOf, wouldHold, recoveryWords, callErrorWords, noModelKind, noModelWords, heldReasons, failureSummary } from './lib/ai-overview'
 import './ai-models-services.css'
 
 const say = e => refusal(e) || plainError(e)
@@ -97,6 +97,26 @@ function AiSetting({ s, can, onSave }) {
 const Meter = ({ value, max, label }) => {
   const known = value != null && Number(max) > 0, pct = known ? Math.min(100, Math.round(100 * Number(value) / Number(max))) : 0
   return <div className={`aim-meter${known && pct >= 100 ? ' is-full' : known && pct >= 80 ? ' is-near' : ''}`} role="meter" aria-label={label} aria-valuemin={0} aria-valuemax={Number(max) || 0} aria-valuenow={known ? Number(value) : undefined} aria-valuetext={known ? `${pct}%` : 'not measured'}><span style={{ width: `${pct}%` }}/></div>
+}
+
+// ---- the limits banner (Platform Admin 14 Nov 2026: "Make the Observe vs. Stop mode banner clearer and unmissable at the top of the page so the
+// Platform Admin immediately sees whether caps/ceilings are enforcing or only reporting"). Above the four cards, so a collapsed card cannot hide it.
+// The switch itself stays in card 1; this only says what is in force.
+function ModeBanner({ d }) {
+  const or = d.openrouter || {}, mode = d.mode ?? or.mode ?? null, services = d.services || []
+  const ceiling = usd(d.ceiling_usd ?? or.daily_ceiling_usd), spent = money(or.spent_today_usd)
+  const would = services.filter(s => s.enabled !== false && wouldHold(s)).length
+  const heldByLimit = services.filter(s => ['cap', 'ceiling'].includes(s.held_kind)).length
+  const n = v => `${fmtNumber(v)} service${v === 1 ? '' : 's'}`
+  const tone = mode === 'stop' ? 'success' : mode === 'observe' ? 'warning' : 'danger'
+  return <section className={`aim-state aim-banner tone-${tone}`} role="status" aria-label="AI limits" data-ai-mode-banner={mode || 'unknown'}>
+    <span className={`cf-chip tone-${tone}`}>{mode === 'stop' ? 'Limits enforced' : mode === 'observe' ? 'Limits not enforced' : 'Limit mode not recorded'}</span>
+    <span className="aim-banner-text">
+      {mode === 'stop' ? <><strong>Enforcing (stop at limits).</strong> The daily ceiling ({ceiling ?? 'not set'}) and each service's cap stop scheduled work when reached. Spent today (UTC): {spent}. {heldByLimit ? `${n(heldByLimit)} held by a cap or the ceiling now.` : 'No service is held by a cap or the ceiling now.'}</>
+        : mode === 'observe' ? <><strong>Observing only: limits are reported, not enforced.</strong> The daily ceiling ({ceiling ?? 'not set'}) and the service caps stop nothing. Spent today (UTC): {spent}. {would ? `${n(would)} would be held now if limits were enforced.` : 'No service would be held now if limits were enforced.'}</>
+        : <><strong>The limit mode is not recorded.</strong> Whether the ceiling and the caps stop work cannot be told from here.</>}
+      {' '}In both modes a service still stops when it is switched off, has no allowed or qualified model, or there is no credit or no recent balance reading. The mode is changed in 1 · OpenRouter key and usage.</span>
+  </section>
 }
 
 // ---- 1 OpenRouter key and usage -----------------------------------------------------------------------------------------------------------
@@ -239,7 +259,7 @@ const capWords = (v, unit) => (v == null ? 'no cap' : unit === 'usd' ? usd(v) : 
 const sameList = (a, b) => a.length === b.length && a.every((x, i) => x === b[i])
 
 function ServiceRow({ s, d, can, admin, act, saveSetting, open, onToggle, onError }) {
-  const models = d.models || [], mig = migrationOf(s), all = cascadeOf(s, models), items = mig === 'routed_single' ? all.slice(0, 1) : mig === 'not_migrated' ? [] : all, state = serviceState(s), last = lastCall(s), recovery = recoveryOf(s), would = wouldHold(s), quals = qualification(s)
+  const models = d.models || [], mig = migrationOf(s), all = cascadeOf(s, models), items = mig === 'routed_single' ? all.slice(0, 1) : mig === 'not_migrated' ? [] : all, state = serviceState(s), last = lastCall(s), recovery = recoveryOf(s), would = wouldHold(s), quals = qualification(s), noKind = noModelKind(s, models), reasons = state.key === 'running' ? [] : heldReasons(s, models)
   const [draft, setDraft] = useState(null), [busy, setBusy] = useState(false), [err, setErr] = useState(''), [done, setDone] = useState(''), [promptEdit, setPromptEdit] = useState(false), [qualify, setQualify] = useState(null)
   const byCode = Object.fromEntries(models.map(m => [m.code, m]))
   const begin = (patch = {}) => { setErr(''); setDone(''); setDraft({ cascade: [...(s.cascade || [])], usd: s.daily_usd_cap == null ? '' : String(s.daily_usd_cap), calls: s.daily_calls_cap == null ? '' : String(s.daily_calls_cap), enabled: s.enabled !== false, ...patch }); if (!open) onToggle(true) }
@@ -284,19 +304,20 @@ function ServiceRow({ s, d, can, admin, act, saveSetting, open, onToggle, onErro
       <td data-label="Model cascade" data-ai-model-cell data-ai-migration={mig}>{mig === 'not_migrated' ? <span className="aim-cascade">{effect ? <span className="aim-chip is-plain" title={inUse}>{shortModel(effect)}</span> : <NoModel/>}</span> : <Cascade items={items}/>}
         {mig === 'routed_single' && <small className="aim-sub" data-ai-single>Fallback not available for this service yet</small>}
         {mig === 'not_migrated' && <small className="aim-sub">The model in effect. This service does not take its model from here yet.</small>}
-        {mig !== 'not_migrated' && items.length > 0 && !(s.models || []).length && <NoModel what="No allowed model"/>}
+        {mig !== 'not_migrated' && items.length > 0 && !(s.models || []).length && <NoModel what={noModelWords(noKind) || 'No allowed model'}/>}
         <small className="aim-sub" data-ai-last>Last used: {last?.model ? <span title={last.model}>{shortModel(models.find(m => m.model_identifier === last.model)?.label || last.model)}</span> : 'not measured'}{last?.at ? `, ${fmtRelative(last.at)}` : ''}{last?.outcome ? ` · ${humanLabel(last.outcome)}` : ''}</small>
         {s.previous_model && s.previous_model !== inUse && <small className="aim-sub aim-was" data-ai-was-on>Was on: <span title={s.previous_model}>{shortModel(models.find(m => m.model_identifier === s.previous_model)?.label || s.previous_model)}</span></small>}
         {(s.skipped || []).length > 0 && mig !== 'not_migrated' && <small className="aim-sub" data-ai-skipped>Not handed out: {s.skipped.map(x => `${shortModel(byCode[x.code]?.label || x.code)} (${x.why})`).join(', ')}</small>}
         {(s.models || []).length > 0 && !inUse && <small className="aim-sub" data-ai-in-effect>In use today: <NoModel/></small>}
-        {inUse && inUse !== firstAllowed && <small className="aim-sub" data-ai-in-effect>In use today: <strong title={inUse}>{shortModel(effect)}</strong></small>}
+        {(s.models || []).length > 0 && inUse && inUse !== firstAllowed && <small className="aim-sub" data-ai-in-effect>In use today: <strong title={inUse}>{shortModel(effect)}</strong></small>}
 </td>
       <td data-label="On"><span className="aim-allow"><Switch on={s.enabled !== false} label={`${s.enabled !== false ? 'Switch off' : 'Switch on'} ${s.label}`} disabled={!can || busy || mig === 'not_migrated'} onChange={on => begin({ enabled: on })}/></span></td>
       <td data-label="Daily cap"><span>{s.daily_usd_cap == null ? 'No US$ cap' : usd(s.daily_usd_cap)}</span><small className="aim-sub">{s.daily_calls_cap == null ? 'no call cap' : `${fmtNumber(Number(s.daily_calls_cap))} calls`}</small></td>
       <td data-label="Spent today" data-ai-spent><span>{money(spent.usd)}{s.daily_usd_cap != null ? ` of ${usd(s.daily_usd_cap)}` : ''}</span>
         {s.daily_usd_cap != null && <Meter value={spent.usd} max={s.daily_usd_cap} label={`${s.label}: today's spend against its cap`}/>}
         <small className="aim-sub">{spent.calls == null ? 'calls not measured' : `${fmtNumber(Number(spent.calls))} call${Number(spent.calls) === 1 ? '' : 's'}`}{s.daily_calls_cap != null ? ` of ${fmtNumber(Number(s.daily_calls_cap))}` : ''}</small></td>
-      <td data-label="State"><span className={`cf-chip tone-${state.tone}`} title={state.why} data-ai-state-pill>{state.label}</span>{mig === 'not_migrated' && <span className="cf-chip tone-neutral" data-ai-not-migrated>Not migrated</span>}{state.why && state.key !== 'running' && <small className="aim-sub">{state.why}</small>}
+      <td data-label="State"><span className={`cf-chip tone-${state.tone}`} title={state.why} data-ai-state-pill>{state.label}</span>{mig === 'not_migrated' && <span className="cf-chip tone-neutral" data-ai-not-migrated>Not migrated</span>}{reasons.length > 0 && <ul className="aim-why" data-ai-held-reasons aria-label={`Why ${s.label} is not running`}>{reasons.map((r, i) => <li key={i}>{r}</li>)}</ul>}
+        {state.key === 'running' && last?.outcome === 'failed' && <small className="aim-sub" data-ai-row-failing><span className="cf-chip tone-danger">Last call failed</span> {callErrorWords(last.error) || 'the error was not recorded'}{last.at ? `, ${fmtRelative(last.at)}` : ''}</small>}
         {would && <small className="aim-sub aim-would" data-ai-would-hold={would.kind || 'yes'}><span className="cf-chip tone-warning">Would be held</span> {would.label.replace(/^Held: /, '')}: {would.reason} Limits are observed, not enforced, so it runs.</small>}</td>
     </tr>
     {open && <tr className="aim-detailrow" id={`aim-d-${s.service_code}`} data-ai-service-detail={s.service_code}><td colSpan={6}><div className="aim-detail">
@@ -393,11 +414,13 @@ function ServicesPane({ d, can, admin, act, saveSetting, focus, onError }) {
   const groups = serviceGroups(d.services || [])
   const [open, setOpen] = useState(() => (focus ? { [focus]: true } : {}))
   useEffect(() => { if (focus) setOpen(o => ({ ...o, [focus]: true })) }, [focus])
-  const noModel = (d.services || []).filter(s => !(s.models || []).length)
+  // a service that is switched on and gets no model: the alarm. One that is switched off is Off on purpose, and its row says why (live 14 Nov 2026:
+  // the five services seeded off were listed here as having "no allowed model", although the reason was that none is qualified yet)
+  const models = d.models || [], noModel = (d.services || []).filter(s => s.enabled !== false && !(s.models || []).length)
   const held = (d.services || []).filter(s => ['cap', 'ceiling', 'credit_floor', 'held'].includes(serviceState(s).key)).length
   return <Card id={PANES.services} level={2} defaultOpen={desktop()} className="aim-pane" data-ai-pane="services" title="3 · Services" subtitle="What the platform uses AI for, one row each: its model cascade, switch, daily cap and today's spend. Open a row for its prompt and its other AI settings."
       meta={<><span className="aim-quiet">{fmtNumber((d.services || []).length)} services</span>{noModel.length > 0 && <span className="cf-chip tone-danger" data-ai-no-model-chip>{fmtNumber(noModel.length)} with no model</span>}{held > 0 && <span className="cf-chip tone-warning">{fmtNumber(held)} held</span>}</>}>
-    {noModel.length > 0 && <p className="aim-state tone-danger" role="alert" data-ai-no-model-warning><span className="cf-chip tone-danger">No model</span><span>{noModel.map(s => s.label).join(', ')}: no allowed model. {noModel.length === 1 ? 'It does' : 'They do'} not run until a cascade names one.</span></p>}
+    {noModel.length > 0 && <p className="aim-state tone-danger" role="alert" data-ai-no-model-warning><span className="cf-chip tone-danger">No model</span><span>{noModel.map(s => `${s.label} (${(noModelWords(noModelKind(s, models)) || 'No allowed model').toLowerCase()})`).join(', ')}: switched on, but {noModel.length === 1 ? 'it does' : 'they do'} not run until {noModel.length === 1 ? 'its' : 'each'} cascade has an allowed model that is qualified for {noModel.length === 1 ? 'it' : 'the service'}.</span></p>}
     {!groups.length ? <Empty text="No services are listed."/> : <div className="cf-table-wrap aim-wrap"><table className="cf-table aim-table aim-services" data-ai-services data-no-resize>
       <thead><tr><th>Service</th><th>Model cascade</th><th>On</th><th>Daily cap</th><th>Spent today (UTC)</th><th>State</th></tr></thead>
       {groups.map(g => <tbody key={g.area} data-ai-area={g.area}>
@@ -413,7 +436,7 @@ function ServicesPane({ d, can, admin, act, saveSetting, focus, onError }) {
 // ---- 4 Recent usage -----------------------------------------------------------------------------------------------------------------------
 function UsagePane({ d }) {
   const [unit, setUnit] = useState('hour'), [by, setBy] = useState('service')
-  const rows = unit === 'hour' ? d.usage?.by_hour_24h : d.usage?.by_day_14d, per = d.usage?.by_model_24h
+  const rows = unit === 'hour' ? d.usage?.by_hour_24h : d.usage?.by_day_14d, per = d.usage?.by_model_24h, fails = useMemo(() => failureSummary(per, d.usage?.fallbacks_24h), [per, d])
   const sLabel = Object.fromEntries((d.services || []).map(s => [s.service_code, s.label])), mLabel = Object.fromEntries((d.models || []).map(m => [m.model_identifier, m.label]))
   const groups = useMemo(() => usageBy(rows, by, d), [rows, by, d]), buckets = useMemo(() => usageBuckets(rows, unit), [rows, unit])
   const top = Math.max(0, ...(groups || []).map(g => Number(g.usd || 0))), peak = Math.max(0, ...(buckets || []).map(b => Number(b.usd || 0)))
@@ -422,7 +445,7 @@ function UsagePane({ d }) {
   const when = b => (unit === 'hour' ? new Date(b.t).toISOString().slice(11, 16) : new Date(b.t).toISOString().slice(5, 10).split('-').reverse().join('/'))
   const pick = (cur, set, items, label) => <div className="pg-views" role="toolbar" aria-label={label}>{items.map(([k, l]) => <button key={k} type="button" className={`pg-view${cur === k ? ' is-on' : ''}`} aria-pressed={cur === k} onClick={() => set(k)} data-ai-usage-pick={k}>{l}</button>)}</div>
   return <Card id={PANES.usage} level={2} defaultOpen={desktop()} className="aim-pane" data-ai-pane="usage" title="4 · Recent usage" subtitle="Costs, calls, tokens, failures and fallbacks by service and by model. Times and days are UTC, the same day the caps and the ceiling count."
-      meta={<span className="aim-quiet">{money(d.openrouter?.spent_today_usd)} today</span>}>
+      meta={<><span className="aim-quiet">{money(d.openrouter?.spent_today_usd)} today</span>{fails && fails.failures > 0 && <span className="cf-chip tone-danger" data-ai-failures-chip>{fmtNumber(fails.failures)} failed call{fails.failures === 1 ? '' : 's'}, 24 h</span>}</>}>
     <div className="aim-usage-picks">{pick(unit, setUnit, [['hour', 'Last 24 hours, by hour'], ['day', 'Last 14 days, by day']], 'Period')}{pick(by, setBy, [['service', 'By service'], ['model', 'By model']], 'Group by')}</div>
     {!groups ? <p className="aim-note" data-ai-usage-none>{NOT_MEASURED}: no usage figures were returned for this period.</p> : <>
       <p className="aim-line" data-ai-usage-total><strong>{money(total)}</strong> spent · <strong>{count(calls)}</strong> calls {unit === 'hour' ? 'in the last 24 hours' : 'in the last 14 days'}</p>
@@ -447,6 +470,10 @@ function UsagePane({ d }) {
     </>}
     <div className="aim-block" data-ai-calls-24h>
       <h4>Calls in the last 24 hours, from the per-call record</h4>
+      {fails && fails.attempts > 0 && <p className={`aim-state tone-${fails.failures ? 'danger' : 'success'}`} role="status" data-ai-failures-summary={fails.failures}>
+        <span className={`cf-chip tone-${fails.failures ? 'danger' : 'success'}`}>{fails.failures ? `${fmtNumber(fails.failures)} failed` : 'No failures'}</span>
+        <span>{fails.failures ? `${fmtNumber(fails.failures)} of ${fmtNumber(fails.attempts)} attempts failed (${Math.round(100 * fails.failures / fails.attempts)}%)` : `All ${fmtNumber(fails.attempts)} attempts answered`}{fails.fallbacks ? `; ${fmtNumber(fails.fallbacks)} answered on a later model of the cascade` : ''}.
+          {fails.kinds.length > 0 && <> By kind, of the {fmtNumber(fails.listed)} most recent failed attempts: {fails.kinds.map(([k, v]) => `${callErrorWords(k === 'not_recorded' ? null : k) || 'not recorded'} ${fmtNumber(v)}`).join(', ')}.</>} What failed attempts cost is included in Spend.</span></p>}
       {!Array.isArray(per) ? <p className="aim-note">{NOT_MEASURED}: no per-call record was returned.</p>
         : !per.length ? <p className="aim-note" data-ai-calls-empty>No call is on record yet. Rows appear once the worker that records each call is deployed.</p>
         : <div className="cf-table-wrap aim-wrap"><table className="cf-table aim-table" data-no-resize data-ai-calls>
@@ -456,12 +483,12 @@ function UsagePane({ d }) {
             <td data-label="Model"><span>{r.model ? (mLabel[r.model] || r.model) : 'Model not recorded'}</span></td>
             <td data-label="Attempts" className="num"><span>{count(r.attempts)}</span></td>
             <td data-label="Answered" className="num"><span>{count(r.answered)}</span></td>
-            <td data-label="Failures" className="num"><span>{count(r.failures)}</span></td>
+            <td data-label="Failures" className="num" data-ai-calls-failures={Number(r.failures) > 0 ? 'some' : 'none'}>{Number(r.failures) > 0 ? <span className="cf-chip tone-danger">{count(r.failures)}</span> : <span>{count(r.failures)}</span>}</td>
             <td data-label="Fallbacks" className="num"><span>{count(r.fallbacks)}</span></td>
             <td data-label="Tokens in / out" className="num"><span>{r.tokens_in == null && r.tokens_out == null ? NOT_MEASURED : `${count(r.tokens_in)} / ${count(r.tokens_out)}`}</span></td>
             <td data-label="Spend" className="num"><span>{money(r.usd)}</span></td>
           </tr>)}</tbody></table></div>}
-      {Array.isArray(d.usage?.fallbacks_24h) && d.usage.fallbacks_24h.length > 0 && <details className="aim-more" data-ai-fallbacks><summary>Failed attempts in the last 24 hours ({fmtNumber(d.usage.fallbacks_24h.length)})</summary>
+      {Array.isArray(d.usage?.fallbacks_24h) && d.usage.fallbacks_24h.length > 0 && <details className="aim-more" data-ai-fallbacks open><summary>Failed attempts in the last 24 hours ({fmtNumber(d.usage.fallbacks_24h.length)})</summary>
         <ul className="aim-events">{d.usage.fallbacks_24h.map((e, i) => <li key={i}><small>{fmtDateTime(e.at)}</small> <strong>{sLabel[e.service_code] || e.service_code}</strong> {mLabel[e.model] || e.model || 'model not recorded'} · attempt {e.attempt_no ?? 'not recorded'} · {callErrorWords(e.failure_kind) || 'kind not recorded'}</li>)}</ul></details>}
     </div>
   </Card>
@@ -483,6 +510,7 @@ export default function AiModelsServices({ onError, focusService = '' }) {
   const rank = Number(d.rank ?? viewerRank), admin = d.can_admin ?? rank >= PLATFORM_ADMIN_RANK
   const can = Boolean(d.can_control) && rank >= 5 // routes, caps and switches: PIM Admin; the model list, qualification, ceiling and key: Platform Admin
   return <div className="m-page-stack aim" data-ai-page="ready">
+    <ModeBanner d={d}/>
     <OpenRouterPane d={d} admin={admin} saveSetting={saveSetting} reload={load} onError={onError}/>
     <ModelsPane d={d} can={admin} act={act}/>
     <ServicesPane d={d} can={can} admin={admin} act={act} saveSetting={saveSetting} focus={focusService} onError={onError}/>

@@ -119,6 +119,52 @@ export function lastCall(s) {
 }
 export const recoveryOf = s => s?.recovery_state ?? null
 
+// ---- why a service is not running, in words (Platform Admin 14 Nov 2026: "Display explicit, human-readable held reasons directly on held
+// services ... rather than forcing the admin to guess why a service isn't running") ------------------------------------------------------
+// Live, round 5: a service that is switched off and has no model qualified for it comes with held_kind "off" and no models handed out. The
+// page said "no allowed model" for it, although its cascade names an allowed model; the reason is the qualification.
+const NO_MODEL_WORDS = { no_model: 'No allowed model', no_qualified_model: 'No qualified model', none_handed_out: 'No model handed out' }
+export const noModelWords = kind => NO_MODEL_WORDS[kind] || null
+/** Why no model is handed out to a service: no_model (its cascade names no allowed model), no_qualified_model (it names allowed models but none
+ *  is qualified for this service), none_handed_out (the answer does not say more), or null when a model is handed out. */
+export function noModelKind(s, models = []) {
+  if (['no_model', 'no_qualified_model'].includes(s?.held_kind)) return s.held_kind
+  if ((s?.models || []).length) return null
+  const allowed = cascadeOf(s, models).filter(m => m.allowed)
+  if (!allowed.length) return 'no_model'
+  const q = qualification(s)
+  if (q && allowed.every(m => !q.get(m.code)?.qualified)) return 'no_qualified_model'
+  return (s?.skipped || []).some(x => /qualif/i.test(String(x?.why || ''))) ? 'no_qualified_model' : 'none_handed_out'
+}
+/** Every reason a service is not running, as sentences, most basic first. [] when it is running. Nothing is inferred beyond the answer. */
+export function heldReasons(s, models = []) {
+  const out = [], kind = noModelKind(s, models), off = s?.enabled === false
+  if (migrationOf(s) === 'not_migrated') out.push('Not migrated: its reader does not take its switch or model from this page yet.')
+  if (off) out.push('Switched off on this page.')
+  if (kind === 'no_qualified_model') out.push(off ? 'It cannot be switched on yet: no model in its cascade is qualified for it. The Platform Admin records a qualification first.' : 'No model in its cascade is qualified for it. The Platform Admin records a qualification first.')
+  else if (kind === 'no_model') out.push('No model in its cascade is allowed. Allow one in Models, or change the cascade.')
+  else if (kind === 'none_handed_out') out.push('No model in its cascade is handed out.')
+  const hk = s?.held_kind
+  if (hk && STATES[hk] && !['off', 'no_model', 'no_qualified_model'].includes(hk)) {
+    const said = s.held_reason && s.held_reason !== hk ? sentence(s.held_reason) : STATES[hk][2]
+    out.push(said + (s.on_demand_exempt ? ' Work asked for under an open request is still let through.' : ''))
+  }
+  if (!out.length && s?.held) out.push(s.held_reason ? sentence(s.held_reason) : 'Held.')
+  return out
+}
+// the server's reason may come as a fragment ("its daily cap is reached"): first letter up, a full stop at the end; nothing else is changed
+const sentence = t => { const v = String(t).trim(); return v ? v[0].toUpperCase() + v.slice(1) + (/[.!?]$/.test(v) ? '' : '.') : v }
+
+// ---- failed calls (Platform Admin 14 Nov 2026: "Surface per-call failures clearly in the Usage view so failed/rejected model calls are visible
+// alongside spend"). From the per-call record only: the spend ledger has no failures. null when the record was not returned (Not measured).
+export function failureSummary(perModel, failed) {
+  if (!Array.isArray(perModel)) return null
+  const n = k => perModel.reduce((a, r) => a + (r[k] == null ? 0 : Number(r[k])), 0)
+  const kinds = {}
+  for (const e of Array.isArray(failed) ? failed : []) { const k = e?.failure_kind || 'not_recorded'; kinds[k] = (kinds[k] || 0) + 1 }
+  return { attempts: n('attempts'), failures: n('failures'), fallbacks: n('fallbacks'), kinds: Object.entries(kinds).sort((a, b) => b[1] - a[1]), listed: Array.isArray(failed) ? failed.length : 0 }
+}
+
 // ---- usage -------------------------------------------------------------------------------------------------------------------------------
 const sum = (rows, k) => { const known = rows.filter(r => r[k] != null); return known.length ? known.reduce((n, r) => n + Number(r[k] || 0), 0) : null }
 /** Rows grouped by service or model. A null figure stays null (Not measured), never 0. */
