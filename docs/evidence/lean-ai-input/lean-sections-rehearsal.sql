@@ -241,7 +241,7 @@ begin
     r := r || jsonb_build_object('X1_migration_md5', md5(substr(q, a, b - a)));
     if md5(substr(q, a, b - a)) <> 'd45d9e6e7b16576d858969e76387065f' then f := f || 'X1 executed migration differs from the file'; end if;
   end;
-  r := r || jsonb_build_object('S_cases_by_source', (select jsonb_object_agg(k, n) from (select gold_source||':'||field k, count(*) n from pipeline.lean_section_eval_cases group by 1) z));
+  r := r || jsonb_build_object('S_cases_by_source', (select jsonb_object_agg(z.k, z.cnt) from (select gold_source||':'||field k, count(*) cnt from pipeline.lean_section_eval_cases group by 1) z));
   select count(*) into n from pipeline.lean_section_eval_cases; if n < 1000 then f := f || 'S1 fewer than 1000 cases seeded'; end if;
   if exists (select 1 from pipeline.lean_section_eval_cases where gold_source not in ('aer_accepted','adapter')) then f := f || 'S2 label source'; end if;
   if exists (select 1 from pipeline.lean_section_eval_cases where jsonb_typeof(gold) <> 'array' or jsonb_array_length(gold) = 0) then f := f || 'S3 empty gold'; end if;

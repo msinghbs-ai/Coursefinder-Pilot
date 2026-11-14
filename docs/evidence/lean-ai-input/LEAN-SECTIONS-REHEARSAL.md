@@ -1,0 +1,20 @@
+# PR #1136: rolled-back rehearsal on Pilot (14 Nov 2026, 11:58 AEDT)
+
+**Verdict: PASS.** No assertion failed. The transaction was aborted (txid 17161597), and an independent read confirms nothing persisted.
+
+- **Migration:** `20261114010000_cf247_lean_sections_eval.sql`, md5 `d45d9e6e7b16576d858969e76387065f`. Inside the transaction, `md5(substr(current_query()))` proves the executed text is byte-identical to the PR file.
+- **Script:** [`lean-sections-rehearsal.sql`](lean-sections-rehearsal.sql). **Raw result:** [`lean-sections-rehearsal-result.json`](lean-sections-rehearsal-result.json).
+- **First attempt:** at 11:56 AEDT it stopped on an ambiguous column alias in the check block, after every migration statement had already succeeded. That transaction aborted and nothing persisted. The alias was fixed and the script run again.
+
+| Check | Result |
+|---|---|
+| Seeded cases | 2,800: 400 each for `aer_accepted:entry_requirements` and adapter `campus`, `delivery`, `duration`, `entry_requirements`, `fees`, `intakes`. Every label comes from a person or a tested adapter |
+| Settings | Exactly 3 added. Job `lean-sections-eval` is scheduled with a command that contains no number, and it is catalogued |
+| ACL | `next`, `record`, `seed` and `report`, and the table itself, are denied to authenticated users and anon. `next` is allowed for service_role |
+| Re-seed | Running the same seed again adds 0 rows |
+| Lease, record | Lease 3; record 2 (one done, one failed, unknown case ignored); a done case is never overwritten |
+| Report | Computed; `ai_calls` 0 |
+| Switch off | The fire sends nothing and the lease hands over nothing |
+| Regression | `field_enrich_items` and the AER labels unchanged; exactly one cron job added |
+
+**Independent read afterwards (11:58:52):** table absent, 0 functions, 0 settings (total still 1,420), no cron, catalogue or register rows. `txid_status` = aborted.
