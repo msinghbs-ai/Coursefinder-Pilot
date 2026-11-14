@@ -148,6 +148,8 @@
   .aim-table thead{display:none}
   .aim-table tr{padding:8px 0;border-bottom:1px solid var(--cf-border)}
   .aim-table tr.aim-group{padding:0;border-bottom:0}
+  /* a group heading and its note wrap on a phone (the global th is nowrap: "GPT, Claude and anything outside the seven families" ran 20 px past the screen on CI's fonts) */
+  .aim-table .aim-group th{white-space:normal;overflow-wrap:anywhere}
   .aim-table td,.aim-table td.num{display:grid;grid-template-columns:104px minmax(0,1fr);gap:8px;padding:4px 2px;border-bottom:0;text-align:left}
   .aim-table td[data-label]::before{content:attr(data-label);color:var(--cf-muted);font-size:var(--cf-fs-sm)}
   .aim-table td[data-label]>*{grid-column:2;min-width:0;justify-self:start}
