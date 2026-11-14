@@ -1,4 +1,4 @@
-// Guards: CF-247 Firecrawl format profiles (Platform Admin 14 Nov 2026 19:19): surcharge formats and onlyCleanContent never sent; rawHtml and markdown from one call kept under one evidence row; stored HTML still converted locally by lean-md-v2
+// Guards: CF-247 Firecrawl format profiles (Platform Admin 14 Nov 2026 19:19; screen v2.16.2, mock-up accepted 20:13): surcharge formats and onlyCleanContent never sent; rawHtml and markdown from one call kept under one evidence row; stored HTML still converted locally by lean-md-v2
 // What a Firecrawl scrape asks for is set per profile on Toolsets and limits › Firecrawl › Format profiles (settings scrape_profiles,
 // scrape_profile_lanes, scrape_profile_overrides). Worker v0.98.0 applies the profile inside fcClient (firecrawl.ts); migration 20261114201500
 // seeds today's requests plus markdown, checks every save with the same rules, and records the kept formats on the page's evidence row.
@@ -7,6 +7,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { execFileSync } from 'node:child_process'
+import { mockAdmin } from './support/admin-mock.mjs'
 
 const DIR = 'supabase/functions/coverage-sweep'
 const ix = fs.readFileSync(`${DIR}/index.ts`, 'utf8')
@@ -15,7 +16,7 @@ const mig = fs.readFileSync('supabase/migrations/20261114201500_cf247_firecrawl_
 const SURCHARGE = ['json', 'summary', 'question', 'highlights']
 
 async function load(file, tag) {
-  const out = path.join(os.tmpdir(), `${tag}-s544-${process.pid}.mjs`)
+  const out = path.join(os.tmpdir(), `${tag}-s545-${process.pid}.mjs`)
   execFileSync('node_modules/.bin/esbuild', [`${DIR}/${file}`, '--bundle', '--format=esm', '--platform=node', `--outfile=${out}`, '--log-level=error'])
   return import(out)
 }
@@ -142,4 +143,73 @@ test('guardrails: no route switch, ceiling, Observe/Stop mode, model route or AE
   const code = mig.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n').toLowerCase()
   for (const s of ['aer.v2_shadow_on', 'gpt-4.1-mini', 'held_kind', 'enforcement', 'ceiling', 'max_usd', 'route_on', 'paused']) expect(code, s).not.toContain(s)
   expect(ix).toMatch(/const WORKER = "coverage-sweep-worker-v0\.98\.0";/)
+})
+
+// ---- the screen: Models & services › Toolsets and limits › Firecrawl › Format profiles (v2.16.2) ----
+const read = (over = {}) => ({ profiles: SEED.profiles, lanes: SEED.lanes, overrides: [], version: 1, screenshot_max_mb: 15, saved_at: '2026-11-14T09:15:00Z', reason: 'first version',
+  formats: ['markdown', 'rawHtml', 'html', 'links', 'screenshot'], never_sent: ['json', 'summary', 'question', 'highlights', 'onlyCleanContent'], can_edit: true, problems: [], history: [], ...over })
+async function openProfiles(page, data) {
+  const sent = []
+  await page.route('https://example.supabase.co/rest/v1/rpc/admin_fc_profiles_*', async (route) => {
+    const name = new URL(route.request().url()).pathname.split('/').pop(), body = route.request().postDataJSON() || {}
+    sent.push({ name, body })
+    const reply = name === 'admin_fc_profiles_set_v1' ? { ok: true, version: 2 } : data
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(reply) })
+  })
+  await page.goto('/#models-services?tab=limits')
+  const card = page.locator('[data-card="services.toolset.firecrawl.formats"]')
+  await card.locator('.cf-card-toggle').first().click()
+  await expect(card.locator('[data-fc-profiles-body]')).toBeVisible()
+  return { card, sent }
+}
+
+test.describe('mocked browser', () => {
+  test('the card lists the profiles, refuses surcharge formats by name, keeps AER v1 lanes on their own request and saves with a reason and the version', async ({ page }) => {
+    await mockAdmin(page)
+    const { card, sent } = await openProfiles(page, read())
+    await expect(card.locator('[data-fcp-never]')).toContainText('Never sent')
+    for (const f of SURCHARGE) await expect(card.locator('[data-fcp-never]')).toContainText(f)
+    await expect(card.locator('[data-fcp-never]')).toContainText('onlyCleanContent')
+    await expect(card.locator('[data-fcp-profile]')).toHaveCount(Object.keys(SEED.profiles).length)
+    // only the five allowed formats can be ticked
+    await expect(card.locator('[data-fcp-editor] [data-fcp-format]')).toHaveCount(5)
+    for (const f of SURCHARGE) await expect(card.locator(`[data-fcp-format="${f}"]`)).toHaveCount(0)
+    // the preview: a scheduled read uses the 48-hour copy, Run now asks for a fresh page
+    const pre = card.locator('[data-fcp-preview] pre')
+    await expect(pre).toContainText('"maxAge": 172800000')
+    await card.getByRole('button', { name: 'Run now' }).click()
+    await expect(pre).toContainText('"maxAge": 0')
+    // AER v1 lanes are not offered a profile
+    await expect(card.locator('[data-fcp-lane="entry_render"] select')).toHaveCount(0)
+    await expect(card.locator('[data-fcp-lane="entry_render"]')).toContainText('The lane’s own request')
+    await expect(card.locator('[data-fcp-lane="course_read"]')).toContainText('rawHtml + markdown')
+    // a change needs a reason; a profile with no page format cannot be saved
+    const save = card.getByRole('button', { name: 'Save profiles' })
+    await expect(save).toBeDisabled()
+    await card.locator('[data-fcp-format="rawHtml"]').uncheck()
+    await card.locator('[data-fcp-format="markdown"]').uncheck()
+    await expect(card.locator('[data-fcp-problems]')).toContainText('choose at least one format')
+    await card.locator('[data-fcp-format="markdown"]').check()
+    await card.locator('[data-fcp-format="rawHtml"]').check()
+    await card.locator('[data-fcp-lane="course_list_read"] select').selectOption('text_full')
+    await card.getByPlaceholder('Why this change').fill('List pages read as text')
+    await expect(save).toBeEnabled()
+    await save.click()
+    await expect(card.locator('[data-fcp-msg]')).toContainText('Saved as version 2')
+    const call = sent.find((c) => c.name === 'admin_fc_profiles_set_v1').body
+    expect(call.p_reason).toBe('List pages read as text')
+    expect(call.p_expected_version).toBe(1)
+    expect(call.p_lanes.course_list_read).toBe('text_full')
+    expect(call.p_lanes.entry_render).toBe('lane_own')
+    expect(call.p_profiles.page_html.formats).toEqual(['markdown', 'rawHtml'])
+  })
+
+  test('read only below Platform Admin (Pipeline Operator); a saved set with a problem says the worker is not using it', async ({ page }) => {
+    await mockAdmin(page, { rank: 4, role: 'pipeline_operator' })
+    const { card } = await openProfiles(page, read({ can_edit: false, problems: ['page_html: format json is never sent'] }))
+    await expect(card.locator('[data-fcp-server-problem]')).toContainText('every lane sends its own request')
+    await expect(card.getByRole('button', { name: 'Save profiles' })).toHaveCount(0)
+    await expect(card.locator('[data-fcp-format="markdown"]')).toBeDisabled()
+    await expect(card).toContainText('Only a Platform Admin can change it')
+  })
 })

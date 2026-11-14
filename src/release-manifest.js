@@ -1,26 +1,25 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.1'
-export const PACKAGE_VERSION='0.1.423'
+export const UI_VERSION='2.16.2'
+export const PACKAGE_VERSION='0.1.424'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'14 Nov 2026',
-  title:'Models & services: limits banner, held reasons in words, failed calls in Recent usage',
+  title:'Firecrawl format profiles: what every page read asks for, set per lane',
   changes:[
-    'Models & services > AI: a limits banner at the top of the page, above the four panes, says whether limits are enforced. Limits enforced: the daily ceiling and each service\'s cap stop scheduled work when reached. Limits not enforced: they are only reported. It gives today\'s spend and how many services are held, or would be held now, and it stays in view when every pane is closed.',
-    'A service that is not running lists its reasons under its state, in words: switched off, no allowed model, no model qualified for it yet, not migrated, or a cap, the ceiling or the credit.',
-    'A running service whose last call failed says so on its row, with the kind of failure (cut short, timed out, an error from the AI service, and so on).',
-    'Recent usage: the failed calls of the last 24 hours are counted on the card (shown when it is closed too), with their rate and their kinds above the per-call table; a failure count is highlighted, and the list of failed attempts is open.',
-    'Since v2.16.0: every AI call goes through its service\'s route with its cascade and caps (worker v0.86.0 to v0.91.0); course page reads are measured in shadow for Lean AI Input, with no change to what is read or sent; the entry requirements v2 trial gained a stored ranked sample and evaluation prompt versions, all held off.'
+    'Models & services › Services & limits › Firecrawl: a new card, Format profiles, sets what every Firecrawl page read asks for. Each profile names its formats (markdown, rawHtml, html, links, screenshot), whether only the main content is kept, tags to leave out or keep, how old a Firecrawl copy may be, the wait and time allowed, optional actions before the read, and crawl options.',
+    'json, summary, question, highlights and onlyCleanContent can never be asked for: the screen lists them as Never sent, and the database and the worker refuse them too. Each costs extra credits or runs an AI pass over the page.',
+    'Each lane (course page reads, Run now reads, About pages, lists, register pages and so on) is mapped to a profile, and a university can have its own profile for one lane. Entry requirement lanes (AER v1, frozen) and adapter capture keep their own request.',
+    'By default a page read asks for rawHtml and markdown together, in one call of one credit. Course page reads, Run now reads and About pages keep the markdown beside the stored page, and the evidence row records the profile and its version, the formats asked for, Firecrawl\'s cache state, the page\'s own status and the credits used.',
+    'Run now and other on-demand reads always ask Firecrawl for a fresh page; scheduled reads may use Firecrawl\'s copy of up to 48 hours.',
+    'Course pages stay whole page (not main content only) until a test read shows the stored page keeps its side-panel entry bands.',
+    'Screenshots are off in every profile; a screenshot a profile asks for is kept as received, up to the size set on the card. Crawl options are checked and saved; no lane crawls yet.',
+    'Every change is saved with a reason as a new version; a save made after someone else\'s is refused, so nothing is overwritten. Pipeline Operator and above can read the card; only the Platform Admin can change it.'
   ],
   bugFixes:[
-    'Services: the five services switched off until a model is qualified for them were listed in a red alert as having "no allowed model". Their cascades name an allowed model; none is qualified yet. They now show Off with that reason, and the red alert is only for services that are switched on and get no model.',
-    'A service row said "In use today" with a model when nothing was handed out to the service. It no longer does.',
-    'A switched-off row\'s model cell said "No allowed model" when the reason was that no model is qualified for the service. It now says "No qualified model".',
-    'On a phone, the note under the Not allowed group of Models ran past the edge of the screen; it now wraps.',
-    'Since v2.16.0: the scholarship page picker keeps never-decided pages first, and the entry requirements v2 trial keeps its prompt version\'s settings, after the move to service routes.'
+    'The generic Firecrawl settings table no longer offers a set of values as a line of text to change.'
   ]
 }
 
