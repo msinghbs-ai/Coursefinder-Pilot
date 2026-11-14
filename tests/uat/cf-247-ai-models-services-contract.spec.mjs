@@ -327,8 +327,10 @@ test('phase 2 worker: models come from the readers; the cascade moves on only on
   expect((worker.match(/await cascadeFetch\(/g) || []).length).toBe(17)  // v0.94.0: the 1b-3 qualification (mode lean_qualify)
   expect((worker.match(/await cascadeFetch\((ors\.)?fetch, \{ models: /g) || []).length).toBe(11)
   expect((worker.match(/await cascadeFetch\(ors\.fetch, \{ models: null, deadline: t0 \+ BUDGET_MS - 25000, service: "entry_requirements_v2_shadow" \}/g) || []).length).toBe(1)
-  expect([...worker.matchAll(/await cascadeFetch\((?:ors\.)?fetch, \{ service: "([a-z_0-9]+)" \}, /g)].map((m) => m[1]).sort())
+  // v0.95.0 (pre-AI admission gate, R5): the scholarship page call also names its queue item, so each attempt's cost is attributable in ai_invocations
+  expect([...worker.matchAll(/await cascadeFetch\((?:ors\.)?fetch, \{ service: "([a-z_0-9]+)"(?:, source: "[a-z_]+", source_id: [a-z_.]+)? \}, /g)].map((m) => m[1]).sort())
     .toEqual(['adapter_builder', 'entry_matrices', 'ops_diagnosis', 'provider_description', 'scholarship_eligibility', 'scholarship_extraction'])
+  expect(worker).toContain('await cascadeFetch(fetch, { service: "scholarship_extraction", source: "scholarship_ai_queue", source_id: it.queue_id }, ')
   expect((worker.match(/await (ors\.)?fetch\("https:\/\/openrouter\.ai\/api\/v1\/chat\/completions"/g) || []).length).toBe(0)
   for (const l of worker.split('\n').filter((x) => x.includes('await cascadeFetch('))) expect(l, l.slice(0, 120)).toMatch(/\bservice[:, }]/)   // every call names its service
   // the attempts are sent once, after the call is answered; a failure to send them never fails the call
