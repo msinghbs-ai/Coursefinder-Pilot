@@ -53,12 +53,14 @@
 --   still switched on (Layer 3 was retired on 12 Oct 2026 and is not wired to the routes).
 --
 -- Live definitions this change replaces (md5 of pg_get_functiondef, read 13 Nov 2026 about 20:20 AEDT; before -> after):
+--   (14 Nov 2026, merge with main: public.svc_scholarship_ai_next is rebased on the live text after #1132 / 20261113373500, F-SCH.15
+--   never-decided pages first, so the route change does not take that ordering back out; its before md5 is that live text.)
 --   public.svc_fee_ai_next(integer)  f18fa0ef8454803ef0990e42c2e653d7 -> bf6ec0c89a535508e83ba0ff1e38b6cf
 --   public.svc_central_ai_next(integer)  c085a8253b6db65c55773dca02e620ac -> 255f8ff7108bb19a719630b72f576228
 --   public.svc_provider_description_next(integer)  16d8baa4faf83ec9c6471d63774c2531 -> f7b463e1df56305e32404c73493781b6
 --   public.svc_provider_description_reserve_v1(uuid,text,numeric,text)  10abae09be0f865d0eba4d45a6da6049 -> df2ef6b8fc11e845525f2f49f7a145d9
 --   security.provider_description_selection_v1(jsonb)  55924745a938cd02dfdb52d2bff606fe -> fc03bf02372ce16efd9c12e5cea55ae0
---   public.svc_scholarship_ai_next(integer)  e2596cacd875dd3438fc77b7ecc0d9a0 -> b563f09b94dda390caac48f2c1e9a8a6
+--   public.svc_scholarship_ai_next(integer)  e2596cacd875dd3438fc77b7ecc0d9a0 -> 4860b52da46c2912b10d687f944fb65a
 --   public.svc_scholarship_ai_record(bigint,jsonb,jsonb,text,numeric,integer,integer,numeric,text,text,text,text,jsonb,boolean)  736fe3f1d0eb22407eb4d5c586df3bd5 -> cbcf286f7d5cdd916aee7bb34ca52bc4
 --   public.svc_scholarship_eligibility_next(integer)  309668330f2c434ff7ef047b5941a0a3 -> c6d57cba0c9101d080e682599af32e9b
 --   public.svc_scholarship_recheck_next(integer)  ccfaf9a9c6bbba4ce5fde64a3d7738af -> 5a0aba814bfda17a7da7ba8273fd1cb4
@@ -98,7 +100,7 @@ begin
       ('public.svc_provider_description_next(integer)', '16d8baa4faf83ec9c6471d63774c2531', 'f7b463e1df56305e32404c73493781b6'),
       ('public.svc_provider_description_reserve_v1(uuid,text,numeric,text)', '10abae09be0f865d0eba4d45a6da6049', 'df2ef6b8fc11e845525f2f49f7a145d9'),
       ('security.provider_description_selection_v1(jsonb)', '55924745a938cd02dfdb52d2bff606fe', 'fc03bf02372ce16efd9c12e5cea55ae0'),
-      ('public.svc_scholarship_ai_next(integer)', 'e2596cacd875dd3438fc77b7ecc0d9a0', 'b563f09b94dda390caac48f2c1e9a8a6'),
+      ('public.svc_scholarship_ai_next(integer)', 'e2596cacd875dd3438fc77b7ecc0d9a0', '4860b52da46c2912b10d687f944fb65a'),
       ('public.svc_scholarship_ai_record(bigint,jsonb,jsonb,text,numeric,integer,integer,numeric,text,text,text,text,jsonb,boolean)', '736fe3f1d0eb22407eb4d5c586df3bd5', 'cbcf286f7d5cdd916aee7bb34ca52bc4'),
       ('public.svc_scholarship_eligibility_next(integer)', '309668330f2c434ff7ef047b5941a0a3', 'c6d57cba0c9101d080e682599af32e9b'),
       ('public.svc_scholarship_recheck_next(integer)', 'ccfaf9a9c6bbba4ce5fde64a3d7738af', '5a0aba814bfda17a7da7ba8273fd1cb4'),
@@ -575,8 +577,9 @@ begin
   -- (the due items are put in order first and the per-item checks run only until the window is full: offset 0 keeps them out of the sort)
   select array_agg(w.id) into v_win from (
     select o.id from (select q.id, q.provider_id, q.run_kind from pipeline.scholarship_ai_queue q
+                       left join pipeline.scholarship_page_candidates cd on cd.id = q.candidate_id  -- F-SCH.15: never-decided pages first
                        where ((q.state = 'queued' and q.next_try_at <= now()) or (q.state = 'leased' and q.leased_until < now())) and q.attempts < 3
-                       order by (q.run_kind = 'test') desc, (q.run_kind = 'qualify') desc, q.step desc, q.id offset 0) o
+                       order by (q.run_kind = 'test') desc, (q.run_kind = 'qualify') desc, q.step desc, (cd.admit_status is not null), q.id offset 0) o
      where (o.provider_id is null or o.run_kind in ('test', 'qualify') or not exists (select 1 from security.provider_hidden_v1 h where h.provider_id = o.provider_id))
        and (v_paid or security.scholarship_ai_has_copy_v1(o.id))
      limit greatest(20, least(v_scan, 2000))) w;

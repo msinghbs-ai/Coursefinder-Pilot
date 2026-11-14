@@ -233,6 +233,14 @@ test('phase 2: twenty-five live definitions are replaced, each md5-guarded both 
   expect(MIG2).toMatch(/^-- Replaces: .+/m); expect(MIG2).toMatch(/^-- Retires: .+/m)
 })
 
+test('phase 2: a replaced body keeps what live already holds (F-SCH.15, #1132: never-decided scholarship pages first)', () => {
+  // the live text the guard matches carries #1132; the replacement adds the route and must not take the ordering back out
+  const live = fs.readFileSync(`${FX}/live2/svc_scholarship_ai_next.sql`, 'utf8'), ours = body2('public.svc_scholarship_ai_next')
+  for (const s of ['left join pipeline.scholarship_page_candidates cd on cd.id = q.candidate_id  -- F-SCH.15: never-decided pages first',
+                   "q.step desc, (cd.admit_status is not null), q.id offset 0) o"]) { expect(live, s).toContain(s); expect(ours, s).toContain(s) }
+  expect(ours).toContain("security.ai_route_gate_v1('scholarship_extraction')")
+})
+
 test('phase 2: every reader takes its model from its route and is held by it; no reader reads a model from the old places', () => {
   const readers = { 'public.svc_fee_ai_next': 'fee_reader', 'public.svc_provider_description_next': 'provider_description', 'public.svc_provider_description_reserve_v1': 'provider_description',
     'security.provider_description_selection_v1': 'provider_description', 'public.svc_scholarship_ai_next': 'scholarship_extraction', 'public.svc_scholarship_eligibility_next': 'scholarship_eligibility',
