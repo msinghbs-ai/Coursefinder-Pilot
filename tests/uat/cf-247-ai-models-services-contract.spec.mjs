@@ -457,14 +457,15 @@ test('round 4: every model call attempt is kept with tokens and cost; the page r
   takeAiTrace()
   let r = await cascadeFetch(seq([{ status: 503, body: {} }, { body: ok }]), { models: ['v/a', 'v/b'], service: 'fee_reader', source_id: 7 }, 'u', init)
   expect((await r.json()).cf_model_sent).toBe('v/b')
-  expect(takeAiTrace()).toEqual([
+  expect(takeAiTrace().map(({ ms, ...t }) => t)).toEqual([
     { service: 'fee_reader', model: 'v/a', attempt_no: 1, outcome: 'failed', failure_kind: 'http', input_tokens: null, output_tokens: null, cost: null, source: null, source_id: '7' },
     { service: 'fee_reader', model: 'v/b', attempt_no: 2, outcome: 'answered', failure_kind: null, input_tokens: 10, output_tokens: 5, cost: 0.001, source: null, source_id: '7' }])
   r = await cascadeFetch(seq([{ body: ok }]), { service: 'ops_diagnosis' }, 'u', init)
   expect(await r.json()).toEqual(ok)   // one model: the answer as it came
-  expect(takeAiTrace()).toEqual([{ service: 'ops_diagnosis', model: 'v/a', attempt_no: 1, outcome: 'answered', failure_kind: null, input_tokens: 10, output_tokens: 5, cost: 0.001, source: null, source_id: null }])
+  expect(takeAiTrace().map(({ ms, ...t }) => t)).toEqual([{ service: 'ops_diagnosis', model: 'v/a', attempt_no: 1, outcome: 'answered', failure_kind: null, input_tokens: 10, output_tokens: 5, cost: 0.001, source: null, source_id: null }])
   await expect(cascadeFetch(seq([{ name: 'TimeoutError' }]), { service: 'entry_matrices' }, 'u', init)).rejects.toThrow()
   expect(takeAiTrace().map((t) => `${t.outcome}:${t.failure_kind}`)).toEqual(['failed:timeout'])
+  // v1.0.0: every attempt also notes its time (ms); compared above without it
   expect(['HTTP 500', 'cut answer', 'answer is not JSON', 'error: refused', 'empty answer', 'no choices'].map(failureKind)).toEqual(['http', 'cut', 'non_json', 'refused', 'empty', 'empty'])
   fs.rmSync(out, { force: true })
   expect(fixtures).toContain('ok 13 every model call attempt is kept with tokens and cost')

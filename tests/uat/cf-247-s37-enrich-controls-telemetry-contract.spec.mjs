@@ -58,5 +58,5 @@ test('hotfix: items that used their AI tries are settled as failed; null charact
   expect(fix).not.toMatch(/^\s*(drop|delete|truncate)\b/im)
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(w).toContain('await rpc("svc_enrich_ai_record", { p_results: noNul(out) })')
-  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(?:2[3-9]|[3-9]\d)\.\d+";/)
+  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v(?:[1-9]\d*\.\d+\.\d+|0\.(?:2[3-9]|[3-9]\d)\.\d+)";/)
 })

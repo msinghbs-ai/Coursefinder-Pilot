@@ -38,7 +38,7 @@ test('judging: a label is found only when the proven answer gives it; a quote ac
 })
 
 test('worker mode lean_qualify: stored copies only, the pinned route of each service, nothing admitted or written beyond the qualification record', () => {
-  expect(IX).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(9[4-9]|\d{3,})\.\d+";/)
+  expect(IX).toMatch(/const WORKER = "coverage-sweep-worker-v(?:[1-9]\d*\.\d+\.\d+|0\.(9[4-9]|\d{3,})\.\d+)";/)
   expect(body).toContain('rpc("svc_lean_qualify_next_v1"')
   expect(body).toContain('rpc("svc_lean_qualify_record_v1"')
   expect(body).toContain('readEvidenceCopy(c, String(it.storage_path))')

@@ -132,14 +132,19 @@ test('the markdown and the stored HTML of one read are kept under one evidence r
   expect(fcSrc).toContain('screenshot: accepted && typeof d?.data?.screenshot === "string" ? String(d.data.screenshot) : null,')
 })
 
-test('stored HTML evidence is still converted locally by lean-md-v2; no reader reads the kept markdown', async () => {
+test('stored HTML evidence is still converted locally by lean-md-v2; the kept markdown is read only when reading.markdown_input is on (worker v1.0.0)', async () => {
   const { leanText, LEAN_CONVERTER } = await load('lean-input.ts', 'lean')
   expect(LEAN_CONVERTER).toBe('lean-md-v2')
   const t = leanText(BIG)
   expect(t.converter).toBe('lean-md-v2')
   expect(t.text).toContain('IELTS 6.5 overall')  // content outside <main> kept, as today
   expect(ix).not.toMatch(/download\([^)]*\.md\.gz/)
-  expect(fs.readFileSync(`${DIR}/lean-input.ts`, 'utf8')).not.toMatch(/markdown|\.md\.gz/)
+  // v1.0.0 (Platform Admin 15 Nov 2026 00:23): lean-md-v2 itself never reads markdown; the readers take the kept .md.gz only through storedMarkdown,
+  // which returns nothing unless setting reading.markdown_input is 1 (ships 0)
+  const li = fs.readFileSync(`${DIR}/lean-input.ts`, 'utf8')
+  expect(li.slice(li.indexOf('export function leanText('), li.indexOf('// fc-md-v1'))).not.toMatch(/markdown|\.md\.gz/i)
+  expect(ix).toContain('const MD_INPUT = Number(ws["reading.markdown_input"]) === 1;')
+  expect(ix).toMatch(/if \(!MD_INPUT \|\| !path/)
 })
 
 test('guardrails: no route switch, ceiling, Observe/Stop mode, model route or AER shadow setting is touched', () => {
@@ -147,7 +152,8 @@ test('guardrails: no route switch, ceiling, Observe/Stop mode, model route or AE
   expect(top).not.toMatch(/^\s*update\b/im)
   const code = mig.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n').toLowerCase()
   for (const s of ['aer.v2_shadow_on', 'gpt-4.1-mini', 'held_kind', 'enforcement', 'ceiling', 'max_usd', 'route_on', 'paused']) expect(code, s).not.toContain(s)
-  expect(ix).toMatch(/const WORKER = "coverage-sweep-worker-v0\.99\.0";/)
+  expect(ix).toMatch(/const WORKER = "coverage-sweep-worker-v(?:0\.99\.0|[1-9]\d*\.\d+\.\d+)";/)  // v0.99.0 or a later worker (v1.0.0)
+  expect(ix).toMatch(/const WORKER = "coverage-sweep-worker-v0\.99\.0";|\/\/ was v0\.99\.0 \/\/ v0\.99\.0 \(14 Nov 2026, CF-247 Firecrawl format profiles/)
 })
 
 // ---- the screen: Models & services › Toolsets and limits › Firecrawl › Format profiles (v2.16.2) ----

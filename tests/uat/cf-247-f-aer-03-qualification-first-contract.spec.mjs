@@ -80,7 +80,7 @@ test('the two live functions are edited only from their live md5; the person dec
 test('worker v0.70.0 asks the database for the qualifications and sends qualification rows', () => {
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   // v0.70.0 or a later worker that keeps its v0.70.0 note (F-AER.07 v0.71.0 reads PDF tables by cell and keeps this behaviour)
-  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(7\d|[89]\d)\.\d+"/)
+  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v(?:[1-9]\d*\.\d+\.\d+|0\.(7\d|[89]\d)\.\d+)"/)
   expect(w).toContain('v0.70.0 (12 Nov 2026, CF-247 F-AER.03 qualification-first')
   expect(w).toContain('rpc("svc_aer_qualifications_v1", {})')
   expect(w).toContain('...(qrows.length ? { qualification_rows: qrows } : {})')

@@ -114,6 +114,60 @@ export function leanText(html: string): LeanText {
   return { converter: LEAN_CONVERTER, text: out, blocks: kept, tables, table_rows: tableRowsN };
 }
 
+// fc-md-v1 (worker v1.0.0, Platform Admin 15 Nov 2026 00:23): the same structured text built from Firecrawl's own markdown of the page, kept beside
+// the stored HTML (<name>.md.gz) since worker v0.99.0. Same block kinds and line format as lean-md-v2 (headings "## ", items "- ", table rows
+// "Header: cell | Header: cell"), the markdown syntax taken out so a quote is the page's own words: links keep their text, images go, emphasis
+// and inline code marks go. source_at is the offset in the markdown. Used only when reading.markdown_input is on and the markdown file exists;
+// otherwise lean-md-v2 converts the stored HTML, as before.
+export const MD_CONVERTER = "fc-md-v1";  // never edited in place: a different conversion is a new version
+export function mdPlain(s: string): string {
+  return String(s || "")
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")                    // images
+    .replace(/\[([^\]]*)\]\((?:[^()]|\([^)]*\))*\)/g, "$1")      // links keep their text
+    .replace(/<[^>]+>/g, " ")                                  // stray markup
+    .replace(/(\*\*|__)(.+?)\1/g, "$2").replace(/(^|[\s(])[*_]([^*_\n]+)[*_](?=[\s).,;:!?]|$)/g, "$1$2")  // emphasis
+    .replace(/`([^`]*)`/g, "$1").replace(/\\([\\`*_{}\[\]()#+\-.!|])/g, "$1")  // inline code, escapes
+    .replace(/\s+/g, " ").trim();
+}
+const cells = (row: string) => row.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map((c) => mdPlain(c));
+export function leanTextFromMarkdown(md: string): LeanText {
+  const lines = String(md || "").split("\n");
+  const blocks: Block[] = [];
+  let tables = 0, tableRowsN = 0, at = 0, para: string[] = [], paraAt = 0;
+  const push = (kind: Block["kind"], t: string, src: number) => { const s = mdPlain(t); if (s) blocks.push({ kind, text: s, start: 0, end: 0, source_at: src }) };
+  const flush = () => { if (para.length) push("text", para.join(" "), paraAt); para = [] };
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i], t = line.trim(), here = at; at += line.length + 1;
+    if (!t || /^(-{3,}|\*{3,}|_{3,})$/.test(t) || /^```/.test(t)) { flush(); continue }
+    let m: RegExpExecArray | null;
+    if ((m = /^#{1,6}\s+(.*)$/.exec(t))) { flush(); push("heading", m[1].replace(/\s#+$/, ""), here); continue }
+    if (/^\|.*\|$/.test(t)) {  // a table: header row, separator row, body rows
+      flush(); tables++;
+      const rows: { c: string[]; at: number }[] = [{ c: cells(t), at: here }];
+      while (i + 1 < lines.length && /^\s*\|.*\|\s*$/.test(lines[i + 1])) { i++; rows.push({ c: cells(lines[i]), at }); at += lines[i].length + 1 }
+      const sep = rows.length > 1 && rows[1].c.every((c) => /^:?-{2,}:?$/.test(c.replace(/\s/g, "")) || c === "");
+      const head = sep ? rows[0].c : null, body = sep ? rows.slice(2) : rows;
+      for (const r of body) {
+        const out = r.c.map((c, k) => head && head[k] && c ? `${head[k]}: ${c}` : c).filter(Boolean);
+        if (out.length) { push("table_row", out.join(" | "), r.at); tableRowsN++ }
+      }
+      if (head && !body.length) push("table_row", head.filter(Boolean).join(" | "), rows[0].at);
+      continue;
+    }
+    if ((m = /^(?:[-*+]|\d+[.)])\s+(.*)$/.exec(t))) { flush(); push("item", m[1], here); continue }
+    if (!para.length) paraAt = here;
+    para.push(t.replace(/^>\s?/, ""));
+  }
+  flush();
+  const kept = keepScoreLines(blocks);
+  let out = "";
+  for (const b of kept) {
+    const line = b.kind === "heading" ? `## ${b.text}` : b.kind === "item" ? `- ${b.text}` : b.text;
+    const start = out.length + (out ? 1 : 0); out += (out ? "\n" : "") + line; b.start = start; b.end = out.length;
+  }
+  return { converter: MD_CONVERTER, text: out, blocks: kept, tables, table_rows: tableRowsN };
+}
+
 // High-recall signals per field. A word list can miss a page (tables, aliases, implicit headings), so the verdict is three-way and only
 // "likely" is a positive claim; "no_signal" means no signal was seen, never "the page does not state it".
 const MONTH = "jan(uary)?|feb(ruary)?|mar(ch)?|apr(il)?|may|june?|july?|aug(ust)?|sep(t(ember)?)?|oct(ober)?|nov(ember)?|dec(ember)?";

@@ -70,8 +70,8 @@ test('an observation names the cut and the field signalled only beyond it; the f
 })
 
 test('the worker observes in shadow: every read observed, nothing skipped or changed, a failure never fails the read, off by setting', () => {
-  expect(IX).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(8[7-9]|9\d)\.\d+";/)  // v0.87.0 or a later worker that keeps the observation
-  expect(IX).toContain('import { leanText, observation, sha256Hex } from "./lean-input.ts";')
+  expect(IX).toMatch(/const WORKER = "coverage-sweep-worker-v(?:[1-9]\d*\.\d+\.\d+|0\.(8[7-9]|9\d)\.\d+)";/)  // v0.87.0 or a later worker that keeps the observation
+  expect(IX).toContain('import { leanText, leanTextFromMarkdown, observation, sha256Hex } from "./lean-input.ts";')
   // v0.92.0: the switch is read as a switch, so 0 turns observing off (wsNum read a 0 as the default 1)
   expect(IX).toContain('const OBSERVE = wsOn("reading.input_observe_on", 1), observed: any[] = [];')
   expect(IX).toContain('const wsOn = (k: string, d: 0 | 1) => { const n = Number(ws[k] ?? d); return Number.isFinite(n) ? n > 0 : d > 0; };')
@@ -81,7 +81,8 @@ test('the worker observes in shadow: every read observed, nothing skipped or cha
   expect(IX).toContain('sent: courseTextPage(raw, PAGE_CHARS), limit: PAGE_CHARS, prompt: CDESC_PROMPT_VERSION')
   expect(IX).toContain('sent: courseTextPage(raw, PAGE_CHARS), limit: PAGE_CHARS, prompt: COURSE_TEXT_PROMPT_VERSION')
   expect(IX).toContain('sent: fieldsSrc.slice(0, PAGE_CHARS), limit: PAGE_CHARS')
-  expect(IX).toContain('const page = ((data ? `Page data fields:\\n${data}\\n\\n` : "") + mainText(raw)).slice(0, PAGE_CHARS);')
+  // v1.0.0: the stored markdown of the page when reading.markdown_input is 1 (ships 0); otherwise the stored HTML as before
+  expect(IX).toContain('const page = ((data ? `Page data fields:\\n${data}\\n\\n` : "") + (md ? leanTextFromMarkdown(md).text : mainText(raw))).slice(0, PAGE_CHARS);')
   // the preflight decides nothing in the worker
   const enrich = IX.slice(IX.indexOf('if (mode === "enrich_ai")'), IX.indexOf('if (mode === "scholarship_inspect")'))
   expect(enrich).not.toMatch(/preflight\(/)

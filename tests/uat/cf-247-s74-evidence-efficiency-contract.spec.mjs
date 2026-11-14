@@ -8,7 +8,7 @@ const reuse = fs.readFileSync('supabase/migrations/20261019080000_cf247_reuse_un
 const orphans = fs.readFileSync('supabase/migrations/20261019090000_cf247_orphan_files_list.sql', 'utf8')
 
 test('an unchanged course page keeps the copy in use: no file, no new evidence record; switchable', () => {
-  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(3[2-9]|[4-9]\d)\.\d+";/)
+  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v(?:[1-9]\d*\.\d+\.\d+|0\.(3[2-9]|[4-9]\d)\.\d+)";/)
   expect(worker).toContain('const normText = (t: string) => String(t || "").replace(/\\s+/g, " ").trim();')
   // both read paths (Firecrawl run items and the direct reader) compare the text hash before storing
   expect(worker.match(/if \(identityBasis && textSha === await rpc\("svc_coverage_text_sha", \{ p_course_id: it\.course_id \}\)\.catch\(\(\) => null\)\) \{ path = null; sha = null \}/g).length).toBe(2)
