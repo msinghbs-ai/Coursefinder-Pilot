@@ -1,6 +1,6 @@
 -- CF-247 Pre-AI admission gate, shadow (Decision 278, Platform Admin 14 Nov 2026 16:10, D1-D4; admin docs/audits/studysearch-pre-ai-admission-gate-design.md
 -- §5; builds on docs/platform/SHARED-SOURCE-TO-PUBLISHED-ENRICHMENT-DESIGN.md §11 F3/F4/F5/F6 and LEAN-AI-INPUT-PHASE0-BASELINE-2026-11-13.md §4).
--- Worker coverage-sweep v0.95.0, module admission-gate.ts (pre-ai-admission-v1), judges each scholarship_ai read before it is sent and records what it
+-- Worker coverage-sweep v0.97.0, module admission-gate.ts (pre-ai-admission-v1), judges each scholarship_ai read before it is sent and records what it
 -- WOULD do. This migration adds the table those decisions go to, the insert the worker calls, the lookup of fingerprints already answered, the gate's
 -- settings, a read-only report, and lets the worker read the gate's settings. Nothing else:
 --   * the gate ships off (admission.gate_on = 0) and every reason ships with enforcement off (admission.enforce.<reason> = 0): no read is skipped, no
@@ -52,7 +52,7 @@ insert into pipeline.platform_toolset_settings (toolset_key, key, label, help, k
 values
  ('pipeline', 'admission.gate_on', 'Pre-AI admission: judge each AI read before it is sent',
   '1: each AI read is judged by the pre-AI admission gate and the decision is recorded (pipeline.pre_ai_admission_decisions). 0: nothing is judged or recorded. With every admission.enforce.* switch at 0 the reads are exactly as before.',
-  'number', '0'::jsonb, 0, 1, 'on (1) or off (0)', 1450, 'Pre-AI admission gate, shadow (audit 14 Nov 2026); on only with Platform Admin approval', 'Enrich fields', 'worker coverage-sweep mode scholarship_ai (v0.95.0); enrich_ai and aer_v2_shadow later, each a separate approval'),
+  'number', '0'::jsonb, 0, 1, 'on (1) or off (0)', 1450, 'Pre-AI admission gate, shadow (audit 14 Nov 2026); on only with Platform Admin approval', 'Enrich fields', 'worker coverage-sweep mode scholarship_ai (v0.97.0); enrich_ai and aer_v2_shadow later, each a separate approval'),
  ('pipeline', 'admission.min_main_chars', 'Pre-AI admission: least main text for a page to be read',
   'A stored copy with less main text than this (navigation, header and footer removed) is judged thin. 300 is the direct reader''s own floor for a read page.',
   'number', '300'::jsonb, 50, 5000, 'characters', 1451, 'Pre-AI admission gate: thin-page rule', 'Enrich fields', 'worker admission-gate.ts thin_page'),

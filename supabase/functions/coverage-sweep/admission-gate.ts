@@ -1,4 +1,4 @@
-// CF-247 pre-AI admission and enrichment gate, pre-ai-admission-v1 (Decision 278, Platform Admin 14 Nov 2026 16:10; shadow, worker v0.95.0).
+// CF-247 pre-AI admission and enrichment gate, pre-ai-admission-v1 (Decision 278, Platform Admin 14 Nov 2026 16:10; shadow, worker v0.97.0).
 // Design: admin docs/audits/studysearch-pre-ai-admission-gate-design.md (14 Nov 2026), built on SHARED-SOURCE-TO-PUBLISHED-ENRICHMENT-DESIGN.md §11
 // (F2 section slicer, F3 high-recall negative filter, F4 content cache, F5 split/park, never truncate, F6 observability).
 //

@@ -39,7 +39,7 @@ import { awardSections, mapOutcome, nextPage, pagingState, redirectOutcome, sect
 import { COURSE_TEXT_FIELDS, cdescRequest, cdescResults, cdescSpans, cdescUser, courseTextAnswer, courseTextAnswerLimit, courseTextLength, courseTextPage, courseTextRequest, courseTextResults, courseTextUser, COURSE_TEXT_PROMPT_VERSION, CDESC_PROMPT_VERSION } from "./course-text.ts";
 import { leanText, observation, sha256Hex } from "./lean-input.ts";
 import { preflight as leanPreflight } from "./lean-input.ts";
-import { ADMISSION_GATE, OPENED_COPY_REQUIRED, admit, decisionRow, openCopy, type ArtifactManifest, type Decision, type GateSettings, type Reason } from "./admission-gate.ts";  // v0.95.0: pre-AI admission gate, shadow (Decision 278)
+import { ADMISSION_GATE, OPENED_COPY_REQUIRED, admit, decisionRow, openCopy, type ArtifactManifest, type Decision, type GateSettings, type Reason } from "./admission-gate.ts";  // v0.97.0: pre-AI admission gate, shadow (Decision 278)
 import { BLOCK_INPUT, LEAN_SECTIONS, SECTION_DEFAULTS, blockPlain, holds, selectSections } from "./lean-sections.ts";
 import { FEE_CANDIDATE_PROMPT, INTAKE_BASELINE_PROMPT, INTAKE_CANDIDATE_PROMPT, LEAN_QUALIFY, feeFound, feeRequest, intakeFound, intakeRequest, quoteHeld } from "./lean-qualify.ts";
 import { DESCRIPTION_ANSWER_KEY, DESCRIPTION_PROMPT_VERSION, promptRequest, promptSentences, DESCRIPTION_WORKER_PROTOCOL, aboutLinks, aboutPageCheck, descriptionAnswer, descriptionClaimCheck, descriptionCostQuote, descriptionPageText, descriptionIdentitySeen, descriptionRequest, descriptionSourceIdentity, type IdentityTrace, ownHost, providerDescriptionSentences } from "./description.ts";
@@ -2068,7 +2068,7 @@ async function handle(req: Request): Promise<Response> {
       return j({ ok: true, mode, rows: rows.length, done, failed, changes, ms: Date.now() - t0, workerVersion: VERSION, scholarshipExtractor: SCH_VERSION });
     }
     const storedHtml = async (path: string) => { const { data, error } = await c.storage.from("evidence").download(path); if (error || !data) throw Error(error?.message || "missing"); return await new Response(data.stream().pipeThrough(new DecompressionStream("gzip"))).text() };
-    // v0.95.0: the same stored copy as bytes (admission-gate.ts openCopy: decompressed, hashed over its bytes, then decoded as storedHtml decodes it)
+    // v0.97.0: the same stored copy as bytes (admission-gate.ts openCopy: decompressed, hashed over its bytes, then decoded as storedHtml decodes it)
     const storedCopy = async (path: string) => { const { data, error } = await c.storage.from("evidence").download(path); if (error || !data) throw Error(error?.message || "missing"); return await openCopy(new Uint8Array(await data.arrayBuffer()), "gzip") };
     // v0.20.0 (Platform Admin bugs 11/10-6, 11 Oct 2026: "scholarship to be read by code using Firecrawl but then use AI to extract
     // attributes"): each queued scholarship page (stored copy, or read now through the scraper and kept) is sent to the model and
@@ -2081,7 +2081,7 @@ async function handle(req: Request): Promise<Response> {
       const items: any[] = await rpc("svc_scholarship_ai_next", { p_limit: Math.min(Number(body.limit || 8), 12) });
       const schTokens = answerLimit(ws, "scholarship_page");
       const tally: Record<string, number> = {}; let cost = 0;
-      // v0.95.0 (pre-ai-admission-v1, Decision 278; admin docs/audits/studysearch-pre-ai-admission-gate-design.md §4): each read is judged before it is
+      // v0.97.0 (pre-ai-admission-v1, Decision 278; admin docs/audits/studysearch-pre-ai-admission-gate-design.md §4): each read is judged before it is
       // sent and the decision recorded (public.svc_pre_ai_admission_record_v1). Off unless admission.gate_on; with every admission.enforce.<reason> at 0
       // nothing changes. A park (duplicate_input, over_budget_split) is not enforced here: this lane has no route for parked items yet.
       const GATE_ON = wsNum("admission.gate_on", 0) > 0, admissions: unknown[] = [];
@@ -2093,8 +2093,8 @@ async function handle(req: Request): Promise<Response> {
         // v0.78.0: a version 3 read may take up to SCH_V3_TIMEOUT_MS, so it starts only early in the call (the rest wait, no try used)
         if (Date.now() - t0 > BUDGET_MS - (Number(it.prompt_version || 0) >= 3 ? SCH_V3_TIMEOUT_MS : 25000)) { await rec({ p_retry: true }); tally.later = (tally.later || 0) + 1; return }
         let html = "", finalUrl = it.url, path: string | null = null, sha: string | null = null, ruleFacts: Record<string, unknown> | null = null;
-        let spent = 0;  // v0.95.0 (R5): what this item's model calls cost, kept for the catch (a record that failed after a paid answer recorded 0: audit A4)
-        let rawBytes: Uint8Array | null = null, storedBytes = 0;  // v0.95.0: the copy's decompressed bytes and stored size, for the gate (only while admission.gate_on)
+        let spent = 0;  // v0.97.0 (R5): what this item's model calls cost, kept for the catch (a record that failed after a paid answer recorded 0: audit A4)
+        let rawBytes: Uint8Array | null = null, storedBytes = 0;  // v0.97.0: the copy's decompressed bytes and stored size, for the gate (only while admission.gate_on)
         try {
           if (it.storage_path) { if (GATE_ON) { const cp = await storedCopy(it.storage_path); html = cp.text; rawBytes = cp.bytes; storedBytes = cp.stored_bytes } else html = await storedHtml(it.storage_path) }
           else {
@@ -2158,7 +2158,7 @@ async function handle(req: Request): Promise<Response> {
             tally.rejected_admission = (tally.rejected_admission || 0) + 1; return;
           }
           const ask = async (reqBody: unknown, where: string) => {
-            // v0.95.0 (R5): each attempt names its queue item in pipeline.ai_invocations, written once at the end of this call by public.svc_ai_model_answered_v1,
+            // v0.97.0 (R5): each attempt names its queue item in pipeline.ai_invocations, written once at the end of this call by public.svc_ai_model_answered_v1,
             // outside the queue and extraction tables: a paid answer's cost is kept there even when svc_scholarship_ai_record cannot write it
             const r = await cascadeFetch(fetch, { service: "scholarship_extraction", source: "scholarship_ai_queue", source_id: it.queue_id }, "https://openrouter.ai/api/v1/chat/completions", { method: "POST", headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
               body: JSON.stringify(reqBody), signal: AbortSignal.timeout(v3 ? SCH_V3_TIMEOUT_MS : 60000) });
@@ -2207,7 +2207,7 @@ async function handle(req: Request): Promise<Response> {
                       p_storage_path: path, p_sha256: sha, p_final_url: finalUrl, p_rule_facts: ruleFacts });
           tally[verdict] = (tally[verdict] || 0) + 1;
         } catch (e) {
-          // v0.54.0 (W32): cost recorded on a failed read. v0.95.0 (R5): also when the record itself failed after a paid answer (errorCost is 0 for a
+          // v0.54.0 (W32): cost recorded on a failed read. v0.97.0 (R5): also when the record itself failed after a paid answer (errorCost is 0 for a
           // record error, so the paid cost is spent). That fallback goes to the same svc_scholarship_ai_record, which locks the same queue row: if it fails
           // too it is counted (record_failed) and never fails the batch; the cost then stays in pipeline.ai_invocations (source_id = this queue item).
           try {
