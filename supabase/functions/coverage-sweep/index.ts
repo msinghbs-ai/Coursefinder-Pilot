@@ -2152,8 +2152,9 @@ async function handle(req: Request): Promise<Response> {
             admissions.push(decisionRow(dec, { lane_item: "scholarship_ai_queue", item_id: it.queue_id, evidence_id: null, storage_path: gatePath, worker: WORKER }));
             gateDec = dec;
           } catch { tally.gate_error = (tally.gate_error || 0) + 1 }
-          if (gateDec?.decision === "reject") {  // only when the Platform Admin has switched this reason on; nothing is spent
-            await rec({ p_error: `rejected_admission: ${gateDec.reasons.map((r) => r.code).join(",")}`.slice(0, 400), p_storage_path: path, p_sha256: sha, p_final_url: finalUrl, p_rule_facts: ruleFacts });
+          // only a reason the Platform Admin switched on stops a read, and only those codes are written (never a shadow or park code); nothing is spent
+          if (gateDec?.decision === "reject" && gateDec.enforced.length > 0) {
+            await rec({ p_error: `rejected_admission: ${gateDec.enforced.join(",")}`.slice(0, 400), p_storage_path: path, p_sha256: sha, p_final_url: finalUrl, p_rule_facts: ruleFacts });
             tally.rejected_admission = (tally.rejected_admission || 0) + 1; return;
           }
           const ask = async (reqBody: unknown, where: string) => {

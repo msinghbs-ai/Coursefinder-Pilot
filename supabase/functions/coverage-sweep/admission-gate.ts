@@ -151,7 +151,11 @@ export type GateSettings = {
 export type Decision = {
   gate: string; lane: Lane; decision: "admit" | "reject" | "park"; shadow: boolean;
   would: "admit" | "reject" | "park";              // what the gate would do with every reason enforced
-  reasons: { code: Reason; detail: string }[];
+  reasons: { code: Reason; detail: string }[];     // every reason found (shadow measurement included)
+  // the reasons that actually stop this read: switched on (admission.enforce.<reason> = 1), not measure-only and not a park. Empty unless decision is
+  // "reject". Only these may be written into an item's "rejected_admission:" error: a shadow code or a park code never is, so the terminal queue
+  // state for rejected items can never catch an item meant for a split or for reuse.
+  enforced: Reason[];
   signals: Record<string, unknown>;
   sent_chars: number; tokens_saved_estimate: number; // chars/4, an estimate only: real tokens come from the model's usage block
   input_sha256: string; fingerprint: string | null;
@@ -249,7 +253,9 @@ export async function admit(g: GateInput, s: GateSettings = {}): Promise<Decisio
   const would: Decision["would"] = reasons.length === 0 ? "admit" : reasons.every((r) => PARK.has(r.code)) ? "park" : "reject";
   const enforced = reasons.filter((r) => s.enforce?.[r.code] === true && !MEASURE_ONLY.has(r.code) && (!PARK.has(r.code) || s.park_routed === true));
   const decision: Decision["decision"] = enforced.length === 0 ? "admit" : enforced.every((r) => PARK.has(r.code)) ? "park" : "reject";
-  return { gate: ADMISSION_GATE, lane: g.lane, decision, shadow: enforced.length === 0 && reasons.length > 0, would, reasons, signals,
+  const enforcedReject = decision === "reject" ? [...new Set(enforced.filter((r) => !PARK.has(r.code)).map((r) => r.code))] : [];
+  signals.enforced = enforcedReject;
+  return { gate: ADMISSION_GATE, lane: g.lane, decision, shadow: enforced.length === 0 && reasons.length > 0, would, reasons, enforced: enforcedReject, signals,
     sent_chars: sent.length, tokens_saved_estimate: would === "admit" ? 0 : Math.round(sent.length / 4), input_sha256, fingerprint };
 }
 

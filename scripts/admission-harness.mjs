@@ -131,6 +131,11 @@ async function selfTest() {
   const unrouted = await G.admit({ ...base, lane: "aer", html: course, seen_fingerprints: new Set([first.fingerprint]) }, { enforce: { duplicate_input: true } });
   const uok = unrouted.decision === "admit" && unrouted.would === "park" && unrouted.shadow === true;
   if (!uok) failed++; console.log(`${uok ? "PASS" : "FAIL"}  enforced park without a park route stays shadow: decision ${unrouted.decision}, would ${unrouted.would}`);
+  // only enforced reject codes may be written as rejected_admission: never a measure-only or a park code
+  const seenThin = new Set([(await G.admit({ ...base, lane: "scholarship", html: thin })).fingerprint]);
+  const mixed = await G.admit({ ...base, lane: "scholarship", html: thin, seen_fingerprints: seenThin }, { enforce: { thin_page: true, scholarship_low_signal: true, duplicate_input: true }, park_routed: true });
+  const rok = mixed.decision === "reject" && mixed.enforced.join(",") === "thin_page" && mixed.reasons.some((r) => r.code === "duplicate_input");
+  if (!rok) failed++; console.log(`${rok ? "PASS" : "FAIL"}  rejected_admission codes are the enforced reject codes only: [${mixed.enforced}] of [${mixed.reasons.map((r) => r.code)}]`);
   // scholarship bundle: a changed (or added, or removed) linked eligibility page is a different input, so it never hits duplicate_input
   const awardUrl = "https://example.edu/scholarships/global", L1 = sha("Eligibility: international students with an offer."), L2 = sha("Eligibility: domestic students only.");
   const s0 = await G.admit({ ...base, lane: "scholarship", html: award, url: awardUrl, linked_sha256: L1 });
@@ -163,7 +168,7 @@ async function selfTest() {
   const { seg } = G.segment(course, null, ["aer"]);
   const lok = seg.text.aer.split("\n").every((l) => /^\[B\d+ @(\d+|data)\] /.test(l)) && seg.by_lane.aer.block_ids.length > 0;
   if (!lok) failed++; console.log(`${lok ? "PASS" : "FAIL"}  AER segment keeps [B#] block labels (${seg.by_lane.aer.block_ids.length} blocks)`);
-  console.log(failed ? `\n${failed} FAILED` : `\nall ${cases.length + 9} checks passed`);
+  console.log(failed ? `\n${failed} FAILED` : `\nall ${cases.length + 10} checks passed`);
   process.exit(failed ? 1 : 0);
 }
 

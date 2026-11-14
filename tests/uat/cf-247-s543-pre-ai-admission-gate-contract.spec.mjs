@@ -128,7 +128,6 @@ test('admission.gate_on ships 0 and every switch 0; the worker reads them; off m
   expect(worker).toContain('const admitted = admissions.length ? await rpc("svc_pre_ai_admission_record_v1", { p_rows: noNul(admissions) }).catch(')
   // only an enforced reject stops a read; this lane has no route for parked items, so it never enforces a park
   expect(worker).toContain('park_routed: false,')
-  expect(worker).toContain('if (gateDec?.decision === "reject") {')
   // the gate never fails a read: an error inside it is counted and the read goes ahead
   expect(worker).toContain('if (GATE_ON) try {')
   expect(worker).toContain('} catch { tally.gate_error = (tally.gate_error || 0) + 1 }')
@@ -137,6 +136,29 @@ test('admission.gate_on ships 0 and every switch 0; the worker reads them; off m
   expect([parked.would, parked.decision, parked.shadow]).toEqual(['park', 'admit', true])
   // with no settings at all nothing is enforced
   for (const html of [news, page('x', '<p>Loading…</p>')]) expect((await G.admit({ ...base, lane: 'scholarship', html })).decision).toBe('admit')
+})
+
+test('rejected_admission names enforced reject codes only: never a shadow code, never a park code, and a park writes no rejected_admission at all', async () => {
+  const thin = page('Just a moment', '<p>Loading…</p>')
+  const b = { ...base, lane: 'scholarship', html: thin }
+  const seen = new Set([(await G.admit(b)).fingerprint])
+  // three reasons found (thin_page, scholarship_low_signal measured only, duplicate_input a park); one switched on
+  const one = await G.admit({ ...b, seen_fingerprints: seen }, { enforce: { thin_page: true } })
+  expect(one.reasons.map((r) => r.code)).toEqual(expect.arrayContaining(['thin_page', 'scholarship_low_signal', 'duplicate_input']))
+  expect([one.decision, one.enforced]).toEqual(['reject', ['thin_page']])
+  // every switch on and parks routed: still only the reject code; the measure-only and park codes stay out
+  const all = await G.admit({ ...b, seen_fingerprints: seen }, { enforce: { thin_page: true, scholarship_low_signal: true, duplicate_input: true }, park_routed: true })
+  expect([all.decision, all.enforced]).toEqual(['reject', ['thin_page']])
+  // a park, even routed and enforced, is not a reject: nothing to write
+  const park = await G.admit({ ...b, seen_fingerprints: seen }, { enforce: { duplicate_input: true }, park_routed: true })
+  expect([park.decision, park.enforced]).toEqual(['park', []])
+  // shadow (nothing switched on): nothing to write
+  expect((await G.admit({ ...b, seen_fingerprints: seen })).enforced).toEqual([])
+  // the worker writes the prefix only for a reject with enforced codes, from those codes alone
+  expect(worker).toContain('if (gateDec?.decision === "reject" && gateDec.enforced.length > 0) {')
+  expect(worker).toContain('p_error: `rejected_admission: ${gateDec.enforced.join(",")}`.slice(0, 400),')
+  expect((worker.match(/rejected_admission: \$\{/g) || []).length).toBe(1)
+  expect(worker).not.toContain('rejected_admission: ${gateDec.reasons')
 })
 
 test('R5: a paid answer whose record failed keeps its cost, the fallback cannot fail the batch, and each attempt names its item in ai_invocations', () => {
