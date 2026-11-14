@@ -27,7 +27,8 @@ jobs:
           BASE: ${{ github.event.pull_request.base.sha || 'origin/main' }}
         run: |
           errs() {  # one line per error: "TS<code> <message> | <file under supabase/functions>"; $2 keeps the raw output
-            (cd "$1" && deno check --no-lock supabase/functions/coverage-sweep/index.ts 2>&1 || true) | sed -E 's/\x1b\[[0-9;]*m//g' > "$2"
+            # DENO_NO_PACKAGE_JSON: the repository's package.json is the admin site's; the worker's npm: imports resolve as the edge runtime does
+            (cd "$1" && DENO_NO_PACKAGE_JSON=1 deno check --no-lock supabase/functions/coverage-sweep/index.ts 2>&1 || true) | sed -E 's/\x1b\[[0-9;]*m//g' > "$2"
             # a check that could not run (a module not found, a download failure) is a failure, never "no errors"
             if grep -E '^error: ' "$2" | grep -vq 'Type checking failed'; then echo "deno check could not run in $1:" >&2; cat "$2" >&2; exit 1; fi
             awk '
