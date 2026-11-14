@@ -21,7 +21,7 @@ import { ENTRY_GRID_READER, entryGridHeadingList, entryGridRead } from "./entry-
 import { pdfGrids2 } from "./pdf-grid.ts";
 import { COURSE_ENTRY_PROMPT_VERSION, courseEntryAnswer, courseEntryMerge, courseEntryPlan, courseEntryRequest, courseEntrySliceRows, courseEntryUser } from "./course-entry.ts";
 import type { CourseSliceOutcome } from "./course-entry.ts";
-import { AER_V2_MODE, aerV2Answer, aerV2Refs, aerV2Request, aerV2Sha256, aerV2User, aerV2Verify } from "./aer-v2.ts";
+import { AER_V2_MODE, AER_V3_CONTRACT, aerV2Answer, aerV2Refs, aerV2Request, aerV2Sha256, aerV2User, aerV2Verify, aerV3Blocks, aerV3Request, aerV3User, aerV3Verify } from "./aer-v2.ts";
 import { PDF_METHOD, pdfPages, pdfTables } from "./pdf.ts";
 import type { PdfResult } from "./pdf.ts";
 import { getDocumentProxy, getResolvedPDFJS } from "npm:unpdf@0.12.1";
@@ -83,7 +83,9 @@ const VERSION = "coverage-sweep-v0.5.6"; // extractor version (unchanged by v0.6
 // v0.38.1 (22 Oct 2026, NZ course list pages): a page the AI page match chose from the university's own site addresses (its course list or
 // site map) is listed on the university's own site, so it may be read through the scraper when the direct read is blocked (Otago, Lincoln, AUT).
 const FC_TRUSTED_BASIS = ["cricos_search", "cricos_code", "cricos_code_on_page", "nzqa_code", "adapter_code", "title_match", "cms_path_public", "manual", "firecrawl_upgrade", "ai_match", "programme_list"]; // v0.45.0: a page bound by its NZ or CA code is as trusted as one bound by a CRICOS code
-const WORKER = "coverage-sweep-worker-v0.88.0"; // v0.88.0 (14 Nov 2026, CF-247 merge of #1128 AI models and services with #1131 Lean AI Input Phase 1): both releases together. Every model call still goes through cascade.ts on its own service route (#1128), and mode enrich_ai still observes every course-page read in shadow (#1131); the observation of a course description names the course_description route model the read is sent to. No request, prompt, model choice, skip, value, admission, setting or ceiling changes.
+const WORKER = "coverage-sweep-worker-v0.89.0"; // v0.89.0 (14 Nov 2026, CF-247 merge of #1128 AI models and services with #1137 AER v2 prompt v3; both were numbered v0.88.0): mode aer_v2_shadow builds the v3 request over numbered lean-md-v1 blocks (#1137) and sends it through cascade.ts on the entry_requirements_v2_shadow route (#1128); the version's answer contract, routing and params come from the version, the model and its cascade from the route. No request, prompt, model choice, skip, value, admission, setting or ceiling changes.
+// was v0.88.0 (#1137) // v0.88.0 (14 Nov 2026, CF-247 AER v2 prompt v3, Platform Admin 14 Nov 2026 item 2): mode aer_v2_shadow reads a prompt version whose answer contract is aer-v2-answer-v3 over the whole stored page as numbered lean-md-v1 blocks (aer-v2.ts aerV3Blocks: "[B<n> @<source_at>]", headings, list items, table rows with their column headers; never cut), with the version's pinned provider routing and require_parameters (aerV3Request), and checks each record with the v3 verifier (aerV3Verify: exact_quote inside its cited block and holding the minimum; lead_in_quote separate, before it, within reading.aer_v3_lead_in_max_blocks and no heading between). Versions with the v1 contract read exactly as before.
+// was v0.88.0 (#1128 merge) // v0.88.0 (14 Nov 2026, CF-247 merge of #1128 AI models and services with #1131 Lean AI Input Phase 1): both releases together. Every model call still goes through cascade.ts on its own service route (#1128), and mode enrich_ai still observes every course-page read in shadow (#1131); the observation of a course description names the course_description route model the read is sent to. No request, prompt, model choice, skip, value, admission, setting or ceiling changes.
 // was v0.87.0 // v0.87.0 (13 Nov 2026, numbered after #1128 v0.85.0 and v0.86.0, CF-247 Lean AI Input Phase 1, Platform Admin 13 Nov 2026 22:51; admin docs/platform/LEAN-AI-INPUT-PHASE0-BASELINE-2026-11-13.md §4): mode enrich_ai observes every course-page read in shadow (lean-input.ts lean-md-v1): source text length, characters sent, whether and where the text was cut, a high-recall preflight on the text sent and on the whole page, the sent-input SHA-256 and a content/prompt/model/schema fingerprint, recorded through public.svc_ai_input_observe_v1 (reading.input_observe_on). No request, prompt, model, skip, value or admission changes.
 // was v0.86.0 // v0.86.0 (13 Nov 2026, CF-247 Platform Admin review 22:10): every model call attempt is kept (service, model, attempt, outcome, failure kind, tokens, cost) and sent to svc_ai_model_answered_v1 at the end of the call; the six single-model calls go through cascade.ts for that record only (one model, the call as it was); no prompt changed.
 // was v0.85.0 // v0.85.0 (13 Nov 2026, CF-247 AI spend control, Platform Admin 19:14 "Service based Model with cascading"): no model is named in the worker (AI_MATCH_MODEL and PAGE_ID_MODELS are gone; course-page matching takes its model from public.svc_coverage_ai_match_next); the description, the entry requirements and the other course fields each use their own route (w.routes); calls with a cascade (cascade.ts: course fields, fees, central pages, scholarship re-check, course-page matching, entry requirements v2) try the handed-out models in order and move on only on a technical failure, never on what a model answered, and only while the call's time budget lasts; the model that answered is recorded. Prompts and prompt versions are unchanged.
@@ -2347,6 +2349,9 @@ async function handle(req: Request): Promise<Response> {
       if (!key) return j({ ok: false, mode, error: "OpenRouter credential unavailable", worker: WORKER }, 503);
       const refs = aerV2Refs(w?.countries, w?.qualifications), quals = (Array.isArray(w?.qualifications) ? w.qualifications : []).map((q: any) => ({ code: String(q.code), name: String(q.name) }));
       const pageChars = wsNum("reading.aer_v2_page_chars", 60000), maxTokens = wsNum("reading.aer_v2_max_tokens", 6000), quoteMax = Number(ver.quote_max_chars) || 300;  // fixed: the prompt's own quote limit when the version row has none
+      // v0.88.0: a version with answer contract aer-v2-answer-v3 reads the whole page as numbered lean-md-v1 blocks and is checked by the v3 verifier
+      const v3 = String(ver.answer_contract || "") === AER_V3_CONTRACT, gapMax = wsNum("reading.aer_v3_lead_in_max_blocks", 3);
+      const routing = ver.routing && typeof ver.routing === "object" ? ver.routing : null, params = ver.params && typeof ver.params === "object" ? ver.params : null;
       const ors = orStats(), tally: Record<string, number> = {}; let cost = 0, passed = 0, failed = 0;
       const late = () => Date.now() - t0 > BUDGET_MS - 25000;  // fixed: time left for the last call and its record
       await pool(items, Math.max(1, Math.min(wsNum("reading.aer_v2_concurrency", 4), 8)), async (it: any) => {  // fixed: the setting's upper bound (reading.aer_v2_concurrency)
@@ -2355,17 +2360,22 @@ async function handle(req: Request): Promise<Response> {
         try {
           // the text the current course entry reader gives the model (page data items, then the page without navigation, header and footer)
           const raw = await readEvidenceCopy(c, String(it.storage_path)), di = pageDataItems(raw);
-          const text = (di ? `Page data fields:\n${di}\n\n` : "") + htmlToText(raw.replace(/<(nav|header|footer)\b[\s\S]*?<\/\1>/gi, " "));
+          const blocks = v3 ? aerV3Blocks(leanText(raw), di) : null;
+          const text = blocks ? blocks.text : (di ? `Page data fields:\n${di}\n\n` : "") + htmlToText(raw.replace(/<(nav|header|footer)\b[\s\S]*?<\/\1>/gi, " "));
           if (text.length > pageChars) out.error = `page_too_long: ${text.length} characters, more than reading.aer_v2_page_chars (${pageChars}); a cut page is never read`;
           else {
-            const r = await cascadeFetch(ors.fetch, { models: ver.models, deadline: t0 + BUDGET_MS - 25000, service: "entry_requirements_v2_shadow" }, "https://openrouter.ai/api/v1/chat/completions", { method: "POST", headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
-              body: JSON.stringify(aerV2Request(model, system, aerV2User({ title: it.title, provider: it.provider, provider_country: it.provider_country, level: it.level, url: it.url }, quals, text), maxTokens)),
+            // v0.89.0: a version that pins its providers (#1137 routing, allow_fallbacks off) is sent to one model only, never moved down the cascade with
+            // another model's provider pins (the call is then exactly as before; a refusal is recorded as the read's error)
+            const r = await cascadeFetch(ors.fetch, { models: routing ? null : ver.models, deadline: t0 + BUDGET_MS - 25000, service: "entry_requirements_v2_shadow" }, "https://openrouter.ai/api/v1/chat/completions", { method: "POST", headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
+              body: JSON.stringify(blocks
+                ? aerV3Request(model, system, aerV3User({ title: it.title, provider: it.provider, provider_country: it.provider_country, level: it.level, url: it.url }, quals, blocks), maxTokens, routing, params)
+                : aerV2Request(model, system, aerV2User({ title: it.title, provider: it.provider, provider_country: it.provider_country, level: it.level, url: it.url }, quals, text), maxTokens)),
               signal: AbortSignal.timeout(90000) });  // fixed: API time-out of one call
             const d = await r.json().catch((e) => ({ unreadable: e instanceof Error ? e.message : String(e) }));
             const ans = aerV2Answer(d, sentModel(d, model)); out.cost = ans.cost; (out as any).model = sentModel(d, model);
             if (!r.ok) out.error = `HTTP ${r.status}: ${JSON.stringify(d?.error || d).slice(0, 200)}`;
             else if (!ans.ok) out.error = ans.error;
-            else { const v = aerV2Verify(ans.a, text, refs, quoteMax); out = { ...out, records: v.records, checks: v.checks, seen: v.seen_not_mapped }; passed += v.passed; failed += v.failed }
+            else { const v = blocks ? aerV3Verify(ans.a, blocks, refs, quoteMax, gapMax) : aerV2Verify(ans.a, text, refs, quoteMax); out = { ...out, records: v.records, checks: v.checks, seen: v.seen_not_mapped }; passed += v.passed; failed += v.failed }
           }
         } catch (e) { out.error = `read failed: ${(e instanceof Error ? e.message : String(e)).slice(0, 200)}` }
         cost += out.cost;

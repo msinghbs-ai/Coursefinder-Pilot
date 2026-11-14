@@ -259,7 +259,11 @@ test('phase 2: every reader takes its model from its route and is held by it; no
   expect(body2('public.svc_fee_ai_next')).toContain("'model', v_rt->>'model', 'model_code', v_rt#>>'{models,0,code}', 'models', v_rt->'models',")
   expect(body2('public.svc_coverage_ai_match_next')).toContain("'candidates', u.candidates, 'model', v_rt->>'model', 'models', v_rt->'models')), '[]'::jsonb)")
   expect(body2('security.aer_v2_shadow_hold_v1')).toContain("'version', v.version, 'system_text', v.system_text, 'system_sha256', v.system_sha256,")   // the prompt version keeps its text and sha
-  expect(body2('security.aer_v2_shadow_hold_v1')).toContain("'model', v_rt->>'model', 'models', v_rt->'models', 'quote_max_chars', v.quote_max_chars) end,")
+  expect(body2('security.aer_v2_shadow_hold_v1')).toContain("'model', v_rt->>'model', 'models', v_rt->'models', 'quote_max_chars', v.quote_max_chars,")
+  // rebased on #1137 (20261114011500): the version's own answer contract, input format, routing and params still reach the worker
+  expect(body2('security.aer_v2_shadow_hold_v1')).toContain("'answer_contract', v.answer_contract, 'input_format', v.input_format, 'routing', v.routing, 'params', v.params) end,")
+  // a version that pins its providers is sent to one model only (worker v0.89.0)
+  expect(worker).toContain('await cascadeFetch(ors.fetch, { models: routing ? null : ver.models, deadline: t0 + BUDGET_MS - 25000, service: "entry_requirements_v2_shadow" }')
   // held as phase 1 holds: the gate; a cap or the ceiling does not hold an on-demand provider, a switch does
   expect(fn2('security.ai_route_open_v1')).toContain("select not coalesce((p_route->>'held')::boolean, true)\n      or (coalesce((p_route->>'on_demand_exempt')::boolean, false) and p_provider is not null and coalesce(p_route->'on_demand_providers' ? p_provider::text, false))")
   expect(fn2('security.ai_route_gate_v1')).toContain('security.ai_on_demand_providers_v1(p_service)')

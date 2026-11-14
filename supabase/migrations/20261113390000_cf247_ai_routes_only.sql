@@ -54,7 +54,9 @@
 --
 -- Live definitions this change replaces (md5 of pg_get_functiondef, read 13 Nov 2026 about 20:20 AEDT; before -> after):
 --   (14 Nov 2026, merge with main: public.svc_scholarship_ai_next is rebased on the live text after #1132 / 20261113373500, F-SCH.15
---   never-decided pages first, so the route change does not take that ordering back out; its before md5 is that live text.)
+--   never-decided pages first, so the route change does not take that ordering back out; its before md5 is that live text.
+--   security.aer_v2_shadow_hold_v1 likewise on the live text after #1137 / 20261114011500: it still hands the version's answer contract,
+--   input format, routing and params to the worker; only the model and its cascade are the route's.)
 --   public.svc_fee_ai_next(integer)  f18fa0ef8454803ef0990e42c2e653d7 -> bf6ec0c89a535508e83ba0ff1e38b6cf
 --   public.svc_central_ai_next(integer)  c085a8253b6db65c55773dca02e620ac -> 255f8ff7108bb19a719630b72f576228
 --   public.svc_provider_description_next(integer)  16d8baa4faf83ec9c6471d63774c2531 -> f7b463e1df56305e32404c73493781b6
@@ -64,7 +66,7 @@
 --   public.svc_scholarship_ai_record(bigint,jsonb,jsonb,text,numeric,integer,integer,numeric,text,text,text,text,jsonb,boolean)  736fe3f1d0eb22407eb4d5c586df3bd5 -> cbcf286f7d5cdd916aee7bb34ca52bc4
 --   public.svc_scholarship_eligibility_next(integer)  309668330f2c434ff7ef047b5941a0a3 -> c6d57cba0c9101d080e682599af32e9b
 --   public.svc_scholarship_recheck_next(integer)  ccfaf9a9c6bbba4ce5fde64a3d7738af -> 5a0aba814bfda17a7da7ba8273fd1cb4
---   security.aer_v2_shadow_hold_v1()  b8d1f95c8a171c5346d2a4c88c9adbb3 -> 84dd6a5cb62b79e92d918f3314f579a9
+--   security.aer_v2_shadow_hold_v1()  d41d55e87b4d79b5349d15f18581551c -> 549e3c5e677786cf075182eccf9c3594
 --   public.svc_aer_v2_shadow_record(uuid,text,text,uuid,text,jsonb,jsonb,jsonb,numeric,text,text)  43cceaf0ca4e33f7dc9a724eb5b2f22a -> b9b470c621b36d072328a1b4ac7db1cf
 --   public.svc_coverage_ai_match_next(integer)  5a8176270c18994ef3564a5f59a9ff60 -> 64129c1e8aa79984939c2d8781c60aab
 --   public.svc_enrich_ai_record(jsonb)  bcbfc91ce997b1516d90b1320264fa12 -> bbd61b2798896f1e592577766ffaab02
@@ -104,7 +106,7 @@ begin
       ('public.svc_scholarship_ai_record(bigint,jsonb,jsonb,text,numeric,integer,integer,numeric,text,text,text,text,jsonb,boolean)', '736fe3f1d0eb22407eb4d5c586df3bd5', 'cbcf286f7d5cdd916aee7bb34ca52bc4'),
       ('public.svc_scholarship_eligibility_next(integer)', '309668330f2c434ff7ef047b5941a0a3', 'c6d57cba0c9101d080e682599af32e9b'),
       ('public.svc_scholarship_recheck_next(integer)', 'ccfaf9a9c6bbba4ce5fde64a3d7738af', '5a0aba814bfda17a7da7ba8273fd1cb4'),
-      ('security.aer_v2_shadow_hold_v1()', 'b8d1f95c8a171c5346d2a4c88c9adbb3', '84dd6a5cb62b79e92d918f3314f579a9'),
+      ('security.aer_v2_shadow_hold_v1()', 'd41d55e87b4d79b5349d15f18581551c', '549e3c5e677786cf075182eccf9c3594'),
       ('public.svc_aer_v2_shadow_record(uuid,text,text,uuid,text,jsonb,jsonb,jsonb,numeric,text,text)', '43cceaf0ca4e33f7dc9a724eb5b2f22a', 'b9b470c621b36d072328a1b4ac7db1cf'),
       ('public.svc_coverage_ai_match_next(integer)', '5a8176270c18994ef3564a5f59a9ff60', '64129c1e8aa79984939c2d8781c60aab'),
       ('public.svc_enrich_ai_record(jsonb)', 'bcbfc91ce997b1516d90b1320264fa12', 'bbd61b2798896f1e592577766ffaab02'),
@@ -819,7 +821,7 @@ AS $function$
 declare v record; v_rt jsonb := security.ai_route_v1('entry_requirements_v2_shadow'); v_spent numeric; v_today numeric; v_budget numeric := security.pipeline_num_v1('aer.v2_shadow_budget_usd', 20);
         v_daily numeric := security.pipeline_num_v1('aer.v2_shadow_daily_usd', 3);
 begin
-  select x.version, x.system_text, x.system_sha256, x.model, x.quote_max_chars into v
+  select x.version, x.system_text, x.system_sha256, x.model, x.quote_max_chars, x.answer_contract, x.input_format, x.routing, x.params into v
     from pipeline.aer_prompt_versions x where x.purpose = 'course_page' and x.status = 'trial' order by x.created_at desc limit 1;
   select coalesce(sum(r.cost_usd), 0),
          coalesce(sum(r.cost_usd) filter (where r.created_at >= date_trunc('day', now() at time zone 'utc') at time zone 'utc'), 0)  -- fixed: the UTC day, as the AI ledger counts it
@@ -831,7 +833,8 @@ begin
                  when v_spent >= v_budget then format('trial budget reached: US$%s of US$%s (aer.v2_shadow_budget_usd)', round(v_spent, 4), v_budget)
                  when v_today >= v_daily then format('daily share reached: US$%s of US$%s today (aer.v2_shadow_daily_usd)', round(v_today, 4), v_daily) end,
     'version', case when v.version is not null then jsonb_build_object('version', v.version, 'system_text', v.system_text, 'system_sha256', v.system_sha256,
-                                                                        'model', v_rt->>'model', 'models', v_rt->'models', 'quote_max_chars', v.quote_max_chars) end,  -- the model is the route's; the prompt text and its sha are the version's
+                                                                        'model', v_rt->>'model', 'models', v_rt->'models', 'quote_max_chars', v.quote_max_chars,
+                                                                        'answer_contract', v.answer_contract, 'input_format', v.input_format, 'routing', v.routing, 'params', v.params) end,  -- the model is the route's; the prompt text and its sha are the version's
     'budget', jsonb_build_object('usd', v_budget, 'spent', v_spent, 'daily_usd', v_daily, 'today', v_today));
 end $function$;
 

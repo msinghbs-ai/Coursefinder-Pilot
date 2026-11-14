@@ -10,6 +10,8 @@ create table pipeline.uni_adapter_drafts (id uuid primary key default gen_random
 create function security.firecrawl_setting(p_key text) returns jsonb language sql stable as $$ select s.value from pipeline.platform_toolset_settings s where s.toolset_key = 'firecrawl' and s.key = p_key $$;
 insert into pipeline.platform_toolset_settings (toolset_key, key, label, kind, value) values ('firecrawl', 'builder_model_profile', 'Its Models and services profile', 'text', '"openrouter-intake-l3c-qwen3-30b-a3b-2507-v1"');
 alter table pipeline.aer_prompt_versions add column system_sha256 text, add column quote_max_chars integer;
+-- #1137 (20261114011500): the version's answer contract, input format, routing and params, which security.aer_v2_shadow_hold_v1 hands to the worker
+alter table pipeline.aer_prompt_versions add column answer_contract text not null default 'aer-v2-answer-v1', add column input_format text not null default 'page-text-v1', add column routing jsonb, add column params jsonb;
 create table pipeline.aer_v2_shadow_results (id bigint generated always as identity primary key, cost_usd numeric, created_at timestamptz default now());
 insert into pipeline.platform_toolset_settings (toolset_key, key, label, kind, value) values ('pipeline', 'aer.v2_shadow_on', 'Entry requirements v2: shadow trial', 'number', '1'), ('pipeline', 'aer.v2_shadow_budget_usd', 'Entry requirements v2: shadow trial budget', 'number', '20');
 -- central pages and course-page matching readers
