@@ -70,7 +70,7 @@ test('an observation names the cut and the field signalled only beyond it; the f
 })
 
 test('the worker observes in shadow: every read observed, nothing skipped or changed, a failure never fails the read, off by setting', () => {
-  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v0.87.0";')
+  expect(IX).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(8[7-9]|9\d)\.\d+";/)  // v0.87.0 or a later worker that keeps the observation
   expect(IX).toContain('import { leanText, observation, sha256Hex } from "./lean-input.ts";')
   expect(IX).toContain('const OBSERVE = wsNum("reading.input_observe_on", 1) > 0, observed: any[] = [];')
   expect(IX).toContain('if (OBSERVE) await observeReads(pg, raw, data).catch(() => {});  // shadow only: never fails or changes the read')

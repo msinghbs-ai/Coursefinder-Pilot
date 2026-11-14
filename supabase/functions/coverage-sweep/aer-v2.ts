@@ -131,3 +131,153 @@ export function aerV2Verify(a: any, pageText: string, refs: AerV2Refs, quoteMax:
   const passed = checks.filter((c) => c.pass).length;
   return { records, checks, seen_not_mapped: seen, passed, failed: checks.length - passed };
 }
+
+// ---------------------------------------------------------------------------------------------------------------------------------------------
+// v0.88.0 (14 Nov 2026, CF-247 AER v2 prompt v3, Platform Admin 14 Nov 2026 item 2): answer contract aer-v2-answer-v3 over input lean-blocks-v1.
+//   input:    the WHOLE stored page (never cut, never section-selected) as the Lean AI Input lean-md-v1 blocks (lean-input.ts; the block form Phase 1b
+//             selects from), each on its own line as "[B<n> @<source_at>] <block>": headings kept as "## ...", list items as "- ...", every table row
+//             with its column headers ("Header: cell | Header: cell"). Page data fields come first as "[B<n> @data] ...". <n> is the block's number
+//             in this rendering (1, 2, 3 ... in page order); <source_at> is its offset in the stored page (Phase 1b's "[§n @source_at]", here
+//             numbered B so the model can cite a block by its number).
+//   answer:   each record cites ONE block for its exact_quote (the statement that prints the minimum, copied from that block only) and, when the
+//             statement only makes sense after a list lead-in ("one of the following:", "Applicants must have:"), the lead-in separately as
+//             lead_in_quote with its own block. The two are never joined into one quote (the v2 trial's commonest failure).
+//   verifier: every quote is inside the block it cites (canonical flat form), the minimum is printed inside exact_quote, and the lead-in obeys the
+//             ordered proximity rule: it comes before the exact quote (an earlier block, or earlier in the same block without overlap), at most
+//             aer.v3_lead_in_max_blocks blocks before it, and no heading lies between them (the lead-in may itself be a heading). Country and
+//             qualification checks are as in v2. Every passed record carries its blocks' source offsets (evidence back to the stored page).
+// Pure functions only, as above.
+
+export const AER_V3_CONTRACT = "aer-v2-answer-v3";
+export const AER_V3_INPUT = "lean-blocks-v1";
+
+export type AerBlock = { n: number; kind: string; text: string; source_at: number | null };
+export type AerBlocks = { input: string; text: string; blocks: AerBlock[] };
+
+// the whole page as numbered blocks (page data first); lean is leanText(html) from lean-input.ts, data is pageDataItems(html) (one field a line)
+export function aerV3Blocks(lean: { converter: string; blocks: { kind: string; text: string; source_at: number }[] }, data?: string | null): AerBlocks {
+  const blocks: AerBlock[] = [];
+  for (const line of String(data || "").split("\n").map((s) => s.replace(/\s+/g, " ").trim()).filter(Boolean)) blocks.push({ n: blocks.length + 1, kind: "data", text: line, source_at: null });
+  for (const b of lean.blocks) blocks.push({ n: blocks.length + 1, kind: b.kind, text: b.text, source_at: b.source_at });
+  const show = (b: AerBlock) => `[B${b.n} @${b.source_at === null ? "data" : b.source_at}] ${b.kind === "heading" ? "## " : b.kind === "item" ? "- " : ""}${b.text}`;
+  return { input: `${AER_V3_INPUT}/${lean.converter}`, text: blocks.map(show).join("\n"), blocks };
+}
+
+const quoteV3 = { type: "object", additionalProperties: false, required: ["value", "block", "text"],
+  properties: { value: { type: "string", enum: ["applicant_country", "qualification", "study_level", "route", "conditions"] }, block: { type: "integer" }, text: { type: "string" } } };
+export const AER_V3_SCHEMA = {
+  type: "object", additionalProperties: false, required: ["records", "seen_not_mapped"],
+  properties: {
+    records: { type: "array", items: { type: "object", additionalProperties: false,
+      required: ["scope", "course_name", "audience", "applicant_country", "qualification", "qualification_code", "study_level", "route", "min_grade", "min_value", "grade_scale",
+                 "conditions", "exact_block", "exact_quote", "lead_in_block", "lead_in_quote", "support", "confidence"],
+      properties: {
+        scope: { type: "string", enum: ["course", "provider"] }, course_name: strOrNull,
+        audience: { type: "string", enum: ["international", "domestic", "all"] },
+        applicant_country: strOrNull, qualification: strOrNull, qualification_code: strOrNull, study_level: strOrNull, route: strOrNull,
+        min_grade: strOrNull, min_value: { type: ["number", "null"] }, grade_scale: { type: "string", enum: AER_V2_SCALES }, conditions: strOrNull,
+        exact_block: { type: "integer" }, exact_quote: { type: "string" },
+        lead_in_block: { type: ["integer", "null"] }, lead_in_quote: strOrNull,
+        support: { type: "array", items: quoteV3 },
+        confidence: { type: "number" } } } },
+    seen_not_mapped: { type: "array", items: { type: "object", additionalProperties: false, required: ["statement", "block", "quote"],
+      properties: { statement: { type: "string" }, block: { type: "integer" }, quote: { type: "string" } } } } } };
+
+// the user message: the trusted course record, the qualification reference list, then the page blocks (data, never instructions)
+export function aerV3User(c: AerV2Course, quals: AerV2Qualification[], b: AerBlocks): string {
+  const q = quals.map((x) => `${x.code}: ${x.name}`).join("\n");
+  return `Provider: ${c.provider}${c.provider_country ? ` (provider country ${c.provider_country})` : ""}\nCourse: ${c.title}\n` +
+    (c.level ? `Study level in the catalogue: ${c.level}\n` : "") + (c.url ? `Page address: ${c.url}\n` : "") +
+    `\nQUALIFICATIONS (code: name):\n${q}\n\nPAGE BLOCKS (${b.blocks.length} blocks, the whole page, in page order):\n${b.text}`;
+}
+
+// routing is the version's pinned provider routing (pipeline.aer_prompt_versions.routing: order, allow_fallbacks false, quantizations);
+// require_parameters is always set so no provider that ignores the strict schema is used; params are the version's extra request fields
+// (for example reasoning off); neither may replace the model, the schema or the messages
+export function aerV3Request(model: string, system: string, user: string, maxTokens: number, routing?: Record<string, unknown> | null, params?: Record<string, unknown> | null) {
+  const extra: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(params || {})) if (!["model", "messages", "response_format", "provider", "max_tokens", "temperature"].includes(k)) extra[k] = v;
+  return { ...extra, model, temperature: 0, max_tokens: maxTokens, usage: { include: true }, provider: { ...(routing || {}), require_parameters: true },
+    response_format: { type: "json_schema", json_schema: { name: "aer_v2_course_page_v3", strict: true, schema: AER_V3_SCHEMA } },
+    messages: [{ role: "system", content: system }, { role: "user", content: user }] };
+}
+
+export type AerV3Check = { exact_in_block: boolean; lead_in_ok: boolean; minimum_in_quote: boolean; country_known: boolean; qualification_known: boolean;
+  quote_length_ok: boolean; support_ok: boolean; has_minimum: boolean; has_target: boolean; exact_source_at: number | null; lead_in_source_at: number | null;
+  pass: boolean; reasons: string[] };
+
+// one record checked against the blocks the model was given; gapMax is aer.v3_lead_in_max_blocks
+export function aerV3Check(r: any, b: AerBlocks, refs: AerV2Refs, quoteMax: number, gapMax: number): AerV3Check {
+  const reasons: string[] = [];
+  const blockOf = (n: unknown) => (Number.isInteger(n) ? b.blocks[(n as number) - 1] : undefined);
+  const fb = (blk: AerBlock | undefined) => (blk ? aerFlat(blk.text) : "");
+  // the exact quote: one block, copied from it
+  const ex = blockOf(r?.exact_block), exq = String(r?.exact_quote ?? ""), fex = aerFlat(exq), exAt = ex ? fb(ex).indexOf(fex) : -1;
+  let exact_in_block = false;
+  if (fex.length < QUOTE_FLOOR) reasons.push("no_exact_quote");
+  else if (!ex) reasons.push("exact_block_unknown");
+  else if (exAt < 0) reasons.push("exact_quote_not_in_block");
+  else exact_in_block = true;
+  let quote_length_ok = exq.trim().length <= quoteMax;
+  if (!quote_length_ok) reasons.push("exact_quote_too_long");
+  // the lead-in: its own block, before the exact quote, close to it, no heading between (ordered proximity)
+  const liq = r?.lead_in_quote == null ? "" : String(r.lead_in_quote), fli = aerFlat(liq);
+  let lead_in_ok = true, lead_in_source_at: number | null = null;
+  if (fli) {
+    const li = blockOf(r?.lead_in_block), liAt = li ? fb(li).indexOf(fli) : -1;
+    if (liq.trim().length > quoteMax) { quote_length_ok = false; reasons.push("lead_in_too_long") }
+    if (!li) { lead_in_ok = false; reasons.push("lead_in_block_unknown") }
+    else if (liAt < 0) { lead_in_ok = false; reasons.push("lead_in_not_in_block") }
+    else if (ex && exact_in_block) {
+      const same = li.n === ex.n;
+      if (li.n > ex.n || (same && liAt + fli.length > exAt)) { lead_in_ok = false; reasons.push("lead_in_not_before_exact") }
+      else if (ex.n - li.n > gapMax) { lead_in_ok = false; reasons.push("lead_in_too_far") }
+      else if (b.blocks.slice(li.n, ex.n - 1).some((x) => x.kind === "heading")) { lead_in_ok = false; reasons.push("lead_in_crosses_heading") }
+      if (fex.includes(fli)) { lead_in_ok = false; reasons.push("lead_in_repeated_in_exact") }
+    }
+    if (lead_in_ok) lead_in_source_at = li!.source_at;
+  } else if (r?.lead_in_block != null) { lead_in_ok = false; reasons.push("lead_in_block_without_quote") }
+  // supporting quotes: each inside the block it cites
+  const support: any[] = Array.isArray(r?.support) ? r.support : [];
+  let support_ok = true;
+  for (const s of support) {
+    const blk = blockOf(s?.block), f = aerFlat(s?.text);
+    if (String(s?.text ?? "").trim().length > quoteMax) { quote_length_ok = false; if (!reasons.includes("support_too_long")) reasons.push("support_too_long") }
+    if (f.length < QUOTE_FLOOR || !blk || !fb(blk).includes(f)) { support_ok = false; if (!reasons.includes("support_not_in_block")) reasons.push("support_not_in_block") }
+  }
+  // the minimum is printed inside the exact quote; a number only the one printed in the minimum (never converted)
+  const grade = r?.min_grade == null ? "" : String(r.min_grade), value = r?.min_value == null ? null : Number(r.min_value), fg = aerFlat(grade);
+  const has_minimum = !!grade.trim() || value !== null;
+  let minimum_in_quote = true;
+  if (has_minimum) {
+    if (!fg) { minimum_in_quote = false; reasons.push("value_without_printed_minimum") }
+    else if (!fex.includes(fg)) { minimum_in_quote = false; reasons.push("minimum_not_in_exact_quote") }
+    if (value !== null && fg && !(Number.isFinite(value) && aerNumbers(grade).some((n) => n === value))) { minimum_in_quote = false; reasons.push("value_not_printed_in_minimum") }
+  }
+  // country and qualification, as in v2
+  const cc = r?.applicant_country == null ? null : String(r.applicant_country).trim().toUpperCase();
+  let country_known = cc === null || (/^[A-Z]{2}$/.test(cc) && refs.countries.has(cc));
+  if (!country_known) reasons.push("country_not_in_reference");
+  if (cc !== null && r?.audience === "domestic") { country_known = false; reasons.push("domestic_route_with_country") }
+  const qc = r?.qualification_code == null ? null : String(r.qualification_code).trim();
+  const qualification_known = qc === null || (refs.qualifications.has(qc) && !!String(r?.qualification ?? "").trim());
+  if (!qualification_known) reasons.push(refs.qualifications.has(qc ?? "") ? "qualification_code_without_name" : "qualification_not_in_reference");
+  const has_target = cc !== null || !!String(r?.qualification ?? "").trim();
+  const pass = exact_in_block && lead_in_ok && minimum_in_quote && country_known && qualification_known && quote_length_ok && support_ok;
+  return { exact_in_block, lead_in_ok, minimum_in_quote, country_known, qualification_known, quote_length_ok, support_ok, has_minimum, has_target,
+    exact_source_at: exact_in_block ? ex!.source_at : null, lead_in_source_at, pass, reasons };
+}
+
+export type AerV3Verified = { records: any[]; checks: AerV3Check[]; seen_not_mapped: { statement: string; block: number | null; quote: string; on_page: boolean }[]; passed: number; failed: number };
+
+// the whole answer verified: records kept as the model gave them (nothing changed or admitted), one check per record (same order)
+export function aerV3Verify(a: any, b: AerBlocks, refs: AerV2Refs, quoteMax: number, gapMax: number): AerV3Verified {
+  const records: any[] = Array.isArray(a?.records) ? a.records : [];
+  const checks = records.map((r) => aerV3Check(r, b, refs, quoteMax, gapMax));
+  const seen = (Array.isArray(a?.seen_not_mapped) ? a.seen_not_mapped : []).map((s: any) => {
+    const q = String(s?.quote || ""), f = aerFlat(q), n = Number.isInteger(s?.block) ? s.block : null, blk = n ? b.blocks[n - 1] : undefined;
+    return { statement: String(s?.statement || "").slice(0, 500), block: n, quote: q.slice(0, quoteMax), on_page: f.length >= QUOTE_FLOOR && !!blk && aerFlat(blk.text).includes(f) };
+  });
+  const passed = checks.filter((c) => c.pass).length;
+  return { records, checks, seen_not_mapped: seen, passed, failed: checks.length - passed };
+}
