@@ -3,7 +3,7 @@
 // a notice on each layer when a toolset it depends on hits a limit or times out; Serper and ScrapingBee saials across
 // every country; every variable a setting the Platform Admin changes in the UI.
 import { test, expect } from '@playwright/test'
-import { openCards, openCard, openAdapter } from './support/cards.mjs'
+import { openCards, openCard, openAdapter, openServiceDetails } from './support/cards.mjs'
 import { readFileSync } from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
@@ -82,6 +82,7 @@ test('browser: Models & services — the OpenRouter card points to the AI tab (v
   await mockAdmin(page)
   page.on('dialog', d => d.accept('Decision 252 sample'))
   await page.goto('/#models-services?tab=limits')
+  await openServiceDetails(page) // v2.16.12: service details sit in a fold below the summary
   await openCards(page) // v2.15.200: cards start collapsed
   // v2.16.0 (Platform Admin 13 Nov 2026 19:14): the OpenRouter mode, balance and guards are on Models & services › AI (cf-247-ai-models-services-ui)
   await expect(page.locator('[data-toolset="openrouter"]')).toHaveCount(0)
@@ -153,6 +154,7 @@ test('browser: Firecrawl work — credits and report on Models & services, runs 
   await mockAdmin(page)
   page.on('dialog', d => d.type() === 'prompt' && d.message().startsWith('Add credits') ? d.accept('500') : d.accept('Decision 253 run'))
   await page.goto('/#models-services?tab=limits')
+  await openServiceDetails(page) // v2.16.12: service details sit in a fold below the summary
   await openCards(page)
   for (const sec of ['Target universities', 'Read pages', 'Find pages', 'Runs']) await expect(page.locator(`[data-toolset-section="firecrawl:${sec}"]`)).toBeVisible()
   await expect(page.locator('[data-firecrawl-credits] [data-firecrawl-plan]')).toContainText('490,846 of 500,000 credits left')

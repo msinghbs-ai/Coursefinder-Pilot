@@ -1,21 +1,21 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.11'
-export const PACKAGE_VERSION='0.1.433'
+export const UI_VERSION='2.16.12'
+export const PACKAGE_VERSION='0.1.434'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'16 Nov 2026',
-  title:'Settings groups as tabs, and the prompt registry on the AI tab',
+  title:'Services at a glance, and Settings › Integrations',
   changes:[
-    'Settings › Settings: the five groups are tabs and one is shown at a time. It opens on the settings a person has changed (Changed by a person), or on the first group when none has. Find a setting still searches every group.',
-    'Models & services › AI: a fifth pane, Prompt registry (shadow), lists each registered prompt, where its live copy is, and whether its text and models still match the ones in use.',
-    'Models & services › AI loads again (v2.16.10).'
+    'Models & services › Services & limits opens with one summary row per outside service (Firecrawl, Direct HTTP, OpenRouter): its status, its switch and the credit or cap left.',
+    'The Firecrawl and Direct read cards keep their switch, limits and settings in a closed Details section, drawn only when opened. A link to something inside a service (a notice\'s Go, a bookmarked card) opens it.',
+    'Settings › Integrations: the keys for outside services, platform resources and the services overview have their own tab; the Settings tab shows the settings only.'
   ],
   bugFixes:[
-    'Every AI hand-out and the AI tab find the latest OpenRouter balance reading through an index instead of reading the whole history; the AI tab now loads in well under a second.',
-    'The website and Zoho APIs are unchanged (checked against their baseline before and after the change).'
+    'Settings tab colours come from the shared colour set.',
+    'No database change; the website and Zoho APIs are unchanged.'
   ]
 }
 

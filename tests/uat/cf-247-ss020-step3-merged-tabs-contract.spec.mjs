@@ -3,6 +3,7 @@
 // C45, C46, C47, C48: Platform health › Work queues + Integration queue's Pipeline yield → Queues & yield (key 'queues'); Models & services ›
 // Services + Toolsets & limits + Fetchers → Services & limits (key 'services'); AI model switches → AI & OpenRouter. 53 → 51 tabs.
 import { test, expect } from '@playwright/test'
+import { openServiceDetails } from './support/cards.mjs'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 import { PAGES, resolveTarget, hrefFor } from '../../src/nav-map.js'
@@ -39,6 +40,7 @@ test('browser: Services & limits is one card per service (Final board F41); the 
   await expect(page).toHaveURL(/#models-services/)
   const tab = page.locator('[data-services-limits]')
   for (const id of ['firecrawl', 'direct', 'openrouter', 'platform', 'notices']) await expect(tab.locator(`[data-service-card="${id}"]`)).toBeVisible()
+  await openServiceDetails(page) // v2.16.12: service details sit in a fold below the summary
   await expect(tab.locator('[data-service-card="firecrawl"] [data-search-cap]')).toBeVisible()
   // v2.16.0: the OpenRouter card only points to the AI tab; its balance, guards and settings are drawn once, there
   await expect(tab.locator('[data-service-card="openrouter"] [data-ai-moved="openrouter"] a')).toHaveAttribute('href', '#models-services?tab=ai')

@@ -123,11 +123,44 @@ const REFERENCE_TYPES=[['','All'],['dates','Key dates'],['links','Reference sour
 // SS-020 step 3 cards (Decision 269, Final board F41): Services & limits as one card per outside service, built from the same components
 // (each limited to its service), so every switch, limit and setting stays where it is changed and nothing is drawn twice.
 const SVC_NAMED=['firecrawl','direct-http']
-function ServicesLimits({rank,err}){
+// v2.16.12 (Platform Admin 16 Nov 2026 07:41): one compact row per outside service at the top (switch, status and the credit or cap left), read
+// from the services list and the pipeline budgets; the Firecrawl and Direct read cards keep every switch, limit and setting in a fold that is
+// drawn (and read) only when opened.
+function ServicesSummary(){
+  const[s,setS]=useState(null),[b,setB]=useState(null),[failed,setFailed]=useState('')
+  useEffect(()=>{let live=true
+    Promise.all([supabase.rpc('admin_services_read'),supabase.rpc('admin_pipeline_settings_read')]).then(([a,c])=>{if(!live)return
+      if(a.error)setFailed(a.error.message||'not loaded');else setS(a.data||{});setB(c.error?{}:(c.data?.budgets||{}))}).catch(e=>{if(live){setFailed(e?.message||'not loaded');setB({})}})
+    return()=>{live=false}},[])
+  const svc=k=>(s?.services||[]).find(x=>x.key===k)
+  const on=x=>x==null?<span className="cf-chip tone-neutral">Unknown</span>:x.enabled?<span className="cf-chip tone-success">On</span>:<span className="cf-chip tone-warning">Off</span>
+  const status=x=>{if(!s)return '…';if(!x)return <span className="cf-chip tone-neutral">Not registered</span>
+    if(!x.credential&&x.key!=='direct-http')return <span className="cf-chip tone-danger">No key</span> /* direct reads need no key */
+    const t=x.last_test||{};return t.status==='passed'?<span className="cf-chip tone-success">Test passed{t.at?` ${fmtDate(t.at)}`:''}</span>:t.status?<span className="cf-chip tone-danger">Test {t.status}</span>:<span className="cf-chip tone-neutral">Not tested</span>}
+  const orStatus=b?.openrouter?.remaining_usd!=null?<span className="cf-chip tone-success">Balance read</span>:<span className="cf-chip tone-warning">No balance reading</span>
+  const fcLeft=b&&b.firecrawl_monthly_limit!=null?Number(b.firecrawl_monthly_limit)-Number(b.firecrawl_used_this_month||0):null
+  const rows=[
+    ['firecrawl','Firecrawl',status(svc('firecrawl')),on(svc('firecrawl')),fcLeft==null?'—':<>{fmtNumber(fcLeft)} of {fmtNumber(Number(b.firecrawl_monthly_limit))} credits left this month{Number(b.firecrawl_stop_at_remaining||0)>0?<> (stops at {fmtNumber(Number(b.firecrawl_stop_at_remaining))})</>:null}</>],
+    ['direct-http','Direct HTTP',status(svc('direct-http')),on(svc('direct-http')),'No paid plan: limited by its rate and calls at once'],
+    ['openrouter','OpenRouter',b?orStatus:'…',<a className="cf-link" href={hrefFor('services','ai')}>AI tab</a>,b?.openrouter?.remaining_usd!=null?<>US${Number(b.openrouter.remaining_usd).toFixed(2)} balance at the last reading ({fmtDateTime(b.openrouter.observed_at)}); the daily ceiling and caps are on the AI tab</>:'No balance reading: see the AI tab']]
+  return <section className="m-panel svc-summary" data-services-summary>
+    <SectionTitle title="Services at a glance" subtitle="Status, switch and the credit or cap left for each outside service. Open Details under a service to change it."/>
+    {failed&&<p className="l3v-note" role="alert">The services could not be read: {failed}</p>}
+    <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Service</th><th>Status</th><th>Switch</th><th>Credit or cap left</th></tr></thead><tbody>
+      {rows.map(([k,name,st,sw,left])=><tr key={k} data-service-summary={k}><td><strong>{name}</strong></td><td data-summary-status>{st}</td><td>{s||k==='openrouter'?sw:'…'}</td><td>{b||k==='direct-http'?left:'…'}</td></tr>)}
+    </tbody></table></div>
+  </section>
+}
+function ServicesLimits({rank,err,routeParams}){
   const svc=(id,title,subtitle,children)=><section className="m-panel svc-card" data-service-card={id}><SectionTitle title={title} subtitle={subtitle}/>{children}</section>
+  // a link to something inside a service (a notice's Go, ?card=…, ?at=…, the old ?tab=firecrawl) opens that service's fold
+  const target=['card','at','tab','setting'].map(k=>routeParams?.get?.(k)||'').join(' ')
+  const fold=(id,word,body)=>{const want=target.includes(word)
+    return <LazyFold key={`${id}:${want?target:''}`} className="svc-details" data={`service-details:${id}`} open={want} summary={<strong>Details</strong>}>{body}</LazyFold>}
   return <div className="m-page-stack" data-services-limits>
-    {svc('firecrawl','Firecrawl','Switch, monthly cap and reserve, course-page search budget, credits today and its daily shares.',<><ModelsServices part="services" only={['firecrawl']} onError={err}/><SearchCapCard/><Toolsets only={['firecrawl']} onError={err}/>{/* SS-020 step 4: Firecrawl and AI today (was Coverage › Progress) */}<Progress part="services" onError={err}/><Layer2ProviderConfig rank={rank} embedded only={['firecrawl']}/></>)}
-    {svc('direct','Direct read','Switch, rate, calls at once and time limit for reading pages directly.',<><ModelsServices part="services" only={['direct-http']} onError={err}/><Layer2ProviderConfig rank={rank} embedded only={['direct-http']}/></>)}
+    <ServicesSummary/>
+    {svc('firecrawl','Firecrawl','Switch, monthly cap and reserve, course-page search budget, credits today and its daily shares.',fold('firecrawl','firecrawl',()=><><ModelsServices part="services" only={['firecrawl']} onError={err}/><SearchCapCard/><Toolsets only={['firecrawl']} onError={err}/>{/* SS-020 step 4: Firecrawl and AI today (was Coverage › Progress) */}<Progress part="services" onError={err}/><Layer2ProviderConfig rank={rank} embedded only={['firecrawl']}/></>))}
+    {svc('direct','Direct read','Switch, rate, calls at once and time limit for reading pages directly.',fold('direct','direct',()=><><ModelsServices part="services" only={['direct-http']} onError={err}/><Layer2ProviderConfig rank={rank} embedded only={['direct-http']}/></>))}
     {/* v2.16.0 (Platform Admin 13 Nov 2026 19:23): everything about AI is on the AI tab; this card only points there */}
     {svc('openrouter','OpenRouter','The OpenRouter key, credit, floor, daily spend ceiling, models, service caps and AI usage are on the AI tab.',<p className="l3v-note" data-ai-moved="openrouter"><a className="cf-link" href={hrefFor('services','ai')}>AI models, prompts, caps and the OpenRouter key are in Models &amp; services › AI</a></p>)}
     {svc('platform','Database jobs and edge calls','Scheduled jobs, edge function calls and the pipeline job sizes, re-reads and retries.',<Toolsets only={['scheduled_jobs','edge_functions','pipeline']} onError={err}/>)}
@@ -397,12 +430,13 @@ function Page({pageKey,tab,requestedTab='',routeParams,rank,actorId,onError,navi
       case'jobs':return tab==='tasks'?<AdminTasks rank={rank} onError={onError}/>:tab==='automations'?<div className="m-page-stack"><Automations onError={err}/><ScheduledRuntimeHealth onNavigate={hash=>{location.hash=hash}}/></div>:<JobsWorkspace/>
       case'evidence':return <EvidenceWorkspace onError={onError} navigate={navigate} routeParams={routeParams}/>
       // CF-247 (16 Oct 2026): calls to the API version URLs (zoho-api-v2 first), by key and action; v2.15.301 Settings › API usage
-      case'environment':if(tab==='api')return <ApiUsagePanel onError={onError}/>;if(tab==='backup')return rank>=6?<SettingsBackup onError={err}/>:null;return <><PipelineSettings onError={err}/><EnvironmentMigrationWorkspace rank={rank} onError={onError} view="integrations"/></>
+      // v2.16.12 (Platform Admin 16 Nov 2026 08:22): Environment & integrations moved to its own Integrations tab; the Settings tab is the settings only
+      case'environment':if(tab==='api')return <ApiUsagePanel onError={onError}/>;if(tab==='backup')return rank>=6?<SettingsBackup onError={err}/>:null;if(tab==='integrations')return rank>=6?<div className="m-page-stack" data-settings-integrations><EnvironmentMigrationWorkspace rank={rank} onError={onError} view="integrations"/></div>:null;return <><PipelineSettings onError={err}/><p className="l3v-note" data-integrations-moved>Keys for outside services, platform resources and the services overview are on <a className="cf-link" href={hrefFor('environment','integrations')}>Settings › Integrations</a>.</p></>
       // Clean-up batch 2 (9 Oct 2026): Source profiles and the Layer 2 workload defaults were retired; the provider registry and keys stay.
       // v2.15.300 (Platform Admin, 20 Oct 2026): Scrapers & fetchers is Models & services › Fetchers
       // v2.16.0 (Platform Admin 13 Nov 2026 19:14 to 19:36): the AI tab is one page of four panes (OpenRouter key and usage, Models, Services,
       // Recent usage). The scholarship extraction workspace (sample pages, qualification, instructions) is a section of Scholarships › Coverage.
-      case'services':return tab==='ai'?<AiModelsServices onError={err} focusService={routeParams?.get?.('service')||''}/>:rank>=4?<ServicesLimits rank={rank} err={err}/>:null
+      case'services':return tab==='ai'?<AiModelsServices onError={err} focusService={routeParams?.get?.('service')||''}/>:rank>=4?<ServicesLimits rank={rank} err={err} routeParams={routeParams}/>:null
       case'migration':return <div className="m-page-stack"><EnvironmentMigrationWorkspace rank={rank} onError={onError} view="migration"/><PlatformMaturity rank={rank} onError={onError} view="golive"/>{/* v2.15.301: Capacity (was Platform health › Capacity) */}<section data-golive-capacity><PlatformMaturity rank={rank} onError={onError} view="capacity"/></section>{/* v2.15.228: the Reset database control was retired (Platform Admin, 9 Oct 2026) */}</div>
       // v2.15.301 (Platform Admin, 20 Oct 2026): Data model retired (its address opens Coverage › Attributes); Storage & retention is a Platform health tab
       case'users':return <AccessRolesEmbedded actorId={actorId}/>

@@ -907,3 +907,9 @@
 @media (max-width:900px){.sc-funnel{grid-template-columns:repeat(2,minmax(0,1fr))}}
 /* v2.16.0 (Platform Admin 13 Nov 2026 19:14): the read-only "Model: … change in Models & services" line on the pages that use a model */
 .mdl-line{display:inline-flex;flex-wrap:wrap;gap:4px 6px;align-items:center}.mdl-line a{display:inline-flex;align-items:center;min-height:24px}
+/* v2.16.12: Services & limits: one summary row per outside service; each service's switch, limits and settings sit in a fold */
+.svc-summary .cf-table td{vertical-align:top}
+.svc-summary .cf-table td:first-child{white-space:nowrap}
+.svc-details{border-top:1px solid var(--cf-border);padding-top:6px}
+.svc-details>summary{cursor:pointer;min-height:36px;display:flex;align-items:center;color:var(--cf-text)}
+.svc-details[open]>summary{margin-bottom:6px}
