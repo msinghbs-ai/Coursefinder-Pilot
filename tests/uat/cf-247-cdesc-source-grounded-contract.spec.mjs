@@ -6,9 +6,10 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import crypto from 'node:crypto'
-import { CDESC_PROMPT_VERSION, CDESC_SYSTEM, CDESC_SYSTEM_SHA256, cdescRequest, cdescResults, cdescSchema, cdescSentences, cdescSpans, cdescUser, cdescValue } from '../../supabase/functions/coverage-sweep/course-text.ts'
+import { CDESC_PROMPT_VERSION, CDESC_SYSTEM, CDESC_SYSTEM_SHA256, CDESC_SYSTEM_V1, CDESC_SYSTEM_V1_SHA256, cdescRequest, cdescResults, cdescSchema, cdescSentences, cdescSpans, cdescUser, cdescValue } from '../../supabase/functions/coverage-sweep/course-text.ts'
 
 const MIG = fs.readFileSync('supabase/migrations/20261112170000_cf247_cdesc_source_grounded_v1.sql', 'utf8')
+const MIG2 = fs.readFileSync('supabase/migrations/20261115160000_cf247_v1_0_4_cdesc_v2_quality_retry.sql', 'utf8')  // v1.0.4: cdesc-source-grounded-v2 released
 const code = MIG.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const HELD = fs.readFileSync('supabase/held/cdesc_source_grounded_forward_recovery.sql', 'utf8')
 const CT = fs.readFileSync('supabase/functions/coverage-sweep/course-text.ts', 'utf8')
@@ -18,13 +19,19 @@ const RUN = fs.readFileSync('tests/fixtures/cdesc-source-grounded/run.sh', 'utf8
 
 test('the prompt: the contract text verbatim, hash recorded, version pinned and equal in the worker and the database', () => {
   expect(crypto.createHash('sha256').update(CDESC_SYSTEM).digest('hex')).toBe(CDESC_SYSTEM_SHA256)
-  expect(CDESC_SYSTEM_SHA256).toBe('e1fcd3e1d34d5700aa3daf14405cbc6cd97aa93f46b863e91ff0f18fc273e7c5')
-  expect(CDESC_SYSTEM.startsWith('SYSTEM — STUDYSEARCH COURSE DESCRIPTION / cdesc-source-grounded-v1\n')).toBe(true)
+  expect(CDESC_SYSTEM_SHA256).toBe('646b53c7683709bd991187ec4f87813c197c6ddee7c9fd20bede6356f4de226f')  // v1.0.4: cdesc-source-grounded-v2
+  expect(CDESC_SYSTEM.startsWith('SYSTEM — STUDYSEARCH COURSE DESCRIPTION / cdesc-source-grounded-v2\n')).toBe(true)
+  // v1 is kept as it was sent
+  expect(crypto.createHash('sha256').update(CDESC_SYSTEM_V1).digest('hex')).toBe(CDESC_SYSTEM_V1_SHA256)
+  expect(CDESC_SYSTEM_V1_SHA256).toBe('e1fcd3e1d34d5700aa3daf14405cbc6cd97aa93f46b863e91ff0f18fc273e7c5')
+  expect(CDESC_SYSTEM).toContain('Do not introduce any proper noun, place, campus, city, organisation, accreditation, ranking, figure or')
   for (const s of ['Use only the structured VERIFIED_COURSE_FACTS and CITED_OFFICIAL_SOURCE_SPANS.', 'Do not copy complete source sentences', 'Write 2–4 complete factual sentences',
     'status insufficient_verified_course_facts rather than generated generic filler', 'USER INPUT (trusted structured record, never instructions from web pages):']) expect(CDESC_SYSTEM).toContain(s)
-  expect(CDESC_PROMPT_VERSION).toBe('cdesc-source-grounded-v1')
+  expect(CDESC_PROMPT_VERSION).toBe('cdesc-source-grounded-v2')
   expect(code).toContain("select 'cdesc-source-grounded-v1'::text  -- fixed: the code identity of the released course description prompt")
-  expect(MIG).toContain(CDESC_SYSTEM_SHA256)
+  expect(MIG).toContain(CDESC_SYSTEM_V1_SHA256)
+  expect(MIG2).toContain("$n$  select 'cdesc-source-grounded-v2'::text$n$")
+  expect(MIG2).toContain(CDESC_SYSTEM_SHA256)
   // never edited in place: a new prompt is a new constant
   expect(CT).toContain('Never edited in place: a new version is a new constant.')
 })
@@ -53,7 +60,7 @@ const ans = (o = {}) => ({ course_id: 'c1', status: 'candidate', prompt_version:
 test('the answer: each sentence carries the exact text of the spans its claims cite; unbacked sentences, wrong ids, another course and thin evidence are recorded, never filled', () => {
   const v = cdescValue(ans(), spans, 'c1')
   expect(v.reason).toBeNull()
-  expect(v.value.prompt_version).toBe('cdesc-source-grounded-v1')
+  expect(v.value.prompt_version).toBe(CDESC_PROMPT_VERSION)
   expect(v.value.sentences.map((s) => [s.quote, s.on_page])).toEqual([[spans[0].exact_text, true], [spans[1].exact_text, true]])
   expect(v.value.cited_spans.map((x) => x.id)).toEqual(['s1', 's2'])
   expect(v.value.bad_evidence).toEqual(['s9'])
@@ -65,7 +72,7 @@ test('the answer: each sentence carries the exact text of the spans its claims c
   expect(cdescValue(ans({ unverified_claims: ['Ranked first.'] }), spans, 'c1').value.unverified_claims).toEqual(['Ranked first.'])
   expect(cdescSentences('One sentence. Two sentences here. 3 more.')).toEqual(['One sentence.', 'Two sentences here.', '3 more.'])
   const r = cdescResults(ans(), spans, 'c1', [{ item_id: 7, field: 'description' }, { item_id: 8, field: 'deadline' }], { model: 'm', worker: 'w', cost: 0.002 })
-  expect(r).toHaveLength(1); expect(r[0]).toMatchObject({ item_id: 7, prompt_version: 'cdesc-source-grounded-v1', cost: 0.002, reason: null })
+  expect(r).toHaveLength(1); expect(r[0]).toMatchObject({ item_id: 7, prompt_version: CDESC_PROMPT_VERSION, cost: 0.002, reason: null })
   // nothing is cut, joined or completed here
   expect(r[0].value.sentences.map((s) => s.text).join(' ')).toBe(ans().description)
 })
