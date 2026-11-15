@@ -1,7 +1,7 @@
-<!-- sop-export: id=admin-sop; version=2.42; reviewed-release=2.16.4; source-commit=a940c066c1cf+local; content-sha256=d1e7d75b60df2b8c67b2d11dffd954749a1f1a028a5fdec8d0805f420c54e1bf -->
+<!-- sop-export: id=admin-sop; version=2.43; reviewed-release=2.16.5; source-commit=ae9464f85a0d+local; content-sha256=07d731cfbda454c64fa10d18c4fb7bcc1cc9bc014e15c5b15b253be774c42a8b -->
 # StudySearch – Platform Admin SOP
 
-**Version:** 2.42 (reviewed for platform release v2.16.4)  
+**Version:** 2.43 (reviewed for platform release v2.16.5)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -92,6 +92,7 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 | Ready to admit (stage 4) or "Admitted automatically" | With Admit automatically on, spot-check and undo a wrong admit on Layer 2/3 › Universities (Admit off, with a reason); with it off, admit the passing fields yourself. Enriching its courses and finding its scholarships then run by themselves. | Layer 2/3 › Universities; Layer 2/3 › Universities |
 | Approve central pages / Approvals waiting | Open the document, check values against it, approve or reject with a reason. Fee schedules always wait for you; English policies and calendars wait only when policy-auto-approve flagged them or its switches are off. | Adapter builder 1.3; Layer 2/3 › Operations › Approvals waiting |
 | Needs a person (nothing passed after the AI attempts) | Open the Adapter builder: mark the values on the sample pages, add a better course page, or approve the central pages; then Retry. Admitting by hand, or approving its central pages, moves it on to Enrich courses. | Layer 2/3 › Universities › Builder |
+| A settings paste file is due (PASTE-20261116-retired-settings-drop.sql, from 30 Nov 2026) | Run it in the Supabase SQL editor for project fxcwkweaxjtknorudmwp only. It refuses, changing nothing, while a setting is not yet past its retirement date, a scheduled job still names one, or a function that reads one still exists: drop those first with their own paste files, then run it again. Every row it removes is kept in the change log first. |  |
 | A scheduler is in shadow (rollup-scheduler, admission-rule-runner) | After 24 hours, read its shadow report (security.rollup_shadow_report_v1 or security.admission_rule_shadow_report_v1): every target matches the old job's starts and no tick failed. The cutover then switches the old jobs off and marks them retiring; their drop paste file is run after the 14-day retention window. A Platform health issue admission_rule_breaker:<rule> means that rule failed 3 times in a row and is skipped for a back-off: fix the cause; its next good run closes it. |  |
 | Before a database change (a migration, a table change) | Open Scheduled jobs › Automations › Pipeline maintenance and press Pause & Drain for Migration with a reason. Wait until the card turns green: SAFE TO APPLY DB CHANGES (nothing running, leased or locked). Apply the change, then press Resume Pipeline: it switches on exactly the jobs the pause switched off and changes no setting. A job listed as switched on again during the pause must be paused before you apply the change. | Scheduled jobs › Automations |
 | A notice on a layer page marked Action needed or Optional | Do the one thing it says: press Go to for the exact card or setting, or act inside the notice (Search again for a held or stopped course search; enter a website for a provider with none). Notices marked Nothing to do are on Toolsets and limits and clear by themselves. | The layer page; Models & services › Services & limits |
@@ -137,6 +138,7 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.43 | 16 Nov 2026 | v2.16.5 | Settings tidy-up: retiring settings sit in their own group with what replaced them; run the retired-settings paste file only on or after its date, when it no longer refuses. |
 | 2.42 | 15 Nov 2026 | v2.16.4 | Schedulers in shadow: read the 24-hour shadow report before the cutover; an admission rule breaker issue means a rule failed 3 times in a row. |
 | 2.41 | 15 Nov 2026 | v2.16.3 | Pipeline maintenance on Automations: pause every job before a database change, wait for SAFE TO APPLY DB CHANGES, then resume exactly the jobs the pause switched off. |
 | 2.40 | 14 Nov 2026 | v2.16.2 | Firecrawl › Format profiles: what each Firecrawl page read asks for, by lane and university, changed with a reason as a new version; surcharge and AI formats are never sent. |

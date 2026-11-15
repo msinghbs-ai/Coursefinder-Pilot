@@ -1,23 +1,23 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.4'
-export const PACKAGE_VERSION='0.1.426'
+export const UI_VERSION='2.16.5'
+export const PACKAGE_VERSION='0.1.427'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'15 Nov 2026',
-  title:'One scheduler for reports and caches, one runner for admission rules, and quieter scheduled jobs',
+  date:'16 Nov 2026',
+  title:'Settings tidy-up: retiring settings set apart, every setting says what reads it and its unit, fewer sections',
   changes:[
-    'Reports and screen caches: a new job, rollup-scheduler, works out every minute which of 26 report and cache refreshes are due on their own schedules and runs them one after another, frequent ones first. It started in shadow on 15 Nov 2026: it records what was due while the old jobs still run them. Settings › Pipeline settings › Rollup scheduler.',
-    'Admission rules: a new runner in three lanes (admission-rule-runner, -b and -c) takes over 20 field-specific admission rule jobs on their own schedules, with a time budget and a circuit breaker per rule: a rule that fails 3 times in a row is skipped for a back-off that doubles from 15 minutes up to 4 hours, and a Platform health issue is raised until its next good run. It starts in shadow. Settings › Pipeline settings › Admission rule runner.',
-    'Shadow rule (Platform Admin 15 Nov 2026 22:36): a scheduler like these runs in shadow for 24 hours; when its dispatches match the old jobs, the old jobs are switched off. They are dropped by a paste file after the 14-day retention window.',
-    'Search refresh: each run may take up to Settings › Pipeline settings › Website API › Search refresh: time limit for one run (5 minutes); it failed about one run in five on the database\'s two-minute limit.',
-    'Four busy jobs start on quieter minutes with the same number of runs an hour (course page AI match preparation, link refresh, the website reference bundle and course description admission). Eight switched-off jobs are retiring.'
+    'Settings: 46 settings nothing live needs any more are marked Retiring, each with what replaced it: the 39 Serper and ScrapingBee settings (both services were dropped on 4 Oct 2026; their cards were already gone), four settings read only by switched-off jobs or retiring functions, and three AI model pins that the AI routes on Models & services replaced. The pipeline ones show in the Retiring group on Pipeline settings. A paste file removes them after the 14-day retirement period.',
+    'Seven settings that were tied to retiring functions are still read by the functions that replaced them; their Used by now names the new readers (alerts, intake dates, calendar re-read).',
+    'Every setting outside the Website API and Zoho API sections now says what reads it (Used by) and its unit; switches show on/off, lists and text say what they hold.',
+    'Pipeline settings has 51 sections instead of 64: sections that overlapped are merged (for example the six scholarship sections are one, Scholarships). Only the headings changed; no setting key or value changed.',
+    'Each of these changes is in the settings change log with its value before and after and the reason, like a change made on the screen.'
   ],
   bugFixes:[
-    'Course description proposals that can no longer be approved are found without the full description check, so the hourly job no longer times out.',
-    'The website and Zoho APIs are unchanged (checked against their baseline before and after each change).'
+    'The Serper and ScrapingBee sample-run notice check no longer reads their retiring tables and settings, so it keeps working when they are removed.',
+    'The website and Zoho APIs are unchanged (checked against their baseline before and after the change).'
   ]
 }
 
