@@ -94,6 +94,8 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     admin_layer3_control: b => { calls.push(b); return F.layer3Control },
     admin_automations_read: F.automations,
     admin_automation_control: b => { calls.push(b); return F.automations },
+    // Pipeline Maintenance Mode (15 Nov 2026): not paused
+    admin_pipeline_maintenance: b => { calls.push({ maintenance: b }); return { state: 'ACTIVE', is_paused: false, active_jobs: 187, safe_to_migrate: false, leases: {}, jobs_switched_on_again: [] } },
     admin_requeue_read: F.requeue,
     admin_requeue: b => { calls.push(b); return { ...F.requeue, moved: 12 } },
     admin_scholarship_publishing_read: F.scholarshipPublishing,

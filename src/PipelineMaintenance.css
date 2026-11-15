@@ -1,0 +1,26 @@
+/* CF-247 15 Nov 2026: Scheduled jobs › Automations › Pipeline maintenance */
+.pm-card{border-left:4px solid var(--cf-slate-225)}
+.pm-card[data-pm-state="DRAINING"]{border-left-color:var(--cf-amber-500);background:var(--cf-amber-50)}
+.pm-card[data-pm-state="SAFE"]{border-left-color:var(--cf-green-700);background:var(--cf-green-50)}
+.pm-card[data-pm-overdue="yes"]{border-left-color:var(--cf-red-700)}
+.pm-banner{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:8px 0 12px;padding:12px 14px;border-radius:var(--cf-radius-md);font-weight:800;letter-spacing:.02em}
+.pm-banner.safe{background:var(--cf-green-700);color:var(--cf-white);font-size:var(--cf-fs-xl)}
+.pm-banner.draining{background:var(--cf-amber-700);color:var(--cf-white)}
+.pm-banner small{font-weight:600;letter-spacing:0;opacity:.92}
+.pm-badges{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 10px}
+.pm-badge{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--cf-slate-225);border-radius:999px;padding:4px 10px;background:var(--cf-white);font-size:var(--cf-fs-xs);font-weight:700;color:var(--cf-slate-700)}
+.pm-badge b{font-variant-numeric:tabular-nums}
+.pm-badge.busy{border-color:var(--cf-amber-500);color:var(--cf-amber-800)}
+.pm-badge.clear{border-color:var(--cf-green-700);color:var(--cf-green-800)}
+.pm-meta{display:flex;flex-wrap:wrap;gap:14px;font-size:var(--cf-fs-sm);color:var(--cf-slate-700);margin:4px 0}
+.pm-elapsed{font-variant-numeric:tabular-nums;font-weight:800}
+.pm-elapsed.overdue{color:var(--cf-red-700)}
+.pm-detail{font-size:var(--cf-fs-xs);color:var(--cf-slate-700);margin:4px 0 0;padding-left:18px}
+.pm-detail li{margin:2px 0;word-break:break-word}
+.pm-backdrop{position:fixed;inset:0;z-index:60000;background:color-mix(in srgb,var(--cf-slate-900) 55%,transparent);display:flex;align-items:center;justify-content:center;padding:16px}
+.pm-dialog{width:min(560px,100%);max-height:86vh;overflow:auto;background:var(--cf-white);border-radius:var(--cf-radius-2xl);border:1px solid var(--cf-slate-225);box-shadow:var(--cf-shadow-xl);padding:18px;color:var(--cf-slate-900)}
+.pm-dialog h3{margin:0 0 8px;font-size:var(--cf-fs-xl)}
+.pm-dialog label{display:grid;gap:4px;margin:12px 0;font-size:var(--cf-fs-xs);font-weight:750;color:var(--cf-slate-600)}
+.pm-dialog input{height:36px;border:1px solid var(--cf-slate-225);border-radius:var(--cf-radius-md);padding:0 9px;font:inherit}
+.pm-dialog-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;margin-top:12px}
+.pm-err{color:var(--cf-red-700);font-size:var(--cf-fs-sm)}

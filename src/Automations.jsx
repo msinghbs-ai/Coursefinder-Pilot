@@ -5,6 +5,7 @@
 // logged and shown under "Recent changes".
 // Read: public.admin_automations_read(); write: public.admin_automation_control(job, action, args)
 // (migration 20260930050000_cf247_ui_control_sweep).
+// Pipeline maintenance (pause every job for a database change): PipelineMaintenance.jsx, public.admin_pipeline_maintenance (20261115180000).
 import React,{useEffect,useMemo,useState}from'react'
 import{AlarmClock,Pause,Play,RefreshCw,Save,Zap}from'lucide-react'
 import{supabase}from'./lib/supabase'
@@ -12,6 +13,7 @@ import{Badge,Button,Empty,Loading,Metric,SectionTitle,StatusChip,fmtDate,fmtDate
 import{EVERY,describeSchedule}from'./automation-schedule'
 import{plainError}from'./lib/errors'
 import{controlOwner,ADMISSION_PATHS,ADMISSION_WORDS,RETIREMENT_CRITERIA}from'./guide/operatingWords'
+import PipelineMaintenance from'./PipelineMaintenance'
 
 
 const STATUS={succeeded:['success','Succeeded'],failed:['danger','Failed'],running:['info','Running'],starting:['info','Starting']}
@@ -30,6 +32,8 @@ export default function Automations({onError}){
   if(failed&&!data)return <section className="m-panel"><Empty text={`Automations could not be loaded: ${failed}`}/><Button compact onClick={load}><RefreshCw size={14}/>Try again</Button></section>
   const paused=jobs.filter(j=>!j.active).length,failing=jobs.filter(j=>Number(j.failed_24h)>0).length,runs=jobs.reduce((n,j)=>n+Number(j.runs_24h||0),0)
   return <>
+    {/* Pipeline Maintenance Mode (Platform Admin 15 Nov 2026): pause every job before a database change, resume exactly those jobs */}
+    <PipelineMaintenance rank={rank} onError={onError} onChanged={load}/>
     <div className="cf-metric-grid">
       <Metric label="Automations" value={`${jobs.length-paused} running`} detail={paused?`${paused} paused`:'None paused'} icon={AlarmClock} tone={paused?'warning':'success'}/>
       <Metric label="Runs in the last 24 hours" value={fmtNumber(runs)} icon={Zap}/>
