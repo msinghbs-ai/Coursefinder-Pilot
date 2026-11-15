@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.432 — 16 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.10** (Platform Admin 16 Nov 2026 07:41: Models & services › AI timed out). Migration 20261116060000_cf247_ai_tab_timeout: public.admin_ai_overview_v1 evaluated security.ai_route_v1 once per reference of its pulled-up lateral subquery (about 225 evaluations for 15 services; 5.6 to 20.7 s measured); "offset 0" keeps one evaluation per service (0.7 to 1.1 s, same payload). Indexes ai_invocations (service_code, at desc, id desc) and admin_control_events (area, created_at desc). The read carries security.prompt_registry_parity_v1(). md5-guarded edit in place. New spec s554.
+
 ## 0.1.431 — 16 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.9** (Platform Admin 16 Nov 2026 05:23: Phase 2 wave C of the UI/UX and settings simplification, architectural spec §7.1). Migration 20261116050000_cf247_prompt_registry_shadow: pipeline.prompt_templates (new, status shadow or retired only; nothing reads it) filled verbatim with provider_description v4 and scholarship_extraction v3 (from their active database prompts) and course_description cdesc-source-grounded-v2 (the worker constant CDESC_SYSTEM, sha-256 646b53c7…), with declared variables, JSON answer schemas and the routes' named models; security.prompt_render_v1 (undeclared or missing variables fail), security.prompt_answer_check_v1 and security.json_schema_problems_v1 (schema subset), security.prompt_registry_parity_v1 (registry against the live copies and route models). ai_service_routes.prompt_source for course_description corrected to cdesc-source-grounded-v2 (label only). AER v1 and the other worker-code prompts are not registered. Platform guide (Settings). New spec s553.
