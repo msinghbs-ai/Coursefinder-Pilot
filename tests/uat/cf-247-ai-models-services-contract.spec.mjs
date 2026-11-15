@@ -341,7 +341,7 @@ test('phase 2 worker: models come from the readers; the cascade moves on only on
   expect(worker).toContain('model: used.size ? [...used].join("+") : em, worker')
   // prompt versions are byte-identical to the versions before this change
   for (const [f, c] of [['course-entry.ts', 'export const COURSE_ENTRY_PROMPT_VERSION = "course-entry-v1";'], ['course-text.ts', 'export const COURSE_TEXT_PROMPT_VERSION = "course-text-v2";'],
-    ['course-text.ts', 'export const CDESC_PROMPT_VERSION = "cdesc-source-grounded-v1";'], ['entry.ts', 'export const ENTRY_PROMPT_VERSION = "entry-matrix-v0.1.4";'], ['calendar.ts', 'export const CALENDAR_READER = "calendar-v2.4";']])
+    ['course-text.ts', 'export const CDESC_PROMPT_VERSION = "cdesc-source-grounded-v2";'], ['entry.ts', 'export const ENTRY_PROMPT_VERSION = "entry-matrix-v0.1.4";'], ['calendar.ts', 'export const CALENDAR_READER = "calendar-v2.4";']])
     expect(fs.readFileSync(`${WORKER_DIR}/${f}`, 'utf8'), c).toContain(c)
   // the rule itself, run: cascade.ts with a scripted fetch
   const { transformSync } = await import('esbuild')

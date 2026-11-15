@@ -42,9 +42,9 @@ worker: each reader hands it out from `security.ai_route_v1(<service>)`.
 | `index.ts:3235` | `provider_description` | `public.svc_provider_description_lease_v1, public.svc_provider_description_next, public.svc_provider_description_reserve_v1` | provider_description | `routed_single` | one model (a price is reserved for that model) |
 | `index.ts:3290` | `enrich_ai (course fields: ask)` | `public.svc_enrich_ai_next` | course_other_fields | `routed` | worker cascade |
 | `index.ts:3314` | `enrich_ai (description and deadline: askText)` | `public.svc_enrich_ai_next` | course_description (description), course_other_fields (deadline) | `routed` | worker cascade |
-| `index.ts:3342` | `enrich_ai (entry requirements)` | `public.svc_enrich_ai_next` | course_entry_requirements | `routed` | worker cascade |
-| `index.ts:3653` | `ai_match` | `public.svc_coverage_ai_match_next` | course_matching | `routed` | worker cascade |
-| `index.ts:3791` | `adapter_propose` | `security.adapter_builder_model_for_v1 (through public.svc_adapter_draft_get)` | adapter_builder | `routed_single` | one model |
+| `index.ts:3363` | `enrich_ai (entry requirements)` | `public.svc_enrich_ai_next` | course_entry_requirements | `routed` | worker cascade |
+| `index.ts:3674` | `ai_match` | `public.svc_coverage_ai_match_next` | course_matching | `routed` | worker cascade |
+| `index.ts:3812` | `adapter_propose` | `security.adapter_builder_model_for_v1 (through public.svc_adapter_draft_get)` | adapter_builder | `routed_single` | one model |
 
 State: `routed` means the route's cascade is executed (a later model is asked only on a technical failure). `routed_single` means the route
 chooses the model but the call uses one model; Models & services shows one model and refuses a second one for these. `not_migrated` is
