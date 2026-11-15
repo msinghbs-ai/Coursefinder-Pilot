@@ -3,6 +3,7 @@
 // scrape_profile_lanes, scrape_profile_overrides). Worker v0.99.0 applies the profile inside fcClient (firecrawl.ts); migration 20261114201500
 // seeds today's requests plus markdown, checks every save with the same rules, and records the kept formats on the page's evidence row.
 import { test, expect } from '@playwright/test'
+import { openServiceDetails } from './support/cards.mjs'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -168,6 +169,7 @@ async function openProfiles(page, data) {
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(reply) })
   })
   await page.goto('/#models-services?tab=limits')
+  await openServiceDetails(page) // v2.16.12: service details sit in a fold below the summary
   const card = page.locator('[data-card="services.toolset.firecrawl.formats"]')
   await card.locator('.cf-card-toggle').first().click()
   await expect(card.locator('[data-fc-profiles-body]')).toBeVisible()

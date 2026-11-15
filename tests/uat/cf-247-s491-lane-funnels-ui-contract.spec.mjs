@@ -1,6 +1,7 @@
 // Guards: CF-247 OPS/UI mandate (Platform Admin 8 Nov 2026 14:06): every autonomous lane has a funnel on the existing Operations screen (state, next/last run, stage counts, 24 h gains, oldest age, human review, controls with a reason), a green job / stage transfer / published data are three different measures, unknown shows "unknown" never 0, and Firecrawl allowance, live remaining, floor and daily shares show in credits on the existing Services screen
 // Desktop project (chromium-desktop). Mocked admin (tests/uat/support/admin-mock.mjs plus lane-funnel-mock.mjs); nothing reaches a real backend.
 import { test, expect } from '@playwright/test'
+import { openServiceDetails } from './support/cards.mjs'
 import { mockAdmin } from './support/admin-mock.mjs'
 import { mockLaneFunnels } from './support/lane-funnel-mock.mjs'
 
@@ -97,6 +98,7 @@ test.describe('Firecrawl allowance and spend on Services', () => {
   test('allowance, live remaining (flagged when above plan), last sync, floor, daily shares and usage show in credits, never money', async ({ page }) => {
     await mockAdmin(page); await mockLaneFunnels(page)
     await page.goto('/#models-services?tab=firecrawl')
+    await openServiceDetails(page) // v2.16.12: service details sit in a fold below the summary
     const card = page.locator('[data-fc-acceptance]')
     await expect(card).toBeVisible()
     await card.getByRole('button', { name: /Firecrawl allowance and spend/ }).click()

@@ -123,8 +123,10 @@ export const PAGES = {
   // CF-247 (16 Oct 2026) API usage: v2.15.301 (Platform Admin, 20 Oct 2026, "Move API usage to Settings") is Settings › API usage.
 
   // v2.15.301: two tabs. Settings (Platform Admin) and API usage (Pipeline Operator and above, as before the move).
-  environment: { label: 'Settings', slug: 'environment', icon: 'plug', subtitle: 'Every pipeline setting in one place, by step: throughput, reading, page identity and budgets; keys for outside services (never shown); calls to the consumer APIs.', tabs: [
+  environment: { label: 'Settings', slug: 'environment', icon: 'plug', subtitle: 'Every pipeline setting in one place, by step: throughput, reading, page identity and budgets; keys for outside services (never shown) on Integrations; calls to the consumer APIs.', tabs: [
     { key: 'settings', label: 'Settings', min: 6 },
+    // v2.16.12 (Platform Admin 16 Nov 2026 08:22): keys for outside services, platform resources and the services overview are their own tab
+    { key: 'integrations', label: 'Integrations', min: 6 },
     // CF-247 (16 Oct 2026, Platform Admin: "summary and stat collection"): calls to the API version URLs by key and action
     { key: 'api', label: 'API usage', min: 4 },
     // v2.15.310 (Platform Admin, 22 Oct 2026 07:41): daily backup of the provider Published switch and setting values, restore (Platform Admin)

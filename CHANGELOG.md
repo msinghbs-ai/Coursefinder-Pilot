@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.434 — 16 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.12** (Platform Admin 16 Nov 2026 07:41). Models & services › Services & limits: ServicesSummary, one row per outside service (Firecrawl, Direct HTTP, OpenRouter) with its switch and the credit or cap left, read from public.admin_services_read and public.admin_pipeline_settings_read (budgets); the Firecrawl and Direct read card bodies sit in folds drawn only when opened, opened by a link into them (?card=, ?at=). Settings › Integrations tab (Environment & integrations moved off the Settings tab, Platform Admin 16 Nov 2026 08:22). Settings hub tab colours from tokens. Specs that read inside those cards open the folds first (support/cards.mjs openServiceDetails); new spec s556. No migration.
+
 ## 0.1.433 — 16 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.11** (Platform Admin 16 Nov 2026 07:41). Settings › Settings (SettingsRegister): the five hub groups are tabs, one drawn at a time, opening on the settings changed by a person (else the first group). Models & services › AI: pane 5, Prompt registry (shadow), from the parity report in public.admin_ai_overview_v1. Migration 20261116070000_cf247_ai_route_observation_index: index pipeline.layer3_openrouter_observations (kind, observed_at desc) for the balance reading in security.ai_route_v1 (15 route reads 498 to 150 ms, AI read 998 to 590 ms, rolled-back live run). Specs: s552 (tabs), ai-models-services-ui (five panes); new spec s555.

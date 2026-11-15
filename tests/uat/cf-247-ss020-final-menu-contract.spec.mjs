@@ -1,4 +1,4 @@
-// Guards: Decision 269 (SS-020, Platform Admin 3 Nov 2026 22:05): the admin menu ends at 47 tabs, every old address of a merged or moved tab opens its new home, and each moved section keeps its minimum role
+// Guards: Decision 269 (SS-020, Platform Admin 3 Nov 2026 22:05): the admin menu ends at 47 tabs (48 since v2.16.12: Settings › Integrations, Platform Admin 16 Nov 2026 08:22), every old address of a merged or moved tab opens its new home, and each moved section keeps its minimum role
 // CF-247 SS-020 step 5 and the programme's end state. Step 5: Rankings › Outcomes (QILT) and Student flow (PRISMS) are "View data" on
 // Rankings › Datasets (C16, C17, C18), the Overview cards link there. The menu is 47 tabs on 20 pages (Decision 269 amended 4 Nov 2026 about
 // 05:40). Link refresh and portals stay on Coverage › Courses (same amendment; the move to Settings, C20 and C42, is withdrawn).
@@ -9,8 +9,8 @@ import { PAGES, resolveTarget } from '../../src/nav-map.js'
 
 const go = (addr) => { const [a, q] = addr.split('?'); const r = resolveTarget(a, new URLSearchParams(q || '')); return `${r.page}/${r.tab}${r.params.toString() ? '?' + r.params : ''}` }
 
-test('the menu: 47 tabs on 20 pages, as the Final board', () => {
-  expect(Object.values(PAGES).reduce((n, p) => n + (p.tabs ? p.tabs.length : 1), 0)).toBe(47)
+test('the menu: 48 tabs on 20 pages, as the Final board (v2.16.12: Settings › Integrations)', () => {
+  expect(Object.values(PAGES).reduce((n, p) => n + (p.tabs ? p.tabs.length : 1), 0)).toBe(48)
   expect(Object.keys(PAGES)).toHaveLength(20)
   expect(PAGES.rankings.tabs.map((t) => `${t.key}:${t.min}`)).toEqual(['overview:1', 'compare:1', 'datasets:1'])
 })

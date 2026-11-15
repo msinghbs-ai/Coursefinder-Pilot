@@ -73,10 +73,10 @@ test('item 1: Automations no longer shows Refresh schedules; its runtime health 
   expect(l1).toContain('SCHEDULES.find(([,d])=>d===scheduleDays(s))')
 })
 
-test('items 2 and 4: Link refresh stays on Coverage › Courses; no "conditional Layer 3" row wording; 47 tabs on 20 pages', () => {
+test('items 2 and 4: Link refresh stays on Coverage › Courses; no "conditional Layer 3" row wording; 48 tabs on 20 pages (v2.16.12: Settings › Integrations)', () => {
   expect(read('src/mature-main.jsx')).toContain("<CoverageView view=\"courses\"/><LinkRefresh/>")
   expect(Object.keys(PAGES)).toHaveLength(20)
-  expect(Object.values(PAGES).reduce((n, p) => n + (p.tabs?.length || 1), 0)).toBe(47)
+  expect(Object.values(PAGES).reduce((n, p) => n + (p.tabs?.length || 1), 0)).toBe(48)
   const texts = fs.readdirSync('src', { recursive: true }).filter((f) => /\.(jsx?|css)$/.test(f)).map((f) => read(`src/${f}`))
   for (const t of texts) { expect(t).not.toContain('conditional Layer 3'); expect(t).not.toMatch(/\b22 pages\b/) }
   expect(read('src/guide/platformGuide.js')).toContain('Refresh schedules and one-off runs is retired from Automations')

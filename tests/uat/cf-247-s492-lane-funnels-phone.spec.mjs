@@ -2,6 +2,7 @@
 // These tests run on the phone project only (chromium-mobile, Pixel 7, 412 px; `@responsive`). Each first asserts it really is at phone width.
 // Mocked admin (tests/uat/support/admin-mock.mjs plus lane-funnel-mock.mjs); nothing reaches a real backend.
 import { test, expect } from '@playwright/test'
+import { openServiceDetails } from './support/cards.mjs'
 import { mockAdmin } from './support/admin-mock.mjs'
 import { mockLaneFunnels } from './support/lane-funnel-mock.mjs'
 
@@ -64,6 +65,7 @@ test.describe('lane funnels on a phone @responsive', () => {
     await mockAdmin(page); await mockLaneFunnels(page)
     const w = await atPhoneWidth(page)
     await page.goto('/#models-services?tab=firecrawl')
+    await openServiceDetails(page) // v2.16.12: service details sit in a fold below the summary
     const card = page.locator('[data-fc-acceptance]')
     await expect(card).toBeVisible()
     await card.getByRole('button', { name: /Firecrawl allowance and spend/ }).click()

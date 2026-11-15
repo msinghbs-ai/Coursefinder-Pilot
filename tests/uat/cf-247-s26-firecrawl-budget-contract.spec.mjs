@@ -2,6 +2,7 @@
 // CF-247 v2.15.262 (S26): Platform Admin, 12 Oct 2026 21:47: "Report Firecrawl credit used per uni and pages produced, that will give
 // us how much waste is happening, and tweak it along." Decisions: all five tweaks; a daily budget of 15,000 credits.
 import { test, expect } from '@playwright/test'
+import { openServiceDetails } from './support/cards.mjs'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
@@ -40,6 +41,7 @@ test.describe('mocked browser', () => {
     page.on('dialog', d => { prompts.push(d.message()); d.accept('Website checked: humber.ca') })
     await mockAdmin(page)
     await page.goto('/#models-services?tab=limits')
+    await openServiceDetails(page) // v2.16.12: service details sit in a fold below the summary
     const card = page.locator('[data-fc-by-uni]')
     await expect(card).toBeVisible()
     await card.locator('.cf-card-toggle').first().click()

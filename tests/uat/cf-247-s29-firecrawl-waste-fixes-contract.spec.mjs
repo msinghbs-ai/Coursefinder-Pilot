@@ -3,6 +3,7 @@
 // "Refusals per university", "Reset cap for top-50"; course search "Australia and 30+ courses first", "Flag Victoria Uni and Adelaide Uni",
 // "Never search directory sites", "CRICOS code before title"; "use training.gov.au or ASQA ... CRICOS/RTO code, flag the exceptions".
 import { test, expect } from '@playwright/test'
+import { openServiceDetails } from './support/cards.mjs'
 import fs from 'node:fs'
 
 const mig = fs.readFileSync('supabase/migrations/20261013012200_cf247_firecrawl_waste_fixes.sql', 'utf8')
@@ -61,6 +62,7 @@ test.describe('mocked browser', () => {
     page.on('dialog', d => d.accept('Adapter checked: vu.edu.au course pages'))
     await mockAdmin(page)
     await page.goto('/#models-services?tab=limits')
+    await openServiceDetails(page) // v2.16.12: service details sit in a fold below the summary
     const card = page.locator('[data-fc-by-uni]')
     await card.locator('.cf-card-toggle').first().click()
     const sch = card.locator('[data-fc-refused-uni="u-sch"]')
