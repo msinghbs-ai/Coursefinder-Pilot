@@ -21,8 +21,8 @@ const sideScroll = (page) => page.evaluate(() => [...document.querySelectorAll('
 async function mount(page) {
   await mockAdmin(page, { rank: 6 })
   const ai = await mockAi(page)
-  // cards start closed and remember being opened per browser session, so open the four before the page loads
-  await page.addInitScript(() => { try { for (const id of ['openrouter', 'models', 'services', 'usage']) window.sessionStorage.setItem(`cf.card.services.ai.${id}`, '1') } catch { /* storage unavailable */ } })
+  // cards start closed and remember being opened per browser session, so open the five before the page loads (v2.16.11: the prompt registry is the fifth)
+  await page.addInitScript(() => { try { for (const id of ['openrouter', 'models', 'services', 'usage', 'prompt-registry']) window.sessionStorage.setItem(`cf.card.services.ai.${id}`, '1') } catch { /* storage unavailable */ } })
   await page.goto('/#models-services?tab=ai')
   const t = page.locator('[data-ai-page="ready"]')
   await expect(t).toBeVisible({ timeout: 30_000 })
@@ -44,22 +44,22 @@ async function boxes(page, selector) {
 }
 
 test.describe('Models & services › AI on a phone @responsive', () => {
-  test('on a phone the four cards start closed and still show their warnings', async ({ page }) => {
+  test('on a phone the five cards start closed and still show their warnings', async ({ page }) => {
     await atPhoneWidth(page)
     await mockAdmin(page, { rank: 6 }); await mockAi(page)
     await page.goto('/#models-services?tab=ai')
     await expect(page.locator('[data-ai-page="ready"]')).toBeVisible({ timeout: 30_000 })
-    await expect(page.locator('[data-ai-pane]')).toHaveCount(4)
+    await expect(page.locator('[data-ai-pane]')).toHaveCount(5) // v2.16.11: 5 · Prompt registry (shadow)
     await expect(page.locator('[data-ai-pane] .cf-card-toggle[aria-expanded="true"]')).toHaveCount(0)
     await expect(page.locator('[data-ai-pane="services"] [data-ai-no-model-chip]')).toHaveText('1 with no model')
     await expect(page.locator('[data-ai-pane="openrouter"] [data-ai-caps-chip]')).toBeVisible()
     expect(await pageOverflow(page)).toBeLessThanOrEqual(1)
   })
 
-  test('the four panes, their stacked rows and an open service sit inside the screen, and nothing scrolls sideways', async ({ page }) => {
+  test('the five panes, their stacked rows and an open service sit inside the screen, and nothing scrolls sideways', async ({ page }) => {
     const w = await atPhoneWidth(page)
     await mount(page)
-    expect(await page.locator('[data-ai-pane]').evaluateAll(els => els.map(e => e.getAttribute('data-ai-pane')))).toEqual(['openrouter', 'models', 'services', 'usage'])
+    expect(await page.locator('[data-ai-pane]').evaluateAll(els => els.map(e => e.getAttribute('data-ai-pane')))).toEqual(['openrouter', 'models', 'services', 'usage', 'prompt-registry'])
     const out = []
     for (const sel of ['[data-ai-pane]', '.aim-tile', '.aim-state', '[data-ai-key-controls]', '.aim-setting', '[data-ai-model] td', '[data-ai-service] td', '.aim-chip', '.aim-detail', '.aim-editor', '.aim-steps li', '.aim-add select', '.aim-save', '.aim-prompt', '.aim-strip', '[data-ai-usage] td', '.aim-meta']) {
       const bs = await boxes(page, `[data-ai-page] ${sel}`)
