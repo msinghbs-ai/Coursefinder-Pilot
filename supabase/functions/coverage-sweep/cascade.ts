@@ -37,6 +37,43 @@ export function technicalFailure(status: number, d: any, wantsJson: boolean): st
   return null;
 }
 
+// v1.0.3 (15 Nov 2026, Platform Admin 12:53): an OpenRouter key or budget limit refusal is an ACCOUNT stop, not a failure of the model or the item.
+// OpenRouter answers 402 or 403 with "Key limit exceeded" (or error.metadata.limit_source openrouter_key_limit) once the key's own limit or a budget
+// over it is used up; every model of every cascade goes through the same key, so asking the next model only repeats the refusal. On the first one:
+// the attempt is noted with failure kind key_limit (left out of the model health counts), no other model is asked, the worker call stops asking
+// (every later call of this worker call is refused here without being sent), the caller gets a KeyLimitStop error and gives its items back to the
+// queue (svc_ai_key_limit_release_v1), and the refusal is recorded (svc_openrouter_key_record_v1), so security.ai_route_v1 holds AI work until the
+// key has room again.
+const KEY_LIMIT_TEXT = /key limit exceeded/i;
+export const KEY_LIMIT_MARK = "OpenRouter key limit";
+// deno-lint-ignore no-explicit-any
+export function keyLimitRefusal(status: number, d: any): string | null {
+  if (status !== 402 && status !== 403) return null;
+  const msg = String(d?.error?.message ?? d?.message ?? "");
+  const source = String(d?.error?.metadata?.limit_source ?? d?.metadata?.limit_source ?? "");
+  if (!KEY_LIMIT_TEXT.test(msg) && source !== "openrouter_key_limit") return null;
+  // the key's own words (they name the limit and what is used); the key management address in them is left out
+  return `${KEY_LIMIT_MARK} (HTTP ${status}): ${msg.replace(/https?:\/\/\S+/g, "").replace(/\s+/g, " ").trim() || source}`.slice(0, 300);
+}
+export class KeyLimitStop extends Error {
+  constructor(why: string) { super(why.startsWith(KEY_LIMIT_MARK) ? why : `${KEY_LIMIT_MARK}: ${why}`); this.name = "KeyLimitStop" }
+}
+// an error, or a text a lane made from one ("held_partial: ... slice 1 of 2: OpenRouter key limit ..."), that a key limit refusal caused
+export function isKeyLimit(e: unknown): boolean {
+  if (e instanceof KeyLimitStop) return true;
+  const t = e instanceof Error ? e.message : typeof e === "string" ? e : "";
+  return !!t && (t.includes(KEY_LIMIT_MARK) || KEY_LIMIT_TEXT.test(t));
+}
+let keyStop: { why: string; status: number; at: string } | null = null;
+export const keyStopped = () => keyStop;
+export const resetKeyStop = () => { keyStop = null };
+// "$70.01 of $70.00 used": what the refusal says of the limit, for the record
+export function keyLimitFigures(why: string): { used_usd: number | null; limit_usd: number | null } {
+  const m = /\$\s*([0-9][0-9,]*(?:\.[0-9]+)?)\s+of\s+\$\s*([0-9][0-9,]*(?:\.[0-9]+)?)\s+used/i.exec(why);
+  const n = (s?: string) => s == null ? null : Number(s.replace(/,/g, ""));
+  return { used_usd: n(m?.[1]), limit_usd: n(m?.[2]) };
+}
+
 // deno-lint-ignore no-explicit-any
 export const sentModel = (d: any, asked: string): string => String(d?.cf_model_sent || asked || "");
 
@@ -70,6 +107,7 @@ const trace: Attempt[] = [];
 const TRACE_MAX = 2000; // fixed: memory guard of one worker call's attempt list
 export const takeAiTrace = (): Attempt[] => trace.splice(0, trace.length);
 export function failureKind(why: string): string {
+  if (why.startsWith(KEY_LIMIT_MARK)) return "key_limit";  // v1.0.3: an account stop; job ai-model-health leaves it out of the model's counts
   if (/^HTTP /.test(why)) return "http";
   if (/timed? ?out|timeout|abort/i.test(why)) return "timeout";
   if (why === "cut answer") return "cut";
@@ -96,15 +134,19 @@ export async function cascadeFetch(doFetch: FetchFn, cascade: Cascade, url: stri
   let body: any; try { body = JSON.parse(String(init.body)) } catch { return doFetch(url, init) }
   const list = healthOrder(cascade?.service, cascadeModels(String(body?.model || ""), models));
   const wantsJson = !!body.response_format;
+  if (keyStop) throw new KeyLimitStop(keyStop.why);  // v1.0.3: the key refused earlier in this worker call: nothing more is sent
   if (list.length < 2) {  // one model: exactly the call as it was; the attempt is noted from a copy of the answer
     const t1 = Date.now();
+    let r: Response;
     try {
-      const r = await doFetch(url, init);
-      // deno-lint-ignore no-explicit-any
-      const d: any = await r.clone().json().catch(() => ({ unreadable: true }));
-      note(cascade, list[0], 1, technicalFailure(r.status, d, wantsJson), d, Date.now() - t1);
-      return r;
+      r = await doFetch(url, init);
     } catch (e) { note(cascade, list[0], 1, thrown(e), null, Date.now() - t1); throw e }
+    // deno-lint-ignore no-explicit-any
+    const d: any = await r.clone().json().catch(() => ({ unreadable: true }));
+    const kl = keyLimitRefusal(r.status, d);
+    note(cascade, list[0], 1, kl ?? technicalFailure(r.status, d, wantsJson), d, Date.now() - t1);
+    if (kl) { keyStop = { why: kl, status: r.status, at: new Date().toISOString() }; throw new KeyLimitStop(kl) }
+    return r;
   }
   const tried: { model: string; why: string }[] = [];
   let spent = 0, lastError: unknown = null;
@@ -117,12 +159,18 @@ export async function cascadeFetch(doFetch: FetchFn, cascade: Cascade, url: stri
       const r = await doFetch(url, { ...init, body: JSON.stringify({ ...body, model }), signal: i === 0 ? init.signal : AbortSignal.timeout(Math.max(1000, Math.min(RETRY_TIMEOUT_MS, left))) });
       // deno-lint-ignore no-explicit-any
       const d: any = await r.json().catch((e) => ({ unreadable: e instanceof Error ? e.message : String(e) }));
-      const cost = Number(d?.usage?.cost || 0), why = technicalFailure(r.status, d, wantsJson);
+      const kl = keyLimitRefusal(r.status, d);
+      const cost = Number(d?.usage?.cost || 0), why = kl ?? technicalFailure(r.status, d, wantsJson);
       note(cascade, model, i + 1, why, d, Date.now() - t1);
+      if (kl) {  // v1.0.3: every model goes through the same key: no other model is asked; the cost of earlier failed attempts stays with the error
+        keyStop = { why: kl, status: r.status, at: new Date().toISOString() };
+        throw Object.assign(new KeyLimitStop(kl), { cost: cost + spent });
+      }
       if (why && !last) { spent += cost; tried.push({ model, why }); continue }
       const out = { ...d, cf_model_sent: model, cf_cascade_tried: tried, usage: { ...(d?.usage || {}), cost: cost + spent } };
       return new Response(JSON.stringify(out), { status: r.status, headers: { "content-type": "application/json" } });
     } catch (e) {
+      if (e instanceof KeyLimitStop) throw e;  // v1.0.3: noted above; no other model is asked
       lastError = e; note(cascade, model, i + 1, thrown(e), null, Date.now() - t1); tried.push({ model, why: e instanceof Error ? e.message.slice(0, 120) : String(e).slice(0, 120) });
       if (last) throw (spent > 0 && e && typeof e === "object" ? Object.assign(e, { cost: spent }) : e);
     }
