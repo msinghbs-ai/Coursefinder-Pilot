@@ -25,7 +25,7 @@ Rules:
 - audience: international or domestic, from the page's heading or column. If the page is only for international students, every row is international.
 - quote: copy the words of the row from the page exactly, including the amount, so it can be found on the page.
 - course_id: the id of the one course in the given course list that this row's fee is for (same qualification; a subject row belongs to its qualification's course when the list has no separate course for the subject). Use null when no course in the list fits. match_confidence 0 to 1: how sure the match is.
-- Do not invent rows, amounts or years. Leave out notes, deposits, levies, insurance and living costs.
+- Do not invent rows, amounts or years. Leave out notes, deposits, levies, insurance, living costs and one-off charges (application, audit, confirmation, enrolment, registration, acceptance, commitment or graduation fees): only tuition is a fee row.
 - more_fee_pages: full addresses of other fee pages of this provider that this page links to (for example one page per faculty or division), only on the provider's own site.
 - page_notes: two to four sentences on how this provider's fee pages are laid out and how rows map to courses, written for the next reader of this site (for example "fees are in one table per division; qualification rows with subject rows under them; the first column is the 2027 yearly fee").`;
 
@@ -92,16 +92,25 @@ export function noNul<T>(v: T): T {
 // 22 Oct 2026 (fix 6): a page without a single money amount has no fee table; it is recorded as no rows without asking the AI
 export const hasFeeAmount = (text: string) => /(?:[$£€]|\b(?:NZD|CAD|AUD|USD)\b)\s?\d{1,3}(?:[,\s]?\d{3})+(?:\.\d{2})?|\d{1,3}(?:,\d{3})+(?:\.\d{2})?\s?(?:NZD|CAD|AUD)\b/i.test(String(text || ""));
 
+// v1.0.2 (CF-247 audit 15 Nov 2026, defect 4): a one-off charge (an application, audit or confirmation fee of CAD 30–105 at CNA) is not tuition,
+// even when the model returns it as a yearly fee row; the row is left out unless its own words also name tuition
+const ONE_OFF_FEE = /\b(application|audit|confirmation|enrol?l?ment|registration|acceptance|commitment|graduation|admission|transcript|late|resubmission)\s+(fees?|deposits?|charges?|levy|levies)\b|\bdeposits?\b|\bnon-refundable\s+(annual\s+)?fee\b/i;
+export const oneOffFee = (r: any) => {
+  const words = `${r?.quote || ""} ${r?.qualification || ""} ${r?.subject || ""}`;
+  return ONE_OFF_FEE.test(words) && !/\btuition\b/i.test(words);
+};
+
 export function feeAiParsed(a: any, page: string, courseIds: Set<string>) {
   const on = squash(page);
-  const rows: any[] = []; let quotes_missing = 0;
+  const rows: any[] = []; let quotes_missing = 0, one_off = 0;
   for (const r of Array.isArray(a?.rows) ? a.rows : []) {
     const q = squash(r?.quote), amount = Number(r?.amount_min);
     if (!q || q.length < 6 || !on.includes(q) || !(amount > 0) || !on.includes(String(Math.trunc(amount)))) { quotes_missing++; continue }
+    if (oneOffFee(r)) { one_off++; continue }
     rows.push({ ...r, amount_min: amount, amount_max: Number(r?.amount_max) > 0 ? Number(r.amount_max) : null,
       course_id: r?.course_id && courseIds.has(String(r.course_id)) ? String(r.course_id) : null,
       match_confidence: Math.max(0, Math.min(1, Number(r?.match_confidence) || 0)) });
   }
   const more = (Array.isArray(a?.more_fee_pages) ? a.more_fee_pages : []).filter((u: unknown) => /^https?:\/\/\S+$/.test(String(u))).slice(0, 20);
-  return noNul({ rows, quotes_missing, more_fee_pages: more, page_notes: String(a?.page_notes || "").slice(0, 1500) });
+  return noNul({ rows, quotes_missing, one_off_left_out: one_off, more_fee_pages: more, page_notes: String(a?.page_notes || "").slice(0, 1500) });
 }
