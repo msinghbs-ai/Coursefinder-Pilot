@@ -1,24 +1,23 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.3'
-export const PACKAGE_VERSION='0.1.425'
+export const UI_VERSION='2.16.4'
+export const PACKAGE_VERSION='0.1.426'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'15 Nov 2026',
-  title:'Pipeline maintenance: pause every job before a database change, then resume exactly those jobs',
+  title:'One scheduler for reports and caches, one runner for admission rules, and quieter scheduled jobs',
   changes:[
-    'Scheduled jobs › Automations: a new card at the top, Pipeline maintenance. Pause & Drain for Migration (Platform Admin) switches off every active scheduled job after a confirmation with an optional reason, and keeps a copy of every job and setting. Jobs that were already off stay off.',
-    'While paused the card refreshes every 2 seconds and shows what is still under way: running cron jobs, active database queries, edge worker calls, worker leases, catalogue locks, and any job switched on again during the pause.',
-    'When all of these reach 0 the card turns green: SAFE TO APPLY DB CHANGES. The time paused counts up and turns red after Maintenance pause: warn after (Settings › Pipeline settings, 15 minutes).',
-    'Resume Pipeline switches on exactly the jobs the pause switched off (never a retiring job). It changes no setting; settings changed during the pause are listed.',
-    'While paused, nothing switches a job back on by itself: the idle-job and flag controllers stand down, releasing a held job is refused, and Automations allows Pause only. The website and Zoho APIs keep answering; their data is not refreshed until resume.',
-    'Everyone with an admin role sees the state; only the Platform Admin pauses and resumes.'
+    'Reports and screen caches: a new job, rollup-scheduler, works out every minute which of 26 report and cache refreshes are due on their own schedules and runs them one after another, frequent ones first. It started in shadow on 15 Nov 2026: it records what was due while the old jobs still run them. Settings › Pipeline settings › Rollup scheduler.',
+    'Admission rules: a new runner in three lanes (admission-rule-runner, -b and -c) takes over 20 field-specific admission rule jobs on their own schedules, with a time budget and a circuit breaker per rule: a rule that fails 3 times in a row is skipped for a back-off that doubles from 15 minutes up to 4 hours, and a Platform health issue is raised until its next good run. It starts in shadow. Settings › Pipeline settings › Admission rule runner.',
+    'Shadow rule (Platform Admin 15 Nov 2026 22:36): a scheduler like these runs in shadow for 24 hours; when its dispatches match the old jobs, the old jobs are switched off. They are dropped by a paste file after the 14-day retention window.',
+    'Search refresh: each run may take up to Settings › Pipeline settings › Website API › Search refresh: time limit for one run (5 minutes); it failed about one run in five on the database\'s two-minute limit.',
+    'Four busy jobs start on quieter minutes with the same number of runs an hour (course page AI match preparation, link refresh, the website reference bundle and course description admission). Eight switched-off jobs are retiring.'
   ],
   bugFixes:[
-    'Worker v1.0.0 to v1.0.4 (no screen change, released since v2.16.2): Layer 4 self-healing drain and its verdicts; markdown page input; model order kept by AI health; defects found in admitted records fixed (the scholarship coverage classifier failed on every run); an OpenRouter key-limit refusal stops AI work for the account instead of failing each item; course description prompt v2 with one quality retry on the next model.',
-    'API v3 additive schema (migration 20261115190000): new columns and tables beside v2; the v2 website and Zoho APIs are unchanged.'
+    'Course description proposals that can no longer be approved are found without the full description check, so the hourly job no longer times out.',
+    'The website and Zoho APIs are unchanged (checked against their baseline before and after each change).'
   ]
 }
 
