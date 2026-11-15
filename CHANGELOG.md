@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.433 — 16 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.11** (Platform Admin 16 Nov 2026 07:41). Settings › Settings (SettingsRegister): the five hub groups are tabs, one drawn at a time, opening on the settings changed by a person (else the first group). Models & services › AI: pane 5, Prompt registry (shadow), from the parity report in public.admin_ai_overview_v1. Migration 20261116070000_cf247_ai_route_observation_index: index pipeline.layer3_openrouter_observations (kind, observed_at desc) for the balance reading in security.ai_route_v1 (15 route reads 498 to 150 ms, AI read 998 to 590 ms, rolled-back live run). Specs: s552 (tabs), ai-models-services-ui (five panes); new spec s555.
+
 ## 0.1.432 — 16 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.10** (Platform Admin 16 Nov 2026 07:41: Models & services › AI timed out). Migration 20261116060000_cf247_ai_tab_timeout: public.admin_ai_overview_v1 evaluated security.ai_route_v1 once per reference of its pulled-up lateral subquery (about 225 evaluations for 15 services; 5.6 to 20.7 s measured); "offset 0" keeps one evaluation per service (0.7 to 1.1 s, same payload). Indexes ai_invocations (service_code, at desc, id desc) and admin_control_events (area, created_at desc). The read carries security.prompt_registry_parity_v1(). md5-guarded edit in place. New spec s554.

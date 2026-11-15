@@ -98,7 +98,7 @@ function SectionRows({settings,can,onSave}){
 }
 
 export default function SettingsRegister({onError}){
-  const[d,setD]=useState(null),[failed,setFailed]=useState(''),[q,setQ]=useState(''),[changedOnly,setChangedOnly]=useState(false),[unlocked,setUnlocked]=useState({})
+  const[d,setD]=useState(null),[failed,setFailed]=useState(''),[q,setQ]=useState(''),[changedOnly,setChangedOnly]=useState(false),[unlocked,setUnlocked]=useState({}),[tab,setTab]=useState(null)
   const load=async()=>{try{const{data,error}=await supabase.rpc('admin_settings_register_read');if(error)throw error;setD(data||{})}catch(e){setFailed(errText(e));onError?.(errText(e))}}
   useEffect(()=>{load()},[])
   // a Consumer APIs setting is sent with the unlock only when the Platform Admin ticked it for that section; without it the write is refused
@@ -112,6 +112,9 @@ export default function SettingsRegister({onError}){
   const query=q.trim().toLowerCase(),finding=Boolean(query)||changedOnly
   const found=finding?sections.map(sec=>({...sec,settings:sec.settings.filter(s=>matches(s,query)&&(!changedOnly||s.changed))})).filter(sec=>sec.settings.length):[]
   const locked=sec=>sec.hub==='Consumer APIs'&&!unlocked[sec.section]
+  const groups=HUB_GROUPS.filter(([g])=>sections.some(sec=>sec.hub===g))
+  const edited=sections.map(sec=>({...sec,settings:sec.settings.filter(s=>s.changed)})).filter(sec=>sec.settings.length)
+  const current=tab&&(tab==='Edited'?edited.length>0:groups.some(([g])=>g===tab))?tab:(edited.length>0?'Edited':groups[0]?.[0])
   const rowsOf=sec=><>
     {sec.hub==='Consumer APIs'&&can&&<label className="sr-unlock" data-consumer-unlock={sec.section}><input type="checkbox" checked={Boolean(unlocked[sec.section])}
       onChange={e=>setUnlocked(u=>({...u,[sec.section]:e.target.checked}))}/> Unlock: this is an approved change (it is recorded)</label>}
@@ -133,14 +136,27 @@ export default function SettingsRegister({onError}){
       {found.length===0?<Empty text="No setting matches."/>:found.map(sec=><div key={sec.section} className="sr-result-section" data-hub-result-section={sec.section}>
         <h4>{sec.hub} › {sec.section}</h4>{rowsOf(sec)}</div>)}
     </section>
-    :HUB_GROUPS.map(([g,help])=>{const secs=sections.filter(sec=>sec.hub===g);return secs.length>0&&<section key={g} className="sr-hub-group" data-hub-group={g}>
-      <div className="sr-hub-head"><h3>{g}</h3><span className="cf-chip tone-neutral">{fmtNumber(secs.reduce((n,sec)=>n+sec.settings.length,0))} settings</span>{g==='Consumer APIs'&&<span className="cf-chip tone-warning">Read-only</span>}</div>
-      <small className="sr-hub-help">{help}</small>
-      {secs.map(sec=><Card key={sec.section} id={`settings.register.${slug(sec.section)}`} title={sec.section} subtitle={SECTION_HELP[sec.section]||''}
-          data-register-section={sec.section} data-anchor={`register:${sec.section}`} meta={<span className="cf-chip tone-neutral">{fmtNumber(sec.settings.length)} settings</span>}>
-        {rowsOf(sec)}
-      </Card>)}
-    </section>})}
+    :<>
+      {/* v2.16.11 (Platform Admin 16 Nov 2026 07:41): the groups are tabs; one group is drawn at a time. It opens on the settings a person has
+          changed, or, when none has, on the first group that has settings. */}
+      <div className="sr-hub-tabs" role="tablist" aria-label="Settings groups" data-hub-tabs>
+        {edited.length>0&&<button type="button" role="tab" aria-selected={current==='Edited'} className={`sr-hub-tab${current==='Edited'?' is-on':''}`} data-hub-tab="Edited" onClick={()=>setTab('Edited')}>
+          Changed by a person <span className="cf-chip tone-neutral">{fmtNumber(edited.reduce((n,sec)=>n+sec.settings.length,0))}</span></button>}
+        {groups.map(([g])=><button key={g} type="button" role="tab" aria-selected={current===g} className={`sr-hub-tab${current===g?' is-on':''}`} data-hub-tab={g} onClick={()=>setTab(g)}>
+          {g} <span className="cf-chip tone-neutral">{fmtNumber(sections.filter(sec=>sec.hub===g).reduce((n,sec)=>n+sec.settings.length,0))}</span></button>)}
+      </div>
+      {current==='Edited'?<section className="m-panel sr-results" data-hub-group="Edited" role="tabpanel">
+        {edited.map(sec=><div key={sec.section} className="sr-result-section" data-hub-result-section={sec.section}><h4>{sec.hub} › {sec.section}</h4>{rowsOf(sec)}</div>)}
+      </section>
+      :groups.filter(([g])=>g===current).map(([g,help])=>{const secs=sections.filter(sec=>sec.hub===g);return <section key={g} className="sr-hub-group" data-hub-group={g} role="tabpanel">
+        <div className="sr-hub-head"><h3>{g}</h3><span className="cf-chip tone-neutral">{fmtNumber(secs.reduce((n,sec)=>n+sec.settings.length,0))} settings</span>{g==='Consumer APIs'&&<span className="cf-chip tone-warning">Read-only</span>}</div>
+        <small className="sr-hub-help">{help}</small>
+        {secs.map(sec=><Card key={sec.section} id={`settings.register.${slug(sec.section)}`} title={sec.section} subtitle={SECTION_HELP[sec.section]||''}
+            data-register-section={sec.section} data-anchor={`register:${sec.section}`} meta={<span className="cf-chip tone-neutral">{fmtNumber(sec.settings.length)} settings</span>}>
+          {rowsOf(sec)}
+        </Card>)}
+      </section>})}
+    </>}
     <PolicyTables can={can} onError={onError}/>
   </div>
 }
