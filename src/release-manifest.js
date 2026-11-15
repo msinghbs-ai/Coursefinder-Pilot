@@ -1,18 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.8'
-export const PACKAGE_VERSION='0.1.430'
+export const UI_VERSION='2.16.9'
+export const PACKAGE_VERSION='0.1.431'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'16 Nov 2026',
-  title:'Settings Hub: five groups, find a setting, and the website and Zoho settings protected',
+  title:'A prompt registry, in shadow: today\'s AI prompts recorded exactly, with their variables and answer formats',
   changes:[
-    'Settings › Settings shows the pipeline settings in five groups: AI & Models, Schedulers & Cadence, Circuit Breakers, Consumer APIs and Pipeline steps. Each section keeps its card, settings and links.',
-    'Find a setting: type part of its name, its key or what uses it, or tick Changed by a person only, to list just the settings that match, ready to change with a reason.',
-    'Consumer APIs (the Website API and Zoho API sections) are read-only. To change one, the Platform Admin ticks Unlock: this is an approved change; the change is then saved with a reason as usual and the unlock is kept in the change log. A change sent without the unlock is refused and recorded.',
-    'Provider onboarding timings are settings (v2.16.7).'
+    'A prompt registry keeps the prompts of three AI services exactly as they are sent today (course descriptions, provider descriptions and scholarship pages), with the variables each message is built from, the answer format each must return, and the models its route names. It is a record only: no reader uses it yet, and switching a reader to it is a separate step for the Platform Admin.',
+    'A parity report shows that each registered prompt still equals the one in use; any difference means the registry must be brought up to date before it could ever be used.',
+    'Models & services: the course description service now names the prompt it really sends (cdesc-source-grounded-v2); it still said v1.',
+    'Settings Hub (v2.16.8): five groups, Find a setting, and the website and Zoho settings read-only until an approved change is unlocked.'
   ],
   bugFixes:[
     'The website and Zoho APIs are unchanged (checked against their baseline before and after the change).'
