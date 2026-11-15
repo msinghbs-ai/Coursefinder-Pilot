@@ -173,7 +173,7 @@ begin
          where check_key = 'admission_rule_breaker:' || p_code and resolved_at is null;
       else
         insert into pipeline.platform_issues(check_key, severity, area, title, detail)
-        values ('admission_rule_breaker:' || p_code, 'warning', 'admission rules',
+        values ('admission_rule_breaker:' || p_code, 'warning', 'admission',  -- an area platform_issues allows (platform_issues_area_check)
                 'Admission rule ' || p_code || ' failed ' || (v_r.consecutive_failures + 1) || ' times in a row: skipped until ' || to_char(v_until at time zone 'UTC', 'HH24:MI') || ' UTC',
                 jsonb_build_object('rule', p_code, 'failures_in_a_row', v_r.consecutive_failures + 1, 'skipped_until', v_until, 'last_error', left(v_err, 300)));
       end if;
