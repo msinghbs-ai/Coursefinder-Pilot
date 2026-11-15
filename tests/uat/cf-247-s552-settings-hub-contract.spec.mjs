@@ -1,4 +1,4 @@
-// Guards: Settings Hub (Phase 3 of the UI/UX and settings simplification; Platform Admin 16 Nov 2026 05:12 decisions 2 and 4, 05:23): the settings sit in five groups (AI & Models, Schedulers & Cadence, Circuit Breakers, Consumer APIs, Pipeline steps) from pipeline.settings_hub_groups; a setting can be found by name, key or what uses it, or by "changed by a person"; Consumer APIs (Website API, Zoho API) is read-only until the Platform Admin unlocks an approved change, the write refuses and records a change without the unlock, and the unlock is kept in the log
+// Guards: Settings Hub (Phase 3; v2.16.11 tabs, Platform Admin 16 Nov 2026 07:41: one group drawn at a time, opening on the settings a person changed of the UI/UX and settings simplification; Platform Admin 16 Nov 2026 05:12 decisions 2 and 4, 05:23): the settings sit in five groups (AI & Models, Schedulers & Cadence, Circuit Breakers, Consumer APIs, Pipeline steps) from pipeline.settings_hub_groups; a setting can be found by name, key or what uses it, or by "changed by a person"; Consumer APIs (Website API, Zoho API) is read-only until the Platform Admin unlocks an approved change, the write refuses and records a change without the unlock, and the unlock is kept in the log
 // CF-247 S552. Migration 20261116040000_cf247_settings_hub and src/SettingsRegister.jsx. Mocked REST responses: nothing reaches a real backend.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
@@ -49,8 +49,17 @@ test.describe('mocked browser', () => {
     await page.route('https://example.supabase.co/rest/v1/rpc/admin_toolsets_write', async route => { calls.push(route.request().postDataJSON()); return route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' }) })
     await page.goto('/#environment')
     const reg = page.locator('[data-settings-register]').first()
-    for (const g of ['Schedulers & Cadence', 'Circuit Breakers', 'Consumer APIs', 'Pipeline steps']) await expect(reg.locator(`[data-hub-group="${g}"]`)).toBeVisible()
+    // v2.16.11: the groups are tabs, one drawn at a time; it opens on the settings a person changed
+    for (const g of ['Edited', 'Schedulers & Cadence', 'Circuit Breakers', 'Consumer APIs', 'Pipeline steps']) await expect(reg.locator(`[data-hub-tab="${g}"]`)).toBeVisible()
+    await expect(reg.locator('[data-hub-tab="AI & Models"]')).toHaveCount(0)
+    await expect(reg.locator('[data-hub-group]')).toHaveCount(1)
+    await expect(reg.locator('[data-hub-group="Edited"] [data-register-setting="batch.coverage_admit"]')).toBeVisible()
+    await expect(reg.locator('[data-register-section]')).toHaveCount(0)
+    await reg.locator('[data-hub-tab="Pipeline steps"]').click()
+    await expect(reg.locator('[data-hub-group]')).toHaveCount(1)
     await expect(reg.locator('[data-hub-group="Pipeline steps"] [data-register-section="Onboarding"]')).toHaveCount(1)
+    await expect(reg.locator('[data-register-section="Job sizes"]')).toHaveCount(0)
+    await reg.locator('[data-hub-tab="Consumer APIs"]').click()
     await expect(reg.locator('[data-hub-group="Consumer APIs"]')).toContainText('Read-only')
 
     await reg.getByLabel('Find a setting').fill('delivery_take')

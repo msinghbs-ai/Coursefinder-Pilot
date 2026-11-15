@@ -1,19 +1,20 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.10'
-export const PACKAGE_VERSION='0.1.432'
+export const UI_VERSION='2.16.11'
+export const PACKAGE_VERSION='0.1.433'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'16 Nov 2026',
-  title:'Models & services › AI loads again',
+  title:'Settings groups as tabs, and the prompt registry on the AI tab',
   changes:[
-    'Prompt registry (v2.16.9, shadow only): the prompts of three AI readers recorded exactly as sent, with their variables, answer formats and models.'
+    'Settings › Settings: the five groups are tabs and one is shown at a time. It opens on the settings a person has changed (Changed by a person), or on the first group when none has. Find a setting still searches every group.',
+    'Models & services › AI: a fifth pane, Prompt registry (shadow), lists each registered prompt, where its live copy is, and whether its text and models still match the ones in use.',
+    'Models & services › AI loads again (v2.16.10).'
   ],
   bugFixes:[
-    'Models & services › AI failed with "The database took too long to answer": its read worked out each AI service\'s route state once for every value shown (about 225 times instead of 15). It now works it out once per service and loads in about a second.',
-    'The last call of each AI service and the page\'s last changes are found through an index.',
+    'Every AI hand-out and the AI tab find the latest OpenRouter balance reading through an index instead of reading the whole history; the AI tab now loads in well under a second.',
     'The website and Zoho APIs are unchanged (checked against their baseline before and after the change).'
   ]
 }

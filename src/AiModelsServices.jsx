@@ -495,6 +495,23 @@ function UsagePane({ d }) {
 }
 
 // ---- the page -----------------------------------------------------------------------------------------------------------------------------
+// v2.16.11 (Platform Admin 16 Nov 2026 07:41): the prompt registry (v2.16.9, shadow only) on the AI tab. Each registered prompt with where its
+// live copy is, whether the registered text still equals it and whether its models are the route's. Nothing reads the registry yet: a reader
+// switching to it is a separate step for the Platform Admin.
+function PromptRegistryPane({ d }) {
+  const rows = Array.isArray(d.prompt_registry) ? d.prompt_registry : null
+  const ok = v => v === true ? <span className="cf-chip tone-success">Matches</span> : v === false ? <span className="cf-chip tone-danger">Differs</span> : <span className="cf-chip tone-neutral">Checked by spec</span>
+  return <Card id="services.ai.prompt-registry" level={2} className="aim-pane" data-ai-pane="prompt-registry" title="5 · Prompt registry (shadow)"
+      subtitle="Each registered prompt exactly as it is sent today, with its variables, answer format and models. No reader uses the registry yet."
+      meta={rows && <span className="cf-chip tone-neutral">{fmtNumber(rows.length)} prompts</span>}>
+    {!rows ? <p className="aim-note">The registry was not returned.</p> : rows.length === 0 ? <p className="aim-note">No prompt is registered.</p> :
+    <div className="cf-table-wrap"><table className="cf-table" data-prompt-registry><thead><tr><th>Service</th><th>Version</th><th>Live copy</th><th>Text</th><th>Models</th><th>Status</th></tr></thead><tbody>
+      {rows.map(r => <tr key={`${r.service}:${r.version}`} data-prompt-row={r.service}><td>{r.service}</td><td>{r.version}</td><td>{r.source}</td><td>{ok(r.system_text_matches)}</td>
+        <td>{r.models_match_route ? <span className="cf-chip tone-success">Route's models</span> : <span className="cf-chip tone-danger">Differ from the route</span>}</td><td>{r.status}</td></tr>)}
+    </tbody></table></div>}
+  </Card>
+}
+
 export default function AiModelsServices({ onError, focusService = '' }) {
   const viewerRank = useViewerRank()
   const [d, setD] = useState(null), [failed, setFailed] = useState('')
@@ -515,5 +532,6 @@ export default function AiModelsServices({ onError, focusService = '' }) {
     <ModelsPane d={d} can={admin} act={act}/>
     <ServicesPane d={d} can={can} admin={admin} act={act} saveSetting={saveSetting} focus={focusService} onError={onError}/>
     <UsagePane d={d}/>
+    <PromptRegistryPane d={d}/>
   </div>
 }
