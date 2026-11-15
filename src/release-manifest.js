@@ -1,22 +1,20 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.5'
-export const PACKAGE_VERSION='0.1.427'
+export const UI_VERSION='2.16.6'
+export const PACKAGE_VERSION='0.1.428'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'16 Nov 2026',
-  title:'Settings tidy-up: retiring settings set apart, every setting says what reads it and its unit, fewer sections',
+  title:'Values that were written into the pipeline are now settings (first wave)',
   changes:[
-    'Settings: 46 settings nothing live needs any more are marked Retiring, each with what replaced it: the 39 Serper and ScrapingBee settings (both services were dropped on 4 Oct 2026; their cards were already gone), four settings read only by switched-off jobs or retiring functions, and three AI model pins that the AI routes on Models & services replaced. The pipeline ones show in the Retiring group on Pipeline settings. A paste file removes them after the 14-day retirement period.',
-    'Seven settings that were tied to retiring functions are still read by the functions that replaced them; their Used by now names the new readers (alerts, intake dates, calendar re-read).',
-    'Every setting outside the Website API and Zoho API sections now says what reads it (Used by) and its unit; switches show on/off, lists and text say what they hold.',
-    'Pipeline settings has 51 sections instead of 64: sections that overlapped are merged (for example the six scholarship sections are one, Scholarships). Only the headings changed; no setting key or value changed.',
-    'Each of these changes is in the settings change log with its value before and after and the reason, like a change made on the screen.'
+    'Nine new settings on Settings › Pipeline settings, each with the value the pipeline already used, so nothing behaves differently until it is changed with a reason: how long a course or provider counts as verified (Re-read and retry, 30 days); when a failed scholarship scheduler step is tried again (Scholarships, 60 minutes); when a course page is searched for again (Course page search, 7 days); when verification counts as stale on the data quality pages (Health report, 180 days); how long progress snapshots are kept and how young evidence is never purged, and evidence audit columns per run (Storage & retention: 90 days, 7 days, 3); when a provider is checked again for zero-yield pages (Zero-yield pages, 23 hours); and when an English policy plan is worked out again (English policies, 30 minutes).',
+    'A scholarship page admitted from its title is next read after Read a scholarship page again after (Re-read and retry), like every other scholarship page; this was the same 90 days written separately.',
+    'Values that are technical, not operational, stay in the code and are marked with the reason (for example a 10-minute hand-over lease, or the page size of a list).',
+    'Settings tidy-up (v2.16.5): the retired-settings paste file can be run from 29 Nov 2026.'
   ],
   bugFixes:[
-    'The Serper and ScrapingBee sample-run notice check no longer reads their retiring tables and settings, so it keeps working when they are removed.',
     'The website and Zoho APIs are unchanged (checked against their baseline before and after the change).'
   ]
 }
