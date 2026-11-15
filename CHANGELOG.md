@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.430 — 16 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.8** (Platform Admin 16 Nov 2026 05:12 decisions 2 and 4, and 05:23: Phase 3 of the UI/UX and settings simplification, the Settings Hub). Migration 20261116040000_cf247_settings_hub: pipeline.settings_hub_groups (new; toolset or section to one of five groups) and security.settings_hub_group_v1; public.admin_settings_register_read gives each section its hub_group and read_only and each setting changed (additive); public.admin_toolsets_write refuses and records a Consumer APIs (Website API, Zoho API) change without the explicit unlock and keeps the unlock in the change log (both md5-guarded edits in place). Settings › Settings (SettingsRegister) groups the sections in five groups, adds Find a setting and Changed by a person only, and keeps Consumer APIs read-only until unlocked. Specs s39 and r23-r24 now unlock before changing a Website API setting (decision 4). Platform guide (Settings), Admin SOP 2.44. New spec s552.
+
 ## 0.1.429 — 16 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.7** (Platform Admin 16 Nov 2026 05:23: Phase 2 of the UI/UX and settings simplification, G2 promotion wave B). Migration 20261116030000_cf247_g2_promotion_wave_b: the eleven stage timers written into security.provider_onboarding_step_v1 (job provider-onboarding) become nine settings with today's values (onboarding.job_done_wait_minutes 90, read_quiet_minutes 60, proposal_wait_minutes 30, apply_max_minutes 90, apply_quiet_minutes 10, apply_activity_minutes 5, enrich_wait_minutes 20, enrich_quiet_minutes 10, scholarship_settle_minutes 15), edited in place from the md5-guarded live definition with exact edit counts; the one-minute clock tolerance marked "-- fixed:". Platform guide (Settings). New spec s551.

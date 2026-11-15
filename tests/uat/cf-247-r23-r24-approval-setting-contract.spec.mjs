@@ -46,6 +46,9 @@ test.describe('mocked browser', () => {
     const row = sec.locator('[data-register-setting="api.v2_r23_r24_approved"]')
     await expect(row).toContainText('Used by: migration 20261109160000')
     await expect(row.locator('.sr-range')).toHaveText('0 to 1')
+    // Settings Hub (v2.16.8, decision 4): Website API is in Consumer APIs, read-only until an approved change is unlocked
+    await expect(row.locator('input[type="number"]')).toHaveCount(0)
+    await sec.locator('[data-consumer-unlock="Website API"] input').check()
     const input = row.getByLabel('Website API v2 R23/R24 consumer change: approved')
     await expect(input).toHaveValue('0')
     await input.fill('1')
@@ -53,6 +56,6 @@ test.describe('mocked browser', () => {
     await expect(save).toBeDisabled()
     await row.getByLabel('Reason').fill('Platform Admin formal G3 authorisation 9 Nov 2026 19:18 AEDT')
     await save.click()
-    await expect.poll(() => calls[0]).toEqual({ p_action: 'setting', p_args: { toolset: 'pipeline', key: 'api.v2_r23_r24_approved', value: 1, reason: 'Platform Admin formal G3 authorisation 9 Nov 2026 19:18 AEDT' } })
+    await expect.poll(() => calls[0]).toEqual({ p_action: 'setting', p_args: { toolset: 'pipeline', key: 'api.v2_r23_r24_approved', value: 1, reason: 'Platform Admin formal G3 authorisation 9 Nov 2026 19:18 AEDT', unlock: 'consumer_api' } })
   })
 })

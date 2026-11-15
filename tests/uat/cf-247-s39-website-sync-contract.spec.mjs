@@ -55,6 +55,9 @@ test.describe('mocked browser', () => {
     await page.goto('/#environment')
     const sec = page.locator('[data-register-section="Website API"]')
     await sec.locator('.cf-card-toggle').click()
+    // Settings Hub (v2.16.8, decision 4): the Website API section is in Consumer APIs, read-only until an approved change is unlocked
+    await expect(sec.locator('[data-register-setting="website.rankings_display_approved"] select')).toHaveCount(0)
+    await sec.locator('[data-consumer-unlock="Website API"] input').check()
     const row = sec.locator('[data-register-setting="website.rankings_display_approved"]')
     const sel = row.getByLabel('Website: rankings approved for display')
     await expect(sel).toHaveValue('true')
@@ -63,7 +66,7 @@ test.describe('mocked browser', () => {
     await expect(save).toBeDisabled()
     await row.getByLabel('Reason').fill('Management asked to hold rankings')
     await save.click()
-    await expect.poll(() => calls[0]).toEqual({ p_action: 'setting', p_args: { toolset: 'pipeline', key: 'website.rankings_display_approved', value: false, reason: 'Management asked to hold rankings' } })
+    await expect.poll(() => calls[0]).toEqual({ p_action: 'setting', p_args: { toolset: 'pipeline', key: 'website.rankings_display_approved', value: false, reason: 'Management asked to hold rankings', unlock: 'consumer_api' } })
     await expect(sec.locator('[data-register-setting="website.logo_link_days"]').getByLabel('Website: logo link valid for')).toHaveValue('365')
   })
 })
