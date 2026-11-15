@@ -690,6 +690,15 @@
 .sr-check{display:flex;gap:8px;align-items:flex-start;padding:10px 12px;border-radius:10px;font-size:var(--cf-fs-sm)}
 .sr-check.is-ok{background:var(--cf-success-soft,var(--cf-slate-50));color:var(--cf-success-ink,var(--cf-slate-800))}
 .sr-check.is-bad{background:var(--cf-warning-soft);color:var(--cf-warning-ink)}
+/* Settings Hub (v2.16.8): five groups, find a setting, Consumer APIs read-only until unlocked */
+.sr-find{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+.sr-find-q{flex:1 1 280px;min-width:0}.sr-find-q .fv-input{width:100%;min-height:36px;box-sizing:border-box}
+.sr-find-changed,.sr-unlock{display:inline-flex;gap:6px;align-items:center;font-size:var(--cf-fs-sm);min-height:32px}
+.sr-unlock{margin:0 0 8px;color:var(--cf-warning-ink)}
+.sr-hub-group{display:flex;flex-direction:column;gap:8px;min-width:0}
+.sr-hub-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.sr-hub-head h3{margin:0;font-size:var(--cf-fs-md,1rem)}
+.sr-hub-help{color:var(--cf-slate-600)}
+.sr-results{display:flex;flex-direction:column;gap:12px}.sr-result-section h4{margin:0 0 6px;font-size:var(--cf-fs-sm)}
 .sr-row{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:12px;align-items:start;padding:10px 0;border-top:1px solid var(--cf-slate-100)}
 .sr-row:first-child{border-top:0}
 .sr-text{display:grid;gap:2px}.sr-text strong{font-size:var(--cf-fs-sm);color:var(--cf-slate-800)}.sr-text small{font-size:var(--cf-fs-xs);color:var(--cf-slate-600);line-height:1.45}

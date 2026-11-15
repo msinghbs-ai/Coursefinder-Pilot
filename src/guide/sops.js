@@ -9,7 +9,7 @@
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 // Check the admin copy with `node scripts/export-sops.mjs --check-mirror <coursefinder-admin/docs/sops>` (SS-016 UR-03): it exits 1 on drift.
 
-export const SOP_REVIEWED_FOR = '2.16.7'
+export const SOP_REVIEWED_FOR = '2.16.8'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -45,7 +45,7 @@ const step = (o) => o
 
 export const SOPS = [
   {
-    id: 'admin-sop', title: 'Platform Admin SOP', version: '2.43', audience: 'Platform Admin (role rank 6)',
+    id: 'admin-sop', title: 'Platform Admin SOP', version: '2.44', audience: 'Platform Admin (role rank 6)',
     purpose: 'How the Platform Admin runs StudySearch day to day: the approvals only you can give, the budgets and models you own, and the checks that keep automatic admission trustworthy.',
     owns: ['Admitting university adapters (Layer 2/3 › Universities)', 'Approving central pages: fee schedules, English policies, academic calendars', 'AI models, their order, AI admission and the AI allowances', 'Firecrawl and OpenRouter budgets and service keys', 'Onboarding settings, Retry and Stop', 'Users and roles; new countries; go-live'],
     schedule: [
@@ -86,6 +86,7 @@ export const SOPS = [
       { trigger: 'Ready to admit (stage 4) or "Admitted automatically"', action: 'With Admit automatically on, spot-check and undo a wrong admit on Layer 2/3 › Universities (Admit off, with a reason); with it off, admit the passing fields yourself. Enriching its courses and finding its scholarships then run by themselves.', where: 'Layer 2/3 › Universities; Layer 2/3 › Universities' },
       { trigger: 'Approve central pages / Approvals waiting', action: 'Open the document, check values against it, approve or reject with a reason. Fee schedules always wait for you; English policies and calendars wait only when policy-auto-approve flagged them or its switches are off.', where: 'Adapter builder 1.3; Layer 2/3 › Operations › Approvals waiting' },
       { trigger: 'Needs a person (nothing passed after the AI attempts)', action: 'Open the Adapter builder: mark the values on the sample pages, add a better course page, or approve the central pages; then Retry. Admitting by hand, or approving its central pages, moves it on to Enrich courses.', where: 'Layer 2/3 › Universities › Builder' },
+      { trigger: 'A Website API or Zoho API setting must change (Settings › Settings › Consumer APIs)', action: 'Only for a change approved for the website or Zoho (G3: the consumer API is frozen; its values are data, its shape never changes here). Open the section, tick Unlock: this is an approved change, change the value and save with the approval in the reason. Without the unlock the change is refused and the refusal is recorded.' },
       { trigger: 'A settings paste file is due (PASTE-20261116-retired-settings-drop.sql, from 29 Nov 2026)', action: 'Run it in the Supabase SQL editor for project fxcwkweaxjtknorudmwp only. It refuses, changing nothing, while a setting is not yet past its retirement date, a scheduled job still names one, or a function that reads one still exists: drop those first with their own paste files, then run it again. Every row it removes is kept in the change log first.' },
       { trigger: 'A scheduler is in shadow (rollup-scheduler, admission-rule-runner)', action: 'After 24 hours, read its shadow report (security.rollup_shadow_report_v1 or security.admission_rule_shadow_report_v1): every target matches the old job\'s starts and no tick failed. The cutover then switches the old jobs off and marks them retiring; their drop paste file is run after the 14-day retention window. A Platform health issue admission_rule_breaker:<rule> means that rule failed 3 times in a row and is skipped for a back-off: fix the cause; its next good run closes it.' },
       { trigger: 'Before a database change (a migration, a table change)', action: 'Open Scheduled jobs › Automations › Pipeline maintenance and press Pause & Drain for Migration with a reason. Wait until the card turns green: SAFE TO APPLY DB CHANGES (nothing running, leased or locked). Apply the change, then press Resume Pipeline: it switches on exactly the jobs the pause switched off and changes no setting. A job listed as switched on again during the pause must be paused before you apply the change.', where: 'Scheduled jobs › Automations' },
@@ -126,7 +127,8 @@ export const SOPS = [
       'Scholarships withdrawn by the nightly review: a jump means a rule changed or a site moved its pages.',
     ],
     escalate: ['A job that fails the same way after a fix, a worker refusing work ("invalid key", "nonce"), or data written where it should not be: pause the job, note what you saw, raise it with the platform engineer with the change-control reference (CF-247).'],
-    changes: [{ version: '2.43', date: '16 Nov 2026', release: '2.16.5', change: 'Settings tidy-up: retiring settings sit in their own group with what replaced them; run the retired-settings paste file only on or after its date, when it no longer refuses.' },
+    changes: [{ version: '2.44', date: '16 Nov 2026', release: '2.16.8', change: 'Settings Hub: settings in five groups with Find a setting; a Website API or Zoho API setting changes only after Unlock: this is an approved change.' },
+      { version: '2.43', date: '16 Nov 2026', release: '2.16.5', change: 'Settings tidy-up: retiring settings sit in their own group with what replaced them; run the retired-settings paste file only on or after its date, when it no longer refuses.' },
       { version: '2.42', date: '15 Nov 2026', release: '2.16.4', change: 'Schedulers in shadow: read the 24-hour shadow report before the cutover; an admission rule breaker issue means a rule failed 3 times in a row.' },
       { version: '2.41', date: '15 Nov 2026', release: '2.16.3', change: 'Pipeline maintenance on Automations: pause every job before a database change, wait for SAFE TO APPLY DB CHANGES, then resume exactly the jobs the pause switched off.' },
       { version: '2.40', date: '14 Nov 2026', release: '2.16.2', change: 'Firecrawl › Format profiles: what each Firecrawl page read asks for, by lane and university, changed with a reason as a new version; surcharge and AI formats are never sent.' },
