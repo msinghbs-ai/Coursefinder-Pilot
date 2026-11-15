@@ -1,12 +1,15 @@
 -- CF-247 StudySearch API v3: additive schema extensions (REQ-18/19/28, REQ-34, REQ-52, REQ-53, REQ-57, REQ-65/67, REQ-75, REQ-76).
 --   1. catalogue.courses: study_load, study_load_source, study_load_evidence_id, empty_reason_code (new columns, checked vocabularies).
---   2. catalogue.campuses: is_primary (at most one per provider), primary_basis, street_address, accepts_international, source_url,
---      last_checked_at (new columns).
+--   2. catalogue.campuses: is_primary (at most one per provider), primary_basis, accepts_international, source_url (new columns). Street
+--      address and check date use the existing address_line1 and last_verified_at (Platform Admin 15 Nov 2026: no duplicate columns);
+--      source_url is new (campuses hold only website, the campus's own site).
 --   3. catalogue.provider_accreditations: AACSB / EQUIS / AMBA accreditations per provider (new table, FK catalogue.providers(id)).
 --   4. catalogue.course_english_requirements: score_grade and subtest_grades for letter-graded tests such as OET (new columns). The numeric
 --      OET score (0 to 500, WP-2.1, 20261113250000) stays in overall_score; a letter grade is held here and never turned into a number.
 --   5. ref.grade_scale_conversions: academic entry grade normalisation to 0 to 100 (new table).
 --   6. destination.editions, study_rules, city_profiles, career_outcomes: governed destination editions (new schema and tables).
+--      Countries in items 5 and 6 are country_id uuid -> ref.countries(id) ON DELETE RESTRICT, as in the catalogue (Platform Admin
+--      15 Nov 2026); each FK takes SHARE ROW EXCLUSIVE on ref.countries (reads go on, writes to it wait).
 --      city_profiles.city_id has no foreign key: the database has no canonical cities table (campuses hold city as text;
 --      pipeline.city_regions is keyed by city_key text). Add the FK in the change that introduces one.
 --   7. ref.api_field_dictionary: v3 field dictionary and allowed values (new table).
@@ -110,10 +113,8 @@ comment on column catalogue.courses.empty_reason_code is 'Machine-readable reaso
 alter table catalogue.campuses
   add column if not exists is_primary boolean not null default false,
   add column if not exists primary_basis text,
-  add column if not exists street_address text,
   add column if not exists accepts_international boolean,
-  add column if not exists source_url text,
-  add column if not exists last_checked_at timestamptz;
+  add column if not exists source_url text;
 
 do $$
 begin
@@ -246,7 +247,7 @@ comment on column catalogue.course_english_requirements.subtest_grades is 'JSONB
 -- ----------------------------------------------------------------------------
 create table if not exists ref.grade_scale_conversions (
   id uuid primary key default gen_random_uuid(),
-  country_code char(2) not null,
+  country_id uuid not null references ref.countries(id) on delete restrict,
   qualification_code text not null,
   qualification_name text not null,
   board_or_stream text,
@@ -269,7 +270,7 @@ comment on table ref.grade_scale_conversions is 'StudySearch API v3 (REQ-18/19/2
 
 create unique index if not exists uq_grade_scale_conversions_key
   on ref.grade_scale_conversions (
-    country_code,
+    country_id,
     qualification_code,
     coalesce(board_or_stream, ''),
     scale_code,
@@ -277,7 +278,7 @@ create unique index if not exists uq_grade_scale_conversions_key
   );
 
 create index if not exists idx_grade_scale_conversions_lookup
-  on ref.grade_scale_conversions (country_code, qualification_code, normalized_0_100)
+  on ref.grade_scale_conversions (country_id, qualification_code, normalized_0_100)
   where is_active = true;
 
 alter table ref.grade_scale_conversions enable row level security;
@@ -305,7 +306,7 @@ end $$;
 -- 6a. destination.editions
 create table if not exists destination.editions (
   id uuid primary key default gen_random_uuid(),
-  country_code char(2) not null,
+  country_id uuid not null references ref.countries(id) on delete restrict,
   domain text not null
     check (domain in ('study_rules', 'city_profiles', 'career_outcomes')),
   edition_label text not null,
@@ -329,17 +330,17 @@ create table if not exists destination.editions (
 comment on table destination.editions is 'StudySearch API v3 (REQ-65/67): one governed edition per destination country and domain (study rules, city profiles, career outcomes), with source, attribution, terms and approval; at most one published per country and domain.';
 
 create unique index if not exists uq_destination_editions_single_published
-  on destination.editions (country_code, domain)
+  on destination.editions (country_id, domain)
   where status = 'published';
 
 create index if not exists idx_destination_editions_country_domain
-  on destination.editions (country_code, domain, status);
+  on destination.editions (country_id, domain, status);
 
 -- 6b. destination.study_rules (visa, funds, work hours, post-study work, TAC)
 create table if not exists destination.study_rules (
   id uuid primary key default gen_random_uuid(),
   edition_id uuid not null references destination.editions(id) on delete restrict,
-  country_code char(2) not null,
+  country_id uuid not null references ref.countries(id) on delete restrict,
   visa_subclass text not null,
   visa_name text not null,
   application_fee_amount numeric(12,2),
@@ -359,20 +360,20 @@ create table if not exists destination.study_rules (
   source_url text not null,
   last_checked_at timestamptz not null default now(),
   created_at timestamptz not null default now(),
-  unique (edition_id, country_code, visa_subclass)
+  unique (edition_id, country_id, visa_subclass)
 );
 
 comment on table destination.study_rules is 'StudySearch API v3 (REQ-65/67): student visa rules per destination edition: fees, financial capacity, work hours, post-study work, processing times, application channels.';
 
 create index if not exists idx_destination_study_rules_country
-  on destination.study_rules (country_code, edition_id);
+  on destination.study_rules (country_id, edition_id);
 
 -- 6c. destination.city_profiles (population, 30-year climate, living costs)
 create table if not exists destination.city_profiles (
   id uuid primary key default gen_random_uuid(),
   edition_id uuid not null references destination.editions(id) on delete restrict,
   city_id uuid not null, -- no FK: no canonical cities table exists yet (see header, item 6)
-  country_code char(2) not null,
+  country_id uuid not null references ref.countries(id) on delete restrict,
   city_name text not null,
   subdivision_code text,
   population integer check (population is null or population >= 0),
@@ -392,13 +393,13 @@ create table if not exists destination.city_profiles (
 comment on table destination.city_profiles is 'StudySearch API v3 (REQ-65/67): city profile per destination edition: population, climate baseline and living costs.';
 
 create index if not exists idx_destination_city_profiles_country
-  on destination.city_profiles (country_code, edition_id);
+  on destination.city_profiles (country_id, edition_id);
 
 -- 6d. destination.career_outcomes (occupations, skill shortages, pay, outlook)
 create table if not exists destination.career_outcomes (
   id uuid primary key default gen_random_uuid(),
   edition_id uuid not null references destination.editions(id) on delete restrict,
-  country_code char(2) not null,
+  country_id uuid not null references ref.countries(id) on delete restrict,
   occupation_code text not null,
   occupation_title text not null,
   study_area_code text,
@@ -423,13 +424,13 @@ create table if not exists destination.career_outcomes (
   source_url text not null,
   last_checked_at timestamptz not null default now(),
   created_at timestamptz not null default now(),
-  unique (edition_id, country_code, occupation_code)
+  unique (edition_id, country_id, occupation_code)
 );
 
 comment on table destination.career_outcomes is 'StudySearch API v3 (REQ-65/67): occupation outcomes per destination edition: skill shortage status, median pay, employment rate and outlook.';
 
 create index if not exists idx_destination_career_outcomes_country
-  on destination.career_outcomes (country_code, edition_id);
+  on destination.career_outcomes (country_id, edition_id);
 
 create index if not exists idx_destination_career_outcomes_study_area
   on destination.career_outcomes (study_area_code)
@@ -558,7 +559,7 @@ begin
 end $$;
 
 -- ----------------------------------------------------------------------------
--- Post-check: every new table has RLS on and a read policy; every new constraint is validated
+-- Post-check: every new table has RLS on and a read policy; every new constraint is validated; every country is a ref.countries FK
 -- ----------------------------------------------------------------------------
 do $check$
 declare
@@ -586,5 +587,26 @@ begin
   where not exists (select 1 from pg_constraint c where c.conname = k.n and c.convalidated);
   if v_missing is not null then
     raise exception 'API v3 post-check: constraint not validated: %', v_missing;
+  end if;
+
+  select string_agg(t, ', ') into v_missing
+  from unnest(array[
+    'ref.grade_scale_conversions', 'destination.editions', 'destination.study_rules', 'destination.city_profiles', 'destination.career_outcomes'
+  ]) t
+  where not exists (
+    select 1 from pg_constraint c
+    join pg_attribute a on a.attrelid = c.conrelid and a.attnum = c.conkey[1] and a.attname = 'country_id'
+    where c.conrelid = to_regclass(t) and c.contype = 'f' and c.confrelid = 'ref.countries'::regclass
+      and c.confdeltype = 'r' and array_length(c.conkey, 1) = 1 and a.attnotnull
+  );
+  if v_missing is not null then
+    raise exception 'API v3 post-check: country_id is not a NOT NULL ON DELETE RESTRICT FK to ref.countries on %', v_missing;
+  end if;
+
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'catalogue' and table_name = 'campuses' and column_name in ('street_address', 'last_checked_at')
+  ) then
+    raise exception 'API v3 post-check: catalogue.campuses must not carry street_address or last_checked_at (use address_line1, last_verified_at)';
   end if;
 end $check$;
