@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.425 — 15 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.3** (Platform Admin 15 Nov 2026 17:49). Scheduled jobs › Automations › Pipeline maintenance: Pause & Drain for Migration switches off every active scheduled job and keeps a copy of every job and setting; the card refreshes every 2 seconds while paused (running cron jobs, active database queries, edge worker calls, worker leases, catalogue locks, jobs switched on again) and turns green, SAFE TO APPLY DB CHANGES, when all are 0; Resume Pipeline switches on exactly the jobs the pause switched off and changes no setting. The idle-job and flag controllers and the Automations control do not switch a job on while paused. Migration 20261115180000 (applied 15 Nov 2026 08:03 UTC): pipeline.maintenance_state, pipeline.maintenance_job_snapshot, pipeline.pause_for_maintenance, pipeline.get_maintenance_drain_status, pipeline.resume_from_maintenance, public.admin_pipeline_maintenance; new setting maintenance.alert_after_minutes. Also in this release (no screen change): worker v1.0.0 to v1.0.4 and the API v3 additive schema.
+
 ## 0.1.424 — 14 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.2** (Platform Admin 14 Nov 2026 19:19; mock-up accepted 20:13). Models & services › Services & limits › Firecrawl › Format profiles: what every Firecrawl page read asks for, by profile (formats markdown, rawHtml, html, links, screenshot; main content only; tags; copy age; wait; time allowed; actions; crawl options checked only), each lane mapped to a profile with university overrides, saved with a reason as a new version. json, summary, question, highlights and onlyCleanContent are never sent. Worker coverage-sweep keeps markdown beside stored course pages, Run now pages and About pages and records the request on the same evidence row (migration 20261114201500). AER v1 lanes and adapter capture keep their own request; course pages stay whole page.

@@ -1,25 +1,24 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.2'
-export const PACKAGE_VERSION='0.1.424'
+export const UI_VERSION='2.16.3'
+export const PACKAGE_VERSION='0.1.425'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'14 Nov 2026',
-  title:'Firecrawl format profiles: what every page read asks for, set per lane',
+  date:'15 Nov 2026',
+  title:'Pipeline maintenance: pause every job before a database change, then resume exactly those jobs',
   changes:[
-    'Models & services › Services & limits › Firecrawl: a new card, Format profiles, sets what every Firecrawl page read asks for. Each profile names its formats (markdown, rawHtml, html, links, screenshot), whether only the main content is kept, tags to leave out or keep, how old a Firecrawl copy may be, the wait and time allowed, optional actions before the read, and crawl options.',
-    'json, summary, question, highlights and onlyCleanContent can never be asked for: the screen lists them as Never sent, and the database and the worker refuse them too. Each costs extra credits or runs an AI pass over the page.',
-    'Each lane (course page reads, Run now reads, About pages, lists, register pages and so on) is mapped to a profile, and a university can have its own profile for one lane. Entry requirement lanes (AER v1, frozen) and adapter capture keep their own request.',
-    'By default a page read asks for rawHtml and markdown together, in one call of one credit. Course page reads, Run now reads and About pages keep the markdown beside the stored page, and the evidence row records the profile and its version, the formats asked for, Firecrawl\'s cache state, the page\'s own status and the credits used.',
-    'Run now and other on-demand reads always ask Firecrawl for a fresh page; scheduled reads may use Firecrawl\'s copy of up to 48 hours.',
-    'Course pages stay whole page (not main content only) until a test read shows the stored page keeps its side-panel entry bands.',
-    'Screenshots are off in every profile; a screenshot a profile asks for is kept as received, up to the size set on the card. Crawl options are checked and saved; no lane crawls yet.',
-    'Every change is saved with a reason as a new version; a save made after someone else\'s is refused, so nothing is overwritten. Pipeline Operator and above can read the card; only the Platform Admin can change it.'
+    'Scheduled jobs › Automations: a new card at the top, Pipeline maintenance. Pause & Drain for Migration (Platform Admin) switches off every active scheduled job after a confirmation with an optional reason, and keeps a copy of every job and setting. Jobs that were already off stay off.',
+    'While paused the card refreshes every 2 seconds and shows what is still under way: running cron jobs, active database queries, edge worker calls, worker leases, catalogue locks, and any job switched on again during the pause.',
+    'When all of these reach 0 the card turns green: SAFE TO APPLY DB CHANGES. The time paused counts up and turns red after Maintenance pause: warn after (Settings › Pipeline settings, 15 minutes).',
+    'Resume Pipeline switches on exactly the jobs the pause switched off (never a retiring job). It changes no setting; settings changed during the pause are listed.',
+    'While paused, nothing switches a job back on by itself: the idle-job and flag controllers stand down, releasing a held job is refused, and Automations allows Pause only. The website and Zoho APIs keep answering; their data is not refreshed until resume.',
+    'Everyone with an admin role sees the state; only the Platform Admin pauses and resumes.'
   ],
   bugFixes:[
-    'The generic Firecrawl settings table no longer offers a set of values as a line of text to change.'
+    'Worker v1.0.0 to v1.0.4 (no screen change, released since v2.16.2): Layer 4 self-healing drain and its verdicts; markdown page input; model order kept by AI health; defects found in admitted records fixed (the scholarship coverage classifier failed on every run); an OpenRouter key-limit refusal stops AI work for the account instead of failing each item; course description prompt v2 with one quality retry on the next model.',
+    'API v3 additive schema (migration 20261115190000): new columns and tables beside v2; the v2 website and Zoho APIs are unchanged.'
   ]
 }
 
