@@ -1,20 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.9'
-export const PACKAGE_VERSION='0.1.431'
+export const UI_VERSION='2.16.10'
+export const PACKAGE_VERSION='0.1.432'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'16 Nov 2026',
-  title:'A prompt registry, in shadow: today\'s AI prompts recorded exactly, with their variables and answer formats',
+  title:'Models & services › AI loads again',
   changes:[
-    'A prompt registry keeps the prompts of three AI services exactly as they are sent today (course descriptions, provider descriptions and scholarship pages), with the variables each message is built from, the answer format each must return, and the models its route names. It is a record only: no reader uses it yet, and switching a reader to it is a separate step for the Platform Admin.',
-    'A parity report shows that each registered prompt still equals the one in use; any difference means the registry must be brought up to date before it could ever be used.',
-    'Models & services: the course description service now names the prompt it really sends (cdesc-source-grounded-v2); it still said v1.',
-    'Settings Hub (v2.16.8): five groups, Find a setting, and the website and Zoho settings read-only until an approved change is unlocked.'
+    'Prompt registry (v2.16.9, shadow only): the prompts of three AI readers recorded exactly as sent, with their variables, answer formats and models.'
   ],
   bugFixes:[
+    'Models & services › AI failed with "The database took too long to answer": its read worked out each AI service\'s route state once for every value shown (about 225 times instead of 15). It now works it out once per service and loads in about a second.',
+    'The last call of each AI service and the page\'s last changes are found through an index.',
     'The website and Zoho APIs are unchanged (checked against their baseline before and after the change).'
   ]
 }
