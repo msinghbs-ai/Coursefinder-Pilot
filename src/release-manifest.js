@@ -1,18 +1,16 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.6'
-export const PACKAGE_VERSION='0.1.428'
+export const UI_VERSION='2.16.7'
+export const PACKAGE_VERSION='0.1.429'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'16 Nov 2026',
-  title:'Values that were written into the pipeline are now settings (first wave)',
+  title:'Provider onboarding timings are settings',
   changes:[
-    'Nine new settings on Settings › Pipeline settings, each with the value the pipeline already used, so nothing behaves differently until it is changed with a reason: how long a course or provider counts as verified (Re-read and retry, 30 days); when a failed scholarship scheduler step is tried again (Scholarships, 60 minutes); when a course page is searched for again (Course page search, 7 days); when verification counts as stale on the data quality pages (Health report, 180 days); how long progress snapshots are kept and how young evidence is never purged, and evidence audit columns per run (Storage & retention: 90 days, 7 days, 3); when a provider is checked again for zero-yield pages (Zero-yield pages, 23 hours); and when an English policy plan is worked out again (English policies, 30 minutes).',
-    'A scholarship page admitted from its title is next read after Read a scholarship page again after (Re-read and retry), like every other scholarship page; this was the same 90 days written separately.',
-    'Values that are technical, not operational, stay in the code and are marked with the reason (for example a 10-minute hand-over lease, or the page size of a list).',
-    'Settings tidy-up (v2.16.5): the retired-settings paste file can be run from 29 Nov 2026.'
+    'Settings › Pipeline settings › Onboarding: nine new settings for how long each onboarding step waits before it moves on or tries again (a step whose task has ended, course page search, an adapter proposal, applying the adapter, writing admitted values, and scholarships settling). Each starts at the time the pipeline already used, so onboarding behaves exactly as before until one is changed with a reason.',
+    'Values written into the pipeline become settings (v2.16.6): nine settings for re-checks, retries, retention ages and a job size, each at the value already used.'
   ],
   bugFixes:[
     'The website and Zoho APIs are unchanged (checked against their baseline before and after the change).'
