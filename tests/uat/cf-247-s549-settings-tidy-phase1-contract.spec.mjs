@@ -59,7 +59,7 @@ test('the paste file: one transaction, date- and count-guarded, refuses while a 
   expect(P.match(/^begin;$/gm)).toHaveLength(1)
   expect(P.match(/^commit;$/gm)).toHaveLength(1)
   expect(P).toContain('project fxcwkweaxjtknorudmwp ONLY')
-  expect(P).toContain("if v_n <> 46 then raise exception 'refused: % of 46 settings are retiring and past retire_after (30 Nov 2026); nothing was changed', v_n; end if;")
+  expect(P).toContain("if v_n <> 46 then raise exception 'refused: % of 46 settings are retiring and past retire_after (29 Nov 2026); nothing was changed', v_n; end if;")
   expect(P).toContain("or j.jobname in ('course-link-reverse', 'worker-outcome-check');")
   for (const f of ['public.admin_search_pass_start', 'public.admin_toolset_sample_write', 'public.admin_toolset_samples_read', 'security.toolset_pass_backlog',
     'security.calendar_default_intakes_apply_v1']) expect(P).toContain(`'${f}'`)
