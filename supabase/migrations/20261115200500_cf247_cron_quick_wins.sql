@@ -75,9 +75,9 @@ as $function$
 declare v_on boolean := security.pipeline_num_v1('enrich.course_description_stale_supersede_on', 0) >= 1; r record; v_n int := 0; v_ex int := 0; v_by jsonb := '{}'::jsonb; v_reason text;
         v_max int := security.pipeline_num_v1('layer4.reconcile_batch', 200)::int;
 begin
-  -- 15 Nov 2026 (job governance quick win 1): the two classes this job retires, read directly with the rules of
-  -- security.course_description_reconcile_v1 (a course no longer active first, then a course that already has a description). Reading them
-  -- through that function also ran the full course description check on every waiting proposal, which this job never uses.
+  -- 15 Nov 2026 (job governance quick win 1): the two classes this job retires, read directly with the rules of the course description
+  -- reconcile (a course no longer active first, then a course that already has a description). Reading them through the reconcile also ran
+  -- the full course description check on every waiting proposal, which this job never uses.
   for r in select i.id item_id, c.id course_id,
                   case when c.lifecycle_status is distinct from 'active' then 'course_inactive' else 'already_filled' end class,
                   i.field_code, i.entity_type, i.entity_id, i.evidence_id
@@ -134,7 +134,8 @@ end $$;
 do $$
 declare v_def text := pg_get_functiondef('security.course_description_retire_stale_v1()'::regprocedure);
 begin
-  if v_def like '%course_description_reconcile_v1%' then raise exception 'post-check: stale-retire still reads through the reconcile function'; end if;
+  -- the call, not a mention: 15 Nov 2026 the first version of this file named the function in a comment and its own post-check refused it
+  if v_def ~ 'course_description_reconcile_v1\s*\(' then raise exception 'post-check: stale-retire still reads through the reconcile function'; end if;
   if not exists (select 1 from pipeline.platform_toolset_settings where toolset_key = 'pipeline' and key = 'search.refresh_time_limit_seconds' and value = to_jsonb(300)) then
     raise exception 'post-check: the search refresh time limit setting is missing';
   end if;

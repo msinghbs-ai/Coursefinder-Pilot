@@ -3,7 +3,7 @@
 -- (CLAUDE.md housekeeping); this file is how the eight switched-off scheduled jobs leave the scheduler.
 -- Approved: Platform Admin 15 Nov 2026 20:38 ("Retire legacy jobs: mark the 8 LEGACY_DISABLED jobs as retiring ... and generate the 14-day
 -- drop paste file"), following the job governance audit of 15 Nov 2026 20:25 (project doc claude/cron-governance-audit-2026-11-15.md).
--- Prepared by: migration 20261115200000_cf247_cron_quick_wins (marks the last three retiring).
+-- Prepared by: migration 20261115200500_cf247_cron_quick_wins (marks the last three retiring).
 -- Replaces: nothing. Retires: the eight jobs below (cron.unschedule, catalogue row removed, component register row set to retired).
 -- Run PART A now or later; run PART B on or after its retire_after date (29 Nov 2026). Each part is one transaction and refuses to run unless
 -- every job in it is still switched off, still retiring, past retire_after and has not run for hygiene.idle_days. Nothing else is touched:
