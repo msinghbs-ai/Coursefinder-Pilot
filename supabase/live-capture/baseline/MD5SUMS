@@ -1,2 +1,6 @@
+29cc2587c8ff86905e54e924c07be77f  apply-postscript.sql
+f1561819317ed8322eee617c69f016da  apply-preamble.sql
+af21d87ba54796f89cffbacf3bd98edd  permission-fingerprint.sql
+3dd3283e73e7f07111757a399f837d5a  roles-apply.sql
 9d2a94b63ccf758a08c5d3e19d7623e7  roles.sql
-e267e6a00962d845828d4949fd880e2b  schema.sql
+071db0b90117c0ed74d3cec96a7c9073  schema.sql
