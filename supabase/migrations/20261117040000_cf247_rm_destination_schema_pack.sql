@@ -16,6 +16,8 @@
 --   5. Admin: public.admin_destination_overview, admin_destination_review (Curator and above) and admin_destination_set_status (Platform Admin).
 -- G1: no job. G2: three settings destination.* (page size, review list size, postcode share for a primary match; A-3 90%); no number in code.
 -- G3: no consumer API object is read differently, altered, renamed or retyped (v2 untouched; the two new functions are v3 additions).
+-- Issued as 20261117040000: the first file (20261117030000, Pilot #1193) was refused by the deploy step before anything ran, because the
+-- NOT NULL relaxation was written as a top-level "alter table ... drop not null". It now sits in the block beside the constraint changes.
 -- Replaces: nothing.
 -- Retires: nothing.
 
@@ -105,8 +107,9 @@ alter table destination.study_rules
   add column if not exists status_reason text,
   add column if not exists quote_on_page text,
   add column if not exists evidence_date date;
-alter table destination.study_rules alter column visa_subclass drop not null, alter column visa_name drop not null, alter column fee_currency drop not null;
 do $$ begin
+  -- Platform Admin 17 Nov 2026 ("Extend in place": relax the visa-only NOT NULLs): no column, row or object is removed; the table is empty
+  alter table destination.study_rules alter column visa_subclass drop not null, alter column visa_name drop not null, alter column fee_currency drop not null;
   if not exists (select 1 from pg_constraint where conrelid = 'destination.study_rules'::regclass and conname = 'study_rules_rule_category_check') then
     alter table destination.study_rules
       add constraint study_rules_rule_category_check check (rule_category is null or rule_category in

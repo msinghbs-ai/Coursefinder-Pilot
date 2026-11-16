@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261117030000_cf247_rm_destination_schema_pack.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations/20261117040000_cf247_rm_destination_schema_pack.sql', 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const web = fs.readFileSync('supabase/functions/website-api-v3/index.ts', 'utf8')
 const zoho = fs.readFileSync('supabase/functions/zoho-api-v3/index.ts', 'utf8')
@@ -17,6 +17,8 @@ test('extend in place: the 20261115190000 tables are altered, never created agai
   expect(code).toContain('alter table destination.study_rules\n  add column if not exists state_code text,')
   expect(code).toContain('alter table destination.career_outcomes\n  add column if not exists locality_id uuid references destination.localities(id) on delete restrict,')
   expect(code).not.toMatch(/drop (table|column|function|schema|trigger|index)/i)
+  // the deploy step (scripts/ci/apply-migration.sh) refuses these at the start of a line; 20261117030000 was refused for one, so the same test runs here before merge
+  expect(m).not.toMatch(/^(drop|delete|truncate)\b|^alter table .* drop /im)
   expect(code).not.toMatch(/destination_(import|row_guard|edition_guard|edition_publish|edition_set_terms)_v1\s*\(/) // the importer and guards of 20261115230000 are not replaced
 })
 

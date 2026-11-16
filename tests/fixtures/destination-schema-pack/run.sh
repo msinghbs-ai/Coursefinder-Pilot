@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Guards: Admin destination data design v1.6 (roadmap schema pack, Platform Admin 17 Nov 2026 07:39; RM0C, RM0D, RM0E, RM0F) and G4 database-backed tests:
-# migration 20261117030000 on top of 20261115190000 and 20261115230000 runs on an isolated PostgreSQL 16 (fixtures only, never a Supabase project). It proves:
+# migration 20261117040000 on top of 20261115190000 and 20261115230000 runs on an isolated PostgreSQL 16 (fixtures only, never a Supabase project). It proves:
 # the pack applies twice; the #1155 importer still works; the destination read is empty lists before any load and returns only approved or published rows of
 # a published edition inside their effective dates; one primary locality per postcode; a rule is a visa row or a categorised rule; approval is the Platform
 # Admin's; the access history accepts password_reset_sent and still refuses an unknown action.
@@ -12,7 +12,7 @@ case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"
 F=tests/fixtures/destination-schema-pack
 S=supabase/migrations/20261115190000_api_v3_additive_schema.sql; G=supabase/migrations/20261115230000_cf247_destination_importer_guard.sql
-M=supabase/migrations/20261117030000_cf247_rm_destination_schema_pack.sql
+M=supabase/migrations/20261117040000_cf247_rm_destination_schema_pack.sql
 trap '[ -n "${DSP_KEEP:-}" ] || dropdb --if-exists '$DB' >/dev/null 2>&1' EXIT
 dropdb --if-exists $DB >/dev/null 2>&1; createdb $DB
 psql -X -q -d postgres -c "do \$\$ begin if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated; end if; if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon; end if; if not exists (select 1 from pg_roles where rolname = 'service_role') then create role service_role; end if; end \$\$"
