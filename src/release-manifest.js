@@ -1,22 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.16'
-export const PACKAGE_VERSION='0.1.438'
+export const UI_VERSION='2.16.17'
+export const PACKAGE_VERSION='0.1.439'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'17 Nov 2026',
-  title:'Invitations and password resets return to the admin sign-in; catalogue lists export to CSV',
+  title:'CRICOS registrations on the latest register edition are no longer held',
   changes:[
-    'Administration › Users & roles: Reset password emails another person a link to choose a new password (not a Platform Admin, a disabled account or one whose invitation is still open).',
-    'Administration › Users & roles › Create user: an invitation can carry the person\'s full name; the email names their role and links the Platform guide.',
-    'Invitation and reset links open the StudySearch Admin sign-in, which asks for the new password first. The sign-in screen has Forgot password? for your own account.',
-    'Providers, Courses, Locations and Scholarships catalogues: Export CSV writes the whole filtered list, with the visible columns or all columns (opens in Excel).'
+    'Course recognition: a CRICOS registration whose row in the latest register edition is still waiting to be applied counts as listed, so its course is served with its recognition again.',
+    'Course detail and Layer 2/3 › Operations › Data Delivery: a held registration now reads "not on the latest CRICOS edition", with what releases it.'
   ],
   bugFixes:[
-    'An invited person was signed in by the link but never asked to choose a password; they now set it on arrival.',
-    'The website and Zoho APIs are unchanged (no database change in this release).'
+    'Register end dates: 1,596 registrations that the 11 Nov CRICOS edition lists were shown as ended on 1 Oct; the daily job now restores them. The 701 registrations that left the register stay held.'
   ]
 }
 

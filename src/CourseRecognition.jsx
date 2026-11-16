@@ -10,7 +10,8 @@ import{fmtDate}from'./lib/format.js'
 function FactCard({label,value,sub,children,tone='',id}){return <div className={`ds-card${tone?' tone-'+tone:''}`} data-ds-card={id||label}>
   <small>{label}</small>{value!=null&&<strong>{value}</strong>}{children&&<div className="ds-card-body">{children}</div>}{sub&&<span className="ds-sub">{sub}</span>}</div>}
 
-const HELD={registration_dates_inconsistent:'Held: the registration is active but its end date has passed. Layer 1 (F-DISC) reconciles it.',
+const HELD={not_on_latest_register_edition:'Held: this registration is not on the latest CRICOS edition. It is released by itself if a later edition lists it; its removal waits for the register departures approval.',
+  registration_dates_inconsistent:'Held: the registration is active but its end date has passed. Layer 1 (F-DISC) reconciles it.',
   registration_source_missing:'Held: the registration has no active public source.'}
 
 export default function CourseRecognition({courseId,client=null}){
