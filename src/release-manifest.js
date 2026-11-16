@@ -1,18 +1,21 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.13'
-export const PACKAGE_VERSION='0.1.435'
+export const UI_VERSION='2.16.14'
+export const PACKAGE_VERSION='0.1.436'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'16 Nov 2026',
-  title:'Course descriptions: earlier readings the platform set aside no longer count as a person\'s refusal',
+  title:'Course descriptions start with the course\'s own facts; every AI call is recorded as it happens',
   changes:[
-    'The course description machine rule is now version cdesc-machine-v2: every first description waiting in Layer 4 is checked again under it.'
+    'Course descriptions are written with prompt cdesc-source-grounded-v3: no opening sentence that only introduces the course ("The <course> at <provider> is a ..."); the first sentence starts with a fact the course page prints.',
+    'Settings › Settings › Course description and deadline: "rules that earn a second model" decides when a description is asked once more of the next model.',
+    'Two telemetry reports, by AI service and model tier and from page discovery to the catalogue, feed the telemetry sheet.'
   ],
   bugFixes:[
-    'Course descriptions waiting in Layer 4 were held as "a person decided against an earlier description for this course" when the earlier description had only been set aside by the platform (for example when the new description prompt was released). Only a person\'s decision now counts; the waiting descriptions are checked again against every other check, and those that pass are admitted as before.',
+    'Every AI attempt is recorded as soon as it finishes, so a worker call the platform stops part-way no longer loses the cost of the attempts it had already made.',
+    'A course description declined again records the rule version that declined it (cdesc-machine-v2).',
     'The website and Zoho APIs are unchanged (checked against their baseline before and after the change).'
   ]
 }
