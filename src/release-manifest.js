@@ -1,21 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.12'
-export const PACKAGE_VERSION='0.1.434'
+export const UI_VERSION='2.16.13'
+export const PACKAGE_VERSION='0.1.435'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'16 Nov 2026',
-  title:'Services at a glance, and Settings › Integrations',
+  title:'Course descriptions: earlier readings the platform set aside no longer count as a person\'s refusal',
   changes:[
-    'Models & services › Services & limits opens with one summary row per outside service (Firecrawl, Direct HTTP, OpenRouter): its status, its switch and the credit or cap left.',
-    'The Firecrawl and Direct read cards keep their switch, limits and settings in a closed Details section, drawn only when opened. A link to something inside a service (a notice\'s Go, a bookmarked card) opens it.',
-    'Settings › Integrations: the keys for outside services, platform resources and the services overview have their own tab; the Settings tab shows the settings only.'
+    'The course description machine rule is now version cdesc-machine-v2: every first description waiting in Layer 4 is checked again under it.'
   ],
   bugFixes:[
-    'Settings tab colours come from the shared colour set.',
-    'No database change; the website and Zoho APIs are unchanged.'
+    'Course descriptions waiting in Layer 4 were held as "a person decided against an earlier description for this course" when the earlier description had only been set aside by the platform (for example when the new description prompt was released). Only a person\'s decision now counts; the waiting descriptions are checked again against every other check, and those that pass are admitted as before.',
+    'The website and Zoho APIs are unchanged (checked against their baseline before and after the change).'
   ]
 }
 
