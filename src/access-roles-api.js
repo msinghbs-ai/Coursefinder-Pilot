@@ -20,10 +20,14 @@ async function invoke(body) {
 
 export const accessApi = {
   list: () => invoke({ action: 'list' }),
-  create: ({ email, mode = 'invite', password = '', roles = [], expiresAt = null }) => invoke({
+  // CF-247 (Platform Admin 16 Nov 2026 22:12): an invitation carries the person's name; the server adds the role, the guide address and the
+  // admin sign-in address (redirectTo) for the Supabase email template
+  create: ({ email, mode = 'invite', password = '', roles = [], expiresAt = null, fullName = '' }) => invoke({
     action: 'create', email, mode, password: mode === 'password' ? password : undefined,
-    roles, expires_at: expiresAt,
+    roles, expires_at: expiresAt, full_name: mode === 'invite' ? fullName : undefined,
   }),
+  // CF-247 (Platform Admin 16 Nov 2026 22:12): a password reset email to another person's account (not a Platform Admin); the link returns to the admin sign-in
+  resetPassword: (userId) => invoke({ action: 'reset_password', user_id: userId }),
   replaceRoles: ({ userId, roles = [], expiresAt = null }) => invoke({
     action: 'roles', user_id: userId, roles, expires_at: expiresAt,
   }),

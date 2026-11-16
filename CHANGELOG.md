@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.438 — 17 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.16** (Platform Admin 16 Nov 2026 22:12; overnight Admin UI task). No migration. (1) Users & roles: Reset password for non-Admin accounts (edge function `admin-user-management` action `reset_password`, redirectTo = the admin sign-in on the Cloudflare Worker); invitations carry `redirectTo` and `data { role, role_code, guide_url, full_name }` for the Supabase template; a set-password screen after an invitation or reset link; Forgot password? on the sign-in screen. (2) Catalogue CSV export on the shared catalogue table (`src/lib/csv-export.js`, `src/CsvExport.jsx`): visible or all columns, every filtered row, RFC 4180, UTF-8 with BOM. Specs `s568`, `s569`.
+
 ## 0.1.437 — 16 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.15** (Platform Admin 16 Nov 2026 22:30; RM1A-2, O28). Migration 20261116200000_cf247_rm1a2_asced_field_codes_v3. (1) API v3 course detail (Website and Zoho) returns `field_of_study_codes[]`: the ASCED narrow-field codes the CRICOS register prints, read from `catalogue.course_field_observations` with source and stored evidence; Zoho v3 course detail also returns `recognition[]`. (2) Course detail Recognition card and Data Delivery panel show the codes and coverage. No table added; v2 APIs unchanged.

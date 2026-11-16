@@ -1,19 +1,22 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.15'
-export const PACKAGE_VERSION='0.1.437'
+export const UI_VERSION='2.16.16'
+export const PACKAGE_VERSION='0.1.438'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'16 Nov 2026',
-  title:'Field-of-study codes from the national register on course detail',
+  date:'17 Nov 2026',
+  title:'Invitations and password resets return to the admin sign-in; catalogue lists export to CSV',
   changes:[
-    'Course detail: the Recognition card also shows the field of education codes the CRICOS register prints for the course (first and second field).',
-    'Layer 2/3 › Operations › Data Delivery: the Course recognition panel counts the courses served with register field codes, those with a second field, and superseded first fields left out.'
+    'Administration › Users & roles: Reset password emails another person a link to choose a new password (not a Platform Admin, a disabled account or one whose invitation is still open).',
+    'Administration › Users & roles › Create user: an invitation can carry the person\'s full name; the email names their role and links the Platform guide.',
+    'Invitation and reset links open the StudySearch Admin sign-in, which asks for the new password first. The sign-in screen has Forgot password? for your own account.',
+    'Providers, Courses, Locations and Scholarships catalogues: Export CSV writes the whole filtered list, with the visible columns or all columns (opens in Excel).'
   ],
   bugFixes:[
-    'The website and Zoho v2 APIs are unchanged (checked against their baseline before and after the change).'
+    'An invited person was signed in by the link but never asked to choose a password; they now set it on arrival.',
+    'The website and Zoho APIs are unchanged (no database change in this release).'
   ]
 }
 

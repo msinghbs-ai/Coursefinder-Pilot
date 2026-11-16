@@ -3,6 +3,21 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 
 const WORKER_ORIGIN = "https://coursefinder-pilot.techm.workers.dev";
 const LOCAL_ORIGINS = new Set(["http://localhost:5173", "http://127.0.0.1:5173"]);
+// CF-247 invite and reset links (Platform Admin 16 Nov 2026 22:12): every Supabase Auth email this function sends returns the person to the
+// admin sign-in on the Cloudflare Worker, never to the Supabase project address. ADMIN_LOGIN_URL may override it (an https address that is not
+// a supabase.co one); otherwise the Worker origin above. Supabase Auth honours redirectTo only if the address is in Authentication > URL
+// Configuration > Redirect URLs (a dashboard setting; admin repo docs/paste/PASTE-20261117-supabase-invite-email-template.md).
+function adminLoginUrl(): string {
+  const raw = String(Deno.env.get("ADMIN_LOGIN_URL") || "").trim();
+  try {
+    const u = new URL(raw);
+    if (u.protocol === "https:" && !/(^|\.)supabase\.co$/i.test(u.hostname)) return u.origin + (u.pathname.endsWith("/") ? u.pathname : u.pathname + "/");
+  } catch { /* not set or not an address: the Worker origin */ }
+  return WORKER_ORIGIN + "/";
+}
+// The in-app Platform guide (nav-map slug platform-guide), sent with an invitation as {{ .Data.guide_url }}
+const guideUrl = (login: string) => login + "#platform-guide";
+const SYSTEM_EMAIL = /\.invalid$/i;
 const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -141,6 +156,7 @@ Deno.serve(async (req: Request) => {
       const roles = cleanRoles(body?.roles);
       const mode = String(body?.mode || "invite").toLowerCase() === "password" ? "password" : "invite";
       const expiresAt = parseExpiry(body?.expires_at);
+      const fullName = String(body?.full_name || "").replace(/\s+/g, " ").trim().slice(0, 120);
       if (!emailRe.test(email)) return reply(req, 400, { error: "valid_email_required" });
       if (!roles.length) return reply(req, 400, { error: "at_least_one_role_required" });
 
@@ -157,8 +173,21 @@ Deno.serve(async (req: Request) => {
         if (error || !data?.user) return reply(req, 409, { error: error?.message || "user_create_failed" });
         createdUser = data.user;
       } else {
+        // the invitation's template reads {{ .Data.role }}, {{ .Data.full_name }} and {{ .Data.guide_url }}; the role is the highest selected one
+        const { data: snap } = await serviceClient.rpc("svc_admin_access_snapshot");
+        const known = (Array.isArray(snap?.roles) ? snap.roles : []).filter((r: any) => roles.includes(String(r.code)));
+        const top = known.sort((a: any, b: any) => Number(b.rank || 0) - Number(a.rank || 0))[0] || null;
+        const login = adminLoginUrl();
         const { data, error } = await serviceClient.auth.admin.inviteUserByEmail(email, {
-          data: { created_via: "coursefinder_admin", account_purpose: "staff" },
+          redirectTo: login,
+          data: {
+            created_via: "coursefinder_admin",
+            account_purpose: "staff",
+            role: top ? String(top.name || top.code) : roles[0],
+            role_code: top ? String(top.code) : roles[0],
+            guide_url: guideUrl(login),
+            full_name: fullName || null,
+          },
         });
         if (error || !data?.user) return reply(req, 409, { error: error?.message || "user_invite_failed" });
         createdUser = data.user;
@@ -182,7 +211,7 @@ Deno.serve(async (req: Request) => {
         p_action: eventAction,
         p_before_state: {},
         p_after_state: { email, roles: roleState?.roles || [], confirmed: mode === "password" },
-        p_metadata: { mode },
+        p_metadata: { mode, redirect_to: mode === "invite" ? adminLoginUrl() : null },
       });
       return reply(req, 201, { ok: true, user: { id: createdUser.id, email: createdUser.email || email, mode, roles: roleState?.roles || [] } });
     }
@@ -230,6 +259,33 @@ Deno.serve(async (req: Request) => {
         p_metadata: {},
       });
       return reply(req, 200, { ok: true, user_id: targetUserId, disabled: action === "disable" });
+    }
+
+    // CF-247 (Platform Admin 16 Nov 2026 22:12): a Platform Admin sends a password reset email to another person's account. Not to their own
+    // account (they reset it from the sign-in screen), not to another Platform Admin, not to the system account, not to a disabled account and
+    // not before the invitation is accepted (the invitation link sets the first password). The link returns to the admin sign-in (redirectTo).
+    if (action === "reset_password") {
+      const targetUserId = String(body?.user_id || "");
+      if (!uuidRe.test(targetUserId)) return reply(req, 400, { error: "valid_user_id_required" });
+      if (targetUserId === actorUserId) return reply(req, 409, { error: "reset_own_password_from_sign_in" });
+      const { data: target, error: targetError } = await serviceClient.auth.admin.getUserById(targetUserId);
+      if (targetError || !target?.user) return reply(req, 404, { error: "target_user_not_found" });
+      const email = String(target.user.email || "");
+      if (!emailRe.test(email) || SYSTEM_EMAIL.test(email)) return reply(req, 409, { error: "system_account_has_no_reset" });
+      if (target.user.banned_until && new Date(target.user.banned_until).getTime() > Date.now()) return reply(req, 409, { error: "account_disabled_enable_first" });
+      if (!target.user.email_confirmed_at) return reply(req, 409, { error: "invitation_not_yet_accepted" });
+      const { data: snap, error: snapError } = await serviceClient.rpc("svc_admin_access_snapshot");
+      if (snapError) throw new Error("access_snapshot_failed");
+      const now = Date.now();
+      const isAdmin = (Array.isArray(snap?.assignments) ? snap.assignments : []).some((a: any) =>
+        String(a.user_id) === targetUserId && a.role_code === "platform_admin" && (!a.expires_at || new Date(a.expires_at).getTime() > now));
+      if (isAdmin) return reply(req, 409, { error: "platform_admin_resets_own_password" });
+      const login = adminLoginUrl();
+      const { error: sendError } = await serviceClient.auth.resetPasswordForEmail(email, { redirectTo: login });
+      if (sendError) return reply(req, 400, { error: sendError.message || "password_reset_failed" });
+      // Not written to the access history yet: its action list (user_created, user_invited, roles_replaced, user_disabled, user_enabled) is a
+      // database check, and widening it is a migration of its own. Supabase Auth keeps the recovery request in its own audit log.
+      return reply(req, 200, { ok: true, user_id: targetUserId, sent_to: email });
     }
 
     // 16 Oct 2026 (Platform Admin: "only Platform admin should be able to delete the user from UI, Platform admins roles user can't be

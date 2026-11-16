@@ -1,7 +1,7 @@
-<!-- sop-export: id=operator-sop; version=2.22; reviewed-release=2.16.15; source-commit=7fed0c99aa43+local; content-sha256=2d09b0604c74d00d6c667986f99fd08411aff03cd6015b5bc11ab72847331098 -->
+<!-- sop-export: id=operator-sop; version=2.23; reviewed-release=2.16.16; source-commit=3fa05b381a8b+local; content-sha256=b692495e1f7b673d873c0507a0ff9b2b70130fd2561ddb91399d500441ebc52b -->
 # StudySearch – Operator SOP
 
-**Version:** 2.22 (reviewed for platform release v2.16.15)  
+**Version:** 2.23 (reviewed for platform release v2.16.16)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -115,6 +115,7 @@ How operators keep the data flowing and decide what automation cannot: the revie
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.23 | 17 Nov 2026 | v2.16.16 | Providers, Courses, Locations and Scholarships: Export CSV › Export visible columns or Export all columns writes the whole filtered list to a file Excel opens. Sign-in: Forgot password? sends your own reset link. |
 | 2.22 | 14 Nov 2026 | v2.16.1 | When AI work stops: read the limits banner at the top of Models & services › AI and the reasons listed under the service's state; a running row whose last call failed says so. |
 | 2.21 | 13 Nov 2026 | v2.16.0 | Models & services › AI is one page of four panes; when AI work stops, read the state line and the service row there and tell the Platform Admin. Scholarship extraction is configured under the Scholarship pages service; its results stay on Scholarships › Coverage. |
 | 2.20 | 11 Nov 2026 | v2.15.494 | Provider descriptions: Fill description on a provider record; deciding the provider descriptions that wait in Layer 4; a description typed by hand is never replaced. |
