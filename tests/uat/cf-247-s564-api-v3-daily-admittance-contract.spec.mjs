@@ -16,7 +16,7 @@ test('every API v3 and request-register field is counted, with its REQ id in the
   for (const f of ['v3_study_load', 'v3_empty_reason', 'v3_campus_primary', 'v3_accreditations', 'v3_grade_normalised', 'v3_destination', 'p_entry_matrix', 'p_registrations']) {
     expect(code).toContain(`'${f}'`)
   }
-  for (const r of ["'REQ-52'", "'REQ-53'", "'REQ-57 (D-4)'", "'REQ-75 (D-3)'", "'REQ-19'", "'REQ-65, REQ-67, REQ-68'"]) expect(code).toContain(r)
+  for (const r of ["'REQ-52'", "'REQ-53'", "'REQ-75 (D-4)'", "'REQ-57 (D-3)'", "'REQ-19'", "'REQ-65, REQ-67, REQ-68'"]) expect(code).toContain(r)
   expect(code).toContain('td.filled - yd.filled')
   expect(code).toContain('f.snapshot_date = d.t - 1')
 })

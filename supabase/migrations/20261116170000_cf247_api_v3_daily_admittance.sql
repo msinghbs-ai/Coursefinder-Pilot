@@ -13,8 +13,8 @@
 -- Fields (country = the provider's coverage country; v3 = API v3 field, p_ = provider level):
 --   v3_study_load (REQ-52)        active courses; admitted = study_load held
 --   v3_empty_reason (REQ-53)      active courses with no campus; admitted = empty_reason_code held
---   v3_campus_primary (REQ-57)    providers with an active campus; admitted = one campus marked primary
---   v3_accreditations (REQ-75)    providers with active courses; admitted = at least one accreditation row
+--   v3_campus_primary (REQ-75)    providers with an active campus; admitted = one campus marked primary
+--   v3_accreditations (REQ-57)    providers with active courses; admitted = at least one active accreditation (AACSB, EQUIS, AMBA)
 --   v3_grade_normalised (REQ-19)  active entry matrix rows; admitted = 0 until PR E adds the normalisation table (PR E replaces this line)
 --   v3_destination (REQ-65/67)    destination rows (AU); admitted = rows in a published edition with approved terms
 --   p_entry_matrix                providers with active courses; admitted = at least one active entry matrix row
@@ -45,7 +45,7 @@ as $function$
   select ap.cc, 'v3_campus_primary', count(*), count(*) filter (where exists (select 1 from catalogue.campuses k where k.provider_id = ap.id and k.is_primary))
     from ap where exists (select 1 from catalogue.campuses k where k.provider_id = ap.id and k.status = 'active') group by ap.cc
   union all
-  select ap.cc, 'v3_accreditations', count(*), count(*) filter (where exists (select 1 from catalogue.provider_accreditations a where a.provider_id = ap.id))
+  select ap.cc, 'v3_accreditations', count(*), count(*) filter (where exists (select 1 from catalogue.provider_accreditations a where a.provider_id = ap.id and a.status = 'active'))
     from ap group by ap.cc
   union all
   select ap.cc, 'v3_grade_normalised', count(*), 0::bigint  -- PR E: admitted rows from the normalisation table
@@ -75,7 +75,7 @@ set search_path = pg_catalog, public
 as $function$
   with d as (select coalesce(p_date, (select max(f.snapshot_date) from pipeline.field_coverage_daily f)) t),
   m(field, req_ids, ord) as (values
-    ('v3_study_load', 'REQ-52', 1), ('v3_empty_reason', 'REQ-53', 2), ('v3_campus_primary', 'REQ-57 (D-4)', 3), ('v3_accreditations', 'REQ-75 (D-3)', 4),
+    ('v3_study_load', 'REQ-52', 1), ('v3_empty_reason', 'REQ-53', 2), ('v3_campus_primary', 'REQ-75 (D-4)', 3), ('v3_accreditations', 'REQ-57 (D-3)', 4),
     ('v3_grade_normalised', 'REQ-19', 5), ('v3_destination', 'REQ-65, REQ-67, REQ-68', 6), ('official_url', 'core', 7), ('description', 'core', 8),
     ('academic_entry', 'core', 9), ('english', 'core', 10), ('intakes', 'core', 11), ('provider_tuition', 'core', 12), ('registered_tuition', 'core', 13),
     ('p_entry_matrix', 'core', 14), ('p_registrations', 'core', 15)),
