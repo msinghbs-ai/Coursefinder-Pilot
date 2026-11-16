@@ -71,7 +71,7 @@ test('gold matching: flat form, every part needed', () => {
 
 test('worker mode lean_sections_eval: stored copies only, no AI, no Firecrawl, nothing admitted; no reader uses the selector', () => {
   expect(IX).toMatch(/const WORKER = "coverage-sweep-worker-v0\.89\.0";|\/\/ was v0\.89\.0 \(#1136\) \/\/ v0\.89\.0 \(14 Nov 2026, numbered after #1137/)  // current, or kept as "was" by a later worker (v0.90.0 merges #1128)
-  expect(IX).toContain('import { BLOCK_INPUT, LEAN_SECTIONS, SECTION_DEFAULTS, blockPlain, holds, selectSections } from "./lean-sections.ts";')
+  expect(IX).toContain('import { BLOCK_INPUT, LEAN_SECTIONS, SECTION_DEFAULTS, blockPlain, holds, longPageWindow, selectSections } from "./lean-sections.ts";')
   expect(IX).toContain('const ab = aerV3Blocks(leanText(raw), di), whole = blockPlain(ab), sel = selectSections(ab, f, SEC_OPT);')
   expect(IX).toContain('const selText = sel.no_selection ? whole : sel.plain;')  // v0.92.0: nothing selected means the page is sent whole (design §3)
   const a = IX.indexOf('if (mode === "lean_sections_eval")'), b = IX.indexOf('if (mode === "central_ai")')
@@ -85,6 +85,10 @@ test('worker mode lean_sections_eval: stored copies only, no AI, no Firecrawl, n
   // the selector is used by the recall check, (v0.92.0, Phase 1b step 2) by the shadow beside live reads and (v0.94.0, 1b-3) by the
   // fees and intakes qualification on stored pages, nowhere else: no reader that admits values is sent the selection
   expect(IX.split('selectSections(').length - 1).toBe(3)
+  // v1.0.6 (Platform Admin 16 Nov 2026 16:52, AER long pages; guarded by s561): the one exception. The AER v2 reader (benchmark and shadow modes,
+  // neither admits values) is sent the entry requirement sections of a page longer than its limit, through longPageWindow only, behind the
+  // switch reading.aer_v2_long_page_sections_on (ships 0), and its answer is verified against the whole page.
+  expect(IX.split('longPageWindow(blocks, pageChars, longOn)').length - 1).toBe(2)
 })
 
 test('the migration: independent labels only, settings for switch, batch and sample, catalogued job, read-only report; nothing dropped', () => {

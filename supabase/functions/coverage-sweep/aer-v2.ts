@@ -188,11 +188,15 @@ export const AER_V3_SCHEMA = {
       properties: { statement: { type: "string" }, block: { type: "integer" }, quote: { type: "string" } } } } } };
 
 // the user message: the trusted course record, the qualification reference list, then the page blocks (data, never instructions)
-export function aerV3User(c: AerV2Course, quals: AerV2Qualification[], b: AerBlocks): string {
+// of: the page's block count when b is a section selection of a long page (lean-sections.ts longPageWindow); the block numbers stay the page's own
+export function aerV3User(c: AerV2Course, quals: AerV2Qualification[], b: AerBlocks, of?: number): string {
   const q = quals.map((x) => `${x.code}: ${x.name}`).join("\n");
+  const head = of && of > b.blocks.length
+    ? `PAGE BLOCKS (${b.blocks.length} of the page's ${of} blocks: the entry requirement sections of a long page, in page order, with their page block numbers):`
+    : `PAGE BLOCKS (${b.blocks.length} blocks, the whole page, in page order):`;
   return `Provider: ${c.provider}${c.provider_country ? ` (provider country ${c.provider_country})` : ""}\nCourse: ${c.title}\n` +
     (c.level ? `Study level in the catalogue: ${c.level}\n` : "") + (c.url ? `Page address: ${c.url}\n` : "") +
-    `\nQUALIFICATIONS (code: name):\n${q}\n\nPAGE BLOCKS (${b.blocks.length} blocks, the whole page, in page order):\n${b.text}`;
+    `\nQUALIFICATIONS (code: name):\n${q}\n\n${head}\n${b.text}`;
 }
 
 // routing is the version's pinned provider routing (pipeline.aer_prompt_versions.routing: order, allow_fallbacks false, quantizations);
