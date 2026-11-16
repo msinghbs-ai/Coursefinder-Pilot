@@ -24,7 +24,8 @@ test('every read action of both v3 APIs is in the dictionary', () => {
   const writes = new Set(['report'])   // a counsellor report is a write, described in the guide's request table
   const web = actions('supabase/functions/website-api-v3/index.ts')
   const zoho = actions('supabase/functions/zoho-api-v3/index.ts').filter((a) => !writes.has(a))
-  const held = (s) => new Set(doc.fields.filter((f) => f.api_surface === s).map((f) => f.endpoint.split(':')[0]))
+  // 17 Nov 2026 (roadmap schema pack, RM0E): an action added since the last reviewed issue is described under pending_fields (with a pending_reason) until the next issue loads it
+  const held = (s) => new Set([...doc.fields, ...(doc.pending_fields || [])].filter((f) => f.api_surface === s).map((f) => f.endpoint.split(':')[0]))
   for (const a of web) expect(held('website').has(a), `website ${a}`).toBe(true)
   for (const a of zoho) expect(held('zoho').has(a), `zoho ${a}`).toBe(true)
 })

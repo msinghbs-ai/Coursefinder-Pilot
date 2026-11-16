@@ -1,19 +1,20 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.17'
-export const PACKAGE_VERSION='0.1.439'
+export const UI_VERSION='2.16.18'
+export const PACKAGE_VERSION='0.1.440'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'17 Nov 2026',
-  title:'CRICOS registrations on the latest register edition are no longer held',
+  title:'Destination data schema ready for loading; API v3 gains the destination action',
   changes:[
-    'Course recognition: a CRICOS registration whose row in the latest register edition is still waiting to be applied counts as listed, so its course is served with its recognition again.',
-    'Course detail and Layer 2/3 › Operations › Data Delivery: a held registration now reads "not on the latest CRICOS edition", with what releases it.'
+    'API v3 (website and Zoho): a new destination action returns approved localities with their figures, study rules and career outcomes. It returns empty lists until data is loaded and approved.',
+    'Destination data: tables for localities, postcode shares, locality figures and rule applicability are in place, ready for bulk loading. Approval of destination rows is the Platform Admin\'s, with a reason.',
+    'Settings › Pipeline settings › Destination data: three new settings (largest API page, review list size, postcode share for a primary locality match, 90%).'
   ],
   bugFixes:[
-    'Register end dates: 1,596 registrations that the 11 Nov CRICOS edition lists were shown as ended on 1 Oct; the daily job now restores them. The 701 registrations that left the register stay held.'
+    'Administration › Users & roles: the access history can now record a password reset email (recorded from the next release of the reset action). The website and Zoho v2 APIs are unchanged.'
   ]
 }
 

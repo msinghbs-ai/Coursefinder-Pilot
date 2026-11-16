@@ -1,0 +1,39 @@
+# Guards: Admin destination data design v1.6 (roadmap schema pack, Platform Admin 17 Nov 2026 07:39; RM0C, RM0D, RM0E, RM0F) and G4 database-backed tests: migration 20261117030000 on top of 20261115190000 and 20261115230000 runs its tables, read path, approval and access-history rules on an isolated PostgreSQL 16 (fixtures only, never a Supabase project).
+name: Destination schema pack integration
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/20261115190000_api_v3_additive_schema.sql'
+      - 'supabase/migrations/20261115230000_cf247_destination_importer_guard.sql'
+      - 'supabase/migrations/20261117030000_cf247_rm_destination_schema_pack.sql'
+      - 'tests/fixtures/destination-editions/stubs.sql'
+      - 'tests/fixtures/destination-schema-pack/**'
+      - '.github/workflows/destination-schema-pack-test.yml'
+  workflow_dispatch:
+jobs:
+  isolated-postgres:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: fixture-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: fixture-only
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash tests/fixtures/destination-schema-pack/run.sh | tee destination-schema-pack-results.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: destination-schema-pack-database-evidence
+          path: destination-schema-pack-results.log

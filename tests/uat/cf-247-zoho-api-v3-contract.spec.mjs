@@ -41,10 +41,11 @@ test('zoho-api-v3 is zoho-api-v2 with the v3 function names: same keys, rate lim
   const changed = b.filter((l) => !a.includes(l))
   // only the lines that name a v3 function, the version label, the log label, edu_country and the linked-course paging differ
   expect(changed.length).toBeLessThanOrEqual(22)
-  for (const l of changed) expect(l).toMatch(/zoho_v3_|zoho-v3|v3:\$\{action\}|edu_country|zoho_api_v3_error/)
+  for (const l of changed) expect(l).toMatch(/zoho_v3_|zoho-v3|v3:\$\{action\}|edu_country|zoho_api_v3_error|"destination"\]/)
   expect(V3).toContain('svc.rpc("zoho_v2_auth"'); expect(V3).toContain('svc.rpc("zoho_v2_rate"'); expect(V3).toContain('svc.rpc("zoho_v2_log"')
   expect(V3).toContain('p_action: action ? `v3:${action}` : action')
-  expect(V3.match(/const ACTIONS = \[[^\]]+\]/)[0]).toBe(V2.match(/const ACTIONS = \[[^\]]+\]/)[0])
+  // 17 Nov 2026 (roadmap schema pack, RM0E; Zoho v3 additive changes merge on green): v3 has the v2 actions plus destination
+  expect(V3.match(/const ACTIONS = \[[^\]]+\]/)[0]).toBe(V2.match(/const ACTIONS = \[[^\]]+\]/)[0].replace('"report_status"]', '"report_status", "destination"]'))
   expect(V3).not.toMatch(/NOT_RELEASED|zoho_v3_call/)
   expect(V3).not.toMatch(/fn = "zoho_v2_/)
   expect(EDGE.functions['zoho-api-v3']).toBe(EDGE.functions['zoho-api-v2'])
