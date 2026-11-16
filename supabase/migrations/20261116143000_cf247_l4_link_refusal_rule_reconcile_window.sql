@@ -23,6 +23,7 @@
 -- G1: no new job (the PR 1 and PR 2 dispatcher cutovers are not touched; a standing schedule for the rule, if wanted, is an admission rule row
 -- after the PR 2 cutover). G2: five settings with label, range, unit and used_by; only the system automation account id and the audit sample's
 -- hash width are fixed (marked). G3: no consumer API object is read or changed (security.consumer_api_check_v1() before and after).
+-- Renumbered from 20261116110000 (Pilot #1177, never applied: that version was taken by #1162 the same afternoon; deploy refused it, nothing ran).
 -- Replaces: security.layer4_reconcile_v1(text,integer) (same name and signature; body md5-guarded).
 -- Retires: nothing. Nothing is dropped or deleted.
 
@@ -58,11 +59,11 @@ with u as (
   update pipeline.platform_toolset_settings
      set value = '200'::jsonb, updated_at = now(),
          help = 'At most this many waiting items are superseded in one run. The run checks up to Layer 4: waiting items checked a run, continuing where the last run stopped.',
-         reason = 'Migration 20261116110000: the setting now caps items settled (as labelled), not items examined; examined items have their own setting (layer4.reconcile_examine_max). Back to 200 from the 3000 interim of 16 Nov 2026 16:27 AEDT'
+         reason = 'Migration 20261116143000: the setting now caps items settled (as labelled), not items examined; examined items have their own setting (layer4.reconcile_examine_max). Back to 200 from the 3000 interim of 16 Nov 2026 16:27 AEDT'
    where toolset_key = 'pipeline' and key = 'layer4.reconcile_batch'
   returning key)
 insert into pipeline.admin_control_events(area, action, target, detail, actor)
-select 'settings', 'migration', 'layer4.reconcile_batch', jsonb_build_object('migration', '20261116110000', 'after', 200,
+select 'settings', 'migration', 'layer4.reconcile_batch', jsonb_build_object('migration', '20261116143000', 'after', 200,
        'why', 'p_limit of security.layer4_reconcile_v1 now caps items settled; examined items are capped by layer4.reconcile_examine_max'), null from u;
 
 -- 2. Run records
@@ -253,7 +254,7 @@ revoke all on function security.layer4_course_link_refusal_rule_v1(int, boolean)
 do $g$
 declare v_md5 text := (select md5(p.prosrc) from pg_proc p where p.oid = 'security.layer4_reconcile_v1(text,integer)'::regprocedure);
 begin
-  if v_md5 not in ('5ec45998c27babfb92d024b0c60d1265', '2ceb891c50a494c2508bbd823cddc0c2') then
+  if v_md5 not in ('5ec45998c27babfb92d024b0c60d1265', '641ff18954c6c5006b3f7dacca6cdf1e') then
     raise exception 'live security.layer4_reconcile_v1 differs from the definition this change replaces (body md5 %)', v_md5;
   end if;
 end $g$;
@@ -263,7 +264,7 @@ returns jsonb language plpgsql security definer set search_path = '' as $functio
 -- While layer4.reconcile_supersede_on is 1: waiting items of p_kind (or of every kind in layer4.platform_kinds when null) that the platform can
 -- settle are superseded (status superseded, decided_at, the reason on change_control_ref; pipeline.layer4_supersessions holds the reason, the
 -- covering item and the evidence). Never approves or rejects; never touches a lock. Off: counts only. {on, examined, superseded, by_reason}.
--- 16 Nov 2026 (migration 20261116110000): p_limit caps the items superseded; at most layer4.reconcile_examine_max items are checked, and a run over
+-- 16 Nov 2026 (migration 20261116143000): p_limit caps the items superseded; at most layer4.reconcile_examine_max items are checked, and a run over
 -- every kind starts after the item the last such run stopped at (pipeline.layer4_reconcile_cursor), wrapping to the oldest, so no settleable item
 -- waits behind older items for a person. p_limit 0 checks nothing.
 declare r record; v_res jsonb; v_on boolean := security.pipeline_num_v1('layer4.reconcile_supersede_on', 0) >= 1; v_n int := 0; v_ex int := 0;
@@ -308,15 +309,15 @@ end $function$;
 do $g$
 declare v_md5 text := (select md5(p.prosrc) from pg_proc p where p.oid = 'security.layer4_reconcile_v1(text,integer)'::regprocedure);
 begin
-  if v_md5 <> '2ceb891c50a494c2508bbd823cddc0c2' then raise exception 'security.layer4_reconcile_v1 body md5 after the change is %, expected 2ceb891c50a494c2508bbd823cddc0c2', v_md5; end if;
+  if v_md5 <> '641ff18954c6c5006b3f7dacca6cdf1e' then raise exception 'security.layer4_reconcile_v1 body md5 after the change is %, expected 641ff18954c6c5006b3f7dacca6cdf1e', v_md5; end if;
 end $g$;
 
 insert into pipeline.component_register(kind, name, layer, area, purpose, status, replaces, introduced_in) values
-  ('function', 'security.layer4_course_link_refusal_check_v1', 'Layer 4', 'Layer 4', 'Rule l4-link-refusal-v1: which waiting official-link items the finder already refused on negative evidence may be closed, the audit sample, and why not', 'active', '{}', '20261116110000'),
-  ('function', 'security.layer4_course_link_refusal_rule_v1', 'Layer 4', 'Layer 4', 'Rule l4-link-refusal-v1: closes those items through Refuse this proposal under the system automation account (Platform Admin 16 Nov 2026 16:47)', 'active', '{}', '20261116110000'),
-  ('table', 'pipeline.layer4_link_refusal_runs', 'Layer 4', 'Layer 4', 'One row per call of rule l4-link-refusal-v1', 'active', '{}', '20261116110000'),
-  ('table', 'pipeline.layer4_link_refusal_run_items', 'Layer 4', 'Layer 4', 'One row per item a call of rule l4-link-refusal-v1 looked at', 'active', '{}', '20261116110000'),
-  ('table', 'pipeline.layer4_reconcile_cursor', 'Layer 4', 'Layer 4', 'Where the last full-queue platform settlement run stopped, so every waiting item is reached', 'active', '{}', '20261116110000')
+  ('function', 'security.layer4_course_link_refusal_check_v1', 'Layer 4', 'Layer 4', 'Rule l4-link-refusal-v1: which waiting official-link items the finder already refused on negative evidence may be closed, the audit sample, and why not', 'active', '{}', '20261116143000'),
+  ('function', 'security.layer4_course_link_refusal_rule_v1', 'Layer 4', 'Layer 4', 'Rule l4-link-refusal-v1: closes those items through Refuse this proposal under the system automation account (Platform Admin 16 Nov 2026 16:47)', 'active', '{}', '20261116143000'),
+  ('table', 'pipeline.layer4_link_refusal_runs', 'Layer 4', 'Layer 4', 'One row per call of rule l4-link-refusal-v1', 'active', '{}', '20261116143000'),
+  ('table', 'pipeline.layer4_link_refusal_run_items', 'Layer 4', 'Layer 4', 'One row per item a call of rule l4-link-refusal-v1 looked at', 'active', '{}', '20261116143000'),
+  ('table', 'pipeline.layer4_reconcile_cursor', 'Layer 4', 'Layer 4', 'Where the last full-queue platform settlement run stopped, so every waiting item is reached', 'active', '{}', '20261116143000')
 on conflict do nothing;
 
 -- 6. Post-checks

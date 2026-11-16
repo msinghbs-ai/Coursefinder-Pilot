@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const sql = fs.readFileSync('supabase/migrations/20261116110000_cf247_l4_link_refusal_rule_reconcile_window.sql', 'utf8')
+const sql = fs.readFileSync('supabase/migrations/20261116143000_cf247_l4_link_refusal_rule_reconcile_window.sql', 'utf8')
 const code = sql.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const check = code.slice(code.indexOf('create or replace function security.layer4_course_link_refusal_check_v1'), code.indexOf('create or replace function security.layer4_course_link_refusal_rule_v1'))
 const rule = code.slice(code.indexOf('create or replace function security.layer4_course_link_refusal_rule_v1'), code.indexOf('do $g$'))
