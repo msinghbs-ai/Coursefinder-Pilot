@@ -13,17 +13,18 @@
 --   3. security.coverage_lane_run_v1, procedure security.coverage_lane_tick_v1(lane) (jobs coverage-lane-dispatch, -b, -c, every minute) and
 --      security.coverage_lane_shadow_report_v1(hours): as PR 2. Three lanes because the legacy calls take up to 84 s (reextract, contact page)
 --      and share minutes.
--- Scope (read live 16 Nov 23:20 AEDT): the 14 Course pages and Enrichment worker lanes of the coverage-sweep worker on minute schedules:
---   course-link-search-worker, coverage-ai-match, coverage-find-site, coverage-reextract, coverage-reidentify, provider-contact-page, provider-facts, companion-read, course-list-read, credential-read, policy-add-tests, programme-discover, programme-read, source-find.
--- Not taken (reported to the Platform Admin): calendar-reread (an intake calendar lane: S2-Intakes owns F-INT); coverage-read and
+-- Scope (read live 16 Nov 23:20 AEDT; 17 Nov 06:15 AEDT the Platform Admin left coverage-ai-match out, switched off at 06:00): the 13 Course pages and Enrichment worker lanes of the coverage-sweep worker on minute schedules:
+--   course-link-search-worker, coverage-find-site, coverage-reextract, coverage-reidentify, provider-contact-page, provider-facts, companion-read, course-list-read, credential-read, policy-add-tests, programme-discover, programme-read, source-find.
+-- Not taken (reported to the Platform Admin): coverage-ai-match (switched off on live 17 Nov 2026 06:00 AEDT; a later change adds it once it
+--   runs again); calendar-reread (an intake calendar lane: S2-Intakes owns F-INT); coverage-read and
 --   coverage-read-2 (schedule "30 seconds": a minute dispatcher cannot reproduce a sub-minute interval byte for byte); the Scholarships, Layer 2
 --   reading, Platform upkeep and Reports worker jobs (other modules or not coverage lanes); platform-health; every job registered by PR 1
 --   (pipeline.rollup_targets) or PR 2 (pipeline.admission_rules).
--- Shadow only: the 14 legacy jobs keep running exactly as they are. G1: the three dispatcher jobs are catalogued before they are scheduled.
+-- Shadow only: the 13 legacy jobs keep running exactly as they are. G1: the three dispatcher jobs are catalogued before they are scheduled.
 -- G2: eight settings coverage_lane.* (inserted; no existing setting changes); the job commands have no number. G3: no consumer API object is
 -- read or changed. Nothing dropped.
 -- Replaces: nothing (shadow: no legacy job changes).
--- Retires: nothing (the cutover change switches the 14 legacy jobs off and retires them).
+-- Retires: nothing (the cutover change switches the 13 legacy jobs off and retires them).
 
 set local lock_timeout = '5s'; -- fixed: lock wait guard for the catalogue and cron writes below
 
@@ -284,7 +285,7 @@ begin
 end $function$;
 revoke all on function security.coverage_lane_shadow_report_v1(int) from public, anon, authenticated;
 
--- 6. The 14 worker lanes, copied from the live legacy jobs (command and schedule byte for byte); budget = the legacy job's longest run in 7 days
+-- 6. The 13 worker lanes, copied from the live legacy jobs (command and schedule byte for byte); budget = the legacy job's longest run in 7 days
 insert into pipeline.field_execution_registry(lane_code, kind, legacy_job, call_sql, call_md5, schedule, priority, mode, budget_ms, expected_ms, owner, note)
 select j.jobname, 'worker_lane', j.jobname, j.command, md5(j.command), j.schedule, 50, 'shadow',
        (select round(max(extract(epoch from d.end_time - d.start_time)) * 1000)::int
@@ -293,7 +294,7 @@ select j.jobname, 'worker_lane', j.jobname, j.command, md5(j.command), j.schedul
           from cron.job_run_details d where d.jobid = j.jobid and d.status = 'succeeded' and d.start_time > now() - make_interval(days => 7)),
        'S2 - SS Build (Course Module)', 'registered in shadow by 20261116220000; the legacy job still runs'
   from cron.job j
- where j.active and j.jobname in ('course-link-search-worker', 'coverage-ai-match', 'coverage-find-site', 'coverage-reextract', 'coverage-reidentify', 'provider-contact-page', 'provider-facts', 'companion-read', 'course-list-read', 'credential-read', 'policy-add-tests', 'programme-discover', 'programme-read', 'source-find')
+ where j.active and j.jobname in ('course-link-search-worker', 'coverage-find-site', 'coverage-reextract', 'coverage-reidentify', 'provider-contact-page', 'provider-facts', 'companion-read', 'course-list-read', 'credential-read', 'policy-add-tests', 'programme-discover', 'programme-read', 'source-find')
    and not exists (select 1 from pipeline.rollup_targets t where t.legacy_job = j.jobname)
    and not exists (select 1 from pipeline.admission_rules a where a.legacy_job = j.jobname)
 on conflict (lane_code) do nothing;
@@ -361,12 +362,12 @@ begin
   if to_regnamespace('cron') is not null then
     select count(*) into v_n from pipeline.field_execution_registry r join cron.job j on j.jobname = r.legacy_job
      where r.kind = 'worker_lane' and r.mode = 'shadow' and r.call_sql = j.command and r.call_md5 = md5(j.command) and r.schedule = j.schedule and j.active;
-    if v_n <> 14 then raise exception 'post-check: % of 14 coverage lanes match their live legacy job', v_n; end if;
+    if v_n <> 13 then raise exception 'post-check: % of 13 coverage lanes match their live legacy job', v_n; end if;
     if (select count(*) from cron.job where jobname in ('coverage-lane-dispatch', 'coverage-lane-dispatch-b', 'coverage-lane-dispatch-c') and schedule = '* * * * *' and active
           and command in ($j$call security.coverage_lane_tick_v1('a')$j$, $j$call security.coverage_lane_tick_v1('b')$j$, $j$call security.coverage_lane_tick_v1('c')$j$)) <> 3 then
       raise exception 'post-check: the three coverage-lane-dispatch jobs';
     end if;
-    if exists (select 1 from pipeline.field_execution_registry r where r.legacy_job in ('calendar-reread', 'coverage-read', 'coverage-read-2', 'platform-health')
+    if exists (select 1 from pipeline.field_execution_registry r where r.legacy_job in ('calendar-reread', 'coverage-read', 'coverage-read-2', 'coverage-ai-match', 'platform-health')
                  or exists (select 1 from pipeline.rollup_targets t where t.legacy_job = r.legacy_job)
                  or exists (select 1 from pipeline.admission_rules a where a.legacy_job = r.legacy_job)) then
       raise exception 'post-check: a job kept separate or held by another dispatcher was registered';

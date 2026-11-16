@@ -1,4 +1,4 @@
-// Guards: Consolidation PR 3, coverage lane dispatch in shadow (Platform Admin 16 Nov 2026 10:59, 16:26, 16:52 and 22:45): pipeline.field_execution_registry holds the 14 coverage worker lanes registered byte for byte with their own cron schedules (shadow records what was due and runs nothing; the legacy jobs are not touched) and the seven API v3 field lanes declared disabled and never dispatched; three lanes never run a coverage lane twice; live dispatch is budgeted, isolated, md5-guarded and behind a per-lane circuit breaker; calendar-reread, the 30-second coverage-read jobs and every job held by PR 1 or PR 2 stay out
+// Guards: Consolidation PR 3, coverage lane dispatch in shadow (Platform Admin 16 Nov 2026 10:59, 16:26, 16:52 and 22:45): pipeline.field_execution_registry holds the 13 coverage worker lanes (coverage-ai-match left out: switched off on live 17 Nov 06:00, Platform Admin 06:15) registered byte for byte with their own cron schedules (shadow records what was due and runs nothing; the legacy jobs are not touched) and the seven API v3 field lanes declared disabled and never dispatched; three lanes never run a coverage lane twice; live dispatch is budgeted, isolated, md5-guarded and behind a per-lane circuit breaker; calendar-reread, the 30-second coverage-read jobs and every job held by PR 1 or PR 2 stay out
 // CF-247 S567. Migration 20261116220000_cf247_pr3_coverage_lane_dispatch_shadow. 24-hour shadow cycle (CLAUDE.md, cron dispatchers).
 // G1, G2, G3 and housekeeping are guarded centrally by s42, s32 and s57; this spec guards the dispatcher's own behaviour.
 import { test, expect } from '@playwright/test'
@@ -10,19 +10,19 @@ const body = (name) => {
   const i = code.indexOf(`create or replace ${name}`)
   return code.slice(i, code.indexOf('$function$;', i))
 }
-const LANES = ['course-link-search-worker', 'coverage-ai-match', 'coverage-find-site', 'coverage-reextract', 'coverage-reidentify', 'provider-contact-page',
+const LANES = ['course-link-search-worker', 'coverage-find-site', 'coverage-reextract', 'coverage-reidentify', 'provider-contact-page',
   'provider-facts', 'companion-read', 'course-list-read', 'credential-read', 'policy-add-tests', 'programme-discover', 'programme-read', 'source-find']
 const FIELDS = ['campus_is_primary', 'course_empty_reason', 'course_study_load', 'provider_accreditations', 'grade_scale_conversions', 'destination_editions', 'api_field_dictionary']
 
-test('14 worker lanes copied from live byte for byte with their own schedules and budgets, all in shadow; the separate jobs are not registered', () => {
+test('13 worker lanes copied from live byte for byte with their own schedules and budgets, all in shadow; the separate jobs are not registered', () => {
   const list = /j\.active and j\.jobname in \(([^)]+)\)/.exec(code)[1]
   expect([...list.matchAll(/'([^']+)'/g)].map((m) => m[1]).sort()).toEqual([...LANES].sort())
   expect(code).toContain("select j.jobname, 'worker_lane', j.jobname, j.command, md5(j.command), j.schedule, 50, 'shadow',")
   expect(code).toContain('not exists (select 1 from pipeline.rollup_targets t where t.legacy_job = j.jobname)')
   expect(code).toContain('not exists (select 1 from pipeline.admission_rules a where a.legacy_job = j.jobname)')
-  expect(code).toContain("if v_n <> 14 then raise exception 'post-check: % of 14 coverage lanes match their live legacy job', v_n; end if;")
+  expect(code).toContain("if v_n <> 13 then raise exception 'post-check: % of 13 coverage lanes match their live legacy job', v_n; end if;")
   expect(code).toContain("raise exception 'post-check: a lane is live (this change is shadow only)'")
-  expect(list).not.toMatch(/'(calendar-reread|coverage-read|coverage-read-2|platform-health)'/)
+  expect(list).not.toMatch(/'(calendar-reread|coverage-read|coverage-read-2|coverage-ai-match|platform-health)'/)
 })
 
 test('the seven API v3 field lanes are declared disabled with owner, mode, fill function and request ids, and are never dispatched', () => {
