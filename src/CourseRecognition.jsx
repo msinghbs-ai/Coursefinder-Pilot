@@ -25,10 +25,13 @@ export default function CourseRecognition({courseId,client=null}){
   const regs=d.registrations||[],served=d.served||[]
   const value=served.length?served.map(x=>`${x.scheme} ${x.code}`).join(', '):'None served'
   const sub=d.held_reason?HELD[d.held_reason]||d.held_reason:!served.length?(regs.length?'No registration is in a scheme Website v3 serves yet (CRICOS only).':'No registration held.'):`Website v3 course detail${served[0]?.checked_on?` · register checked ${fmtDate(served[0].checked_on)}`:''}`
+  const codes=d.field_codes||[]
+  const codeLine=codes.length?`ASCED ${codes.map(c=>`${c.code} ${c.name}`).join(' · ')}`:d.field_codes_held_reason?`Field codes held: ${d.field_codes_held_reason}`:'No register field code held.'
   return <FactCard id="recognition" label="Recognition (Website v3)" value={value} sub={sub} tone={d.held_reason?'warning':''}>
     {regs.length>0&&<span className="ds-pill-list" data-recognition-registrations>{regs.map((r,i)=><StatusChip key={i} tone={r.on_website_v3?'success':r.status==='active'?'neutral':'danger'}
       label={`${String(r.scheme||'').toUpperCase()} ${r.code}${r.status!=='active'?` (${r.status})`:''}`}
       title={[r.source_label,r.valid_to?`ends ${fmtDate(r.valid_to)}`:null,r.captured_at?`evidence ${fmtDate(r.captured_at)}`:null,r.on_website_v3?'served on Website v3':'not served on Website v3'].filter(Boolean).join(' · ')}/>)}
       {regs.find(r=>r.source_url)&&<a className="cf-link" href={regs.find(r=>r.source_url).source_url} target="_blank" rel="noreferrer">Register <ExternalLink size={11}/></a>}</span>}
+    <span className="ds-sub" data-recognition-field-codes title="Field of education codes the national register prints, served as field_of_study_codes[] on API v3 course detail">{codeLine}</span>
   </FactCard>
 }

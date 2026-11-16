@@ -323,18 +323,21 @@ function AerProgress(){
 export function RecognitionDelivery({rpc}){
   const[p,setP]=useState(null),[err,setErr]=useState('')
   useEffect(()=>{let live=true;Promise.resolve(rpc('admin_course_recognition_delivery',{})).then(({data,error})=>{if(!live)return;if(error)setErr(error.message||'Not available');else setP(data)}).catch(e=>{if(live)setErr(String(e?.message||e))});return()=>{live=false}},[])
-  const head=<h4>Course recognition (Website API v3 course detail)</h4>
+  const head=<h4>Course recognition and field codes (API v3 course detail)</h4>
   if(err||p?.known===false)return <section className="dd-recognition" data-dd-recognition="unknown">{head}<Unknown reason={err||p?.reason||'Not available'} word="Not measured"/></section>
   if(!p)return <section className="dd-recognition" data-dd-recognition="loading">{head}<p className="sl-sub">Loading…</p></section>
   const au=p.au||{},nz=p.nz||{}
   return <section className="dd-recognition" data-dd-recognition="known">{head}
-    <p className="sl-sub" data-dd-recognition-stamp>Counted live at {fmtDateTime(p.counted_at)}. Website v3 only; Zoho v3 follows after the Zoho developer is told. An empty list is never &ldquo;not recognised&rdquo;.</p>
+    <p className="sl-sub" data-dd-recognition-stamp>Counted live at {fmtDateTime(p.counted_at)}. Website v3 and Zoho v3 course detail. An empty list is never &ldquo;not recognised&rdquo;.</p>
     <ul>
       <Row k="rec_au_searchable" label="Australian courses in search" v={au.searchable}/>
       <Row k="rec_au_served" label="Served with a CRICOS registration" v={au.served} actor="machine"/>
       <Row k="rec_au_held_dates" label="Held: registration active but its end date has passed (F-DISC to reconcile)" v={au.held_dates_inconsistent}/>
       <Row k="rec_au_held_source" label="Held: no active public source for the registration" v={au.held_source_missing}/>
       <Row k="rec_nz_searchable" label={`New Zealand courses in search (held: ${nz.held_reason||'reason Not measured'})`} v={nz.searchable}/>
+      <Row k="fc_au_served" label="Served with ASCED field-of-study codes (from the CRICOS register)" v={p.field_codes?.served} actor="machine"/>
+      <Row k="fc_au_second" label="…of which carry a second field" v={p.field_codes?.with_second_field}/>
+      <Row k="fc_au_superseded" label="Superseded first field left out" v={p.field_codes?.superseded_primary_left_out}/>
     </ul>
     {p.next_action&&<p className="sl-sub" data-dd-recognition-next>Next action: {p.next_action}</p>}
   </section>
