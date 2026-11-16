@@ -9,7 +9,7 @@
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 // Check the admin copy with `node scripts/export-sops.mjs --check-mirror <coursefinder-admin/docs/sops>` (SS-016 UR-03): it exits 1 on drift.
 
-export const SOP_REVIEWED_FOR = '2.16.15'
+export const SOP_REVIEWED_FOR = '2.16.16'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -45,7 +45,7 @@ const step = (o) => o
 
 export const SOPS = [
   {
-    id: 'admin-sop', title: 'Platform Admin SOP', version: '2.44', audience: 'Platform Admin (role rank 6)',
+    id: 'admin-sop', title: 'Platform Admin SOP', version: '2.45', audience: 'Platform Admin (role rank 6)',
     purpose: 'How the Platform Admin runs StudySearch day to day: the approvals only you can give, the budgets and models you own, and the checks that keep automatic admission trustworthy.',
     owns: ['Admitting university adapters (Layer 2/3 › Universities)', 'Approving central pages: fee schedules, English policies, academic calendars', 'AI models, their order, AI admission and the AI allowances', 'Firecrawl and OpenRouter budgets and service keys', 'Onboarding settings, Retry and Stop', 'Users and roles; new countries; go-live'],
     schedule: [
@@ -79,7 +79,7 @@ export const SOPS = [
       step({ do: '10-minute field check, 4 of 4. Platform health: no Coverage sweep "below target and not moving" warning older than a week; Go to opens Stalled fields.', page: 'health', tab: 'checks' }),
       // v2.15.306: enrichment plans
       step({ do: 'Layer 2/3 › Enrichment plan: automatic plans open and the toolset shares left; the on-demand allowance used. For a university a customer or the website asks about, Open plan, read each step\'s estimate and Run now the steps worth their cost, with a reason. Switch automatic plans off (with a reason) if a share is needed elsewhere. Then open Plans that need a person: each line says what stopped (for example an adapter that read nothing); open the plan or the Adapter builder. On Enrich fields › Fee reader (AI), check the providers with problems and widen the scope (Settings › Pipeline settings › Enrichment) when the current one reads well. On Settings › Backup & restore, Compare the last daily backup: a provider published or a setting changed that nobody decided is put back with Put back chosen and a reason.', page: 'layer2', tab: 'plan', why: 'Each university\'s gaps are filled end to end, automatically within the shares or on demand when a person decides.', done: 'Open plans moving; on-demand use matches what was decided.' }),
-      step({ do: 'Users & roles: lowest role that does the job; expiry dates for contractors.', page: 'users' }),
+      step({ do: 'Users & roles: lowest role that does the job; expiry dates for contractors. Invite with Create user › Send invitation (add the full name: the email greets them, names the role and links the Platform guide). Someone locked out: Reset password on their row emails a link to the admin sign-in, where they choose a new one (not for a Platform Admin, a disabled account or an open invitation).', page: 'users' }),
       step({ do: 'Layer 2/3 › Operations: the stage counts, the pace and the estimate for the queue. Adjust "How many at once" (its current value is shown there) in Onboarding settings if credits run low or the queue is slow; queue universities not yet in onboarding when new ones appear.', page: 'layer2', tab: 'universities' }),
     ],
     interventions: [
@@ -127,7 +127,8 @@ export const SOPS = [
       'Scholarships withdrawn by the nightly review: a jump means a rule changed or a site moved its pages.',
     ],
     escalate: ['A job that fails the same way after a fix, a worker refusing work ("invalid key", "nonce"), or data written where it should not be: pause the job, note what you saw, raise it with the platform engineer with the change-control reference (CF-247).'],
-    changes: [{ version: '2.44', date: '16 Nov 2026', release: '2.16.8', change: 'Settings Hub: settings in five groups with Find a setting; a Website API or Zoho API setting changes only after Unlock: this is an approved change.' },
+    changes: [{ version: '2.45', date: '17 Nov 2026', release: '2.16.16', change: 'Users & roles: Reset password for another person (not a Platform Admin); invitations carry the full name, role and Platform guide link, and their link opens the admin sign-in, which asks for the password first. Catalogue lists: Export CSV (visible or all columns, the whole filtered list).' },
+      { version: '2.44', date: '16 Nov 2026', release: '2.16.8', change: 'Settings Hub: settings in five groups with Find a setting; a Website API or Zoho API setting changes only after Unlock: this is an approved change.' },
       { version: '2.43', date: '16 Nov 2026', release: '2.16.5', change: 'Settings tidy-up: retiring settings sit in their own group with what replaced them; run the retired-settings paste file only on or after its date, when it no longer refuses.' },
       { version: '2.42', date: '15 Nov 2026', release: '2.16.4', change: 'Schedulers in shadow: read the 24-hour shadow report before the cutover; an admission rule breaker issue means a rule failed 3 times in a row.' },
       { version: '2.41', date: '15 Nov 2026', release: '2.16.3', change: 'Pipeline maintenance on Automations: pause every job before a database change, wait for SAFE TO APPLY DB CHANGES, then resume exactly the jobs the pause switched off.' },
@@ -267,7 +268,7 @@ export const SOPS = [
       { version: '2.03', date: '29 Oct 2026', release: '2.15.362', change: 'Academic entry requirements (AER programme): the Provider drawer lists each source with its latest read, so a held PDF, a refused page or a page with no row is visible with its reason; first reads of new providers wait in Layer 4 as Entry matrix (first run).' }],
   },
   {
-    id: 'operator-sop', title: 'Operator SOP', version: '2.22', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
+    id: 'operator-sop', title: 'Operator SOP', version: '2.23', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
     purpose: 'How operators keep the data flowing and decide what automation cannot: the review queues, stuck or failing work, and the records that need a person. Each step names the lowest role that does it.',
     owns: ['Curator: reading Layer 4 › Inbox items and correcting the records they point to, key dates and reference links, course and provider details, ranking links', 'Pipeline Operator: Layer 4 › Inbox decisions (except entry requirement items: Platform Admin), Task manager › Background jobs, failed jobs and worker errors (diagnose, record, escalate), onboarding follow-up, scholarship links, counsellor reports', 'PIM Admin: pacing, pausing, resuming and running again the automations marked PIM Admin, testing adapters in the Adapter builder'],
     schedule: [
@@ -324,7 +325,8 @@ export const SOPS = [
       'Values marked as estimates (savings from CRICOS cost): quote them to students as estimates.',
     ],
     escalate: ['Tell the Platform Admin about anything needing approval, admitting, budgets, models, keys, users, or a fault that repeats after your fix. Write what you saw, where, and when.', 'Pace, pause, resume or run again: Pipeline Operator diagnoses, records and escalates; the PIM Admin (or a higher role) changes pace or pauses; automations marked Platform Admin go to the Platform Admin.', 'A StudySearch alert by push or e-mail: open Platform health and tell the Platform Admin you received it; the Platform Admin acknowledges it.'],
-    changes: [{ version: '2.22', date: '14 Nov 2026', release: '2.16.1', change: 'When AI work stops: read the limits banner at the top of Models & services › AI and the reasons listed under the service\'s state; a running row whose last call failed says so.' },
+    changes: [{ version: '2.23', date: '17 Nov 2026', release: '2.16.16', change: 'Providers, Courses, Locations and Scholarships: Export CSV › Export visible columns or Export all columns writes the whole filtered list to a file Excel opens. Sign-in: Forgot password? sends your own reset link.' },
+      { version: '2.22', date: '14 Nov 2026', release: '2.16.1', change: 'When AI work stops: read the limits banner at the top of Models & services › AI and the reasons listed under the service\'s state; a running row whose last call failed says so.' },
       { version: '2.21', date: '13 Nov 2026', release: '2.16.0', change: 'Models & services › AI is one page of four panes; when AI work stops, read the state line and the service row there and tell the Platform Admin. Scholarship extraction is configured under the Scholarship pages service; its results stay on Scholarships › Coverage.' }, { version: '2.20', date: '11 Nov 2026', release: '2.15.494', change: 'Provider descriptions: Fill description on a provider record; deciding the provider descriptions that wait in Layer 4; a description typed by hand is never replaced.' }, { version: '2.19', date: '8 Nov 2026', release: '2.15.494', change: 'Operations shows each automated lane stage by stage; the Firecrawl card shows allowance, remaining credits and floor; Course description review shows capacity and a university-ordered pack. New spend paths ship switched off; no data gain, admission or publication is claimed.' }, { version: '2.18', date: '6 Nov 2026', release: '2.15.493', change: 'English course-group approval and binding, same-family supersession and coverage holds; no automatic group admission or paid discovery activation.' }, { version: '2.17', date: '6 Nov 2026', release: '2.15.492', change: 'Course description reviewer navigation, held-source evidence and separate proposal/admission/publication measures; human admission authority remains.' }, { version: '2.16', date: '6 Nov 2026', release: '2.15.491', change: 'Deadline review distinguishes application closing evidence from commencement dates; corrections retain audit and human-lock authority.' }, { version: '1.0', date: '12 Oct 2026', release: '2.15.257', change: 'First issue: daily routine by role, review queues, follow-up, weekly checks, interventions and escalation.' },
       { version: '1.1', date: '12 Oct 2026', release: '2.15.258', change: 'Onboarding moved to Layer 2 › Onboarding with seven journey stages; scholarships are found only after a university is admitted and its courses enriched.' },
       { version: '1.2', date: '12 Oct 2026', release: '2.15.259', change: 'Admit is automatic for the fields that pass; universities move on to enriching and scholarships by themselves. Tell the Platform Admin about any admitted value that looks wrong.' },

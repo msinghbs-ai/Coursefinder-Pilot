@@ -1,7 +1,7 @@
-<!-- sop-export: id=admin-sop; version=2.44; reviewed-release=2.16.15; source-commit=7fed0c99aa43+local; content-sha256=d86d7cc4dd8dd10ab707ba3c068f7dae728f256a82bbea2107423fb32772bc54 -->
+<!-- sop-export: id=admin-sop; version=2.45; reviewed-release=2.16.16; source-commit=3fa05b381a8b+local; content-sha256=fd026aaa2ce0d308f017b5cd16131e092f627da8a7e804fb968b883008448742 -->
 # StudySearch – Platform Admin SOP
 
-**Version:** 2.44 (reviewed for platform release v2.16.15)  
+**Version:** 2.45 (reviewed for platform release v2.16.16)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -82,7 +82,7 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 - 10-minute field check, 3 of 4. Layer 2/3 › Enrich fields › Fill the gaps (standing queue): a run in the last 6 hours and values filled in 7 days. Coverage › Attributes › Cross-check differences: many on one field means a reading rule to fix, not courses to change one by one; a university's own delivery phrase goes in Delivery wording, with a reason. _(Coverage & completeness › Attributes)_
 - 10-minute field check, 4 of 4. Platform health: no Coverage sweep "below target and not moving" warning older than a week; Go to opens Stalled fields. _(Platform health › Health checks)_
 - Layer 2/3 › Enrichment plan: automatic plans open and the toolset shares left; the on-demand allowance used. For a university a customer or the website asks about, Open plan, read each step's estimate and Run now the steps worth their cost, with a reason. Switch automatic plans off (with a reason) if a share is needed elsewhere. Then open Plans that need a person: each line says what stopped (for example an adapter that read nothing); open the plan or the Adapter builder. On Enrich fields › Fee reader (AI), check the providers with problems and widen the scope (Settings › Pipeline settings › Enrichment) when the current one reads well. On Settings › Backup & restore, Compare the last daily backup: a provider published or a setting changed that nobody decided is put back with Put back chosen and a reason. _(Layer 2/3 Build & enrich › Enrichment plan)_
-- Users & roles: lowest role that does the job; expiry dates for contractors. _(Users & roles)_
+- Users & roles: lowest role that does the job; expiry dates for contractors. Invite with Create user › Send invitation (add the full name: the email greets them, names the role and links the Platform guide). Someone locked out: Reset password on their row emails a link to the admin sign-in, where they choose a new one (not for a Platform Admin, a disabled account or an open invitation). _(Users & roles)_
 - Layer 2/3 › Operations: the stage counts, the pace and the estimate for the queue. Adjust "How many at once" (its current value is shown there) in Onboarding settings if credits run low or the queue is slow; queue universities not yet in onboarding when new ones appear. _(Layer 2/3 Build & enrich › Universities)_
 
 ## 7. Where a person intervenes
@@ -139,6 +139,7 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.45 | 17 Nov 2026 | v2.16.16 | Users & roles: Reset password for another person (not a Platform Admin); invitations carry the full name, role and Platform guide link, and their link opens the admin sign-in, which asks for the password first. Catalogue lists: Export CSV (visible or all columns, the whole filtered list). |
 | 2.44 | 16 Nov 2026 | v2.16.8 | Settings Hub: settings in five groups with Find a setting; a Website API or Zoho API setting changes only after Unlock: this is an approved change. |
 | 2.43 | 16 Nov 2026 | v2.16.5 | Settings tidy-up: retiring settings sit in their own group with what replaced them; run the retired-settings paste file only on or after its date, when it no longer refuses. |
 | 2.42 | 15 Nov 2026 | v2.16.4 | Schedulers in shadow: read the 24-hour shadow report before the cutover; an admission rule breaker issue means a rule failed 3 times in a row. |

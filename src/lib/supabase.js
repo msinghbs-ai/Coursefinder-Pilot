@@ -5,6 +5,12 @@ const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
 
 if (!url || !key) console.warn('Missing VITE_SUPABASE_URL or VITE_SUPABASE_PUBLISHABLE_KEY')
 
+// CF-247 (Platform Admin 16 Nov 2026 22:12): an invitation or password reset link returns here with type=invite or type=recovery in the
+// address; read it before the client takes the session from the address and clears it, so the app can ask for a new password.
+export const AUTH_LINK_TYPE = (() => {
+  try { const m = /[#&?]type=(invite|recovery)(?:&|$)/.exec(`${globalThis.location?.hash || ''}&${globalThis.location?.search || ''}`); return m ? m[1] : null } catch { return null }
+})()
+
 export const supabase = createClient(url ?? '', key ?? '', {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
 })
