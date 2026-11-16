@@ -24,7 +24,7 @@ test('v3 is v2 with every action routed to website_v3_*; same key, rate limit an
   // the body below the header differs from v2 only in the routed lines
   const body = (s) => s.slice(s.indexOf('import "jsr:'))
   const diff = body(v3).split('\n').filter((l, i) => l !== body(v2).split('\n')[i])
-  expect(diff.length).toBeLessThanOrEqual(12)
+  expect(diff.length).toBeLessThanOrEqual(13) // 17 Nov 2026 (roadmap schema pack, RM0E): the ACTIONS line now differs too (v3 adds the destination action, on the scholarships line)
   expect(v2).toContain('const API_VERSION = "website-v2";')
 })
 

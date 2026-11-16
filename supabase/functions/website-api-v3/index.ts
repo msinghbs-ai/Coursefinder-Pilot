@@ -10,7 +10,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 type Json = Record<string, unknown>;
 const API_VERSION = "website-v3";
 const LOGO_BUCKET = "provider-assets";
-const ACTIONS = ["reference", "search", "course", "providers", "provider", "rankings", "scholarships", "scholarship", "sync"];
+const ACTIONS = ["reference", "search", "course", "providers", "provider", "rankings", "scholarships", "scholarship", "sync", "destination"];
 const MESSAGES: Record<string, string> = {
   INVALID_JSON: "Malformed JSON request",
   INVALID_ACTION: "Unsupported action",
@@ -133,7 +133,7 @@ Deno.serve(async (req: Request) => {
     case "search": fn = "website_v3_course_search"; args = { p_filters: filters, p_page: page, p_page_size: pageSize, p_sort: sort }; break;
     case "providers": fn = "website_v3_providers"; args = { p_filters: filters, p_page: page, p_page_size: pageSize, p_sort: sort }; break;
     case "rankings": fn = "website_v3_rankings"; args = { p_filters: filters, p_page: page, p_page_size: pageSize }; break;
-    case "scholarships": fn = "website_v3_scholarships"; args = { p_filters: filters, p_page: page, p_page_size: pageSize }; break;
+    case "scholarships": fn = "website_v3_scholarships"; args = { p_filters: filters, p_page: page, p_page_size: pageSize }; break; case "destination": fn = "website_v3_destination"; args = { p_filters: filters, p_page: page, p_page_size: body.page_size === undefined ? null : pageSize }; break; // 17 Nov 2026 (RM0E): approved or published destination rows only; on one line so the file stays line for line beside v2
     case "course": {
       const c = cleanText(body.course_id) || cleanText(body.course_code);
       if (!c || c.length > 200) return fail(400, "INVALID_INPUT", {}, "course_id or course_code required");

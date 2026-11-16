@@ -12,7 +12,7 @@ type Json = Record<string, unknown>;
 const API_VERSION = "zoho-v3";
 const LOGO_BUCKET = "provider-assets";
 const ACTIONS = ["reference", "search", "course", "courses", "providers", "provider", "campuses", "contacts", "rankings", "scholarships",
-  "scholarship", "statistics", "sync", "export", "report", "report_status"];
+  "scholarship", "statistics", "sync", "export", "report", "report_status", "destination"];
 const MESSAGES: Record<string, string> = {
   INVALID_JSON: "Malformed JSON request",
   INVALID_ACTION: "Unsupported action",
@@ -150,6 +150,7 @@ Deno.serve(async (req: Request) => {
     }
     case "campuses": fn = "zoho_v3_list"; args = { p_entity: "campus", p_filters: filters, p_page: page, p_page_size: pageSize }; break;
     case "contacts": fn = "zoho_v3_list"; args = { p_entity: "contact", p_filters: filters, p_page: page, p_page_size: pageSize }; break;
+    case "destination": fn = "zoho_v3_destination"; args = { p_filters: filters, p_page: page, p_page_size: body.page_size === undefined ? null : pageSize }; break; // 17 Nov 2026 (RM0E): approved or published destination rows only
     case "statistics": fn = "zoho_v3_statistics"; args = { p_kind: cleanText(body.kind), p_filters: filters, p_page: page, p_page_size: pageSize }; break;
     case "rankings": case "scholarships":
       fn = "zoho_v3_passthrough"; args = { p_action: action, p_filters: filters, p_page: page, p_page_size: pageSize, p_id: null, p_body: null }; break;

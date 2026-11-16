@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.440 — 17 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.18** (Platform Admin 17 Nov 2026 07:39; roadmap schema pack before the migration squash; RM0C, RM0D, RM0E, RM0F and the schema of RM1B, RM1C, RM1D, RM1H, RM1I, RM2B, RM2C, RM4A, RM4C). Migration 20261117030000_cf247_rm_destination_schema_pack extends the destination tables of 20261115190000 in place: new `destination.localities`, `locality_postcodes`, `locality_metrics`, `rule_applicability` and `ref.registration_schemes`; general rule fields on `destination.study_rules`; locality, scheme, period and status on `destination.career_outcomes`. API v3 action `destination` on `website-api-v3` and `zoho-api-v3` (approved or published rows only; empty until data is loaded). Admin RPCs `admin_destination_overview`, `admin_destination_review`, `admin_destination_set_status`. `security.user_access_events` accepts `password_reset_sent`. Three settings `destination.*`. No data loaded; v2 APIs unchanged.
+
 ## 0.1.439 — 17 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.17** (Platform Admin 17 Nov 2026 06:43; RM1A-3, O29). Migration 20261117010000_cf247_rm1a3_register_end_dates_pending. `security.layer1_register_end_dates_v1` counts a code the latest planned register edition carries as a new or changed item as listed, so 1,596 CRICOS registrations wrongly end-dated 1 Oct are restored by the function's own listed-again step (run once in the migration); the 701 departed codes stay held. Held reason renamed `not_on_latest_register_edition`. No table added; v2 APIs unchanged.
