@@ -186,8 +186,8 @@ grant execute on function security.api_field_dictionary_drift_v1(text, text, jso
 -- 3. Component register
 insert into pipeline.component_register (kind, name, layer, area, purpose, status, replaces, introduced_in)
 values
-  ('function', 'security.api_field_dictionary_sync_v1', 'consumer', 'api_v3', 'REQ-76: idempotent load of the API v3 field dictionary from docs/api/v3/field-dictionary.json', 'active', '{}', '20261115233000'),
-  ('function', 'security.api_field_dictionary_drift_v1', 'consumer', 'api_v3', 'REQ-76: lists live response paths the API v3 field dictionary does not hold', 'active', '{}', '20261115233000')
+  ('function', 'security.api_field_dictionary_sync_v1', 'consumer', 'api_v3', 'REQ-76: idempotent load of the API v3 field dictionary from docs/api/v3/field-dictionary.json', 'active', '{}', '20261116110000'),
+  ('function', 'security.api_field_dictionary_drift_v1', 'consumer', 'api_v3', 'REQ-76: lists live response paths the API v3 field dictionary does not hold', 'active', '{}', '20261116110000')
 on conflict (kind, name) do nothing;
 
 -- 4. Load the reviewed list (docs/api/v3/field-dictionary.json in its compact form, written between the markers by

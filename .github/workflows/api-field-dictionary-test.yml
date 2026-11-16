@@ -1,10 +1,10 @@
-# Guards: REQ-76 API v3 field dictionary sync (Platform Admin 15 Nov 2026, combined build item 1) and G4 database-backed tests: migration 20261115233000 on top of 20261115190000 loads the reviewed field list and runs the sync and drift rules on an isolated PostgreSQL 16 (fixtures only, never a Supabase project).
+# Guards: REQ-76 API v3 field dictionary sync (Platform Admin 15 Nov 2026, combined build item 1) and G4 database-backed tests: migration 20261116110000 on top of 20261115190000 loads the reviewed field list and runs the sync and drift rules on an isolated PostgreSQL 16 (fixtures only, never a Supabase project).
 name: API v3 field dictionary sync integration
 on:
   pull_request:
     paths:
       - 'supabase/migrations/20261115190000_api_v3_additive_schema.sql'
-      - 'supabase/migrations/20261115233000_cf247_api_field_dictionary_sync.sql'
+      - 'supabase/migrations/20261116110000_cf247_api_field_dictionary_sync.sql'
       - 'docs/api/v3/field-dictionary.json'
       - 'scripts/api-v3-field-dictionary.mjs'
       - 'tests/fixtures/api-field-dictionary/**'
