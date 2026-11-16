@@ -7,6 +7,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
+import { openServiceDetails } from './support/cards.mjs'
 import { PAGES, resolveTarget } from '../../src/nav-map.js'
 
 const go = (addr) => { const [a, q] = addr.split('?'); const r = resolveTarget(a, new URLSearchParams(q || '')); return `${r.page}/${r.tab}${r.params.toString() ? '?' + r.params : ''}` }
@@ -61,5 +62,6 @@ test('browser: Operations shows Progress; Universities offers Build per row; Ada
   await page.goto('/#layer-2-discovery?tab=builder')
   await expect(page.locator('[data-fold="builder-step0"] [data-build-adapter]')).toBeVisible()
   await page.goto('/#models-services')
+  await openServiceDetails(page) // v2.16.12: service details sit in a fold below the summary
   await expect(page.locator('[data-progress-today] [data-progress-budget]')).toBeVisible()
 })

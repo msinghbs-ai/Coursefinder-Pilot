@@ -690,6 +690,18 @@
 .sr-check{display:flex;gap:8px;align-items:flex-start;padding:10px 12px;border-radius:10px;font-size:var(--cf-fs-sm)}
 .sr-check.is-ok{background:var(--cf-success-soft,var(--cf-slate-50));color:var(--cf-success-ink,var(--cf-slate-800))}
 .sr-check.is-bad{background:var(--cf-warning-soft);color:var(--cf-warning-ink)}
+/* Settings Hub (v2.16.8): five groups, find a setting, Consumer APIs read-only until unlocked */
+.sr-find{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+.sr-find-q{flex:1 1 280px;min-width:0}.sr-find-q .fv-input{width:100%;min-height:36px;box-sizing:border-box}
+.sr-find-changed,.sr-unlock{display:inline-flex;gap:6px;align-items:center;font-size:var(--cf-fs-sm);min-height:32px}
+.sr-unlock{margin:0 0 8px;color:var(--cf-warning-ink)}
+.sr-hub-group{display:flex;flex-direction:column;gap:8px;min-width:0}
+.sr-hub-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.sr-hub-head h3{margin:0;font-size:var(--cf-fs-md,1rem)}
+.sr-hub-help{color:var(--cf-slate-600)}
+.sr-results{display:flex;flex-direction:column;gap:12px}
+.sr-hub-tabs{display:flex;flex-wrap:wrap;gap:6px;border-bottom:1px solid var(--cf-border);padding-bottom:6px}
+.sr-hub-tab{display:inline-flex;gap:6px;align-items:center;min-height:32px;padding:4px 10px;border:1px solid var(--cf-border);border-radius:999px;background:transparent;font:inherit;font-size:var(--cf-fs-sm);cursor:pointer}
+.sr-hub-tab.is-on{background:var(--cf-nav);color:var(--cf-white);border-color:transparent}.sr-result-section h4{margin:0 0 6px;font-size:var(--cf-fs-sm)}
 .sr-row{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:12px;align-items:start;padding:10px 0;border-top:1px solid var(--cf-slate-100)}
 .sr-row:first-child{border-top:0}
 .sr-text{display:grid;gap:2px}.sr-text strong{font-size:var(--cf-fs-sm);color:var(--cf-slate-800)}.sr-text small{font-size:var(--cf-fs-xs);color:var(--cf-slate-600);line-height:1.45}
@@ -895,3 +907,9 @@
 @media (max-width:900px){.sc-funnel{grid-template-columns:repeat(2,minmax(0,1fr))}}
 /* v2.16.0 (Platform Admin 13 Nov 2026 19:14): the read-only "Model: … change in Models & services" line on the pages that use a model */
 .mdl-line{display:inline-flex;flex-wrap:wrap;gap:4px 6px;align-items:center}.mdl-line a{display:inline-flex;align-items:center;min-height:24px}
+/* v2.16.12: Services & limits: one summary row per outside service; each service's switch, limits and settings sit in a fold */
+.svc-summary .cf-table td{vertical-align:top}
+.svc-summary .cf-table td:first-child{white-space:nowrap}
+.svc-details{border-top:1px solid var(--cf-border);padding-top:6px}
+.svc-details>summary{cursor:pointer;min-height:36px;display:flex;align-items:center;color:var(--cf-text)}
+.svc-details[open]>summary{margin-bottom:6px}

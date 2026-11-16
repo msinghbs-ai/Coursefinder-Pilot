@@ -9,6 +9,12 @@ export async function openCards(page, scope = 'body') {
     await page.waitForTimeout(150)
   }
 }
+// v2.16.12: Services & limits shows one summary row per service; each service card keeps its switch, limits and settings in a fold. Opens them.
+export async function openServiceDetails(page, scope = 'body') {
+  await page.locator(`${scope} details[data-fold^="service-details:"]`).first().waitFor()
+  const closed = page.locator(`${scope} details[data-fold^="service-details:"]:not([open]) > summary`)
+  for (let n = await closed.count(); n > 0; n = await closed.count()) { await closed.first().click(); await page.waitForTimeout(50) }
+}
 export async function openCard(page, id) {
   const t = page.locator(`[data-card="${id}"] .cf-card-toggle`)
   if ((await t.getAttribute('aria-expanded')) !== 'true') await t.click()

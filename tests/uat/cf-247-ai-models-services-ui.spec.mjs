@@ -29,15 +29,15 @@ const row = (page, code) => page.locator(`[data-ai-service="${code}"]`)
 const detail = (page, code) => page.locator(`[data-ai-service-detail="${code}"]`)
 
 test.describe('Models & services › AI, mocked browser', () => {
-  test('one page, exactly four panes, in the order asked: OpenRouter key and usage, Models, Services, Recent usage', async ({ page }) => {
+  test('one page, the panes in the order asked: OpenRouter key and usage, Models, Services, Recent usage, then the prompt registry (16 Nov 2026 07:41)', async ({ page }) => {
     await open(page)
     // four panes, and above them the limits banner (Platform Admin 14 Nov 2026: "unmissable at the top of the page"): a status line, not a pane
-    await expect(page.locator('[data-ai-page] > [data-ai-pane]')).toHaveCount(4)
-    await expect(page.locator('[data-ai-page] > *')).toHaveCount(5)
+    await expect(page.locator('[data-ai-page] > [data-ai-pane]')).toHaveCount(5)
+    await expect(page.locator('[data-ai-page] > *')).toHaveCount(6)
     await expect(page.locator('[data-ai-page] > :first-child')).toHaveAttribute('data-ai-mode-banner', 'stop')
     const panes = await page.locator('[data-ai-pane]').evaluateAll(els => els.map(e => e.getAttribute('data-ai-pane')))
-    expect(panes).toEqual(['openrouter', 'models', 'services', 'usage'])
-    await expect(page.locator('[data-ai-pane] h2')).toHaveText(['1 · OpenRouter key and usage', '2 · Models', '3 · Services', '4 · Recent usage'])
+    expect(panes).toEqual(['openrouter', 'models', 'services', 'usage', 'prompt-registry'])
+    await expect(page.locator('[data-ai-pane] h2')).toHaveText(['1 · OpenRouter key and usage', '2 · Models', '3 · Services', '4 · Recent usage', '5 · Prompt registry (shadow)'])
     // the retired screens are not drawn anywhere on the tab
     for (const old of ['[data-ai-config]', '[data-ai-uses]', '[data-ai-profiles]', '[data-ai-central]', '[data-ai-adapter]', '[data-ai-scholarship-models]', '[data-scholarship-extraction]', '[data-card="services.ai-models"]']) await expect(page.locator(old)).toHaveCount(0)
     // pane 1: the key is never shown; the credit and when it was read; the one ceiling with today's spend; a plain state line

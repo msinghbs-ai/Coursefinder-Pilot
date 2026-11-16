@@ -5,7 +5,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { PAGES, resolveTarget } from '../../src/nav-map.js'
 import { mockAdmin } from './support/admin-mock.mjs'
-import { openAdapter, openCard } from './support/cards.mjs'
+import { openAdapter, openCard, openServiceDetails } from './support/cards.mjs'
 
 const read = p => fs.readFileSync(p, 'utf8')
 
@@ -153,6 +153,7 @@ test.describe('mocked browser', () => {
       await expect(page.locator('[data-adapters-workspace]')).toBeVisible()
     }
     await page.goto('/#scrapers')
+    await openServiceDetails(page) // v2.16.12: service details sit in a fold below the summary
     await expect(page.locator('.l2p-provider-list').first()).toBeVisible() // SS-020 step 3: a list per service card
     await expect(page.locator('[data-card="scrapers.source-profiles"]')).toHaveCount(0)
   })

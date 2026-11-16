@@ -51,6 +51,10 @@ export async function openLayer2(page) {
 // Clean-up batch 2 (9 Oct 2026): Source profiles were retired; the acquisition provider registry stays on Fetchers.
 async function openFetchersCard(page,heading){
   await clickPrimaryNav(page,'Scrapers & fetchers')
+  // v2.16.12: each service card keeps its lists in a closed Details fold below the summary
+  await page.locator('[data-services-summary]').first().waitFor().catch(()=>{})
+  const folds=page.locator('details[data-fold^="service-details:"]:not([open]) > summary')
+  for(let n=await folds.count();n>0;n=await folds.count())await folds.first().click()
   const headingLocator=page.getByRole('heading',{name:heading,exact:true}).first()
   await visibleOrExplain(headingLocator, page, `Fetchers › ${heading}`)
   return headingLocator.locator('xpath=ancestor-or-self::*[@role="region"][1] | ancestor::section[1]').first()

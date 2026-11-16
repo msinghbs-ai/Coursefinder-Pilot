@@ -1,23 +1,22 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.4'
-export const PACKAGE_VERSION='0.1.426'
+export const UI_VERSION='2.16.14'
+export const PACKAGE_VERSION='0.1.436'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'15 Nov 2026',
-  title:'One scheduler for reports and caches, one runner for admission rules, and quieter scheduled jobs',
+  date:'16 Nov 2026',
+  title:'Course descriptions start with the course\'s own facts; every AI call is recorded as it happens',
   changes:[
-    'Reports and screen caches: a new job, rollup-scheduler, works out every minute which of 26 report and cache refreshes are due on their own schedules and runs them one after another, frequent ones first. It started in shadow on 15 Nov 2026: it records what was due while the old jobs still run them. Settings › Pipeline settings › Rollup scheduler.',
-    'Admission rules: a new runner in three lanes (admission-rule-runner, -b and -c) takes over 20 field-specific admission rule jobs on their own schedules, with a time budget and a circuit breaker per rule: a rule that fails 3 times in a row is skipped for a back-off that doubles from 15 minutes up to 4 hours, and a Platform health issue is raised until its next good run. It starts in shadow. Settings › Pipeline settings › Admission rule runner.',
-    'Shadow rule (Platform Admin 15 Nov 2026 22:36): a scheduler like these runs in shadow for 24 hours; when its dispatches match the old jobs, the old jobs are switched off. They are dropped by a paste file after the 14-day retention window.',
-    'Search refresh: each run may take up to Settings › Pipeline settings › Website API › Search refresh: time limit for one run (5 minutes); it failed about one run in five on the database\'s two-minute limit.',
-    'Four busy jobs start on quieter minutes with the same number of runs an hour (course page AI match preparation, link refresh, the website reference bundle and course description admission). Eight switched-off jobs are retiring.'
+    'Course descriptions are written with prompt cdesc-source-grounded-v3: no opening sentence that only introduces the course ("The <course> at <provider> is a ..."); the first sentence starts with a fact the course page prints.',
+    'Settings › Settings › Course description and deadline: "rules that earn a second model" decides when a description is asked once more of the next model.',
+    'Two telemetry reports, by AI service and model tier and from page discovery to the catalogue, feed the telemetry sheet.'
   ],
   bugFixes:[
-    'Course description proposals that can no longer be approved are found without the full description check, so the hourly job no longer times out.',
-    'The website and Zoho APIs are unchanged (checked against their baseline before and after each change).'
+    'Every AI attempt is recorded as soon as it finishes, so a worker call the platform stops part-way no longer loses the cost of the attempts it had already made.',
+    'A course description declined again records the rule version that declined it (cdesc-machine-v2).',
+    'The website and Zoho APIs are unchanged (checked against their baseline before and after the change).'
   ]
 }
 

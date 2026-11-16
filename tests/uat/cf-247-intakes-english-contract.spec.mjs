@@ -5,6 +5,7 @@ import { execFileSync } from 'node:child_process'
 import os from 'node:os'
 import path from 'node:path'
 import { test, expect } from '@playwright/test'
+import { openServiceDetails } from './support/cards.mjs'
 
 test('Decision 226: quote failures sent back to Layer 3; tuition retry respects the regulator gate', async () => {
   const m = await fs.readFile('supabase/migrations-archive/20261002182700_cf247_quote_failures_rerun.sql', 'utf8')
@@ -125,6 +126,7 @@ test.describe('browser: English policies panel', () => {
     await mockAdmin(page)
     page.on('dialog', (d) => d.accept())
     await page.goto('/#models-services?tab=limits')
+    await openServiceDetails(page) // v2.16.12: service details sit in a fold below the summary
     const c = page.locator('[data-search-cap]')
     await expect(c.locator('[data-cap-reached]')).toContainText('320 searches are waiting')
     // the budget sits above the toolsets (SS-020 step 3: below the page-service switches on Services & limits)
