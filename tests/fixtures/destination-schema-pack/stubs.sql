@@ -1,4 +1,4 @@
--- Extra objects that 20261117030000_cf247_rm_destination_schema_pack.sql builds on (fixtures only, never a Supabase project).
+-- Extra objects that 20261117040000_cf247_rm_destination_schema_pack.sql builds on (fixtures only, never a Supabase project).
 create schema if not exists auth;
 create table security.user_access_events (id uuid primary key default gen_random_uuid(), actor_user_id uuid, target_user_id uuid, action text not null,
   constraint user_access_events_action_check check (action = any (array['user_created', 'user_invited', 'roles_replaced', 'user_disabled', 'user_enabled'])));

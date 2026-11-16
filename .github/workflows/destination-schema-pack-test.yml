@@ -1,11 +1,11 @@
-# Guards: Admin destination data design v1.6 (roadmap schema pack, Platform Admin 17 Nov 2026 07:39; RM0C, RM0D, RM0E, RM0F) and G4 database-backed tests: migration 20261117030000 on top of 20261115190000 and 20261115230000 runs its tables, read path, approval and access-history rules on an isolated PostgreSQL 16 (fixtures only, never a Supabase project).
+# Guards: Admin destination data design v1.6 (roadmap schema pack, Platform Admin 17 Nov 2026 07:39; RM0C, RM0D, RM0E, RM0F) and G4 database-backed tests: migration 20261117040000 on top of 20261115190000 and 20261115230000 runs its tables, read path, approval and access-history rules on an isolated PostgreSQL 16 (fixtures only, never a Supabase project).
 name: Destination schema pack integration
 on:
   pull_request:
     paths:
       - 'supabase/migrations/20261115190000_api_v3_additive_schema.sql'
       - 'supabase/migrations/20261115230000_cf247_destination_importer_guard.sql'
-      - 'supabase/migrations/20261117030000_cf247_rm_destination_schema_pack.sql'
+      - 'supabase/migrations/20261117040000_cf247_rm_destination_schema_pack.sql'
       - 'tests/fixtures/destination-editions/stubs.sql'
       - 'tests/fixtures/destination-schema-pack/**'
       - '.github/workflows/destination-schema-pack-test.yml'
