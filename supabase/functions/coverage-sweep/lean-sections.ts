@@ -84,6 +84,22 @@ export function selectSections(ab: AerBlocks, field: string, opt: SectionOptions
     signal: preflight(field, plainOf(idx.map((k) => B[k]))) };
 }
 
+// v1.0.6 (Platform Admin 16 Nov 2026 16:52, AER long pages): a page longer than the read's limit is never cut. When the long-page switch is on, the
+// reader is sent the entry requirement sections only (selectSections, field entry_requirements), with the page's own block numbers, if that
+// selection fits the limit; otherwise the page stays page_too_long. The answer is still verified against the WHOLE page's blocks, so a quote must
+// be on the page and the lead-in rules see the real neighbours. window says what was sent; null when the whole page was sent.
+export type LongPageWindow = { selector: string; field: string; page_chars: number; chars: number; blocks: number; of_blocks: number; no_selection: boolean; fits: boolean };
+export function longPageWindow(ab: AerBlocks, maxChars: number, on: boolean): { send: AerBlocks | null; window: LongPageWindow | null } {
+  if (ab.text.length <= maxChars) return { send: ab, window: null };
+  if (!on) return { send: null, window: null };
+  const s = selectSections(ab, "entry_requirements");
+  const fits = !s.no_selection && s.chars <= maxChars;
+  const window: LongPageWindow = { selector: s.selector, field: s.field, page_chars: ab.text.length, chars: s.chars, blocks: s.blocks, of_blocks: ab.blocks.length, no_selection: s.no_selection, fits };
+  if (!fits) return { send: null, window };
+  const keep = new Set(s.block_ids);
+  return { send: { input: `${ab.input}+${LEAN_SECTIONS}`, text: s.text, blocks: ab.blocks.filter((b) => keep.has(`B${b.n}`)) }, window };
+}
+
 // v0.91.0 (Platform Admin 14 Nov 2026 13:25, recall matcher fix): the words of blocks without their "[B<n> @<offset>]" labels and line marks, joined
 // in page order. A quote that runs across adjacent blocks (a lead-in and its paragraph, a sentence and its list) is matched against this, never
 // against the labelled lines, where the label between two blocks broke the match. Measurement only: what a reader is sent is the labelled text.
