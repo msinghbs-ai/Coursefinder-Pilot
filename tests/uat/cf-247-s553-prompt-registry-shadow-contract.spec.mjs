@@ -10,13 +10,17 @@ const DS = fs.readFileSync('supabase/functions/coverage-sweep/description.ts', '
 const lit = (src) => new Function(`return (${src})`)()
 
 test('course description: the registered system text is the worker constant, byte for byte, with the worker’s sha-256', () => {
-  const worker = JSON.parse(/^export const CDESC_SYSTEM = ("(?:[^"\\]|\\.)*");$/m.exec(CT)[1])
-  const sha = /^export const CDESC_SYSTEM_SHA256 = "([0-9a-f]{64})"/m.exec(CT)[1]
-  const reg = /'cdesc-source-grounded-v2', \$cdesc\$([\s\S]*?)\$cdesc\$, '([0-9a-f]{64})'/.exec(M)
-  expect(reg[1]).toBe(worker)
-  expect(reg[2]).toBe(sha)
-  expect(crypto.createHash('sha256').update(reg[1], 'utf8').digest('hex')).toBe(sha)
-  expect(/^export const CDESC_PROMPT_VERSION = "cdesc-source-grounded-v2";$/m.test(CT)).toBe(true)
+  // v1.0.5 (s559): cdesc-source-grounded-v3 is the worker's CDESC_SYSTEM and is registered by migration 20261116090000; v2 is kept as CDESC_SYSTEM_V2
+  const M3 = fs.readFileSync('supabase/migrations/20261116090000_cf247_cdesc_v3_retry_gate_telemetry.sql', 'utf8')
+  for (const [constName, shaName, version, src] of [['CDESC_SYSTEM', 'CDESC_SYSTEM_SHA256', 'cdesc-source-grounded-v3', M3], ['CDESC_SYSTEM_V2', 'CDESC_SYSTEM_V2_SHA256', 'cdesc-source-grounded-v2', M]]) {
+    const worker = JSON.parse(new RegExp(`^export const ${constName} = ("(?:[^"\\\\]|\\\\.)*");$`, 'm').exec(CT)[1])
+    const sha = new RegExp(`^export const ${shaName} = "([0-9a-f]{64})"`, 'm').exec(CT)[1]
+    const reg = new RegExp(`'${version}', \\$cdesc\\$([\\s\\S]*?)\\$cdesc\\$, '([0-9a-f]{64})'`).exec(src)
+    expect(reg[1], version).toBe(worker)
+    expect(reg[2], version).toBe(sha)
+    expect(crypto.createHash('sha256').update(reg[1], 'utf8').digest('hex')).toBe(sha)
+  }
+  expect(/^export const CDESC_PROMPT_VERSION = "cdesc-source-grounded-v3";$/m.test(CT)).toBe(true)
 })
 
 test('answer schemas equal the worker’s; the provider description user template renders the worker’s message', () => {
@@ -49,7 +53,9 @@ test('shadow only: no live status, and nothing in the worker or another migratio
   expect(M).toContain("status text not null default 'shadow' check (status in ('shadow', 'retired'))")
   const files = (d) => fs.readdirSync(d, { recursive: true }).filter((f) => /\.(ts|js|mjs)$/.test(f)).map((f) => `${d}/${f}`)
   for (const f of files('supabase/functions')) expect(fs.readFileSync(f, 'utf8'), f).not.toMatch(/prompt_templates|prompt_render_v1/)
-  for (const f of fs.readdirSync('supabase/migrations').filter((x) => x.endsWith('.sql') && x !== '20261116050000_cf247_prompt_registry_shadow.sql'))
+  // a migration that releases a prompt keeps the registry in step (20261116090000: course description v3 registered, v2 retired there); it writes rows, nothing reads them
+  const KEEPS_REGISTRY = ['20261116050000_cf247_prompt_registry_shadow.sql', '20261116090000_cf247_cdesc_v3_retry_gate_telemetry.sql']
+  for (const f of fs.readdirSync('supabase/migrations').filter((x) => x.endsWith('.sql') && !KEEPS_REGISTRY.includes(x)))
     expect(fs.readFileSync(`supabase/migrations/${f}`, 'utf8'), f).not.toMatch(/prompt_templates/)
   expect(M).not.toMatch(/entry_matrices'|course_entry_requirements'/)
 })

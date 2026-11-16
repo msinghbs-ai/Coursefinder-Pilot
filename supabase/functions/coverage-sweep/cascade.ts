@@ -106,6 +106,27 @@ export function healthOrder(service: string | null | undefined, list: string[]):
 const trace: Attempt[] = [];
 const TRACE_MAX = 2000; // fixed: memory guard of one worker call's attempt list
 export const takeAiTrace = (): Attempt[] => trace.splice(0, trace.length);
+// v1.0.5 (16 Nov 2026, Platform Admin 12:36, "per-attempt ledger flush"): each attempt is written to pipeline.ai_invocations as soon as it is noted,
+// through the writer the worker sets for its call (public.svc_ai_model_answered_v1), so a call the platform stops part-way (HTTP 546, worker
+// resource limit) no longer loses the attempts it had already paid for. Rows the writer could not hand over (an error answer) stay in the trace and go
+// with the end-of-call write as before. A write that timed out is not sent again (it may have been kept), so an attempt is never counted twice.
+type TraceWriter = (rows: Attempt[]) => Promise<void>;
+let traceWriter: TraceWriter | null = null;
+const TRACE_WRITE_MS = 5000; // fixed: API time-out of one attempt write; a slower write is left to the end-of-call write path
+export const setTraceWriter = (w: TraceWriter | null): void => { traceWriter = w };
+export const traceStats = { written: 0, kept_for_end: 0, uncertain: 0 };
+export async function flushAiTrace(): Promise<void> {
+  if (!traceWriter || !trace.length) return;
+  const rows = trace.splice(0, trace.length);
+  let timer: number | undefined;
+  try {
+    const timedOut = new Promise<"timeout">((res) => { timer = setTimeout(() => res("timeout"), TRACE_WRITE_MS) });
+    const r = await Promise.race([traceWriter(rows).then(() => "ok" as const), timedOut]);
+    if (r === "timeout") traceStats.uncertain += rows.length; else traceStats.written += rows.length;
+  } catch {
+    trace.unshift(...rows); traceStats.kept_for_end += rows.length;  // refused: kept for the end-of-call write
+  } finally { if (timer !== undefined) clearTimeout(timer) }
+}
 export function failureKind(why: string): string {
   if (why.startsWith(KEY_LIMIT_MARK)) return "key_limit";  // v1.0.3: an account stop; job ai-model-health leaves it out of the model's counts
   if (/^HTTP /.test(why)) return "http";
@@ -140,11 +161,12 @@ export async function cascadeFetch(doFetch: FetchFn, cascade: Cascade, url: stri
     let r: Response;
     try {
       r = await doFetch(url, init);
-    } catch (e) { note(cascade, list[0], 1, thrown(e), null, Date.now() - t1); throw e }
+    } catch (e) { note(cascade, list[0], 1, thrown(e), null, Date.now() - t1); await flushAiTrace(); throw e }
     // deno-lint-ignore no-explicit-any
     const d: any = await r.clone().json().catch(() => ({ unreadable: true }));
     const kl = keyLimitRefusal(r.status, d);
     note(cascade, list[0], 1, kl ?? technicalFailure(r.status, d, wantsJson), d, Date.now() - t1);
+    await flushAiTrace();  // v1.0.5: written as it completes
     if (kl) { keyStop = { why: kl, status: r.status, at: new Date().toISOString() }; throw new KeyLimitStop(kl) }
     return r;
   }
@@ -162,6 +184,7 @@ export async function cascadeFetch(doFetch: FetchFn, cascade: Cascade, url: stri
       const kl = keyLimitRefusal(r.status, d);
       const cost = Number(d?.usage?.cost || 0), why = kl ?? technicalFailure(r.status, d, wantsJson);
       note(cascade, model, i + 1, why, d, Date.now() - t1);
+      await flushAiTrace();  // v1.0.5: written as it completes, the paid failures too
       if (kl) {  // v1.0.3: every model goes through the same key: no other model is asked; the cost of earlier failed attempts stays with the error
         keyStop = { why: kl, status: r.status, at: new Date().toISOString() };
         throw Object.assign(new KeyLimitStop(kl), { cost: cost + spent });
@@ -171,7 +194,7 @@ export async function cascadeFetch(doFetch: FetchFn, cascade: Cascade, url: stri
       return new Response(JSON.stringify(out), { status: r.status, headers: { "content-type": "application/json" } });
     } catch (e) {
       if (e instanceof KeyLimitStop) throw e;  // v1.0.3: noted above; no other model is asked
-      lastError = e; note(cascade, model, i + 1, thrown(e), null, Date.now() - t1); tried.push({ model, why: e instanceof Error ? e.message.slice(0, 120) : String(e).slice(0, 120) });
+      lastError = e; note(cascade, model, i + 1, thrown(e), null, Date.now() - t1); await flushAiTrace(); tried.push({ model, why: e instanceof Error ? e.message.slice(0, 120) : String(e).slice(0, 120) });
       if (last) throw (spent > 0 && e && typeof e === "object" ? Object.assign(e, { cost: spent }) : e);
     }
     if (last) break;
