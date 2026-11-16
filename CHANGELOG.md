@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.439 — 17 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.17** (Platform Admin 17 Nov 2026 06:43; RM1A-3, O29). Migration 20261117010000_cf247_rm1a3_register_end_dates_pending. `security.layer1_register_end_dates_v1` counts a code the latest planned register edition carries as a new or changed item as listed, so 1,596 CRICOS registrations wrongly end-dated 1 Oct are restored by the function's own listed-again step (run once in the migration); the 701 departed codes stay held. Held reason renamed `not_on_latest_register_edition`. No table added; v2 APIs unchanged.
+
 ## 0.1.438 — 17 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.16** (Platform Admin 16 Nov 2026 22:12; overnight Admin UI task). No migration. (1) Users & roles: Reset password for non-Admin accounts (edge function `admin-user-management` action `reset_password`, redirectTo = the admin sign-in on the Cloudflare Worker); invitations carry `redirectTo` and `data { role, role_code, guide_url, full_name }` for the Supabase template; a set-password screen after an invitation or reset link; Forgot password? on the sign-in screen. (2) Catalogue CSV export on the shared catalogue table (`src/lib/csv-export.js`, `src/CsvExport.jsx`): visible or all columns, every filtered row, RFC 4180, UTF-8 with BOM. Specs `s568`, `s569`.
