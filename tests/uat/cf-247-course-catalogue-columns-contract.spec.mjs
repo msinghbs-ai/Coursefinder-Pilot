@@ -12,9 +12,12 @@ const MIG = fs.readFileSync('supabase/migrations/20261106300000_cf247_course_cat
 const UI = fs.readFileSync('src/mature-main.jsx', 'utf8')
 
 test('the screen registry equals the database registry the server checks a layout against', () => {
-  const rows = [...MIG.matchAll(/\('courses', '([a-z0-9_]+)', '([^']+)', '([^']+)', (\d+), (?:'([a-z_]+)'|null), (true|false), (\d+), (\d+), (true|false)\)/g)]
-    .map(m => ({ key: m[1], group: m[2], label: m[3], sortKey: m[5] || null, defaultVisible: m[6] === 'true', width: +m[7], minWidth: +m[8], alwaysVisible: m[9] === 'true' }))
-  expect(rows).toHaveLength(40)
+  // 18 Nov 2026 (migration 20261118073000): Study load and Empty reason join the registry; the screen lists every column in the registry's own order (sort)
+  const MIG2 = fs.readFileSync('supabase/migrations/20261118073000_cf247_course_study_load_empty_reason_campus_primary_locality.sql', 'utf8')
+  const rows = [...(MIG + MIG2).matchAll(/\('courses', '([a-z0-9_]+)', '([^']+)', '([^']+)', (\d+), (?:'([a-z_]+)'|null), (true|false), (\d+), (\d+), (true|false)\)/g)]
+    .map(m => ({ key: m[1], group: m[2], label: m[3], sort: +m[4], sortKey: m[5] || null, defaultVisible: m[6] === 'true', width: +m[7], minWidth: +m[8], alwaysVisible: m[9] === 'true' }))
+    .sort((x, y) => x.sort - y.sort).map(({ sort, ...r }) => r)
+  expect(rows).toHaveLength(42)
   expect(COURSE_COLUMNS.map(({ header, ...c }) => ({ ...c, sortKey: c.sortKey || null }))).toEqual(rows)
   expect(new Set(COURSE_COLUMNS.map(c => c.group))).toEqual(new Set(GROUPS))
 })
@@ -55,7 +58,7 @@ async function panelUsable(page) {
   await page.addStyleTag({ content: ALL_CSS })
   await page.locator('[data-columns-toggle]').click()
   const boxes = page.locator('[data-columns-panel] [data-col-toggle]')
-  expect(await boxes.count()).toBe(40)
+  expect(await boxes.count()).toBe(42)
   // the whole panel is on screen and not clipped: its close button can be clicked, and each checkbox, centred in the panel's own scroll area
   // (never by scrolling an outer box, which once showed a clipped panel through an 18 px slit), is what is under the pointer
   const panel = page.locator('[data-columns-panel]')
@@ -85,7 +88,7 @@ async function layoutRoute(page) {
   await page.route('https://example.supabase.co/rest/v1/rpc/admin_table_layout', route => { const b = route.request().postDataJSON()
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(b.p_action === 'read' ? { screen: 'courses', layout: null, server_layouts: true, new_sorts: true, limits: { max_columns: 60, width_min_px: 64, width_max_px: 1200 } } : { saved: true, layout: b.p_args.layout, saved_at: '2026-11-06T00:30:00Z', has_previous: true }) }) })
 }
-test('with every stylesheet loaded as in production, all 40 Columns checkboxes can be clicked and the saved acknowledgement shows', async ({ page }) => {
+test('with every stylesheet loaded as in production, all 42 Columns checkboxes can be clicked and the saved acknowledgement shows', async ({ page }) => {
   await mockAdmin(page); await layoutRoute(page)
   await page.goto('/#courses')
   await expect(page.getByRole('heading', { name: 'Course catalogue' })).toBeVisible()
@@ -116,7 +119,7 @@ test.describe('mocked browser', () => {
     await expect(page.locator('[data-admitted="unknown"]').first()).toHaveText('Unknown')
     await page.locator('[data-columns-toggle]').click()
     for (const g of GROUPS) await expect(page.locator(`[data-columns-group="${g}"]`)).toBeVisible()
-    await expect(page.locator('[data-columns-count]')).toHaveText('14 of 40')
+    await expect(page.locator('[data-columns-count]')).toHaveText('14 of 42')
     await expect(page.locator('[data-col-toggle="canonical_title"]')).toBeDisabled()
     await page.getByLabel('Search columns').fill('adapter')
     await expect(page.locator('[data-col-toggle]')).toHaveCount(3)
@@ -165,7 +168,7 @@ test.describe('mocked browser', () => {
 })
 
 test.describe('phone @responsive', () => {
-  test('Columns panel at phone width with every stylesheet loaded: all 40 checkboxes can be tapped and the saved acknowledgement shows', async ({ page }) => {
+  test('Columns panel at phone width with every stylesheet loaded: all 42 checkboxes can be tapped and the saved acknowledgement shows', async ({ page }) => {
     await mockAdmin(page); await layoutRoute(page)
     expect(page.viewportSize()?.width || 9999, 'this test must run at phone width (chromium-mobile)').toBeLessThanOrEqual(480)
     await page.goto('/#courses')

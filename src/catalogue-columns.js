@@ -20,6 +20,8 @@ export const COURSE_COLUMNS = [
   C('field_of_study', 'Identity', 'Study area', 'field', true, 190, 110),
   C('duration', 'Course information', 'Duration', null, false, 130, 90),
   C('delivery_mode', 'Course information', 'Delivery mode', null, false, 140, 90),
+  // 18 Nov 2026 (Platform Admin 07:03, migration 20261118073000): the API v3 study load, off until a person shows it
+  C('study_load', 'Course information', 'Study load', null, false, 130, 90),
   C('intl_fee_amount', 'Course information', 'International fee', 'intl_fee', true, 190, 110),
   C('fee_amount', 'Course information', 'Tuition (registered, CRICOS)', 'fee', true, 150, 100),
   C('intl_fee_year', 'Course information', 'Fee year', null, false, 100, 80),
@@ -33,6 +35,8 @@ export const COURSE_COLUMNS = [
   C('has_scholarship', 'Course information', 'Scholarships', null, false, 120, 90),
   C('description', 'Course information', 'Course description', null, false, 160, 100),
   C('official_url', 'Course information', 'Official course URL', null, false, 180, 110),
+  // 18 Nov 2026: why values of this course are empty on purpose (API v3 empty_reason_code); a course with no reason has gaps still to fill
+  C('empty_reason_code', 'Course information', 'Empty reason', null, false, 210, 120),
   C('completeness_score_v2', 'Course information', 'Completeness', 'completeness', true, 120, 90),
   C('adapter_state', 'Pipeline and enrichment', 'Adapter status', 'adapter', true, 160, 110),
   C('adapter_last_read_at', 'Pipeline and enrichment', 'Adapter last read', null, false, 160, 110),
@@ -219,3 +223,7 @@ export const QUALITY_FILTER_OPTIONS = [
 // The provider fields the server lists as having no value (security.provider_missing_fields_v1), in words. Information only: the reader fills the description and nothing else.
 const FIELD_WORDS = { description: 'Description', website: 'Website', city: 'City', state_region: 'State / region', provider_type: 'Type', phone: 'Phone', email: 'Email', address: 'Address', established_year: 'Year established' }
 export const fieldWords = list => (Array.isArray(list) ? list : []).map(f => FIELD_WORDS[f] || String(f).replaceAll('_', ' ').replace(/^./, c => c.toUpperCase()))
+
+// 18 Nov 2026 (Platform Admin 07:03): the words for the API v3 study load and empty reason, shared by the Course catalogue's cells and filters
+export const STUDY_LOAD_LABELS = { full_time: 'Full-time', part_time: 'Part-time', both: 'Full-time or part-time' }
+export const EMPTY_REASON_LABELS = { not_published_by_provider: 'Not published by the provider', not_listed_on_register: 'Not on the register', online_only_no_campus: 'Online only, no campus', pending_extraction: 'Waiting to be read', source_unavailable: 'Source unavailable' }

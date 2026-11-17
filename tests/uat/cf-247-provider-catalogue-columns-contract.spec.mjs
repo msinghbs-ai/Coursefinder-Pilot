@@ -36,7 +36,7 @@ test('the default Provider layout is today\'s 13 columns in today\'s order and h
   expect(columnOf('publication_status', 'providers').header).toBe('Published')
   expect(defaultLayout().columns).toHaveLength(14)
   expect(defaultLayout().sort).toBe('course')
-  expect(COURSE_COLUMNS).toHaveLength(40)
+  expect(COURSE_COLUMNS).toHaveLength(42)
   expect(groupHeading('providers', 'Identity')).not.toBe('Identity')
   expect(groupHeading('courses', 'Identity')).toBe('Identity')
 })

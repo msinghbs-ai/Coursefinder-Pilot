@@ -32,7 +32,7 @@ test('1, 2, 3, 5: show, hide, reorder and resize are saved to the account and re
   const { context, page } = await open(browser, 'operator2')
   expect(await headers(page)).toEqual(DEFAULT)
   await page.locator('[data-columns-toggle]').click()
-  await expect(page.locator('[data-columns-count]')).toHaveText('14 of 40')
+  await expect(page.locator('[data-columns-count]')).toHaveText('14 of 42')
   await page.getByLabel('Search columns').fill('campus')
   await expect(page.locator('[data-col-toggle]')).toHaveCount(1)
   await page.locator('[data-col-toggle="campus_count"]').check()
@@ -176,7 +176,7 @@ test('14: every column shown at once, at production volume, stays inside the pag
   await page.locator('[data-columns-toggle]').click()
   const unticked = page.locator('[data-col-toggle]:not(:checked):not(:disabled)')
   while (await unticked.count()) await unticked.first().check()
-  await expect(page.locator('[data-columns-count]')).toHaveText('40 of 40')
+  await expect(page.locator('[data-columns-count]')).toHaveText('42 of 42')
   await page.keyboard.press('Escape')
   // the click turns the sort to Last data admitted, or reverses it if it already is (a retry starts from the state the first try left)
   const wasAsc = (await page.locator('[data-active-sort]').getAttribute('data-active-sort')) === 'admitted:asc'

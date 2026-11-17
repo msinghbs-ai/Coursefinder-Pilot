@@ -610,3 +610,8 @@ header.cf-layer-header[data-layer-header] button{background:var(--cf-white);colo
 .sch-delivery-row:last-child{border-bottom:0}
 /* CF-247 catalogue CSV export (16 Nov 2026) */
 .csv-export{position:relative;display:inline-flex;align-items:center;gap:6px}.csv-export.is-running{font-size:var(--cf-fs-xs);color:var(--m-muted)}.csv-export-menu{position:absolute;top:calc(100% + 5px);right:0;z-index:100;display:flex;flex-direction:column;min-width:240px;max-width:calc(100vw - 32px);background:var(--cf-white);border:1px solid var(--m-border);border-radius:var(--cf-radius-lg);box-shadow:var(--cf-shadow-lg);padding:6px}.csv-export-menu button{border:0;background:transparent;text-align:left;border-radius:var(--cf-radius-sm);padding:8px;cursor:pointer;display:flex;flex-direction:column;gap:2px;color:var(--cf-slate-700)}.csv-export-menu button:hover{background:var(--cf-slate-50)}.csv-export-menu strong{font-size:var(--cf-fs-xs)}.csv-export-menu small{font-size:var(--cf-fs-2xs);color:var(--cf-slate-400)}@media(max-width:680px){.csv-export-menu{left:0;right:auto}}
+
+/* 18 Nov 2026 (Platform Admin 07:03): the Campuses list's Locality search sits in the filter bar as a typed filter (tokens only) */
+.m-filter-text{cursor:text}
+.m-filter-text>span{display:grid;width:100%}
+.m-filter-text input{font:inherit;font-size:var(--cf-fs-xs);font-weight:600;margin-top:2px;color:inherit;border:0;background:transparent;padding:0;min-width:0;width:100%;outline:none}
