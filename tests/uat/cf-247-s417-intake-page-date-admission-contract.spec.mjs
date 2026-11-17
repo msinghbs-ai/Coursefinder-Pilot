@@ -101,7 +101,7 @@ test('governance: nothing is dropped or deleted, no consumer API object is touch
   expect(body42).toContain('comment on function security.intake_page_date_v1(')
   expect(body42).toContain('comment on function security.intake_dates_plan_v3(')
   // the numbering follows PR 930 (20261109030000)
-  for (const m of [M41, M42]) expect(Number(m.match(/migrations\/(\d{14})/)[1])).toBeGreaterThan(20261109030000)
+  for (const m of [M41, M42]) expect(Number(m.match(/migrations(?:-archive)?\/(\d{14})/)[1])).toBeGreaterThan(20261109030000)
 })
 
 test('fixture: production-shaped cases (Federation P1, Canberra P2, Macquarie and Western Sydney P3, Adelaide how-to-apply, Deakin 2028) and the run are wired in', () => {
