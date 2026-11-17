@@ -1,17 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.30'
-export const PACKAGE_VERSION='0.1.452'
+export const UI_VERSION='2.16.31'
+export const PACKAGE_VERSION='0.1.453'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'17 Nov 2026',
-  title:'Boost queue: Country tier and Priority score on Queues & yield',
+  title:'Destination data: Bulk Approve Drafts for localities',
   changes:[
-    'Platform health › Queues & yield: new Boost queue card. It lists every item Boost has taken with its Country tier and Priority score, a summary by country and lane, filters for tier, country, lane and state, and a sort by score.',
-    'Country tier and Priority score are worked out when the list opens, from the Boost priority settings (country weight × category weight; the tier 1 and tier 2 country lists). Nothing is stored on a course, and the Course catalogue does not show them.',
-    'New setting Boost queue: rows per page (Settings › Pipeline settings).'
+    'Destination data › Localities & postcodes: new Bulk Approve Drafts button (Platform Admin). For each dataset edition with draft localities it shows how many are ready, and approves them all with one reason.',
+    'A draft with no attribution text is left as draft and counted. Localities in review, withdrawn or already approved are not touched, and figures and study rules are still approved on their own tabs.',
+    'The action is recorded once in the control log, and each locality keeps who approved it, when and why.'
   ],
   bugFixes:[
   ]

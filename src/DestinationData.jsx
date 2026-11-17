@@ -10,6 +10,7 @@ import{ExternalLink,RefreshCw}from'lucide-react'
 import{Button,StatusChip,EmptyInline,Metric,fmtDate,fmtDateTime,fmtNumber}from'./ui-kit'
 import{supabase}from'./lib/supabase'
 import{plainError}from'./lib/errors'
+import{draftEditions}from'./lib/destination-drafts'
 import'./destination-data.css'
 
 const TONE={approved:'success',published:'success',draft:'neutral',in_review:'warning',pending:'warning',restricted:'danger',withdrawn:'danger',superseded:'neutral'}
@@ -72,6 +73,17 @@ function Overview({o,rank,run}){
   </div>
 }
 
+// v2.16.31 (Platform Admin 18 Nov 2026 07:39): Bulk Approve Drafts. One line per dataset edition that has draft localities in the list shown: how many are
+// ready (name and attribution present) and how many would be left, with one button for the Platform Admin. The server approves the edition's clean drafts
+// only, with the one reason kept on every row and one control event (public.admin_destination_localities_bulk_approve).
+function BulkApprove({rows,rank,run}){const eds=draftEditions(rows)
+  if(!eds.length)return null
+  return <div className="dst-bulk" data-dst-bulk>{eds.map(e=><p key={e.edition} className="dst-bulk-row" data-dst-bulk-edition={e.edition}>
+    <span><b>{e.edition}</b>: {fmtNumber(e.ready)} draft {e.ready===1?'locality is':'localities are'} ready to approve{e.left?<>; {fmtNumber(e.left)} without attribution text will be left as draft</>:null}.</span>
+    <Act label="Bulk Approve Drafts" need={6} rank={rank} primary data="locality-bulk-approve" onRun={()=>{if(!e.ready)return window.alert('No draft locality of this edition has attribution text, so none can be approved.')
+      const r=ask(`Approve all ${e.ready} clean draft localities of ${e.edition}${e.left?` (${e.left} without attribution text stay draft)`:''}. Each becomes available to the API`);if(r)run('admin_destination_localities_bulk_approve',{p_dataset_edition:e.edition,p_reason:r})}}/></p>)}
+    <p className="sl-sub">One reason is kept with every locality approved and the action is recorded once in the control log. Figures and study rules are approved on their own tabs.</p></div>}
+
 function Localities({rpc,rank,run,tick,share}){
   const[status,setStatus]=useState('')
   const loc=useList(rpc,'locality',status,tick),pcs=useList(rpc,'postcode','',tick)
@@ -79,6 +91,7 @@ function Localities({rpc,rank,run,tick,share}){
     <section className="m-panel"><h3>Localities</h3>
       <p className="sl-sub">One official geography unit per boundary edition, for example an ABS Significant Urban Area on ASGS Edition 3. A locality reaches the API once it is approved.</p>
       <StatusFilter value={status} onChange={setStatus} options={['draft','in_review','approved','published','withdrawn']}/>
+      <BulkApprove rows={loc.rows||[]} rank={rank} run={run}/>
       <Wait {...loc} empty="No locality is loaded yet. The ABS population and postcode load creates them (Platform health › Data delivery › Destination loads).">
         <div className="dst-scroll"><table className="cf-table" data-dst-localities><thead><tr><th>Locality</th><th>Geography</th><th>Boundary</th><th>Edition</th><th>Attribution</th><th>Postcodes</th><th>Figures</th><th>Status</th><th>Actions</th></tr></thead>
           <tbody>{(loc.rows||[]).map(l=><tr key={l.id} data-dst-locality={l.id}><td>{l.name}<small className="dst-sub">{l.country_code}</small></td><td>{l.geography_type} {l.geography_code}</td><td>{l.boundary_vintage}</td><td>{l.dataset_edition}</td>
@@ -173,7 +186,7 @@ export default function DestinationData({tab='overview',rank=0,onError,client=nu
   useEffect(()=>{load()},[tick])
   const run=async(fn,args)=>{setNote('')
     try{const{data,error}=await rpc(fn,args);if(error)throw error
-      setNote(data?.locality?`Postcode ${data.postcode} now maps to ${data.locality}.`:data?.to?`Recorded: ${data.from||'—'} to ${data.to}.`:'Recorded.');setTick(t=>t+1)}
+      setNote(data?.approved!=null&&data?.dataset_edition?`Approved ${data.approved} of ${data.drafts} draft localities of ${data.dataset_edition}${data.left_without_attribution?`; ${data.left_without_attribution} without attribution text left as draft`:''}.`:data?.locality?`Postcode ${data.postcode} now maps to ${data.locality}.`:data?.to?`Recorded: ${data.from||'—'} to ${data.to}.`:'Recorded.');setTick(t=>t+1)}
     catch(e){const m=plainError(e);setNote(m);onError?.(m)}}
   if(rank<3)return <EmptyInline text="Destination data opens for Curator and above."/>
   const body=err?<EmptyInline text={err}/>:!o?<p className="sl-sub">Loading…</p>
