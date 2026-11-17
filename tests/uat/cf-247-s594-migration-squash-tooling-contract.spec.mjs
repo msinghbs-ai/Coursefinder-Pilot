@@ -12,8 +12,8 @@ test('the helper lists the live folder plus files archived from the post-#452 ba
   const archivedSince = fs.readdirSync(ARCHIVE_DIR).filter((n) => n.endsWith('.sql') && n.slice(0, 14) >= SQUASH_FROM && !live.includes(n))
   expect(migrationNames()).toEqual([...live, ...archivedSince].sort())
   expect(SQUASH_FROM).toBe('20261010006400')
-  const anyLive = live.find((n) => n.endsWith('.sql'))
-  expect(migrationPath(anyLive)).toBe(`${LIVE_DIR}/${anyLive}`)
+  const anyLive = live.find((n) => n.endsWith('.sql')) // none right after a squash
+  if (anyLive) expect(migrationPath(anyLive)).toBe(`${LIVE_DIR}/${anyLive}`)
   const anyOld = fs.readdirSync(ARCHIVE_DIR).find((n) => n.endsWith('.sql'))
   expect(migrationPath(anyOld)).toBe(`${ARCHIVE_DIR}/${anyOld}`)
 })
@@ -32,7 +32,8 @@ test('the squash tool moves only the post-#452 range up to the cut-off, can chec
   expect(TOOL).toContain("refused: ${missing.length} file(s) are not in the production history")
   expect(TOOL).toContain("execFileSync('git', ['mv', path.join(LIVE, n), path.join(ARCHIVE, n)])")
   expect(TOOL).not.toMatch(/live-capture|supabase\.co|database\/query|psql/) // never the baseline files or the database
-  const first = fs.readdirSync(LIVE_DIR).filter((n) => /^\d{14}_/.test(n)).sort()[0].slice(0, 14)
+  const first = (fs.readdirSync(LIVE_DIR).filter((n) => /^\d{14}_/.test(n)).sort()[0] || '').slice(0, 14)
+  if (!first) return // right after a squash the live folder holds no migration to try
   const before = execFileSync('git', ['status', '--porcelain']).toString()
   const out = execFileSync('node', ['scripts/migration-squash.mjs', first, '--dry-run']).toString()
   expect(out).toMatch(new RegExp(`^cut-off ${first}: 1 migration files to move`))
