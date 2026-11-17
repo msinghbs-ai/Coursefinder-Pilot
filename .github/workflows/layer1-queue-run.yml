@@ -1,0 +1,63 @@
+# CF-247 S2-Build (Platform Admin 17 Nov 2026 22:04: no interactive Supabase mutations; work runs non-interactively through GitHub Actions).
+# Queues one Layer 1 source run through the standard path, security.layer1_queue_system_run_v1 (the same call the Layer 1 scheduler makes:
+# the source must be active, verified, not paused and without a run in flight; an apply with a variance warning is refused), then follows the
+# run in pipeline.layer1_run_queue and prints its outcome. Started by hand only, after typing the Pilot project ref.
+name: Layer 1 queue a source run
+on:
+  workflow_dispatch:
+    inputs:
+      source_id:
+        description: "pipeline.sources id of the Layer 1 source"
+        required: true
+      mode:
+        description: "dry_run or apply"
+        required: true
+        default: dry_run
+      retry_of:
+        description: "Optional: the failed run this one retries"
+        required: false
+        default: ""
+      reason:
+        description: "Why (kept on the run)"
+        required: true
+      confirm_project:
+        description: "Type the Pilot project ref to confirm"
+        required: true
+concurrency:
+  group: layer1-queue-run
+  cancel-in-progress: false
+jobs:
+  queue:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      REF: ${{ vars.SUPABASE_PROJECT_REF }}
+      SOURCE: ${{ inputs.source_id }}
+      MODE: ${{ inputs.mode }}
+      RETRY_OF: ${{ inputs.retry_of }}
+      REASON: ${{ inputs.reason }}
+      CONFIRM: ${{ inputs.confirm_project }}
+    steps:
+      - name: Queue and follow the run
+        run: |
+          set -euo pipefail
+          if [ -z "$REF" ] || [ "$CONFIRM" != "$REF" ]; then echo "::error::Refused: the typed project ref does not match the Pilot"; exit 1; fi
+          [[ "$SOURCE" =~ ^[0-9a-f-]{36}$ ]] || { echo "::error::source_id is not a uuid"; exit 1; }
+          [[ "$MODE" == "dry_run" || "$MODE" == "apply" ]] || { echo "::error::mode is dry_run or apply"; exit 1; }
+          [[ -z "$RETRY_OF" || "$RETRY_OF" =~ ^[0-9a-f-]{36}$ ]] || { echo "::error::retry_of is not a uuid"; exit 1; }
+          q() { jq -n --arg q "$1" '{query:$q}' > q.json; code=$(curl -sS -o r.json -w '%{http_code}' -X POST -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" --data @q.json "https://api.supabase.com/v1/projects/$REF/database/query"); if [ "$code" -ge 300 ]; then echo "::error::Management API $code: $(head -c 600 r.json)"; exit 1; fi; }
+          reason=$(printf '%s' "$REASON (GitHub Actions run $GITHUB_RUN_ID by $GITHUB_ACTOR)" | sed "s/'/''/g" | head -c 280)
+          retry="null"; [ -n "$RETRY_OF" ] && retry="'$RETRY_OF'::uuid"
+          q "select security.layer1_queue_system_run_v1('$SOURCE'::uuid, '$MODE', 0, $retry, '$reason') as r"
+          run=$(jq -r '.[0].r.run_id' r.json); echo "queued run $run"; echo "Queued Layer 1 run \`$run\` ($MODE) for source \`$SOURCE\`." >> "$GITHUB_STEP_SUMMARY"
+          for i in $(seq 1 110); do
+            sleep 30
+            q "select status, current_stage, processed_count, expected_count, created_count, updated_count, failed_count, result->'retry'->>'last_error' as last_error from pipeline.layer1_run_queue where id = '$run'"
+            st=$(jq -r '.[0].status' r.json); echo "$(date -u +%H:%M:%S) $(jq -c '.[0]' r.json)"
+            case "$st" in completed|no_change|failed|cancelled) break;; esac
+          done
+          jq '.[0]' r.json | tee -a "$GITHUB_STEP_SUMMARY"
+          [ "$st" = "completed" ] || [ "$st" = "no_change" ] || { echo "::error::run $run ended $st"; exit 1; }
