@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.452 — 18 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.30** (Platform Admin decision 18 Nov 2026 07:03, S1-RM-Design lane). Migration 20261118080000: `public.admin_boost_queue_read(args)` (Curator and above, read-only, stable) lists `pipeline.boost_extract_items` with Country tier and Priority score worked out on read from the `boost.matrix.*` settings through `security.boost_country_category_weight_v1`; setting `admin.boost_queue_page_rows` (50). No column is added anywhere. Platform health › Queues & yield gains the Boost queue card. Guards: `s598`, fixture `admin-boost-queue`.
+
 ## 0.1.451 — 18 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.29** (Platform Admin 18 Nov 2026 07:03, S1-RM-Design lane; UI audit of the new API v3 fields, slices A and B). Migration 20261118073000: md5-guarded edits of `security.admin_course_page_fast`, `security.admin_course_page_fast_base`, `security.course_list_with_extras_v1` (courses_page carries `study_load` and `empty_reason_code` and takes the `study_load` and `empty_reason` filters) and `public.admin_read` (campuses_page is read by the new `security.admin_campuses_page_v2`: Primary, Locality by postcode, `primary` and `locality` filters; `security.admin_campus_page_fast` marked retiring). Two partial indexes on `catalogue.courses`; two rows in the Course catalogue column registry (42). The ILEP induction draft is marked for its move to TrustEd Ireland. Held forward recovery: `supabase/held/course_campus_new_fields_forward_recovery.sql`. Guards: `s597`, fixture `course-campus-new-fields`.

@@ -84,6 +84,7 @@ import{providerDescriptionRunApi}from'./provider-description-run-api'
 const ProcessResults=lazyPage(()=>import('./ProcessResults'))
 const LaneFunnels=lazyPage(()=>import('./LaneFunnels'))
 const DataDelivery=lazyPage(()=>import('./DataDelivery'))
+const BoostQueue=lazyPage(()=>import('./BoostQueue')) // v2.16.30: Platform health › Queues & yield › Boost queue (Country tier and Priority score, worked out on read)
 const CompletenessReport=lazyPage(()=>import('./CompletenessReport')) // Wave 2: Platform health › Country & category completeness
 const DestinationData=lazyPage(()=>import('./DestinationData')) // v2.16.19 RM0F: Destination data page
 const Layer23Operations=lazyPage(()=>import('./Layer23Operations'))
@@ -447,7 +448,7 @@ function Page({pageKey,tab,requestedTab='',routeParams,rank,actorId,onError,navi
       case'layer4':return <Layer4Inbox onError={err} routeParams={routeParams}/>
       // v2.15.300: Screen use (Platform Admin) under the health checks, to decide which screens retire
       // v2.15.301: Capacity moved to the Go-live checklist; Storage & retention is a tab here
-      case'health':return tab==='completeness'?<CompletenessReport rank={rank} onError={onError}/>:tab==='storage'?<RetentionScreen onError={onError}/>:tab==='queues'?<div className="m-page-stack" data-queues-yield>{/* SS-020 step 3 (Decision 269, Final board F31: lanes first): Pipeline yield moved here from Integration queue; PIM Admin and above, as before (server checks too) */}{rank>=5&&<PipelineYield onError={onError}/>}<QueueWatch onError={onError}/></div>:tab==='integration'?<IntegrationQueue onError={onError}/>:<><PlatformHealth onError={onError}/>{rank>=6&&<ScreenUse onError={onError}/>}</>
+      case'health':return tab==='completeness'?<CompletenessReport rank={rank} onError={onError}/>:tab==='storage'?<RetentionScreen onError={onError}/>:tab==='queues'?<div className="m-page-stack" data-queues-yield>{/* SS-020 step 3 (Decision 269, Final board F31: lanes first): Pipeline yield moved here from Integration queue; PIM Admin and above, as before (server checks too) */}{rank>=5&&<PipelineYield onError={onError}/>}<QueueWatch onError={onError}/><BoostQueue onError={onError}/></div>:tab==='integration'?<IntegrationQueue onError={onError}/>:<><PlatformHealth onError={onError}/>{rank>=6&&<ScreenUse onError={onError}/>}</>
       case'jobs':return tab==='tasks'?<AdminTasks rank={rank} onError={onError}/>:tab==='automations'?<div className="m-page-stack"><Automations onError={err}/><ScheduledRuntimeHealth onNavigate={hash=>{location.hash=hash}}/></div>:<JobsWorkspace/>
       case'evidence':return <EvidenceWorkspace onError={onError} navigate={navigate} routeParams={routeParams}/>
       // CF-247 (16 Oct 2026): calls to the API version URLs (zoho-api-v2 first), by key and action; v2.15.301 Settings › API usage
