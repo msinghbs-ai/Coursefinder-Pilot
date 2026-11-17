@@ -72,6 +72,7 @@
     "website-api-v3": false,
     "website-course-api": false,
     "wix-course-api": false,
+    "worker-boost-bulk-ingest": false,
     "zoho-api-v2": false,
     "zoho-api-v3": false,
     "zoho-course-api": false
