@@ -1,7 +1,7 @@
-<!-- sop-export: id=admin-sop; version=2.52; reviewed-release=2.16.26; source-commit=43c890db728f+local; content-sha256=6acf13dbf8bd6b91014be0ea351e7d7448529a710f5deaabb6fbef755155e7ef -->
+<!-- sop-export: id=admin-sop; version=2.53; reviewed-release=2.16.27; source-commit=ee4cd0e0cae8+local; content-sha256=e1448cd3665ae4d0dcd3b169470f74a6dad67f9d0697d151b8a4a38dd7fa362f -->
 # StudySearch – Platform Admin SOP
 
-**Version:** 2.52 (reviewed for platform release v2.16.26)  
+**Version:** 2.53 (reviewed for platform release v2.16.27)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -139,6 +139,7 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.53 | 17 Nov 2026 | v2.16.27 | Links & Email Templates › Email delivery provider: save the card with its own Reason and Save Email Provider Settings, then Send Test Email (through Resend, to your own address) and read the answer in the card before choosing Resend API. |
 | 2.52 | 17 Nov 2026 | v2.16.26 | Curators can open Layer 1 and prepare Add source drafts; activation stays yours. The wizard's Staging kept (days) sets the source's period on Storage & retention at activation. One list of eight enrichment categories for every lane. |
 | 2.51 | 17 Nov 2026 | v2.16.25 | Layer 1 › Sources shows each source's parser (Hardcoded, AI-built, none). On Layout drift flagged, request Re-infer Parser Spec with a reason and keep the source paused if its counts look wrong. The wizard asks for the target record type first. |
 | 2.50 | 17 Nov 2026 | v2.16.24 | Layer 1 › + Add source is a six-step wizard; activate with a reason only when the licence terms and mapping are right, and leave the source paused until a dry run has passed. Platform health › Country & category completeness: read fill by country and category and Layer 4 ageing after each load. |

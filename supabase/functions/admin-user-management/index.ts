@@ -50,7 +50,7 @@ function renderEmail(text: string, v: Record<string, string>, html: boolean): st
     .replace(/(,?[ ]?)\{\{\s*user_name\s*\}\}/g, (_m, lead) => v.user_name ? lead + out(v.user_name) : "")
     .replace(/\{\{\s*(link|guide_link|user_email|role)\s*\}\}/g, (_m, t) => out(String(v[t] || "")));
 }
-async function sendViaResend(d: Delivery, to: string, kind: "invite" | "recovery", v: Record<string, string>, subjectPrefix = ""): Promise<void> {
+async function sendViaResend(d: Delivery, to: string, kind: "invite" | "recovery", v: Record<string, string>, subjectPrefix = ""): Promise<string> {
   const t = d.templates?.[kind];
   if (!t?.subject || !t?.body) throw new Error("email_template_not_found");
   const r = await fetch("https://api.resend.com/emails", {
@@ -61,8 +61,11 @@ async function sendViaResend(d: Delivery, to: string, kind: "invite" | "recovery
   });
   if (!r.ok) {
     const j: any = await r.json().catch(() => ({}));
-    throw new Error(`resend_${r.status}_${String(j?.name || j?.message || "send_failed").replace(/re_[A-Za-z0-9_-]+/g, "re_…").slice(0, 160)}`);
+    // v2.16.27: Resend's own words as well as its error name, so the screen can show why a send was refused (the key is never echoed)
+    throw new Error(`resend_${r.status}_${String([j?.name, j?.message].filter(Boolean).join(": ") || "send_failed").replace(/re_[A-Za-z0-9_-]+/g, "re_…").slice(0, 240)}`);
   }
+  const sent: any = await r.json().catch(() => ({}));
+  return String(sent?.id || ""); // Resend's reference for the email
 }
 const SYSTEM_EMAIL = /\.invalid$/i;
 const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -186,17 +189,24 @@ Deno.serve(async (req: Request) => {
       if (!emailRe.test(to) || SYSTEM_EMAIL.test(to)) return reply(req, 400, { error: "valid_test_email_required" });
       // v2.16.23: through Resend either saved template can be tested, to any address, with sample values and a link that signs nobody in
       const delivery = await loadDelivery(serviceClient);
+      // v2.16.27 (Platform Admin 17 Nov 2026 22:31): the Email delivery provider card's own test. It sends through Resend with the saved sender,
+      // from email and key even while Supabase built-in is still the provider, so the settings can be proved before switching over.
+      if (body?.via === "resend" && delivery.effective !== "resend") {
+        if (!delivery.key) return reply(req, 409, { error: "no_resend_api_key_is_saved_enter_the_key_and_save_email_provider_settings_first" });
+        if (!emailRe.test(delivery.fromEmail)) return reply(req, 409, { error: "no_from_email_is_saved_enter_it_and_save_email_provider_settings_first" });
+        delivery.effective = "resend";
+      }
       if (delivery.effective === "resend") {
         if (template !== "invite" && template !== "recovery") return reply(req, 400, { error: "template_is_invite_or_recovery" });
         const login = adminLoginUrl();
-        let note = "sent";
+        let note = "sent", resendId = "";
         try {
-          await sendViaResend(delivery, to, template, { link: login + "#test-email-link-signs-nobody-in", guide_link: delivery.guideLink || guideUrl(login),
+          resendId = await sendViaResend(delivery, to, template, { link: login + "#test-email-link-signs-nobody-in", guide_link: delivery.guideLink || guideUrl(login),
             user_email: to, user_name: String(me?.user?.user_metadata?.full_name || ""), role: "Platform Admin" }, "[Test] ");
         } catch (e) { note = e instanceof Error ? e.message : "send_failed"; }
-        await serviceClient.rpc("svc_admin_auth_template_log", { p_actor: actorUserId, p_action: "auth_template_test", p_detail: { template, sent_to: to, provider: "resend", synced: note === "sent", note } });
+        await serviceClient.rpc("svc_admin_auth_template_log", { p_actor: actorUserId, p_action: "auth_template_test", p_detail: { template, sent_to: to, provider: "resend", synced: note === "sent", note, resend_id: resendId || null } });
         if (note !== "sent") return reply(req, 400, { error: note });
-        return reply(req, 200, { ok: true, sent_to: to, template, provider: "resend" });
+        return reply(req, 200, { ok: true, sent_to: to, template, provider: "resend", resend_id: resendId || null, from: `${delivery.senderName} <${delivery.fromEmail}>`, in_use: delivery.configured === "resend" });
       }
       if (template !== "recovery") return reply(req, 409, { error: "an_invitation_is_tested_by_inviting_a_new_address_from_create_user" });
       const known = (await listAuthUsers(serviceClient)).some((u: any) => String(u.email || "").toLowerCase() === to && !u.deleted_at);

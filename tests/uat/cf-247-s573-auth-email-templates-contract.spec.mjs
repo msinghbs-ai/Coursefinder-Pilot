@@ -1,4 +1,4 @@
-// Guards: Users & roles › Links & Email Templates (Platform Admin 17 Nov 2026 14:40): the Admin site URL, guide link and the Invite User and Reset Password emails are edited by a Platform Admin only, a save needs a reason and is logged, Supabase Auth is changed only through the edge function when a management token is set, the preview cannot run scripts, and the consumer API is not touched. Follow-up (Platform Admin 17 Nov 2026 15:45): an open invitation can be sent again from the user row, and while no management token is set the screen warns that Supabase Auth keeps the previous emails and offers the HTML to paste. Decisions (Platform Admin 17 Nov 2026 16:13): no account token is kept in the edge function (Auth is synced by the admin workflow), a missing name leaves no stray comma, and custom SMTP (Resend) is a Go-live checklist item. Email delivery provider (Platform Admin 17 Nov 2026 16:24): invitations and resets can go through Resend; the API key is write-only, kept in Vault, read by the service role only and never returned, logged or echoed.
+// Guards: Users & roles › Links & Email Templates (Platform Admin 17 Nov 2026 14:40): the Admin site URL, guide link and the Invite User and Reset Password emails are edited by a Platform Admin only, a save needs a reason and is logged, Supabase Auth is changed only through the edge function when a management token is set, the preview cannot run scripts, and the consumer API is not touched. Follow-up (Platform Admin 17 Nov 2026 15:45): an open invitation can be sent again from the user row, and while no management token is set the screen warns that Supabase Auth keeps the previous emails and offers the HTML to paste. Decisions (Platform Admin 17 Nov 2026 16:13): no account token is kept in the edge function (Auth is synced by the admin workflow), a missing name leaves no stray comma, and custom SMTP (Resend) is a Go-live checklist item. Email delivery provider (Platform Admin 17 Nov 2026 16:24): invitations and resets can go through Resend; the API key is write-only, kept in Vault, read by the service role only and never returned, logged or echoed. Save and test on the card (Platform Admin 17 Nov 2026 22:31): the Email delivery provider card has its own always-enabled Save Email Provider Settings button with a reason and its own Send Test Email, which goes through Resend to the signed-in admin and shows Resend's answer in the card.
 // Behaviour is proven on isolated PostgreSQL by tests/fixtures/admin-auth-email-templates/run.sh (workflow admin-auth-email-templates-test); these checks keep the rules in the migration, the edge function and the screen.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
@@ -137,7 +137,7 @@ test('email delivery: with Resend in use the edge function makes the link withou
   expect(edge.match(/if \(delivery\.effective === "resend"\)/g).length).toBe(4)
   expect(edge).toContain('await serviceClient.auth.admin.deleteUser(data.user.id).catch(() => undefined); // nothing was sent, so no account is left behind')
   // the key leaves only as the Resend bearer; the status answer names its source, never the key
-  expect(edge.match(/d\.key\b/g).length).toBe(1)
+  expect(edge.match(/\bd\.key\b/g).length).toBe(1)
   expect(edge).toContain('delivery: { configured: d.configured, effective: d.effective, key_source: d.keySource, sender_name: d.senderName, from_email: d.fromEmail } });')
   expect(edge).not.toMatch(/console\.(log|warn|error)\([^)]*\bkey\b/)
   // a person's values are HTML-escaped and a missing name takes its comma with it
@@ -155,5 +155,23 @@ test('email delivery: the screen has the provider toggle, sender, from email and
   expect(screen).toContain("const payload={...dform,...(newKey.trim()?{resend_api_key:newKey.trim()}:{})}")
   expect(screen).toContain("rpc('admin_email_delivery_save',{p_payload:payload,p_reason:why})")
   expect(screen).toContain("setNewKey('');said.push(") // the typed key is cleared from the screen once saved
+  // v2.16.27: the card saves and tests itself. Its buttons are never greyed for a missing field; the card says what is missing instead.
+  const card = screen.slice(screen.indexOf('data-aet-delivery>'), screen.indexOf('data-aet-templates>'))
+  expect(card).toContain("<Button compact variant=\"primary\" disabled={busy!==''} onClick={saveDelivery} data-aet-delivery-save>{busy==='dsave'?'Saving…':'Save Email Provider Settings'}</Button>")
+  expect(card).toContain("<Button compact disabled={busy!==''} onClick={sendDeliveryTest} data-aet-delivery-test>{busy==='dtest'?'Sending…':'Send Test Email'}</Button>")
+  expect(card.indexOf('data-aet-delivery-reason')).toBeLessThan(card.indexOf('data-aet-delivery-save')); expect(card.indexOf('data-aet-delivery-save')).toBeLessThan(card.indexOf('data-aet-delivery-test'))
+  expect(card).toContain('data-aet-delivery-result')
+  expect(screen).toContain("if(why.length<4){setDNote({ok:false,text:'Not saved. Give a reason for the change in the Reason box (it is kept in the control log).'});return}")
+  expect(screen).toContain('const r=await access.deliveryTest(kind)')
+  expect(screen).toContain("setDNote({ok:false,text:`Test not sent. ${plainError(e).replace(/_/g,' ')}`})")
+  expect(screen).toContain("if(rank<6)return <EmptyInline text=\"Links & Email Templates opens for the Platform Admin.\"/>") // the whole tab, card included
+  // Save & Sync is the templates' own save now
+  expect(screen).toContain("disabled={busy!==''||!dirty||missingLink||bad.length>0||reason.trim().length<4} onClick={save} data-aet-save")
+  expect(read('src/access-roles-api.js')).toContain("deliveryTest: (template) => invoke({ action: 'auth_template_test', template, via: 'resend' }),")
+  // the edge function: the card's test goes through Resend with the saved settings before Resend is switched on, to the caller's own address, and answers with Resend's reference
+  expect(edge).toContain('if (body?.via === "resend" && delivery.effective !== "resend") {')
+  expect(edge).toContain('if (!delivery.key) return reply(req, 409, { error: "no_resend_api_key_is_saved_enter_the_key_and_save_email_provider_settings_first" });')
+  expect(edge).toContain('resend_id: resendId || null, from: `${delivery.senderName} <${delivery.fromEmail}>`, in_use: delivery.configured === "resend" });')
+  expect(edge).toContain('String([j?.name, j?.message].filter(Boolean).join(": ") || "send_failed").replace(/re_[A-Za-z0-9_-]+/g, "re_…")')
   expect(screen.indexOf('data-aet-delivery>')).toBeLessThan(screen.indexOf('data-aet-templates>')) // above the template editor
 })

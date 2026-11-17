@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.449 — 17 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.27** (Platform Admin 17 Nov 2026 22:31, S1-RM-Design lane). No migration. Users & roles › Links & Email Templates › Email delivery provider gets its own Reason box, an always-enabled **Save Email Provider Settings** button and a **Send Test Email** button whose result shows in the card. Edge function `admin-user-management`: `auth_template_test` with `via: "resend"` sends through Resend with the saved sender, from email and key to the caller's own address, also before Resend is the provider, and answers with Resend's reference; a refused send carries Resend's own message. Save & Sync saves link settings and templates only. Guard: `s573`.
+
 ## 0.1.448 — 17 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.26** (Platform Admin 17 Nov 2026 19:58 and 20:45, S1-RM-Design lane, Wave 2 decisions). Migration 20261117213000_cf247_wave2_unify_categories_retention_roles: `public.svc_enrichment_categories()` publishes the one list of eight categories; the wizard's keep period is set through `admin_source_retention_set` on activation and the report reads `pipeline.source_retention_policies` and the `retention.*` settings; Curator (rank 3) opens Layer 1 and drafts (exact, md5-guarded change of `security.admin_layer1_operations_read` and the draft functions), re-infer stays rank 4, activation rank 6. UI: Layer 1 nav minimum 3. No job. G3 untouched.

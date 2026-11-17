@@ -1,21 +1,20 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.26'
-export const PACKAGE_VERSION='0.1.448'
+export const UI_VERSION='2.16.27'
+export const PACKAGE_VERSION='0.1.449'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'17 Nov 2026',
-  title:'Curators open Layer 1; one category list; source retention in one place',
+  title:'Email provider settings: their own Save and Send Test Email buttons',
   changes:[
-    'Layer 1 Register now opens for Curator and above. A Curator can prepare and edit Add source drafts. Re-infer Parser Spec stays Pipeline Operator and above; activating a source stays the Platform Admin\'s. Every other control on a source keeps its own role.',
-    'Add source wizard, step 4: one Staging kept (days) field. On activation it is set for the source on Storage & retention, where the nightly housekeeping reads it. Leave it empty to follow the platform period.',
-    'Country & category completeness: the retention columns now read the same per-source periods and settings as Storage & retention.',
-    'The eight enrichment categories are one list, published to every loader and worker.',
-    'Country & category completeness: new table Evidence captured and Layer 4 review items, by source. The two counts sit side by side and are not divided into a rate, because one stored page can raise many review items.'
+    'Links & Email Templates › Email delivery provider: new Save Email Provider Settings button on the card, with its own Reason box. It saves the provider, Sender Name, From Email and (when typed) the Resend API key. The button is always available; if something is missing the card says what.',
+    'Same card: new Send Test Email button. It sends the template selected below through Resend to your own sign-in address, using the saved settings, and shows Resend\'s answer or error in the card. It works before Resend is switched on, so the key and from email can be proved first.',
+    'Save & Sync now saves the link settings and templates only.'
   ],
   bugFixes:[
+    'With Resend API selected there was no visible button on the card to save the provider settings or test them; the save sat under the template editor.'
   ]
 }
 
