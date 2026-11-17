@@ -1,4 +1,4 @@
-// Guards: RM1I climate figures (Platform Admin 18 Nov 2026 10:31 "build the non-breaking ingestion/refresh pipeline into destination.locality_metrics (with source attribution and /destination API v3 exposure)"; Study Square 13 Nov: long-term climate averages, summer and winter averages and annual rainfall): BOM pages are read and parsed deterministically, figures load as draft with attribution and evidence only after the edition's terms are approved (held preview before), a reviewed figure is never changed, and the consumer API is not reshaped.
+// Guards: RM1I climate figures (Platform Admin 18 Nov 2026 10:31 "build the non-breaking ingestion/refresh pipeline into destination.locality_metrics (with source attribution and /destination API v3 exposure)"; Study Square 13 Nov: long-term climate averages, summer and winter averages and annual rainfall): BOM pages are read and parsed deterministically, figures load as draft with attribution and evidence (Platform Admin 10:44: load into draft editions; terms and publication stay the Platform Admin's; a dry run or a restricted edition writes nothing), a reviewed figure is never changed, and the consumer API is not reshaped.
 // CF-247 S621. supabase/migrations/20261118123000_cf247_rm1i_destination_climate_loader.sql, supabase/functions/_shared/cf247-bom-climate.js, supabase/functions/layer1-destination-geo-loader/index.ts.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
@@ -26,17 +26,18 @@ test('the BOM reader takes the three monthly statistics, the years of record and
   expect(parseBomClimate('<table><tr><td>nothing</td></tr></table>').missing).toEqual(['mean_max_temp_c', 'mean_min_temp_c', 'mean_rainfall_mm'])
 })
 
-test('the load is held until the terms are approved, writes draft figures with attribution, and keeps reviewed figures', () => {
-  expect(M).toContain("'BOM Climate statistics for Australian locations (IDCJCM0037)', 'draft', 'https://www.bom.gov.au/climate/averages/'")
+test('the load writes draft figures with attribution, holds on a dry run or restricted terms, and keeps reviewed figures', () => {
+  expect(M).toContain("'BOM Climate statistics for Australian locations (IDCJCM0037)', current_date, 'draft', 'https://www.bom.gov.au/climate/averages/'")
   expect(M).toContain("'pending', now()")
-  expect(M).toContain("v_hold := v_ed.terms_status <> 'approved';")
+  expect(M).toContain("v_hold := v_ed.terms_status = 'restricted' or coalesce((p_payload->>'dry_run')::boolean, false);")
   expect(M).toContain("if v_hold then continue; end if;")
   expect(M).toContain("v_kept := v_kept + 1;  -- approved, published, superseded or withdrawn: never changed by a load")
   expect(M).toContain("values (v_st.locality_id, 'climate', m.key, v_val, m.unit, v_period, v_ed.edition_label, x->>'page_url',")
   expect(M).toContain("v_ed.attribution_text || ' Station ' || v_st.station_name || ' (' || v_st.station_id || ').', 'draft', v_ev);")
   for (const k of ['climate_summer_mean_max_c', 'climate_summer_mean_min_c', 'climate_winter_mean_max_c', 'climate_winter_mean_min_c', 'climate_annual_rainfall_mm']) expect(M).toContain(`'${k}'`)
   expect(M).toContain("array[12,1,2]::smallint[], array[6,7,8]::smallint[]")
-  expect(M).toContain("raise exception 'post-check: the climate edition terms must stay pending until a Platform Admin approves them'")
+  expect(M).toContain("raise exception 'post-check: the climate edition terms stay pending until the Platform Admin records them'")
+  expect(M).toContain("'dry_run', true, 'stations'")
   expect(M).not.toMatch(/terms_status\s*=\s*'approved'\s*(,|where|$)/m)
 })
 

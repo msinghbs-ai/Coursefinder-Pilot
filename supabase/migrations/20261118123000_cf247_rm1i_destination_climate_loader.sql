@@ -7,14 +7,16 @@
 -- What it builds
 --   * destination.climate_stations: the Bureau of Meteorology station read for each destination city (data, changed by a Platform Admin), with the
 --     season months of its hemisphere. Seeded for the eight capital-city localities (approved SUA rows).
---   * destination.editions row "BOM Climate statistics for Australian locations (IDCJCM0037)", status draft, terms_status PENDING. The Bureau's
---     terms have not been approved for StudySearch (admin DESTINATION-DATA-UI-AND-INGESTION-SPEC.md §6: "The build can proceed; the load cannot").
+--   * destination.editions row "BOM Climate statistics for Australian locations (IDCJCM0037)", status draft, terms_status pending. Platform Admin
+--     18 Nov 2026 10:44 directed the RM1I load "into draft editions with full source attribution so the Platform Admin can review and publish them":
+--     figures load as draft while the terms are pending; recording the terms and publishing the edition stay the Platform Admin's. A load is held
+--     (writes nothing) only when the edition's terms are marked restricted.
 --   * security.destination_climate_load_v1: from the monthly statistics of each station page, five draft figures per city
 --     (climate_summer_mean_max_c, climate_summer_mean_min_c, climate_winter_mean_max_c, climate_winter_mean_min_c, climate_annual_rainfall_mm),
 --     each with its unit, the years of record as reference period, the station page as source link, the attribution and the stored page as
---     evidence. While the edition's terms are pending it writes NOTHING and returns what it would write (a held preview); once a Platform Admin
---     records the terms as approved (Destination data › Overview & editions) the next run writes draft figures, which a person approves on
---     City metrics & costs (Bulk Approve Drafts included). A figure already approved, published or withdrawn is never changed.
+--     evidence. Figures are written as draft for a person to approve on City metrics & costs (Bulk Approve Drafts included); a dry run
+--     (payload dry_run) or an edition marked restricted writes nothing and returns a preview. A figure already approved, published or withdrawn
+--     is never changed.
 --   * job destination-climate-load (2nd of the month, 05:30 Sydney) and Run now, through edge function layer1-destination-geo-loader (mode climate).
 --   * API v3: /destination already returns every approved or published locality figure with its category, key, unit, period, source and attribution
 --     (public.website_v3_destination, section localities). Nothing in the consumer API changes (G3 untouched; v3 is read, not reshaped).
@@ -63,9 +65,9 @@ select l.id, 'AU', s.station_id, s.station_name, 'https://www.bom.gov.au/climate
   join destination.localities l on l.country_code = 'AU' and l.geography_code = s.sua_code and l.status in ('approved', 'published')
  where not exists (select 1 from destination.climate_stations c where c.locality_id = l.id and c.product = 'IDCJCM0037' and c.status = 'active');
 
--- 2. the edition (terms pending: nothing is written until a Platform Admin approves them)
-insert into destination.editions(country_id, domain, edition_label, status, source_url, source_owner, attribution_text, terms_status, last_checked_at)
-select c.id, 'city_profiles', 'BOM Climate statistics for Australian locations (IDCJCM0037)', 'draft', 'https://www.bom.gov.au/climate/averages/',
+-- 2. the edition (draft; terms pending until the Platform Admin records them)
+insert into destination.editions(country_id, domain, edition_label, effective_from, status, source_url, source_owner, attribution_text, terms_status, last_checked_at)
+select c.id, 'city_profiles', 'BOM Climate statistics for Australian locations (IDCJCM0037)', current_date, 'draft', 'https://www.bom.gov.au/climate/averages/',
        'Bureau of Meteorology',
        'Source: Bureau of Meteorology, Climate statistics for Australian locations (all years of record). © Commonwealth of Australia.',
        'pending', now()
@@ -107,7 +109,7 @@ declare v_run uuid := nullif(p_payload->>'run_id', '')::uuid; v_ed destination.e
 begin
   select * into v_ed from destination.editions where edition_label = 'BOM Climate statistics for Australian locations (IDCJCM0037)';
   if v_ed.id is null then raise exception 'the climate edition is missing'; end if;
-  v_hold := v_ed.terms_status <> 'approved';
+  v_hold := v_ed.terms_status = 'restricted' or coalesce((p_payload->>'dry_run')::boolean, false);
   for x in select * from jsonb_array_elements(coalesce(p_payload->'stations', '[]'::jsonb)) loop
     select * into v_st from destination.climate_stations where station_id = x->>'station_id' and product = 'IDCJCM0037' and status = 'active';
     if v_st.id is null then v_skipped := v_skipped || jsonb_build_object('station_id', x->>'station_id', 'reason', 'not an active station'); continue; end if;
@@ -160,7 +162,7 @@ begin
     end loop;
   end loop;
   v_result := jsonb_build_object('edition', v_ed.edition_label, 'terms_status', v_ed.terms_status,
-    'held', v_hold, 'held_reason', case when v_hold then 'The Bureau of Meteorology terms are not approved for this edition; nothing was written. Record the terms on Destination data › Overview & editions, then run again.' end,
+    'held', v_hold, 'held_reason', case when v_ed.terms_status = 'restricted' then 'The edition''s terms are marked restricted; nothing was written.' when v_hold then 'Dry run: nothing was written.' end,
     'figures', jsonb_array_length(v_rows), 'changed', v_written, 'unchanged', v_unchanged, 'kept_reviewed', v_kept,
     'skipped', v_skipped, 'preview', case when v_hold then v_rows end, 'trigger', p_payload->>'trigger');
   insert into pipeline.admin_control_events(area, action, target, detail, actor)
@@ -169,7 +171,7 @@ begin
   perform security.destination_run_finish_v1(v_run, jsonb_strip_nulls(v_result), null);
   return jsonb_strip_nulls(v_result);
 end $function$;
-comment on function security.destination_climate_load_v1(jsonb) is 'RM1I: five draft climate figures per destination city from BOM monthly statistics (seasons from destination.climate_stations); writes nothing while the edition terms are pending (returns a preview); never changes a reviewed figure.';
+comment on function security.destination_climate_load_v1(jsonb) is 'RM1I: five draft climate figures per destination city from BOM monthly statistics (seasons from destination.climate_stations); a dry run or a restricted edition writes nothing (returns a preview); never changes a reviewed figure.';
 
 create or replace function public.svc_destination_climate_load_v1(p_payload jsonb)
  returns jsonb
@@ -239,7 +241,7 @@ grant execute on function public.svc_destination_climate_stations_v1() to servic
 -- 7. the job and the register (the edge function is already on the nonce allowlist)
 insert into pipeline.automation_catalogue(jobname, area, sort, label, description, control_rank, batch_editable) values
  ('destination-climate-load', 'Layer 1 register', 301, 'Destination: BOM climate averages',
-  'Reads the Bureau of Meteorology climate statistics page of each destination city''s station and loads summer and winter average temperatures and annual rainfall, with attribution, as draft figures for approval on City metrics & costs. Writes nothing until the edition''s terms are approved. Runs on the 2nd of the month at 05:30 Sydney time.',
+  'Reads the Bureau of Meteorology climate statistics page of each destination city''s station and loads summer and winter average temperatures and annual rainfall, with attribution, as draft figures for approval on City metrics & costs. Runs on the 2nd of the month at 05:30 Sydney time.',
   6, false)
 on conflict (jobname) do nothing;
 
@@ -262,7 +264,7 @@ declare v_prev jsonb;
 begin
   if (select count(*) from destination.climate_stations where status = 'active') <> 8 then raise exception 'post-check: eight capital-city stations'; end if; -- fixed: the seeded capitals
   if (select terms_status from destination.editions where edition_label = 'BOM Climate statistics for Australian locations (IDCJCM0037)') <> 'pending' then
-    raise exception 'post-check: the climate edition terms must stay pending until a Platform Admin approves them';
+    raise exception 'post-check: the climate edition terms stay pending until the Platform Admin records them';
   end if;
   if not exists (select 1 from cron.job where jobname = 'destination-climate-load' and active) then raise exception 'post-check: job'; end if;
   if (select command from cron.job where jobname = 'destination-climate-load') ~ '\(\s*[0-9]+\s*[,)]' then raise exception 'post-check: a number in the job command'; end if;
@@ -270,14 +272,14 @@ begin
   if not (security.toolset_setting('pipeline', 'run_now.jobs') ? 'destination-climate-load') or not (security.toolset_setting('pipeline', 'run_now.jobs') ? 'destination-abs-load') then
     raise exception 'post-check: run_now.jobs';
   end if;
-  -- a held load writes nothing and previews the figures
-  v_prev := security.destination_climate_load_v1(jsonb_build_object('trigger', 'post-check', 'stations', jsonb_build_array(jsonb_build_object(
+  -- a dry run writes nothing and previews the figures
+  v_prev := security.destination_climate_load_v1(jsonb_build_object('trigger', 'post-check', 'dry_run', true, 'stations', jsonb_build_array(jsonb_build_object(
     'station_id', '066062', 'page_url', 'https://www.bom.gov.au/climate/averages/tables/cw_066062_All.shtml', 'missing', '[]'::jsonb,
     'statistics', jsonb_build_object(
       'mean_max_temp_c', jsonb_build_object('months', jsonb_build_array(26,25.8,24.8,22.5,19.6,17.1,16.5,17.8,20.2,22.2,23.7,25.3), 'annual', 21.8, 'first_year', 1859, 'last_year', 2026),
       'mean_min_temp_c', jsonb_build_object('months', jsonb_build_array(18.8,19,17.6,14.7,11.6,9.3,8.1,9,11.1,13.6,15.7,17.5), 'annual', 13.8, 'first_year', 1859, 'last_year', 2026),
       'mean_rainfall_mm', jsonb_build_object('months', jsonb_build_array(101,117.6,129.2,127.1,119.9,132,97.4,80.7,68.3,76.9,83.9,77.6), 'annual', 1213.8, 'first_year', 1858, 'last_year', 2026))))));
   if not (v_prev->>'held')::boolean or (v_prev->>'changed')::int <> 0 or (v_prev->>'figures')::int <> 5 then raise exception 'post-check: held preview %', v_prev; end if;
-  if exists (select 1 from destination.locality_metrics where metric_category = 'climate') then raise exception 'post-check: a held load wrote a figure'; end if;
+  if exists (select 1 from destination.locality_metrics where metric_category = 'climate') then raise exception 'post-check: a dry run wrote a figure'; end if;
   if (v_prev->'preview'->0->>'value')::numeric <> 25.7 then raise exception 'post-check: summer mean maximum (Dec, Jan, Feb) %', v_prev->'preview'->0; end if;
 end $$;
