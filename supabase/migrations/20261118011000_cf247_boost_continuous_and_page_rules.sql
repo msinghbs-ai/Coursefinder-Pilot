@@ -153,7 +153,7 @@ begin
   end if;
   if jsonb_array_length(v_claim->'items') > 0 then
     perform public.svc_boost_extract_done(v_claim->>'batch_id',
-      (select jsonb_agg(jsonb_build_object('item_key', x->>'item_key', 'status', 'released', 'note', 'post-check of migration 20261118002000')) from jsonb_array_elements(v_claim->'items') x), null);
+      (select jsonb_agg(jsonb_build_object('item_key', x->>'item_key', 'status', 'released', 'note', 'post-check of migration 20261118011000')) from jsonb_array_elements(v_claim->'items') x), null);
   end if;
   -- a run of the job in flight keeps its own claimed rows; every finished reading is released
   if exists (select 1 from pipeline.boost_extract_items where state in ('verified', 'rejected', 'failed')) then raise exception 'post-check: a course is not released for the new reading'; end if;

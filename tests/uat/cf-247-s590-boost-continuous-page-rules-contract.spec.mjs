@@ -1,9 +1,9 @@
 // Guards: Boost runs continuously, on the course's own page only (Platform Admin 17 Nov 2026 22:50, and the first live results of 23:22 to 23:30): the Boost windows are opened to the whole day by their settings; the squash lock (Thu 19 Nov 2026 01:15 to 03:30 Melbourne) still closes both gates and promotion; a stored page whose text is also stored for another course is never claimed; Boost's spend goes to the AI spend ledger so the route cap counts it; the change qualifies no model, so everything stays shadow
-// CF-247 S590. Migration 20261118002000_cf247_boost_continuous_and_page_rules (with worker coverage-sweep v1.0.10, guarded by s587). G1, G2, G3 and housekeeping are guarded centrally by s42, s32 and s57.
+// CF-247 S590. Migration 20261118011000_cf247_boost_continuous_and_page_rules (with worker coverage-sweep v1.0.10, guarded by s587). G1, G2, G3 and housekeeping are guarded centrally by s42, s32 and s57.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261118002000_cf247_boost_continuous_and_page_rules.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations/20261118011000_cf247_boost_continuous_and_page_rules.sql', 'utf8')
 const code = M.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const strip = (s) => s.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const fn = (src, name) => { const i = src.indexOf(`create or replace function ${name}`); return src.slice(i, src.indexOf('end $function$;', i)) }
