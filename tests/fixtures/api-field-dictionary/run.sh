@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Guards: REQ-76 API v3 field dictionary sync (Platform Admin 15 Nov 2026, combined build item 1) and G4 database-backed tests:
-# migration 20261116110000 on top of 20261115190000 runs on an isolated PostgreSQL 16 (fixtures only, never a Supabase project). It proves: the
+# migration 20261116110000, then the newest reviewed list (20261117051000), on top of 20261115190000 runs on an isolated PostgreSQL 16 (fixtures only, never a Supabase project). It proves: the
 # reviewed list loads every field; a second load changes nothing; only a changed field is written; a field dropped from the list is marked
 # deprecated and never deleted, and comes back un-deprecated; a bad list writes nothing; the drift check finds a missing path, a type change and a
 # null where the dictionary says not nullable, and is empty for a matching response.
@@ -11,7 +11,8 @@ DB=${FD_DB:-g_api_field_dictionary}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"
 F=tests/fixtures/api-field-dictionary
-S=supabase/migrations/20261115190000_api_v3_additive_schema.sql; M=supabase/migrations/20261116110000_cf247_api_field_dictionary_sync.sql
+S=supabase/migrations/20261115190000_api_v3_additive_schema.sql; M0=supabase/migrations/20261116110000_cf247_api_field_dictionary_sync.sql
+M=supabase/migrations/20261117051000_cf247_api_field_dictionary_destination.sql  # the newest reviewed list, on top of the functions of M0
 N=$(node -e "console.log(JSON.parse(require('fs').readFileSync('docs/api/v3/field-dictionary.json','utf8')).fields.length)")
 # a fingerprint of the reviewed list: the loaded table must carry exactly the same values (the compact form decodes losslessly)
 FP=$(node -e "const c=require('crypto');const d=JSON.parse(require('fs').readFileSync('docs/api/v3/field-dictionary.json','utf8'));console.log(c.createHash('md5').update(d.fields.map(f=>[f.api_surface,f.endpoint,f.field_path,f.data_type,f.is_nullable,f.description,(f.allowed_values?JSON.stringify(f.allowed_values).replace(/,/g,', '):'null'),(f.req_ids||[]).slice().sort().join(',')].join('|')).sort().join('\\n')).digest('hex'))")
@@ -21,8 +22,9 @@ psql -X -q -d postgres -c "do \$\$ begin if not exists (select 1 from pg_roles w
 $P -f $F/stubs.sql
 $P -1 -f $S >/dev/null
 echo "loaded: stubs and $S"
+$P -1 -f $M0 >/dev/null 2>&1
 $P -1 -f $M >/dev/null 2>&1; $P -1 -f $M >/dev/null 2>&1
-echo "migration: applied twice without error"
+echo "migration: $M0, then the newest list applied twice without error"
 
 $P -v n="$N" -v fp="$FP" <<'SQL'
 create or replace function pg_temp.ok(c boolean, m text) returns void language plpgsql as $$ begin if c is not true then raise exception 'FAIL: %', m; end if; raise notice 'ok: %', m; end $$;

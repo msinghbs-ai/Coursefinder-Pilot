@@ -1,11 +1,14 @@
-// Guards: REQ-76 API v3 field dictionary (Platform Admin 15 Nov 2026, combined build item 1): every Website API v3 and Zoho API v3 read action is described field by field in docs/api/v3/field-dictionary.json, and migration 20261116110000 loads exactly that list
+// Guards: REQ-76 API v3 field dictionary (Platform Admin 15 Nov 2026, combined build item 1): every Website API v3 and Zoho API v3 read action is described field by field in docs/api/v3/field-dictionary.json, and the newest sync migration (20261117051000, after 20261116110000) loads exactly that list
 // Behaviour of the sync and drift functions is proven on isolated PostgreSQL by tests/fixtures/api-field-dictionary/run.sh (workflow api-field-dictionary-test).
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { load, validate, compact, embedded } from '../../scripts/api-v3-field-dictionary.mjs'
 
+// the sync and drift functions live in 20261116110000; each later reviewed list is loaded by its own sync migration, the newest of which must embed the file
 const MIG = 'supabase/migrations/20261116110000_cf247_api_field_dictionary_sync.sql'
+const LIST = 'supabase/migrations/20261117051000_cf247_api_field_dictionary_destination.sql'
 const sql = fs.readFileSync(MIG, 'utf8')
+const listSql = fs.readFileSync(LIST, 'utf8')
 const code = sql.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const doc = load()
 const actions = (file) => JSON.parse(fs.readFileSync(file, 'utf8').match(/const ACTIONS = (\[[^\]]+\])/)[1].replace(/\s+/g, ' '))
@@ -15,9 +18,11 @@ test('the reviewed list is complete and valid: one entry per field, a descriptio
   for (const f of doc.fields) expect(f.description.trim().length, `${f.api_surface} ${f.endpoint} ${f.field_path}`).toBeGreaterThan(8)
 })
 
-test('the migration loads exactly the reviewed list', () => {
-  expect(embedded(sql)).toBe(compact(doc))
-  expect(code).toContain("security.api_field_dictionary_sync_v1('v3', 'v3.0', (")
+test('the newest sync migration loads exactly the reviewed list', () => {
+  expect(embedded(listSql)).toBe(compact(doc))
+  expect(listSql).toContain("security.api_field_dictionary_sync_v1('v3', 'v3.0', (")
+  const newest = fs.readdirSync('supabase/migrations').filter((f) => /api_field_dictionary/.test(f) && embedded(fs.readFileSync(`supabase/migrations/${f}`, 'utf8'))).sort().at(-1)
+  expect(`supabase/migrations/${newest}`).toBe(LIST)
 })
 
 test('every read action of both v3 APIs is in the dictionary', () => {

@@ -5,6 +5,7 @@ on:
     paths:
       - 'supabase/migrations/20261115190000_api_v3_additive_schema.sql'
       - 'supabase/migrations/20261116110000_cf247_api_field_dictionary_sync.sql'
+      - 'supabase/migrations/20261117051000_cf247_api_field_dictionary_destination.sql'
       - 'docs/api/v3/field-dictionary.json'
       - 'scripts/api-v3-field-dictionary.mjs'
       - 'tests/fixtures/api-field-dictionary/**'
