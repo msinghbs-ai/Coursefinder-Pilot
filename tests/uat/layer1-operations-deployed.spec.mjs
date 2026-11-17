@@ -53,7 +53,16 @@ test.describe('M2.4.1 Layer 1 regulatory operations @deployed',()=>{
     await expect(page.getByRole('tab',{name:'Source settings'})).toHaveCount(0)
     const dialog=page.locator('[data-l1-sources]');const row=dialog.locator('[data-l1-source]').first();await expect(row).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
     const body=await openRow(dialog,row);await expect(body).toContainText('Settings can be changed by a Platform Admin.');await expect(dialog.locator('[data-l1-source-form]')).toHaveCount(0)
-    await expect(dialog.getByRole('button',{name:'Add source'})).toHaveCount(0)
+    // v2.16.26 (Platform Admin 17 Nov 2026 20:45, role gates by role name): Curator (rank 3) and above open Layer 1 and prepare Add source
+    // drafts, so the operator sees + Add source and the wizard. Activating a source stays the Platform Admin's (rank 6): the reason field and
+    // the Activate button are disabled for the operator. Nothing is saved here (no step is submitted). Re-infer Parser Spec is Pipeline
+    // Operator (rank 4) and above and shows only on a source whose reader has flagged layout drift, so it is not asserted on live data.
+    const add=dialog.getByRole('button',{name:'Add source'});await expect(add).toHaveCount(1);await add.click()
+    const wizard=page.locator('[data-l1-induction-wizard]');await expect(wizard.locator('[data-l1i-country]')).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+    await wizard.locator('[data-l1i-tab="activate"]').click()
+    await expect(wizard.locator('[data-l1i-reason]')).toBeDisabled();await expect(wizard.locator('[data-l1i-activate]')).toBeDisabled()
+    await expect(wizard.locator('[data-l1i-activate]')).toHaveAttribute('title','Needs Platform Admin')
+    await wizard.getByRole('button',{name:'Close',exact:true}).click();await expect(wizard).toHaveCount(0)
     await milestoneScreenshot(page,testInfo,'cf-067-layer1-source-settings-role-boundary')
   }finally{await finish(testInfo,runtime)}})
 
