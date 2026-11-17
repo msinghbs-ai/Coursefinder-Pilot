@@ -104,7 +104,7 @@ test('the three switches still ship off, the revision is not touched by this lan
     const body = fs.readFileSync(migrationPath(f), 'utf8').split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')
     expect(body, f).not.toMatch(/reader_revision|reading\.(course_quote_fragments_on|entry_country_aliases_on|entry_value_null_on)/)
   }
-  const paste = fs.readFileSync('docs/paste/AER2-20261108-reader-revision-2.md', 'utf8')
+  const paste = fs.readFileSync('tests/fixtures/paste/AER2-20261108-reader-revision-2.md', 'utf8')
   expect(paste).toContain('Nothing in this file has been applied')
   expect(paste).toContain('layer4.reader_revision')
   expect(paste).toContain('raising the revision now releases nothing')

@@ -78,7 +78,7 @@ test('housekeeping rows: the five components and the job are registered; the rec
   expect(code).toContain("('job', 'aer-source-stored-find'")
   expect(code).toMatch(/comment on table pipeline\.aer_source_stored_find is '/)
   expect((code.match(/introduced_in|'20261107150000'/g) || []).length).toBeGreaterThan(4)
-  const measure = fs.readFileSync('docs/paste/MEASURE-20261107-aer-stored-source-discovery.sql', 'utf8')
+  const measure = fs.readFileSync('tests/fixtures/paste/MEASURE-20261107-aer-stored-source-discovery.sql', 'utf8')
   expect(measure).toContain('entry_source_stored_find_v1')
   expect(measure.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')).not.toMatch(/\b(insert|update|delete|drop|alter|truncate)\b/i)
   expect(code).not.toMatch(/website_v2_|website_edge_|zoho_edge_|\bapi\./)   // G3 reading: no consumer API object

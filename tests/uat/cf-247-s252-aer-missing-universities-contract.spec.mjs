@@ -8,8 +8,8 @@ import fs from 'node:fs'
 
 const MIG = 'supabase/migrations/20261104090000_cf247_ops_c_aer_missing_universities.sql'
 const m = fs.readFileSync(MIG, 'utf8')
-const PASTE = fs.readFileSync('docs/paste/PASTE-20261104-aer-missing-university-sources.sql', 'utf8')
-const ROLL = fs.readFileSync('docs/paste/PASTE-20261104-aer-missing-university-sources-rollback.sql', 'utf8')
+const PASTE = fs.readFileSync('tests/fixtures/paste/PASTE-20261104-aer-missing-university-sources.sql', 'utf8')
+const ROLL = fs.readFileSync('tests/fixtures/paste/PASTE-20261104-aer-missing-university-sources-rollback.sql', 'utf8')
 const fx = (f) => fs.readFileSync(`tests/fixtures/ops-aer-missing/${f}`, 'utf8')
 const EIGHT = ['6f5cb7f7-7c70-4c06-970f-f368c3a786e2', 'c5c5d225-3d4c-4e41-8275-78eddd261073', 'fa0e0d13-838a-42ff-b6a3-9cea84bd80b2', 'fec52f92-a8a3-4de8-a862-06f355e4e2f7',
   '030992c3-72c6-452d-8a3b-10ceb0fd77f2', 'fe6af182-f5ca-4a3c-bfb4-b0773ff1b113', 'f02d9d9b-0eb2-4f0e-8215-27a36ae63aa6', '551383f9-7732-4588-a843-dd2b97c13f6f']
@@ -66,12 +66,12 @@ test('report classes are not status values; the ledger carries class, fingerprin
 })
 
 test('the rendered pilot uses the existing host list only, is capped to two pages, and rolls back to the four hosts exactly', () => {
-  const pilot = fs.readFileSync('docs/paste/PASTE-20261104-aer-render-pilot.sql', 'utf8')
-  const back = fs.readFileSync('docs/paste/PASTE-20261104-aer-render-pilot-rollback.sql', 'utf8')
+  const pilot = fs.readFileSync('tests/fixtures/paste/PASTE-20261104-aer-render-pilot.sql', 'utf8')
+  const back = fs.readFileSync('tests/fixtures/paste/PASTE-20261104-aer-render-pilot-rollback.sql', 'utf8')
   expect(pilot).toContain("v_before || '[\"jcu.edu.au\", \"unisq.edu.au\"]'::jsonb")
   expect(pilot).toContain("if v_n <> 2 then raise exception 'guard: % entry pages on the pilot hosts, expected exactly 2; rolled back', v_n; end if;")
   expect(pilot).not.toMatch(/toolset_key = 'firecrawl'|key = '(daily_budget|daily_share|scholarship_cap)/)  // no Firecrawl limit is changed
   expect(back).toContain("set value = '[\"wgtn.ac.nz\", \"whitireiaweltec.ac.nz\", \"newcastle.edu.au\", \"griffith.edu.au\"]'::jsonb")
-  expect(fs.readFileSync('docs/paste/MEASURE-20261104-aer-render-pilot.sql', 'utf8')).not.toMatch(/\b(insert|update|delete)\b/i)
+  expect(fs.readFileSync('tests/fixtures/paste/MEASURE-20261104-aer-render-pilot.sql', 'utf8')).not.toMatch(/\b(insert|update|delete)\b/i)
   expect(fx('run.sh')).toContain('render pilot: two hosts added, exactly two pages')
 })

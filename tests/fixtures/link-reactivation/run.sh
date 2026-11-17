@@ -41,10 +41,10 @@ $P -d $DB -f fixtures.sql 2>&1 | show
 $P -d $DB -f paste-rehearsal-seed.sql >/dev/null
 $P -d $DB -c "alter sequence pipeline.admin_control_events_id_seq restart with 30000" >/dev/null
 [ "$($P -d $DB -Atc "select count(*) from security.course_link_reactivated_v1() where link_id::text in (select jsonb_array_elements_text(detail->'made_inactive') from pipeline.admin_control_events where id = 28622)")" = 13 ] || { echo "rehearsal: the listing does not find the 13"; exit 1; }
-$P -d $DB -f ../../../docs/paste/PASTE-20261103-iq43-reactivated-links.sql >/dev/null
+$P -d $DB -f ../../../tests/fixtures/paste/PASTE-20261103-iq43-reactivated-links.sql >/dev/null
 [ "$($P -d $DB -Atc "select count(*) from catalogue.course_links l join pipeline.admin_control_events e on e.id = 28622 and e.detail->'made_inactive' ? l.id::text where l.status = 'inactive'")" = 13 ] || { echo "rehearsal: paste did not restore 13"; exit 1; }
 [ "$($P -d $DB -Atc "select (detail->>'count')::int from pipeline.admin_control_events where action = 'iq43_reactivated_link_restore'")" = 13 ] || { echo "rehearsal: no audit row"; exit 1; }
-if $P -d $DB -f ../../../docs/paste/PASTE-20261103-iq43-reactivated-links.sql >/dev/null 2>&1; then echo "rehearsal: a second paste run was not refused"; exit 1; fi
-$P -d $DB -f ../../../docs/paste/PASTE-20261103-iq43-reactivated-links-rollback.sql >/dev/null
+if $P -d $DB -f ../../../tests/fixtures/paste/PASTE-20261103-iq43-reactivated-links.sql >/dev/null 2>&1; then echo "rehearsal: a second paste run was not refused"; exit 1; fi
+$P -d $DB -f ../../../tests/fixtures/paste/PASTE-20261103-iq43-reactivated-links-rollback.sql >/dev/null
 [ "$($P -d $DB -Atc "select count(*) from catalogue.course_links l join pipeline.admin_control_events e on e.id = 28622 and e.detail->'made_inactive' ? l.id::text where l.status = 'active'")" = 13 ] || { echo "rehearsal: rollback did not restore 13"; exit 1; }
 echo "ok paste rehearsal: listing finds the 13; paste sets 13 inactive with an audit row, shown links unchanged; a second run is refused; rollback re-activates 13"

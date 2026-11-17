@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Guards: IQ-00313: the correction file (docs/paste/PASTE-20261108-iq00313-deakin-intake-withdrawal.sql) is tested as written. Only its two data blocks
+# Guards: IQ-00313: the correction file (tests/fixtures/paste/PASTE-20261108-iq00313-deakin-intake-withdrawal.sql) is tested as written. Only its two data blocks
 # (CONSTANTS and TARGETS: the production ids and the rejected value) are replaced by the fixture's own contaminated intakes; every guard, the withdrawal,
 # the rejection, the reconciliation, the verification and the audit run as they are in the file.
 import re, subprocess, sys

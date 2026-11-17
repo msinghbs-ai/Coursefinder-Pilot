@@ -1,11 +1,11 @@
 // Guards: Settings tidy-up Phase 1 (Platform Admin 16 Nov 2026 05:12 and 05:23, claude/ui-ux-settings-audit-2026-11-15.md decisions 1 to 4): the 39 Serper and ScrapingBee settings and the settings whose only readers are retiring become retiring (never deleted by a migration; the count-guarded paste file removes them after the retirement period); settings still read by a replacement are re-pointed; every setting outside the consumer API sections has used_by and a unit; overlapping sections are merged by label only; every change is logged with its before value; the Website API and Zoho API settings are not touched
-// CF-247 S549. Migration 20261116010000_cf247_settings_tidy_phase1 and docs/paste/PASTE-20261116-retired-settings-drop.sql.
+// CF-247 S549. Migration 20261116010000_cf247_settings_tidy_phase1 and tests/fixtures/paste/PASTE-20261116-retired-settings-drop.sql.
 // G2 (no number in a job or function), G3 (consumer API frozen) and housekeeping (Replaces/Retires, nothing dropped) are guarded centrally by s32, s57 and s42.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
 const M = fs.readFileSync('supabase/migrations/20261116010000_cf247_settings_tidy_phase1.sql', 'utf8')
-const P = fs.readFileSync('docs/paste/PASTE-20261116-retired-settings-drop.sql', 'utf8')
+const P = fs.readFileSync('tests/fixtures/paste/PASTE-20261116-retired-settings-drop.sql', 'utf8')
 const code = M.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 
 test('46 settings become retiring with a register row; the 39 Serper and ScrapingBee settings by toolset, the other 7 by name', () => {

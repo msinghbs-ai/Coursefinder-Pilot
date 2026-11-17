@@ -3,7 +3,7 @@
 # the containment rollback and the interim stop on a stub database (scratch PostgreSQL only).
 set -euo pipefail
 D=${1:-cf_fee_units_paste}; H=/var/run/postgresql; P="psql -h $H -U postgres -v ON_ERROR_STOP=1 -qAt"
-here=$(cd "$(dirname "$0")" && pwd); paste=$here/../../../docs/paste
+here=$(cd "$(dirname "$0")" && pwd); paste=$here/../../../tests/fixtures/paste
 dropdb -h $H -U postgres --if-exists $D; createdb -h $H -U postgres $D
 $P -d $D -f $here/paste-stub.sql; $P -d $D -f $here/paste-rows.sql
 # the stub notes differ from live, so the md5 guard values are rewritten to the stub notes' md5 (only those 13 literals change)

@@ -44,7 +44,7 @@ $P -d $PD -1 -q -o /dev/null -f $MIG
 for id in 04b4c75e-f020-4d17-a9c4-3310156d8b76 0f7d0c66-05d9-413d-bdde-15d08ac2d30f 51ebae9d-67d3-4221-9cb3-1308260f4801 5d897b64-1f04-4171-8321-228ff54f2388 a4f9c399-8194-4b58-bcec-62df728c98af; do
   $P -d $PD -c "insert into catalogue.course_fees(id, course_id, fee_type, amount, notes) values ('$id', gen_random_uuid(), 'provider_current_tuition', 10000, 'AI fee reader (https://x/$id)')"; done
 G=$($P -d $PD -Atc "select md5(string_agg(f.id::text || ':' || md5(f.notes), ',' order by f.id)) from catalogue.course_fees f")
-tmp=$(mktemp); sed "s/ccc44c30f3bf04340cdc7a2ec11223b2/$G/g" $ROOT/docs/paste/PASTE-20261104-fee-admitted-recheck.sql > $tmp
+tmp=$(mktemp); sed "s/ccc44c30f3bf04340cdc7a2ec11223b2/$G/g" $ROOT/tests/fixtures/paste/PASTE-20261104-fee-admitted-recheck.sql > $tmp
 $P -d $PD -f $tmp
 echo "paste: raised=$($P -d $PD -Atc "select count(*) from pipeline.enrichment_flags where field = 'fee_ai_recheck' and state = 'raised'") cards=$($P -d $PD -Atc "select count(*) from security.layer4_inbox_items_v1() where kind = 'fee_check' and why like 'Re-check an admitted AI fee:%'") fees_changed=$($P -d $PD -Atc "select count(*) from catalogue.course_fees where status <> 'active'")"
 if $P -d $PD -f $tmp >/dev/null 2>&1; then echo "SECOND PASTE RUN CHANGED SOMETHING"; exit 1; else echo "paste: second run refused (guard)"; fi

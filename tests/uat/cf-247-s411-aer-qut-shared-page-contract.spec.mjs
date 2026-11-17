@@ -8,7 +8,7 @@ const code = (t) => t.split('\n').filter((l) => !l.trim().startsWith('--')).join
 const run = fs.readFileSync('tests/fixtures/aer-qut-shared/run.sh', 'utf8')
 const sc = fs.readFileSync('tests/fixtures/aer-qut-shared/scenarios.sql', 'utf8')
 const sc2 = fs.readFileSync('tests/fixtures/aer-qut-shared/scenarios2.sql', 'utf8')
-const paste = fs.readFileSync('docs/paste/AER-20261108-shared-page-44-classification.md', 'utf8')
+const paste = fs.readFileSync('tests/fixtures/paste/AER-20261108-shared-page-44-classification.md', 'utf8')
 
 test('the shared-page function is edited once, under its live md5, with a recorded after md5 and an exact-once check', () => {
   expect(A).toContain("v_before constant text := 'cc037bb72a83595406b1246570d1e977'")

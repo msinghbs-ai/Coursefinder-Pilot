@@ -9,8 +9,8 @@ cd "$(dirname "$0")"
 DB=${OPSAM_DB:-ops_aer_missing_fixtures}
 ROOT=../../..
 MIG=$ROOT/supabase/migrations/20261104090000_cf247_ops_c_aer_missing_universities.sql
-PASTE=$ROOT/docs/paste/PASTE-20261104-aer-missing-university-sources.sql
-ROLL=$ROOT/docs/paste/PASTE-20261104-aer-missing-university-sources-rollback.sql
+PASTE=$ROOT/tests/fixtures/paste/PASTE-20261104-aer-missing-university-sources.sql
+ROLL=$ROOT/tests/fixtures/paste/PASTE-20261104-aer-missing-university-sources-rollback.sql
 P="psql -v ON_ERROR_STOP=1 -q -X"
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }
 md5of() { $P -d $DB -Atc "select md5(pg_get_functiondef('$1'::regprocedure))"; }
@@ -49,7 +49,7 @@ $P -d $DB -f $PASTE >/dev/null
 $P -d $DB -c "update pipeline.entry_matrix_sources set status = 'read', read_at = now(), content_hash = 'h' where url = 'https://www.cdu.edu.au/international/how-apply/entry-requirements'" >/dev/null
 if $P -d $DB -f $ROLL >/dev/null 2>&1; then echo "rollback removed a read source"; exit 1; fi
 echo "rollback: removes the 4 while unread; refused once one has been read"
-PILOT=$ROOT/docs/paste/PASTE-20261104-aer-render-pilot.sql; PROLL=$ROOT/docs/paste/PASTE-20261104-aer-render-pilot-rollback.sql
+PILOT=$ROOT/tests/fixtures/paste/PASTE-20261104-aer-render-pilot.sql; PROLL=$ROOT/tests/fixtures/paste/PASTE-20261104-aer-render-pilot-rollback.sql
 $P -d $DB -c "update pipeline.entry_matrix_sources set status = 'read', read_via = 'direct', read_at = now(), content_hash = 'u' where url = 'https://www.unisq.edu.au/international/apply/entry-requirements'" >/dev/null
 $P -d $DB -f $PILOT >/dev/null
 q() { $P -d $DB -Atc "$1"; }
@@ -57,7 +57,7 @@ q() { $P -d $DB -Atc "$1"; }
 [ "$(q "select count(*) from pipeline.entry_matrix_sources where lower(substring(url from '^https?://(?:www\.)?([^/:?#]+)')) in ('jcu.edu.au', 'unisq.edu.au')")" = 2 ] || { echo "pilot pages"; exit 1; }
 [ "$(q "select status from pipeline.entry_matrix_sources where url = 'https://www.unisq.edu.au/international/apply/entry-requirements'")" = found ] || { echo "UniSQ not queued for a rendered re-read"; exit 1; }
 if $P -d $DB -f $PILOT >/dev/null 2>&1; then echo "the pilot ran twice"; exit 1; fi
-$P -d $DB -f $ROOT/docs/paste/MEASURE-20261104-aer-render-pilot.sql >/dev/null
+$P -d $DB -f $ROOT/tests/fixtures/paste/MEASURE-20261104-aer-render-pilot.sql >/dev/null
 $P -d $DB -c "insert into pipeline.entry_matrix_sources(provider_id, url, found_via) values ('fe6af182-f5ca-4a3c-bfb4-b0773ff1b113', 'https://www.jcu.edu.au/other', 'manual')" >/dev/null
 $P -d $DB -f $PROLL >/dev/null
 [ "$(q "select value::text from pipeline.platform_toolset_settings where key = 'entry.render_hosts'")" = '["wgtn.ac.nz", "whitireiaweltec.ac.nz", "newcastle.edu.au", "griffith.edu.au"]' ] || { echo "pilot rollback hosts"; exit 1; }

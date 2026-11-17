@@ -68,7 +68,7 @@ test('the fixtures mirror live: NOT NULL columns of the tables read or written a
 })
 
 test('the pack for the Platform Admin is issued with the change and keeps suggestions apart from decisions', () => {
-  const pack = fs.readFileSync('docs/paste/aer-review-pack-20261108.md', 'utf8')
+  const pack = fs.readFileSync('tests/fixtures/paste/aer-review-pack-20261108.md', 'utf8')
   expect(pack).toContain('Nothing here is a decision')
   expect(pack).toContain('held unless individually authorised')
   expect(pack).toMatch(/Approve except/)

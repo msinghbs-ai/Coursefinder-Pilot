@@ -19,8 +19,8 @@ const FX = 'tests/fixtures/intake-dates'
 const fixtures = fs.readFileSync(`${FX}/fixtures.sql`, 'utf8')
 const run = fs.readFileSync(`${FX}/run.sh`, 'utf8')
 const fn = (name) => { const a = m.indexOf(`create or replace function ${name}(`); return m.slice(a, m.indexOf('\n$function$;', a)) }
-const PASTE = 'docs/paste/PASTE-20261103-intake-excluded-months-withdrawal.sql'
-const ROLLBACK = 'docs/paste/PASTE-20261103-intake-excluded-months-withdrawal-rollback.sql'
+const PASTE = 'tests/fixtures/paste/PASTE-20261103-intake-excluded-months-withdrawal.sql'
+const ROLLBACK = 'tests/fixtures/paste/PASTE-20261103-intake-excluded-months-withdrawal-rollback.sql'
 
 test('edits only from the live md5s, checked after; plan v2 is built from the live plan v1', () => {
   expect(m).toContain("select pg_temp.edit_once('security.intake_dates_apply_v1(integer)', '2ee1ce769cb5de8d300d9ad6e1bdbf7f', 'd15c04c680dc0128ca5da33556426c43'")

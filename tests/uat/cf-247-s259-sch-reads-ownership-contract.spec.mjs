@@ -11,7 +11,7 @@ const MIG = 'supabase/migrations/20261104250000_cf247_sch_reads_ownership.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const FX = 'tests/fixtures/sch-reads-ownership'
 const fx = (f) => fs.readFileSync(`${FX}/${f}`, 'utf8')
-const paste = (f) => fs.readFileSync(`docs/paste/${f}`, 'utf8')
+const paste = (f) => fs.readFileSync(`tests/fixtures/paste/${f}`, 'utf8')
 const fn = (name) => m.slice(m.indexOf(`create or replace function ${name}(`), m.indexOf('$function$;', m.indexOf(`create or replace function ${name}(`)))
 
 test('four md5-guarded edits from live text; lands after workstream A; v2.15.434 functions untouched', () => {
