@@ -1,9 +1,9 @@
 // Guards: Wave 2 PR C, the generic Layer 1 declarative runner (Platform Admin 17 Nov 2026 17:55, 19:08, 19:58, 22:04, 23:02): AI-built parser specs only (no SQL or code), header drift halts and flags re-inference, chunked staging with row-hash diffing, course and provider registers through svc_layer1_apply_register_records, other record types staged for review, gap routing to the eight enrichment categories, ABS postcode flags, a dry run that writes nothing and switches nothing on, departures in staging only
-// CF-247 S591. Migration 20261118010000_cf247_w2c_layer1_declarative_runner.sql; edge function layer1-declarative-runner 1.0.0.
+// CF-247 S596. Migration 20261118013000_cf247_w2c_layer1_declarative_runner.sql; edge function layer1-declarative-runner 1.0.0.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const mig = fs.readFileSync('supabase/migrations/20261118010000_cf247_w2c_layer1_declarative_runner.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations/20261118013000_cf247_w2c_layer1_declarative_runner.sql', 'utf8')
 const fn = fs.readFileSync('supabase/functions/layer1-declarative-runner/index.ts', 'utf8')
 const reg = JSON.parse(fs.readFileSync('.github/edge-functions.json', 'utf8'))
 
