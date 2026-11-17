@@ -1,0 +1,42 @@
+# Guards: API v3 course fields and city profiles edition rows (Platform Admin 18 Nov 2026 10:33 and 10:34, ref G7QN3W) and G4 database-backed tests: migration 20261118123707 runs its functions on an isolated PostgreSQL 16 (fixtures only, never a Supabase project).
+name: API v3 course fields integration
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/20261118123707_cf247_api_v3_course_study_load_edition_rows.sql'
+      - 'supabase/migrations/20261113180000_cf247_website_api_v3_r28.sql'
+      - 'tests/fixtures/api-v3-course-fields/**'
+      - 'tests/fixtures/destination-admin-ui/stubs.sql'
+      - 'tests/fixtures/destination-editions/stubs.sql'
+      - 'tests/fixtures/destination-schema-pack/stubs.sql'
+      - 'supabase/migrations/20261117131500_cf247_rm0f_destination_admin_ui.sql'
+      - 'supabase/migrations/20261117040000_cf247_rm_destination_schema_pack.sql'
+      - '.github/workflows/api-v3-course-fields-test.yml'
+  workflow_dispatch:
+jobs:
+  isolated-postgres:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: fixture-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: fixture-only
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash tests/fixtures/api-v3-course-fields/run.sh | tee api-v3-course-fields-results.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: api-v3-course-fields-database-evidence
+          path: api-v3-course-fields-results.log
