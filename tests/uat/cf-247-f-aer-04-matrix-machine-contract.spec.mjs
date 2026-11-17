@@ -3,6 +3,7 @@
 // marked machine; everything else stays in Layer 4 with its reason. Behaviour is proven on isolated PostgreSQL by tests/fixtures/aer-matrix-machine/run.sh.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
+import { migrationNames } from './support/migration-files.mjs'
 
 const MIG = 'supabase/migrations/20261112093700_cf247_aer_matrix_machine_admission.sql'
 const m = fs.readFileSync(MIG, 'utf8')
@@ -36,5 +37,5 @@ test('admission is the person\'s apply with the machine records; reversible; the
   expect(code).toContain("return jsonb_build_object('error', left(sqlerrm, 300));")
   expect(m).toContain('--   security.aer_machine_run_v1() ad143b44722ba6fbc0129cd38386661c -> f88ab3f16833dec601786af5c7cdbbcc')
   expect(m).toMatch(/^-- Replaces: security\.aer_machine_run_v1/m)
-  expect(fs.readdirSync('supabase/migrations').filter((f) => f.startsWith('20261112093700_'))).toEqual(['20261112093700_cf247_aer_matrix_machine_admission.sql'])
+  expect(migrationNames().filter((f) => f.startsWith('20261112093700_'))).toEqual(['20261112093700_cf247_aer_matrix_machine_admission.sql'])
 })

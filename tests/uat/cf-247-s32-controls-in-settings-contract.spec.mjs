@@ -6,10 +6,11 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
+import { migrationNames, migrationPath } from './support/migration-files.mjs'
 
 const MIG_DIR = 'supabase/migrations'
 const FIRST = '20261013012900'
-const mig = fs.readFileSync(`${MIG_DIR}/${FIRST}_cf247_all_controls_in_settings.sql`, 'utf8')
+const mig = fs.readFileSync(migrationPath(`${FIRST}_cf247_all_controls_in_settings.sql`), 'utf8')
 const worker = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 const SETTING_CALL = /(pipeline_num_v1|scholarship_setting|fc_setting_num_v1)\('[^']+',\s*(\d+(\.\d+)?|null)\)/g
 
@@ -54,10 +55,10 @@ test('every job command in the migration reads its size from a setting', () => {
 })
 
 test('guard: no migration from v2.15.269 on writes a number into a job or a business rule into a function', () => {
-  const files = fs.readdirSync(MIG_DIR).filter(f => f.endsWith('.sql') && f.slice(0, 14) >= FIRST).sort()
+  const files = migrationNames().filter(f => f.endsWith('.sql') && f.slice(0, 14) >= FIRST).sort()
   expect(files[0]).toBe(`${FIRST}_cf247_all_controls_in_settings.sql`)
   for (const f of files) {
-    const sql = fs.readFileSync(`${MIG_DIR}/${f}`, 'utf8')
+    const sql = fs.readFileSync(migrationPath(f), 'utf8')
     expect(fixedInFunctions(sql), f).toEqual([])
     for (const m of sql.matchAll(/cron\.schedule\(\s*'[^']+'\s*,\s*'[^']+'\s*,\s*'((?:[^']|'')*)'\s*\)/g)) expect(fixedInJob(m[1].replace(/''/g, "'")), `${f}: ${m[1]}`).toBe(false)
     for (const m of sql.matchAll(/command\s*(?::=|=>)\s*'((?:[^']|'')*)'/g)) expect(fixedInJob(m[1].replace(/''/g, "'")), `${f}: ${m[1]}`).toBe(false)

@@ -7,6 +7,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { execFileSync } from 'node:child_process'
+import { migrationNames } from './support/migration-files.mjs'
 
 const MIG = 'supabase/migrations/20261112060000_cf247_aer_qualification_first.sql'
 const m = fs.readFileSync(MIG, 'utf8')
@@ -74,7 +75,7 @@ test('the two live functions are edited only from their live md5; the person dec
   expect(code).toContain("'proposed',\n              jsonb_build_object('reader', 'entry_ai'")
   expect(code).toContain("position('entry_matrix_gate_v1' in")
   expect(m).toMatch(/^-- Replaces: public\.svc_entry_matrix_record, security\.entry_matrix_review_apply_v1/m)
-  expect(fs.readdirSync('supabase/migrations').filter((f) => f.startsWith('20261112060000_'))).toEqual(['20261112060000_cf247_aer_qualification_first.sql'])
+  expect(migrationNames().filter((f) => f.startsWith('20261112060000_'))).toEqual(['20261112060000_cf247_aer_qualification_first.sql'])
 })
 
 test('worker v0.70.0 asks the database for the qualifications and sends qualification rows', () => {

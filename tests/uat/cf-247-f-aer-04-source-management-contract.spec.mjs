@@ -4,6 +4,7 @@
 // Behaviour is proven on isolated PostgreSQL by tests/fixtures/aer-source-management/run.sh.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
+import { migrationNames } from './support/migration-files.mjs'
 
 const read = (f) => fs.readFileSync(f, 'utf8')
 const sqlCode = (f) => read(f).split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
@@ -46,5 +47,5 @@ test('D3 screen: inside Sources, reads and holds and linked from the provider; n
   expect(sv).toContain('<SourceDiscovery/>')
   expect(sv).toContain('const meta=useSourceMeta(rows.map(s=>s.id))')
   expect(er).toContain("href={hrefFor('entry','sources',{provider:providerId})} data-entry-sources-link>Attach or manage sources</a>")
-  expect(fs.readdirSync('supabase/migrations').filter((f) => /^2026111211(07|37)00_/.test(f)).sort()).toEqual(['20261112110700_cf247_aer_matrix_machine_quote_proof.sql', '20261112113700_cf247_aer_source_management.sql'])
+  expect(migrationNames().filter((f) => /^2026111211(07|37)00_/.test(f)).sort()).toEqual(['20261112110700_cf247_aer_matrix_machine_quote_proof.sql', '20261112113700_cf247_aer_source_management.sql'])
 })

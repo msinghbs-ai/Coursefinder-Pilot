@@ -7,9 +7,10 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
+import { migrationNames, migrationPath } from './support/migration-files.mjs'
 
 const FILE = '20261109155000_cf247_r23_r24_approval_setting.sql'
-const m = fs.readFileSync(`supabase/migrations/${FILE}`, 'utf8')
+const m = fs.readFileSync(migrationPath(FILE), 'utf8')
 const code = (s) => s.replace(/--[^\n]*/g, '')
 
 test('the setting is defined at 0 (not approved), with a label, range, unit, section and used_by line; it never overwrites a value already set', () => {
@@ -25,7 +26,7 @@ test('the migration approves nothing and touches nothing else: no update, delete
   expect(code(m)).not.toMatch(/\b(update|delete|drop|truncate|alter|create)\b/i)
   expect(code(m)).not.toMatch(/website_v2_|website_edge_|website_api_v2_|zoho_edge_|svc_website_settings_v1|\bapi\.(website|zoho)/)
   expect(code(m)).not.toMatch(/'1'|\b1::jsonb|to_jsonb\(1\)/)   // the value 1 is only ever written by a Platform Admin on Settings
-  const mig = fs.readdirSync('supabase/migrations').filter((f) => f.endsWith('.sql')).sort()
+  const mig = migrationNames().filter((f) => f.endsWith('.sql')).sort()
   expect(mig.filter((f) => f.startsWith('20261109155000'))).toEqual([FILE])
   expect('20261109155000' < '20261109160000').toBe(true)
   expect(mig.indexOf(FILE)).toBeGreaterThan(mig.indexOf('20261109150000_cf247_aer_selector_fix.sql'))

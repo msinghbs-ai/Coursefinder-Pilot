@@ -1,9 +1,10 @@
 // Guards: CF-247 decision W28 (29 Oct 2026): Read again re-queues only the run on the newest stored copy of a source; runs on older copies keep their history and their still-pending Layer 4 item is superseded with existing statuses; md5-guarded edit of security.aer_reread_v1; no new status; nothing dropped or deleted
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
+import { migrationNames, migrationPath } from './support/migration-files.mjs'
 
-const FILE = fs.readdirSync('supabase/migrations').find((f) => /^20261029120000_cf247_aer_reread_newest_copy\.sql$/.test(f))
-const m = fs.readFileSync(`supabase/migrations/${FILE}`, 'utf8')
+const FILE = migrationNames().find((f) => /^20261029120000_cf247_aer_reread_newest_copy\.sql$/.test(f))
+const m = fs.readFileSync(migrationPath(FILE), 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 // the replacement texts ($n$ ... $n$) are the new function body; the originals ($o$ ... $o$) are what live must contain
 const NEW = [...m.matchAll(/\$n\$([\s\S]*?)\$n\$/g)].map((x) => x[1]).join('\n')

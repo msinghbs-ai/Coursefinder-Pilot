@@ -3,6 +3,7 @@
 // security.aer_machine_validate_v1() could not finish inside the API limit. Migration 20261111235000 adds one expression index; it switches nothing.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
+import { migrationNames } from './support/migration-files.mjs'
 
 const MIG = 'supabase/migrations/20261111235000_cf247_aer_machine_validate_index.sql'
 const m = fs.readFileSync(MIG, 'utf8')
@@ -16,7 +17,7 @@ test('one additive expression index on the lookup the validation history uses, a
 })
 
 test('the version is used by no other migration', () => {
-  expect(fs.readdirSync('supabase/migrations').filter((f) => f.startsWith('20261111235000_'))).toEqual(['20261111235000_cf247_aer_machine_validate_index.sql'])
+  expect(migrationNames().filter((f) => f.startsWith('20261111235000_'))).toEqual(['20261111235000_cf247_aer_machine_validate_index.sql'])
 })
 
 const ENA = 'supabase/migrations/20261112001700_cf247_aer_machine_enable.sql'
@@ -34,5 +35,5 @@ test('machine admission is switched on only by the recorded decision and only wh
   expect(ecode).toContain("key = 'aer.machine_shadow_min_hours'")
   expect(ecode).not.toMatch(/\b(drop|delete|truncate)\b|create\s+or\s+replace\s+function|cron\./i)
   expect(e).toMatch(/^-- Replaces: nothing\. Retires: nothing\./m)
-  expect(fs.readdirSync('supabase/migrations').filter((f) => f.startsWith('20261112001700_'))).toEqual(['20261112001700_cf247_aer_machine_enable.sql'])
+  expect(migrationNames().filter((f) => f.startsWith('20261112001700_'))).toEqual(['20261112001700_cf247_aer_machine_enable.sql'])
 })

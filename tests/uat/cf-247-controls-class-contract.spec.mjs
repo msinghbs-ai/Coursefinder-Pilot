@@ -3,6 +3,7 @@
 // Settings › Pipeline settings. Mocked REST responses: nothing reaches a real backend. The phone-width check is tagged @responsive and runs on the phone project only.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
+import { migrationNames, migrationPath } from './support/migration-files.mjs'
 
 const MIG = fs.readFileSync('supabase/migrations/20261110080000_cf247_control_class.sql', 'utf8')
 const UI = fs.readFileSync('src/SettingsRegister.jsx', 'utf8')
@@ -40,7 +41,7 @@ test('migration: the human keys are exactly the 19 agreed, the rest of the provi
   expect(human).not.toContain("'pdesc.queue_per_run'")
   expect(STILL_READ).toHaveLength(2)
   // the dependency evidence: the live readers the migration names are still in the migrations that define them
-  const all = fs.readdirSync('supabase/migrations').filter((f) => f.endsWith('.sql')).map((f) => fs.readFileSync(`supabase/migrations/${f}`, 'utf8')).join('\n')
+  const all = migrationNames().filter((f) => f.endsWith('.sql')).map((f) => fs.readFileSync(migrationPath(f), 'utf8')).join('\n')
   expect(all).toContain("security.toolset_setting('pipeline', 'pdesc.provider_keys')")
   expect(all).toContain("security.pipeline_num_v1('pdesc.queue_per_run', 10)")
 })

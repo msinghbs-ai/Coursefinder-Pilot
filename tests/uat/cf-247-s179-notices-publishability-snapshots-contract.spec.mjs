@@ -9,10 +9,11 @@ import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 import { snapshotMeta } from './support/admin-fixtures.mjs'
 import { fmtAge } from '../../src/lib/format.js'
+import { migrationNames, migrationPath } from './support/migration-files.mjs'
 
 const MIG_DIR = 'supabase/migrations'
-const file = fs.readdirSync(MIG_DIR).find((f) => f.endsWith('_cf247_notices_publishability_snapshots.sql'))
-const m = fs.readFileSync(`${MIG_DIR}/${file}`, 'utf8')
+const file = migrationNames().find((f) => f.endsWith('_cf247_notices_publishability_snapshots.sql'))
+const m = fs.readFileSync(migrationPath(file), 'utf8')
 const RPC = 'https://example.supabase.co/rest/v1/rpc/'
 const fulfil = (route, data) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(data) })
 

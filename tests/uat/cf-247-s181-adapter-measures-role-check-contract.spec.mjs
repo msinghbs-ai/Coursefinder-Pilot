@@ -2,10 +2,11 @@
 // Design adopted as admin decision paper §11.3. Live proof: rolled-back dry run on 30 Oct 2026 (anon, curator rank 3, rank 4 refused; rank 5, Platform Admin, owner session allowed; service_role refused). G2 is guarded by s32, G3 by s57, housekeeping by s42.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
+import { migrationNames, migrationPath } from './support/migration-files.mjs'
 
 const DIR = 'supabase/migrations'
-const FILE = fs.readdirSync(DIR).find((f) => /^[0-9X]{13,14}_cf247_d6_adapter_measures_role_check\.sql$/.test(f))
-const m = fs.readFileSync(`${DIR}/${FILE}`, 'utf8')
+const FILE = migrationNames().find((f) => /^[0-9X]{13,14}_cf247_d6_adapter_measures_role_check\.sql$/.test(f))
+const m = fs.readFileSync(migrationPath(FILE), 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const OLD = [...m.matchAll(/\$o\$([\s\S]*?)\$o\$/g)].map((x) => x[1])
 const NEW = [...m.matchAll(/\$n\$([\s\S]*?)\$n\$/g)].map((x) => x[1])

@@ -2,16 +2,17 @@
 // Specification: admin docs/platform/ui-audit/2026-10-30-bulk-reread-newest-copy-spec.md. G2 is guarded by s32, G3 by s57, housekeeping by s42.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
+import { migrationNames, migrationPath } from './support/migration-files.mjs'
 
 const DIR = 'supabase/migrations'
-const FILE = fs.readdirSync(DIR).find((f) => /^[0-9X]{13,14}_cf247_aer_bulk_reread_newest_copy\.sql$/.test(f))
-const m = fs.readFileSync(`${DIR}/${FILE}`, 'utf8')
+const FILE = migrationNames().find((f) => /^[0-9X]{13,14}_cf247_aer_bulk_reread_newest_copy\.sql$/.test(f))
+const m = fs.readFileSync(migrationPath(FILE), 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const bulk = code.slice(code.indexOf('create or replace function public.admin_entry_matrix_reread'), code.indexOf('revoke all on function public.admin_entry_matrix_reread'))
 const OLD = [...m.matchAll(/\$o\$([\s\S]*?)\$o\$/g)].map((x) => x[1])
 const NEW = [...m.matchAll(/\$n\$([\s\S]*?)\$n\$/g)].map((x) => x[1])
-const w28 = fs.readFileSync(`${DIR}/20261029120000_cf247_aer_reread_newest_copy.sql`, 'utf8')
-const before = fs.readFileSync(`${DIR}/20261026008000_cf247_entry_matrix_reread.sql`, 'utf8')
+const w28 = fs.readFileSync(migrationPath('20261029120000_cf247_aer_reread_newest_copy.sql'), 'utf8')
+const before = fs.readFileSync(migrationPath('20261026008000_cf247_entry_matrix_reread.sql'), 'utf8')
 
 const NEWEST_ORDER = 'order by (content_hash is not distinct from v_src.content_hash) desc, created_at desc, id desc limit 1'
 

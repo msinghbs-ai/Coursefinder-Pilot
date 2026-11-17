@@ -1,6 +1,7 @@
 // Guards: Platform Admin directive 10 Nov 2026, Workstream C (recover the course readings stuck after the read by a deterministic subtractive subset of whole sentences: no AI call, no page read, no setting or word-list change, the same full check on the remainder, the existing record and machine admission path with the distinct reason subset_of_reading, the daily read cap untouched; no cutting for length; a university About page never stands in for a course page; additive Data Delivery keys); QA of PR 995 (Claude Integration Controller, 10 Nov 2026). G2 is guarded centrally by s32 and G3 by s57 (G4: not re-asserted here)
 import fs from 'node:fs'
 import { test, expect } from '@playwright/test'
+import { migrationNames } from './support/migration-files.mjs'
 
 const M = fs.readFileSync('supabase/migrations/20261110230000_cf247_cdesc_subset_recovery.sql', 'utf8')
 const R = fs.readFileSync('supabase/held/cdesc_subset_recovery_forward_recovery.sql', 'utf8')
@@ -151,7 +152,7 @@ test('activation is stated plainly, with the pause and the way back; the bulk wi
   expect(BW).toContain("raise exception 'set v_actor to the Platform Admin user id first'")
   expect(BW).not.toMatch(/^\s*(drop|delete|truncate)\b/im)
   expect(BW).not.toMatch(/\bupdate\s+(pipeline|catalogue)\./i)
-  expect(fs.readdirSync('supabase/migrations').filter((f) => f.includes('bulk_withdraw'))).toEqual([])
+  expect(migrationNames().filter((f) => f.includes('bulk_withdraw'))).toEqual([])
 })
 
 test('CI runs the fixture and this contract', () => {

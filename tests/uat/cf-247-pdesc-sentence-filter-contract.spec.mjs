@@ -2,6 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { copyNote, descriptionRequest, DESCRIPTION_SYSTEM, descriptionClaimCheck } from '../../supabase/functions/coverage-sweep/description.ts'
+import { migrationNames, migrationPath } from './support/migration-files.mjs'
 
 const MIG = fs.readFileSync('supabase/migrations/20261110120000_cf247_pdesc_sentence_filter.sql', 'utf8')
 const CODE = MIG.split('\n').filter((l) => !l.trimStart().startsWith('--')).join('\n')   // the statements, without the comments
@@ -38,7 +39,7 @@ test('the filter is opt-in: only the record of a new read asks for it, so the ma
   // the recorder stores the KEPT sentences for a proposal, and nothing is rebound for a held answer
   expect(CODE).toContain("if v_chk->>'outcome' in ('propose', 'verified') and v_chk ? 'sentences' then x := jsonb_set(x, '{answer,sentences}', v_chk->'sentences'); end if;")
   expect(CODE.match(/drop_failing/g).length).toBeGreaterThanOrEqual(2)
-  const callers = fs.readdirSync('supabase/migrations').filter((f) => f >= '20261109000000').map((f) => fs.readFileSync(`supabase/migrations/${f}`, 'utf8')).join('\n')
+  const callers = migrationNames().filter((f) => f >= '20261109000000').map((f) => fs.readFileSync(migrationPath(f), 'utf8')).join('\n')
   expect(callers).not.toMatch(/'drop_failing',\s*true[^\n]*machine_admit/)   // the machine admission does not set it
 })
 

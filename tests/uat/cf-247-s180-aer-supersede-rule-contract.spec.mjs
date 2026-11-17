@@ -4,9 +4,10 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
+import { migrationNames, migrationPath } from './support/migration-files.mjs'
 
-const [FILE] = fs.readdirSync('supabase/migrations').filter((f) => f.endsWith('_cf247_d4_supersede_rule.sql'))
-const m = fs.readFileSync(`supabase/migrations/${FILE}`, 'utf8')
+const [FILE] = migrationNames().filter((f) => f.endsWith('_cf247_d4_supersede_rule.sql'))
+const m = fs.readFileSync(migrationPath(FILE), 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const EDITS = [...m.matchAll(/select pg_temp\.edit_n\('([^']+)', '([0-9a-f]{32})', array\[([\s\S]*?)\], array\[([\d, ]+)\]\);/g)].map(([, sig, md5, body, times]) => ({
   sig, md5, old: [...body.matchAll(/\$o\$([\s\S]*?)\$o\$/g)].map((x) => x[1]), neu: [...body.matchAll(/\$n\$([\s\S]*?)\$n\$/g)].map((x) => x[1]), times: times.split(',').map(Number) }))

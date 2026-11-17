@@ -2,11 +2,12 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import crypto from 'node:crypto'
+import { migrationNames, migrationPath } from './support/migration-files.mjs'
 
 const MIG = fs.readFileSync('supabase/migrations/20261109183000_cf247_pdesc_cron_six_fires.sql', 'utf8')
 const CODE = MIG.split('\n').filter((l) => !l.trimStart().startsWith('--')).join('\n')
 const s216 = fs.readFileSync('tests/uat/cf-247-s216-p1-provider-descriptions-contract.spec.mjs', 'utf8')
-const orig = fs.readFileSync('supabase/migrations/' + fs.readdirSync('supabase/migrations').find((f) => /provider_descriptions?/.test(f) && fs.readFileSync('supabase/migrations/' + f, 'utf8').includes("cron.schedule('provider-description-read'")), 'utf8')
+const orig = fs.readFileSync(migrationPath(migrationNames().find((f) => /provider_descriptions?/.test(f) && fs.readFileSync(migrationPath(f), 'utf8').includes("cron.schedule('provider-description-read'"))), 'utf8')
 
 test('housekeeping: Replaces and Retires lines (naming the catalogue and the help text), one alter_job on the one job, nothing dropped, no other object touched', () => {
   expect(MIG).toMatch(/^-- Replaces: .*6,16,26,56.*automation_catalogue.*pdesc\.every_minutes/m)
@@ -37,7 +38,7 @@ test('the new schedule is every ten minutes and the fire guard already allows th
   const gaps = mins.map((m, i) => (mins[(i + 1) % mins.length] - m + 60) % 60)
   expect(gaps).toEqual([10, 10, 10, 10, 10, 10])
   // the setting that spaces fires is the existing one; this change adds none
-  const all = fs.readdirSync('supabase/migrations').map((f) => fs.readFileSync('supabase/migrations/' + f, 'utf8')).join('\n')
+  const all = migrationNames().map((f) => fs.readFileSync(migrationPath(f), 'utf8')).join('\n')
   expect(all).toMatch(/pdesc\.every_minutes/)
 })
 

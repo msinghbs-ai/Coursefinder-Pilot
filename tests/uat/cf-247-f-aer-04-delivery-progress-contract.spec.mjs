@@ -3,6 +3,7 @@
 // security.data_delivery_v1 (measured 7-17 s against the 8 s limit). A figure the server did not send is Not measured, never 0. Proven by tests/fixtures/aer-delivery-progress/run.sh.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
+import { migrationNames } from './support/migration-files.mjs'
 
 const m = fs.readFileSync('supabase/migrations/20261112133700_cf247_aer_delivery_progress.sql', 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
@@ -23,5 +24,5 @@ test('stage 4 sits in the existing AER panel, reads on its own and shows Not mea
   expect(panel).toContain('data-dd-aer-progress="unknown"')
   expect(panel).toContain("const nm=x=>x==null?'Not measured':fmtNumber(Number(x))")
   for (const k of ['aer_campaign_asked', 'aer_campaign_usable', 'aer_campaign_credits', 'aer_campaign_spare', 'aer_machine_matrix', 'aer_corrected_open', 'aer_gains', 'aer_failures']) expect(panel).toContain(`k="${k}"`)
-  expect(fs.readdirSync('supabase/migrations').filter((f) => f.startsWith('20261112133700_'))).toEqual(['20261112133700_cf247_aer_delivery_progress.sql'])
+  expect(migrationNames().filter((f) => f.startsWith('20261112133700_'))).toEqual(['20261112133700_cf247_aer_delivery_progress.sql'])
 })

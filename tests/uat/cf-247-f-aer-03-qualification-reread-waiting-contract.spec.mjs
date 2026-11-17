@@ -2,6 +2,7 @@
 // The governed re-read supersedes each source's own waiting item before queuing the run again, so each source keeps one item; a source whose item a person has taken is left.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
+import { migrationNames } from './support/migration-files.mjs'
 
 const MIG = 'supabase/migrations/20261112153700_cf247_aer_qualification_reread_waiting.sql'
 const m = fs.readFileSync(MIG, 'utf8')
@@ -14,5 +15,5 @@ test('the governed re-read for the 14 remaining sources, leaving any item a pers
   expect(code).not.toMatch(/\b(update|insert|delete|drop|truncate|alter)\b/i)
   expect(m).toMatch(/^-- Replaces: nothing\./m)
   expect(m).toMatch(/^-- Retires: nothing\./m)
-  expect(fs.readdirSync('supabase/migrations').filter((f) => f.startsWith('20261112153700_'))).toEqual(['20261112153700_cf247_aer_qualification_reread_waiting.sql'])
+  expect(migrationNames().filter((f) => f.startsWith('20261112153700_'))).toEqual(['20261112153700_cf247_aer_qualification_reread_waiting.sql'])
 })

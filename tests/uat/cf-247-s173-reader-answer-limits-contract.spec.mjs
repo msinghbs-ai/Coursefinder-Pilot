@@ -4,12 +4,13 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { READ_ANSWER_LIMITS, answerLimit, callCost, errorCost, readAnswer, readError } from '../../supabase/functions/coverage-sweep/answer.ts'
 import { feeAiRequest } from '../../supabase/functions/coverage-sweep/fees.ts'
+import { migrationNames, migrationPath } from './support/migration-files.mjs'
 
 const FX = 'tests/fixtures/reader-answer-limits'
 const fx = (f) => JSON.parse(fs.readFileSync(`${FX}/${f}`, 'utf8'))
 const worker = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-const [mig] = fs.readdirSync('supabase/migrations').filter((f) => f.endsWith('_cf247_reader_answer_limits.sql'))
-const sql = mig ? fs.readFileSync(`supabase/migrations/${mig}`, 'utf8') : ''
+const [mig] = migrationNames().filter((f) => f.endsWith('_cf247_reader_answer_limits.sql'))
+const sql = mig ? fs.readFileSync(migrationPath(mig), 'utf8') : ''
 const block = (from, to) => { const a = worker.indexOf(from); expect(a, from).toBeGreaterThan(-1); const b = worker.indexOf(to, a + from.length); expect(b, to).toBeGreaterThan(a); return worker.slice(a, b) }
 
 test('the live fault: a course fields answer cut at 2,000 tokens is held_partial: output_truncated with its cost, never parsed (it was "Unterminated string in JSON", cost 0)', () => {

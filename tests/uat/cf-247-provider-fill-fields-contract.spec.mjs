@@ -5,6 +5,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { PROVIDER_COLUMNS, QUALITY_LEVELS, QUALITY_FILTER_OPTIONS, qualityOf, fieldWords, sortSentence } from '../../src/catalogue-columns.js'
+import { migrationNames } from './support/migration-files.mjs'
 
 const MIG = fs.readFileSync('supabase/migrations/20261110030000_cf247_provider_fill_fields.sql', 'utf8')
 const SQL = MIG.split('\n').filter(l => !/^\s*--/.test(l)).join('\n')
@@ -165,7 +166,7 @@ test('the screens: a tick box and an Extract / refresh button on each Provider r
 })
 
 test('forward recovery and the post-deploy equivalence check are held outside supabase/migrations', () => {
-  expect(fs.readdirSync('supabase/migrations').filter(f => /provider_fill_fields/.test(f))).toEqual(['20261110030000_cf247_provider_fill_fields.sql'])
+  expect(migrationNames().filter(f => /provider_fill_fields/.test(f))).toEqual(['20261110030000_cf247_provider_fill_fields.sql'])
   const rec = fs.readFileSync('supabase/held/provider_fill_fields_forward_recovery.sql', 'utf8')
   expect(rec).toContain("'f3eb9fc6f8efa37566c36ac5ef2e8f0e'")
   expect(rec).toContain("'b397cf320a689b6e981aa6747e7156b8'")

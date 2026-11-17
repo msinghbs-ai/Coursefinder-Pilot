@@ -4,6 +4,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import crypto from 'node:crypto'
+import { migrationNames } from './support/migration-files.mjs'
 
 const OLD = fs.readFileSync('supabase/migrations/20261109200000_cf247_provider_catalogue_columns.sql', 'utf8')
 const NEWFILE = 'supabase/migrations/20261109220000_cf247_provider_catalogue_filter_speed.sql'
@@ -24,7 +25,7 @@ const NEW_SQL = NEW.split('\n').filter(l => !/^\s*--/.test(l)).join('\n')
 const queryOf = f => f.slice(f.indexOf('with pv as ('), f.lastIndexOf('from st s') + 'from st s'.length)
 
 test('the migration is the next free version, guarded by the md5 of the two live bodies it replaces and of the two it writes, and says what it replaces and retires', () => {
-  expect(fs.readdirSync('supabase/migrations').filter(f => f.startsWith('20261109220000'))).toEqual(['20261109220000_cf247_provider_catalogue_filter_speed.sql'])
+  expect(migrationNames().filter(f => f.startsWith('20261109220000'))).toEqual(['20261109220000_cf247_provider_catalogue_filter_speed.sql'])
   expect(md5(factsOld)).toBe('4127aab7f07d3b97431191e58f07bfdb')
   expect(md5(v3Old)).toBe('70be6f7e4b3faac863d7011f5fcec832')
   // the guard accepts the old body or the new one (a second run), refuses anything else, and the post-check requires the new one
@@ -121,7 +122,7 @@ test('the other columns the page selects from base are the same, and base is sti
 })
 
 test('forward recovery restores the two 20261109200000 bodies byte for byte, guarded, with nothing dropped', () => {
-  expect(fs.readdirSync('supabase/migrations').filter(f => /filter_speed_forward_recovery/.test(f))).toEqual([])
+  expect(migrationNames().filter(f => /filter_speed_forward_recovery/.test(f))).toEqual([])
   expect(REC).toContain(`('${md5(factsNew)}', '4127aab7f07d3b97431191e58f07bfdb')`)
   expect(REC).toContain(`('${md5(v3New)}', '70be6f7e4b3faac863d7011f5fcec832')`)
   expect(md5(body(REC, FACTS_HEAD))).toBe('4127aab7f07d3b97431191e58f07bfdb')
