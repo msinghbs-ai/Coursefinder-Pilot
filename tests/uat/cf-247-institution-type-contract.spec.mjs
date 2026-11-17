@@ -87,7 +87,7 @@ test('worker: service key or one-time nonce, approved host only, evidence kept, 
   expect(worker).toContain('"svc_provider_register_facts_put"')
   expect(worker).toContain('"svc_provider_type_classify"')
   expect(worker).toMatch(/const FETCH_MS = \d+; \/\/ fixed: API time-out/)
-  expect(control).toContain('const VERSION="layer1-operations-control-v1.9.0";')
+  expect(control).toContain('const VERSION="layer1-operations-control-v1.10.0";')
   expect(control).toContain('if(system==="PROVIDER_FACTS"){const body=await invokeStatWorker(url,serviceKey,"layer1-provider-facts",{source_id:sourceId,mode:"dry_run"})')
   expect(control).toContain('system==="PROVIDER_FACTS"?{source_id:q.source_id,mode:apply?"apply":"dry_run"}')
   expect(scheduled).toContain('const VERSION="layer1-operations-scheduled-v1.5.0";')
