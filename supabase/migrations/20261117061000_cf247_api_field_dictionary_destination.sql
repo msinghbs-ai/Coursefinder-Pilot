@@ -4,7 +4,7 @@
 -- Retires: nothing
 --
 -- docs/api/v3/field-dictionary.json now lists the 72 destination fields of each v3 API (moved from pending_fields, where they waited since the
--- schema pack of 17 Nov) and the two G-1 career outcome fields of each API (geography_level, state_code; migration 20261117050000): 1,923 + 148 = 2,071
+-- schema pack of 17 Nov) and the two G-1 career outcome fields of each API (geography_level, state_code; migration 20261117060000): 1,923 + 148 = 2,071
 -- fields. The sync upserts on (api_surface, version, endpoint, field_path), writes only what changed, never deletes, and marks deprecated a field no
 -- longer listed (none here: the new list holds every field of the old one). Two reference fields stay pending (array<number> is not an allowed type).
 -- Only ref.api_field_dictionary is written: no consumer API object is touched (G3). G1: no job. G2: no setting.

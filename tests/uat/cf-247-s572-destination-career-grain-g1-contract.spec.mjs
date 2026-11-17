@@ -1,9 +1,9 @@
 // Guards: Destination decision G-1 (Platform Admin 17 Nov 2026 11:52; run before the squash, 13:12): career outcomes are one row per edition, country, occupation scheme, occupation code and area (national, state or locality); the old key is replaced inside the constraint block only while the table is empty; the importer upserts on the new key and the v3 destination read returns the area
-// CF-247 S572. Migration 20261117050000_cf247_destination_career_grain_g1.
+// CF-247 S572. Migration 20261117060000_cf247_destination_career_grain_g1.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const code = fs.readFileSync('supabase/migrations/20261117050000_cf247_destination_career_grain_g1.sql', 'utf8').split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
+const code = fs.readFileSync('supabase/migrations/20261117060000_cf247_destination_career_grain_g1.sql', 'utf8').split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 
 test('the new key and the area rule; the old key is dropped only inside the constraint block and only while the table is empty', () => {
   expect(code).toContain('add constraint career_outcomes_area_key unique nulls not distinct\n        (edition_id, country_id, occupation_scheme, occupation_code, geography_level, state_code, locality_id);')
