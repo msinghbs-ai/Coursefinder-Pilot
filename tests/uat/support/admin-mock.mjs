@@ -96,6 +96,16 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     // Wave 2 addenda (17 Nov 2026 19:09): the parser badge of each Layer 1 source, and the re-infer request
     admin_layer1_parser_status: () => ({ sources: { 'l1-centennial': { parser: 'ai_built', target_record_type: 'course_register', spec_version: 2, drift_flagged_at: '2026-11-17T06:00:00Z', drift_message: 'expected 195 unique source codes got 200', reinfer_requested_at: null },
       'l1-nzqa': { parser: 'hardcoded', target_record_type: null, drift_flagged_at: null }, 'l1-dfat': { parser: 'none' } } }),
+    // Platform health › Queues & yield › Boost queue (v2.16.30): the read answers the filters, sort and offset it is sent
+    admin_boost_queue_read: b => { calls.push({ boostQueue: b }); const a = b.p_args || {}
+      const all = Array.from({ length: 60 }, (_, i) => { const cc = i < 50 ? 'AU' : i < 57 ? 'GB' : 'DE', tier = cc === 'AU' ? 1 : cc === 'GB' ? 2 : null
+        return { item_key: `k${i}`, lane: 'study_load', entity: 'course', country_code: cc, state: i % 10 === 9 ? 'rejected' : 'verified', category: 'intakes_deadlines', category_label: 'Intakes & deadlines',
+          priority_score: cc === 'AU' ? 80 : cc === 'GB' ? 40 : 0, country_tier: tier, title: `Course ${i}`, promotion_state: 'shadow', worker_status: 'verified', done_at: '2026-11-17T10:00:00Z' } })
+      const rows = all.filter(r => (!a.tier || (a.tier === 'none' ? r.country_tier == null : String(r.country_tier) === a.tier)) && (!a.country || r.country_code === a.country) && (!a.state || r.state === a.state))
+      if (a.sort === 'score' && a.direction === 'asc') rows.reverse()
+      return { total: rows.length, all_rows: all.length, page_rows: 50, offset: a.offset || 0, sort: a.sort || 'score', direction: a.direction || 'desc', tiers: { tier_1: ['AU', 'NZ', 'CA'], tier_2: ['UK', 'IE', 'US'] },
+        summary: [{ country_tier: 1, country_code: 'AU', lane: 'study_load', category: 'intakes_deadlines', priority_score: 80, items: 50, waiting: 0 }, { country_tier: 2, country_code: 'GB', lane: 'study_load', category: 'intakes_deadlines', priority_score: 40, items: 7, waiting: 0 }],
+        filters: { countries: ['AU', 'DE', 'GB'], lanes: ['study_load'], states: ['rejected', 'verified'] }, rows: rows.slice(a.offset || 0, (a.offset || 0) + 50) } },
     // Reference data › API field dictionary and Grade scale conversions (v2.16.28): the read answers the search, filters and offset it is sent
     admin_reference_table_read: b => { calls.push({ referenceTable: b }); const a = b.p_args || {}
       if (b.p_kind === 'grade_scales') return { kind: 'grade_scales', total: 0, all_rows: 0, page_rows: 50, offset: 0, filters: { countries: [] }, rows: [] }

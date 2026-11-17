@@ -1,0 +1,36 @@
+# Guards: Boost queue view (Platform Admin decision 18 Nov 2026 07:03) and G4 database-backed tests: migration 20261118083707 runs its read function on an isolated PostgreSQL 16 (fixtures only, never a Supabase project).
+name: Admin boost queue integration
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/20261118083707_cf247_admin_boost_queue_read.sql'
+      - 'tests/fixtures/admin-boost-queue/**'
+      - '.github/workflows/admin-boost-queue-test.yml'
+  workflow_dispatch:
+jobs:
+  isolated-postgres:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: fixture-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: fixture-only
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash tests/fixtures/admin-boost-queue/run.sh | tee admin-boost-queue-results.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: admin-boost-queue-database-evidence
+          path: admin-boost-queue-results.log

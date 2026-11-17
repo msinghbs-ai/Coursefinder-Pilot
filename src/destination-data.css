@@ -18,3 +18,7 @@
 .dst .dst-two blockquote{margin:4px 0;padding:6px 10px;border-left:3px solid var(--cf-border)}
 .dst .dst-preview{margin-top:10px;padding:8px 12px;border:1px solid var(--cf-border);border-radius:var(--cf-radius-md)}
 .dst .dst-preview p{margin:4px 0 0}
+/* v2.16.31: Bulk Approve Drafts on Localities & postcodes (tokens only) */
+.dst .dst-bulk{display:grid;gap:6px;padding:10px 12px;margin:8px 0;border:1px solid var(--cf-border);border-radius:var(--cf-radius-md);background:var(--cf-slate-50)}
+.dst .dst-bulk-row{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:0}
+.dst .dst-bulk .sl-sub{margin:0}

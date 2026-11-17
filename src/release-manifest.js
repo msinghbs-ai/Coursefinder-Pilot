@@ -1,19 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.29'
-export const PACKAGE_VERSION='0.1.451'
+export const UI_VERSION='2.16.31'
+export const PACKAGE_VERSION='0.1.453'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'17 Nov 2026',
-  title:'Courses: Study load and Empty reason; Campuses: Primary and Locality',
+  title:'Destination data: Bulk Approve Drafts for localities',
   changes:[
-    'Catalogue › Courses: two new columns in the Columns picker, Study load (full-time, part-time, or both) and Empty reason (why a course\'s empty values are empty on purpose, shown as a badge). Both are off until you show them.',
-    'Catalogue › Courses: two new filters under Filters, Study load (including Not held) and Empty reason (any reason, one reason, or No reason recorded, which finds courses whose gaps are still to fill).',
-    'Catalogue › Providers › Campuses: new Primary column (badge) and Locality column. The locality is looked up from the campus postcode and says when it is still a draft in Destination data.',
-    'Campuses: new Primary filter and a Locality search box in the filter bar (type a name, press Enter).',
-    'The Campuses list now counts courses only for the rows on the page, so it opens faster.'
+    'Destination data › Localities & postcodes: new Bulk Approve Drafts button (Platform Admin). For each dataset edition with draft localities it shows how many are ready, and approves them all with one reason.',
+    'A draft with no attribution text is left as draft and counted. Localities in review, withdrawn or already approved are not touched, and figures and study rules are still approved on their own tabs.',
+    'The action is recorded once in the control log, and each locality keeps who approved it, when and why.'
   ],
   bugFixes:[
   ]
