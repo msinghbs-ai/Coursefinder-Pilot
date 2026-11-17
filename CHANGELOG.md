@@ -2,7 +2,7 @@
 
 ## 0.1.452 — 18 Nov 2026
 
-- Prepared visible PIM Admin release candidate **v2.16.30** (Platform Admin decision 18 Nov 2026 07:03, S1-RM-Design lane). Migration 20261118080000: `public.admin_boost_queue_read(args)` (Curator and above, read-only, stable) lists `pipeline.boost_extract_items` with Country tier and Priority score worked out on read from the `boost.matrix.*` settings through `security.boost_country_category_weight_v1`; setting `admin.boost_queue_page_rows` (50). No column is added anywhere. Platform health › Queues & yield gains the Boost queue card. Guards: `s598`, fixture `admin-boost-queue`.
+- Prepared visible PIM Admin release candidate **v2.16.30** (Platform Admin decision 18 Nov 2026 07:03, S1-RM-Design lane). Migration 20261118083000: `public.admin_boost_queue_read(args)` (Curator and above, read-only, stable) lists `pipeline.boost_extract_items` with Country tier and Priority score worked out on read from the `boost.matrix.*` settings through `security.boost_country_category_weight_v1`; setting `admin.boost_queue_page_rows` (50). No column is added anywhere. Platform health › Queues & yield gains the Boost queue card. Guards: `s599`, fixture `admin-boost-queue`.
 
 ## 0.1.451 — 18 Nov 2026
 

@@ -1,6 +1,6 @@
 // CF-247 Boost queue (Platform Admin decision 18 Nov 2026 07:03): Platform health › Queues & yield. The Boost queue with Country tier and Priority score,
 // worked out when the queue is read from the boost.matrix settings (country weight x category weight; tier 1 and tier 2 country lists). Nothing is stored on
-// a course, and these two values are shown only here. Read-only: public.admin_boost_queue_read(args), Curator and above (migration 20261118080000).
+// a course, and these two values are shown only here. Read-only: public.admin_boost_queue_read(args), Curator and above (migration 20261118083000).
 import React,{useCallback,useEffect,useState}from'react'
 import{supabase}from'./lib/supabase'
 import{Button,EmptyInline,StatusChip,fmtDateTime,fmtNumber}from'./ui-kit'
