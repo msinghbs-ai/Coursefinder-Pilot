@@ -144,4 +144,62 @@ do $t$ declare r jsonb; v_id uuid; v_src uuid; v_pol text; begin
     and not has_table_privilege('authenticated', 'ref.enrichment_category_fields', 'select') and has_table_privilege('service_role', 'ref.enrichment_category_fields', 'select'), 'anon reaches nothing; tables are closed to the browser; the loaders read the categories');
 end $t$;
 SQL
+# Wave 2 addenda (Platform Admin 17 Nov 2026 19:09): parser line items and the target record type, on top of the wizard
+N=supabase/migrations/20261117203000_cf247_layer1_parser_line_items.sql
+$P -1 -f $N >/dev/null; $P -1 -f $N >/dev/null
+echo "parser migration: applied twice without error (definition guard and post-check included)"
+$P <<'SQL'
+create or replace function pg_temp.ok(c boolean, m text) returns void language plpgsql as $$ begin if c is not true then raise exception 'FAIL: %', m; end if; raise notice 'ok: %', m; end $$;
+create or replace function pg_temp.err(q text) returns text language plpgsql as $$ begin execute q; return null; exception when others then return sqlerrm; end $$;
+do $t$ declare r jsonb; v_id uuid; v_ai uuid; v_hard uuid; v_none uuid; begin
+  perform set_config('fixture.uid', '44444444-4444-4444-4444-444444444444', true); perform set_config('fixture.rank', '4', true);
+  r := public.admin_layer1_induction_read();
+  perform pg_temp.ok(jsonb_array_length(r#>'{options,record_types}') = 7 and r#>'{options,record_types}' @> '[{"key":"course_register"},{"key":"career_outcomes"},{"key":"destination_metrics"}]'::jsonb, 'the wizard offers seven target record types');
+  perform pg_temp.ok(pg_temp.err($$select public.admin_layer1_induction_save(null, '{"country_code":"IE","target_record_type":"anything"}')$$) = 'unknown target record type', 'an unknown record type is refused');
+  r := public.admin_layer1_induction_save(null, '{"country_code":"IE","scheme":"ie_qqi","scheme_kind":"course_registration"}');
+  v_id := (r#>>'{item,id}')::uuid;
+  perform pg_temp.ok(not (r#>>'{item,steps,scheme}')::boolean and not (r#>>'{item,steps,parser_spec}')::boolean, 'step 1 is not finished without a target record type');
+  perform pg_temp.ok(pg_temp.err(format($$select public.admin_layer1_induction_save(%L, '{"target_record_type":"tuition_fees","parser_spec":{"record_type":"course_register","fields":[]}}')$$, v_id)) like 'the parser spec is for another record type%', 'a parser spec for another record type is refused');
+  r := public.admin_layer1_induction_save(v_id, '{"target_record_type":"tuition_fees","source_label":"QQI fees table","source_url":"https://qsearch.qqi.ie/fees.csv","authority_name":"QQI","connector_type":"csv_file","terms_status":"not_required","cadence":"annual",
+    "parser_spec":{"record_type":"tuition_fees","target_table":"catalogue.course_fees","format":"csv","fields":[{"source":"Fee","target":"provider_tuition"}]}}', '[{"source_field":"Fee","target_field":"provider_tuition","category_key":"fees","by":"ai"}]');
+  perform pg_temp.ok((r#>>'{item,steps,scheme}')::boolean and (r#>>'{item,steps,parser_spec}')::boolean and r#>>'{item,payload,parser_spec,target_table}' = 'catalogue.course_fees' and r#>>'{item,payload,parser_spec_by}' = 'ai', 'the record type and the mapper''s parser spec are saved with the draft');
+  perform set_config('fixture.rank', '6', true);
+  r := public.admin_layer1_induction_activate(v_id, 'QQI fees approved');
+  v_ai := (r->>'source_id')::uuid;
+  perform pg_temp.ok((select parser_kind = 'ai_built' and target_record_type = 'tuition_fees' and spec_version = 1 and induction_id = v_id and parser_spec->>'format' = 'csv' from pipeline.layer1_source_parsers where source_id = v_ai)
+    and (select detail->>'parser' = 'ai_built' and detail->>'target_record_type' = 'tuition_fees' from pipeline.admin_control_events where action = 'induction_activate' and target = v_ai::text)
+    and (select paused from pipeline.layer1_source_operations where source_id = v_ai), 'activation records the AI-built parser for the source, which stays paused');
+  -- a register read by code, and one still waiting for a parser
+  insert into pipeline.sources(source_type, url, label, status, metadata) values ('web', 'https://cricos.example/data', 'CRICOS courses', 'active', '{}') returning id into v_hard;
+  insert into pipeline.layer1_source_operations(source_id, authority_name, paused, active) values (v_hard, 'DoE', false, true);
+  select s.id into v_none from pipeline.sources s where s.label = 'Second register';
+  perform set_config('fixture.rank', '3', true);
+  perform pg_temp.ok(pg_temp.err($$select public.admin_layer1_parser_status()$$) like 'Pipeline Operator (rank 4)%', 'the parser status opens with Layer 1');
+  perform set_config('fixture.rank', '4', true);
+  r := public.admin_layer1_parser_status()->'sources';
+  perform pg_temp.ok(r#>>array[v_ai::text, 'parser'] = 'ai_built' and r#>>array[v_hard::text, 'parser'] = 'hardcoded' and r#>>array[v_none::text, 'parser'] = 'none' and r#>>array[v_ai::text, 'target_record_type'] = 'tuition_fees'
+    and (select count(*) from pipeline.layer1_source_parsers) = 1, 'badges: AI-built from its spec, hardcoded when read by code, none while it waits for a parser');
+  perform pg_temp.ok(pg_temp.err(format($$select public.admin_layer1_parser_reinfer_request(%L, 'layout moved')$$, v_ai)) = 'no layout drift is flagged for this source'
+    and pg_temp.err(format($$select public.svc_layer1_parser_drift_record(%L, true, 'x')$$, v_ai)) = 'service role required', 're-infer needs flagged drift; only a reader flags drift');
+  perform set_config('fixture.role', 'service_role', true);
+  perform public.svc_layer1_parser_drift_record(v_ai, true, 'column Fee is now Annual fee');
+  perform public.svc_layer1_parser_drift_record(v_hard, true, 'header row moved');
+  perform pg_temp.ok(pg_temp.err($$select public.svc_layer1_parser_drift_record('99999999-9999-9999-9999-999999999999', true, 'x')$$) = 'not a Layer 1 source'
+    and (select parser_kind = 'hardcoded' and drift_flagged_at is not null from pipeline.layer1_source_parsers where source_id = v_hard), 'a reader flags drift; a source read by code gets its row as hardcoded');
+  perform set_config('fixture.role', '', true);
+  perform pg_temp.ok(pg_temp.err(format($$select public.admin_layer1_parser_reinfer_request(%L, ' ')$$, v_ai)) = 'a reason is required', 're-infer needs a reason');
+  r := public.admin_layer1_parser_reinfer_request(v_ai, 'fee column renamed');
+  perform pg_temp.ok((r->>'ok')::boolean and (select count(*) from pipeline.admin_control_events where area = 'layer1' and action = 'parser_reinfer_request' and target = v_ai::text and detail->>'reason' = 'fee column renamed') = 1
+    and pg_temp.err(format($$select public.admin_layer1_parser_reinfer_request(%L, 'again')$$, v_ai)) = 'a re-infer is already requested for this source'
+    and public.admin_layer1_parser_status()#>>array['sources', v_ai::text, 'reinfer_reason'] = 'fee column renamed'
+    and (select paused from pipeline.layer1_source_operations where source_id = v_ai), 'the request is recorded once and logged; nothing is run and the source stays paused');
+  perform set_config('fixture.role', 'service_role', true);
+  perform pg_temp.ok(pg_temp.err(format($$select public.svc_layer1_parser_record(%L, '{"parser_kind":"ai_built"}')$$, v_ai)) = 'an AI-built parser needs its spec', 'an AI-built parser needs its spec');
+  r := public.svc_layer1_parser_record(v_ai, '{"parser_kind":"ai_built","target_record_type":"tuition_fees","parser_spec":{"record_type":"tuition_fees","format":"csv","fields":[{"source":"Annual fee","target":"provider_tuition"}]}}');
+  perform pg_temp.ok((r->>'spec_version')::int = 2 and (select drift_flagged_at is null and reinfer_requested_at is null and parser_spec#>>'{fields,0,source}' = 'Annual fee' from pipeline.layer1_source_parsers where source_id = v_ai)
+    and public.svc_layer1_parser_drift_record(v_hard, false)->>'drift_flagged' = 'false', 'a new spec is version 2 and clears the drift and the request; a reader can clear drift');
+  perform pg_temp.ok(not has_function_privilege('anon', 'public.admin_layer1_parser_reinfer_request(uuid, text)', 'execute') and not has_function_privilege('authenticated', 'public.svc_layer1_parser_record(uuid, jsonb)', 'execute')
+    and not has_table_privilege('authenticated', 'pipeline.layer1_source_parsers', 'select'), 'anon reaches nothing; the parser table and service functions are closed to the browser');
+end $t$;
+SQL
 echo "layer1 induction wizard: all checks passed"

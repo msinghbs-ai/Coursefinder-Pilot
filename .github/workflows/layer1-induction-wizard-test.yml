@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'supabase/migrations/20261117193000_cf247_layer1_induction_wizard.sql'
+      - 'supabase/migrations/20261117203000_cf247_layer1_parser_line_items.sql'
       - 'tests/fixtures/layer1-induction-wizard/**'
       - '.github/workflows/layer1-induction-wizard-test.yml'
   workflow_dispatch:

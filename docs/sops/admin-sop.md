@@ -1,7 +1,7 @@
-<!-- sop-export: id=admin-sop; version=2.50; reviewed-release=2.16.24; source-commit=0c39f5b0ef61+local; content-sha256=b7c8e073f5c5e3a30b0c83d6bb7a9eb99bdd12ee91bfe2d1c85d1438ad449e45 -->
+<!-- sop-export: id=admin-sop; version=2.51; reviewed-release=2.16.25; source-commit=45a597a44148+local; content-sha256=729b4cc26baceef4582303a689079c4693a8ffe4ccedaa2056485681bb66154d -->
 # StudySearch – Platform Admin SOP
 
-**Version:** 2.50 (reviewed for platform release v2.16.24)  
+**Version:** 2.51 (reviewed for platform release v2.16.25)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -139,6 +139,7 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.51 | 17 Nov 2026 | v2.16.25 | Layer 1 › Sources shows each source's parser (Hardcoded, AI-built, none). On Layout drift flagged, request Re-infer Parser Spec with a reason and keep the source paused if its counts look wrong. The wizard asks for the target record type first. |
 | 2.50 | 17 Nov 2026 | v2.16.24 | Layer 1 › + Add source is a six-step wizard; activate with a reason only when the licence terms and mapping are right, and leave the source paused until a dry run has passed. Platform health › Country & category completeness: read fill by country and category and Layer 4 ageing after each load. |
 | 2.49 | 17 Nov 2026 | v2.16.23 | Links & Email Templates › Email delivery provider: send invitations and resets through Resend (sender name, from email, write-only API key). Replace the key by typing a new one; rotate it in Resend if it may have been seen. |
 | 2.48 | 17 Nov 2026 | v2.16.22 | Email templates reach Supabase Auth through the admin workflow supabase-auth-config.yml (or Copy HTML), not from the screen. Go-live checklist: Auth custom SMTP (Resend) before production. |

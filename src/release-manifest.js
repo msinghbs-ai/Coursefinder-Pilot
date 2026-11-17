@@ -1,19 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.24'
-export const PACKAGE_VERSION='0.1.446'
+export const UI_VERSION='2.16.25'
+export const PACKAGE_VERSION='0.1.447'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'17 Nov 2026',
-  title:'Layer 1 source induction wizard; Country & category completeness report',
+  title:'Layer 1 sources show their parser; the wizard takes a target record type',
   changes:[
-    'Layer 1 › Sources: + Add source now opens a six-step wizard: Country & scheme, Source & licence, Field mapping, Cadence & retention, Dry-run preview, Activation. A draft is saved at each step and can be continued later. Pipeline Operators can prepare a draft; activation is the Platform Admin\'s, with a reason, and the source is saved paused.',
-    'Field mapping: map each source field to a platform field and one of eight enrichment categories. AI Auto-Map switches on by itself when the AI mapper is deployed; until then mapping is by hand.',
-    'Cadence & retention: the retention entered for a source is recorded only. It does not change what the platform prunes.',
-    'Dry-run preview shows rows read, inserts, updates, departures and postcodes under the match share once the source has a reader; before that it says Waiting for a reader.',
-    'Platform health: new tab Country & category completeness (Curator and above): field fill by country and category, each Layer 1 source\'s editions, last change and retention, and how long Layer 4 items have waited. The Platform Admin can move a field to another category with a reason.'
+    'Layer 1 › Sources: each source line has a Parser badge: Hardcoded parser (read by code), AI-built parser (read from a reviewed parser spec) or No parser yet. Filter by Country as before; schedule, warn and stop %, record bounds, Run now, Check source and Pause are on each line.',
+    'When a reader flags that a source\'s layout has changed, the line says so and offers Re-infer Parser Spec (Pipeline Operator and above, with a reason). The request is recorded and logged; the source keeps its current parser until a new spec is accepted.',
+    'Add source wizard, step 1: choose the Target record type (Course register, Provider register, Tuition fees, Study rules, Destination metrics, Career outcomes, Scholarships).',
+    'Add source wizard, step 3: when the AI mapper is deployed, AI Auto-Map also proposes the parser spec, its target table and the category routing, shown for review before saving. On activation the spec becomes the source\'s AI-built parser.'
   ],
   bugFixes:[
   ]

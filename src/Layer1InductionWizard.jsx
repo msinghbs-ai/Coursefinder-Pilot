@@ -17,7 +17,7 @@ const CONNECTOR={csv_file:'CSV file',xlsx_file:'Excel file',json_api:'JSON API',
 const TERMS={approved:'Approved',pending:'Pending (REQ-68)',not_required:'Not required'}
 const CADENCE={weekly:'Weekly',monthly:'Monthly',annual:'Annual'}
 const KIND={course_registration:'Course registration',provider_registration:'Provider registration',field_of_study:'Field of study',work_eligibility:'Work eligibility'}
-const EMPTY={country_code:'',scheme:'',scheme_kind:'',field_scheme:'',source_label:'',source_url:'',authority_name:'',dataset_class:'register',connector_type:'',expected_format:'',licence_name:'',licence_url:'',attribution_text:'',terms_status:'',cadence:'',notes:'',sample_file_name:'',edition_archiving:true,staging_retention_days:'',raw_retention_days:'',sample:null}
+const EMPTY={country_code:'',scheme:'',scheme_kind:'',field_scheme:'',target_record_type:'',parser_spec:null,source_label:'',source_url:'',authority_name:'',dataset_class:'register',connector_type:'',expected_format:'',licence_name:'',licence_url:'',attribution_text:'',terms_status:'',cadence:'',notes:'',sample_file_name:'',edition_archiving:true,staging_retention_days:'',raw_retention_days:'',sample:null}
 
 export default function Layer1InductionWizard({rank=0,onDone,onCancel,client=null,invoke=null}){
   const rpc=client||((fn,args)=>supabase.rpc(fn,args))
@@ -39,7 +39,8 @@ export default function Layer1InductionWizard({rank=0,onDone,onCancel,client=nul
   const steps=item?.steps||{}
   const closed=item&&item.status!=='draft'
   async function save(next){setBusy('save');setErr('');setNote('')
-    try{const payload={...f,staging_retention_days:f.staging_retention_days===''?null:Number(f.staging_retention_days),raw_retention_days:f.raw_retention_days===''?null:Number(f.raw_retention_days)}
+    try{const{parser_validation:_pv,...rest}=f
+      const payload={...rest,staging_retention_days:f.staging_retention_days===''?null:Number(f.staging_retention_days),raw_retention_days:f.raw_retention_days===''?null:Number(f.raw_retention_days)}
       const{data,error}=await rpc('admin_layer1_induction_save',{p_id:id,p_payload:payload,p_mappings:maps});if(error)throw error
       setItem(data.item);setId(data.item.id);setNote('Draft saved.');if(next!=null)setStep(next);return data.item}
     catch(e){setErr(plainError(e));return null}finally{setBusy('')}}
@@ -52,13 +53,14 @@ export default function Layer1InductionWizard({rank=0,onDone,onCancel,client=nul
   const setMap=(i,patch)=>setMaps(m=>m.map((x,j)=>j===i?{...x,...patch,by:x.by==='ai'||x.by==='ai_adjusted'?'ai_adjusted':'manual'}:x))
   async function autoMap(){setBusy('map');setErr('');setNote('')
     try{const saved=await save(null);if(!saved)return
-      const{data,error}=await call(MAPPER,{action:'map',induction_id:saved.id,country_code:f.country_code,connector_type:f.connector_type,source_url:f.source_url,sample:{columns:f.sample?.columns||maps.map(m=>m.source_field),rows:(f.sample?.rows||[]).slice(0,20)},
+      const{data,error}=await call(MAPPER,{action:'map',induction_id:saved.id,target_record_type:f.target_record_type,country_code:f.country_code,connector_type:f.connector_type,source_url:f.source_url,sample:{columns:f.sample?.columns||maps.map(m=>m.source_field),rows:(f.sample?.rows||[]).slice(0,20)},
         target_fields:fieldList.map(x=>({field:x.field,label:x.label,category_key:x.category_key})),categories:(o?.categories||[]).map(c=>({key:c.key,label:c.label,description:c.description}))})
       if(error||!data?.ok)throw new Error(data?.error||error?.message||'The mapper did not answer.')
       const sug=new Map((data.suggestions||[]).map(s=>[s.source_field,s]))
       setMaps(m=>{const have=new Set(m.map(x=>x.source_field));const merged=m.map(x=>{const s=sug.get(x.source_field);return s&&!x.target_field&&!x.category_key?{...x,target_field:s.target_field||'',category_key:s.category_key||'',confidence:s.confidence,note:s.reason||x.note,by:'ai'}:x})
         for(const s of data.suggestions||[])if(!have.has(s.source_field))merged.push({source_field:s.source_field,target_field:s.target_field||'',category_key:s.category_key||'',confidence:s.confidence,note:s.reason||'',by:'ai'});return merged})
-      setNote(`AI Auto-Map suggested ${(data.suggestions||[]).length} mappings${data.model?` (${data.model})`:''}. Check each one; nothing is saved until Save & continue.`)}
+      if(data.parser_spec&&typeof data.parser_spec==='object')setF(x=>({...x,parser_spec:{...data.parser_spec,record_type:data.parser_spec.record_type||x.target_record_type},parser_validation:data.validation||null}))
+      setNote(`AI Auto-Map suggested ${(data.suggestions||[]).length} mappings${data.parser_spec?' and a parser spec':''}${data.model?` (${data.model})`:''}. Check each one; nothing is saved until Save & continue.`)}
     catch(e){setErr(plainError(e))}finally{setBusy('')}}
   async function activate(){const why=reason.trim();if(why.length<4){setErr('Give a reason for activating this source (it is kept in the control log).');return}
     setBusy('activate');setErr('');setNote('')
@@ -78,6 +80,8 @@ export default function Layer1InductionWizard({rank=0,onDone,onCancel,client=nul
       <label>Country<select value={f.country_code} onChange={e=>setF(x=>({...x,country_code:e.target.value,scheme:'',scheme_kind:'',field_scheme:''}))} disabled={closed} data-l1i-country><option value="">Choose…</option>{o.countries.map(c=><option key={c.code} value={c.code}>{c.name} ({c.code})</option>)}</select></label>
       <label>Registration scheme<select value={f.scheme?`${f.scheme}|${f.scheme_kind}`:''} onChange={e=>{const[a,b]=e.target.value.split('|');setF(x=>({...x,scheme:a||'',scheme_kind:b||''}))}} disabled={closed||!schemes.length} data-l1i-scheme><option value="">Choose…</option>{schemes.filter(s=>s.kind!=='field_of_study').map(s=><option key={s.scheme+s.kind} value={`${s.scheme}|${s.kind}`}>{s.label||s.scheme} · {KIND[s.kind]||s.kind}</option>)}</select></label>
       <label>Native field-of-study scheme<select value={f.field_scheme} onChange={set('field_scheme')} disabled={closed||!schemes.length} data-l1i-field-scheme><option value="">None or not known</option>{schemes.filter(s=>s.kind==='field_of_study').map(s=><option key={s.scheme} value={s.scheme}>{s.label||s.scheme}</option>)}</select></label>
+      <label>Target record type<select value={f.target_record_type} onChange={e=>setF(x=>({...x,target_record_type:e.target.value,parser_spec:null}))} disabled={closed} data-l1i-record-type><option value="">Choose…</option>{(o.record_types||[]).map(t=><option key={t.key} value={t.key}>{t.label}</option>)}</select>
+        <small>{(o.record_types||[]).find(t=>t.key===f.target_record_type)?.help||'What each row of this source becomes. The AI mapper builds the parser spec for this type.'}</small></label>
       {f.country_code&&!schemes.length&&<p className="l1i-warn" data-l1i-no-scheme>No registration scheme is registered for {f.country_code} yet. A scheme is added to the reference list first (a database change), then this source can be set up.</p>}
     </div>,
     // 2
@@ -98,7 +102,7 @@ export default function Layer1InductionWizard({rank=0,onDone,onCancel,client=nul
     // 3
     <div key="s3" data-l1i-step="mapping">
       <div className="l1i-bar"><p className="sl-sub">Map each source field to the platform field it fills and its enrichment category. Leave a field unmapped to ignore it.</p>
-        <span className="l1i-actions"><Button compact disabled={closed||!mapper||busy!==''} title={mapper?undefined:'AI Auto-Map switches on when the mapper is deployed'} onClick={autoMap} data-l1i-automap>{busy==='map'?'Mapping…':'AI Auto-Map'}</Button>
+        <span className="l1i-actions"><Button compact disabled={closed||!mapper||!f.target_record_type||busy!==''} title={mapper?undefined:'AI Auto-Map switches on when the mapper is deployed'} onClick={autoMap} data-l1i-automap>{busy==='map'?'Mapping…':'AI Auto-Map'}</Button>
           <StatusChip tone={mapper?'success':'neutral'} label={mapper?'AI mapper ready':mapper===null?'Checking the AI mapper…':'AI mapper not deployed yet: map by hand'}/>
           <Button compact disabled={closed} onClick={()=>setMaps(m=>[...m,{source_field:'',target_field:'',category_key:'',by:'manual'}])} data-l1i-add-map>Add a field</Button></span></div>
       {maps.length?<div className="l1i-scroll"><table className="cf-table"><thead><tr><th>Source field</th><th>Sample</th><th>Platform field</th><th>Enrichment category</th><th>By</th><th></th></tr></thead>
@@ -109,6 +113,15 @@ export default function Layer1InductionWizard({rank=0,onDone,onCancel,client=nul
             <td>{m.by==='ai'?`AI${m.confidence!=null?` ${Math.round(Number(m.confidence)*100)}%`:''}`:m.by==='ai_adjusted'?'AI, adjusted':'By hand'}</td>
             <td><Button compact disabled={closed} onClick={()=>setMaps(x=>x.filter((_,j)=>j!==i))} aria-label={`Remove ${m.source_field||'field'}`}>Remove</Button></td></tr>})}</tbody></table></div>
         :<EmptyInline text="No fields yet. Upload a sample in step 2 to list its columns, or add a field by hand."/>}
+      <div className="l1i-spec" data-l1i-parser-spec={f.parser_spec?'present':'none'}>
+        <h4>Parser spec for {(o.record_types||[]).find(t=>t.key===f.target_record_type)?.label||'the target record type'}</h4>
+        {f.parser_spec?<>
+          <p className="sl-sub">Proposed by the AI mapper. Target: <strong>{f.parser_spec.target_table||'not stated'}</strong>. {f.parser_validation?(f.parser_validation.ok?'Validated against the sample.':`Not valid yet: ${(f.parser_validation.errors||[]).join('; ')||'see the spec'}.`):'Validation was not reported.'} On activation it becomes the AI-built parser of this source.</p>
+          <ul className="l1i-routing" data-l1i-routing>{(o.categories||[]).map(c=>{const k=maps.filter(m=>m.category_key===c.key).length;return k?<li key={c.key}><strong>{c.label}</strong>: {fmtNumber(k)} {k===1?'field':'fields'}</li>:null})}</ul>
+          <pre className="l1i-json" tabIndex={0} aria-label="Parser spec (JSON)">{JSON.stringify(f.parser_spec,null,2)}</pre>
+          <Button compact disabled={closed} onClick={()=>setF(x=>({...x,parser_spec:null,parser_validation:null}))} data-l1i-spec-discard>Discard the spec</Button></>
+          :<p className="sl-sub">{mapper?'Press AI Auto-Map to have the parser spec, target table and category routing proposed for this record type.':'The parser spec is proposed by the AI mapper, which is not deployed yet. Without one the source is saved with no parser and waits for a reader.'}</p>}
+      </div>
     </div>,
     // 4
     <div className="l1i-grid" key="s4" data-l1i-step="cadence">

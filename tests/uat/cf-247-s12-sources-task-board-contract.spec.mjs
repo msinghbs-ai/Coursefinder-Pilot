@@ -43,6 +43,13 @@ test('mocked browser: Layer 1 › Sources is a list; a failing source says why; 
   await expect(l.locator('[data-l1-source]').first()).toContainText('Centennial') // needs attention sorts first
   await l.getByRole('button', { name: 'Open Centennial College Program Catalogue API' }).click()
   await expect(l.locator('[data-l1-health-reason]')).toContainText('expected 195 unique source codes got 200')
+  // Wave 2 addenda (Platform Admin 17 Nov 2026 19:09): each line shows its parser; flagged layout drift offers Re-infer Parser Spec
+  await expect(l.locator('[data-l1-parser="ai_built"]')).toContainText('AI-built parser')
+  await expect(l.locator('[data-l1-parser="hardcoded"]')).toContainText('Hardcoded parser')
+  await expect(l.locator('[data-l1-parser-line]')).toContainText('spec v2')
+  await expect(l.locator('[data-l1-drift]')).toContainText('expected 195 unique source codes got 200')
+  await l.locator('[data-l1-reinfer]').click()
+  await expect.poll(() => page.l3calls.find(c => c.l1Reinfer)?.l1Reinfer).toMatchObject({ p_source_id: 'l1-centennial', p_reason: 'Testing the list' })
   const f = l.locator('[data-l1-source-form]')
   await f.getByLabel('Load every (days)').fill('14')
   await f.getByLabel('Reason for the change (kept in the log)').fill('Weekly is too often')
@@ -56,6 +63,7 @@ test('mocked browser: Layer 1 › Sources is a list; a failing source says why; 
   await expect(page.locator('[data-l1-add-source]')).toHaveCount(0)
   await a.locator('[data-l1i-country]').selectOption('CA')
   await a.locator('[data-l1i-scheme]').selectOption('mtcu|course_registration')
+  await a.locator('[data-l1i-record-type]').selectOption('course_register')
   await a.getByRole('button', { name: 'Save & continue' }).click()
   await a.locator('[data-l1i-label]').fill('Ontario Colleges register')
   await a.locator('[data-l1i-url]').fill('https://www.ontariocolleges.ca/')
@@ -64,6 +72,7 @@ test('mocked browser: Layer 1 › Sources is a list; a failing source says why; 
   await a.locator('[data-l1i-terms]').selectOption('not_required')
   await a.getByRole('button', { name: 'Save & continue' }).click()
   await expect(a.locator('[data-l1i-automap]')).toBeDisabled() // the AI mapper is not deployed in the mock: map by hand
+  await expect(a.locator('[data-l1i-parser-spec="none"]')).toContainText('proposed by the AI mapper, which is not deployed yet')
   await a.locator('[data-l1i-add-map]').click()
   await a.getByLabel('Source field').fill('Program title')
   await a.getByLabel('Platform field').selectOption('level')
@@ -76,7 +85,7 @@ test('mocked browser: Layer 1 › Sources is a list; a failing source says why; 
   await expect(a.locator('[data-l1i-activate]')).toBeDisabled() // a reason first
   await a.locator('[data-l1i-reason]').fill('Ontario Colleges approved')
   await a.locator('[data-l1i-activate]').click()
-  await expect.poll(() => page.l3calls.filter(c => c.l1InductionSave).pop()?.l1InductionSave).toMatchObject({ p_payload: { country_code: 'CA', scheme: 'mtcu', source_label: 'Ontario Colleges register', source_url: 'https://www.ontariocolleges.ca/', cadence: 'monthly' }, p_mappings: [{ source_field: 'Program title', target_field: 'level', category_key: 'course_basics' }] })
+  await expect.poll(() => page.l3calls.filter(c => c.l1InductionSave).pop()?.l1InductionSave).toMatchObject({ p_payload: { country_code: 'CA', scheme: 'mtcu', target_record_type: 'course_register', source_label: 'Ontario Colleges register', source_url: 'https://www.ontariocolleges.ca/', cadence: 'monthly' }, p_mappings: [{ source_field: 'Program title', target_field: 'level', category_key: 'course_basics' }] })
   await expect.poll(() => page.l3calls.find(c => c.l1InductionActivate)?.l1InductionActivate).toMatchObject({ p_id: 'ind-1', p_reason: 'Ontario Colleges approved' })
   await expect(a).toContainText('Activated and saved paused')
 })
