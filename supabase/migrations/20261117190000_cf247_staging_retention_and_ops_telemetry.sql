@@ -282,7 +282,7 @@ bf as (select (f.done_at at time zone 'Australia/Melbourne')::date as day, count
          from pipeline.boost_ingest_files f where f.done_at is not null group by 1),
 bs as (select (s.promoted_at at time zone 'Australia/Melbourne')::date as day, count(*) settled, count(*) filter (where s.promotion_state = 'admitted') admitted
          from pipeline.boost_inbound_staging s where s.promoted_at is not null group by 1),
-cl as (select (r.tick_at at time zone 'Australia/Melbourne')::date day,
+cl as (select (r.tick_at at time zone 'Australia/Melbourne')::date as day,
               count(*) filter (where r.mode <> 'shadow' and r.status = 'succeeded') live_succeeded,
               count(*) filter (where r.mode <> 'shadow' and r.status not in ('succeeded', 'shadow_due', 'locked', 'already')) live_failed,
               count(*) filter (where r.mode <> 'shadow' and r.over_budget) live_over_budget,
