@@ -23,7 +23,9 @@ create function auth.role() returns text language sql stable as $$ select nullif
 create function security.current_role_rank() returns int language sql stable as $$ select nullif(current_setting('fixture.rank', true), '')::int $$;
 SQL
 $P -1 -f $M >/dev/null; $P -1 -f $M >/dev/null
-echo "migration: applied twice without error (post-check included)"
+G=supabase/migrations/20261117163000_cf247_golive_auth_custom_smtp.sql
+$P -1 -f $G >/dev/null; $P -1 -f $G >/dev/null
+echo "migrations: each applied twice without error (post-checks included)"
 $P <<'SQL'
 create or replace function pg_temp.ok(c boolean, m text) returns void language plpgsql as $$ begin if c is not true then raise exception 'FAIL: %', m; end if; raise notice 'ok: %', m; end $$;
 create or replace function pg_temp.err(q text) returns text language plpgsql as $$ begin execute q; return null; exception when others then return sqlerrm; end $$;
@@ -51,6 +53,7 @@ do $t$ declare r jsonb; m text; b text; begin
   perform pg_temp.ok((select count(*) from pipeline.environment_settings where setting_key = 'admin_auth_email_templates' and category = 'auth' and management_mode = 'read_only') = 1, 'one row in the existing settings table');
   r := public.admin_auth_template_settings_save(public.admin_auth_template_settings_read()->'defaults', 'back to default');
   perform pg_temp.ok(r#>>'{settings,site_url}' = 'https://coursefinder-pilot.techm.workers.dev' and jsonb_array_length(public.admin_auth_template_settings_read()->'last_events') = 2, 'saving the defaults resets everything; the last events are listed');
+  perform pg_temp.ok((select count(*) from pipeline.environment_settings where setting_key = 'auth_custom_smtp' and category = 'auth' and management_mode = 'deployment_managed' and environment_scope = 'production' and required_for_production and status = 'pending' and setting_value is null) = 1, 'Go-live checklist: custom SMTP (Resend) is one pending deployment step with no value stored');
   perform pg_temp.ok(pg_temp.err($$select public.svc_admin_auth_template_settings()$$) = 'service role required', 'the service read is refused to a signed-in user');
   perform set_config('fixture.role', 'service_role', true);
   perform public.svc_admin_auth_template_log('33333333-3333-3333-3333-333333333333', 'auth_templates_sync', '{"synced":true,"token":"secret"}');

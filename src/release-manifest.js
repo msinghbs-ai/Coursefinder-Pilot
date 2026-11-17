@@ -1,19 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.21'
-export const PACKAGE_VERSION='0.1.443'
+export const UI_VERSION='2.16.22'
+export const PACKAGE_VERSION='0.1.444'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'17 Nov 2026',
-  title:'Users & roles: Resend invite; a clear warning when emails are not copied to Supabase Auth',
+  title:'Emails greet cleanly without a name; custom SMTP on the Go-live checklist',
   changes:[
-    'Users & roles: a person who has not accepted the invitation yet has Resend invite on their row (Platform Admin). It emails the invitation again and is recorded in the access history. Everyone else keeps Reset password.',
-    'Links & Email Templates: while no management token is set for the edge function, a warning says that Supabase Auth still sends the previous emails, with Copy HTML for Supabase Dashboard and Copy subject to paste the selected template into the dashboard.'
+    'Go-live checklist: new step Auth custom SMTP (Resend), so production emails come from StudySearch PIM Admin instead of Supabase Auth.',
+    'Links & Email Templates: the screen now says that Supabase Auth is updated by the admin workflow, not from this screen. Copy HTML for Supabase Dashboard stays as the instant route.'
   ],
   bugFixes:[
-    'Users & roles: the directory now says why Reset password is greyed for your own account and for a Platform Admin.'
+    'Invitation and reset emails: a person invited without a full name is greeted "Welcome" (and "Hello,"), with no stray comma or space.'
   ]
 }
 

@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'supabase/migrations/20261117152700_cf247_admin_auth_email_templates.sql'
+      - 'supabase/migrations/20261117163000_cf247_golive_auth_custom_smtp.sql'
       - 'tests/fixtures/admin-auth-email-templates/**'
       - '.github/workflows/admin-auth-email-templates-test.yml'
   workflow_dispatch:
