@@ -69,7 +69,7 @@ $P -d "$DB" -1 -f "$P0"
 
 # Exercise the ACTUAL review DO body, enabled only in a temporary local fixture
 # copy with a conspicuously synthetic actor/approval. Never alter the source file.
-REVIEW=../../../docs/paste/REVIEW-20261106-p0-deadline-three-values.sql
+REVIEW=../../../tests/fixtures/paste/REVIEW-20261106-p0-deadline-three-values.sql
 grep -qF 'v_approved boolean := false;' "$REVIEW"
 grep -qF 'v_actor uuid := null;' "$REVIEW"
 grep -qF 'v_decision text := null;' "$REVIEW"

@@ -15,8 +15,8 @@ const FX = 'tests/fixtures/ops-provider-lifecycle'
 const run = fs.readFileSync(`${FX}/run.sh`, 'utf8')
 const fixtures = fs.readFileSync(`${FX}/fixtures.sql`, 'utf8')
 const fn = (name) => { const a = m.indexOf(`create or replace function ${name}(`); expect(a, name).toBeGreaterThan(-1); return m.slice(a, m.indexOf('\n$$;', a)) }
-const pasteA = fs.readFileSync('docs/paste/PASTE-20261104-newgen-03871f-a-website-check.sql', 'utf8')
-const pasteB = fs.readFileSync('docs/paste/PASTE-20261104-newgen-03871f-b-website-correction.sql', 'utf8')
+const pasteA = fs.readFileSync('tests/fixtures/paste/PASTE-20261104-newgen-03871f-a-website-check.sql', 'utf8')
+const pasteB = fs.readFileSync('tests/fixtures/paste/PASTE-20261104-newgen-03871f-b-website-correction.sql', 'utf8')
 
 test('lands after workstream A; edits only the onboarding tick from its live md5; the fixture loads the same live text', () => {
   expect(m).toContain("if to_regclass('pipeline.ops_remedies') is null then raise exception 'workstream A (20261104010000) has not landed")

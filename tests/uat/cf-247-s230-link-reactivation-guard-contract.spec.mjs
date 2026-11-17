@@ -14,8 +14,8 @@ const FX = 'tests/fixtures/link-reactivation'
 const run = fs.readFileSync(`${FX}/run.sh`, 'utf8')
 const fixtures = fs.readFileSync(`${FX}/fixtures.sql`, 'utf8')
 const before = fs.readFileSync(`${FX}/fixtures-before.sql`, 'utf8')
-const PASTE = fs.readFileSync('docs/paste/PASTE-20261103-iq43-reactivated-links.sql', 'utf8')
-const ROLLBACK = fs.readFileSync('docs/paste/PASTE-20261103-iq43-reactivated-links-rollback.sql', 'utf8')
+const PASTE = fs.readFileSync('tests/fixtures/paste/PASTE-20261103-iq43-reactivated-links.sql', 'utf8')
+const ROLLBACK = fs.readFileSync('tests/fixtures/paste/PASTE-20261103-iq43-reactivated-links-rollback.sql', 'utf8')
 const fn = (name) => { const a = m.indexOf(`create or replace function ${name}(`); return m.slice(a, m.indexOf('$$;', m.indexOf('as $$', a) + 5)) }
 
 test('the two edited functions change only from their live md5 and are checked after; the fixtures load the live text and check it first', () => {

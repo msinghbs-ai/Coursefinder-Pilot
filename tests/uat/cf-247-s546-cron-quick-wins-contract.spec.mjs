@@ -1,11 +1,11 @@
 // Guards: Job governance quick wins (Platform Admin 15 Nov 2026 20:38, approving the job governance audit of 20:25): search-refresh-requested runs with its own time limit from a setting and its rebuild is unchanged; course-description-stale-retire reads its two classes directly with the same rules and no similarity scan; the eight switched-off jobs are retiring and leave only by the count-guarded paste file; the four collision-risk jobs start on quieter minutes with the same runs an hour
-// CF-247 S546. Migration 20261115200500_cf247_cron_quick_wins and docs/paste/PASTE-20261115-cron-legacy-jobs-drop.sql.
+// CF-247 S546. Migration 20261115200500_cf247_cron_quick_wins and tests/fixtures/paste/PASTE-20261115-cron-legacy-jobs-drop.sql.
 // G2 (no number in a job), G3 (consumer API frozen) and housekeeping (Replaces/Retires, nothing dropped) are guarded centrally by s32, s57 and s42.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
 const M = fs.readFileSync('supabase/migrations/20261115200500_cf247_cron_quick_wins.sql', 'utf8')
-const P = fs.readFileSync('docs/paste/PASTE-20261115-cron-legacy-jobs-drop.sql', 'utf8')
+const P = fs.readFileSync('tests/fixtures/paste/PASTE-20261115-cron-legacy-jobs-drop.sql', 'utf8')
 const code = M.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 
 // minutes of the hour a cron minute field starts on

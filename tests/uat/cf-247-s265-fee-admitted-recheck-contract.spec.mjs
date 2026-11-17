@@ -13,8 +13,8 @@ const m = fs.readFileSync(MIG, 'utf8')
 const FX = 'tests/fixtures/fee-l4-route'
 const run = fs.readFileSync(`${FX}/run.sh`, 'utf8')
 const fixtures = fs.readFileSync(`${FX}/fixtures.sql`, 'utf8')
-const paste = fs.readFileSync('docs/paste/PASTE-20261104-fee-admitted-recheck.sql', 'utf8')
-const observe = fs.readFileSync('docs/paste/OBSERVE-20261104-fee-reads-v2.15.442.sql', 'utf8')
+const paste = fs.readFileSync('tests/fixtures/paste/PASTE-20261104-fee-admitted-recheck.sql', 'utf8')
+const observe = fs.readFileSync('tests/fixtures/paste/OBSERVE-20261104-fee-reads-v2.15.442.sql', 'utf8')
 const md5 = (s) => crypto.createHash('md5').update(s).digest('hex')
 
 test('the Layer 4 inbox is not edited here: the items render through the Layer 4 owner\'s version (20261104150000, 4fc05d14)', () => {

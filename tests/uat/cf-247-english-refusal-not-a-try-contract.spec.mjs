@@ -58,8 +58,8 @@ test('the worker records the refusal names the database treats as refusals (noth
 })
 
 test('the requeue of closed pages is a paste file with a rollback, never a migration, and does not touch pages that gave no content', () => {
-  const paste = fs.readFileSync('docs/paste/PASTE-20261107-english-refused-sources-requeue.sql', 'utf8')
-  const back = fs.readFileSync('docs/paste/PASTE-20261107-english-refused-sources-requeue-rollback.sql', 'utf8')
+  const paste = fs.readFileSync('tests/fixtures/paste/PASTE-20261107-english-refused-sources-requeue.sql', 'utf8')
+  const back = fs.readFileSync('tests/fixtures/paste/PASTE-20261107-english-refused-sources-requeue-rollback.sql', 'utf8')
   expect(paste).toContain('security.provider_fact_refusal_v1(f.parse_summary->>\'error\')')
   expect(paste).toContain("f.status = 'failed'"); expect(paste).toContain("'requeued_from'")
   expect(back).toContain("parse_summary ? 'requeued_from'"); expect(back).toContain('f.read_at is null')

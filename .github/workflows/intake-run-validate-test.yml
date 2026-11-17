@@ -21,7 +21,7 @@ on:
       - 'tests/fixtures/calendar-reread-all-providers/**'
       - 'supabase/migrations/*calendar_reread*'
       - 'supabase/held/calendar_reread_all_providers_forward_recovery.sql'
-      - 'docs/paste/PASTE-20261108-iq00313-deakin-intake-withdrawal.sql'
+      - 'tests/fixtures/paste/PASTE-20261108-iq00313-deakin-intake-withdrawal.sql'
       - 'supabase/functions/coverage-sweep/calendar.ts'
       - 'tests/integration/intake-postgres.spec.mjs'
       - 'playwright.intake.config.mjs'

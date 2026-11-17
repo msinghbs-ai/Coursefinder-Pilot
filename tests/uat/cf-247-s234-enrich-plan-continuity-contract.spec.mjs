@@ -15,8 +15,8 @@ const m = fs.readFileSync(MIG, 'utf8')
 const FX = 'tests/fixtures/enrich-plan-continuity'
 const run = fs.readFileSync(`${FX}/run.sh`, 'utf8')
 const fixtures = fs.readFileSync(`${FX}/fixtures.sql`, 'utf8')
-const PASTE = fs.readFileSync('docs/paste/PASTE-20261103-layer2-refresh-requests-close.sql', 'utf8')
-const ROLLBACK = fs.readFileSync('docs/paste/PASTE-20261103-layer2-refresh-requests-close-rollback.sql', 'utf8')
+const PASTE = fs.readFileSync('tests/fixtures/paste/PASTE-20261103-layer2-refresh-requests-close.sql', 'utf8')
+const ROLLBACK = fs.readFileSync('tests/fixtures/paste/PASTE-20261103-layer2-refresh-requests-close-rollback.sql', 'utf8')
 const read = (p) => fs.readFileSync(p, 'utf8')
 
 test('each edited definition changes only from its live md5 and is checked after; the fixtures load the live text and check it first', () => {

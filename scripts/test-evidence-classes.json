@@ -2,7 +2,7 @@
   "schema": 1,
   "_about": "Platform Admin mandate 6 Nov 2026 11:00. Classification of tracked files for the authoritative test evidence. A file is an EXECUTION input (changing it invalidates evidence) unless it matches reusableMetadata. Unknown files are execution inputs (fail closed).",
   "reusableMetadata": ["CHANGELOG.md", "README.md", "docs/release-notes/*.md", "docs/platform/*.md", "docs/*.md"],
-  "executionOverrides": ["docs/sops/**", "docs/paste/**"],
+  "executionOverrides": ["docs/sops/**", "tests/fixtures/paste/**"],
   "coveredByFinalChecks": ["CHANGELOG.md", "docs/release-notes/*.md", "docs/platform/TEST-REGISTER.md"],
   "finalCandidateChecks": {
     "commands": ["node scripts/verify-release-contract.mjs"],

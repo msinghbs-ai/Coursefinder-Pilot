@@ -69,7 +69,7 @@ test('case 2: release notes, changelog text and docs reuse the full-suite eviden
 })
 
 test('case 2b: the version bump, SOPs, paste files and anything unclassified are NOT metadata (fail closed)', () => {
-  for (const p of ['package.json', 'src/release-manifest.js', 'docs/sops/admin-sop.md', 'docs/paste/PASTE-20261104-aer-render-pilot.sql', 'some-new-config.toml', 'docs/diagram.png', '.github/workflows/test-evidence.yml'])
+  for (const p of ['package.json', 'src/release-manifest.js', 'docs/sops/admin-sop.md', 'tests/fixtures/paste/PASTE-20261104-aer-render-pilot.sql', 'some-new-config.toml', 'docs/diagram.png', '.github/workflows/test-evidence.yml'])
     expect(classify(p, cfg), p).toBe('execution')
   // a metadata file that a test reads directly becomes an input (README.md is named by cf-247-baseline-contract)
   const pro = fpOf(head).promotedMetadata
