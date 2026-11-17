@@ -1,5 +1,5 @@
 // Guards: CRICOS 11 Nov 2026 edition apply timeout (Platform Admin 17 Nov 2026 14:30): Layer 1 register apply calls take their size from setting layer1.register_apply_chunk, so each call stays within the 8-second service statement limit
-// CF-247 S573. Migration 20261117150000_cf247_layer1_register_apply_chunk.sql; layer1-au-depth v1.9.1; layer1-nz-live v1.4.0.
+// CF-247 S573. Migration 20261117150000_cf247_layer1_register_apply_chunk.sql; layer1-au-depth v1.9.2; layer1-nz-live v1.4.0.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
@@ -30,4 +30,12 @@ for (const [name, src, scheme] of [['layer1-au-depth', au, 'cricos'], ['layer1-n
 test('layer1-au-depth: the reporting stats after an applied batch cannot fail the batch (run 4ae92b4f, 17 Nov 2026)', () => {
   expect(au).toContain('catalogueStats=await rpc(service,"svc_layer1_au_cricos_fact_stats").catch((e:any)=>({unavailable:String(e?.message||e)}))')
   expect(au).toContain('depthStats=await rpc(service,"svc_layer1_depth_stats").catch((e:any)=>({unavailable:String(e?.message||e)}))')
+})
+
+test('layer1-au-depth: location and study-level apply calls use the same setting; no fixed 250 remains', () => {
+  expect(au).not.toContain('RPC_CHUNK')
+  for (const fn of ['svc_layer1_apply_location_records', 'svc_layer1_apply_course_study_levels']) {
+    const call = au.match(new RegExp(fn + '",\\{[^}]*\\}'))[0]
+    expect(call).toContain('.slice(i,i+chunk)')
+  }
 })
