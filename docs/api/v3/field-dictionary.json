@@ -3161,6 +3161,83 @@
   {
    "api_surface": "website",
    "endpoint": "provider",
+   "field_path": "item.campuses[].locality",
+   "data_type": "object",
+   "is_nullable": true,
+   "description": "The approved locality the campus postcode maps to (G-5, 17 Nov 2026): the primary match in an approved or published locality, newest boundary first; null until the postcode has one.",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "provider",
+   "field_path": "item.campuses[].locality.locality_id",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Stable identifier of the locality (as in the destination action).",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "provider",
+   "field_path": "item.campuses[].locality.name",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Name of the locality as the source publishes it.",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "provider",
+   "field_path": "item.campuses[].locality.geography_type",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The official geography the locality belongs to, for example SUA.",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "provider",
+   "field_path": "item.campuses[].locality.geography_code",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The source code of the locality in that geography.",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "provider",
+   "field_path": "item.campuses[].locality.boundary_vintage",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The boundary edition the locality is drawn on, for example ASGS_2021_ED3.",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "provider",
+   "field_path": "item.campuses[].locality.match_share",
+   "data_type": "number",
+   "is_nullable": false,
+   "description": "Share of the postcode inside the locality, from 0 to 1.",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "provider",
    "field_path": "item.campuses[].campus_name",
    "data_type": "string",
    "is_nullable": true,
@@ -11522,6 +11599,83 @@
    "data_type": "string",
    "is_nullable": false,
    "description": "StudySearch campus identifier."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "provider",
+   "field_path": "item.campuses[].locality",
+   "data_type": "object",
+   "is_nullable": true,
+   "description": "The approved locality the campus postcode maps to (G-5, 17 Nov 2026): the primary match in an approved or published locality, newest boundary first; null until the postcode has one.",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "provider",
+   "field_path": "item.campuses[].locality.locality_id",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Stable identifier of the locality (as in the destination action).",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "provider",
+   "field_path": "item.campuses[].locality.name",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Name of the locality as the source publishes it.",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "provider",
+   "field_path": "item.campuses[].locality.geography_type",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The official geography the locality belongs to, for example SUA.",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "provider",
+   "field_path": "item.campuses[].locality.geography_code",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The source code of the locality in that geography.",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "provider",
+   "field_path": "item.campuses[].locality.boundary_vintage",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The boundary edition the locality is drawn on, for example ASGS_2021_ED3.",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "provider",
+   "field_path": "item.campuses[].locality.match_share",
+   "data_type": "number",
+   "is_nullable": false,
+   "description": "Share of the postcode inside the locality, from 0 to 1.",
+   "req_ids": [
+    "REQ-67"
+   ]
   },
   {
    "api_surface": "zoho",
