@@ -30,7 +30,7 @@ test('boost.ts v1.0.13: a page with a statement for international students is as
   expect(B.studyLoadSections(page, 20).text.length).toBeLessThanOrEqual(20)
   // a page with no such statement is read as before
   expect(B.studyLoadSections('Duration: 3 years full-time or 6 years part-time.', 6000).selector).toBe('study-load-windows-v3')
-  expect(B.BOOST_STUDY_LOAD_PROMPT_VERSION).toBe('boost-study-load-v3')
+  expect(B.BOOST_STUDY_LOAD_PROMPT_VERSION).toBe('boost-study-load-v4')  // v4 from worker v1.0.14 (s614)
   expect(B.BOOST_STUDY_LOAD_SYSTEM).toContain('When the text you are given is only sentences about international students, answer from those sentences.')
 })
 
