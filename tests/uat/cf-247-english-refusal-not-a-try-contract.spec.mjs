@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { centralCandidates } from '../../supabase/functions/coverage-sweep/central.ts'
 
-const MIG = fs.readFileSync('supabase/migrations/20261107060000_cf247_refusal_is_not_a_try.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations-archive/20261107060000_cf247_refusal_is_not_a_try.sql', 'utf8')
 const CODE = MIG.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')
 const WORKER = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 const eng = (urls, host) => centralCandidates(urls.map((url) => ({ url })), host).filter((c) => c.kind === 'english_policy')

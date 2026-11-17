@@ -2,7 +2,7 @@
 // Record: admin docs/platform/aer-v1.1-build-log.md. A live rolled-back probe (26 Oct 23:5x) admitted 13 of China's 22 rows with Gao Kao excluded.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const m = fs.readFileSync('supabase/migrations/20261026011000_cf247_entry_matrix_complete_admission.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261026011000_cf247_entry_matrix_complete_admission.sql', 'utf8')
 
 test('approval admits exactly the rows the complete verdict matched; the guard and identity checks stay ahead of it', () => {
   expect(m).toContain("select pg_temp.edit_n('security.entry_matrix_review_apply_v1(uuid,text,jsonb,text,uuid)', '9386a7be7726b5f23a3d01436dfeca35'")

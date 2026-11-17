@@ -2,7 +2,7 @@
 import fs from 'node:fs'
 import { test, expect } from '@playwright/test'
 
-const M = fs.readFileSync('supabase/migrations/20261110240000_cf247_planner_noop_memory.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261110240000_cf247_planner_noop_memory.sql', 'utf8')
 const R = fs.readFileSync('supabase/held/planner_noop_memory_forward_recovery.sql', 'utf8')
 const BEFORE = '5a3874e777ae649916d61575e2692609'
 const AFTER = 'f0c95d0bbef3ccac550585185c9784c9'

@@ -17,7 +17,7 @@ test('worker identity-v0.6.0: a CRICOS proof only for Australian pages; NZ code 
 })
 
 test('migration: policy refuses CRICOS proofs outside Australia; lists cleaned; read record and binder country-aware; re-verification count-guarded', () => {
-  const m = read('supabase/migrations/20261024002000_cf247_cricos_australia_only.sql')
+  const m = read('supabase/migrations-archive/20261024002000_cf247_cricos_australia_only.sql')
   expect(m).toMatch(/^-- Replaces: /m); expect(m).toMatch(/^-- Retires: /m); expect(m).not.toMatch(/^\s*(drop|truncate|delete\s+from)\b/im)
   expect(m).toContain("select pg_temp.edit_once('security.coverage_identity_allowed(uuid,text,text)', '9509a4103b6257e30310e48effe04c52', array[")
   expect(m).toContain("select case when p_basis in ('cricos_code', 'cricos_code_on_page', 'cricos_search') and not exists (select 1 from catalogue.providers p0 join ref.countries k0 on k0.id = p0.country_id where p0.id = p_provider_id and k0.iso_alpha2 = 'AU') then false")

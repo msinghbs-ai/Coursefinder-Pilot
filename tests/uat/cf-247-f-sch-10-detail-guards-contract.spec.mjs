@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261113066000_cf247_sch_detail_guards.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261113066000_cf247_sch_detail_guards.sql', 'utf8')
 const pg = (re) => new RegExp(re.replace(/\\m|\\M/g, '\\b').replace(/''/g, "'"), 'i')
 const CUE = pg("(citizen|nationals?\\M|nationality|passport|residen|descent|origin|born in|(students?|applicants?|candidates?|people|those) (from|of)\\M|eligible countr|following countr)")
 const NEG = pg("(\\mI am\\M|\\mI''m\\M|awardee|alumn)")

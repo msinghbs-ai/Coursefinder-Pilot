@@ -7,7 +7,7 @@ import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 import { mockOnDemand, ORDER } from './support/cdesc-on-demand-mock.mjs'
 
-const MIG = fs.readFileSync('supabase/migrations/20261110070000_cf247_cdesc_on_demand.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations-archive/20261110070000_cf247_cdesc_on_demand.sql', 'utf8')
 const code = MIG.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const REC = fs.readFileSync('supabase/held/cdesc_on_demand_forward_recovery.sql', 'utf8')
 const UI = fs.readFileSync('src/CourseDescriptionOnDemand.jsx', 'utf8')

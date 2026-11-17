@@ -16,7 +16,7 @@ test('one group drawn at a time; the default is the changed settings, else the f
 })
 
 test('the latest OpenRouter balance reading is found through an index', () => {
-  const M = fs.readFileSync('supabase/migrations/20261116070000_cf247_ai_route_observation_index.sql', 'utf8')
+  const M = fs.readFileSync('supabase/migrations-archive/20261116070000_cf247_ai_route_observation_index.sql', 'utf8')
   expect(M).toContain('create index if not exists layer3_openrouter_observations_kind_observed_idx on pipeline.layer3_openrouter_observations (kind, observed_at desc);')
 })
 

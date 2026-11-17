@@ -1,7 +1,7 @@
 // Guards: CF-247 Track C Step B decision 28 Oct 2026 (Platform Admin mandate 20:36; admin docs/platform/ENTRY-REQUIREMENTS-STEP-B-DECISION-2026-10-28.md section 4; B1 spec field-admission section 5): course entry requirements ride the existing Enrich fields lane from the stored course page only, admitted as proposed under the B1 rules (quote on page, score with printed basis, band only when printed, no English duplicate, audience from the quote) and only through Layer 4; settings not constants; one bounded slice read
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const m = fs.readFileSync('supabase/migrations/20261028001000_cf247_entry_step_b_course_read_resolver.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261028001000_cf247_entry_step_b_course_read_resolver.sql', 'utf8')
 const code = m.split('\n').filter(l => !/^\s*--/.test(l)).join('\n')
 const rec = code.slice(code.indexOf('create or replace function security.enrich_entry_record_v1'), code.indexOf('revoke all on function security.enrich_entry_record_v1'))
 const apply = code.slice(code.indexOf('create or replace function security.course_entry_review_apply_v1'), code.indexOf('revoke all on function security.course_entry_review_apply_v1'))
@@ -68,7 +68,7 @@ test('edited functions are md5-guarded; one bounded, count-guarded slice read', 
 })
 
 test('v0.49.1 follow-up: a read releases the field\'s earlier no-value hold and is refused loudly by the item gate otherwise', () => {
-  const f = fs.readFileSync('supabase/migrations/20261028003000_cf247_entry_step_b_course_read_full_page.sql', 'utf8')
+  const f = fs.readFileSync('supabase/migrations-archive/20261028003000_cf247_entry_step_b_course_read_full_page.sql', 'utf8')
   expect(f).toContain("if md5(pg_get_functiondef('security.course_entry_read_enqueue_v1(uuid,uuid,text)'::regprocedure)) <> '77053f34121c28c633f10d2318cc9f4b' then")
   expect(f).toContain("and f.reason_code = 'enrich_no_value' and f.state in ('raised', 'counting') and f.field = 'entry_requirements';")
   expect(f).toContain("raise exception 'the entry requirements item was refused by the item gate'")
@@ -77,7 +77,7 @@ test('v0.49.1 follow-up: a read releases the field\'s earlier no-value hold and 
 })
 
 test('the slice read once more, after v0.49.1 is live: count-guarded, at most two items ever', () => {
-  const f = fs.readFileSync('supabase/migrations/20261028004000_cf247_entry_step_b_slice_reread.sql', 'utf8')
+  const f = fs.readFileSync('supabase/migrations-archive/20261028004000_cf247_entry_step_b_slice_reread.sql', 'utf8')
   expect(f).toContain("if (select count(*) from pipeline.field_enrich_items where field = 'entry_requirements') = 1")
   expect(f).toContain("and state = 'skipped' and reason = 'the page does not state it') then")
   expect(f).toContain("raise exception 'slice guard: more than two entry_requirements items would exist';")

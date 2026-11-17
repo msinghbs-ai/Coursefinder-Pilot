@@ -3,7 +3,7 @@
 // is verified, the sample is confirmed and the list shape is already person-approved; 1 in layer4.auto_admit_sample_rate is audited.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const m = fs.readFileSync('supabase/migrations/20261026002000_cf247_sp2a_layer4_auto_admit_first_runs.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261026002000_cf247_sp2a_layer4_auto_admit_first_runs.sql', 'utf8')
 const fn = m.slice(m.indexOf('create or replace function security.no_page_auto_admit_v1()'), m.indexOf("comment on function security.no_page_auto_admit_v1()"))
 
 test('every tunable is a setting (G2), sample rate default 10, on by the Platform Admin decision', () => {

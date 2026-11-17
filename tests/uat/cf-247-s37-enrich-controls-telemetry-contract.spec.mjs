@@ -6,7 +6,7 @@ import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
 const read = f => fs.readFileSync(f, 'utf8')
-const mig = read('supabase/migrations/20261014013800_cf247_enrich_controls_and_telemetry.sql')
+const mig = read('supabase/migrations-archive/20261014013800_cf247_enrich_controls_and_telemetry.sql')
 const worker = read('supabase/functions/coverage-sweep/index.ts')
 
 test('worker values are settings; the worker reads them; nothing fixed in the enrich step', () => {
@@ -53,7 +53,7 @@ test.describe('mocked browser', () => {
 // v2.15.275 hotfix (scheduled check, 14 Oct 2026 15:24): an AI reply with a null character could not be recorded; its items used their
 // tries while leased and were never settled, so batch 1 could not finish and batch 2 could not start.
 test('hotfix: items that used their AI tries are settled as failed; null characters removed before recording', () => {
-  const fix = fs.readFileSync('supabase/migrations/20261014013900_cf247_enrich_settle_spent_items.sql', 'utf8')
+  const fix = fs.readFileSync('supabase/migrations-archive/20261014013900_cf247_enrich_settle_spent_items.sql', 'utf8')
   expect(fix).toContain("where e.job_id = p_id and e.attempts >= 3 and (e.state = 'ai' or (e.state = 'leased' and e.leased_until < now()));")
   expect(fix).not.toMatch(/^\s*(drop|delete|truncate)\b/im)
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')

@@ -1,7 +1,7 @@
 // Guards: CF-247 AER programme admin experience (Platform Admin consolidated mandate 28 Oct 2026 23:22, item 1: operators inspect provider data, evidence, statuses, runs and holds through bounded UI reads; admission stays in Layer 4; no new dashboard): the provider's Academic entry requirements section lists its sources and each one's latest read, holds and refusals included, read only and bounded
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const m = fs.readFileSync('supabase/migrations/20261029005000_cf247_aer_admin_sources_and_reads.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261029005000_cf247_aer_admin_sources_and_reads.sql', 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const ui = fs.readFileSync('src/EntryRequirements.jsx', 'utf8')
 

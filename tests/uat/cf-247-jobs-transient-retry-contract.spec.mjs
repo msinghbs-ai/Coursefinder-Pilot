@@ -2,7 +2,7 @@
 import fs from 'node:fs'
 import { test, expect } from '@playwright/test'
 
-const M = fs.readFileSync('supabase/migrations/20261111230000_cf247_jobs_transient_retry.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261111230000_cf247_jobs_transient_retry.sql', 'utf8')
 const R = fs.readFileSync('supabase/held/jobs_transient_retry_forward_recovery.sql', 'utf8')
 const LIVE = fs.readFileSync('tests/fixtures/jobs-transient-retry/live/security.admin_jobs_tick_v1.sql', 'utf8')
 const BEFORE = 'f95f8c26d9bbd4fa07a74bcd0797e198'

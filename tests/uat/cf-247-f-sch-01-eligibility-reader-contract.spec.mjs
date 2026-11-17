@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { eligibilityLinks, eligibilityOutcome, linkedPageNote, siteOf } from '../../supabase/functions/coverage-sweep/eligibility.ts'
 
-const m = fs.readFileSync('supabase/migrations/20261113030000_cf247_sch_eligibility_reader_and_flow_guard.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261113030000_cf247_sch_eligibility_reader_and_flow_guard.sql', 'utf8')
 const worker = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 const PAGE = 'https://www.unisa.edu.au/student-life/scholarships/vc-international-scholarship/'
 const HTML = `<nav><a href="/">Home</a><a href="https://www.facebook.com/unisa">Facebook</a></nav><main><h1>VC International Scholarship</h1>

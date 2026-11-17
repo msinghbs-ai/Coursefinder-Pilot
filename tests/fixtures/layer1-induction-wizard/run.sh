@@ -10,7 +10,7 @@ cd "$(dirname "$0")/../../.."
 DB=${LIW_DB:-g_layer1_induction_wizard}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"
-M=supabase/migrations/20261117193000_cf247_layer1_induction_wizard.sql
+M=supabase/migrations-archive/20261117193000_cf247_layer1_induction_wizard.sql
 trap '[ -n "${LIW_KEEP:-}" ] || dropdb --if-exists '$DB' >/dev/null 2>&1' EXIT
 dropdb --if-exists $DB >/dev/null 2>&1; createdb $DB
 psql -X -q -d postgres -c "do \$\$ begin if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated; end if; if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon; end if; if not exists (select 1 from pg_roles where rolname = 'service_role') then create role service_role; end if; end \$\$"
@@ -145,7 +145,7 @@ do $t$ declare r jsonb; v_id uuid; v_src uuid; v_pol text; begin
 end $t$;
 SQL
 # Wave 2 addenda (Platform Admin 17 Nov 2026 19:09): parser line items and the target record type, on top of the wizard
-N=supabase/migrations/20261117203000_cf247_layer1_parser_line_items.sql
+N=supabase/migrations-archive/20261117203000_cf247_layer1_parser_line_items.sql
 $P -1 -f $N >/dev/null; $P -1 -f $N >/dev/null
 echo "parser migration: applied twice without error (definition guard and post-check included)"
 $P <<'SQL'
@@ -217,7 +217,7 @@ end $f$;
 insert into pipeline.platform_toolset_settings(toolset_key, key, value) values ('pipeline', 'retention.staging_keep_days', to_jsonb(90)), ('pipeline', 'retention.raw_hash_keep_years', to_jsonb(7)), ('pipeline', 'retention.staging_prune_on', to_jsonb(0));
 -- the Layer 1 list read of another lane is not in this fixture: the migration leaves an absent function alone
 SQL
-U=supabase/migrations/20261117213000_cf247_wave2_unify_categories_retention_roles.sql
+U=supabase/migrations-archive/20261117213000_cf247_wave2_unify_categories_retention_roles.sql
 $P -1 -f $U >/dev/null; $P -1 -f $U >/dev/null
 echo "decisions migration: applied twice without error (definition guards, exact-text swaps and post-check included)"
 $P <<'SQL'
@@ -269,7 +269,7 @@ do $t$ declare r jsonb; v_id uuid; v_src uuid; v_cur uuid; begin
 end $t$;
 SQL
 # Wave 2 register drafts (Platform Admin 17 Nov 2026 23:02): nine drafts are pre-staged; a draft is not a source and writes no retention policy
-W=supabase/migrations/20261118004000_cf247_wave2_register_drafts.sql
+W=supabase/migrations-archive/20261118004000_cf247_wave2_register_drafts.sql
 if $P -1 -f $W >/dev/null 2>/tmp/liw_w.err; then echo "FAIL: the drafts migration applied without GB, US and CA or their schemes" >&2; exit 1; fi
 grep -q "prerequisite missing" /tmp/liw_w.err
 $P <<'SQL'

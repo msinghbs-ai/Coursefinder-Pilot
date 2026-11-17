@@ -14,9 +14,9 @@ node tests/fixtures/e13-completeness-gate/before.mjs | $P -d $DB -o /dev/null
 md5s() { $P -d $DB -Atc "select string_agg(md5(pg_get_functiondef(f::regprocedure)), ' ' order by o) from unnest(array['security.enrich_entry_record_v1(bigint,jsonb)', 'security.course_entry_review_apply_v1(uuid,text,jsonb,text)', 'security.aer_review_read_v1(uuid)']) with ordinality t(f, o)"; }
 BEFORE=$(md5s); [ "$BEFORE" = "857102dc182426a841a41e7244f7a088 ce8d0bad9717034342f165b1876fb632 62793b3544874e91a1e2aa26b80e8a14" ] || { echo "rebuilt definitions differ from live: $BEFORE"; exit 1; }
 echo "before (rebuilt = live): $BEFORE"
-$P -d $DB -1 -o /dev/null -f supabase/migrations/20261102010000_cf247_e13_entry_completeness_gate.sql
+$P -d $DB -1 -o /dev/null -f supabase/migrations-archive/20261102010000_cf247_e13_entry_completeness_gate.sql
 AFTER=$(md5s); echo "after: $AFTER"
-$P -d $DB -1 -At -f supabase/migrations/20261102010000_cf247_e13_entry_completeness_gate.sql | grep -c 'already applied' | grep -qx 3 || { echo "a second run changed something"; exit 1; }
+$P -d $DB -1 -At -f supabase/migrations-archive/20261102010000_cf247_e13_entry_completeness_gate.sql | grep -c 'already applied' | grep -qx 3 || { echo "a second run changed something"; exit 1; }
 [ "$(md5s)" = "$AFTER" ] || { echo "a second run changed a definition"; exit 1; }
 echo "second run: already applied, unchanged"
 $P -d $DB -f tests/fixtures/e13-completeness-gate/fixtures.sql 2>&1 | sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'

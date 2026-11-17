@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261118113000_cf247_page_text_feed_for_boost.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261118113000_cf247_page_text_feed_for_boost.sql', 'utf8')
 const IX = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 const block = IX.slice(IX.indexOf('if (mode === "page_text") {'), IX.indexOf('return j({ ok: false, error: "supported modes: '))
 

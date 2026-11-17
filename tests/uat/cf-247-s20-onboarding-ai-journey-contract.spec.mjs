@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
-const sql = fs.readFileSync('supabase/migrations/20261012010700_cf247_onboarding_ai_retry_journey.sql', 'utf8')
+const sql = fs.readFileSync('supabase/migrations-archive/20261012010700_cf247_onboarding_ai_retry_journey.sql', 'utf8')
 
 test('migration: AI proposes again when no field passes, at most 2 attempts; nothing ready stops for a person; never admits', () => {
   const step = sql.slice(sql.indexOf('FUNCTION security.provider_onboarding_step_v1'))
@@ -35,14 +35,14 @@ test('migration: journey events, journey read, live scholarship counts, the 35 s
 })
 
 test('migration 10800: the course-page search picks only Firecrawl target universities while target-only is on', () => {
-  const s = fs.readFileSync('supabase/migrations/20261012010800_cf247_link_search_targets_only.sql', 'utf8')
+  const s = fs.readFileSync('supabase/migrations-archive/20261012010800_cf247_link_search_targets_only.sql', 'utf8')
   expect(s).toContain("exists (select 1 from pipeline.firecrawl_target_cache tc where tc.provider_id = s.provider_id and tc.included)")
   expect(s).toContain('live % differs from the definition this change replaces')
   expect(s.slice(0, s.indexOf('CREATE OR REPLACE FUNCTION'))).not.toMatch(/^\s*(drop|delete|truncate)\b/im)
 })
 
 test('migration 11000: the Needs a person note is short (reasons stay in Fields)', () => {
-  const s = fs.readFileSync('supabase/migrations/20261012011000_cf247_onboarding_needs_person_note.sql', 'utf8')
+  const s = fs.readFileSync('supabase/migrations-archive/20261012011000_cf247_onboarding_needs_person_note.sql', 'utf8')
   expect(s).toContain("Nothing passed after %s AI attempt(s); the Fields column shows why for each field.")
   expect(s).toContain('live % differs from the definition this change replaces')
 })

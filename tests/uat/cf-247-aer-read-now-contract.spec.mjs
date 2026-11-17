@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const mig = fs.readFileSync('supabase/migrations/20261110220000_cf247_aer_read_now.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261110220000_cf247_aer_read_now.sql', 'utf8')
 const held = fs.readFileSync('supabase/held/aer_read_now_forward_recovery.sql', 'utf8')
 const wf = fs.readFileSync('.github/workflows/aer-read-now-test.yml', 'utf8')
 const sql = mig.replace(/--[^\n]*/g, '') // code only: the header comments describe what is NOT done
@@ -59,7 +59,7 @@ test('the header records the live md5s and the edits are guarded, idempotent and
   // G2: every constant is marked, and the daily window is the scheduled reader's own
   for (const m of sql.split('\n').filter(l => /interval '1 day'/.test(l))) expect(mig).toContain('-- fixed:')
   expect(wf).toContain('tests/fixtures/aer-read-now/run.sh')
-  for (const p of ['supabase/migrations/20261110220000_cf247_aer_read_now.sql', 'supabase/held/aer_read_now_forward_recovery.sql', 'tests/fixtures/aer-read-now/**']) expect(wf).toContain(p)
+  for (const p of ['supabase/migrations-archive/20261110220000_cf247_aer_read_now.sql', 'supabase/held/aer_read_now_forward_recovery.sql', 'tests/fixtures/aer-read-now/**']) expect(wf).toContain(p)
 })
 
 test('Data Delivery (server keys only; the screen is left to the Data Delivery work): the aer stream gains the reviewer key, and a lane\'s recovery is off only when every one of its switches is off', () => {

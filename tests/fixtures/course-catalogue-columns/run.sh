@@ -14,7 +14,7 @@ cd "$(dirname "$0")/../../.."
 case "${PGHOST:-127.0.0.1}" in 127.0.0.1|localhost|/tmp) ;; *) echo 'Refusing a remote database: use isolated local PostgreSQL' >&2; exit 1;; esac
 FX=tests/fixtures/course-catalogue-columns
 DB=${CCOL_DB:-c_ccol_fixture}
-MIG=supabase/migrations/20261106300000_cf247_course_catalogue_columns.sql
+MIG=supabase/migrations-archive/20261106300000_cf247_course_catalogue_columns.sql
 P="psql -X -q -v ON_ERROR_STOP=1 -d $DB"
 psql -X -q -d postgres -c "drop database if exists $DB" -c "create database $DB" >/dev/null
 [ -n "${CCOL_KEEP:-}" ] || trap 'psql -X -q -d postgres -c "drop database if exists $DB" >/dev/null' EXIT

@@ -3,12 +3,12 @@ name: AER corrected-read settle integration
 on:
   pull_request:
     paths:
-      - 'supabase/migrations/20261112123700_cf247_aer_supersession_settle.sql'
+      - 'supabase/migrations-archive/20261112123700_cf247_aer_supersession_settle.sql'
       - 'supabase/held/aer_supersession_settle_forward_recovery.sql'
       - 'tests/fixtures/aer-supersession-settle/**'
       - 'tests/fixtures/aer-self-healing/**'
       - 'tests/fixtures/aer-source-recovery/**'
-      - 'supabase/migrations/20261111220000_cf247_aer_self_healing_corrections.sql'
+      - 'supabase/migrations-archive/20261111220000_cf247_aer_self_healing_corrections.sql'
       - 'tests/fixtures/aer-source-recovery/stubs.sql'
       - 'tests/fixtures/aer-source-recovery/data.sql'
       - 'tests/fixtures/aer-source-recovery/seed_l4.sql'

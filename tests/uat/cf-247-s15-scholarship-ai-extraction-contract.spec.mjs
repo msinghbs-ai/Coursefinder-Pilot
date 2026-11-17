@@ -11,7 +11,7 @@ import { mockAdmin } from './support/admin-mock.mjs'
 const read = p => fs.readFileSync(p, 'utf8')
 
 test('migration: models, instructions, sample, queue, answers; pinned models; activation and admission are separate gated steps; nothing dropped', () => {
-  const sql = read('supabase/migrations/20261011010300_cf247_scholarship_ai_extraction.sql')
+  const sql = read('supabase/migrations-archive/20261011010300_cf247_scholarship_ai_extraction.sql')
   for (const s of ['create table if not exists pipeline.scholarship_ai_models', 'create table if not exists pipeline.scholarship_ai_prompts', 'create table if not exists pipeline.scholarship_ai_extract_settings',
     'create table if not exists pipeline.scholarship_ai_sample', 'create table if not exists pipeline.scholarship_ai_queue', 'create table if not exists pipeline.scholarship_ai_extractions',
     "'qwen/qwen3-30b-a3b-instruct-2507'", "'openai/gpt-4.1-mini'", 'create or replace function public.admin_scholarship_ai', 'create or replace function public.svc_scholarship_ai_record',

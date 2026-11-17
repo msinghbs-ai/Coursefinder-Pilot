@@ -7,7 +7,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
-const m = fs.readFileSync('supabase/migrations/20261104540000_cf247_l4_action_lifecycle.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261104540000_cf247_l4_action_lifecycle.sql', 'utf8')
 const fx = fs.readFileSync('tests/fixtures/l4-action-lifecycle/fixtures.sql', 'utf8')
 const ui = fs.readFileSync('src/Layer4ItemLifecycle.jsx', 'utf8')
 const inbox = fs.readFileSync('src/Layer4Inbox.jsx', 'utf8')

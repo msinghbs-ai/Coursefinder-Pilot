@@ -4,7 +4,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = 'supabase/migrations/20261010006500_cf247_r2_own_sites_only.sql'
+const MIG = 'supabase/migrations-archive/20261010006500_cf247_r2_own_sites_only.sql'
 
 test('server: governed third-party list, verdict helper, refusals and data clean-up without deletes', () => {
   const sql = fs.readFileSync(MIG, 'utf8')

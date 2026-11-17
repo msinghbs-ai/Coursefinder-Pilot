@@ -7,7 +7,7 @@ import crypto from 'node:crypto'
 import { CDESC_PROMPT_VERSION, CDESC_SYSTEM, CDESC_SYSTEM_SHA256, CDESC_SYSTEM_V2 } from '../../supabase/functions/coverage-sweep/course-text.ts'
 
 const D = 'supabase/functions/coverage-sweep'
-const M = fs.readFileSync('supabase/migrations/20261116090000_cf247_cdesc_v3_retry_gate_telemetry.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261116090000_cf247_cdesc_v3_retry_gate_telemetry.sql', 'utf8')
 const code = M.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const IX = fs.readFileSync(`${D}/index.ts`, 'utf8')
 const CS = fs.readFileSync(`${D}/cascade.ts`, 'utf8')

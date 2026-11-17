@@ -75,7 +75,7 @@ $P -d "$DB2" -f "$WORK/fixture.sql"
 $P -d "$DB2" -f settings.sql
 # Reproduce the existing consumer visibility view before the new metric is created.
 $P -d "$DB2" -f publication.sql
-MIG=$ROOT/supabase/migrations/20261106500000_cf247_course_descriptions_complete.sql
+MIG=$ROOT/supabase/migrations-archive/20261106500000_cf247_course_descriptions_complete.sql
 $P -d "$DB2" -1 -f $MIG 2>&1 | sed -n 's/^.*\(WARNING\|ERROR\):  /\1 /p'
 $P -d "$DB2" -1 -f $MIG 2>&1 | sed -n 's/^.*\(WARNING\|ERROR\):  /\1 /p'
 echo 'migration 20261106500000 applied twice without error'

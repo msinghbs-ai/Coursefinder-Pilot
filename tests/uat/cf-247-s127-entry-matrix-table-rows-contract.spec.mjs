@@ -7,7 +7,7 @@ import { entryPageText, entryMatrixParsed, ENTRY_PROMPT, ENTRY_PROMPT_VERSION, E
 import { htmlToText } from '../../supabase/functions/coverage-sweep/extract.ts'
 const html = fs.readFileSync('tests/fixtures/entry-matrix/rmit-band-ladder.html', 'utf8')
 const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-const m = fs.readFileSync('supabase/migrations/20261026008000_cf247_entry_matrix_reread.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261026008000_cf247_entry_matrix_reread.sql', 'utf8')
 const row = (q, x = {}) => ({ country_code: 'BD', country_name: 'Bangladesh', study_level: 'Bachelor degrees', qualification_name: 'Higher School Certificate (HSC)',
   min_grade: 'Minimum CGPA of 4.2', min_value: 4.2, grade_scale: 'gpa', benchmark_band: '70%', course_name: null,
   conditions: { subject_minimums: [], best_n: null, alternatives: [] }, confidence: 0.95, quote: q, ...x })

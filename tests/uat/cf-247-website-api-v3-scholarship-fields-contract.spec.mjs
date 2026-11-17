@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261113240000_cf247_website_api_v3_scholarship_fields.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261113240000_cf247_website_api_v3_scholarship_fields.sql', 'utf8')
 const KEYS = ['description', 'award_type', 'sponsor', 'programme', 'award_code', 'benefits', 'application', 'award_duration', 'academic_year',
   'excluded_nationality_codes', 'nationality_regions']
 

@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
-const sql = fs.readFileSync('supabase/migrations/20261012011600_cf247_onboarding_auto_admit_pilot.sql', 'utf8')
+const sql = fs.readFileSync('supabase/migrations-archive/20261012011600_cf247_onboarding_auto_admit_pilot.sql', 'utf8')
 const outside = s => s.slice(0, s.indexOf('CREATE OR REPLACE FUNCTION')) + s.slice(s.lastIndexOf('$function$;'))
 
 test('11600: automatic Admit only while switched on, only the passing fields, logged; recorded with who and why', () => {

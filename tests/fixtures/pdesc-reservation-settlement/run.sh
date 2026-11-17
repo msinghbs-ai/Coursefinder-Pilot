@@ -7,8 +7,8 @@ export LC_ALL=C # fixed: one byte order for sort and comm, whatever the runner's
 DB=${PRS_DB:-g_pdesc_resv_settle}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"
-M1=supabase/migrations/20261110140000_cf247_pdesc_reservation_settlement.sql
-M2=supabase/migrations/20261110141000_cf247_pdesc_upgrade_lane_gate.sql
+M1=supabase/migrations-archive/20261110140000_cf247_pdesc_reservation_settlement.sql
+M2=supabase/migrations-archive/20261110141000_cf247_pdesc_upgrade_lane_gate.sql
 R1=supabase/held/pdesc_reservation_settlement_forward_recovery.sql
 R2=supabase/held/pdesc_upgrade_lane_gate_forward_recovery.sql
 F=tests/fixtures/pdesc-reservation-settlement
@@ -24,7 +24,7 @@ q() { psql -X -d "$DB" -Atc "$1"; }
 BASE=$(PDSF_KEEP=1 PDSF_DB=$DB bash tests/fixtures/pdesc-sentence-filter/run.sh 2>&1) || { echo "$BASE" | tail -15; echo "the base harness failed"; exit 1; }
 echo "base: pdesc-sentence-filter harness built the database (20261109020000 to 20261110120000 as the harness applies them)"
 W=$(mktemp -d); trap 'rm -rf "$W"; [ -n "${PRS_KEEP:-}" ] || { dropdb --if-exists '$DB' >/dev/null 2>&1; dropdb --if-exists '${DB}_refuse' >/dev/null 2>&1; }' EXIT
-$P -1 -At -f supabase/migrations/20261109110000_cf247_pdesc_fire_window_jitter.sql >/dev/null || { echo "the prerequisite migration 20261109110000 failed"; exit 1; }
+$P -1 -At -f supabase/migrations-archive/20261109110000_cf247_pdesc_fire_window_jitter.sql >/dev/null || { echo "the prerequisite migration 20261109110000 failed"; exit 1; }
 echo "prerequisite: 20261109110000 applied (the fire as live has it)"
 
 # the edited functions are the live ones (md5 of the function body, pg_proc.prosrc, read 10 Nov 2026 UTC, project fxcwkweaxjtknorudmwp), and so are the ones the change relies on

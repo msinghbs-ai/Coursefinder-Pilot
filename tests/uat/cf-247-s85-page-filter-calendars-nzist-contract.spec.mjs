@@ -4,7 +4,7 @@ import fs from 'node:fs'
 
 // CF-247 (Platform Admin, 21 Oct 2026 19:18 "Go on with task 3"): never-a-course-page patterns, term dates outside Australia,
 // start months by hand for Otago, Calgary and SFU, SFU English page, NZIST names.
-const m = fs.readFileSync('supabase/migrations/20261021235000_cf247_page_filter_calendars_nzist.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261021235000_cf247_page_filter_calendars_nzist.sql', 'utf8')
 
 test('non-course pages are refused by setting, existing ones marked and their links set inactive (nothing deleted)', () => {
   expect(m).toContain("('pipeline', 'pages.not_course_patterns'")

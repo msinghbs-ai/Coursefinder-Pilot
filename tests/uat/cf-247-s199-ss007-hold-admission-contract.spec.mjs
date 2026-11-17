@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261101030000_cf247_ss007_hold_admission.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261101030000_cf247_ss007_hold_admission.sql', 'utf8')
 const code = (s) => s.replace(/--[^\n]*/g, '')
 
 test('md5-guarded plan edit adds the SS-007 hold; nothing dropped; consumer API untouched', () => {

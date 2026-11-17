@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261113200000_cf247_website_api_v3_r29_course_paging.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261113200000_cf247_website_api_v3_r29_course_paging.sql', 'utf8')
 const v3 = fs.readFileSync('supabase/functions/website-api-v3/index.ts', 'utf8')
 
 test('scholarship takes courses_page and courses_page_size (1-200) and answers a page in a stable order', () => {

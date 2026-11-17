@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const code = fs.readFileSync('supabase/migrations/20261117030000_cf247_aer_v3_bench_r3_close.sql', 'utf8').split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
+const code = fs.readFileSync('supabase/migrations-archive/20261117030000_cf247_aer_v3_bench_r3_close.sql', 'utf8').split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 
 test('refuses while a round-3 run answers; switches back to 0 with reason and event; window closed', () => {
   expect(code.indexOf("raise exception 'refused: a round-3 run is still answering; nothing was changed';")).toBeLessThan(code.indexOf('update pipeline.platform_toolset_settings'))

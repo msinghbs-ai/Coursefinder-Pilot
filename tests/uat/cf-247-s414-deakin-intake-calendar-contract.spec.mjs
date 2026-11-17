@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = 'supabase/migrations/20261108050000_cf247_deakin_intake_calendar_year.sql'
+const MIG = 'supabase/migrations-archive/20261108050000_cf247_deakin_intake_calendar_year.sql'
 const PASTE = 'tests/fixtures/paste/PASTE-20261108-iq00313-deakin-intake-withdrawal.sql'
 const FX = 'tests/fixtures/deakin-intake-calendar'
 const sql = fs.readFileSync(MIG, 'utf8')

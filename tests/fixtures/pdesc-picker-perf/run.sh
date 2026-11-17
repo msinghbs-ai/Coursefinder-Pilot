@@ -9,7 +9,7 @@ cd "$(dirname "$0")/../../.."
 DB=${PDESCPERF_DB:-pdesc_picker_perf_fixtures}
 FX=tests/fixtures/pdesc-picker-perf
 P="psql -v ON_ERROR_STOP=1 -q -X"
-MIG=supabase/migrations/20261103100000_cf247_pdesc_picker_perf.sql
+MIG=supabase/migrations-archive/20261103100000_cf247_pdesc_picker_perf.sql
 SIGS="array['security.provider_description_stored_v1(uuid)', 'public.svc_provider_description_next(integer)']"
 READ="array['security.provider_description_page_v1(uuid,text)', 'security.provider_hosts_v1(uuid)', 'security.provider_page_host_v1(uuid,text)', 'security.provider_description_scope_v1(uuid)', 'security.toolset_setting(text,text)', 'security.pipeline_num_v1(text,numeric)']"
 dropdb --if-exists "$DB" >/dev/null 2>&1 || true

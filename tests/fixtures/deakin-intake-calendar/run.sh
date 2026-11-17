@@ -7,7 +7,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 case "${PGHOST:-127.0.0.1}" in 127.0.0.1|localhost|/tmp|/var/run/postgresql) ;; *) echo 'Refusing a remote database: use isolated local PostgreSQL' >&2; exit 1;; esac
 BASE=intake_fairness_fixtures; DB=${DK_DB:-intake_deakin_calendar_fixtures}; F=tests/fixtures/deakin-intake-calendar
-MIG=${DK_MIG:-supabase/migrations/20261108050000_cf247_deakin_intake_calendar_year.sql}
+MIG=${DK_MIG:-supabase/migrations-archive/20261108050000_cf247_deakin_intake_calendar_year.sql}
 PASTE=tests/fixtures/paste/PASTE-20261108-iq00313-deakin-intake-withdrawal.sql
 P=(psql -X -q -v ON_ERROR_STOP=1)
 if [ -z "${DK_REUSE:-}" ] || ! "${P[@]}" -d postgres -Atc "select 1 from pg_database where datname = '$BASE'" | grep -q 1; then

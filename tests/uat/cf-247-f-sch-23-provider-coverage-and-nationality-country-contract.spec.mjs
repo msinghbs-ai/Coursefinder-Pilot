@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = 'supabase/migrations/20261113351500_cf247_sch_provider_coverage_and_nationality_country.sql'
+const MIG = 'supabase/migrations-archive/20261113351500_cf247_sch_provider_coverage_and_nationality_country.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const cov = fs.readFileSync('src/ScholarshipCoverage.jsx', 'utf8')
 const ui = fs.readFileSync('src/mature-main.jsx', 'utf8')

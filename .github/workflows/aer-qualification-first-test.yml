@@ -3,7 +3,7 @@ name: AER qualification-first integration
 on:
   pull_request:
     paths:
-      - 'supabase/migrations/20261112060000_cf247_aer_qualification_first.sql'
+      - 'supabase/migrations-archive/20261112060000_cf247_aer_qualification_first.sql'
       - 'supabase/held/aer_qualification_first_forward_recovery.sql'
       - 'tests/fixtures/aer-qualification-first/**'
       - '.github/workflows/aer-qualification-first-test.yml'

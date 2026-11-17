@@ -5,7 +5,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const mig = fs.readFileSync('supabase/migrations/20261015050000_cf247_provider_logo_finder.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261015050000_cf247_provider_logo_finder.sql', 'utf8')
 const worker = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 const logo = fs.readFileSync('supabase/functions/coverage-sweep/logo.ts', 'utf8')
 const upload = fs.readFileSync('supabase/functions/provider-asset-upload/index.ts', 'utf8')

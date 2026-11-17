@@ -13,7 +13,7 @@ async function load(file, name) {
   execFileSync('node_modules/.bin/esbuild', [file, '--bundle', '--format=esm', '--platform=node', `--outfile=${out}`])
   return import(out)
 }
-const M = fs.readFileSync('supabase/migrations/20261112213100_cf247_aer_course_links.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261112213100_cf247_aer_course_links.sql', 'utf8')
 const refs = JSON.parse(fs.readFileSync('tests/fixtures/entry-cells/country-refs.json', 'utf8'))
 const Q = JSON.parse(fs.readFileSync('tests/fixtures/entry-cells/qualifications.json', 'utf8'))
 const LIST = JSON.parse(fs.readFileSync('tests/fixtures/entry-cells/grid-heading-list.json', 'utf8'))
@@ -77,7 +77,7 @@ test('worker v0.73.0 reads a proven grid only with its switch, before a PDF is h
 })
 
 test('recovery: the held UNSW, Sydney and UQ PDFs are read again only with the grid switch on, on the proven stored copies, never an item a person holds', () => {
-  const r = fs.readFileSync('supabase/migrations/20261112233100_cf247_aer_grid_reread.sql', 'utf8')
+  const r = fs.readFileSync('supabase/migrations-archive/20261112233100_cf247_aer_grid_reread.sql', 'utf8')
   expect(r).toContain("pipeline_num_v1('reading.entry_grid_reader_on', 0) < 1")
   for (const h of ['be64345329d911fcaa1fab3b261f4529f39b32cd73832f4962f657f84112b0a9', 'bb850ce1acc52800c2ee250233eb48ec58c8e1719c85c2d7373824c8eec198d1', 'b0f7b80368299d165fd90c501ce647cbb7a885661a8dfcf10e2b10acfc9cf62d']) expect(r).toContain(h)
   expect(r).toMatch(/claimed_at is not null or li\.assigned_to is not null/)
@@ -86,7 +86,7 @@ test('recovery: the held UNSW, Sydney and UQ PDFs are read again only with the g
 })
 
 test('production verification: the printed course is part of a row\'s identity (streams of one course), and the ATAR column is a course fact, read again', () => {
-  const r = fs.readFileSync('supabase/migrations/20261113013100_cf247_aer_grid_identity_and_atar.sql', 'utf8')
+  const r = fs.readFileSync('supabase/migrations-archive/20261113013100_cf247_aer_grid_identity_and_atar.sql', 'utf8')
   expect(r).toContain("'915df18ea188103fbf0f9978bdd25536'")
   expect(r).toContain("jsonb_build_object('key', 'course: ' || btrim(new.course_label))")
   expect(r).toMatch(/when 'ATAR=AU' then 'ATAR=fact'/)
@@ -103,7 +103,7 @@ test('production verification: the printed course is part of a row\'s identity (
 })
 
 test('the title rule is an index lookup (UNSW: statement timeout), added beside the consumer table without changing it; UNSW is read again', () => {
-  const r = fs.readFileSync('supabase/migrations/20261113023100_cf247_aer_course_link_index.sql', 'utf8')
+  const r = fs.readFileSync('supabase/migrations-archive/20261113023100_cf247_aer_course_link_index.sql', 'utf8')
   expect(r).toContain('on catalogue.courses (provider_id, security.entry_course_title_key_v1(canonical_title))')
   expect(r).toContain('on catalogue.courses (provider_id, security.entry_course_title_key_v1(display_title))')
   expect(r).not.toMatch(/^\s*alter table catalogue\.courses/im)

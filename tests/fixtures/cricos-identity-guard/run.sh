@@ -8,7 +8,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 DB=${CIG_DB:-cricos_identity_guard_fixtures}
 P="psql -v ON_ERROR_STOP=1 -q -X"
-MIG=supabase/migrations/20261104360000_cf247_cricos_identity_guard.sql
+MIG=supabase/migrations-archive/20261104360000_cf247_cricos_identity_guard.sql
 FX=tests/fixtures/cricos-identity-guard
 E16=tests/fixtures/e16-binding-validation
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }
@@ -22,9 +22,9 @@ $P -d $DB -c "create schema security; create schema search; create schema pipeli
 PGOPTIONS='-c check_function_bodies=off' $P -d $DB -o /dev/null -f "$TMP/before.sql"
 $P -d $DB -f $E16/stubs.sql >/dev/null
 $P -d $DB -q -c "alter table pipeline.evidence_artifacts add column if not exists metadata jsonb not null default '{}', add column if not exists captured_at timestamptz default now()" # stub gaps: live has both
-$P -d $DB -1 -o /dev/null -f supabase/migrations/20261102030000_cf247_e16_binding_validation.sql 2>&1 | show
-sed -n '/^create or replace function security.layer4_url_key_v1/,/^\$function\$;/p' supabase/migrations/20261104120000_cf247_ops_layer4_throughput.sql > "$TMP/key.sql"
-sed -n '/^create or replace function security.pipeline_list_v1/,/^\$function\$;/p' supabase/migrations/20261103140000_cf247_hidden_failures_country_config.sql > "$TMP/list.sql"
+$P -d $DB -1 -o /dev/null -f supabase/migrations-archive/20261102030000_cf247_e16_binding_validation.sql 2>&1 | show
+sed -n '/^create or replace function security.layer4_url_key_v1/,/^\$function\$;/p' supabase/migrations-archive/20261104120000_cf247_ops_layer4_throughput.sql > "$TMP/key.sql"
+sed -n '/^create or replace function security.pipeline_list_v1/,/^\$function\$;/p' supabase/migrations-archive/20261103140000_cf247_hidden_failures_country_config.sql > "$TMP/list.sql"
 $P -d $DB -f "$TMP/key.sql" -f "$TMP/list.sql" >/dev/null
 declare -A LIVE=(
   ["security.coverage_page_refused_host_guard()"]=f2e4102f8788816c3f22f26945785f55

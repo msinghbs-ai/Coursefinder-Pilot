@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261113130000_cf247_sch_catalogue_detail_fields.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261113130000_cf247_sch_catalogue_detail_fields.sql', 'utf8')
 const ui = fs.readFileSync('src/mature-main.jsx', 'utf8')
 
 test('the admin read gains the detail fields, filters and sorts through md5-guarded edits only', () => {

@@ -3,9 +3,9 @@ name: AER read now integration
 on:
   pull_request:
     paths:
-      - 'supabase/migrations/20261110220000_cf247_aer_read_now.sql'
+      - 'supabase/migrations-archive/20261110220000_cf247_aer_read_now.sql'
       - 'supabase/held/aer_read_now_forward_recovery.sql'
-      - 'supabase/migrations/20261110160000_cf247_aer_source_recovery.sql'
+      - 'supabase/migrations-archive/20261110160000_cf247_aer_source_recovery.sql'
       - 'tests/fixtures/aer-read-now/**'
       - '.github/workflows/aer-read-now-test.yml'
   workflow_dispatch:

@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261105040000_cf247_intake_recovery_final.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261105040000_cf247_intake_recovery_final.sql', 'utf8')
 
 test('R2: the refresh credit budget is 40 in total, bounded per run, and the existing provider-facts reads do the fetching', () => {
   expect(m).toMatch(/'central\.calendar_refresh_credit_budget'[\s\S]{0,400}'number', to_jsonb\(40\), 0, 40, 'credits'/)

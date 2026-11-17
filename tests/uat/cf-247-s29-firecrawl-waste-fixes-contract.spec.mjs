@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test'
 import { openServiceDetails } from './support/cards.mjs'
 import fs from 'node:fs'
 
-const mig = fs.readFileSync('supabase/migrations/20261013012200_cf247_firecrawl_waste_fixes.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261013012200_cf247_firecrawl_waste_fixes.sql', 'utf8')
 const worker = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 
 test('every Firecrawl spend on a directory site is refused, and refusals are counted per university', () => {

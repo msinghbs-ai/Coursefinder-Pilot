@@ -10,7 +10,7 @@ DB=${AQF_DB:-g_aer_qualification_first}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"
 F=tests/fixtures/aer-qualification-first
-M=supabase/migrations/20261112060000_cf247_aer_qualification_first.sql
+M=supabase/migrations-archive/20261112060000_cf247_aer_qualification_first.sql
 R=supabase/held/aer_qualification_first_forward_recovery.sql
 RE='public.svc_entry_matrix_record(uuid,jsonb,numeric,text)'; AP='security.entry_matrix_review_apply_v1(uuid,text,jsonb,text,uuid)'
 RE_B=3e76d77b83bc8c1f9514b40f7cb4ac3e; AP_B=6d7b47fe7d2cd40b9cfb8f3547bad158; RE_A=7eee2ef2229520266fd56c8aa8f1f1fb; AP_A=c46ef6d3f9820c3d4d822846909e35ce

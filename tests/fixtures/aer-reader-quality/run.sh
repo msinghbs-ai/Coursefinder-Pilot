@@ -6,7 +6,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 P="psql -v ON_ERROR_STOP=1 -q -X"
 FX=tests/fixtures/aer-reader-quality
-MIG=supabase/migrations/20261108020000_cf247_aer_reader_quality.sql
+MIG=supabase/migrations-archive/20261108020000_cf247_aer_reader_quality.sql
 DB=${AERRQ_DB:-aer_reader_quality}
 $P -d postgres -c "drop database if exists $DB" -c "create database $DB" >/dev/null 2>&1
 trap '$P -d postgres -c "drop database if exists '$DB'" >/dev/null 2>&1' EXIT

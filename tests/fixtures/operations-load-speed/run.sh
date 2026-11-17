@@ -9,7 +9,7 @@ DB=${OLS_DB:-g_ops_load_speed}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X"
 F=tests/fixtures/operations-load-speed
-MIG=supabase/migrations/20261110020000_cf247_operations_load_speed.sql
+MIG=supabase/migrations-archive/20261110020000_cf247_operations_load_speed.sql
 REC=supabase/held/operations_load_speed_forward_recovery.sql
 q() { psql -X -d "$1" -Atc "$2"; }
 cleanup() { for d in "$DB" "${DB}_refuse" "${DB}_idx"; do $P -d postgres -c "drop database if exists $d" >/dev/null 2>&1 || true; done; }
@@ -17,7 +17,7 @@ cleanup() { for d in "$DB" "${DB}_refuse" "${DB}_idx"; do $P -d postgres -c "dro
 cleanup
 $P -d postgres -c "create database $DB" >/dev/null
 $P -d $DB -f tests/fixtures/lane-funnels/schema.sql >/dev/null
-$P -d $DB -f supabase/migrations/20261108170000_cf247_lane_funnels.sql >/dev/null 2>&1
+$P -d $DB -f supabase/migrations-archive/20261108170000_cf247_lane_funnels.sql >/dev/null 2>&1
 PGOPTIONS='-c check_function_bodies=off' $P -d $DB -f $F/schema-extra.sql >/dev/null
 PGOPTIONS='-c check_function_bodies=off' $P -d $DB -f $F/live-functions.sql >/dev/null
 

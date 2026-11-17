@@ -7,7 +7,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 DB=l4_rule_runs_table_fixtures
-MIG=../../../supabase/migrations/20261104280000_cf247_l4_rule_runs_table.sql
+MIG=../../../supabase/migrations-archive/20261104280000_cf247_l4_rule_runs_table.sql
 P="psql -v ON_ERROR_STOP=1 -q -X"
 q() { $P -d $DB -Atc "$1"; }
 L4CL_KEEP=1 L4CL_DB=$DB bash ../l4-course-link/run.sh >/dev/null

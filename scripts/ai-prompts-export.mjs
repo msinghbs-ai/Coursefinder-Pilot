@@ -62,7 +62,7 @@ export async function build() {
     inline.push({ name: name || `ask_${i + 2}`, where: `index.ts:${i + 2}`, text: x.text, complete: x.complete, ...(x.complete ? {} : { note: 'where the text says <data of the request> the worker puts in data of that request (a list of codes or of regions)' }) })
   })
   // the operations diagnosis instructions are written in the database function (migration 20261113380000)
-  const mig = fs.readFileSync('supabase/migrations/20261113380000_cf247_ai_models_services.sql', 'utf8').split('\n')
+  const mig = fs.readFileSync('supabase/migrations-archive/20261113380000_cf247_ai_models_services.sql', 'utf8').split('\n')
   const at = mig.findIndex((l) => /^\s*'instructions', '/.test(l)); if (at < 0) throw Error('ops diagnosis instructions not found')
   let ops = ''
   for (let i = at; i < mig.length; i++) { const m = mig[i].match(/^\s*(?:'instructions', |\|\| )'((?:[^']|'')*)',?\s*$/); if (!m) break; ops += m[1].replace(/''/g, "'") }

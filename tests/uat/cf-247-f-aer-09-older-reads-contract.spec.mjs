@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261112183100_cf247_aer_older_reads_and_empty_read_close.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261112183100_cf247_aer_older_reads_and_empty_read_close.sql', 'utf8')
 
 test('only the four older reads are read again, never an item a person holds, and nothing is admitted', () => {
   for (const s of ['74306034-c24a-4ed8-a859-1770edd7ab0b', '58c60102-e549-4482-be03-7b6358059ada', '18e64f94-d2a5-479f-846b-1c5db07cc65b', '01139439-b952-4a53-891c-60e593c01cd1']) expect(m).toContain(s)

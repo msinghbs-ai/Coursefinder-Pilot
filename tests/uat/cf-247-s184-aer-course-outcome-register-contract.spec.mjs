@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261030300000_cf247_aer_course_outcome_register.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261030300000_cf247_aer_course_outcome_register.sql', 'utf8')
 const ui = fs.readFileSync('src/AerWorkspace.jsx', 'utf8')
 const code = (s) => s.replace(/--[^\n]*/g, '')
 const fnBody = (name) => { const c = code(m); const a = c.indexOf(`create or replace function ${name}(`); return c.slice(a, c.indexOf('$function$;', a)) }

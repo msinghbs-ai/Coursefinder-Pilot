@@ -6,14 +6,14 @@
 set -euo pipefail
 cd "$(dirname "$0")/../../.."
 DB=${DR_DB:-aer_dr2_dr3_fixtures}
-MIG=supabase/migrations/20261103070000_cf247_aer_dr2_dr3_supersede_and_matrix_gate.sql
+MIG=supabase/migrations-archive/20261103070000_cf247_aer_dr2_dr3_supersede_and_matrix_gate.sql
 P="psql -v ON_ERROR_STOP=1 -q -X"
 $P -d postgres -c "drop database if exists $DB" -c "create database $DB" >/dev/null
 trap '$P -d postgres -c "drop database if exists $DB" >/dev/null' EXIT
 $P -d $DB -f tests/fixtures/e13-completeness-gate/stubs.sql
 $P -d $DB -f tests/fixtures/aer-dr2-dr3/stubs.sql
 node tests/fixtures/e13-completeness-gate/before.mjs | $P -d $DB -o /dev/null
-$P -d $DB -1 -o /dev/null -f supabase/migrations/20261102010000_cf247_e13_entry_completeness_gate.sql
+$P -d $DB -1 -o /dev/null -f supabase/migrations-archive/20261102010000_cf247_e13_entry_completeness_gate.sql
 node tests/fixtures/aer-dr2-dr3/before.mjs | $P -d $DB -o /dev/null
 SIGS="'security.course_entry_gate_v1(uuid,uuid[])', 'security.entry_matrix_review_apply_v1(uuid,text,jsonb,text,uuid)', 'security.aer_review_read_v1(uuid)', 'security.enrich_entry_record_v1(bigint,jsonb)', 'security.course_entry_review_apply_v1(uuid,text,jsonb,text)', 'security.course_entry_review_trg_v1()'"
 md5s() { $P -d $DB -Atc "select string_agg(md5(pg_get_functiondef(f::regprocedure)), ' ' order by o) from unnest(array[$SIGS]) with ordinality t(f, o)"; }

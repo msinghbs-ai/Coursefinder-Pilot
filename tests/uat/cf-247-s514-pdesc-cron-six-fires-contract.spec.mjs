@@ -4,7 +4,7 @@ import fs from 'node:fs'
 import crypto from 'node:crypto'
 import { migrationNames, migrationPath } from './support/migration-files.mjs'
 
-const MIG = fs.readFileSync('supabase/migrations/20261109183000_cf247_pdesc_cron_six_fires.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations-archive/20261109183000_cf247_pdesc_cron_six_fires.sql', 'utf8')
 const CODE = MIG.split('\n').filter((l) => !l.trimStart().startsWith('--')).join('\n')
 const s216 = fs.readFileSync('tests/uat/cf-247-s216-p1-provider-descriptions-contract.spec.mjs', 'utf8')
 const orig = fs.readFileSync(migrationPath(migrationNames().find((f) => /provider_descriptions?/.test(f) && fs.readFileSync(migrationPath(f), 'utf8').includes("cron.schedule('provider-description-read'"))), 'utf8')

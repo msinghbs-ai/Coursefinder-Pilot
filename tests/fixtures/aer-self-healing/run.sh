@@ -14,7 +14,7 @@ case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"
 F=tests/fixtures/aer-self-healing
 B=tests/fixtures/aer-source-recovery
-M=supabase/migrations/20261111220000_cf247_aer_self_healing_corrections.sql
+M=supabase/migrations-archive/20261111220000_cf247_aer_self_healing_corrections.sql
 R=supabase/held/aer_self_healing_corrections_forward_recovery.sql
 HELD='security.aer_schedule_held_v1(integer)'; TICK='security.aer_schedule_tick_v1(boolean)'
 HELD_BEFORE=d390d02a5e9b59b6e8ffaadadbf2c7e8; TICK_BEFORE=f995e9521198ae57ab0401564e4e5a20

@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { migrationNames, migrationPath } from './support/migration-files.mjs'
 
-const MIG = fs.readFileSync('supabase/migrations/20261107150000_cf247_aer_source_stored_discovery.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations-archive/20261107150000_cf247_aer_source_stored_discovery.sql', 'utf8')
 const code = MIG.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const FX = 'tests/fixtures/aer-stored-source-discovery'
 const fn = (name) => { const a = code.indexOf(`function ${name}`); return code.slice(a, code.indexOf('$function$;', code.indexOf('$function$', a) + 10)) }
@@ -97,7 +97,7 @@ test('fixture runner: checks the live md5s, reproduces the circular gate, applie
 })
 
 test('speed fix 20261107160000: the eligibility rule is judged one provider at a time, each stored link is scored once, and the step still only reads stored links', () => {
-  const sql = fs.readFileSync('supabase/migrations/20261107160000_cf247_aer_stored_find_speed.sql', 'utf8')
+  const sql = fs.readFileSync('supabase/migrations-archive/20261107160000_cf247_aer_stored_find_speed.sql', 'utf8')
   const body = sql.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
   // the rule is no longer a per-row filter of the selection (it rebuilt the eligible set 1,476 times); it is judged in the loop, only as far as the run needs
   expect(body).not.toMatch(/where security\.entry_matrix_attach_allowed_v1\(p\.id\)/)

@@ -4,7 +4,7 @@
 // standard bind path. Record: admin repo docs/platform/ui-audit/2026-10-24-hotfix-manual-task-and-layer4-entry.md.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const m = fs.readFileSync('supabase/migrations/20261024009000_cf247_hotfix_manual_task_and_layer4_entry.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261024009000_cf247_hotfix_manual_task_and_layer4_entry.sql', 'utf8')
 const inbox = fs.readFileSync('src/Layer4Inbox.jsx', 'utf8')
 const tasks = fs.readFileSync('src/AdminTasks.jsx', 'utf8')
 
@@ -106,7 +106,7 @@ test('Layer 4 "Enter another address" on a held-fee course-link item runs bind â
 
 // hotfix 2 (v2.15.343): the worker's credit check carried a third copy of the stop; a person's task passes it there too, budgets unchanged
 test('the credit check (svc_fc_spend) lets a person\'s Find course pages task past the search stop, and nothing else', () => {
-  const m2 = fs.readFileSync('supabase/migrations/20261024010000_cf247_hotfix2_person_task_spend_gate.sql', 'utf8')
+  const m2 = fs.readFileSync('supabase/migrations-archive/20261024010000_cf247_hotfix2_person_task_spend_gate.sql', 'utf8')
   expect(m2).toMatch(/pg_temp\.edit_n\('public\.svc_fc_spend\(numeric,text,uuid,text\)', '[0-9a-f]{32}'/)
   expect(m2).toContain("and not (security.pipeline_num_v1('search.person_task_bypass', 1) >= 1")
   expect(m2).toContain("j.kind = 'course_page_find' and j.state in ('queued', 'running')")
@@ -121,7 +121,7 @@ test('the credit check (svc_fc_spend) lets a person\'s Find course pages task pa
 
 // hotfix 3 (v2.15.347): the Task manager read timed out (8 s) when several Find course pages tasks stalled at once
 test('the stall cause stays cheap: one university\'s stop, month and day totals once per request, one person-task query', () => {
-  const m3 = fs.readFileSync('supabase/migrations/20261024011000_cf247_hotfix3_task_status_speed.sql', 'utf8')
+  const m3 = fs.readFileSync('supabase/migrations-archive/20261024011000_cf247_hotfix3_task_status_speed.sql', 'utf8')
   expect(m3).toMatch(/pg_temp\.edit_n\('security\.link_search_block_v1\(uuid,uuid\[\]\)', '[0-9a-f]{32}'/)
   expect(m3).toContain('if security.fc_search_stopped_for_v1(p_provider) and not (v_bypass and v_person) then')
   expect(m3).toContain("perform set_config('cf.link_search_block_totals', statement_timestamp()::text")

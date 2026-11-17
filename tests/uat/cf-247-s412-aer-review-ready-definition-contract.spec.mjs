@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261108040000_cf247_aer_review_ready_single_definition.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261108040000_cf247_aer_review_ready_single_definition.sql', 'utf8')
 const run = fs.readFileSync('tests/fixtures/aer-review-ready/run.sh', 'utf8')
 const fx = fs.readFileSync('tests/fixtures/aer-review-ready/fixtures.sql', 'utf8')
 const code = (t) => t.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')

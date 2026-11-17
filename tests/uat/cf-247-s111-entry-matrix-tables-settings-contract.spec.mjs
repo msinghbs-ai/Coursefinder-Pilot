@@ -3,7 +3,7 @@
 // file boundary (Platform Admin 25 Oct 2026 18:54: nothing in the search picker, stop gates, course_events or the blade).
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const m = fs.readFileSync('supabase/migrations/20261026001000_cf247_entry_matrix_step_a.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261026001000_cf247_entry_matrix_step_a.sql', 'utf8')
 const code = m.split('\n').filter(l => !/^\s*--/.test(l)).join('\n') // the header names the boundary; the code must not touch it
 
 test('tables: matrix and course requirements, comment on table, RLS on, no number without a scale', () => {

@@ -4,7 +4,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = 'supabase/migrations/20261010006900_cf247_r4b_pause_unpublished_work.sql'
+const MIG = 'supabase/migrations-archive/20261010006900_cf247_r4b_pause_unpublished_work.sql'
 const PICKERS = ['svc_coverage_discovery_next(integer)', 'svc_coverage_site_next(integer)', 'svc_coverage_read_next(integer)', 'svc_coverage_ai_match_next(integer)',
   'svc_course_link_search_next(integer)', 'svc_site_hint_next(integer)', 'svc_provider_contact_next(integer)', 'svc_cricos_peo_next(integer)',
   'svc_provider_facts_read_next(integer)', 'svc_provider_facts_search_next(integer)', 'svc_scholarship_candidate_next(integer)', 'svc_scholarship_discover_next(integer)',

@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261113068000_cf247_sch_award_details.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261113068000_cf247_sch_award_details.sql', 'utf8')
 
 test('a new table beside the consumer tables, written from verified passages only, empty fields only', () => {
   expect(m).toContain('create table if not exists scholarship.award_details (')

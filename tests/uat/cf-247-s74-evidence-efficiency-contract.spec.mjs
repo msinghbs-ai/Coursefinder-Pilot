@@ -4,8 +4,8 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 const worker = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-const reuse = fs.readFileSync('supabase/migrations/20261019080000_cf247_reuse_unchanged_pages.sql', 'utf8')
-const orphans = fs.readFileSync('supabase/migrations/20261019090000_cf247_orphan_files_list.sql', 'utf8')
+const reuse = fs.readFileSync('supabase/migrations-archive/20261019080000_cf247_reuse_unchanged_pages.sql', 'utf8')
+const orphans = fs.readFileSync('supabase/migrations-archive/20261019090000_cf247_orphan_files_list.sql', 'utf8')
 
 test('an unchanged course page keeps the copy in use: no file, no new evidence record; switchable', () => {
   expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v(?:[1-9]\d*\.\d+\.\d+|0\.(3[2-9]|[4-9]\d)\.\d+)";/)

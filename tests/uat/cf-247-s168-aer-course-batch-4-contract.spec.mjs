@@ -1,7 +1,7 @@
 // Guards: CF-247 AER course-level programme batch 4 (Platform Admin mandate 29 Oct 2026 12:23 B3): one course batch through the programme, the credit-floor refusal inside the function recorded and not retried; logged; nothing read again, approved, admitted, dropped or deleted
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const m = fs.readFileSync('supabase/migrations/20261029100000_cf247_aer_course_batch_4.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261029100000_cf247_aer_course_batch_4.sql', 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 
 test('one course batch through the programme; a refusal recorded, not retried; logged; nothing else', () => {

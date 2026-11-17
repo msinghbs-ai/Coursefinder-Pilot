@@ -7,7 +7,7 @@ import fs from 'node:fs'
 import { PROVIDER_COLUMNS, QUALITY_LEVELS, QUALITY_FILTER_OPTIONS, qualityOf, fieldWords, sortSentence } from '../../src/catalogue-columns.js'
 import { migrationNames } from './support/migration-files.mjs'
 
-const MIG = fs.readFileSync('supabase/migrations/20261110030000_cf247_provider_fill_fields.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations-archive/20261110030000_cf247_provider_fill_fields.sql', 'utf8')
 const SQL = MIG.split('\n').filter(l => !/^\s*--/.test(l)).join('\n')
 const UI = fs.readFileSync('src/mature-main.jsx', 'utf8')
 const PANEL = fs.readFileSync('src/ProviderFillFields.jsx', 'utf8') + '\n' + fs.readFileSync('src/provider-fill-stages.js', 'utf8') // the panel and its plain-word helpers

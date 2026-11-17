@@ -19,7 +19,7 @@ SQL
 WORK=$(mktemp -d)
 cleanup() { local code=$?; trap - EXIT; [ -n "${CDOD_KEEP:-}" ] || $P -d postgres -c "drop database if exists $DB" -c "drop database if exists ${DB}_refuse" -c "drop database if exists ${DB}_conc" >/dev/null || code=1; rm -rf "$WORK"; exit "$code"; }
 trap cleanup EXIT
-MIG=$ROOT/supabase/migrations/20261110070000_cf247_cdesc_on_demand.sql
+MIG=$ROOT/supabase/migrations-archive/20261110070000_cf247_cdesc_on_demand.sql
 REC=$ROOT/supabase/held/cdesc_on_demand_forward_recovery.sql
 node "$ROOT/scripts/prod-parity-capture.mjs" fixture $PAR/manifest-register.json >"$WORK/register.sql"
 node "$ROOT/scripts/prod-parity-capture.mjs" fixture $PAR/manifest.json >"$WORK/fixture.sql"

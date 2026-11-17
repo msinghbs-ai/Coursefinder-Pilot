@@ -10,7 +10,7 @@ import fs from 'node:fs'
 import crypto from 'node:crypto'
 import { migrationNames, migrationPath } from './support/migration-files.mjs'
 
-const MIG = 'supabase/migrations/20261104070000_cf247_ai_eval_self_improvement.sql'
+const MIG = 'supabase/migrations-archive/20261104070000_cf247_ai_eval_self_improvement.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const FX = 'tests/fixtures/ops-ai-eval'
 const run = fs.readFileSync(`${FX}/run.sh`, 'utf8')

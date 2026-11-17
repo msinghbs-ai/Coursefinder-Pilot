@@ -8,7 +8,7 @@ cd "$(dirname "$0")/../../.."
 export LC_ALL=C # fixed: one byte order for sort and comm, whatever the runner's locale
 DB=${CDS_DB:-g_cdesc_subset}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
-M=supabase/migrations/20261110230000_cf247_cdesc_subset_recovery.sql
+M=supabase/migrations-archive/20261110230000_cf247_cdesc_subset_recovery.sql
 HELD=supabase/held/cdesc_subset_recovery_forward_recovery.sql
 F=tests/fixtures/cdesc-subset
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"

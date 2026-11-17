@@ -7,7 +7,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
-const MIG = fs.readFileSync('supabase/migrations/20261106500000_cf247_course_descriptions_complete.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations-archive/20261106500000_cf247_course_descriptions_complete.sql', 'utf8')
 const code = MIG.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const worker = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 const FX = 'tests/fixtures/course-description-parity'

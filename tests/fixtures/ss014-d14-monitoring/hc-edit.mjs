@@ -6,7 +6,7 @@
 //                                        (read-only; the same query, run on production, gave the after md5 the migration checks)
 //   node hc-edit.mjs variant <before> <after>   the migration with the health check's md5s set to the fixture skeleton's
 import fs from 'node:fs'
-const MIG = new URL('../../../supabase/migrations/20261102040000_cf247_ss014_d14_monitoring_accuracy.sql', import.meta.url)
+const MIG = new URL('../../../supabase/migrations-archive/20261102040000_cf247_ss014_d14_monitoring_accuracy.sql', import.meta.url)
 const m = fs.readFileSync(MIG, 'utf8')
 const head = "select pg_temp.edit_once('security.platform_health_check_v1(boolean)', "
 const a = m.indexOf(head); const e = m.indexOf('array[1, 1]);', a) + 'array[1, 1]);'.length

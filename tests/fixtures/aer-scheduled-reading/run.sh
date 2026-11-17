@@ -9,7 +9,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/../../.."
 DB=${AERJOB_DB:-aer_scheduled_reading_fixtures}
-MIG=supabase/migrations/20261103220000_cf247_aer_scheduled_reading.sql
+MIG=supabase/migrations-archive/20261103220000_cf247_aer_scheduled_reading.sql
 P="psql -v ON_ERROR_STOP=1 -q -X"
 $P -d postgres -c "drop database if exists $DB" -c "create database $DB" >/dev/null
 [ -n "${AERJOB_KEEP:-}" ] || trap '$P -d postgres -c "drop database if exists $DB" >/dev/null' EXIT
@@ -18,9 +18,9 @@ md5of() { $P -d $DB -Atc "select md5(pg_get_functiondef('$1'::regprocedure))"; }
 $P -d $DB -f tests/fixtures/e13-completeness-gate/stubs.sql
 $P -d $DB -f tests/fixtures/aer-dr2-dr3/stubs.sql
 node tests/fixtures/e13-completeness-gate/before.mjs | $P -d $DB -o /dev/null
-$P -d $DB -1 -o /dev/null -f supabase/migrations/20261102010000_cf247_e13_entry_completeness_gate.sql
+$P -d $DB -1 -o /dev/null -f supabase/migrations-archive/20261102010000_cf247_e13_entry_completeness_gate.sql
 node tests/fixtures/aer-dr2-dr3/before.mjs | $P -d $DB -o /dev/null
-$P -d $DB -1 -o /dev/null -f supabase/migrations/20261103070000_cf247_aer_dr2_dr3_supersede_and_matrix_gate.sql
+$P -d $DB -1 -o /dev/null -f supabase/migrations-archive/20261103070000_cf247_aer_dr2_dr3_supersede_and_matrix_gate.sql
 $P -d $DB -f tests/fixtures/aer-scheduled-reading/stubs.sql
 for f in tests/fixtures/aer-scheduled-reading/live/*.sql; do $P -d $DB -c "set check_function_bodies = off" -f "$f"; done
 declare -A LIVE=(

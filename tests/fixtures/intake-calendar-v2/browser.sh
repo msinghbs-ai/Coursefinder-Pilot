@@ -8,7 +8,7 @@ F=tests/fixtures/intake-calendar-v2; P=(psql -X -q -v ON_ERROR_STOP=1 -d intake_
 bash tests/fixtures/intake-preview-timeout/run.sh > /dev/null  # the #872 database with #876 applied, as in production
 PGOPTIONS='-c client_min_messages=warning' "${P[@]}" -f $F/parity-tables.sql
 "${P[@]}" -f $F/live-functions.sql
-PGOPTIONS='-c client_min_messages=warning' "${P[@]}" -1 -o /dev/null -f supabase/migrations/20261105020000_cf247_intake_calendar_v2.sql
+PGOPTIONS='-c client_min_messages=warning' "${P[@]}" -1 -o /dev/null -f supabase/migrations-archive/20261105020000_cf247_intake_calendar_v2.sql
 [ "$("${P[@]}" -Atc "select md5(pg_get_functiondef('security.intake_ui_selection_v1(text,integer)'::regprocedure)) || ' ' || (position('intake_dates_plan_v3' in pg_get_functiondef('security.intake_dates_apply_v1(integer,uuid[])'::regprocedure)) > 0)::text")" = '36ecb3ad4d8fbd7a398e570159dfe4c8 true' ] || { echo 'plan v3 not in place'; exit 1; }
 echo 'PASS intake fixture database now on plan v3 (selection 36ecb3ad, apply uses plan v3)'
 npx playwright test --config=playwright.intake.config.mjs

@@ -7,7 +7,7 @@ import path from 'node:path'
 import { execFileSync } from 'node:child_process'
 import { mockAdmin } from './support/admin-mock.mjs'
 
-const m = fs.readFileSync('supabase/migrations/20261101070000_cf247_ur07_retired_jobs.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261101070000_cf247_ur07_retired_jobs.sql', 'utf8')
 const code = (s) => s.replace(/--[^\n]*/g, '')
 
 test('UR-07 migration: md5-guarded; refuses switching on retired jobs; area resume skips them; read reports retirement', () => {

@@ -29,7 +29,7 @@ for f in live/*.sql; do $P -d $DB -c "set check_function_bodies = off" -f "$f"; 
 echo 'before: entry_matrix_attach_v1 and entry_matrix_enabled_v1 are the live definitions (md5 checked)'
 $P -d $DB -f data.sql
 $P -d $DB -f before.sql 2>&1 | sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'
-MIG=$ROOT/supabase/migrations/20261107150000_cf247_aer_source_stored_discovery.sql
+MIG=$ROOT/supabase/migrations-archive/20261107150000_cf247_aer_source_stored_discovery.sql
 $P -d $DB -1 -f $MIG 2>&1 | sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'
 SNAP="select (select count(*) from pipeline.platform_toolset_settings) || '/' || (select count(*) from cron.job) || '/' || (select count(*) from pipeline.automation_catalogue) || '/' || (select count(*) from pipeline.component_register)"
 S1=$($P -d $DB -Atc "$SNAP")
@@ -38,7 +38,7 @@ echo "$OUT" | grep -q 'already applied' || { echo 'the second run did not report
 [ "$($P -d $DB -Atc "$SNAP")" = "$S1" ] || { echo 'a second run added rows'; exit 1; }
 echo 'migration 20261107150000 applied twice; the second run changed nothing'
 # 7 Nov 2026 speed fix (the first live measure: 33 s for three providers): same behaviour, applied twice, the scenarios below run on it
-MIG2=$ROOT/supabase/migrations/20261107160000_cf247_aer_stored_find_speed.sql
+MIG2=$ROOT/supabase/migrations-archive/20261107160000_cf247_aer_stored_find_speed.sql
 $P -d $DB -1 -f $MIG2 && $P -d $DB -1 -f $MIG2
 echo 'migration 20261107160000 (speed) applied twice'
 [ "$(md5of 'security.entry_matrix_enabled_v1(uuid)')" = 582a5024ffeca0ac3c5446a903b39b3f ] || { echo 'enabled_v1 was changed'; exit 1; }

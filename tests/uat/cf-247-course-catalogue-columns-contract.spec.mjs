@@ -8,12 +8,12 @@ import path from 'node:path'
 import { collisions, selectorClasses } from '../../scripts/verify-css-class-collisions.mjs'
 import { COURSE_COLUMNS, GROUPS, defaultLayout, normaliseLayout, moveColumn, toggleColumn, citySummary, sortSentence, intakeSummary, intakeName } from '../../src/catalogue-columns.js'
 
-const MIG = fs.readFileSync('supabase/migrations/20261106300000_cf247_course_catalogue_columns.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations-archive/20261106300000_cf247_course_catalogue_columns.sql', 'utf8')
 const UI = fs.readFileSync('src/mature-main.jsx', 'utf8')
 
 test('the screen registry equals the database registry the server checks a layout against', () => {
   // 18 Nov 2026 (migration 20261118073000): Study load and Empty reason join the registry; the screen lists every column in the registry's own order (sort)
-  const MIG2 = fs.readFileSync('supabase/migrations/20261118073000_cf247_course_study_load_empty_reason_campus_primary_locality.sql', 'utf8')
+  const MIG2 = fs.readFileSync('supabase/migrations-archive/20261118073000_cf247_course_study_load_empty_reason_campus_primary_locality.sql', 'utf8')
   const rows = [...(MIG + MIG2).matchAll(/\('courses', '([a-z0-9_]+)', '([^']+)', '([^']+)', (\d+), (?:'([a-z_]+)'|null), (true|false), (\d+), (\d+), (true|false)\)/g)]
     .map(m => ({ key: m[1], group: m[2], label: m[3], sort: +m[4], sortKey: m[5] || null, defaultVisible: m[6] === 'true', width: +m[7], minWidth: +m[8], alwaysVisible: m[9] === 'true' }))
     .sort((x, y) => x.sort - y.sort).map(({ sort, ...r }) => r)

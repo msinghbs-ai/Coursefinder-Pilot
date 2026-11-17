@@ -7,7 +7,7 @@ import { entryManifest, entryCompleteness, entryMatrixParsed, entryTables, ENTRY
 import { htmlToText } from '../../supabase/functions/coverage-sweep/extract.ts'
 const fx = (n) => fs.readFileSync(`tests/fixtures/entry-matrix/${n}`, 'utf8')
 const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-const m = fs.readFileSync('supabase/migrations/20261026010000_cf247_entry_matrix_completeness_guard.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261026010000_cf247_entry_matrix_completeness_guard.sql', 'utf8')
 const COUNTRY = { 'rmit-china.html': ['CN', 'China'], 'rmit-canada.html': ['CA', 'Canada'], 'rmit-cambodia.html': ['KH', 'Cambodia'] }
 // the rows a correct read gives: one per manifest entry, quoting the entry's whole table line (as the reader is asked to)
 const rowsFor = (file, man, pick = () => true) => man.entries.filter(pick).map(e => ({

@@ -7,7 +7,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 DB=identity_check_values_fixtures
-MIG=../../../supabase/migrations/20261104180000_cf247_identity_check_issue_values.sql
+MIG=../../../supabase/migrations-archive/20261104180000_cf247_identity_check_issue_values.sql
 P="psql -v ON_ERROR_STOP=1 -q -X"
 q() { $P -d $DB -Atc "$1"; }
 OPSG_KEEP=1 OPSG_DB=$DB bash ../ops-provider-lifecycle/run.sh >/dev/null

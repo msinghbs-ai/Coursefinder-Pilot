@@ -6,7 +6,7 @@ import { mockAdmin } from './support/admin-mock.mjs'
 import { COURSE_COLUMNS, STUDY_LOAD_LABELS, EMPTY_REASON_LABELS, defaultLayout } from '../../src/catalogue-columns.js'
 
 const read = (p) => fs.readFileSync(p, 'utf8')
-const M = read('supabase/migrations/20261118073000_cf247_course_study_load_empty_reason_campus_primary_locality.sql')
+const M = read('supabase/migrations-archive/20261118073000_cf247_course_study_load_empty_reason_campus_primary_locality.sql')
 const C = M.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const UI = read('src/mature-main.jsx')
 

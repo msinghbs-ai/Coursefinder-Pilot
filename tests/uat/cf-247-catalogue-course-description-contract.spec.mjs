@@ -5,7 +5,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
-const MIG = fs.readFileSync('supabase/migrations/20261113153000_cf247_catalogue_course_description.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations-archive/20261113153000_cf247_catalogue_course_description.sql', 'utf8')
 const code = MIG.split('\n').filter(l => !/^\s*--/.test(l)).join('\n')
 const HELD = fs.readFileSync('supabase/held/catalogue_course_description_forward_recovery.sql', 'utf8')
 const UI = fs.readFileSync('src/mature-main.jsx', 'utf8')

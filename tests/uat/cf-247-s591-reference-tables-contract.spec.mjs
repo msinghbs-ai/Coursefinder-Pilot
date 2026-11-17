@@ -5,7 +5,7 @@ import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
 const read = (p) => fs.readFileSync(p, 'utf8')
-const m = read('supabase/migrations/20261118005000_cf247_admin_reference_tables_read.sql')
+const m = read('supabase/migrations-archive/20261118005000_cf247_admin_reference_tables_read.sql')
 const c = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const screen = read('src/ReferenceTables.jsx')
 

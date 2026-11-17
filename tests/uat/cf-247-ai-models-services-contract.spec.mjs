@@ -11,8 +11,8 @@ import fs from 'node:fs'
 import crypto from 'node:crypto'
 import { migrationPath } from './support/migration-files.mjs'
 
-const MIG = fs.readFileSync('supabase/migrations/20261113380000_cf247_ai_models_services.sql', 'utf8')
-const MIG2 = fs.readFileSync('supabase/migrations/20261113390000_cf247_ai_routes_only.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations-archive/20261113380000_cf247_ai_models_services.sql', 'utf8')
+const MIG2 = fs.readFileSync('supabase/migrations-archive/20261113390000_cf247_ai_routes_only.sql', 'utf8')
 const COLS = ['20261113377000_cf247_ai_ledger_columns', '20261113378000_cf247_ai_settings_home_columns', '20261113379000_cf247_ai_item_model_column'].map((f) => fs.readFileSync(migrationPath(`${f}.sql`), 'utf8'))
 const WORKER_DIR = 'supabase/functions/coverage-sweep'
 const worker = fs.readFileSync(`${WORKER_DIR}/index.ts`, 'utf8')

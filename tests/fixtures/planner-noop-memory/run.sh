@@ -9,7 +9,7 @@ export LC_ALL=C # fixed: one byte order whatever the runner's locale
 DB=${PNM_DB:-g_planner_noop}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 F=tests/fixtures/planner-noop-memory
-M=supabase/migrations/20261110240000_cf247_planner_noop_memory.sql
+M=supabase/migrations-archive/20261110240000_cf247_planner_noop_memory.sql
 R=supabase/held/planner_noop_memory_forward_recovery.sql
 FN='security.enrich_plan_auto_v1()'; BEFORE=5a3874e777ae649916d61575e2692609; AFTER=f0c95d0bbef3ccac550585185c9784c9
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"

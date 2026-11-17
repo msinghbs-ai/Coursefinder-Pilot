@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
-const mig = fs.readFileSync('supabase/migrations/20261013012500_cf247_progress_tab.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261013012500_cf247_progress_tab.sql', 'utf8')
 const read = f => fs.readFileSync(f, 'utf8')
 
 test('migration: hourly snapshot kept 90 days, catalogued job, one read for four views, nothing dropped', () => {

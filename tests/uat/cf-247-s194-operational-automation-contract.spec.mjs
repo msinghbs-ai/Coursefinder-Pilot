@@ -4,7 +4,7 @@ import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 import * as F from './support/admin-fixtures.mjs'
 
-const m = fs.readFileSync('supabase/migrations/20261031091000_cf247_ss014_operational_automation.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261031091000_cf247_ss014_operational_automation.sql', 'utf8')
 const code = (s) => s.replace(/--[^\n]*/g, '')
 
 test('two md5-guarded edits of existing health functions; nothing dropped; consumer API untouched', () => {

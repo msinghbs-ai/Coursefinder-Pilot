@@ -17,10 +17,10 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 DB=${AERT_DB:-aer_throughput_fixtures}
 P="psql -v ON_ERROR_STOP=1 -q -X"
-MIG=supabase/migrations/20261104470000_cf247_aer_throughput.sql
+MIG=supabase/migrations-archive/20261104470000_cf247_aer_throughput.sql
 FX=tests/fixtures/aer-throughput
-WC=supabase/migrations/20261104170000_cf247_work_continuity.sql
-AD=supabase/migrations/20261104320000_cf247_work_continuity_adopt.sql
+WC=supabase/migrations-archive/20261104170000_cf247_work_continuity.sql
+AD=supabase/migrations-archive/20261104320000_cf247_work_continuity_adopt.sql
 q() { $P -d $DB -Atc "$1"; }
 md5of() { q "select md5(pg_get_functiondef('$1'::regprocedure))"; }
 after() { grep -F -- "--   $1 " $MIG | head -1 | sed 's/.*-> *\([0-9a-f]*\).*/\1/'; }

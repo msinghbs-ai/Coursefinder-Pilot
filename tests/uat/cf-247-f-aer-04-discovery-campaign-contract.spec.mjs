@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { migrationNames } from './support/migration-files.mjs'
 
-const MIG = 'supabase/migrations/20261112040000_cf247_aer_discovery_campaign.sql'
+const MIG = 'supabase/migrations-archive/20261112040000_cf247_aer_discovery_campaign.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 

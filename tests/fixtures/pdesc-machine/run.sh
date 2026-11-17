@@ -10,9 +10,9 @@ export LC_ALL=C # fixed: one byte order for sort and comm, whatever the runner's
 DB=${PDM_DB:-g_pdesc_machine}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"
-M2=supabase/migrations/20261109020000_cf247_pdesc_machine_admission.sql
-M3=supabase/migrations/20261109030000_cf247_pdesc_whole_platform_queue.sql
-M5=supabase/migrations/20261109140000_cf247_pdesc_registry_reeval.sql
+M2=supabase/migrations-archive/20261109020000_cf247_pdesc_machine_admission.sql
+M3=supabase/migrations-archive/20261109030000_cf247_pdesc_whole_platform_queue.sql
+M5=supabase/migrations-archive/20261109140000_cf247_pdesc_registry_reeval.sql
 F=tests/fixtures/pdesc-machine
 q() { psql -X -d "$DB" -Atc "$1"; }
 [ -n "${PDM_KEEP:-}" ] || trap 'dropdb --if-exists '$DB' >/dev/null 2>&1; dropdb --if-exists '${DB}_refuse' >/dev/null 2>&1; dropdb --if-exists '${DB}_scale' >/dev/null 2>&1' EXIT

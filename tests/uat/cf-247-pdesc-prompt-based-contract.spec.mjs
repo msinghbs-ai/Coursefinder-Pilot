@@ -6,11 +6,11 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { promptSentences, promptRequest, PROMPT_SCHEMA, passageCanonical } from '../../supabase/functions/coverage-sweep/description.ts'
 
-const MIG = fs.readFileSync('supabase/migrations/20261112011000_cf247_pdesc_prompt_based.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations-archive/20261112011000_cf247_pdesc_prompt_based.sql', 'utf8')
 const IX = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-const MIG4 = fs.readFileSync('supabase/migrations/20261112023700_cf247_pdesc_name_forms_prompt_v4.sql', 'utf8')
-const MIG5 = fs.readFileSync('supabase/migrations/20261112034500_cf247_pdesc_machine_gate_prompt_profile.sql', 'utf8')
-const MIG6 = fs.readFileSync('supabase/migrations/20261112110000_cf247_pdesc_catalogue_current.sql', 'utf8')
+const MIG4 = fs.readFileSync('supabase/migrations-archive/20261112023700_cf247_pdesc_name_forms_prompt_v4.sql', 'utf8')
+const MIG5 = fs.readFileSync('supabase/migrations-archive/20261112034500_cf247_pdesc_machine_gate_prompt_profile.sql', 'utf8')
+const MIG6 = fs.readFileSync('supabase/migrations-archive/20261112110000_cf247_pdesc_catalogue_current.sql', 'utf8')
 const SOPS = fs.readFileSync('src/guide/sops.js', 'utf8')
 const GUIDE = fs.readFileSync('src/guide/platformGuide.js', 'utf8')
 const read = (f) => fs.readFileSync(f, 'utf8')

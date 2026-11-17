@@ -5,7 +5,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { migrationNames } from './support/migration-files.mjs'
 
-const m = fs.readFileSync('supabase/migrations/20261112143700_cf247_aer_matrix_machine_enable.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261112143700_cf247_aer_matrix_machine_enable.sql', 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 
 test('mode 2 only after a passing validation in the same run, with the quote proof live; from shadow only', () => {

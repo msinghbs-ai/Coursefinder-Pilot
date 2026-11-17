@@ -14,14 +14,14 @@ test('a refused PDF (401, 403, 406, 429) goes to Firecrawl only with its switch 
   expect(block.indexOf('storage.from("evidence")')).toBeLessThan(block.indexOf('p_status: "read", p_via: "firecrawl"'))
   expect(block).toContain('.md.gz')
   expect(ix).toMatch(/const WORKER = "coverage-sweep-worker-v0\.80\.1"|\/\/ was v0\.80\.1 /)
-  const m = fs.readFileSync('supabase/migrations/20261113123100_cf247_aer_pdf_firecrawl_fallback.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261113123100_cf247_aer_pdf_firecrawl_fallback.sql', 'utf8')
   expect(m).toContain("'reading.entry_pdf_firecrawl_on'")
   expect(m).toMatch(/where s\.error = 'blocked_pdf' and s\.status in \('failed', 'found'\)/)
   expect(m).not.toMatch(/^\s*(delete|drop|truncate)\b/im)
 })
 
 test('the refused-PDF fetch spends from the reads share, and the PDFs refused for the central share are attached again', () => {
-  const m = fs.readFileSync('supabase/migrations/20261113133100_cf247_aer_pdf_fallback_reads_share.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261113133100_cf247_aer_pdf_fallback_reads_share.sql', 'utf8')
   expect(m).toMatch(/where s\.error like 'blocked_pdf; firecrawl: credits_refused%' and s\.status in \('failed', 'found'\)/)
   expect(m).not.toMatch(/^\s*(delete|drop|truncate)\b/im)
 })

@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261113361500_cf247_aer_v2_identity_settle.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261113361500_cf247_aer_v2_identity_settle.sql', 'utf8')
 
 test('the settle check holds anything a person decided, rejected or is to decide, and anything E16 refuses', () => {
   expect(M).toContain("return jsonb_build_object('decision', 'held', 'reason', 'manual_binding')")

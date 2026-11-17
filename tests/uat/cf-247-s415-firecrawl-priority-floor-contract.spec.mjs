@@ -4,8 +4,8 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const F = fs.readFileSync('supabase/migrations/20261108060000_cf247_firecrawl_priority_floor.sql', 'utf8')
-const P = fs.readFileSync('supabase/migrations/20261108061000_cf247_firecrawl_plan_100k_shares.sql', 'utf8')
+const F = fs.readFileSync('supabase/migrations-archive/20261108060000_cf247_firecrawl_priority_floor.sql', 'utf8')
+const P = fs.readFileSync('supabase/migrations-archive/20261108061000_cf247_firecrawl_plan_100k_shares.sql', 'utf8')
 const FX = 'tests/fixtures/firecrawl-priority-floor'
 const run = fs.readFileSync(`${FX}/run.sh`, 'utf8')
 const fixtures = fs.readFileSync(`${FX}/fixtures.sql`, 'utf8')

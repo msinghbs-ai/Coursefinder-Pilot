@@ -8,7 +8,7 @@ cd "$(dirname "$0")/../../.."
 case "${PGHOST:-127.0.0.1}" in 127.0.0.1|localhost|/tmp|/var/lib/postgresql/*) ;; *) echo 'Refusing a remote database: use isolated local PostgreSQL' >&2; exit 1;; esac
 DB=${FILL_DB:-g_provider_fill_fields}
 FX=tests/fixtures/provider-fill-fields
-MIG=supabase/migrations/20261110030000_cf247_provider_fill_fields.sql
+MIG=supabase/migrations-archive/20261110030000_cf247_provider_fill_fields.sql
 P="psql -v ON_ERROR_STOP=1 -q -X"
 TMP=$(mktemp -d); trap 'rm -rf "$TMP"; [ -n "${FILL_KEEP:-}" ] || $P -d postgres -c "drop database if exists '$DB'" >/dev/null 2>&1' EXIT
 $P -d postgres -c "drop database if exists $DB" -c "create database $DB" >/dev/null
@@ -18,7 +18,7 @@ for f in facts page_live page_before run_live run_before; do PGOPTIONS='-c check
 # the registry rows of the Provider Catalogue's earlier columns change (32 of 34 columns), exactly as written by the earlier migration
 python3 - "$TMP/columns.sql" <<'PY'
 import sys
-t = open('supabase/migrations/20261109200000_cf247_provider_catalogue_columns.sql').read()
+t = open('supabase/migrations-archive/20261109200000_cf247_provider_catalogue_columns.sql').read()
 i = t.index('insert into pipeline.admin_table_columns')
 j = t.index('on conflict (screen, key) do nothing;', i) + len('on conflict (screen, key) do nothing;')
 open(sys.argv[1], 'w').write(t[i:j] + '\n')

@@ -12,7 +12,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { execFileSync } from 'node:child_process'
 
-const MIG = 'supabase/migrations/20261103060000_cf247_intake_semester_pairs.sql'
+const MIG = 'supabase/migrations-archive/20261103060000_cf247_intake_semester_pairs.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const FX = 'tests/fixtures/intake-dates'
@@ -28,7 +28,7 @@ test('edits only from the live md5s, checked after; plan v2 is built from the li
   expect(m).toContain("if md5(pg_get_functiondef('security.intake_dates_plan_v1(uuid[],integer)'::regprocedure)) <> '4e3847587271c68e70018de23d0b74b6' then")
   expect(code).toContain("raise exception '% after the edit has md5 %, expected %'")
   expect(run).toContain('"4e3847587271c68e70018de23d0b74b6 2ee1ce769cb5de8d300d9ad6e1bdbf7f 28beada5c58b585bd9e655381231f20f"')
-  expect(run).toContain('MIG3=supabase/migrations/20261103060000_cf247_intake_semester_pairs.sql')
+  expect(run).toContain('MIG3=supabase/migrations-archive/20261103060000_cf247_intake_semester_pairs.sql')
 })
 
 test('the pair and list reading ships off behind intake_dates.name_period_lists (default 0) and the plan reads it', () => {

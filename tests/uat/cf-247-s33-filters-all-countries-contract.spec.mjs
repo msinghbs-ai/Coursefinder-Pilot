@@ -9,8 +9,8 @@ import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
 const read = f => fs.readFileSync(f, 'utf8')
-const mig = read('supabase/migrations/20261014013000_cf247_filters_all_countries.sql')
-const fix = read('supabase/migrations/20261014013100_cf247_provider_assets_country_fix.sql')
+const mig = read('supabase/migrations-archive/20261014013000_cf247_filters_all_countries.sql')
+const fix = read('supabase/migrations-archive/20261014013100_cf247_provider_assets_country_fix.sql')
 
 test('regions: campus region, else the provider region, in the options, the filter and the list', () => {
   expect(mig).toContain('join ref.subdivisions s on s.id=p.subdivision_id')

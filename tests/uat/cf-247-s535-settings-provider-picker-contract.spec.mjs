@@ -4,7 +4,7 @@ import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 import { isProviderIdList } from '../../src/lib/settings-list.js'
 
-const MIG = fs.readFileSync('supabase/migrations/20261111235500_cf247_settings_provider_picker.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations-archive/20261111235500_cf247_settings_provider_picker.sql', 'utf8')
 const UI = fs.readFileSync('src/SettingsRegister.jsx', 'utf8')
 const PICK = fs.readFileSync('src/ProviderListPicker.jsx', 'utf8')
 const MONASH = '543b87b8-f0dd-4bc7-80d6-76252cfaabec'

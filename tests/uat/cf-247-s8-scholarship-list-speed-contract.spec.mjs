@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
 test('published list skips publishability and builds counts for the page rows only; md5-guarded; nothing dropped', () => {
-  const sql = fs.readFileSync('supabase/migrations/20261011008300_cf247_scholarship_list_speed.sql', 'utf8')
+  const sql = fs.readFileSync('supabase/migrations-archive/20261011008300_cf247_scholarship_list_speed.sql', 'utf8')
   expect(sql).toContain("where coalesce(p_args->>'status', '') <> 'published'),")
   expect(sql).toContain("'value_label',scholarship.value_label(o.id),")
   expect(sql).toContain('"security.admin_scholarships_page(jsonb)": "1e0e5ca08c099dcc4f14e3515997b76b"')

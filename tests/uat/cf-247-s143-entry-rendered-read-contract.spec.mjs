@@ -1,7 +1,7 @@
 // Guards: CF-247 AER programme Step C (Platform Admin consolidated mandate 28 Oct 2026 23:22; admin docs/platform/ENTRY-REQUIREMENTS-PROGRAMME-DECISION-2026-10-28.md P5 and section 4): a JavaScript-only entry page is read once rendered through Firecrawl, robots.txt respected, within the Firecrawl budget check, named by setting (entry.render_hosts, empty until the worker is live); no minimum on the rendered page gives no rows (contact provider), never an endless retry
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const m = fs.readFileSync('supabase/migrations/20261029002000_cf247_aer_steps_b_c_pdf_and_rendered.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261029002000_cf247_aer_steps_b_c_pdf_and_rendered.sql', 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 const ai = w.slice(w.indexOf('if (mode === "entry_ai") {'), w.indexOf('if (mode === "fee_ai") {'))

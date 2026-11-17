@@ -7,7 +7,7 @@ import fs from 'node:fs'
 const read = f => fs.readFileSync(f, 'utf8')
 
 test('migration: reading.pages_at_once setting with a range; worker settings include reading.*; picker cap 200 (md5-guarded edits)', () => {
-  const m = read('supabase/migrations/20261023027000_cf247_read_lane_settings.sql')
+  const m = read('supabase/migrations-archive/20261023027000_cf247_read_lane_settings.sql')
   expect(m).toMatch(/^-- Replaces: /m); expect(m).toMatch(/^-- Retires: /m); expect(m).not.toMatch(/^\s*(drop|truncate|delete\s+from)\b/im)
   expect(m).toContain("values ('pipeline', 'reading.pages_at_once', 'Read course pages: pages fetched at once',")
   expect(m).toContain("'number', '8'::jsonb, '1', '32', 'pages', 103, 'Job sizes', 'job coverage-read, coverage-read-2; worker coverage-sweep read',")

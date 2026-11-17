@@ -3,12 +3,12 @@ name: Operations load speed integration
 on:
   pull_request:
     paths:
-      - 'supabase/migrations/20261110020000_cf247_operations_load_speed.sql'
+      - 'supabase/migrations-archive/20261110020000_cf247_operations_load_speed.sql'
       - 'supabase/held/operations_load_speed_forward_recovery.sql'
       - 'supabase/held/operations_load_speed_equivalence.sql'
       - 'tests/fixtures/operations-load-speed/**'
       - 'tests/fixtures/lane-funnels/**'
-      - 'supabase/migrations/20261108170000_cf247_lane_funnels.sql'
+      - 'supabase/migrations-archive/20261108170000_cf247_lane_funnels.sql'
       - 'src/LaneFunnels.jsx'
       - '.github/workflows/operations-load-speed-test.yml'
   workflow_dispatch:

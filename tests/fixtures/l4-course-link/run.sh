@@ -9,7 +9,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 DB=${L4CL_DB:-l4_course_link_fixtures}
 P="psql -v ON_ERROR_STOP=1 -q -X"
-MIG=supabase/migrations/20261104260000_cf247_l4_course_link.sql
+MIG=supabase/migrations-archive/20261104260000_cf247_l4_course_link.sql
 FX=tests/fixtures/l4-course-link
 P1=tests/fixtures/p1-provider-descriptions
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }
@@ -22,8 +22,8 @@ TMP=$(mktemp -d); trap 'rm -rf "$TMP"; [ -n "${L4CL_KEEP:-}" ] || $P -d postgres
 # 1 the live Layer 4 functions, as they reached production
 PGOPTIONS='-c check_function_bodies=off' $P -d $DB -f $P1/stubs.sql >/dev/null
 for f in $P1/live-before/*.sql; do PGOPTIONS='-c check_function_bodies=off' $P -d $DB -f "$f" >/dev/null; done
-PGOPTIONS='-c check_function_bodies=off' $P -d $DB -1 -o /dev/null -f supabase/migrations/20261102090000_cf247_p1_provider_descriptions.sql 2>&1 | show
-M=supabase/migrations/20261103110000_cf247_course_description_deadline_fields.sql
+PGOPTIONS='-c check_function_bodies=off' $P -d $DB -1 -o /dev/null -f supabase/migrations-archive/20261102090000_cf247_p1_provider_descriptions.sql 2>&1 | show
+M=supabase/migrations-archive/20261103110000_cf247_course_description_deadline_fields.sql
 # the decision path as live: its text before 20261103110000 (../course-text/live), then that migration's edit of it and of the item list
 PGOPTIONS='-c check_function_bodies=off' $P -d $DB -f tests/fixtures/course-text/live/security.layer4_review_decide_impl.sql >/dev/null
 { sed -n '/^create or replace function pg_temp.edit_once/,/^end \$f\$;/p' $M; sed -n "/^select pg_temp.edit_once('security.layer4_inbox_items_v1()'/,/]], array\[/p" $M
@@ -31,8 +31,8 @@ PGOPTIONS='-c check_function_bodies=off' $P -d $DB -f tests/fixtures/course-text
 PGOPTIONS='-c check_function_bodies=off' $P -d $DB -At -f "$TMP/items.sql" >/dev/null
 # the course-link apply as live (../iq67-coverage-admit/live)
 PGOPTIONS='-c check_function_bodies=off' $P -d $DB -f tests/fixtures/iq67-coverage-admit/live/security.layer4_course_link_apply_impl.def >/dev/null
-sed -n '/^create or replace function security.binding_refusal_route_v1/,/^end \$function\$;/p' supabase/migrations/20261102030000_cf247_e16_binding_validation.sql > "$TMP/brr.sql"
-sed -n '/^create or replace function security.layer4_url_key_v1/,/^\$function\$;/p' supabase/migrations/20261104120000_cf247_ops_layer4_throughput.sql > "$TMP/key.sql"
+sed -n '/^create or replace function security.binding_refusal_route_v1/,/^end \$function\$;/p' supabase/migrations-archive/20261102030000_cf247_e16_binding_validation.sql > "$TMP/brr.sql"
+sed -n '/^create or replace function security.layer4_url_key_v1/,/^\$function\$;/p' supabase/migrations-archive/20261104120000_cf247_ops_layer4_throughput.sql > "$TMP/key.sql"
 PGOPTIONS='-c check_function_bodies=off' $P -d $DB -f "$TMP/brr.sql" -f "$TMP/key.sql" >/dev/null
 $P -d $DB -f $FX/stubs.sql
 declare -A LIVE=(

@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261118080000_cf247_wave2_schemes_and_source_reconcile.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261118080000_cf247_wave2_schemes_and_source_reconcile.sql', 'utf8')
 
 test('the four schemes are registered as planned and set only on drafts whose scheme is still empty', () => {
   for (const s of ["('uk_ukvi', 'provider_registration', 'GB'", "('uk_hesa', 'course_registration', 'GB'", "('ie_ilep', 'course_registration', 'IE'", "('us_ipeds_completions', 'course_registration', 'US'"]) expect(M).toContain(s)

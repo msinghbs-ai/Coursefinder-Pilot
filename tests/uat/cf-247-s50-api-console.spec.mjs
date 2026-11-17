@@ -5,7 +5,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const mig = fs.readFileSync('supabase/migrations/20261016060000_cf247_api_console.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261016060000_cf247_api_console.sql', 'utf8')
 const zoho = fs.readFileSync('supabase/functions/zoho-api-v2/index.ts', 'utf8')
 const web = fs.readFileSync('supabase/functions/website-api-v2/index.ts', 'utf8')
 const ui = fs.readFileSync('src/ApiUsagePanel.jsx', 'utf8')

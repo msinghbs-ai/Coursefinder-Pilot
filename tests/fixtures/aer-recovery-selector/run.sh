@@ -15,14 +15,14 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 DB=${AERS_DB:-aer_recovery_selector_fixtures}
 P="psql -v ON_ERROR_STOP=1 -q -X"
-MIG=supabase/migrations/20261104580000_cf247_aer_recovery_selector.sql
+MIG=supabase/migrations-archive/20261104580000_cf247_aer_recovery_selector.sql
 FX=tests/fixtures/aer-recovery-selector
 RQ=tests/fixtures/aer-review-queue
 TF=tests/fixtures/aer-throughput
-WC=supabase/migrations/20261104170000_cf247_work_continuity.sql
-AD=supabase/migrations/20261104320000_cf247_work_continuity_adopt.sql
-HAR=supabase/migrations/20261104450000_cf247_human_assisted_recovery.sql
-LC=supabase/migrations/20261104540000_cf247_l4_action_lifecycle.sql
+WC=supabase/migrations-archive/20261104170000_cf247_work_continuity.sql
+AD=supabase/migrations-archive/20261104320000_cf247_work_continuity_adopt.sql
+HAR=supabase/migrations-archive/20261104450000_cf247_human_assisted_recovery.sql
+LC=supabase/migrations-archive/20261104540000_cf247_l4_action_lifecycle.sql
 q() { $P -d $DB -Atc "$1"; }
 md5of() { q "select md5(pg_get_functiondef('$1'::regprocedure))"; }
 after() { grep -F -- "--   $1 " $MIG | head -1 | sed 's/.*-> *\([0-9a-f]*\).*/\1/'; }
@@ -39,15 +39,15 @@ $P -d $DB -f $TF/stubs-pre.sql >/dev/null
 $P -d $DB -f $TF/stubs.sql >/dev/null
 for f in $TF/live/*.sql; do $P -d $DB -c "set check_function_bodies = off" -f "$f" >/dev/null; done
 $P -d $DB -f $TF/seed.sql >/dev/null
-$P -d $DB -1 -o /dev/null -f supabase/migrations/20261104470000_cf247_aer_throughput.sql
+$P -d $DB -1 -o /dev/null -f supabase/migrations-archive/20261104470000_cf247_aer_throughput.sql
 for i in $(seq 1 25); do q "update pipeline.layer4_item_readiness set classified_at = classified_at - interval '3 hours'; select security.layer4_readiness_tick_v1()" >/dev/null; done
 $P -d $DB -f $RQ/stubs.sql >/dev/null
-sed -n '/^create or replace function security.pipeline_list_v1/,/^\$function\$;/p' supabase/migrations/20261103140000_cf247_hidden_failures_country_config.sql | $P -d $DB >/dev/null
+sed -n '/^create or replace function security.pipeline_list_v1/,/^\$function\$;/p' supabase/migrations-archive/20261103140000_cf247_hidden_failures_country_config.sql | $P -d $DB >/dev/null
 { echo "set check_function_bodies = off;"; awk '/^-- 1 settings \(G2; Settings > Pipeline settings, section Human-assisted/,/^-- 6 the stronger-model step/' $HAR | sed '$d'
   awk '/^-- 8 AER \(lanes aer_source/,/^-- 12 metrics/' $HAR | sed '$d'
   awk '/^-- 13b AER reads held/,/^-- 14 the job/' $HAR | sed '$d'; } | $P -d $DB >/dev/null
 $P -d $DB -f $RQ/seed.sql >/dev/null
-$P -d $DB -1 -o /dev/null -f supabase/migrations/20261104530000_cf247_aer_review_queue.sql
+$P -d $DB -1 -o /dev/null -f supabase/migrations-archive/20261104530000_cf247_aer_review_queue.sql
 $P -d $DB -f $FX/stubs.sql >/dev/null
 { echo "set check_function_bodies = off;"; awk '/^-- 1 settings \(G2; Settings › Pipeline settings, section Layer 4\)/,/^-- 2 indexes/' $LC | sed '$d'
   sed -n '/^create or replace function security.l4_time_v1/,/^revoke all on function security.l4_time_v1/p' $LC

@@ -4,7 +4,7 @@
 import re, sys, os
 out = sys.argv[1]
 os.makedirs(out, exist_ok=True)
-m = open('supabase/migrations/20261109220000_cf247_provider_catalogue_filter_speed.sql').read()
+m = open('supabase/migrations-archive/20261109220000_cf247_provider_catalogue_filter_speed.sql').read()
 def func(text, head):
     i = text.index(head)
     a = text.index('$function$', i) + len('$function$')
@@ -13,7 +13,7 @@ def func(text, head):
 open(f'{out}/facts.sql', 'w').write(func(m, 'CREATE OR REPLACE FUNCTION security.provider_catalogue_facts_v1'))
 open(f'{out}/page_live.sql', 'w').write(func(m, 'CREATE OR REPLACE FUNCTION security.admin_providers_page_v3'))
 open(f'{out}/page_before.sql', 'w').write(func(m, 'CREATE OR REPLACE FUNCTION security.admin_providers_page_v3').replace('admin_providers_page_v3', 'admin_providers_page_v3_before', 1))
-a = open('supabase/migrations/20261106200000_cf247_provider_description_autonomy.sql').read()
+a = open('supabase/migrations-archive/20261106200000_cf247_provider_description_autonomy.sql').read()
 i = a.index('create or replace function public.admin_provider_description_run_v1')
 x = a.index('$function$', i) + len('$function$')
 y = a.index('$function$', x)

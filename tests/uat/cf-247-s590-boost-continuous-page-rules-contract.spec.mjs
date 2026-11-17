@@ -3,12 +3,12 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261118011000_cf247_boost_continuous_and_page_rules.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261118011000_cf247_boost_continuous_and_page_rules.sql', 'utf8')
 const code = M.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const strip = (s) => s.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const fn = (src, name) => { const i = src.indexOf(`create or replace function ${name}`); return src.slice(i, src.indexOf('end $function$;', i)) }
 const claim = fn(code, 'security.boost_extract_claim_v1')
-const oldClaim = strip(fn(fs.readFileSync('supabase/migrations/20261117235000_cf247_boost_extract.sql', 'utf8'), 'security.boost_extract_claim_v1'))
+const oldClaim = strip(fn(fs.readFileSync('supabase/migrations-archive/20261117235000_cf247_boost_extract.sql', 'utf8'), 'security.boost_extract_claim_v1'))
 
 test('all day is a matter of settings, and the squash lock starts at the freeze', () => {
   expect(code).toContain("(values ('boost.ingest_window_start_minute', to_jsonb(0)), ('boost.ingest_window_end_minute', to_jsonb(1440)),\n               ('boost.quiet_window_start_hour', to_jsonb(0)), ('boost.quiet_window_end_hour', to_jsonb(24))) v(key, value)")

@@ -2,7 +2,7 @@
 // Record: admin docs/coursefinder-design-reference-v1.4.md Decision 268; change control CF-CHG-20260915-247 (27 Oct). G2 (settings) is guarded by s32 and G3 (consumer API) by s57.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const m = fs.readFileSync('supabase/migrations/20261027003000_cf247_governed_action_aer_recovery_close.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261027003000_cf247_governed_action_aer_recovery_close.sql', 'utf8')
 const code = m.split('\n').filter(l => !/^\s*--/.test(l)).join('\n')
 const fn = code.slice(code.indexOf('create or replace function public.admin_governed_action'), code.indexOf('revoke all on function public.admin_governed_action'))
 const snap = code.slice(code.indexOf('create or replace function security.governed_aer_close_snapshot_v1'), code.indexOf('revoke all on function security.governed_aer_close_snapshot_v1'))

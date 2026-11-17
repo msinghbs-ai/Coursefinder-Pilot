@@ -9,8 +9,8 @@ set -euo pipefail
 cd "$(dirname "$0")"
 DB=${PLANLIFE_DB:-enrich_plan_lifecycle_fixtures}
 BASE=../enrich-plan-continuity
-MIG419=../../../supabase/migrations/20261103120000_cf247_enrich_plan_continuity.sql
-MIG=../../../supabase/migrations/20261103150000_cf247_plan_lifecycle.sql
+MIG419=../../../supabase/migrations-archive/20261103120000_cf247_enrich_plan_continuity.sql
+MIG=../../../supabase/migrations-archive/20261103150000_cf247_plan_lifecycle.sql
 TMPMIG=$(mktemp)
 P="psql -v ON_ERROR_STOP=1 -q -X"
 $P -d postgres -c "drop database if exists $DB" -c "create database $DB" >/dev/null 2>&1

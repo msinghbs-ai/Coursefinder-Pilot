@@ -12,7 +12,7 @@ test('Live activity retired: no page, no menu entry; old addresses redirect to T
   expect(nav).toContain("'live-activity': { page: 'jobs', tab: 'tasks' },")
   expect(nav).toContain("if (hit.view && !p.get('view')) p.set('view', hit.view)")
   // the read it used is still what Running now builds on
-  const m = fs.readFileSync('supabase/migrations/20261013012500_cf247_progress_tab.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261013012500_cf247_progress_tab.sql', 'utf8')
   expect(m).toContain('v := security.admin_live_activity_v1();')
 })
 

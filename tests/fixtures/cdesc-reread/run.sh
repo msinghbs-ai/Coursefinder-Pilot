@@ -7,7 +7,7 @@ cd "$(dirname "$0")/../../.."
 export LC_ALL=C # fixed: one byte order for sort and comm
 DB=${CRR_DB:-g_cdesc_reread}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
-M=supabase/migrations/20261112190000_cf247_cdesc_first_cycle_reread.sql
+M=supabase/migrations-archive/20261112190000_cf247_cdesc_first_cycle_reread.sql
 HELD=supabase/held/cdesc_reread_forward_recovery.sql
 F=tests/fixtures/cdesc-reread
 SIG='security.enrich_course_text_gaps_v1(text[])'; BEFORE=ddba9b553a63a9e38c49782a0b0d29c9; AFTER=d117edb4198b81a692e93af9a937110e

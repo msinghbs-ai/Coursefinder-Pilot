@@ -3,7 +3,7 @@ name: AER self-healing integration
 on:
   pull_request:
     paths:
-      - 'supabase/migrations/20261111220000_cf247_aer_self_healing_corrections.sql'
+      - 'supabase/migrations-archive/20261111220000_cf247_aer_self_healing_corrections.sql'
       - 'supabase/held/aer_self_healing_corrections_forward_recovery.sql'
       - 'tests/fixtures/aer-self-healing/**'
       - 'tests/fixtures/aer-source-recovery/stubs.sql'

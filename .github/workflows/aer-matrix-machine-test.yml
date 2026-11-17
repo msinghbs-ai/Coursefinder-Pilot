@@ -3,11 +3,11 @@ name: AER matrix machine admission integration
 on:
   pull_request:
     paths:
-      - 'supabase/migrations/20261112093700_cf247_aer_matrix_machine_admission.sql'
+      - 'supabase/migrations-archive/20261112093700_cf247_aer_matrix_machine_admission.sql'
       - 'supabase/held/aer_matrix_machine_admission_forward_recovery.sql'
       - 'tests/fixtures/aer-matrix-machine/**'
       - 'tests/fixtures/aer-qualification-first/**'
-      - 'supabase/migrations/20261112060000_cf247_aer_qualification_first.sql'
+      - 'supabase/migrations-archive/20261112060000_cf247_aer_qualification_first.sql'
       - '.github/workflows/aer-matrix-machine-test.yml'
   workflow_dispatch:
 jobs:

@@ -8,7 +8,7 @@ import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 import * as F from './support/admin-fixtures.mjs'
 
-const MIG = 'supabase/migrations/20261029070000_cf247_scholarship_relationship_fix.sql'
+const MIG = 'supabase/migrations-archive/20261029070000_cf247_scholarship_relationship_fix.sql'
 const sql = fs.readFileSync(MIG, 'utf8')
 const main = fs.readFileSync('src/mature-main.jsx', 'utf8')
 const actions = fs.readFileSync('src/ScholarshipActions.jsx', 'utf8')

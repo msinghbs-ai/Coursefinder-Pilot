@@ -15,7 +15,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../lib/migration-path.sh" 
 cd "$(dirname "$0")/../../.."
 DB=${L4G_DB:-l4_operational_groups_fixtures}
 P="psql -v ON_ERROR_STOP=1 -q -X"
-MIG=supabase/migrations/20261104590000_cf247_l4_operational_groups.sql
+MIG=supabase/migrations-archive/20261104590000_cf247_l4_operational_groups.sql
 FX=tests/fixtures/l4-operational-groups
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }
 q() { $P -d $DB -Atc "$1"; }
@@ -33,12 +33,12 @@ $P -d $DB -f tests/fixtures/course-link-simplify/stubs.sql > /dev/null 2>&1 || t
 for m in 20261104280000_cf247_l4_rule_runs_table 20261104330000_cf247_l4_rule_sfu_perf 20261104350000_cf247_l4_rule_target_scheme; do
   PGOPTIONS='-c check_function_bodies=off' $P -d $DB -1 -At -f "$(migpath "$m")" > /dev/null 2>&1 || true
 done
-M0=supabase/migrations/20261104120000_cf247_ops_layer4_throughput.sql
+M0=supabase/migrations-archive/20261104120000_cf247_ops_layer4_throughput.sql
 { for f in layer4_value_key_v1 layer4_scope_key_v1 layer4_resolution_for_v1 layer4_resolution_v1 layer4_supersession_reverse_v1; do
     sed -n "/^create or replace function security.$f(/,/^\$function\$;\|^end \$function\$;/p" $M0; done; } > "$TMP0/l4r.sql"
 PGOPTIONS='-c check_function_bodies=off' $P -d $DB -f "$TMP0/l4r.sql" > /dev/null
-PGOPTIONS='-c check_function_bodies=off' $P -d $DB -1 -At -f supabase/migrations/20261104570000_cf247_course_link_simplify.sql > /dev/null
-M8=supabase/migrations/20261104580000_cf247_aer_recovery_selector.sql
+PGOPTIONS='-c check_function_bodies=off' $P -d $DB -1 -At -f supabase/migrations-archive/20261104570000_cf247_course_link_simplify.sql > /dev/null
+M8=supabase/migrations-archive/20261104580000_cf247_aer_recovery_selector.sql
 { sed -n '/^create or replace function pg_temp.edit_once/,/^end \$f\$;/p' $M8
   sed -n "/^select pg_temp.edit_once('security.layer4_reread_repeat_v1(uuid)'/,/^  array\[1\]);/p" $M8
   sed -n "/^select pg_temp.edit_once('security.layer4_aer_recovery_detail_v1(text)'/,/^  array\[1, 1, 1, 1, 1\]);/p" $M8; } > "$TMP0/sel.sql"

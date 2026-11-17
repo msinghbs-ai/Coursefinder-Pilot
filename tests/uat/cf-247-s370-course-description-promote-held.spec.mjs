@@ -4,7 +4,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = fs.readFileSync('supabase/migrations/20261107120000_cf247_course_description_promote_held.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations-archive/20261107120000_cf247_course_description_promote_held.sql', 'utf8')
 const code = MIG.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const FX = 'tests/fixtures/course-description-promote-held'
 

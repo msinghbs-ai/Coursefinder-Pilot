@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const mig = fs.readFileSync('supabase/migrations/20261118013000_cf247_w2c_layer1_declarative_runner.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261118013000_cf247_w2c_layer1_declarative_runner.sql', 'utf8')
 const fn = fs.readFileSync('supabase/functions/layer1-declarative-runner/index.ts', 'utf8')
 const reg = JSON.parse(fs.readFileSync('.github/edge-functions.json', 'utf8'))
 

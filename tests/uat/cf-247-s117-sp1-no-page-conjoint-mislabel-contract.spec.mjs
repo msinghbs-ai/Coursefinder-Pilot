@@ -4,7 +4,7 @@
 // first, extra course domains, the AI page match widened over existing inventories, and the S4-3 mislabel fix (target_list_refused).
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const m = fs.readFileSync('supabase/migrations/20261025003000_cf247_sp1_no_page_conjoint_domains_mislabel.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261025003000_cf247_sp1_no_page_conjoint_domains_mislabel.sql', 'utf8')
 const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 
 test('no page published: first run per provider to Layer 4, 60% rule, held out of search, re-opened, never deleted', () => {

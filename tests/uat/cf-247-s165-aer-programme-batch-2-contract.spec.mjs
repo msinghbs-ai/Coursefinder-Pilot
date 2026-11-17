@@ -1,7 +1,7 @@
 // Guards: CF-247 AER programme batch 2 (Platform Admin mandate 29 Oct 2026 12:23 B2 and B3): exactly the thirteen approved sources, one governed attempt each through the Read again mechanism, refusals recorded and not retried, earlier partial items superseded and never approved; one course batch through the programme (credit-floor refusal inside the function); DP020 read once through the existing one-course mechanism; logged; nothing admitted, dropped or deleted
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const m = fs.readFileSync('supabase/migrations/20261029050000_cf247_aer_programme_batch_2.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261029050000_cf247_aer_programme_batch_2.sql', 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 
 test('the thirteen approved sources, counted; one attempt each through the Read again mechanism; a refusal recorded, not retried', () => {

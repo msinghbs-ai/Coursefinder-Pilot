@@ -4,7 +4,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const mig = fs.readFileSync('supabase/migrations/20261016100000_cf247_storage_size_daily.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261016100000_cf247_storage_size_daily.sql', 'utf8')
 
 test('daily record of database, schemas, tables and buckets; job catalogued; old table rows by setting', () => {
   expect(mig).toContain("check (kind in ('database', 'schema', 'table', 'bucket'))")
@@ -38,7 +38,7 @@ test.describe('mocked browser', () => {
 })
 
 // Platform Admin 16 Oct 2026 23:44: "Run 1,2,6,7": daily housekeeping job replaces the two job-log trims made outside git.
-const hk = fs.readFileSync('supabase/migrations/20261016110000_cf247_housekeeping_daily.sql', 'utf8')
+const hk = fs.readFileSync('supabase/migrations-archive/20261016110000_cf247_housekeeping_daily.sql', 'utf8')
 test('daily housekeeping: expired request codes and old job run records by setting; old trims switched off, not removed', () => {
   expect(hk).toContain("make_interval(days => security.pipeline_num_v1('retention.nonce_keep_days', 1)::int)")
   expect(hk).toContain("make_interval(days => security.pipeline_num_v1('retention.job_log_keep_days', 3)::int)")

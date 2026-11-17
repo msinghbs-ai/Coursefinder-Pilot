@@ -7,7 +7,7 @@ export LC_ALL=C # fixed: one byte order for sort and comm, whatever the runner's
 DB=${PDDA_DB:-g_pdesc_dd_ai}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"
-M=supabase/migrations/20261110150000_cf247_dd_provider_ai_allowance.sql
+M=supabase/migrations-archive/20261110150000_cf247_dd_provider_ai_allowance.sql
 R=supabase/held/dd_provider_ai_allowance_forward_recovery.sql
 F=tests/fixtures/pdesc-dd-ai
 DDV='security.data_delivery_v1()'; PD='security.data_delivery_pdesc_v1()'

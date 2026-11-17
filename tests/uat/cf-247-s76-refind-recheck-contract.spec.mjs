@@ -6,10 +6,10 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
-const refind = fs.readFileSync('supabase/migrations/20261019110000_cf247_refind_wave.sql', 'utf8')
-const adelaide = fs.readFileSync('supabase/migrations/20261019120000_cf247_adelaide_not_on_site_flags.sql', 'utf8')
-const recheck = fs.readFileSync('supabase/migrations/20261019130000_cf247_scholarship_recheck.sql', 'utf8')
-const reuse = fs.readFileSync('supabase/migrations/20261019140000_cf247_evidence_reuse_today.sql', 'utf8')
+const refind = fs.readFileSync('supabase/migrations-archive/20261019110000_cf247_refind_wave.sql', 'utf8')
+const adelaide = fs.readFileSync('supabase/migrations-archive/20261019120000_cf247_adelaide_not_on_site_flags.sql', 'utf8')
+const recheck = fs.readFileSync('supabase/migrations-archive/20261019130000_cf247_scholarship_recheck.sql', 'utf8')
+const reuse = fs.readFileSync('supabase/migrations-archive/20261019140000_cf247_evidence_reuse_today.sql', 'utf8')
 const worker = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 const progress = fs.readFileSync('src/Progress.jsx', 'utf8')
 
@@ -64,7 +64,7 @@ test.describe('mocked browser', () => {
 })
 
 test('then finish: a university whose held pages all have a re-check is done; the held pages stay for a person', () => {
-  const fin = fs.readFileSync('supabase/migrations/20261019150000_cf247_recheck_then_finish.sql', 'utf8')
+  const fin = fs.readFileSync('supabase/migrations-archive/20261019150000_cf247_recheck_then_finish.sql', 'utf8')
   expect(fin).toContain("not exists (select 1 from pipeline.scholarship_ai_reviews r where r.provider_id = ob.provider_id and r.status = 'pending' and coalesce(r.recheck->>'state', 'none') <> 'done')")
   expect(fin).toContain("Layer 4 › AI could not decide")
   expect(fin).not.toMatch(/scholarship_ai_apply_v1|review_decide|set status = '(admitted|refused)'/)

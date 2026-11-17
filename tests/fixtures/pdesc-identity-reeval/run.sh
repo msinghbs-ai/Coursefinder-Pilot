@@ -9,8 +9,8 @@ export LC_ALL=C # fixed: one byte order for sort and comm, whatever the runner's
 DB=${PDIR_DB:-g_pdesc_idreeval}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"
-MIG=supabase/migrations/20261109185000_cf247_pdesc_identity_reeval.sql
-PRE=supabase/migrations/20261109182000_cf247_pdesc_lease_one_pass.sql
+MIG=supabase/migrations-archive/20261109185000_cf247_pdesc_identity_reeval.sql
+PRE=supabase/migrations-archive/20261109182000_cf247_pdesc_lease_one_pass.sql
 F=tests/fixtures/pdesc-identity-reeval
 q() { psql -X -d "$DB" -Atc "$1"; }
 BASE=$(PDCC_KEEP=1 PDCC_DB=$DB bash tests/fixtures/pdesc-claim-context/run.sh 2>&1) || { echo "$BASE" | tail -15; echo "the base harness failed"; exit 1; }

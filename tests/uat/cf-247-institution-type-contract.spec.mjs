@@ -7,12 +7,12 @@ import fs from 'node:fs'
 import { readFileSync as __rf } from 'node:fs'
 const EDGE_LIST = Object.entries(JSON.parse(__rf('.github/edge-functions.json', 'utf8')).functions).map(([k, v]) => `\n[${k}]=${v}`).join('') // CF-247 Phase 3: the allow-list moved to .github/edge-functions.json
 
-const sql = fs.readFileSync('supabase/migrations/20261014060746_cf247_institution_type.sql', 'utf8')
-const putFix = fs.readFileSync('supabase/migrations/20261014063911_cf247_register_facts_put_set_based.sql', 'utf8')
-const byName = fs.readFileSync('supabase/migrations/20261014065115_cf247_register_facts_match_by_name.sql', 'utf8')
-const live = fs.readFileSync('supabase/migrations/20261014064736_cf247_institution_type_sources_live.sql', 'utf8')
-const byName3 = fs.readFileSync('supabase/migrations/20261014070327_cf247_register_facts_match_by_name_v3.sql', 'utf8')
-const nzCode = fs.readFileSync('supabase/migrations/20261014070622_cf247_nzqa_code_from_search_number.sql', 'utf8')
+const sql = fs.readFileSync('supabase/migrations-archive/20261014060746_cf247_institution_type.sql', 'utf8')
+const putFix = fs.readFileSync('supabase/migrations-archive/20261014063911_cf247_register_facts_put_set_based.sql', 'utf8')
+const byName = fs.readFileSync('supabase/migrations-archive/20261014065115_cf247_register_facts_match_by_name.sql', 'utf8')
+const live = fs.readFileSync('supabase/migrations-archive/20261014064736_cf247_institution_type_sources_live.sql', 'utf8')
+const byName3 = fs.readFileSync('supabase/migrations-archive/20261014070327_cf247_register_facts_match_by_name_v3.sql', 'utf8')
+const nzCode = fs.readFileSync('supabase/migrations-archive/20261014070622_cf247_nzqa_code_from_search_number.sql', 'utf8')
 const worker = fs.readFileSync('supabase/functions/layer1-provider-facts/index.ts', 'utf8')
 const control = fs.readFileSync('supabase/functions/layer1-operations-control/index.ts', 'utf8')
 const scheduled = fs.readFileSync('supabase/functions/layer1-operations-scheduled/index.ts', 'utf8')

@@ -10,8 +10,8 @@ set -euo pipefail
 cd "$(dirname "$0")"
 ROOT=../../..
 DB=${FEE_LANE_DB:-g_fees_lane_fixtures}
-G=$ROOT/supabase/migrations/20261108110000_cf247_fee_plausibility_guard.sql
-M=$ROOT/supabase/migrations/20261108111000_cf247_fee_decision_memory.sql
+G=$ROOT/supabase/migrations-archive/20261108110000_cf247_fee_plausibility_guard.sql
+M=$ROOT/supabase/migrations-archive/20261108111000_cf247_fee_decision_memory.sql
 P="psql -v ON_ERROR_STOP=1 -q -X"
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }
 q() { $P -d $DB -Atc "$1"; }

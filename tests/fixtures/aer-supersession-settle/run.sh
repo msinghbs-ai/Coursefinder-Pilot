@@ -11,8 +11,8 @@ DB=${ASS_DB:-g_aer_supersession_settle}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"
 H=tests/fixtures/aer-self-healing; B=tests/fixtures/aer-source-recovery; F=tests/fixtures/aer-supersession-settle
-M0=supabase/migrations/20261111220000_cf247_aer_self_healing_corrections.sql
-M=supabase/migrations/20261112123700_cf247_aer_supersession_settle.sql; R=supabase/held/aer_supersession_settle_forward_recovery.sql
+M0=supabase/migrations-archive/20261111220000_cf247_aer_self_healing_corrections.sql
+M=supabase/migrations-archive/20261112123700_cf247_aer_supersession_settle.sql; R=supabase/held/aer_supersession_settle_forward_recovery.sql
 TICK='security.aer_schedule_tick_v1(boolean)'; T_B=b96163772b72f02b6c9956b1a263224a; T_A=${ASS_AFTER:-800af9161234c24387bff6a74d6acb99}
 q() { psql -X -d "$DB" -Atc "$1"; }
 trap '[ -n "${ASS_KEEP:-}" ] || dropdb --if-exists '$DB' >/dev/null 2>&1' EXIT

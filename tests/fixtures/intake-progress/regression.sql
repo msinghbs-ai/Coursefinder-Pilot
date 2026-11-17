@@ -80,7 +80,7 @@ select md5(string_agg(row(t.key, t.chain, t.step, t.input_eligible, t.input_proc
   from pipeline.progress_transitions t where t.chain in ('scholarship', 'aer') \gset
 rollback to savepoint s1;
 -- the change
-\i supabase/migrations/20261106400000_cf247_intake_automation_progress.sql
+\i supabase/migrations-archive/20261106400000_cf247_intake_automation_progress.sql
 select string_agg(k || '=' || (security.progress_measure_v1(k, now() - interval '24 hours') - case when k = 'first_run_verify' then 'eligible' else '' end)::text, '|' order by k) as m_after,
        security.progress_measure_v1('first_run_verify', now() - interval '24 hours')->>'eligible' as frv_after
   from unnest(array['sch_classification', 'sch_source_recovery', 'sch_listing_traversal', 'sch_candidate_matching', 'sch_reading', 'sch_eligibility', 'sch_layer4',

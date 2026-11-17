@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { AER_V2_SCHEMA, aerFlat, aerNumbers, aerV2Answer, aerV2Refs, aerV2Request, aerV2Sha256, aerV2User, aerV2Verify } from '../../supabase/functions/coverage-sweep/aer-v2.ts'
 
-const MIG = 'supabase/migrations/20261113103100_cf247_aer_v2_shadow.sql'
+const MIG = 'supabase/migrations-archive/20261113103100_cf247_aer_v2_shadow.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const mod = fs.readFileSync('supabase/functions/coverage-sweep/aer-v2.ts', 'utf8')
@@ -150,7 +150,7 @@ test('no admission: neither the migration nor the module or the worker mode writ
 })
 
 test('the sample reads courses with a Layer 4 decision alongside the priority providers, one for one, so agreement is measured from the first runs', () => {
-  const m = fs.readFileSync('supabase/migrations/20261113143100_cf247_aer_v2_shadow_labelled_sample.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261113143100_cf247_aer_v2_shadow_labelled_sample.sql', 'utf8')
   expect(m).toContain("'145904dd4d74e23314c7ca57198b68d3'")
   expect(m).toContain('lab as materialized (select distinct l.course_id from pipeline.aer_labelled_rows_v1 l where l.course_id is not null)')
   expect(m).toMatch(/row_number\(\) over \(order by \(ranked\.lane = 3\), ranked\.lane_rank, ranked\.lane\) sample_rank/)

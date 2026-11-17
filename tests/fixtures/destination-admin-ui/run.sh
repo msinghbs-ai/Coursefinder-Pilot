@@ -12,14 +12,14 @@ DB=${DAU_DB:-g_destination_admin_ui}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"
 F=tests/fixtures/destination-admin-ui
-M=supabase/migrations/20261117131500_cf247_rm0f_destination_admin_ui.sql
+M=supabase/migrations-archive/20261117131500_cf247_rm0f_destination_admin_ui.sql
 trap '[ -n "${DAU_KEEP:-}" ] || dropdb --if-exists '$DB' >/dev/null 2>&1' EXIT
 dropdb --if-exists $DB >/dev/null 2>&1; createdb $DB
 psql -X -q -d postgres -c "do \$\$ begin if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated; end if; if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon; end if; if not exists (select 1 from pg_roles where rolname = 'service_role') then create role service_role; end if; end \$\$"
 $P -f tests/fixtures/destination-editions/stubs.sql -f tests/fixtures/destination-schema-pack/stubs.sql
-$P -1 -f supabase/migrations/20261115190000_api_v3_additive_schema.sql >/dev/null
-$P -1 -f supabase/migrations/20261115230000_cf247_destination_importer_guard.sql >/dev/null
-$P -1 -f supabase/migrations/20261117040000_cf247_rm_destination_schema_pack.sql >/dev/null
+$P -1 -f supabase/migrations-archive/20261115190000_api_v3_additive_schema.sql >/dev/null
+$P -1 -f supabase/migrations-archive/20261115230000_cf247_destination_importer_guard.sql >/dev/null
+$P -1 -f supabase/migrations-archive/20261117040000_cf247_rm_destination_schema_pack.sql >/dev/null
 $P -f $F/stubs.sql
 $P -1 -f $M >/dev/null; $P -1 -f $M >/dev/null
 echo "migration: applied twice without error (post-check included)"

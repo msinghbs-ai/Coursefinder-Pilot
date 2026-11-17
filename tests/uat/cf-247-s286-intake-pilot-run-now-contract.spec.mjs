@@ -7,8 +7,8 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261104610000_cf247_intake_pilot_run_now.sql', 'utf8')
-const scope = fs.readFileSync('supabase/migrations/20261104630000_cf247_intake_pilot_top_au_universities.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261104610000_cf247_intake_pilot_run_now.sql', 'utf8')
+const scope = fs.readFileSync('supabase/migrations-archive/20261104630000_cf247_intake_pilot_top_au_universities.sql', 'utf8')
 const FX = 'tests/fixtures/intake-pilot-run-now'
 const run = fs.readFileSync(`${FX}/run.sh`, 'utf8')
 const fixtures = fs.readFileSync(`${FX}/fixtures.sql`, 'utf8') + fs.readFileSync(`${FX}/fixtures2.sql`, 'utf8')
@@ -77,7 +77,7 @@ test('20:53: the cohort is picked only from the top Australian universities by a
 })
 
 test('hotfix 20261104640000: the Run Now task outcome uses production outcome codes (admin_jobs_outcome_fkey)', () => {
-  const h = fs.readFileSync('supabase/migrations/20261104640000_cf247_run_now_outcome_code.sql', 'utf8')
+  const h = fs.readFileSync('supabase/migrations-archive/20261104640000_cf247_run_now_outcome_code.sql', 'utf8')
   expect(h).toContain("'cabacd4094ed138a57f6b102183eeacc'")
   for (const c of ['succeeded_with_result', 'succeeded_no_movement', 'failed_retryable', 'blocked_policy']) expect(h).toContain(`'${c}'`)
   expect(h).toMatch(/^-- Replaces: security\.job_run_now_v1/m)

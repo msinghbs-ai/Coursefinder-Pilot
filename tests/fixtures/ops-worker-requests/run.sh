@@ -9,11 +9,11 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 DB=${OWR_DB:-ops_worker_requests_fixtures}
-MIG=../../../supabase/migrations/20261104110000_cf247_ops_worker_requests.sql
-MA=../../../supabase/migrations/20261104010000_cf247_ops_controller.sql
-MD=../../../supabase/migrations/20261104020000_cf247_ops_job_lifecycle.sql
-MA2=../../../supabase/migrations/20261104100000_cf247_ops_reopen_rule_ai_contract.sql
-if [ -f "$MA2" ]; then A2SRC=$(cat "$MA2"); else A2SRC=$(git -C ../../.. show 0a1f82eeb37ea8d05ced8bf93a7ed8c20b9511c6:supabase/migrations/20261104100000_cf247_ops_reopen_rule_ai_contract.sql); fi
+MIG=../../../supabase/migrations-archive/20261104110000_cf247_ops_worker_requests.sql
+MA=../../../supabase/migrations-archive/20261104010000_cf247_ops_controller.sql
+MD=../../../supabase/migrations-archive/20261104020000_cf247_ops_job_lifecycle.sql
+MA2=../../../supabase/migrations-archive/20261104100000_cf247_ops_reopen_rule_ai_contract.sql
+if [ -f "$MA2" ]; then A2SRC=$(cat "$MA2"); else A2SRC=$(git -C ../../.. show 0a1f82eeb37ea8d05ced8bf93a7ed8c20b9511c6:supabase/migrations-archive/20261104100000_cf247_ops_reopen_rule_ai_contract.sql); fi
 P="psql -v ON_ERROR_STOP=1 -q -X"
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }
 md5of() { $P -d $DB -Atc "select md5(pg_get_functiondef('$1'::regprocedure))"; }

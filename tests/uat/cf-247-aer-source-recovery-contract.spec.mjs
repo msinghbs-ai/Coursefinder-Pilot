@@ -2,7 +2,7 @@
 import fs from 'node:fs'
 import { test, expect } from '@playwright/test'
 
-const M = fs.readFileSync('supabase/migrations/20261110160000_cf247_aer_source_recovery.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261110160000_cf247_aer_source_recovery.sql', 'utf8')
 const R = fs.readFileSync('supabase/held/aer_source_recovery_forward_recovery.sql', 'utf8')
 const UI = fs.readFileSync('src/DataDelivery.jsx', 'utf8')
 const WF = fs.readFileSync('.github/workflows/aer-source-recovery-test.yml', 'utf8')
@@ -83,7 +83,7 @@ test('the existing panel draws the new key; a missing key is Not measured; nothi
 
 test('CI runs the fixture and this contract on every change to the files', () => {
   expect(WF).toContain('run: bash tests/fixtures/aer-source-recovery/run.sh')
-  expect(WF).toContain('supabase/migrations/20261110160000_cf247_aer_source_recovery.sql')
+  expect(WF).toContain('supabase/migrations-archive/20261110160000_cf247_aer_source_recovery.sql')
   expect(WF).toContain('supabase/held/aer_source_recovery_forward_recovery.sql')
   expect(RUN).toContain('dropdb')
   expect(RUN).toMatch(/case "\$DB" in g_\*\)/)   // a scratch database only, never a Supabase project

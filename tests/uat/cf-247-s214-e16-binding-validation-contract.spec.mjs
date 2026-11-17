@@ -9,7 +9,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = 'supabase/migrations/20261102030000_cf247_e16_binding_validation.sql'
+const MIG = 'supabase/migrations-archive/20261102030000_cf247_e16_binding_validation.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const FX = 'tests/fixtures/e16-binding-validation'

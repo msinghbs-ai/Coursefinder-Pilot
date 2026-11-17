@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const sql = fs.readFileSync('supabase/migrations/20261108010000_cf247_entry_rows_range_19.sql', 'utf8')
+const sql = fs.readFileSync('supabase/migrations-archive/20261108010000_cf247_entry_rows_range_19.sql', 'utf8')
 const body = sql.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 
 test('the range maximum becomes 19, guarded on the live values (value 6, maximum 10), and the global value is not changed', () => {

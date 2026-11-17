@@ -8,7 +8,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import crypto from 'node:crypto'
 
-const MIG = 'supabase/migrations/20261104390000_cf247_sch_coverage_recovery.sql'
+const MIG = 'supabase/migrations-archive/20261104390000_cf247_sch_coverage_recovery.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const FX = 'tests/fixtures/sch-coverage-recovery'
 const run = fs.readFileSync(`${FX}/run.sh`, 'utf8')
@@ -31,7 +31,7 @@ test('three live definitions are edited, md5-guarded both ways, from the live te
   expect(md5(fs.readFileSync(`${FX}/live/security.scholarship_university.def`, 'utf8'))).toBe('00ca2485d894ae4542b643a112c2b764')
   expect(md5(fs.readFileSync(`${FX}/live/public.svc_scholarship_read_next.def`, 'utf8'))).toBe('b30f59a20dff4c874c9fbed2659586c7')
   // the coverage reader is loaded from its own migration text (live md5 cf9a3828... when replayed)
-  const src = fs.readFileSync('supabase/migrations/20261104040000_cf247_ops_c_scholarship_aer_coverage.sql', 'utf8')
+  const src = fs.readFileSync('supabase/migrations-archive/20261104040000_cf247_ops_c_scholarship_aer_coverage.sql', 'utf8')
   expect(src).toContain(fs.readFileSync(`${FX}/live/security.scholarship_coverage_v1.def`, 'utf8').trimEnd())
   expect(m).toContain("md5(pg_get_functiondef('security.work_item_report_v1(text,text,text,text,jsonb)'::regprocedure)) <> '6a15318c0ecd6644b32f1883463c542e'")
 })
@@ -80,7 +80,7 @@ test('the fixture reproduces the defects first and asserts every case after', ()
 
 // Integration Controller, 4 Nov 2026 (v2.15.460 production defect): job scholarship-coverage-classify failed its first run because a listing lists
 // the same address twice, so one insert met the same (provider_id, item_key) twice.
-const FIX = fs.readFileSync('supabase/migrations/20261104430000_cf247_sch_coverage_classify_fix.sql', 'utf8')
+const FIX = fs.readFileSync('supabase/migrations-archive/20261104430000_cf247_sch_coverage_classify_fix.sql', 'utf8')
 test('classification fix: one row per case with a deterministic winner; a failed report write never aborts the run', () => {
   expect(FIX).toContain("select pg_temp.edit_once('security.scholarship_coverage_classify_v1(uuid[])', 'a268ce816990d71ef545dbdc0ae28a5e', 'c072494c5e0082e2a8b58a06dfd94a00'")
   expect(FIX).toContain("md5(pg_get_functiondef('security.scholarship_coverage_items_v1(uuid[])'::regprocedure)) <> 'd3dfacf0e70fd33162eab7a57aca72e4'")

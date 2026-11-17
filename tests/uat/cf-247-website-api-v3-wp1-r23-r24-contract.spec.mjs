@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261113190000_cf247_website_api_v3_r23_r24.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261113190000_cf247_website_api_v3_r23_r24.sql', 'utf8')
 
 test('R23: provider campuses one per campus with campus_id, campus_name and course_count, on providers, provider and sync', () => {
   expect(m).toContain("'campus_id', k.stable_key, 'campus_name', nullif(btrim(k.name), ''), 'course_count', coalesce(n.n, 0))")
