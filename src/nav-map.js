@@ -162,7 +162,11 @@ export const PAGES = {
   // v2.15.301 (Platform Admin, 20 Oct 2026, "Retire the page"): Data model retired (read only, no use); the attribute data stays.
   // Its address opens Coverage & completeness › Attributes. v2.15.219 Storage & retention is Platform health › Storage & retention.
 
-  users: { label: 'Users & roles', slug: 'users-roles', icon: 'users', min: 6, subtitle: 'Who can sign in and what each person may do.' },
+  // v2.16.20 (Platform Admin 17 Nov 2026 14:40): Links & Email Templates is a tab beside the directory (the page had no tabs before)
+  users: { label: 'Users & roles', slug: 'users-roles', icon: 'users', min: 6, subtitle: 'Who can sign in and what each person may do.', tabs: [
+    { key: 'directory', label: 'Users & roles', min: 6 },
+    { key: 'templates', label: 'Links & Email Templates', min: 6 },
+  ] },
   contacts: { label: 'Provider contacts', slug: 'provider-contacts', icon: 'users', min: 1, subtitle: 'International recruitment contacts for each provider.' },
   // v2.15.136 (Decision 209): the operator and Platform Admin walkthrough, reviewed every release.
   // v2.15.257 (Platform Admin, 12 Oct 2026): Guides: the Platform guide and the two SOPs (Platform Admin, Operator), versioned

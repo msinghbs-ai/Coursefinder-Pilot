@@ -34,4 +34,9 @@ export const accessApi = {
   setDisabled: (userId, disabled) => invoke({ action: disabled ? 'disable' : 'enable', user_id: userId }),
   // 16 Oct 2026: Platform Admin only; Platform Admins, your own account and the system account cannot be deleted (checked in the database)
   deleteUser: (userId) => invoke({ action: 'delete', user_id: userId }),
+  // v2.16.20 (Platform Admin 17 Nov 2026 14:40): Users & roles › Links & Email Templates. Reading and saving are database functions (the save
+  // takes the reason); these three ask the edge function where links return to, to copy what is saved to Supabase Auth, and to send a test.
+  templatesStatus: () => invoke({ action: 'auth_templates_status' }),
+  templatesSync: () => invoke({ action: 'auth_templates_sync' }),
+  templateTest: (template, to = '') => invoke({ action: 'auth_template_test', template, to: to || undefined }),
 }

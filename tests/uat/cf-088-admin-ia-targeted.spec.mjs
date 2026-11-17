@@ -21,7 +21,7 @@ test.describe('CF-088 M2.4.5 Administration IA hardening @targeted',()=>{
     for(const k of ["'overview'","'sources-imports'","'layer1-sources'","'layer2-providers'","'provider-assets'","'layer2-sources'","'onboarding'","'pim'","'users-roles'","'environment-migration'","'platform'"])expect(nav).toContain(k+':')
     expect(nav).toContain("'attributes': { page: 'coverage', tab: 'attributes' }") // v2.15.301: Data model retired
     expect(nav).toContain("'settings': { page: 'migration' }") // v2.15.301: Capacity is on the Go-live checklist
-    expect(main).toContain("case'users':return <AccessRolesEmbedded actorId={actorId}/>")
+    expect(main).toContain("return <AccessRolesEmbedded actorId={actorId}/>")
     expect(main).not.toContain("if(key==='users-roles'){location.hash='#users-roles'")
     expect(access).toContain("export function AccessRolesEmbedded")
     expect(index).not.toContain('id="access-roles-root"')

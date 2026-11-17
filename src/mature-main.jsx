@@ -102,6 +102,7 @@ const Layer2ProviderConfig=lazyPage(()=>import('./layer2-provider-entry'),'Conso
 const PlatformMaturity=lazyPage(()=>import('./platform-maturity-entry'))
 const EnvironmentMigrationWorkspace=lazyPage(()=>import('./EnvironmentMigrationWorkspace'))
 const AccessRolesEmbedded=lazyPage(()=>import('./access-roles-entry'),'AccessRolesEmbedded')
+const AuthEmailTemplates=lazyPage(()=>import('./AuthEmailTemplates'))
 const JobsWorkspace=lazyPage(()=>import('./pipeline-ops-entry'),'JobsWorkspace')
 const SourcesWorkspace=lazyPage(()=>import('./pipeline-ops-entry'),'SourcesWorkspace')
 const Toolsets=lazyPage(()=>import('./Toolsets'))
@@ -454,7 +455,8 @@ function Page({pageKey,tab,requestedTab='',routeParams,rank,actorId,onError,navi
       case'services':return tab==='ai'?<AiModelsServices onError={err} focusService={routeParams?.get?.('service')||''}/>:rank>=4?<ServicesLimits rank={rank} err={err} routeParams={routeParams}/>:null
       case'migration':return <div className="m-page-stack"><EnvironmentMigrationWorkspace rank={rank} onError={onError} view="migration"/><PlatformMaturity rank={rank} onError={onError} view="golive"/>{/* v2.15.301: Capacity (was Platform health › Capacity) */}<section data-golive-capacity><PlatformMaturity rank={rank} onError={onError} view="capacity"/></section>{/* v2.15.228: the Reset database control was retired (Platform Admin, 9 Oct 2026) */}</div>
       // v2.15.301 (Platform Admin, 20 Oct 2026): Data model retired (its address opens Coverage › Attributes); Storage & retention is a Platform health tab
-      case'users':return <AccessRolesEmbedded actorId={actorId}/>
+      case'users':if(tab==='templates')return <AuthEmailTemplates rank={rank} onError={onError}/> // v2.16.20 Links & Email Templates
+        return <AccessRolesEmbedded actorId={actorId}/>
       case'contacts':return <ProviderContactsWorkspace rank={rank} onError={onError} navigate={navigate} initialProviderId={routeParams?.get?.('provider_id')||''}/>
       default:return <EmptyState icon={AlertTriangle} title="Page not found" text="This address does not match a page. Use the menu to continue."/>
     }

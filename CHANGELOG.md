@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.442 — 17 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.20** (Platform Admin 17 Nov 2026 14:40, S1-RM-Design lane). Migration 20261117152700_cf247_admin_auth_email_templates: `admin_auth_template_settings_read()` and `admin_auth_template_settings_save(payload, reason)` (Platform Admin, rank 6; the save writes `pipeline.admin_control_events`), stored as one row in `pipeline.environment_settings`; service functions for `admin-user-management`. Edge function `admin-user-management`: actions `auth_templates_status`, `auth_templates_sync` (Supabase Management API, only when secret `SB_MANAGEMENT_TOKEN` is set) and `auth_template_test`; a reset refreshes the account's role and guide link first. UI: Users & roles gains tabs Users & roles and Links & Email Templates (54 tabs on 21 pages). G3 untouched.
+
 ## 0.1.441 — 17 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.19** (Platform Admin 17 Nov 2026 13:12, S1-RM-Design lane: Admin UI fitout, RM0F; decisions G-2, G-3, G-5). Migration 20261117131500_cf247_rm0f_destination_admin_ui: Admin wrappers `admin_destination_edition_set_terms`, `admin_destination_edition_publish`, `admin_destination_postcode_resolve`; overview and review lists extended (editions, postcodes with candidates, rule applicability and stored evidence); `destination.study_rules.evidence_id`; Layer 4 Inbox kind `campus_locality` as a kind hook; `campuses[].locality` on `website_v3_provider_item` and `zoho_v3_provider`; reads `admin_course_destination_read` and `admin_provider_destination_read`; `svc_admin_access_log_event` accepts `password_reset_sent`. Frontend: `src/DestinationData.jsx` (page `#destination-data`, five tabs), `src/ProviderDestination.jsx`, Course Recognition card, Data delivery › Destination loads. Edge `admin-user-management` records the password reset. No data loaded; no loader or importer changed; v2 APIs unchanged.
