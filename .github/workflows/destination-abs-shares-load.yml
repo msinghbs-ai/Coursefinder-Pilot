@@ -42,9 +42,9 @@ jobs:
           ls -l *.xlsx
       - name: Compute the shares
         run: |
-          python3 -m pip install --quiet openpyxl==3.1.5
+          python3 -m venv "$RUNNER_TEMP/venv" && "$RUNNER_TEMP/venv/bin/pip" install --quiet openpyxl==3.1.5
           cd "$RUNNER_TEMP/abs"
-          python3 -I "$GITHUB_WORKSPACE/scripts/destination/abs_postcode_sua_shares.py" MB_2021_AUST.xlsx POA_2021_AUST.xlsx SUA_2021_AUST.xlsx shares.json
+          "$RUNNER_TEMP/venv/bin/python" -I "$GITHUB_WORKSPACE/scripts/destination/abs_postcode_sua_shares.py" MB_2021_AUST.xlsx POA_2021_AUST.xlsx SUA_2021_AUST.xlsx shares.json
       - name: Load the shares
         run: |
           cd "$RUNNER_TEMP/abs"
