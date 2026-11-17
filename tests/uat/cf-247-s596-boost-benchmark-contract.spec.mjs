@@ -43,13 +43,13 @@ test('results are closed, cost reaches the ledger, and nothing is dropped', () =
 })
 
 test('the worker asks each candidate directly, with the extraction request and check, and writes only benchmark rows', () => {
-  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.11"')
+  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.12"')
   expect(mode).toContain('const route = await rpc("svc_boost_benchmark_route_v1", {});')
   expect(mode).toContain('const candidates = new Set<string>((Array.isArray(route?.models) ? route.models : []).map((m: any) => String(m?.model_identifier || "")).filter(Boolean));')
   expect(mode).toContain('if (!candidates.has(model)) {')
   expect((mode.match(/await cascadeFetch\(fetch, \{ service: "boost_extract_benchmark" \}, "https:\/\/openrouter\.ai\/api\/v1\/chat\/completions"/g) || []).length).toBe(1)
   expect(mode).toContain('body: JSON.stringify(boostStudyLoadRequest(model, String(pg.title || ""), sec.text, maxTokens))')
-  expect(mode).toContain('const v = verifyStudyLoad(ra.a, pageFlat);')
+  expect(mode).toContain('const v = verifyStudyLoad(ra.a, pageFlat, page);')
   expect(mode).toContain('!String(out.model).startsWith(model) ? `answered by ${out.model}, not the model asked`')
   expect(mode).toContain('await rpc("svc_boost_benchmark_done", { p_items: done });')
   expect(mode).not.toMatch(/staging-boost|svc_boost_inbound|svc_boost_promote|svc_boost_extract_|boost_model_qualifications|catalogue\./)
