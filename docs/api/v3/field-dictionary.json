@@ -16748,6 +16748,1200 @@
    "data_type": "string",
    "is_nullable": true,
    "description": "CSV column (text): Linked published scholarships."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "api_version",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The API and version that answered: website-v3 or zoho-v3."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "request_id",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Identifier of this call, for support."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "page",
+   "data_type": "integer",
+   "is_nullable": false,
+   "description": "The page returned."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "page_size",
+   "data_type": "integer",
+   "is_nullable": false,
+   "description": "Rows of each kind per page; capped by the platform."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "filters",
+   "data_type": "object",
+   "is_nullable": false,
+   "description": "The filters applied: country_code, section, postcode, locality_id."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "totals",
+   "data_type": "object",
+   "is_nullable": false,
+   "description": "Rows available of each kind for these filters."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "totals.localities",
+   "data_type": "integer",
+   "is_nullable": false,
+   "description": "Localities available."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "totals.study_rules",
+   "data_type": "integer",
+   "is_nullable": false,
+   "description": "Study rules available."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "totals.career_outcomes",
+   "data_type": "integer",
+   "is_nullable": false,
+   "description": "Career outcomes available."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "localities",
+   "data_type": "array<object>",
+   "is_nullable": false,
+   "description": "Approved localities (for example an ABS Significant Urban Area). Empty until data is loaded and approved."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "localities[].locality_id",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Stable identifier of the locality."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "localities[].country_code",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "ISO 3166-1 alpha-2 country code."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "localities[].name",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Name of the locality as the source publishes it."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "localities[].geography_type",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The official geography the locality belongs to, for example SUA."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "localities[].geography_code",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The source code of the locality in that geography."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "localities[].boundary_vintage",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The boundary edition the locality is drawn on, for example ASGS_2021_ED3."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "localities[].dataset_edition",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The dataset edition the locality was loaded from."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "localities[].attribution",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Attribution to show with the locality and its figures."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "localities[].metrics",
+   "data_type": "array<object>",
+   "is_nullable": false,
+   "description": "Approved figures for the locality: population, climate and living cost."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "localities[].metrics[].category",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "population, climate or living_cost."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "localities[].metrics[].key",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The measure, for example erp_persons."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "localities[].metrics[].value",
+   "data_type": "number",
+   "is_nullable": false,
+   "description": "The figure, in its native unit."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "localities[].metrics[].unit",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Unit of the figure."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "localities[].metrics[].currency_code",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "ISO 4217 currency of a money figure; null otherwise."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "localities[].metrics[].reference_period",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The date or period the figure refers to."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "localities[].metrics[].dataset_edition",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The dataset edition the figure comes from."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "localities[].metrics[].source_url",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The official page of the figure."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "localities[].metrics[].attribution",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Attribution to show beside the figure."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "study_rules",
+   "data_type": "array<object>",
+   "is_nullable": false,
+   "description": "Approved study rules of the published edition that are in effect today. Empty until rules are loaded and approved."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "study_rules[].rule_id",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Stable identifier of the rule."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "study_rules[].country_code",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "ISO 3166-1 alpha-2 country code."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "study_rules[].state_code",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "State or province the rule is limited to; null for a national rule."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "study_rules[].rule_category",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "application_route, visa_funds, work_rights, post_study_work, visa_fee or processing_time; null for a visa summary row."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "study_rules[].applicant_scope",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Who the rule applies to, as the source states it."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "study_rules[].title",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Short title of the rule."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "study_rules[].summary",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Plain summary of the rule."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "study_rules[].numeric_threshold",
+   "data_type": "number",
+   "is_nullable": true,
+   "description": "The amount or number the rule sets, when it sets one."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "study_rules[].currency_code",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "ISO 4217 currency of the threshold; null otherwise."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "study_rules[].effective_from",
+   "data_type": "date",
+   "is_nullable": true,
+   "description": "First day the rule applies."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "study_rules[].effective_to",
+   "data_type": "date",
+   "is_nullable": true,
+   "description": "Last day the rule applies; null when open."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "study_rules[].visa",
+   "data_type": "object",
+   "is_nullable": true,
+   "description": "Visa summary (subclass, name, fee, funds, work hours, post-study work, processing times); null for a rule that is not a visa row."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "study_rules[].source_url",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The official page of the rule."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "study_rules[].quote_on_page",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The words on the page the rule rests on."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "study_rules[].evidence_date",
+   "data_type": "date",
+   "is_nullable": true,
+   "description": "The day the page was read."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "study_rules[].edition",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Label of the published edition."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "study_rules[].attribution",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Attribution to show with the rule."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "study_rules[].applicability",
+   "data_type": "array<object>",
+   "is_nullable": false,
+   "description": "Where the rule is proven to apply or is excluded."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "study_rules[].applicability[].entity_type",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "country, state, locality, provider or course."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "study_rules[].applicability[].entity_id",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Identifier of the entity; null for a state."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "study_rules[].applicability[].entity_code",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Code of the entity, for example a state code."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "study_rules[].applicability[].status",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "proven or excluded."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "study_rules[].applicability[].evidence_url",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The page that shows it."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "study_rules[].applicability[].quote_on_page",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The words on that page."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "study_rules[].applicability[].verified_at",
+   "data_type": "timestamptz",
+   "is_nullable": false,
+   "description": "When it was verified."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "career_outcomes",
+   "data_type": "array<object>",
+   "is_nullable": false,
+   "description": "Approved occupation outcomes of the published edition. Empty until an edition is loaded and approved."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "career_outcomes[].outcome_id",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Stable identifier of the outcome row."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "career_outcomes[].country_code",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "ISO 3166-1 alpha-2 country code."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "career_outcomes[].locality_id",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Locality the figure is for; null for a national figure."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "career_outcomes[].geography_level",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The area the figure is for: national, state (state_code is set) or locality (locality_id is set).",
+   "allowed_values": [
+    "national",
+    "state",
+    "locality"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "career_outcomes[].state_code",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "State or territory code (for example NSW) when geography_level is state; otherwise null."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "career_outcomes[].occupation_scheme",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "ANZSCO, NOC or SOC (required since G-1, 17 Nov 2026)."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "career_outcomes[].occupation_code",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Occupation code in its native scheme."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "career_outcomes[].occupation_title",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Occupation title as the source publishes it."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "career_outcomes[].median_annual_earnings",
+   "data_type": "number",
+   "is_nullable": true,
+   "description": "Median annual earnings; null when the source does not publish an annual figure."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "career_outcomes[].median_earnings",
+   "data_type": "number",
+   "is_nullable": true,
+   "description": "Median earnings for the period in earnings_period."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "career_outcomes[].earnings_period",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "annual, weekly or hourly."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "career_outcomes[].currency_code",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "ISO 4217 currency of the earnings."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "career_outcomes[].demand_rating",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The source outlook or demand rating."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "career_outcomes[].skill_shortage_status",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "national_shortage, regional_shortage, no_shortage or unknown."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "career_outcomes[].employment_rate_pct",
+   "data_type": "number",
+   "is_nullable": true,
+   "description": "Employment rate, per cent."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "career_outcomes[].reference_period",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The period the figures refer to."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "career_outcomes[].dataset_edition",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The dataset edition the figures come from."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "career_outcomes[].source_url",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The official page of the figures."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "career_outcomes[].attribution",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Attribution to show with the figures."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "api_version",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The API and version that answered: website-v3 or zoho-v3."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "request_id",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Identifier of this call, for support."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "page",
+   "data_type": "integer",
+   "is_nullable": false,
+   "description": "The page returned."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "page_size",
+   "data_type": "integer",
+   "is_nullable": false,
+   "description": "Rows of each kind per page; capped by the platform."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "filters",
+   "data_type": "object",
+   "is_nullable": false,
+   "description": "The filters applied: country_code, section, postcode, locality_id."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "totals",
+   "data_type": "object",
+   "is_nullable": false,
+   "description": "Rows available of each kind for these filters."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "totals.localities",
+   "data_type": "integer",
+   "is_nullable": false,
+   "description": "Localities available."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "totals.study_rules",
+   "data_type": "integer",
+   "is_nullable": false,
+   "description": "Study rules available."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "totals.career_outcomes",
+   "data_type": "integer",
+   "is_nullable": false,
+   "description": "Career outcomes available."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "localities",
+   "data_type": "array<object>",
+   "is_nullable": false,
+   "description": "Approved localities (for example an ABS Significant Urban Area). Empty until data is loaded and approved."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "localities[].locality_id",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Stable identifier of the locality."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "localities[].country_code",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "ISO 3166-1 alpha-2 country code."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "localities[].name",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Name of the locality as the source publishes it."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "localities[].geography_type",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The official geography the locality belongs to, for example SUA."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "localities[].geography_code",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The source code of the locality in that geography."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "localities[].boundary_vintage",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The boundary edition the locality is drawn on, for example ASGS_2021_ED3."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "localities[].dataset_edition",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The dataset edition the locality was loaded from."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "localities[].attribution",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Attribution to show with the locality and its figures."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "localities[].metrics",
+   "data_type": "array<object>",
+   "is_nullable": false,
+   "description": "Approved figures for the locality: population, climate and living cost."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "localities[].metrics[].category",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "population, climate or living_cost."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "localities[].metrics[].key",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The measure, for example erp_persons."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "localities[].metrics[].value",
+   "data_type": "number",
+   "is_nullable": false,
+   "description": "The figure, in its native unit."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "localities[].metrics[].unit",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Unit of the figure."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "localities[].metrics[].currency_code",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "ISO 4217 currency of a money figure; null otherwise."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "localities[].metrics[].reference_period",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The date or period the figure refers to."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "localities[].metrics[].dataset_edition",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The dataset edition the figure comes from."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "localities[].metrics[].source_url",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The official page of the figure."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "localities[].metrics[].attribution",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Attribution to show beside the figure."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "study_rules",
+   "data_type": "array<object>",
+   "is_nullable": false,
+   "description": "Approved study rules of the published edition that are in effect today. Empty until rules are loaded and approved."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "study_rules[].rule_id",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Stable identifier of the rule."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "study_rules[].country_code",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "ISO 3166-1 alpha-2 country code."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "study_rules[].state_code",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "State or province the rule is limited to; null for a national rule."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "study_rules[].rule_category",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "application_route, visa_funds, work_rights, post_study_work, visa_fee or processing_time; null for a visa summary row."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "study_rules[].applicant_scope",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Who the rule applies to, as the source states it."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "study_rules[].title",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Short title of the rule."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "study_rules[].summary",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Plain summary of the rule."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "study_rules[].numeric_threshold",
+   "data_type": "number",
+   "is_nullable": true,
+   "description": "The amount or number the rule sets, when it sets one."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "study_rules[].currency_code",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "ISO 4217 currency of the threshold; null otherwise."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "study_rules[].effective_from",
+   "data_type": "date",
+   "is_nullable": true,
+   "description": "First day the rule applies."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "study_rules[].effective_to",
+   "data_type": "date",
+   "is_nullable": true,
+   "description": "Last day the rule applies; null when open."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "study_rules[].visa",
+   "data_type": "object",
+   "is_nullable": true,
+   "description": "Visa summary (subclass, name, fee, funds, work hours, post-study work, processing times); null for a rule that is not a visa row."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "study_rules[].source_url",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The official page of the rule."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "study_rules[].quote_on_page",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The words on the page the rule rests on."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "study_rules[].evidence_date",
+   "data_type": "date",
+   "is_nullable": true,
+   "description": "The day the page was read."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "study_rules[].edition",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Label of the published edition."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "study_rules[].attribution",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Attribution to show with the rule."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "study_rules[].applicability",
+   "data_type": "array<object>",
+   "is_nullable": false,
+   "description": "Where the rule is proven to apply or is excluded."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "study_rules[].applicability[].entity_type",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "country, state, locality, provider or course."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "study_rules[].applicability[].entity_id",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Identifier of the entity; null for a state."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "study_rules[].applicability[].entity_code",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Code of the entity, for example a state code."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "study_rules[].applicability[].status",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "proven or excluded."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "study_rules[].applicability[].evidence_url",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The page that shows it."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "study_rules[].applicability[].quote_on_page",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The words on that page."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "study_rules[].applicability[].verified_at",
+   "data_type": "timestamptz",
+   "is_nullable": false,
+   "description": "When it was verified."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "career_outcomes",
+   "data_type": "array<object>",
+   "is_nullable": false,
+   "description": "Approved occupation outcomes of the published edition. Empty until an edition is loaded and approved."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "career_outcomes[].outcome_id",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Stable identifier of the outcome row."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "career_outcomes[].country_code",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "ISO 3166-1 alpha-2 country code."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "career_outcomes[].locality_id",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Locality the figure is for; null for a national figure."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "career_outcomes[].geography_level",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The area the figure is for: national, state (state_code is set) or locality (locality_id is set).",
+   "allowed_values": [
+    "national",
+    "state",
+    "locality"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "career_outcomes[].state_code",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "State or territory code (for example NSW) when geography_level is state; otherwise null."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "career_outcomes[].occupation_scheme",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "ANZSCO, NOC or SOC (required since G-1, 17 Nov 2026)."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "career_outcomes[].occupation_code",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Occupation code in its native scheme."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "career_outcomes[].occupation_title",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Occupation title as the source publishes it."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "career_outcomes[].median_annual_earnings",
+   "data_type": "number",
+   "is_nullable": true,
+   "description": "Median annual earnings; null when the source does not publish an annual figure."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "career_outcomes[].median_earnings",
+   "data_type": "number",
+   "is_nullable": true,
+   "description": "Median earnings for the period in earnings_period."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "career_outcomes[].earnings_period",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "annual, weekly or hourly."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "career_outcomes[].currency_code",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "ISO 4217 currency of the earnings."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "career_outcomes[].demand_rating",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The source outlook or demand rating."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "career_outcomes[].skill_shortage_status",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "national_shortage, regional_shortage, no_shortage or unknown."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "career_outcomes[].employment_rate_pct",
+   "data_type": "number",
+   "is_nullable": true,
+   "description": "Employment rate, per cent."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "career_outcomes[].reference_period",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The period the figures refer to."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "career_outcomes[].dataset_edition",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The dataset edition the figures come from."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "career_outcomes[].source_url",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The official page of the figures."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "career_outcomes[].attribution",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Attribution to show with the figures."
   }
  ],
  "pending_fields": [
@@ -16768,1302 +17962,6 @@
    "is_nullable": false,
    "description": "Edition years held, latest first.",
    "pending_reason": "array of numbers: ref.api_field_dictionary.data_type has no array<integer> yet (constraint change sent to the Platform Admin)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "api_version",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "The API and version that answered: website-v3 or zoho-v3.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "request_id",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "Identifier of this call, for support.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "page",
-   "data_type": "integer",
-   "is_nullable": false,
-   "description": "The page returned.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "page_size",
-   "data_type": "integer",
-   "is_nullable": false,
-   "description": "Rows of each kind per page; capped by the platform.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "filters",
-   "data_type": "object",
-   "is_nullable": false,
-   "description": "The filters applied: country_code, section, postcode, locality_id.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "totals",
-   "data_type": "object",
-   "is_nullable": false,
-   "description": "Rows available of each kind for these filters.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "totals.localities",
-   "data_type": "integer",
-   "is_nullable": false,
-   "description": "Localities available.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "totals.study_rules",
-   "data_type": "integer",
-   "is_nullable": false,
-   "description": "Study rules available.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "totals.career_outcomes",
-   "data_type": "integer",
-   "is_nullable": false,
-   "description": "Career outcomes available.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "localities",
-   "data_type": "array<object>",
-   "is_nullable": false,
-   "description": "Approved localities (for example an ABS Significant Urban Area). Empty until data is loaded and approved.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "localities[].locality_id",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "Stable identifier of the locality.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "localities[].country_code",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "ISO 3166-1 alpha-2 country code.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "localities[].name",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "Name of the locality as the source publishes it.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "localities[].geography_type",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "The official geography the locality belongs to, for example SUA.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "localities[].geography_code",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "The source code of the locality in that geography.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "localities[].boundary_vintage",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "The boundary edition the locality is drawn on, for example ASGS_2021_ED3.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "localities[].dataset_edition",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "The dataset edition the locality was loaded from.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "localities[].attribution",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "Attribution to show with the locality and its figures.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "localities[].metrics",
-   "data_type": "array<object>",
-   "is_nullable": false,
-   "description": "Approved figures for the locality: population, climate and living cost.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "localities[].metrics[].category",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "population, climate or living_cost.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "localities[].metrics[].key",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "The measure, for example erp_persons.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "localities[].metrics[].value",
-   "data_type": "number",
-   "is_nullable": false,
-   "description": "The figure, in its native unit.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "localities[].metrics[].unit",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "Unit of the figure.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "localities[].metrics[].currency_code",
-   "data_type": "string",
-   "is_nullable": true,
-   "description": "ISO 4217 currency of a money figure; null otherwise.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "localities[].metrics[].reference_period",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "The date or period the figure refers to.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "localities[].metrics[].dataset_edition",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "The dataset edition the figure comes from.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "localities[].metrics[].source_url",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "The official page of the figure.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "localities[].metrics[].attribution",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "Attribution to show beside the figure.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "study_rules",
-   "data_type": "array<object>",
-   "is_nullable": false,
-   "description": "Approved study rules of the published edition that are in effect today. Empty until rules are loaded and approved.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "study_rules[].rule_id",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "Stable identifier of the rule.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "study_rules[].country_code",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "ISO 3166-1 alpha-2 country code.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "study_rules[].state_code",
-   "data_type": "string",
-   "is_nullable": true,
-   "description": "State or province the rule is limited to; null for a national rule.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "study_rules[].rule_category",
-   "data_type": "string",
-   "is_nullable": true,
-   "description": "application_route, visa_funds, work_rights, post_study_work, visa_fee or processing_time; null for a visa summary row.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "study_rules[].applicant_scope",
-   "data_type": "string",
-   "is_nullable": true,
-   "description": "Who the rule applies to, as the source states it.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "study_rules[].title",
-   "data_type": "string",
-   "is_nullable": true,
-   "description": "Short title of the rule.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "study_rules[].summary",
-   "data_type": "string",
-   "is_nullable": true,
-   "description": "Plain summary of the rule.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "study_rules[].numeric_threshold",
-   "data_type": "number",
-   "is_nullable": true,
-   "description": "The amount or number the rule sets, when it sets one.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "study_rules[].currency_code",
-   "data_type": "string",
-   "is_nullable": true,
-   "description": "ISO 4217 currency of the threshold; null otherwise.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "study_rules[].effective_from",
-   "data_type": "date",
-   "is_nullable": true,
-   "description": "First day the rule applies.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "study_rules[].effective_to",
-   "data_type": "date",
-   "is_nullable": true,
-   "description": "Last day the rule applies; null when open.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "study_rules[].visa",
-   "data_type": "object",
-   "is_nullable": true,
-   "description": "Visa summary (subclass, name, fee, funds, work hours, post-study work, processing times); null for a rule that is not a visa row.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "study_rules[].source_url",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "The official page of the rule.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "study_rules[].quote_on_page",
-   "data_type": "string",
-   "is_nullable": true,
-   "description": "The words on the page the rule rests on.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "study_rules[].evidence_date",
-   "data_type": "date",
-   "is_nullable": true,
-   "description": "The day the page was read.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "study_rules[].edition",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "Label of the published edition.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "study_rules[].attribution",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "Attribution to show with the rule.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "study_rules[].applicability",
-   "data_type": "array<object>",
-   "is_nullable": false,
-   "description": "Where the rule is proven to apply or is excluded.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "study_rules[].applicability[].entity_type",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "country, state, locality, provider or course.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "study_rules[].applicability[].entity_id",
-   "data_type": "string",
-   "is_nullable": true,
-   "description": "Identifier of the entity; null for a state.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "study_rules[].applicability[].entity_code",
-   "data_type": "string",
-   "is_nullable": true,
-   "description": "Code of the entity, for example a state code.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "study_rules[].applicability[].status",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "proven or excluded.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "study_rules[].applicability[].evidence_url",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "The page that shows it.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "study_rules[].applicability[].quote_on_page",
-   "data_type": "string",
-   "is_nullable": true,
-   "description": "The words on that page.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "study_rules[].applicability[].verified_at",
-   "data_type": "timestamptz",
-   "is_nullable": false,
-   "description": "When it was verified.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "career_outcomes",
-   "data_type": "array<object>",
-   "is_nullable": false,
-   "description": "Approved occupation outcomes of the published edition. Empty until an edition is loaded and approved.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "career_outcomes[].outcome_id",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "Stable identifier of the outcome row.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "career_outcomes[].country_code",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "ISO 3166-1 alpha-2 country code.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "career_outcomes[].locality_id",
-   "data_type": "string",
-   "is_nullable": true,
-   "description": "Locality the figure is for; null for a national figure.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "career_outcomes[].occupation_scheme",
-   "data_type": "string",
-   "is_nullable": true,
-   "description": "ANZSCO, NOC or SOC.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "career_outcomes[].occupation_code",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "Occupation code in its native scheme.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "career_outcomes[].occupation_title",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "Occupation title as the source publishes it.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "career_outcomes[].median_annual_earnings",
-   "data_type": "number",
-   "is_nullable": true,
-   "description": "Median annual earnings; null when the source does not publish an annual figure.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "career_outcomes[].median_earnings",
-   "data_type": "number",
-   "is_nullable": true,
-   "description": "Median earnings for the period in earnings_period.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "career_outcomes[].earnings_period",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "annual, weekly or hourly.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "career_outcomes[].currency_code",
-   "data_type": "string",
-   "is_nullable": true,
-   "description": "ISO 4217 currency of the earnings.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "career_outcomes[].demand_rating",
-   "data_type": "string",
-   "is_nullable": true,
-   "description": "The source outlook or demand rating.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "career_outcomes[].skill_shortage_status",
-   "data_type": "string",
-   "is_nullable": true,
-   "description": "national_shortage, regional_shortage, no_shortage or unknown.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "career_outcomes[].employment_rate_pct",
-   "data_type": "number",
-   "is_nullable": true,
-   "description": "Employment rate, per cent.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "career_outcomes[].reference_period",
-   "data_type": "string",
-   "is_nullable": true,
-   "description": "The period the figures refer to.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "career_outcomes[].dataset_edition",
-   "data_type": "string",
-   "is_nullable": true,
-   "description": "The dataset edition the figures come from.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "career_outcomes[].source_url",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "The official page of the figures.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "website",
-   "endpoint": "destination",
-   "field_path": "career_outcomes[].attribution",
-   "data_type": "string",
-   "is_nullable": true,
-   "description": "Attribution to show with the figures.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "api_version",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "The API and version that answered: website-v3 or zoho-v3.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "request_id",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "Identifier of this call, for support.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "page",
-   "data_type": "integer",
-   "is_nullable": false,
-   "description": "The page returned.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "page_size",
-   "data_type": "integer",
-   "is_nullable": false,
-   "description": "Rows of each kind per page; capped by the platform.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "filters",
-   "data_type": "object",
-   "is_nullable": false,
-   "description": "The filters applied: country_code, section, postcode, locality_id.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "totals",
-   "data_type": "object",
-   "is_nullable": false,
-   "description": "Rows available of each kind for these filters.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "totals.localities",
-   "data_type": "integer",
-   "is_nullable": false,
-   "description": "Localities available.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "totals.study_rules",
-   "data_type": "integer",
-   "is_nullable": false,
-   "description": "Study rules available.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "totals.career_outcomes",
-   "data_type": "integer",
-   "is_nullable": false,
-   "description": "Career outcomes available.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "localities",
-   "data_type": "array<object>",
-   "is_nullable": false,
-   "description": "Approved localities (for example an ABS Significant Urban Area). Empty until data is loaded and approved.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "localities[].locality_id",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "Stable identifier of the locality.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "localities[].country_code",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "ISO 3166-1 alpha-2 country code.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "localities[].name",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "Name of the locality as the source publishes it.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "localities[].geography_type",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "The official geography the locality belongs to, for example SUA.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "localities[].geography_code",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "The source code of the locality in that geography.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "localities[].boundary_vintage",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "The boundary edition the locality is drawn on, for example ASGS_2021_ED3.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "localities[].dataset_edition",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "The dataset edition the locality was loaded from.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "localities[].attribution",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "Attribution to show with the locality and its figures.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "localities[].metrics",
-   "data_type": "array<object>",
-   "is_nullable": false,
-   "description": "Approved figures for the locality: population, climate and living cost.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "localities[].metrics[].category",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "population, climate or living_cost.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "localities[].metrics[].key",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "The measure, for example erp_persons.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "localities[].metrics[].value",
-   "data_type": "number",
-   "is_nullable": false,
-   "description": "The figure, in its native unit.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "localities[].metrics[].unit",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "Unit of the figure.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "localities[].metrics[].currency_code",
-   "data_type": "string",
-   "is_nullable": true,
-   "description": "ISO 4217 currency of a money figure; null otherwise.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "localities[].metrics[].reference_period",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "The date or period the figure refers to.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "localities[].metrics[].dataset_edition",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "The dataset edition the figure comes from.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "localities[].metrics[].source_url",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "The official page of the figure.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "localities[].metrics[].attribution",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "Attribution to show beside the figure.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "study_rules",
-   "data_type": "array<object>",
-   "is_nullable": false,
-   "description": "Approved study rules of the published edition that are in effect today. Empty until rules are loaded and approved.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "study_rules[].rule_id",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "Stable identifier of the rule.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "study_rules[].country_code",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "ISO 3166-1 alpha-2 country code.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "study_rules[].state_code",
-   "data_type": "string",
-   "is_nullable": true,
-   "description": "State or province the rule is limited to; null for a national rule.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "study_rules[].rule_category",
-   "data_type": "string",
-   "is_nullable": true,
-   "description": "application_route, visa_funds, work_rights, post_study_work, visa_fee or processing_time; null for a visa summary row.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "study_rules[].applicant_scope",
-   "data_type": "string",
-   "is_nullable": true,
-   "description": "Who the rule applies to, as the source states it.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "study_rules[].title",
-   "data_type": "string",
-   "is_nullable": true,
-   "description": "Short title of the rule.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "study_rules[].summary",
-   "data_type": "string",
-   "is_nullable": true,
-   "description": "Plain summary of the rule.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "study_rules[].numeric_threshold",
-   "data_type": "number",
-   "is_nullable": true,
-   "description": "The amount or number the rule sets, when it sets one.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "study_rules[].currency_code",
-   "data_type": "string",
-   "is_nullable": true,
-   "description": "ISO 4217 currency of the threshold; null otherwise.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "study_rules[].effective_from",
-   "data_type": "date",
-   "is_nullable": true,
-   "description": "First day the rule applies.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "study_rules[].effective_to",
-   "data_type": "date",
-   "is_nullable": true,
-   "description": "Last day the rule applies; null when open.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "study_rules[].visa",
-   "data_type": "object",
-   "is_nullable": true,
-   "description": "Visa summary (subclass, name, fee, funds, work hours, post-study work, processing times); null for a rule that is not a visa row.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "study_rules[].source_url",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "The official page of the rule.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "study_rules[].quote_on_page",
-   "data_type": "string",
-   "is_nullable": true,
-   "description": "The words on the page the rule rests on.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "study_rules[].evidence_date",
-   "data_type": "date",
-   "is_nullable": true,
-   "description": "The day the page was read.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "study_rules[].edition",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "Label of the published edition.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "study_rules[].attribution",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "Attribution to show with the rule.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "study_rules[].applicability",
-   "data_type": "array<object>",
-   "is_nullable": false,
-   "description": "Where the rule is proven to apply or is excluded.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "study_rules[].applicability[].entity_type",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "country, state, locality, provider or course.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "study_rules[].applicability[].entity_id",
-   "data_type": "string",
-   "is_nullable": true,
-   "description": "Identifier of the entity; null for a state.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "study_rules[].applicability[].entity_code",
-   "data_type": "string",
-   "is_nullable": true,
-   "description": "Code of the entity, for example a state code.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "study_rules[].applicability[].status",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "proven or excluded.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "study_rules[].applicability[].evidence_url",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "The page that shows it.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "study_rules[].applicability[].quote_on_page",
-   "data_type": "string",
-   "is_nullable": true,
-   "description": "The words on that page.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "study_rules[].applicability[].verified_at",
-   "data_type": "timestamptz",
-   "is_nullable": false,
-   "description": "When it was verified.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "career_outcomes",
-   "data_type": "array<object>",
-   "is_nullable": false,
-   "description": "Approved occupation outcomes of the published edition. Empty until an edition is loaded and approved.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "career_outcomes[].outcome_id",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "Stable identifier of the outcome row.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "career_outcomes[].country_code",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "ISO 3166-1 alpha-2 country code.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "career_outcomes[].locality_id",
-   "data_type": "string",
-   "is_nullable": true,
-   "description": "Locality the figure is for; null for a national figure.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "career_outcomes[].occupation_scheme",
-   "data_type": "string",
-   "is_nullable": true,
-   "description": "ANZSCO, NOC or SOC.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "career_outcomes[].occupation_code",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "Occupation code in its native scheme.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "career_outcomes[].occupation_title",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "Occupation title as the source publishes it.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "career_outcomes[].median_annual_earnings",
-   "data_type": "number",
-   "is_nullable": true,
-   "description": "Median annual earnings; null when the source does not publish an annual figure.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "career_outcomes[].median_earnings",
-   "data_type": "number",
-   "is_nullable": true,
-   "description": "Median earnings for the period in earnings_period.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "career_outcomes[].earnings_period",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "annual, weekly or hourly.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "career_outcomes[].currency_code",
-   "data_type": "string",
-   "is_nullable": true,
-   "description": "ISO 4217 currency of the earnings.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "career_outcomes[].demand_rating",
-   "data_type": "string",
-   "is_nullable": true,
-   "description": "The source outlook or demand rating.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "career_outcomes[].skill_shortage_status",
-   "data_type": "string",
-   "is_nullable": true,
-   "description": "national_shortage, regional_shortage, no_shortage or unknown.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "career_outcomes[].employment_rate_pct",
-   "data_type": "number",
-   "is_nullable": true,
-   "description": "Employment rate, per cent.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "career_outcomes[].reference_period",
-   "data_type": "string",
-   "is_nullable": true,
-   "description": "The period the figures refer to.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "career_outcomes[].dataset_edition",
-   "data_type": "string",
-   "is_nullable": true,
-   "description": "The dataset edition the figures come from.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "career_outcomes[].source_url",
-   "data_type": "string",
-   "is_nullable": false,
-   "description": "The official page of the figures.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
-  },
-  {
-   "api_surface": "zoho",
-   "endpoint": "destination",
-   "field_path": "career_outcomes[].attribution",
-   "data_type": "string",
-   "is_nullable": true,
-   "description": "Attribution to show with the figures.",
-   "pending_reason": "action added 17 Nov 2026 (roadmap schema pack, RM0E); loaded into ref.api_field_dictionary with the next reviewed dictionary issue (RM0B, at v3 release)"
   }
  ]
 }
