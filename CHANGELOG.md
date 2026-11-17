@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.453 — 18 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.31** (Platform Admin 18 Nov 2026 07:39, S1-RM-Design lane). Migration 20261118090000: `public.admin_destination_localities_bulk_approve(dataset edition, reason)` (Platform Admin, a reason, one control event) approves every clean draft locality of one edition; drafts without attribution are left. Destination data › Localities & postcodes gains Bulk Approve Drafts. Guards: `s600`, fixture `destination-bulk-approve`.
+
 ## 0.1.452 — 18 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.30** (Platform Admin decision 18 Nov 2026 07:03, S1-RM-Design lane). Migration 20261118083000: `public.admin_boost_queue_read(args)` (Curator and above, read-only, stable) lists `pipeline.boost_extract_items` with Country tier and Priority score worked out on read from the `boost.matrix.*` settings through `security.boost_country_category_weight_v1`; setting `admin.boost_queue_page_rows` (50). No column is added anywhere. Platform health › Queues & yield gains the Boost queue card. Guards: `s599`, fixture `admin-boost-queue`.
