@@ -1,4 +1,4 @@
-// Guards: Parallel Wave 2 (Platform Admin 17 Nov 2026 17:59; decisions 18:10): Layer 1 › + Add source is a six-step induction wizard whose drafts are Pipeline Operator and above and whose activation is the Platform Admin's with a reason, creating the source paused; AI Auto-Map switches on only when the mapper answers; a dry run is recorded by the service role and switches nothing on; per-source retention is recorded and no policy or prune job changes; Platform health has the Country & category completeness report over eight editable categories; the consumer API is not touched. Addenda (Platform Admin 17 Nov 2026 19:09): each Layer 1 source line shows a Hardcoded or AI-built parser badge with Re-infer Parser Spec when a reader flags layout drift (recorded and logged, nothing run), and the wizard takes one of seven target record types and keeps the AI mapper's parser spec with the draft.
+// Guards: Parallel Wave 2 (Platform Admin 17 Nov 2026 17:59; decisions 18:10): Layer 1 › + Add source is a six-step induction wizard whose drafts are Pipeline Operator and above and whose activation is the Platform Admin's with a reason, creating the source paused; AI Auto-Map switches on only when the mapper answers; a dry run is recorded by the service role and switches nothing on; per-source retention is recorded and no policy or prune job changes; Platform health has the Country & category completeness report over eight editable categories; the consumer API is not touched. Addenda (Platform Admin 17 Nov 2026 19:09): each Layer 1 source line shows a Hardcoded or AI-built parser badge with Re-infer Parser Spec when a reader flags layout drift (recorded and logged, nothing run), and the wizard takes one of seven target record types and keeps the AI mapper's parser spec with the draft. Decisions (Platform Admin 17 Nov 2026 19:58 and 20:45): one category list published to every lane; per-source retention only in pipeline.source_retention_policies; Curator (rank 3) and above open Layer 1 and draft, Re-infer Parser Spec stays Pipeline Operator (rank 4) and above, activation stays Platform Admin (rank 6).
 // Behaviour is proven on isolated PostgreSQL by tests/fixtures/layer1-induction-wizard/run.sh (workflow layer1-induction-wizard-test); these checks keep the rules in the migration and the screens.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
@@ -84,7 +84,8 @@ test('mocked browser: the report shows fill by country and category, a figure op
   await r.locator('[data-ccr-cell="AU:course_basics"]').click()
   await expect(r.locator('[data-ccr-detail]')).toContainText('140 of 200 values held')
   await expect(r.locator('[data-ccr-detail]')).toContainText('Duration')
-  await expect(r.locator('[data-ccr-source="s-cricos"]')).toContainText('Permanent')
+  await expect(r.locator('[data-ccr-source="s-cricos"]')).toContainText('90 days') // the platform staging period
+  await expect(r.locator('[data-ccr-source="s-cricos"]')).toContainText('7 years')
   await expect(r.locator('[data-ccr-l4="course"]')).toContainText('12')
 })
 
@@ -113,4 +114,49 @@ test('addenda: the Layer 1 line shows the parser badge and Re-infer Parser Spec;
   expect(l1).toContain("supabase.rpc('admin_layer1_parser_reinfer_request',{p_source_id:source.source_id,p_reason:why.trim()})")
   for (const k of ['data-l1i-record-type', 'data-l1i-parser-spec={f.parser_spec?\'present\':\'none\'}', 'data-l1i-routing', 'data-l1i-spec-discard']) expect(wizard).toContain(k)
   expect(wizard).toContain("{action:'map',induction_id:saved.id,target_record_type:f.target_record_type,")
+})
+
+test('decisions: one category list is published, retention lives in the retention table, and the role gates are 3 to open and draft, 4 to re-infer, 6 to activate', () => {
+  const u = read('supabase/migrations/20261117213000_cf247_wave2_unify_categories_retention_roles.sql')
+  const c = u.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
+  expect(u).toContain('-- Retires: nothing.'); expect(u).toMatch(/^-- Replaces: the wizard's own per-source retention values/m)
+  for (const l of u.split('\n')) expect(l).not.toMatch(/^(drop|delete|truncate)\b|^alter table .* drop /i)
+  expect(c).not.toMatch(/website_v2_|website_v3_|zoho_v2_|zoho_v3_|website_edge_|zoho_edge_|\bapi\./)
+  expect(c).not.toMatch(/cron\.(schedule|unschedule|alter_job)|automation_catalogue|create table/i)
+  // categories: published from the one table, to the service role
+  expect(c).toContain('create or replace function public.svc_enrichment_categories() returns jsonb')
+  expect(c).toContain('revoke all on function public.svc_enrichment_categories() from public, anon, authenticated;')
+  expect(c).not.toMatch(/country_category_boost'\s*(,|\))\s*.*(update|insert)/i) // the Boost setting is not written here
+  // retention: no values of the wizard's own; activation goes through S1-Build's function; periods come from settings
+  expect(c).not.toMatch(/'staging_retention_days'|'raw_retention_days'/)
+  expect(c).toContain("perform public.admin_source_retention_set(v_source, (v_row.payload->>'staging_keep_days')::int, 'Induction wizard: ' || v_reason);")
+  expect(c).toContain('left join pipeline.source_retention_policies rp on rp.source_id = s.id')
+  for (const k of ['retention.staging_keep_days', 'retention.raw_hash_keep_years', 'retention.staging_prune_on']) expect(c).toContain(`security.pipeline_num_v1('${k}',`)
+  // roles: the Layer 1 list read and the draft functions open at 3 by an exact, md5-guarded text change; activation is not lowered
+  expect(c).toContain("select pg_temp.swap_once('security.admin_layer1_operations_read(jsonb)', '0e93afeba4d14c2ad2ce2d492ffd14d4', '3af9dff07f35f774e935fc590552ce13',")
+  expect(c).toContain("if v_md5 <> p_before then raise exception '% is not the definition this change was written against', p_fn; end if;")
+  const act = c.slice(c.indexOf('function public.admin_layer1_induction_activate'), c.indexOf('function public.admin_completeness_report'))
+  expect(act).toContain('security.current_role_rank(), 0) < 6'); expect(act).not.toMatch(/current_role_rank\(\), 0\) < [345]/)
+  expect(c).not.toContain('admin_layer1_parser_reinfer_request(uuid,text)\', \'') // the re-infer gate is not swapped
+  expect(PAGES.layer1.min).toBe(3)
+  expect(l1).toContain('rank>=3&&<button className="primary" onClick={()=>setAdding(x=>!x)} data-l1-add>')
+  expect(l1).toContain('parser.drift_flagged_at&&!parser.reinfer_requested_at&&rank>=4&&<button onClick={reinfer}')
+  expect(wizard).toContain("if(rank<3)return <EmptyInline text=\"Adding a source opens for Curator and above.\"/>")
+  expect(wizard).toContain("disabled={busy!==''||rank<6||reason.trim().length<4}")
+  expect(wizard).not.toMatch(/raw_retention_days|staging_retention_days/); expect(report).not.toMatch(/raw_retention_days|staging_retention_days/)
+})
+
+test('mocked browser: a Curator opens Layer 1 and the wizard; Re-infer Parser Spec is not offered to a Curator', async ({ page }) => {
+  await mockAdmin(page, { rank: 3 })
+  await page.goto('/#layer-1-register')
+  const l = page.locator('[data-l1-sources]')
+  await expect(l.locator('[data-l1-parser="ai_built"]')).toContainText('AI-built parser')
+  await l.getByRole('button', { name: 'Open Centennial College Program Catalogue API' }).click()
+  await expect(l.locator('[data-l1-drift]')).toBeVisible()
+  await expect(l.locator('[data-l1-reinfer]')).toHaveCount(0)
+  await l.getByRole('button', { name: 'Add source' }).click()
+  const a = page.locator('[data-l1-induction-wizard]')
+  await expect(a.locator('[data-l1i-country]')).toBeVisible()
+  await a.locator('[data-l1i-tab="activate"]').click()
+  await expect(a.locator('[data-l1i-activate]')).toBeDisabled()
 })

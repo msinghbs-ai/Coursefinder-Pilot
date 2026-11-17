@@ -202,4 +202,70 @@ do $t$ declare r jsonb; v_id uuid; v_ai uuid; v_hard uuid; v_none uuid; begin
     and not has_table_privilege('authenticated', 'pipeline.layer1_source_parsers', 'select'), 'anon reaches nothing; the parser table and service functions are closed to the browser');
 end $t$;
 SQL
+# Wave 2 decisions (Platform Admin 17 Nov 2026 19:58 and 20:45): one category list, retention in S1-Build's table, Curators in Layer 1
+$P <<'SQL'
+-- S1-Build's per-source retention (migration 20261117200000), reduced to what the wizard relies on
+create table pipeline.source_retention_policies (source_id uuid primary key references pipeline.sources(id), staging_keep_days int not null check (staging_keep_days between 30 and 3650), reason text not null, updated_by uuid, updated_at timestamptz not null default now());
+create function public.admin_source_retention_set(p_source_id uuid, p_keep_days int, p_reason text) returns jsonb language plpgsql security definer set search_path to '' as $f$
+begin
+  if coalesce(security.current_role_rank(), 0) < 6 then raise exception 'Platform Admin (rank 6) is needed to change a retention period' using errcode = '42501'; end if;
+  insert into pipeline.source_retention_policies(source_id, staging_keep_days, reason, updated_by) values (p_source_id, p_keep_days, p_reason, auth.uid())
+  on conflict (source_id) do update set staging_keep_days = excluded.staging_keep_days, reason = excluded.reason;
+  insert into pipeline.admin_control_events(area, action, target, detail, actor) values ('retention', 'source_retention_set', p_source_id::text, jsonb_build_object('staging_keep_days', p_keep_days, 'reason', p_reason), auth.uid());
+  return jsonb_build_object('source_id', p_source_id, 'staging_keep_days', p_keep_days);
+end $f$;
+insert into pipeline.platform_toolset_settings(toolset_key, key, value) values ('pipeline', 'retention.staging_keep_days', to_jsonb(90)), ('pipeline', 'retention.raw_hash_keep_years', to_jsonb(7)), ('pipeline', 'retention.staging_prune_on', to_jsonb(0));
+-- the Layer 1 list read of another lane is not in this fixture: the migration leaves an absent function alone
+SQL
+U=supabase/migrations/20261117213000_cf247_wave2_unify_categories_retention_roles.sql
+$P -1 -f $U >/dev/null; $P -1 -f $U >/dev/null
+echo "decisions migration: applied twice without error (definition guards, exact-text swaps and post-check included)"
+$P <<'SQL'
+create or replace function pg_temp.ok(c boolean, m text) returns void language plpgsql as $$ begin if c is not true then raise exception 'FAIL: %', m; end if; raise notice 'ok: %', m; end $$;
+create or replace function pg_temp.err(q text) returns text language plpgsql as $$ begin execute q; return null; exception when others then return sqlerrm; end $$;
+do $t$ declare r jsonb; v_id uuid; v_src uuid; v_cur uuid; begin
+  perform set_config('fixture.uid', '55555555-5555-5555-5555-555555555555', true); perform set_config('fixture.rank', '2', true);
+  perform pg_temp.ok(pg_temp.err($$select public.admin_layer1_induction_read()$$) like 'Curator (rank 3)%' and pg_temp.err($$select public.admin_layer1_parser_status()$$) like 'Curator (rank 3)%', 'a Counsellor still cannot open Layer 1');
+  perform set_config('fixture.rank', '3', true);
+  r := public.admin_layer1_induction_read();
+  perform pg_temp.ok((r->>'rank')::int = 3 and (r#>>'{options,retention_defaults,staging_keep_days}')::int = 90 and (r#>>'{options,retention_defaults,raw_hash_keep_years}')::int = 7
+    and r#>>'{options,retention_defaults,staging_prune_on}' = 'false' and not r#>'{options,retention_defaults}' ? 'raw_retention_days' and public.admin_layer1_parser_status() ? 'sources',
+    'a Curator opens the wizard and the parser badges; retention defaults come from the retention settings');
+  perform pg_temp.ok(pg_temp.err($$select public.admin_layer1_induction_save(null, '{"country_code":"IE","staging_keep_days":14}')$$) like 'staging is kept for a whole number of days from 30 to 3,650%', 'the keep period follows the range of the retention table');
+  r := public.admin_layer1_induction_save(null, '{"country_code":"IE","scheme":"ie_qqi","scheme_kind":"course_registration","target_record_type":"provider_register","source_label":"QQI providers","source_url":"https://qsearch.qqi.ie/providers.csv","authority_name":"QQI","connector_type":"csv_file","terms_status":"not_required","cadence":"monthly","staging_keep_days":180,"raw_retention_days":2555}', '[{"source_field":"Name","target_field":"p_type","category_key":"provider_profile"}]');
+  v_id := (r#>>'{item,id}')::uuid;
+  perform pg_temp.ok(r#>>'{item,payload,staging_keep_days}' = '180' and not r#>'{item,payload}' ? 'raw_retention_days' and not r#>'{item,payload}' ? 'staging_retention_days' and (r#>>'{item,steps,cadence}')::boolean,
+    'a Curator creates and edits a draft; it carries one staging keep period and no retention values of its own');
+  r := public.admin_layer1_induction_save(null, '{"country_code":"NZ"}'); v_cur := (r#>>'{item,id}')::uuid;
+  perform pg_temp.ok(public.admin_layer1_induction_cancel(v_cur, 'not needed')#>>'{item,status}' = 'cancelled', 'a Curator cancels a draft with a reason');
+  perform pg_temp.ok(pg_temp.err(format($$select public.admin_layer1_induction_activate(%L, 'go')$$, v_id)) like 'Platform Admin (rank 6) activates%', 'a Curator cannot activate');
+  perform set_config('fixture.rank', '5', true);
+  perform pg_temp.ok(pg_temp.err(format($$select public.admin_layer1_induction_activate(%L, 'go live')$$, v_id)) like 'Platform Admin (rank 6) activates%', 'a PIM Operator cannot activate');
+  perform set_config('fixture.rank', '6', true);
+  r := public.admin_layer1_induction_activate(v_id, 'QQI providers approved'); v_src := (r->>'source_id')::uuid;
+  perform pg_temp.ok((select staging_keep_days = 180 and reason = 'Induction wizard: QQI providers approved' from pipeline.source_retention_policies where source_id = v_src)
+    and (select count(*) from pipeline.admin_control_events where area = 'retention' and action = 'source_retention_set' and target = v_src::text) = 1
+    and (select (detail->>'staging_keep_days')::int = 180 from pipeline.admin_control_events where action = 'induction_activate' and target = v_src::text)
+    and (select paused from pipeline.layer1_source_operations where source_id = v_src), 'activation sets the keep period through admin_source_retention_set (the table housekeeping reads); the source stays paused');
+  -- re-infer: Pipeline Operator and above, never a Curator
+  perform set_config('fixture.role', 'service_role', true);
+  perform public.svc_layer1_parser_drift_record(v_src, true, 'column renamed');
+  perform pg_temp.ok(jsonb_array_length(public.svc_enrichment_categories()->'categories') = 8 and (public.svc_enrichment_categories()->>'version')::int = 1
+    and (select sum(jsonb_array_length(c->'fields')) from jsonb_array_elements(public.svc_enrichment_categories()->'categories') c) = 32
+    and public.svc_enrichment_categories()#>>'{categories,0,key}' = 'course_basics' and public.svc_enrichment_categories()::text not like '%identity_registers%',
+    'the loaders read one list: eight keys, 32 fields, in order, and no Boost key among them');
+  perform set_config('fixture.role', '', true); perform set_config('fixture.rank', '3', true);
+  perform pg_temp.ok(pg_temp.err($$select public.svc_enrichment_categories()$$) = 'service role required'
+    and pg_temp.err(format($$select public.admin_layer1_parser_reinfer_request(%L, 'layout moved')$$, v_src)) like 'Pipeline Operator (rank 4)%', 'a Curator cannot request a re-infer');
+  perform set_config('fixture.rank', '4', true);
+  perform pg_temp.ok((public.admin_layer1_parser_reinfer_request(v_src, 'layout moved')->>'ok')::boolean, 'a Pipeline Operator requests a re-infer with a reason');
+  -- the report reads the retention table and settings
+  perform set_config('fixture.rank', '3', true);
+  r := public.admin_completeness_report();
+  perform pg_temp.ok((select (e#>>'{retention,per_source}')::boolean and (e#>>'{retention,staging_keep_days}')::int = 180 and (e#>>'{retention,raw_hash_keep_years}')::int = 7 from jsonb_array_elements(r->'editions') e where e->>'source_id' = v_src::text)
+    and (select count(*) from jsonb_array_elements(r->'editions') e where not (e#>>'{retention,per_source}')::boolean and (e#>>'{retention,staging_keep_days}')::int = 90) >= 1
+    and (r#>>'{retention_settings,staging_keep_days}')::int = 90 and r#>>'{retention_settings,staging_prune_on}' = 'false', 'the report shows each source''s keep period from the retention table, or the platform period');
+  perform pg_temp.ok(col_description('ref.enrichment_category_fields'::regclass, (select attnum from pg_attribute where attrelid = 'ref.enrichment_category_fields'::regclass and attname = 'boost_category')) like 'Crosswalk only%', 'the Boost key on a field is marked as a crosswalk, not a list');
+end $t$;
+SQL
 echo "layer1 induction wizard: all checks passed"

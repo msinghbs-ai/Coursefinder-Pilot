@@ -27,7 +27,7 @@ test('migrations: task board, jobs per run, noisy-register rule, retired registe
 
 test('navigation: Layer 1 is one Sources page (v2.15.301); old Runs, Source settings and Manual batch runs addresses open it', () => {
   expect(PAGES.layer1.tabs).toBeUndefined()
-  expect(PAGES.layer1.min).toBe(4)
+  expect(PAGES.layer1.min).toBe(3) // v2.16.26 (Platform Admin 17 Nov 2026 20:45): Curator and above open Layer 1
   for (const tab of ['settings', 'batch', 'operations']) expect(resolveTarget('layer-1-register', new URLSearchParams({ tab }))).toMatchObject({ page: 'layer1', tab: '' })
   expect(resolveTarget('regulatory-settings')).toMatchObject({ page: 'layer1', tab: '' })
   expect(resolveTarget('layer-1-register', new URLSearchParams({ tab: 'scholarships' }))).toMatchObject({ page: 'layer2', tab: 'scholarships' })
@@ -78,14 +78,15 @@ test('mocked browser: Layer 1 › Sources is a list; a failing source says why; 
   await a.getByLabel('Platform field').selectOption('level')
   await a.getByRole('button', { name: 'Save & continue' }).click()
   await a.locator('[data-l1i-cadence]').selectOption('monthly')
-  await expect(a.locator('[data-l1i-retention-note]')).toContainText('do not change what the platform prunes')
+  await a.locator('[data-l1i-staging-days]').fill('180')
+  await expect(a.locator('[data-l1i-retention-note]')).toContainText('where the nightly housekeeping reads it')
   await a.getByRole('button', { name: 'Save & continue' }).click()
   await expect(a.locator('[data-l1i-dry-run="waiting_for_reader"]')).toContainText('Waiting for a reader')
   await a.getByRole('button', { name: 'Save & continue' }).click()
   await expect(a.locator('[data-l1i-activate]')).toBeDisabled() // a reason first
   await a.locator('[data-l1i-reason]').fill('Ontario Colleges approved')
   await a.locator('[data-l1i-activate]').click()
-  await expect.poll(() => page.l3calls.filter(c => c.l1InductionSave).pop()?.l1InductionSave).toMatchObject({ p_payload: { country_code: 'CA', scheme: 'mtcu', target_record_type: 'course_register', source_label: 'Ontario Colleges register', source_url: 'https://www.ontariocolleges.ca/', cadence: 'monthly' }, p_mappings: [{ source_field: 'Program title', target_field: 'level', category_key: 'course_basics' }] })
+  await expect.poll(() => page.l3calls.filter(c => c.l1InductionSave).pop()?.l1InductionSave).toMatchObject({ p_payload: { country_code: 'CA', scheme: 'mtcu', target_record_type: 'course_register', source_label: 'Ontario Colleges register', source_url: 'https://www.ontariocolleges.ca/', cadence: 'monthly', staging_keep_days: 180 }, p_mappings: [{ source_field: 'Program title', target_field: 'level', category_key: 'course_basics' }] })
   await expect.poll(() => page.l3calls.find(c => c.l1InductionActivate)?.l1InductionActivate).toMatchObject({ p_id: 'ind-1', p_reason: 'Ontario Colleges approved' })
   await expect(a).toContainText('Activated and saved paused')
 })

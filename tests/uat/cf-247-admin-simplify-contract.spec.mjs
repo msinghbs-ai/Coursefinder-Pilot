@@ -43,12 +43,12 @@ test('role gates are unchanged from the screens they came from', () => {
   // v2.15.301 (menu review): Layer 1 is one Sources page (rank 4, as both before); Scholarships (was Layer 1, rank 4) is Layer 2/3 › Scholarships (rank 4);
   // API usage (rank 4) is Settings › API usage; Storage & retention (rank 6) is Platform health › Storage; Capacity (rank 6) is on the Go-live checklist (rank 6);
   // Scholarship extraction (rank 3) is on Models & services › AI (now rank 3; the AI configuration inside stays rank 4)
-  expect([min('layer1'), min('layer2', 'scholarships') + 2, min('layer2', 'universities'), min('layer4', 'inbox'), min('jobs', 'jobs'), min('evidence')]).toEqual([4, 6, 3, 3, 4, 3])
+  expect([min('layer1'), min('layer2', 'scholarships') + 2, min('layer2', 'universities'), min('layer4', 'inbox'), min('jobs', 'jobs'), min('evidence')]).toEqual([3 /* v2.16.26: Curators open Layer 1 (Platform Admin 17 Nov 2026 20:45) */, 6, 3, 3, 4, 3])
   expect([min('users', 'directory') /* v2.16.20: Users & roles has two tabs, both Platform Admin */, min('environment', 'settings'), min('migration'), 6, min('environment', 'api'), min('services', 'services') /* SS-020 step 3: Fetchers is in Services & limits */, min('health', 'storage'), min('services', 'ai'), min('layer2', 'flags')]).toEqual([6, 6, 6, 6, 4, 4, 6, 3, 3])
   expect(min('users', 'templates')).toBe(6)
   expect(canOpen('users', 5)).toBe(false)
   // v2.15.112: Key dates and Key links moved to Reference data, Onboarding to Providers (still rank 3)
-  expect(canOpen('layer1', 3)).toBe(false)
+  expect(canOpen('layer1', 3)).toBe(true); expect(canOpen('layer1', 2)).toBe(false) // v2.16.26: Curator and above
   expect(canOpen('reference', 3)).toBe(true)
   expect(resolveTarget('reference-data', new URLSearchParams({ tab: 'imports' }))).toMatchObject({ page: 'rankings', tab: 'datasets' }) // v2.15.301
   expect(PAGES.layer2.tabs.find(t => t.key === 'universities').min).toBe(3) // v2.15.258: Onboarding moved to Layer 2, same role gate; v2.15.300: Universities

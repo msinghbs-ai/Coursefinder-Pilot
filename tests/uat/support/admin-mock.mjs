@@ -87,7 +87,7 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
       categories: [{ key: 'course_basics', label: 'Course basics', description: 'What the course is.', fields: [{ field: 'level', label: 'Level' }, { field: 'duration', label: 'Duration' }] }, { key: 'fees', label: 'Fees', description: 'Tuition.', fields: [{ field: 'provider_tuition', label: 'Tuition published by the provider' }] }],
       record_types: [{ key: 'course_register', label: 'Course register', help: 'Courses as an official register lists them.' }, { key: 'tuition_fees', label: 'Tuition fees', help: 'Fees by course or provider.' }],
       connector_types: ['csv_file', 'json_api', 'html_pages'], cadences: ['weekly', 'monthly', 'annual'], terms_statuses: ['approved', 'pending', 'not_required'],
-      retention_defaults: { staging_retention_days: 14, raw_retention_days: null }, dry_run_rows: 100, sample_rows: 20, postcode_min_share: 0.9 } }),
+      retention_defaults: { staging_keep_days: 90, raw_hash_keep_years: 7, staging_prune_on: false }, dry_run_rows: 100, sample_rows: 20, postcode_min_share: 0.9 } }),
     admin_layer1_induction_save: b => { calls.push({ l1InductionSave: b }); const p = b.p_payload || {}, m = b.p_mappings || []
       return { ok: true, item: { id: 'ind-1', status: 'draft', country_code: p.country_code, payload: p, mappings: m, dry_run: null,
         steps: { scheme: !!p.scheme, source: !!(p.source_url && p.connector_type && p.terms_status), mapping: m.length > 0, cadence: !!p.cadence, dry_run: false, dry_run_state: 'waiting_for_reader', activated: false } } } },
@@ -102,7 +102,8 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
         { country_code: 'AU', category_key: 'fees', total: 100, filled: 25, pct: 25.0, fields: [{ field: 'provider_tuition', label: 'Tuition published by the provider', total: 100, filled: 25, pct: 25.0 }] },
         { country_code: 'NZ', category_key: 'course_basics', total: 40, filled: 40, pct: 100.0, fields: [{ field: 'level', label: 'Level', total: 40, filled: 40, pct: 100.0 }] }],
       editions: [{ source_id: 's-cricos', label: 'CRICOS courses', country_code: 'AU', paused: false, editions_kept: 3, current_edition: '2026-11-11', last_verified_at: '2026-11-17T01:00:00Z', previous_count: 26100, last_count: 26204, variance_percent: 0.4, variance_decision: 'accept',
-        retention: { per_source: false, staging_retention_days: 14, raw_retention_days: null, edition_archiving: true } }],
+        retention: { per_source: false, staging_keep_days: 90, raw_hash_keep_years: 7, edition_archiving: true } }],
+      retention_settings: { staging_keep_days: 90, raw_hash_keep_years: 7, staging_prune_on: false },
       retention_policy: [{ class_key: 'temporary_staging', days: 14, immutable: false, purge_allowed: true }],
       layer4: { warn_days: 7, old_days: 30, pending: 12, oldest_at: '2026-10-01T00:00:00Z', by_type: [{ entity_type: 'course', pending: 12, fresh: 5, waiting: 4, old: 3, oldest_at: '2026-10-01T00:00:00Z' }] } }),
     admin_enrichment_category_field_set: b => { calls.push({ categoryFieldSet: b }); return { ok: true, field: b.p_field, to: b.p_category_key } },

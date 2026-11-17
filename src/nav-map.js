@@ -62,7 +62,8 @@ export const PAGES = {
   // v2.15.301 (Platform Admin, 20 Oct 2026, "Merge into one Sources page"): Layer 1 is the one Sources page with a layer filter. It opens on
   // the official registers (run, schedule, settings, + Add source); "All layers" lists every source the pipeline reads (the old Sources
   // page, whose address now opens this page on All layers). Layer 1 › Scholarships moved to Layer 2/3 › Scholarships.
-  layer1: { label: 'Layer 1 Register', slug: 'layer-1-register', icon: 'database', min: 4, subtitle: 'Every source the pipeline reads. Registers (such as CRICOS) first: each with its health, schedule and settings; choose All layers for every other source.' },
+  // v2.16.26 (Platform Admin 17 Nov 2026 20:45): Curator and above open Layer 1 (to prepare Add source drafts); each control inside keeps its own rank
+  layer1: { label: 'Layer 1 Register', slug: 'layer-1-register', icon: 'database', min: 3, subtitle: 'Every source the pipeline reads. Registers (such as CRICOS) first: each with its health, schedule and settings; choose All layers for every other source.' },
   // v2.15.112 (Platform Admin, 30 Sep 2026): reference data that is not a register run moved out of Layer 1.
   // v2.15.301 (Platform Admin, 20 Oct 2026, "One list with a type filter"): Key dates and Reference sources are one list with a type
   // filter (?type=dates|links); Ranking imports moved to Rankings & statistics › Datasets. Old tab addresses redirect.
