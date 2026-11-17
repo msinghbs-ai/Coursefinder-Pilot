@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { applySpec, missingHeaders, rowKeyAndHash, type Spec } from "../_shared/cf247-layer1-spec.ts";
 import { fetchBytes, readTable } from "../_shared/cf247-layer1-read.ts";
+import { extractHtmlTables } from "../_shared/cf247-html-table.js";
 
 // CF-247 Wave 2 PR C (S2-Build; Platform Admin 17 Nov 2026 17:55, 19:08, 19:58, 22:04, 23:02). The generic Layer 1 declarative runner for
 // sources whose parser is AI-built (a strict JSON spec, checked by security.layer1_parser_spec_validate_v1; nothing here evaluates code or builds SQL).
@@ -18,7 +19,7 @@ import { fetchBytes, readTable } from "../_shared/cf247-layer1-read.ts";
 // in chunks of layer1.declarative_chunk_rows with a row key and hash. Course and provider registers apply their new and changed records through
 // svc_layer1_apply_register_records in chunks of layer1.register_apply_chunk; the other record types are staged for review. Every record names the
 // enrichment categories it leaves open; Australian postcodes are flagged against the ABS postcode-to-SUA shares.
-const VERSION = "1.0.0";
+const VERSION = "1.0.1";
 const APPLY_FN = "public.svc_layer1_apply_register_records";
 
 const cors = {
@@ -31,7 +32,7 @@ const json = (body: unknown, status = 200) =>
 const fail = (error: string, status = 200) => json({ ok: false, error }, status);
 const clean = (v: unknown, max = 300) => String(v ?? "").replace(/\s+/g, " ").trim().slice(0, max);
 const isUuid = (v: unknown) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(v ?? ""));
-const MIME: Record<string, string> = { csv: "text/csv", xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", json: "application/json" };
+const MIME: Record<string, string> = { csv: "text/csv", xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", json: "application/json", html_table: "text/html" };
 
 async function rpc(client: any, name: string, args: Record<string, unknown> = {}) {
   const { data, error } = await client.rpc(name, args);
@@ -122,7 +123,9 @@ async function dryRun(service: any, inductionId: string) {
       inserts += Number(r?.inserts || 0); updates += Number(r?.updates || 0); unchanged += Number(r?.unchanged || 0);
     }
     const t = tally(rows, ctx.categories || []);
-    const counts = { rows_read: table.rows.length, records: rows.length, rejected: table.rows.length - records.length, duplicates, inserts, updates, unchanged,
+    // Track B: how many tables the page holds, so a wrong source.table_index is easy to see
+    const pageTables = spec.format === "html_table" ? extractHtmlTables(new TextDecoder("utf-8").decode(bytes)).length : undefined;
+    const counts = { rows_read: table.rows.length, records: rows.length, rejected: table.rows.length - records.length, duplicates, inserts, updates, unchanged, ...(pageTables !== undefined ? { tables_on_page: pageTables } : {}),
       would_apply: applied ? inserts + updates : 0, staged_review: applied ? 0 : inserts + updates, postcode_escalations: t.postcode_escalations, gaps: t.gaps };
     const passed = rows.length > 0;
     const msg = `${rows.length} records from the first ${table.rows.length} rows${errors.length ? `; ${errors.length} problems, first: ${errors[0]}` : ""}${duplicates ? `; ${duplicates} duplicate keys` : ""}.`;

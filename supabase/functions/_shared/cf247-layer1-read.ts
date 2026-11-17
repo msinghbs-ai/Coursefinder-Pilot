@@ -1,7 +1,8 @@
 // CF-247 Wave 2 (S2-Build, 17 Nov 2026): reads a Layer 1 source file into a header row and rows, for an AI-built parser spec. Shared by
 // layer1-ai-induction-mapper (re-infer samples) and the Layer 1 declarative runner. Formats: csv, xlsx, json (rows by a simple path such as
-// $.data[*]). No code is evaluated; the size limit is the caller's setting (layer1.declarative_max_file_mb).
+// $.data[*]) and html_table (Track B, 18 Nov 2026: one table on a web page, by source.table_index and source.header_row; cf247-html-table.js). No code is evaluated; the size limit is the caller's setting (layer1.declarative_max_file_mb).
 import * as XLSX from "npm:xlsx@0.18.5";
+import { htmlTableRows } from "./cf247-html-table.js";
 
 export type Table = { headers: string[]; rows: Record<string, unknown>[]; arrays: string[][]; bytes: Uint8Array };
 
@@ -80,5 +81,12 @@ export function readTable(bytes: Uint8Array, format: string, source: Record<stri
     const rows = picked.map((x) => Object.fromEntries(headers.map((h) => [h, x[h] === null || x[h] === undefined ? null : typeof x[h] === "object" ? JSON.stringify(x[h]) : x[h]])));
     return { headers, rows, arrays: rows.map((r) => headers.map((h) => String(r[h] ?? ""))), bytes };
   }
-  throw new Error(`format ${format} is not read by the declarative reader (csv, xlsx and json are)`);
+  if (format === "html_table") {
+    const html = new TextDecoder("utf-8").decode(bytes);
+    const t = htmlTableRows(html, source, Number.isFinite(maxRows) ? maxRows : Infinity);
+    const headers = t.headers.map((h) => String(h).trim());
+    const arrays = t.arrays.map((r) => headers.map((_, i) => String(r[i] ?? "")));
+    return { headers, arrays, rows: arrays.map((r) => Object.fromEntries(headers.map((h, i) => [h, r[i] === "" ? null : r[i]]))), bytes };
+  }
+  throw new Error(`format ${format} is not read by the declarative reader (csv, xlsx, json and html_table are)`);
 }

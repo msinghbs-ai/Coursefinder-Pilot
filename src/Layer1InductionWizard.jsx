@@ -54,13 +54,13 @@ export default function Layer1InductionWizard({rank=0,onDone,onCancel,client=nul
   async function onFile(e){const file=e.target.files?.[0];if(!file)return
     if(file.size>5*1024*1024){setErr('The sample is larger than 5 MB. Save the first few hundred rows as a small file and upload that.');return}
     const text=await file.text();const s=parseSample(file.name,text,Number(o?.sample_rows||20))
-    if(!s){setErr('No rows were found in that file. Upload a CSV, tab-separated or JSON sample.');return}
+    if(!s){setErr('No rows were found in that file. Upload a CSV, tab-separated, JSON or saved web page (HTML with a table) sample.');return}
     setF(x=>({...x,sample:s,sample_file_name:file.name}));setErr('')
     setMaps(m=>[...m,...s.columns.filter(c=>!m.some(x=>x.source_field===c)).map(c=>({source_field:c,target_field:'',category_key:'',by:'manual'}))])}
   const setMap=(i,patch)=>setMaps(m=>m.map((x,j)=>j===i?{...x,...patch,by:x.by==='ai'||x.by==='ai_adjusted'?'ai_adjusted':'manual'}:x))
   async function autoMap(){setBusy('map');setErr('');setNote('')
     try{const saved=await save(null);if(!saved)return
-      const{data,error}=await call(MAPPER,{action:'map',induction_id:saved.id,target_record_type:f.target_record_type,country_code:f.country_code,connector_type:f.connector_type,source_url:f.source_url,sample:{columns:f.sample?.columns||maps.map(m=>m.source_field),rows:(f.sample?.rows||[]).slice(0,20)},
+      const{data,error}=await call(MAPPER,{action:'map',induction_id:saved.id,target_record_type:f.target_record_type,country_code:f.country_code,connector_type:f.connector_type,source_url:f.source_url,sample:{columns:f.sample?.columns||maps.map(m=>m.source_field),rows:(f.sample?.rows||[]).slice(0,20)},...(f.sample?.table_index!=null?{source:{table_index:f.sample.table_index,header_row:f.sample.header_row}}:{}),
         target_fields:fieldList.map(x=>({field:x.field,label:x.label,category_key:x.category_key})),categories:(o?.categories||[]).map(c=>({key:c.key,label:c.label,description:c.description}))})
       if(error||!data?.ok)throw new Error(data?.error||error?.message||'The mapper did not answer.')
       const sug=new Map((data.suggestions||[]).map(s=>[s.source_field,s]))
@@ -98,8 +98,8 @@ export default function Layer1InductionWizard({rank=0,onDone,onCancel,client=nul
       <label>Authority that publishes it<input value={f.authority_name} onChange={set('authority_name')} disabled={closed}/></label>
       <label>Type<select value={f.dataset_class} onChange={set('dataset_class')} disabled={closed}><option value="register">Register</option><option value="statistics">Statistics</option></select></label>
       <label>Connector type<select value={f.connector_type} onChange={set('connector_type')} disabled={closed} data-l1i-connector><option value="">Choose…</option>{o.connector_types.map(k=><option key={k} value={k}>{CONNECTOR[k]||k}</option>)}</select></label>
-      <label>Sample file (CSV, tab-separated or JSON)<input type="file" accept=".csv,.tsv,.txt,.json,text/csv,application/json" onChange={onFile} disabled={closed} data-l1i-sample/>
-        <small>{f.sample?`${f.sample_file_name||'Sample'}: ${fmtNumber(f.sample.columns.length)} columns, ${fmtNumber(f.sample.total_rows||0)} rows; the first ${fmtNumber(f.sample.rows.length)} are kept with the draft.`:'Read in your browser; only the column names and the first rows are kept.'}</small></label>
+      <label>Sample file (CSV, tab-separated, JSON, or a saved web page with a table)<input type="file" accept=".csv,.tsv,.txt,.json,.html,.htm,text/csv,application/json,text/html" onChange={onFile} disabled={closed} data-l1i-sample/>
+        <small>{f.sample?`${f.sample_file_name||'Sample'}: ${fmtNumber(f.sample.columns.length)} columns, ${fmtNumber(f.sample.total_rows||0)} rows${f.sample.table_index!=null?` in table ${fmtNumber(f.sample.table_index+1)} of ${fmtNumber(f.sample.tables||1)} on the page`:''}; the first ${fmtNumber(f.sample.rows.length)} are kept with the draft.`:'Read in your browser; only the column names and the first rows are kept.'}</small></label>
       <label>Dataset licence<input value={f.licence_name} onChange={set('licence_name')} disabled={closed} placeholder="For example: CC BY 4.0"/></label>
       <label>Licence address (https)<input type="url" value={f.licence_url} onChange={set('licence_url')} disabled={closed} placeholder="https://"/></label>
       <label className="wide">Attribution shown with the data<input value={f.attribution_text} onChange={set('attribution_text')} disabled={closed} placeholder="For example: Source: Australian Bureau of Statistics"/></label>
@@ -148,7 +148,7 @@ export default function Layer1InductionWizard({rank=0,onDone,onCancel,client=nul
         :<div className="l1i-wait" data-l1i-dry-run="waiting_for_reader"><StatusChip tone="warning" label={f.parser_spec?'Ready for a dry run':'Waiting for a reader'}/><p>{f.parser_spec?'This draft has an AI-built parser spec (step 3). Run a dry run to read the first rows of the source file with it; nothing is written.':'This source has no parser spec yet, so there is nothing to preview: use AI Auto-Map in step 3 with a sample of the file. You can still activate it: it is saved paused and stays paused until its reader is built and a dry run passes.'}</p></div>}
       <div className="l1i-actions"><Button compact disabled={!id||closed||!f.parser_spec||busy!==''} onClick={dryRun} data-l1i-dry-run-start>{busy==='dry'?'Running…':'Run dry run'}</Button>
         <Button compact disabled={!id||busy!==''} onClick={()=>open(id)} data-l1i-dry-refresh>Check again</Button></div>
-      {f.parser_spec&&!/\.(csv|xlsx|json)(\?|$)/i.test(f.source_url||'')?<p className="sl-sub" data-l1i-dry-file-note>The dry run reads a CSV, XLSX or JSON file. If the source address is a landing page, enter the address of the file itself in step 2.</p>:null}
+      {f.parser_spec&&f.connector_type!=='html_pages'&&!/\.(csv|xlsx|json)(\?|$)/i.test(f.source_url||'')?<p className="sl-sub" data-l1i-dry-file-note>The dry run reads a CSV, XLSX or JSON file, or a table on a web page when the connector is Web pages. If the source address is a landing page, enter the address of the file itself in step 2.</p>:null}
     </div>,
     // 6
     <div key="s6" data-l1i-step="activate">
