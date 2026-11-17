@@ -10,7 +10,7 @@ const drawer = fs.readFileSync('src/EntryRequirements.jsx', 'utf8')
 test('one menu destination with four views, beside Scholarships; one editing implementation; every write through admin_aer', () => {
   expect(nav).toContain("entry: { label: 'Entry requirements', slug: 'entry-requirements', icon: 'entry'")
   for (const t of ["{ key: 'matrix', label: 'Provider entry matrix', min: 1 }", "{ key: 'course', label: 'Course entry requirements', min: 1 }", "{ key: 'sources', label: 'Sources, reads and holds', min: 1 }", "{ key: 'resolve', label: 'Resolution inspection', min: 1 }"]) expect(nav).toContain(t)
-  expect(nav).toContain("pages: ['courses', 'providers', 'contacts', 'scholarships', 'entry', 'rankings', 'reference']")
+  expect(nav).toContain("pages: ['courses', 'providers', 'contacts', 'scholarships', 'entry', 'rankings', 'destination', 'reference']") // v2.16.19 (RM0F, decision G-2, Platform Admin 17 Nov 2026): Destination data added after Rankings & statistics
   expect(main).toContain("case'entry':return <AerWorkspace tab={tab} rank={rank} onError={onError} navigate={navigate} routeParams={routeParams}/>")
   expect(ui).toContain("supabase.rpc('admin_aer',{p_action:action,p_args:args})")
   expect(ui).not.toMatch(/supabase\.from\(/)

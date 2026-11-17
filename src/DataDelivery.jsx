@@ -15,6 +15,7 @@ import{Button,Loading,StatusChip,fmtDateTime,fmtNumber,fmtRelative,fmtTimeSecond
 import{fmtMoney}from'./lib/format'
 import{plainError}from'./lib/errors'
 import'./data-delivery.css'
+import{DestinationLoads}from'./DestinationData' // v2.16.19 RM0F
 
 const READ_TIMEOUT_MS=20000 // fixed: an API time-out for one read, so a hung request cannot halt the reload loop
 const stampOf=v=>fmtTimeSeconds(v,null)
@@ -442,6 +443,8 @@ export default function DataDelivery({rank=0,onError,client=null}){
     <div className="dd-head" aria-hidden="true"><span>Stream</span><span>Coverage</span><span>Net {hoursText(d.windows?.short_hours)}</span><span>Net {hoursText(d.windows?.long_hours)}</span><span>Website</span><span>Zoho</span><span>Queue</span><span>Holds and reasons</span><span>Speed</span><span>Last and next run</span><span>Automatic recovery</span></div>
     <div className="dd-streams">{streams.map(s=><Stream key={s.stream} s={s} now={now} providerFilters={Boolean(d.provider_filters_available)} open={open[s.stream]??Boolean(s.stages||s.provider_ai||s.aer_sources)} onToggle={o=>setOpen(x=>({...x,[s.stream]:o}))}/>)}</div>
     <RecognitionDelivery rpc={rpc}/>
+    {/* v2.16.19 RM0F: destination load jobs and what waits for a person */}
+    <DestinationLoads rpc={rpc} rank={rank}/>
     <p className="sl-sub">Net = admitted minus withdrawn, from each stream&rsquo;s own ledger timestamps. A job the scheduler reports as OK says nothing about data: the flag shows when it admitted nothing. Reload interval, windows and the number of reasons are settings (Settings &rsaquo; Pipeline settings &rsaquo; Data delivery).</p>
   </section>
 }

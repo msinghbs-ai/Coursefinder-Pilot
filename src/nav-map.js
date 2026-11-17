@@ -66,6 +66,16 @@ export const PAGES = {
   // v2.15.112 (Platform Admin, 30 Sep 2026): reference data that is not a register run moved out of Layer 1.
   // v2.15.301 (Platform Admin, 20 Oct 2026, "One list with a type filter"): Key dates and Reference sources are one list with a type
   // filter (?type=dates|links); Ranking imports moved to Rankings & statistics › Datasets. Old tab addresses redirect.
+  // v2.16.19 (RM0F; Platform Admin 17 Nov 2026 13:12, decision G-2): Destination data, after Rankings & statistics. Country and city datasets the
+  // website and Zoho read through the API v3 destination action. Curator and above (the server's own rank for the review functions); approval,
+  // publication and withdrawal are Platform Admin inside the page.
+  destination: { label: 'Destination data', slug: 'destination-data', icon: 'book', subtitle: 'Country and city datasets the website and Zoho read: localities, city figures, study rules and career outcomes, with their sources and approval.', tabs: [
+    { key: 'overview', label: 'Overview & editions', min: 3 },
+    { key: 'localities', label: 'Localities & postcodes', min: 3 },
+    { key: 'metrics', label: 'City metrics & costs', min: 3 },
+    { key: 'rules', label: 'Study rules', min: 3 },
+    { key: 'careers', label: 'Careers & outcomes', min: 3 },
+  ] },
   reference: { label: 'Reference data', slug: 'reference-data', icon: 'book', min: 3, subtitle: 'Key dates and the third-party sites the platform refers to, in one list with a type filter.' },
   // v2.15.200 (Decision 254, Platform Admin 6 Oct 15:31 and 15:38): Layer 2 is the adapters and their whole lifecycle, plus
   // scholarships. Overview, Fetch an area, History and Source profiles retired (unused for 30 days); their old addresses
@@ -165,7 +175,7 @@ export const PAGES = {
 
 export const SECTIONS = [
   { label: '', pages: ['dashboard'] },
-  { label: 'Catalogue', pages: ['courses', 'providers', 'contacts', 'scholarships', 'entry', 'rankings', 'reference'] },
+  { label: 'Catalogue', pages: ['courses', 'providers', 'contacts', 'scholarships', 'entry', 'rankings', 'destination', 'reference'] },
   { label: 'Data pipeline', pages: ['coverage', 'layer1', 'layer2', 'layer4'] },
   { label: 'Operations', pages: ['health', 'jobs', 'evidence'] },
   { label: 'Platform settings', pages: ['environment', 'services', 'migration'] },

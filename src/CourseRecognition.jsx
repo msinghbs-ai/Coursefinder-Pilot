@@ -15,7 +15,11 @@ const HELD={not_on_latest_register_edition:'Held: this registration is not on th
   registration_source_missing:'Held: the registration has no active public source.'}
 
 export default function CourseRecognition({courseId,client=null}){
-  const[d,setD]=useState(null),[err,setErr]=useState('')
+  const[d,setD]=useState(null),[err,setErr]=useState(''),[x,setX]=useState(null)
+  // v2.16.19 RM0F: the registrations by scheme (never merged), the country's field-of-study scheme and the study rules proven for this course
+  useEffect(()=>{if(!courseId)return;let live=true
+    const call=client?client('admin_course_destination_read',{p_course_id:courseId}):supabase.rpc('admin_course_destination_read',{p_course_id:courseId})
+    Promise.resolve(call).then(({data,error})=>{if(live&&!error)setX(data)}).catch(()=>{});return()=>{live=false}},[courseId])
   useEffect(()=>{if(!courseId)return;let live=true
     const call=client?client('admin_course_recognition_read',{p_course_id:courseId}):supabase.rpc('admin_course_recognition_read',{p_course_id:courseId})
     Promise.resolve(call).then(({data,error})=>{if(!live)return;if(error)setErr(error.message||'Not available');else setD(data)}).catch(e=>{if(live)setErr(String(e?.message||e))})
@@ -34,5 +38,7 @@ export default function CourseRecognition({courseId,client=null}){
       title={[r.source_label,r.valid_to?`ends ${fmtDate(r.valid_to)}`:null,r.captured_at?`evidence ${fmtDate(r.captured_at)}`:null,r.on_website_v3?'served on Website v3':'not served on Website v3'].filter(Boolean).join(' · ')}/>)}
       {regs.find(r=>r.source_url)&&<a className="cf-link" href={regs.find(r=>r.source_url).source_url} target="_blank" rel="noreferrer">Register <ExternalLink size={11}/></a>}</span>}
     <span className="ds-sub" data-recognition-field-codes title="Field of education codes the national register prints, served as field_of_study_codes[] on API v3 course detail">{codeLine}</span>
+    {x?.found&&<span className="ds-sub" data-recognition-schemes title="One line per scheme the course holds. Schemes are never merged or converted into one another.">{(x.registrations||[]).length?`Schemes held: ${[...new Set(x.registrations.map(r=>`${r.label||String(r.scheme).toUpperCase()}${r.authority?` (${r.authority})`:''}`))].join(' · ')}`:'No registration scheme held.'}{(x.field_schemes||[]).length?` Field scheme for ${x.country_code}: ${x.field_schemes.map(f=>`${String(f.scheme).toUpperCase()}${f.status==='planned'?' (not loaded yet)':''}`).join(', ')}.`:''}</span>}
+    {x?.found&&<span className="ds-sub" data-recognition-study-rules>{(x.study_rules||[]).length?<>Study rules proven for this course: {x.study_rules.map((r,i)=><React.Fragment key={r.rule_id}>{i>0&&' · '}<a className="cf-link" href="#destination-data?tab=rules" title={`Proven through the ${r.applies_through}; rule ${r.approval_status}, edition ${r.edition_status}`}>{r.title}</a></React.Fragment>)}</>:'No study rule is proven for this course yet.'}</span>}
   </FactCard>
 }

@@ -283,8 +283,17 @@ Deno.serve(async (req: Request) => {
       const login = adminLoginUrl();
       const { error: sendError } = await serviceClient.auth.resetPasswordForEmail(email, { redirectTo: login });
       if (sendError) return reply(req, 400, { error: sendError.message || "password_reset_failed" });
-      // Not written to the access history yet: its action list (user_created, user_invited, roles_replaced, user_disabled, user_enabled) is a
-      // database check, and widening it is a migration of its own. Supabase Auth keeps the recovery request in its own audit log.
+      // v2.16.19 (RM0F follow-up, Platform Admin 17 Nov 2026 13:12): the reset is written to the access history. Its action list took
+      // password_reset_sent in migration 20261117040000. The email is already sent, so a failed log write never fails the request.
+      const { error: logError } = await serviceClient.rpc("svc_admin_access_log_event", {
+        p_actor_user_id: actorUserId,
+        p_target_user_id: targetUserId,
+        p_action: "password_reset_sent",
+        p_before_state: {},
+        p_after_state: { email },
+        p_metadata: { redirect_to: login },
+      });
+      if (logError) console.warn("admin-user-management: password_reset_sent was not logged", logError.message);
       return reply(req, 200, { ok: true, user_id: targetUserId, sent_to: email });
     }
 

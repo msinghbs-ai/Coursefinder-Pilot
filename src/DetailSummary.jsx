@@ -8,6 +8,7 @@ import{StatusChip}from'./ui-kit'
 import{fmtNumber,fmtDate,fmtMoney}from'./lib/format.js'
 import'./detail-summary.css'
 import CourseRecognition from'./CourseRecognition' // CF-247 RM1A-1 (O29): Recognition card
+import ProviderDestination from'./ProviderDestination' // v2.16.19 RM0F: primary campus, mapped locality, registrations by scheme
 
 const human=v=>String(v??'').replaceAll('_',' ').replace(/^./,c=>c.toUpperCase())
 const DELIVERY={on_campus:'On campus',online:'Online',blended:'Blended',mixed:'Blended'}
@@ -75,6 +76,7 @@ export function ProviderSummary({data,navigate}){
     <FactCards>
       <FactCard id="courses" label="Courses" value={fmtNumber(Number(data.course_count||0))} sub={data.projected_course_count!=null?`${fmtNumber(Number(data.projected_course_count))} in search`:null}/>
       <FactCard id="scholarships" label="Scholarships" value={fmtNumber(Number(data.scholarship_count||0))}/>
+      {data.id&&<ProviderDestination providerId={data.id}/>}
       <FactCard id="contacts" label="International contacts" value={fmtNumber(nContacts)}>{data.id&&<button type="button" className="m-secondary compact" onClick={()=>navigate?.('Provider Contacts',{provider_id:data.id})}><UsersRound size={12}/>View contacts</button>}</FactCard>
       <FactCard id="checked" label="Last checked" value={data.last_verified_at?fmtDate(data.last_verified_at):'—'} sub={data.website?<a className="cf-link" href={data.website} target="_blank" rel="noreferrer">{String(data.website).replace(/^https?:\/\//,'')} <ExternalLink size={11}/></a>:'No website yet'}/>
       {campuses.length>0&&<FactCard id="campuses" wide label={`Campuses (${fmtNumber(Number(data.campuses_page?.total||campuses.length))})`}><Pills items={campuses.map(c=>({label:`${c.name||c.city}${c.course_count!=null?` · ${fmtNumber(c.course_count)}`:''}`,title:[c.city,c.subdivision_name].filter(Boolean).join(', ')+(c.course_count!=null?` — ${c.course_count} courses`:''),tone:'neutral'}))}/></FactCard>}
