@@ -11,7 +11,7 @@ const words=v=>v==null||v===''?'—':String(v).replace(/_/g,' ')
 const STATE_TONE={verified:'success',rejected:'warning',failed:'danger',released:'neutral',claimed:'info',pending:'info'}
 const PROMO={shadow:'Shadow (not admitted)',refused:'Refused',promoted:'Admitted',admitted:'Admitted'}
 export const tierLabel=t=>t===1?'Tier 1':t===2?'Tier 2':'No tier'
-const score=v=>fmtNumber(v,{maximumFractionDigits:2})
+const score=v=>fmtNumber(v,{maxDecimals:2})
 export default function BoostQueue({onError,client=null}){
   const rpc=client||((fn,args)=>supabase.rpc(fn,args))
   const[d,setD]=useState(null),[err,setErr]=useState(''),[f,setF]=useState({offset:0,sort:'score',direction:'desc'})
