@@ -1,7 +1,7 @@
-<!-- sop-export: id=admin-sop; version=2.55; reviewed-release=2.16.29; source-commit=acf01a355072+local; content-sha256=fd7faaf6bfabd28153213125fd86be89dc0c58fad158359ee54684a28d9fa081 -->
+<!-- sop-export: id=admin-sop; version=2.56; reviewed-release=2.16.30; source-commit=7c66eb8afc83+local; content-sha256=12e1914503774ec1c91e5bf3ac01ff9e708217948a1d597589f44024f62c4cae -->
 # StudySearch – Platform Admin SOP
 
-**Version:** 2.55 (reviewed for platform release v2.16.29)  
+**Version:** 2.56 (reviewed for platform release v2.16.30)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -139,6 +139,7 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.56 | 18 Nov 2026 | v2.16.30 | Platform health › Queues & yield › Boost queue: read each item with its Country tier and Priority score (worked out from the Boost priority settings when the list opens), filter by tier and sort by score. |
 | 2.55 | 18 Nov 2026 | v2.16.29 | Courses: show Study load and Empty reason from Columns and filter by them; an Empty reason of No reason recorded finds courses whose gaps are still to fill. Campuses: Primary badge and filter; Locality (from the postcode) and its search. |
 | 2.54 | 17 Nov 2026 | v2.16.28 | Reference data: look up any API field (where it is read from, its type, the request that asked for it) under API field dictionary, and grade conversions under Grade scale conversions. Both are read-only. |
 | 2.53 | 17 Nov 2026 | v2.16.27 | Links & Email Templates › Email delivery provider: save the card with its own Reason and Save Email Provider Settings, then Send Test Email (through Resend, to your own address) and read the answer in the card before choosing Resend API. |

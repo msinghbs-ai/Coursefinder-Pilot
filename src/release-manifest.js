@@ -1,19 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.29'
-export const PACKAGE_VERSION='0.1.451'
+export const UI_VERSION='2.16.30'
+export const PACKAGE_VERSION='0.1.452'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'17 Nov 2026',
-  title:'Courses: Study load and Empty reason; Campuses: Primary and Locality',
+  title:'Boost queue: Country tier and Priority score on Queues & yield',
   changes:[
-    'Catalogue › Courses: two new columns in the Columns picker, Study load (full-time, part-time, or both) and Empty reason (why a course\'s empty values are empty on purpose, shown as a badge). Both are off until you show them.',
-    'Catalogue › Courses: two new filters under Filters, Study load (including Not held) and Empty reason (any reason, one reason, or No reason recorded, which finds courses whose gaps are still to fill).',
-    'Catalogue › Providers › Campuses: new Primary column (badge) and Locality column. The locality is looked up from the campus postcode and says when it is still a draft in Destination data.',
-    'Campuses: new Primary filter and a Locality search box in the filter bar (type a name, press Enter).',
-    'The Campuses list now counts courses only for the rows on the page, so it opens faster.'
+    'Platform health › Queues & yield: new Boost queue card. It lists every item Boost has taken with its Country tier and Priority score, a summary by country and lane, filters for tier, country, lane and state, and a sort by score.',
+    'Country tier and Priority score are worked out when the list opens, from the Boost priority settings (country weight × category weight; the tier 1 and tier 2 country lists). Nothing is stored on a course, and the Course catalogue does not show them.',
+    'New setting Boost queue: rows per page (Settings › Pipeline settings).'
   ],
   bugFixes:[
   ]
