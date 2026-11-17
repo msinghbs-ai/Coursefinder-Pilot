@@ -5,7 +5,7 @@
 // rebuilt md5s against the live ones read on 2 Nov 2026.
 import fs from 'node:fs'
 const root = new URL('../../../supabase/', import.meta.url)
-const read = (f) => fs.readFileSync(new URL(f, root), 'utf8')
+const read = (f) => { const a = new URL(f, root); return fs.readFileSync(fs.existsSync(a) || !f.startsWith('migrations/') ? a : new URL(f.replace(/^migrations\//, 'migrations-archive/'), root), 'utf8') } // after the squash an applied file is in supabase/migrations-archive
 const between = (sql, start, endRe) => {
   const a = sql.indexOf(start); if (a < 0) throw new Error(`not found: ${start.slice(0, 80)}`)
   const r = new RegExp(endRe, 'g'); r.lastIndex = a; const m = r.exec(sql); if (!m) throw new Error(`no end after: ${start.slice(0, 80)}`)

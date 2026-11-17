@@ -4,7 +4,8 @@
 import fs from 'node:fs'
 const root = new URL('../../../supabase/', import.meta.url)
 const base = fs.readFileSync(new URL('live-capture/baseline/schema.sql', root), 'utf8')
-const mig = fs.readFileSync(new URL('migrations/20261026001000_cf247_entry_matrix_step_a.sql', root), 'utf8')
+const migUrl = ['migrations', 'migrations-archive'].map((d) => new URL(`${d}/20261026001000_cf247_entry_matrix_step_a.sql`, root)).find((u) => fs.existsSync(u)) // archived by the squash
+const mig = fs.readFileSync(migUrl || new URL('migrations/20261026001000_cf247_entry_matrix_step_a.sql', root), 'utf8')
 const table = (sql, name) => {
   const a = sql.indexOf(`CREATE TABLE IF NOT EXISTS ${name} (`); if (a < 0) throw new Error(`not in baseline: ${name}`)
   return sql.slice(a, sql.indexOf('\n);', a) + 3)

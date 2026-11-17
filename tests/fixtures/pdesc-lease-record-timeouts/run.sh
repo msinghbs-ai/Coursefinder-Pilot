@@ -2,6 +2,7 @@
 # Guards: F-PDESC (P0, Platform Admin 9 Nov 2026), lease and record statement time-outs: migration 20261109233000 edits only public.svc_provider_description_next(integer) and public.svc_provider_description_record(jsonb) (checked by the md5 of each function body, the same text on PostgreSQL 16 and 17, and it refuses and changes nothing when either live function differs from the one it was written against), adds one index and no setting, job, table or column, and the lease and the record give the same items, order, content and results before and after.
 # Needs a scratch PostgreSQL 16 (never a Supabase project): PGHOST/PGPORT/PGUSER point at it. Builds the database with the pdesc-claim-context harness, applies 20261109182000 and 20261109185000 (the text this change edits), runs the scenarios, applies the migration twice, runs them again.
 set -euo pipefail
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../lib/migration-path.sh"  # migpath: a migration in supabase/migrations or migrations-archive
 cd "$(dirname "$0")/../../.."
 export LC_ALL=C # fixed: one byte order for sort and comm, whatever the runner's locale
 DB=${PDLRT_DB:-g_pdesc_leasetimeouts}
@@ -15,7 +16,7 @@ BASE=$(PDCC_KEEP=1 PDCC_DB=$DB bash tests/fixtures/pdesc-claim-context/run.sh 2>
 echo "base: pdesc-claim-context harness built the database (20261109020000, 20261109030000 and 20261109120000 applied)"
 W=$(mktemp -d); trap 'rm -rf "$W"; [ -n "${PDLRT_KEEP:-}" ] || { dropdb --if-exists '$DB' >/dev/null 2>&1; dropdb --if-exists '${DB}_refuse' >/dev/null 2>&1; }' EXIT
 for pre in 20261109182000_cf247_pdesc_lease_one_pass 20261109185000_cf247_pdesc_identity_reeval; do
-  $P -1 -At -f supabase/migrations/$pre.sql >/dev/null || { echo "the prerequisite migration $pre failed"; exit 1; }
+  $P -1 -At -f "$(migpath "$pre")" >/dev/null || { echo "the prerequisite migration $pre failed"; exit 1; }
 done
 echo "prerequisite: 20261109182000 and 20261109185000 applied (the lease and the record as live has them)"
 

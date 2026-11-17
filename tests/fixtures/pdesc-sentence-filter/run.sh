@@ -3,6 +3,7 @@
 # so that one weak sentence no longer sinks a provider-description proposal: with drop_failing (set only by the record of a new read) a sentence that fails a sentence rule is left out, the sentences that pass every rule are kept and stored, and fewer kept sentences than pdesc.min_sentences hold the read with the first failing rule; every other caller of the validator still holds the answer on the first failing sentence; no sentence rule is loosened; no other function, setting, table, trigger, read, Layer 4 item or job changes; the forward recovery in supabase/held restores both earlier bodies byte for byte.
 # Needs a scratch PostgreSQL 16 (never a Supabase project): PGHOST/PGPORT/PGUSER point at it. Builds the database with the pdesc-lease-record-timeouts harness (which applies 20261109182000, 20261109185000 and 20261109233000), applies 20261110040000 and 20261110090000, runs the scenarios, applies the migration twice, runs them again, applies the forward recovery and runs them a third time.
 set -euo pipefail
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../lib/migration-path.sh"  # migpath: a migration in supabase/migrations or migrations-archive
 cd "$(dirname "$0")/../../.."
 export LC_ALL=C # fixed: one byte order for sort and comm, whatever the runner's locale
 DB=${PDSF_DB:-g_pdesc_sentfilter}
@@ -23,7 +24,7 @@ BASE=$(PDLRT_KEEP=1 PDLRT_DB=$DB bash tests/fixtures/pdesc-lease-record-timeouts
 echo "base: pdesc-lease-record-timeouts harness built the database (20261109020000, 20261109030000, 20261109120000, 20261109182000, 20261109185000 and 20261109233000 applied)"
 W=$(mktemp -d); trap 'rm -rf "$W"; [ -n "${PDSF_KEEP:-}" ] || { dropdb --if-exists '$DB' >/dev/null 2>&1; dropdb --if-exists '${DB}_refuse' >/dev/null 2>&1; }' EXIT
 for pre in 20261110040000_cf247_pdesc_basic_profile_upgrade 20261110090000_cf247_pdesc_signature_reader_version; do
-  $P -1 -At -f supabase/migrations/$pre.sql >/dev/null || { echo "the prerequisite migration $pre failed"; exit 1; }
+  $P -1 -At -f "$(migpath "$pre")" >/dev/null || { echo "the prerequisite migration $pre failed"; exit 1; }
 done
 echo "prerequisite: 20261110040000 and 20261110090000 applied (the picker, the lease and the signature as live has them after #973 and #980)"
 

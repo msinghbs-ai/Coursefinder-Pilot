@@ -9,7 +9,7 @@ cd "$(dirname "$0")/../../.."
 export LC_ALL=C # fixed: one byte order for sort and comm, whatever the runner's locale
 case "${PGHOST:-127.0.0.1}" in 127.0.0.1|localhost|/tmp|/var/run/postgresql) ;; *) echo 'Refusing a remote database: use isolated local PostgreSQL' >&2; exit 1;; esac
 BASE=${CR_BASE:-intake_page_date_recovery_fixtures}; DB=${CR_DB:-calendar_reread_all_fixtures}; RF=${DB}_refuse; F=tests/fixtures/calendar-reread-all-providers
-M=$(ls supabase/migrations/*_cf247_calendar_reread_all_providers.sql | head -1)
+M=$(ls supabase/migrations/*_cf247_calendar_reread_all_providers.sql supabase/migrations-archive/*_cf247_calendar_reread_all_providers.sql 2>/dev/null | head -1)
 R=supabase/held/calendar_reread_all_providers_forward_recovery.sql
 NEXT='public.svc_calendar_reread_next_v2(integer,text)'; REL='security.calendar_reread_relevant_v2()'
 NEXT_BEFORE=755ef3b77c797c89fa2caa215e33d4ee; NEXT_AFTER=6bede79de2f656b4bc9de6ea783696b6; REL_AFTER=42e2c5a73dbfbf6cacc333ffb92a9b61

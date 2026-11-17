@@ -6,6 +6,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { centralCandidates, entryCandidates, weakKinds, ENTRY_SEARCH } from '../../supabase/functions/coverage-sweep/central.ts'
+import { migrationPath } from './support/migration-files.mjs'
 
 const MIG = 'supabase/migrations/20261111100000_cf247_aer_entry_search.sql'
 const m = fs.readFileSync(MIG, 'utf8')
@@ -16,7 +17,7 @@ const L = (url, title = null) => ({ url, title })
 test('the live AER migrations applied overnight are checked in byte for byte (no live-only object)', () => {
   for (const f of ['20261111010000_cf247_aer_row_limits_from_evidence', '20261111020000_cf247_aer_machine_admission', '20261111030000_cf247_aer_machine_same_page_recapture',
     '20261111040000_cf247_aer_title_identity', '20261111050000_cf247_aer_title_identity_index', '20261111060000_cf247_aer_title_identity_set', '20261111070000_cf247_aer_source_discover']) {
-    expect(fs.existsSync(`supabase/migrations/${f}.sql`), f).toBe(true)
+    expect(fs.existsSync(migrationPath(`${f}.sql`)), f).toBe(true)
   }
 })
 

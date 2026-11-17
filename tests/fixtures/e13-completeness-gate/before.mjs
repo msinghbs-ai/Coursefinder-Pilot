@@ -3,7 +3,7 @@
 // statement, then the md5-guarded edits later migrations made to it, in order. run.sh checks the rebuilt md5s against the live ones.
 import fs from 'node:fs'
 const dir = new URL('../../../supabase/migrations/', import.meta.url)
-const read = (f) => fs.readFileSync(new URL(f, dir), 'utf8')
+const read = (f) => { const a = new URL(f, dir); return fs.readFileSync(fs.existsSync(a) ? a : new URL(f, new URL('../migrations-archive/', dir)), 'utf8') } // after the squash an applied file is in supabase/migrations-archive
 const helper = (sql) => sql.slice(sql.indexOf('create or replace function pg_temp.edit_n('), sql.indexOf('end $f$;') + 'end $f$;'.length)
 const create = (sql, name) => { const a = sql.indexOf(`create or replace function ${name}(`); const e = /\nend \$(function)?\$;/g; e.lastIndex = a; const m = e.exec(sql); return sql.slice(a, m.index + m[0].length) }
 const edit = (sql, sig) => { const a = sql.indexOf(`select pg_temp.edit_n('${sig}'`); const m = /array\[[\d,\s]+\]\);/g; m.lastIndex = a; const e = m.exec(sql); return sql.slice(a, e.index + e[0].length) }

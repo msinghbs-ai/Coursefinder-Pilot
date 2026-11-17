@@ -25,7 +25,7 @@ test('one migration, version 20261109190000, after the selector fix it follows, 
   for (const dep of ['20261103070000', '20261104580000', '20261107130100', '20261109150000']) expect(files.find((f) => f.startsWith(dep)), dep).toBeTruthy()
   expect(M).toMatch(/^-- Replaces: .+/m)
   expect(M).toMatch(/^-- Retires: nothing/m)
-  expect(run).toContain(`MIG=supabase/migrations/${NAME}`)
+  expect(run).toMatch(new RegExp(`MIG=supabase/migrations(-archive)?/${NAME.replace(/[.]/g, '\\.')}`)) // either folder: the squash archives it
 })
 
 test('one function is edited under its live md5 (read 9 Nov 2026) with a recorded after md5; D-R2, the held step and the measure are not edited', () => {
@@ -87,6 +87,6 @@ test('CI runs the fixture on an isolated PostgreSQL 16 and nothing else', () => 
   expect(wf).toMatch(/^# Guards: .+/m)
   expect(wf).toContain('postgres:16')
   expect(wf).toContain('bash tests/fixtures/aer-lock-agreement/run.sh')
-  expect(wf).toContain(`'supabase/migrations/${NAME}'`)
+  expect(wf).toMatch(new RegExp(`'supabase/migrations(-archive)?/${NAME.replace(/[.]/g, '\\.')}'`)) // either folder: the squash archives it
   expect(wf).not.toMatch(/SUPABASE_|supabase\.co|secrets\./)
 })
