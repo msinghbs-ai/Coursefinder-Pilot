@@ -1,0 +1,31 @@
+# CF-247 Wave 2 Track B (S2-Build, 18 Nov 2026): read-only probe of the deterministic HTML table extractor against live pages (the Track B
+# drafts' addresses by default). Fetches the pages from GitHub's runner and prints the tables found; touches no database and no secret.
+name: Layer 1 HTML table probe
+on:
+  workflow_dispatch:
+    inputs:
+      urls:
+        description: "Space-separated https addresses (default: the four Track B drafts)"
+        required: false
+        default: ""
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Probe the pages
+        env:
+          URLS: ${{ inputs.urls }}
+        run: |
+          set -u
+          list="${URLS:-https://www.canada.ca/en/immigration-refugees-citizenship/services/study-canada/work/after-graduation/eligibility/field-of-study.html https://www.officeforstudents.org.uk/for-providers/regulatory-resources/guide-to-the-ofs-register/ https://www.qqi.ie/what-we-do/the-qualifications-system/irish-register-of-qualifications}"
+          for u in $list; do
+            [[ "$u" =~ ^https:// ]] || { echo "::warning::skipped $u (not https)"; continue; }
+            node scripts/layer1-html-table-probe.mjs "$u" || echo "::warning::$u could not be read"
+          done

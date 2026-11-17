@@ -18,7 +18,7 @@ import { fetchBytes, readTable } from "../_shared/cf247-layer1-read.ts";
 // in chunks of layer1.declarative_chunk_rows with a row key and hash. Course and provider registers apply their new and changed records through
 // svc_layer1_apply_register_records in chunks of layer1.register_apply_chunk; the other record types are staged for review. Every record names the
 // enrichment categories it leaves open; Australian postcodes are flagged against the ABS postcode-to-SUA shares.
-const VERSION = "1.0.0";
+const VERSION = "1.0.1";
 const APPLY_FN = "public.svc_layer1_apply_register_records";
 
 const cors = {
@@ -31,7 +31,7 @@ const json = (body: unknown, status = 200) =>
 const fail = (error: string, status = 200) => json({ ok: false, error }, status);
 const clean = (v: unknown, max = 300) => String(v ?? "").replace(/\s+/g, " ").trim().slice(0, max);
 const isUuid = (v: unknown) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(v ?? ""));
-const MIME: Record<string, string> = { csv: "text/csv", xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", json: "application/json" };
+const MIME: Record<string, string> = { csv: "text/csv", xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", json: "application/json", html_table: "text/html" };
 
 async function rpc(client: any, name: string, args: Record<string, unknown> = {}) {
   const { data, error } = await client.rpc(name, args);

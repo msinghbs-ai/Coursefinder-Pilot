@@ -1,5 +1,5 @@
 // Guards: Wave 2 PR C, the generic Layer 1 declarative runner (Platform Admin 17 Nov 2026 17:55, 19:08, 19:58, 22:04, 23:02): AI-built parser specs only (no SQL or code), header drift halts and flags re-inference, chunked staging with row-hash diffing, course and provider registers through svc_layer1_apply_register_records, other record types staged for review, gap routing to the eight enrichment categories, ABS postcode flags, a dry run that writes nothing and switches nothing on, departures in staging only
-// CF-247 S596. Migration 20261118013000_cf247_w2c_layer1_declarative_runner.sql; edge function layer1-declarative-runner 1.0.0.
+// CF-247 S596. Migration 20261118013000_cf247_w2c_layer1_declarative_runner.sql; edge function layer1-declarative-runner 1.0.1 (1.0.1: html_table, s613).
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
@@ -30,7 +30,7 @@ test('sizes are settings; gap routes name only the eight categories and the seve
 })
 
 test('the runner: AI-built specs only, drift halts and flags, registers apply new and changed records, dry run writes nothing', () => {
-  expect(fn).toContain('const VERSION = "1.0.0";')
+  expect(fn).toContain('const VERSION = "1.0.1";')
   expect(fn).toContain('par.parser_kind !== "ai_built"')
   expect(fn).toContain('if (par.drift_flagged_at) return fail(')
   expect(fn).toContain('if (p.terms_status !== "approved") return fail(')

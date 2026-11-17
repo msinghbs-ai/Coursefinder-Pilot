@@ -36,5 +36,5 @@ test('the mapper answers re-infer only with a nonce; hardcoded parsers are skipp
   expect(fn).toContain('spec_by: "ai_reinfer"')
   expect(fn).not.toMatch(/paused\s*[:=]\s*false|resume/i)
   expect(rd).not.toMatch(/\beval\(|new Function\(/)
-  expect(rd).toContain('throw new Error(`format ${format} is not read by the declarative reader (csv, xlsx and json are)`);')
+  expect(rd).toContain('throw new Error(`format ${format} is not read by the declarative reader (csv, xlsx, json and html_table are)`);')  // html_table since s613 (Track B, 18 Nov 2026)
 })

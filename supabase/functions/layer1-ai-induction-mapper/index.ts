@@ -13,7 +13,7 @@ import { fetchBytes, readTable } from "../_shared/cf247-layer1-read.ts";
 //           public.svc_layer1_parser_record when it passes the check; a hardcoded parser is answered "needs a code change".
 // The model is called by the coverage-sweep worker (mode induction_map), the only caller of the model provider: the route layer1_induction_map
 // gives its one model, caps and holds, and every attempt is kept in pipeline.ai_invocations (Platform Admin 17 Nov 2026 20:30). A person decides every mapping.
-const VERSION = "1.1.0";
+const VERSION = "1.2.0";
 const FUNCTION_NAME = "layer1-ai-induction-mapper";
 const FORMAT_OF: Record<string, string> = { csv_file: "csv", xlsx_file: "xlsx", json_api: "json", html_pages: "html_table" };
 const CONNECTORS = ["csv_file", "xlsx_file", "json_api", "html_pages", "pdf_document", "manual_upload"];
@@ -151,7 +151,7 @@ async function reinfer(service: any, url: string, key: string, limit: number) {
       }
       const ind = it.induction || {};
       const format = FORMAT_OF[clean(ind.connector_type, 40)];
-      if (!ind.source_url || !format || format === "html_table") throw new Error(`the source cannot be read declaratively (${ind.connector_type || "no connector"}, ${ind.source_url ? "address known" : "no address"})`);
+      if (!ind.source_url || !format) throw new Error(`the source cannot be read declaratively (${ind.connector_type || "no connector"}, ${ind.source_url ? "address known" : "no address"})`);
       const bytes = await fetchBytes(String(ind.source_url), maxBytes, 60000); // fixed: API time-out
       const prev = it.parser_spec || {};
       const table = readTable(bytes, format, (prev.source || {}) as Record<string, unknown>, sampleRows);
@@ -224,7 +224,12 @@ Deno.serve(async (req) => {
     const induction = await rpc(service, "svc_layer1_induction_read", { p_id: body.induction_id, p_source_id: null });
     if (!induction) return fail("The draft was not found; save it and try again.");
     const attribution = clean(induction?.payload?.attribution_text ?? induction?.attribution_text ?? "", 1000);
-    const pr = await propose(service, url, key, { recordType, connector, country, columns, rows, targetFields, categories, attribution });
+    // Track B (18 Nov 2026): which table on a web page, and its header row, as the wizard read them from the sample
+    const src: Record<string, number> = {};
+    const ti = Math.floor(Number(body.source?.table_index)), hr = Math.floor(Number(body.source?.header_row));
+    if (connector === "html_pages" && ti >= 0 && ti <= 50) src.table_index = ti; // fixed: input-safety bound (as the spec check)
+    if (connector === "html_pages" && hr >= 1 && hr <= 200) src.header_row = hr; // fixed: input-safety bound (as the spec check)
+    const pr = await propose(service, url, key, { recordType, connector, country, columns, rows, targetFields, categories, attribution, ...(Object.keys(src).length ? { source: src } : {}) });
     return json({ ok: true, version: VERSION, model: pr.model, suggestions: pr.suggestions, parser_spec: pr.parser_spec, validation: pr.validation });
   } catch (e) {
     return fail(e instanceof Error ? e.message : String(e));
