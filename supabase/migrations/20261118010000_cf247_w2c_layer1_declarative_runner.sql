@@ -124,7 +124,7 @@ begin
       'country_code', (select c.iso_alpha2::text from ref.countries c where c.id = v_src.country_id)) end,
     'operations', case when v_ops.source_id is null then null else jsonb_build_object('active', v_ops.active, 'paused', v_ops.paused, 'expected_format', v_ops.expected_format) end,
     'targets', security.layer1_parser_targets_v1(), 'gap_routes', security.layer1_gap_routes_v1(),
-    'categories', (select coalesce(jsonb_agg(e.key order by e.key), '[]'::jsonb) from ref.enrichment_categories e));
+    'categories', (select coalesce(jsonb_agg(e.category_key order by e.sort_order), '[]'::jsonb) from ref.enrichment_categories e));
 end $function$;
 comment on function public.svc_layer1_declarative_source_v1(uuid, uuid) is 'CF-247 Wave 2 PR C (17 Nov 2026): what layer1-declarative-runner needs for a source or a wizard draft: the draft, the parser (kind, spec, drift), the source, its Layer 1 controls, the allowed targets and the gap routes. Service role only.';
 revoke all on function public.svc_layer1_declarative_source_v1(uuid, uuid) from public, anon, authenticated;
@@ -256,7 +256,7 @@ grant execute on function public.svc_layer1_declarative_run_finish_v1(uuid, text
 
 do $$
 begin
-  if exists (select 1 from jsonb_each(security.layer1_gap_routes_v1()) t, jsonb_object_keys(t.value) k where k not in (select key from ref.enrichment_categories)) then
+  if exists (select 1 from jsonb_each(security.layer1_gap_routes_v1()) t, jsonb_object_keys(t.value) k where k not in (select category_key from ref.enrichment_categories where active)) then
     raise exception 'post-check: a gap route names a category that is not in ref.enrichment_categories';
   end if;
   if exists (select 1 from jsonb_object_keys(security.layer1_gap_routes_v1()) k where not (security.layer1_parser_targets_v1() ? k)) then
