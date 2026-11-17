@@ -7,10 +7,11 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
+import { migrationNames, migrationPath } from './support/migration-files.mjs'
 
 const DIR = 'supabase/migrations'
-const file = fs.readdirSync(DIR).find((f) => f.endsWith('_cf247_admin_read_snapshots.sql'))
-const mig = fs.readFileSync(`${DIR}/${file}`, 'utf8')
+const file = migrationNames().find((f) => f.endsWith('_cf247_admin_read_snapshots.sql'))
+const mig = fs.readFileSync(migrationPath(file), 'utf8')
 const refresh = mig.slice(mig.indexOf('create or replace function security.course_coverage_snapshot_refresh_v1'), mig.indexOf('end $function$;', mig.indexOf('create or replace function security.course_coverage_snapshot_refresh_v1')))
 const snapshotBranch = mig.slice(mig.indexOf("  elsif p_operation='course_coverage' and exists (select 1 from pipeline.course_coverage_snapshot"), mig.indexOf("  elsif p_operation='course_coverage' then\n    with a as ($n$"))
 const replaced = [...mig.matchAll(/array\[\$o\$([\s\S]*?)\$o\$,/g)].map((m) => m[1])

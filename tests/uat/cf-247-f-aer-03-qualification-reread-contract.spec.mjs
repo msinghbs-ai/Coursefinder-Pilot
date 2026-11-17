@@ -2,6 +2,7 @@
 // Only sources whose provider has no entry-matrix item waiting for a person are read again (no second item beside a waiting one); active rows stay until a person approves.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
+import { migrationNames } from './support/migration-files.mjs'
 
 const MIG = 'supabase/migrations/20261112070000_cf247_aer_qualification_reread.sql'
 const m = fs.readFileSync(MIG, 'utf8')
@@ -13,5 +14,5 @@ test('the governed re-read is used for exactly the 8 sources with no waiting ite
   expect(code).toContain("'F-AER.03 qualification-first (worker v0.70.0)")
   expect(code).not.toMatch(/\b(update|insert|delete|drop|truncate|alter)\b/i)
   expect(m).toMatch(/^-- Replaces: nothing\. Retires: nothing\./m)
-  expect(fs.readdirSync('supabase/migrations').filter((f) => f.startsWith('20261112070000_'))).toEqual(['20261112070000_cf247_aer_qualification_reread.sql'])
+  expect(migrationNames().filter((f) => f.startsWith('20261112070000_'))).toEqual(['20261112070000_cf247_aer_qualification_reread.sql'])
 })

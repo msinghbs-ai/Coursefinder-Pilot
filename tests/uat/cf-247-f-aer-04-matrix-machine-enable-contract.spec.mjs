@@ -3,6 +3,7 @@
 // in shadow with the failed validation recorded. A pass never switches anything on by itself: this migration is the decision D1 carried out, recorded as control events.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
+import { migrationNames } from './support/migration-files.mjs'
 
 const m = fs.readFileSync('supabase/migrations/20261112143700_cf247_aer_matrix_machine_enable.sql', 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
@@ -19,5 +20,5 @@ test('mode 2 only after a passing validation in the same run, with the quote pro
   expect(code).toContain("'matrix_machine_mode_set'")
   expect(m).toMatch(/^-- Replaces: nothing\./m)
   expect(m).toMatch(/^-- Retires: nothing\./m)
-  expect(fs.readdirSync('supabase/migrations').filter((f) => f.startsWith('20261112143700_'))).toEqual(['20261112143700_cf247_aer_matrix_machine_enable.sql'])
+  expect(migrationNames().filter((f) => f.startsWith('20261112143700_'))).toEqual(['20261112143700_cf247_aer_matrix_machine_enable.sql'])
 })

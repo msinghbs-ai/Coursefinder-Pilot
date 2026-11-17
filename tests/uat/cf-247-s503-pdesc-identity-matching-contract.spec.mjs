@@ -2,6 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { aboutPageCheck, descriptionIdentityAliases, descriptionPageText, descriptionSourceIdentity } from '../../supabase/functions/coverage-sweep/description.ts'
+import { migrationNames } from './support/migration-files.mjs'
 
 const fx = (name) => fs.readFileSync(`tests/fixtures/pdesc-identity/${name}`, 'utf8')
 // the worker's call: the page text, the catalogue names and the evidence the database gave it (the final address and the provider's own verified hosts)
@@ -103,5 +104,5 @@ test('G2: the change adds no setting, no migration and no operational number; th
   const ix = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(ix).toMatch(/\{ url: String\(rec\.url \|\| ""\), hosts \}(?:, proofTrace)?\)/)   // v0.63.0 also passes the diagnostics trace
   expect(ix).toMatch(/const WORKER = "coverage-sweep-worker-v(?:[1-9]\d*\.\d+\.\d+|0\.(?:59\.(1[3-9]|[2-9]\d)|[6-9]\d\.\d+))"/)  // v0.59.13 or a later reader: this change's own worker version is checked by its own spec
-  expect(fs.readdirSync('supabase/migrations').filter((f) => f.endsWith('.sql') && f >= '20261109130000' && f < '20261109140000')).toEqual([])
+  expect(migrationNames().filter((f) => f.endsWith('.sql') && f >= '20261109130000' && f < '20261109140000')).toEqual([])
 })

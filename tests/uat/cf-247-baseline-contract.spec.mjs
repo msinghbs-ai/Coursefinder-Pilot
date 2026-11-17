@@ -47,7 +47,7 @@ test('rebuild applies the extension-type grant postscript after the schema', () 
 })
 
 test('old migrations are archived and the migrations folder holds only changes after the baseline', () => {
-  const archived = readdirSync('supabase/migrations-archive').filter((f) => f.endsWith('.sql'))
+  const archived = readdirSync('supabase/migrations-archive').filter((f) => f.endsWith('.sql') && f < '20261010006400') // the 10 Oct baseline's archive (later squashes add files after it)
   expect(archived.length).toBe(1062) // 1,053 at capture + the nine 8 Oct 2026 website API v2 files, applied live before the baseline and checked in on 14 Oct (Decision 257)
   expect(archived).toContain('20261008033739_cf247_website_v2_providers_rankings_reference.sql')
   expect(archived).toContain('20261010006300_cf247_course_detail_slim.sql')

@@ -4,6 +4,7 @@
 // This spec holds the source contract. G2, G3 and housekeeping are guarded centrally (s32, s57, s42) and not re-asserted here.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
+import { migrationNames, migrationPath } from './support/migration-files.mjs'
 
 const MIG = fs.readFileSync('supabase/migrations/20261107150000_cf247_aer_source_stored_discovery.sql', 'utf8')
 const code = MIG.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
@@ -62,8 +63,8 @@ test('the page rules are the worker\'s: every pattern of central.ts entry_requir
   const strong = central.match(/entry_requirements: \{\s*strong: \/(.+?)\/,\s*weak: \/(.+?)\//s)
   expect(strong).toBeTruthy()
   // the latest migration that defines the scorer (20261111100000 F-AER.01 adds the small-provider top-level rule with central.ts v0.64.0)
-  const lastDef = fs.readdirSync('supabase/migrations').filter((f) => f.endsWith('.sql')).sort().reverse()
-    .map((f) => fs.readFileSync(`supabase/migrations/${f}`, 'utf8')).find((t) => /function security\.entry_source_score_v1\(/i.test(t))
+  const lastDef = migrationNames().filter((f) => f.endsWith('.sql')).sort().reverse()
+    .map((f) => fs.readFileSync(migrationPath(f), 'utf8')).find((t) => /function security\.entry_source_score_v1\(/i.test(t))
   const lc = lastDef.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n'), la = lc.search(/function security\.entry_source_score_v1\(/i)
   const score = lc.slice(la, lc.indexOf('$function$;', lc.indexOf('$function$', la) + 10))
   expect(score).toContain(strong[1].replace(/\\\//g, '/'))

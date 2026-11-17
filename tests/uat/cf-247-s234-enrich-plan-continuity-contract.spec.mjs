@@ -8,6 +8,7 @@
 // and the paste file and rollback rehearsed on the measured ids).
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
+import { migrationNames, migrationPath } from './support/migration-files.mjs'
 
 const MIG = 'supabase/migrations/20261103120000_cf247_enrich_plan_continuity.sql'
 const m = fs.readFileSync(MIG, 'utf8')
@@ -84,8 +85,8 @@ test('Run now never changes a recurring schedule (mandate §6): plan Run now and
   expect(runBlock).not.toMatch(/enrich_plan_control|cron\./)
   expect(fixtures).toContain("if (select row(auto_enabled, owner, reason) from pipeline.enrich_plan_control) is distinct from v_ctl then raise exception 'G1: a Run now changed the automatic plans'")
   // Scheduled jobs › Automations › Run now: runs the job's command once; only set_every alters the cron schedule
-  const autoMig = fs.readdirSync('supabase/migrations').filter((f) => f.endsWith('.sql')).sort().reverse()
-    .map((f) => read(`supabase/migrations/${f}`)).find((s) => s.includes("p_action='run_now' then") && s.includes('admin_automation_control_v1'))
+  const autoMig = migrationNames().filter((f) => f.endsWith('.sql')).sort().reverse()
+    .map((f) => read(migrationPath(f))).find((s) => s.includes("p_action='run_now' then") && s.includes('admin_automation_control_v1'))
   const block = autoMig.slice(autoMig.indexOf("p_action='run_now' then"), autoMig.indexOf('elsif', autoMig.indexOf("p_action='run_now' then")))
   expect(block.replace(/\s+/g, ' ').trim()).toBe("p_action='run_now' then execute j.command;")
   // Refresh schedules › Run on demand retired with its section (SS-020 follow-up, 4 Nov 2026; guarded by s274)

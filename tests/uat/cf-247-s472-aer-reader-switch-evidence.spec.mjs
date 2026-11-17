@@ -8,6 +8,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { courseEntrySliceRows } from '../../supabase/functions/coverage-sweep/course-entry.ts'
 import { entryCountryAliases, entryMatrixParsed } from '../../supabase/functions/coverage-sweep/entry.ts'
+import { migrationNames, migrationPath } from './support/migration-files.mjs'
 
 const SHAPES = JSON.parse(fs.readFileSync('tests/fixtures/aer-reader-switch-evidence/quote-shapes-20261108.json', 'utf8')).drops
 const QM = fs.readFileSync('supabase/migrations/20261108020000_cf247_aer_reader_quality.sql', 'utf8')
@@ -99,8 +100,8 @@ test('BEFORE and AFTER for the 122 live unknown_country drops: the alias list tu
 
 test('the three switches still ship off, the revision is not touched by this lane\'s migrations, and the prepared revision change is documented but not applied', () => {
   for (const k of ['reading.course_quote_fragments_on', 'reading.entry_country_aliases_on', 'reading.entry_value_null_on']) expect(QM).toMatch(new RegExp(`'${k.replace('.', '\\.')}'[\\s\\S]*?to_jsonb\\(0\\), 0, 1, 'on/off'`))
-  for (const f of fs.readdirSync('supabase/migrations').filter((x) => /^2026110815\d{4}_/.test(x))) {
-    const body = fs.readFileSync(`supabase/migrations/${f}`, 'utf8').split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')
+  for (const f of migrationNames().filter((x) => /^2026110815\d{4}_/.test(x))) {
+    const body = fs.readFileSync(migrationPath(f), 'utf8').split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')
     expect(body, f).not.toMatch(/reader_revision|reading\.(course_quote_fragments_on|entry_country_aliases_on|entry_value_null_on)/)
   }
   const paste = fs.readFileSync('docs/paste/AER2-20261108-reader-revision-2.md', 'utf8')

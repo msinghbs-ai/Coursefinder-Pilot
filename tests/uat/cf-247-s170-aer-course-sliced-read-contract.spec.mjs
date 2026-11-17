@@ -4,6 +4,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { courseEntryAnswer, courseEntryCoverage, courseEntryMerge, courseEntryPlan, courseEntrySliceRows, courseEntrySlices, courseEntryUser, COURSE_ENTRY_SLICE_BASIS } from '../../supabase/functions/coverage-sweep/course-entry.ts'
 import { htmlToText, pageDataItems } from '../../supabase/functions/coverage-sweep/extract.ts'
+import { migrationNames, migrationPath } from './support/migration-files.mjs'
 
 const FX = 'tests/fixtures/course-entry'
 const html = fs.readFileSync(`${FX}/long-course-page.html`, 'utf8')
@@ -145,8 +146,8 @@ test('worker and settings: the course read uses the plan, the merge and the five
   expect(read).toContain('courseEntryMerge(plan.slices, outcomes, plan.page_chars)')
   expect(read).toContain('error: `held_partial: ${m.reason}`.slice(0, 300), cost: m.cost / items.length')
   expect(read).not.toContain('.slice(0, chars)')  // the page is never cut to its limit
-  const [mig] = fs.readdirSync('supabase/migrations').filter((f) => f.endsWith('_cf247_aer_course_sliced_read.sql'))
-  const sql = fs.readFileSync(`supabase/migrations/${mig}`, 'utf8')
+  const [mig] = migrationNames().filter((f) => f.endsWith('_cf247_aer_course_sliced_read.sql'))
+  const sql = fs.readFileSync(migrationPath(mig), 'utf8')
   for (const k of ['enrich.course_entry_slice_chars', 'enrich.course_entry_slice_overlap_chars', 'enrich.course_entry_max_slices', 'enrich.course_entry_max_tokens', 'enrich.course_entry_slice_concurrency']) expect(sql).toContain(`('pipeline', '${k}', 'Course entry requirements: `)
   expect(sql).toContain("select pg_temp.edit_n('security.enrich_entry_record_v1(bigint,jsonb)', '0f4d8f90b006f84f4523b110dfa5eaa2'")
 })

@@ -6,9 +6,10 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
+import { migrationNames, migrationPath } from './support/migration-files.mjs'
 
-const MIG = fs.readdirSync('supabase/migrations').find((f) => /^2026103\d{7}_cf247_universities_paging\.sql$/.test(f) || f === '20261030040000_cf247_universities_paging.sql')
-const sql = fs.readFileSync(`supabase/migrations/${MIG}`, 'utf8')
+const MIG = migrationNames().find((f) => /^2026103\d{7}_cf247_universities_paging\.sql$/.test(f) || f === '20261030040000_cf247_universities_paging.sql')
+const sql = fs.readFileSync(migrationPath(MIG), 'utf8')
 const screen = fs.readFileSync('src/AdaptersWorkspace.jsx', 'utf8')
 
 test('the server answers one page: an md5-guarded edit adds universities_page beside the two actions it keeps, with its size from a setting', () => {

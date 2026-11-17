@@ -1,12 +1,13 @@
 // Guards: Platform Admin approval 30 Oct 2026 08:45 (D5) under decision A4 (admin docs/platform/AER-OPERATIONS-WORKSPACE-DECISION-2026-10-29.md §9 and §11.2; register WEBSITE-DEVELOPER-REQUIREMENTS O9): the additive Website API v2 marker scale_stated on entry_matrix items and entry.resolution rows (true stated scale, false printed grade with no stated scale, null case by case); no inferred scale; no existing key changed; option R1, the governed "Not stated on the page" scale choice in the AER workspace (G3 itself is guarded by s57)
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
+import { migrationNames, migrationPath } from './support/migration-files.mjs'
 
 const dir = 'supabase/migrations'
 const find = suffix => {
-  const f = fs.readdirSync(dir).filter(x => x.endsWith(suffix))
+  const f = migrationNames().filter(x => x.endsWith(suffix))
   expect(f, suffix).toHaveLength(1)
-  return fs.readFileSync(`${dir}/${f[0]}`, 'utf8')
+  return fs.readFileSync(migrationPath(f[0]), 'utf8')
 }
 const m = find('_cf247_d5_scale_stated_marker.sql')
 const r1 = find('_cf247_d5_aer_scale_not_stated.sql')
@@ -51,7 +52,7 @@ test('resolver fixtures: the three-way distinction, and no-scale rows are a publ
   const c = code(m)
   expect(c.split(`'scale_stated', ${SCALE_STATED_SQL})`).length - 1).toBe(2)
   expect(c).toContain(`'case_by_case', ${CASE_BY_CASE_SQL},`)
-  expect(fs.readFileSync(`${dir}/20261028005000_cf247_entry_step_b_consumer_api.sql`, 'utf8')).toContain("'scale', case when m.min_grade is null then 'none' else m.grade_scale end")
+  expect(fs.readFileSync(migrationPath('20261028005000_cf247_entry_step_b_consumer_api.sql'), 'utf8')).toContain("'scale', case when m.min_grade is null then 'none' else m.grade_scale end")
 })
 
 // ---------------------------------------------------------------- the consumer part (paste-applied)

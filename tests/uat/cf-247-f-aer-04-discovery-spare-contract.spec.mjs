@@ -4,6 +4,7 @@
 // isolated PostgreSQL by tests/fixtures/aer-discovery-spare/run.sh.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
+import { migrationNames } from './support/migration-files.mjs'
 
 const MIG = 'supabase/migrations/20261112103900_cf247_aer_discovery_spare.sql'
 const m = fs.readFileSync(MIG, 'utf8')
@@ -34,5 +35,5 @@ test('the credit count is the same total without the full scan; metrics on the d
   for (const k of ['providers_attempted', 'new_sources', 'usable_sources', 'not_found', 'cost_per_usable_source', 'spare_credits_today']) expect(code).toContain(`'${k}'`)
   expect(m).toContain('--   public.svc_fc_spend(numeric,text,uuid,text) c9d616fa35a278103121416ce73e0295 -> 07972f712be389e84d49f33a0852f534')
   expect(m).toMatch(/^-- Replaces: security\.aer_discovery_campaign_used_v1/m)
-  expect(fs.readdirSync('supabase/migrations').filter((f) => f.startsWith('20261112103900_'))).toEqual(['20261112103900_cf247_aer_discovery_spare.sql'])
+  expect(migrationNames().filter((f) => f.startsWith('20261112103900_'))).toEqual(['20261112103900_cf247_aer_discovery_spare.sql'])
 })

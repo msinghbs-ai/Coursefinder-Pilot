@@ -4,6 +4,7 @@
 // on isolated PostgreSQL by tests/fixtures/aer-discovery-campaign/run.sh (workflow aer-discovery-campaign-test).
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
+import { migrationNames } from './support/migration-files.mjs'
 
 const MIG = 'supabase/migrations/20261112040000_cf247_aer_discovery_campaign.sql'
 const m = fs.readFileSync(MIG, 'utf8')
@@ -43,5 +44,5 @@ test('every eligible provider without a source is asked until it has an outcome;
 })
 
 test('the version is used by no other migration', () => {
-  expect(fs.readdirSync('supabase/migrations').filter((f) => f.startsWith('20261112040000_'))).toEqual(['20261112040000_cf247_aer_discovery_campaign.sql'])
+  expect(migrationNames().filter((f) => f.startsWith('20261112040000_'))).toEqual(['20261112040000_cf247_aer_discovery_campaign.sql'])
 })

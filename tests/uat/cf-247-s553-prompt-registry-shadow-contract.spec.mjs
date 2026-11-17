@@ -3,6 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import crypto from 'node:crypto'
+import { migrationNames, migrationPath } from './support/migration-files.mjs'
 
 const M = fs.readFileSync('supabase/migrations/20261116050000_cf247_prompt_registry_shadow.sql', 'utf8')
 const CT = fs.readFileSync('supabase/functions/coverage-sweep/course-text.ts', 'utf8')
@@ -55,7 +56,7 @@ test('shadow only: no live status, and nothing in the worker or another migratio
   for (const f of files('supabase/functions')) expect(fs.readFileSync(f, 'utf8'), f).not.toMatch(/prompt_templates|prompt_render_v1/)
   // a migration that releases a prompt keeps the registry in step (20261116090000: course description v3 registered, v2 retired there); it writes rows, nothing reads them
   const KEEPS_REGISTRY = ['20261116050000_cf247_prompt_registry_shadow.sql', '20261116090000_cf247_cdesc_v3_retry_gate_telemetry.sql']
-  for (const f of fs.readdirSync('supabase/migrations').filter((x) => x.endsWith('.sql') && !KEEPS_REGISTRY.includes(x)))
-    expect(fs.readFileSync(`supabase/migrations/${f}`, 'utf8'), f).not.toMatch(/prompt_templates/)
+  for (const f of migrationNames().filter((x) => x.endsWith('.sql') && !KEEPS_REGISTRY.includes(x)))
+    expect(fs.readFileSync(migrationPath(f), 'utf8'), f).not.toMatch(/prompt_templates/)
   expect(M).not.toMatch(/entry_matrices'|course_entry_requirements'/)
 })

@@ -4,9 +4,10 @@
 // tests/fixtures/aer-lock-agreement/run.sh (scratch PostgreSQL 16; live md5s checked; applied twice). This spec holds the contract.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
+import { migrationNames, migrationPath } from './support/migration-files.mjs'
 
 const NAME = '20261109190000_cf247_aer_rule_lock_agreement.sql'
-const M = fs.readFileSync(`supabase/migrations/${NAME}`, 'utf8')
+const M = fs.readFileSync(migrationPath(NAME), 'utf8')
 const code = (t) => t.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')
 const C = code(M)
 const FX = 'tests/fixtures/aer-lock-agreement'
@@ -14,7 +15,7 @@ const run = fs.readFileSync(`${FX}/run.sh`, 'utf8')
 const fixtures = fs.readFileSync(`${FX}/fixtures.sql`, 'utf8')
 const seed = fs.readFileSync(`${FX}/seed.sql`, 'utf8')
 const wf = fs.readFileSync('.github/workflows/aer-lock-agreement-test.yml', 'utf8')
-const files = fs.readdirSync('supabase/migrations').filter((f) => f.endsWith('.sql')).sort()
+const files = migrationNames().filter((f) => f.endsWith('.sql')).sort()
 const BEFORE = '35281a190b1465699ef3cc7eccaf6d41'
 const AFTER = '25dcc4055de135901826ffcae344a96f'
 

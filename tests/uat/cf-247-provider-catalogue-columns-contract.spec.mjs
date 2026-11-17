@@ -8,6 +8,7 @@ import path from 'node:path'
 import { mockAdmin } from './support/admin-mock.mjs'
 import { collisions } from '../../scripts/verify-css-class-collisions.mjs'
 import { COURSE_COLUMNS, PROVIDER_COLUMNS, GROUPS, defaultLayout, normaliseLayout, moveColumn, toggleColumn, registryOf, groupHeading, sortSentence, columnOf } from '../../src/catalogue-columns.js'
+import { migrationNames } from './support/migration-files.mjs'
 
 const MIGRATION = 'supabase/migrations/20261109200000_cf247_provider_catalogue_columns.sql'
 const MIG = fs.readFileSync(MIGRATION, 'utf8')
@@ -96,7 +97,7 @@ test('the facts function skips the two feed candidate scans unless a column, fil
 })
 
 test('forward recovery and the post-deploy equivalence check are held outside supabase/migrations', () => {
-  expect(fs.readdirSync('supabase/migrations').filter(f => /provider_catalogue_columns/.test(f))).toEqual(['20261109200000_cf247_provider_catalogue_columns.sql'])
+  expect(migrationNames().filter(f => /provider_catalogue_columns/.test(f))).toEqual(['20261109200000_cf247_provider_catalogue_columns.sql'])
   const rec = fs.readFileSync('supabase/held/provider_catalogue_columns_forward_recovery.sql', 'utf8')
   // the recovery is the migration's own edit read backwards: the md5s swap and the new and old texts swap
   expect(rec).toContain("'109237d709578315e1acd9eefdb645cc', '7efb948272dc64abaac2bb141ccb50f6'")

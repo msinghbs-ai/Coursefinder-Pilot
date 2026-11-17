@@ -3,6 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { load, validate, compact, embedded } from '../../scripts/api-v3-field-dictionary.mjs'
+import { migrationNames, migrationPath } from './support/migration-files.mjs'
 
 // the sync and drift functions live in 20261116110000; each later reviewed list is loaded by its own sync migration, the newest of which must embed the file
 const MIG = 'supabase/migrations/20261116110000_cf247_api_field_dictionary_sync.sql'
@@ -21,8 +22,8 @@ test('the reviewed list is complete and valid: one entry per field, a descriptio
 test('the newest sync migration loads exactly the reviewed list', () => {
   expect(embedded(listSql)).toBe(compact(doc))
   expect(listSql).toContain("security.api_field_dictionary_sync_v1('v3', 'v3.0', (")
-  const newest = fs.readdirSync('supabase/migrations').filter((f) => /api_field_dictionary/.test(f) && embedded(fs.readFileSync(`supabase/migrations/${f}`, 'utf8'))).sort().at(-1)
-  expect(`supabase/migrations/${newest}`).toBe(LIST)
+  const newest = migrationNames().filter((f) => /api_field_dictionary/.test(f) && embedded(fs.readFileSync(migrationPath(f), 'utf8'))).sort().at(-1)
+  expect(migrationPath(newest)).toBe(LIST)
 })
 
 test('every read action of both v3 APIs is in the dictionary', () => {

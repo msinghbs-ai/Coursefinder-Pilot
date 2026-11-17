@@ -5,6 +5,7 @@
 // PostgreSQL by tests/fixtures/aer-self-healing/run.sh (workflow aer-self-healing-test). These are source contracts of the migration and its recovery.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
+import { migrationNames } from './support/migration-files.mjs'
 
 const MIG = 'supabase/migrations/20261111220000_cf247_aer_self_healing_corrections.sql'
 const REC = 'supabase/held/aer_self_healing_corrections_forward_recovery.sql'
@@ -63,6 +64,6 @@ test('the fixture runs in CI on isolated PostgreSQL only', () => {
 
 test('the migration version is used by no other file (deploy-on-merge skips a version already in the ledger)', () => {
   const v = MIG.match(/\/(\d{14})_/)[1]
-  const same = fs.readdirSync('supabase/migrations').filter((f) => f.startsWith(`${v}_`))
+  const same = migrationNames().filter((f) => f.startsWith(`${v}_`))
   expect(same).toEqual(['20261111220000_cf247_aer_self_healing_corrections.sql'])
 })

@@ -6,10 +6,11 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { collect } from '../../scripts/component-register-collect.mjs'
+import { migrationNames, migrationPath } from './support/migration-files.mjs'
 
 const MIG_DIR = 'supabase/migrations'
 const FIRST = '20261015030000'
-const mig = fs.readFileSync(`${MIG_DIR}/${FIRST}_cf247_component_register.sql`, 'utf8')
+const mig = fs.readFileSync(migrationPath(`${FIRST}_cf247_component_register.sql`), 'utf8')
 
 export function housekeepingProblems(sql) {
   const out = []
@@ -30,9 +31,9 @@ export function housekeepingProblems(sql) {
 }
 
 test('every migration from Decision 260 on says what it replaces and retires, states table purposes, catalogues jobs, drops nothing', () => {
-  const files = fs.readdirSync(MIG_DIR).filter((f) => f.endsWith('.sql') && f.slice(0, 14) >= FIRST).sort()
+  const files = migrationNames().filter((f) => f.endsWith('.sql') && f.slice(0, 14) >= FIRST).sort()
   expect(files[0]).toBe(`${FIRST}_cf247_component_register.sql`)
-  for (const f of files) expect(housekeepingProblems(fs.readFileSync(`${MIG_DIR}/${f}`, 'utf8')), f).toEqual([])
+  for (const f of files) expect(housekeepingProblems(fs.readFileSync(migrationPath(f), 'utf8')), f).toEqual([])
   expect(housekeepingProblems("create table pipeline.x (a int);")).toContain('table pipeline.x has no purpose (comment on table)')
   expect(housekeepingProblems("-- Replaces: nothing\n-- Retires: nothing\nselect cron.schedule('y', '* * * * *', 'select 1');")).toEqual(['job y is not catalogued'])
 })

@@ -8,6 +8,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import crypto from 'node:crypto'
+import { migrationNames, migrationPath } from './support/migration-files.mjs'
 
 const MIG = 'supabase/migrations/20261104070000_cf247_ai_eval_self_improvement.sql'
 const m = fs.readFileSync(MIG, 'utf8')
@@ -17,7 +18,7 @@ const fixtures = fs.readFileSync(`${FX}/fixtures.sql`, 'utf8')
 const seed = fs.readFileSync(`${FX}/seed.sql`, 'utf8')
 const W = 'supabase/functions/coverage-sweep/'
 // the baseline registrations in release order: this migration, then every later migration that registers a prompt version as current
-const REGISTRY = [m, ...fs.readdirSync('supabase/migrations').filter((f) => f > MIG.split('/').pop() && f.endsWith('.sql')).sort().map((f) => fs.readFileSync(`supabase/migrations/${f}`, 'utf8')).filter((t) => t.includes('ai_instruction_register_v1') && t.includes("'status', 'current'"))]
+const REGISTRY = [m, ...migrationNames().filter((f) => f > MIG.split('/').pop() && f.endsWith('.sql')).sort().map((f) => fs.readFileSync(migrationPath(f), 'utf8')).filter((t) => t.includes('ai_instruction_register_v1') && t.includes("'status', 'current'"))]
 const md5 = (s) => crypto.createHash('md5').update(s).digest('hex')
 
 // the text of a worker constant: a template literal without interpolation, or concatenated double-quoted strings

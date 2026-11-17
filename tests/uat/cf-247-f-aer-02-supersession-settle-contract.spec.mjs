@@ -3,6 +3,7 @@
 // tick now closes it as refused with the reader's reason; the item is left as it is (no new Layer 4 item). Behaviour is proven by tests/fixtures/aer-supersession-settle/run.sh.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
+import { migrationNames } from './support/migration-files.mjs'
 
 const MIG = 'supabase/migrations/20261112123700_cf247_aer_supersession_settle.sql'
 const m = fs.readFileSync(MIG, 'utf8')
@@ -19,5 +20,5 @@ test('the existing hourly tick settles on each real run, never on a preview; md5
   expect(m).toContain('--   security.aer_schedule_tick_v1(boolean) b96163772b72f02b6c9956b1a263224a -> 800af9161234c24387bff6a74d6acb99')
   expect(m).toMatch(/^-- Replaces: security\.aer_schedule_tick_v1/m)
   expect(m).toMatch(/^-- Retires: nothing\./m)
-  expect(fs.readdirSync('supabase/migrations').filter((f) => f.startsWith('20261112123700_'))).toEqual(['20261112123700_cf247_aer_supersession_settle.sql'])
+  expect(migrationNames().filter((f) => f.startsWith('20261112123700_'))).toEqual(['20261112123700_cf247_aer_supersession_settle.sql'])
 })

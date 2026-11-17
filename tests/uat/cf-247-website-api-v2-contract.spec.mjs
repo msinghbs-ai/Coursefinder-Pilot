@@ -5,10 +5,12 @@
 // logos, the provider Published switch, display codes and QILT at provider grain only.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
+import path from 'node:path'
+import { migrationPath } from './support/migration-files.mjs'
 
 const M = 'supabase/migrations'
 const A = 'supabase/migrations-archive'
-const at = f => (f.startsWith('20261008') ? A : M)
+const at = f => (f.startsWith('20261008') ? A : path.dirname(migrationPath(f))) // after the 19 Nov 2026 squash the 14 Oct files are archived too
 const read = f => fs.readFileSync(`${at(f)}/${f}`, 'utf8')
 const edge = fs.readFileSync('supabase/functions/wix-course-api/index.ts', 'utf8')
 const files = [

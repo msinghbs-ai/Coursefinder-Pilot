@@ -4,9 +4,10 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
+import { migrationNames, migrationPath } from './support/migration-files.mjs'
 
-const [FILE] = fs.readdirSync('supabase/migrations').filter((f) => f.endsWith('_cf247_aer_review_path.sql'))
-const m = fs.readFileSync(`supabase/migrations/${FILE}`, 'utf8')
+const [FILE] = migrationNames().filter((f) => f.endsWith('_cf247_aer_review_path.sql'))
+const m = fs.readFileSync(migrationPath(FILE), 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 // each md5-guarded edit: signature, live md5, originals ($o$) and replacements ($n$), and how many times each applies
 const EDITS = [...m.matchAll(/select pg_temp\.edit_n\('([^']+)', '([0-9a-f]{32})', array\[([\s\S]*?)\], array\[([\d, ]+)\]\);/g)].map(([, sig, md5, body, times]) => ({
