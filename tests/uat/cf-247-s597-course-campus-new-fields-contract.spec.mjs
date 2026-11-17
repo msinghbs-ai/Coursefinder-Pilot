@@ -57,6 +57,9 @@ test('the screen: two registered course columns (off by default) and their filte
   expect(UI).toContain("if(filters.studyLoad)a.study_load=filters.studyLoad;if(filters.emptyReason)a.empty_reason=filters.emptyReason}if(type==='campus'){if(filters.campusPrimary)a.primary=filters.campusPrimary;if(filters.campusLocality)a.locality=filters.campusLocality}return a}")
   expect(UI).toContain("{key:'locality_name',label:'Locality',width:200},{key:'is_primary',label:'Primary',width:110},")
   expect(read('src/catalogue-columns.css')).not.toContain('m-filter-text')
+  // the integration test's database registers the same two rows the migration does
+  const rowsOf = (t) => [...t.matchAll(/^ \('courses', '(?:study_load|empty_reason_code)', .*\),?$/gm)].map((x) => x[0].replace(/,$/, ''))
+  expect(rowsOf(read('tests/fixtures/course-campus-new-fields/registry.sql'))).toEqual(rowsOf(M)); expect(rowsOf(M)).toHaveLength(2)
 })
 
 test('the ILEP draft is kept and marked for its move to TrustEd Ireland', () => {

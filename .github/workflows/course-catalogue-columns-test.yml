@@ -52,6 +52,8 @@ jobs:
       - run: CCOL_KEEP=1 bash tests/fixtures/course-catalogue-columns/run.sh | tee course-columns-sql-results.log
       - run: bash tests/fixtures/catalogue-course-description/run.sh | tee -a course-columns-sql-results.log
       - run: bash tests/fixtures/course-campus-new-fields/run.sh | tee -a course-columns-sql-results.log
+      # the integration test's database is the course-catalogue-columns fixture: register the two columns migration 20261118073000 adds, as production does
+      - run: psql -X -q -v ON_ERROR_STOP=1 -d c_ccol_fixture -f tests/fixtures/course-campus-new-fields/registry.sql
       - run: npx playwright test --config=playwright.course-columns.config.mjs
       - uses: actions/upload-artifact@v4
         if: always()
