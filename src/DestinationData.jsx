@@ -76,13 +76,16 @@ function Overview({o,rank,run}){
 // v2.16.31 (Platform Admin 18 Nov 2026 07:39): Bulk Approve Drafts. One line per dataset edition that has draft localities in the list shown: how many are
 // ready (name and attribution present) and how many would be left, with one button for the Platform Admin. The server approves the edition's clean drafts
 // only, with the one reason kept on every row and one control event (public.admin_destination_localities_bulk_approve).
-function BulkApprove({rows,rank,run}){const eds=draftEditions(rows)
+// v2.16.32 (Platform Admin 18 Nov 2026 10:05): the same action for city figures (kind="figure", public.admin_destination_figures_bulk_approve).
+const BULK={locality:{one:'locality is',many:'localities are',noun:'localities',left:'without attribution text',fn:'admin_destination_localities_bulk_approve',data:'locality-bulk-approve',none:'No draft locality of this edition has attribution text, so none can be approved.',after:'Each becomes available to the API',foot:'One reason is kept with every locality approved and the action is recorded once in the control log. Figures and study rules are approved on their own tabs.'},
+  figure:{one:'figure is',many:'figures are',noun:'figures',left:'without attribution text',fn:'admin_destination_figures_bulk_approve',data:'metric-bulk-approve',none:'No draft figure of this edition has attribution text, so none can be approved.',after:'A figure is returned by the API once its locality is approved too',foot:'One reason is kept with every figure approved and the action is recorded once in the control log. Localities are approved on Localities & postcodes.'}}
+function BulkApprove({rows,rank,run,kind='locality'}){const eds=draftEditions(rows,kind),w=BULK[kind]
   if(!eds.length)return null
-  return <div className="dst-bulk" data-dst-bulk>{eds.map(e=><p key={e.edition} className="dst-bulk-row" data-dst-bulk-edition={e.edition}>
-    <span><b>{e.edition}</b>: {fmtNumber(e.ready)} draft {e.ready===1?'locality is':'localities are'} ready to approve{e.left?<>; {fmtNumber(e.left)} without attribution text will be left as draft</>:null}.</span>
-    <Act label="Bulk Approve Drafts" need={6} rank={rank} primary data="locality-bulk-approve" onRun={()=>{if(!e.ready)return window.alert('No draft locality of this edition has attribution text, so none can be approved.')
-      const r=ask(`Approve all ${e.ready} clean draft localities of ${e.edition}${e.left?` (${e.left} without attribution text stay draft)`:''}. Each becomes available to the API`);if(r)run('admin_destination_localities_bulk_approve',{p_dataset_edition:e.edition,p_reason:r})}}/></p>)}
-    <p className="sl-sub">One reason is kept with every locality approved and the action is recorded once in the control log. Figures and study rules are approved on their own tabs.</p></div>}
+  return <div className="dst-bulk" data-dst-bulk={kind}>{eds.map(e=><p key={e.edition} className="dst-bulk-row" data-dst-bulk-edition={e.edition}>
+    <span><b>{e.edition}</b>: {fmtNumber(e.ready)} draft {e.ready===1?w.one:w.many} ready to approve{e.left?<>; {fmtNumber(e.left)} {w.left} will be left as draft</>:null}.</span>
+    <Act label="Bulk Approve Drafts" need={6} rank={rank} primary data={w.data} onRun={()=>{if(!e.ready)return window.alert(w.none)
+      const r=ask(`Approve all ${e.ready} clean draft ${w.noun} of ${e.edition}${e.left?` (${e.left} ${w.left} stay draft)`:''}. ${w.after}`);if(r)run(w.fn,{p_dataset_edition:e.edition,p_reason:r})}}/></p>)}
+    <p className="sl-sub">{w.foot}</p></div>}
 
 function Localities({rpc,rank,run,tick,share}){
   const[status,setStatus]=useState('')
@@ -121,6 +124,7 @@ function Metrics({rpc,rank,run,tick}){
     <section className="m-panel"><h3>City figures</h3>
       <p className="sl-sub">Population, climate and living-cost figures for each locality, one value per measure, period and dataset edition. Every figure carries its source and the attribution the website must show beside it.</p>
       <StatusFilter value={status} onChange={setStatus} options={['draft','in_review','approved','published','withdrawn']}/>
+      <BulkApprove rows={m.rows||[]} rank={rank} run={run} kind="figure"/>
       <Wait {...m} empty="No city figure is loaded yet. Population arrives with the ABS load; climate and living costs follow once their sources are approved.">
         <div className="dst-scroll"><table className="cf-table" data-dst-metrics><thead><tr><th>Locality</th><th>Category</th><th>Measure</th><th>Value</th><th>Period</th><th>Edition</th><th>Source</th><th>Status</th><th>Actions</th></tr></thead>
           <tbody>{(m.rows||[]).map(x=><tr key={x.id} data-dst-metric={x.id}><td>{x.locality_name}<small className="dst-sub">{x.country_code}</small></td><td>{String(x.metric_category).replace('_',' ')}</td><td>{x.metric_key}</td>
@@ -186,7 +190,7 @@ export default function DestinationData({tab='overview',rank=0,onError,client=nu
   useEffect(()=>{load()},[tick])
   const run=async(fn,args)=>{setNote('')
     try{const{data,error}=await rpc(fn,args);if(error)throw error
-      setNote(data?.approved!=null&&data?.dataset_edition?`Approved ${data.approved} of ${data.drafts} draft localities of ${data.dataset_edition}${data.left_without_attribution?`; ${data.left_without_attribution} without attribution text left as draft`:''}.`:data?.locality?`Postcode ${data.postcode} now maps to ${data.locality}.`:data?.to?`Recorded: ${data.from||'—'} to ${data.to}.`:'Recorded.');setTick(t=>t+1)}
+      setNote(data?.approved!=null&&data?.dataset_edition?`Approved ${data.approved} of ${data.drafts} draft ${data.kind==='figures'?'figures':'localities'} of ${data.dataset_edition}${(data.left_without_attribution||data.left_without_value_or_attribution)?`; ${data.left_without_attribution||data.left_without_value_or_attribution} without attribution text left as draft`:''}.`:data?.locality?`Postcode ${data.postcode} now maps to ${data.locality}.`:data?.to?`Recorded: ${data.from||'—'} to ${data.to}.`:'Recorded.');setTick(t=>t+1)}
     catch(e){const m=plainError(e);setNote(m);onError?.(m)}}
   if(rank<3)return <EmptyInline text="Destination data opens for Curator and above."/>
   const body=err?<EmptyInline text={err}/>:!o?<p className="sl-sub">Loading…</p>

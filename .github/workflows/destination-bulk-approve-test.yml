@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'supabase/migrations/20261118090707_cf247_destination_localities_bulk_approve.sql'
+      - 'supabase/migrations/20261118110707_cf247_destination_figures_bulk_approve.sql'
       - 'tests/fixtures/destination-bulk-approve/**'
       - 'tests/fixtures/destination-admin-ui/stubs.sql'
       - 'tests/fixtures/destination-editions/stubs.sql'
