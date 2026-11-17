@@ -1,10 +1,10 @@
 // Guards: Boost study load, the international study load first (Platform Admin 18 Nov 2026 07:08, decisions 1 and 5): the study load a page states for international students is reported and checked ahead of the general one; a general definition of full-time study is refused; Boost no longer skips for a running dispatcher tick unless setting boost.yield_to_dispatchers is 1; the change qualifies no model and admits nothing
-// CF-247 S597. Migration 20261118073000_cf247_boost_international_first, worker coverage-sweep v1.0.12 (boost.ts prompt boost-study-load-v2, selector study-load-windows-v3). G1, G2, G3 and housekeeping are guarded centrally by s42, s32 and s57.
+// CF-247 S597. Migration 20261118074500_cf247_boost_international_first, worker coverage-sweep v1.0.12 (boost.ts prompt boost-study-load-v2, selector study-load-windows-v3). G1, G2, G3 and housekeeping are guarded centrally by s42, s32 and s57.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { build } from 'esbuild'
 
-const M = fs.readFileSync('supabase/migrations/20261118073000_cf247_boost_international_first.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations/20261118074500_cf247_boost_international_first.sql', 'utf8')
 const code = M.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const IX = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 let B
@@ -22,6 +22,9 @@ test('migration: the gate yields to dispatcher ticks only by its setting, earlie
   for (const hold of ["'switched off (boost.ingest_on)'", "'Pipeline Maintenance Mode'", "'blackout (migration squash)'", "'housekeeping-daily running or just started'"]) expect(code).toContain(hold)
   expect(code).toContain("update pipeline.boost_extract_items set state = 'released', note = 'read again under boost-study-load-v2 (worker v1.0.12, international study load first)', done_at = now()")
   expect(code).toContain("('boost.benchmark_label', to_jsonb('bench-2'::text),")
+  // the idle check may have paused boost-extract; the migration gives it work and switches it on, and does not require the other Boost jobs to be on
+  expect(code).toContain("select cron.alter_job((select jobid from cron.job where jobname = 'boost-extract'), active := true)")
+  expect(code).not.toContain('not active or command')
   expect(code).not.toMatch(/insert into pipeline\.boost_model_qualifications|boost_promote_v1\(|update catalogue\.|insert into catalogue\./)
   expect(code.replace(/on commit drop/g, '')).not.toMatch(/\bdrop\s+(table|function|trigger|schema|index|view)\b|\bdelete\s+from\b|\btruncate\b/i)
   expect(code).toContain("raise exception 'post-check: a model is qualified for admission; this migration qualifies none'")
