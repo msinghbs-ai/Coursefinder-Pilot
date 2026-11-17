@@ -7,12 +7,15 @@
 --    evidence record (pipeline.evidence_artifacts, class regulatory_evidence: immutable) are never touched.
 --    The class catalogue says a dry run comes first (retention_class_policies.dry_run_required), so the switch retention.staging_prune_on
 --    starts at 0: each night reports what would go; the Platform Admin turns pruning on (Settings > Pipeline settings > Housekeeping).
+--    The older unreferenced-evidence purge (Storage & retention, category evidence_unreferenced) is aligned with the same rule (Platform Admin
+--    17 Nov 2026 18:25): security.retention_evidence_candidates_v1 never offers evidence younger than retention.raw_hash_keep_years (7), so
+--    neither its estimate nor the retention worker removes an evidence record or file before then.
 -- 2. Telemetry (read only): views pipeline.ops_l1_apply_latency_v (chunked Layer 1 apply latency), pipeline.ops_l4_escalation_by_source_v
 --    (Layer 4 escalation rate per source) and pipeline.ops_boost_vs_pr3_throughput_v (nightly Boost against daytime PR 3), read by the
 --    Ops report through public.admin_ops_telemetry(). Look-back: setting telemetry.window_days.
 -- G1: no new job (housekeeping-daily is catalogued; its description is updated). G2: every period, size and switch is a setting.
 -- G3: no consumer API object is read for structure or changed.
--- Replaces: nothing (housekeeping_daily_v1 is extended in place)
+-- Replaces: nothing (housekeeping_daily_v1 extended and retention_evidence_candidates_v1 aligned in place)
 -- Retires: nothing
 
 set local lock_timeout = '5s';
@@ -22,6 +25,9 @@ do $pre$
 begin
   if md5(pg_get_functiondef('security.housekeeping_daily_v1()'::regprocedure)) <> 'd2761ea4beb46baed71ee88591d89c60' then
     raise exception 'pre-check: security.housekeeping_daily_v1 differs from the definition this change extends';
+  end if;
+  if md5(pg_get_functiondef('security.retention_evidence_candidates_v1()'::regprocedure)) <> '5b3912e24120bef44576688ecc63e914' then
+    raise exception 'pre-check: security.retention_evidence_candidates_v1 differs from the definition this change aligns';
   end if;
 end $pre$;
 
@@ -172,6 +178,23 @@ begin
 end $function$;
 revoke all on function security.staging_retention_v1(boolean, timestamptz) from public, anon, authenticated;
 comment on function security.staging_retention_v1(boolean, timestamptz) is 'CF-247 S1-Build (Platform Admin 17 Nov 2026 18:02): removes applied staging rows past their keep period (hash kept 7 years) or, as a dry run, reports them. Called by housekeeping-daily; editions and evidence are never touched.';
+
+-- 4b. The unreferenced-evidence purge keeps evidence for retention.raw_hash_keep_years (7) as well as retention.evidence_min_age_days
+create or replace function security.retention_evidence_candidates_v1()
+ returns table(evidence_id uuid, storage_path text, created_at timestamp with time zone)
+ language sql stable security definer set search_path to '' as $function$
+  with a as (select r.started_at from pipeline.retention_runs r where r.category = 'evidence_audit' and r.status = 'done' order by r.finished_at desc limit 1)
+  select e.id, e.storage_path, e.created_at
+    from pipeline.evidence_artifacts e, a
+   where e.created_at < least(a.started_at, now() - make_interval(days => security.pipeline_num_v1('retention.evidence_min_age_days', 7)::int),
+                              now() - make_interval(years => security.pipeline_num_v1('retention.raw_hash_keep_years', 7)::int))
+     and coalesce(e.retention_class, '') not in ('standard_365', 'source_evidence')
+     and coalesce(e.storage_path, '') not like 'regulatory/%'
+     and not exists (select 1 from pipeline.evidence_audit_refs r where r.evidence_id = e.id)
+$function$;
+update pipeline.platform_toolset_settings
+   set help = 'The unreferenced-evidence purge never removes evidence younger than this many days, nor younger than retention.raw_hash_keep_years (7 years; Platform Admin 17 Nov 2026 18:25).'
+ where toolset_key = 'pipeline' and key = 'retention.evidence_min_age_days';
 
 -- 5. housekeeping-daily: the live body unchanged, plus the retention step
 create or replace function security.housekeeping_daily_v1()
@@ -371,4 +394,7 @@ begin
     raise exception 'post-check: a telemetry view is open to anon or authenticated';
   end if;
   if has_function_privilege('anon', 'public.admin_ops_telemetry()', 'execute') then raise exception 'post-check: admin_ops_telemetry is open to anon'; end if;
+  if pg_get_functiondef('security.retention_evidence_candidates_v1()'::regprocedure) not like '%make_interval(years => security.pipeline_num_v1(''retention.raw_hash_keep_years'', 7)::int)%' then
+    raise exception 'post-check: the evidence purge does not keep the 7-year floor';
+  end if;
 end $c$;
