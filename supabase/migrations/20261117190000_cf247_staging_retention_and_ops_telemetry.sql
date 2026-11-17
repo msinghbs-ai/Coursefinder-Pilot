@@ -276,11 +276,11 @@ create or replace view pipeline.ops_boost_vs_pr3_throughput_v as
 with w as (select security.pipeline_num_v1('telemetry.window_days', 30)::int days,
                   security.pipeline_num_v1('boost.ingest_window_start_minute', 65)::int wfrom,
                   security.pipeline_num_v1('boost.ingest_window_end_minute', 290)::int wto),
-d as (select (now() at time zone 'Australia/Melbourne')::date - g day from w, generate_series(0, w.days - 1) g),
-bf as (select (f.done_at at time zone 'Australia/Melbourne')::date day, count(*) files, sum(coalesce(f.loaded, 0)) rows_loaded,
+d as (select (now() at time zone 'Australia/Melbourne')::date - g as day from w, generate_series(0, w.days - 1) g),
+bf as (select (f.done_at at time zone 'Australia/Melbourne')::date as day, count(*) files, sum(coalesce(f.loaded, 0)) rows_loaded,
               count(*) filter (where f.status = 'failed') files_failed
          from pipeline.boost_ingest_files f where f.done_at is not null group by 1),
-bs as (select (s.promoted_at at time zone 'Australia/Melbourne')::date day, count(*) settled, count(*) filter (where s.promotion_state = 'admitted') admitted
+bs as (select (s.promoted_at at time zone 'Australia/Melbourne')::date as day, count(*) settled, count(*) filter (where s.promotion_state = 'admitted') admitted
          from pipeline.boost_inbound_staging s where s.promoted_at is not null group by 1),
 cl as (select (r.tick_at at time zone 'Australia/Melbourne')::date day,
               count(*) filter (where r.mode <> 'shadow' and r.status = 'succeeded') live_succeeded,
