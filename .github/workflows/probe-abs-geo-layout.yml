@@ -1,0 +1,44 @@
+# Throwaway probe (S2-Build, 17 Nov 2026): prints the layout of the approved ABS files (A-1, A-4) so the loader is written against the real columns.
+# Runs only on push to this probe branch; reads public ABS and data.gov.au files; writes nothing anywhere. Deleted with the branch.
+name: Probe ABS geo file layout
+on:
+  push:
+    branches: [probe-abs-geo-layout]
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Fetch and inspect
+        run: |
+          set -euo pipefail
+          pip install --quiet openpyxl
+          curl -sSfL -A "Mozilla/5.0" -o pop.xlsx "https://www.abs.gov.au/statistics/people/population/regional-population/2024-25/32180DS0004_2001-25.xlsx"
+          curl -sSfL -A "Mozilla/5.0" -o alloc.zip "https://data.gov.au/data/dataset/4c9dbd2f-5706-4c89-aeb8-689ccc3ca290/resource/b0c00ec8-4232-4eb5-bf19-45c944c336de/download/asgs-edition-3-2021-allocation-files.zip"
+          ls -la pop.xlsx alloc.zip; sha256sum pop.xlsx alloc.zip
+          unzip -l alloc.zip | head -60
+          python3 - <<'PY'
+          import openpyxl, zipfile, io
+          wb = openpyxl.load_workbook('pop.xlsx', read_only=True, data_only=True)
+          for ws in wb.worksheets:
+              print('== SHEET', ws.title, ws.max_row, ws.max_column)
+              for i, row in enumerate(ws.iter_rows(values_only=True)):
+                  if i < 12: print(i, [c for c in row][:12])
+                  else: break
+          z = zipfile.ZipFile('alloc.zip')
+          for n in z.namelist():
+              if any(k in n.upper() for k in ('MB_2021', 'POA_2021', 'SUA_2021')):
+                  print('== FILE', n, z.getinfo(n).file_size)
+                  data = z.read(n)
+                  if n.lower().endswith('.xlsx'):
+                      w = openpyxl.load_workbook(io.BytesIO(data), read_only=True, data_only=True)
+                      for s in w.worksheets:
+                          print('  sheet', s.title)
+                          for i, row in enumerate(s.iter_rows(values_only=True)):
+                              if i < 4: print('  ', i, list(row)[:20])
+                              else: break
+                  elif n.lower().endswith('.csv'):
+                      print('  ', data[:600])
+                  elif n.lower().endswith('.zip'):
+                      inner = zipfile.ZipFile(io.BytesIO(data)); print('  inner', inner.namelist()[:20])
+          PY
