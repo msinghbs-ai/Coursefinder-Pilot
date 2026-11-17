@@ -7,7 +7,8 @@ import { applySpec, type Spec } from "../_shared/cf247-layer1-spec.ts";
 //   status: { ok, version, model }. The wizard enables AI Auto-Map only when this answers ok.
 //   map:    field and category suggestions for a sample, and a parser spec for the target record type, checked by
 //           security.layer1_parser_spec_validate_v1 and test-applied to the sample. It writes nothing but a call record (daily limit).
-// The model is one pinned model (setting layer1.induction_mapper_model); its limits are settings (G2). A person decides every mapping.
+// The model is called by the coverage-sweep worker (mode induction_map), the only caller of the model provider: the route layer1_induction_map
+// gives its one model, caps and holds, and every attempt is kept in pipeline.ai_invocations (Platform Admin 17 Nov 2026 20:30). A person decides every mapping.
 const VERSION = "1.0.0";
 const FUNCTION_NAME = "layer1-ai-induction-mapper";
 const FORMAT_OF: Record<string, string> = { csv_file: "csv", xlsx_file: "xlsx", json_api: "json", html_pages: "html_table" };
@@ -30,11 +31,9 @@ async function rpc(client: any, name: string, args: Record<string, unknown> = {}
   return data;
 }
 
-async function settings(service: any) {
-  const s = (await rpc(service, "svc_layer1_register_settings_v1", {})) || {};
-  const model = typeof s["layer1.induction_mapper_model"] === "string" ? s["layer1.induction_mapper_model"] : "";
-  const maxTokens = Math.floor(Number(s["layer1.induction_mapper_max_tokens"])) || 4000; // fixed: fallback when the setting cannot be read
-  return { model, maxTokens };
+async function route(service: any) {
+  const r = (await rpc(service, "svc_layer1_induction_map_route_v1", {})) || {};
+  return { model: String(r.model || ""), held: !!r.held, why: String(r.held_reason || r.held_kind || "") };
 }
 
 async function caller(req: Request, service: any, url: string, anon: string) {
@@ -47,53 +46,20 @@ async function caller(req: Request, service: any, url: string, anon: string) {
   return u.id as string;
 }
 
-function prompt(input: {
-  recordType: string; country: string; connector: string; columns: string[]; rows: string[][];
-  targetFields: { field: string; label: string; category_key: string }[]; categories: { key: string; label: string; description: string }[];
-  specTargets: Record<string, { type: string; required?: boolean }>; specKey: string[];
-}) {
-  const system = [
-    "You map the columns of a sample from an official education data source to a platform's fields. Answer with one JSON object only.",
-    "Use only the field names, category keys and parser targets you are given. Never invent a name. If nothing fits, use null.",
-    "Base every choice on the column name and the sample values, and give one short reason a person can check against the sample.",
-    "Shape: {\"suggestions\":[{\"source_field\":\"<column>\",\"target_field\":\"<field or null>\",\"category_key\":\"<key or null>\",\"confidence\":0.0,\"reason\":\"...\"}],",
-    "\"spec_fields\":[{\"source\":\"<column>\",\"target\":\"<parser target>\",\"transforms\":[{\"op\":\"trim\"}]}],\"unique_key\":[\"<parser target>\"],\"header_row\":1}.",
-    "Transforms allowed: trim, upper, lower, strip_currency, first_token, default (arg: text), map_values (arg: object of text to text), date_format (arg: one of YYYY-MM-DD, DD/MM/YYYY, MM/DD/YYYY, D MMM YYYY, DD-MM-YYYY, YYYY/MM/DD).",
-  ].join("\n");
-  const user = JSON.stringify({
-    target_record_type: input.recordType, country_code: input.country, connector_type: input.connector,
-    sample: { columns: input.columns, rows: input.rows },
-    platform_fields: input.targetFields.map((f) => ({ field: f.field, label: f.label, category_key: f.category_key })),
-    categories: input.categories.map((c) => ({ key: c.key, label: c.label, description: c.description })),
-    parser_targets: Object.entries(input.specTargets).map(([k, v]) => ({ target: k, type: v.type, required: !!v.required })),
-    parser_key: input.specKey,
-  });
-  return { system, user };
-}
-
-async function askModel(model: string, maxTokens: number, system: string, user: string) {
-  const key = Deno.env.get("OPENROUTER_API_KEY");
-  if (!key) throw new Error("The AI key is not configured.");
+// the worker reads the route's one model, sends the induction request (coverage-sweep/induction.ts) and records the call
+async function askWorker(service: any, url: string, serviceKey: string, input: Record<string, unknown>) {
+  const nonce = await rpc(service, "svc_pilot_issue_nonce", { p_function: "coverage-sweep" });
   const ctl = new AbortController();
-  const timer = setTimeout(() => ctl.abort(), 60000); // fixed: API time-out
+  const timer = setTimeout(() => ctl.abort(), 120000); // fixed: API time-out
   try {
-    const r = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    const r = await fetch(`${url}/functions/v1/coverage-sweep`, {
       method: "POST", signal: ctl.signal,
-      headers: { authorization: `Bearer ${key}`, "content-type": "application/json", "x-title": `coursefinder ${FUNCTION_NAME}` },
-      body: JSON.stringify({
-        model, temperature: 0, max_tokens: maxTokens, response_format: { type: "json_object" },
-        provider: { require_parameters: true, allow_fallbacks: false },
-        messages: [{ role: "system", content: system }, { role: "user", content: user }],
-      }),
+      headers: { "content-type": "application/json", "x-cf-run-nonce": String(nonce), authorization: `Bearer ${serviceKey}`, apikey: serviceKey },
+      body: JSON.stringify({ mode: "induction_map", input }),
     });
     const body = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(`The AI model answered ${r.status}: ${clean(body?.error?.message || "", 200)}`);
-    const text = String(body?.choices?.[0]?.message?.content || "");
-    const answered = String(body?.model || model);
-    if (!answered.startsWith(model.split(":")[0])) throw new Error(`The AI answer came from ${answered}, not the pinned model.`);
-    let parsed: any;
-    try { parsed = JSON.parse(text.replace(/^```(json)?\s*|\s*```$/g, "")); } catch { throw new Error("The AI answer was not JSON."); }
-    return { parsed, usage: body?.usage || null };
+    if (!body?.ok) throw new Error(clean(body?.error || `the AI worker answered ${r.status}`, 300));
+    return { parsed: body.answer, model: String(body.model || "") };
   } finally {
     clearTimeout(timer);
   }
@@ -106,13 +72,13 @@ Deno.serve(async (req) => {
   const service = createClient(url, key, { auth: { persistSession: false } });
   let body: any = {};
   try { body = await req.json(); } catch { body = {}; }
-  let userId: string;
-  try { userId = await caller(req, service, url, anon); } catch (e) { return fail(e instanceof Error ? e.message : String(e), 401); }
+  try { await caller(req, service, url, anon); } catch (e) { return fail(e instanceof Error ? e.message : String(e), 401); }
 
   try {
-    const { model, maxTokens } = await settings(service);
-    if (!model || /(^|\/)auto$/i.test(model)) return fail("The mapper model is not pinned (setting layer1.induction_mapper_model).");
-    if (body.action === "status") return json({ ok: true, version: VERSION, model });
+    const rt = await route(service);
+    if (!rt.model) return fail("No qualified model is routed for the induction mapping (Models & services › layer1_induction_map).");
+    if (rt.held) return fail(`The induction mapping is held: ${rt.why || "route held"}.`);
+    if (body.action === "status") return json({ ok: true, version: VERSION, model: rt.model });
     if (body.action !== "map") return fail("Unknown action; use status or map.", 400);
 
     // the request (Mapper Contract v1.1)
@@ -137,11 +103,12 @@ Deno.serve(async (req) => {
     if (!induction) return fail("The draft was not found; save it and try again.");
     const attribution = clean(induction?.payload?.attribution_text ?? induction?.attribution_text ?? "", 1000);
 
-    const allowed = await rpc(service, "svc_layer1_mapper_call_v1", { p_user: userId, p_detail: { induction_id: body.induction_id, record_type: recordType, columns: columns.length, model, version: VERSION } });
-    if (!allowed?.allowed) return fail(`The AI mapper's daily limit (${allowed?.limit}) is reached; map by hand or try tomorrow.`);
-
-    const p = prompt({ recordType, country, connector, columns, rows, targetFields, categories, specTargets: targets.fields, specKey: targets.key });
-    const { parsed } = await askModel(model, maxTokens, p.system, p.user);
+    const { parsed, model } = await askWorker(service, url, key, {
+      target_record_type: recordType, country_code: country, connector_type: connector, sample: { columns, rows },
+      platform_fields: targetFields, categories,
+      parser_targets: Object.entries(targets.fields).map(([k, v]: [string, any]) => ({ target: k, type: v.type, required: !!v.required })),
+      parser_key: targets.key,
+    });
 
     // suggestions: one per source column, names only from the lists
     const fieldCat = new Map(targetFields.map((f: any) => [f.field, f.category_key]));

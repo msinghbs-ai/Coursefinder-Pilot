@@ -6,10 +6,13 @@
 --   2. security.layer1_parser_spec_validate_v1(spec, record_type, columns): the strict check every AI-built spec passes before it is shown,
 --      saved, or run. Unknown keys are refused at every level; formats, types, transforms and date patterns come from fixed lists; the unique
 --      key must be mapped fields; attribution is required; expected headers must be in the sample. Errors are plain sentences.
---   3. Settings for the mapper (G2): the pinned model (one named model; the contract forbids an "auto" model), calls a day, answer size.
---   4. Service functions for the edge function layer1-ai-induction-mapper (deployed in the same change): validate a spec, and log a call and
---      count today's calls. The mapper writes nothing else; a person reviews every suggestion in the wizard.
--- G1: no job. G2: limits are settings; input-safety bounds are marked fixed. G3: no consumer API object is touched.
+--   3. The AI service route layer1_induction_map (Platform Admin 17 Nov 2026 20:30: the mapper calls its model through the coverage-sweep worker,
+--      like every AI service; only the worker calls OpenRouter). One model, the central Qwen3 30B (Platform Admin decision 13 Nov 2026 19:09),
+--      qualified provisionally on that decision like the other central services, with daily caps on the route; the answer length is the
+--      worker setting reading.answer_tokens.induction_map. The Platform Admin can change the model, the caps or switch it off in Models & services.
+--   4. Service functions: validate a spec (the mapper and the runner), and the route the worker reads (mode induction_map, worker v1.0.7).
+--      The mapper writes nothing; a person reviews every suggestion in the wizard. Every model call is kept in pipeline.ai_invocations.
+-- G1: no job. G2: the model, caps and answer length are the route's and a setting; input-safety bounds are marked fixed. G3: no consumer API object is touched.
 -- Replaces: nothing (the wizard maps by hand until the mapper answers status; Mapper Contract v1.1).
 -- Retires: nothing.
 
@@ -22,18 +25,24 @@ do $pre$ begin
   end if;
 end $pre$;
 
--- 1. settings
+-- 1. the AI service route, its provisional qualification, and the answer length
+insert into pipeline.ai_service_routes(service_code, label, area, field, lane, ledger_match, cascade, daily_usd_cap, daily_calls_cap, prompt_source, enabled, resolver,
+                                       purpose_group, migration_state, previous_model, note, sort, reason)
+values ('layer1_induction_map', 'Layer 1 induction field mapping', 'Layer 1', null, 'induction_map', null, array['qwen3-30b'], 2, 200, 'worker code: induction.ts (induction-map-v1)', true, 'route',
+        'central', 'routed_single', null, 'AI Auto-Map in the Layer 1 induction wizard: suggestions and a parser spec a person reviews (Mapper Contract v1.1).', 150,
+        'S2-Build 17 Nov 2026 (Platform Admin 20:30: through the worker); central model per Platform Admin decision 13 Nov 2026 19:09')
+on conflict (service_code) do nothing;
+
+insert into pipeline.ai_route_qualifications(service_code, model_code, prompt_version, status, provisional, evidence, note)
+select 'layer1_induction_map', 'qwen3-30b', 'induction-map-v1', 'qualified', true,
+       'Platform Admin decision 13 Nov 2026 19:09 (central model set to Qwen3 30B); regression qualification pending',
+       'S2-Build 17 Nov 2026: suggestions only, reviewed by a person; every spec passes security.layer1_parser_spec_validate_v1'
+where not exists (select 1 from pipeline.ai_route_qualifications q where q.service_code = 'layer1_induction_map' and q.model_code = 'qwen3-30b');
+
 insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, reason, section, used_by) values
- ('pipeline', 'layer1.induction_mapper_model', 'Layer 1 induction: pinned AI mapper model',
-  'The one model the AI induction mapper uses to suggest field mappings and a parser spec. A person reviews every suggestion; change it only to another qualified model.',
-  'text', to_jsonb('openai/gpt-4.1-mini'::text), null, null, 'model id', 1210, 'Wave 2 mapper (S2-Build, Platform Admin 17 Nov 2026 17:55); the model already pinned for entry matrices', 'Layer 1 register',
-  'layer1-ai-induction-mapper'),
- ('pipeline', 'layer1.induction_mapper_calls_per_day', 'Layer 1 induction: AI mapper calls a day',
-  'The most AI Auto-Map and re-infer calls the mapper makes in one Sydney day; further calls answer that the daily limit is reached.',
-  'number', to_jsonb(200), 1, 2000, 'calls', 1211, 'Wave 2 mapper (S2-Build, 17 Nov 2026)', 'Layer 1 register', 'layer1-ai-induction-mapper'),
- ('pipeline', 'layer1.induction_mapper_max_tokens', 'Layer 1 induction: AI mapper answer size',
-  'The largest answer the mapper asks the model for, in tokens.',
-  'number', to_jsonb(4000), 500, 16000, 'tokens', 1212, 'Wave 2 mapper (S2-Build, 17 Nov 2026)', 'Layer 1 register', 'layer1-ai-induction-mapper')
+ ('pipeline', 'reading.answer_tokens.induction_map', 'AI answer length: Layer 1 induction mapping',
+  'The longest answer the AI induction mapping may give (suggestions and parser spec fields). A cut answer is refused with its reason; the cost is recorded.', 'number',
+  to_jsonb(4000), 1000, 16000, 'tokens', 941, 'Wave 2 mapper (S2-Build, 17 Nov 2026)', 'AI answer limits', 'worker coverage-sweep induction_map')
 on conflict (toolset_key, key) do nothing;
 
 -- 2. the allowed targets of each record type
@@ -230,32 +239,25 @@ begin
 end $function$;
 comment on function public.svc_layer1_parser_spec_validate_v1(jsonb, text, jsonb) is 'Wave 2: the parser spec check and the allowed targets of a record type, for layer1-ai-induction-mapper and the Layer 1 runner.';
 
-create or replace function public.svc_layer1_mapper_call_v1(p_user uuid, p_detail jsonb)
+create or replace function public.svc_layer1_induction_map_route_v1()
  returns jsonb
  language plpgsql
- security definer
+ stable security definer
  set search_path to ''
 as $function$
-declare v_limit int := security.pipeline_num_v1('layer1.induction_mapper_calls_per_day', 200)::int; v_today int;
 begin
   if current_user <> 'postgres' and coalesce(auth.role(), '') <> 'service_role' then raise exception 'service_role required'; end if;
-  select count(*) into v_today from pipeline.admin_control_events e
-   where e.area = 'layer1' and e.action = 'ai_induction_map'
-     and (e.created_at at time zone 'Australia/Sydney')::date = (now() at time zone 'Australia/Sydney')::date;
-  if v_today >= v_limit then return jsonb_build_object('allowed', false, 'today', v_today, 'limit', v_limit); end if;
-  insert into pipeline.admin_control_events(area, action, target, detail, actor)
-  values ('layer1', 'ai_induction_map', coalesce(p_detail->>'induction_id', p_detail->>'source_id', 'mapper'), coalesce(p_detail, '{}'::jsonb), p_user);
-  return jsonb_build_object('allowed', true, 'today', v_today + 1, 'limit', v_limit);
+  return security.ai_route_v1('layer1_induction_map');
 end $function$;
-comment on function public.svc_layer1_mapper_call_v1(uuid, jsonb) is 'Wave 2: records one AI mapper call and refuses it once the daily limit (layer1.induction_mapper_calls_per_day) is reached.';
+comment on function public.svc_layer1_induction_map_route_v1() is 'Wave 2: the route of the Layer 1 induction mapping (model, caps, hold), read by worker coverage-sweep mode induction_map and by layer1-ai-induction-mapper status.';
 
 revoke all on function security.layer1_parser_targets_v1() from public, anon, authenticated;
 revoke all on function security.layer1_parser_spec_validate_v1(jsonb, text, jsonb) from public, anon, authenticated;
 revoke all on function public.svc_layer1_parser_spec_validate_v1(jsonb, text, jsonb) from public, anon, authenticated;
-revoke all on function public.svc_layer1_mapper_call_v1(uuid, jsonb) from public, anon, authenticated;
+revoke all on function public.svc_layer1_induction_map_route_v1() from public, anon, authenticated;
 grant execute on function security.layer1_parser_targets_v1() to service_role;
 grant execute on function public.svc_layer1_parser_spec_validate_v1(jsonb, text, jsonb) to service_role;
-grant execute on function public.svc_layer1_mapper_call_v1(uuid, jsonb) to service_role;
+grant execute on function public.svc_layer1_induction_map_route_v1() to service_role;
 
 insert into pipeline.component_register(kind, name, layer, area, purpose, status, introduced_in)
 select v.kind, v.name, v.layer, 'Layer 1 register', v.purpose, 'active', '20261117221000'
@@ -264,7 +266,7 @@ select v.kind, v.name, v.layer, 'Layer 1 register', v.purpose, 'active', '202611
     ('function', 'security.layer1_parser_spec_validate_v1', 'Layer 1', 'Wave 2: strict check of an AI-built parser spec'),
     ('function', 'security.layer1_parser_targets_v1', 'Layer 1', 'Wave 2: allowed targets per record type'),
     ('function', 'public.svc_layer1_parser_spec_validate_v1', 'Layer 1', 'Wave 2: spec check for the mapper and the runner'),
-    ('function', 'public.svc_layer1_mapper_call_v1', 'Layer 1', 'Wave 2: mapper call log and daily limit')
+    ('function', 'public.svc_layer1_induction_map_route_v1', 'Layer 1', 'Wave 2: route of the induction mapping for the worker and the mapper')
   ) v(kind, name, layer, purpose)
  where not exists (select 1 from pipeline.component_register r where r.kind = v.kind and r.name = v.name);
 
@@ -285,4 +287,5 @@ begin
               'sql', 'drop table x', 'attribution_text', 'x', 'fields', jsonb_build_array(jsonb_build_object('source', 'Code', 'target', 'password', 'type', 'code')),
               'unique_key', jsonb_build_array('provider_code')), 'provider_register', null);
   if (v_bad->>'ok')::boolean or jsonb_array_length(v_bad->'errors') < 3 then raise exception 'post-check: an invalid spec was accepted'; end if;
+  if not exists (select 1 from pipeline.ai_service_routes where service_code = 'layer1_induction_map') then raise exception 'post-check: route'; end if;
 end $$;

@@ -23,7 +23,7 @@ Three calls are not model calls: the balance read (`index.ts:825`, `GET /credits
 
 ## 2. Every model call in the worker
 
-All sixteen go through `cascadeFetch` (`cascade.ts`), which keeps one row per attempt in `pipeline.ai_invocations`. The model is never named in the
+All eighteen go through `cascadeFetch` (`cascade.ts`), which keeps one row per attempt in `pipeline.ai_invocations`. The model is never named in the
 worker: each reader hands it out from `security.ai_route_v1(<service>)`.
 
 | Call | Worker mode | Database reader that hands out the model | Service (route) | State | How the model is used |
@@ -45,6 +45,7 @@ worker: each reader hands it out from `security.ai_route_v1(<service>)`.
 | `index.ts:3383` | `enrich_ai (entry requirements)` | `public.svc_enrich_ai_next` | course_entry_requirements | `routed` | worker cascade |
 | `index.ts:3694` | `ai_match` | `public.svc_coverage_ai_match_next` | course_matching | `routed` | worker cascade |
 | `index.ts:3832` | `adapter_propose` | `security.adapter_builder_model_for_v1 (through public.svc_adapter_draft_get)` | adapter_builder | `routed_single` | one model |
+| `index.ts:3870` | `induction_map` | `public.svc_layer1_induction_map_route_v1` (called by edge function `layer1-ai-induction-mapper` with a one-time nonce from `public.svc_pilot_issue_nonce`) | layer1_induction_map | `routed_single` | one model; the answer is a suggestion a person reviews in the Layer 1 induction wizard (worker v1.0.7, 17 Nov 2026) |
 
 State: `routed` means the route's cascade is executed (a later model is asked only on a technical failure). `routed_single` means the route
 chooses the model but the call uses one model; Models & services shows one model and refuses a second one for these. `not_migrated` is
