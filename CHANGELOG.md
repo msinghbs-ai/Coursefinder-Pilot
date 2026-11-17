@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.454 — 18 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.32** (Platform Admin 18 Nov 2026 10:05, S1-RM-Design lane). Migration 20261118110707: `public.admin_destination_figures_bulk_approve(dataset edition, reason)` (Platform Admin, a reason, one control event) approves every clean draft city figure of one edition; the ILEP induction draft's note drops the sentence about registering `ie_ilep` (only while it is still the text 20261118073000 wrote). Destination data › City metrics & costs gains Bulk Approve Drafts. Guards: `s611` (extended), fixture `destination-bulk-approve`.
+
 ## 0.1.453 — 18 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.31** (Platform Admin 18 Nov 2026 07:39, S1-RM-Design lane). Migration 20261118090707: `public.admin_destination_localities_bulk_approve(dataset edition, reason)` (Platform Admin, a reason, one control event) approves every clean draft locality of one edition; drafts without attribution are left. Destination data › Localities & postcodes gains Bulk Approve Drafts. Guards: `s611`, fixture `destination-bulk-approve`.

@@ -1,19 +1,20 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.31'
-export const PACKAGE_VERSION='0.1.453'
+export const UI_VERSION='2.16.32'
+export const PACKAGE_VERSION='0.1.454'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'17 Nov 2026',
-  title:'Destination data: Bulk Approve Drafts for localities',
+  title:'Destination data: Bulk Approve Drafts for city figures',
   changes:[
-    'Destination data › Localities & postcodes: new Bulk Approve Drafts button (Platform Admin). For each dataset edition with draft localities it shows how many are ready, and approves them all with one reason.',
-    'A draft with no attribution text is left as draft and counted. Localities in review, withdrawn or already approved are not touched, and figures and study rules are still approved on their own tabs.',
-    'The action is recorded once in the control log, and each locality keeps who approved it, when and why.'
+    'Destination data › City metrics & costs: new Bulk Approve Drafts button (Platform Admin). For each dataset edition with draft figures it shows how many are ready, and approves them all with one reason.',
+    'A draft figure without attribution text is left as draft and counted. Only draft figures change; a figure is returned by the API once its locality is approved too.',
+    'The action is recorded once in the control log, and each figure keeps who approved it, when and why.'
   ],
   bugFixes:[
+    'The ILEP draft\'s note no longer says its scheme is still to be registered (it was registered on 18 Nov).'
   ]
 }
 

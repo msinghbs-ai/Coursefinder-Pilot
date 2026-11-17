@@ -22,8 +22,10 @@ test('every change on the page asks for a reason and is gated: approvals and edi
   expect(page).toContain("const ask=t=>{const r=window.prompt(`${t}\\n\\nReason (kept with the decision):`);return r&&r.trim().length>=4?r.trim():null}")
   // every action button names its rank; none of the status or edition actions is below 6, and the postcode actions are 3
   const acts = [...page.matchAll(/<Act label=[^>]*? need=\{(\d)\}[^>]*? data="([a-z-]+)"/g)].map((x) => `${x[2]}:${x[1]}`)
-  expect(acts.sort()).toEqual(['career-approve:6', 'career-withdraw:6', 'edition-publish:6', 'edition-terms:6', 'locality-approve:6', 'locality-bulk-approve:6', 'locality-withdraw:6', 'metric-approve:6', 'metric-withdraw:6',
+  expect(acts.sort()).toEqual(['career-approve:6', 'career-withdraw:6', 'edition-publish:6', 'edition-terms:6', 'locality-approve:6', 'locality-withdraw:6', 'metric-approve:6', 'metric-withdraw:6',
     'postcode-accept:3', 'postcode-choose:3', 'postcode-none:3', 'rule-approve:6', 'rule-withdraw:6'])
+  // the two bulk approvals (localities, city figures) share one button, at Platform Admin
+  expect(page).toContain('<Act label="Bulk Approve Drafts" need={6} rank={rank} primary data={w.data} onRun=')
   expect(page).toContain("disabled={!ok} title={ok?undefined:`Needs ${need>=6?'Platform Admin':'Curator'}`}")
   // the server is the check: the wrappers refuse below their rank and without a reason
   for (const f of ['admin_destination_edition_set_terms', 'admin_destination_edition_publish']) {

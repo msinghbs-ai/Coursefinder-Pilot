@@ -9,7 +9,7 @@
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 // Check the admin copy with `node scripts/export-sops.mjs --check-mirror <coursefinder-admin/docs/sops>` (SS-016 UR-03): it exits 1 on drift.
 
-export const SOP_REVIEWED_FOR = '2.16.31'
+export const SOP_REVIEWED_FOR = '2.16.32'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -45,7 +45,7 @@ const step = (o) => o
 
 export const SOPS = [
   {
-    id: 'admin-sop', title: 'Platform Admin SOP', version: '2.57', audience: 'Platform Admin (role rank 6)',
+    id: 'admin-sop', title: 'Platform Admin SOP', version: '2.58', audience: 'Platform Admin (role rank 6)',
     purpose: 'How the Platform Admin runs StudySearch day to day: the approvals only you can give, the budgets and models you own, and the checks that keep automatic admission trustworthy.',
     owns: ['Admitting university adapters (Layer 2/3 › Universities)', 'Approving central pages: fee schedules, English policies, academic calendars', 'AI models, their order, AI admission and the AI allowances', 'Firecrawl and OpenRouter budgets and service keys', 'Onboarding settings, Retry and Stop', 'Users and roles; new countries; go-live'],
     schedule: [
@@ -127,7 +127,8 @@ export const SOPS = [
       'Scholarships withdrawn by the nightly review: a jump means a rule changed or a site moved its pages.',
     ],
     escalate: ['A job that fails the same way after a fix, a worker refusing work ("invalid key", "nonce"), or data written where it should not be: pause the job, note what you saw, raise it with the platform engineer with the change-control reference (CF-247).'],
-    changes: [{ version: '2.57', date: '18 Nov 2026', release: '2.16.31', change: 'Destination data › Localities & postcodes: Bulk Approve Drafts approves every clean draft locality of an edition with one reason (Platform Admin). Then approve the figures, record the edition terms and Publish edition on Overview & editions.' },
+    changes: [{ version: '2.58', date: '18 Nov 2026', release: '2.16.32', change: 'Destination data › City metrics & costs: Bulk Approve Drafts approves every clean draft figure of an edition with one reason (Platform Admin), as on Localities & postcodes.' },
+      { version: '2.57', date: '18 Nov 2026', release: '2.16.31', change: 'Destination data › Localities & postcodes: Bulk Approve Drafts approves every clean draft locality of an edition with one reason (Platform Admin). Then approve the figures, record the edition terms and Publish edition on Overview & editions.' },
       { version: '2.56', date: '18 Nov 2026', release: '2.16.30', change: 'Platform health › Queues & yield › Boost queue: read each item with its Country tier and Priority score (worked out from the Boost priority settings when the list opens), filter by tier and sort by score.' },
       { version: '2.55', date: '18 Nov 2026', release: '2.16.29', change: 'Courses: show Study load and Empty reason from Columns and filter by them; an Empty reason of No reason recorded finds courses whose gaps are still to fill. Campuses: Primary badge and filter; Locality (from the postcode) and its search.' },
       { version: '2.54', date: '17 Nov 2026', release: '2.16.28', change: 'Reference data: look up any API field (where it is read from, its type, the request that asked for it) under API field dictionary, and grade conversions under Grade scale conversions. Both are read-only.' },
