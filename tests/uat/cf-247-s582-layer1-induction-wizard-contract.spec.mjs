@@ -1,4 +1,4 @@
-// Guards: Parallel Wave 2 (Platform Admin 17 Nov 2026 17:59; decisions 18:10): Layer 1 › + Add source is a six-step induction wizard whose drafts are Pipeline Operator and above and whose activation is the Platform Admin's with a reason, creating the source paused; AI Auto-Map switches on only when the mapper answers; a dry run is recorded by the service role and switches nothing on; per-source retention is recorded and no policy or prune job changes; Platform health has the Country & category completeness report over eight editable categories; the consumer API is not touched.
+// Guards: Parallel Wave 2 (Platform Admin 17 Nov 2026 17:59; decisions 18:10): Layer 1 › + Add source is a six-step induction wizard whose drafts are Pipeline Operator and above and whose activation is the Platform Admin's with a reason, creating the source paused; AI Auto-Map switches on only when the mapper answers; a dry run is recorded by the service role and switches nothing on; per-source retention is recorded and no policy or prune job changes; Platform health has the Country & category completeness report over eight editable categories; the consumer API is not touched. Addenda (Platform Admin 17 Nov 2026 19:09): each Layer 1 source line shows a Hardcoded or AI-built parser badge with Re-infer Parser Spec when a reader flags layout drift (recorded and logged, nothing run), and the wizard takes one of seven target record types and keeps the AI mapper's parser spec with the draft.
 // Behaviour is proven on isolated PostgreSQL by tests/fixtures/layer1-induction-wizard/run.sh (workflow layer1-induction-wizard-test); these checks keep the rules in the migration and the screens.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
@@ -50,7 +50,7 @@ test('the wizard has six steps, saves a draft at each, and AI Auto-Map is off un
   expect(wizard).toContain("export const STEPS=[['scheme','Country & scheme'],['source','Source & licence'],['mapping','Field mapping'],['cadence','Cadence & retention'],['dry_run','Dry-run preview'],['activate','Activation']]")
   expect(wizard).toContain("export const MAPPER='layer1-ai-induction-mapper'")
   expect(wizard).toContain("call(MAPPER,{action:'status'})"); expect(wizard).toContain('setMapper(!error&&data?.ok?data:false)')
-  expect(wizard).toContain("disabled={closed||!mapper||busy!==''}")
+  expect(wizard).toContain("disabled={closed||!mapper||!f.target_record_type||busy!==''}")
   expect(wizard).toContain("rpc('admin_layer1_induction_save',{p_id:id,p_payload:payload,p_mappings:maps})")
   expect(wizard).toContain("rpc('admin_layer1_induction_activate',{p_id:saved.id,p_reason:why})")
   expect(wizard).toContain("disabled={busy!==''||rank<6||reason.trim().length<4}")
@@ -86,4 +86,31 @@ test('mocked browser: the report shows fill by country and category, a figure op
   await expect(r.locator('[data-ccr-detail]')).toContainText('Duration')
   await expect(r.locator('[data-ccr-source="s-cricos"]')).toContainText('Permanent')
   await expect(r.locator('[data-ccr-l4="course"]')).toContainText('12')
+})
+
+test('addenda: the parser table and functions add beside what exists; the four induction functions are replaced only from their known definitions', () => {
+  const n = read('supabase/migrations/20261117203000_cf247_layer1_parser_line_items.sql')
+  const c = n.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
+  expect(n).toContain('-- Replaces: nothing (four induction functions extended in place).'); expect(n).toContain('-- Retires: nothing.')
+  for (const l of n.split('\n')) expect(l).not.toMatch(/^(drop|delete|truncate)\b|^alter table .* drop /i)
+  expect(c).not.toMatch(/website_v2_|website_v3_|zoho_v2_|zoho_v3_|website_edge_|zoho_edge_|\bapi\./)
+  expect(c).not.toMatch(/cron\.(schedule|unschedule|alter_job)|automation_catalogue/i)
+  expect(c).toContain('create table if not exists pipeline.layer1_source_parsers ('); expect(c).toContain('comment on table pipeline.layer1_source_parsers is ')
+  for (const h of ['8dcb609809443e60ceb192b796579c61', '55adb79297f228419c0d02aeb5c16f92', '0a8fac994a5a553968dc40df55d1a5a3', '1f3ba519ed00322440d9347261cd7ec8']) expect(c).toContain(`'${h}'`)
+  expect(c).toContain("is distinct from 'cf247_wave2_parser'")
+  expect((c.match(/jsonb_build_object\('key', '[a-z_]+', 'label', /g) || []).length).toBe(7) // seven target record types
+  const re = c.slice(c.indexOf('function public.admin_layer1_parser_reinfer_request'), c.indexOf('function public.svc_layer1_parser_record'))
+  expect(re).toContain("raise exception 'a reason is required'"); expect(re).toContain("raise exception 'no layout drift is flagged for this source'")
+  expect(re).toContain("values ('layer1', 'parser_reinfer_request', p_source_id::text")
+  expect(re).not.toMatch(/layer1_source_operations|paused|admin_layer1_command|net\.http/) // the request runs nothing
+  for (const f of ['svc_layer1_parser_record(uuid, jsonb)', 'svc_layer1_parser_drift_record(uuid, boolean, text)']) expect(c).toContain(`revoke all on function public.${f} from public, anon, authenticated;`)
+})
+
+test('addenda: the Layer 1 line shows the parser badge and Re-infer Parser Spec; the wizard has the target record type and the spec preview', () => {
+  expect(l1).toContain("export const PARSER_LABEL={hardcoded:'Hardcoded parser',ai_built:'AI-built parser',none:'No parser yet'}")
+  expect(l1).toContain("{key:'parser',label:'Parser',"); expect(l1).toContain("supabase.rpc('admin_layer1_parser_status')")
+  expect(l1).toContain("{parser.drift_flagged_at&&!parser.reinfer_requested_at&&rank>=4&&<button onClick={reinfer} disabled={!!busy} data-l1-reinfer>")
+  expect(l1).toContain("supabase.rpc('admin_layer1_parser_reinfer_request',{p_source_id:source.source_id,p_reason:why.trim()})")
+  for (const k of ['data-l1i-record-type', 'data-l1i-parser-spec={f.parser_spec?\'present\':\'none\'}', 'data-l1i-routing', 'data-l1i-spec-discard']) expect(wizard).toContain(k)
+  expect(wizard).toContain("{action:'map',induction_id:saved.id,target_record_type:f.target_record_type,")
 })

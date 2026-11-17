@@ -255,7 +255,11 @@ const isRetired=s=>String(s.source_status||'').toLowerCase()==='retired'
 const healthReason=s=>{const h=healthOf(s);if(h!=='attention')return'';const r=s.latest_run;if(r&&['failed','blocked'].includes(String(r.status).toLowerCase()))return r.error_text||'The last run stopped.';if(String(s.verification_status).toLowerCase()==='failed'||String(s.source_health).toLowerCase()==='unhealthy')return s.verification_message||s.last_error||'The last check failed.';if(!s.last_success_at&&!r)return'Never run.';return s.verification_message||s.last_error||human(s.source_health)}
 const settingsForm=s=>({source_url:s.source_url||'',authority_name:s.authority_name||'',authority_domains:(s.authority_domains||[]).join(', '),expected_format:s.expected_format||'',schedule:scheduleOf(s),verification_cadence_days:s.verification_cadence_days||1,ingestion_cadence_days:s.ingestion_cadence_days||7,variance_warn_percent:s.variance_warn_percent??5,variance_block_percent:s.variance_block_percent??20,min_expected_records:s.min_expected_records??'',max_expected_records:s.max_expected_records??'',reason:''})
 
-function SourceRowBody({source,rank,onRefresh,candidates}){
+// Wave 2 addenda: the parser badge words
+export const PARSER_LABEL={hardcoded:'Hardcoded parser',ai_built:'AI-built parser',none:'No parser yet'}
+const PARSER_TONE={hardcoded:'neutral',ai_built:'violet',none:'warning'}
+const PARSER_HELP={hardcoded:'Read by a reader written in code',ai_built:'Read from a parser spec the AI mapper proposed and a person reviewed',none:'Waits for a reader or a parser spec'}
+function SourceRowBody({source,rank,onRefresh,candidates,parser}){
  const[busy,setBusy]=useState(''),[error,setError]=useState(''),[saved,setSaved]=useState(''),[form,setForm]=useState(()=>settingsForm(source))
  useEffect(()=>setForm(settingsForm(source)),[source.source_id,source.updated_at])
  const act=async(name,fn,done)=>{setBusy(name);setError('');setSaved('');try{await fn();await onRefresh();if(done)setSaved(done)}catch(e){setError(errorText(e)||String(e))}finally{setBusy('')}}
@@ -277,6 +281,8 @@ function SourceRowBody({source,rank,onRefresh,candidates}){
    await command('save_source',{source_id:source.source_id,source_url:form.source_url,authority_name:form.authority_name,authority_domains:form.authority_domains.split(',').map(x=>x.trim()).filter(Boolean),expected_format:form.expected_format,expected_count_kind:source.expected_count_kind||'records',active:true,paused:source.paused,verification_cadence_days:Number(form.verification_cadence_days),ingestion_cadence_days:Number(form.ingestion_cadence_days),variance_warn_percent:Number(form.variance_warn_percent),variance_block_percent:Number(form.variance_block_percent),min_expected_records:form.min_expected_records===''?null:Number(form.min_expected_records),max_expected_records:form.max_expected_records===''?null:Number(form.max_expected_records),reason:form.reason.trim()})
    if(form.schedule!=='custom'&&form.schedule!==scheduleOf(source)){const{error:e}=await supabase.rpc('admin_layer1_schedule',{p_source_id:source.source_id,p_schedule:form.schedule,p_reason:form.reason.trim()});if(e)throw e}
   },'Saved. The next run uses these settings.')}
+ // Wave 2 addenda: ask for the parser spec to be inferred again when a reader has flagged that the layout changed (recorded and logged; nothing runs here)
+ const reinfer=()=>{const why=window.prompt('Ask for the parser spec of this source to be inferred again?\n\nReason (kept in the control log):');if(!why||why.trim().length<4)return;act('reinfer',async()=>{const{error:e}=await supabase.rpc('admin_layer1_parser_reinfer_request',{p_source_id:source.source_id,p_reason:why.trim()});if(e)throw e},'Re-infer requested. The AI mapper proposes a new spec; the source keeps its current parser until one is accepted.')}
  const set=k=>e=>setForm(f=>({...f,[k]:e.target.value})),canEdit=rank>=6
  const jobsHref=`#scheduled-jobs?tab=jobs&q=${encodeURIComponent(source.source_label||'')}`
  return <div data-l1-source-body={source.source_id}>
@@ -293,6 +299,14 @@ function SourceRowBody({source,rank,onRefresh,candidates}){
    <a className="xl-link" href={jobsHref}>Jobs for this source</a>
    {source.latest_evidence_at&&<a className="xl-link" href="#evidence">Evidence</a>}
   </div>
+  {parser&&<div className="xl-facts" data-l1-parser-line>
+   <Pill tone={PARSER_TONE[parser.parser]||'neutral'} title={PARSER_HELP[parser.parser]}>{PARSER_LABEL[parser.parser]||human(parser.parser)}{parser.spec_version?` · spec v${parser.spec_version}`:''}</Pill>
+   {parser.target_record_type&&<Pill title="Target record type">{human(parser.target_record_type)}</Pill>}
+   {parser.drift_flagged_at&&<Pill tone="danger" title={parser.drift_message||undefined}>Layout drift flagged {fmt(parser.drift_flagged_at)}</Pill>}
+   {parser.reinfer_requested_at&&<Pill tone="info" title={parser.reinfer_reason||undefined}>Re-infer requested {fmt(parser.reinfer_requested_at)}</Pill>}
+   {parser.drift_flagged_at&&!parser.reinfer_requested_at&&rank>=4&&<button onClick={reinfer} disabled={!!busy} data-l1-reinfer><RefreshCw size={14}/>{busy==='reinfer'?'Requesting…':'Re-infer Parser Spec'}</button>}
+  </div>}
+  {parser?.drift_flagged_at&&parser.drift_message&&<div className="xl-note tone-danger" role="alert" data-l1-drift><AlertTriangle size={14}/><span><b>Layout drift:</b> {parser.drift_message}{parser.parser==='hardcoded'?' This source is read by code, so its reader also needs a change.':''}</span></div>}
   <NewEditions source={source} candidates={candidates} rank={rank} onRefresh={onRefresh}/>
   <RunStatus source={source} rank={rank} busy={busy} onRetry={retry} onRefresh={onRefresh}/>
   {error&&<div className="xl-note tone-danger" role="alert">{error}</div>}{saved&&<div className="xl-note tone-success" role="status"><CheckCircle2 size={14}/>{saved}</div>}
@@ -327,9 +341,9 @@ function SourceRowBody({source,rank,onRefresh,candidates}){
 
 
 export function Layer1Sources(){
- const[context,setContext]=useState(null),[data,setData]=useState({sources:[]}),[candidates,setCandidates]=useState([]),[busy,setBusy]=useState(false),[error,setError]=useState(''),[adding,setAdding]=useState(false),[notice,setNotice]=useState('')
+ const[context,setContext]=useState(null),[data,setData]=useState({sources:[]}),[candidates,setCandidates]=useState([]),[busy,setBusy]=useState(false),[error,setError]=useState(''),[adding,setAdding]=useState(false),[notice,setNotice]=useState(''),[parsers,setParsers]=useState({})
  const[q,setQ]=useState(''),[country,setCountry]=useState(''),[type,setType]=useState(''),[health,setHealth]=useState(''),[showRetired,setShowRetired]=useState(false),[open,setOpen]=useState(null)
- const load=async()=>{setBusy(true);setError('');try{const[c,d,k]=await Promise.all([api.context(),readLayer1(),supabase.rpc('layer1_statistics_candidates_read').then(r=>r.error?[]:(r.data||[])).catch(()=>[])]);setContext(c||null);setData(d||{sources:[]});setCandidates(Array.isArray(k)?k:[])}catch(e){setError(errorText(e)||String(e))}finally{setBusy(false)}}
+ const load=async()=>{setBusy(true);setError('');try{const[c,d,k,ps]=await Promise.all([api.context(),readLayer1(),supabase.rpc('layer1_statistics_candidates_read').then(r=>r.error?[]:(r.data||[])).catch(()=>[]),supabase.rpc('admin_layer1_parser_status').then(r=>r.error?{}:(r.data?.sources||{})).catch(()=>({}))]);setContext(c||null);setData(d||{sources:[]});setCandidates(Array.isArray(k)?k:[]);setParsers(ps||{})}catch(e){setError(errorText(e)||String(e))}finally{setBusy(false)}}
  useEffect(()=>{load()},[])
  const rows=data?.sources||[]
  useEffect(()=>{if(!rows.some(s=>['queued','running'].includes(String(s.latest_run?.status||'').toLowerCase())))return;const t=setInterval(load,5000);return()=>clearInterval(t)},[rows.map(s=>s.latest_run?.status).join('|')])
@@ -343,6 +357,8 @@ export function Layer1Sources(){
   {key:'source',label:'Source',width:'minmax(220px,2.4fr)',render:s=>{const sub=s.authority_name&&s.authority_name.trim().toLowerCase()!==String(s.source_label||'').trim().toLowerCase()?s.authority_name:(s.source_url?String(s.source_url).replace(/^https?:\/\/(www\.)?/,'').replace(/\/.*$/,''):'');return <span className="xl-title"><b>{s.source_label}</b>{sub&&<small>{sub}</small>}</span>}},
   {key:'country',label:'Country',width:'minmax(70px,.6fr)',render:s=><Pill title={s.country_name}>{s.country_code||'—'}</Pill>},
   {key:'type',label:'Type',width:'minmax(90px,.8fr)',render:s=><Pill tone={sourceClass(s)==='statistics'?'violet':'info'}>{isRankingSource(s)?'Ranking':TYPE_LABEL[sourceClass(s)]||human(sourceClass(s))}</Pill>},
+  // Wave 2 addenda (Platform Admin 17 Nov 2026 19:09): which parser reads the source, and whether its layout has drifted
+  {key:'parser',label:'Parser',width:'minmax(130px,1fr)',render:s=>{const p=parsers[s.source_id];return p?<span className="xl-stack" data-l1-parser={p.parser}><Pill tone={PARSER_TONE[p.parser]||'neutral'} title={PARSER_HELP[p.parser]}>{PARSER_LABEL[p.parser]||human(p.parser)}</Pill>{p.drift_flagged_at&&<small>Layout drift flagged</small>}</span>:<Pill>—</Pill>}},
   {key:'health',label:'Health',width:'minmax(120px,1fr)',render:s=>{const h=isRetired(s)?'retired':healthOf(s);return <Pill tone={HEALTH_TONE[h]||'neutral'} title={healthReason(s)||undefined}>{h==='retired'?'Retired':HEALTH_LABEL[h]||human(h)}</Pill>}},
   {key:'run',label:'Last run',width:'minmax(150px,1.2fr)',render:s=>{const r=s.latest_run;return r?<span className="xl-stack"><Pill tone={RUN_TONE[String(r.status).toLowerCase()]||'neutral'}>{human(r.status==='no_change'?'unchanged':r.status)}</Pill><small>{fmt(r.completed_at||r.started_at||s.last_success_at)}</small></span>:<span className="xl-stack"><Pill>Not run</Pill>{s.last_success_at&&<small>{fmt(s.last_success_at)}</small>}</span>}},
   {key:'schedule',label:'Schedule',width:'minmax(140px,1.1fr)',render:s=><span className="xl-stack"><Pill tone={scheduleOf(s)==='manual'?'neutral':'info'}>{scheduleOf(s)==='custom'?`Every ${scheduleDays(s)} days`:SCHEDULE_LABEL[scheduleOf(s)]}</Pill><small>{s.paused?'Paused':`Next ${fmt(s.schedule_next_due_at||s.next_ingestion_at)}`}</small></span>},
@@ -359,7 +375,7 @@ export function Layer1Sources(){
   </XlToolbar>
   {error&&<div className="xl-note tone-danger" role="alert">{error}</div>}{notice&&<div className="xl-note tone-success" role="status">{notice}</div>}
   {/* Wave 2 (Platform Admin 17 Nov 2026 17:59): + Add source opens the six-step induction wizard; activation stays the Platform Admin's */}{adding&&<Layer1InductionWizard rank={rank} onCancel={()=>setAdding(false)} onDone={()=>{load()}}/>}
-  {busy&&!rows.length?<div className="xl-empty">Loading sources…</div>:<ExpandList columns={columns} rows={rowsOut} rowKey={s=>s.source_id} openKey={open} onOpen={setOpen} dataAttr="data-l1-source" renderBody={s=><SourceRowBody source={s} rank={rank} onRefresh={load} candidates={candidates}/>}/>}
+  {busy&&!rows.length?<div className="xl-empty">Loading sources…</div>:<ExpandList columns={columns} rows={rowsOut} rowKey={s=>s.source_id} openKey={open} onOpen={setOpen} dataAttr="data-l1-source" renderBody={s=><SourceRowBody source={s} rank={rank} onRefresh={load} candidates={candidates} parser={parsers[s.source_id]}/>}/>}
   <p className="xl-muted">{n(list.length)} of {n(all.filter(x=>showRetired||!isRetired(x)).length)} sources. Each runs on its own schedule and is rerun only when it is due and its file has changed.</p>
  </section>
 }

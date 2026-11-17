@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.447 — 17 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.25** (Platform Admin 17 Nov 2026 19:09, S1-RM-Design lane, Wave 2 addenda). Migration 20261117203000_cf247_layer1_parser_line_items: `pipeline.layer1_source_parsers`, `admin_layer1_parser_status()`, `admin_layer1_parser_reinfer_request(source, reason)`, `svc_layer1_parser_record` and `svc_layer1_parser_drift_record` for the readers and the AI mapper, seven target record types; the four induction functions extended in place (definition guard) for the record type and the parser spec. UI: Parser badge and Re-infer Parser Spec on Layer 1 › Sources; target record type and parser spec preview in the wizard. No job. G3 untouched.
+
 ## 0.1.446 — 17 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.24** (Platform Admin 17 Nov 2026 17:59 and decisions 18:10, S1-RM-Design lane, Parallel Wave 2). Migration 20261117193000_cf247_layer1_induction_wizard: `ref.enrichment_categories` (8) and `ref.enrichment_category_fields` (32), `pipeline.layer1_source_inductions`, `admin_layer1_induction_read/save/cancel/activate`, `svc_layer1_induction_read` and `svc_layer1_induction_dry_run_record` for the loaders, `admin_enrichment_category_field_set`, `admin_completeness_report`, four settings. UI: Layer 1 › + Add source opens the six-step wizard (the single form is removed); Platform health gains the tab Country & category completeness (55 tabs on 21 pages). No job, no retention policy change. G3 untouched.

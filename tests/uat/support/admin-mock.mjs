@@ -85,6 +85,7 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     admin_layer1_induction_read: () => ({ rank: 6, drafts: [], item: null, options: { countries: [{ code: 'CA', name: 'Canada' }, { code: 'IE', name: 'Ireland' }],
       schemes: [{ scheme: 'mtcu', kind: 'course_registration', country_code: 'CA', label: 'MTCU programme codes' }, { scheme: 'cip', kind: 'field_of_study', country_code: 'CA', label: 'CIP' }],
       categories: [{ key: 'course_basics', label: 'Course basics', description: 'What the course is.', fields: [{ field: 'level', label: 'Level' }, { field: 'duration', label: 'Duration' }] }, { key: 'fees', label: 'Fees', description: 'Tuition.', fields: [{ field: 'provider_tuition', label: 'Tuition published by the provider' }] }],
+      record_types: [{ key: 'course_register', label: 'Course register', help: 'Courses as an official register lists them.' }, { key: 'tuition_fees', label: 'Tuition fees', help: 'Fees by course or provider.' }],
       connector_types: ['csv_file', 'json_api', 'html_pages'], cadences: ['weekly', 'monthly', 'annual'], terms_statuses: ['approved', 'pending', 'not_required'],
       retention_defaults: { staging_retention_days: 14, raw_retention_days: null }, dry_run_rows: 100, sample_rows: 20, postcode_min_share: 0.9 } }),
     admin_layer1_induction_save: b => { calls.push({ l1InductionSave: b }); const p = b.p_payload || {}, m = b.p_mappings || []
@@ -92,6 +93,10 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
         steps: { scheme: !!p.scheme, source: !!(p.source_url && p.connector_type && p.terms_status), mapping: m.length > 0, cadence: !!p.cadence, dry_run: false, dry_run_state: 'waiting_for_reader', activated: false } } } },
     admin_layer1_induction_activate: b => { calls.push({ l1InductionActivate: b }); return { ok: true, source_id: 'l1-new', source_paused: true, dry_run: 'waiting_for_reader',
       item: { id: b.p_id, status: 'activated', country_code: 'CA', payload: {}, mappings: [], dry_run: null, activation_reason: b.p_reason, steps: { scheme: true, source: true, mapping: true, cadence: true, dry_run: false, dry_run_state: 'waiting_for_reader', activated: true } } } },
+    // Wave 2 addenda (17 Nov 2026 19:09): the parser badge of each Layer 1 source, and the re-infer request
+    admin_layer1_parser_status: () => ({ sources: { 'l1-centennial': { parser: 'ai_built', target_record_type: 'course_register', spec_version: 2, drift_flagged_at: '2026-11-17T06:00:00Z', drift_message: 'expected 195 unique source codes got 200', reinfer_requested_at: null },
+      'l1-nzqa': { parser: 'hardcoded', target_record_type: null, drift_flagged_at: null }, 'l1-dfat': { parser: 'none' } } }),
+    admin_layer1_parser_reinfer_request: b => { calls.push({ l1Reinfer: b }); return { ok: true, source_id: b.p_source_id } },
     admin_completeness_report: () => ({ rank: 6, snapshot_date: '2026-11-17', countries: ['AU', 'NZ'], categories: [{ key: 'course_basics', label: 'Course basics', description: 'What the course is.' }, { key: 'fees', label: 'Fees', description: 'Tuition.' }],
       cells: [{ country_code: 'AU', category_key: 'course_basics', total: 200, filled: 140, pct: 70.0, fields: [{ field: 'level', label: 'Level', total: 100, filled: 90, pct: 90.0 }, { field: 'duration', label: 'Duration', total: 100, filled: 50, pct: 50.0 }] },
         { country_code: 'AU', category_key: 'fees', total: 100, filled: 25, pct: 25.0, fields: [{ field: 'provider_tuition', label: 'Tuition published by the provider', total: 100, filled: 25, pct: 25.0 }] },
