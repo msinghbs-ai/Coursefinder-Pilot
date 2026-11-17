@@ -268,4 +268,53 @@ do $t$ declare r jsonb; v_id uuid; v_src uuid; v_cur uuid; begin
   perform pg_temp.ok(col_description('ref.enrichment_category_fields'::regclass, (select attnum from pg_attribute where attrelid = 'ref.enrichment_category_fields'::regclass and attname = 'boost_category')) like 'Crosswalk only%', 'the Boost key on a field is marked as a crosswalk, not a list');
 end $t$;
 SQL
+# Wave 2 register drafts (Platform Admin 17 Nov 2026 23:02): nine drafts are pre-staged; a draft is not a source and writes no retention policy
+W=supabase/migrations/20261118003000_cf247_wave2_register_drafts.sql
+if $P -1 -f $W >/dev/null 2>/tmp/liw_w.err; then echo "FAIL: the drafts migration applied without GB, US and CA or their schemes" >&2; exit 1; fi
+grep -q "prerequisite missing" /tmp/liw_w.err
+$P <<'SQL'
+insert into ref.countries(iso_alpha2, name) values ('GB', 'United Kingdom'), ('US', 'United States'), ('CA', 'Canada') on conflict do nothing;
+insert into ref.registration_schemes values ('uk_ofs', 'provider_registration', 'GB', 'Office for Students', 'OfS register (UKPRN)'), ('ie_qqi', 'provider_registration', 'IE', 'QQI', 'QQI provider'),
+  ('us_ipeds', 'provider_registration', 'US', 'NCES', 'IPEDS unit ID'), ('us_opeid', 'provider_registration', 'US', 'US Department of Education', 'OPE ID'), ('pgwp', 'work_eligibility', 'CA', 'IRCC', 'PGWP'),
+  ('hecos', 'field_of_study', 'GB', 'HESA', 'HECoS'), ('cip', 'field_of_study', 'US', 'NCES', 'CIP'), ('cip', 'field_of_study', 'CA', 'Statistics Canada', 'CIP Canada') on conflict do nothing;
+create table public.fixture_before_w as select (select count(*) from pipeline.sources) sources, (select count(*) from pipeline.source_retention_policies) policies,
+  (select count(*) from pipeline.layer1_source_inductions) inductions, (select count(*) from pipeline.admin_control_events) events;
+SQL
+$P -1 -f $W >/dev/null; $P -1 -f $W >/dev/null
+echo "drafts migration: refused without its prerequisites, then applied twice without error (post-check included)"
+$P <<'SQL'
+create or replace function pg_temp.ok(c boolean, m text) returns void language plpgsql as $$ begin if c is not true then raise exception 'FAIL: %', m; end if; raise notice 'ok: %', m; end $$;
+create or replace function pg_temp.err(q text) returns text language plpgsql as $$ begin execute q; return null; exception when others then return sqlerrm; end $$;
+do $t$ declare r jsonb; v_id uuid; b record; begin
+  select * into b from public.fixture_before_w;
+  perform pg_temp.ok((select count(*) from pipeline.layer1_source_inductions) = b.inductions + 9
+    and (select count(*) from pipeline.layer1_source_inductions i where i.payload->>'notes' like 'Wave 2 draft, pre-staged%' and i.status = 'draft' and i.source_id is null and i.created_by is null) = 9,
+    'nine Wave 2 drafts, once only after two applies, all in draft with no source');
+  perform pg_temp.ok((select jsonb_object_agg(country_code, n) from (select country_code, count(*) n from pipeline.layer1_source_inductions where payload->>'notes' like 'Wave 2 draft%' group by 1) x)
+    = '{"GB": 3, "IE": 3, "US": 2, "CA": 1}'::jsonb, 'three for the United Kingdom, three for Ireland, two for the United States, one for Canada');
+  perform pg_temp.ok((select count(*) from pipeline.sources) = b.sources and (select count(*) from pipeline.source_retention_policies) = b.policies and (select count(*) from pipeline.admin_control_events) = b.events,
+    'no source is added, no retention policy is written and nothing is logged as a control change');
+  perform pg_temp.ok(not exists (select 1 from pipeline.layer1_source_inductions i where i.payload->>'notes' like 'Wave 2 draft%' and i.payload->>'source_label' ilike '%Designated Learning%'),
+    'the IRCC Designated Learning Institutions list is not drafted (it is already a live source)');
+  perform pg_temp.ok((select bool_and((i.payload->>'staging_keep_days')::int = 90 and (i.payload->>'edition_archiving')::boolean and i.payload->>'terms_status' = 'pending' and i.payload->>'source_url' ~ '^https://'
+      and i.payload->>'target_record_type' in ('provider_register', 'course_register', 'study_rules')) from pipeline.layer1_source_inductions i where i.payload->>'notes' like 'Wave 2 draft%'),
+    'each draft keeps staging 90 days, has an https address, a target record type and licence terms pending');
+  perform pg_temp.ok((select count(*) from pipeline.layer1_source_inductions i where i.payload->>'notes' like 'Wave 2 draft%' and (security.layer1_induction_steps_v1(i)->>'scheme')::boolean) = 5
+    and (select count(*) from pipeline.layer1_source_inductions i where i.payload->>'notes' like 'Wave 2 draft%' and (security.layer1_induction_steps_v1(i)->>'mapping')::boolean) = 5
+    and (select bool_and((security.layer1_induction_steps_v1(i)->>'cadence')::boolean and security.layer1_induction_steps_v1(i)->>'dry_run_state' = 'waiting_for_reader') from pipeline.layer1_source_inductions i where i.payload->>'notes' like 'Wave 2 draft%'),
+    'five drafts have a registered scheme and five have mappings; all have a cadence and wait for a reader');
+  -- a Curator opens a seeded draft and saves it through the wizard's own function; activation stays the Platform Admin's and is refused while a step is unfinished
+  perform set_config('fixture.uid', '44444444-4444-4444-4444-444444444444', true); perform set_config('fixture.rank', '3', true);
+  select i.id into v_id from pipeline.layer1_source_inductions i where i.payload->>'source_label' = 'IPEDS institution directory (HD)';
+  r := public.admin_layer1_induction_read(v_id);
+  perform pg_temp.ok(r#>>'{item,payload,target_record_type}' = 'provider_register' and jsonb_array_length(r#>'{item,mappings}') = 10 and (select count(*) from jsonb_array_elements(r->'drafts') d where d->>'status' = 'draft') >= 9,
+    'a Curator sees the seeded drafts and opens one');
+  r := public.admin_layer1_induction_save(v_id, '{"notes":"checked by the fixture"}'::jsonb, null);
+  perform pg_temp.ok(r#>>'{item,payload,scheme}' = 'us_ipeds' and (r#>>'{item,payload,staging_keep_days}')::int = 90 and jsonb_array_length(r#>'{item,mappings}') = 10, 'the wizard''s save accepts a seeded draft and keeps its scheme, keep period and mappings');
+  perform pg_temp.ok(pg_temp.err(format($$select public.admin_layer1_induction_activate(%L, 'fixture activation')$$, v_id)) like 'Platform Admin (rank 6)%', 'a Curator cannot activate a seeded draft');
+  perform set_config('fixture.rank', '6', true);
+  select i.id into v_id from pipeline.layer1_source_inductions i where i.payload->>'source_label' = 'Interim List of Eligible Programmes (ILEP)';
+  perform pg_temp.ok(pg_temp.err(format($$select public.admin_layer1_induction_activate(%L, 'fixture activation')$$, v_id)) like 'step 1 is not finished%', 'a draft with no registered scheme cannot be activated');
+end $t$;
+SQL
 echo "layer1 induction wizard: all checks passed"

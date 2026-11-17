@@ -174,3 +174,27 @@ test('mocked browser: evidence captures and Layer 4 review items are two columns
   await expect(e).toContainText('not divided into a rate')
   expect(report).not.toContain('escalation_rate')
 })
+
+test('Wave 2 register drafts (Platform Admin 17 Nov 2026 23:02): nine drafts are pre-staged; a draft is not a source, and the live IRCC list is not drafted again', () => {
+  const w = read('supabase/migrations/20261118003000_cf247_wave2_register_drafts.sql')
+  const c = w.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
+  expect(w).toMatch(/^-- Replaces: nothing$/m); expect(w).toMatch(/^-- Retires: nothing$/m)
+  for (const l of w.split('\n')) expect(l).not.toMatch(/^(drop|delete|truncate|update)\b|^alter table .* drop /i)
+  // the only write is the insert of drafts: no source, no retention policy, no schedule, no function or table change
+  expect(c.match(/insert into /g).length).toBe(1); expect(c).toContain('insert into pipeline.layer1_source_inductions(country_code, payload, mappings)')
+  const code = c.replace(/'\{"scheme".*?\}'::jsonb/g, "'{}'::jsonb") // the statements, without the words of each draft's notes
+  for (const no of ['pipeline.sources', 'source_retention_policies', 'cron.', 'create or replace function', 'create table', 'alter table', 'website_', 'zoho_', ' api.']) expect(code).not.toContain(no)
+  const drafts = [...c.matchAll(/\('([A-Z]{2})', '(\{"scheme".*?\})'::jsonb,/g)].map((m) => ({ country: m[1], ...JSON.parse(m[2].replace(/''/g, "'")) }))
+  expect(drafts.length).toBe(9)
+  expect(drafts.map((d) => d.country).join('')).toBe('GBGBGBIEIEIEUSUSCA')
+  for (const d of drafts) {
+    expect(d.source_url).toMatch(/^https:\/\/[^\s]+$/); expect(['provider_register', 'course_register', 'study_rules']).toContain(d.target_record_type)
+    expect(d.terms_status).toBe('pending'); expect(d.notes.length).toBeLessThanOrEqual(600); expect(d.notes).toMatch(/^Wave 2 draft, pre-staged 17 Nov 2026\./)
+    expect(['weekly', 'monthly', 'annual']).toContain(d.cadence)
+  }
+  expect(drafts.some((d) => /Designated Learning/i.test(d.source_label))).toBe(false)
+  expect(c).toContain("s.payload || jsonb_build_object('staging_keep_days', 90, 'edition_archiving', true)")
+  // applies twice: keyed on country, address and record type across every state, so a cancelled draft is not brought back
+  expect(c).toContain("where not exists (select 1 from pipeline.layer1_source_inductions i where i.country_code = s.country_code and i.payload->>'source_url' = s.payload->>'source_url'")
+  expect(c).not.toMatch(/i\.status\s*=/)
+})

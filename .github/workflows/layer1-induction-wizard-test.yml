@@ -6,6 +6,7 @@ on:
       - 'supabase/migrations/20261117193000_cf247_layer1_induction_wizard.sql'
       - 'supabase/migrations/20261117203000_cf247_layer1_parser_line_items.sql'
       - 'supabase/migrations/20261117213000_cf247_wave2_unify_categories_retention_roles.sql'
+      - 'supabase/migrations/20261118003000_cf247_wave2_register_drafts.sql'
       - 'tests/fixtures/layer1-induction-wizard/**'
       - '.github/workflows/layer1-induction-wizard-test.yml'
   workflow_dispatch:
