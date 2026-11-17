@@ -11,7 +11,7 @@ const go = (addr) => { const [a, q] = addr.split('?'); const r = resolveTarget(a
 
 test('the menu: 48 tabs on 20 pages, as the Final board (v2.16.12: Settings › Integrations)', () => {
   // v2.16.19 (RM0F, decision G-2, Platform Admin 17 Nov 2026): Destination data added after Rankings & statistics: 53 tabs on 21 pages (was 48 on 20)
-  expect(Object.values(PAGES).reduce((n, p) => n + (p.tabs ? p.tabs.length : 1), 0)).toBe(53)
+  expect(Object.values(PAGES).reduce((n, p) => n + (p.tabs ? p.tabs.length : 1), 0)).toBe(54) /* v2.16.20: Users & roles has two tabs (Links & Email Templates) */
   expect(Object.keys(PAGES)).toHaveLength(21)
   expect(PAGES.rankings.tabs.map((t) => `${t.key}:${t.min}`)).toEqual(['overview:1', 'compare:1', 'datasets:1'])
 })

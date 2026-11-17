@@ -1,22 +1,21 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.19'
-export const PACKAGE_VERSION='0.1.441'
+export const UI_VERSION='2.16.20'
+export const PACKAGE_VERSION='0.1.442'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'17 Nov 2026',
-  title:'Destination data page; campus localities in Layer 4; locality on API v3 providers',
+  title:'Users & roles: Links & Email Templates',
   changes:[
-    'New page Catalogue › Destination data (Curator and above), with five tabs: Overview & editions, Localities & postcodes, City metrics & costs, Study rules, Careers & outcomes. Approval, publication and withdrawal are the Platform Admin\'s and always ask for a reason. The tables are empty until the first loads.',
-    'Layer 4 Review › Inbox: new kind Campus locality. A campus whose postcode is below the match share waits there; one decision settles the postcode for every campus in it.',
-    'Course detail › Recognition card: the schemes a course is registered under, the field-of-study scheme of its country, and the study rules proven for it. Provider detail: the primary campus, the locality each campus maps to, and provider registrations by scheme, with PGWP shown apart from the DLI number.',
-    'Platform health › Data delivery: Destination loads lists the destination load jobs with Run now, and what waits for a person.',
-    'API v3 provider (website and Zoho): each campus gains locality, null until its postcode has an approved match. The v2 APIs are unchanged.'
+    'Administration › Users & roles now has two tabs: Users & roles (the directory, as before) and Links & Email Templates (Platform Admin).',
+    'Links & Email Templates: set the Admin Site URL and the Admin Guide Link, and edit the Invite User and Reset Password emails (subject and HTML body) with a live preview. Variable chips insert {{link}}, {{guide_link}}, {{user_email}}, {{user_name}} and {{role}} at the cursor. The emails start from the branded StudySearch PIM Admin template.',
+    'Save & Sync needs a reason, which is kept in the control log. The saved emails are copied to Supabase Auth only when a management token is set for the edge function; the screen says whether the copy happened.',
+    'Send Test Email sends the Reset Password email to your own account or another existing user. An invitation is tested by inviting a new address from Create user.',
+    'A password reset email now carries the person\'s current role and the saved guide link.'
   ],
   bugFixes:[
-    'Administration › Users & roles: sending a password reset email is now recorded in the access history.'
   ]
 }
 

@@ -17,6 +17,16 @@ function adminLoginUrl(): string {
 }
 // The in-app Platform guide (nav-map slug platform-guide), sent with an invitation as {{ .Data.guide_url }}
 const guideUrl = (login: string) => login + "#platform-guide";
+// v2.16.20 (Platform Admin 17 Nov 2026 14:40): Users & roles › Links & Email Templates. The saved templates use five plain tokens; Supabase Auth
+// wants its own. {{guide_link}} is written in as the saved address; the others become the Auth variables the invitation and the reset already fill.
+const TEMPLATE_TOKENS: Record<string, string> = { link: "{{ .ConfirmationURL }}", user_email: "{{ .Email }}", user_name: "{{ .Data.full_name }}", role: "{{ .Data.role }}" };
+const escHtml = (v: string) => v.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+function toAuthTemplate(text: string, guideLink: string): string {
+  return String(text || "").replace(/\{\{\s*(link|guide_link|user_email|user_name|role)\s*\}\}/g, (_m, t) => t === "guide_link" ? escHtml(guideLink) : TEMPLATE_TOKENS[t]);
+}
+// A Supabase personal access token with access to this project, kept as an Edge Function secret (a secret's name cannot begin SUPABASE_)
+const managementToken = () => String(Deno.env.get("SB_MANAGEMENT_TOKEN") || "").trim();
+const projectRef = (url: string) => { try { return new URL(url).hostname.split(".")[0]; } catch { return ""; } };
 const SYSTEM_EMAIL = /\.invalid$/i;
 const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -98,6 +108,51 @@ Deno.serve(async (req: Request) => {
   });
 
   try {
+    // v2.16.20: Links & Email Templates. Where links return to and whether a save can be copied to Supabase Auth from here.
+    if (action === "auth_templates_status") {
+      return reply(req, 200, { ok: true, login_url: adminLoginUrl(), management_token_configured: managementToken().length > 0 });
+    }
+    // Copy the saved settings to Supabase Auth (site_url, and the Invite user and Reset password subjects and bodies). The save itself, with its
+    // reason, is public.admin_auth_template_settings_save; this only pushes what is saved. Without a management token nothing is changed.
+    if (action === "auth_templates_sync") {
+      const { data: tpl, error: tplError } = await serviceClient.rpc("svc_admin_auth_template_settings");
+      if (tplError || !tpl?.templates) throw new Error("auth_template_settings_failed");
+      const token = managementToken(), ref = projectRef(url);
+      let synced = false, note = "management_token_not_configured";
+      if (token && ref) {
+        const guide = String(tpl.guide_link || "");
+        const r = await fetch(`https://api.supabase.com/v1/projects/${ref}/config/auth`, {
+          method: "PATCH",
+          headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+          body: JSON.stringify({
+            site_url: String(tpl.site_url),
+            mailer_subjects_invite: toAuthTemplate(tpl.templates.invite.subject, guide),
+            mailer_templates_invite_content: toAuthTemplate(tpl.templates.invite.body, guide),
+            mailer_subjects_recovery: toAuthTemplate(tpl.templates.recovery.subject, guide),
+            mailer_templates_recovery_content: toAuthTemplate(tpl.templates.recovery.body, guide),
+          }),
+          signal: AbortSignal.timeout(15000), // fixed: API time-out
+        });
+        synced = r.ok; note = r.ok ? "synced" : `management_api_${r.status}`;
+      }
+      await serviceClient.rpc("svc_admin_auth_template_log", { p_actor: actorUserId, p_action: "auth_templates_sync", p_detail: { synced, note, site_url: tpl.site_url } });
+      return reply(req, 200, { ok: true, synced, note });
+    }
+    // Send the Reset password email to an existing account (the signed-in admin by default), through Supabase Auth, so the real template is what
+    // arrives. An invitation cannot be tested this way: Auth only sends one by creating the account.
+    if (action === "auth_template_test") {
+      const template = String(body?.template || "recovery");
+      if (template !== "recovery") return reply(req, 409, { error: "an_invitation_is_tested_by_inviting_a_new_address_from_create_user" });
+      const { data: me } = await serviceClient.auth.admin.getUserById(actorUserId);
+      const to = String(body?.to || me?.user?.email || "").trim().toLowerCase();
+      if (!emailRe.test(to) || SYSTEM_EMAIL.test(to)) return reply(req, 400, { error: "valid_test_email_required" });
+      const known = (await listAuthUsers(serviceClient)).some((u: any) => String(u.email || "").toLowerCase() === to && !u.deleted_at);
+      if (!known) return reply(req, 409, { error: "test_address_has_no_account_a_reset_email_only_goes_to_an_existing_user" });
+      const { error: testError } = await serviceClient.auth.resetPasswordForEmail(to, { redirectTo: adminLoginUrl() });
+      await serviceClient.rpc("svc_admin_auth_template_log", { p_actor: actorUserId, p_action: "auth_template_test", p_detail: { template, sent_to: to, synced: !testError, note: testError ? String(testError.message || "send_failed") : "sent" } });
+      if (testError) return reply(req, 400, { error: testError.message || "test_email_failed" });
+      return reply(req, 200, { ok: true, sent_to: to, template });
+    }
     if (action === "list") {
       const [authUsersAll, snapshotResult, deletedResult, activeResult] = await Promise.all([
         listAuthUsers(serviceClient),
@@ -178,6 +233,8 @@ Deno.serve(async (req: Request) => {
         const known = (Array.isArray(snap?.roles) ? snap.roles : []).filter((r: any) => roles.includes(String(r.code)));
         const top = known.sort((a: any, b: any) => Number(b.rank || 0) - Number(a.rank || 0))[0] || null;
         const login = adminLoginUrl();
+        const { data: savedTpl } = await serviceClient.rpc("svc_admin_auth_template_settings");
+        const savedGuide = String(savedTpl?.guide_link || "");
         const { data, error } = await serviceClient.auth.admin.inviteUserByEmail(email, {
           redirectTo: login,
           data: {
@@ -187,6 +244,8 @@ Deno.serve(async (req: Request) => {
             role_code: top ? String(top.code) : roles[0],
             guide_url: guideUrl(login),
             full_name: fullName || null,
+            // v2.16.20: the Admin guide link saved on Users & roles › Links & Email Templates, when there is one
+            ...(savedGuide ? { guide_url: savedGuide } : {}),
           },
         });
         if (error || !data?.user) return reply(req, 409, { error: error?.message || "user_invite_failed" });
@@ -281,6 +340,19 @@ Deno.serve(async (req: Request) => {
         String(a.user_id) === targetUserId && a.role_code === "platform_admin" && (!a.expires_at || new Date(a.expires_at).getTime() > now));
       if (isAdmin) return reply(req, 409, { error: "platform_admin_resets_own_password" });
       const login = adminLoginUrl();
+      // v2.16.20: the reset email's {{role}} and {{guide_link}} read the account's own data, so it is brought up to date first (the name stays as invited)
+      {
+        const rank = new Map((Array.isArray(snap?.roles) ? snap.roles : []).map((r: any) => [String(r.code), r]));
+        const mine = (Array.isArray(snap?.assignments) ? snap.assignments : [])
+          .filter((a: any) => String(a.user_id) === targetUserId && (!a.expires_at || new Date(a.expires_at).getTime() > now))
+          .map((a: any) => rank.get(String(a.role_code))).filter(Boolean)
+          .sort((a: any, b: any) => Number(b.rank || 0) - Number(a.rank || 0))[0] as any;
+        const { data: savedTpl } = await serviceClient.rpc("svc_admin_auth_template_settings");
+        const meta = { ...(target.user.user_metadata || {}), guide_url: String(savedTpl?.guide_link || "") || guideUrl(login),
+          ...(mine ? { role: String(mine.name || mine.code), role_code: String(mine.code) } : {}) };
+        const { error: metaError } = await serviceClient.auth.admin.updateUserById(targetUserId, { user_metadata: meta });
+        if (metaError) console.warn("admin-user-management: reset email data was not refreshed", metaError.message);
+      }
       const { error: sendError } = await serviceClient.auth.resetPasswordForEmail(email, { redirectTo: login });
       if (sendError) return reply(req, 400, { error: sendError.message || "password_reset_failed" });
       // v2.16.19 (RM0F follow-up, Platform Admin 17 Nov 2026 13:12): the reset is written to the access history. Its action list took

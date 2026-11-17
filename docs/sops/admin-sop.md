@@ -1,7 +1,7 @@
-<!-- sop-export: id=admin-sop; version=2.45; reviewed-release=2.16.19; source-commit=d3bf8e561d46+local; content-sha256=fac01f42aee353917386c3d6f83b3d4d1e7087103ba235cd9f1670a031ee3b44 -->
+<!-- sop-export: id=admin-sop; version=2.46; reviewed-release=2.16.20; source-commit=d86775bff6a4; content-sha256=3907bead32018c9522ddf51f47bafd8eb0ebfaf57f7ae670fd6cc9570ee56f0b -->
 # StudySearch – Platform Admin SOP
 
-**Version:** 2.45 (reviewed for platform release v2.16.19)  
+**Version:** 2.46 (reviewed for platform release v2.16.20)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -139,6 +139,7 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.46 | 17 Nov 2026 | v2.16.20 | Users & roles › Links & Email Templates: change the Admin Site URL, the guide link and the Invite User and Reset Password emails with a reason; check the line that says whether the save was copied to Supabase Auth. |
 | 2.45 | 17 Nov 2026 | v2.16.16 | Users & roles: Reset password for another person (not a Platform Admin); invitations carry the full name, role and Platform guide link, and their link opens the admin sign-in, which asks for the password first. Catalogue lists: Export CSV (visible or all columns, the whole filtered list). |
 | 2.44 | 16 Nov 2026 | v2.16.8 | Settings Hub: settings in five groups with Find a setting; a Website API or Zoho API setting changes only after Unlock: this is an approved change. |
 | 2.43 | 16 Nov 2026 | v2.16.5 | Settings tidy-up: retiring settings sit in their own group with what replaced them; run the retired-settings paste file only on or after its date, when it no longer refuses. |
