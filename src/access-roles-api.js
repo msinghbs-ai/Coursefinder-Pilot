@@ -41,4 +41,6 @@ export const accessApi = {
   templatesStatus: () => invoke({ action: 'auth_templates_status' }),
   templatesSync: () => invoke({ action: 'auth_templates_sync' }),
   templateTest: (template, to = '') => invoke({ action: 'auth_template_test', template, to: to || undefined }),
+  // v2.16.27: the Email delivery provider card's test. Always through Resend with the saved settings, to the signed-in admin's own address.
+  deliveryTest: (template) => invoke({ action: 'auth_template_test', template, via: 'resend' }),
 }

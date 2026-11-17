@@ -25,7 +25,7 @@ export const unknownTokens=text=>[...new Set([...String(text||'').matchAll(/\{\{
 export default function AuthEmailTemplates({rank=0,onError,client=null,access=accessApi}){
   const rpc=client||((fn,args)=>supabase.rpc(fn,args))
   const[d,setD]=useState(null),[err,setErr]=useState(''),[note,setNote]=useState(''),[busy,setBusy]=useState(''),[status,setStatus]=useState(null)
-  const[form,setForm]=useState(null),[dv,setDv]=useState(null),[dform,setDform]=useState(null),[newKey,setNewKey]=useState(''),[kind,setKind]=useState('invite'),[reason,setReason]=useState(''),[testTo,setTestTo]=useState('')
+  const[form,setForm]=useState(null),[dv,setDv]=useState(null),[dform,setDform]=useState(null),[newKey,setNewKey]=useState(''),[kind,setKind]=useState('invite'),[reason,setReason]=useState(''),[testTo,setTestTo]=useState(''),[dReason,setDReason]=useState(''),[dNote,setDNote]=useState(null)
   const subjectRef=useRef(null),bodyRef=useRef(null),last=useRef('body')
   const load=useCallback(()=>{setErr('')
     Promise.resolve(rpc('admin_auth_template_settings_read',{})).then(({data,error})=>{if(error){setErr(plainError(error));return}
@@ -58,13 +58,9 @@ export default function AuthEmailTemplates({rank=0,onError,client=null,access=ac
     try{const said=[]
       if(dirty){const{data,error}=await rpc('admin_auth_template_settings_save',{p_payload:form,p_reason:why});if(error)throw error
         said.push(`Templates saved${data?.changed?.length?` (${data.changed.join(', ')})`:''}.`)}
-      // the key travels only when a new one was typed; an empty field keeps the stored key
-      if(dDirty){const payload={...dform,...(newKey.trim()?{resend_api_key:newKey.trim()}:{})};const{data,error}=await rpc('admin_email_delivery_save',{p_payload:payload,p_reason:why});if(error)throw error
-        setNewKey('');said.push(`Email delivery saved${data?.changed?.length?` (${data.changed.map(c=>c==='resend_api_key'?'Resend API key':c).join(', ')})`:''}.`)}
       let sync=null;if(dirty){try{sync=await access.templatesSync()}catch(e){sync={synced:false,note:plainError(e)}}}
       const st=await Promise.resolve(access.templatesStatus()).catch(()=>null)
-      if(st?.delivery?.effective==='resend')said.push(`Invitations and resets sent from the Admin now go through Resend as ${st.delivery.sender_name}, using the templates saved here.`)
-      else if(dform?.email_provider==='resend')said.push('Resend is chosen but not in use yet: it needs a saved API key and a from email. Supabase built-in still sends.')
+      if(st?.delivery?.effective==='resend')said.push(`Invitations and resets sent from the Admin go through Resend as ${st.delivery.sender_name}, using the templates saved here.`)
       else if(dirty&&!sync?.synced)said.push('Supabase Auth still sends the previous emails until the admin workflow supabase-auth-config.yml is run, or the copied HTML is pasted in the dashboard.')
       setReason('');setNote(said.join(' '));load()}
     catch(e){const m=plainError(e);setNote(m);onError?.(m)}finally{setBusy('')}}
@@ -72,6 +68,29 @@ export default function AuthEmailTemplates({rank=0,onError,client=null,access=ac
   async function copyForDashboard(what){const text=toAuthTemplate(what==='subject'?t.subject:t.body,form.guide_link)
     try{await navigator.clipboard.writeText(text);setNote(`${kind==='invite'?'Invite User':'Reset Password'} ${what==='subject'?'subject':'HTML'} copied. Paste it in the Supabase dashboard: Authentication › Emails › ${kind==='invite'?'Invite user':'Reset password'}.`)}
     catch{setNote('The browser did not allow copying. Select the text in the Body box and copy it by hand; replace {{link}} with {{ .ConfirmationURL }}.')}}
+  // v2.16.27 (Platform Admin 17 Nov 2026 22:31): the Email delivery provider card saves itself, with its own reason, and tests itself.
+  // The button is always there and never greyed for a missing field: it says in the card what is missing instead.
+  async function saveDelivery(){const why=dReason.trim()
+    if(dBad){setDNote({ok:false,text:'Not saved. Resend needs a From Email on a domain verified in Resend.'});return}
+    if(why.length<4){setDNote({ok:false,text:'Not saved. Give a reason for the change in the Reason box (it is kept in the control log).'});return}
+    if(!dDirty){setDNote({ok:false,text:'Nothing to save: the provider, sender name and from email are as saved, and no new key was typed.'});return}
+    setBusy('dsave');setDNote(null)
+    try{const said=[]
+      // the key travels only when a new one was typed; an empty field keeps the stored key
+      const payload={...dform,...(newKey.trim()?{resend_api_key:newKey.trim()}:{})};const{data,error}=await rpc('admin_email_delivery_save',{p_payload:payload,p_reason:why});if(error)throw error
+      setNewKey('');said.push(`Email provider settings saved${data?.changed?.length?` (${data.changed.map(c=>c==='resend_api_key'?'Resend API key':c.replace(/_/g,' ')).join(', ')})`:''}.`)
+      const st=await Promise.resolve(access.templatesStatus()).catch(()=>null)
+      if(st?.delivery?.effective==='resend')said.push(`Invitations and resets sent from the Admin now go through Resend as ${st.delivery.sender_name} <${st.delivery.from_email}>.`)
+      else if(dform.email_provider==='resend')said.push('Resend is chosen but not in use yet: it needs a saved API key and a from email. Supabase built-in still sends.')
+      else said.push('Supabase built-in sends the emails.')
+      setDReason('');setDNote({ok:true,text:said.join(' ')});load()}
+    catch(e){const m=plainError(e);setDNote({ok:false,text:`Not saved. ${m}`});onError?.(m)}finally{setBusy('')}}
+  async function sendDeliveryTest(){
+    if(dDirty){setDNote({ok:false,text:'Save Email Provider Settings first: the test uses the saved sender name, from email and key, not what is typed here.'});return}
+    setBusy('dtest');setDNote(null)
+    try{const r=await access.deliveryTest(kind)
+      setDNote({ok:true,text:`Resend accepted the test ${kind==='invite'?'Invite User':'Reset Password'} email to ${r?.sent_to}, from ${r?.from||'the saved sender'}.${r?.resend_id?` Resend reference: ${r.resend_id}.`:''}${r?.in_use?'':' Supabase built-in is still the provider for real invitations and resets until Resend API is chosen and saved.'} The link in a test signs nobody in.`});load()}
+    catch(e){setDNote({ok:false,text:`Test not sent. ${plainError(e).replace(/_/g,' ')}`})}finally{setBusy('')}}
   async function sendTest(){setBusy('test');setNote('')
     try{const r=await access.templateTest(kind,testTo.trim());setNote(r?.provider==='resend'?`Test ${kind==='invite'?'Invite User':'Reset Password'} email sent through Resend to ${r?.sent_to}, from the templates saved here. Its link signs nobody in.`:`Reset password email sent to ${r?.sent_to}. It is the email Supabase Auth holds now.`);load()}
     catch(e){const m=plainError(e).replace(/_/g,' ');setNote(m)}finally{setBusy('')}}
@@ -105,7 +124,14 @@ export default function AuthEmailTemplates({rank=0,onError,client=null,access=ac
           <small>Stored encrypted and never shown again. Type a key only to set or replace it. <StatusChip tone={dv?.key_saved?'success':'warning'} label={dv?.key_saved?`Saved (re_••••${dv.key_hint||''})`:'No key saved'}/></small></label>
       </div>
       {dBad&&<p className="aet-warn" data-aet-from-needed>Resend needs a From Email on a domain verified in Resend.</p>}
-      <p className="sl-sub" data-aet-delivery-status>In use now: <StatusChip tone={viaResend?'success':'neutral'} label={viaResend?'Resend':'Supabase built-in (sender shows as Supabase Auth)'}/>{status?.delivery?.configured==='resend'&&!viaResend?' Resend is chosen but needs a saved API key and a from email before it is used.':''}{status?.delivery?.key_source==='edge_secret'?' The key in use is the edge function secret RESEND_API_KEY.':''} Changes here are saved with Save &amp; Sync below and its reason.</p>
+      <p className="sl-sub" data-aet-delivery-status>In use now: <StatusChip tone={viaResend?'success':'neutral'} label={viaResend?'Resend':'Supabase built-in (sender shows as Supabase Auth)'}/>{status?.delivery?.configured==='resend'&&!viaResend?' Resend is chosen but needs a saved API key and a from email before it is used.':''}{status?.delivery?.key_source==='edge_secret'?' The key in use is the edge function secret RESEND_API_KEY.':''}</p>
+      <div className="aet-actions" data-aet-delivery-actions>
+        <label className="aet-inline aet-reason">Reason<input value={dReason} onChange={e=>setDReason(e.target.value)} placeholder="Why this change is made" data-aet-delivery-reason/></label>
+        <Button compact variant="primary" disabled={busy!==''} onClick={saveDelivery} data-aet-delivery-save>{busy==='dsave'?'Saving…':'Save Email Provider Settings'}</Button>
+        <Button compact disabled={busy!==''} onClick={sendDeliveryTest} data-aet-delivery-test>{busy==='dtest'?'Sending…':'Send Test Email'}</Button>
+      </div>
+      {dNote&&<p className={dNote.ok?'aet-note':'aet-warn'} role={dNote.ok?'status':'alert'} data-aet-delivery-result data-ok={dNote.ok?'1':'0'}>{dNote.text}</p>}
+      <p className="sl-sub">Save Email Provider Settings saves this card only, with its reason, to the control log. Send Test Email sends the {kind==='invite'?'Invite User':'Reset Password'} template selected below through Resend to your own sign-in address, using the saved settings, and shows Resend&rsquo;s answer here. It works before Resend is switched on, so the key and from email can be proved first.</p>
     </section>}
     <section className="cf-card aet-card" data-aet-templates><h3>Email templates</h3>
       <div className="pg-views" role="toolbar" aria-label="Template">{TEMPLATE_KINDS.map(([k,l])=><button key={k} type="button" className={`pg-view${kind===k?' is-on':''}`} aria-pressed={kind===k} data-aet-kind={k} onClick={()=>setKind(k)}>{l}</button>)}</div>
@@ -127,7 +153,7 @@ export default function AuthEmailTemplates({rank=0,onError,client=null,access=ac
         <label className="aet-inline">Test address<input type="email" value={testTo} onChange={e=>setTestTo(e.target.value)} placeholder="your own address" data-aet-test-to/></label>
         <Button compact disabled={busy!==''||(!viaResend&&kind!=='recovery')} title={!viaResend&&kind!=='recovery'?'Supabase Auth only sends an invitation by creating the account: test it by inviting a new address from Create user':undefined} onClick={sendTest} data-aet-test>{busy==='test'?'Sending…':'Send Test Email'}</Button>
         <label className="aet-inline aet-reason">Reason<input value={reason} onChange={e=>setReason(e.target.value)} placeholder="Why this change is made" data-aet-reason/></label>
-        <Button compact variant="primary" disabled={busy!==''||!(dirty||dDirty)||missingLink||bad.length>0||dBad||reason.trim().length<4} onClick={save} data-aet-save>{busy==='save'?'Saving…':'Save & Sync'}</Button>
+        <Button compact variant="primary" disabled={busy!==''||!dirty||missingLink||bad.length>0||reason.trim().length<4} onClick={save} data-aet-save>{busy==='save'?'Saving…':'Save & Sync'}</Button>
       </div>
       <p className="sl-sub">{viaResend?'Send Test Email sends the selected template through Resend, as saved, to your own address or the one entered. The link in a test signs nobody in.':'Send Test Email sends the Reset Password email as Supabase Auth holds it now, to your own account or to another existing user\u2019s address. An invitation is tested by inviting a new address from Create user.'}</p>
     </section>
