@@ -8,9 +8,10 @@
 // Page content is data: nothing here follows an instruction found on a page.
 
 export const BOOST_STUDY_LOAD_PROMPT_ID = "boost-study-load";
-export const BOOST_STUDY_LOAD_PROMPT_VERSION = "boost-study-load-v2";  // v2 (18 Nov 2026, Platform Admin decision 1): the study load for international students when the page states one; otherwise the course's general study load
+export const BOOST_STUDY_LOAD_PROMPT_VERSION = "boost-study-load-v3";  // v2 (18 Nov 2026, Platform Admin decision 1): the study load for international students when the page states one; otherwise the course's general study load
 // Deployed with migration 20261118074500 (the first attempt, 20261118073000, stopped at its post-check before this worker was deployed).
 export const BOOST_SELECTOR = "study-load-windows-v3";  // v3 (18 Nov 2026): sentences about international students and visas are sent again: they are the preferred basis (decision 1)
+export const BOOST_SELECTOR_INTERNATIONAL = "study-load-international-v1";  // only the sentences that state a study load for international students
 export const BOOST_ANSWER_KEY = "reading.answer_tokens.boost_extract";
 export const BOOST_ANSWER_DEFAULT = 300;   // used only when the setting cannot be read
 export const BOOST_SECTION_KEY = "reading.boost_extract_section_chars";
@@ -22,6 +23,7 @@ export const BOOST_STUDY_LOAD_SYSTEM = [
   "Rules:",
   "- study_load is \"full_time\" when the page states the course is studied full-time, \"part_time\" when it states part-time, \"both\" when it states both.",
   "- International students first: when the page states a study load specifically for international students (for example what international students or student visa holders must or may study), report that study load, quote that sentence, and set basis to \"international\".",
+  "- When the text you are given is only sentences about international students, answer from those sentences.",
   "- Otherwise report the study load the page states for the course for all students, and set basis to \"general\".",
   "- A sentence that only defines or describes full-time or part-time study in general (for example how many hours or courses a full-time student takes) does not state this course's study load.",
   "- Never infer study load from delivery mode (online, on campus, blended), from a timetable or from the duration alone.",
@@ -79,6 +81,16 @@ export function studyLoadSections(page: string, maxChars: number): { text: strin
     if (last && a <= last[1]) last[1] = Math.max(last[1], b); else spans.push([a, b]);
   }
   if (!hits) return { text: "", selector: "no_signal", hits: 0, page_chars: text.length, chars: 0 };
+  // v1.0.13: a page that states a study load for international students is asked about those sentences only (decision 1: that statement
+  // is the answer). First results of v1.0.12, 18 Nov 2026 08:03: given the whole of such a page, the model answered from the general
+  // statement on 214 of 468 pages and the page check refused them.
+  const intl = internationalStudySentences(text);
+  if (intl.length) {
+    const kept: string[] = []; let n = 0;
+    for (const x of intl) { if (n + x.length > maxChars) { if (!kept.length) kept.push(x.slice(0, maxChars)); break } kept.push(x); n += x.length + 7 }
+    const sent = kept.join("\n[...]\n");
+    return { text: sent, selector: BOOST_SELECTOR_INTERNATIONAL, hits, page_chars: text.length, chars: sent.length };
+  }
   const parts: string[] = []; let used = 0;
   for (const [a, b] of spans) {
     const part = text.slice(a, b).replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
@@ -116,7 +128,7 @@ export function readBoostAnswer(d: any, maxTokens: number): { ok: true; a: any; 
   catch { return { ok: false, usage, error: "the answer was not JSON" } }
 }
 
-export type BoostVerdict = { ok: boolean; problems: string[]; quotes_checked: number };
+export type BoostVerdict = { ok: boolean; problems: string[]; quotes_checked: number; basis?: "international" | "general" };
 const isText = (v: unknown): v is string => typeof v === "string" && v.trim().length > 0;
 
 // The gate every answer passes (page-supported evidence, Platform Admin 18 Nov 2026 decision 2b): shape and allowed values; the quote is on
@@ -133,20 +145,19 @@ export function verifyStudyLoad(answer: any, pageFlat: string, page = ""): Boost
   const problems: string[] = [];
   if (!BOOST_STUDY_LOADS.includes(answer.study_load)) problems.push(`study_load ${JSON.stringify(answer.study_load)} is not allowed`);
   if (!isText(answer.quote)) problems.push("quote missing");
-  if (answer.basis !== "international" && answer.basis !== "general") problems.push("basis is not international or general");
   if (problems.length) return { ok: false, problems, quotes_checked: 0 };
   const q = String(answer.quote), flat = boostFlat(q);
   if (!(flat.length >= MIN_QUOTE_FLAT && pageFlat.includes(flat))) problems.push("quote 0 is not on the page");
   const parts = sentencesOf(q), intlParts = parts.filter((x) => INTL_WORDS.test(x));
-  if (answer.basis === "international") {
-    if (!intlParts.length) problems.push("basis is international but the quote does not speak of international students");
-    else if (loadOf(intlParts) !== answer.study_load) problems.push("the study load is not what the quoted sentence states for international students");
+  // the basis is what the quote shows, whatever the model called it: a quoted sentence about international students decides the value
+  if (intlParts.length) {
+    if (loadOf(intlParts) !== answer.study_load) problems.push("the study load is not what the quoted sentence states for international students");
   } else {
     if (intl.length) problems.push("the page states a study load for international students; the answer does not use it");
     if (loadOf(parts) !== answer.study_load) problems.push("the quote does not state the study load it claims (never from delivery mode or duration alone)");
   }
   if (DEFINITION_WORDS.test(q) && !parts.some((x) => !DEFINITION_WORDS.test(x) && (FULL.test(x) || PART.test(x)))) problems.push("the quote defines full-time or part-time study in general; it does not state the course's study load");
-  return { ok: problems.length === 0, problems, quotes_checked: 1 };
+  return { ok: problems.length === 0, problems, quotes_checked: 1, basis: intlParts.length ? "international" : "general" };
 }
 
 // the result line of one item, in the shape worker-boost-bulk-ingest loads (public.svc_boost_inbound_load)

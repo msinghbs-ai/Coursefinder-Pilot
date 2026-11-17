@@ -1,5 +1,5 @@
 // Guards: Boost extraction (Platform Admin 17 Nov 2026 21:18 decision 1 and 22:05): Boost's AI calls go through worker coverage-sweep and the Models & services route boost_extract, pinned to one named allowed model, with no separate worker key; the job boost-extract runs only when its gate allows (the switch and the overnight Boost gate) and holds no number; courses are claimed in the order of the Boost priority matrix; every answer is checked against the whole stored page and a page with neither study word is never sent to a model; results go to Storage staging-boost/inbound and stay shadow because the change qualifies no model for admission
-// CF-247 S587. Migration 20261117235000_cf247_boost_extract, worker coverage-sweep v1.0.9, then v1.0.12 (boost.ts: the international study load first, Platform Admin 18 Nov 2026 07:08; rules in s597). G1, G2, G3 and housekeeping are guarded centrally by s42, s32 and s57.
+// CF-247 S587. Migration 20261117235000_cf247_boost_extract, worker coverage-sweep v1.0.9, then v1.0.12 (boost.ts: the international study load first, Platform Admin 18 Nov 2026 07:08; rules in s601). G1, G2, G3 and housekeeping are guarded centrally by s42, s32 and s57.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { build } from 'esbuild'
@@ -52,7 +52,7 @@ test('courses are claimed in matrix order, once per stored page, and the table a
 })
 
 test('the worker asks the route\'s one model through cascadeFetch, never holds its own key path, and writes to staging-boost/inbound', () => {
-  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.12"')
+  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.13"')
   // v1.0.11: the run waits for a dispatcher tick to finish (up to six looks, 5 s apart) instead of skipping
   expect(mode).toContain('let gate: any = null; for (let i = 0; i < 6; i++) { gate = await rpc("svc_boost_extract_gate", {}); if (gate?.ok || gate?.reason !== "a dispatcher tick is running") break; await new Promise((r) => setTimeout(r, 5000)) }')
   expect(mode).toContain('const route = await rpc("svc_boost_extract_route_v1", {});')
@@ -71,14 +71,17 @@ test('the worker asks the route\'s one model through cascadeFetch, never holds i
 
 test('boost.ts: only the parts around the study words are sent, and a page with neither is not sent at all', () => {
   const page = 'Intro text. '.repeat(300) + '\nStudy mode: available full-time (3 years) or part-time (6 years) on campus.\n' + 'Other text. '.repeat(400) + '\nInternational students must study Full Time.'
-  const s = B.studyLoadSections(page, 6000)
-  expect(s.hits).toBe(3)   // v1.0.12: the sentence about international students is sent; it is the preferred basis
+  // v1.0.13: a page that states a study load for international students is asked about those sentences only (rules in s601 and s602)
+  const i = B.studyLoadSections(page, 6000)
+  expect(i).toMatchObject({ hits: 3, selector: 'study-load-international-v1', text: 'International students must study Full Time.' })
+  const general = page.replace('\nInternational students must study Full Time.', '')
+  const s = B.studyLoadSections(general, 6000)
+  expect(s.hits).toBe(2)
   expect(s.selector).toBe('study-load-windows-v3')
   expect(s.text).toContain('available full-time (3 years) or part-time (6 years)')
-  expect(s.text).toContain('International students must study Full Time.')
-  expect(s.chars).toBeLessThan(page.length / 4)
+  expect(s.chars).toBeLessThan(general.length / 4)
   expect(B.studyLoadSections('Delivered online and on campus over three years.', 6000)).toMatchObject({ hits: 0, selector: 'no_signal', text: '' })
-  expect(B.studyLoadSections(page, 200).text.length).toBeLessThanOrEqual(200)
+  expect(B.studyLoadSections(general, 200).text.length).toBeLessThanOrEqual(200)
   const req = B.boostStudyLoadRequest('m', 'Bachelor of X', s.text, 300)
   expect(req.provider).toEqual({ require_parameters: true, allow_fallbacks: false })
   expect(req.messages[0].content).toBe(B.BOOST_STUDY_LOAD_SYSTEM)
@@ -94,7 +97,7 @@ test('boost.ts: an answer passes only when its quote is on the whole page and st
   expect(V({ study_load: 'full_time', basis: 'general', quote: 'Delivered online.', reason: null }).ok).toBe(false)   // never from delivery mode
   expect(V({ study_load: 'online', basis: 'general', quote: 'available full-time (3 years)', reason: null }).ok).toBe(false)
   expect(V({ study_load: 'full_time', basis: 'general', quote: 'full-time', reason: null }).ok).toBe(false)             // too short to prove anything
-  expect(V({ study_load: 'both', quote: 'available full-time (3 years) or part-time (6 years)', reason: null }).problems).toEqual(['basis is not international or general'])
+  expect(V({ study_load: 'both', quote: 'available full-time (3 years) or part-time (6 years)', reason: null })).toMatchObject({ ok: true, basis: 'general' })   // the basis is read from the quote
   expect(V({ study_load: null, basis: null, quote: null, reason: 'not_stated' }).ok).toBe(true)
   expect(V({ study_load: null, basis: null, quote: null, reason: null }).ok).toBe(false)
   expect(B.readBoostAnswer({ choices: [{ finish_reason: 'length', message: { content: '{' } }] }, 300).ok).toBe(false)

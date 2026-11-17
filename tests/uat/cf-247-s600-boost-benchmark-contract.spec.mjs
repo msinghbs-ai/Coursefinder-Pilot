@@ -1,5 +1,5 @@
 // Guards: Boost model benchmark (Platform Admin 17 Nov 2026 22:05 and 22:45): the named candidate models (Qwen3 30B, Mistral Small 3.2, MiMo v2.6 Flash) are asked the same study load reading for the same stored course pages through their own Models & services route, each directly and never as a fallback; the cohort takes the course's own page only; every call's cost reaches the AI spend ledger; nothing is staged or admitted and no model is qualified for admission; the route boost_extract stays pinned to one model
-// CF-247 S596. Migration 20261118020000_cf247_boost_benchmark, worker coverage-sweep v1.0.11 (mode boost_benchmark). G1, G2, G3 and housekeeping are guarded centrally by s42, s32 and s57.
+// CF-247 S600 (was s596; renumbered 18 Nov 2026, s596 is the Layer 1 runner spec). Migration 20261118020000_cf247_boost_benchmark, worker coverage-sweep v1.0.11 (mode boost_benchmark). G1, G2, G3 and housekeeping are guarded centrally by s42, s32 and s57.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
@@ -43,7 +43,7 @@ test('results are closed, cost reaches the ledger, and nothing is dropped', () =
 })
 
 test('the worker asks each candidate directly, with the extraction request and check, and writes only benchmark rows', () => {
-  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.12"')
+  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.13"')
   expect(mode).toContain('const route = await rpc("svc_boost_benchmark_route_v1", {});')
   expect(mode).toContain('const candidates = new Set<string>((Array.isArray(route?.models) ? route.models : []).map((m: any) => String(m?.model_identifier || "")).filter(Boolean));')
   expect(mode).toContain('if (!candidates.has(model)) {')
