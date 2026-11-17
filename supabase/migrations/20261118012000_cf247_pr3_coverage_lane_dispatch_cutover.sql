@@ -49,19 +49,19 @@ begin
             where fr.kind = 'worker_lane' order by fr.lane_code loop
     perform cron.alter_job(r.jobid, active => false);
     update pipeline.field_execution_registry set mode = 'live', enabled = r.active, updated_at = now(),
-           note = coalesce(note || '; ', '') || 'live from cutover 20261118003000 (Platform Admin 17 Nov 2026 23:02; shadow clean for the last hour after #1227)'
+           note = coalesce(note || '; ', '') || 'live from cutover 20261118012000 (Platform Admin 17 Nov 2026 23:02; shadow clean for the last hour after #1227)'
              || case when r.active then '' else '; held at cutover: legacy job idle-paused, released by flag-recheck' end
      where lane_code = r.lane_code;
     insert into pipeline.admin_control_events (area, action, target, detail, actor)
     values ('scheduler', 'dispatcher_cutover', r.legacy_job,
             jsonb_build_object('dispatcher', 'coverage-lane-dispatch', 'lane', r.lane_code, 'legacy_job_active', false, 'mode', 'live', 'lane_enabled', r.active,
-                               'shadow_from', v_rep->>'from', 'by', 'migration 20261118003000'), null);
+                               'shadow_from', v_rep->>'from', 'by', 'migration 20261118012000'), null);
   end loop;
 
   update pipeline.component_register c
      set status = 'retiring', replaced_by = 'coverage-lane-dispatch (pipeline.field_execution_registry, mode live)',
          retire_after = current_date + security.pipeline_num_v1('hygiene.retire_after_days', 14)::int,
-         note = 'switched off at the consolidation PR 3 cutover (20261118003000); unscheduled by docs/paste/PASTE-20261118-coverage-lane-legacy-unschedule.sql after retire_after'
+         note = 'switched off at the consolidation PR 3 cutover (20261118012000); unscheduled by docs/paste/PASTE-20261118-coverage-lane-legacy-unschedule.sql after retire_after'
     from pipeline.field_execution_registry fr
    where fr.kind = 'worker_lane' and c.kind = 'job' and c.name = fr.legacy_job and c.status = 'active';
 end $cut$;
