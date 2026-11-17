@@ -81,3 +81,5 @@
 .dd .dd-recognition h4{margin:0 0 4px;font-size:var(--cf-fs-md)}
 .dd .dd-recognition ul{margin:6px 0 0;padding-left:0;list-style:none;display:grid;gap:3px}
 .dd .dd-recognition li{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+/* v2.16.19 RM0F: links in the delivery panels (Destination loads) are tap-sized on a phone too (guard cf-247-f-ops-04) */
+.dd .dd-recognition a{display:inline-flex;align-items:center;min-height:24px}
