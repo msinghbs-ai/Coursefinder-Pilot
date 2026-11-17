@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { applySpec, missingHeaders, rowKeyAndHash, type Spec } from "../_shared/cf247-layer1-spec.ts";
 import { fetchBytes, readTable } from "../_shared/cf247-layer1-read.ts";
+import { extractHtmlTables } from "../_shared/cf247-html-table.js";
 
 // CF-247 Wave 2 PR C (S2-Build; Platform Admin 17 Nov 2026 17:55, 19:08, 19:58, 22:04, 23:02). The generic Layer 1 declarative runner for
 // sources whose parser is AI-built (a strict JSON spec, checked by security.layer1_parser_spec_validate_v1; nothing here evaluates code or builds SQL).
@@ -122,7 +123,9 @@ async function dryRun(service: any, inductionId: string) {
       inserts += Number(r?.inserts || 0); updates += Number(r?.updates || 0); unchanged += Number(r?.unchanged || 0);
     }
     const t = tally(rows, ctx.categories || []);
-    const counts = { rows_read: table.rows.length, records: rows.length, rejected: table.rows.length - records.length, duplicates, inserts, updates, unchanged,
+    // Track B: how many tables the page holds, so a wrong source.table_index is easy to see
+    const pageTables = spec.format === "html_table" ? extractHtmlTables(new TextDecoder("utf-8").decode(bytes)).length : undefined;
+    const counts = { rows_read: table.rows.length, records: rows.length, rejected: table.rows.length - records.length, duplicates, inserts, updates, unchanged, ...(pageTables !== undefined ? { tables_on_page: pageTables } : {}),
       would_apply: applied ? inserts + updates : 0, staged_review: applied ? 0 : inserts + updates, postcode_escalations: t.postcode_escalations, gaps: t.gaps };
     const passed = rows.length > 0;
     const msg = `${rows.length} records from the first ${table.rows.length} rows${errors.length ? `; ${errors.length} problems, first: ${errors[0]}` : ""}${duplicates ? `; ${duplicates} duplicate keys` : ""}.`;

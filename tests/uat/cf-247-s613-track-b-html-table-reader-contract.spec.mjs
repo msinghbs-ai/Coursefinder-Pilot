@@ -78,6 +78,8 @@ test('the reader, mapper, runner and wizard use the extractor for html_table; th
   expect(mapper).toContain('if (connector === "html_pages" && ti >= 0 && ti <= 50) src.table_index = ti;')
   const runner = read('supabase/functions/layer1-declarative-runner/index.ts')
   expect(runner).toContain('html_table: "text/html"')
+  expect(runner).toContain('import { extractHtmlTables } from "../_shared/cf247-html-table.js";')
+  expect(runner).toContain('tables_on_page: pageTables')
   expect(runner).toContain('"svc_layer1_declarative_stage_v1", { p_run_id: run, p_rows: rows.slice(i, i + cfg.chunk), p_write: false }')
   const html = read('supabase/functions/_shared/cf247-html-table.js')
   expect(html).not.toMatch(/\bfetch\(|eval\(|new Function|import\(/)
