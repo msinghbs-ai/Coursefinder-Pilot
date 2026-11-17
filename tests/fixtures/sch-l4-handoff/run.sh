@@ -9,14 +9,15 @@
 #   fixtures-before.sql (the defects, rolled back); the migration 20261104480000, then again (nothing changes); fixtures.sql.
 # Drops the database at the end (L4H_KEEP=1 keeps it).
 set -euo pipefail
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../lib/migration-path.sh"  # migpath: a migration in supabase/migrations or migrations-archive
 cd "$(dirname "$0")"
 DB=${L4H_DB:-sch_l4_handoff_fixtures}
 ROOT=../../..
 SC=../sch-coverage-recovery
 M=$ROOT/supabase/migrations
-MIG=$M/20261104480000_cf247_sch_l4_handoff.sql
-HAR=$M/20261104450000_cf247_human_assisted_recovery.sql
-WC=$M/20261104170000_cf247_work_continuity.sql
+MIG="$(migpath 20261104480000_cf247_sch_l4_handoff.sql)"
+HAR="$(migpath 20261104450000_cf247_human_assisted_recovery.sql)"
+WC="$(migpath 20261104170000_cf247_work_continuity.sql)"
 P="psql -v ON_ERROR_STOP=1 -q -X"
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }
 md5of() { $P -d $DB -Atc "select md5(pg_get_functiondef('$1'::regprocedure))"; }
@@ -32,8 +33,8 @@ $P -d $DB -c "insert into pipeline.ops_root_causes(code, class, title) values ('
   on conflict do nothing" >/dev/null
 { echo "set check_function_bodies = off;"; awk '/^-- 1 settings/,/^-- 4 review categories/' $WC; awk '/^-- 5 functions/,/^create or replace function security.work_review_room_v1/' $WC | sed '$d'; } | $P -d $DB >/dev/null
 for f in $SC/live/*.def; do $P -d $DB -c "set check_function_bodies = off" -f $f >/dev/null; done
-$P -d $DB -1 -f $M/20261104390000_cf247_sch_coverage_recovery.sql >/dev/null 2>&1
-$P -d $DB -1 -f $M/20261104430000_cf247_sch_coverage_classify_fix.sql >/dev/null 2>&1
+$P -d $DB -1 -f "$(migpath 20261104390000_cf247_sch_coverage_recovery.sql)" >/dev/null 2>&1
+$P -d $DB -1 -f "$(migpath 20261104430000_cf247_sch_coverage_classify_fix.sql)" >/dev/null 2>&1
 $P -d $DB -f stubs-extra.sql >/dev/null
 $P -d $DB -c "set check_function_bodies = off" -f live/security.scholarship_publishability_for_v1.def -f live/public.admin_scholarship_edit.def >/dev/null
 # the human-assisted recovery contract as on main (v2.15.463): sections 1-11

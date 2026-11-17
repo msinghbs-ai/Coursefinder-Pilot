@@ -6,6 +6,7 @@
 # (nothing changes); loads the production-shaped backlog (seed.sql) and runs every case (fixtures.sql). Drops the database at the end
 # (CLS_KEEP=1 keeps it).
 set -euo pipefail
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../lib/migration-path.sh"  # migpath: a migration in supabase/migrations or migrations-archive
 cd "$(dirname "$0")/../../.."
 DB=${CLS_DB:-course_link_simplify_fixtures}
 P="psql -v ON_ERROR_STOP=1 -q -X"
@@ -21,7 +22,7 @@ trap 'rm -rf "$TMP"; [ -n "${CLS_KEEP:-}" ] || $P -d postgres -c "drop database 
 L4CL_KEEP=1 L4CL_DB=$DB bash tests/fixtures/l4-course-link/run.sh >/dev/null
 $P -d $DB -f $FX/stubs.sql
 for m in 20261104280000_cf247_l4_rule_runs_table 20261104330000_cf247_l4_rule_sfu_perf 20261104350000_cf247_l4_rule_target_scheme; do
-  PGOPTIONS='-c check_function_bodies=off' $P -d $DB -1 -At -f supabase/migrations/$m.sql >/dev/null
+  PGOPTIONS='-c check_function_bodies=off' $P -d $DB -1 -At -f "$(migpath "$m")" >/dev/null
 done
 M=supabase/migrations/20261104120000_cf247_ops_layer4_throughput.sql
 { sed -n '/^create table if not exists pipeline.layer4_item_readiness/,/^);/p' $M

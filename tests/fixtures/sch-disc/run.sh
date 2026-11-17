@@ -6,14 +6,15 @@
 # change calls (stubs.sql, ../sch-l4-handoff/stubs-extra.sql), the live text of every definition this change edits (live/, each checked against its live md5),
 # seed.sql, fixtures-before.sql (the defects, rolled back), the migration, then again (nothing changes), fixtures.sql. Drops the database at the end (SCHDISC_KEEP=1 keeps it).
 set -euo pipefail
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../lib/migration-path.sh"  # migpath: a migration in supabase/migrations or migrations-archive
 cd "$(dirname "$0")"
 DB=${SCHDISC_DB:-g_sch_disc_fixtures}
 ROOT=../../..
 SC=../sch-coverage-recovery
 L4=../sch-l4-handoff
 M=$ROOT/supabase/migrations
-MIG=$M/20261108160000_cf247_sch_disc_honest_coverage_and_recovery.sql
-WC=$M/20261104170000_cf247_work_continuity.sql
+MIG="$(migpath 20261108160000_cf247_sch_disc_honest_coverage_and_recovery.sql)"
+WC="$(migpath 20261104170000_cf247_work_continuity.sql)"
 P="psql -v ON_ERROR_STOP=1 -q -X"
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }
 md5of() { $P -d $DB -Atc "select md5(pg_get_functiondef('$1'::regprocedure))"; }
@@ -32,8 +33,8 @@ $P -d $DB -c "insert into pipeline.ops_root_causes(code, class, title) values ('
   on conflict do nothing" >/dev/null
 { echo "set check_function_bodies = off;"; awk '/^-- 1 settings/,/^-- 4 review categories/' $WC; awk '/^-- 5 functions/,/^create or replace function security.work_review_room_v1/' $WC | sed '$d'; } | $P -d $DB >/dev/null
 for f in $SC/live/*.def; do $P -d $DB -c "set check_function_bodies = off" -f $f >/dev/null; done
-$P -d $DB -1 -f $M/20261104390000_cf247_sch_coverage_recovery.sql >/dev/null 2>&1 || { echo "20261104390000 did not replay"; exit 1; }
-$P -d $DB -1 -f $M/20261104430000_cf247_sch_coverage_classify_fix.sql >/dev/null 2>&1 || { echo "20261104430000 did not replay"; exit 1; }
+$P -d $DB -1 -f "$(migpath 20261104390000_cf247_sch_coverage_recovery.sql)" >/dev/null 2>&1 || { echo "20261104390000 did not replay"; exit 1; }
+$P -d $DB -1 -f "$(migpath 20261104430000_cf247_sch_coverage_classify_fix.sql)" >/dev/null 2>&1 || { echo "20261104430000 did not replay"; exit 1; }
 $P -d $DB -f $L4/stubs-extra.sql >/dev/null
 $P -d $DB -c "set check_function_bodies = off" -f $L4/live/security.scholarship_publishability_for_v1.def >/dev/null
 $P -d $DB -f stubs.sql >/dev/null

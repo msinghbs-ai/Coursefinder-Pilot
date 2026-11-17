@@ -150,7 +150,7 @@ test('course-text.ts: schema per field asked, quotes on the page, dates never ma
 })
 
 test('fixtures cover every case, on the live definitions, with the migration applied twice', () => {
-  expect(run).toContain('migrations/20261103110000_cf247_course_description_deadline_fields.sql')
+  expect(run).toMatch(/migrations(-archive)?\/20261103110000_cf247_course_description_deadline_fields\.sql/) // either folder: the squash archives it
   expect(run).toContain("grep -c ': applied' <<<\"$OUT\")\" = 8")
   expect(run).toContain("grep -c 'already applied' <<<\"$OUT2\")\" = 8")
   for (const c of ['1a', '1e', '2a', '2c', '3b', '3d', '4a', '4b', '4c', '4d', '4e', '4f', '4g', '4h', '4i', '5a', '5c', '5d', '5e', '5f', '5g', '5h', '5i', '5j', '5l', '5m',

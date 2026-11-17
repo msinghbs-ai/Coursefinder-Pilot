@@ -11,6 +11,7 @@
 #     first-load read under 300 ms.
 # Drops the database at the end (L4G_KEEP=1 keeps it).
 set -euo pipefail
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../lib/migration-path.sh"  # migpath: a migration in supabase/migrations or migrations-archive
 cd "$(dirname "$0")/../../.."
 DB=${L4G_DB:-l4_operational_groups_fixtures}
 P="psql -v ON_ERROR_STOP=1 -q -X"
@@ -30,7 +31,7 @@ $P -d $DB -f $FX/stubs.sql > /dev/null
 TMP0=$(mktemp -d)
 $P -d $DB -f tests/fixtures/course-link-simplify/stubs.sql > /dev/null 2>&1 || true
 for m in 20261104280000_cf247_l4_rule_runs_table 20261104330000_cf247_l4_rule_sfu_perf 20261104350000_cf247_l4_rule_target_scheme; do
-  PGOPTIONS='-c check_function_bodies=off' $P -d $DB -1 -At -f supabase/migrations/$m.sql > /dev/null 2>&1 || true
+  PGOPTIONS='-c check_function_bodies=off' $P -d $DB -1 -At -f "$(migpath "$m")" > /dev/null 2>&1 || true
 done
 M0=supabase/migrations/20261104120000_cf247_ops_layer4_throughput.sql
 { for f in layer4_value_key_v1 layer4_scope_key_v1 layer4_resolution_for_v1 layer4_resolution_v1 layer4_supersession_reverse_v1; do

@@ -7,6 +7,7 @@
 #   c  inserts a ledger row and reads a setting through security.pipeline_num_v1
 # Passes when every migration applies, no writer statement fails (no deadlock, no lock time-out) and no writer waited 3 seconds for a lock.
 set -euo pipefail
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../lib/migration-path.sh"  # migpath: a migration in supabase/migrations or migrations-archive
 cd "$(dirname "$0")/../../.."
 DB=$1; P="psql -X -q -v ON_ERROR_STOP=1"; OUT=$(mktemp -d)
 MIGS="20261113377000_cf247_ai_ledger_columns 20261113378000_cf247_ai_settings_home_columns 20261113379000_cf247_ai_item_model_column 20261113380000_cf247_ai_models_services 20261113390000_cf247_ai_routes_only"
@@ -28,7 +29,7 @@ sleep 2
 for m in $MIGS; do
   S=$(date +%s%N)
   for try in 1 2 3; do  # a columns step that cannot have its lock in 3 seconds fails fast and is simply run again
-    if $P -d $DB -1 -f supabase/migrations/$m.sql >/dev/null 2>$OUT/mig.err; then break; fi
+    if $P -d $DB -1 -f "$(migpath "$m")" >/dev/null 2>$OUT/mig.err; then break; fi
     grep -q "lock timeout" $OUT/mig.err && [ $try -lt 3 ] || { echo "$m failed:"; tail -3 $OUT/mig.err; touch $OUT/stop; wait; exit 1; }
   done
   echo "applied $m in $(( ($(date +%s%N) - S) / 1000000 )) ms (attempt $try)"

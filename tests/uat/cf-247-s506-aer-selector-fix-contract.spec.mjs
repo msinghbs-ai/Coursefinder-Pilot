@@ -23,7 +23,7 @@ test('renumbered: one file, after every migration it depends on, the old held nu
   for (const dep of ['20261104580000', '20261106400000', '20261107130100']) expect(files.find((f) => f.startsWith(dep)), dep).toBeTruthy()
   expect(NAME.slice(0, 14) > '20261107130100').toBe(true)
   for (const t of [M, run, fixtures, seed]) expect(t).not.toContain('20261104620000_')
-  expect(run).toContain(`MIG=supabase/migrations/${NAME}`)
+  expect(run).toMatch(new RegExp(`MIG=supabase/migrations(-archive)?/${NAME.replace(/[.]/g, '\\.')}`)) // either folder: the squash archives it
 })
 
 test('two live functions are edited under their live md5s (read 9 Nov 2026) with a recorded after md5; the shared rule is not edited', () => {

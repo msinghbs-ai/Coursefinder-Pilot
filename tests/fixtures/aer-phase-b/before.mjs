@@ -4,7 +4,7 @@
 // security.platform_alerts_evaluate_v1 (unchanged since). run.sh checks each rebuilt md5 against the live md5 read on 2 Nov 2026.
 import fs from 'node:fs'
 const dir = new URL('../../../supabase/migrations/', import.meta.url)
-const read = (f) => fs.readFileSync(new URL(f, dir), 'utf8')
+const read = (f) => { const a = new URL(f, dir); return fs.readFileSync(fs.existsSync(a) ? a : new URL(f, new URL('../migrations-archive/', dir)), 'utf8') } // after the squash an applied file is in supabase/migrations-archive
 const between = (sql, start, endRe) => { const a = sql.indexOf(start); if (a < 0) throw new Error(`missing: ${start}`); endRe.lastIndex = a; const m = endRe.exec(sql); return sql.slice(a, m.index + m[0].length) }
 const helper = (sql, name) => between(sql, `create or replace function pg_temp.${name}(`, /end \$f\$;/g)
 const create = (sql, name) => between(sql, `create or replace function ${name}(`, /\nend \$(function)?\$;/g)
