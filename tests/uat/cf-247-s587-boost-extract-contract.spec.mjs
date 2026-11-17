@@ -7,7 +7,7 @@ import { build } from 'esbuild'
 const M = fs.readFileSync('supabase/migrations/20261117235000_cf247_boost_extract.sql', 'utf8')
 const code = M.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const IX = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-const mode = IX.slice(IX.indexOf('if (mode === "boost_extract") {'), IX.indexOf('// v0.17.16 (CF-247, 8 Oct 2026): Storage & retention.'))
+const mode = IX.slice(IX.indexOf('if (mode === "boost_extract") {'), IX.indexOf('// v1.0.11 (18 Nov 2026, CF-247 S2 - BOOST, Platform Admin 17 Nov 2026 22:05 and 22:45): the Boost model benchmark.'))
 let B
 test.beforeAll(async () => {
   fs.mkdirSync('test-results', { recursive: true })
@@ -52,8 +52,9 @@ test('courses are claimed in matrix order, once per stored page, and the table a
 })
 
 test('the worker asks the route\'s one model through cascadeFetch, never holds its own key path, and writes to staging-boost/inbound', () => {
-  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.10"')
-  expect(mode).toContain('const gate = await rpc("svc_boost_extract_gate", {});')
+  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.11"')
+  // v1.0.11: the run waits for a dispatcher tick to finish (up to six looks, 5 s apart) instead of skipping
+  expect(mode).toContain('let gate: any = null; for (let i = 0; i < 6; i++) { gate = await rpc("svc_boost_extract_gate", {}); if (gate?.ok || gate?.reason !== "a dispatcher tick is running") break; await new Promise((r) => setTimeout(r, 5000)) }')
   expect(mode).toContain('const route = await rpc("svc_boost_extract_route_v1", {});')
   expect(mode).toContain('if (route?.held) return j({ ok: true, mode, skipped:')
   expect((mode.match(/await cascadeFetch\(fetch, \{ service: "boost_extract" \}, "https:\/\/openrouter\.ai\/api\/v1\/chat\/completions"/g) || []).length).toBe(1)
