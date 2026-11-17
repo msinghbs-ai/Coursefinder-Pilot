@@ -9,7 +9,7 @@
 
 export const BOOST_STUDY_LOAD_PROMPT_ID = "boost-study-load";
 export const BOOST_STUDY_LOAD_PROMPT_VERSION = "boost-study-load-v1";
-export const BOOST_SELECTOR = "study-load-windows-v1";
+export const BOOST_SELECTOR = "study-load-windows-v2";  // v2 (17 Nov 2026): a sentence about a visa is not a statement of the course's study load, so it is neither sent nor accepted as a quote
 export const BOOST_ANSWER_KEY = "reading.answer_tokens.boost_extract";
 export const BOOST_ANSWER_DEFAULT = 300;   // used only when the setting cannot be read
 export const BOOST_SECTION_KEY = "reading.boost_extract_section_chars";
@@ -32,6 +32,17 @@ export const boostFlat = (s: unknown) => String(s ?? "").toLowerCase().normalize
 const MIN_QUOTE_FLAT = 12;  // fixed: a quote shorter than this proves nothing (a few words match anywhere); not an operational limit
 const WINDOW_EACH_SIDE = 300; // fixed: text kept each side of a "full-time" or "part-time" so the sentence around it is whole; the total sent is the setting
 const STUDY_WORDS = /(full|part)[\s-]?time/gi;
+// First live results (17 Nov 2026 23:22 to 23:30, 35 answers): 28 of the 29 study loads given rested on one sentence of provider boilerplate,
+// "Only a full-time study option is available to international students on a Student visa", often on a page stored for many courses. That is a
+// visa rule, which the prompt already forbids as a basis (REQ-52). The check is now deterministic: a sentence that speaks of a visa does not
+// count as a study word on the page, and a quote that speaks of a visa is refused.
+const VISA_WORDS = /\bvisas?\b|\bCRICOS\b|international students? (must|can only|may only|are required to|need to)\b/i;  // a rule for visa holders, however it is worded
+const sentenceAround = (text: string, at: number, len: number) => {
+  let a = at, b = at + len;
+  while (a > 0 && !/[.!?\n]/.test(text[a - 1])) a--;
+  while (b < text.length && !/[.!?\n]/.test(text[b])) b++;
+  return text.slice(a, b);
+};
 
 const settingNumber = (ws: Record<string, unknown> | null | undefined, key: string, fallback: number) => {
   const n = Number((ws || {})[key]);
@@ -40,13 +51,14 @@ const settingNumber = (ws: Record<string, unknown> | null | undefined, key: stri
 export const boostAnswerLimit = (ws: Record<string, unknown> | null | undefined) => settingNumber(ws, BOOST_ANSWER_KEY, BOOST_ANSWER_DEFAULT);
 export const boostSectionChars = (ws: Record<string, unknown> | null | undefined) => settingNumber(ws, BOOST_SECTION_KEY, BOOST_SECTION_DEFAULT);
 
-// The parts of the page that can state a study load: a window around every "full-time" or "part-time", in page order, overlapping windows
-// joined, cut at the size the setting allows. A page with neither word cannot give a valid answer (the quote must contain one), so nothing is
-// sent for it and no model is called: hits is 0.
+// The parts of the page that can state a study load: a window around every "full-time" or "part-time" that is not in a sentence about a visa,
+// in page order, overlapping windows joined, cut at the size the setting allows. A page with no such word cannot give a valid answer (the
+// quote must contain one and must not be a visa rule), so nothing is sent for it and no model is called: hits is 0.
 export function studyLoadSections(page: string, maxChars: number): { text: string; selector: string; hits: number; page_chars: number; chars: number } {
   const text = String(page || ""), spans: [number, number][] = [];
   let hits = 0;
   for (const m of text.matchAll(STUDY_WORDS)) {
+    if (VISA_WORDS.test(sentenceAround(text, m.index || 0, m[0].length))) continue;  // a visa rule, not the course's study load
     hits++;
     let a = Math.max(0, (m.index || 0) - WINDOW_EACH_SIDE), b = Math.min(text.length, (m.index || 0) + m[0].length + WINDOW_EACH_SIDE);
     while (a > 0 && !/\s/.test(text[a - 1])) a--;          // start and end on a word boundary
@@ -111,6 +123,7 @@ export function verifyStudyLoad(answer: any, pageFlat: string): BoostVerdict {
   const full = /full[\s-]?time/i.test(q), part = /part[\s-]?time/i.test(q);
   const says = answer.study_load === "both" ? full && part : answer.study_load === "full_time" ? full : part;
   if (!says) problems.push("the quote does not state the study load it claims (REQ-52: never from delivery mode)");
+  if (VISA_WORDS.test(q)) problems.push("the quote is a visa rule, not the course's study load (REQ-52)");
   return { ok: problems.length === 0, problems, quotes_checked: 1 };
 }
 
