@@ -1,4 +1,4 @@
-// Guards: Parallel Wave 2 (Platform Admin 17 Nov 2026 17:59; decisions 18:10): Layer 1 › + Add source is a six-step induction wizard whose drafts are Pipeline Operator and above and whose activation is the Platform Admin's with a reason, creating the source paused; AI Auto-Map switches on only when the mapper answers; a dry run is recorded by the service role and switches nothing on; per-source retention is recorded and no policy or prune job changes; Platform health has the Country & category completeness report over eight editable categories; the consumer API is not touched. Addenda (Platform Admin 17 Nov 2026 19:09): each Layer 1 source line shows a Hardcoded or AI-built parser badge with Re-infer Parser Spec when a reader flags layout drift (recorded and logged, nothing run), and the wizard takes one of seven target record types and keeps the AI mapper's parser spec with the draft. Decisions (Platform Admin 17 Nov 2026 19:58 and 20:45): one category list published to every lane; per-source retention only in pipeline.source_retention_policies; Curator (rank 3) and above open Layer 1 and draft, Re-infer Parser Spec stays Pipeline Operator (rank 4) and above, activation stays Platform Admin (rank 6).
+// Guards: Parallel Wave 2 (Platform Admin 17 Nov 2026 17:59; decisions 18:10): Layer 1 › + Add source is a six-step induction wizard whose drafts are Pipeline Operator and above and whose activation is the Platform Admin's with a reason, creating the source paused; AI Auto-Map switches on only when the mapper answers; a dry run is recorded by the service role and switches nothing on; per-source retention is recorded and no policy or prune job changes; Platform health has the Country & category completeness report over eight editable categories; the consumer API is not touched. Addenda (Platform Admin 17 Nov 2026 19:09): each Layer 1 source line shows a Hardcoded or AI-built parser badge with Re-infer Parser Spec when a reader flags layout drift (recorded and logged, nothing run), and the wizard takes one of seven target record types and keeps the AI mapper's parser spec with the draft. Decisions (Platform Admin 17 Nov 2026 19:58 and 20:45): one category list published to every lane; per-source retention only in pipeline.source_retention_policies; Curator (rank 3) and above open Layer 1 and draft, Re-infer Parser Spec stays Pipeline Operator (rank 4) and above, activation stays Platform Admin (rank 6). Evidence captures and Layer 4 review items are shown side by side on the report, never as one ratio (Platform Admin 17 Nov 2026 20:06).
 // Behaviour is proven on isolated PostgreSQL by tests/fixtures/layer1-induction-wizard/run.sh (workflow layer1-induction-wizard-test); these checks keep the rules in the migration and the screens.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
@@ -159,4 +159,18 @@ test('mocked browser: a Curator opens Layer 1 and the wizard; Re-infer Parser Sp
   await expect(a.locator('[data-l1i-country]')).toBeVisible()
   await a.locator('[data-l1i-tab="activate"]').click()
   await expect(a.locator('[data-l1i-activate]')).toBeDisabled()
+})
+
+test('mocked browser: evidence captures and Layer 4 review items are two columns, with no items-per-evidence ratio', async ({ page }) => {
+  await mockAdmin(page)
+  await page.goto('/#platform-health?tab=completeness')
+  const e = page.locator('[data-ccr-evidence-items]')
+  await expect(e.getByRole('columnheader', { name: 'Evidence captures' })).toBeVisible()
+  await expect(e.getByRole('columnheader', { name: 'Layer 4 review items' })).toBeVisible()
+  const ircc = e.locator('[data-ccr-ei="s-ircc"]')
+  await expect(ircc.locator('[data-ccr-evidence]')).toHaveText('28')
+  await expect(ircc.locator('[data-ccr-items]')).toHaveText('3,301')
+  await expect(e).not.toContainText('117.9'); await expect(e).not.toContainText('117.8')
+  await expect(e).toContainText('not divided into a rate')
+  expect(report).not.toContain('escalation_rate')
 })

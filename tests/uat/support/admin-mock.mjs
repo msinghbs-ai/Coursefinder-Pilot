@@ -106,6 +106,10 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
       retention_settings: { staging_keep_days: 90, raw_hash_keep_years: 7, staging_prune_on: false },
       retention_policy: [{ class_key: 'temporary_staging', days: 14, immutable: false, purge_allowed: true }],
       layer4: { warn_days: 7, old_days: 30, pending: 12, oldest_at: '2026-10-01T00:00:00Z', by_type: [{ entity_type: 'course', pending: 12, fresh: 5, waiting: 4, old: 3, oldest_at: '2026-10-01T00:00:00Z' }] } }),
+    // S1-Build's ops telemetry (Pilot migration 20261117200000), read by the completeness report
+    admin_ops_telemetry: () => ({ window_days: 30, l1_apply_latency: [], boost_vs_pr3: [], staging_retention: { prune_on: false, last: null },
+      l4_escalation_by_source: [{ source_id: 's-ircc', source_label: 'IRCC designated learning institutions', country_code: 'CA', evidence_captured: 28, layer4_items: 3301, escalation_rate: 117.8929, pending: 40, pending_aged: 12, oldest_pending: '2026-10-20T00:00:00Z', approved: 3000, rejected: 100, returned: 61, superseded: 100 },
+        { source_id: 's-cricos', source_label: 'CRICOS courses', country_code: 'AU', evidence_captured: 5120, layer4_items: 210, escalation_rate: 0.041, pending: 10, pending_aged: 0, oldest_pending: null, approved: 180, rejected: 10, returned: 5, superseded: 5 }] }),
     admin_enrichment_category_field_set: b => { calls.push({ categoryFieldSet: b }); return { ok: true, field: b.p_field, to: b.p_category_key } },
     admin_layer1_add_source: b => { calls.push({ l1Add: b.p_args }); return { ok: true, source_id: 'l1-new', label: b.p_args.label } },
     layer1_admin_command: b => { calls.push({ l1Command: b }); return { ok: true } },

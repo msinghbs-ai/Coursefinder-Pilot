@@ -12,7 +12,8 @@ export const RELEASE={
     'Layer 1 Register now opens for Curator and above. A Curator can prepare and edit Add source drafts. Re-infer Parser Spec stays Pipeline Operator and above; activating a source stays the Platform Admin\'s. Every other control on a source keeps its own role.',
     'Add source wizard, step 4: one Staging kept (days) field. On activation it is set for the source on Storage & retention, where the nightly housekeeping reads it. Leave it empty to follow the platform period.',
     'Country & category completeness: the retention columns now read the same per-source periods and settings as Storage & retention.',
-    'The eight enrichment categories are one list, published to every loader and worker.'
+    'The eight enrichment categories are one list, published to every loader and worker.',
+    'Country & category completeness: new table Evidence captured and Layer 4 review items, by source. The two counts sit side by side and are not divided into a rate, because one stored page can raise many review items.'
   ],
   bugFixes:[
   ]
