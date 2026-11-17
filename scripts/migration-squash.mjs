@@ -1,14 +1,15 @@
 #!/usr/bin/env node
 // CF-247 canonical migration squash tool (Platform Admin 17 Nov 2026; admin docs/platform/MIGRATION-SQUASH-RUNBOOK.md, based on Pilot #452).
 //
-//   node scripts/migration-squash.mjs <cut-off version> [--history <file>] [--dry-run]
+//   node scripts/migration-squash.mjs <cut-off version> [--history <file>] [--allow <version>]... [--dry-run]
 //
 // Moves every supabase/migrations/<v>_*.sql with SQUASH_FROM <= v <= cut-off to supabase/migrations-archive/ (git mv, so history follows),
 // then rewrites every literal reference "supabase/migrations/<moved file>" under tests/, scripts/, src/, docs/ and .github/ to
 // "supabase/migrations-archive/<moved file>". Guards that list the folder already read both folders through
 // tests/uat/support/migration-files.mjs, so no assertion changes.
 // --history: a file with one applied version per line (read only from production's supabase_migrations.schema_migrations); the tool refuses
-// if a file to move is not in it (nothing unapplied is ever archived). --dry-run prints what would change and changes nothing.
+// if a file to move is not in it (nothing unapplied is ever archived), except a version named with --allow (a documented no-op such as
+// 20261031090000, refused by its own guard at deploy and kept as `select 1`). --dry-run prints what would change and changes nothing.
 // It never touches the database, the baseline files or a migration file's content.
 import fs from 'node:fs'
 import path from 'node:path'
@@ -21,9 +22,10 @@ const ROOTS = ['tests', 'scripts', 'src', 'docs', '.github']
 const TEXT = /\.(mjs|js|jsx|ts|tsx|json|md|sql|sh|yml|yaml|py|txt|csv)$/
 
 const args = process.argv.slice(2)
-const cut = args.find((a) => /^\d{14}$/.test(a))
+const cut = args.find((a, i) => /^\d{14}$/.test(a) && args[i - 1] !== '--allow')
 const dry = args.includes('--dry-run')
 const hIdx = args.indexOf('--history')
+const allow = new Set(args.flatMap((a, i) => (a === '--allow' ? [args[i + 1]] : [])))
 if (!cut) { console.error('usage: node scripts/migration-squash.mjs <cut-off version (14 digits)> [--history <file>] [--dry-run]'); process.exit(2) }
 
 const version = (n) => (n.match(/^(\d{14})_/) || [])[1] || ''
@@ -32,7 +34,7 @@ if (moving.length === 0) { console.error(`nothing to move at or below ${cut}`); 
 
 if (hIdx >= 0) {
   const applied = new Set(fs.readFileSync(args[hIdx + 1], 'utf8').split(/\r?\n/).map((s) => s.trim()).filter(Boolean))
-  const missing = moving.filter((n) => !applied.has(version(n)))
+  const missing = moving.filter((n) => !applied.has(version(n)) && !allow.has(version(n)))
   if (missing.length) { console.error(`refused: ${missing.length} file(s) are not in the production history:\n${missing.join('\n')}`); process.exit(1) }
 }
 const clash = moving.filter((n) => fs.existsSync(path.join(ARCHIVE, n)))
