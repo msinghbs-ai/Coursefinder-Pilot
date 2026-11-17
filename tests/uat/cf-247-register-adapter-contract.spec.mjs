@@ -41,7 +41,7 @@ test('NZQA register adapter: stored switched off, reference is the layer1-nz-liv
   // the reference must stay the same code as layer1-nz-live (formatting aside)
   const norm = (s) => s.replace(/\s+/g, '').replace(/;}/g, '}').replace(/\((\w)\)=>/g, '$1=>')
   const live = fs.readFileSync('supabase/functions/layer1-nz-live/index.ts', 'utf8')
-  expect(live).toContain('const VERSION="layer1-nz-live-v1.3.0"')
+  expect(live).toContain('const VERSION="layer1-nz-live-v1.4.0"')
   const l = norm(live)
   const r = fs.readFileSync('supabase/functions/_shared/cf247-register-html.ts', 'utf8')
   for (const f of ['const clean =', 'function mapLevel(', 'function providerNumber(', 'function providerName(', 'function providerWebsite(', 'function parseQualifications(']) {
