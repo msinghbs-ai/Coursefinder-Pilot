@@ -1,9 +1,9 @@
-# Guards: Boost queue view (Platform Admin decision 18 Nov 2026 07:03) and G4 database-backed tests: migration 20261118083000 runs its read function on an isolated PostgreSQL 16 (fixtures only, never a Supabase project).
+# Guards: Boost queue view (Platform Admin decision 18 Nov 2026 07:03) and G4 database-backed tests: migration 20261118083707 runs its read function on an isolated PostgreSQL 16 (fixtures only, never a Supabase project).
 name: Admin boost queue integration
 on:
   pull_request:
     paths:
-      - 'supabase/migrations/20261118083000_cf247_admin_boost_queue_read.sql'
+      - 'supabase/migrations/20261118083707_cf247_admin_boost_queue_read.sql'
       - 'tests/fixtures/admin-boost-queue/**'
       - '.github/workflows/admin-boost-queue-test.yml'
   workflow_dispatch:

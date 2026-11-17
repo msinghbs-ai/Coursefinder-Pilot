@@ -84,7 +84,7 @@ begin
                  left join lateral (select s.promotion_state, s.worker_status from pipeline.boost_inbound_staging s
                                      where s.entity_id = pg.entity_id and s.item_key = pg.item_key order by s.loaded_at desc nulls last, s.id desc limit 1) st on true)));
 end $$;
-comment on function public.admin_boost_queue_read(jsonb) is 'Boost queue view (20261118083000): the queue with Country tier and Priority score worked out from the boost.matrix settings when read. Curator and above. Changes nothing.';
+comment on function public.admin_boost_queue_read(jsonb) is 'Boost queue view (20261118083707): the queue with Country tier and Priority score worked out from the boost.matrix settings when read. Curator and above. Changes nothing.';
 revoke all on function public.admin_boost_queue_read(jsonb) from public, anon;
 grant execute on function public.admin_boost_queue_read(jsonb) to authenticated;
 

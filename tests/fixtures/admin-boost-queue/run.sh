@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Guards: Boost queue view (Platform Admin decision 18 Nov 2026 07:03) and G4 database-backed tests: migration 20261118083000 runs on an isolated PostgreSQL 16
+# Guards: Boost queue view (Platform Admin decision 18 Nov 2026 07:03) and G4 database-backed tests: migration 20261118083707 runs on an isolated PostgreSQL 16
 # (fixtures only, never a Supabase project). It proves: the migration applies twice; the read is Curator and above and writes nothing; Priority score and Country
 # tier follow the boost.matrix settings when they change (nothing is stored); the tier, country, lane and state filters, the sorts and the paging.
 # The S2 - BOOST functions it calls are stood in for here by small copies that read the same settings; their own behaviour is guarded in S2 - BOOST's fixtures.
@@ -9,7 +9,7 @@ cd "$(dirname "$0")/../../.."
 DB=${ABQ_DB:-g_admin_boost_queue}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"
-M=supabase/migrations/20261118083000_cf247_admin_boost_queue_read.sql
+M=supabase/migrations/20261118083707_cf247_admin_boost_queue_read.sql
 trap '[ -n "${ABQ_KEEP:-}" ] || dropdb --if-exists '$DB' >/dev/null 2>&1' EXIT
 dropdb --if-exists $DB >/dev/null 2>&1; createdb $DB
 psql -X -q -d postgres -c "do \$\$ begin if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated; end if; if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon; end if; end \$\$"

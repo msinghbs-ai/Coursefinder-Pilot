@@ -1,4 +1,4 @@
-<!-- sop-export: id=operator-sop; version=2.23; reviewed-release=2.16.30; source-commit=1598f54621d8; content-sha256=2b44d386a2225ab772f15fbbea651f297a1b07c61a50fab2860e4b1ef7ccead4 -->
+<!-- sop-export: id=operator-sop; version=2.23; reviewed-release=2.16.30; source-commit=84fdb829a604; content-sha256=2b44d386a2225ab772f15fbbea651f297a1b07c61a50fab2860e4b1ef7ccead4 -->
 # StudySearch – Operator SOP
 
 **Version:** 2.23 (reviewed for platform release v2.16.30)  
