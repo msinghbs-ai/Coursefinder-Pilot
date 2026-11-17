@@ -324,12 +324,12 @@ test('phase 2 worker: models come from the readers; the cascade moves on only on
   // and eligibility, provider descriptions, adapter proposals, operations diagnosis, entry matrices. v0.93.0 (S1-AER benchmark): a tenth call carries
   // models: null, the one pinned candidate of an opened ai_eval run (mode aer_v3_eval), never the cascade. v0.94.0 (Lean AI 1b-3): an eleventh
   // carries the route's cascade of the service it qualifies (mode lean_qualify: fee_reader or course_other_fields)
-  expect((worker.match(/await cascadeFetch\(/g) || []).length).toBe(19)  // v0.94.0: the 1b-3 qualification (mode lean_qualify); v1.0.7: induction_map (one model, service layer1_induction_map); v1.0.9: boost_extract (one model, service boost_extract)
+  expect((worker.match(/await cascadeFetch\(/g) || []).length).toBe(20)  // v0.94.0: the 1b-3 qualification (mode lean_qualify); v1.0.7: induction_map (one model, service layer1_induction_map); v1.0.9: boost_extract (one model, service boost_extract); v1.0.11: boost_benchmark (each candidate asked directly, service boost_extract_benchmark)
   expect((worker.match(/await cascadeFetch\((ors\.)?fetch, \{ models: /g) || []).length).toBe(11)
   expect((worker.match(/await cascadeFetch\(ors\.fetch, \{ models: null, deadline: t0 \+ BUDGET_MS - 25000, service: "entry_requirements_v2_shadow" \}/g) || []).length).toBe(1)
   // v0.97.0 (pre-AI admission gate, R5): the scholarship page call also names its queue item, so each attempt's cost is attributable in ai_invocations
   expect([...worker.matchAll(/await cascadeFetch\((?:ors\.)?fetch, \{ service: "([a-z_0-9]+)"(?:, source: "[a-z_]+", source_id: [a-z_.]+)? \}, /g)].map((m) => m[1]).sort())
-    .toEqual(['adapter_builder', 'boost_extract', 'entry_matrices', 'layer1_induction_map', 'ops_diagnosis', 'provider_description', 'scholarship_eligibility', 'scholarship_extraction'])
+    .toEqual(['adapter_builder', 'boost_extract', 'boost_extract_benchmark', 'entry_matrices', 'layer1_induction_map', 'ops_diagnosis', 'provider_description', 'scholarship_eligibility', 'scholarship_extraction'])
   expect(worker).toContain('await cascadeFetch(fetch, { service: "scholarship_extraction", source: "scholarship_ai_queue", source_id: it.queue_id }, ')
   expect((worker.match(/await (ors\.)?fetch\("https:\/\/openrouter\.ai\/api\/v1\/chat\/completions"/g) || []).length).toBe(0)
   for (const l of worker.split('\n').filter((x) => x.includes('await cascadeFetch('))) expect(l, l.slice(0, 120)).toMatch(/\bservice[:, }]/)   // every call names its service
@@ -508,7 +508,7 @@ test('round 4: roles, the mode on the page, and the documents (call paths, setti
   const paths = fs.readFileSync('docs/platform/AI-CALL-PATHS-2026-11-13.md', 'utf8')
   const lines = worker.split('\n')
   const sites = lines.map((l, i) => (l.includes('await cascadeFetch(') ? i + 1 : 0)).filter(Boolean)
-  expect(sites).toHaveLength(19)  // v0.94.0: the 1b-3 qualification (mode lean_qualify); v1.0.7: induction_map (Layer 1 induction mapping, Wave 2); v1.0.9: boost_extract (Boost study load, S2 - BOOST)
+  expect(sites).toHaveLength(20)  // v0.94.0: the 1b-3 qualification (mode lean_qualify); v1.0.7: induction_map (Layer 1 induction mapping, Wave 2); v1.0.9: boost_extract (Boost study load, S2 - BOOST); v1.0.11: boost_benchmark (Boost model benchmark)
   for (const n of sites) expect(paths, `index.ts:${n}`).toContain(`index.ts:${n}`)   // every call the worker makes is listed at its line
   for (const t of ['admin_provider_description_run_v1', 'svc_entry_matrix_next', 'svc_ops_diagnosis_next', 'svc_enrich_ai_next', 'Layer 3', 'routed_single', 'not_migrated']) expect(paths, t).toContain(t)
   // only the worker calls OpenRouter
