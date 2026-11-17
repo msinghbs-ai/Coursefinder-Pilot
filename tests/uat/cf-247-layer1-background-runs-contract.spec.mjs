@@ -49,7 +49,7 @@ test('Layer 1 change-based apply, departures and automatic ingestion are wired e
   expect(depth).toContain('svc_layer1_plan_mark_applied')
   expect(depth).toContain('async function storedRegister(')
   const facts=fs.readFileSync('supabase/functions/layer1-au-cricos-facts/index.ts','utf8')
-  expect(facts).toContain('const VERSION="layer1-au-cricos-facts-v1.3.0"')
+  expect(facts).toContain('const VERSION="layer1-au-cricos-facts-v1.4.0"')
   expect(facts).toContain('storedPath=clean(body.evidencePath)')
   const dedupe=fs.readFileSync('supabase/functions/evidence-storage-dedupe/index.ts','utf8')
   expect(dedupe).toContain('svc_evidence_dedupe_next')
