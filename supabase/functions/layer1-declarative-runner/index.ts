@@ -19,8 +19,13 @@ import { extractHtmlTables } from "../_shared/cf247-html-table.js";
 // in chunks of layer1.declarative_chunk_rows with a row key and hash. Course and provider registers apply their new and changed records through
 // svc_layer1_apply_register_records in chunks of layer1.register_apply_chunk; the other record types are staged for review. Every record names the
 // enrichment categories it leaves open; Australian postcodes are flagged against the ABS postcode-to-SUA shares.
-const VERSION = "1.0.1";
+const VERSION = "1.1.0";
 const APPLY_FN = "public.svc_layer1_apply_register_records";
+// 1.1.0 (18 Nov 2026, Platform Admin 10:31): campuses, provider accreditations and grade scale conversions, and a course's study load and empty
+// reason, are applied by public.svc_layer1_apply_baseline_records_v1 (fills only what is not held; never overwrites, publishes or deletes).
+const BASELINE_FN = "public.svc_layer1_apply_baseline_records_v1";
+const isApplied = (t: any) => t?.apply === APPLY_FN || t?.apply === BASELINE_FN;
+const courseExtras = (recs: Record<string, unknown>[]) => recs.filter((x) => !empty(x.study_load) || !empty(x.empty_reason_code));
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -60,7 +65,7 @@ const empty = (v: unknown) => v === null || v === undefined || String(v).trim() 
 // canonical records → staged rows with key, hash, open categories and postcode flag
 async function toRows(service: any, spec: Spec, recordType: string, country: string, records: Record<string, unknown>[], ctx: any) {
   const routes: Record<string, string[]> = ctx.gap_routes?.[recordType] || {};
-  const applied = ctx.targets?.[recordType]?.apply === APPLY_FN;
+  const applied = isApplied(ctx.targets?.[recordType]);
   const seen = new Set<string>();
   const out: any[] = [];
   let duplicates = 0;
@@ -154,8 +159,9 @@ async function applyRun(service: any, body: any) {
   const country = clean(ctx?.source?.country_code || ctx?.induction?.country_code, 2).toUpperCase();
   const url = clean(p.source_url || ctx?.source?.url, 2000);
   const scheme = clean(p.scheme, 40);
-  const applied = ctx.targets?.[recordType]?.apply === APPLY_FN;
-  if (applied && !scheme) return fail("The source has no registration scheme (wizard step 1); a register cannot be applied without one.");
+  const applied = isApplied(ctx.targets?.[recordType]);
+  const baseline = ctx.targets?.[recordType]?.apply === BASELINE_FN;
+  if (applied && !scheme && recordType !== "grade_scale_conversions") return fail("The source has no registration scheme (wizard step 1); a register cannot be applied without one.");
   if (!/^https?:\/\//i.test(url)) return fail("The source has no web address.");
   const offset = Math.max(0, Math.floor(Number(body.offset) || 0));
 
@@ -191,7 +197,7 @@ async function applyRun(service: any, body: any) {
     const slice = table.rows.slice(offset, offset + cfg.batch);
     const { records, errors } = applySpec(spec, slice);
     const { rows, duplicates } = await toRows(service, spec, recordType, country, records, ctx);
-    const c = { inserts: 0, updates: 0, unchanged: 0, applied: 0, provider_created: 0, course_created: 0, conflicts: 0 };
+    const c = { inserts: 0, updates: 0, unchanged: 0, applied: 0, provider_created: 0, course_created: 0, baseline_written: 0, conflicts: 0 };
     const evidence = evidenceId || body.evidence_id || null;
     for (let i = 0; i < rows.length; i += cfg.chunk) {
       const part = rows.slice(i, i + cfg.chunk);
@@ -201,9 +207,20 @@ async function applyRun(service: any, body: any) {
         const changed = new Set<string>((r?.changed_keys || []) as string[]);
         const recs = part.filter((x) => changed.has(x.key)).map((x) => x.record);
         for (let j = 0; j < recs.length; j += cfg.applyChunk) {
-          const a = await rpc(service, "svc_layer1_apply_register_records", { p_country_code: country, p_source_id: sourceId, p_evidence_id: evidence, p_registration_scheme: scheme, p_records: recs.slice(j, j + cfg.applyChunk) });
-          c.applied += recs.slice(j, j + cfg.applyChunk).length;
+          const part2 = recs.slice(j, j + cfg.applyChunk);
+          if (baseline) {
+            const b = await rpc(service, "svc_layer1_apply_baseline_records_v1", { p_record_type: recordType, p_country_code: country, p_source_id: sourceId, p_evidence_id: evidence, p_registration_scheme: scheme || null, p_records: part2 });
+            c.applied += part2.length; c.baseline_written += Number(b?.written || 0); c.conflicts += Number(b?.provider_not_registered || 0) + Number(b?.invalid || 0);
+            continue;
+          }
+          const a = await rpc(service, "svc_layer1_apply_register_records", { p_country_code: country, p_source_id: sourceId, p_evidence_id: evidence, p_registration_scheme: scheme, p_records: part2 });
+          c.applied += part2.length;
           c.provider_created += Number(a?.provider_created || 0); c.course_created += Number(a?.course_created || 0); c.conflicts += Number(a?.conflicts || 0);
+          const extras = recordType === "course_register" ? courseExtras(part2) : [];
+          if (extras.length) {
+            const b = await rpc(service, "svc_layer1_apply_baseline_records_v1", { p_record_type: "course_register", p_country_code: country, p_source_id: sourceId, p_evidence_id: evidence, p_registration_scheme: scheme, p_records: extras });
+            c.baseline_written += Number(b?.written || 0);
+          }
         }
       }
     }
