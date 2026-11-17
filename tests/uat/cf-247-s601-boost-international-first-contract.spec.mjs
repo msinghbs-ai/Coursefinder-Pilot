@@ -1,5 +1,5 @@
 // Guards: Boost study load, the international study load first (Platform Admin 18 Nov 2026 07:08, decisions 1 and 5): the study load a page states for international students is reported and checked ahead of the general one; a general definition of full-time study is refused; Boost no longer skips for a running dispatcher tick unless setting boost.yield_to_dispatchers is 1; the change qualifies no model and admits nothing
-// CF-247 S597. Migration 20261118074500_cf247_boost_international_first, worker coverage-sweep v1.0.12 (boost.ts; the prompt is boost-study-load-v3 from v1.0.13, s599). G1, G2, G3 and housekeeping are guarded centrally by s42, s32 and s57.
+// CF-247 S601 (was s597; renumbered 18 Nov 2026). Migration 20261118074500_cf247_boost_international_first, worker coverage-sweep v1.0.12 (boost.ts; the prompt is boost-study-load-v3 from v1.0.13, s602). G1, G2, G3 and housekeeping are guarded centrally by s42, s32 and s57.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { build } from 'esbuild'

@@ -1,5 +1,5 @@
 // Guards: Boost study load, the international study load first (Platform Admin 18 Nov 2026 07:08, decision 1): a page that states a study load for international students is asked about those sentences only, and the page check reads the basis from the quote, not from the model's label; the change qualifies no model and admits nothing
-// CF-247 S599. Migration 20261118083000_cf247_boost_international_sentences, worker coverage-sweep v1.0.13 (boost.ts prompt boost-study-load-v3, selector study-load-international-v1). G1, G2, G3 and housekeeping are guarded centrally by s42, s32 and s57.
+// CF-247 S602. Migration 20261118083000_cf247_boost_international_sentences, worker coverage-sweep v1.0.13 (boost.ts prompt boost-study-load-v3, selector study-load-international-v1). G1, G2, G3 and housekeeping are guarded centrally by s42, s32 and s57.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { build } from 'esbuild'

@@ -1,5 +1,5 @@
 // Guards: Boost extraction (Platform Admin 17 Nov 2026 21:18 decision 1 and 22:05): Boost's AI calls go through worker coverage-sweep and the Models & services route boost_extract, pinned to one named allowed model, with no separate worker key; the job boost-extract runs only when its gate allows (the switch and the overnight Boost gate) and holds no number; courses are claimed in the order of the Boost priority matrix; every answer is checked against the whole stored page and a page with neither study word is never sent to a model; results go to Storage staging-boost/inbound and stay shadow because the change qualifies no model for admission
-// CF-247 S587. Migration 20261117235000_cf247_boost_extract, worker coverage-sweep v1.0.9, then v1.0.12 (boost.ts: the international study load first, Platform Admin 18 Nov 2026 07:08; rules in s597). G1, G2, G3 and housekeeping are guarded centrally by s42, s32 and s57.
+// CF-247 S587. Migration 20261117235000_cf247_boost_extract, worker coverage-sweep v1.0.9, then v1.0.12 (boost.ts: the international study load first, Platform Admin 18 Nov 2026 07:08; rules in s601). G1, G2, G3 and housekeeping are guarded centrally by s42, s32 and s57.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { build } from 'esbuild'
@@ -71,7 +71,7 @@ test('the worker asks the route\'s one model through cascadeFetch, never holds i
 
 test('boost.ts: only the parts around the study words are sent, and a page with neither is not sent at all', () => {
   const page = 'Intro text. '.repeat(300) + '\nStudy mode: available full-time (3 years) or part-time (6 years) on campus.\n' + 'Other text. '.repeat(400) + '\nInternational students must study Full Time.'
-  // v1.0.13: a page that states a study load for international students is asked about those sentences only (rules in s597 and s599)
+  // v1.0.13: a page that states a study load for international students is asked about those sentences only (rules in s601 and s602)
   const i = B.studyLoadSections(page, 6000)
   expect(i).toMatchObject({ hits: 3, selector: 'study-load-international-v1', text: 'International students must study Full Time.' })
   const general = page.replace('\nInternational students must study Full Time.', '')
