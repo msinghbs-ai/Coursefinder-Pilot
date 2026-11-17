@@ -1,0 +1,16 @@
+/* CF-247 Platform health › Country & category completeness (tokens only; no fixed colours) */
+.ccr{display:grid;gap:12px}
+.ccr .ccr-bar-top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.ccr .ccr-card{padding:14px;display:grid;gap:10px}
+.ccr .ccr-card h3,.ccr .ccr-detail h4{margin:0}
+.ccr .ccr-note{margin:0;padding:8px 12px;border:1px solid var(--cf-border);border-radius:var(--cf-radius-md);background:var(--cf-white)}
+.ccr .ccr-scroll{overflow-x:auto}
+.ccr .ccr-scroll table{min-width:640px}
+.ccr td.num,.ccr th.num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.ccr .ccr-cell{display:inline-flex;align-items:center;gap:8px;min-height:28px;padding:2px 8px;border:1px solid transparent;border-radius:var(--cf-radius-md);background:none;font:inherit;color:inherit;cursor:pointer}
+.ccr .ccr-cell[aria-pressed=true]{border-color:var(--cf-border)}
+.ccr .ccr-bar{display:inline-block;width:56px;height:6px;border-radius:999px;background:var(--cf-border);overflow:hidden;vertical-align:middle;margin-right:6px}
+.ccr .ccr-bar>span{display:block;height:100%;background:var(--cf-warning-ink)}
+.ccr .ccr-none,.ccr .ccr-sub{font-size:var(--cf-fs-sm);opacity:.75}
+.ccr .ccr-sub{display:block}
+.ccr .ccr-detail{display:grid;gap:8px;padding:12px;border:1px solid var(--cf-border);border-radius:var(--cf-radius-md)}

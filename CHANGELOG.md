@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.446 — 17 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.24** (Platform Admin 17 Nov 2026 17:59 and decisions 18:10, S1-RM-Design lane, Parallel Wave 2). Migration 20261117193000_cf247_layer1_induction_wizard: `ref.enrichment_categories` (8) and `ref.enrichment_category_fields` (32), `pipeline.layer1_source_inductions`, `admin_layer1_induction_read/save/cancel/activate`, `svc_layer1_induction_read` and `svc_layer1_induction_dry_run_record` for the loaders, `admin_enrichment_category_field_set`, `admin_completeness_report`, four settings. UI: Layer 1 › + Add source opens the six-step wizard (the single form is removed); Platform health gains the tab Country & category completeness (55 tabs on 21 pages). No job, no retention policy change. G3 untouched.
+
 ## 0.1.445 — 17 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.23** (Platform Admin 17 Nov 2026 16:24, S1-RM-Design lane). Migration 20261117170000_cf247_admin_email_delivery_resend: `admin_email_delivery_read()` and `admin_email_delivery_save(payload, reason)` (rank 6; reason; control log), settings row `admin_email_delivery` in `pipeline.environment_settings`, Resend API key in Supabase Vault (`admin_resend_api_key`), `svc_admin_email_delivery()` for the service role only. Edge function `admin-user-management`: with Resend in use, invitations, resent invitations, resets and test emails use `generateLink` and the Resend API with the saved templates; otherwise Supabase built-in as before. UI: Email delivery provider section with a write-only key. G3 untouched.

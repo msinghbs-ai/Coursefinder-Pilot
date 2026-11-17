@@ -119,6 +119,8 @@ export const PAGES = {
     // CF-247 (Platform Admin 2 Nov 2026 16:58, continuous validation mandate §3 and §9): the integration feedback queue and the operating mode
     { key: 'integration', label: 'Integration queue', min: 5 },
     { key: 'storage', label: 'Storage & retention', min: 6 },
+    // Wave 2 (Platform Admin 17 Nov 2026 17:59): field fill by country and enrichment category, Layer 1 editions and retention, Layer 4 queue ageing
+    { key: 'completeness', label: 'Country & category completeness', min: 3 },
   ] },
   jobs: { label: 'Scheduled jobs', slug: 'scheduled-jobs', icon: 'workflow', subtitle: 'Every automation the platform runs, the order work is taken in, and job history.', tabs: [
     { key: 'automations', label: 'Automations', min: 4 },

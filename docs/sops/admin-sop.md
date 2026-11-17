@@ -1,7 +1,7 @@
-<!-- sop-export: id=admin-sop; version=2.49; reviewed-release=2.16.23; source-commit=4c1b262fe91f+local; content-sha256=bf941bff2a4c8a350c0a8c4cbcf008a7a3b76ca3643607bcbe5848ed6c8fc102 -->
+<!-- sop-export: id=admin-sop; version=2.50; reviewed-release=2.16.24; source-commit=0c39f5b0ef61+local; content-sha256=b7c8e073f5c5e3a30b0c83d6bb7a9eb99bdd12ee91bfe2d1c85d1438ad449e45 -->
 # StudySearch – Platform Admin SOP
 
-**Version:** 2.49 (reviewed for platform release v2.16.23)  
+**Version:** 2.50 (reviewed for platform release v2.16.24)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -139,6 +139,7 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.50 | 17 Nov 2026 | v2.16.24 | Layer 1 › + Add source is a six-step wizard; activate with a reason only when the licence terms and mapping are right, and leave the source paused until a dry run has passed. Platform health › Country & category completeness: read fill by country and category and Layer 4 ageing after each load. |
 | 2.49 | 17 Nov 2026 | v2.16.23 | Links & Email Templates › Email delivery provider: send invitations and resets through Resend (sender name, from email, write-only API key). Replace the key by typing a new one; rotate it in Resend if it may have been seen. |
 | 2.48 | 17 Nov 2026 | v2.16.22 | Email templates reach Supabase Auth through the admin workflow supabase-auth-config.yml (or Copy HTML), not from the screen. Go-live checklist: Auth custom SMTP (Resend) before production. |
 | 2.47 | 17 Nov 2026 | v2.16.21 | Users & roles: Resend invite for a person who has not accepted yet. Links & Email Templates: when the warning shows, the emails are not copied to Supabase Auth; copy the HTML and paste it in the dashboard, or set the management token. |
