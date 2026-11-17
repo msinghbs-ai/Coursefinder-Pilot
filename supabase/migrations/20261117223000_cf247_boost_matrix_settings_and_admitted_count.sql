@@ -305,3 +305,6 @@ begin
     raise exception 'post-check: a Boost matrix function is open to anon or authenticated';
   end if;
 end $c$;
+
+-- 11. The deferred matrix check runs here, on the settings rows this change wrote, so that it is proven before the commit (and by the dry run)
+set constraints all immediate;
