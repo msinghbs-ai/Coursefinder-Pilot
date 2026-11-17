@@ -96,6 +96,13 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     // Wave 2 addenda (17 Nov 2026 19:09): the parser badge of each Layer 1 source, and the re-infer request
     admin_layer1_parser_status: () => ({ sources: { 'l1-centennial': { parser: 'ai_built', target_record_type: 'course_register', spec_version: 2, drift_flagged_at: '2026-11-17T06:00:00Z', drift_message: 'expected 195 unique source codes got 200', reinfer_requested_at: null },
       'l1-nzqa': { parser: 'hardcoded', target_record_type: null, drift_flagged_at: null }, 'l1-dfat': { parser: 'none' } } }),
+    // Reference data › API field dictionary and Grade scale conversions (v2.16.28): the read answers the search, filters and offset it is sent
+    admin_reference_table_read: b => { calls.push({ referenceTable: b }); const a = b.p_args || {}
+      if (b.p_kind === 'grade_scales') return { kind: 'grade_scales', total: 0, all_rows: 0, page_rows: 50, offset: 0, filters: { countries: [] }, rows: [] }
+      const all = Array.from({ length: 120 }, (_, i) => ({ api_surface: i % 2 ? 'zoho' : 'website', version: 'v3', endpoint: 'course', field_path: i === 0 ? 'course.study_load' : `course.field_${i}`, data_type: 'text', is_nullable: true,
+        allowed_values: i === 0 ? ['full_time', 'part_time', 'both'] : null, req_ids: i === 0 ? ['R33', 'REQ-76'] : [], source_table: 'catalogue.courses', source_column: i === 0 ? 'study_load' : `col_${i}`, description: `Field ${i}`, introduced_in: 'v3', deprecated_in: null }))
+      const rows = all.filter(r => (!a.query || r.field_path.includes(a.query)) && (!a.surface || r.api_surface === a.surface))
+      return { kind: 'api_fields', total: rows.length, all_rows: all.length, page_rows: 50, offset: a.offset || 0, filters: { surfaces: ['website', 'zoho'], versions: ['v3'] }, rows: rows.slice(a.offset || 0, (a.offset || 0) + 50) } },
     admin_layer1_parser_reinfer_request: b => { calls.push({ l1Reinfer: b }); return { ok: true, source_id: b.p_source_id } },
     admin_completeness_report: () => ({ rank: 6, snapshot_date: '2026-11-17', countries: ['AU', 'NZ'], categories: [{ key: 'course_basics', label: 'Course basics', description: 'What the course is.' }, { key: 'fees', label: 'Fees', description: 'Tuition.' }],
       cells: [{ country_code: 'AU', category_key: 'course_basics', total: 200, filled: 140, pct: 70.0, fields: [{ field: 'level', label: 'Level', total: 100, filled: 90, pct: 90.0 }, { field: 'duration', label: 'Duration', total: 100, filled: 50, pct: 50.0 }] },

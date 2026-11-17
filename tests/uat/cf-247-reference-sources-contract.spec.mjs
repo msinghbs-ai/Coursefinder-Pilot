@@ -33,7 +33,7 @@ test('no fixed third-party site patterns remain in the coverage sweep or the ran
   expect(main).not.toContain('www.topuniversities.com')
   expect(main).toContain("(x.uses||[]).includes('ranking_publisher')")
   expect(PAGES.reference.tabs).toBeUndefined() // v2.15.301: Key dates and Reference sources are one list with a type filter
-  expect(read('src/mature-main.jsx')).toContain("const REFERENCE_TYPES=[['','All'],['dates','Key dates'],['links','Reference sources']]")
+  expect(read('src/mature-main.jsx')).toContain("const REFERENCE_TYPES=[['','All'],['dates','Key dates'],['links','Reference sources'],['api_fields','API field dictionary'],['grade_scales','Grade scale conversions']]")
 })
 
 test.describe('mocked browser', () => {

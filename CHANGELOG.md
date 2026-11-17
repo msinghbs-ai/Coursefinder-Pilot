@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.450 — 17 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.28** (Platform Admin 17 Nov 2026 23:05, S1-RM-Design lane; UI audit of the new API v3 fields, first slice). Migration 20261118005000_cf247_admin_reference_tables_read: `public.admin_reference_table_read(kind, args)` (Curator and above, read-only, stable) pages `ref.api_field_dictionary` and `ref.grade_scale_conversions` with search and filters; setting `admin.reference_table_page_rows` (50). Reference data gains the types API field dictionary and Grade scale conversions. Guards: `s591`, fixture `admin-reference-tables`.
+
 ## 0.1.449 — 17 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.27** (Platform Admin 17 Nov 2026 22:31, S1-RM-Design lane). No migration. Users & roles › Links & Email Templates › Email delivery provider gets its own Reason box, an always-enabled **Save Email Provider Settings** button and a **Send Test Email** button whose result shows in the card. Edge function `admin-user-management`: `auth_template_test` with `via: "resend"` sends through Resend with the saved sender, from email and key to the caller's own address, also before Resend is the provider, and answers with Resend's reference; a refused send carries Resend's own message. Save & Sync saves link settings and templates only. Guard: `s573`.
