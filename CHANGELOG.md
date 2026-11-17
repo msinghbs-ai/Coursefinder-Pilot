@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.443 — 17 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.21** (Platform Admin 17 Nov 2026 15:45, S1-RM-Design lane). Edge function `admin-user-management`: action `resend_invite` (an unconfirmed, enabled, non-system account only; recorded as `user_invited` with `resent`). UI: Resend invite on the user row; Links & Email Templates shows a warning with Copy HTML for Supabase Dashboard while `SB_MANAGEMENT_TOKEN` is not set. No migration. G3 untouched.
+
 ## 0.1.442 — 17 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.20** (Platform Admin 17 Nov 2026 14:40, S1-RM-Design lane). Migration 20261117152700_cf247_admin_auth_email_templates: `admin_auth_template_settings_read()` and `admin_auth_template_settings_save(payload, reason)` (Platform Admin, rank 6; the save writes `pipeline.admin_control_events`), stored as one row in `pipeline.environment_settings`; service functions for `admin-user-management`. Edge function `admin-user-management`: actions `auth_templates_status`, `auth_templates_sync` (Supabase Management API, only when secret `SB_MANAGEMENT_TOKEN` is set) and `auth_template_test`; a reset refreshes the account's role and guide link first. UI: Users & roles gains tabs Users & roles and Links & Email Templates (54 tabs on 21 pages). G3 untouched.

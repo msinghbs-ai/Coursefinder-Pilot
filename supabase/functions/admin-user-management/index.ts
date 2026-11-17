@@ -369,6 +369,47 @@ Deno.serve(async (req: Request) => {
       return reply(req, 200, { ok: true, user_id: targetUserId, sent_to: email });
     }
 
+    // v2.16.21 (Platform Admin 17 Nov 2026 15:45): send the invitation again to a person who has not accepted it yet. Supabase Auth sends an
+    // invitation to an existing address only while it is unconfirmed; the email is the Invite user template Auth holds. Never the system account,
+    // a disabled account or an account that has already signed in (that person gets Reset password instead).
+    if (action === "resend_invite") {
+      const targetUserId = String(body?.user_id || "");
+      if (!uuidRe.test(targetUserId)) return reply(req, 400, { error: "valid_user_id_required" });
+      const { data: target, error: targetError } = await serviceClient.auth.admin.getUserById(targetUserId);
+      if (targetError || !target?.user) return reply(req, 404, { error: "target_user_not_found" });
+      const email = String(target.user.email || "").toLowerCase();
+      if (!emailRe.test(email) || SYSTEM_EMAIL.test(email)) return reply(req, 409, { error: "system_account_has_no_invitation" });
+      if (target.user.banned_until && new Date(target.user.banned_until).getTime() > Date.now()) return reply(req, 409, { error: "account_disabled_enable_first" });
+      if (target.user.email_confirmed_at) return reply(req, 409, { error: "invitation_already_accepted_use_reset_password" });
+      const { data: snap, error: snapError } = await serviceClient.rpc("svc_admin_access_snapshot");
+      if (snapError) throw new Error("access_snapshot_failed");
+      const now = Date.now();
+      const byCode = new Map((Array.isArray(snap?.roles) ? snap.roles : []).map((r: any) => [String(r.code), r]));
+      const top = (Array.isArray(snap?.assignments) ? snap.assignments : [])
+        .filter((a: any) => String(a.user_id) === targetUserId && (!a.expires_at || new Date(a.expires_at).getTime() > now))
+        .map((a: any) => byCode.get(String(a.role_code))).filter(Boolean)
+        .sort((a: any, b: any) => Number(b.rank || 0) - Number(a.rank || 0))[0] as any;
+      const login = adminLoginUrl();
+      const { data: savedTpl } = await serviceClient.rpc("svc_admin_auth_template_settings");
+      const old = target.user.user_metadata || {};
+      const { error: inviteError } = await serviceClient.auth.admin.inviteUserByEmail(email, {
+        redirectTo: login,
+        data: { ...old, guide_url: String(savedTpl?.guide_link || "") || guideUrl(login),
+          ...(top ? { role: String(top.name || top.code), role_code: String(top.code) } : {}) },
+      });
+      if (inviteError) return reply(req, 400, { error: inviteError.message || "invitation_resend_failed" });
+      const { error: logError } = await serviceClient.rpc("svc_admin_access_log_event", {
+        p_actor_user_id: actorUserId,
+        p_target_user_id: targetUserId,
+        p_action: "user_invited",
+        p_before_state: {},
+        p_after_state: { email, confirmed: false },
+        p_metadata: { mode: "invite", resent: true, redirect_to: login },
+      });
+      if (logError) console.warn("admin-user-management: the resent invitation was not logged", logError.message);
+      return reply(req, 200, { ok: true, user_id: targetUserId, sent_to: email });
+    }
+
     // 16 Oct 2026 (Platform Admin: "only Platform admin should be able to delete the user from UI, Platform admins roles user can't be
     // deleted"): the database guard decides; a user named on recorded work is soft-deleted so the history keeps its link
     if (action === "delete") {

@@ -23,3 +23,5 @@
 .aet .aet-reason{flex:1 1 260px}
 .aet .aet-events{margin:0;padding:0;list-style:none;display:grid;gap:6px}
 .aet .aet-events li{display:flex;gap:12px;flex-wrap:wrap;font-size:var(--cf-fs-sm)}
+.aet .aet-banner{padding:12px 14px;border:1px solid var(--cf-border);border-left:4px solid var(--cf-warning);border-radius:var(--cf-radius-md);background:var(--cf-warning-soft);color:var(--cf-warning-ink);display:grid;gap:8px}
+.aet .aet-banner p{margin:0}

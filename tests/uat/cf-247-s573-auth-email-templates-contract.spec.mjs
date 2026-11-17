@@ -1,4 +1,4 @@
-// Guards: Users & roles › Links & Email Templates (Platform Admin 17 Nov 2026 14:40): the Admin site URL, guide link and the Invite User and Reset Password emails are edited by a Platform Admin only, a save needs a reason and is logged, Supabase Auth is changed only through the edge function when a management token is set, the preview cannot run scripts, and the consumer API is not touched.
+// Guards: Users & roles › Links & Email Templates (Platform Admin 17 Nov 2026 14:40): the Admin site URL, guide link and the Invite User and Reset Password emails are edited by a Platform Admin only, a save needs a reason and is logged, Supabase Auth is changed only through the edge function when a management token is set, the preview cannot run scripts, and the consumer API is not touched. Follow-up (Platform Admin 17 Nov 2026 15:45): an open invitation can be sent again from the user row, and while no management token is set the screen warns that Supabase Auth keeps the previous emails and offers the HTML to paste.
 // Behaviour is proven on isolated PostgreSQL by tests/fixtures/admin-auth-email-templates/run.sh (workflow admin-auth-email-templates-test); these checks keep the rules in the migration, the edge function and the screen.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
@@ -69,4 +69,27 @@ test('Users & roles has two Platform Admin tabs and the screen offers the contro
   expect(screen).toContain("rpc('admin_auth_template_settings_save',{p_payload:form,p_reason:why})")
   expect(screen).toContain('reason.trim().length<4')
   for (const a of ["templatesStatus: () => invoke({ action: 'auth_templates_status' })", "templatesSync: () => invoke({ action: 'auth_templates_sync' })"]) expect(apiSrc).toContain(a)
+})
+
+test('Resend invite: an open invitation only, Platform Admin only, recorded in the access history', () => {
+  const r = edge.slice(edge.indexOf('if (action === "resend_invite")'), edge.indexOf('// 16 Oct 2026 (Platform Admin: "only Platform admin'))
+  expect(edge.indexOf('platform_admin_role_required')).toBeLessThan(edge.indexOf('if (action === "resend_invite")'))
+  for (const e of ['system_account_has_no_invitation', 'account_disabled_enable_first', 'invitation_already_accepted_use_reset_password']) expect(r).toContain(`"${e}"`)
+  expect(r).toContain('serviceClient.auth.admin.inviteUserByEmail(email, {')
+  expect(r).toContain('redirectTo: login,')
+  expect(r).toContain('p_action: "user_invited",'); expect(r).toContain('resent: true')
+  const rows = read('src/access-roles-entry.jsx')
+  expect(rows).toContain("export const inviteOpen=user=>!user.email_confirmed_at&&!user.disabled&&!String(user.email||'').endsWith('.invalid')")
+  expect(rows).toContain('data-resend-invite={user.id}')
+  expect(rows).toContain('data-reset-password={user.id}')
+  expect(apiSrc).toContain("resendInvite: (userId) => invoke({ action: 'resend_invite', user_id: userId }),")
+})
+
+test('with no management token the screen warns and offers the HTML as Supabase Auth reads it', () => {
+  expect(screen).toContain('status&&status.management_token_configured===false&&<div className="aet-banner" role="alert" data-aet-no-token>')
+  expect(screen).toContain('Supabase Auth still holds the previous emails.')
+  expect(screen).toContain('data-aet-copy-html>Copy HTML for Supabase Dashboard</Button>')
+  const src = /export const toAuthTemplate=[^\n]+/.exec(screen)[0].replace('export const toAuthTemplate=', 'return ')
+  const toAuth = new Function('AUTH_TOKENS', 'esc', src)({ link: '{{ .ConfirmationURL }}', user_email: '{{ .Email }}', user_name: '{{ .Data.full_name }}', role: '{{ .Data.role }}' }, (v) => v)
+  expect(toAuth('<a href="{{link}}">{{user_name}}</a> {{ role }} {{guide_link}}', 'https://x.example/#g')).toBe('<a href="{{ .ConfirmationURL }}">{{ .Data.full_name }}</a> {{ .Data.role }} https://x.example/#g')
 })
