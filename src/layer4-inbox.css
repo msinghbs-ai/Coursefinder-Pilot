@@ -82,3 +82,25 @@
 .ef-cd{overflow-wrap:anywhere}
 .ef-cd-h{margin:12px 0 4px}
 .ef-cd-word{border-top:1px solid var(--cf-slate-200);padding-top:6px;margin-top:6px}
+/* CF-247 UI/UX audit Phase 5 (18 Nov 2026): Layer 4 › Inbox › Grid, saved views and the quote/value drawer (shared tokens only) */
+.l4g{display:grid;gap:10px}
+.l4g-help,.l4g-sub,.l4g-muted{color:var(--cf-slate-500);font-size:var(--cf-fs-xs)}
+.l4g-views{display:flex;flex-wrap:wrap;gap:6px}
+.l4g-views button{border:1px solid var(--cf-slate-200);border-radius:999px;background:var(--cf-white);padding:4px 10px;font-size:var(--cf-fs-xs);cursor:pointer}
+.l4g-views button.on{background:var(--cf-slate-900);color:var(--cf-white);border-color:var(--cf-slate-900)}
+.l4g-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.l4g-bar label{display:grid;gap:2px;font-size:var(--cf-fs-2xs);color:var(--cf-slate-500)}
+.l4g-bar select,.l4g-bar input,.l4g-save input{border:1px solid var(--cf-slate-200);border-radius:var(--cf-radius-md);padding:5px 8px;font-size:var(--cf-fs-xs);min-width:150px}
+.l4g-actions,.l4g-save{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.l4g-picker{display:flex;flex-wrap:wrap;gap:10px;border:1px solid var(--cf-slate-200);border-radius:var(--cf-radius-md);padding:8px 10px;font-size:var(--cf-fs-xs)}
+.l4g-picker label{display:flex;gap:4px;align-items:center}
+.l4g-note{color:var(--cf-green-700,#15803d);font-size:var(--cf-fs-xs)}
+.l4g-err{color:var(--cf-red-700,#b91c1c);font-size:var(--cf-fs-xs)}
+.l4g-count{font-size:var(--cf-fs-xs);color:var(--cf-slate-600)}
+.l4g-drawer section{margin:0 0 16px}
+.l4g-drawer h3{font-size:var(--cf-fs-sm);margin:0 0 6px}
+.l4g-qv{width:100%;border-collapse:collapse;font-size:var(--cf-fs-xs)}
+.l4g-qv th,.l4g-qv td{border:1px solid var(--cf-slate-150);padding:6px 8px;vertical-align:top;text-align:left;width:50%;overflow-wrap:anywhere}
+.l4g-qv q{font-style:italic}
+.l4g-history{margin:0;padding-left:18px;font-size:var(--cf-fs-xs);display:grid;gap:6px}
+@media (max-width:640px){.l4g-bar select,.l4g-bar input,.l4g-save input{min-width:0;width:100%}.l4g-bar label{flex:1 1 100%}}

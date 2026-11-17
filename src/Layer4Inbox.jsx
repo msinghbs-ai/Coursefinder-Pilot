@@ -23,6 +23,7 @@ import{GroupBar,GroupList,recordNavigation}from'./Layer4Groups' // CF-247 mandat
 import{ItemLifecycle}from'./Layer4ItemLifecycle' // CF-247 decision 12:24: action lifecycle, times and acknowledgement on every card
 import{layer4DeepLinkCursor}from'./layer4-deep-link'
 import AerCourseLinks from'./AerCourseLinks' // CF-247 F-AER.08 step 3: course links of a university's entry tables
+import Layer4Grid from'./Layer4Grid' // CF-247 UI/UX audit Phase 5 (18 Nov 2026): the review grid, saved views and the quote/value drawer
 import{CdList,CdPanel,ChecksLine,ReasonChips,isCourseDescription,useCdQueue}from'./CourseDescriptionPanel' // CF-247 course descriptions (6 Nov 2026): reconcile, ready first, the sample
 
 const rpc=async(action,args)=>{const{data,error}=await supabase.rpc('admin_layer4_inbox',{p_action:action,p_args:args||{}});if(error)throw new Error(error.message);return data||{}}
@@ -72,7 +73,7 @@ export default function Layer4Inbox({onError,routeParams}){
   const loadSum=()=>rpc('summary').then(setSum).catch(e=>onError?.(e.message))
   const loadUnis=(o=offset)=>{if(!sum)return;setUnis(null);rpc('universities',{kind,q,limit:UPAGE,offset:o}).then(d=>{setUnis(d);if(view==='university'&&!pick&&d.items?.[0]){const s=sel0.current;sel0.current=null
     setPick(wantProvider?(d.items.find(u=>u.provider_id===wantProvider)||{provider_id:wantProvider,name:'University'}):s?.pick?.provider_id?s.pick:d.items[0])}}).catch(e=>onError?.(e.message))}
-  const loadItems=(c=cur)=>{if(view==='group'){setItems(null);return}if(view==='decided'){setItems(null);rpc('decided',{limit:100}).then(setItems).catch(e=>onError?.(e.message));return}if(view==='kind'&&!kind){setItems(null);return}if(view==='university'&&!pick){setItems(null);return}if(!sum)return;setItems(null)
+  const loadItems=(c=cur)=>{if(view==='group'||view==='grid'){setItems(null);return}if(view==='decided'){setItems(null);rpc('decided',{limit:100}).then(setItems).catch(e=>onError?.(e.message));return}if(view==='kind'&&!kind){setItems(null);return}if(view==='university'&&!pick){setItems(null);return}if(!sum)return;setItems(null)
     rpc('items',{...(view==='kind'?{kind}:{provider_id:pick.provider_id,...((uk||kind)?{kind:uk||kind}:{})}),limit:IPAGE,...(c||{})}).then(setItems).catch(e=>onError?.(e.message))}
   const choose=(u,k)=>{setPick(u);setUk(k||'');setNote('')}
   useEffect(()=>{loadSum()},[])
@@ -129,12 +130,13 @@ export default function Layer4Inbox({onError,routeParams}){
       {order.filter(k=>bk[k]?.n).map(k=><button key={k} type="button" className={kind===k?'on':''} data-l4-kind={k} onClick={()=>setKind(k)}>{kinds[k].label} ({fmtNumber(bk[k].n)})</button>)}
     </div>
     <div className="l4i-bar">
-      <div className="l4i-view">{[['university','By university'],['kind','By kind'],['decided','Decided']].map(([v,l])=><button key={v} type="button" className={view===v?'on':''} onClick={()=>{setView(v);setNote('')}}>{l}</button>)}</div>
+      <div className="l4i-view">{[['university','By university'],['kind','By kind'],['grid','Grid'],['decided','Decided']].map(([v,l])=><button key={v} type="button" className={view===v?'on':''} onClick={()=>{setView(v);setNote('')}}>{l}</button>)}</div>
       {view==='university'&&<label className="l4i-search"><Search size={14}/><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Find a university…" aria-label="Find a university"/></label>}
       <Button compact onClick={()=>{loadSum();loadUnis(offset);loadItems(cur)}}><RefreshCw size={14}/>Refresh</Button>
     </div>
     {note&&<p className="l4i-note" role="status">{note}</p>}
-    {view==='group'?<GroupList group={grp} refresh={gtick} renderItem={it=><Item it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider rank={sum.rank} onDone={r=>{decided(r);setGtick(x=>x+1)}} onError={onError} onRefresh={()=>{loadSum();setGtick(x=>x+1)}}/>}/>:
+    {view==='grid'?<Layer4Grid kinds={kinds} targetDays={sum.target_days} onError={onError} onDecided={r=>{setNote(outcomeText(r));loadSum()}} renderItem={(it,done)=><Item it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider rank={sum.rank} onDone={done} onError={onError} onRefresh={loadSum}/>}/>:
+    view==='group'?<GroupList group={grp} refresh={gtick} renderItem={it=><Item it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider rank={sum.rank} onDone={r=>{decided(r);setGtick(x=>x+1)}} onError={onError} onRefresh={()=>{loadSum();setGtick(x=>x+1)}}/>}/>:
     view==='decided'?<Decided items={items} kinds={kinds}/>:view==='kind'&&!kind?<Empty text="Choose a kind above to see its items across every university."/>:
     <div className={view==='university'?'l4i-split':''}>
       {view==='university'&&<aside className="l4i-unis" aria-label="Universities">
