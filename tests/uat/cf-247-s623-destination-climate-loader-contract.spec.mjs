@@ -1,5 +1,5 @@
 // Guards: RM1I climate figures (Platform Admin 18 Nov 2026 10:31 "build the non-breaking ingestion/refresh pipeline into destination.locality_metrics (with source attribution and /destination API v3 exposure)"; Study Square 13 Nov: long-term climate averages, summer and winter averages and annual rainfall): BOM pages are read and parsed deterministically, figures load as draft with attribution and evidence (Platform Admin 10:44: load into draft editions; terms and publication stay the Platform Admin's; a dry run or a restricted edition writes nothing), a reviewed figure is never changed, and the consumer API is not reshaped.
-// CF-247 S621. supabase/migrations/20261118123000_cf247_rm1i_destination_climate_loader.sql, supabase/functions/_shared/cf247-bom-climate.js, supabase/functions/layer1-destination-geo-loader/index.ts.
+// CF-247 S623. supabase/migrations/20261118123000_cf247_rm1i_destination_climate_loader.sql, supabase/functions/_shared/cf247-bom-climate.js, supabase/functions/layer1-destination-geo-loader/index.ts.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { parseBomClimate, parseStatisticRow } from '../../supabase/functions/_shared/cf247-bom-climate.js'
