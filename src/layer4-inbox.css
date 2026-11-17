@@ -94,8 +94,8 @@
 .l4g-actions,.l4g-save{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .l4g-picker{display:flex;flex-wrap:wrap;gap:10px;border:1px solid var(--cf-slate-200);border-radius:var(--cf-radius-md);padding:8px 10px;font-size:var(--cf-fs-xs)}
 .l4g-picker label{display:flex;gap:4px;align-items:center}
-.l4g-note{color:var(--cf-green-700,#15803d);font-size:var(--cf-fs-xs)}
-.l4g-err{color:var(--cf-red-700,#b91c1c);font-size:var(--cf-fs-xs)}
+.l4g-note{color:var(--cf-green-700);font-size:var(--cf-fs-xs)}
+.l4g-err{color:var(--cf-danger-ink);font-size:var(--cf-fs-xs)}
 .l4g-count{font-size:var(--cf-fs-xs);color:var(--cf-slate-600)}
 .l4g-drawer section{margin:0 0 16px}
 .l4g-drawer h3{font-size:var(--cf-fs-sm);margin:0 0 6px}
