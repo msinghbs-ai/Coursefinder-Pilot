@@ -1,7 +1,8 @@
 -- CF-247 Parallel Wave 2 (Platform Admin 17 Nov 2026 17:59 and decisions 18:10, S1-RM-Design): country and register induction wizard, and the
 -- Country & category completeness report.
 --   1. ref.enrichment_categories and ref.enrichment_category_fields: the eight enrichment categories and which of the 32 coverage fields belongs
---      to each (editable by the Platform Admin with a reason; shared with the Layer 1 loaders).
+--      to each (editable by the Platform Admin with a reason; shared with the Layer 1 loaders). The list is the one the Platform Admin chose at
+--      18:10. The Boost matrix of 18:02 (migration 20261117183000) uses eight other keys; each field carries its Boost category beside it.
 --   2. pipeline.layer1_source_inductions: one row per wizard draft (country and scheme, source and licence, field mappings, cadence and retention,
 --      dry-run result, activation). Drafting is Pipeline Operator and above (who can open Layer 1); activation is the Platform Admin's, with a
 --      reason, and creates the source through the existing public.admin_layer1_add_source, which saves it paused.
@@ -41,9 +42,10 @@ create table if not exists ref.enrichment_category_fields (
   field text primary key check (field ~ '^[a-z0-9_]{2,60}$'),
   category_key text not null references ref.enrichment_categories(category_key),
   label text not null,
+  boost_category text check (boost_category is null or boost_category ~ '^[a-z_]{3,40}$'),
   updated_by uuid,
   updated_at timestamptz not null default now());
-comment on table ref.enrichment_category_fields is 'Which enrichment category each coverage field (pipeline.field_coverage_daily.field) belongs to. One category per field; changed by the Platform Admin with a reason (public.admin_enrichment_category_field_set).';
+comment on table ref.enrichment_category_fields is 'Which enrichment category each coverage field (pipeline.field_coverage_daily.field) belongs to. One category per field; changed by the Platform Admin with a reason (public.admin_enrichment_category_field_set). boost_category is the Layer 2/3 Boost category of the same field (setting country_category_boost, migration 20261117183000), so the report''s categories and the Boost matrix are tied field by field.';
 
 alter table ref.enrichment_categories enable row level security;
 alter table ref.enrichment_category_fields enable row level security;
@@ -61,21 +63,21 @@ insert into ref.enrichment_categories(category_key, label, description, sort_ord
  ('scholarships', 'Scholarships', 'Scholarships the provider offers.', 80)
 on conflict (category_key) do nothing;
 
-insert into ref.enrichment_category_fields(field, category_key, label) values
- ('level', 'course_basics', 'Level'), ('duration', 'course_basics', 'Duration'), ('delivery', 'course_basics', 'Delivery mode'), ('field_of_study', 'course_basics', 'Field of study'),
- ('description', 'course_basics', 'Course description'), ('official_url', 'course_basics', 'Official course page'), ('v3_study_load', 'course_basics', 'Study load (API v3)'),
- ('v3_empty_reason', 'course_basics', 'Reason a value is empty (API v3)'),
- ('provider_tuition', 'fees', 'Tuition published by the provider'), ('registered_tuition', 'fees', 'Tuition on the register'),
- ('academic_entry', 'entry_requirements', 'Academic entry'), ('english', 'entry_requirements', 'English requirement'), ('p_entry_matrix', 'entry_requirements', 'Provider entry matrix'),
- ('v3_grade_normalised', 'entry_requirements', 'Normalised grade (API v3)'),
- ('intakes', 'intakes_deadlines', 'Intakes'), ('deadline', 'intakes_deadlines', 'Application deadline'),
- ('campus', 'campus_location', 'Campus'), ('campus_city', 'campus_location', 'Campus city'), ('p_campuses', 'campus_location', 'Provider campuses'), ('p_address', 'campus_location', 'Provider address'),
- ('v3_campus_primary', 'campus_location', 'Primary campus (API v3)'), ('v3_destination', 'campus_location', 'Destination data (API v3)'),
- ('p_description', 'provider_profile', 'Provider description'), ('p_logo', 'provider_profile', 'Provider logo'), ('p_type', 'provider_profile', 'Provider type'),
- ('p_website', 'provider_profile', 'Provider website'), ('p_contact', 'provider_profile', 'Provider contact'),
- ('p_registrations', 'recognition_registration', 'Provider registrations'), ('v3_accreditations', 'recognition_registration', 'Accreditations (API v3)'),
- ('international', 'recognition_registration', 'Open to international students'), ('p_international', 'recognition_registration', 'Provider takes international students'),
- ('p_scholarships', 'scholarships', 'Provider scholarships')
+insert into ref.enrichment_category_fields(field, category_key, label, boost_category) values
+ ('level', 'course_basics', 'Level', 'identity_registers'), ('duration', 'course_basics', 'Duration', 'intakes_delivery'), ('delivery', 'course_basics', 'Delivery mode', 'intakes_delivery'), ('field_of_study', 'course_basics', 'Field of study', 'identity_registers'),
+ ('description', 'course_basics', 'Course description', 'identity_registers'), ('official_url', 'course_basics', 'Official course page', 'identity_registers'), ('v3_study_load', 'course_basics', 'Study load (API v3)', 'intakes_delivery'),
+ ('v3_empty_reason', 'course_basics', 'Reason a value is empty (API v3)', 'identity_registers'),
+ ('provider_tuition', 'fees', 'Tuition published by the provider', 'tuition_fees'), ('registered_tuition', 'fees', 'Tuition on the register', 'tuition_fees'),
+ ('academic_entry', 'entry_requirements', 'Academic entry', 'admissions_entry'), ('english', 'entry_requirements', 'English requirement', 'admissions_entry'), ('p_entry_matrix', 'entry_requirements', 'Provider entry matrix', 'admissions_entry'),
+ ('v3_grade_normalised', 'entry_requirements', 'Normalised grade (API v3)', 'admissions_entry'),
+ ('intakes', 'intakes_deadlines', 'Intakes', 'intakes_delivery'), ('deadline', 'intakes_deadlines', 'Application deadline', 'intakes_delivery'),
+ ('campus', 'campus_location', 'Campus', 'geo_localities'), ('campus_city', 'campus_location', 'Campus city', 'geo_localities'), ('p_campuses', 'campus_location', 'Provider campuses', 'geo_localities'), ('p_address', 'campus_location', 'Provider address', 'geo_localities'),
+ ('v3_campus_primary', 'campus_location', 'Primary campus (API v3)', 'geo_localities'), ('v3_destination', 'campus_location', 'Destination data (API v3)', 'geo_localities'),
+ ('p_description', 'provider_profile', 'Provider description', 'identity_registers'), ('p_logo', 'provider_profile', 'Provider logo', 'identity_registers'), ('p_type', 'provider_profile', 'Provider type', 'identity_registers'),
+ ('p_website', 'provider_profile', 'Provider website', 'identity_registers'), ('p_contact', 'provider_profile', 'Provider contact', 'identity_registers'),
+ ('p_registrations', 'recognition_registration', 'Provider registrations', 'identity_registers'), ('v3_accreditations', 'recognition_registration', 'Accreditations (API v3)', 'scholarships_accred'),
+ ('international', 'recognition_registration', 'Open to international students', 'identity_registers'), ('p_international', 'recognition_registration', 'Provider takes international students', 'identity_registers'),
+ ('p_scholarships', 'scholarships', 'Provider scholarships', 'scholarships_accred')
 on conflict (field) do nothing;
 
 -- 2. Settings (G2)
@@ -146,7 +148,7 @@ begin
       'countries', (select coalesce(jsonb_agg(jsonb_build_object('code', c.iso_alpha2, 'name', c.name) order by c.name), '[]'::jsonb) from ref.countries c where c.iso_alpha2 is not null),
       'schemes', (select coalesce(jsonb_agg(jsonb_build_object('scheme', s.scheme, 'kind', s.kind, 'country_code', s.country_code, 'label', s.label, 'authority', s.authority) order by s.country_code, s.kind, s.scheme), '[]'::jsonb) from ref.registration_schemes s),
       'categories', (select coalesce(jsonb_agg(jsonb_build_object('key', k.category_key, 'label', k.label, 'description', k.description,
-                       'fields', (select coalesce(jsonb_agg(jsonb_build_object('field', f.field, 'label', f.label) order by f.label), '[]'::jsonb) from ref.enrichment_category_fields f where f.category_key = k.category_key)) order by k.sort_order), '[]'::jsonb)
+                       'fields', (select coalesce(jsonb_agg(jsonb_build_object('field', f.field, 'label', f.label, 'boost_category', f.boost_category) order by f.label), '[]'::jsonb) from ref.enrichment_category_fields f where f.category_key = k.category_key)) order by k.sort_order), '[]'::jsonb)
                      from ref.enrichment_categories k where k.active),
       'connector_types', jsonb_build_array('csv_file', 'xlsx_file', 'json_api', 'html_pages', 'pdf_document', 'manual_upload'),
       'cadences', jsonb_build_array('weekly', 'monthly', 'annual'),

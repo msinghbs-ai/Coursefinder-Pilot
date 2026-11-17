@@ -53,6 +53,8 @@ create or replace function pg_temp.err(q text) returns text language plpgsql as 
 do $t$ declare r jsonb; v_id uuid; v_src uuid; v_pol text; begin
   perform pg_temp.ok((select count(*) from ref.enrichment_categories) = 8 and (select count(*) from ref.enrichment_category_fields) = 32
     and (select count(distinct category_key) from ref.enrichment_category_fields) = 8, 'eight categories hold the 32 coverage fields, one category each');
+  perform pg_temp.ok((select count(*) from ref.enrichment_category_fields where boost_category in ('identity_registers', 'geo_localities', 'tuition_fees', 'admissions_entry', 'intakes_delivery', 'study_rules', 'careers_outcomes', 'scholarships_accred')) = 32
+    and (select boost_category from ref.enrichment_category_fields where field = 'v3_study_load') = 'intakes_delivery', 'every field also carries its Boost category (the keys of setting country_category_boost)');
   perform pg_temp.ok(pg_temp.err($$select public.admin_layer1_induction_read()$$) = 'authentication required', 'no session: refused');
   perform set_config('fixture.uid', '44444444-4444-4444-4444-444444444444', true); perform set_config('fixture.rank', '3', true);
   perform pg_temp.ok(pg_temp.err($$select public.admin_layer1_induction_read()$$) like 'Pipeline Operator (rank 4)%' and pg_temp.err($$select public.admin_layer1_induction_save(null, '{"country_code":"IE"}')$$) like 'Pipeline Operator (rank 4)%', 'a Curator cannot open or draft (Layer 1 opens at Pipeline Operator)');
