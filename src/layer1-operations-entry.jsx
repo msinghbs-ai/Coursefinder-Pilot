@@ -5,6 +5,7 @@ import{Activity,AlertTriangle,BarChart3,BookOpen,Building2,CalendarClock,CheckCi
 import{api,supabase}from'./lib/supabase'
 import{fmtNumber,fmtDateTime,fmtTime,fmtPercent}from'./lib/format.js'
 import{ExpandList,Pill,XlToolbar,XlField}from'./ExpandList'
+import Layer1InductionWizard from'./Layer1InductionWizard'
 
 const ROOT_ID='layer1-operations-root'
 const fmt=v=>v?fmtDateTime(v):'—'
@@ -244,7 +245,7 @@ export function Layer1Operations({embedded=false}){
 // v2.15.246 (Platform Admin bugs 11/10-3, Feature 2): Layer 1 › Sources. One plain list of every register, statistics file and
 // ranking, replacing the Runs cards, the Source settings cards and Manual batch runs. Each row shows pills (country, type,
 // health, last run, schedule); opening a row shows the facts, the live run, what is wrong when it is unhealthy, and the same
-// settings that were on Source settings, editable in place. "+ Add source" records a new register (paused until it has a reader).
+// settings that were on Source settings, editable in place. "+ Add source" opens the six-step induction wizard (Layer1InductionWizard.jsx); the Platform Admin activates, and the source is saved paused.
 const TYPE_LABEL={regulatory:'Register',statistics:'Statistics'}
 const HEALTH_TONE={healthy:'success',running:'info',due:'violet',paused:'neutral',attention:'danger'}
 const HEALTH_LABEL={healthy:'Healthy',running:'Running',due:'Due',paused:'Paused',attention:'Needs attention'}
@@ -324,27 +325,6 @@ function SourceRowBody({source,rank,onRefresh,candidates}){
  </div>
 }
 
-function AddLayer1Source({countries,onDone,onCancel}){
- const[f,setF]=useState({country_code:'',label:'',url:'',authority_name:'',ingestion_cadence_days:30,dataset_class:'register',expected_format:'',notes:'',reason:''}),[busy,setBusy]=useState(false),[error,setError]=useState('')
- const set=k=>e=>setF(x=>({...x,[k]:e.target.value}))
- const save=async()=>{setBusy(true);setError('');try{const{data,error:e}=await supabase.rpc('admin_layer1_add_source',{p_args:{...f,country_code:f.country_code.trim().toUpperCase(),ingestion_cadence_days:Number(f.ingestion_cadence_days)}});if(e)throw e;onDone(data)}catch(e){setError(errorText(e))}finally{setBusy(false)}}
- return <section className="xl-add" data-l1-add-source aria-label="Add a source">
-  <h3>Add a source</h3><p className="xl-muted">The new source is saved paused. It runs once a reader is assigned to it.</p>
-  <div className="xl-form">
-   <XlField label="Country code (for example AU, NZ, CA)"><input list="l1-country-codes" value={f.country_code} onChange={set('country_code')} maxLength={2}/><datalist id="l1-country-codes">{countries.map(c=><option key={c.value} value={c.value}>{c.label}</option>)}</datalist></XlField>
-   <XlField label="Type"><select value={f.dataset_class} onChange={set('dataset_class')}><option value="register">Register</option><option value="statistics">Statistics</option></select></XlField>
-   <XlField label="Name" wide><input value={f.label} onChange={set('label')} placeholder="For example: NZQA Education Organisations"/></XlField>
-   <XlField label="Source address (https)" wide><input value={f.url} onChange={set('url')} placeholder="https://"/></XlField>
-   <XlField label="Authority that publishes it"><input value={f.authority_name} onChange={set('authority_name')}/></XlField>
-   <XlField label="Load every (days)"><input type="number" min="1" max="365" value={f.ingestion_cadence_days} onChange={set('ingestion_cadence_days')}/></XlField>
-   <XlField label="File format"><input value={f.expected_format} onChange={set('expected_format')} placeholder="For example: CSV, web pages"/></XlField>
-   <XlField label="Notes"><input value={f.notes} onChange={set('notes')}/></XlField>
-   <XlField label="Reason (kept in the log)" wide><input value={f.reason} onChange={set('reason')}/></XlField>
-   {error&&<div className="xl-note tone-danger" role="alert">{error}</div>}
-   <div className="xl-form-foot"><button onClick={onCancel} disabled={busy}>Cancel</button><button className="primary" onClick={save} disabled={busy}>{busy?'Adding…':'Add source'}</button></div>
-  </div>
- </section>
-}
 
 export function Layer1Sources(){
  const[context,setContext]=useState(null),[data,setData]=useState({sources:[]}),[candidates,setCandidates]=useState([]),[busy,setBusy]=useState(false),[error,setError]=useState(''),[adding,setAdding]=useState(false),[notice,setNotice]=useState('')
@@ -370,7 +350,7 @@ export function Layer1Sources(){
  const rowsOut=list.map(s=>({...s,__label:s.source_label,__muted:isRetired(s)||s.paused}))
  return <section className="xl-page" data-l1-sources>
   <div className="xl-summary">{['attention','running','due','paused','healthy'].map(h=><button key={h} className={health===h?'is-on':''} onClick={()=>setHealth(health===h?'':h)}><Pill tone={HEALTH_TONE[h]}>{HEALTH_LABEL[h]}</Pill><b>{n(counts[h]||0)}</b></button>)}</div>
-  <XlToolbar actions={<><button onClick={load} disabled={busy}><RefreshCw size={14}/>{busy?'Refreshing…':'Refresh'}</button>{rank>=6&&<button className="primary" onClick={()=>setAdding(x=>!x)} data-l1-add><span aria-hidden>+</span> Add source</button>}</>}>
+  <XlToolbar actions={<><button onClick={load} disabled={busy}><RefreshCw size={14}/>{busy?'Refreshing…':'Refresh'}</button>{rank>=4&&<button className="primary" onClick={()=>setAdding(x=>!x)} data-l1-add><span aria-hidden>+</span> Add source</button>}</>}>
    <XlField label="Source"><input type="search" value={q} onChange={e=>setQ(e.target.value)} placeholder="Name, authority or address"/></XlField>
    <XlField label="Country"><select value={country} onChange={e=>setCountry(e.target.value)}><option value="">All</option>{countries.map(c=><option key={c.value} value={c.value}>{c.label}</option>)}</select></XlField>
    <XlField label="Type"><select value={type} onChange={e=>setType(e.target.value)}><option value="">All</option><option value="regulatory">Register</option><option value="statistics">Statistics</option></select></XlField>
@@ -378,7 +358,7 @@ export function Layer1Sources(){
    <label className="xl-check"><input type="checkbox" checked={showRetired} onChange={e=>setShowRetired(e.target.checked)}/>Show retired</label>
   </XlToolbar>
   {error&&<div className="xl-note tone-danger" role="alert">{error}</div>}{notice&&<div className="xl-note tone-success" role="status">{notice}</div>}
-  {adding&&<AddLayer1Source countries={countries} onCancel={()=>setAdding(false)} onDone={async d=>{setAdding(false);setNotice(`${d?.label||'Source'} added, paused until a reader is assigned.`);await load();if(d?.source_id)setOpen(d.source_id)}}/>}
+  {/* Wave 2 (Platform Admin 17 Nov 2026 17:59): + Add source opens the six-step induction wizard; activation stays the Platform Admin's */}{adding&&<Layer1InductionWizard rank={rank} onCancel={()=>setAdding(false)} onDone={()=>{load()}}/>}
   {busy&&!rows.length?<div className="xl-empty">Loading sources…</div>:<ExpandList columns={columns} rows={rowsOut} rowKey={s=>s.source_id} openKey={open} onOpen={setOpen} dataAttr="data-l1-source" renderBody={s=><SourceRowBody source={s} rank={rank} onRefresh={load} candidates={candidates}/>}/>}
   <p className="xl-muted">{n(list.length)} of {n(all.filter(x=>showRetired||!isRetired(x)).length)} sources. Each runs on its own schedule and is rerun only when it is due and its file has changed.</p>
  </section>

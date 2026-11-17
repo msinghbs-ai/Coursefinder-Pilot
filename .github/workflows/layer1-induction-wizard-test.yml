@@ -1,0 +1,36 @@
+# Guards: Layer 1 induction wizard and Country & category completeness report (Platform Admin 17 Nov 2026 17:59) and G4 database-backed tests: migration 20261117193000 runs its wizard, service and report functions on an isolated PostgreSQL 16 (fixtures only, never a Supabase project).
+name: Layer 1 induction wizard integration
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/20261117193000_cf247_layer1_induction_wizard.sql'
+      - 'tests/fixtures/layer1-induction-wizard/**'
+      - '.github/workflows/layer1-induction-wizard-test.yml'
+  workflow_dispatch:
+jobs:
+  isolated-postgres:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: fixture-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: fixture-only
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash tests/fixtures/layer1-induction-wizard/run.sh | tee layer1-induction-wizard-results.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: layer1-induction-wizard-database-evidence
+          path: layer1-induction-wizard-results.log

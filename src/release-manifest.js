@@ -1,18 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.23'
-export const PACKAGE_VERSION='0.1.445'
+export const UI_VERSION='2.16.24'
+export const PACKAGE_VERSION='0.1.446'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'17 Nov 2026',
-  title:'Send Admin invitations and resets through Resend',
+  title:'Layer 1 source induction wizard; Country & category completeness report',
   changes:[
-    'Links & Email Templates: new section Email delivery provider. Choose Supabase Built-in or Resend API, and set the Sender Name (StudySearch PIM Admin) and From Email.',
-    'Resend API Key is write-only: it is stored encrypted, never shown again, and the screen shows only Saved (re_••••1234). Leaving the field empty keeps the saved key.',
-    'With Resend in use, Create user › Send invitation, Resend invite and Reset password are written from the templates saved on this screen and sent through Resend, so a template change takes effect on save. Send Test Email then tests either template to any address.',
-    'Forgot password? on the sign-in screen is still sent by Supabase Auth.'
+    'Layer 1 › Sources: + Add source now opens a six-step wizard: Country & scheme, Source & licence, Field mapping, Cadence & retention, Dry-run preview, Activation. A draft is saved at each step and can be continued later. Pipeline Operators can prepare a draft; activation is the Platform Admin\'s, with a reason, and the source is saved paused.',
+    'Field mapping: map each source field to a platform field and one of eight enrichment categories. AI Auto-Map switches on by itself when the AI mapper is deployed; until then mapping is by hand.',
+    'Cadence & retention: the retention entered for a source is recorded only. It does not change what the platform prunes.',
+    'Dry-run preview shows rows read, inserts, updates, departures and postcodes under the match share once the source has a reader; before that it says Waiting for a reader.',
+    'Platform health: new tab Country & category completeness (Curator and above): field fill by country and category, each Layer 1 source\'s editions, last change and retention, and how long Layer 4 items have waited. The Platform Admin can move a field to another category with a reason.'
   ],
   bugFixes:[
   ]
