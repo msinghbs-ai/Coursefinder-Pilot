@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.445 — 17 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.23** (Platform Admin 17 Nov 2026 16:24, S1-RM-Design lane). Migration 20261117170000_cf247_admin_email_delivery_resend: `admin_email_delivery_read()` and `admin_email_delivery_save(payload, reason)` (rank 6; reason; control log), settings row `admin_email_delivery` in `pipeline.environment_settings`, Resend API key in Supabase Vault (`admin_resend_api_key`), `svc_admin_email_delivery()` for the service role only. Edge function `admin-user-management`: with Resend in use, invitations, resent invitations, resets and test emails use `generateLink` and the Resend API with the saved templates; otherwise Supabase built-in as before. UI: Email delivery provider section with a write-only key. G3 untouched.
+
 ## 0.1.444 — 17 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.22** (Platform Admin 17 Nov 2026 16:13, S1-RM-Design lane). `admin-user-management` and the Copy HTML button: `{{user_name}}` becomes a conditional, so a missing name leaves no stray comma or space. Migration 20261117163000_cf247_golive_auth_custom_smtp: one Go-live checklist row `auth_custom_smtp` (Resend; pending; no value stored). Links & Email Templates wording: Supabase Auth is updated by the admin workflow (decision: no account token in the edge function). G3 untouched.

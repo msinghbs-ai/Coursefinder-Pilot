@@ -1,7 +1,7 @@
-<!-- sop-export: id=admin-sop; version=2.48; reviewed-release=2.16.22; source-commit=ebebc0b5e1e2+local; content-sha256=c52773ed058f2c94a800354367898030ad4e07ac1b94335734ab86287cee6e55 -->
+<!-- sop-export: id=admin-sop; version=2.49; reviewed-release=2.16.23; source-commit=4c1b262fe91f+local; content-sha256=bf941bff2a4c8a350c0a8c4cbcf008a7a3b76ca3643607bcbe5848ed6c8fc102 -->
 # StudySearch – Platform Admin SOP
 
-**Version:** 2.48 (reviewed for platform release v2.16.22)  
+**Version:** 2.49 (reviewed for platform release v2.16.23)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -139,6 +139,7 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.49 | 17 Nov 2026 | v2.16.23 | Links & Email Templates › Email delivery provider: send invitations and resets through Resend (sender name, from email, write-only API key). Replace the key by typing a new one; rotate it in Resend if it may have been seen. |
 | 2.48 | 17 Nov 2026 | v2.16.22 | Email templates reach Supabase Auth through the admin workflow supabase-auth-config.yml (or Copy HTML), not from the screen. Go-live checklist: Auth custom SMTP (Resend) before production. |
 | 2.47 | 17 Nov 2026 | v2.16.21 | Users & roles: Resend invite for a person who has not accepted yet. Links & Email Templates: when the warning shows, the emails are not copied to Supabase Auth; copy the HTML and paste it in the dashboard, or set the management token. |
 | 2.46 | 17 Nov 2026 | v2.16.20 | Users & roles › Links & Email Templates: change the Admin Site URL, the guide link and the Invite User and Reset Password emails with a reason; check the line that says whether the save was copied to Supabase Auth. |

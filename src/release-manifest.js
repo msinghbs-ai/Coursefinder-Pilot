@@ -1,19 +1,20 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.22'
-export const PACKAGE_VERSION='0.1.444'
+export const UI_VERSION='2.16.23'
+export const PACKAGE_VERSION='0.1.445'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'17 Nov 2026',
-  title:'Emails greet cleanly without a name; custom SMTP on the Go-live checklist',
+  title:'Send Admin invitations and resets through Resend',
   changes:[
-    'Go-live checklist: new step Auth custom SMTP (Resend), so production emails come from StudySearch PIM Admin instead of Supabase Auth.',
-    'Links & Email Templates: the screen now says that Supabase Auth is updated by the admin workflow, not from this screen. Copy HTML for Supabase Dashboard stays as the instant route.'
+    'Links & Email Templates: new section Email delivery provider. Choose Supabase Built-in or Resend API, and set the Sender Name (StudySearch PIM Admin) and From Email.',
+    'Resend API Key is write-only: it is stored encrypted, never shown again, and the screen shows only Saved (re_••••1234). Leaving the field empty keeps the saved key.',
+    'With Resend in use, Create user › Send invitation, Resend invite and Reset password are written from the templates saved on this screen and sent through Resend, so a template change takes effect on save. Send Test Email then tests either template to any address.',
+    'Forgot password? on the sign-in screen is still sent by Supabase Auth.'
   ],
   bugFixes:[
-    'Invitation and reset emails: a person invited without a full name is greeted "Welcome" (and "Hello,"), with no stray comma or space.'
   ]
 }
 

@@ -27,7 +27,9 @@ test('the admin sign-in address is the Cloudflare Worker, and a supabase.co or n
 
 test('an invitation passes redirectTo and the template data role, guide_url and full_name', () => {
   const c = code(EDGE)
-  const invite = c.slice(c.indexOf('inviteUserByEmail(email, {'), c.indexOf('});', c.indexOf('inviteUserByEmail(email, {')))
+  // v2.16.23: the template data is one object (inviteData) used by both senders, Supabase built-in and Resend
+  const invite = c.slice(c.indexOf('const inviteData = {'), c.indexOf('});', c.indexOf('inviteUserByEmail(email, {')))
+  expect(invite).toContain('data: inviteData,')
   expect(invite).toContain('redirectTo: login,')
   for (const k of ['role:', 'role_code:', 'guide_url: guideUrl(login),', 'full_name: fullName || null,']) expect(invite).toContain(k)
   expect(c).toContain('const login = adminLoginUrl();')

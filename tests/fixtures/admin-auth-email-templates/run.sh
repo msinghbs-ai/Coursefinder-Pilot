@@ -20,11 +20,18 @@ create table pipeline.environment_settings (setting_key text primary key, catego
 create table pipeline.admin_control_events (id bigserial primary key, area text not null, action text not null, target text, detail jsonb not null default '{}', actor uuid, created_at timestamptz not null default now());
 create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('fixture.uid', true), '')::uuid $$;
 create function auth.role() returns text language sql stable as $$ select nullif(current_setting('fixture.role', true), '') $$;
+create schema vault;
+create table vault.secrets (id uuid primary key default gen_random_uuid(), name text unique, description text, secret text);
+create view vault.decrypted_secrets as select id, name, description, secret, secret as decrypted_secret from vault.secrets;
+create function vault.create_secret(new_secret text, new_name text default null, new_description text default '', new_key_id uuid default null) returns uuid language sql as $$ insert into vault.secrets(name, description, secret) values (new_name, new_description, new_secret) returning id $$;
+create function vault.update_secret(secret_id uuid, new_secret text default null, new_name text default null, new_description text default null, new_key_id uuid default null) returns void language sql as $$ update vault.secrets set secret = coalesce(new_secret, secret) where id = secret_id $$;
 create function security.current_role_rank() returns int language sql stable as $$ select nullif(current_setting('fixture.rank', true), '')::int $$;
 SQL
 $P -1 -f $M >/dev/null; $P -1 -f $M >/dev/null
 G=supabase/migrations/20261117163000_cf247_golive_auth_custom_smtp.sql
 $P -1 -f $G >/dev/null; $P -1 -f $G >/dev/null
+D=supabase/migrations/20261117170000_cf247_admin_email_delivery_resend.sql
+$P -1 -f $D >/dev/null; $P -1 -f $D >/dev/null
 echo "migrations: each applied twice without error (post-checks included)"
 $P <<'SQL'
 create or replace function pg_temp.ok(c boolean, m text) returns void language plpgsql as $$ begin if c is not true then raise exception 'FAIL: %', m; end if; raise notice 'ok: %', m; end $$;
@@ -60,6 +67,35 @@ do $t$ declare r jsonb; m text; b text; begin
   perform pg_temp.ok(public.svc_admin_auth_template_settings() ? 'templates'
     and (select not detail ? 'token' and (detail->>'synced')::boolean from pipeline.admin_control_events where action = 'auth_templates_sync') and pg_temp.err($$select public.svc_admin_auth_template_log(null, 'other', '{}')$$) = 'unsupported action',
     'the service role reads the settings and logs a sync; a token never reaches the log');
+  -- email delivery provider (migration 20261117170000)
+  perform set_config('fixture.role', '', true); perform set_config('fixture.rank', '5', true);
+  perform pg_temp.ok(pg_temp.err($$select public.admin_email_delivery_read()$$) like 'Platform Admin (rank 6)%' and pg_temp.err($$select public.admin_email_delivery_save('{}', 'x')$$) like 'Platform Admin (rank 6)%', 'email delivery: a Pipeline Operator can neither read nor save');
+  perform set_config('fixture.rank', '6', true);
+  r := public.admin_email_delivery_read();
+  perform pg_temp.ok(r#>>'{delivery,email_provider}' = 'supabase' and r#>>'{delivery,sender_name}' = 'StudySearch PIM Admin' and not (r#>>'{delivery,key_saved}')::boolean and r#>>'{delivery,key_hint}' is null, 'email delivery: built-in by default, sender name StudySearch PIM Admin, no key');
+  perform pg_temp.ok(pg_temp.err($$select public.admin_email_delivery_save('{"email_provider":"resend","from_email":"noreply@example.org"}', ' ')$$) = 'a reason is required'
+    and pg_temp.err($$select public.admin_email_delivery_save('{"email_provider":"resend"}', 'x')$$) like 'Resend needs a from email%'
+    and pg_temp.err($$select public.admin_email_delivery_save('{"email_provider":"smtp"}', 'x')$$) = 'the provider is supabase or resend'
+    and pg_temp.err($$select public.admin_email_delivery_save('{"from_email":"not an address"}', 'x')$$) = 'the from email is not an email address'
+    and pg_temp.err($$select public.admin_email_delivery_save('{"sender_name":"A <b>"}', 'x')$$) like 'the sender name is 1 to 80 characters%', 'email delivery: a save needs a reason, a known provider, a from email for Resend and a plain sender name');
+  m := pg_temp.err($$select public.admin_email_delivery_save('{"resend_api_key":"sk_wrongshape_SECRETVALUE"}', 'x')$$);
+  perform pg_temp.ok(m like 'the Resend API key must begin re_%' and m not like '%SECRETVALUE%', 'email delivery: a key of the wrong shape is refused and not echoed');
+  r := public.admin_email_delivery_save('{"email_provider":"resend","from_email":" NoReply@Example.org ","resend_api_key":"re_FixtureKey_1234abcd"}', 'route through Resend');
+  perform pg_temp.ok((r->>'key_replaced')::boolean and r->'changed' @> '["email_provider","from_email","resend_api_key"]'::jsonb and r#>>'{delivery,from_email}' = 'noreply@example.org'
+    and (r#>>'{delivery,key_saved}')::boolean and r#>>'{delivery,key_hint}' = 'abcd' and r::text not like '%re_FixtureKey%', 'email delivery: the save stores the key and returns only its last four characters');
+  perform pg_temp.ok((select count(*) from vault.secrets where name = 'admin_resend_api_key' and secret = 're_FixtureKey_1234abcd') = 1
+    and (select setting_value::text not like '%FixtureKey%' and management_mode = 'read_only' from pipeline.environment_settings where setting_key = 'admin_email_delivery')
+    and (select count(*) from pipeline.admin_control_events where action = 'email_delivery_save' and detail->>'reason' = 'route through Resend' and (detail->>'key_replaced')::boolean and detail::text not like '%FixtureKey%') = 1
+    and public.admin_email_delivery_read()::text not like '%FixtureKey%', 'email delivery: the key is in Vault only; not in the settings row, the control log or the read');
+  r := public.admin_email_delivery_save('{"sender_name":"StudySearch Team","resend_api_key":"  "}', 'rename sender');
+  perform pg_temp.ok(not (r->>'key_replaced')::boolean and r->'changed' = '["sender_name"]'::jsonb and r#>>'{delivery,key_hint}' = 'abcd' and r#>>'{delivery,email_provider}' = 'resend'
+    and (select secret from vault.secrets where name = 'admin_resend_api_key') = 're_FixtureKey_1234abcd', 'email delivery: an empty key field keeps the stored key; other fields change alone');
+  r := public.admin_email_delivery_save('{"resend_api_key":"re_SecondKey_9876wxyz"}', 'rotate key');
+  perform pg_temp.ok((select count(*) from vault.secrets where name = 'admin_resend_api_key') = 1 and (select secret from vault.secrets where name = 'admin_resend_api_key') = 're_SecondKey_9876wxyz' and r#>>'{delivery,key_hint}' = 'wxyz', 'email delivery: a new key replaces the stored one');
+  perform pg_temp.ok(pg_temp.err($$select public.svc_admin_email_delivery()$$) = 'service role required', 'email delivery: the key read is refused to a signed-in Platform Admin');
+  perform set_config('fixture.role', 'service_role', true);
+  perform pg_temp.ok(public.svc_admin_email_delivery()->>'resend_api_key' = 're_SecondKey_9876wxyz' and public.svc_admin_email_delivery()->>'email_provider' = 'resend', 'email delivery: the service role reads the settings and the key');
+  perform pg_temp.ok(not has_function_privilege('anon', 'public.admin_email_delivery_save(jsonb, text)', 'execute') and not has_function_privilege('authenticated', 'public.svc_admin_email_delivery()', 'execute') and not has_function_privilege('anon', 'public.admin_email_delivery_read()', 'execute'), 'email delivery: anon reaches nothing; the key read is not callable from the browser');
   perform pg_temp.ok(not has_function_privilege('anon', 'public.admin_auth_template_settings_save(jsonb, text)', 'execute') and not has_function_privilege('authenticated', 'public.svc_admin_auth_template_settings()', 'execute'), 'anon reaches nothing; the service functions are not callable from the browser');
 end $t$;
 SQL

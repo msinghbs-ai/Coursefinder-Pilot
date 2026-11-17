@@ -9,7 +9,7 @@
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 // Check the admin copy with `node scripts/export-sops.mjs --check-mirror <coursefinder-admin/docs/sops>` (SS-016 UR-03): it exits 1 on drift.
 
-export const SOP_REVIEWED_FOR = '2.16.22'
+export const SOP_REVIEWED_FOR = '2.16.23'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -45,7 +45,7 @@ const step = (o) => o
 
 export const SOPS = [
   {
-    id: 'admin-sop', title: 'Platform Admin SOP', version: '2.48', audience: 'Platform Admin (role rank 6)',
+    id: 'admin-sop', title: 'Platform Admin SOP', version: '2.49', audience: 'Platform Admin (role rank 6)',
     purpose: 'How the Platform Admin runs StudySearch day to day: the approvals only you can give, the budgets and models you own, and the checks that keep automatic admission trustworthy.',
     owns: ['Admitting university adapters (Layer 2/3 › Universities)', 'Approving central pages: fee schedules, English policies, academic calendars', 'AI models, their order, AI admission and the AI allowances', 'Firecrawl and OpenRouter budgets and service keys', 'Onboarding settings, Retry and Stop', 'Users and roles; new countries; go-live'],
     schedule: [
@@ -127,7 +127,8 @@ export const SOPS = [
       'Scholarships withdrawn by the nightly review: a jump means a rule changed or a site moved its pages.',
     ],
     escalate: ['A job that fails the same way after a fix, a worker refusing work ("invalid key", "nonce"), or data written where it should not be: pause the job, note what you saw, raise it with the platform engineer with the change-control reference (CF-247).'],
-    changes: [{ version: '2.48', date: '17 Nov 2026', release: '2.16.22', change: 'Email templates reach Supabase Auth through the admin workflow supabase-auth-config.yml (or Copy HTML), not from the screen. Go-live checklist: Auth custom SMTP (Resend) before production.' },
+    changes: [{ version: '2.49', date: '17 Nov 2026', release: '2.16.23', change: 'Links & Email Templates › Email delivery provider: send invitations and resets through Resend (sender name, from email, write-only API key). Replace the key by typing a new one; rotate it in Resend if it may have been seen.' },
+      { version: '2.48', date: '17 Nov 2026', release: '2.16.22', change: 'Email templates reach Supabase Auth through the admin workflow supabase-auth-config.yml (or Copy HTML), not from the screen. Go-live checklist: Auth custom SMTP (Resend) before production.' },
       { version: '2.47', date: '17 Nov 2026', release: '2.16.21', change: 'Users & roles: Resend invite for a person who has not accepted yet. Links & Email Templates: when the warning shows, the emails are not copied to Supabase Auth; copy the HTML and paste it in the dashboard, or set the management token.' },
       { version: '2.46', date: '17 Nov 2026', release: '2.16.20', change: 'Users & roles › Links & Email Templates: change the Admin Site URL, the guide link and the Invite User and Reset Password emails with a reason; check the line that says whether the save was copied to Supabase Auth.' },
       { version: '2.45', date: '17 Nov 2026', release: '2.16.16', change: 'Users & roles: Reset password for another person (not a Platform Admin); invitations carry the full name, role and Platform guide link, and their link opens the admin sign-in, which asks for the password first. Catalogue lists: Export CSV (visible or all columns, the whole filtered list).' },
