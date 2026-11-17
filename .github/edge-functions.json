@@ -43,6 +43,7 @@
     "layer1-ca-sk-programs": false,
     "layer1-ca-stclair-programs": false,
     "layer1-ca-stlawrence-programs": false,
+    "layer1-destination-geo-loader": false,
     "layer1-nz-live": true,
     "layer1-operations-control": false,
     "layer1-operations-scheduled": false,
