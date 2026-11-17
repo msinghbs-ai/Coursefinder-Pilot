@@ -361,12 +361,12 @@ grant execute on function public.admin_ops_telemetry(), public.admin_source_rete
 
 -- 8. The register
 insert into pipeline.component_register (kind, name, layer, area, purpose, status, replaces, introduced_in) values
-  ('table', 'pipeline.source_retention_policies', 'Platform', 'Housekeeping', 'Per-source keep period for applied staging rows', 'active', '{}', '20261117190000'),
-  ('table', 'pipeline.staging_hash_ledger', 'Platform', 'Housekeeping', 'Hashes of staging rows removed by housekeeping-daily, kept 7 years', 'active', '{}', '20261117190000'),
-  ('function', 'security.staging_retention_v1', 'Platform', 'Housekeeping', 'Removes (or reports) applied staging rows past their keep period', 'active', '{}', '20261117190000'),
-  ('view', 'pipeline.ops_l1_apply_latency_v', 'Platform', 'Operations telemetry', 'Layer 1 register apply latency per chunk', 'active', '{}', '20261117190000'),
-  ('view', 'pipeline.ops_l4_escalation_by_source_v', 'Platform', 'Operations telemetry', 'Layer 4 escalation rate per source', 'active', '{}', '20261117190000'),
-  ('view', 'pipeline.ops_boost_vs_pr3_throughput_v', 'Platform', 'Operations telemetry', 'Nightly Boost against daytime PR 3 throughput', 'active', '{}', '20261117190000')
+  ('table', 'pipeline.source_retention_policies', 'Platform', 'Housekeeping', 'Per-source keep period for applied staging rows', 'active', '{}', '20261117200000'),
+  ('table', 'pipeline.staging_hash_ledger', 'Platform', 'Housekeeping', 'Hashes of staging rows removed by housekeeping-daily, kept 7 years', 'active', '{}', '20261117200000'),
+  ('function', 'security.staging_retention_v1', 'Platform', 'Housekeeping', 'Removes (or reports) applied staging rows past their keep period', 'active', '{}', '20261117200000'),
+  ('view', 'pipeline.ops_l1_apply_latency_v', 'Platform', 'Operations telemetry', 'Layer 1 register apply latency per chunk', 'active', '{}', '20261117200000'),
+  ('view', 'pipeline.ops_l4_escalation_by_source_v', 'Platform', 'Operations telemetry', 'Layer 4 escalation rate per source', 'active', '{}', '20261117200000'),
+  ('view', 'pipeline.ops_boost_vs_pr3_throughput_v', 'Platform', 'Operations telemetry', 'Nightly Boost against daytime PR 3 throughput', 'active', '{}', '20261117200000')
 on conflict do nothing;
 
 -- 9. Post-checks

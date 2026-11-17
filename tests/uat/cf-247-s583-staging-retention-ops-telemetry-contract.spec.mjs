@@ -1,9 +1,9 @@
 // Guards: Staging retention and operations telemetry (Platform Admin 17 Nov 2026 18:02 and 18:25): housekeeping-daily removes only applied staging rows past their keep period (90 days, per source if set), writes each removed row's hash to a 7-year ledger first, never touches editions or evidence, and is a dry run until retention.staging_prune_on is 1; the unreferenced-evidence purge keeps evidence 7 years; the telemetry views are read only and closed to anon and authenticated; migrations are dry-run on the live project by GitHub Actions inside a transaction that is always rolled back
-// CF-247 S583. Migration 20261117190000_cf247_staging_retention_and_ops_telemetry, workflow db-migration-dry-run.yml. G1, G2, G3 and housekeeping are guarded centrally by s42, s32 and s57.
+// CF-247 S583. Migration 20261117200000_cf247_staging_retention_and_ops_telemetry, workflow db-migration-dry-run.yml. G1, G2, G3 and housekeeping are guarded centrally by s42, s32 and s57.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261117190000_cf247_staging_retention_and_ops_telemetry.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations/20261117200000_cf247_staging_retention_and_ops_telemetry.sql', 'utf8')
 const code = M.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const between = (a, b) => code.slice(code.indexOf(a), code.indexOf(b, code.indexOf(a)))
 const ret = between('create or replace function security.staging_retention_v1', 'revoke all on function security.staging_retention_v1')
