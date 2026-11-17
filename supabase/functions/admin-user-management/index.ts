@@ -30,6 +30,40 @@ function toAuthTemplate(text: string, guideLink: string): string {
 // A Supabase personal access token with access to this project, kept as an Edge Function secret (a secret's name cannot begin SUPABASE_)
 const managementToken = () => String(Deno.env.get("SB_MANAGEMENT_TOKEN") || "").trim();
 const projectRef = (url: string) => { try { return new URL(url).hostname.split(".")[0]; } catch { return ""; } };
+// v2.16.23 (Platform Admin 17 Nov 2026 16:24): email delivery provider. With Resend chosen, a from address and a key (saved on Links & Email
+// Templates and kept in Vault, or the Edge Function secret RESEND_API_KEY), invitations and resets are written from the saved templates and sent
+// through Resend with the saved sender name. Otherwise Supabase's built-in mail service sends them, as before. The key is never returned or logged.
+type Delivery = { configured: string; effective: "resend" | "supabase"; key: string; keySource: "saved" | "edge_secret" | null; senderName: string; fromEmail: string; templates: any; guideLink: string };
+async function loadDelivery(serviceClient: any): Promise<Delivery> {
+  const [{ data: d }, { data: tpl }] = await Promise.all([serviceClient.rpc("svc_admin_email_delivery"), serviceClient.rpc("svc_admin_auth_template_settings")]);
+  const saved = String(d?.resend_api_key || "").trim(), env = String(Deno.env.get("RESEND_API_KEY") || "").trim();
+  const key = saved || env, fromEmail = String(d?.from_email || "").trim();
+  const configured = d?.email_provider === "resend" ? "resend" : "supabase";
+  return { configured, effective: configured === "resend" && key && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fromEmail) ? "resend" : "supabase", key,
+    keySource: saved ? "saved" : env ? "edge_secret" : null, senderName: String(d?.sender_name || "StudySearch PIM Admin"), fromEmail,
+    templates: tpl?.templates || null, guideLink: String(tpl?.guide_link || "") };
+}
+// One saved template with a person's values written in. In the body every value is HTML-escaped; a missing name takes its comma or space with it.
+function renderEmail(text: string, v: Record<string, string>, html: boolean): string {
+  const out = (x: string) => html ? escHtml(x) : x;
+  return String(text || "")
+    .replace(/(,?[ ]?)\{\{\s*user_name\s*\}\}/g, (_m, lead) => v.user_name ? lead + out(v.user_name) : "")
+    .replace(/\{\{\s*(link|guide_link|user_email|role)\s*\}\}/g, (_m, t) => out(String(v[t] || "")));
+}
+async function sendViaResend(d: Delivery, to: string, kind: "invite" | "recovery", v: Record<string, string>, subjectPrefix = ""): Promise<void> {
+  const t = d.templates?.[kind];
+  if (!t?.subject || !t?.body) throw new Error("email_template_not_found");
+  const r = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { authorization: `Bearer ${d.key}`, "content-type": "application/json" },
+    body: JSON.stringify({ from: `${d.senderName} <${d.fromEmail}>`, to: [to], subject: subjectPrefix + renderEmail(t.subject, v, false), html: renderEmail(t.body, v, true) }),
+    signal: AbortSignal.timeout(15000), // fixed: API time-out
+  });
+  if (!r.ok) {
+    const j: any = await r.json().catch(() => ({}));
+    throw new Error(`resend_${r.status}_${String(j?.name || j?.message || "send_failed").replace(/re_[A-Za-z0-9_-]+/g, "re_…").slice(0, 160)}`);
+  }
+}
 const SYSTEM_EMAIL = /\.invalid$/i;
 const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -113,7 +147,9 @@ Deno.serve(async (req: Request) => {
   try {
     // v2.16.20: Links & Email Templates. Where links return to and whether a save can be copied to Supabase Auth from here.
     if (action === "auth_templates_status") {
-      return reply(req, 200, { ok: true, login_url: adminLoginUrl(), management_token_configured: managementToken().length > 0 });
+      const d = await loadDelivery(serviceClient);
+      return reply(req, 200, { ok: true, login_url: adminLoginUrl(), management_token_configured: managementToken().length > 0,
+        delivery: { configured: d.configured, effective: d.effective, key_source: d.keySource, sender_name: d.senderName, from_email: d.fromEmail } });
     }
     // Copy the saved settings to Supabase Auth (site_url, and the Invite user and Reset password subjects and bodies). The save itself, with its
     // reason, is public.admin_auth_template_settings_save; this only pushes what is saved. Without a management token nothing is changed.
@@ -145,10 +181,24 @@ Deno.serve(async (req: Request) => {
     // arrives. An invitation cannot be tested this way: Auth only sends one by creating the account.
     if (action === "auth_template_test") {
       const template = String(body?.template || "recovery");
-      if (template !== "recovery") return reply(req, 409, { error: "an_invitation_is_tested_by_inviting_a_new_address_from_create_user" });
       const { data: me } = await serviceClient.auth.admin.getUserById(actorUserId);
       const to = String(body?.to || me?.user?.email || "").trim().toLowerCase();
       if (!emailRe.test(to) || SYSTEM_EMAIL.test(to)) return reply(req, 400, { error: "valid_test_email_required" });
+      // v2.16.23: through Resend either saved template can be tested, to any address, with sample values and a link that signs nobody in
+      const delivery = await loadDelivery(serviceClient);
+      if (delivery.effective === "resend") {
+        if (template !== "invite" && template !== "recovery") return reply(req, 400, { error: "template_is_invite_or_recovery" });
+        const login = adminLoginUrl();
+        let note = "sent";
+        try {
+          await sendViaResend(delivery, to, template, { link: login + "#test-email-link-signs-nobody-in", guide_link: delivery.guideLink || guideUrl(login),
+            user_email: to, user_name: String(me?.user?.user_metadata?.full_name || ""), role: "Platform Admin" }, "[Test] ");
+        } catch (e) { note = e instanceof Error ? e.message : "send_failed"; }
+        await serviceClient.rpc("svc_admin_auth_template_log", { p_actor: actorUserId, p_action: "auth_template_test", p_detail: { template, sent_to: to, provider: "resend", synced: note === "sent", note } });
+        if (note !== "sent") return reply(req, 400, { error: note });
+        return reply(req, 200, { ok: true, sent_to: to, template, provider: "resend" });
+      }
+      if (template !== "recovery") return reply(req, 409, { error: "an_invitation_is_tested_by_inviting_a_new_address_from_create_user" });
       const known = (await listAuthUsers(serviceClient)).some((u: any) => String(u.email || "").toLowerCase() === to && !u.deleted_at);
       if (!known) return reply(req, 409, { error: "test_address_has_no_account_a_reset_email_only_goes_to_an_existing_user" });
       const { error: testError } = await serviceClient.auth.resetPasswordForEmail(to, { redirectTo: adminLoginUrl() });
@@ -219,6 +269,7 @@ Deno.serve(async (req: Request) => {
       if (!roles.length) return reply(req, 400, { error: "at_least_one_role_required" });
 
       let createdUser: any = null;
+      let sentBy = "supabase";
       if (mode === "password") {
         const password = String(body?.password || "");
         if (password.length < 12) return reply(req, 400, { error: "password_minimum_12_characters" });
@@ -238,9 +289,7 @@ Deno.serve(async (req: Request) => {
         const login = adminLoginUrl();
         const { data: savedTpl } = await serviceClient.rpc("svc_admin_auth_template_settings");
         const savedGuide = String(savedTpl?.guide_link || "");
-        const { data, error } = await serviceClient.auth.admin.inviteUserByEmail(email, {
-          redirectTo: login,
-          data: {
+        const inviteData = {
             created_via: "coursefinder_admin",
             account_purpose: "staff",
             role: top ? String(top.name || top.code) : roles[0],
@@ -249,10 +298,29 @@ Deno.serve(async (req: Request) => {
             full_name: fullName || null,
             // v2.16.20: the Admin guide link saved on Users & roles › Links & Email Templates, when there is one
             ...(savedGuide ? { guide_url: savedGuide } : {}),
-          },
+        };
+        const delivery = await loadDelivery(serviceClient);
+        if (delivery.effective === "resend") {
+          // v2.16.23: Supabase Auth makes the account and the single-use link without sending; the email goes through Resend from the saved template
+          const { data, error } = await serviceClient.auth.admin.generateLink({ type: "invite", email, options: { redirectTo: login, data: inviteData } });
+          const link = String(data?.properties?.action_link || "");
+          if (error || !data?.user || !link) return reply(req, 409, { error: error?.message || "user_invite_failed" });
+          try {
+            await sendViaResend(delivery, email, "invite", { link, guide_link: String(inviteData.guide_url), user_email: email, user_name: fullName, role: String(inviteData.role) });
+          } catch (e) {
+            await serviceClient.auth.admin.deleteUser(data.user.id).catch(() => undefined); // nothing was sent, so no account is left behind
+            return reply(req, 502, { error: e instanceof Error ? e.message : "invitation_email_failed" });
+          }
+          createdUser = data.user;
+          sentBy = "resend";
+        } else {
+        const { data, error } = await serviceClient.auth.admin.inviteUserByEmail(email, {
+          redirectTo: login,
+          data: inviteData,
         });
         if (error || !data?.user) return reply(req, 409, { error: error?.message || "user_invite_failed" });
         createdUser = data.user;
+        }
       }
 
       const { data: roleState, error: roleError } = await serviceClient.rpc("svc_admin_access_replace_roles", {
@@ -273,7 +341,7 @@ Deno.serve(async (req: Request) => {
         p_action: eventAction,
         p_before_state: {},
         p_after_state: { email, roles: roleState?.roles || [], confirmed: mode === "password" },
-        p_metadata: { mode, redirect_to: mode === "invite" ? adminLoginUrl() : null },
+        p_metadata: { mode, redirect_to: mode === "invite" ? adminLoginUrl() : null, ...(mode === "invite" ? { provider: sentBy } : {}) },
       });
       return reply(req, 201, { ok: true, user: { id: createdUser.id, email: createdUser.email || email, mode, roles: roleState?.roles || [] } });
     }
@@ -356,8 +424,20 @@ Deno.serve(async (req: Request) => {
         const { error: metaError } = await serviceClient.auth.admin.updateUserById(targetUserId, { user_metadata: meta });
         if (metaError) console.warn("admin-user-management: reset email data was not refreshed", metaError.message);
       }
+      const delivery = await loadDelivery(serviceClient);
+      if (delivery.effective === "resend") {
+        // v2.16.23: the single-use recovery link is made without sending; the email goes through Resend from the saved Reset Password template
+        const { data: rec, error: linkError } = await serviceClient.auth.admin.generateLink({ type: "recovery", email, options: { redirectTo: login } });
+        const link = String(rec?.properties?.action_link || "");
+        if (linkError || !link) return reply(req, 400, { error: linkError?.message || "password_reset_failed" });
+        const m = rec?.user?.user_metadata || target.user.user_metadata || {};
+        try {
+          await sendViaResend(delivery, email, "recovery", { link, guide_link: delivery.guideLink || guideUrl(login), user_email: email, user_name: String(m.full_name || ""), role: String(m.role || "") });
+        } catch (e) { return reply(req, 502, { error: e instanceof Error ? e.message : "password_reset_email_failed" }); }
+      } else {
       const { error: sendError } = await serviceClient.auth.resetPasswordForEmail(email, { redirectTo: login });
       if (sendError) return reply(req, 400, { error: sendError.message || "password_reset_failed" });
+      }
       // v2.16.19 (RM0F follow-up, Platform Admin 17 Nov 2026 13:12): the reset is written to the access history. Its action list took
       // password_reset_sent in migration 20261117040000. The email is already sent, so a failed log write never fails the request.
       const { error: logError } = await serviceClient.rpc("svc_admin_access_log_event", {
@@ -366,7 +446,7 @@ Deno.serve(async (req: Request) => {
         p_action: "password_reset_sent",
         p_before_state: {},
         p_after_state: { email },
-        p_metadata: { redirect_to: login },
+        p_metadata: { redirect_to: login, provider: delivery.effective },
       });
       if (logError) console.warn("admin-user-management: password_reset_sent was not logged", logError.message);
       return reply(req, 200, { ok: true, user_id: targetUserId, sent_to: email });
@@ -395,19 +475,30 @@ Deno.serve(async (req: Request) => {
       const login = adminLoginUrl();
       const { data: savedTpl } = await serviceClient.rpc("svc_admin_auth_template_settings");
       const old = target.user.user_metadata || {};
+      const againData = { ...old, guide_url: String(savedTpl?.guide_link || "") || guideUrl(login),
+          ...(top ? { role: String(top.name || top.code), role_code: String(top.code) } : {}) };
+      const delivery = await loadDelivery(serviceClient);
+      if (delivery.effective === "resend") {
+        const { data: again, error: linkError } = await serviceClient.auth.admin.generateLink({ type: "invite", email, options: { redirectTo: login, data: againData } });
+        const link = String(again?.properties?.action_link || "");
+        if (linkError || !link) return reply(req, 400, { error: linkError?.message || "invitation_resend_failed" });
+        try {
+          await sendViaResend(delivery, email, "invite", { link, guide_link: String(againData.guide_url), user_email: email, user_name: String(againData.full_name || ""), role: String(againData.role || "") });
+        } catch (e) { return reply(req, 502, { error: e instanceof Error ? e.message : "invitation_email_failed" }); }
+      } else {
       const { error: inviteError } = await serviceClient.auth.admin.inviteUserByEmail(email, {
         redirectTo: login,
-        data: { ...old, guide_url: String(savedTpl?.guide_link || "") || guideUrl(login),
-          ...(top ? { role: String(top.name || top.code), role_code: String(top.code) } : {}) },
+        data: againData,
       });
       if (inviteError) return reply(req, 400, { error: inviteError.message || "invitation_resend_failed" });
+      }
       const { error: logError } = await serviceClient.rpc("svc_admin_access_log_event", {
         p_actor_user_id: actorUserId,
         p_target_user_id: targetUserId,
         p_action: "user_invited",
         p_before_state: {},
         p_after_state: { email, confirmed: false },
-        p_metadata: { mode: "invite", resent: true, redirect_to: login },
+        p_metadata: { mode: "invite", resent: true, redirect_to: login, provider: delivery.effective },
       });
       if (logError) console.warn("admin-user-management: the resent invitation was not logged", logError.message);
       return reply(req, 200, { ok: true, user_id: targetUserId, sent_to: email });

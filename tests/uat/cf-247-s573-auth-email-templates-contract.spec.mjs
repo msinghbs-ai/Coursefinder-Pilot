@@ -1,4 +1,4 @@
-// Guards: Users & roles › Links & Email Templates (Platform Admin 17 Nov 2026 14:40): the Admin site URL, guide link and the Invite User and Reset Password emails are edited by a Platform Admin only, a save needs a reason and is logged, Supabase Auth is changed only through the edge function when a management token is set, the preview cannot run scripts, and the consumer API is not touched. Follow-up (Platform Admin 17 Nov 2026 15:45): an open invitation can be sent again from the user row, and while no management token is set the screen warns that Supabase Auth keeps the previous emails and offers the HTML to paste. Decisions (Platform Admin 17 Nov 2026 16:13): no account token is kept in the edge function (Auth is synced by the admin workflow), a missing name leaves no stray comma, and custom SMTP (Resend) is a Go-live checklist item.
+// Guards: Users & roles › Links & Email Templates (Platform Admin 17 Nov 2026 14:40): the Admin site URL, guide link and the Invite User and Reset Password emails are edited by a Platform Admin only, a save needs a reason and is logged, Supabase Auth is changed only through the edge function when a management token is set, the preview cannot run scripts, and the consumer API is not touched. Follow-up (Platform Admin 17 Nov 2026 15:45): an open invitation can be sent again from the user row, and while no management token is set the screen warns that Supabase Auth keeps the previous emails and offers the HTML to paste. Decisions (Platform Admin 17 Nov 2026 16:13): no account token is kept in the edge function (Auth is synced by the admin workflow), a missing name leaves no stray comma, and custom SMTP (Resend) is a Go-live checklist item. Email delivery provider (Platform Admin 17 Nov 2026 16:24): invitations and resets can go through Resend; the API key is write-only, kept in Vault, read by the service role only and never returned, logged or echoed.
 // Behaviour is proven on isolated PostgreSQL by tests/fixtures/admin-auth-email-templates/run.sh (workflow admin-auth-email-templates-test); these checks keep the rules in the migration, the edge function and the screen.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
@@ -88,7 +88,7 @@ test('Resend invite: an open invitation only, Platform Admin only, recorded in t
 })
 
 test('with no management token the screen warns and offers the HTML as Supabase Auth reads it', () => {
-  expect(screen).toContain('status&&status.management_token_configured===false&&<div className="aet-banner" role="alert" data-aet-no-token>')
+  expect(screen).toContain('status&&status.management_token_configured===false&&!viaResend&&<div className="aet-banner" role="alert" data-aet-no-token>')
   expect(screen).toContain('Saving here does not change the emails Supabase Auth sends.')
   expect(screen).toContain('supabase-auth-config.yml') // decision 17 Nov 2026 16:13: Auth is synced by the admin workflow; no account token in the edge function
   expect(screen).toContain('data-aet-copy-html>Copy HTML for Supabase Dashboard</Button>')
@@ -106,4 +106,54 @@ test('custom SMTP (Resend) is on the Go-live checklist as a deployment step; the
   expect(c).toContain('on conflict (setting_key) do nothing')
   expect(c).not.toMatch(/create (or replace )?(function|table)|\bupdate\b|smtp_pass\s*=|re_[A-Za-z0-9]{8,}/i)
   for (const l of g.split('\n')) expect(l).not.toMatch(/^(drop|delete|truncate)\b|^alter table .* drop /i)
+})
+
+test('email delivery: the Resend key is write-only, in Vault, and only the service role reads it', () => {
+  const d = read('supabase/migrations/20261117170000_cf247_admin_email_delivery_resend.sql')
+  const c = d.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
+  expect(d).toContain('-- Replaces: nothing.'); expect(d).toContain('-- Retires: nothing.')
+  expect(c).not.toMatch(/create table/i)
+  for (const l of d.split('\n')) expect(l).not.toMatch(/^(drop|delete|truncate)\b|^alter table .* drop /i)
+  expect(c).not.toMatch(/website_v2_|website_v3_|zoho_v2_|zoho_v3_|website_edge_|zoho_edge_|\bapi\./)
+  expect(c.match(/security\.current_role_rank\(\), 0\) < 6/g).length).toBe(2)
+  expect(c).toContain("perform vault.create_secret(v_key, 'admin_resend_api_key'"); expect(c).toContain('perform vault.update_secret(v_id, v_key);')
+  // the only place the key is read out is the service function; the read for the screen and the settings row never carry it
+  expect(c.match(/decrypted_secret\b/g).length).toBe(1)
+  expect(c).toContain("if coalesce(auth.role(), '') <> 'service_role' then raise exception 'service role required'")
+  expect(c).toContain('revoke all on function public.svc_admin_email_delivery() from public, anon, authenticated;')
+  const save = c.slice(c.indexOf('function public.admin_email_delivery_save'), c.indexOf('function public.svc_admin_email_delivery'))
+  expect(save).toContain("'key_replaced', v_key is not null"); expect(save).toContain("right(v_key, 4)")
+  expect(save).not.toMatch(/raise exception[^;]*%[^;]*v_key/) // no error message carries the key
+  expect(save).not.toMatch(/jsonb_build_object\([^;]*'resend_api_key', v_key/)
+})
+
+test('email delivery: with Resend in use the edge function makes the link without sending and sends the saved template through Resend', () => {
+  expect(edge).toContain('serviceClient.rpc("svc_admin_email_delivery")'); expect(edge).toContain('Deno.env.get("RESEND_API_KEY")')
+  expect(edge).toContain('effective: configured === "resend" && key && ')
+  expect(edge).toContain('fetch("https://api.resend.com/emails", {')
+  expect(edge).toContain('from: `${d.senderName} <${d.fromEmail}>`')
+  expect(edge.match(/generateLink\(\{ type: "invite", email, options: \{ redirectTo: login, data: /g).length).toBe(2) // Create user and Resend invite
+  expect(edge).toContain('generateLink({ type: "recovery", email, options: { redirectTo: login } })')
+  expect(edge.match(/if \(delivery\.effective === "resend"\)/g).length).toBe(4)
+  expect(edge).toContain('await serviceClient.auth.admin.deleteUser(data.user.id).catch(() => undefined); // nothing was sent, so no account is left behind')
+  // the key leaves only as the Resend bearer; the status answer names its source, never the key
+  expect(edge.match(/d\.key\b/g).length).toBe(1)
+  expect(edge).toContain('delivery: { configured: d.configured, effective: d.effective, key_source: d.keySource, sender_name: d.senderName, from_email: d.fromEmail } });')
+  expect(edge).not.toMatch(/console\.(log|warn|error)\([^)]*\bkey\b/)
+  // a person's values are HTML-escaped and a missing name takes its comma with it
+  const src = /function renderEmail\([\s\S]*?\n\}/.exec(edge)[0].replace('(text: string, v: Record<string, string>, html: boolean): string', '(text, v, html)').replace('(x: string)', '(x)')
+  const render = new Function('escHtml', `${src}; return renderEmail`)((v) => v.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'))
+  expect(render('<h2>Welcome, {{user_name}}</h2><a href="{{link}}">{{role}}</a>', { user_name: '', link: 'https://x.example/v?a=1&b=2', role: 'Curator' }, true)).toBe('<h2>Welcome</h2><a href="https://x.example/v?a=1&amp;b=2">Curator</a>')
+  expect(render('Welcome, {{ user_name }}', { user_name: '<b>Al</b>' }, true)).toBe('Welcome, &lt;b&gt;Al&lt;/b&gt;')
+})
+
+test('email delivery: the screen has the provider toggle, sender, from email and a masked key that is sent only when typed', () => {
+  for (const k of ['data-aet-delivery', 'data-aet-provider={k}', 'data-aet-sender-name', 'data-aet-from-email', 'data-aet-resend-key', 'data-aet-delivery-status']) expect(screen).toContain(k)
+  expect(screen).toContain("[['supabase','Supabase Built-in'],['resend','Resend API']]")
+  expect(screen).toContain('<input type="password" autoComplete="new-password" spellCheck={false} value={newKey}')
+  expect(screen).toContain("label={dv?.key_saved?`Saved (re_••••${dv.key_hint||''})`:'No key saved'}")
+  expect(screen).toContain("const payload={...dform,...(newKey.trim()?{resend_api_key:newKey.trim()}:{})}")
+  expect(screen).toContain("rpc('admin_email_delivery_save',{p_payload:payload,p_reason:why})")
+  expect(screen).toContain("setNewKey('');said.push(") // the typed key is cleared from the screen once saved
+  expect(screen.indexOf('data-aet-delivery>')).toBeLessThan(screen.indexOf('data-aet-templates>')) // above the template editor
 })
