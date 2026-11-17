@@ -46,6 +46,7 @@ worker: each reader hands it out from `security.ai_route_v1(<service>)`.
 | `index.ts:3694` | `ai_match` | `public.svc_coverage_ai_match_next` | course_matching | `routed` | worker cascade |
 | `index.ts:3832` | `adapter_propose` | `security.adapter_builder_model_for_v1 (through public.svc_adapter_draft_get)` | adapter_builder | `routed_single` | one model |
 | `index.ts:3870` | `induction_map` | `public.svc_layer1_induction_map_route_v1` (called by edge function `layer1-ai-induction-mapper` with a one-time nonce from `public.svc_pilot_issue_nonce`) | layer1_induction_map | `routed_single` | one model; the answer is a suggestion a person reviews in the Layer 1 induction wizard (worker v1.0.7, 17 Nov 2026) |
+| `index.ts:3915` | `boost_extract` | `public.svc_boost_extract_route_v1`, `public.svc_boost_extract_claim` (job `boost-extract`, inside the overnight Boost window) | boost_extract | `routed_single` | one model; result lines go to Storage `staging-boost/inbound` and are settled by `worker-boost-bulk-ingest`, shadow only until a model is qualified in `pipeline.boost_model_qualifications` (worker v1.0.9, 17 Nov 2026) |
 
 State: `routed` means the route's cascade is executed (a later model is asked only on a technical failure). `routed_single` means the route
 chooses the model but the call uses one model; Models & services shows one model and refuses a second one for these. `not_migrated` is
