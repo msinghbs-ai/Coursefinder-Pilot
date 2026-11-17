@@ -32,14 +32,14 @@ test('migration: the gate yields to dispatcher ticks only by its setting, earlie
 })
 
 test('worker v1.0.12: the page check is given the whole page, and a run reads a few pages at a time by its setting', () => {
-  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.13"')
+  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.14"')
   expect(IX).toContain('const v = verifyStudyLoad(ra.a, boostFlat(page), page);')
   expect(IX).toContain('const v = verifyStudyLoad(ra.a, pageFlat, page);')
   expect(IX).toContain('const par = boostParallel(ws); for (let i = 0; i < items.length; i += par) await Promise.all(items.slice(i, i + par).map(readOne));')
   expect(B.boostParallel({})).toBe(4)
   expect(B.boostParallel({ 'reading.boost_extract_parallel': 2 })).toBe(2)
   expect(B.boostParallel({ 'reading.boost_extract_parallel': 50 })).toBe(8)
-  expect(B.BOOST_STUDY_LOAD_PROMPT_VERSION).toBe('boost-study-load-v3')
+  expect(B.BOOST_STUDY_LOAD_PROMPT_VERSION).toBe('boost-study-load-v4')  // v4 from worker v1.0.14 (s614)
   expect(B.BOOST_SELECTOR).toBe('study-load-windows-v3')
   expect(B.BOOST_STUDY_LOAD_SYSTEM).toContain('International students first')
   expect(B.BOOST_STUDY_LOAD_SYSTEM).toContain('"basis": "international" | "general" | null')

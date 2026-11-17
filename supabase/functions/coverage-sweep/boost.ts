@@ -8,8 +8,7 @@
 // Page content is data: nothing here follows an instruction found on a page.
 
 export const BOOST_STUDY_LOAD_PROMPT_ID = "boost-study-load";
-export const BOOST_STUDY_LOAD_PROMPT_VERSION = "boost-study-load-v3";  // v2 (18 Nov 2026, Platform Admin decision 1): the study load for international students when the page states one; otherwise the course's general study load
-// Deployed with migration 20261118074500 (the first attempt, 20261118073000, stopped at its post-check before this worker was deployed).
+export const BOOST_STUDY_LOAD_PROMPT_VERSION = "boost-study-load-v4";  // v2 (18 Nov 2026, Platform Admin decision 1): the study load for international students when the page states one; otherwise the course's general study load
 export const BOOST_SELECTOR = "study-load-windows-v3";  // v3 (18 Nov 2026): sentences about international students and visas are sent again: they are the preferred basis (decision 1)
 export const BOOST_SELECTOR_INTERNATIONAL = "study-load-international-v1";  // only the sentences that state a study load for international students
 export const BOOST_ANSWER_KEY = "reading.answer_tokens.boost_extract";
@@ -45,16 +44,43 @@ const STUDY_WORDS = /(full|part)[\s-]?time/gi;
 //    must rest on it. (Worker v1.0.10 refused such sentences under REQ-52; that reading is replaced by this decision.)
 //  - A sentence that defines full-time or part-time study in general ("As a full-time student, you can expect to commit around 48 hours of
 //    study per week", given for 76 courses) is not a statement of the course's study load and is refused as a quote.
-const INTL_WORDS = /\binternational\b|\boverseas\b|\bvisas?\b|\bCRICOS\b/i;
-const DEFINITION_WORDS = /\b(full|part)[\s-]?time (study|load|enrolment|enrollment) (is|means|refers to)\b|\bas a (full|part)[\s-]?time student\b|\bis considered (full|part)[\s-]?time\b|\b(full|part)[\s-]?time students? (are expected|can expect|should expect|typically|usually|normally)\b/i;
+//  - v1.0.14 (first results of v1.0.13, 18 Nov 2026 08:38): a sentence counts as stating a study load for international students only when
+//    it names them (or a student visa) AND states a rule about how they may study: "must", "only", "not available", "visa holders", a
+//    labelled line ("International students: ... full-time"). A fee line ("International fee ... a standard full-time course load for a
+//    year"), an entry requirement ("two years full-time workplace experience") or a scholarship or fee note is never one.
+const INTL_WORDS = /\binternational\b|\boverseas\b|\bvisas?\b|\bCRICOS\b|\bnon[\s-]?visa\b/i;
+const INTL_RULE = /\b(must|only|required|requirement|not (be )?(available|offered|permitted|possible|eligible)|unavailable|cannot|can ?not|unable|restricted|eligible to apply for (an? )?(australian |new zealand |canadian )?student visa)\b|\bvisa holders?\b|\bon an? (student|subclass)\b|\bstudent visa\b|\binternational students?\s*[:\-–]|\b(international students?|visa holders?)\b[^.]{0,40}\b(is|are|be)\s+(full|part)[\s-]?time|\bless than an? (full|part)[\s-]?time\b/i;
+const NOT_A_LOAD_RULE = /\bfees?\b|\btuition\b|\bcost\b|\$\s?\d|\bcredit points?\b|\bexperience\b|\bemploy|\bscholarship|\bindicative\b|\bper (year|annum|semester|trimester)\b|\bloan\b|\bwork(ing)?\b[^.]{0,40}\b(hours|fortnight)\b|\bwork(ing)? (part|full)[\s-]?time\b|\bwork rights\b|\bneeds? an? (student )?visa\b|\bwhat visa\b/i;
+const DEFINITION_WORDS = /\b(full|part)[\s-]?time (study|load|enrolment|enrollment) (means|refers to|is defined|is when|is where|is an? |is \d|is (usually|typically|normally|generally))|\bas a (full|part)[\s-]?time student\b|\bis considered (full|part)[\s-]?time\b|\b(full|part)[\s-]?time students? (are expected|can expect|should expect|typically|usually|normally)\b|\bstandard (full|part)[\s-]?time (course |study )?load\b/i;
 const FULL = /full[\s-]?time/i, PART = /part[\s-]?time/i;
 const sentencesOf = (text: string) => String(text || "").split(/(?<=[.!?])\s+|\n+/).map((x) => x.trim()).filter(Boolean);
 // the sentences of the page that state a study load for international students
-export const internationalStudySentences = (page: string) => sentencesOf(page).filter((x) => INTL_WORDS.test(x) && (FULL.test(x) || PART.test(x)) && !DEFINITION_WORDS.test(x));
-// a load named only to say it is not offered ("part-time study is not available") does not count as offered
-const notOffered = (w: string) => new RegExp(`${w}[\\s-]?time( study| enrolment| enrollment| option)?( is| are)? (not |un)(available|offered|possible|permitted)|\\b(no|not (available|offered)( as| on a| for| in)?|cannot (study|enrol|enroll)( on a)?) ${w}[\\s-]?time`, "i");
-const NOT_PART = notOffered("part"), NOT_FULL = notOffered("full");
-const loadOf = (texts: string[]) => { const f = texts.some((x) => FULL.test(x) && !NOT_FULL.test(x)), p = texts.some((x) => PART.test(x) && !NOT_PART.test(x)); return f && p ? "both" : f ? "full_time" : p ? "part_time" : null };
+export const internationalStudySentences = (page: string) => sentencesOf(page).filter((x) => INTL_WORDS.test(x) && (FULL.test(x) || PART.test(x)) && INTL_RULE.test(x) && !NOT_A_LOAD_RULE.test(x) && !DEFINITION_WORDS.test(x));
+// Which loads a sentence offers. A load named only to say it is not offered, or offered only to others ("part-time study (only available
+// for non-visa students)", "Part-time equivalent study options are not available for international students"), does not count. When a
+// sentence about international students only rules a load out, it states the other one.
+// a phrase that rules out the load named just before it (within the clause), or the load named just after a negation
+const NEG_PHRASE = /\b(not (be )?(available|offered|permitted|possible)|unavailable|only (available|offered|open) (to|for) (domestic|non[\s-]?visa|australian|local|new zealand|citizens|permanent)|available (only )?(to|for) (domestic|non[\s-]?visa|local) (students|applicants))/gi;
+const NEG_BEFORE = /\b(no|not|cannot|can ?not|unable to|never)\b[^.;:,]{0,25}$/i;
+function offered(sentence: string): { full: boolean; part: boolean; ruledOut: { full: boolean; part: boolean } } {
+  const out = { full: false, part: false, ruledOut: { full: false, part: false } };
+  const hits = [...sentence.matchAll(/(full|part)[\s-]?time/gi)].map((m) => ({ w: (m[1].toLowerCase() === "full" ? "full" : "part") as "full" | "part", at: m.index || 0, end: (m.index || 0) + m[0].length, neg: false }));
+  for (const h of hits) if (NEG_BEFORE.test(sentence.slice(Math.max(0, h.at - 30), h.at))) h.neg = true;
+  for (const n of sentence.matchAll(NEG_PHRASE)) {
+    const nEnd = (n.index || 0) + n[0].length;
+    if (hits.some((h) => h.at >= nEnd && h.at - nEnd <= 12)) continue;  // "not available part-time": it rules out the load that follows
+    const before = hits.filter((h) => h.end <= (n.index || 0) && !/[.;:]/.test(sentence.slice(h.end, n.index || 0)) && (n.index || 0) - h.end <= 70);
+    if (before.length) before[before.length - 1].neg = true;
+  }
+  for (const h of hits) { if (h.neg) out.ruledOut[h.w] = true; else out[h.w] = true }
+  return out;
+}
+const loadOf = (texts: string[], forInternational = false) => {
+  let f = false, p = false, rf = false, rp = false;
+  for (const x of texts) { const o = offered(x); f ||= o.full; p ||= o.part; rf ||= o.ruledOut.full; rp ||= o.ruledOut.part }
+  if (forInternational && !f && !p) { if (rp && !rf) f = true; else if (rf && !rp) p = true }
+  return f && p ? "both" : f ? "full_time" : p ? "part_time" : null;
+};
 
 const settingNumber = (ws: Record<string, unknown> | null | undefined, key: string, fallback: number) => {
   const n = Number((ws || {})[key]);
@@ -148,10 +174,10 @@ export function verifyStudyLoad(answer: any, pageFlat: string, page = ""): Boost
   if (problems.length) return { ok: false, problems, quotes_checked: 0 };
   const q = String(answer.quote), flat = boostFlat(q);
   if (!(flat.length >= MIN_QUOTE_FLAT && pageFlat.includes(flat))) problems.push("quote 0 is not on the page");
-  const parts = sentencesOf(q), intlParts = parts.filter((x) => INTL_WORDS.test(x));
+  const parts = sentencesOf(q), intlParts = internationalStudySentences(q);
   // the basis is what the quote shows, whatever the model called it: a quoted sentence about international students decides the value
   if (intlParts.length) {
-    if (loadOf(intlParts) !== answer.study_load) problems.push("the study load is not what the quoted sentence states for international students");
+    if (loadOf(intlParts, true) !== answer.study_load) problems.push("the study load is not what the quoted sentence states for international students");
   } else {
     if (intl.length) problems.push("the page states a study load for international students; the answer does not use it");
     if (loadOf(parts) !== answer.study_load) problems.push("the quote does not state the study load it claims (never from delivery mode or duration alone)");
