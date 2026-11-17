@@ -269,7 +269,7 @@ do $t$ declare r jsonb; v_id uuid; v_src uuid; v_cur uuid; begin
 end $t$;
 SQL
 # Wave 2 register drafts (Platform Admin 17 Nov 2026 23:02): nine drafts are pre-staged; a draft is not a source and writes no retention policy
-W=supabase/migrations/20261118003000_cf247_wave2_register_drafts.sql
+W=supabase/migrations/20261118004000_cf247_wave2_register_drafts.sql
 if $P -1 -f $W >/dev/null 2>/tmp/liw_w.err; then echo "FAIL: the drafts migration applied without GB, US and CA or their schemes" >&2; exit 1; fi
 grep -q "prerequisite missing" /tmp/liw_w.err
 $P <<'SQL'

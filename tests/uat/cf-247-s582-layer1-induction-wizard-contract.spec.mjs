@@ -176,7 +176,7 @@ test('mocked browser: evidence captures and Layer 4 review items are two columns
 })
 
 test('Wave 2 register drafts (Platform Admin 17 Nov 2026 23:02): nine drafts are pre-staged; a draft is not a source, and the live IRCC list is not drafted again', () => {
-  const w = read('supabase/migrations/20261118003000_cf247_wave2_register_drafts.sql')
+  const w = read('supabase/migrations/20261118004000_cf247_wave2_register_drafts.sql')
   const c = w.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
   expect(w).toMatch(/^-- Replaces: nothing$/m); expect(w).toMatch(/^-- Retires: nothing$/m)
   for (const l of w.split('\n')) expect(l).not.toMatch(/^(drop|delete|truncate|update)\b|^alter table .* drop /i)
