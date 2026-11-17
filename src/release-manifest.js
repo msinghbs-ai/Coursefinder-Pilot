@@ -1,20 +1,22 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.18'
-export const PACKAGE_VERSION='0.1.440'
+export const UI_VERSION='2.16.19'
+export const PACKAGE_VERSION='0.1.441'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'17 Nov 2026',
-  title:'Destination data schema ready for loading; API v3 gains the destination action',
+  title:'Destination data page; campus localities in Layer 4; locality on API v3 providers',
   changes:[
-    'API v3 (website and Zoho): a new destination action returns approved localities with their figures, study rules and career outcomes. It returns empty lists until data is loaded and approved.',
-    'Destination data: tables for localities, postcode shares, locality figures and rule applicability are in place, ready for bulk loading. Approval of destination rows is the Platform Admin\'s, with a reason.',
-    'Settings › Pipeline settings › Destination data: three new settings (largest API page, review list size, postcode share for a primary locality match, 90%).'
+    'New page Catalogue › Destination data (Curator and above), with five tabs: Overview & editions, Localities & postcodes, City metrics & costs, Study rules, Careers & outcomes. Approval, publication and withdrawal are the Platform Admin\'s and always ask for a reason. The tables are empty until the first loads.',
+    'Layer 4 Review › Inbox: new kind Campus locality. A campus whose postcode is below the match share waits there; one decision settles the postcode for every campus in it.',
+    'Course detail › Recognition card: the schemes a course is registered under, the field-of-study scheme of its country, and the study rules proven for it. Provider detail: the primary campus, the locality each campus maps to, and provider registrations by scheme, with PGWP shown apart from the DLI number.',
+    'Platform health › Data delivery: Destination loads lists the destination load jobs with Run now, and what waits for a person.',
+    'API v3 provider (website and Zoho): each campus gains locality, null until its postcode has an approved match. The v2 APIs are unchanged.'
   ],
   bugFixes:[
-    'Administration › Users & roles: the access history can now record a password reset email (recorded from the next release of the reset action). The website and Zoho v2 APIs are unchanged.'
+    'Administration › Users & roles: sending a password reset email is now recorded in the access history.'
   ]
 }
 

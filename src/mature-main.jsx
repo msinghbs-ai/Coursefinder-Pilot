@@ -83,6 +83,7 @@ import{providerDescriptionRunApi}from'./provider-description-run-api'
 const ProcessResults=lazyPage(()=>import('./ProcessResults'))
 const LaneFunnels=lazyPage(()=>import('./LaneFunnels'))
 const DataDelivery=lazyPage(()=>import('./DataDelivery'))
+const DestinationData=lazyPage(()=>import('./DestinationData')) // v2.16.19 RM0F: Destination data page
 const Layer23Operations=lazyPage(()=>import('./Layer23Operations'))
 const ScreenUse=lazyPage(()=>import('./ScreenUse'))
 const AdapterBuilderTab=lazyPage(()=>import('./AdapterBuilderTab'))
@@ -395,6 +396,7 @@ function Page({pageKey,tab,requestedTab='',routeParams,rank,actorId,onError,navi
       // v2.15.301: Extraction is on Models & services › AI (old address redirects)
       case'entry':return <AerWorkspace tab={tab} rank={rank} onError={onError} navigate={navigate} routeParams={routeParams}/>
       case'scholarships':if(tab==='coverage')return <div className="m-page-stack"><ScholarshipCoverage rank={rank} onError={onError} navigate={navigate}/>{/* v2.16.0 (Platform Admin written review 13 Nov 2026 22:10): Coverage keeps the extraction's operational results and links to its configuration on Models & services › AI */}<LazyFold className="m-panel" data="scholarship-extraction" open={routeParams?.get?.('at')==='sch-extraction'} summary={<><strong data-anchor="sch-extraction">Extraction results</strong> <small>Pages waiting, cost today, re-check and re-read, and the AI's recent answers. Its configuration is in Models &amp; services</small></>}>{()=><ScholarshipExtraction part="results" onError={onError}/>}</LazyFold></div>;return <ScholarshipWorkspace rank={rank} onError={onError} navigate={navigate} initialId={focusId}/>
+      case'destination':return <DestinationData tab={tab} rank={rank} onError={onError}/> // v2.16.19 RM0F (decision G-2)
       case'rankings':
         if(tab==='compare')return <ComparisonWorkspace routeParams={routeParams} navigate={navigate} onError={onError}/>
         // v2.15.301 (Platform Admin, 20 Oct 2026): Ranking imports moved here from Reference data
