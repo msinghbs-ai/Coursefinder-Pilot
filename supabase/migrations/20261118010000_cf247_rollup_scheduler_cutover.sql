@@ -28,7 +28,7 @@ set local lock_timeout = '5s'; -- fixed: lock wait guard for the cron and target
 do $cut$
 declare
   v_from timestamptz := now() - interval '24 hours'; -- fixed: the 24-hour shadow cycle the dispatcher rule requires
-  v_n int; v_bad jsonb; r record;
+  v_n int; v_bad jsonb; v_t record;
 begin
   -- the gate
   if exists (select 1 from pipeline.rollup_targets where rollup_group = 'A' and mode = 'live') then
@@ -61,15 +61,15 @@ begin
   if v_n <> 25 then raise exception 'gate: % of 25 legacy jobs still carry the registered command and schedule and are active', v_n; end if;
 
   -- the cutover
-  for r in select t.target_code, t.legacy_job, j.jobid from pipeline.rollup_targets t join cron.job j on j.jobname = t.legacy_job
+  for v_t in select t.target_code, t.legacy_job, j.jobid from pipeline.rollup_targets t join cron.job j on j.jobname = t.legacy_job
             where t.rollup_group = 'A' and t.enabled order by t.target_code loop
-    perform cron.alter_job(r.jobid, active => false);
+    perform cron.alter_job(v_t.jobid, active => false);
     update pipeline.rollup_targets set mode = 'live', updated_at = now(),
            note = coalesce(note || '; ', '') || 'live from cutover 20261118010000 (Platform Admin 17 Nov 2026 23:07; 24-hour shadow, minute coverage matched)'
-     where target_code = r.target_code;
+     where target_code = v_t.target_code;
     insert into pipeline.admin_control_events (area, action, target, detail, actor)
-    values ('scheduler', 'dispatcher_cutover', r.legacy_job,
-            jsonb_build_object('dispatcher', 'rollup-scheduler', 'target', r.target_code, 'legacy_job_active', false, 'mode', 'live',
+    values ('scheduler', 'dispatcher_cutover', v_t.legacy_job,
+            jsonb_build_object('dispatcher', 'rollup-scheduler', 'target', v_t.target_code, 'legacy_job_active', false, 'mode', 'live',
                                'shadow_from', v_from, 'by', 'migration 20261118010000'), null);
   end loop;
 
