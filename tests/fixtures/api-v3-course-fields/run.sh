@@ -94,6 +94,19 @@ do $t$ declare v_au uuid := (select id from ref.countries where iso_alpha2 = 'AU
   perform pg_temp.ok((r->>'rows')::int = 3 and (r->>'rows_approved')::int = 2 and (r #>> '{figures,approved}')::int = 2, 'Overview & editions shows the same rows, rows approved and figures');
   r := security.destination_edition_publish_v1(v_ed, null);
   perform pg_temp.ok(r->>'status' = 'published' and (r->>'rows')::int = 2 and (select status from destination.editions where id = v_ed) = 'published', 'with approved localities the edition publishes');
+  -- a figures-only edition (climate averages on localities another edition wrote) counts and publishes on its figures
+  declare v_cl uuid; begin
+    insert into destination.editions(country_id, domain, edition_label, effective_from, status, source_url, source_owner, attribution_text, terms_status)
+    values (v_au, 'city_profiles', 'Climate 1', current_date, 'draft', 'https://www.bom.gov.au/', 'BOM', 'Source: BOM', 'approved') returning id into v_cl;
+    insert into destination.locality_metrics(locality_id, metric_category, metric_key, numeric_value, unit, reference_period, dataset_edition, source_url, attribution_text, status)
+    select l.id, 'climate', 'climate_annual_rainfall_mm', 600, 'mm', '1991-2020', 'Climate 1', 'https://www.bom.gov.au/', 'Source: BOM', 'draft' from destination.localities l where l.dataset_edition = 'Edition B';
+    r := security.destination_edition_rows_v1(v_cl);
+    perform pg_temp.ok((r->>'rows')::int = 3 and (r->>'rows_approved')::int = 0, 'a figures-only edition counts its 3 figures as rows, none approved yet');
+    update destination.locality_metrics set status = 'approved' where dataset_edition = 'Climate 1';
+    r := security.destination_edition_rows_v1(v_cl);
+    perform pg_temp.ok((r->>'rows_approved')::int = 2, 'an approved figure counts only on an approved locality (2 of 3)');
+    perform pg_temp.ok(security.destination_edition_publish_v1(v_cl, null)->>'status' = 'published', 'the figures-only edition publishes');
+  end;
   -- other domains keep their check
   insert into destination.editions(country_id, domain, edition_label, effective_from, status, source_url, source_owner, attribution_text, terms_status)
   values (v_au, 'study_rules', 'Rules 1', current_date, 'draft', 'https://immi.homeaffairs.gov.au/', 'Home Affairs', 'Source: Home Affairs', 'approved') returning id into v_sr;

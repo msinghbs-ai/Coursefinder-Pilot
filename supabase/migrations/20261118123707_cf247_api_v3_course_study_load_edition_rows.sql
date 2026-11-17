@@ -10,9 +10,10 @@
 --   * security.provider_accreditations_v3_v1(provider) (new): active accreditations whose expiry has not passed (AACSB, EQUIS, AMBA); [] when none.
 --     public.website_v3_provider_item adds them as item.accreditations.
 --   * security.destination_edition_rows_v1(edition) (new): the rows of an edition. A city profiles edition holds its city profile rows plus the
---     localities its load wrote (destination.localities matched by country and dataset_edition = edition label), with their figures counted beside.
+--     localities its load wrote (destination.localities matched by country and dataset_edition = edition label), plus its figures that sit on
+--     another edition's localities (a figures-only edition such as climate averages, S2-Build #1256), with every figure counted beside.
 --     The ABS population load writes localities and figures, never city_profiles, so the edition showed 0 rows and Publish edition refused it.
---     security.destination_edition_publish_v1 now needs one approved locality (or profile) for a city profiles edition; other domains are unchanged.
+--     security.destination_edition_publish_v1 now needs one approved row (profile, locality, or figure on an approved locality) for a city profiles edition; other domains are unchanged.
 --     public.admin_destination_overview shows the same rows, rows approved and figures.
 --   The website and Zoho v2 surfaces and every frozen consumer function are untouched (G3): website_v3_* and zoho_v3_* are not in the frozen
 --   surface until v3 go-live (Decision 277). G1: no job. G2: no setting (the counts and lookups take no limit).
@@ -66,7 +67,7 @@ comment on function security.course_v3_fields_v1(jsonb, uuid) is 'CF-247 API v3 
 revoke all on function security.course_v3_fields_v1(jsonb, uuid) from public, anon, authenticated;
 
 create or replace function security.destination_edition_rows_v1(p_edition uuid) returns jsonb language plpgsql stable security definer set search_path = '' as $f$
-declare e destination.editions%rowtype; v_cc text; v_prof int := 0; v_loc int := 0; v_loc_ok int := 0; v_fig int := 0; v_fig_ok int := 0; v_rows int; v_ok int;
+declare e destination.editions%rowtype; v_cc text; v_prof int := 0; v_loc int := 0; v_loc_ok int := 0; v_fig int := 0; v_fig_ok int := 0; v_other int := 0; v_other_ok int := 0; v_rows int; v_ok int;
 begin
   select * into e from destination.editions x where x.id = p_edition;
   if not found then return null; end if;
@@ -80,10 +81,14 @@ begin
     select count(*), count(*) filter (where l.status in ('approved', 'published')) into v_loc, v_loc_ok
       from destination.localities l where l.country_code = v_cc and l.dataset_edition = e.edition_label;
     -- a figure is returned by the API only when it and its locality are approved or published
-    select count(*), count(*) filter (where m.status in ('approved', 'published') and l.status in ('approved', 'published')) into v_fig, v_fig_ok
+    select count(*), count(*) filter (where m.status in ('approved', 'published') and l.status in ('approved', 'published')),
+           count(*) filter (where l.dataset_edition is distinct from e.edition_label),
+           count(*) filter (where l.dataset_edition is distinct from e.edition_label and m.status in ('approved', 'published') and l.status in ('approved', 'published'))
+      into v_fig, v_fig_ok, v_other, v_other_ok
       from destination.locality_metrics m join destination.localities l on l.id = m.locality_id
      where l.country_code = v_cc and m.dataset_edition = e.edition_label;
-    v_rows := v_prof + v_loc; v_ok := v_prof + v_loc_ok;
+    -- a figures-only edition (for example climate averages on localities another edition wrote) counts its figures as its rows
+    v_rows := v_prof + v_loc + v_other; v_ok := v_prof + v_loc_ok + v_other_ok;
   end if;
   return jsonb_build_object('edition_id', e.id, 'domain', e.domain, 'rows', v_rows, 'rows_approved', v_ok,
            'city_profiles', case when e.domain = 'city_profiles' then v_prof end,
