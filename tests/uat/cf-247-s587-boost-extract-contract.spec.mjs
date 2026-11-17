@@ -1,5 +1,5 @@
 // Guards: Boost extraction (Platform Admin 17 Nov 2026 21:18 decision 1 and 22:05): Boost's AI calls go through worker coverage-sweep and the Models & services route boost_extract, pinned to one named allowed model, with no separate worker key; the job boost-extract runs only when its gate allows (the switch and the overnight Boost gate) and holds no number; courses are claimed in the order of the Boost priority matrix; every answer is checked against the whole stored page and a page with neither study word is never sent to a model; results go to Storage staging-boost/inbound and stay shadow because the change qualifies no model for admission
-// CF-247 S587. Migration 20261117235000_cf247_boost_extract, worker coverage-sweep v1.0.9 (boost.ts). G1, G2, G3 and housekeeping are guarded centrally by s42, s32 and s57.
+// CF-247 S587. Migration 20261117235000_cf247_boost_extract, worker coverage-sweep v1.0.9, then v1.0.10 (boost.ts: a visa rule is not a study load). G1, G2, G3 and housekeeping are guarded centrally by s42, s32 and s57.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { build } from 'esbuild'
@@ -52,7 +52,7 @@ test('courses are claimed in matrix order, once per stored page, and the table a
 })
 
 test('the worker asks the route\'s one model through cascadeFetch, never holds its own key path, and writes to staging-boost/inbound', () => {
-  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.9"')
+  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.10"')
   expect(mode).toContain('const gate = await rpc("svc_boost_extract_gate", {});')
   expect(mode).toContain('const route = await rpc("svc_boost_extract_route_v1", {});')
   expect(mode).toContain('if (route?.held) return j({ ok: true, mode, skipped:')
@@ -71,8 +71,8 @@ test('the worker asks the route\'s one model through cascadeFetch, never holds i
 test('boost.ts: only the parts around the study words are sent, and a page with neither is not sent at all', () => {
   const page = 'Intro text. '.repeat(300) + '\nStudy mode: available full-time (3 years) or part-time (6 years) on campus.\n' + 'Other text. '.repeat(400) + '\nInternational students must study Full Time.'
   const s = B.studyLoadSections(page, 6000)
-  expect(s.hits).toBe(3)
-  expect(s.selector).toBe('study-load-windows-v1')
+  expect(s.hits).toBe(2)   // the sentence about what international students must do is a visa rule, not counted
+  expect(s.selector).toBe('study-load-windows-v2')
   expect(s.text).toContain('available full-time (3 years) or part-time (6 years)')
   expect(s.chars).toBeLessThan(page.length / 4)
   expect(B.studyLoadSections('Delivered online and on campus over three years.', 6000)).toMatchObject({ hits: 0, selector: 'no_signal', text: '' })
@@ -86,7 +86,14 @@ test('boost.ts: only the parts around the study words are sent, and a page with 
 test('boost.ts: an answer passes only when its quote is on the whole page and states the study load it claims', () => {
   const flat = B.boostFlat('Study mode: available full-time (3 years) or part-time (6 years) on campus. International students must study Full Time. Delivered online.')
   expect(B.verifyStudyLoad({ study_load: 'both', quote: 'available full-time (3 years) or part-time (6 years)', reason: null }, flat).ok).toBe(true)
-  expect(B.verifyStudyLoad({ study_load: 'full_time', quote: 'International students must study Full Time.', reason: null }, flat).ok).toBe(true)
+  expect(B.verifyStudyLoad({ study_load: 'full_time', quote: 'International students must study Full Time.', reason: null }, flat).problems).toEqual(["the quote is a visa rule, not the course's study load (REQ-52)"])
+  // v1.0.10: a visa rule is refused as a quote and is not sent (first live results, 17 Nov 2026: 28 of 29 study loads rested on one)
+  const visa = 'Only a full-time study option is available to international students on a Student visa.'
+  expect(B.verifyStudyLoad({ study_load: 'full_time', quote: visa, reason: null }, B.boostFlat(visa)).problems).toEqual(["the quote is a visa rule, not the course's study load (REQ-52)"])
+  expect(B.studyLoadSections(`About the course. ${visa} Apply now.`, 6000)).toMatchObject({ hits: 0, selector: 'no_signal' })
+  const mixed = B.studyLoadSections(`${visa}\nStudy mode: full-time or part-time on campus.`, 6000)
+  expect(mixed.hits).toBe(2)
+  expect(B.verifyStudyLoad({ study_load: 'both', quote: 'Study mode: full-time or part-time on campus.', reason: null }, B.boostFlat(`${visa}\nStudy mode: full-time or part-time on campus.`)).ok).toBe(true)
   expect(B.verifyStudyLoad({ study_load: 'both', quote: 'International students must study Full Time.', reason: null }, flat).problems[0]).toContain('REQ-52')
   expect(B.verifyStudyLoad({ study_load: 'full_time', quote: 'this course is taught full-time in Sydney', reason: null }, flat).problems).toEqual(['quote 0 is not on the page'])
   expect(B.verifyStudyLoad({ study_load: 'full_time', quote: 'Delivered online.', reason: null }, flat).ok).toBe(false)   // never from delivery mode
