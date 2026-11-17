@@ -1,21 +1,20 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.32'
-export const PACKAGE_VERSION='0.1.454'
+export const UI_VERSION='2.16.33'
+export const PACKAGE_VERSION='0.1.455'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'17 Nov 2026',
-  title:'Destination data: Bulk Approve Drafts for city figures',
+  date:'18 Nov 2026',
+  title:'Layer 4 › Inbox: review grid, saved views and the source quote drawer',
   changes:[
-    'Destination data › City metrics & costs: new Bulk Approve Drafts button (Platform Admin). For each dataset edition with draft figures it shows how many are ready, and approves them all with one reason.',
-    'A draft figure without attribution text is left as draft and counted. Only draft figures change; a figure is returned by the API once its locality is approved too.',
-    'The action is recorded once in the control log, and each figure keeps who approved it, when and why.'
+    'Layer 4 › Inbox has a new Grid view: one kind of item at a time as rows, paged on the server, with a reason filter, a search, oldest or newest first, a column chooser and Export CSV.',
+    'Saved views: three shared views (AER Audit Samples, Official URLs, Provider Blockers) for everyone, changed by a Platform Admin only; anyone can save their own view of the filters and columns.',
+    'Opening a row shows the Source Quote vs Extracted Value drawer: the quote on the saved page beside the value it produced, the evidence link and the decision history, with the item\'s own decision buttons.',
+    'A view only chooses what is shown. The AER audit sample, the course-address rules and every decision path are unchanged.'
   ],
-  bugFixes:[
-    'The ILEP draft\'s note no longer says its scheme is still to be registered (it was registered on 18 Nov).'
-  ]
+  bugFixes:[]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

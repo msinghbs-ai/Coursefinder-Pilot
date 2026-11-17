@@ -1,7 +1,7 @@
-<!-- sop-export: id=operator-sop; version=2.23; reviewed-release=2.16.32; source-commit=c5a7650019cb+local; content-sha256=8218cd6091e24fdfca94295ec1d7882e5663a619f516744ee2d8d15bf6fe9f03 -->
+<!-- sop-export: id=operator-sop; version=2.24; reviewed-release=2.16.33; source-commit=1af49b915bfa+local; content-sha256=0f844d0d0a8176f0926af672a9cfae367e806ff9c78d5afe3b8bb16b4ec4db4e -->
 # StudySearch – Operator SOP
 
-**Version:** 2.23 (reviewed for platform release v2.16.32)  
+**Version:** 2.24 (reviewed for platform release v2.16.33)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -55,9 +55,10 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | # | Who | Do | Why | Done when |
 |---|---|---|---|---|
 | 1 | Pipeline Operator | Layer 4 › Inbox (Course link): oldest first. Open the stored page or document, then approve, correct or reject with a reason. A Curator reads the same items and corrects the course record where it is wrong. _(Layer 4 Review › Inbox)_ | These are values automation would not decide: sources disagree, only an unofficial source, a fee year that does not match. | The count falls day on day. |
-| 2 | Pipeline Operator | Layer 4 › Inbox (Held scholarship): for each page read the AI re-check and the stored page; Publish with the chosen answer, or refuse it (not for international students, or not a scholarship) with a reason. Your decision is kept for that page copy. _(Layer 4 Review › Inbox)_ | Scholarship pages no model could prove; admitted answers still pass the hourly publishing checks. | Oldest items cleared first. |
-| 3 | Pipeline Operator | Layer 4 › Inbox (Website needed): enter the official website for each university listed and Save (a Curator may find it and pass it on). _(Layer 4 Review › Inbox)_ | Onboarding cannot start without a website; it carries on by itself once one is saved. | List shorter; nothing guessed. |
-| 4 | Pipeline Operator | Layer 4 › Inbox (Counsellor report): oldest first. Check what the counsellor reported against the source link or the provider's page; correct the value where it is held, then close the report as Fixed, or Not changed with the reason. Zoho shows the outcome to the counsellor. _(Layer 4 Review › Inbox)_ | Counsellors in Zoho Creator and CRM see the data with students and report missing or wrong values on courses, institutes, campuses and contacts. | No report older than two working days. |
+| 2 | Curator | Layer 4 › Inbox › Grid: pick a saved view (AER Audit Samples, Official URLs, Provider Blockers or your own) or a kind, filter by the reason or a search, and open a row. The drawer shows the quote on the saved page beside the value it produced, the evidence link and the decision history; a Pipeline Operator decides the item there as on the other views. Export CSV writes the filtered rows; Save as my view keeps your filters and columns. _(Layer 4 Review › Inbox)_ | One kind at a time as rows is quicker to work through than item cards, and the quote beside the value shows at once whether the reading matches the page. | The view's count falls; nothing is decided without opening the row. |
+| 3 | Pipeline Operator | Layer 4 › Inbox (Held scholarship): for each page read the AI re-check and the stored page; Publish with the chosen answer, or refuse it (not for international students, or not a scholarship) with a reason. Your decision is kept for that page copy. _(Layer 4 Review › Inbox)_ | Scholarship pages no model could prove; admitted answers still pass the hourly publishing checks. | Oldest items cleared first. |
+| 4 | Pipeline Operator | Layer 4 › Inbox (Website needed): enter the official website for each university listed and Save (a Curator may find it and pass it on). _(Layer 4 Review › Inbox)_ | Onboarding cannot start without a website; it carries on by itself once one is saved. | List shorter; nothing guessed. |
+| 5 | Pipeline Operator | Layer 4 › Inbox (Counsellor report): oldest first. Check what the counsellor reported against the source link or the provider's page; correct the value where it is held, then close the report as Fixed, or Not changed with the reason. Zoho shows the outcome to the counsellor. _(Layer 4 Review › Inbox)_ | Counsellors in Zoho Creator and CRM see the data with students and report missing or wrong values on courses, institutes, campuses and contacts. | No report older than two working days. |
 
 ### Afternoon: follow-up
 
@@ -115,6 +116,7 @@ How operators keep the data flowing and decide what automation cannot: the revie
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.24 | 18 Nov 2026 | v2.16.33 | Layer 4 › Inbox › Grid: one kind at a time as rows with saved views (three shared views and your own), column choice and CSV export; a row opens the Source Quote vs Extracted Value drawer with the evidence and the decision history, where the item is decided as before. |
 | 2.23 | 17 Nov 2026 | v2.16.16 | Providers, Courses, Locations and Scholarships: Export CSV › Export visible columns or Export all columns writes the whole filtered list to a file Excel opens. Sign-in: Forgot password? sends your own reset link. |
 | 2.22 | 14 Nov 2026 | v2.16.1 | When AI work stops: read the limits banner at the top of Models & services › AI and the reasons listed under the service's state; a running row whose last call failed says so. |
 | 2.21 | 13 Nov 2026 | v2.16.0 | Models & services › AI is one page of four panes; when AI work stops, read the state line and the service row there and tell the Platform Admin. Scholarship extraction is configured under the Scholarship pages service; its results stay on Scholarships › Coverage. |
