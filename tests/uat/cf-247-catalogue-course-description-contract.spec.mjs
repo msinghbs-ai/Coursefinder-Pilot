@@ -36,7 +36,7 @@ test('migration 20261113153000: three md5-guarded edits, housekeeping lines, not
 test('the screen: a Course description filter sends description; the column shows the text (wrapped, Show all) or the field state', () => {
   expect(UI).toContain("const COURSE_DESCRIPTION_OPTIONS=[{value:'updated_24h',label:'Written by the reader in the last 24 hours'},{value:'updated_7d',label:'Written by the reader in the last 7 days'},{value:'populated',label:'Has a description'},{value:'missing',label:'No description'}]")
   expect(UI).toContain("<FilterSelect label=\"Course description\" value={filters.courseDescription||''} onChange={(v,l)=>patch('courseDescription',v,l)} options={COURSE_DESCRIPTION_OPTIONS}/>")
-  expect(UI).toContain('if(filters.courseDescription)a.description=filters.courseDescription}return a}')
+  expect(UI).toContain('if(filters.courseDescription)a.description=filters.courseDescription;if(filters.studyLoad)a.study_load=filters.studyLoad;if(filters.emptyReason)a.empty_reason=filters.emptyReason}')
   expect(COLS).toContain("case 'description': return <DescriptionText row={row} />")
   expect(COLS).toContain("if (!t) return <FieldState fs={(row.field_states || {}).description} />")
   expect(CSS).toMatch(/\.ccol-cdesc-text \{[^}]*-webkit-line-clamp: 5;[^}]*white-space: normal;/)

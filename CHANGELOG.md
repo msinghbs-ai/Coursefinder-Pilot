@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.451 — 18 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.29** (Platform Admin 18 Nov 2026 07:03, S1-RM-Design lane; UI audit of the new API v3 fields, slices A and B). Migration 20261118073000: md5-guarded edits of `security.admin_course_page_fast`, `security.admin_course_page_fast_base`, `security.course_list_with_extras_v1` (courses_page carries `study_load` and `empty_reason_code` and takes the `study_load` and `empty_reason` filters) and `public.admin_read` (campuses_page is read by the new `security.admin_campuses_page_v2`: Primary, Locality by postcode, `primary` and `locality` filters; `security.admin_campus_page_fast` marked retiring). Two partial indexes on `catalogue.courses`; two rows in the Course catalogue column registry (42). The ILEP induction draft is marked for its move to TrustEd Ireland. Held forward recovery: `supabase/held/course_campus_new_fields_forward_recovery.sql`. Guards: `s597`, fixture `course-campus-new-fields`.
+
 ## 0.1.450 — 17 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.28** (Platform Admin 17 Nov 2026 23:05, S1-RM-Design lane; UI audit of the new API v3 fields, first slice). Migration 20261118005000_cf247_admin_reference_tables_read: `public.admin_reference_table_read(kind, args)` (Curator and above, read-only, stable) pages `ref.api_field_dictionary` and `ref.grade_scale_conversions` with search and filters; setting `admin.reference_table_page_rows` (50). Reference data gains the types API field dictionary and Grade scale conversions. Guards: `s591`, fixture `admin-reference-tables`.

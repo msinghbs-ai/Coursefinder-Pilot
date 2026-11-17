@@ -1,17 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.28'
-export const PACKAGE_VERSION='0.1.450'
+export const UI_VERSION='2.16.29'
+export const PACKAGE_VERSION='0.1.451'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'17 Nov 2026',
-  title:'Reference data: API field dictionary and grade scale conversions to look up',
+  title:'Courses: Study load and Empty reason; Campuses: Primary and Locality',
   changes:[
-    'Reference data: two new types on the filter, API field dictionary and Grade scale conversions. Both are read-only lists with a search box, filters and pages. The dictionary is searched by field, endpoint, source column or request number, and filtered by API and version. Opens for Curator and above.',
-    'Grade scale conversions says plainly when none are loaded yet.',
-    'New setting Reference data: rows per page (Settings › Pipeline settings).'
+    'Catalogue › Courses: two new columns in the Columns picker, Study load (full-time, part-time, or both) and Empty reason (why a course\'s empty values are empty on purpose, shown as a badge). Both are off until you show them.',
+    'Catalogue › Courses: two new filters under Filters, Study load (including Not held) and Empty reason (any reason, one reason, or No reason recorded, which finds courses whose gaps are still to fill).',
+    'Catalogue › Providers › Campuses: new Primary column (badge) and Locality column. The locality is looked up from the campus postcode and says when it is still a draft in Destination data.',
+    'Campuses: new Primary filter and a Locality search box in the filter bar (type a name, press Enter).',
+    'The Campuses list now counts courses only for the rows on the page, so it opens faster.'
   ],
   bugFixes:[
   ]

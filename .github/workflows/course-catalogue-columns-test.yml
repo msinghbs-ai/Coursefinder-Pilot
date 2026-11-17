@@ -13,6 +13,10 @@ on:
       - 'supabase/migrations/*course_catalogue_columns*'
       - 'supabase/migrations/20261113153000_cf247_catalogue_course_description.sql'
       - 'tests/fixtures/catalogue-course-description/**'
+      - 'tests/fixtures/course-campus-new-fields/**'
+      - 'supabase/migrations/20261118073000_cf247_course_study_load_empty_reason_campus_primary_locality.sql'
+      - 'supabase/held/course_campus_new_fields_forward_recovery.sql'
+      - 'tests/uat/cf-247-s597-course-campus-new-fields-contract.spec.mjs'
       - 'tests/uat/cf-247-catalogue-course-description-contract.spec.mjs'
       - 'tests/fixtures/course-catalogue-columns/**'
       - 'tests/integration/course-columns-postgres.spec.mjs'
@@ -47,6 +51,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: CCOL_KEEP=1 bash tests/fixtures/course-catalogue-columns/run.sh | tee course-columns-sql-results.log
       - run: bash tests/fixtures/catalogue-course-description/run.sh | tee -a course-columns-sql-results.log
+      - run: bash tests/fixtures/course-campus-new-fields/run.sh | tee -a course-columns-sql-results.log
       - run: npx playwright test --config=playwright.course-columns.config.mjs
       - uses: actions/upload-artifact@v4
         if: always()
