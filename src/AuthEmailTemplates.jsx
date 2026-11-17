@@ -19,7 +19,7 @@ export const sampleValues=(siteUrl,guideLink)=>({link:`${String(siteUrl||'').rep
 export const renderTemplate=(text,values)=>String(text||'').replace(/\{\{\s*(link|guide_link|user_email|user_name|role)\s*\}\}/g,(_m,t)=>esc(values[t]))
 // what Supabase Auth wants in place of each token (the same translation admin-user-management makes when it copies a save to Auth)
 const AUTH_TOKENS={link:'{{ .ConfirmationURL }}',user_email:'{{ .Email }}',user_name:'{{ .Data.full_name }}',role:'{{ .Data.role }}'}
-export const toAuthTemplate=(text,guideLink)=>String(text||'').replace(/\{\{\s*(link|guide_link|user_email|user_name|role)\s*\}\}/g,(_m,t)=>t==='guide_link'?esc(guideLink):AUTH_TOKENS[t])
+export const toAuthTemplate=(text,guideLink)=>String(text||'').replace(/(,?[ ]?)\{\{\s*user_name\s*\}\}/g,(_m,lead)=>`{{ if .Data.full_name }}${lead}{{ .Data.full_name }}{{ end }}`).replace(/\{\{\s*(link|guide_link|user_email|role)\s*\}\}/g,(_m,t)=>t==='guide_link'?esc(guideLink):AUTH_TOKENS[t])
 export const unknownTokens=text=>[...new Set([...String(text||'').matchAll(/\{\{\s*([^{}]*?)\s*\}\}/g)].map(m=>m[1]).filter(t=>!TOKENS.includes(t)))]
 
 export default function AuthEmailTemplates({rank=0,onError,client=null,access=accessApi}){
@@ -52,7 +52,7 @@ export default function AuthEmailTemplates({rank=0,onError,client=null,access=ac
     setBusy('save');setNote('')
     try{const{data,error}=await rpc('admin_auth_template_settings_save',{p_payload:form,p_reason:why});if(error)throw error
       let sync=null;try{sync=await access.templatesSync()}catch(e){sync={synced:false,note:plainError(e)}}
-      setReason('');setNote(`Saved${data?.changed?.length?` (${data.changed.join(', ')})`:' (no change)'}. ${sync?.synced?'Supabase Auth now sends these emails.':sync?.note==='management_token_not_configured'?'Not copied to Supabase Auth: no management token is set for the edge function, so Auth keeps sending its current emails.':`Not copied to Supabase Auth (${sync?.note||'unknown'}).`}`);load()}
+      setReason('');setNote(`Saved${data?.changed?.length?` (${data.changed.join(', ')})`:' (no change)'}. ${sync?.synced?'Supabase Auth now sends these emails.':'Supabase Auth still sends the previous emails until the admin workflow supabase-auth-config.yml is run, or the copied HTML is pasted in the dashboard.'}`);load()}
     catch(e){const m=plainError(e);setNote(m);onError?.(m)}finally{setBusy('')}}
   // v2.16.21: the instant fallback while no management token is set. Copies the selected template as Supabase Auth reads it, to paste in the dashboard.
   async function copyForDashboard(what){const text=toAuthTemplate(what==='subject'?t.subject:t.body,form.guide_link)
@@ -66,8 +66,8 @@ export default function AuthEmailTemplates({rank=0,onError,client=null,access=ac
       <Button compact onClick={load} data-aet-refresh><RefreshCw size={13}/> Refresh</Button></div>
     {note&&<p className="aet-note" role="status" data-aet-note>{note}</p>}
     {status&&status.management_token_configured===false&&<div className="aet-banner" role="alert" data-aet-no-token>
-      <strong>Supabase Auth still holds the previous emails.</strong>
-      <p>Save &amp; Sync stores your templates here, but they are not sent until the secret <code>SB_MANAGEMENT_TOKEN</code> is set for the edge function. Until then invitations and resets go out with the template last pasted in the Supabase dashboard. To change them now, copy the selected template and paste it in the dashboard (Authentication › Emails).</p>
+      <strong>Saving here does not change the emails Supabase Auth sends.</strong>
+      <p>Save &amp; Sync stores your templates here with the reason. Supabase Auth is updated by the admin workflow <code>supabase-auth-config.yml</code> (Platform Admin decision 17 Nov 2026: no account token is kept in the edge function). Until that workflow is run, invitations and resets go out with the previous template. To change them straight away, copy the selected template and paste it in the Supabase dashboard (Authentication › Emails).</p>
       <div className="aet-actions"><Button compact onClick={()=>copyForDashboard('body')} data-aet-copy-html>Copy HTML for Supabase Dashboard</Button><Button compact onClick={()=>copyForDashboard('subject')} data-aet-copy-subject>Copy subject</Button><span className="sl-sub">Copies the {kind==='invite'?'Invite User':'Reset Password'} template selected below.</span></div>
     </div>}
     <section className="cf-card aet-card" data-aet-links><h3>Link settings</h3>
@@ -77,7 +77,7 @@ export default function AuthEmailTemplates({rank=0,onError,client=null,access=ac
         <label>Admin Guide Link <code>{'{{guide_link}}'}</code><input type="url" value={form.guide_link} onChange={e=>setForm(f=>({...f,guide_link:e.target.value}))} data-aet-guide-link placeholder={d.defaults.guide_link}/>
           <small>Written into the emails wherever <code>{'{{guide_link}}'}</code> appears.</small></label>
       </div>
-      <p className="sl-sub" data-aet-status>Links in the emails return to <strong>{status?.login_url||'the Admin sign-in'}</strong> (the edge function&rsquo;s own setting, which must also be listed under Redirect URLs in Supabase Auth). Copy to Supabase Auth on save: <StatusChip tone={status?.management_token_configured?'success':'warning'} label={status?.management_token_configured?'on':'off: no management token set'}/></p>
+      <p className="sl-sub" data-aet-status>Links in the emails return to <strong>{status?.login_url||'the Admin sign-in'}</strong> (the edge function&rsquo;s own setting, which must also be listed under Redirect URLs in Supabase Auth). Supabase Auth is updated: <StatusChip tone={status?.management_token_configured?'success':'neutral'} label={status?.management_token_configured?'on save':'by the admin workflow, not from this screen'}/></p>
     </section>
     <section className="cf-card aet-card" data-aet-templates><h3>Email templates</h3>
       <div className="pg-views" role="toolbar" aria-label="Template">{TEMPLATE_KINDS.map(([k,l])=><button key={k} type="button" className={`pg-view${kind===k?' is-on':''}`} aria-pressed={kind===k} data-aet-kind={k} onClick={()=>setKind(k)}>{l}</button>)}</div>

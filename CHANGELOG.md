@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.444 — 17 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.22** (Platform Admin 17 Nov 2026 16:13, S1-RM-Design lane). `admin-user-management` and the Copy HTML button: `{{user_name}}` becomes a conditional, so a missing name leaves no stray comma or space. Migration 20261117163000_cf247_golive_auth_custom_smtp: one Go-live checklist row `auth_custom_smtp` (Resend; pending; no value stored). Links & Email Templates wording: Supabase Auth is updated by the admin workflow (decision: no account token in the edge function). G3 untouched.
+
 ## 0.1.443 — 17 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.21** (Platform Admin 17 Nov 2026 15:45, S1-RM-Design lane). Edge function `admin-user-management`: action `resend_invite` (an unconfirmed, enabled, non-system account only; recorded as `user_invited` with `resent`). UI: Resend invite on the user row; Links & Email Templates shows a warning with Copy HTML for Supabase Dashboard while `SB_MANAGEMENT_TOKEN` is not set. No migration. G3 untouched.

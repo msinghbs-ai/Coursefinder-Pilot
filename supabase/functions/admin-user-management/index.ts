@@ -22,7 +22,10 @@ const guideUrl = (login: string) => login + "#platform-guide";
 const TEMPLATE_TOKENS: Record<string, string> = { link: "{{ .ConfirmationURL }}", user_email: "{{ .Email }}", user_name: "{{ .Data.full_name }}", role: "{{ .Data.role }}" };
 const escHtml = (v: string) => v.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 function toAuthTemplate(text: string, guideLink: string): string {
-  return String(text || "").replace(/\{\{\s*(link|guide_link|user_email|user_name|role)\s*\}\}/g, (_m, t) => t === "guide_link" ? escHtml(guideLink) : TEMPLATE_TOKENS[t]);
+  return String(text || "")
+    // v2.16.22 (Platform Admin 17 Nov 2026 16:13): a person with no name leaves no stray comma or space. "Welcome, {{user_name}}" reads "Welcome".
+    .replace(/(,?[ ]?)\{\{\s*user_name\s*\}\}/g, (_m, lead) => `{{ if .Data.full_name }}${lead}{{ .Data.full_name }}{{ end }}`)
+    .replace(/\{\{\s*(link|guide_link|user_email|role)\s*\}\}/g, (_m, t) => t === "guide_link" ? escHtml(guideLink) : TEMPLATE_TOKENS[t]);
 }
 // A Supabase personal access token with access to this project, kept as an Edge Function secret (a secret's name cannot begin SUPABASE_)
 const managementToken = () => String(Deno.env.get("SB_MANAGEMENT_TOKEN") || "").trim();
