@@ -1,7 +1,7 @@
-<!-- sop-export: id=admin-sop; version=2.57; reviewed-release=2.16.31; source-commit=c99bd69b2039+local; content-sha256=141d8f8275ceb049530b5f31392b85fa80fb7bc64f4e78ceca12bb389e823d98 -->
+<!-- sop-export: id=admin-sop; version=2.58; reviewed-release=2.16.32; source-commit=c5a7650019cb+local; content-sha256=4abd56eb0a6e53c6e9d1abe1e440fcf7115a78950bd901e5800be93b8b56048b -->
 # StudySearch – Platform Admin SOP
 
-**Version:** 2.57 (reviewed for platform release v2.16.31)  
+**Version:** 2.58 (reviewed for platform release v2.16.32)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -139,6 +139,7 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.58 | 18 Nov 2026 | v2.16.32 | Layer 4 Review › Review grid: the shared views AER Audit Samples, Official URLs and Provider Blockers are yours to change (Update this shared view, with a reason); everyone sees them. Open an item to compare the page quote with the value taken from it, then decide it in the Inbox. |
 | 2.57 | 18 Nov 2026 | v2.16.31 | Destination data › Localities & postcodes: Bulk Approve Drafts approves every clean draft locality of an edition with one reason (Platform Admin). Then approve the figures, record the edition terms and Publish edition on Overview & editions. |
 | 2.56 | 18 Nov 2026 | v2.16.30 | Platform health › Queues & yield › Boost queue: read each item with its Country tier and Priority score (worked out from the Boost priority settings when the list opens), filter by tier and sort by score. |
 | 2.55 | 18 Nov 2026 | v2.16.29 | Courses: show Study load and Empty reason from Columns and filter by them; an Empty reason of No reason recorded finds courses whose gaps are still to fill. Campuses: Primary badge and filter; Locality (from the postcode) and its search. |

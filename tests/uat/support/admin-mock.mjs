@@ -106,6 +106,23 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
       return { total: rows.length, all_rows: all.length, page_rows: 50, offset: a.offset || 0, sort: a.sort || 'score', direction: a.direction || 'desc', tiers: { tier_1: ['AU', 'NZ', 'CA'], tier_2: ['UK', 'IE', 'US'] },
         summary: [{ country_tier: 1, country_code: 'AU', lane: 'study_load', category: 'intakes_deadlines', priority_score: 80, items: 50, waiting: 0 }, { country_tier: 2, country_code: 'GB', lane: 'study_load', category: 'intakes_deadlines', priority_score: 40, items: 7, waiting: 0 }],
         filters: { countries: ['AU', 'DE', 'GB'], lanes: ['study_load'], states: ['rejected', 'verified'] }, rows: rows.slice(a.offset || 0, (a.offset || 0) + 50) } },
+    // Layer 4 Review › Review grid (v2.16.32, UI audit Phase 5 first slice): views, rows (answering the view, filters and offset), the drawer and view saves
+    admin_review_grid: b => { calls.push({ reviewGrid: b }); const a = b.p_args || {}
+      const views = [{ id: 'v-aer', scope: 'shared', view_key: 'aer_audit_samples', name: 'AER Audit Samples', description: 'Entry requirement reads held back as the audit sample.', filters: { kinds: ['aer_review'], why_codes: ['audit_sample'] }, sort: { key: 'created_at', direction: 'asc' } },
+        { id: 'v-url', scope: 'shared', view_key: 'official_urls', name: 'Official URLs', description: 'Proposed official course pages.', filters: { kinds: ['course_link'], field_codes: ['official_course_url'] }, sort: { key: 'provider', direction: 'asc' } },
+        { id: 'v-blk', scope: 'shared', view_key: 'provider_blockers', name: 'Provider Blockers', description: 'Universities held at onboarding or reading.', filters: { kinds: ['site_down', 'website_needed'] }, sort: {} }]
+      if (b.p_action === 'views') return { rank, can_edit_shared: rank >= 6, personal_max: 25, views, kinds: [{ kind: 'aer_review', label: 'Entry requirements' }, { kind: 'course_link', label: 'Course link' }, { kind: 'site_down', label: 'Website not answering' }] }
+      if (b.p_action === 'view_save') return { ok: true, id: a.id || 'v-mine' }
+      if (b.p_action === 'view_archive') return { ok: true, id: a.id }
+      if (b.p_action === 'drawer') return { item: { key: `${a.kind}:${a.ref}`, kind: a.kind, kind_label: 'Entry requirements', ref: a.ref, provider_id: 'p-1', provider: 'University One', subject: 'Bachelor of Course 1', why: 'Machine rule aer-machine-v1 did not admit this: audit_sample.', created_at: '2026-11-10T01:00:00Z' },
+        value: { field_code: 'course_entry_first_read', before: null, proposed: { url: 'https://one.example/c1', rows: 2 } }, pairs: [{ label: 'minimum_grade', audience: 'domestic', value: 'ATAR 83.70', quote: 'Entry score: ATAR 83.70' }], pairs_total: 1,
+        evidence: { evidence_id: 'e-1', source_url: 'https://one.example/c1', captured_at: '2026-11-09T22:00:00Z', newer_copy: false }, review: { status: 'open', created_at: '2026-11-10T01:00:00Z' },
+        history: [{ at: '2026-11-11T02:00:00Z', action: 'rule_execute', by: 'rule', rule: 'aer-machine-v1', reason: 'held: audit_sample' }] }
+      const n = a.view_id === 'v-url' ? 12 : a.view_id === 'v-blk' ? 2 : a.view_id === 'v-aer' ? 60 : 93
+      const all = Array.from({ length: n }, (_, i) => ({ key: `aer_review:r${i}`, kind: 'aer_review', kind_label: 'Entry requirements', ref: `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`, provider_id: 'p-1', provider: 'University One',
+        subject: `Bachelor of Course ${i + 1}`, why: 'Machine rule aer-machine-v1 did not admit this: audit_sample.', created_at: '2026-11-10T01:00:00Z', age_days: 8, field_code: 'course_entry_first_read', source_url: 'https://one.example/c1', quotes: 1 }))
+      const rows = (a.filters && a.filters.q) ? all.filter(r => r.subject.toLowerCase().includes(String(a.filters.q).toLowerCase())) : all
+      return { total: rows.length, offset: a.offset || 0, page_rows: 50, page_max: 200, sort: a.sort || 'created_at', direction: a.direction || 'asc', filters: a.filters || {}, rows: rows.slice(a.offset || 0, (a.offset || 0) + 50) } },
     // Reference data › API field dictionary and Grade scale conversions (v2.16.28): the read answers the search, filters and offset it is sent
     admin_reference_table_read: b => { calls.push({ referenceTable: b }); const a = b.p_args || {}
       if (b.p_kind === 'grade_scales') return { kind: 'grade_scales', total: 0, all_rows: 0, page_rows: 50, offset: 0, filters: { countries: [] }, rows: [] }

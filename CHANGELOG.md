@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.454 — 18 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.32** (UI audit Phase 5 first slice; Platform Admin 18 Nov 2026 09:30 and 10:09, S1-Build lane). Migration 20261118120000: table `pipeline.saved_views` (shared views seen by everyone and changed only by a Platform Admin with a reason; personal views owner only; archived, never deleted) seeded with AER Audit Samples, Official URLs and Provider Blockers; `public.admin_review_grid(action, args)` (Curator and above) pages the items waiting for a person from `security.layer4_inbox_items_v2` (read only), gives the Source quote vs extracted value drawer (quote pairs, evidence, decision history) and keeps views; five `layer4.grid_*` and `layer4.saved_views_per_user` settings. Screen: Layer 4 Review › Review grid (`src/Layer4ReviewGrid.jsx`). Decisions stay in the Inbox. G3 untouched. Guards: s620 and fixture phase5-review-grid.
+
 ## 0.1.453 — 18 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.31** (Platform Admin 18 Nov 2026 07:39, S1-RM-Design lane). Migration 20261118090707: `public.admin_destination_localities_bulk_approve(dataset edition, reason)` (Platform Admin, a reason, one control event) approves every clean draft locality of one edition; drafts without attribution are left. Destination data › Localities & postcodes gains Bulk Approve Drafts. Guards: `s611`, fixture `destination-bulk-approve`.

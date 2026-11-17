@@ -105,6 +105,8 @@ export const PAGES = {
   layer4: { label: 'Layer 4 Review', slug: 'layer-4-review', icon: 'review', subtitle: 'Decisions that need a person, with an audit trail.', tabs: [
     // v2.15.298 (Platform Admin, 20 Oct 2026: "anything that needs attention or intervention should come to Layer 4"): one inbox, by university
     { key: 'inbox', label: 'Inbox', min: 3 },
+    // CF-247 UI audit Phase 5, first slice (Platform Admin 18 Nov 2026 09:30): one grid over the same items, saved views and the quote-versus-value drawer
+    { key: 'grid', label: 'Review grid', min: 3 },
     // v2.15.300 (Platform Admin, 20 Oct 2026, "Old Layer 4 tabs now"): Review queue, AI could not decide and Websites to find retired; each
     // is a kind in the Inbox, and their addresses open the Inbox on that kind (resolveTarget). Decisions taken are under Inbox › Decided.
     // v2.15.252: the AI send-back tab retired with Layer 3. v2.15.253: Flagged values, Fee rules, Attributes, Scholarship publishing and Blocks retired.

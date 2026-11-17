@@ -1,17 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.31'
-export const PACKAGE_VERSION='0.1.453'
+export const UI_VERSION='2.16.32'
+export const PACKAGE_VERSION='0.1.454'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'17 Nov 2026',
-  title:'Destination data: Bulk Approve Drafts for localities',
+  date:'18 Nov 2026',
+  title:'Layer 4 Review: Review grid with saved views and the quote-versus-value drawer',
   changes:[
-    'Destination data › Localities & postcodes: new Bulk Approve Drafts button (Platform Admin). For each dataset edition with draft localities it shows how many are ready, and approves them all with one reason.',
-    'A draft with no attribution text is left as draft and counted. Localities in review, withdrawn or already approved are not touched, and figures and study rules are still approved on their own tabs.',
-    'The action is recorded once in the control log, and each locality keeps who approved it, when and why.'
+    'Layer 4 Review › Review grid (new tab): every item that waits for a person in one list, 50 a page, sortable by item, university, kind and waiting time, with a kind filter, a search across title, reason and university, and a "waiting more than" filter.',
+    'Three shared views open the grid: AER Audit Samples (the reads held back as the audit sample, which always stay with a person), Official URLs and Provider Blockers. Only a Platform Admin can change a shared view, with a reason.',
+    'Save as my view keeps your own filters as a personal view that only you see; Archive this view hides it again.',
+    'Open an item to see the Source quote vs extracted value drawer: the words saved from the page beside the value taken from them, the evidence link and the decision history. Open in the Inbox takes you to the item to decide it.',
+    'A view only filters what is shown: no item, AER audit sample or Layer 4 rule changes. Page and drawer sizes are settings (Settings › Pipeline settings › Layer 4).'
   ],
   bugFixes:[
   ]

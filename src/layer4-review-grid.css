@@ -1,0 +1,39 @@
+/* CF-247 UI audit Phase 5, first slice: Layer 4 Review › Review grid and the Source quote vs extracted value drawer (tokens only; no fixed colours) */
+.l4g{padding:14px;display:grid;gap:10px;min-width:0}
+.l4g-help{margin:0;max-width:960px;font-size:var(--cf-fs-sm);color:var(--cf-slate-700)}
+.l4g-muted{margin:0;font-size:var(--cf-fs-xs);color:var(--cf-slate-500)}
+.l4g-views{display:flex;gap:6px;flex-wrap:wrap}
+.l4g-view{font:inherit;font-size:var(--cf-fs-sm);padding:6px 12px;min-height:36px;border:1px solid var(--cf-slate-300);border-radius:var(--cf-radius-pill);background:var(--cf-white);color:var(--cf-slate-700);cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+.l4g-view small{font-size:var(--cf-fs-3xs);text-transform:uppercase;letter-spacing:.06em;color:var(--cf-slate-500)}
+.l4g-view.on{border-color:var(--cf-indigo-500);background:var(--cf-indigo-50);color:var(--cf-indigo-800);font-weight:600}
+.l4g-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.l4g-bar label{display:inline-flex;gap:6px;align-items:center;font-size:var(--cf-fs-sm)}
+.l4g-bar select,.l4g-bar input,.l4g-save input{font:inherit;padding:6px 10px;min-height:36px;border:1px solid var(--cf-slate-300);border-radius:var(--cf-radius-md);background:var(--cf-white);color:inherit;min-width:0}
+.l4g-search{flex:1 1 240px}
+.l4g-search input{width:100%}
+.l4g-save{display:grid;gap:8px;padding:10px 12px;border:1px solid var(--cf-slate-200);border-radius:var(--cf-radius-lg);background:var(--cf-slate-100);max-width:640px}
+.l4g-save label{display:grid;gap:4px;font-size:var(--cf-fs-sm);font-weight:600}
+.l4g-save>div{display:flex;gap:8px}
+.l4g-note{margin:0;font-size:var(--cf-fs-sm);color:var(--cf-green-800)}
+.l4g-count{margin:0;font-size:var(--cf-fs-sm);font-weight:600}
+.l4g-subject{display:grid;gap:2px;overflow-wrap:anywhere}
+.l4g-subject small,.l4g-age{font-size:var(--cf-fs-3xs);color:var(--cf-slate-500)}
+.l4g-age{display:block}
+.l4g-why{display:block;overflow-wrap:anywhere}
+.l4g-q{display:inline-flex;gap:4px;align-items:center}
+.l4g-drawer .m-drawer-body{display:grid;gap:14px}
+.l4g-drawer h3{margin:0 0 4px;font-size:var(--cf-fs-sm)}
+.l4g-why-full{margin:0;font-size:var(--cf-fs-sm);color:var(--cf-slate-700);overflow-wrap:anywhere}
+.l4g-pairs{display:grid;gap:6px;margin-top:6px}
+.l4g-pair{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:10px;padding:8px 10px;border:1px solid var(--cf-slate-200);border-radius:var(--cf-radius-md);background:var(--cf-white)}
+.l4g-pair.head{border:0;background:transparent;padding:0 10px;font-size:var(--cf-fs-3xs);text-transform:uppercase;letter-spacing:.06em;color:var(--cf-slate-500)}
+.l4g-pair blockquote{margin:0;font-style:italic;color:var(--cf-slate-700);overflow-wrap:anywhere}
+.l4g-pair span{display:grid;gap:2px;overflow-wrap:anywhere}
+.l4g-pair span small{font-size:var(--cf-fs-3xs);color:var(--cf-slate-500)}
+.l4g-value{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:4px 12px;margin:8px 0 0;font-size:var(--cf-fs-sm)}
+.l4g-value dt{font-weight:600}
+.l4g-value dd{margin:0;overflow-wrap:anywhere}
+.l4g-history{margin:0;padding-left:18px;display:grid;gap:6px;font-size:var(--cf-fs-sm)}
+.l4g-history small{margin-left:6px;color:var(--cf-slate-500)}
+.l4g-history p{margin:2px 0 0;color:var(--cf-slate-700)}
+@media (max-width:640px){.l4g-pair{grid-template-columns:minmax(0,1fr)}.l4g-pair.head{display:none}}

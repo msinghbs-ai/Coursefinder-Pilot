@@ -9,7 +9,7 @@
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 // Check the admin copy with `node scripts/export-sops.mjs --check-mirror <coursefinder-admin/docs/sops>` (SS-016 UR-03): it exits 1 on drift.
 
-export const SOP_REVIEWED_FOR = '2.16.31'
+export const SOP_REVIEWED_FOR = '2.16.32'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -45,7 +45,7 @@ const step = (o) => o
 
 export const SOPS = [
   {
-    id: 'admin-sop', title: 'Platform Admin SOP', version: '2.57', audience: 'Platform Admin (role rank 6)',
+    id: 'admin-sop', title: 'Platform Admin SOP', version: '2.58', audience: 'Platform Admin (role rank 6)',
     purpose: 'How the Platform Admin runs StudySearch day to day: the approvals only you can give, the budgets and models you own, and the checks that keep automatic admission trustworthy.',
     owns: ['Admitting university adapters (Layer 2/3 › Universities)', 'Approving central pages: fee schedules, English policies, academic calendars', 'AI models, their order, AI admission and the AI allowances', 'Firecrawl and OpenRouter budgets and service keys', 'Onboarding settings, Retry and Stop', 'Users and roles; new countries; go-live'],
     schedule: [
@@ -127,7 +127,8 @@ export const SOPS = [
       'Scholarships withdrawn by the nightly review: a jump means a rule changed or a site moved its pages.',
     ],
     escalate: ['A job that fails the same way after a fix, a worker refusing work ("invalid key", "nonce"), or data written where it should not be: pause the job, note what you saw, raise it with the platform engineer with the change-control reference (CF-247).'],
-    changes: [{ version: '2.57', date: '18 Nov 2026', release: '2.16.31', change: 'Destination data › Localities & postcodes: Bulk Approve Drafts approves every clean draft locality of an edition with one reason (Platform Admin). Then approve the figures, record the edition terms and Publish edition on Overview & editions.' },
+    changes: [{ version: '2.58', date: '18 Nov 2026', release: '2.16.32', change: 'Layer 4 Review › Review grid: the shared views AER Audit Samples, Official URLs and Provider Blockers are yours to change (Update this shared view, with a reason); everyone sees them. Open an item to compare the page quote with the value taken from it, then decide it in the Inbox.' },
+      { version: '2.57', date: '18 Nov 2026', release: '2.16.31', change: 'Destination data › Localities & postcodes: Bulk Approve Drafts approves every clean draft locality of an edition with one reason (Platform Admin). Then approve the figures, record the edition terms and Publish edition on Overview & editions.' },
       { version: '2.56', date: '18 Nov 2026', release: '2.16.30', change: 'Platform health › Queues & yield › Boost queue: read each item with its Country tier and Priority score (worked out from the Boost priority settings when the list opens), filter by tier and sort by score.' },
       { version: '2.55', date: '18 Nov 2026', release: '2.16.29', change: 'Courses: show Study load and Empty reason from Columns and filter by them; an Empty reason of No reason recorded finds courses whose gaps are still to fill. Campuses: Primary badge and filter; Locality (from the postcode) and its search.' },
       { version: '2.54', date: '17 Nov 2026', release: '2.16.28', change: 'Reference data: look up any API field (where it is read from, its type, the request that asked for it) under API field dictionary, and grade conversions under Grade scale conversions. Both are read-only.' },
@@ -280,7 +281,7 @@ export const SOPS = [
       { version: '2.03', date: '29 Oct 2026', release: '2.15.362', change: 'Academic entry requirements (AER programme): the Provider drawer lists each source with its latest read, so a held PDF, a refused page or a page with no row is visible with its reason; first reads of new providers wait in Layer 4 as Entry matrix (first run).' }],
   },
   {
-    id: 'operator-sop', title: 'Operator SOP', version: '2.23', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
+    id: 'operator-sop', title: 'Operator SOP', version: '2.24', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
     purpose: 'How operators keep the data flowing and decide what automation cannot: the review queues, stuck or failing work, and the records that need a person. Each step names the lowest role that does it.',
     owns: ['Curator: reading Layer 4 › Inbox items and correcting the records they point to, key dates and reference links, course and provider details, ranking links', 'Pipeline Operator: Layer 4 › Inbox decisions (except entry requirement items: Platform Admin), Task manager › Background jobs, failed jobs and worker errors (diagnose, record, escalate), onboarding follow-up, scholarship links, counsellor reports', 'PIM Admin: pacing, pausing, resuming and running again the automations marked PIM Admin, testing adapters in the Adapter builder'],
     schedule: [
@@ -337,7 +338,8 @@ export const SOPS = [
       'Values marked as estimates (savings from CRICOS cost): quote them to students as estimates.',
     ],
     escalate: ['Tell the Platform Admin about anything needing approval, admitting, budgets, models, keys, users, or a fault that repeats after your fix. Write what you saw, where, and when.', 'Pace, pause, resume or run again: Pipeline Operator diagnoses, records and escalates; the PIM Admin (or a higher role) changes pace or pauses; automations marked Platform Admin go to the Platform Admin.', 'A StudySearch alert by push or e-mail: open Platform health and tell the Platform Admin you received it; the Platform Admin acknowledges it.'],
-    changes: [{ version: '2.23', date: '17 Nov 2026', release: '2.16.16', change: 'Providers, Courses, Locations and Scholarships: Export CSV › Export visible columns or Export all columns writes the whole filtered list to a file Excel opens. Sign-in: Forgot password? sends your own reset link.' },
+    changes: [{ version: '2.24', date: '18 Nov 2026', release: '2.16.32', change: 'Layer 4 Review › Review grid: work a queue from a shared view (AER Audit Samples, Official URLs, Provider Blockers) or your own saved view; open an item to check the page quote against the value taken from it and the decision history, then Open in the Inbox to decide.' },
+      { version: '2.23', date: '17 Nov 2026', release: '2.16.16', change: 'Providers, Courses, Locations and Scholarships: Export CSV › Export visible columns or Export all columns writes the whole filtered list to a file Excel opens. Sign-in: Forgot password? sends your own reset link.' },
       { version: '2.22', date: '14 Nov 2026', release: '2.16.1', change: 'When AI work stops: read the limits banner at the top of Models & services › AI and the reasons listed under the service\'s state; a running row whose last call failed says so.' },
       { version: '2.21', date: '13 Nov 2026', release: '2.16.0', change: 'Models & services › AI is one page of four panes; when AI work stops, read the state line and the service row there and tell the Platform Admin. Scholarship extraction is configured under the Scholarship pages service; its results stay on Scholarships › Coverage.' }, { version: '2.20', date: '11 Nov 2026', release: '2.15.494', change: 'Provider descriptions: Fill description on a provider record; deciding the provider descriptions that wait in Layer 4; a description typed by hand is never replaced.' }, { version: '2.19', date: '8 Nov 2026', release: '2.15.494', change: 'Operations shows each automated lane stage by stage; the Firecrawl card shows allowance, remaining credits and floor; Course description review shows capacity and a university-ordered pack. New spend paths ship switched off; no data gain, admission or publication is claimed.' }, { version: '2.18', date: '6 Nov 2026', release: '2.15.493', change: 'English course-group approval and binding, same-family supersession and coverage holds; no automatic group admission or paid discovery activation.' }, { version: '2.17', date: '6 Nov 2026', release: '2.15.492', change: 'Course description reviewer navigation, held-source evidence and separate proposal/admission/publication measures; human admission authority remains.' }, { version: '2.16', date: '6 Nov 2026', release: '2.15.491', change: 'Deadline review distinguishes application closing evidence from commencement dates; corrections retain audit and human-lock authority.' }, { version: '1.0', date: '12 Oct 2026', release: '2.15.257', change: 'First issue: daily routine by role, review queues, follow-up, weekly checks, interventions and escalation.' },
       { version: '1.1', date: '12 Oct 2026', release: '2.15.258', change: 'Onboarding moved to Layer 2 › Onboarding with seven journey stages; scholarships are found only after a university is admitted and its courses enriched.' },

@@ -1,0 +1,37 @@
+# Guards: UI audit Phase 5 first slice (Platform Admin 18 Nov 2026 09:30 and 10:09) and G4 database-backed tests: migration 20261118120000 runs the Review grid and saved views on an isolated PostgreSQL 16 (fixtures only, never a Supabase project).
+name: Phase 5 review grid integration
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/20261118120000_cf247_phase5_review_grid_saved_views.sql'
+      - 'supabase/migrations-archive/20261118120000_cf247_phase5_review_grid_saved_views.sql'
+      - 'tests/fixtures/phase5-review-grid/**'
+      - '.github/workflows/phase5-review-grid-test.yml'
+  workflow_dispatch:
+jobs:
+  isolated-postgres:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: fixture-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: fixture-only
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash tests/fixtures/phase5-review-grid/run.sh | tee phase5-review-grid-results.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: phase5-review-grid-database-evidence
+          path: phase5-review-grid-results.log
