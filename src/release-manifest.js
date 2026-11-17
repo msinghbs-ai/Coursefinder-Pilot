@@ -1,21 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.20'
-export const PACKAGE_VERSION='0.1.442'
+export const UI_VERSION='2.16.21'
+export const PACKAGE_VERSION='0.1.443'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'17 Nov 2026',
-  title:'Users & roles: Links & Email Templates',
+  title:'Users & roles: Resend invite; a clear warning when emails are not copied to Supabase Auth',
   changes:[
-    'Administration › Users & roles now has two tabs: Users & roles (the directory, as before) and Links & Email Templates (Platform Admin).',
-    'Links & Email Templates: set the Admin Site URL and the Admin Guide Link, and edit the Invite User and Reset Password emails (subject and HTML body) with a live preview. Variable chips insert {{link}}, {{guide_link}}, {{user_email}}, {{user_name}} and {{role}} at the cursor. The emails start from the branded StudySearch PIM Admin template.',
-    'Save & Sync needs a reason, which is kept in the control log. The saved emails are copied to Supabase Auth only when a management token is set for the edge function; the screen says whether the copy happened.',
-    'Send Test Email sends the Reset Password email to your own account or another existing user. An invitation is tested by inviting a new address from Create user.',
-    'A password reset email now carries the person\'s current role and the saved guide link.'
+    'Users & roles: a person who has not accepted the invitation yet has Resend invite on their row (Platform Admin). It emails the invitation again and is recorded in the access history. Everyone else keeps Reset password.',
+    'Links & Email Templates: while no management token is set for the edge function, a warning says that Supabase Auth still sends the previous emails, with Copy HTML for Supabase Dashboard and Copy subject to paste the selected template into the dashboard.'
   ],
   bugFixes:[
+    'Users & roles: the directory now says why Reset password is greyed for your own account and for a Platform Admin.'
   ]
 }
 
