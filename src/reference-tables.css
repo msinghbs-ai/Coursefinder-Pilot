@@ -1,0 +1,14 @@
+/* CF-247 Reference data › API field dictionary and Grade scale conversions (tokens only; no fixed colours) */
+.rft{padding:14px;display:grid;gap:10px}
+.rft h3{margin:0}
+.rft .rft-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.rft .rft-head p{margin:2px 0 0}
+.rft .rft-filters{display:flex;gap:8px;flex-wrap:wrap;align-items:end}
+.rft .rft-filters label{display:grid;gap:4px;font-size:var(--cf-fs-sm);font-weight:600}
+.rft .rft-filters select,.rft .rft-search input{font:inherit;font-weight:400;padding:6px 10px;min-height:36px;border:1px solid var(--cf-border);border-radius:var(--cf-radius-md);background:var(--cf-white);color:inherit}
+.rft .rft-search{flex:1 1 320px;display:flex !important;align-items:center;gap:6px;padding:0 10px;border:1px solid var(--cf-border);border-radius:var(--cf-radius-md);background:var(--cf-white)}
+.rft .rft-search input{flex:1;border:0;padding:6px 0;min-width:0;background:transparent}
+.rft .rft-table td{vertical-align:top;overflow-wrap:anywhere}
+.rft .rft-code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:var(--cf-fs-sm)}
+.rft .rft-wide{min-width:240px}
+.rft .rft-pager{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap}

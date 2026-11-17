@@ -77,7 +77,7 @@ export const PAGES = {
     { key: 'rules', label: 'Study rules', min: 3 },
     { key: 'careers', label: 'Careers & outcomes', min: 3 },
   ] },
-  reference: { label: 'Reference data', slug: 'reference-data', icon: 'book', min: 3, subtitle: 'Key dates and the third-party sites the platform refers to, in one list with a type filter.' },
+  reference: { label: 'Reference data', slug: 'reference-data', icon: 'book', min: 3, subtitle: 'Key dates and the third-party sites the platform refers to, with the API field dictionary and grade scale conversions to look up, under one type filter.' },
   // v2.15.200 (Decision 254, Platform Admin 6 Oct 15:31 and 15:38): Layer 2 is the adapters and their whole lifecycle, plus
   // scholarships. Overview, Fetch an area, History and Source profiles retired (unused for 30 days); their old addresses
   // and Coverage › Universities open Adapters.

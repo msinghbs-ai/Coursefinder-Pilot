@@ -1,0 +1,36 @@
+# Guards: Reference data › API field dictionary and Grade scale conversions (Platform Admin 17 Nov 2026 23:05) and G4 database-backed tests: migration 20261118005000 runs its read function on an isolated PostgreSQL 16 (fixtures only, never a Supabase project).
+name: Admin reference tables integration
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/20261118005000_cf247_admin_reference_tables_read.sql'
+      - 'tests/fixtures/admin-reference-tables/**'
+      - '.github/workflows/admin-reference-tables-test.yml'
+  workflow_dispatch:
+jobs:
+  isolated-postgres:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: fixture-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: fixture-only
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash tests/fixtures/admin-reference-tables/run.sh | tee admin-reference-tables-results.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: admin-reference-tables-database-evidence
+          path: admin-reference-tables-results.log

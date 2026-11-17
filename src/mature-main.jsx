@@ -64,6 +64,7 @@ const ModelsServices=lazyPage(()=>import('./ModelsServices'))
 const AiModelsServices=lazyPage(()=>import('./AiModelsServices'))
 const StatisticsDatasets=lazyPage(()=>import('./StatisticsDatasets'))
 const ReferenceSources=lazyPage(()=>import('./ReferenceSources'))
+const ReferenceTables=lazyPage(()=>import('./ReferenceTables'))
 const KeyDates=lazyPage(()=>import('./KeyDates'))
 const ComparisonWorkspace=lazyPage(()=>import('./ComparisonWorkspace'))
 const AerWorkspace=lazyPage(()=>import('./AerWorkspace'))
@@ -123,7 +124,9 @@ function SourcesPage({routeParams,navigate}){
 }
 // v2.15.301 (Platform Admin, 20 Oct 2026, "One list with a type filter"): Key dates and Reference sources, one list; Ranking imports is on
 // Rankings & statistics › Datasets.
-const REFERENCE_TYPES=[['','All'],['dates','Key dates'],['links','Reference sources']]
+// v2.16.28 (Platform Admin 17 Nov 2026 23:05): two read-only reference tables join the type filter; All keeps showing the two editable lists only
+const REFERENCE_TYPES=[['','All'],['dates','Key dates'],['links','Reference sources'],['api_fields','API field dictionary'],['grade_scales','Grade scale conversions']]
+const REFERENCE_TABLES=['api_fields','grade_scales']
 // SS-020 step 3 cards (Decision 269, Final board F41): Services & limits as one card per outside service, built from the same components
 // (each limited to its service), so every switch, limit and setting stays where it is changed and nothing is drawn twice.
 const SVC_NAMED=['firecrawl','direct-http']
@@ -182,8 +185,9 @@ function ReferenceList({routeParams,navigate,onError}){
   const t=routeParams?.get?.('type')||'',type=REFERENCE_TYPES.some(([k])=>k===t)?t:''
   return <div className="m-page-stack" data-reference-list={type||'all'}>
     <div className="pg-views" role="toolbar" aria-label="Type">{REFERENCE_TYPES.map(([k,l])=><button key={k||'all'} type="button" className={`pg-view${type===k?' is-on':''}`} aria-pressed={type===k} data-reference-type={k||'all'} onClick={()=>navigate('reference',k?{type:k}:{})}>{l}</button>)}</div>
+    {REFERENCE_TABLES.includes(type)?<ReferenceTables kind={type} onError={onError}/>:<>
     {type!=='links'&&<KeyDates onError={onError}/>}
-    {type!=='dates'&&<ReferenceSources onError={onError}/>}
+    {type!=='dates'&&<ReferenceSources onError={onError}/>}</>}
   </div>
 }
 function CoverageAttributes({rank}){

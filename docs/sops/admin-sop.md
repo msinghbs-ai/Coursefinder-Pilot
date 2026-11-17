@@ -1,7 +1,7 @@
-<!-- sop-export: id=admin-sop; version=2.53; reviewed-release=2.16.27; source-commit=ee4cd0e0cae8+local; content-sha256=e1448cd3665ae4d0dcd3b169470f74a6dad67f9d0697d151b8a4a38dd7fa362f -->
+<!-- sop-export: id=admin-sop; version=2.54; reviewed-release=2.16.28; source-commit=022af946bdf2+local; content-sha256=e780e2db8214b74b1c1c05435e2dd81a9dd3630544583b374b87524fcedefc95 -->
 # StudySearch – Platform Admin SOP
 
-**Version:** 2.53 (reviewed for platform release v2.16.27)  
+**Version:** 2.54 (reviewed for platform release v2.16.28)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -139,6 +139,7 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.54 | 17 Nov 2026 | v2.16.28 | Reference data: look up any API field (where it is read from, its type, the request that asked for it) under API field dictionary, and grade conversions under Grade scale conversions. Both are read-only. |
 | 2.53 | 17 Nov 2026 | v2.16.27 | Links & Email Templates › Email delivery provider: save the card with its own Reason and Save Email Provider Settings, then Send Test Email (through Resend, to your own address) and read the answer in the card before choosing Resend API. |
 | 2.52 | 17 Nov 2026 | v2.16.26 | Curators can open Layer 1 and prepare Add source drafts; activation stays yours. The wizard's Staging kept (days) sets the source's period on Storage & retention at activation. One list of eight enrichment categories for every lane. |
 | 2.51 | 17 Nov 2026 | v2.16.25 | Layer 1 › Sources shows each source's parser (Hardcoded, AI-built, none). On Layout drift flagged, request Re-infer Parser Spec with a reason and keep the source paused if its counts look wrong. The wizard asks for the target record type first. |
