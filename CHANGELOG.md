@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.448 — 17 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.26** (Platform Admin 17 Nov 2026 19:58 and 20:45, S1-RM-Design lane, Wave 2 decisions). Migration 20261117213000_cf247_wave2_unify_categories_retention_roles: `public.svc_enrichment_categories()` publishes the one list of eight categories; the wizard's keep period is set through `admin_source_retention_set` on activation and the report reads `pipeline.source_retention_policies` and the `retention.*` settings; Curator (rank 3) opens Layer 1 and drafts (exact, md5-guarded change of `security.admin_layer1_operations_read` and the draft functions), re-infer stays rank 4, activation rank 6. UI: Layer 1 nav minimum 3. No job. G3 untouched.
+
 ## 0.1.447 — 17 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.25** (Platform Admin 17 Nov 2026 19:09, S1-RM-Design lane, Wave 2 addenda). Migration 20261117203000_cf247_layer1_parser_line_items: `pipeline.layer1_source_parsers`, `admin_layer1_parser_status()`, `admin_layer1_parser_reinfer_request(source, reason)`, `svc_layer1_parser_record` and `svc_layer1_parser_drift_record` for the readers and the AI mapper, seven target record types; the four induction functions extended in place (definition guard) for the record type and the parser spec. UI: Parser badge and Re-infer Parser Spec on Layer 1 › Sources; target record type and parser spec preview in the wizard. No job. G3 untouched.

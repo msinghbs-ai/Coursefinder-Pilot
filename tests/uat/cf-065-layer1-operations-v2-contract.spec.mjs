@@ -32,7 +32,7 @@ test.describe('CF-065 Layer 1 operations v2 source contract',()=>{
     expect(layer1).not.toContain('Advanced source configuration')
     // v2.15.246 (bugs 11/10-3, Feature 2): Runs and Source settings are one Sources list (Operator opens it, rank 4; editing the
     // settings in a row stays Platform Admin, rank 6). The old cards remain exported for the legacy pop-up only.
-    expect(nav).toContain("layer1: { label: 'Layer 1 Register', slug: 'layer-1-register', icon: 'database', min: 4,") // v2.15.301: one Sources page, registers first
+    expect(nav).toContain("layer1: { label: 'Layer 1 Register', slug: 'layer-1-register', icon: 'database', min: 3," /* v2.16.26 (Platform Admin 17 Nov 2026 20:45): Curator and above open Layer 1 */) // v2.15.301: one Sources page, registers first
     expect(nav).not.toContain("label: 'Source settings'")
     expect(shell).toContain("{layer==='all'?<SourcesWorkspace/>:<Layer1Sources/>}")
     expect(layer1).toContain('export function Layer1Sources()')

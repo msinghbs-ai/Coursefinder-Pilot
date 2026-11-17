@@ -52,7 +52,7 @@ test('role gates are kept: Operators see API usage only on Settings; Curators se
   expect(allowedTabs(PAGES.health, 4).map(t => t.key)).toEqual(['checks', 'queues', 'completeness'])
   expect(allowedTabs(PAGES.services, 3).map(t => t.key)).toEqual(['ai']) // read-only for a Curator (Platform Admin 13 Nov 2026 22:10)
   expect(canOpen('reference', 3)).toBe(true)
-  expect(canOpen('layer1', 3)).toBe(false)
+  expect(canOpen('layer1', 3)).toBe(true); expect(canOpen('layer1', 2)).toBe(false) // v2.16.26 (Platform Admin 17 Nov 2026 20:45): Curator and above open Layer 1
   expect(allowedTabs(PAGES.layer2, 3).map(t => t.key)).toContain('flags')
   const main = read('src/mature-main.jsx')
   expect(main).toContain("tab==='ai'?<AiModelsServices onError={err}")

@@ -1,18 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.25'
-export const PACKAGE_VERSION='0.1.447'
+export const UI_VERSION='2.16.26'
+export const PACKAGE_VERSION='0.1.448'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'17 Nov 2026',
-  title:'Layer 1 sources show their parser; the wizard takes a target record type',
+  title:'Curators open Layer 1; one category list; source retention in one place',
   changes:[
-    'Layer 1 › Sources: each source line has a Parser badge: Hardcoded parser (read by code), AI-built parser (read from a reviewed parser spec) or No parser yet. Filter by Country as before; schedule, warn and stop %, record bounds, Run now, Check source and Pause are on each line.',
-    'When a reader flags that a source\'s layout has changed, the line says so and offers Re-infer Parser Spec (Pipeline Operator and above, with a reason). The request is recorded and logged; the source keeps its current parser until a new spec is accepted.',
-    'Add source wizard, step 1: choose the Target record type (Course register, Provider register, Tuition fees, Study rules, Destination metrics, Career outcomes, Scholarships).',
-    'Add source wizard, step 3: when the AI mapper is deployed, AI Auto-Map also proposes the parser spec, its target table and the category routing, shown for review before saving. On activation the spec becomes the source\'s AI-built parser.'
+    'Layer 1 Register now opens for Curator and above. A Curator can prepare and edit Add source drafts. Re-infer Parser Spec stays Pipeline Operator and above; activating a source stays the Platform Admin\'s. Every other control on a source keeps its own role.',
+    'Add source wizard, step 4: one Staging kept (days) field. On activation it is set for the source on Storage & retention, where the nightly housekeeping reads it. Leave it empty to follow the platform period.',
+    'Country & category completeness: the retention columns now read the same per-source periods and settings as Storage & retention.',
+    'The eight enrichment categories are one list, published to every loader and worker.',
+    'Country & category completeness: new table Evidence captured and Layer 4 review items, by source. The two counts sit side by side and are not divided into a rate, because one stored page can raise many review items.'
   ],
   bugFixes:[
   ]

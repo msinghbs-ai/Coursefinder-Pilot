@@ -67,7 +67,8 @@ test('item 1: Automations no longer shows Refresh schedules; its runtime health 
   expect(entry).not.toContain('ScheduledJobsWorkspace')
   for (const slug of ['scheduled-tasks', 'refresh-scheduling']) { expect(LEGACY[slug]).toEqual({ page: 'layer1' }); expect(resolveTarget(slug).page).toBe('layer1') }
   expect(resolveTarget('scheduled-jobs', new URLSearchParams({ tab: 'schedules' })).page).toBe('layer1')
-  expect(PAGES.jobs.min ?? Math.min(...PAGES.jobs.tabs.map((t) => t.min))).toBe(PAGES.layer1.min) // same rank opens the new home
+  expect(PAGES.jobs.min ?? Math.min(...PAGES.jobs.tabs.map((t) => t.min))).toBe(4) // Pipeline Operator opens the new home; from v2.16.26 a Curator also opens Layer 1 (to prepare drafts), where the schedule control stays rank 4
+  expect(PAGES.layer1.min).toBe(3)
   const l1 = read('src/layer1-operations-entry.jsx')
   expect(l1).toContain("const scheduleDays=s=>{const m=String(s?.cadence_interval||'').match(")
   expect(l1).toContain('SCHEDULES.find(([,d])=>d===scheduleDays(s))')

@@ -1,9 +1,9 @@
 // CF-247 Parallel Wave 2 (Platform Admin 17 Nov 2026 17:59; decisions 18:10): the six-step country and register induction wizard that
 // Layer 1 › Sources › + Add source opens. A draft is saved at each step (public.admin_layer1_induction_save), so it can be left and continued.
 //   1 Country and scheme  2 Source, connector and licence (REQ-68)  3 Field and category mapping (AI Auto-Map when the mapper is deployed)
-//   4 Cadence and retention (recorded per source, not enforced)  5 Dry-run preview (from the source's reader, when it has one)
+//   4 Cadence and the staging keep period (set on activation in pipeline.source_retention_policies, which housekeeping-daily reads)  5 Dry-run preview (from the source's reader, when it has one)
 //   6 Activation: the Platform Admin, with a reason. The source is created paused and stays paused; nothing runs from here.
-// Drafting is Pipeline Operator and above (who can open Layer 1); the server checks every step again.
+// Drafting is Curator and above (Platform Admin 17 Nov 2026 20:45); activation is the Platform Admin's. The server checks every step again.
 import React,{useCallback,useEffect,useMemo,useState}from'react'
 import{Button,StatusChip,EmptyInline,fmtDateTime,fmtNumber}from'./ui-kit'
 import{supabase}from'./lib/supabase'
@@ -17,7 +17,7 @@ const CONNECTOR={csv_file:'CSV file',xlsx_file:'Excel file',json_api:'JSON API',
 const TERMS={approved:'Approved',pending:'Pending (REQ-68)',not_required:'Not required'}
 const CADENCE={weekly:'Weekly',monthly:'Monthly',annual:'Annual'}
 const KIND={course_registration:'Course registration',provider_registration:'Provider registration',field_of_study:'Field of study',work_eligibility:'Work eligibility'}
-const EMPTY={country_code:'',scheme:'',scheme_kind:'',field_scheme:'',target_record_type:'',parser_spec:null,source_label:'',source_url:'',authority_name:'',dataset_class:'register',connector_type:'',expected_format:'',licence_name:'',licence_url:'',attribution_text:'',terms_status:'',cadence:'',notes:'',sample_file_name:'',edition_archiving:true,staging_retention_days:'',raw_retention_days:'',sample:null}
+const EMPTY={country_code:'',scheme:'',scheme_kind:'',field_scheme:'',target_record_type:'',parser_spec:null,source_label:'',source_url:'',authority_name:'',dataset_class:'register',connector_type:'',expected_format:'',licence_name:'',licence_url:'',attribution_text:'',terms_status:'',cadence:'',notes:'',sample_file_name:'',edition_archiving:true,staging_keep_days:'',sample:null}
 
 export default function Layer1InductionWizard({rank=0,onDone,onCancel,client=null,invoke=null}){
   const rpc=client||((fn,args)=>supabase.rpc(fn,args))
@@ -28,8 +28,8 @@ export default function Layer1InductionWizard({rank=0,onDone,onCancel,client=nul
     const{data,error}=await rpc('admin_layer1_induction_read',{p_id:draftId||null});if(error){setErr(plainError(error));return}
     setO(data.options);setDrafts(data.drafts||[])
     if(data.item){const p=data.item.payload||{};setItem(data.item);setId(data.item.id);setMaps(data.item.mappings||[])
-      setF({...EMPTY,...p,country_code:data.item.country_code,staging_retention_days:p.staging_retention_days??'',raw_retention_days:p.raw_retention_days??''})}
-    else if(!draftId)setF(x=>x.staging_retention_days===''&&!id?{...x,staging_retention_days:data.options?.retention_defaults?.staging_retention_days??'',raw_retention_days:data.options?.retention_defaults?.raw_retention_days??''}:x)},[id])
+      setF({...EMPTY,...p,country_code:data.item.country_code,staging_keep_days:p.staging_keep_days??''})}
+  },[id])
   useEffect(()=>{open(null)},[])
   // the AI mapper is S2-Build's edge function: the button switches on by itself once it answers
   useEffect(()=>{let live=true;Promise.resolve(call(MAPPER,{action:'status'})).then(({data,error})=>{if(live)setMapper(!error&&data?.ok?data:false)}).catch(()=>{if(live)setMapper(false)});return()=>{live=false}},[])
@@ -40,7 +40,7 @@ export default function Layer1InductionWizard({rank=0,onDone,onCancel,client=nul
   const closed=item&&item.status!=='draft'
   async function save(next){setBusy('save');setErr('');setNote('')
     try{const{parser_validation:_pv,...rest}=f
-      const payload={...rest,staging_retention_days:f.staging_retention_days===''?null:Number(f.staging_retention_days),raw_retention_days:f.raw_retention_days===''?null:Number(f.raw_retention_days)}
+      const payload={...rest,staging_keep_days:f.staging_keep_days===''||f.staging_keep_days==null?null:Number(f.staging_keep_days)}
       const{data,error}=await rpc('admin_layer1_induction_save',{p_id:id,p_payload:payload,p_mappings:maps});if(error)throw error
       setItem(data.item);setId(data.item.id);setNote('Draft saved.');if(next!=null)setStep(next);return data.item}
     catch(e){setErr(plainError(e));return null}finally{setBusy('')}}
@@ -70,7 +70,7 @@ export default function Layer1InductionWizard({rank=0,onDone,onCancel,client=nul
     catch(e){setErr(plainError(e))}finally{setBusy('')}}
   async function cancelDraft(){const why=window.prompt('Cancel this draft? It is kept, marked cancelled.\n\nReason (kept in the control log):');if(!why||why.trim().length<4)return
     const{error}=await rpc('admin_layer1_induction_cancel',{p_id:id,p_reason:why.trim()});if(error){setErr(plainError(error));return}onCancel?.()}
-  if(rank<4)return <EmptyInline text="Adding a source opens for Pipeline Operator and above."/>
+  if(rank<3)return <EmptyInline text="Adding a source opens for Curator and above."/>
   if(!o)return err?<EmptyInline text={err}/>:<p className="sl-sub">Loading…</p>
   const dr=item?.dry_run
   const done=k=>k==='activate'?Boolean(steps.activated):Boolean(steps[k])
@@ -127,11 +127,9 @@ export default function Layer1InductionWizard({rank=0,onDone,onCancel,client=nul
     <div className="l1i-grid" key="s4" data-l1i-step="cadence">
       <label>Cadence<select value={f.cadence} onChange={set('cadence')} disabled={closed} data-l1i-cadence><option value="">Choose…</option>{o.cadences.map(k=><option key={k} value={k}>{CADENCE[k]||k}</option>)}</select></label>
       <label className="l1i-check"><input type="checkbox" checked={Boolean(f.edition_archiving)} onChange={set('edition_archiving')} disabled={closed}/> Keep each accepted edition (edition archiving)</label>
-      <label>Staging kept (days)<input type="number" min="1" value={f.staging_retention_days??''} onChange={set('staging_retention_days')} disabled={closed} placeholder="Permanent" data-l1i-staging-days/>
-        <small>Platform policy today: {o.retention_defaults?.staging_retention_days??'permanent'} days.</small></label>
-      <label>Raw snapshots kept (days)<input type="number" min="1" value={f.raw_retention_days??''} onChange={set('raw_retention_days')} disabled={closed} placeholder="Permanent" data-l1i-raw-days/>
-        <small>Platform policy today: {o.retention_defaults?.raw_retention_days?`${o.retention_defaults.raw_retention_days} days`:'kept permanently'}. Leave empty for permanent.</small></label>
-      <p className="sl-sub wide" data-l1i-retention-note>These retention values are recorded for this source. They do not change what the platform prunes today: no prune job or stored data is touched.</p>
+      <label>Staging kept (days)<input type="number" min="30" max="3650" value={f.staging_keep_days??''} onChange={set('staging_keep_days')} disabled={closed} placeholder={`Platform period: ${o.retention_defaults?.staging_keep_days??90} days`} data-l1i-staging-days/>
+        <small>How long applied staging rows of this source are kept (30 to 3,650 days). Leave empty to follow the platform period of {o.retention_defaults?.staging_keep_days??90} days.</small></label>
+      <p className="sl-sub wide" data-l1i-retention-note>On activation this period is set for the source on Storage &amp; retention, where the nightly housekeeping reads it. Pruning is {o.retention_defaults?.staging_prune_on?'on':'off (the nightly run only reports what would go)'}. Accepted editions and stored evidence are never pruned; hashes of removed staging rows are kept {o.retention_defaults?.raw_hash_keep_years??7} years.</p>
       <label className="wide">Notes<input value={f.notes} onChange={set('notes')} disabled={closed}/></label>
     </div>,
     // 5
