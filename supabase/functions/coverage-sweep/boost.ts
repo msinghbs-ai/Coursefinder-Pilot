@@ -9,6 +9,7 @@
 
 export const BOOST_STUDY_LOAD_PROMPT_ID = "boost-study-load";
 export const BOOST_STUDY_LOAD_PROMPT_VERSION = "boost-study-load-v2";  // v2 (18 Nov 2026, Platform Admin decision 1): the study load for international students when the page states one; otherwise the course's general study load
+// Deployed with migration 20261118074500 (the first attempt, 20261118073000, stopped at its post-check before this worker was deployed).
 export const BOOST_SELECTOR = "study-load-windows-v3";  // v3 (18 Nov 2026): sentences about international students and visas are sent again: they are the preferred basis (decision 1)
 export const BOOST_ANSWER_KEY = "reading.answer_tokens.boost_extract";
 export const BOOST_ANSWER_DEFAULT = 300;   // used only when the setting cannot be read

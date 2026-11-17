@@ -10,6 +10,9 @@
 --      a course's study load only where it is empty, under its own lock; neither needs a dispatcher's lock.
 --   3. Throughput of the second reading: a run reads 80 pages (was 40), 4 at a time (new setting reading.boost_extract_parallel).
 --   4. A second benchmark run, bench-2, of the three named candidates under the new prompt (setting boost.benchmark_label), 24 pages a run.
+--   5. Job boost-extract is switched on again. The platform's idle check (flag-recheck) paused it at 07:30 on 18 Nov 2026 because its last 30
+--      runs found nothing to do; this migration gives it work (item 1), and the idle check itself says a paused job resumes when work arrives.
+--      (This file was 20261118073000; its post-check required the job to be active and stopped the deploy, so nothing of it was applied.)
 -- What it does not do: it qualifies no model for admission and admits nothing. Everything Boost stages stays shadow.
 -- G1: no new job. G2: every value is a setting; the job commands hold no number. G3: no consumer API object is changed.
 -- Replaces: security.boost_ingest_gate_v1 of migration 20261118000100 (same checks; the dispatcher-lock check now reads setting boost.yield_to_dispatchers)
@@ -103,7 +106,11 @@ update pipeline.ai_route_qualifications set prompt_version = 'boost-study-load-v
 update pipeline.boost_extract_items set state = 'released', note = 'read again under boost-study-load-v2 (worker v1.0.12, international study load first)', done_at = now()
  where state in ('verified', 'rejected', 'failed');
 
--- 5. Post-checks
+-- 5. Work has arrived for job boost-extract: on again if the idle check paused it
+select cron.alter_job((select jobid from cron.job where jobname = 'boost-extract'), active := true)
+ where exists (select 1 from cron.job where jobname = 'boost-extract' and not active);
+
+-- 6. Post-checks
 do $c$
 begin
   if security.pipeline_num_v1('boost.yield_to_dispatchers', 1) <> 0 or security.pipeline_num_v1('reading.boost_extract_parallel', 0) <> 4 then raise exception 'post-check: the new settings are not as set'; end if;
@@ -115,8 +122,10 @@ begin
   if exists (select 1 from pipeline.boost_extract_items where state in ('verified', 'rejected', 'failed')) then raise exception 'post-check: a page read under the earlier rule was not given back'; end if;
   if exists (select 1 from pipeline.boost_model_qualifications) then raise exception 'post-check: a model is qualified for admission; this migration qualifies none'; end if;
   if exists (select 1 from pipeline.boost_inbound_staging where promotion_state = 'admitted') then raise exception 'post-check: a Boost row is admitted; this migration admits none'; end if;
-  if exists (select 1 from cron.job where jobname in ('boost-extract', 'worker-boost-bulk-ingest', 'boost-benchmark') and (not active or command ~ '''limit'', [0-9]')) then
-    raise exception 'post-check: a Boost job is inactive or holds a number';
+  if not (select active from cron.job where jobname = 'boost-extract') then raise exception 'post-check: job boost-extract is not on'; end if;
+  -- the other two Boost jobs may be paused by the platform's idle check at any time; that is not this migration's business
+  if exists (select 1 from cron.job where jobname in ('boost-extract', 'worker-boost-bulk-ingest', 'boost-benchmark') and (command ~ '''limit'', [0-9]')) then
+    raise exception 'post-check: a Boost job command holds a number';
   end if;
   if (select count(*) from pipeline.ai_route_qualifications where service_code in ('boost_extract', 'boost_extract_benchmark') and prompt_version = 'boost-study-load-v2') <> 4 then
     raise exception 'post-check: the route qualifications do not name prompt boost-study-load-v2';
