@@ -43,7 +43,7 @@ test('Layer 1 change-based apply, departures and automatic ingestion are wired e
   expect(control).toContain('JSON.stringify({plan:true,runId,apply})')
   expect(control).toContain('svc_layer1_plan_finish')
   const depth=fs.readFileSync('supabase/functions/layer1-au-depth/index.ts','utf8')
-  expect(depth).toContain('const VERSION="layer1-au-depth-v1.9.0"')
+  expect(depth).toContain('const VERSION="layer1-au-depth-v1.9.1"')
   expect(depth).toContain('async function courseFingerprints(')
   expect(depth).toContain('svc_layer1_plan_changes')
   expect(depth).toContain('svc_layer1_plan_mark_applied')
