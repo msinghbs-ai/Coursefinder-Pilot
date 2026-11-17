@@ -13,6 +13,7 @@ import'./layer1-induction.css'
 
 export const STEPS=[['scheme','Country & scheme'],['source','Source & licence'],['mapping','Field mapping'],['cadence','Cadence & retention'],['dry_run','Dry-run preview'],['activate','Activation']]
 export const MAPPER='layer1-ai-induction-mapper'
+export const RUNNER='layer1-declarative-runner'
 const CONNECTOR={csv_file:'CSV file',xlsx_file:'Excel file',json_api:'JSON API',html_pages:'Web pages',pdf_document:'PDF document',manual_upload:'Uploaded by hand'}
 const TERMS={approved:'Approved',pending:'Pending (REQ-68)',not_required:'Not required'}
 const CADENCE={weekly:'Weekly',monthly:'Monthly',annual:'Annual'}
@@ -33,6 +34,12 @@ export default function Layer1InductionWizard({rank=0,onDone,onCancel,client=nul
   useEffect(()=>{open(null)},[])
   // the AI mapper is S2-Build's edge function: the button switches on by itself once it answers
   useEffect(()=>{let live=true;Promise.resolve(call(MAPPER,{action:'status'})).then(({data,error})=>{if(live)setMapper(!error&&data?.ok?data:false)}).catch(()=>{if(live)setMapper(false)});return()=>{live=false}},[])
+  // the dry run reads the first rows with the draft's AI-built parser spec through S2-Build's layer1-declarative-runner; it writes nothing and switches nothing on
+  const dryRun=async()=>{if(!id)return;setBusy('dry');setErr('');setNote('')
+    try{const{data,error}=await call(RUNNER,{action:'dry_run',induction_id:id});if(error||data?.ok===false)setErr(plainError(error||{message:data?.error||'The dry run did not run.'}))
+      else setNote(data?.status==='passed'?'Dry run passed. Nothing was written.':`Dry run failed: ${data?.message||'see the result below'}.`)}
+    catch(e){setErr(plainError(e))}
+    await open(id);setBusy('')}
   const set=k=>e=>setF(x=>({...x,[k]:e.target.type==='checkbox'?e.target.checked:e.target.value}))
   const schemes=useMemo(()=>(o?.schemes||[]).filter(s=>s.country_code===f.country_code),[o,f.country_code])
   const fieldList=useMemo(()=>(o?.categories||[]).flatMap(c=>c.fields.map(x=>({...x,category_key:c.key,category:c.label}))),[o])
@@ -138,8 +145,10 @@ export default function Layer1InductionWizard({rank=0,onDone,onCancel,client=nul
       {dr?<div className="l1i-metrics" data-l1i-dry-run={dr.status}>{[['Rows read',dr.rows_read],['Would insert',dr.inserts],['Would update',dr.updates],['Departures',dr.departures],[`Postcodes under ${Math.round(Number(o.postcode_min_share)*100)}%`,dr.postcode_escalations]].map(([l,v])=><div key={l}><small>{l}</small><strong>{fmtNumber(v||0)}</strong></div>)}
           <div><small>Result</small><StatusChip tone={dr.status==='passed'?'success':'danger'} label={dr.status==='passed'?'Passed':'Failed'}/></div>
           <p className="sl-sub wide">{dr.reader?`Reader: ${dr.reader}. `:''}Recorded {fmtDateTime(dr.recorded_at)}.{dr.message?` ${dr.message}`:''}</p></div>
-        :<div className="l1i-wait" data-l1i-dry-run="waiting_for_reader"><StatusChip tone="warning" label="Waiting for a reader"/><p>This source has no reader yet, so there is nothing to preview. You can still activate it: it is saved paused and stays paused until its reader is built and a dry run passes.</p></div>}
-      <Button compact disabled={!id||busy!==''} onClick={()=>open(id)} data-l1i-dry-refresh>Check again</Button>
+        :<div className="l1i-wait" data-l1i-dry-run="waiting_for_reader"><StatusChip tone="warning" label={f.parser_spec?'Ready for a dry run':'Waiting for a reader'}/><p>{f.parser_spec?'This draft has an AI-built parser spec (step 3). Run a dry run to read the first rows of the source file with it; nothing is written.':'This source has no parser spec yet, so there is nothing to preview: use AI Auto-Map in step 3 with a sample of the file. You can still activate it: it is saved paused and stays paused until its reader is built and a dry run passes.'}</p></div>}
+      <div className="l1i-actions"><Button compact disabled={!id||closed||!f.parser_spec||busy!==''} onClick={dryRun} data-l1i-dry-run-start>{busy==='dry'?'Running…':'Run dry run'}</Button>
+        <Button compact disabled={!id||busy!==''} onClick={()=>open(id)} data-l1i-dry-refresh>Check again</Button></div>
+      {f.parser_spec&&!/\.(csv|xlsx|json)(\?|$)/i.test(f.source_url||'')?<p className="sl-sub" data-l1i-dry-file-note>The dry run reads a CSV, XLSX or JSON file. If the source address is a landing page, enter the address of the file itself in step 2.</p>:null}
     </div>,
     // 6
     <div key="s6" data-l1i-step="activate">
