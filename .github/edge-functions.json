@@ -9,6 +9,7 @@
     "evidence-link-index": false,
     "evidence-storage-dedupe": false,
     "fee-schedule-etl": false,
+    "layer1-ai-induction-mapper": true,
     "layer1-au-cricos-facts": false,
     "layer1-au-depth": false,
     "layer1-ca-ab-alis-degrees": false,
