@@ -33,9 +33,14 @@ test('the mapper: status and map only, Curator or above (Contract v1.2), the mod
   expect(fn).toContain('body: JSON.stringify({ mode: "induction_map", input }),')
   expect(fn).not.toMatch(/openrouter\.ai|chat\/completions|OPENROUTER_API_KEY/)
   const rpcs = [...fn.matchAll(/rpc\(service, "([a-z0-9_]+)"/g)].map((m) => m[1])
-  expect([...new Set(rpcs)].sort()).toEqual(['svc_layer1_authorize_curator', 'svc_layer1_induction_map_route_v1', 'svc_layer1_induction_read', 'svc_layer1_parser_spec_validate_v1', 'svc_pilot_issue_nonce'])
+  // the only write path is svc_layer1_parser_record, used by the re-infer job (PR B, s586); map writes nothing
+  expect([...new Set(rpcs)].sort()).toEqual(['svc_enrichment_categories', 'svc_layer1_authorize_curator', 'svc_layer1_induction_map_route_v1', 'svc_layer1_induction_read', 'svc_layer1_parser_record',
+    'svc_layer1_parser_reinfer_note_v1', 'svc_layer1_parser_reinfer_queue_v1', 'svc_layer1_parser_spec_validate_v1', 'svc_layer1_register_settings_v1', 'svc_pilot_consume_nonce', 'svc_pilot_issue_nonce'])
+  const mapPath = fn.slice(fn.indexOf('if (body.action !== "map")'))
+  expect(mapPath).not.toContain('svc_layer1_parser_record')
   expect(fn).not.toMatch(/\.from\(["'][a-z_]+["']\)\.(insert|update|upsert|delete)/)
-  expect(fns['layer1-ai-induction-mapper']).toBe(true)
+  expect(fns['layer1-ai-induction-mapper']).toBe(false)  // PR B: the re-infer job calls it with a one-time nonce; a person's JWT is checked in the function
+  expect(fn).toContain('await caller(req, service, url, anon);')
 })
 
 test('the route: one model, the central Qwen3 30B, provisional qualification on the 13 Nov decision, caps on the route; the worker calls through cascadeFetch', () => {
