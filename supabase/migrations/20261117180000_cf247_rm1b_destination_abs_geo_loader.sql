@@ -379,7 +379,7 @@ on conflict (jobname) do nothing;
 select cron.schedule('destination-abs-load', '30 18,19 * * *', 'select pipeline.svc_pilot_submit_nonce(''layer1-destination-geo-loader'', jsonb_build_object(''mode'', ''load'', ''trigger'', ''schedule'')) where security.destination_abs_load_due_v1()');
 
 insert into pipeline.component_register(kind, name, layer, area, purpose, status, introduced_in)
-select v.kind, v.name, v.layer, 'Destination data', v.purpose, 'active', '20261117160000'
+select v.kind, v.name, v.layer, 'Destination data', v.purpose, 'active', '20261117180000'
   from (values
     ('job', 'destination-abs-load', 'L1 register', 'ABS population and postcodes for Australian destination localities, monthly (RM1B)'),
     ('edge_function', 'layer1-destination-geo-loader', 'L1 register', 'Reads ABS Regional population 2024-25 Table 2 and loads SUA localities, figures and postcodes (RM1B)'),

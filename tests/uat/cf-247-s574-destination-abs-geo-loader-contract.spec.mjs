@@ -1,9 +1,9 @@
 // Guards: Admin destination data design v1.9 approvals A-1 to A-4 (Platform Admin 17 Nov 2026 07:29, 07:35) and the RM1B loader handoff (13:12, 14:11, 14:30): SUA localities and ERP from ABS Regional population 2024-25 with attribution and evidence, postcode shares from the ASGS Edition 3 Mesh Block files flagged by destination_postcode_flags_v1, job destination-abs-load with Run now
-// CF-247 S574. Migration 20261117160000_cf247_rm1b_destination_abs_geo_loader.sql; edge function layer1-destination-geo-loader v1.0.0; workflow destination-abs-shares-load.
+// CF-247 S574. Migration 20261117180000_cf247_rm1b_destination_abs_geo_loader.sql; edge function layer1-destination-geo-loader v1.0.0; workflow destination-abs-shares-load.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const raw = fs.readFileSync('supabase/migrations/20261117160000_cf247_rm1b_destination_abs_geo_loader.sql', 'utf8')
+const raw = fs.readFileSync('supabase/migrations/20261117180000_cf247_rm1b_destination_abs_geo_loader.sql', 'utf8')
 const mig = raw.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const edge = fs.readFileSync('supabase/functions/layer1-destination-geo-loader/index.ts', 'utf8')
 const wf = fs.readFileSync('.github/workflows/destination-abs-shares-load.yml', 'utf8')
