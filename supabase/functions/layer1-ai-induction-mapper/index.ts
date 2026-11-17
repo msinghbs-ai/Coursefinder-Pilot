@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { applySpec, type Spec } from "../_shared/cf247-layer1-spec.ts";
 
-// CF-247 Wave 2, PR A (S2-Build; Mapper Contract v1.1, docs/platform/LAYER1-AI-INDUCTION-MAPPER-CONTRACT.md in the admin repository).
+// CF-247 Wave 2, PR A (S2-Build; Mapper Contract v1.2, docs/platform/LAYER1-AI-INDUCTION-MAPPER-CONTRACT.md in the admin repository).
 // AI Auto-Map for Layer 1 › Sources › + Add source, step 3. Actions:
 //   status: { ok, version, model }. The wizard enables AI Auto-Map only when this answers ok.
 //   map:    field and category suggestions for a sample, and a parser spec for the target record type, checked by
@@ -42,7 +42,7 @@ async function caller(req: Request, service: any, url: string, anon: string) {
   const user = createClient(url, anon, { global: { headers: { Authorization: `Bearer ${token}` } }, auth: { persistSession: false } });
   const { data: { user: u }, error } = await user.auth.getUser(token);
   if (error || !u) throw new Error("Your session has ended; sign in again.");
-  if (!(await rpc(service, "svc_layer1_authorize_operator", { p_user_id: u.id }))) throw new Error("AI Auto-Map needs Pipeline Operator or above.");
+  if (!(await rpc(service, "svc_layer1_authorize_curator", { p_user_id: u.id }))) throw new Error("AI Auto-Map needs Curator or above.");
   return u.id as string;
 }
 

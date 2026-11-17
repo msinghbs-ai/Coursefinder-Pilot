@@ -25,14 +25,15 @@ test('the spec check refuses unknown keys, targets, types and transforms, and ne
   expect(mig).toContain("raise exception 'post-check: an invalid spec was accepted'")
 })
 
-test('the mapper: status and map only, Pipeline Operator or above, the model through the worker on its route, writes nothing', () => {
+test('the mapper: status and map only, Curator or above (Contract v1.2), the model through the worker on its route, writes nothing', () => {
   expect(fn).toContain('if (body.action === "status") return json({ ok: true, version: VERSION, model: rt.model });')
-  expect(fn).toContain('await rpc(service, "svc_layer1_authorize_operator", { p_user_id: u.id })')
+  expect(fn).toContain('await rpc(service, "svc_layer1_authorize_curator", { p_user_id: u.id })')
+  expect(mig).toContain('where ur.user_id = p_user_id and r.status = \'active\' and r.rank >= 3')
   expect(fn).toContain('const nonce = await rpc(service, "svc_pilot_issue_nonce", { p_function: "coverage-sweep" });')
   expect(fn).toContain('body: JSON.stringify({ mode: "induction_map", input }),')
   expect(fn).not.toMatch(/openrouter\.ai|chat\/completions|OPENROUTER_API_KEY/)
   const rpcs = [...fn.matchAll(/rpc\(service, "([a-z0-9_]+)"/g)].map((m) => m[1])
-  expect([...new Set(rpcs)].sort()).toEqual(['svc_layer1_authorize_operator', 'svc_layer1_induction_map_route_v1', 'svc_layer1_induction_read', 'svc_layer1_parser_spec_validate_v1', 'svc_pilot_issue_nonce'])
+  expect([...new Set(rpcs)].sort()).toEqual(['svc_layer1_authorize_curator', 'svc_layer1_induction_map_route_v1', 'svc_layer1_induction_read', 'svc_layer1_parser_spec_validate_v1', 'svc_pilot_issue_nonce'])
   expect(fn).not.toMatch(/\.from\(["'][a-z_]+["']\)\.(insert|update|upsert|delete)/)
   expect(fns['layer1-ai-induction-mapper']).toBe(true)
 })

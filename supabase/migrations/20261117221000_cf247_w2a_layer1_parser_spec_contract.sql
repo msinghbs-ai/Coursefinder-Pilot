@@ -1,5 +1,5 @@
 -- CF-247 Wave 2, PR A (S2-Build; Platform Admin 17 Nov 2026 17:55, 19:08 and 19:58; Mapper Contract v1.1 of S1-RM-Design, 20:10):
--- the declarative parser spec contract behind the AI induction mapper.
+-- the declarative parser spec contract behind the AI induction mapper (Mapper Contract v1.2 of 21:30: Curators and above may use it).
 --   1. security.layer1_parser_targets_v1(): for each of the seven target record types (security.layer1_record_types_v1), the table its rows
 --      reach, through which proven apply path, and the only target fields a spec may name (type, required, key). A spec cannot name anything
 --      else: no table, column, SQL or code of its own.
@@ -239,6 +239,20 @@ begin
 end $function$;
 comment on function public.svc_layer1_parser_spec_validate_v1(jsonb, text, jsonb) is 'Wave 2: the parser spec check and the allowed targets of a record type, for layer1-ai-induction-mapper and the Layer 1 runner.';
 
+-- Mapper Contract v1.2 (S1-RM-Design 21:30, Pilot v2.16.26): Curators (rank 3) draft, so the mapper accepts Curator and above
+create or replace function public.svc_layer1_authorize_curator(p_user_id uuid)
+ returns boolean
+ language sql
+ stable security definer
+ set search_path to ''
+as $function$
+  select exists (
+    select 1 from security.user_roles ur join security.roles r on r.code = ur.role_code
+     where ur.user_id = p_user_id and r.status = 'active' and r.rank >= 3 -- fixed: who drafts in the Layer 1 wizard (Curator, Mapper Contract v1.2)
+       and (ur.expires_at is null or ur.expires_at > now()));
+$function$;
+comment on function public.svc_layer1_authorize_curator(uuid) is 'Wave 2: true when the user is Curator (rank 3) or above, the people who draft in the Layer 1 induction wizard (Mapper Contract v1.2).';
+
 create or replace function public.svc_layer1_induction_map_route_v1()
  returns jsonb
  language plpgsql
@@ -255,9 +269,11 @@ revoke all on function security.layer1_parser_targets_v1() from public, anon, au
 revoke all on function security.layer1_parser_spec_validate_v1(jsonb, text, jsonb) from public, anon, authenticated;
 revoke all on function public.svc_layer1_parser_spec_validate_v1(jsonb, text, jsonb) from public, anon, authenticated;
 revoke all on function public.svc_layer1_induction_map_route_v1() from public, anon, authenticated;
+revoke all on function public.svc_layer1_authorize_curator(uuid) from public, anon, authenticated;
 grant execute on function security.layer1_parser_targets_v1() to service_role;
 grant execute on function public.svc_layer1_parser_spec_validate_v1(jsonb, text, jsonb) to service_role;
 grant execute on function public.svc_layer1_induction_map_route_v1() to service_role;
+grant execute on function public.svc_layer1_authorize_curator(uuid) to service_role;
 
 insert into pipeline.component_register(kind, name, layer, area, purpose, status, introduced_in)
 select v.kind, v.name, v.layer, 'Layer 1 register', v.purpose, 'active', '20261117221000'
