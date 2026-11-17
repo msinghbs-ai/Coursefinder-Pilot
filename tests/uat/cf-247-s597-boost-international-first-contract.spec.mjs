@@ -1,5 +1,5 @@
 // Guards: Boost study load, the international study load first (Platform Admin 18 Nov 2026 07:08, decisions 1 and 5): the study load a page states for international students is reported and checked ahead of the general one; a general definition of full-time study is refused; Boost no longer skips for a running dispatcher tick unless setting boost.yield_to_dispatchers is 1; the change qualifies no model and admits nothing
-// CF-247 S597. Migration 20261118074500_cf247_boost_international_first, worker coverage-sweep v1.0.12 (boost.ts prompt boost-study-load-v2, selector study-load-windows-v3). G1, G2, G3 and housekeeping are guarded centrally by s42, s32 and s57.
+// CF-247 S597. Migration 20261118074500_cf247_boost_international_first, worker coverage-sweep v1.0.12 (boost.ts; the prompt is boost-study-load-v3 from v1.0.13, s599). G1, G2, G3 and housekeeping are guarded centrally by s42, s32 and s57.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { build } from 'esbuild'
@@ -32,14 +32,14 @@ test('migration: the gate yields to dispatcher ticks only by its setting, earlie
 })
 
 test('worker v1.0.12: the page check is given the whole page, and a run reads a few pages at a time by its setting', () => {
-  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.12"')
+  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.13"')
   expect(IX).toContain('const v = verifyStudyLoad(ra.a, boostFlat(page), page);')
   expect(IX).toContain('const v = verifyStudyLoad(ra.a, pageFlat, page);')
   expect(IX).toContain('const par = boostParallel(ws); for (let i = 0; i < items.length; i += par) await Promise.all(items.slice(i, i + par).map(readOne));')
   expect(B.boostParallel({})).toBe(4)
   expect(B.boostParallel({ 'reading.boost_extract_parallel': 2 })).toBe(2)
   expect(B.boostParallel({ 'reading.boost_extract_parallel': 50 })).toBe(8)
-  expect(B.BOOST_STUDY_LOAD_PROMPT_VERSION).toBe('boost-study-load-v2')
+  expect(B.BOOST_STUDY_LOAD_PROMPT_VERSION).toBe('boost-study-load-v3')
   expect(B.BOOST_SELECTOR).toBe('study-load-windows-v3')
   expect(B.BOOST_STUDY_LOAD_SYSTEM).toContain('International students first')
   expect(B.BOOST_STUDY_LOAD_SYSTEM).toContain('"basis": "international" | "general" | null')
@@ -61,7 +61,7 @@ test('boost.ts: the study load stated for international students is preferred, a
   const p3 = 'Duration: 3 Study Periods (1 year) full-time, or equivalent part-time. Delivered on campus.'
   expect(B.internationalStudySentences(p3)).toEqual([])
   expect(V({ study_load: 'both', basis: 'general', quote: '3 Study Periods (1 year) full-time, or equivalent part-time', reason: null }, p3).ok).toBe(true)
-  expect(V({ study_load: 'both', basis: 'international', quote: '3 Study Periods (1 year) full-time, or equivalent part-time', reason: null }, p3).problems).toEqual(['basis is international but the quote does not speak of international students'])
+  expect(V({ study_load: 'both', basis: 'international', quote: '3 Study Periods (1 year) full-time, or equivalent part-time', reason: null }, p3)).toMatchObject({ ok: true, basis: 'general' })   // v1.0.13: the basis is read from the quote, not from the model's label
   const p7 = 'International students must study full-time. Domestic students may study full-time or part-time.'
   expect(V({ study_load: 'full_time', basis: 'international', quote: 'International students must study full-time.', reason: null }, p7).ok).toBe(true)
   expect(V({ study_load: 'both', basis: 'general', quote: 'Domestic students may study full-time or part-time.', reason: null }, p7).ok).toBe(false)
