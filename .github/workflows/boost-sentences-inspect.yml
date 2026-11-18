@@ -1,0 +1,38 @@
+# Boost study load: read-only inspection of the sentences for international students (CF-247 S660, S2 - BOOST; Platform Admin 18 Nov 2026
+# 17:02 item 1, and 17 Nov 2026 22:05: database runs go through GitHub Actions and the Management API, with no confirmation prompt).
+# It reads the Layer 4 Boost study load readings of the chosen scope, asks the coverage-sweep worker's read-only mode boost_sentences for the
+# sentences on their stored pages (no model call, no write to a table or to Storage) and prints them. The result file is kept as an artifact.
+name: Boost sentence inspection (read only)
+on:
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: "Which readings"
+        type: choice
+        options: ["international-not-stated", "open", "settled"]
+        default: "international-not-stated"
+concurrency:
+  group: boost-sentences-inspect
+  cancel-in-progress: false
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      REF: ${{ vars.SUPABASE_PROJECT_REF }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Inspect the stored pages
+        run: node scripts/boost-sentences-inspect.mjs "${{ inputs.scope }}"
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: boost-sentences
+          path: out/
+          if-no-files-found: ignore

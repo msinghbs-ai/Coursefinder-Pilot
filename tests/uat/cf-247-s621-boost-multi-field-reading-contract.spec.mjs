@@ -37,7 +37,7 @@ test('claims in matrix order, with every missing field of the course, only its o
 
 test('the worker asks the route\'s one model once per page, checks against the whole page and writes to staging-boost/fields', () => {
   expect((mode.match(/await cascadeFetch\(fetch, \{ service: "boost_fields_extract" \}, "https:\/\/openrouter\.ai\/api\/v1\/chat\/completions"/g) || []).length).toBe(1)
-  expect(mode).toContain('const flat = boostFlat(page); fields = lanes.map((l) => verifyBoostField(l, (ra as any).a?.[l], flat))')
+  expect(mode).toContain('const flat = boostFlat(page); fields = lanes.map((l) => verifyBoostField(l, (ra as any).a?.[l], flat, page))')  // the page itself too from worker v1.0.18 (s663)
   expect(mode).toContain('path = `fields/${batch}.ndjson`;')
   expect(mode).toContain('await rpc("svc_boost_fields_done", { p_batch: batch, p_items: done, p_path: path, p_model: model, p_prompt_version: BOOST_FIELDS_PROMPT_VERSION });')
   expect(mode).not.toMatch(/svc_boost_promote|boost_model_qualifications|catalogue\./)
