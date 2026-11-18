@@ -8,8 +8,8 @@
 // Page content is data: nothing here follows an instruction found on a page.
 
 export const BOOST_STUDY_LOAD_PROMPT_ID = "boost-study-load";
-export const BOOST_STUDY_LOAD_PROMPT_VERSION = "boost-study-load-v4";  // v2 (18 Nov 2026, Platform Admin decision 1): the study load for international students when the page states one; otherwise the course's general study load
-export const BOOST_SELECTOR = "study-load-windows-v3";  // v3 (18 Nov 2026): sentences about international students and visas are sent again: they are the preferred basis (decision 1)
+export const BOOST_STUDY_LOAD_PROMPT_VERSION = "boost-study-load-v5";  // v5 (18 Nov 2026, Platform Admin 14:29): a fee note (EFTSL, CSP, a fee calculated on a standard full-time load) is never the study load. v4: v2 (18 Nov 2026, Platform Admin decision 1): the study load for international students when the page states one; otherwise the course's general study load
+export const BOOST_SELECTOR = "study-load-windows-v4";  // v4 (18 Nov 2026 14:29): fee-note sentences are no longer sent. v3: v3 (18 Nov 2026): sentences about international students and visas are sent again: they are the preferred basis (decision 1)
 export const BOOST_SELECTOR_INTERNATIONAL = "study-load-international-v1";  // only the sentences that state a study load for international students
 export const BOOST_ANSWER_KEY = "reading.answer_tokens.boost_extract";
 export const BOOST_ANSWER_DEFAULT = 300;   // used only when the setting cannot be read
@@ -25,6 +25,7 @@ export const BOOST_STUDY_LOAD_SYSTEM = [
   "- When the text you are given is only sentences about international students, answer from those sentences.",
   "- Otherwise report the study load the page states for the course for all students, and set basis to \"general\".",
   "- A sentence that only defines or describes full-time or part-time study in general (for example how many hours or courses a full-time student takes) does not state this course's study load.",
+  "- A fee note never states the course's study load: a sentence about fees, tuition, EFTSL, Commonwealth supported places (CSP) or student contributions, or one saying a fee is calculated on a standard full-time load (for example \"based on a standard full-time load of 48 credit points (1.0 EFTSL)\"), is about money, not about how this course is studied.",
   "- Never infer study load from delivery mode (online, on campus, blended), from a timetable or from the duration alone.",
   "- quote is copied exactly from the page text you are given and must contain the words full-time and/or part-time that support your answer.",
   "- When the page does not state it, answer {\"study_load\": null, \"basis\": null, \"quote\": null, \"reason\": \"not_stated\"}.",
@@ -52,10 +53,16 @@ const INTL_WORDS = /\binternational\b|\boverseas\b|\bvisas?\b|\bCRICOS\b|\bnon[\
 const INTL_RULE = /\b(must|only|required|requirement|not (be )?(available|offered|permitted|possible|eligible)|unavailable|cannot|can ?not|unable|restricted|eligible to apply for (an? )?(australian |new zealand |canadian )?student visa)\b|\bvisa holders?\b|\bon an? (student|subclass)\b|\bstudent visa\b|\binternational students?\s*[:\-–]|\b(international students?|visa holders?)\b[^.]{0,40}\b(is|are|be)\s+(full|part)[\s-]?time|\bless than an? (full|part)[\s-]?time\b/i;
 const NOT_A_LOAD_RULE = /\bfees?\b|\btuition\b|\bcost\b|\$\s?\d|\bcredit points?\b|\bexperience\b|\bemploy|\bscholarship|\bindicative\b|\bper (year|annum|semester|trimester)\b|\bloan\b|\bwork(ing)?\b[^.]{0,40}\b(hours|fortnight)\b|\bwork(ing)? (part|full)[\s-]?time\b|\bwork rights\b|\bneeds? an? (student )?visa\b|\bwhat visa\b/i;
 const DEFINITION_WORDS = /\b(full|part)[\s-]?time (study|load|enrolment|enrollment) (means|refers to|is defined|is when|is where|is an? |is \d|is (usually|typically|normally|generally))|\bas a (full|part)[\s-]?time student\b|\bis considered (full|part)[\s-]?time\b|\b(full|part)[\s-]?time students? (are expected|can expect|should expect|typically|usually|normally)\b|\bstandard (full|part)[\s-]?time (course |study )?load\b/i;
+//  - v1.0.17 (Platform Admin 18 Nov 2026 14:29, from the 400 refused readings in Layer 4): a domestic fee-calculation footnote ("The
+//    indicative annual tuition fee is calculated based on a standard full-time study load which is usually 8 credit points", "based on a
+//    standard full-time load of 48 credit points (1.0 EFTSL)", Commonwealth supported places) was quoted as the study load on 27 pages.
+//    Such a fee note is not sent, never counts as a sentence about international students, and is refused as a quote.
+export const FEE_NOTE = /\bEFTSL\b|\bequivalent full[\s-]?time student load\b|\bCommonwealth[\s-]supported\b|\bCSPs?\b|\bstudent contributions?\b|\b(fees?|tuition)\b[^.]{0,120}\b(calculated|based) on\b|\b(calculated|based) on (a |the )?(standard |normal |typical )?(full|part)[\s-]?time (study |course )?load\b/i;
+export const isFeeNote = (sentence: string) => FEE_NOTE.test(String(sentence || ""));
 const FULL = /full[\s-]?time/i, PART = /part[\s-]?time/i;
 const sentencesOf = (text: string) => String(text || "").split(/(?<=[.!?])\s+|\n+/).map((x) => x.trim()).filter(Boolean);
 // the sentences of the page that state a study load for international students
-export const internationalStudySentences = (page: string) => sentencesOf(page).filter((x) => INTL_WORDS.test(x) && (FULL.test(x) || PART.test(x)) && INTL_RULE.test(x) && !NOT_A_LOAD_RULE.test(x) && !DEFINITION_WORDS.test(x));
+export const internationalStudySentences = (page: string) => sentencesOf(page).filter((x) => INTL_WORDS.test(x) && (FULL.test(x) || PART.test(x)) && INTL_RULE.test(x) && !NOT_A_LOAD_RULE.test(x) && !DEFINITION_WORDS.test(x) && !isFeeNote(x));
 // Which loads a sentence offers. A load named only to say it is not offered, or offered only to others ("part-time study (only available
 // for non-visa students)", "Part-time equivalent study options are not available for international students"), does not count. When a
 // sentence about international students only rules a load out, it states the other one.
@@ -119,11 +126,16 @@ export function studyLoadSections(page: string, maxChars: number): { text: strin
   }
   const parts: string[] = []; let used = 0;
   for (const [a, b] of spans) {
-    const part = text.slice(a, b).replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
+    const raw = text.slice(a, b).replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
+    // v4: fee-note sentences are left out; a window with nothing but fee notes about full-time or part-time is not sent
+    const kept = sentencesOf(raw).filter((x) => !isFeeNote(x));
+    if (!kept.some((x) => FULL.test(x) || PART.test(x))) continue;
+    const part = kept.join(" ");
     if (used + part.length > maxChars) { if (!parts.length) parts.push(part.slice(0, maxChars)); break }
     parts.push(part); used += part.length + 7;
   }
   const out = parts.join("\n[...]\n");
+  if (!out) return { text: "", selector: "fee_notes_only", hits, page_chars: text.length, chars: 0 };
   return { text: out, selector: BOOST_SELECTOR, hits, page_chars: text.length, chars: out.length };
 }
 
@@ -182,6 +194,7 @@ export function verifyStudyLoad(answer: any, pageFlat: string, page = ""): Boost
     if (intl.length) problems.push("the page states a study load for international students; the answer does not use it");
     if (loadOf(parts) !== answer.study_load) problems.push("the quote does not state the study load it claims (never from delivery mode or duration alone)");
   }
+  if (parts.some((x) => (FULL.test(x) || PART.test(x)) && isFeeNote(x)) && !parts.some((x) => (FULL.test(x) || PART.test(x)) && !isFeeNote(x))) problems.push("the quote is a fee note (a fee calculation, EFTSL or CSP), not the course's study load");
   if (DEFINITION_WORDS.test(q) && !parts.some((x) => !DEFINITION_WORDS.test(x) && (FULL.test(x) || PART.test(x)))) problems.push("the quote defines full-time or part-time study in general; it does not state the course's study load");
   return { ok: problems.length === 0, problems, quotes_checked: 1, basis: intlParts.length ? "international" : "general" };
 }
