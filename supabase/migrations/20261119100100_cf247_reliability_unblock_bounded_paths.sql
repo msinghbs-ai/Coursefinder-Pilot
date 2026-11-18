@@ -19,6 +19,9 @@
 --   1. security.course_coverage_build_v1 is provider-chunked: each run rebuilds the providers whose coverage rows are oldest, up to
 --      batch.course_coverage_courses courses (default 3,000); every per-course scan, the AER covered set included, is restricted to the chunk;
 --      country tiers still come from every provider. The whole table is refreshed every 12 runs; course-coverage-build runs every 5 minutes.
+--      The daily counts (course_coverage_daily, course_coverage_daily_by_country) move by each run's change instead of a count of the whole
+--      table (3.9 s measured); the first run of a day starts from the latest earlier day's counts. Rows of providers with no active course left
+--      are removed by provider, not by a scan of the whole table.
 --   2. security.consumer_api_snapshot_v1 reads admit.consumer_snapshot_page_size rows (default 5), cheap reads first and the two free-text
 --      searches (about 7 s each, measured) last, and starts no read after admit.consumer_snapshot_budget_ms (default 6,000 ms), marking the
 --      cases it skipped. The same frozen reads, smaller pages; about 6-8 s a snapshot instead of about 25 s.
@@ -77,22 +80,33 @@ select pg_temp.cf_edit_many('security.course_coverage_build_v1()'::regprocedure,
     $o$from pipeline.field_enrich_items where course_id is not null order by course_id, field, id desc;$o$,
     $o$where a.resolved_at is null;$o$,
     $o$  truncate pipeline.course_attribute_coverage;$o$,
+    $o$  delete from pipeline.course_coverage_daily where snapshot_date=current_date;
+  insert into pipeline.course_coverage_daily(snapshot_date,attribute,state,tier,courses)
+  select current_date, attribute, state, tier, count(*) from pipeline.course_attribute_coverage where country_code='AU' group by 2,3,4;
+  -- Decision 213: daily counts by country
+  update pipeline.course_coverage_daily_by_country set courses = 0, computed_at = now() where snapshot_date = current_date;
+  insert into pipeline.course_coverage_daily_by_country(snapshot_date,country_code,attribute,state,tier,courses)
+  select current_date, country_code, attribute, state, tier, count(*) from pipeline.course_attribute_coverage group by 2,3,4,5
+  on conflict (snapshot_date,country_code,attribute,state,tier) do update set courses = excluded.courses, computed_at = now();$o$,
     $o$return jsonb_build_object('rows',v_n,'courses',(select count(*) from _c),$o$
   ],
   array[
     $n$declare v_n int; v_t0 timestamptz:=clock_timestamp();
-        v_batch int := greatest(1, security.pipeline_num_v1('batch.course_coverage_courses', 3000)::int); v_chunk uuid[];  -- 20261119100100 (s720)$n$,
+        v_batch int := greatest(1, security.pipeline_num_v1('batch.course_coverage_courses', 3000)::int); v_chunk uuid[]; v_gone uuid[]; v_full boolean := false;  -- 20261119100100 (s720)$n$,
     $n$  -- 20261119100100 (s720): provider-chunked. Every provider with active courses and its country; the chunk is the providers whose coverage rows
   -- are oldest (never built first), up to batch.course_coverage_courses courses (always at least one provider)
   create temp table _pc on commit drop as
     select co.provider_id, min(k.iso_alpha2::text) country_code, count(*) n
       from catalogue.courses co join catalogue.providers p on p.id=co.provider_id join ref.countries k on k.id=p.country_id
      where co.lifecycle_status='active' group by co.provider_id;
+  create temp table _cp on commit drop as
+    select provider_id, min(computed_at) last_at from pipeline.course_attribute_coverage group by provider_id;
   select array_agg(z.provider_id) into v_chunk from (
     select q.provider_id, sum(q.n) over (order by q.last_at nulls first, q.provider_id) run_n, row_number() over (order by q.last_at nulls first, q.provider_id) rn
-      from (select pc.provider_id, pc.n, x.last_at from _pc pc
-              left join (select provider_id, min(computed_at) last_at from pipeline.course_attribute_coverage group by provider_id) x on x.provider_id = pc.provider_id) q) z
+      from (select pc.provider_id, pc.n, x.last_at from _pc pc left join _cp x on x.provider_id = pc.provider_id) q) z
    where z.rn = 1 or z.run_n <= v_batch;
+  -- providers whose rows remain but who have no active course left; their rows are removed in the same run
+  v_gone := array(select x.provider_id from _cp x where not exists (select 1 from _pc pc where pc.provider_id = x.provider_id));
   create temp table _c on commit drop as$n$,
     $n$     where co.lifecycle_status='active' and co.provider_id = any(v_chunk); -- Decision 213: every country; 20261119100100: the chunk$n$,
     $n$      from (select provider_id, row_number() over (partition by country_code order by n desc, provider_id) rk from _pc) x; -- tiers within each country (every provider, s720)$n$,
@@ -125,8 +139,39 @@ select pg_temp.cf_edit_many('security.course_coverage_build_v1()'::regprocedure,
     $n$from pipeline.field_enrich_items where course_id in (select course_id from _c) order by course_id, field, id desc;$n$,
     $n$where a.resolved_at is null and a.course_id in (select course_id from _c);$n$,
     $n$  -- s720: the chunk's providers are rebuilt in place, and the rows of providers with no active course left are removed (derived rows)
-  delete from pipeline.course_attribute_coverage where provider_id = any(v_chunk) or provider_id not in (select provider_id from _pc);$n$,
-    $n$return jsonb_build_object('rows',v_n,'courses',(select count(*) from _c),'providers',cardinality(v_chunk),'batch',v_batch,$n$
+  -- the counts of the rows removed are kept so the daily counts can move by this run's change
+  create temp table _dold (country_code text, attribute text, state text, tier text, n int) on commit drop;
+  with d as (delete from pipeline.course_attribute_coverage where provider_id = any(v_chunk || v_gone) returning country_code, attribute, state, tier)
+  insert into _dold select country_code, attribute, state, tier, count(*)::int from d group by 1,2,3,4;$n$,
+    $n$  -- s720: the daily counts move by this run's change (the rows removed above and the rows written now); this function is the only writer of
+  -- these rows. The first run of a day starts from the latest earlier day's counts, or counts the whole table once when there are none.
+  if not exists (select 1 from pipeline.course_coverage_daily_by_country where snapshot_date = current_date) then
+    if exists (select 1 from pipeline.course_coverage_daily_by_country where snapshot_date < current_date) then
+      insert into pipeline.course_coverage_daily_by_country(snapshot_date,country_code,attribute,state,tier,courses)
+      select current_date, country_code, attribute, state, tier, courses from pipeline.course_coverage_daily_by_country
+       where snapshot_date = (select max(snapshot_date) from pipeline.course_coverage_daily_by_country where snapshot_date < current_date);
+    else
+      insert into pipeline.course_coverage_daily_by_country(snapshot_date,country_code,attribute,state,tier,courses)
+      select current_date, country_code, attribute, state, tier, count(*) from pipeline.course_attribute_coverage group by 2,3,4,5;
+      v_full := true;
+    end if;
+  end if;
+  if not v_full then
+    -- Decision 213: daily counts by country
+    insert into pipeline.course_coverage_daily_by_country(snapshot_date,country_code,attribute,state,tier,courses)
+    select current_date, country_code, attribute, state, tier, sum(n)::int from (
+      select country_code, attribute, state, tier, -n n from _dold
+      union all
+      select country_code, attribute, state, tier, count(*)::int from pipeline.course_attribute_coverage where provider_id = any(v_chunk) group by 1,2,3,4) d
+     group by 2,3,4,5
+    on conflict (snapshot_date,country_code,attribute,state,tier) do update set courses = pipeline.course_coverage_daily_by_country.courses + excluded.courses, computed_at = now();
+  end if;
+  -- the Australian daily counts are the Australian rows of the counts by country
+  delete from pipeline.course_coverage_daily where snapshot_date=current_date;
+  insert into pipeline.course_coverage_daily(snapshot_date,attribute,state,tier,courses)
+  select current_date, attribute, state, tier, courses from pipeline.course_coverage_daily_by_country
+   where snapshot_date = current_date and country_code = 'AU' and courses <> 0;$n$,
+    $n$return jsonb_build_object('rows',v_n,'courses',(select count(*) from _c),'providers',cardinality(v_chunk),'gone',cardinality(v_gone),'batch',v_batch,$n$
   ],
   '20261119100100 (s720)');
 
