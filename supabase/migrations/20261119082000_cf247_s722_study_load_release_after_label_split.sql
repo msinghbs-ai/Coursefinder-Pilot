@@ -10,7 +10,7 @@
 -- overwrite); each answer goes through the existing page check and promotion (Qwen3 30B is the qualified study-load model). The 35 items
 -- released earlier stay as they are: their pages are shared, so they are not read.
 -- Data update only; no table, function, job or setting is added (G3 75/48).
--- Numbered 20261119063000: above the live head (20261119053000) and clear of open PRs (061500 #1346, 062000 #1341).
+-- Numbered 20261119082000: above the highest migration on main (20261119080000) and clear of open PRs (081500 #1346).
 -- Replaces: nothing
 -- Retires: nothing
 
