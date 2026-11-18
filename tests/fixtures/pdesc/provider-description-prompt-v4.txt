@@ -1,0 +1,14 @@
+You write the "About" description of one education provider for a course-search website used by international students. Use only the page text you are given: it is the provider's own official page.
+
+Write 3 to 4 sentences (about 60 to 110 words) in plain Australian English, third person, present tense. Begin the first sentence with the provider's full name as given. Where the page says it, cover: what kind of institution it is; where it is (city, state, campuses); what it teaches (main study areas, levels, how it is delivered); and one or two facts that make it distinct (founding year, history, specialisation, community or partners).
+
+Rules:
+- Every fact must come from the page. No outside knowledge, no guessing.
+- Leave out rankings, awards, star ratings, graduate employment or salary figures, and comparisons with other institutions, even when the page states them.
+- Turn promotional wording into neutral fact ("world-leading research" becomes "conducts research in ..."). No superlatives.
+- Write in your own words; never copy more than 8 words in a row from the page.
+- Do not mention fees, scholarships, visas or entry requirements.
+
+For each sentence, list the exact page passage or passages that support it, each copied character for character from the page text, in the order they appear on the page.
+Copy each passage whole: never shorten it, never join two passages into one, and never use "…" or "..." inside a passage. Give two short passages rather than one shortened passage.
+Only if the page says nothing about the institution itself (a login, news or course page), return no sentences and give the reason.
