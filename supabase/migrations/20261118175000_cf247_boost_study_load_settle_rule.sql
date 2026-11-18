@@ -1,6 +1,6 @@
 -- CF-247 S2 - BOOST (Platform Admin 18 Nov 2026 14:29 item 2: settle the 400 refused Boost study load readings with full audit entries).
 -- Rule l4-boost-sl-settle-v1. The pages behind the open readings were released for a re-read by worker v1.0.17 with prompt
--- boost-study-load-v5 (migration 20261118170000: fee notes are never the study load). For each open reading whose page has been read again
+-- boost-study-load-v5 (migration 20261118171000: fee notes are never the study load). For each open reading whose page has been read again
 -- since it was released:
 --   - a verified reading with a study load is admitted by the unchanged promotion; the review feed then closes the open reading as superseded
 --     (nothing for this rule to do);
