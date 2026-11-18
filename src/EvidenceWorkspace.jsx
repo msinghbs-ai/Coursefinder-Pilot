@@ -8,6 +8,7 @@ import{
 import{fmtNumber,fmtDate,fmtDateTime,fmtBytes as formatBytes}from'./lib/format.js'
 import{api}from'./lib/supabase'
 import'./evidence-workspace.css'
+import EvidenceAuditTrail from'./EvidenceAuditTrail'
 
 const PAGE_SIZE=50
 const ENTITY_PAGE={provider:'Providers',course:'Courses',campus:'Campuses',scholarship:'Scholarships'}
@@ -24,6 +25,7 @@ export default function EvidenceWorkspace({onError,navigate,routeParams}){
   const[busy,setBusy]=useState(false)
   const[advanced,setAdvanced]=useState(Boolean(initial.entityId||initial.providerId||initial.jobId||initial.hash||initial.verifiedFrom||initial.verifiedTo))
   const[selected,setSelected]=useState(routeParams?.get?.('evidence_id')||null)
+  const[audit,setAudit]=useState(routeParams?.get?.('view')==='audit') // v2.16.39: Audit trail (dispatcher runs, Boost qualifications, Layer 4 decisions)
   const debounced=useDebounce(query,260)
 
   useEffect(()=>{api.evidenceFilterOptions().then(setOpts).catch(e=>onError(e.message))},[])
@@ -44,8 +46,10 @@ export default function EvidenceWorkspace({onError,navigate,routeParams}){
     <section className="m-panel evidence-hero slim">
       {/* v2.15.227: the page header already names the page; this strip keeps only the count and Refresh */}
       <div className="evidence-count"><strong>{fmt(total)}</strong><span>matching saved pages and files</span></div>
-      <div className="evidence-hero-actions"><button className="m-secondary" onClick={()=>{setBusy(true);api.evidencePage(args).then(setData).catch(e=>onError(e.message)).finally(()=>setBusy(false))}}><RefreshCw size={14}/>Refresh</button></div>
+      <div className="evidence-hero-actions"><button className={`m-secondary ${audit?'active':''}`} aria-pressed={audit} data-evidence-audit-toggle onClick={()=>setAudit(x=>!x)}><FileCheck2 size={14}/>Audit trail</button><button className="m-secondary" onClick={()=>{setBusy(true);api.evidencePage(args).then(setData).catch(e=>onError(e.message)).finally(()=>setBusy(false))}}><RefreshCw size={14}/>Refresh</button></div>
     </section>
+
+    {audit&&<EvidenceAuditTrail onError={onError}/>}
 
     <section className="m-panel evidence-workbench">
       <div className="evidence-search-row">
