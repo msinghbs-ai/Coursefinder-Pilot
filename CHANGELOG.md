@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.456 — 18 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.34** (Platform Admin 18 Nov 2026 10:51, Layer 1 Register issues on v2.16.32). Migration 20261118125000: `security.layer1_next_due_roll_v1` as live `rollup-scheduler` target `layer1-next-due-roll` (overdue next ingestion dates moved on by whole cadences; run once); four Canadian college code readers superseded by coverage-sweep retired (Aurora, College of the North Atlantic, Confederation, Loyalist; checked live), their dedicated edge functions marked retiring; QS 2026 and 2027 verification recorded from the applied publisher files. Layer 1 register headings no longer stick over the filter bar. Guards: `s624`.
+
 ## 0.1.455 — 18 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.33** (Platform Admin 18 Nov 2026 10:09, UI/UX audit Phase 5 first slice). Migration 20261118120000: `pipeline.saved_views` (shared views changed by a Platform Admin only, personal views by their owner) seeded with AER Audit Samples, Official URLs and Provider Blockers; `public.admin_layer4_grid_read_v1` (one built-in kind, paged by `layer4.inbox_page_size`, CSV export up to the new setting `layer4.grid_export_max_rows`); `public.admin_layer4_item_trace_v1` (item, evidence, decision history); `public.admin_saved_views_read_v1`, `admin_saved_view_save_v1`, `admin_saved_view_archive_v1`. Layer 4 › Inbox gains the Grid view and the Source Quote vs Extracted Value drawer; decisions still go only through `admin_layer4_inbox`. Guards: `s620`.
