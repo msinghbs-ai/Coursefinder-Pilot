@@ -1,3 +1,4 @@
+import{useShowAll}from'./ShowAllToggle' // s697
 import React from'react'
 import{Activity,BookOpen,CircleGauge,ExternalLink,GraduationCap,Info,TrendingUp,Users}from'lucide-react'
 import{fmtNumber,fmtDate,fmtPercent}from'./lib/format.js'
@@ -48,10 +49,11 @@ function FlowPanel({group,navigate}){
  </section>
 }
 function ScholarshipPanel({group,navigate}){
- const rows=(group?.items||[]).slice(0,3)
+ const items=group?.items||[],{shown:rows,toggle}=useShowAll(items,{id:'insight-scholarships'}) // s697: first three, then Show all (N) scholarships
  return <section className="ci-panel ci-scholarships">
-  <header className="ci-panel-head"><div className="ci-title"><span><GraduationCap size={16}/></span><div><h3>Scholarships & funding</h3><p>Governed scope · exclusions override broad inclusion</p></div></div><ContextPill tone={rows.length?'good':'neutral'}>{rows.length?group.total+' related':'None related'}</ContextPill></header>
+  <header className="ci-panel-head"><div className="ci-title"><span><GraduationCap size={16}/></span><div><h3>Scholarships & funding</h3><p>Governed scope · exclusions override broad inclusion</p></div></div><ContextPill tone={rows.length?'good':'neutral'}>{items.length?(group.total||items.length)+' related':'None related'}</ContextPill></header>
   {rows.length?<div className="ci-sch-list">{rows.map((x,i)=><div className="ci-sch-row" key={x.id||i}><div><strong>{x.name||'Scholarship'}</strong><small>{[human(x.relationship),x.audience,x.application_close_date?'Closes '+date(x.application_close_date):null].filter(Boolean).join(' · ')}</small></div><div><b>{x.award_value_text||'See details'}</b><EvidenceButton id={x.evidence_id} navigate={navigate}/></div></div>)}</div>:<div className="ci-sch-empty"><GraduationCap size={24}/><div><strong>Nothing related yet</strong><p>No Scholarship is currently related to this entity by an accepted Course/Provider/field/study-level/campus scope.</p></div></div>}
+  {toggle}
   <WorkspaceButton target="Scholarships" navigate={navigate}/>
  </section>
 }

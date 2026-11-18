@@ -1,8 +1,12 @@
 # Changelog
 
+## 0.1.468 — 18 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.46** (Platform Admin 18 Nov 2026, chat S1-Courses, s662 and s664; numbered after v2.16.45). Migration `20261118275000` (md5-guarded edits of seven functions; no new table or function): course description prompt `cdesc-source-grounded-v4` (1 to 2 sentences) with worker `coverage-sweep` v1.0.23, limits 2 sentences and 360 characters, identity proof in `cdesc-machine-v2` (setting `enrich.course_description_identity_proof_on`), the first-description hold off (setting `enrich.course_description_first_hold_on`), and the Layer 4 course description card's plain-English hold box (`src/lib/cdesc-hold.js`, `CdWhy`) with Re-read (1-2 sentences) and Approve all verified for provider. Specs s662 and s664.
+
 ## 0.1.467 — 18 Nov 2026
 
-- Prepared visible PIM Admin release candidate **v2.16.45** (Platform Admin 18 Nov 2026, chat S1-Courses, s662 and s664; numbered after v2.16.44, Pilot #1315). Migration `20261118275000` (md5-guarded edits of seven functions; no new table or function): course description prompt `cdesc-source-grounded-v4` (1 to 2 sentences) with worker `coverage-sweep` v1.0.23, limits 2 sentences and 360 characters, identity proof in `cdesc-machine-v2` (setting `enrich.course_description_identity_proof_on`), the first-description hold off (setting `enrich.course_description_first_hold_on`), and the Layer 4 course description card's plain-English hold box (`src/lib/cdesc-hold.js`, `CdWhy`) with Re-read (1-2 sentences) and Approve all verified for provider. Specs s662 and s664.
+- Prepared visible PIM Admin release candidate **v2.16.45** (Platform Admin 18 Nov 2026 23:02). No migration (zero schema in S1-RM-Design). `src/correlated-blade.css`: the Preview as pills override the drawer header's 32px icon-button rule. `src/lib/field-visibility.js`: internal entries for Archive course (`.re-manage`), Read with AI (`[data-course-read-ai]`), the entry pipeline (`[data-course-entry]`, `[data-aer-read-now]`) and unapproved entry rows; `src/field-visibility.css` shows student-only blocks in a student view. `src/EntryRequirements.jsx`: approved rows or one empty-state line for Counsellors and Viewers. New `src/ShowAllToggle.jsx` on the course scholarships, the correlated card and the scholarship insight panel. Spec s697.
 
 ## 0.1.466 — 18 Nov 2026
 

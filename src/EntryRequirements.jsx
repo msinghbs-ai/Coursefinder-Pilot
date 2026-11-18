@@ -18,6 +18,8 @@ import AerReadNow from'./AerReadNow'
 import{plainError}from'./lib/errors'
 import{hrefFor}from'./nav-map'
 import{orderAerCountries,readAerCountry,saveAerCountry}from'./aer-countries'
+import{STUDENT_ONLY_EMPTY_ENTRY,STUDENT_FACING_ENTRY}from'./lib/field-visibility.js'
+import'./field-visibility.css'
 
 const call=async(action,args)=>{const{data,error}=await supabase.rpc('admin_entry_requirements',{p_action:action,p_args:args});if(error)throw error;return data}
 const OUTCOME={minimum_published:'A minimum is published',case_by_case:'This qualification is considered case by case',contact_provider:'Requirements for this qualification aren’t published — contact the provider'}
@@ -77,7 +79,15 @@ export function CourseEntryRequirements({courseId,onError}){
   useEffect(()=>{if(!d||cc)return;const k=readAerCountry();if(k&&(d.countries||[]).some(c=>c.code===k))resolve(k,false)},[d])
   const read=async reason=>{setBusy(true);try{await call('read',{course_id:courseId,reason});setMsg('Asked. The rows wait in Layer 4 for a person before any is used.');await load()}catch(e){onError?.(plainError(e));throw e}finally{setBusy(false)}}
   if(!d)return null
-  return <section className="rl-provider" data-course-entry>
+  // s697 (Platform Admin 18 Nov 2026 23:02): Counsellors and Viewers see the approved requirements only, or one empty-state line;
+  // the pipeline section below is hidden for them (field-visibility entry_pipeline)
+  const approved=(d.rows||[]).filter(r=>STUDENT_FACING_ENTRY.has(String(r.status)))
+  const student=<section className="rl-provider" data-student-only data-student-entry={approved.length}>
+    <h4><GraduationCap size={14}/>Academic entry requirements</h4>
+    {approved.length?<ul className="sd-list" data-student-entry-rows>{approved.map(r=><li key={r.id}><strong>{String(r.kind||'').replaceAll('_',' ')}</strong> {r.description}{r.min_entry_score!=null?` · ${r.min_entry_score} (${r.min_entry_score_basis})`:''}{r.source_url?<> · <Src url={r.source_url}/></>:null}</li>)}</ul>
+      :<p className="sd-desc" data-student-entry-empty>{STUDENT_ONLY_EMPTY_ENTRY}</p>}
+  </section>
+  return <>{student}<section className="rl-provider" data-course-entry>
     <h4><GraduationCap size={14}/>Academic entry requirements <Button compact onClick={load} disabled={busy}><RefreshCw size={13}/>Refresh</Button> <a className="cf-link" href={hrefFor('entry','course',{course:courseId})} data-entry-workspace-link>Open in Entry requirements</a> <a className="cf-link" href={hrefFor('entry','resolve',{course:courseId})}>Inspect resolution</a></h4>
     <AerReadNow courseId={courseId} onError={onError} onChanged={load}/>
     {(d.rows||[]).length===0?<small>Nothing read from this course's page yet.</small>:
@@ -99,5 +109,5 @@ export function CourseEntryRequirements({courseId,onError}){
     {d.can_read&&<details className="arn-advanced" data-course-entry-read-advanced><summary>Advanced: one direct read of this course’s stored page</summary>
       <div className="sd-actions" data-course-entry-read><ReasonAction label="Read from the stored page" confirm="Read once" testid="course-entry-read" disabled={busy} onDo={read}/></div></details>}
     {msg&&<small role="status">{msg}</small>}
-  </section>
+  </section></>
 }
