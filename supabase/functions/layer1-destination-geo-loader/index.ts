@@ -19,6 +19,8 @@ import { anchorWindows, extractFact, firecrawlScrapeBody, headerSample, htmlToTe
 // the value with a verbatim quote (or, on a miss, what the page says around the fact's anchor word); then finds the JSA OSCA occupation
 // workbook by its link text, stores it and returns the occupation rows its header names. public.svc_destination_page_facts_load_v1 writes
 // draft rules and figures with the evidence, the quote and the time read; editions whose terms are restricted are not read at all.
+// v1.5.0 (Platform Admin 19 Nov 2026 06:41, s714): a rendered page whose address names a tab ('#HowTo', the Home Affairs Step by step tab) is read whole
+// (onlyMainContent false, firecrawlScrapeBody); LIN 19/198 is read directly (static compilation page, no Firecrawl).
 // v1.3.0 (Platform Admin 18 Nov 2026 17:55): a page whose read mode is rendered (destination.page_facts.read_mode; the Home Affairs pages,
 // whose content the browser builds) is read through Firecrawl /v1/scrape (JS rendering, onlyMainContent): the spend is asked of the database
 // first (svc_fc_spend, purpose destination_page_facts, the "other" daily share and the monthly plan limit), every call is logged
@@ -29,7 +31,7 @@ import { anchorWindows, extractFact, firecrawlScrapeBody, headerSample, htmlToTe
 // loader with the internal service key, the source's mode and, for the page facts, its scope (pages or workbook); every artifact is stored in
 // Supabase Storage and recorded as evidence of that source (security.destination_source_evidence_v1); the response carries the Layer 1
 // count and content hash (candidateObservations, fileSha256).
-const VERSION = "layer1-destination-geo-loader-v1.4.0";
+const VERSION = "layer1-destination-geo-loader-v1.5.0";
 const FUNCTION_NAME = "layer1-destination-geo-loader";
 const EDITION = {
   source_url: "https://www.abs.gov.au/statistics/people/population/regional-population/2024-25/32180DS0004_2001-25.xlsx",

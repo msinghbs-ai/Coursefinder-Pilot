@@ -156,8 +156,12 @@ export function parseOccupationGrid(grid) {
 // RM1C/RM1H/RM1I rendered read (Platform Admin 18 Nov 2026 17:55: "Firecrawl (/v1/scrape with JS rendering, onlyMainContent: true)" for the
 // Home Affairs pages, whose content the browser builds): the request sent for a page whose read mode is rendered. Firecrawl renders the
 // page's script by default; only the page's main content is asked for, as HTML (read with htmlToText, like a direct page) and markdown.
+// v1.5.0 (s714, Platform Admin 19 Nov 2026 06:41): a page address with a fragment names a tab (for example Home Affairs '#HowTo', the Step by step
+// tab). The tab's panel sits outside what Firecrawl keeps as main content, so such a page is read whole; every other page keeps main content.
 export function firecrawlScrapeBody(url) {
-  return { url, formats: ['html', 'markdown'], onlyMainContent: true }
+  let tab = false
+  try { tab = new URL(url).hash.length > 1 } catch { /* not a full address: main content */ }
+  return { url, formats: ['html', 'markdown'], onlyMainContent: !tab }
 }
 
 // the words of a link: its text and its address with separators read as spaces, so "osca-occupation-data" matches /OSCA\s+Occupation\s+data/
