@@ -1,0 +1,36 @@
+# Guards: S741 AER matrix machine row rules (Platform Admin 19 Nov 2026 05:42) and G4 database-backed tests: migration 20261119052500 runs against the matrix exclusions function as live has it on an isolated PostgreSQL 16 (fixtures only, never a Supabase project).
+name: AER matrix S741 row rules integration
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/20261119052500_cf247_s741_aer_matrix_completion_clauses_course_link.sql'
+      - 'tests/fixtures/aer-matrix-s741/**'
+      - '.github/workflows/aer-matrix-s741-test.yml'
+  workflow_dispatch:
+jobs:
+  isolated-postgres:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: fixture-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: fixture-only
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash tests/fixtures/aer-matrix-s741/run.sh | tee aer-matrix-s741-results.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: aer-matrix-s741-database-evidence
+          path: aer-matrix-s741-results.log
