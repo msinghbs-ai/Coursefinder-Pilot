@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import * as XLSX from "npm:xlsx@0.18.5";
 import { parseBomClimate } from "../_shared/cf247-bom-climate.js";
+import { anchorWindows, extractFact, htmlToText, parseOccupationGrid, xlsxLinks } from "../_shared/cf247-page-facts.js";
 
 // CF-247 RM1B (Platform Admin 17 Nov 2026 13:12; approvals A-1 to A-4 of 07:29 and 07:35): ABS population loader for Australian
 // destination localities. Reads ABS Regional population 2024-25, Table 2 (estimated resident population by Significant Urban Area),
@@ -13,7 +14,12 @@ import { parseBomClimate } from "../_shared/cf247-bom-climate.js";
 // Run by job destination-abs-load (1st of the month, 05:30 Sydney) and Run now, each with a one-time nonce; a Platform Admin may also
 // call it signed in. A new ABS edition is a new approval (design: "Any source beyond A-1 and A-4 needs a new approval"), so the
 // edition below changes only with a reviewed code change.
-const VERSION = "layer1-destination-geo-loader-v1.1.0";
+// Mode facts (RM1I / RM1C / RM1H / RM1D, Platform Admin 18 Nov 2026 14:23 and 15:32; job destination-page-facts-load and Run now): reads each
+// official page named in destination.page_facts, stores it as evidence, applies each fact's pattern to the page's visible text and returns
+// the value with a verbatim quote (or, on a miss, what the page says around the fact's anchor word); then finds the JSA OSCA occupation
+// workbook by its link text, stores it and returns the occupation rows its header names. public.svc_destination_page_facts_load_v1 writes
+// draft rules and figures with the evidence, the quote and the time read; editions whose terms are restricted are not read at all.
+const VERSION = "layer1-destination-geo-loader-v1.2.0";
 const FUNCTION_NAME = "layer1-destination-geo-loader";
 const EDITION = {
   source_url: "https://www.abs.gov.au/statistics/people/population/regional-population/2024-25/32180DS0004_2001-25.xlsx",
@@ -130,6 +136,68 @@ async function climate(service: any, runId: string | null, trigger: string, star
   }
 }
 
+// RM1I / RM1C / RM1H / RM1D: official pages read in turn; a page or workbook that fails is reported and the others still load
+async function facts(service: any, runId: string | null, trigger: string, started: number) {
+  try {
+    const cfg = await rpc(service, "svc_destination_page_facts_v1");
+    const specs: any[] = Array.isArray(cfg?.facts) ? cfg.facts : [];
+    const byPage = new Map<string, any[]>();
+    for (const f of specs) byPage.set(f.page_url, [...(byPage.get(f.page_url) || []), f]);
+    const pages: any[] = [];
+    for (const [pageUrl, list] of byPage) {
+      try {
+        const bytes = await download(pageUrl);
+        const hash = await sha256(bytes);
+        const text = htmlToText(new TextDecoder("utf-8").decode(bytes));
+        const host = new URL(pageUrl).host;
+        const path = `destination/page-facts/${host}/${hash}.html`;
+        const up = await service.storage.from("evidence").upload(path, bytes, { contentType: "text/html", upsert: true });
+        pages.push({ page_url: pageUrl, sha256: hash, storage_path: up.error ? null : path, read_at: new Date().toISOString(), text_length: text.length,
+          facts: list.map((f) => {
+            const r = extractFact(text, f);
+            return r.found ? { id: f.id, ...r } : { id: f.id, found: false, reason: r.reason, windows: anchorWindows(text, f.anchor) };
+          }) });
+      } catch (e) {
+        pages.push({ page_url: pageUrl, error: e instanceof Error ? e.message : String(e), facts: list.map((f) => ({ id: f.id, found: false, reason: "page not read" })) });
+      }
+    }
+    let jsa: any = null;
+    if (cfg?.jsa?.page_url) {
+      try {
+        const html = new TextDecoder("utf-8").decode(await download(cfg.jsa.page_url));
+        const re = new RegExp(cfg.jsa.link_pattern, "i");
+        const link = xlsxLinks(html, cfg.jsa.page_url).find((l) => re.test(l.text) || re.test(decodeURIComponent(l.href)));
+        if (!link) throw new Error(`no workbook link matching /${cfg.jsa.link_pattern}/ on ${cfg.jsa.page_url}`);
+        const bytes = await download(link.href);
+        const hash = await sha256(bytes);
+        const path = `destination/jsa/osca-occupations/${hash}.xlsx`;
+        const up = await service.storage.from("evidence").upload(path, bytes, {
+          contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", upsert: true,
+        });
+        const wb = XLSX.read(bytes, { type: "array" });
+        const sheets: any[] = [];
+        let best: any = null;
+        for (const name of wb.SheetNames) {
+          const grid = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: true, defval: "" }) as unknown[][];
+          const parsed = parseOccupationGrid(grid);
+          sheets.push({ name, rows: parsed.rows.length, header: parsed.header, first: parsed.header ? null : grid.slice(0, 6).map((r) => r.slice(0, 8)) });
+          if (parsed.rows.length && (!best || parsed.rows.length > best.rows.length)) best = { name, ...parsed };
+        }
+        jsa = { page_url: cfg.jsa.page_url, file_url: link.href, link_text: link.text, sha256: hash, storage_path: up.error ? null : path,
+          read_at: new Date().toISOString(), sheets, sheet: best?.name ?? null, header: best?.header ?? null, rows: best?.rows ?? [] };
+      } catch (e) {
+        jsa = { page_url: cfg.jsa.page_url, error: e instanceof Error ? e.message : String(e) };
+      }
+    }
+    const result = await rpc(service, "svc_destination_page_facts_load_v1", { p_payload: { run_id: runId, trigger, pages, jsa } });
+    return json({ ok: true, version: VERSION, mode: "facts", trigger, run_id: runId, ms: Date.now() - started, result });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    try { await rpc(service, "svc_destination_page_facts_load_v1", { p_payload: { error: `${VERSION}: ${message}`, run_id: runId, trigger } }); } catch { /* recorded below */ }
+    return json({ ok: false, version: VERSION, mode: "facts", error: message }, 500);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ ok: false, error: "POST required" }, 405);
@@ -145,6 +213,7 @@ Deno.serve(async (req) => {
   }
   const started = Date.now();
   if (clean(body.mode) === "climate") return await climate(service, runId, trigger, started);
+  if (clean(body.mode) === "facts") return await facts(service, runId, trigger, started);
   try {
     const bytes = await download(EDITION.source_url);
     const hash = await sha256(bytes);
