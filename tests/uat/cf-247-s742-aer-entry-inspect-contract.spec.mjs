@@ -28,4 +28,7 @@ test('the workflow is dispatch only, holds no write permission and keeps the res
   expect(W).not.toMatch(/contents: write|pull-requests: write/)
   expect(W).toContain('node scripts/aer-entry-inspect.mjs "${{ inputs.rules }}"')
   expect(W).toContain('name: aer-entry-pages')
+  // the log copy is the same file (sha-256 printed with it), gzipped and base64 in marked lines
+  expect(W).toContain("gzip -9 -c out/aer-entry-pages.json | base64 -w 3000 | sed 's/^/AERPAGES:/'")
+  expect(W).toContain('AERPAGES-SHA256:')
 })
