@@ -19,8 +19,9 @@
 --   1. security.course_coverage_build_v1 is provider-chunked: each run rebuilds the providers whose coverage rows are oldest, up to
 --      batch.course_coverage_courses courses (default 3,000); every per-course scan, the AER covered set included, is restricted to the chunk;
 --      country tiers still come from every provider. The whole table is refreshed every 12 runs; course-coverage-build runs every 5 minutes.
---   2. security.consumer_api_snapshot_v1 reads admit.consumer_snapshot_page_size rows (default 5) and stops at
---      admit.consumer_snapshot_budget_ms (default 6,000 ms), marking the cases it skipped. The same frozen reads, smaller pages.
+--   2. security.consumer_api_snapshot_v1 reads admit.consumer_snapshot_page_size rows (default 5), cheap reads first and the two free-text
+--      searches (about 7 s each, measured) last, and starts no read after admit.consumer_snapshot_budget_ms (default 6,000 ms), marking the
+--      cases it skipped. The same frozen reads, smaller pages; about 6-8 s a snapshot instead of about 25 s.
 --   3. security.coverage_admission_apply_v1 never waits for the search-document writer: when it is busy the batch's courses go to
 --      search.refresh_requests (processed by the search refresh job), as security.intake_dates_apply_v1 already does.
 --   4. svc_page_text_next_v1 claims each stored page once (the items still list every course that shares it).
@@ -145,14 +146,14 @@ declare v_def text := replace(pg_get_functiondef('security.consumer_api_snapshot
         v_body text := (select prosrc from pg_proc where oid = 'security.consumer_api_snapshot_v1()'::regprocedure);
         v_new text := $b$
 -- 20261119100100 (s720): the before/after evidence of an admission batch (pipeline.consumer_api_baselines, Decision 163): the same frozen reads,
--- admit.consumer_snapshot_page_size rows each, stopping at admit.consumer_snapshot_budget_ms (the reads it skips are marked)
+-- admit.consumer_snapshot_page_size rows each, cheap reads first and the two free-text searches (about 7 s each) last, stopping at
+-- admit.consumer_snapshot_budget_ms (the reads it skips are marked). A statement-timeout cancel cannot be caught, so the budget is checked
+-- before each read.
 declare res jsonb := '{}'::jsonb; r jsonb; t0 timestamptz; c record; v_start timestamptz := clock_timestamp();
         v_page int := greatest(1, security.pipeline_num_v1('admit.consumer_snapshot_page_size', 5)::int);
         v_budget int := greatest(1000, security.pipeline_num_v1('admit.consumer_snapshot_budget_ms', 6000)::int);
 begin
   for c in select * from (values
-    ('search_bachelor_au', $q$select to_jsonb(public.zoho_edge_course_search_v2('bachelor',array['AU'],null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,%1$s,0))$q$),
-    ('search_master_page2', $q$select to_jsonb(public.zoho_edge_course_search_v2('master',array['AU'],null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,%1$s,%1$s))$q$),
     ('search_has_provider_tuition', $q$select to_jsonb(public.zoho_edge_course_search_v2(null,array['AU'],null,null,null,null,null,null,null,null,true,null,null,null,null,null,null,null,null,null,null,null,%1$s,0))$q$),
     ('search_has_scholarship', $q$select to_jsonb(public.zoho_edge_course_search_v2(null,array['AU'],null,null,null,null,null,true,null,null,null,null,null,null,null,null,null,null,null,null,null,null,%1$s,0))$q$),
     ('search_tuition_range', $q$select to_jsonb(public.zoho_edge_course_search_v2(null,array['AU'],null,null,null,null,null,null,null,null,null,null,null,null,null,null,40000,60000,null,null,null,null,%1$s,0))$q$),
@@ -163,7 +164,9 @@ begin
     ('filter_country', $q$select to_jsonb(public.zoho_edge_filter_options_v1('country',null,null,50,0))$q$),
     ('filter_subdivision_au', $q$select to_jsonb(public.zoho_edge_filter_options_v1('subdivision','AU',null,50,0))$q$),
     ('reference_bundle', $q$select to_jsonb(public.zoho_edge_reference_bundle_v1())$q$),
-    ('website_preview_080729G', $q$select api.website_course_lookup_preview_v1('080729G')$q$)
+    ('website_preview_080729G', $q$select api.website_course_lookup_preview_v1('080729G')$q$),
+    ('search_bachelor_au', $q$select to_jsonb(public.zoho_edge_course_search_v2('bachelor',array['AU'],null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,%1$s,0))$q$),
+    ('search_master_page2', $q$select to_jsonb(public.zoho_edge_course_search_v2('master',array['AU'],null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,%1$s,%1$s))$q$)
   ) v(case_name, stmt) loop
     if extract(epoch from clock_timestamp() - v_start) * 1000 > v_budget then
       res := res || jsonb_build_object(c.case_name, jsonb_build_object('ok', null, 'skipped', 'time budget', 'budget_ms', v_budget));
