@@ -3307,6 +3307,25 @@
   {
    "api_surface": "website",
    "endpoint": "provider",
+   "field_path": "item.campuses[].is_primary",
+   "data_type": "boolean",
+   "is_nullable": false,
+   "description": "True for the provider's primary campus (the registered head office, matched to exactly one active campus); false otherwise (19 Nov 2026, PR D)."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "provider",
+   "field_path": "item.campuses[].primary_basis",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Why the campus is the provider's primary campus, when it is: cricos_head_office (the registered head-office street line and postcode match exactly this one active campus). Null for a campus that is not primary (19 Nov 2026, PR D).",
+   "allowed_values": [
+    "cricos_head_office"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "provider",
    "field_path": "item.country_code",
    "data_type": "string",
    "is_nullable": false,
@@ -11821,6 +11840,25 @@
   {
    "api_surface": "zoho",
    "endpoint": "provider",
+   "field_path": "item.campuses[].is_primary",
+   "data_type": "boolean",
+   "is_nullable": false,
+   "description": "True for the provider's primary campus (the registered head office, matched to exactly one active campus); false otherwise (19 Nov 2026, PR D)."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "provider",
+   "field_path": "item.campuses[].primary_basis",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Why the campus is the provider's primary campus, when it is: cricos_head_office (the registered head-office street line and postcode match exactly this one active campus). Null for a campus that is not primary (19 Nov 2026, PR D).",
+   "allowed_values": [
+    "cricos_head_office"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "provider",
    "field_path": "item.city",
    "data_type": "string",
    "is_nullable": true,
@@ -17501,6 +17539,14 @@
    "description": "Attribution to show with the figures."
   },
   {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "career_outcomes[].employment_count",
+   "data_type": "number",
+   "is_nullable": true,
+   "description": "Number employed in the occupation, as the source states it (JSA OSCA Table 1: employment in main job, 2021 Census). Null where the source gives none (19 Nov 2026, PR D)."
+  },
+  {
    "api_surface": "zoho",
    "endpoint": "destination",
    "field_path": "api_version",
@@ -18098,6 +18144,14 @@
    "description": "Attribution to show with the figures."
   },
   {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "career_outcomes[].employment_count",
+   "data_type": "number",
+   "is_nullable": true,
+   "description": "Number employed in the occupation, as the source states it (JSA OSCA Table 1: employment in main job, 2021 Census). Null where the source gives none (19 Nov 2026, PR D)."
+  },
+  {
    "api_surface": "website",
    "endpoint": "course",
    "field_path": "item.study_load",
@@ -18206,6 +18260,17 @@
    "description": "Share of the postcode inside the locality, from 0 to 1.",
    "req_ids": [
     "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "course",
+   "field_path": "item.campuses[].primary_basis",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Why the campus is the provider's primary campus, when it is: cricos_head_office (the registered head-office street line and postcode match exactly this one active campus). Null for a campus that is not primary (19 Nov 2026, PR D).",
+   "allowed_values": [
+    "cricos_head_office"
    ]
   },
   {
@@ -18486,6 +18551,17 @@
   {
    "api_surface": "website",
    "endpoint": "search",
+   "field_path": "items[].campuses[].primary_basis",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Why the campus is the provider's primary campus, when it is: cricos_head_office (the registered head-office street line and postcode match exactly this one active campus). Null for a campus that is not primary (19 Nov 2026, PR D).",
+   "allowed_values": [
+    "cricos_head_office"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "search",
    "field_path": "items[].provider.accreditations",
    "data_type": "array<object>",
    "is_nullable": false,
@@ -18679,6 +18755,17 @@
   {
    "api_surface": "zoho",
    "endpoint": "course",
+   "field_path": "item.campuses[].primary_basis",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Why the campus is the provider's primary campus, when it is: cricos_head_office (the registered head-office street line and postcode match exactly this one active campus). Null for a campus that is not primary (19 Nov 2026, PR D).",
+   "allowed_values": [
+    "cricos_head_office"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
    "field_path": "item.provider.accreditations",
    "data_type": "array<object>",
    "is_nullable": false,
@@ -18867,6 +18954,17 @@
    "description": "Share of the postcode inside the locality, from 0 to 1.",
    "req_ids": [
     "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "courses",
+   "field_path": "items[].campuses[].primary_basis",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Why the campus is the provider's primary campus, when it is: cricos_head_office (the registered head-office street line and postcode match exactly this one active campus). Null for a campus that is not primary (19 Nov 2026, PR D).",
+   "allowed_values": [
+    "cricos_head_office"
    ]
   },
   {
@@ -19142,6 +19240,17 @@
    "description": "Share of the postcode inside the locality, from 0 to 1.",
    "req_ids": [
     "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "search",
+   "field_path": "items[].campuses[].primary_basis",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Why the campus is the provider's primary campus, when it is: cricos_head_office (the registered head-office street line and postcode match exactly this one active campus). Null for a campus that is not primary (19 Nov 2026, PR D).",
+   "allowed_values": [
+    "cricos_head_office"
    ]
   },
   {
