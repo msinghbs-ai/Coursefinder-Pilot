@@ -13,6 +13,7 @@
 -- 2 pdesc.acquire_firecrawl is 0: the reader takes a stored copy or reads the page directly, and makes no Firecrawl call.
 -- 3 Drain pdesc-gpt41-drain: one read is queued for each of the 58 + 196 + 13 providers above. The reader, its identity proof (with the s762
 --   rule), its grounding checks and the unchanged machine admission decide each one; a description a person wrote is never overwritten.
+-- 4 (addendum 08:17, F-PDESC.01/.02) dates, calendar and timetable stay refused source words (block 2b).
 -- G1: no job. G2: the cap and the switch are a route value and a setting. G3: no consumer API object is changed.
 -- Replaces: nothing
 -- Retires: nothing
@@ -51,6 +52,14 @@ update pipeline.platform_toolset_settings
    set value = '0'::jsonb, reason = 'Platform Admin 19 Nov 2026 07:39: no Firecrawl spend for the provider description re-read (stored copy or direct read only)', updated_at = now()
  where toolset_key = 'pipeline' and key = 'pdesc.acquire_firecrawl' and value <> '0'::jsonb;
 
+-- 2b ------------------------------------------------------------------------------------- F-PDESC.01/.02 source words (addendum 08:17)
+-- There is no allow list of source words: the one list is pdesc.refused_path_words, the words that make a page address unusable as a
+-- description source. dates, calendar and timetable have been in it since 9 Nov 2026. This block keeps them there: a missing word is put back.
+update pipeline.platform_toolset_settings s
+   set value = s.value || (select coalesce(jsonb_agg(w), '[]'::jsonb) from unnest(array['dates', 'calendar', 'timetable']) w where not s.value ? w),
+       reason = 'Platform Admin 19 Nov 2026 08:17 (F-PDESC.01/.02): dates, calendar and timetable pages are never a description source', updated_at = now()
+ where s.toolset_key = 'pipeline' and s.key = 'pdesc.refused_path_words' and not s.value ?& array['dates', 'calendar', 'timetable'];
+
 -- 3 ------------------------------------------------------------------------------------------------------------------------ the drain
 create temp table cf_drain on commit drop as
   with miss as (
@@ -82,6 +91,7 @@ declare v jsonb := security.ai_route_v1('provider_description');
 begin
   if v->>'model' is distinct from 'openai/gpt-4.1-mini' or (v->'cap'->>'usd')::numeric <> 0.5 then raise exception 'post-check: the route does not answer GPT-4.1 mini with a US$0.50 cap: %', v - 'key'; end if;
   if exists (select 1 from pipeline.ai_service_routes r where r.service_code <> 'provider_description' and 'gpt-4.1-mini' = any (r.cascade)) then raise exception 'post-check: another service lists gpt-4.1-mini'; end if;
+  if not (select value ?& array['dates', 'calendar', 'timetable'] from pipeline.platform_toolset_settings where toolset_key = 'pipeline' and key = 'pdesc.refused_path_words') then raise exception 'post-check: dates, calendar or timetable is not a refused source word'; end if;
   if security.pipeline_num_v1('pdesc.acquire_firecrawl', 1) <> 0 then raise exception 'post-check: Firecrawl is still on for provider descriptions'; end if;
   if exists (select 1 from pipeline.provider_description_reads r where r.state in ('queued', 'reading', 'proposed') group by r.provider_id having count(*) > 1) then raise exception 'post-check: a provider has two open reads'; end if;
   if exists (select 1 from cf_drain c join catalogue.providers p on p.id = c.provider_id where nullif(btrim(p.description), '') is not null) then raise exception 'post-check: a provider with a description was queued'; end if;
