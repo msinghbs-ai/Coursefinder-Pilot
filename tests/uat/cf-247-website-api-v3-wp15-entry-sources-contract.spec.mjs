@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261113220000_cf247_website_api_v3_entry_sources.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261113220000_cf247_website_api_v3_entry_sources.sql', 'utf8')
 
 test('provider entry_matrix[]: the v2 items in the v2 order, plus quote and source_url, with or without edu_country', () => {
   expect(m).toContain("'quote', m.quote, 'source_url', m.source_url)")

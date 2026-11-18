@@ -27,11 +27,11 @@ $P -d $DB -f $Q/stubs.sql
 bash $Q/live_shared_page.sh "$ROOT" > "$WORK/live_shared.sql"
 $P -d $DB -f "$WORK/live_shared.sql"
 $P -d $DB -f $Q/data.sql
-$P -d $DB -1 -f $ROOT/supabase/migrations/20261108030000_cf247_aer_shared_page_rejected_binding.sql 2>&1 | notices
+$P -d $DB -1 -f $ROOT/supabase/migrations-archive/20261108030000_cf247_aer_shared_page_rejected_binding.sql 2>&1 | notices
 [ "$(md5of 'security.course_entry_shared_page_v1(uuid)')" = 7b43d0c61419ec08ea2fbb2889b1f444 ] || { echo "shared_page_v1 differs from live: $(md5of 'security.course_entry_shared_page_v1(uuid)')"; exit 1; }
 echo 'before: security.course_entry_shared_page_v1 is the live definition of 18 Nov 2026 (md5 checked)'
 $P -d $DB -f data.sql
-M=$ROOT/supabase/migrations/20261118220000_cf247_aer_shared_page_hand_bound.sql
+M=$ROOT/supabase/migrations-archive/20261118220000_cf247_aer_shared_page_hand_bound.sql
 $P -d $DB -1 -f $M 2>&1 | notices
 AFTER=$(md5of 'security.course_entry_shared_page_v1(uuid)')
 echo "shared_page_v1 md5 after: $AFTER"

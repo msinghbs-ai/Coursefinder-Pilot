@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { build } from 'esbuild'
 
-const M = fs.readFileSync('supabase/migrations/20261118093000_cf247_boost_international_rule_sentences.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261118093000_cf247_boost_international_rule_sentences.sql', 'utf8')
 const code = M.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const IX = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 let B

@@ -10,7 +10,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 DB=${RK_DB:-recovery_knowledge_fixtures}
 P="psql -v ON_ERROR_STOP=1 -q -X"
-MIG=supabase/migrations/20261104600000_cf247_recovery_knowledge.sql
+MIG=supabase/migrations-archive/20261104600000_cf247_recovery_knowledge.sql
 FRV=tests/fixtures/first-run-verification
 VM=tests/fixtures/verification-measures
 FX=tests/fixtures/recovery-knowledge
@@ -22,22 +22,22 @@ $P -d postgres -c "drop database if exists $DB" -c "create database $DB" >/dev/n
 
 # 1 the database as live (4 Nov 2026 18:10 AEDT)
 $P -d $DB -f tests/fixtures/integration-queue/stubs.sql >/dev/null
-$P -d $DB -1 -o /dev/null -f supabase/migrations/20261102120000_cf247_integration_queue.sql 2>&1 | show
+$P -d $DB -1 -o /dev/null -f supabase/migrations-archive/20261102120000_cf247_integration_queue.sql 2>&1 | show
 $P -d $DB -f tests/fixtures/ops-controller/stubs-extra.sql >/dev/null
-$P -d $DB -1 -o /dev/null -f supabase/migrations/20261104010000_cf247_ops_controller.sql 2>&1 | show
+$P -d $DB -1 -o /dev/null -f supabase/migrations-archive/20261104010000_cf247_ops_controller.sql 2>&1 | show
 $P -d $DB -1 -o /dev/null -f tests/fixtures/ops-reopen/ai-guards.sql 2>&1 | show
 $P -d $DB -f tests/fixtures/ops-reopen/stubs-extra.sql >/dev/null
-$P -d $DB -1 -o /dev/null -f supabase/migrations/20261104100000_cf247_ops_reopen_rule_ai_contract.sql 2>&1 | show
+$P -d $DB -1 -o /dev/null -f supabase/migrations-archive/20261104100000_cf247_ops_reopen_rule_ai_contract.sql 2>&1 | show
 $P -d $DB -1 -o /dev/null -f $FRV/upsert-live.sql
 $P -d $DB -f $FRV/stubs.sql >/dev/null 2>&1
 $P -d $DB -c "set check_function_bodies = off" -f $FRV/live/security.ops_report_v1.def >/dev/null
 $P -d $DB -1 -o /dev/null -f $FRV/har-edit.sql
-$P -d $DB -1 -o /dev/null -f supabase/migrations/20261104460000_cf247_first_run_verification.sql
+$P -d $DB -1 -o /dev/null -f supabase/migrations-archive/20261104460000_cf247_first_run_verification.sql
 $P -d $DB -f $VM/stubs.sql >/dev/null 2>&1
-S=supabase/migrations/20261104390000_cf247_sch_coverage_recovery.sql; F=supabase/migrations/20261104430000_cf247_sch_coverage_classify_fix.sql
+S=supabase/migrations-archive/20261104390000_cf247_sch_coverage_recovery.sql; F=supabase/migrations-archive/20261104430000_cf247_sch_coverage_classify_fix.sql
 { echo "set check_function_bodies = off;"; awk '/^create or replace function security.scholarship_coverage_classify_v1\(/,/^end \$function\$;/' $S; } | $P -d $DB >/dev/null
 { awk '/^create or replace function pg_temp.edit_once/,/^end \$f\$;/' $F; awk "/^select pg_temp.edit_once\('security.scholarship_coverage_classify_v1\(uuid\[\]\)'/,/^\], array\[1, 1, 1, 1, 1, 1, 1, 1\]\);/" $F; } | $P -d $DB -1 >/dev/null
-$P -d $DB -1 -o /dev/null -f supabase/migrations/20261104520000_cf247_verification_measures.sql
+$P -d $DB -1 -o /dev/null -f supabase/migrations-archive/20261104520000_cf247_verification_measures.sql
 $P -d $DB -f $FX/stubs.sql >/dev/null
 declare -A LIVE=(
   ["security.ops_authorise_v1(text)"]=ae58963cd1298edeeacae406dc65b314

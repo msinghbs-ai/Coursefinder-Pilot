@@ -96,7 +96,7 @@ test('A2: generic bulk decide and batch decide skip AER kinds, decide nothing an
 test('W28: Read again supersedes only waiting rows, so an excluded row is never superseded, made stale or reclassified by it', () => {
   // this change does not edit the re-read paths; their row updates (W28, live since #744) all select status = 'proposed'
   expect(code).not.toMatch(/aer_reread_v1|admin_entry_matrix_reread/)
-  const w28 = fs.readFileSync('supabase/migrations/20261029120000_cf247_aer_reread_newest_copy.sql', 'utf8')
+  const w28 = fs.readFileSync('supabase/migrations-archive/20261029120000_cf247_aer_reread_newest_copy.sql', 'utf8')
   const n = [...w28.matchAll(/\$n\$([\s\S]*?)\$n\$/g)].map((x) => x[1]).join('\n')
   const ups = [...n.matchAll(/update catalogue\.provider_entry_matrix[\s\S]*?;$/gm)].map((x) => x[0])
   expect(ups.length).toBeGreaterThanOrEqual(2)
@@ -110,7 +110,7 @@ test('W28: Read again supersedes only waiting rows, so an excluded row is never 
   expect(after.find((r) => r.id === 'row-age')).toEqual({ id: 'row-age', status: 'inactive', status_reason: 'excluded by approve except (Layer 4 item 81d14690, reviewer pa): minimum age is not academic' })
   expect(after.find((r) => r.id === 'row-new').status).toBe('superseded')
   // the workspace cannot restore or edit it either: Restore needs a workspace withdraw or quarantine, Edit needs active or quarantined (admin_aer, unchanged)
-  const ws = fs.readFileSync('supabase/migrations/20261029010000_cf247_aer_workspace.sql', 'utf8')
+  const ws = fs.readFileSync('supabase/migrations-archive/20261029010000_cf247_aer_workspace.sql', 'utf8')
   expect(ws).toContain("a row never admitted is decided in Layer 4")
 })
 

@@ -5,7 +5,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { migrationNames, migrationPath } from './support/migration-files.mjs'
 
-const MIG = fs.readFileSync('supabase/migrations/20261110080000_cf247_control_class.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations-archive/20261110080000_cf247_control_class.sql', 'utf8')
 const UI = fs.readFileSync('src/SettingsRegister.jsx', 'utf8')
 const PHONE_MAX = 480
 

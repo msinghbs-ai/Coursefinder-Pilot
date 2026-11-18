@@ -20,7 +20,7 @@ P=("${D[@]}" exec -i pdesc-autonomy-pg psql -U postgres -X -v ON_ERROR_STOP=1 -q
 "${D[@]}" exec pdesc-autonomy-pg psql -U postgres -q -c "alter database pdesc_autonomy set jit=off; alter database pdesc_autonomy set work_mem='7168kB'; alter database pdesc_autonomy set max_parallel_workers_per_gather=1;"
 { echo 'set check_function_bodies=off;'; cat tests/fixtures/p1-provider-descriptions/stubs.sql; } | "${P[@]}"
 for f in tests/fixtures/p1-provider-descriptions/live-before/*.sql; do { echo 'set check_function_bodies=off;'; cat "$f"; } | "${P[@]}"; done
-{ echo 'set check_function_bodies=off;'; cat supabase/migrations/20261102090000_cf247_p1_provider_descriptions.sql; } | "${P[@]}"
+{ echo 'set check_function_bodies=off;'; cat supabase/migrations-archive/20261102090000_cf247_p1_provider_descriptions.sql; } | "${P[@]}"
 node "$FX/parity.mjs" | "${P[@]}"
 "${P[@]}" < "$FX/identity.sql"
 "${P[@]}" < "$FX/roles.sql"
@@ -45,7 +45,7 @@ node "$FX/load-crlf.mjs"
 node "$FX/grants.mjs" | "${P[@]}"
 node "$FX/verify-parity.mjs"
 # Current main contains the Controller's #872/#874 outcome correction. Reproduce it after historical snapshot parity.
-HOTFIX=supabase/migrations/20261104640000_cf247_run_now_outcome_code.sql
+HOTFIX=supabase/migrations-archive/20261104640000_cf247_run_now_outcome_code.sql
 [ -f "$HOTFIX" ] || { echo 'Current-main outcome-code correction is required; rebase onto main first' >&2; exit 1; }
 { echo 'set check_function_bodies=off;'; cat "$HOTFIX"; } | "${P[@]}" -1
 [ "$("${P[@]}" -Atc "select md5(pg_get_functiondef('security.job_run_now_v1(text,text,jsonb,uuid)'::regprocedure))")" = '2640319be221ab00f39e6e767b78a7b3' ] || { echo 'Current-main Run Now outcome signature differs' >&2; exit 1; }
@@ -53,7 +53,7 @@ if [ "${PDESC_SETUP_ONLY:-}" = 1 ]; then
   "${P[@]}" < "$FX/seed.sql"
   exit 0
 fi
-MIG=supabase/migrations/20261106200000_cf247_provider_description_autonomy.sql
+MIG=supabase/migrations-archive/20261106200000_cf247_provider_description_autonomy.sql
 # Platform Admin 5 Nov 2026 20:03 §3: hashes of the functions that set every other Layer 4 kind's rank, taken before the migration.
 mkdir -p uat-artifacts
 "${P[@]}" -Atc "select jsonb_object_agg(sig,md5(pg_get_functiondef(sig::regprocedure))) from unnest(array['security.layer4_review_decide_impl(uuid,text,text,jsonb)','public.layer4_review_decide(uuid,text,text,jsonb)','public.admin_layer4_inbox(text,jsonb)','security.layer4_batch_decide_v1_impl(uuid[],text,text,text,text)','security.course_entry_review_apply_v1(uuid,text,jsonb,text)','security.entry_matrix_review_apply_v1(uuid,text,jsonb,text,uuid)','security.no_page_review_apply_v1(uuid,text,jsonb,text)','security.aer_review_kinds_v1()','security.current_role_rank()']) sig" > uat-artifacts/provider-description-layer4-before.json

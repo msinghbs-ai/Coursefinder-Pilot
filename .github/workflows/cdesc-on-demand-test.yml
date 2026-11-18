@@ -6,7 +6,7 @@ on:
     paths:
       - 'tests/fixtures/cdesc-on-demand/**'
       - 'tests/fixtures/course-description-parity/**'
-      - 'supabase/migrations/20261110070000_cf247_cdesc_on_demand.sql'
+      - 'supabase/migrations-archive/20261110070000_cf247_cdesc_on_demand.sql'
       - 'supabase/held/cdesc_on_demand_forward_recovery.sql'
       - '.github/workflows/cdesc-on-demand-test.yml'
   workflow_dispatch:

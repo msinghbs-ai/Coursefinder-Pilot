@@ -11,7 +11,7 @@ export LC_ALL=C # fixed: one byte order whatever the runner's locale
 DB=${CAO_DB:-g_cdesc_admit_outside}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 F=tests/fixtures/cdesc-admit-outside-record
-M=supabase/migrations/20261111000000_cf247_cdesc_admit_outside_ai_record.sql
+M=supabase/migrations-archive/20261111000000_cf247_cdesc_admit_outside_ai_record.sql
 R=supabase/held/cdesc_admit_outside_ai_record_forward_recovery.sql
 FN='security.course_description_machine_trg_v1()'; BEFORE=ec9b96498c54e37f8492a1003ea97520; AFTER=c75d63a6390f4cb0e3ed7276e70c25f8
 SETTLE='security.course_description_machine_settle_v1()'; SETTLE_MD5=4c40d655a7ff674ce184b598056d835f

@@ -1,7 +1,7 @@
 // Guards: CF-247 AER programme Platform Admin decision 29 Oct 2026 09:57 items 3 and 4 (admin docs/platform/AER-OPERATIONS-WORKSPACE-DECISION-2026-10-29.md W17-W18): course-level reading is a settings-controlled, measured programme on the existing Enrich fields lane with the provider selection visible in the workspace, a count and cost preview, bounded batches of never-read eligible courses (refused while a read waits, when AI is stopped or below the OpenRouter credit floor), Platform Admin only, one Layer 4 item a course; a rendered page with no requirements table opens a Layer 4 note in the existing vocabulary whose approval admits and replaces nothing, shown apart from a confirmed no-matrix outcome; no new job, status, Layer 4 field or consumer API change
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const m = fs.readFileSync('supabase/migrations/20261029030000_cf247_aer_course_programme_rendered_note.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261029030000_cf247_aer_course_programme_rendered_note.sql', 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const ui = fs.readFileSync('src/AerWorkspace.jsx', 'utf8')
 

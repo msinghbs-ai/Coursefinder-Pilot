@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
-const m = fs.readFileSync('supabase/migrations/20261101080000_cf247_ur05_fee_check_card.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261101080000_cf247_ur05_fee_check_card.sql', 'utf8')
 const code = (s) => s.replace(/--[^\n]*/g, '')
 
 test('migration: md5-guarded edits; an address on a fee check is refused; a fee decision is read back from course_fees; nothing dropped', () => {

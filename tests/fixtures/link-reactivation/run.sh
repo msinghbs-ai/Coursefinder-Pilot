@@ -7,7 +7,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 DB=${LINKREACT_DB:-link_reactivation_fixtures}
-MIG=../../../supabase/migrations/20261103080000_cf247_link_reactivation_guard.sql
+MIG=../../../supabase/migrations-archive/20261103080000_cf247_link_reactivation_guard.sql
 P="psql -v ON_ERROR_STOP=1 -q -X"
 $P -d postgres -c "drop database if exists $DB" -c "create database $DB" >/dev/null
 [ -n "${LINKREACT_KEEP:-}" ] || trap '$P -d postgres -c "drop database if exists $DB" >/dev/null' EXIT

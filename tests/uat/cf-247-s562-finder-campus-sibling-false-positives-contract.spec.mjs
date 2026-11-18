@@ -4,7 +4,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261116150000_cf247_finder_campus_sibling_false_positives.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261116150000_cf247_finder_campus_sibling_false_positives.sql', 'utf8')
 
 test('the edit is md5-guarded before and after, each text edit applies exactly once, and the post-check reads the recorded body', () => {
   expect(M).toContain("select pg_temp.edit_all('security.course_page_check_v1(uuid,text,text,text)', '38c776ca90378d866167390f7d40d42b', 'c0183b440fa7feb8dee1d624b1ff2224',")

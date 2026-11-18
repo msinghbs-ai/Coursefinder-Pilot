@@ -9,7 +9,7 @@ export LC_ALL=C # fixed: one byte order whatever the runner's locale
 DB=${CRT_DB:-g_cdesc_run_time_budget}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 F=tests/fixtures/cdesc-run-time-budget
-M=supabase/migrations/20261112080000_cf247_cdesc_run_time_budget.sql
+M=supabase/migrations-archive/20261112080000_cf247_cdesc_run_time_budget.sql
 R=supabase/held/cdesc_run_time_budget_forward_recovery.sql
 S='security.course_description_machine_settle_v1()'; S0=4c40d655a7ff674ce184b598056d835f; S1=5fa17251727adbb49cb718be889fce54
 C='security.course_description_machine_consumer_recheck_v1()'; C0=a6138e39a1ba4a3d1b04cc01994d2848; C1=f4b6bc3e45866782c5f694046d07131f

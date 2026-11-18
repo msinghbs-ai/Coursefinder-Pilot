@@ -1,9 +1,9 @@
 // Guards: Layer 1 Register fixes (Platform Admin 18 Nov 2026 10:51): overdue next ingestion dates are moved on by the unified dispatcher (rollup-scheduler target, no new cron job), only readers proven superseded by coverage-sweep are retired (kept, paused; checked at apply), readers with no other path stay under Needs attention, QS verification is reconciled only from an applied publisher file, and register headings never slide over the filter bar or + Add source.
-// CF-247 S624. supabase/migrations/20261118125000_cf247_layer1_register_due_roll_and_reconcile.sql; src/mature.css.
+// CF-247 S624. supabase/migrations-archive/20261118125000_cf247_layer1_register_due_roll_and_reconcile.sql; src/mature.css.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261118125000_cf247_layer1_register_due_roll_and_reconcile.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261118125000_cf247_layer1_register_due_roll_and_reconcile.sql', 'utf8')
 const CSS = fs.readFileSync('src/mature.css', 'utf8')
 
 test('overdue next ingestion dates move on through a live rollup-scheduler target', () => {

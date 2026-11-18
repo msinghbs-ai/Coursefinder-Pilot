@@ -52,7 +52,7 @@ begin
 end $$;
 -- the Platform Admin switches it on after release and QA: the switch is turned on and the migration (idempotent) is applied again, which runs the backfill
 update pipeline.platform_toolset_settings set value = to_jsonb(1) where toolset_key = 'pipeline' and key = 'intake_dates.revisit_stored_inputs';
-\i supabase/migrations/20261109040000_cf247_intake_revisit_page_fingerprint.sql
+\i supabase/migrations-archive/20261109040000_cf247_intake_revisit_page_fingerprint.sql
 \set QUIET on
 
 -- 1 D3 backfill: rows already waiting get a spread revisit time ------------------------------------------------------------------------------------

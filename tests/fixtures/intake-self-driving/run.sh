@@ -9,7 +9,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 case "${PGHOST:-127.0.0.1}" in 127.0.0.1|localhost|/tmp|/var/run/postgresql) ;; *) echo 'Refusing a remote database: use isolated local PostgreSQL' >&2; exit 1;; esac
 BASE=intake_deakin_calendar_fixtures; DB=${SD_DB:-intake_self_driving_fixtures}; F=tests/fixtures/intake-self-driving
-MIGS=(supabase/migrations/20261109040000_cf247_intake_revisit_page_fingerprint.sql supabase/migrations/20261109041000_cf247_intake_applicability_month_year.sql)
+MIGS=(supabase/migrations-archive/20261109040000_cf247_intake_revisit_page_fingerprint.sql supabase/migrations-archive/20261109041000_cf247_intake_applicability_month_year.sql)
 P=(psql -X -q -v ON_ERROR_STOP=1)
 if [ -z "${SD_REUSE:-}" ] || ! "${P[@]}" -d postgres -Atc "select 1 from pg_database where datname = '$BASE'" | grep -q 1; then
   DK_KEEP=1 bash tests/fixtures/deakin-intake-calendar/run.sh > /dev/null
@@ -52,7 +52,7 @@ OUT=$("${P[@]}" -d $DB -f $F/cases-after.sql 2>&1) || { echo "$OUT" | grep -E 'E
 echo "$OUT" | grep -o 'PASS.*'
 echo "$AFTER" | tee "$ART/intake-self-driving-md5.txt"
 # D1 (page-date admission, default off): the cases are set up and their plan result taken on the code before the migration, the migration is applied twice, then the cases run
-MIG3=supabase/migrations/20261109042000_cf247_intake_page_date_admission.sql
+MIG3=supabase/migrations-archive/20261109042000_cf247_intake_page_date_admission.sql
 OUT=$("${P[@]}" -d $DB -f $F/cases-d1-before.sql 2>&1) || { echo "$OUT" | grep -E 'ERROR|CONTEXT|DETAIL|LINE|HINT' | cut -c1-3000; echo 'FAIL cases-d1-before'; exit 1; }
 echo "$OUT" | grep -o 'PASS.*'
 SIG3="select string_agg(p.oid::regprocedure || ' ' || md5(pg_get_functiondef(p.oid)), E'\\n' order by p.oid::regprocedure::text) from pg_proc p join pg_namespace n on n.oid = p.pronamespace

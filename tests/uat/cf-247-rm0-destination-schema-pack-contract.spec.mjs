@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261117040000_cf247_rm_destination_schema_pack.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261117040000_cf247_rm_destination_schema_pack.sql', 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const web = fs.readFileSync('supabase/functions/website-api-v3/index.ts', 'utf8')
 const zoho = fs.readFileSync('supabase/functions/zoho-api-v3/index.ts', 'utf8')

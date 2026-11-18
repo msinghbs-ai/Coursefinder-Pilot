@@ -11,7 +11,7 @@ import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 import { openCard } from './support/cards.mjs'
 
-const MIG = 'supabase/migrations/20261102070000_cf247_budget_enforcement_and_watchdog.sql'
+const MIG = 'supabase/migrations-archive/20261102070000_cf247_budget_enforcement_and_watchdog.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const FX = 'tests/fixtures/budget-enforcement'

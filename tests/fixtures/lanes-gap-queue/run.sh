@@ -7,7 +7,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 DB=${LANES_DB:-lanes_gap_queue_fixtures}
-MIG=../../../supabase/migrations/20261103160000_cf247_lanes_and_gap_queue.sql
+MIG=../../../supabase/migrations-archive/20261103160000_cf247_lanes_and_gap_queue.sql
 P="psql -v ON_ERROR_STOP=1 -q -X"
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }
 declare -A LIVE=(

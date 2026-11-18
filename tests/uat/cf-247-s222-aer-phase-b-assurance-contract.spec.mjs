@@ -9,7 +9,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
-const MIG = 'supabase/migrations/20261102110000_cf247_aer_phase_b_assurance.sql'
+const MIG = 'supabase/migrations-archive/20261102110000_cf247_aer_phase_b_assurance.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const FX = 'tests/fixtures/aer-phase-b'

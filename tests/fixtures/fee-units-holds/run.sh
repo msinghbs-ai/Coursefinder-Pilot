@@ -8,7 +8,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 ROOT=../../..
 DB=${FEE_UNITS_DB:-cf_fee_units_holds_fixtures}
-MIG=$ROOT/supabase/migrations/20261104140000_cf247_fee_units_holds.sql
+MIG=$ROOT/supabase/migrations-archive/20261104140000_cf247_fee_units_holds.sql
 P="psql -v ON_ERROR_STOP=1 -q -X"
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }
 q() { $P -d $DB -Atc "$1"; }

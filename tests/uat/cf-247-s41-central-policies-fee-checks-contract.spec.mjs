@@ -5,7 +5,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const mig = fs.readFileSync('supabase/migrations/20261015020000_cf247_central_policies_and_fee_checks.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261015020000_cf247_central_policies_and_fee_checks.sql', 'utf8')
 const worker = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 
 test('settings on Pipeline settings › Admission checks', () => {

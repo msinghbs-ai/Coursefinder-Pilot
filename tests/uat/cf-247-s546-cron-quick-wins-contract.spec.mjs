@@ -4,7 +4,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261115200500_cf247_cron_quick_wins.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261115200500_cf247_cron_quick_wins.sql', 'utf8')
 const P = fs.readFileSync('tests/fixtures/paste/PASTE-20261115-cron-legacy-jobs-drop.sql', 'utf8')
 const code = M.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 

@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261113341500_cf247_on_demand_course_search.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261113341500_cf247_on_demand_course_search.sql', 'utf8')
 const W = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 
 test('the picker takes on-demand providers first and keeps the scheduled limits for everyone else', () => {

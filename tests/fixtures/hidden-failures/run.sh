@@ -14,7 +14,7 @@ P="psql -v ON_ERROR_STOP=1 -q -X"
 IQ=tests/fixtures/integration-queue
 YF=tests/fixtures/pipeline-yield
 FX=tests/fixtures/hidden-failures
-MIG=supabase/migrations/20261103140000_cf247_hidden_failures_country_config.sql
+MIG=supabase/migrations-archive/20261103140000_cf247_hidden_failures_country_config.sql
 TMP=$(mktemp -d)
 $P -d postgres -c "drop database if exists $DB" -c "create database $DB" >/dev/null
 trap 'rm -rf "$TMP"; [ -n "${HIDDENFAIL_KEEP:-}" ] || $P -d postgres -c "drop database if exists $DB" >/dev/null' EXIT
@@ -24,15 +24,15 @@ md5of() { $P -d $DB -Atc "select md5(pg_get_functiondef('$1'::regprocedure))"; }
 # the pipeline-yield fixture database, as tests/fixtures/pipeline-yield/run.sh builds it
 $P -d $DB -f $IQ/stubs.sql
 node -e '
-const s = require("fs").readFileSync("supabase/migrations/20261031091000_cf247_ss014_operational_automation.sql", "utf8")
+const s = require("fs").readFileSync("supabase/migrations-archive/20261031091000_cf247_ss014_operational_automation.sql", "utf8")
 for (const n of ["security.platform_alerts_add_v1(", "security.platform_alerts_evaluate_v1("]) {
   const a = s.indexOf("create or replace function " + n), b = s.indexOf("end $function$;", a) + "end $function$;".length
   console.log(s.slice(a, b))
 }' > "$TMP/alerts.sql"
 PGOPTIONS='-c check_function_bodies=off' $P -d $DB -f "$TMP/alerts.sql"
-$P -d $DB -1 -o /dev/null -f supabase/migrations/20261102120000_cf247_integration_queue.sql 2>&1 | show
+$P -d $DB -1 -o /dev/null -f supabase/migrations-archive/20261102120000_cf247_integration_queue.sql 2>&1 | show
 $P -d $DB -f $YF/stubs.sql
-$P -d $DB -1 -o /dev/null -f supabase/migrations/20261103040000_cf247_pipeline_yield_checks.sql 2>&1 | show
+$P -d $DB -1 -o /dev/null -f supabase/migrations-archive/20261103040000_cf247_pipeline_yield_checks.sql 2>&1 | show
 $P -d $DB -f $FX/stubs.sql
 
 # live definitions and their live md5 (3 Nov 2026): the ten this change edits and the three it calls

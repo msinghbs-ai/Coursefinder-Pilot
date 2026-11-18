@@ -3,12 +3,12 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const mig = fs.readFileSync('supabase/migrations/20261117150000_cf247_layer1_register_apply_chunk.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261117150000_cf247_layer1_register_apply_chunk.sql', 'utf8')
 const au = fs.readFileSync('supabase/functions/layer1-au-depth/index.ts', 'utf8')
 const nz = fs.readFileSync('supabase/functions/layer1-nz-live/index.ts', 'utf8')
 const facts = fs.readFileSync('supabase/functions/layer1-au-cricos-facts/index.ts', 'utf8')
 const control = fs.readFileSync('supabase/functions/layer1-operations-control/index.ts', 'utf8')
-const batchMig = fs.readFileSync('supabase/migrations/20261117201000_cf247_layer1_batch_size_settings.sql', 'utf8')
+const batchMig = fs.readFileSync('supabase/migrations-archive/20261117201000_cf247_layer1_batch_size_settings.sql', 'utf8')
 
 test('the setting exists with a range, a unit and its users, and a service-only reader gives it to the workers', () => {
   expect(mig).toContain("('pipeline', 'layer1.register_apply_chunk', 'Layer 1 register: records per apply call',")

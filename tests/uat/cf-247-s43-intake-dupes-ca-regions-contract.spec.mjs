@@ -6,7 +6,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const mig = fs.readFileSync('supabase/migrations/20261015040000_cf247_intake_duplicates_and_ca_regions.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261015040000_cf247_intake_duplicates_and_ca_regions.sql', 'utf8')
 
 test('one active intake per course and month: guard on the table, duplicates withdrawn (kept), post-check', () => {
   expect(mig).toContain('create trigger course_intake_same_month_guard before insert or update on catalogue.course_intakes')

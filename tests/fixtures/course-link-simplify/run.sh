@@ -11,7 +11,7 @@ cd "$(dirname "$0")/../../.."
 DB=${CLS_DB:-course_link_simplify_fixtures}
 P="psql -v ON_ERROR_STOP=1 -q -X"
 FX=tests/fixtures/course-link-simplify
-MIG=supabase/migrations/20261104570000_cf247_course_link_simplify.sql
+MIG=supabase/migrations-archive/20261104570000_cf247_course_link_simplify.sql
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }
 q() { $P -d $DB -Atc "$1"; }
 md5of() { q "select md5(pg_get_functiondef('$1'::regprocedure))"; }
@@ -24,7 +24,7 @@ $P -d $DB -f $FX/stubs.sql
 for m in 20261104280000_cf247_l4_rule_runs_table 20261104330000_cf247_l4_rule_sfu_perf 20261104350000_cf247_l4_rule_target_scheme; do
   PGOPTIONS='-c check_function_bodies=off' $P -d $DB -1 -At -f "$(migpath "$m")" >/dev/null
 done
-M=supabase/migrations/20261104120000_cf247_ops_layer4_throughput.sql
+M=supabase/migrations-archive/20261104120000_cf247_ops_layer4_throughput.sql
 { sed -n '/^create table if not exists pipeline.layer4_item_readiness/,/^);/p' $M
   sed -n '/^create table if not exists pipeline.layer4_supersessions/,/^);/p' $M
   for f in layer4_value_key_v1 layer4_scope_key_v1 layer4_resolution_for_v1 layer4_resolution_v1 layer4_supersession_reverse_v1; do

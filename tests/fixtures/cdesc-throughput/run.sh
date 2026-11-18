@@ -7,7 +7,7 @@ cd "$(dirname "$0")/../../.."
 export LC_ALL=C # fixed: one byte order for sort and comm, whatever the runner's locale
 DB=${CDT_DB:-g_cdesc_throughput}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
-M=supabase/migrations/20261110180000_cf247_cdesc_decline_throughput.sql
+M=supabase/migrations-archive/20261110180000_cf247_cdesc_decline_throughput.sql
 HELD=supabase/held/cdesc_decline_throughput_forward_recovery.sql
 F=tests/fixtures/cdesc-throughput
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"

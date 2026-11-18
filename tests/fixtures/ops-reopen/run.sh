@@ -9,7 +9,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 DB=${OPS_A2_DB:-ops_reopen_fixtures}
 FX=tests/fixtures/ops-reopen
-MIG=supabase/migrations/20261104100000_cf247_ops_reopen_rule_ai_contract.sql
+MIG=supabase/migrations-archive/20261104100000_cf247_ops_reopen_rule_ai_contract.sql
 P="psql -v ON_ERROR_STOP=1 -q -X"
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }
 q() { $P -d $DB -Atc "$1"; }
@@ -30,9 +30,9 @@ after() { sed -n "s/^--   ${1//[()]/.} *[0-9a-f]* -> \([0-9a-f]*\)$/\1/p" $MIG; 
 $P -d postgres -c "drop database if exists $DB" -c "create database $DB" >/dev/null 2>&1
 [ -n "${OPS_A2_KEEP:-}" ] || trap '$P -d postgres -c "drop database if exists $DB" >/dev/null 2>&1' EXIT
 $P -d $DB -f tests/fixtures/integration-queue/stubs.sql
-$P -d $DB -1 -o /dev/null -f supabase/migrations/20261102120000_cf247_integration_queue.sql 2>/dev/null
+$P -d $DB -1 -o /dev/null -f supabase/migrations-archive/20261102120000_cf247_integration_queue.sql 2>/dev/null
 $P -d $DB -f tests/fixtures/ops-controller/stubs-extra.sql
-$P -d $DB -1 -o /dev/null -f supabase/migrations/20261104010000_cf247_ops_controller.sql 2>/dev/null
+$P -d $DB -1 -o /dev/null -f supabase/migrations-archive/20261104010000_cf247_ops_controller.sql 2>/dev/null
 $P -d $DB -c "set check_function_bodies = off" -f $FX/ai-guards.sql
 $P -d $DB -f $FX/stubs-extra.sql
 for s in "${!LIVE[@]}"; do [ "$(md5of "$s")" = "${LIVE[$s]}" ] || { echo "loaded $s differs from live: $(md5of "$s")"; exit 1; }; done

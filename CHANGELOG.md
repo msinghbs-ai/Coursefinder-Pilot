@@ -1,8 +1,12 @@
 # Changelog
 
-## 0.1.468 — 18 Nov 2026
+## 0.1.469 — 19 Nov 2026
 
-- Prepared visible PIM Admin release candidate **v2.16.46** (Platform Admin 18 Nov 2026, chat S1-Courses, s662 and s664; numbered after v2.16.45). Migration `20261118275000` (md5-guarded edits of seven functions; no new table or function): course description prompt `cdesc-source-grounded-v4` (1 to 2 sentences) with worker `coverage-sweep` v1.0.23, limits 2 sentences and 360 characters, identity proof in `cdesc-machine-v2` (setting `enrich.course_description_identity_proof_on`), the first-description hold off (setting `enrich.course_description_first_hold_on`), and the Layer 4 course description card's plain-English hold box (`src/lib/cdesc-hold.js`, `CdWhy`) with Re-read (1-2 sentences) and Approve all verified for provider. Specs s662 and s664.
+- Prepared visible PIM Admin release candidate **v2.16.47** (Platform Admin 18 Nov 2026, chat S1-Courses, s662 and s664; first built 18 Nov as Pilot #1314, numbered after the canonical squash and v2.16.46). Migration `20261119060000` (md5-guarded edits of seven functions; no new table or function): course description prompt `cdesc-source-grounded-v4` (1 to 2 sentences) with worker `coverage-sweep` v1.0.23, limits 2 sentences and 360 characters, identity proof in `cdesc-machine-v2` (setting `enrich.course_description_identity_proof_on`), the first-description hold off (setting `enrich.course_description_first_hold_on`), and the Layer 4 course description card's plain-English hold box (`src/lib/cdesc-hold.js`, `CdWhy`) with Re-read (1-2 sentences) and Approve all verified for provider. Specs s662 and s664.
+
+## 0.1.468 — 19 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.46** (Platform Admin 18 Nov 2026 23:51). No migration (zero schema in S1-RM-Design). `src/CourseDescriptionOnDemand.jsx`: the Description pipeline in a fold, closed by default. `src/ContextualInsights.jsx`: Related insights & funding in a fold, closed by default; no Scholarships & funding card on a course. `src/lib/field-visibility.js`: `description_pipeline` (`[data-cdod-block]`) and `task_triggers` (`[data-scholarship-actions]`, `[data-job-button]`) are internal. Spec s698; `cf-247-f-cdesc-06-on-demand` (desktop and phone), `s697` and the deployed `a12-contextual-insights` open the new folds.
 
 ## 0.1.467 — 18 Nov 2026
 

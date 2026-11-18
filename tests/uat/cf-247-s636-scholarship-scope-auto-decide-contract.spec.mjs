@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const code = fs.readFileSync('supabase/migrations/20261118153000_cf247_scholarship_scope_auto_decide.sql', 'utf8').split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
+const code = fs.readFileSync('supabase/migrations-archive/20261118153000_cf247_scholarship_scope_auto_decide.sql', 'utf8').split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const fn = (name) => { const i = code.indexOf(`create or replace function ${name}(`); return code.slice(i, code.indexOf('$function$;', i)) }
 
 test('the scope comes from the scholarship\'s own name first; word lists, aliases and patterns are settings', () => {
@@ -44,7 +44,7 @@ test('post-checks: nothing left waiting, an audit row per decision, the Inbox em
 })
 
 test('correction 20261118163000: not-course-specific wording read in the name only; description words added when the name keeps no course; only rule decisions redone', () => {
-  const fix = fs.readFileSync('supabase/migrations/20261118163000_cf247_scholarship_scope_auto_fix.sql', 'utf8').split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
+  const fix = fs.readFileSync('supabase/migrations-archive/20261118163000_cf247_scholarship_scope_auto_fix.sql', 'utf8').split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
   const f = (name) => { const i = fix.indexOf(`create or replace function ${name}(`); return fix.slice(i, fix.indexOf('$function$;', i)) }
   expect(f('security.scholarship_scope_auto_decide_v1')).toContain("where position(lower(p) in lower(s.name)) > 0 limit 1;")
   expect(f('security.scholarship_scope_suggest_v1')).toContain("if v_match = 0 and cardinality(v_subj) > 0 and not v_name_code then")

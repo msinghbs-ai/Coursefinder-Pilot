@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = fs.readFileSync('supabase/migrations/20261109182000_cf247_pdesc_lease_one_pass.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations-archive/20261109182000_cf247_pdesc_lease_one_pass.sql', 'utf8')
 const CODE = MIG.split('\n').filter((l) => !l.trimStart().startsWith('--')).join('\n')   // the statements, without the comments
 const HARNESS = fs.readFileSync('tests/fixtures/pdesc-lease-one-pass/run.sh', 'utf8')
 const SCEN = fs.readFileSync('tests/fixtures/pdesc-lease-one-pass/scenarios.sql', 'utf8')

@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = fs.readFileSync('supabase/migrations/20261111120000_cf247_intake_nearest_start_shadow.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations-archive/20261111120000_cf247_intake_nearest_start_shadow.sql', 'utf8')
 const fn = MIG.slice(MIG.indexOf('create or replace function security.intake_nearest_start_shadow_v1'), MIG.indexOf('revoke all on function security.intake_nearest_start_shadow_v1'))
 
 test('the shadow writes only its own table and admits nothing', () => {

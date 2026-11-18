@@ -5,7 +5,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const mig = fs.readFileSync('supabase/migrations/20261017070000_cf247_english_level_map.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261017070000_cf247_english_level_map.sql', 'utf8')
 const adapters = fs.readFileSync('supabase/functions/coverage-sweep/adapters.ts', 'utf8')
 const builder = fs.readFileSync('supabase/functions/coverage-sweep/builder.ts', 'utf8')
 const worker = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
@@ -39,7 +39,7 @@ test('worker v0.28.0 reads english_level as an adapter field', () => {
   expect(mig).toContain("'other_requirements', 'english_level']")
 })
 
-const fix = fs.readFileSync('supabase/migrations/20261017080000_cf247_english_level_own_differs.sql', 'utf8')
+const fix = fs.readFileSync('supabase/migrations-archive/20261017080000_cf247_english_level_own_differs.sql', 'utf8')
 test('Decision 264 fix: a course whose own score differs from its level keeps its own reading only', () => {
   expect(fix).toContain("<> '4c44713235dd2ee97867ca1e37bb9db1' then")
   expect(fix).toContain("v_own_differs := v_own_differs + 1;")

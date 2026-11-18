@@ -30,7 +30,7 @@ test('no migration after the baseline changes a consumer API function or the tab
   }
 })
 
-const mig = fs.readFileSync('supabase/migrations/20261018050000_cf247_consumer_api_guard.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261018050000_cf247_consumer_api_guard.sql', 'utf8')
 test('the guard: baseline from live, daily check, hard flag on drift, nothing changed or dropped', () => {
   expect(mig).toContain("select security.consumer_api_rebaseline_v1('Decision 266, 18 Oct 2026: first baseline, taken from live as found');")
   expect(mig).toContain("if current_user <> 'postgres' then raise exception 'consumer API baseline is re-taken only by a migration'")

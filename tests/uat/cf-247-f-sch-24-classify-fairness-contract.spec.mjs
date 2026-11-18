@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261113371500_cf247_sch_coverage_classify_fairness.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261113371500_cf247_sch_coverage_classify_fairness.sql', 'utf8')
 
 test('one md5-guarded edit of the selection order; what classification decides is unchanged', () => {
   expect(m).toContain("select pg_temp.edit_n('security.scholarship_coverage_classify_v1(uuid[])', '3892bf5f123f2ec48eca72616b0015c8', array[")

@@ -1,7 +1,7 @@
 // Guards: CF-247 AER W19 (Platform Admin mandate 29 Oct 2026 12:23, A3): a published matrix level label that names several levels counts for each (DP020 Diploma finds RMIT "Diploma/Associate degrees" rows); resolver rules 3 and 4, its step-5 reason and Resolution inspection match the course level or a level named in the printed label; mapping only, nothing inferred; rules, settings and consumer API shape unchanged
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const m = fs.readFileSync('supabase/migrations/20261029060000_cf247_aer_label_levels.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261029060000_cf247_aer_label_levels.sql', 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 
 test('every level a printed label names, mapped part by part with the existing mapping', () => {

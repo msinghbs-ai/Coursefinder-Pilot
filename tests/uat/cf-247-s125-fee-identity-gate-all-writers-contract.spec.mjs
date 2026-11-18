@@ -3,7 +3,7 @@
 // in coverage_apply_course_v1. The gate now sits at the table (one trigger for every writer) and the adapter's fee branch checks first.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const m = fs.readFileSync('supabase/migrations/20261026006000_cf247_fee_identity_gate_all_writers.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261026006000_cf247_fee_identity_gate_all_writers.sql', 'utf8')
 const tg = m.slice(m.indexOf('create or replace function security.course_fee_identity_gate_tg()'), m.indexOf('comment on function security.course_fee_identity_gate_tg()'))
 
 test('one gate at the table: a trigger on catalogue.course_fees for every writer, before insert or update', () => {

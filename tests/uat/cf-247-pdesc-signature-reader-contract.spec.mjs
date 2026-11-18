@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = fs.readFileSync('supabase/migrations/20261110090000_cf247_pdesc_signature_reader_version.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations-archive/20261110090000_cf247_pdesc_signature_reader_version.sql', 'utf8')
 const CODE = MIG.split('\n').filter((l) => !l.trimStart().startsWith('--')).join('\n')   // the statements, without the comments
 const HARNESS = fs.readFileSync('tests/fixtures/pdesc-signature-reader/run.sh', 'utf8')
 const SCEN = fs.readFileSync('tests/fixtures/pdesc-signature-reader/scenarios.sql', 'utf8')
@@ -10,7 +10,7 @@ const EXPECTED = fs.readFileSync('tests/fixtures/pdesc-signature-reader/expected
 const EXPECTED_BEFORE = fs.readFileSync('tests/fixtures/pdesc-signature-reader/expected-before.txt', 'utf8')
 const HELD = fs.readFileSync('supabase/held/pdesc_signature_reader_forward_recovery.sql', 'utf8')
 const WF = fs.readFileSync('.github/workflows/provider-description-integration.yml', 'utf8')
-const REEVAL = fs.readFileSync('supabase/migrations/20261109185000_cf247_pdesc_identity_reeval.sql', 'utf8')
+const REEVAL = fs.readFileSync('supabase/migrations-archive/20261109185000_cf247_pdesc_identity_reeval.sql', 'utf8')
 const BEFORE = 'b48bbd5b345f2e7b9a1fc6df9958163b'
 const AFTER = '2002daebe8768dc9504b8c53131472e0'
 const SEL_BEFORE = '41c9e5ffaba74453c699fd84e9135648'   // the picker as 20261110040000 leaves it

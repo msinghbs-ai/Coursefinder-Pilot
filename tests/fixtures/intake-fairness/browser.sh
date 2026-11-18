@@ -9,11 +9,11 @@ F=tests/fixtures/intake-calendar-v2; P=(psql -X -q -v ON_ERROR_STOP=1 -d intake_
 bash tests/fixtures/intake-preview-timeout/run.sh > /dev/null  # the #872 database with #876 applied, as in production
 PGOPTIONS='-c client_min_messages=warning' "${P[@]}" -f $F/parity-tables.sql
 "${P[@]}" -f $F/live-functions.sql
-PGOPTIONS='-c client_min_messages=warning' "${P[@]}" -1 -o /dev/null -f supabase/migrations/20261105020000_cf247_intake_calendar_v2.sql
+PGOPTIONS='-c client_min_messages=warning' "${P[@]}" -1 -o /dev/null -f supabase/migrations-archive/20261105020000_cf247_intake_calendar_v2.sql
 PGOPTIONS='-c client_min_messages=warning' "${P[@]}" -f tests/fixtures/intake-recovery-final/parity-tables.sql
-PGOPTIONS='-c client_min_messages=warning' "${P[@]}" -1 -o /dev/null -f supabase/migrations/20261105040000_cf247_intake_recovery_final.sql
+PGOPTIONS='-c client_min_messages=warning' "${P[@]}" -1 -o /dev/null -f supabase/migrations-archive/20261105040000_cf247_intake_recovery_final.sql
 PGOPTIONS='-c client_min_messages=warning' "${P[@]}" -f tests/fixtures/intake-fairness/parity-tables.sql
-PGOPTIONS='-c client_min_messages=warning' "${P[@]}" -1 -o /dev/null -f supabase/migrations/20261105060000_cf247_intake_fairness_precedence.sql
+PGOPTIONS='-c client_min_messages=warning' "${P[@]}" -1 -o /dev/null -f supabase/migrations-archive/20261105060000_cf247_intake_fairness_precedence.sql
 [ "$("${P[@]}" -Atc "select (position('intake_dates.provider_share' in pg_get_functiondef('security.intake_dates_plan_v3(uuid[],integer)'::regprocedure)) > 0)::text || ' ' || (select count(*) from pg_trigger where tgname = 'intake_failure_class')")" = 'true 2' ] || { echo 'fairness and precedence not in place'; exit 1; }
 echo 'PASS intake fixture database with the provider-fair plan, evidence gate, obsolete-edition rule, failure classes and publication check'
 npx playwright test --config=playwright.intake.config.mjs

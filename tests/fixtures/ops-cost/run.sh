@@ -8,7 +8,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 DB=${OPSF_DB:-ops_cost_fixtures}
-MIG=../../../supabase/migrations/20261104050000_cf247_ops_cost_yield.sql
+MIG=../../../supabase/migrations-archive/20261104050000_cf247_ops_cost_yield.sql
 P="psql -v ON_ERROR_STOP=1 -q -X"
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }
 md5of() { $P -d $1 -Atc "select md5(pg_get_functiondef('$2'::regprocedure))"; }

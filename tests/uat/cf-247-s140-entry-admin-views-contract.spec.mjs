@@ -1,7 +1,7 @@
 // Guards: CF-247 Track C Step B decision 28 Oct 2026 (Platform Admin mandate 20:36; admin docs/platform/ENTRY-REQUIREMENTS-STEP-B-DECISION-2026-10-28.md section 6): the admin entry-requirements views live in the existing Provider drawer and Course detail blade, read through one bounded server function (one provider or course, at most 100 rows a call), with no table editing, no arbitrary SQL and no second approval route; the one-course read is Platform Admin only
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const m = fs.readFileSync('supabase/migrations/20261028001000_cf247_entry_step_b_course_read_resolver.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261028001000_cf247_entry_step_b_course_read_resolver.sql', 'utf8')
 const code = m.split('\n').filter(l => !/^\s*--/.test(l)).join('\n')
 const fn = code.slice(code.indexOf('create or replace function public.admin_entry_requirements'), code.indexOf('revoke all on function public.admin_entry_requirements'))
 const ui = fs.readFileSync('src/EntryRequirements.jsx', 'utf8')

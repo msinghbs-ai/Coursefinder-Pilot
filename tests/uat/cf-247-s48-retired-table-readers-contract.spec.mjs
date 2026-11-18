@@ -5,7 +5,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const mig = fs.readFileSync('supabase/migrations/20261015120000_cf247_retired_table_readers.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261015120000_cf247_retired_table_readers.sql', 'utf8')
 const def = JSON.parse(fs.readFileSync('supabase/archive/cf247-usage-audit-2026-10-15.json', 'utf8'))
 const wf = fs.readFileSync('.github/workflows/db-archive-export.yml', 'utf8')
 const py = fs.readFileSync('scripts/archive_export.py', 'utf8')
@@ -57,6 +57,6 @@ test('the export workflow: confirmed target, read back and checked, nothing chan
 })
 
 test('removing an interpretation looks up its review items by index (the pending-only index cannot serve the check)', () => {
-  const ix = fs.readFileSync('supabase/migrations/20261015130000_cf247_review_item_interpretation_index.sql', 'utf8')
+  const ix = fs.readFileSync('supabase/migrations-archive/20261015130000_cf247_review_item_interpretation_index.sql', 'utf8')
   expect(ix).toContain('create index if not exists layer4_review_items_layer3_interpretation on pipeline.layer4_review_items (layer3_interpretation_id) where layer3_interpretation_id is not null;')
 })

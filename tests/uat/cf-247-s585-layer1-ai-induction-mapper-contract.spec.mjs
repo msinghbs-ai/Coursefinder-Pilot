@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const mig = fs.readFileSync('supabase/migrations/20261117221000_cf247_w2a_layer1_parser_spec_contract.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261117221000_cf247_w2a_layer1_parser_spec_contract.sql', 'utf8')
 const fn = fs.readFileSync('supabase/functions/layer1-ai-induction-mapper/index.ts', 'utf8')
 const eng = fs.readFileSync('supabase/functions/_shared/cf247-layer1-spec.ts', 'utf8')
 const ind = fs.readFileSync('supabase/functions/coverage-sweep/induction.ts', 'utf8')

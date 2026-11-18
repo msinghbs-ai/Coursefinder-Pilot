@@ -2,7 +2,7 @@
 import fs from 'node:fs'
 import { test, expect } from '@playwright/test'
 
-const mig = fs.readFileSync('supabase/migrations/20261104280000_cf247_l4_rule_runs_table.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261104280000_cf247_l4_rule_runs_table.sql', 'utf8')
 
 test('the course-link rule executor records its runs and items in its own tables', () => {
   expect(mig).toContain('create table if not exists pipeline.layer4_course_link_rule_runs (')

@@ -2,7 +2,7 @@
 // CF-247 (S66) relink follow-up: address forms by study level; paused worker jobs switch on again when work waits.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const sql = fs.readFileSync('supabase/migrations/20261018160000_cf247_relink_levels_and_wake.sql', 'utf8')
+const sql = fs.readFileSync('supabase/migrations-archive/20261018160000_cf247_relink_levels_and_wake.sql', 'utf8')
 
 test('guarded; every address form with enough pages counts, same study level first; first-rule absents relinked again', () => {
   for (const m of ['f51e31cceffbd15ffc906d01dfb12220', '90379a09e3b89d031add182acc339bca', '99bf9f8c25020375e5c27ce66d0e160c']) expect(sql).toContain(m)

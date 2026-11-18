@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261113291500_cf247_entry_matrix_attach_once_per_provider.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261113291500_cf247_entry_matrix_attach_once_per_provider.sql', 'utf8')
 
 test('same ranking and limits; the allowed check runs once per remaining provider; nothing deleted', () => {
   expect(M).toContain("'b2a3fbdc77633618cee0b1914fbdc336'")

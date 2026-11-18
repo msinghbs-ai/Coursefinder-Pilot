@@ -32,8 +32,8 @@ echo 'before: security.course_entry_shared_page_v1 is the live definition (md5 c
 $P -d $DB -f data.sql
 $P -d $DB -f before.sql 2>&1 | notices
 echo 'before.sql done'
-MA=$ROOT/supabase/migrations/20261108030000_cf247_aer_shared_page_rejected_binding.sql
-MB=$ROOT/supabase/migrations/20261108030100_cf247_aer_course_table_matrix_route.sql
+MA=$ROOT/supabase/migrations-archive/20261108030000_cf247_aer_shared_page_rejected_binding.sql
+MB=$ROOT/supabase/migrations-archive/20261108030100_cf247_aer_course_table_matrix_route.sql
 $P -d $DB -1 -f $MA 2>&1 | notices
 AFTER=$(md5of 'security.course_entry_shared_page_v1(uuid)')
 echo "shared_page_v1 md5 after: $AFTER"

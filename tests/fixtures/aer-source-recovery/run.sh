@@ -10,10 +10,10 @@ DB=${ASR_DB:-g_aer_source_recovery}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"
 F=tests/fixtures/aer-source-recovery
-M=supabase/migrations/20261110160000_cf247_aer_source_recovery.sql
+M=supabase/migrations-archive/20261110160000_cf247_aer_source_recovery.sql
 R=supabase/held/aer_source_recovery_forward_recovery.sql
-SCORE=supabase/migrations/20261107150000_cf247_aer_source_stored_discovery.sql
-DDM=supabase/migrations/20261110150000_cf247_dd_provider_ai_allowance.sql
+SCORE=supabase/migrations-archive/20261107150000_cf247_aer_source_stored_discovery.sql
+DDM=supabase/migrations-archive/20261110150000_cf247_dd_provider_ai_allowance.sql
 TICK='security.aer_schedule_tick_v1(boolean)'; FIND='security.aer_current_findings_v1()'; DDV='security.data_delivery_v1()'
 TICK_BEFORE=705375f3705eb739cbc2bc2b9d64de53; FIND_BEFORE=a9796f1cf7a3308c01972f2a4226eb90; DDV_PDESC=849453412a8b9a448118e7b87362752a
 TICK_AFTER=f995e9521198ae57ab0401564e4e5a20; FIND_AFTER=13b3a30c15b10135a2441158fc80f48c; DDV_AFTER=04b560cfb6b79758e2b694c96771be33
@@ -34,7 +34,7 @@ python3 - "$W" <<'PY'
 import sys, re
 w = sys.argv[1]
 live = open('tests/fixtures/pdesc-dd-ai/live/security.data_delivery_v1.sql').read().replace('\r', '')
-mig = open('supabase/migrations/20261110150000_cf247_dd_provider_ai_allowance.sql').read()
+mig = open('supabase/migrations-archive/20261110150000_cf247_dd_provider_ai_allowance.sql').read()
 m = re.search(r"array\[\$o\$(.*?)\$o\$\],\s*array\[\$n\$(.*?)\$n\$\]", mig, re.S)
 assert m and live.count(m.group(1)) == 1
 open(w + '/dd.sql', 'w').write('set check_function_bodies = off;\n' + live.replace(m.group(1), m.group(2)) + ';\n')

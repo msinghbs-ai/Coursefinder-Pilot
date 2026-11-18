@@ -2,7 +2,7 @@
 // CF-247 R3 (Platform Admin 24 Oct 2026 09:55): the hourly health rollup. Contracts on the migration source.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const m = fs.readFileSync('supabase/migrations/20261024005000_cf247_r3_health_hourly.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261024005000_cf247_r3_health_hourly.sql', 'utf8')
 
 test('health_snapshots: table commented, RLS on; every threshold a setting with a range; the headline target starts unset', () => {
   expect(m).toMatch(/^-- Replaces: /m); expect(m).toMatch(/^-- Retires: /m); expect(m).not.toMatch(/^\s*(drop|truncate)\b/im)

@@ -11,7 +11,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
-const MIG = 'supabase/migrations/20261103140000_cf247_hidden_failures_country_config.sql'
+const MIG = 'supabase/migrations-archive/20261103140000_cf247_hidden_failures_country_config.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const FX = 'tests/fixtures/hidden-failures'
 const run = fs.readFileSync(`${FX}/run.sh`, 'utf8')

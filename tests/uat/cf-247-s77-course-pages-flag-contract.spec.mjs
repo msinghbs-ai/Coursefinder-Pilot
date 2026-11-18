@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
-const mig = fs.readFileSync('supabase/migrations/20261020010000_cf247_course_pages_not_found_flag.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261020010000_cf247_course_pages_not_found_flag.sql', 'utf8')
 const ui = fs.readFileSync('src/FlagsPanel.jsx', 'utf8')
 
 test('the hold stops every spend; operators may release only this reason; release restarts onboarding', () => {

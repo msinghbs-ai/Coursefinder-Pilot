@@ -6,7 +6,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 DB=${SS020FU_DB:-ss020_followup_fixtures}
-MIG=../../../supabase/migrations/20261104510000_cf247_ss020_followup_layer1_schedule.sql
+MIG=../../../supabase/migrations-archive/20261104510000_cf247_ss020_followup_layer1_schedule.sql
 P="psql -h ${PGHOST:-/var/run/postgresql} -U postgres -v ON_ERROR_STOP=1 -q -X"
 $P -d postgres -c "drop database if exists $DB" -c "create database $DB" >/dev/null
 trap '$P -d postgres -c "drop database if exists $DB" >/dev/null' EXIT

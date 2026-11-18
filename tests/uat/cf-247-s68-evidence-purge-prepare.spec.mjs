@@ -2,7 +2,7 @@
 // CF-247 (S68) 19 Oct 2026: prepare removal of replaced course-page snapshots ("Archive, then remove"); nothing is removed by the change.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const sql = fs.readFileSync('supabase/migrations/20261019020000_cf247_evidence_purge_prepare.sql', 'utf8')
+const sql = fs.readFileSync('supabase/migrations-archive/20261019020000_cf247_evidence_purge_prepare.sql', 'utf8')
 
 test('newest snapshot per course page never a candidate; referenced snapshots kept; cascade-only references ignored', () => {
   expect(sql).toContain('where s.rn > 1')

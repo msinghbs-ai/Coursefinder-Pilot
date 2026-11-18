@@ -2,7 +2,7 @@
 // The provider list is a setting (G2); the one gate every entry-matrix path uses honours it; nothing is switched on by this change.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const m = fs.readFileSync('supabase/migrations/20261026005000_cf247_entry_matrix_au_top20_staged.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261026005000_cf247_entry_matrix_au_top20_staged.sql', 'utf8')
 
 test('entry.providers holds exactly the 20 AU providers; the gate honours it, md5-guarded', () => {
   const row = m.slice(m.indexOf("('pipeline', 'entry.providers'"), m.indexOf('on conflict (toolset_key, key) do nothing;'))

@@ -5,7 +5,7 @@ import fs from 'node:fs'
 import { load } from '../../scripts/api-v3-field-dictionary.mjs'
 
 const read = (p) => fs.readFileSync(p, 'utf8')
-const m = read('supabase/migrations/20261118133707_cf247_api_v3_course_study_load_edition_rows.sql')
+const m = read('supabase/migrations-archive/20261118133707_cf247_api_v3_course_study_load_edition_rows.sql')
 const c = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const EDITED = ['public.website_v3_course_item_r28(jsonb)', 'public.website_v3_provider_item(jsonb)', 'security.destination_edition_publish_v1(uuid,uuid)', 'public.admin_destination_overview()']
 

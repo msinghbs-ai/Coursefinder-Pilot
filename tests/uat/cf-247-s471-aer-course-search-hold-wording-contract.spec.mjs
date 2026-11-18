@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261108150100_cf247_course_search_hold_wording.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261108150100_cf247_course_search_hold_wording.sql', 'utf8')
 const run = fs.readFileSync('tests/fixtures/aer-hold-wording/run.sh', 'utf8')
 const fx = fs.readFileSync('tests/fixtures/aer-hold-wording/fixtures.sql', 'utf8')
 const code = (t) => t.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')

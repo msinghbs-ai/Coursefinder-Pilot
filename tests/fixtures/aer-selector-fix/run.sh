@@ -16,13 +16,13 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 DB=${ASF_DB:-aer_selector_fix_fixtures}
 P="psql -v ON_ERROR_STOP=1 -q -X"
-MIG=supabase/migrations/20261109150000_cf247_aer_selector_fix.sql
+MIG=supabase/migrations-archive/20261109150000_cf247_aer_selector_fix.sql
 FX=tests/fixtures/aer-selector-fix
-FRV=supabase/migrations/20261104460000_cf247_first_run_verification.sql
-VM=supabase/migrations/20261104520000_cf247_verification_measures.sql
-E13=supabase/migrations/20261102010000_cf247_e13_entry_completeness_gate.sql
-RULE=supabase/migrations/20261107130100_cf247_aer_row_limit_rule.sql
-INTAKE=supabase/migrations/20261106400000_cf247_intake_automation_progress.sql
+FRV=supabase/migrations-archive/20261104460000_cf247_first_run_verification.sql
+VM=supabase/migrations-archive/20261104520000_cf247_verification_measures.sql
+E13=supabase/migrations-archive/20261102010000_cf247_e13_entry_completeness_gate.sql
+RULE=supabase/migrations-archive/20261107130100_cf247_aer_row_limit_rule.sql
+INTAKE=supabase/migrations-archive/20261106400000_cf247_intake_automation_progress.sql
 q() { $P -d $DB -Atc "$1"; }
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }
 md5of() { q "select md5(pg_get_functiondef('$1'::regprocedure))"; }

@@ -12,7 +12,7 @@ import { mockAdmin } from './support/admin-mock.mjs'
 const read = p => fs.readFileSync(p, 'utf8')
 
 test('migration: item record, journey, evidence, skip rules, listing suggestions, auto-hold; nothing dropped', () => {
-  const sql = read('supabase/migrations/20261011010200_cf247_scholarship_task_journey_evidence_skip_rules.sql')
+  const sql = read('supabase/migrations-archive/20261011010200_cf247_scholarship_task_journey_evidence_skip_rules.sql')
   for (const s of ['create table if not exists pipeline.admin_job_items', 'create or replace function security.scholarship_job_items_sync_v1', 'create or replace function security.scholarship_job_journey_v1',
     'create or replace function public.admin_scholarship_job_journey', 'create or replace function public.admin_scholarship_provider_runs', 'create table if not exists pipeline.scholarship_skip_rules',
     "'scholarship_candidate_page'", "insert into pipeline.scholarship_listing_pages(provider_id,url,url_norm,source,active,status)", "'Failed a check after publishing: '", "like 'auto-publish%'",

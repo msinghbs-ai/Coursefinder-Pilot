@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261029110000_cf247_search_document_writer_lock.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261029110000_cf247_search_document_writer_lock.sql', 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const LOCK = "hashtext('cf247:search_course_documents_writer')"
 

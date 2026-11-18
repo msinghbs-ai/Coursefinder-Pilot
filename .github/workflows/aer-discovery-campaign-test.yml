@@ -3,7 +3,7 @@ name: AER discovery campaign integration
 on:
   pull_request:
     paths:
-      - 'supabase/migrations/20261112040000_cf247_aer_discovery_campaign.sql'
+      - 'supabase/migrations-archive/20261112040000_cf247_aer_discovery_campaign.sql'
       - 'supabase/held/aer_discovery_campaign_forward_recovery.sql'
       - 'tests/fixtures/aer-discovery-campaign/**'
       - '.github/workflows/aer-discovery-campaign-test.yml'

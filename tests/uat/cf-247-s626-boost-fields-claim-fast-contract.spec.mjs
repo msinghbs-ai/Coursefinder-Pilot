@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const code = fs.readFileSync('supabase/migrations/20261118130000_cf247_boost_fields_claim_fast.sql', 'utf8').split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
+const code = fs.readFileSync('supabase/migrations-archive/20261118130000_cf247_boost_fields_claim_fast.sql', 'utf8').split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 
 test('the claim reads the stored pages once, not a function per course, and keeps the rules', () => {
   expect(code).toContain("if v <> 'ca58e9b4cd2058fceb814806852fe6a6' then raise exception")

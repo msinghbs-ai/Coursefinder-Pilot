@@ -4,7 +4,7 @@ import fs from'node:fs'
 import{sql,quote}from'./db.mjs'
 import{descriptionPageText,providerDescriptionSentences}from'../../../supabase/functions/coverage-sweep/description.ts'
 const root='tests/fixtures/provider-description-autonomy/'
-const migration=fs.readFileSync('supabase/migrations/20261106200000_cf247_provider_description_autonomy.sql','utf8')
+const migration=fs.readFileSync('supabase/migrations-archive/20261106200000_cf247_provider_description_autonomy.sql','utf8')
 const provider='10000000-0000-0000-0000-000000000001'
 const doc=sql(`select to_jsonb(d) from fixture.documents d where provider_id=${quote(provider)};`,{role:'postgres',json:true})
 // A controlled official About page: the fixture provider's stored page plus campus, scholarship and guarantee passages.

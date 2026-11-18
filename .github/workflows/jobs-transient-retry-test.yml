@@ -4,7 +4,7 @@ name: Task runner transient retry integration
 on:
   pull_request:
     paths:
-      - 'supabase/migrations/20261111230000_cf247_jobs_transient_retry.sql'
+      - 'supabase/migrations-archive/20261111230000_cf247_jobs_transient_retry.sql'
       - 'supabase/held/jobs_transient_retry_forward_recovery.sql'
       - 'tests/fixtures/jobs-transient-retry/**'
       - 'tests/uat/cf-247-jobs-transient-retry-contract.spec.mjs'

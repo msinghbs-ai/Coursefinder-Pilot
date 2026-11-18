@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
-const a = fs.readFileSync('supabase/migrations/20261012011100_cf247_targets_refresh_lock_onboarding_wait.sql', 'utf8')
+const a = fs.readFileSync('supabase/migrations-archive/20261012011100_cf247_targets_refresh_lock_onboarding_wait.sql', 'utf8')
 const outside = s => s.slice(0, s.indexOf('CREATE OR REPLACE FUNCTION')) + s.slice(s.lastIndexOf('$function$;'))
 
 test('11100: one refresh at a time; onboarding waits for found pages up to 6 hours; guarded; nothing dropped', () => {
@@ -16,7 +16,7 @@ test('11100: one refresh at a time; onboarding waits for found pages up to 6 hou
   expect(outside(a)).not.toMatch(/^\s*(drop|delete|truncate)\b/im)
 })
 
-const b = fs.readFileSync('supabase/migrations/20261012011200_cf247_scholarship_ai_rules_third_model.sql', 'utf8')
+const b = fs.readFileSync('supabase/migrations-archive/20261012011200_cf247_scholarship_ai_rules_third_model.sql', 'utf8')
 const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 
 test('11200 + worker v0.20.3: proven value stands; nationality proves international; GPT-4.1 qualified, never switched on; waiting pages read again', () => {
@@ -33,7 +33,7 @@ test('11200 + worker v0.20.3: proven value stands; nationality proves internatio
   expect(w).toContain('const checks: Record<string, unknown> = checkScholarshipAnswer(a, `${title} ${h1} ${text}${linked ? " " + linked.text : ""}`, it.country || null);') // v0.77.0: the bundle's linked terms page counts
 })
 
-const c = fs.readFileSync('supabase/migrations/20261012011300_cf247_central_pages_ai.sql', 'utf8')
+const c = fs.readFileSync('supabase/migrations-archive/20261012011300_cf247_central_pages_ai.sql', 'utf8')
 
 test('11300 + worker v0.21.0: central pages read by a pinned model become proposals a person approves; catalogued job; nothing applied by the AI', () => {
   expect(c).toContain("values (1, 'gpt-4.1-mini', 'openai/gpt-4.1-mini',")

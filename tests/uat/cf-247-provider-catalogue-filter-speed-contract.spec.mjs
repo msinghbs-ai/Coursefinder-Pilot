@@ -6,8 +6,8 @@ import fs from 'node:fs'
 import crypto from 'node:crypto'
 import { migrationNames } from './support/migration-files.mjs'
 
-const OLD = fs.readFileSync('supabase/migrations/20261109200000_cf247_provider_catalogue_columns.sql', 'utf8')
-const NEWFILE = 'supabase/migrations/20261109220000_cf247_provider_catalogue_filter_speed.sql'
+const OLD = fs.readFileSync('supabase/migrations-archive/20261109200000_cf247_provider_catalogue_columns.sql', 'utf8')
+const NEWFILE = 'supabase/migrations-archive/20261109220000_cf247_provider_catalogue_filter_speed.sql'
 const NEW = fs.readFileSync(NEWFILE, 'utf8')
 const REC = fs.readFileSync('supabase/held/provider_catalogue_filter_speed_forward_recovery.sql', 'utf8')
 const TOT = fs.readFileSync('supabase/held/provider_catalogue_filter_speed_totals_equivalence.sql', 'utf8')

@@ -6,7 +6,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 P="psql -v ON_ERROR_STOP=1 -q -X"
 FX=tests/fixtures/aer-hold-wording
-MIG=supabase/migrations/20261108150100_cf247_course_search_hold_wording.sql
+MIG=supabase/migrations-archive/20261108150100_cf247_course_search_hold_wording.sql
 DB=${AERHW_DB:-g_aer2_hold_wording}
 q() { $P -d $DB -Atc "$1"; }
 $P -d postgres -c "drop database if exists $DB" -c "create database $DB" >/dev/null 2>&1

@@ -8,7 +8,7 @@ import fs from 'node:fs'
 import { courseEntryMerge, courseEntrySliceRows, proveQuote, quoteFragments, storeQuote, COURSE_ENTRY_SYSTEM } from '../../supabase/functions/coverage-sweep/course-entry.ts'
 import { entryCountryAliases, entryMatrixParsed } from '../../supabase/functions/coverage-sweep/entry.ts'
 
-const MIG = fs.readFileSync('supabase/migrations/20261108020000_cf247_aer_reader_quality.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations-archive/20261108020000_cf247_aer_reader_quality.sql', 'utf8')
 const W = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 const flat = (s) => String(s || '').toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '')
 

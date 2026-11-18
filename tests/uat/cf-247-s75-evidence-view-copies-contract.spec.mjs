@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
-const mig = fs.readFileSync('supabase/migrations/20261019100000_cf247_evidence_copy_roles.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261019100000_cf247_evidence_copy_roles.sql', 'utf8')
 const fn = fs.readFileSync('supabase/functions/admin-evidence-access/index.ts', 'utf8')
 const src = fs.readFileSync('src/EvidenceWorkspace.jsx', 'utf8')
 const lib = fs.readFileSync('src/lib/supabase.js', 'utf8')

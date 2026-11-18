@@ -2,7 +2,7 @@
 // CF-247 UI audit Phase 2 (Platform Admin 24 Oct 2026 11:27): the Courses list shows the fee with its basis and the campus city/state, both sortable.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const m = fs.readFileSync('supabase/migrations/20261024007000_cf247_ui_audit_phase2_course_list.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261024007000_cf247_ui_audit_phase2_course_list.sql', 'utf8')
 const ui = fs.readFileSync('src/mature-main.jsx', 'utf8')
 
 test('migration: basis joins the list row; intl_fee and city sort; md5-guarded; nothing dropped; the website API untouched', () => {

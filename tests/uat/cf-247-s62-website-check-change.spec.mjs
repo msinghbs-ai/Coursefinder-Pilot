@@ -4,7 +4,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = 'supabase/migrations/20261018130000_cf247_website_check_change.sql'
+const MIG = 'supabase/migrations-archive/20261018130000_cf247_website_check_change.sql'
 const sql = fs.readFileSync(MIG, 'utf8')
 const worker = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 const ui = fs.readFileSync('src/AdapterBuilderTab.jsx', 'utf8')

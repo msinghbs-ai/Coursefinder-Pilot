@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261031060000_cf247_d3_rule4_retired.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261031060000_cf247_d3_rule4_retired.sql', 'utf8')
 const code = (s) => s.replace(/--[^\n]*/g, '')
 
 test('logical retirement: catalogue says retired; job and function marked retiring with replacement and date from the setting', () => {

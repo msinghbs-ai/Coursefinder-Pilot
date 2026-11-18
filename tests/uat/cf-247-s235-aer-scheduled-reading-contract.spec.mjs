@@ -9,7 +9,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261103220000_cf247_aer_scheduled_reading.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261103220000_cf247_aer_scheduled_reading.sql', 'utf8')
 const FX = 'tests/fixtures/aer-scheduled-reading'
 const fx = (f) => fs.readFileSync(`${FX}/${f}`, 'utf8')
 const ui = fs.readFileSync('src/AerWorkspace.jsx', 'utf8')

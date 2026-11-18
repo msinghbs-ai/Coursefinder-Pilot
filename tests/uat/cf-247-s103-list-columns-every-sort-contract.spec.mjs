@@ -2,7 +2,7 @@
 // CF-247 hotfix v2.15.351 (consolidated mandate 25 Oct 2026, Part A): the course list shows International fee and City on every sort.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const m = fs.readFileSync('supabase/migrations/20261025001000_cf247_list_columns_on_every_sort.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261025001000_cf247_list_columns_on_every_sort.sql', 'utf8')
 const ui = fs.readFileSync('src/mature-main.jsx', 'utf8')
 
 test('the Completeness / Tuition Only branch adds the same columns as the normal path, from the same rows', () => {

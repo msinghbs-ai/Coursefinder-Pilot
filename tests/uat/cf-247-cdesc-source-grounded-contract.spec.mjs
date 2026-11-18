@@ -8,8 +8,8 @@ import fs from 'node:fs'
 import crypto from 'node:crypto'
 import { CDESC_PROMPT_VERSION, CDESC_SYSTEM, CDESC_SYSTEM_SHA256, CDESC_SYSTEM_V1, CDESC_SYSTEM_V1_SHA256, CDESC_SYSTEM_V2, CDESC_SYSTEM_V2_SHA256, CDESC_SYSTEM_V3, CDESC_SYSTEM_V3_SHA256, cdescRequest, cdescResults, cdescSchema, cdescSentences, cdescSpans, cdescUser, cdescValue } from '../../supabase/functions/coverage-sweep/course-text.ts'
 
-const MIG = fs.readFileSync('supabase/migrations/20261112170000_cf247_cdesc_source_grounded_v1.sql', 'utf8')
-const MIG2 = fs.readFileSync('supabase/migrations/20261115160000_cf247_v1_0_4_cdesc_v2_quality_retry.sql', 'utf8')  // v1.0.4: cdesc-source-grounded-v2 released
+const MIG = fs.readFileSync('supabase/migrations-archive/20261112170000_cf247_cdesc_source_grounded_v1.sql', 'utf8')
+const MIG2 = fs.readFileSync('supabase/migrations-archive/20261115160000_cf247_v1_0_4_cdesc_v2_quality_retry.sql', 'utf8')  // v1.0.4: cdesc-source-grounded-v2 released
 const code = MIG.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const HELD = fs.readFileSync('supabase/held/cdesc_source_grounded_forward_recovery.sql', 'utf8')
 const CT = fs.readFileSync('supabase/functions/coverage-sweep/course-text.ts', 'utf8')
@@ -153,13 +153,13 @@ test('migration 20261112170000: three md5-guarded edits, two functions, two sett
 
 test('fixture: wired into the Course descriptions workflow and built on the live definitions', () => {
   expect(WF).toContain('bash tests/fixtures/cdesc-source-grounded/run.sh')
-  expect(WF).toContain("- 'supabase/migrations/20261112170000_cf247_cdesc_source_grounded_v1.sql'")
+  expect(WF).toContain("- 'supabase/migrations-archive/20261112170000_cf247_cdesc_source_grounded_v1.sql'")
   expect(RUN).toContain('CDS_KEEP=1 CDS_DB=${DB}_sub bash tests/fixtures/cdesc-subset/run.sh')
   expect(RUN).toContain('[ "$FAILS" = "$EXPECTED" ]')
 })
 
 test('migration 20261112190000 (first-cycle check): md5-guarded edits of the gap function and the check (title and provider left out of the tests), "students" out of the claim words with a control event, only the v0.72.0 mapping holds marked reread:, held recovery, fixture wired', () => {
-  const M2 = fs.readFileSync('supabase/migrations/20261112190000_cf247_cdesc_first_cycle_reread.sql', 'utf8'), c2 = M2.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
+  const M2 = fs.readFileSync('supabase/migrations-archive/20261112190000_cf247_cdesc_first_cycle_reread.sql', 'utf8'), c2 = M2.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
   const H2 = fs.readFileSync('supabase/held/cdesc_reread_forward_recovery.sql', 'utf8')
   expect(M2).toContain('security.enrich_course_text_gaps_v1(text[])  ddba9b553a63a9e38c49782a0b0d29c9 -> d117edb4198b81a692e93af9a937110e')
   expect(c2).toContain("select pg_temp.edit_all('security.enrich_course_text_gaps_v1(text[])', 'ddba9b553a63a9e38c49782a0b0d29c9', 'd117edb4198b81a692e93af9a937110e',")

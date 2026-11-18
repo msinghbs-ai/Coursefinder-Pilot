@@ -10,8 +10,8 @@ set -euo pipefail
 cd "$(dirname "$0")"
 DB=${SCHCOV_DB:-sch_coverage_recovery_fixtures}
 ROOT=../../..
-MIG=$ROOT/supabase/migrations/20261104390000_cf247_sch_coverage_recovery.sql
-WC=$ROOT/supabase/migrations/20261104170000_cf247_work_continuity.sql
+MIG=$ROOT/supabase/migrations-archive/20261104390000_cf247_sch_coverage_recovery.sql
+WC=$ROOT/supabase/migrations-archive/20261104170000_cf247_work_continuity.sql
 P="psql -v ON_ERROR_STOP=1 -q -X"
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }
 md5of() { $P -d $DB -Atc "select md5(pg_get_functiondef('$1'::regprocedure))"; }
@@ -48,7 +48,7 @@ OUT=$($P -d $DB -1 -At -f $MIG 2>&1) || { echo "$OUT" | tail -5; exit 1; }
 check; [ "$($P -d $DB -Atc "$SNAP")" = "$S1" ] || { echo "a second run changed settings, remedies, root causes, states or jobs"; exit 1; }
 echo "second run: already applied, unchanged"
 # the v2.15.460 production defect (06:29 AEDT 4 Nov 2026) on the released definition, then the fix 20261104430000 (twice)
-FIX=$ROOT/supabase/migrations/20261104430000_cf247_sch_coverage_classify_fix.sql
+FIX=$ROOT/supabase/migrations-archive/20261104430000_cf247_sch_coverage_classify_fix.sql
 [ "$(md5of 'security.scholarship_coverage_classify_v1(uuid[])')" = a268ce816990d71ef545dbdc0ae28a5e ] || { echo "classify differs from live v2.15.460"; exit 1; }
 $P -d $DB -f fixtures-dup-before.sql 2>&1 | show
 A_FIX=$(sed -n "s/^--   security.scholarship_coverage_classify_v1(uuid\[\]) *[0-9a-f]\{32\} -> \([0-9a-f]\{32\}\)$/\1/p" $FIX)

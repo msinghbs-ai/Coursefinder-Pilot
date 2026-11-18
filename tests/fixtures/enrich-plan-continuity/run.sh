@@ -7,7 +7,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 DB=${PLANFIX_DB:-enrich_plan_continuity_fixtures}
-MIG=../../../supabase/migrations/20261103120000_cf247_enrich_plan_continuity.sql
+MIG=../../../supabase/migrations-archive/20261103120000_cf247_enrich_plan_continuity.sql
 PASTE=../../../tests/fixtures/paste/PASTE-20261103-layer2-refresh-requests-close.sql
 ROLLBACK=../../../tests/fixtures/paste/PASTE-20261103-layer2-refresh-requests-close-rollback.sql
 P="psql -v ON_ERROR_STOP=1 -q -X"

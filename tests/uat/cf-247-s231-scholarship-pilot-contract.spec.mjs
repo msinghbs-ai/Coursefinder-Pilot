@@ -8,7 +8,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = 'supabase/migrations/20261103090000_cf247_scholarship_nonuni_pilot.sql'
+const MIG = 'supabase/migrations-archive/20261103090000_cf247_scholarship_nonuni_pilot.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const FX = 'tests/fixtures/scholarship-pilot'
 const fx = (f) => fs.readFileSync(`${FX}/${f}`, 'utf8')
@@ -32,7 +32,7 @@ test('five md5-guarded changes from today\'s live text; the fixture run rebuilds
   expect(run).toContain('[ "$BEFORE" = "$LIVE" ] || { echo "rebuilt definitions differ from live: $BEFORE"; exit 1; }')
   expect(run).toContain("grep -c ': applied' | grep -qx 5")
   expect(run).toContain("grep -c 'already applied' | grep -qx 5")
-  expect(run).toContain('MIG0=../../../supabase/migrations/20261103050000_cf247_scholarship_recovery.sql')
+  expect(run).toContain('MIG0=../../../supabase/migrations-archive/20261103050000_cf247_scholarship_recovery.sql')
   expect(m).toMatch(/^-- Replaces: security\.scholarship_admission_provider_ok_v1, security\.fc_sch_eligible_v1, security\.fc_provider_tier_v1, security\.scholarship_discovery_refill_v1, security\.scholarship_admit_from_provider_page_v1 \(same names; md5-guarded\)$/m)
 })
 

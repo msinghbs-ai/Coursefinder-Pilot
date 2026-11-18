@@ -8,7 +8,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 DB=${SCHRO_DB:-sch_reads_ownership_fixtures}
-MIG=../../../supabase/migrations/20261104250000_cf247_sch_reads_ownership.sql
+MIG=../../../supabase/migrations-archive/20261104250000_cf247_sch_reads_ownership.sql
 P="psql -v ON_ERROR_STOP=1 -q -X"
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }
 md5of() { $P -d $DB -Atc "select md5(pg_get_functiondef('$1'::regprocedure))"; }

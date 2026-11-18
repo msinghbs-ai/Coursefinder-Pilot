@@ -8,7 +8,7 @@ import fs from 'node:fs'
 import { centralCandidates, entryCandidates, weakKinds, ENTRY_SEARCH } from '../../supabase/functions/coverage-sweep/central.ts'
 import { migrationPath } from './support/migration-files.mjs'
 
-const MIG = 'supabase/migrations/20261111100000_cf247_aer_entry_search.sql'
+const MIG = 'supabase/migrations-archive/20261111100000_cf247_aer_entry_search.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const worker = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')

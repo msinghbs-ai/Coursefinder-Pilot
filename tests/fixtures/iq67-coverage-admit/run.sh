@@ -9,7 +9,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 ROOT=../../..
 DB=${IQ67_DB:-iq67_coverage_admit_fixtures}
-MIG=$ROOT/supabase/migrations/20261104080000_cf247_iq67_coverage_admit_lock_isolation.sql
+MIG=$ROOT/supabase/migrations-archive/20261104080000_cf247_iq67_coverage_admit_lock_isolation.sql
 P="psql -v ON_ERROR_STOP=1 -q -X"
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }
 q() { $P -d $DB -Atc "$1"; }
@@ -28,7 +28,7 @@ for s in "${!AFTER[@]}"; do [ ${#AFTER[$s]} = 32 ] || { echo "after md5 for $s n
 trap '[ -n "${IQ67_KEEP:-}" ] || $P -d postgres -c "drop database if exists $DB" >/dev/null 2>&1' EXIT
 $P -d postgres -c "drop database if exists $DB" -c "create database $DB" >/dev/null 2>&1
 $P -d $DB -f $ROOT/tests/fixtures/integration-queue/stubs.sql
-$P -d $DB -1 -o /dev/null -f $ROOT/supabase/migrations/20261102120000_cf247_integration_queue.sql 2>&1 | show
+$P -d $DB -1 -o /dev/null -f $ROOT/supabase/migrations-archive/20261102120000_cf247_integration_queue.sql 2>&1 | show
 $P -d $DB -f stubs-extra.sql
 for f in live/*.def; do $P -d $DB -c "set check_function_bodies = off" -f "$f"; done
 for s in "${!LIVE[@]}"; do [ "$(md5of "$s")" = "${LIVE[$s]}" ] || { echo "loaded $s differs from live: $(md5of "$s")"; exit 1; }; done

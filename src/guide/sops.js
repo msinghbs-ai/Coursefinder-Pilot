@@ -9,7 +9,7 @@
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 // Check the admin copy with `node scripts/export-sops.mjs --check-mirror <coursefinder-admin/docs/sops>` (SS-016 UR-03): it exits 1 on drift.
 
-export const SOP_REVIEWED_FOR = '2.16.46'
+export const SOP_REVIEWED_FOR = '2.16.47'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -45,7 +45,7 @@ const step = (o) => o
 
 export const SOPS = [
   {
-    id: 'admin-sop', title: 'Platform Admin SOP', version: '2.71', audience: 'Platform Admin (role rank 6)',
+    id: 'admin-sop', title: 'Platform Admin SOP', version: '2.72', audience: 'Platform Admin (role rank 6)',
     purpose: 'How the Platform Admin runs StudySearch day to day: the approvals only you can give, the budgets and models you own, and the checks that keep automatic admission trustworthy.',
     owns: ['Admitting university adapters (Layer 2/3 › Universities)', 'Approving central pages: fee schedules, English policies, academic calendars', 'AI models, their order, AI admission and the AI allowances', 'Firecrawl and OpenRouter budgets and service keys', 'Onboarding settings, Retry and Stop', 'Users and roles; new countries; go-live'],
     schedule: [
@@ -115,7 +115,7 @@ export const SOPS = [
       'Operations lane funnels: read each lane stage by stage. A green job, a stage transfer and published data are different things; a lane with items waiting for a person needs a decision from a person. Firecrawl allowance and remaining credits are read only; check the room above the reserved floor before asking for more course-link work.',
       'English faculty and course-group scores wait for Platform Admin approval and explicit binding; No rule yet and held course-specific cases remain visible without invented coverage.',
       'Course descriptions: distinguish proposed, human-admitted and actually published counts. Review held evidence and use Previous on the final reviewer page.',
-      'Course descriptions (v2.16.46): each card says why it is held and what to do. Re-read (1-2 sentences) re-reads the stored page without marking the course bad; Approve all verified for provider asks you to type the count it shows.',
+      'Course descriptions (v2.16.47): each card says why it is held and what to do. Re-read (1-2 sentences) re-reads the stored page without marking the course bad; Approve all verified for provider asks you to type the count it shows.',
       'An application deadline must quote an actual closing date; commencement and intake dates are not closing dates. Escalate incorrect records without removing human locks.',
       'A held or uncertain production release: confirm the Integration Controller and operation evidence before recovery; keep read-only health checks available.',
       'Provider descriptions: the status on the Provider description prompt card (AI spend against the ceiling and daily guard, Firecrawl use, admitted in 24 hours, waiting, held, written by hand, the jobs\' last runs). Descriptions waiting for a person are marketing wording or words kept for human eyes ("accredited"); decide them in Layer 4.',
@@ -128,7 +128,8 @@ export const SOPS = [
       'Scholarships withdrawn by the nightly review: a jump means a rule changed or a site moved its pages.',
     ],
     escalate: ['A job that fails the same way after a fix, a worker refusing work ("invalid key", "nonce"), or data written where it should not be: pause the job, note what you saw, raise it with the platform engineer with the change-control reference (CF-247).'],
-    changes: [{ version: '2.71', date: '18 Nov 2026', release: '2.16.46', change: 'Layer 4 › Inbox, Course description cards: read Why this is held first. Re-read (1-2 sentences) for a long or worded description, Approve all verified for provider when many of one university are from their own pages (type the count shown to confirm), Reject (bad page / wrong course) when the page is not the course. Course descriptions are now 1 to 2 sentences. The machine rule now admits a description whose own page proves the course (CRICOS or NZQA code, or exact title).' },
+    changes: [{ version: '2.72', date: '19 Nov 2026', release: '2.16.47', change: 'Layer 4 › Inbox, Course description cards: read Why this is held first. Re-read (1-2 sentences) for a long or worded description, Approve all verified for provider when many of one university are from their own pages (type the count shown to confirm), Reject (bad page / wrong course) when the page is not the course. Course descriptions are now 1 to 2 sentences. The machine rule now admits a description whose own page proves the course (CRICOS or NZQA code, or exact title).' },
+      { version: '2.71', date: '19 Nov 2026', release: '2.16.46', change: 'Course detail: open the Description pipeline fold to see stages, runs and Tasks that held this course; Related insights & funding (QILT, PRISMS) is also folded. Scholarships are listed once, in the Scholarships section. Counsellors and Viewers do not see the pipeline or task buttons (check with Preview as).' },
       { version: '2.70', date: '18 Nov 2026', release: '2.16.45', change: 'Course detail: check a Counsellor or Viewer view with Preview as. Archive course, Read with AI and the Read / refresh entry requirements now panel are hidden there; only approved entry requirements show. Scholarship lists show three, then Show all (N) scholarships.' },
       { version: '2.69', date: '18 Nov 2026', release: '2.16.44', change: 'Course and Provider detail carry read-only correlated blocks (Around this course, Around this provider). Viewers and Counsellors see student-facing values only; use Preview as in the detail header to check what a Counsellor or Viewer sees. Destination data › City metrics & costs has Metric type pills.' },
       { version: '2.68', date: '18 Nov 2026', release: '2.16.43', change: 'Layer 4 › Inbox › Grid › Clusters: when the same refusal on the same words appears for many items of one university, settle the cluster here with one reason, then export it and ask for the rule to be written into the Boost worker or the reader (with a test), so it stops coming back.' },
@@ -295,7 +296,7 @@ export const SOPS = [
       { version: '2.03', date: '29 Oct 2026', release: '2.15.362', change: 'Academic entry requirements (AER programme): the Provider drawer lists each source with its latest read, so a held PDF, a refused page or a page with no row is visible with its reason; first reads of new providers wait in Layer 4 as Entry matrix (first run).' }],
   },
   {
-    id: 'operator-sop', title: 'Operator SOP', version: '2.31', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
+    id: 'operator-sop', title: 'Operator SOP', version: '2.32', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
     purpose: 'How operators keep the data flowing and decide what automation cannot: the review queues, stuck or failing work, and the records that need a person. Each step names the lowest role that does it.',
     owns: ['Curator: reading Layer 4 › Inbox items and correcting the records they point to, key dates and reference links, course and provider details, ranking links', 'Pipeline Operator: Layer 4 › Inbox decisions (except entry requirement items: Platform Admin), Task manager › Background jobs, failed jobs and worker errors (diagnose, record, escalate), onboarding follow-up, scholarship links, counsellor reports', 'PIM Admin: pacing, pausing, resuming and running again the automations marked PIM Admin, testing adapters in the Adapter builder'],
     schedule: [
@@ -345,7 +346,7 @@ export const SOPS = [
       'Operations lane funnels: read each lane stage by stage. A green job, a stage transfer and published data are different things; a lane with items waiting for a person needs a decision from a person. Firecrawl allowance and remaining credits are read only; check the room above the reserved floor before asking for more course-link work.',
       'English faculty and course-group scores wait for Platform Admin approval and explicit binding; No rule yet and held course-specific cases remain visible without invented coverage.',
       'Course descriptions: distinguish proposed, human-admitted and actually published counts. Review held evidence and use Previous on the final reviewer page.',
-      'Course descriptions (v2.16.46): each card says why it is held and what to do. Re-read (1-2 sentences) re-reads the stored page without marking the course bad; Approve all verified for provider asks you to type the count it shows.',
+      'Course descriptions (v2.16.47): each card says why it is held and what to do. Re-read (1-2 sentences) re-reads the stored page without marking the course bad; Approve all verified for provider asks you to type the count it shows.',
       'An application deadline must quote an actual closing date; commencement and intake dates are not closing dates. Escalate incorrect records without removing human locks.',
       'Task manager › Background jobs: a job Failing, or a worker repeating the same error.',
       'Layer 4 waiting counts rising two days running: find out why before working harder (reviewers behind, a burst of new arrivals, evidence that cannot be opened, the same defect repeating, or work waiting on another step).',
@@ -354,7 +355,8 @@ export const SOPS = [
       'Values marked as estimates (savings from CRICOS cost): quote them to students as estimates.',
     ],
     escalate: ['Tell the Platform Admin about anything needing approval, admitting, budgets, models, keys, users, or a fault that repeats after your fix. Write what you saw, where, and when.', 'Pace, pause, resume or run again: Pipeline Operator diagnoses, records and escalates; the PIM Admin (or a higher role) changes pace or pauses; automations marked Platform Admin go to the Platform Admin.', 'A StudySearch alert by push or e-mail: open Platform health and tell the Platform Admin you received it; the Platform Admin acknowledges it.'],
-    changes: [{ version: '2.31', date: '18 Nov 2026', release: '2.16.46', change: 'Layer 4 › Inbox, Course description cards: read Why this is held first. Re-read (1-2 sentences) for a long or worded description, Approve all verified for provider when many of one university are from their own pages (type the count shown to confirm), Reject (bad page / wrong course) when the page is not the course. Course descriptions are now 1 to 2 sentences.' },
+    changes: [{ version: '2.32', date: '19 Nov 2026', release: '2.16.47', change: 'Layer 4 › Inbox, Course description cards: read Why this is held first. Re-read (1-2 sentences) for a long or worded description, Approve all verified for provider when many of one university are from their own pages (type the count shown to confirm), Reject (bad page / wrong course) when the page is not the course. Course descriptions are now 1 to 2 sentences.' },
+      { version: '2.31', date: '19 Nov 2026', release: '2.16.46', change: 'Course detail: the Description pipeline and Related insights & funding are folded; open them when you need them. Scholarships are listed once.' },
       { version: '2.30', date: '18 Nov 2026', release: '2.16.45', change: 'Course detail: Counsellors and Viewers see approved entry requirements only, and scholarship lists show three with Show all (N) scholarships.' },
       { version: '2.29', date: '18 Nov 2026', release: '2.16.44', change: 'Course and Provider detail show the campus city weather and population, careers, visa and living-cost rules, rankings and scholarships in a read-only block. Use Preview as (Editors and above) to see the Counsellor view.' },
       { version: '2.28', date: '18 Nov 2026', release: '2.16.43', change: 'Layer 4 › Inbox › Grid › Clusters shows items that share a university, a reason and a quote. Settle a cluster only when every item in it truly takes the same decision; open it first.' },

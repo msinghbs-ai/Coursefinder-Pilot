@@ -1,9 +1,9 @@
 // Guards: Layer 1 induction backend supports the API v3 fields and baseline records for a new country source (Platform Admin 18 Nov 2026 10:31: study_load, empty_reason_code, provider_accreditations, campuses.is_primary, grade_scale_conversions; "allows creating/seeding new baseline records when onboarding a new country source"): the targets are extended md5-guarded, the apply step fills only what is not held (never overwrites, publishes or deletes; grade scales load inactive), and the runner calls it only inside an apply run.
-// CF-247 S622. supabase/migrations/20261118124000_cf247_layer1_induction_v3_fields_baseline.sql; supabase/functions/layer1-declarative-runner/index.ts 1.1.0.
+// CF-247 S622. supabase/migrations-archive/20261118124000_cf247_layer1_induction_v3_fields_baseline.sql; supabase/functions/layer1-declarative-runner/index.ts 1.1.0.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261118124000_cf247_layer1_induction_v3_fields_baseline.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261118124000_cf247_layer1_induction_v3_fields_baseline.sql', 'utf8')
 const R = fs.readFileSync('supabase/functions/layer1-declarative-runner/index.ts', 'utf8')
 
 test('targets and record types are extended from the live definitions, md5-guarded', () => {

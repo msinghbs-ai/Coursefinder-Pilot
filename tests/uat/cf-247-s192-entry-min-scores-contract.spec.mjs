@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261031070000_cf247_d4_entry_min_scores.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261031070000_cf247_d4_entry_min_scores.sql', 'utf8')
 const code = (s) => s.replace(/--[^\n]*/g, '')
 
 test('G3: approved, additive only, baseline re-taken', () => {

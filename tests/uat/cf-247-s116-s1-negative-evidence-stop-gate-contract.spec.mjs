@@ -2,7 +2,7 @@
 // CF-247 S1 part 1 (v2.15.352): one negative-evidence predicate asked by every automatic binding path, one course-search stop gate.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const m = fs.readFileSync('supabase/migrations/20261025002000_cf247_s1_negative_evidence_and_stop_gate.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261025002000_cf247_s1_negative_evidence_and_stop_gate.sql', 'utf8')
 
 test('one predicate: rejections and blocks', () => {
   expect(m).toContain('create or replace function security.page_refused_v1(p_course uuid, p_url text) returns boolean')

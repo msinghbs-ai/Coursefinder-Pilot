@@ -7,8 +7,8 @@ import os from 'node:os'
 import path from 'node:path'
 import { execFileSync } from 'node:child_process'
 
-const r22 = fs.readFileSync('supabase/migrations/20261017010000_cf247_r22_sync_pages.sql', 'utf8')
-const r18 = fs.readFileSync('supabase/migrations/20261017020000_cf247_r18_duolingo.sql', 'utf8')
+const r22 = fs.readFileSync('supabase/migrations-archive/20261017010000_cf247_r22_sync_pages.sql', 'utf8')
+const r18 = fs.readFileSync('supabase/migrations-archive/20261017020000_cf247_r18_duolingo.sql', 'utf8')
 const worker = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 
 async function parser() {
@@ -57,7 +57,7 @@ test('R18: DET added to approved policies only where the IELTS matches, only to 
   expect(worker).toContain('rpc("svc_provider_english_add_tests_v1", { p_proposal_id: it.id, p_parser: ADD_TESTS_PARSER, p_parsed: parsed, p_error: err })')
 })
 
-const fix = fs.readFileSync('supabase/migrations/20261017030000_cf247_r18_add_tests_fix.sql', 'utf8')
+const fix = fs.readFileSync('supabase/migrations-archive/20261017030000_cf247_r18_add_tests_fix.sql', 'utf8')
 test('R18 fix: only tests learnt after approval; earlier additions corrected or withdrawn (never deleted); differing IELTS flagged; md5-guarded', async () => {
   const { ADDED_TESTS } = await parser()
   expect(ADDED_TESTS).toEqual(['DET', 'OET', 'CELPIP'])
@@ -71,7 +71,7 @@ test('R18 fix: only tests learnt after approval; earlier additions corrected or 
 })
 
 // Decision 262 (Platform Admin 17 Oct 2026 15:01: "One policy per uni and report it as well, also record it in admin repo.")
-const inforce = fs.readFileSync('supabase/migrations/20261017040000_cf247_english_policy_in_force.sql', 'utf8')
+const inforce = fs.readFileSync('supabase/migrations-archive/20261017040000_cf247_english_policy_in_force.sql', 'utf8')
 test('Decision 262: one English policy in force per university and level; rows moved only when the value is the same, else Layer 4; settled every run', async () => {
   expect(inforce).toContain("array_agg(docs.id order by docs.page_ok desc, docs.quoted desc, docs.rows_lv desc, docs.decided_at desc nulls last)")
   expect(inforce).toContain("pp.url !~* '(/courses?/|english-for-academic|/bengaluru/)' page_ok")

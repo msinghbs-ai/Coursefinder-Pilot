@@ -10,7 +10,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { migrationNames, migrationPath } from './support/migration-files.mjs'
 
-const MIG = 'supabase/migrations/20261103120000_cf247_enrich_plan_continuity.sql'
+const MIG = 'supabase/migrations-archive/20261103120000_cf247_enrich_plan_continuity.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const FX = 'tests/fixtures/enrich-plan-continuity'
 const run = fs.readFileSync(`${FX}/run.sh`, 'utf8')

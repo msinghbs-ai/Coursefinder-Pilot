@@ -4,7 +4,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261118237000_cf247_s673_aer_machine_revalidate.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261118237000_cf247_s673_aer_machine_revalidate.sql', 'utf8')
 const code = (t) => t.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')
 
 test('the validation runs only under the live definition checked on 18 Nov and records one audit event', () => {

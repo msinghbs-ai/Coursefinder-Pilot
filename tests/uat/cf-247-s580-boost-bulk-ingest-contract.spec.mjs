@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261117163500_cf247_boost_bulk_ingest.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261117163500_cf247_boost_bulk_ingest.sql', 'utf8')
 const code = M.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const F = fs.readFileSync('supabase/functions/worker-boost-bulk-ingest/index.ts', 'utf8')
 const gate = code.slice(code.indexOf('create or replace function security.boost_ingest_gate_v1'), code.indexOf('comment on function security.boost_ingest_gate_v1'))

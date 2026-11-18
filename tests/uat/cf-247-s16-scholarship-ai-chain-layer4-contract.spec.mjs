@@ -8,7 +8,7 @@ import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
 const read = p => fs.readFileSync(p, 'utf8')
-const sql = () => read('supabase/migrations/20261011010400_cf247_scholarship_ai_chain_layer4_reroute.sql')
+const sql = () => read('supabase/migrations-archive/20261011010400_cf247_scholarship_ai_chain_layer4_reroute.sql')
 
 test('migration: model chain, cascade on an unsettled answer, Layer 4 reviews kept as exceptions; nothing dropped', () => {
   const s = sql()
@@ -52,7 +52,7 @@ test('mocked browser: Extraction shows the reading order read only and links to 
 // v2.15.300 (Platform Admin, 20 Oct 2026, "Old Layer 4 tabs now"): AI could not decide retired; a held page is an Inbox kind and Publish
 // sends the extraction the AI read with the chosen answer (admin_layer4_inbox decide → admin_scholarship_ai 'review_decide')
 test('held scholarship pages are decided in the Inbox through review_decide', () => {
-  const m = read('supabase/migrations/20261020040000_cf247_layer4_inbox.sql')
+  const m = read('supabase/migrations-archive/20261020040000_cf247_layer4_inbox.sql')
   expect(m).toContain("v_r := public.admin_scholarship_ai('review_decide', jsonb_build_object('review_id', v_ref::bigint, 'decision', case when v_choice = 'publish' then 'admit' else 'refuse' end,")
   expect(fs.existsSync('src/ScholarshipAiReview.jsx')).toBe(false)
 })
@@ -65,7 +65,7 @@ test('worker v0.20.2+: an audience quote must itself name international (or dome
 })
 
 test('confirm admissions: an admission by the first model is confirmed by the next while the setting is on (default on), switchable on Extraction', () => {
-  const s = read('supabase/migrations/20261011010700_cf247_scholarship_ai_confirm_admissions.sql')
+  const s = read('supabase/migrations-archive/20261011010700_cf247_scholarship_ai_confirm_admissions.sql')
   expect(s).toContain('add column if not exists confirm_admissions boolean not null default true')
   expect(s).toContain("v_why := 'a second model confirms each admission';")
   expect(s).toContain("and security.scholarship_ai_next_model_v1(q.model_code) is not null then")

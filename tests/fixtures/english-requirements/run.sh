@@ -91,7 +91,7 @@ $P -At -d "$DB" -f $T/record.sql | grep '|' > $T/record.txt
 node $FX/baseline.mjs check-recorded $T/record.txt
 # 4 the migration on top: the harness (labelled stand-ins), the migration itself, then the group scenarios (each prints PASS or raises)
 $P -q -v ON_ERROR_STOP=1 -d "$DB" -f $FX/groups-harness.sql >/dev/null 2>&1 || fail 'groups-harness.sql did not apply'
-$P -q -v ON_ERROR_STOP=1 -d "$DB" -f supabase/migrations/20261106550000_cf247_english_requirements_complete.sql >/dev/null 2>$T/mig.err || { cat $T/mig.err; fail 'the migration did not apply on the production-shaped fixture'; }
+$P -q -v ON_ERROR_STOP=1 -d "$DB" -f supabase/migrations-archive/20261106550000_cf247_english_requirements_complete.sql >/dev/null 2>$T/mig.err || { cat $T/mig.err; fail 'the migration did not apply on the production-shaped fixture'; }
 echo 'PASS the migration applies on the production-shaped fixture (every live md5 guard held)'
 $P -X -v ON_ERROR_STOP=1 -d "$DB" -f $FX/groups-tests.sql > $T/groups.out 2>&1 || { cat "$T/groups.out" >&2; fail 'a group scenario failed'; }
 $P -X -v ON_ERROR_STOP=1 -d "$DB" -f $FX/exceptions-tests.sql > $T/exceptions.out 2>&1 || { cat "$T/exceptions.out" >&2; fail 'an exception scenario failed'; }

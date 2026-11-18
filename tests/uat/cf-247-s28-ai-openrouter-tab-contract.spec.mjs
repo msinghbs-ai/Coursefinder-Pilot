@@ -4,7 +4,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const sql = fs.readFileSync('supabase/migrations/20261013012100_cf247_ai_openrouter_tab.sql', 'utf8')
+const sql = fs.readFileSync('supabase/migrations-archive/20261013012100_cf247_ai_openrouter_tab.sql', 'utf8')
 
 test('12100: one read for the AI tab; central pages model and switch by a Platform Admin with a reason; nothing dropped', () => {
   expect(sql).toContain('create or replace function public.admin_ai_config_read() returns jsonb')

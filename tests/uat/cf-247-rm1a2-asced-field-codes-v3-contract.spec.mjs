@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261116200000_cf247_rm1a2_asced_field_codes_v3.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261116200000_cf247_rm1a2_asced_field_codes_v3.sql', 'utf8')
 const dd = fs.readFileSync('src/DataDelivery.jsx', 'utf8')
 const card = fs.readFileSync('src/CourseRecognition.jsx', 'utf8')
 

@@ -5,7 +5,7 @@ import fs from 'node:fs'
 // CF-247 v2.15.309 (Platform Admin 21 Oct 2026 20:02): AI fee reader for NZ universities, ready for Canada and later countries; errors
 // collected and fed back to the AI. Choices: "Automatic above confidence", "As published + yearly estimate", "NZ universities, then NZ
 // rest, then CA".
-const m = fs.readFileSync('supabase/migrations/20261022001000_cf247_fee_reader.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261022001000_cf247_fee_reader.sql', 'utf8')
 const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 const f = fs.readFileSync('supabase/functions/coverage-sweep/fees.ts', 'utf8')
 const ui = fs.readFileSync('src/FeeReader.jsx', 'utf8')
@@ -50,7 +50,7 @@ test('screen: providers, rows, findings, notes, country rules', () => {
 })
 
 test('a fee page never read is not held by the central-page refresh rule', () => {
-  const h = fs.readFileSync('supabase/migrations/20261022002000_cf247_fee_pages_first_read.sql', 'utf8')
+  const h = fs.readFileSync('supabase/migrations-archive/20261022002000_cf247_fee_pages_first_read.sql', 'utf8')
   expect(h).toContain("and fs.status in ('found', 'reading') and fs.read_at is null) then")
   expect(h).toMatch(/^-- Replaces: /m)
   expect(h).toMatch(/^-- Retires: /m)
@@ -58,7 +58,7 @@ test('a fee page never read is not held by the central-page refresh rule', () =>
 
 // 21 Oct 2026 21:36 job queue review ("Keep 13,000, fix order only")
 test('course-page search: priority countries first, wrong-in-a-row stop, providers never searched', () => {
-  const s = fs.readFileSync('supabase/migrations/20261022003000_cf247_search_order_and_waste.sql', 'utf8')
+  const s = fs.readFileSync('supabase/migrations-archive/20261022003000_cf247_search_order_and_waste.sql', 'utf8')
   expect(s).toContain("sp.key = 'search.priority_countries')) desc,")
   expect(s).toContain("security.pipeline_num_v1('search.wrong_in_row_stop', 20)")
   expect(s).toContain("sk.key = 'search.skip_providers' and sk.value ? px.stable_key")

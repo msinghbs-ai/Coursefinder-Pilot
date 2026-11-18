@@ -2,8 +2,8 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M1 = fs.readFileSync('supabase/migrations/20261110060000_cf247_cdesc_machine_policy_shadow.sql', 'utf8')
-const M2 = fs.readFileSync('supabase/migrations/20261110060100_cf247_cdesc_machine_admission.sql', 'utf8')
+const M1 = fs.readFileSync('supabase/migrations-archive/20261110060000_cf247_cdesc_machine_policy_shadow.sql', 'utf8')
+const M2 = fs.readFileSync('supabase/migrations-archive/20261110060100_cf247_cdesc_machine_admission.sql', 'utf8')
 const code = (t) => t.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')
 const C1 = code(M1)
 const C2 = code(M2)
@@ -235,8 +235,8 @@ test('the fixture harness proves it: refusals, no change on apply, applied twice
 })
 
 test('visible results (Platform Admin 10 Nov 2026): wrong_page_kind and the Data Delivery stage counts are md5-guarded edits of functions we own, with forward recovery, no new setting and no new table', () => {
-  const V = fs.readFileSync('supabase/migrations/20261110100000_cf247_cdesc_visible_results.sql', 'utf8')
-  const W = fs.readFileSync('supabase/migrations/20261110100100_cf247_cdesc_wrong_page_kind.sql', 'utf8')
+  const V = fs.readFileSync('supabase/migrations-archive/20261110100000_cf247_cdesc_visible_results.sql', 'utf8')
+  const W = fs.readFileSync('supabase/migrations-archive/20261110100100_cf247_cdesc_wrong_page_kind.sql', 'utf8')
   for (const m of [V, W]) {
     expect(m).toMatch(/^-- Replaces: .+/m)
     expect(m).toMatch(/^-- Retires: .+/m)

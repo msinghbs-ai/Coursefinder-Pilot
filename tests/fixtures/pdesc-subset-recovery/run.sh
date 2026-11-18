@@ -8,7 +8,7 @@ export LC_ALL=C # fixed: one byte order for sort and comm, whatever the runner's
 DB=${PDSR_DB:-g_pdesc_subset}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"
-M=supabase/migrations/20261110210000_cf247_pdesc_sentence_subset_recovery.sql
+M=supabase/migrations-archive/20261110210000_cf247_pdesc_sentence_subset_recovery.sql
 R=supabase/held/pdesc_sentence_subset_recovery_forward_recovery.sql
 F=tests/fixtures/pdesc-subset-recovery
 ADM='security.provider_description_machine_admit_v1(uuid)'; DDP='security.data_delivery_pdesc_v1()'; SUB='security.provider_description_subset_v1(uuid,jsonb)'

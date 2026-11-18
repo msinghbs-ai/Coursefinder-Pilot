@@ -7,7 +7,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = 'supabase/migrations/20261103030000_cf247_url_fill_respects_layer4.sql'
+const MIG = 'supabase/migrations-archive/20261103030000_cf247_url_fill_respects_layer4.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const FX = 'tests/fixtures/url-fill-layer4'
@@ -52,7 +52,7 @@ test('the integration queue gets one issue by a deterministic fingerprint, only 
   expect(edit).toContain("'workstream', 'A4', 'severity', 'P2', 'root_cause_class', 'human_decision'")
   expect(edit).toContain("exception when others then\n      v_iq := jsonb_build_object('error', left(sqlerrm, 300));")
   // the payload fits the queue's own contract (v2.15.409): the function signature and the allowed workstream, root cause and validation layer
-  const q = fs.readFileSync('supabase/migrations/20261102120000_cf247_integration_queue.sql', 'utf8')
+  const q = fs.readFileSync('supabase/migrations-archive/20261102120000_cf247_integration_queue.sql', 'utf8')
   expect(q).toContain("create or replace function security.integration_issue_upsert_v1(p jsonb, p_actor text default 'integration-validate') returns jsonb")
   expect(q).toContain("workstream in ('A1', 'A2', 'A3', 'A4'")
   expect(q).toContain("'human_decision'")

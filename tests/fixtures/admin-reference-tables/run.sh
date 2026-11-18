@@ -8,7 +8,7 @@ cd "$(dirname "$0")/../../.."
 DB=${ART_DB:-g_admin_reference_tables}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"
-M=supabase/migrations/20261118005000_cf247_admin_reference_tables_read.sql
+M=supabase/migrations-archive/20261118005000_cf247_admin_reference_tables_read.sql
 trap '[ -n "${ART_KEEP:-}" ] || dropdb --if-exists '$DB' >/dev/null 2>&1' EXIT
 dropdb --if-exists $DB >/dev/null 2>&1; createdb $DB
 psql -X -q -d postgres -c "do \$\$ begin if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated; end if; if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon; end if; end \$\$"

@@ -117,7 +117,7 @@ test('the worker holds anything not proven before any AI read, for every PDF (no
 })
 
 test('database: PDFs wait while entry.pdf_enabled is 0 (set to 0 here); a PDF source takes only a stored PDF; settings, not constants', () => {
-  const m = fs.readFileSync('supabase/migrations/20261029002000_cf247_aer_steps_b_c_pdf_and_rendered.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261029002000_cf247_aer_steps_b_c_pdf_and_rendered.sql', 'utf8')
   const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
   for (const k of ['entry.pdf_enabled', 'entry.pdf_max_bytes', 'entry.pdf_max_pages']) expect(code).toContain(`('pipeline', '${k}', `)
   expect(code).toContain("to_jsonb(0), 0, 1, 'on/off', 920,")

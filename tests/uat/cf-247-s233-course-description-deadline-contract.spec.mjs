@@ -10,7 +10,7 @@ import fs from 'node:fs'
 import { COURSE_TEXT_ANSWER_KEY, COURSE_TEXT_FIELDS, COURSE_TEXT_SYSTEM, courseTextAnswer, courseTextAnswerLimit, courseTextDeadlines, courseTextLengthNote, courseTextPage,
   courseTextRequest, courseTextResults, courseTextSchema, courseTextUser } from '../../supabase/functions/coverage-sweep/course-text.ts'
 
-const MIG = 'supabase/migrations/20261103110000_cf247_course_description_deadline_fields.sql'
+const MIG = 'supabase/migrations-archive/20261103110000_cf247_course_description_deadline_fields.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const FX = 'tests/fixtures/course-text'
@@ -90,7 +90,7 @@ test('deadline admission: explicit dates in the quote, tied to an intake, never 
   // Admin #382 P0 (6 Nov 2026): extend the existing deadline guard, never a
   // second admissions mechanism or a duplicate spec. Real cases run through
   // svc_enrich_ai_record in the existing PostgreSQL fixture.
-  const semantics = fs.readFileSync('supabase/migrations/20261106450000_cf247_deadline_closing_semantics.sql', 'utf8')
+  const semantics = fs.readFileSync('supabase/migrations-archive/20261106450000_cf247_deadline_closing_semantics.sql', 'utf8')
   expect(semantics).toContain('f01e9be83e58c9c48c33e5fde4de05d9')
   expect(semantics).toContain('2357306ca969fb7b299021bac3b6f3fa')
   expect(semantics).toContain('regexp_split_to_table')

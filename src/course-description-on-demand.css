@@ -46,3 +46,9 @@
   .cdod-panel{padding:8px}
 }
 .cdod-state-line{display:block;margin-top:2px}
+/* s698: the Description pipeline is folded by default; the heading and state chip are the fold's summary */
+.cdod-fold>summary.cdod-block-head{cursor:pointer;list-style:none}
+.cdod-fold>summary.cdod-block-head::-webkit-details-marker{display:none}
+.cdod-fold>summary.cdod-block-head::before{content:'▸';color:var(--cf-slate-500);transition:transform .15s}
+.cdod-fold[open]>summary.cdod-block-head::before{transform:rotate(90deg)}
+.cdod-fold>:not(summary){margin-top:8px}

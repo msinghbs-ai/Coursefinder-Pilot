@@ -8,8 +8,8 @@ import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 import { resolveTarget } from '../../src/nav-map.js'
 
-const m14 = fs.readFileSync('supabase/migrations/20261012011400_cf247_ai_limits_onboarding_pace.sql', 'utf8')
-const m15 = fs.readFileSync('supabase/migrations/20261012011500_cf247_onboarding_journey_stages.sql', 'utf8')
+const m14 = fs.readFileSync('supabase/migrations-archive/20261012011400_cf247_ai_limits_onboarding_pace.sql', 'utf8')
+const m15 = fs.readFileSync('supabase/migrations-archive/20261012011500_cf247_onboarding_journey_stages.sql', 'utf8')
 const worker = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 const outside = s => s.slice(0, s.indexOf('CREATE OR REPLACE FUNCTION')) + s.slice(s.lastIndexOf('$function$;'))
 

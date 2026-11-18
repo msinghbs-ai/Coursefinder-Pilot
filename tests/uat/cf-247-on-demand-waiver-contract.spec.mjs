@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261113153100_cf247_on_demand_waives_toolset_limits.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261113153100_cf247_on_demand_waives_toolset_limits.sql', 'utf8')
 
 test('an open on-demand request waives the Firecrawl toolset limits for its providers only; the directory rule and the monthly plan still apply', () => {
   expect(M).toContain("'41fb1ac8c71c74df25b913b85dcf3baa'")

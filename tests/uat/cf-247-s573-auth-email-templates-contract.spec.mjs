@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
 const read = (p) => fs.readFileSync(p, 'utf8')
-const m = read('supabase/migrations/20261117152700_cf247_admin_auth_email_templates.sql')
+const m = read('supabase/migrations-archive/20261117152700_cf247_admin_auth_email_templates.sql')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const edge = read('supabase/functions/admin-user-management/index.ts')
 const nav = read('src/nav-map.js'), main = read('src/mature-main.jsx'), screen = read('src/AuthEmailTemplates.jsx'), apiSrc = read('src/access-roles-api.js')
@@ -103,7 +103,7 @@ test('with no management token the screen warns and offers the HTML as Supabase 
 })
 
 test('custom SMTP (Resend) is on the Go-live checklist as a deployment step; the migration adds one row and changes nothing else', () => {
-  const g = read('supabase/migrations/20261117163000_cf247_golive_auth_custom_smtp.sql')
+  const g = read('supabase/migrations-archive/20261117163000_cf247_golive_auth_custom_smtp.sql')
   const c = g.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
   expect(g).toContain('-- Replaces: nothing.'); expect(g).toContain('-- Retires: nothing.')
   expect(c).toContain("'auth_custom_smtp', 'auth', 'Auth custom SMTP (Resend)'"); expect(c).toContain("'deployment_managed', 'production', true, 'pending'")
@@ -113,7 +113,7 @@ test('custom SMTP (Resend) is on the Go-live checklist as a deployment step; the
 })
 
 test('email delivery: the Resend key is write-only, in Vault, and only the service role reads it', () => {
-  const d = read('supabase/migrations/20261117170000_cf247_admin_email_delivery_resend.sql')
+  const d = read('supabase/migrations-archive/20261117170000_cf247_admin_email_delivery_resend.sql')
   const c = d.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
   expect(d).toContain('-- Replaces: nothing.'); expect(d).toContain('-- Retires: nothing.')
   expect(c).not.toMatch(/create table/i)

@@ -6,7 +6,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const mig = fs.readFileSync('supabase/migrations/20261015080000_cf247_flag_unit.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261015080000_cf247_flag_unit.sql', 'utf8')
 const worker = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 const panel = fs.readFileSync('src/FlagsPanel.jsx', 'utf8')
 

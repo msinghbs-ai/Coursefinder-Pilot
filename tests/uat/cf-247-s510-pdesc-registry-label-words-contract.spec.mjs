@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = 'supabase/migrations/20261109180000_cf247_pdesc_registry_label_words.sql'
+const MIG = 'supabase/migrations-archive/20261109180000_cf247_pdesc_registry_label_words.sql'
 const M = fs.readFileSync(MIG, 'utf8')
 const code = (t) => t.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')
 const C = code(M)

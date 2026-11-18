@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const body = fs.readFileSync('supabase/migrations/20261109140000_cf247_pdesc_registry_reeval.sql', 'utf8')
+const body = fs.readFileSync('supabase/migrations-archive/20261109140000_cf247_pdesc_registry_reeval.sql', 'utf8')
 const code = body.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')
 
 test('three edits are chained on the live body md5 and each applies exactly once', () => {

@@ -2,8 +2,8 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const A = fs.readFileSync('supabase/migrations/20261108030000_cf247_aer_shared_page_rejected_binding.sql', 'utf8')
-const B = fs.readFileSync('supabase/migrations/20261108030100_cf247_aer_course_table_matrix_route.sql', 'utf8')
+const A = fs.readFileSync('supabase/migrations-archive/20261108030000_cf247_aer_shared_page_rejected_binding.sql', 'utf8')
+const B = fs.readFileSync('supabase/migrations-archive/20261108030100_cf247_aer_course_table_matrix_route.sql', 'utf8')
 const code = (t) => t.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')
 const run = fs.readFileSync('tests/fixtures/aer-qut-shared/run.sh', 'utf8')
 const sc = fs.readFileSync('tests/fixtures/aer-qut-shared/scenarios.sql', 'utf8')

@@ -1,7 +1,7 @@
 // Guards: CF-247 AER programme re-read of ANU after the numeric-table reader correction (Platform Admin consolidated mandate 28 Oct 2026 23:22; deploy-order lesson 28 Oct): merged only after worker v0.50.1 is live; only runs with no row and no Layer 4 item, bounded; the earlier reading kept in the run history. And no endless retrying: a read cut by call time after spending on the model uses a try
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const m = fs.readFileSync('supabase/migrations/20261029004000_cf247_aer_reread_and_time_budget.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261029004000_cf247_aer_reread_and_time_budget.sql', 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 
 test('ANU only, no row and no Layer 4 item, bounded, history kept; nothing else', () => {

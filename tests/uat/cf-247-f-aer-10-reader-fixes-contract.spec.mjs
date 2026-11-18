@@ -79,7 +79,7 @@ test('a country\'s own framework names the country of a row that gives none, onl
 })
 
 test('every fix is a setting; the switches built for these cases are switched on with a reason; nothing is dropped', () => {
-  const m = fs.readFileSync('supabase/migrations/20261113003100_cf247_aer_reader_fixes.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261113003100_cf247_aer_reader_fixes.sql', 'utf8')
   for (const k of ['reading.entry_quote_parts_on', 'reading.entry_quote_window_chars', 'reading.entry_band_label_words', 'reading.entry_qualification_countries']) expect(m).toContain(`'${k}'`)
   for (const k of ['reading.entry_range_lower_bound_on', 'reading.entry_subject_rows_on', 'reading.entry_value_null_on'])
     expect(m).toMatch(new RegExp(`reason = 'Platform Admin mandate 12 Nov 2026 09:23[^']*'\\n where toolset_key = 'pipeline' and key = '${k.replace(/\./g, '\\.')}'`))
@@ -93,7 +93,7 @@ test('every fix is a setting; the switches built for these cases are switched on
 })
 
 test('the eight held country tables are read again only with the fixes on, from their stored copies, never an item a person holds', () => {
-  const m = fs.readFileSync('supabase/migrations/20261113033100_cf247_aer_reader_fix_reread.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261113033100_cf247_aer_reader_fix_reread.sql', 'utf8')
   for (const s of ['74306034', '58c60102', '01139439', '7fd6e509', '30ceba77', '7675875e', 'c9a5c1d5', 'a84c16f4']) expect(m).toContain(s)
   expect(m).toContain("pipeline_num_v1('reading.entry_quote_parts_on', 0) < 1")
   expect(m).toMatch(/claimed_at is not null or li\.assigned_to is not null/)

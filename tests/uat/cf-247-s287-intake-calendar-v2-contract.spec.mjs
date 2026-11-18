@@ -74,7 +74,7 @@ test('the worker: calendars read by calendar-v2 in the existing central_ai mode,
 })
 
 test('the migration: the decided settings, every guarded edit by md5, the jobs, and the fixture runs in CI', () => {
-  const m = fs.readFileSync('supabase/migrations/20261105020000_cf247_intake_calendar_v2.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261105020000_cf247_intake_calendar_v2.sql', 'utf8')
   expect(m).toMatch(/'intake_dates\.month_unique_match'[\s\S]{0,900}'number', to_jsonb\(1\), 0, 1, 'on\/off'/)           // decision §3: approved
   expect(m).toMatch(/'central\.auto_approve_calendar_dates'[\s\S]{0,700}'number', to_jsonb\(0\), 0, 1, 'on\/off'/)        // never switched on by itself
   for (const [sig, md5] of [['security.intake_dates_apply_v1(integer,uuid[])', 'd47fbe685ae62287264a1909c988e9d6'], ['security.intake_ui_selection_v1(text,integer)', 'a61e8114a65bc5e13007b8ff1d262976'],

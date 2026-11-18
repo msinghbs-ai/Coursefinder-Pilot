@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import { test, expect } from '@playwright/test'
 import { migrationNames } from './support/migration-files.mjs'
 
-const M = fs.readFileSync('supabase/migrations/20261110230000_cf247_cdesc_subset_recovery.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261110230000_cf247_cdesc_subset_recovery.sql', 'utf8')
 const R = fs.readFileSync('supabase/held/cdesc_subset_recovery_forward_recovery.sql', 'utf8')
 const BW = fs.readFileSync('supabase/held/cdesc_subset_bulk_withdraw.sql', 'utf8')
 const OD = fs.readFileSync('src/CourseDescriptionOnDemand.jsx', 'utf8')

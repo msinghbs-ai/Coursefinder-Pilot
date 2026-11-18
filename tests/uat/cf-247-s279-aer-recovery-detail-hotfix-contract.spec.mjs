@@ -5,7 +5,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = 'supabase/migrations/20261104475000_cf247_aer_recovery_detail_hotfix.sql'
+const MIG = 'supabase/migrations-archive/20261104475000_cf247_aer_recovery_detail_hotfix.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const body = m.slice(m.indexOf('create or replace function security.layer4_aer_recovery_detail_v1'))
 

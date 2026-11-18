@@ -124,6 +124,7 @@ test.describe('mocked browser', () => {
     })
     await page.goto('/#providers?id=p1')
     await page.locator('[data-provider-more] > summary').click()
+    await page.locator('[data-ci-fold] > summary').click() // s698: Related insights & funding is folded by default
     const rows = page.locator('.ci-scholarships .ci-sch-row')
     await expect(rows).toHaveCount(3)
     await page.locator('[data-show-all="insight-scholarships"]').click()

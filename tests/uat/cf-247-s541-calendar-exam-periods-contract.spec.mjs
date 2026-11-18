@@ -48,7 +48,7 @@ test('parser: the intake-dates fixture reads exactly as before (no heading proof
   expect(JSON.stringify(calendarStarts(md))).not.toContain('year_quote')
 })
 
-const mig = fs.readFileSync('supabase/migrations/20261113313000_cf247_calendar_qualify_exam_periods.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261113313000_cf247_calendar_qualify_exam_periods.sql', 'utf8')
 
 test('qualifier: shared event words and teaching-start wording are settings; a shared word lets a page through only when every start in the window is quoted as a teaching start', () => {
   expect(mig).toContain("'central.calendar_qualify_shared_event_words', '[\"exam\"]'::jsonb")

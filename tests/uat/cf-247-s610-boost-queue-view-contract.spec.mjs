@@ -6,7 +6,7 @@ import { mockAdmin } from './support/admin-mock.mjs'
 import { COURSE_COLUMNS } from '../../src/catalogue-columns.js'
 
 const read = (p) => fs.readFileSync(p, 'utf8')
-const m = read('supabase/migrations/20261118083707_cf247_admin_boost_queue_read.sql')
+const m = read('supabase/migrations-archive/20261118083707_cf247_admin_boost_queue_read.sql')
 const c = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const screen = read('src/BoostQueue.jsx')
 

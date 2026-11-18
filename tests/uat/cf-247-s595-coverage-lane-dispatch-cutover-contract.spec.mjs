@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261118012000_cf247_pr3_coverage_lane_dispatch_cutover.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261118012000_cf247_pr3_coverage_lane_dispatch_cutover.sql', 'utf8')
 
 test('the gate: once only, prerequisite applied, last-hour shadow clean for 13 lanes, legacy commands and schedules unchanged, no person-paused job', () => {
   expect(M).toContain("raise exception 'gate: a lane is already live; this cutover runs once'")

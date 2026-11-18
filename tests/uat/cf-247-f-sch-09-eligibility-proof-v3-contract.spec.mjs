@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261113065000_cf247_sch_eligibility_proof_v3.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261113065000_cf247_sch_eligibility_proof_v3.sql', 'utf8')
 // the rule's two expressions, as they will run (Postgres ~* with \m \M word edges, rendered here as \b)
 const pg = (re) => new RegExp(re.replace(/\\m|\\M/g, '\\b'), 'i')
 const LINKED_OK = pg('(scholar|award|bursar|grant|prize|stipend|terms|condition|eligib|rules|funding|fee[-_]?waiver)')

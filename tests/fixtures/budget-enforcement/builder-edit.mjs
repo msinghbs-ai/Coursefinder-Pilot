@@ -5,7 +5,7 @@
 //                                                migration checks)
 //   node builder-edit.mjs variant <before> <after>   the migration with admin_adapter_builder's md5s set to the skeleton's
 import fs from 'node:fs'
-const MIG = new URL('../../../supabase/migrations/20261102070000_cf247_budget_enforcement_and_watchdog.sql', import.meta.url)
+const MIG = new URL('../../../supabase/migrations-archive/20261102070000_cf247_budget_enforcement_and_watchdog.sql', import.meta.url)
 const m = fs.readFileSync(MIG, 'utf8')
 const head = "select pg_temp.edit_once('public.admin_adapter_builder(text,jsonb)', "
 const a = m.indexOf(head); if (a < 0) throw new Error('admin_adapter_builder edit not found')

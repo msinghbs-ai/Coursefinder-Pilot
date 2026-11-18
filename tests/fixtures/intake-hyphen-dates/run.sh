@@ -10,7 +10,7 @@ cd "$(dirname "$0")/../../.."
 export LC_ALL=C # fixed: one byte order for sort and comm, whatever the runner's locale
 case "${PGHOST:-127.0.0.1}" in 127.0.0.1|localhost|/tmp|/var/run/postgresql) ;; *) echo 'Refusing a remote database: use isolated local PostgreSQL' >&2; exit 1;; esac
 BASE=${HD_BASE:-intake_page_date_recovery_fixtures}; DB=${HD_DB:-intake_hyphen_dates_fixtures}; RF=${DB}_refuse; F=tests/fixtures/intake-hyphen-dates
-M=supabase/migrations/20261110110523_cf247_intake_hyphen_dates.sql
+M=supabase/migrations-archive/20261110110523_cf247_intake_hyphen_dates.sql
 R=supabase/held/intake_hyphen_dates_forward_recovery.sql
 HINT='security.intake_page_date_hint_v1(uuid,uuid,text)'; PD='security.intake_page_date_v1(uuid,uuid,uuid,uuid,text,integer,integer,jsonb,date,integer)'; PLAN='security.intake_dates_plan_v3(uuid[],integer)'
 declare -A BEFORE=( ["$HINT"]=6adf9102074633735e9f30ffe529072c ["$PD"]=52bad9ded722b889b97c746b7209e63a ["$PLAN"]=06255497ef431b0ae0d9fca6460c6cb5 )

@@ -20,7 +20,7 @@ SQL
 cleanup() { local code=$?; trap - EXIT; [ -n "${FCF_KEEP:-}" ] || $P -d postgres -c "drop database if exists $DB" >/dev/null || code=1; exit "$code"; }
 trap cleanup EXIT
 $P -d postgres -c "drop database if exists $DB" -c "create database $DB" >/dev/null
-M=$ROOT/supabase/migrations/20261108060000_cf247_firecrawl_priority_floor.sql
+M=$ROOT/supabase/migrations-archive/20261108060000_cf247_firecrawl_priority_floor.sql
 notices() { sed -n 's/^.*\(NOTICE\|ERROR\|WARNING\):  /\1 /p'; }
 $P -d $DB -f stubs.sql
 # live definitions: unedited helpers, the three the migration edits, the monthly rule it copies, and the queue-watch tool state it must keep working. Each file is checked against the
@@ -68,7 +68,7 @@ echo "$OUT" | grep -q 'FAIL' && { echo 'a fixture check failed'; exit 1; }
 echo "fixtures: $(echo "$OUT" | grep -c 'NOTICE:  PASS') checks passed"
 
 # the controller's addition: migration 20261108061000 (plan record and daily shares re-sized to the 100,000-credit plan), guarded, idempotent, audited
-M2=$ROOT/supabase/migrations/20261108061000_cf247_firecrawl_plan_100k_shares.sql
+M2=$ROOT/supabase/migrations-archive/20261108061000_cf247_firecrawl_plan_100k_shares.sql
 chk() { local o; o=$($P -d $DB -f "$1" 2>&1) || { echo "$o" | grep -E 'FAIL|ERROR' | head -5; echo "$1 failed"; exit 1; }; echo "$o" | notices | sed 's/^NOTICE //' | grep PASS; }
 $P -d $DB -f plan100k-a.sql
 RUN1=$($P -d $DB -1 -f "$M2" 2>&1) || { echo "$RUN1" | tail -5; echo 'plan migration failed'; exit 1; }

@@ -9,17 +9,17 @@ cd "$(dirname "$0")/../../.."
 DB=${DBA_DB:-g_destination_bulk_approve}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"
-M=supabase/migrations/20261118090707_cf247_destination_localities_bulk_approve.sql
-M2=supabase/migrations/20261118110707_cf247_destination_figures_bulk_approve.sql
+M=supabase/migrations-archive/20261118090707_cf247_destination_localities_bulk_approve.sql
+M2=supabase/migrations-archive/20261118110707_cf247_destination_figures_bulk_approve.sql
 trap '[ -n "${DBA_KEEP:-}" ] || dropdb --if-exists '$DB' >/dev/null 2>&1' EXIT
 dropdb --if-exists $DB >/dev/null 2>&1; createdb $DB
 psql -X -q -d postgres -c "do \$\$ begin if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated; end if; if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon; end if; if not exists (select 1 from pg_roles where rolname = 'service_role') then create role service_role; end if; end \$\$"
 $P -f tests/fixtures/destination-editions/stubs.sql -f tests/fixtures/destination-schema-pack/stubs.sql
-$P -1 -f supabase/migrations/20261115190000_api_v3_additive_schema.sql >/dev/null
-$P -1 -f supabase/migrations/20261115230000_cf247_destination_importer_guard.sql >/dev/null
-$P -1 -f supabase/migrations/20261117040000_cf247_rm_destination_schema_pack.sql >/dev/null
+$P -1 -f supabase/migrations-archive/20261115190000_api_v3_additive_schema.sql >/dev/null
+$P -1 -f supabase/migrations-archive/20261115230000_cf247_destination_importer_guard.sql >/dev/null
+$P -1 -f supabase/migrations-archive/20261117040000_cf247_rm_destination_schema_pack.sql >/dev/null
 $P -f tests/fixtures/destination-admin-ui/stubs.sql
-$P -1 -f supabase/migrations/20261117131500_cf247_rm0f_destination_admin_ui.sql >/dev/null
+$P -1 -f supabase/migrations-archive/20261117131500_cf247_rm0f_destination_admin_ui.sql >/dev/null
 $P -1 -f $M >/dev/null; $P -1 -f $M >/dev/null
 echo "migration: applied twice without error (post-check included)"
 $P <<'SQL'

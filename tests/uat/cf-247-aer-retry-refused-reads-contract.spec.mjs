@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261113261500_cf247_aer_retry_refused_reads.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261113261500_cf247_aer_retry_refused_reads.sql', 'utf8')
 
 test('the refusal pattern is a setting; only failed reads whose reason matches it skip the retry interval; nothing is deleted', () => {
   expect(M).toMatch(/'aer\.retry_now_error_pattern'[\s\S]*?'text', to_jsonb\('Key limit exceeded\|/)

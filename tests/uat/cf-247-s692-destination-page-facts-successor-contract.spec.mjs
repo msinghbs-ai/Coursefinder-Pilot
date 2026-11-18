@@ -1,9 +1,9 @@
 // Guards: destination editions are fixed once published (security.destination_row_guard_v1) and page facts are read monthly (Platform Admin 18 Nov 2026 15:32 and 17:55): a published edition is never written to; a new fact or a changed value goes into a complete successor edition; an unchanged JSA file loads nothing.
-// CF-247 S692. supabase/migrations/20261118256000_cf247_destination_page_facts_successor_editions.sql.
+// CF-247 S692. supabase/migrations-archive/20261118256000_cf247_destination_page_facts_successor_editions.sql.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261118256000_cf247_destination_page_facts_successor_editions.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261118256000_cf247_destination_page_facts_successor_editions.sql', 'utf8')
 
 test('pass 1 reads every fact and writes no rule; pass 2 decides per edition', () => {
   const p1 = M.slice(M.indexOf('-- pass 1'), M.indexOf('-- pass 2'))
@@ -30,7 +30,7 @@ test('nothing dropped or deleted, a dry run writes nothing, the consumer API unt
 })
 
 test('regression (fifth live run): no SQL alias shares the loop variable fd, and pass 2 is exercised by a rolled-back post-check', () => {
-  const F = fs.readFileSync('supabase/migrations/20261118265000_cf247_destination_page_facts_alias_fix.sql', 'utf8')
+  const F = fs.readFileSync('supabase/migrations-archive/20261118265000_cf247_destination_page_facts_alias_fix.sql', 'utf8')
   expect(F.replace(/--[^\n]*/g, '')).not.toMatch(/jsonb_array_elements\(v_found\) fd\b/)  // code only, not the header that tells the story
   expect(F).toContain("raise exception 'post-check rollback' using errcode = 'P0001';")
   expect(F).not.toMatch(/^\s*(delete from|drop |truncate )/im)

@@ -7,7 +7,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 P="psql -v ON_ERROR_STOP=1 -q -X"
 FX=tests/fixtures/aer-replay-readiness
-MIG=supabase/migrations/20261108150000_cf247_aer_replay_marks_new_items_ready.sql
+MIG=supabase/migrations-archive/20261108150000_cf247_aer_replay_marks_new_items_ready.sql
 DB=${AERRR_DB:-g_aer2_replay_readiness}
 q() { $P -d $DB -Atc "$1"; }
 bash $FX/build-base.sh $DB

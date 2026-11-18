@@ -5,7 +5,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const mig = fs.readFileSync('supabase/migrations/20261015010000_cf247_enrichment_waste_rules.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261015010000_cf247_enrichment_waste_rules.sql', 'utf8')
 const settingsUi = fs.readFileSync('src/SettingsRegister.jsx', 'utf8')
 const toolsets = fs.readFileSync('src/Toolsets.jsx', 'utf8')
 

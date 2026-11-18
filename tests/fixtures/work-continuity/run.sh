@@ -11,7 +11,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 DB=${WC_DB:-work_continuity_fixtures}
 P="psql -v ON_ERROR_STOP=1 -q -X"
-MIG=supabase/migrations/20261104170000_cf247_work_continuity.sql
+MIG=supabase/migrations-archive/20261104170000_cf247_work_continuity.sql
 FX=tests/fixtures/work-continuity
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }
 q() { $P -d $DB -Atc "$1"; }
@@ -22,7 +22,7 @@ $P -d postgres -c "drop database if exists $DB" -c "drop database if exists ${DB
 
 # 1 without workstream A's contract the migration refuses and leaves nothing behind
 $P -d ${DB}_noa -f tests/fixtures/integration-queue/stubs.sql
-$P -d ${DB}_noa -1 -o /dev/null -f supabase/migrations/20261102120000_cf247_integration_queue.sql 2>&1 | show
+$P -d ${DB}_noa -1 -o /dev/null -f supabase/migrations-archive/20261102120000_cf247_integration_queue.sql 2>&1 | show
 if OUT=$($P -d ${DB}_noa -1 -At -f $MIG 2>&1); then echo "the migration applied without workstream A's contract"; exit 1; fi
 grep -q "workstream A's operations contract (migration 20261104010000) must be applied before this change" <<<"$OUT" || { echo "$OUT" | tail -3; exit 1; }
 [ "$($P -d ${DB}_noa -Atc "select count(*) from pg_proc where proname like 'work\_%' escape '\\'") $($P -d ${DB}_noa -Atc "select to_regclass('pipeline.work_items') is null")" = "0 t" ] || { echo "a refused run left objects"; exit 1; }
@@ -31,12 +31,12 @@ echo "without A's contract: refused, nothing left"
 # 2 the database as live
 $P -d $DB -f tests/fixtures/integration-queue/stubs.sql
 $P -d $DB -c "alter table pipeline.component_register add constraint component_register_kind_check check (kind = any (array['job','table','view','edge_function','screen','function']))"
-$P -d $DB -1 -o /dev/null -f supabase/migrations/20261102120000_cf247_integration_queue.sql 2>&1 | show
+$P -d $DB -1 -o /dev/null -f supabase/migrations-archive/20261102120000_cf247_integration_queue.sql 2>&1 | show
 $P -d $DB -f tests/fixtures/ops-controller/stubs-extra.sql
-$P -d $DB -1 -o /dev/null -f supabase/migrations/20261104010000_cf247_ops_controller.sql 2>&1 | show
+$P -d $DB -1 -o /dev/null -f supabase/migrations-archive/20261104010000_cf247_ops_controller.sql 2>&1 | show
 $P -d $DB -1 -o /dev/null -f tests/fixtures/ops-reopen/ai-guards.sql 2>&1 | show
 $P -d $DB -f tests/fixtures/ops-reopen/stubs-extra.sql
-$P -d $DB -1 -o /dev/null -f supabase/migrations/20261104100000_cf247_ops_reopen_rule_ai_contract.sql 2>&1 | show
+$P -d $DB -1 -o /dev/null -f supabase/migrations-archive/20261104100000_cf247_ops_reopen_rule_ai_contract.sql 2>&1 | show
 $P -d $DB -f $FX/stubs.sql
 for f in $FX/live/*.sql; do $P -d $DB -c "set check_function_bodies = off" -f "$f"; done
 declare -A LIVE=(

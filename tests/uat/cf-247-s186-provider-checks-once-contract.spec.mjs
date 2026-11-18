@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261031010000_cf247_f1_provider_checks_once.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261031010000_cf247_f1_provider_checks_once.sql', 'utf8')
 const code = (s) => s.replace(/--[^\n]*/g, '')
 
 test('md5-guarded edits of exactly the two functions, before and after values pinned', () => {

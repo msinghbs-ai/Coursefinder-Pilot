@@ -10,7 +10,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
-const MIG = 'supabase/migrations/20261102120000_cf247_integration_queue.sql'
+const MIG = 'supabase/migrations-archive/20261102120000_cf247_integration_queue.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const FX = 'tests/fixtures/integration-queue'

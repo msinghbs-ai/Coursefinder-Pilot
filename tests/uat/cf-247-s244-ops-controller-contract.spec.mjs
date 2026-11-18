@@ -8,7 +8,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = 'supabase/migrations/20261104010000_cf247_ops_controller.sql'
+const MIG = 'supabase/migrations-archive/20261104010000_cf247_ops_controller.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const FX = 'tests/fixtures/ops-controller'
 const run = fs.readFileSync(`${FX}/run.sh`, 'utf8')

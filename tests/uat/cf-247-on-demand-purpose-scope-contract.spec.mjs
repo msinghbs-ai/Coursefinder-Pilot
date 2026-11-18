@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261113321500_cf247_on_demand_purpose_scope.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261113321500_cf247_on_demand_purpose_scope.sql', 'utf8')
 
 test('the spend uses the request for its provider and purpose group; null groups keep the old behaviour', () => {
   expect(M).toContain("'521d7e98ef897e92eda1bb6fd8e46af8'")

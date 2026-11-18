@@ -3,7 +3,7 @@ name: Lane funnels integration
 on:
   pull_request:
     paths:
-      - 'supabase/migrations/20261108170000_cf247_lane_funnels.sql'
+      - 'supabase/migrations-archive/20261108170000_cf247_lane_funnels.sql'
       - 'tests/fixtures/lane-funnels/**'
       - 'src/LaneFunnels.jsx'
       - 'src/FirecrawlAcceptance.jsx'

@@ -4,7 +4,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const mig = fs.readFileSync('supabase/migrations/20261018010000_cf247_english_companion_pages.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261018010000_cf247_english_companion_pages.sql', 'utf8')
 const worker = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 
 test('Decision 265: guarded, housekeeping lines, nothing dropped or deleted, new tables commented, job catalogued', () => {
@@ -40,7 +40,7 @@ test('worker v0.29.0 reads companion pages and writes nothing to courses', () =>
   expect(worker).toContain('await rpc("svc_companion_record", { p_course_id: it.course_id, p_status: st')
 })
 
-const fix = fs.readFileSync('supabase/migrations/20261018020000_cf247_english_level_band_wording.sql', 'utf8')
+const fix = fs.readFileSync('supabase/migrations-archive/20261018020000_cf247_english_level_band_wording.sql', 'utf8')
 test('Decision 265 follow-up: "band 7.0" is band 7, "band 7+" is read; guarded; nothing dropped', () => {
   expect(fix).toContain("<> 'ed73353d0ca703f59f1cd74f46f830ee' then")
   expect(fix).toContain("'(\\d)\\.0(?![0-9])', '\\1', 'g')")
@@ -48,7 +48,7 @@ test('Decision 265 follow-up: "band 7.0" is band 7, "band 7+" is read; guarded; 
   expect(fix).not.toMatch(/^(delete|drop|truncate)\b/im)
 })
 
-const spend = fs.readFileSync('supabase/migrations/20261018030000_cf247_manual_source_read_and_melbourne_flags.sql', 'utf8')
+const spend = fs.readFileSync('supabase/migrations-archive/20261018030000_cf247_manual_source_read_and_melbourne_flags.sql', 'utf8')
 test('a person-added source is not held by the central refresh interval; the budget still applies; Melbourne pages not found flagged soft', () => {
   expect(spend).toContain("<> 'd43113b1a6ec99ea3e44c61a562d9cb0' then")
   expect(spend).toContain("and fs.found_via = 'manual' and fs.status in ('found', 'reading')) then")
@@ -57,7 +57,7 @@ test('a person-added source is not held by the central refresh interval; the bud
   expect(spend).not.toMatch(/^(delete|drop|truncate)\b/im)
 })
 
-const acu = fs.readFileSync('supabase/migrations/20261018040000_cf247_acu_english_by_course_group.sql', 'utf8')
+const acu = fs.readFileSync('supabase/migrations-archive/20261018040000_cf247_acu_english_by_course_group.sql', 'utf8')
 test('ACU by course group from the stored UAC page: proposed only, ten ordered rules, nothing dropped', () => {
   expect(acu).toContain("$j$::jsonb, 'proposed'")
   expect(acu).toContain("<> 'cd638f2de25dabb3872692d5b69f9532' then")

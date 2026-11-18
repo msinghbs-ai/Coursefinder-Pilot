@@ -6,8 +6,8 @@ import fs from 'node:fs'
 
 const worker = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 const reader = fs.readFileSync('supabase/functions/coverage-sweep/scholarship.ts', 'utf8')
-const m84 = fs.readFileSync('supabase/migrations/20261011008400_cf247_scholarship_evidence_journey.sql', 'utf8')
-const m85 = fs.readFileSync('supabase/migrations/20261011008500_cf247_scholarship_course_exclusions.sql', 'utf8')
+const m84 = fs.readFileSync('supabase/migrations-archive/20261011008400_cf247_scholarship_evidence_journey.sql', 'utf8')
+const m85 = fs.readFileSync('supabase/migrations-archive/20261011008500_cf247_scholarship_course_exclusions.sql', 'utf8')
 
 // 12 Nov 2026 (F-SCH production redesign, Platform Admin directive 12 Nov 2026 16:12 §6): the scraper-only rule for scholarship pages is superseded
 // (official page read directly first, Firecrawl when needed; guarded by cf-247-f-sch-04); the test "scraper only: ..." is retired (docs/test-retirement-log.md).
@@ -60,7 +60,7 @@ test('record shows the dates and the Evidence & extraction journey (mocked)', as
 })
 
 test('course titles: bullets end a title; long titles match by containment (migration 8800)', () => {
-  const m88 = fs.readFileSync('supabase/migrations/20261011008800_cf247_scholarship_course_title_match.sql', 'utf8')
+  const m88 = fs.readFileSync('supabase/migrations-archive/20261011008800_cf247_scholarship_course_title_match.sql', 'utf8')
   expect(m88).toContain('create or replace function security.scholarship_course_title_match_v1(p_named text, p_canonical text, p_display text)')
   expect(m88).toContain("security.scholarship_course_title_match_v1(x->>'title', c.canonical_title, c.display_title)")
   expect(m88).toContain('"security.scholarship_sweep_apply_v1(uuid)": "a5431127dd4c5c85ac33b5e92dcbcb02"')

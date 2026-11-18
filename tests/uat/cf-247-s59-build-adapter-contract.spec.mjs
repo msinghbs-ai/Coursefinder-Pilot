@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const mig = fs.readFileSync('supabase/migrations/20261018070000_cf247_build_adapter.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261018070000_cf247_build_adapter.sql', 'utf8')
 const adapters = fs.readFileSync('supabase/functions/coverage-sweep/adapters.ts', 'utf8')
 const builder = fs.readFileSync('supabase/functions/coverage-sweep/builder.ts', 'utf8')
 const worker = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
@@ -44,7 +44,7 @@ test('worker v0.30.0 reads majors as a pattern field (every match kept)', () => 
   expect(mig).toContain("'english_level', 'majors']")
 })
 
-const fix = fs.readFileSync('supabase/migrations/20261018080000_cf247_build_readiness_active_courses.sql', 'utf8')
+const fix = fs.readFileSync('supabase/migrations-archive/20261018080000_cf247_build_readiness_active_courses.sql', 'utf8')
 test('first wave fix: readiness is measured on active courses only; qualification and admission unchanged', () => {
   expect(fix).toContain("<> '602d5ab6df40864d987cec1d8dd8b701' then")
   expect(fix).toContain("join catalogue.courses c0 on c0.id = pg.course_id and c0.lifecycle_status = 'active'")
@@ -53,7 +53,7 @@ test('first wave fix: readiness is measured on active courses only; qualificatio
   expect(fix).toContain("v := security.consumer_api_check_v1()->'drift';")
 })
 
-const fix2 = fs.readFileSync('supabase/migrations/20261018090000_cf247_build_admit_approvals_and_campus.sql', 'utf8')
+const fix2 = fs.readFileSync('supabase/migrations-archive/20261018090000_cf247_build_admit_approvals_and_campus.sql', 'utf8')
 test('first wave fix 2: approvals made once at admit; campus agrees only with the university\'s own campuses', () => {
   expect(fix2).toContain("<> '3d301d9c786776704868a183f8c478bb' then")
   expect(fix2).toContain("<> '96fda6f52cbd77022ec0b1346c015ea9' then")
@@ -64,7 +64,7 @@ test('first wave fix 2: approvals made once at admit; campus agrees only with th
   expect(fix2).not.toMatch(/create\s+or\s+replace\s+function\s+security\.coverage_admission/i) // the admit jobs are unchanged
 })
 
-const fix3 = fs.readFileSync('supabase/migrations/20261018100000_cf247_enrich_reads_page_reading.sql', 'utf8')
+const fix3 = fs.readFileSync('supabase/migrations-archive/20261018100000_cf247_enrich_reads_page_reading.sql', 'utf8')
 test('follow-up 3: Enrichment reads the current page reading first; admit releases only holds the page reading now answers', () => {
   expect(fix3).toContain("<> '3428eef302a7086bb045ddc683ca41ba' then")
   expect(fix3).toContain("if md5(d) <> '03cc5526a082f59867a8313cdefa04fd' then")
@@ -74,7 +74,7 @@ test('follow-up 3: Enrichment reads the current page reading first; admit releas
   expect(fix3).not.toMatch(/^(delete|drop|truncate)\b/im)
 })
 
-const fix4 = fs.readFileSync('supabase/migrations/20261018110000_cf247_build_readiness_fee_check_english.sql', 'utf8')
+const fix4 = fs.readFileSync('supabase/migrations-archive/20261018110000_cf247_build_readiness_fee_check_english.sql', 'utf8')
 test('follow-up 4: readiness uses the admit fee cross-check and counts any English requirement as held', () => {
   expect(fix4).toContain("<> '178b0fdbbb3ed2b359d612de7a2f5a47' then")
   expect(fix4).toContain("security.pipeline_num_v1('admit.fee_crosscheck_pct', 25)")

@@ -10,11 +10,16 @@ const md5 = (b) => createHash('md5').update(b).digest('hex')
 
 test('baseline files match their recorded md5', () => {
   const sums = readFileSync(`${dir}/MD5SUMS`, 'utf8').trim().split('\n').map((l) => l.split(/\s+/))
-  expect(sums.map((s) => s[1]).sort()).toEqual(['roles.sql', 'schema.sql'])
+  // from the canonical squash (19 Nov 2026) the dump workflow records every baseline file
+  expect(sums.map((s) => s[1]).sort()).toEqual(['apply-postscript.sql', 'apply-preamble.sql', 'permission-fingerprint.sql', 'roles-apply.sql', 'roles.sql', 'schema.sql'])
   for (const [hash, file] of sums) expect(md5(readFileSync(`${dir}/${file}`))).toBe(hash)
   const schema = readFileSync(`${dir}/schema.sql`, 'utf8')
-  expect((schema.match(/^CREATE (OR REPLACE )?FUNCTION/gm) || []).length).toBe(1257)
-  expect((schema.match(/^CREATE TABLE/gm) || []).length).toBe(400)
+  // canonical squash 19 Nov 2026 (dump run 44324920057, head 20261118272000); the 10 Oct capture held 1,257 functions and 400 tables
+  expect((schema.match(/^CREATE (OR REPLACE )?FUNCTION/gm) || []).length).toBe(2889)
+  expect((schema.match(/^CREATE TABLE/gm) || []).length).toBe(720)
+  // carriage returns are kept byte for byte (7 consumer API functions hold them; G3 md5s); git never converts the baseline
+  expect(readFileSync(`${dir}/schema.sql`).includes(Buffer.from('\r\n'))).toBe(true)
+  expect(readFileSync('.gitattributes', 'utf8')).toContain('supabase/live-capture/baseline/*.sql -text')
 })
 
 test('roles-apply.sql is the captured roles.sql minus only the Supabase-managed parameter grant', () => {
@@ -34,7 +39,9 @@ test('rebuild applies the default-privileges preamble before the schema', () => 
   expect(wf).toContain('cat supabase/live-capture/baseline/apply-preamble.sql supabase/live-capture/baseline/schema.sql')
   // the closing defaults in schema.sql restore the Pilot's defaults
   const schema = readFileSync(`${dir}/schema.sql`, 'utf8')
-  expect(schema).toContain('ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "anon";')
+  // live since the 10 Oct capture: new public functions are no longer granted to anon by default (19 Nov 2026 dump)
+  expect(schema).toContain('ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "authenticated";')
+  expect(schema).not.toContain('ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "anon";')
 })
 
 test('rebuild applies the extension-type grant postscript after the schema', () => {
@@ -53,6 +60,9 @@ test('old migrations are archived and the migrations folder holds only changes a
   expect(archived).toContain('20261010006300_cf247_course_detail_slim.sql')
   const current = readdirSync('supabase/migrations')
   expect(current.filter((f) => f.endsWith('.sql') && f <= '20261010006300')).toEqual([]) // only changes after the baseline
+  // canonical squash 19 Nov 2026: every file up to the cut-off is archived; the live folder holds only changes after it
+  expect(current.filter((f) => f.endsWith('.sql') && f.slice(0, 14) <= '20261118272000')).toEqual([])
+  expect(readdirSync('supabase/migrations-archive').filter((f) => f.endsWith('.sql') && f.slice(0, 14) >= '20261010006400' && f.slice(0, 14) <= '20261118272000').length).toBe(800)
   expect(current).toContain('README.md')
 })
 

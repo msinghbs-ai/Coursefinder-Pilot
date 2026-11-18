@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
-const mig = fs.readFileSync('supabase/migrations/20261013012800_cf247_actionable_notices.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261013012800_cf247_actionable_notices.sql', 'utf8')
 
 test('migration: held, stopped and no-website notices list their universities; stopped excludes held; nothing dropped', () => {
   expect(mig).toContain("'items', s.items)")

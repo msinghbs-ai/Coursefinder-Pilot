@@ -6,7 +6,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = 'supabase/migrations/20261104090000_cf247_ops_c_aer_missing_universities.sql'
+const MIG = 'supabase/migrations-archive/20261104090000_cf247_ops_c_aer_missing_universities.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const PASTE = fs.readFileSync('tests/fixtures/paste/PASTE-20261104-aer-missing-university-sources.sql', 'utf8')
 const ROLL = fs.readFileSync('tests/fixtures/paste/PASTE-20261104-aer-missing-university-sources-rollback.sql', 'utf8')

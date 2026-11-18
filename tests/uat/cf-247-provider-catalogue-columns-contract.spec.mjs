@@ -10,10 +10,10 @@ import { collisions } from '../../scripts/verify-css-class-collisions.mjs'
 import { COURSE_COLUMNS, PROVIDER_COLUMNS, GROUPS, defaultLayout, normaliseLayout, moveColumn, toggleColumn, registryOf, groupHeading, sortSentence, columnOf } from '../../src/catalogue-columns.js'
 import { migrationNames } from './support/migration-files.mjs'
 
-const MIGRATION = 'supabase/migrations/20261109200000_cf247_provider_catalogue_columns.sql'
+const MIGRATION = 'supabase/migrations-archive/20261109200000_cf247_provider_catalogue_columns.sql'
 const MIG = fs.readFileSync(MIGRATION, 'utf8')
 // Fill fields (Platform Admin directive 9-10 Nov 2026) adds two registry rows and replaces the page function with a superset of the first one's sorts; the registry is the two migrations read in order
-const MIG_FILL = fs.readFileSync('supabase/migrations/20261110030000_cf247_provider_fill_fields.sql', 'utf8')
+const MIG_FILL = fs.readFileSync('supabase/migrations-archive/20261110030000_cf247_provider_fill_fields.sql', 'utf8')
 const ROWS = /\('providers', '([a-z0-9_]+)', '([^']+)', '([^']+)', (\d+), (?:'([a-z0-9_]+)'|null), (true|false), (\d+), (\d+), (true|false)\)/g
 const UI = fs.readFileSync('src/mature-main.jsx', 'utf8')
 const COLS = fs.readFileSync('src/CatalogueColumns.jsx', 'utf8')

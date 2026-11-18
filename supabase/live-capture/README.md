@@ -64,6 +64,17 @@ project, compared with the Pilot by `baseline/permission-fingerprint.sql`:
 
 Only difference: Supabase's own `rls_auto_enable` event trigger, present on every new project.
 
+### Re-baselined (canonical squash, 19 Nov 2026)
+
+Platform Admin 17 Nov 2026 18:02 and 22:05 (admin `docs/platform/MIGRATION-SQUASH-RUNBOOK.md`). `baseline/schema.sql` and `MD5SUMS` were
+replaced byte for byte from the production dump `db-schema-dump.yml` run 44324920057 (19 Nov 2026 01:30 AEDT, head `20261118272000`,
+2,148 history rows): `schema.sql` md5 `40cf02f4e8f5a6c2cb53bf351c55eccc`, 2,889 functions, 720 tables, 1,035 carriage returns kept (the 7 consumer
+API functions hold 54, 14, 1, 10, 1, 98 and 28, equal to live). `roles.sql`, `roles-apply.sql`, the preamble, the postscript and the fingerprint are
+unchanged. `.gitattributes` marks `baseline/*.sql` as `-text` so no client converts line endings. Rebuild proof: admin `boost-test-rebuild.yml`
+run 44327488382 on `coursefinder-boost-test`. The 800 applied files from `20261010006400` to `20261118272000` moved to `supabase/migrations-archive/`
+(`node scripts/migration-squash.mjs 20261118272000 --history <production history> --allow 20261031090000`), with 1,201 references repointed;
+`20261031090000` is a documented no-op that was never applied, and `20261107073928` and `20261113004121` are live-only versions with no file.
+
 ## Old migration files
 
 The 1,053 files that built the Pilot one change at a time are in `supabase/migrations-archive/`

@@ -28,7 +28,7 @@ test('SS-013 (31 Oct 2026): no screen, title, test name or workflow name uses th
 })
 
 test('database messages renamed in 82 functions, md5-guarded, nothing dropped', () => {
-  const sql = fs.readFileSync('supabase/migrations/20261011007700_cf247_s6_studysearch_messages.sql', 'utf8')
+  const sql = fs.readFileSync('supabase/migrations-archive/20261011007700_cf247_s6_studysearch_messages.sql', 'utf8')
   expect(sql).not.toContain('CourseFinder role required')
   expect(sql).toContain('StudySearch role required')
   expect(sql.match(/CREATE OR REPLACE FUNCTION/g).length).toBe(82)

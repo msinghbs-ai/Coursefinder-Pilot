@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261101040000_cf247_l4_timeout_recovery.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261101040000_cf247_l4_timeout_recovery.sql', 'utf8')
 const code = (s) => s.replace(/--[^\n]*/g, '')
 
 test('md5-guarded edits; indexes; nothing dropped; consumer API untouched', () => {
