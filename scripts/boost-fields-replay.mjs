@@ -24,7 +24,7 @@ const gold = await read(`with pt as (
       (select array_agg(distinct extract(month from i.start_date)::int) from catalogue.course_intakes i where i.course_id = c.id and i.status = 'active' and i.start_date is not null) as intake_months,
       (select jsonb_agg(distinct jsonb_build_object('amount', f.amount, 'currency', trim(f.currency_code), 'year', f.fee_year, 'period', case when f.basis in ('annual', 'indicative_annual', 'current indicative annual international tuition') then 'year' else 'total' end))
         from catalogue.course_fees f where f.course_id = c.id and f.audience = 'international' and f.status = 'active' and f.amount > 0
-          and ((f.fee_type = 'provider_current_tuition' and f.basis in ('annual', 'indicative_annual', 'current indicative annual international tuition', 'total_indicative')) or (f.fee_type = 'tuition' and f.basis = 'registered_total_course'))) as fees,
+          and ((f.fee_type = 'provider_current_tuition' and f.basis in ('annual', 'indicative_annual', 'current indicative annual international tuition', 'total_indicative')) or (f.fee_type in ('tuition', 'estimated_total_course_cost') and f.basis = 'registered_total_course'))) as fees,
       exists (select 1 from catalogue.course_fees f where f.course_id = c.id and f.audience = 'international' and f.status = 'active' and f.amount > 0 and f.fee_type = 'provider_current_tuition' and f.basis = 'total_indicative') as has_total_fee
     from pt join catalogue.courses c on c.id = pt.course_id),
   s as (
@@ -58,8 +58,9 @@ for (const p of list) {
     bump(lane, 'gold'); bump(lane, `gold_${st}`)
     if (st !== 'verified') continue
     let agree = null
-    if (lane === 'intakes') { const got = (f.value || []).map((m) => MONTHS.indexOf(String(m).toLowerCase()) + 1); agree = got.length > 0 && got.every((m) => p.intake_months.includes(m)); if (agree && got.length === new Set(p.intake_months).size) bump(lane, 'gold_exact') }
+    if (lane === 'intakes') { const got = (f.value || []).map((m) => MONTHS.indexOf(String(m).toLowerCase()) + 1); agree = got.length > 0 && got.every((m) => p.intake_months.includes(m)); if (agree && got.length === new Set(p.intake_months).size) bump(lane, 'gold_exact'); if (!agree && p.intake_months.every((m) => got.includes(m))) bump(lane, 'gold_superset') }  // the page lists every held month and more: the S2-Intakes question (next intake or main annual start)
     else if (lane === 'course_fees') {
+      if (f.value?.audience === 'domestic') { bump(lane, 'gold_not_comparable'); continue }  // held fees are international; a domestic answer is another audience
       const cls = f.value?.period === 'year' ? 'year' : f.value?.period === 'total' ? 'total' : null
       if (!cls) { bump(lane, 'gold_not_comparable'); continue }
       const same = p.fees.filter((g) => g.period === cls)
@@ -77,6 +78,7 @@ fs.writeFileSync('out/boost-fields-replay.json', JSON.stringify({ label: LABEL, 
 const n = (lane, k) => tally[lane]?.[k] || 0, pct = (a, b) => (b ? `${Math.round((100 * a) / b)}%` : 'n/a')
 let md = `### Boost multi-field replay (${LABEL})\n\n${list.length} stored pages of courses that already hold a value, model ${model}, prompt ${versions?.prompt}, page check ${versions?.check}, worker ${worker_name}, cost US$${cost.toFixed(4)}. Nothing was staged or admitted.\n\n| Field | Pages holding a value | Verified | Refused | Not stated | Call failed | Verified and agrees with the held value | Disagrees | Agreement of verified |\n|---|---|---|---|---|---|---|---|---|\n`
 for (const lane of LANES) md += `| ${lane} | ${n(lane, 'gold')} | ${n(lane, 'gold_verified')} | ${n(lane, 'gold_rejected')} | ${n(lane, 'gold_not_stated')} | ${n(lane, 'gold_call_failed')} | ${lane === 'course_description' ? 'not compared' : n(lane, 'gold_agree')} | ${lane === 'course_description' ? 'not compared' : n(lane, 'gold_disagree')} | ${lane === 'course_description' ? 'n/a' : pct(n(lane, 'gold_agree'), n(lane, 'gold_agree') + n(lane, 'gold_disagree'))} |\n`
+md += `\nIntakes: ${n('intakes', 'gold_superset')} of the ${n('intakes', 'gold_disagree')} disagreements list every held month and more (the held value is a subset of what the page lists); ${n('intakes', 'gold_exact')} agree exactly.\n`
 md += `\n**Fees by basis** (an answer is compared with held fees of the same basis only)\n\n| Basis | Verified and agrees | Disagrees | Agreement | Course holds no fee of this basis |\n|---|---|---|---|---|\n`
 for (const c of ['year', 'total']) md += `| ${c === 'year' ? 'Annual (period year)' : 'Whole-course total'} | ${n('course_fees', c + '_agree')} | ${n('course_fees', c + '_disagree')} | ${pct(n('course_fees', c + '_agree'), n('course_fees', c + '_agree') + n('course_fees', c + '_disagree'))} | ${n('course_fees', 'gold_no_' + c + '_fee')} |\n`
 md += `\nFee answers in another period (semester, credit point, unit): ${n('course_fees', 'gold_not_comparable')}, not compared.\n`

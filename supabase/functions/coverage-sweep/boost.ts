@@ -70,16 +70,22 @@ const sentencesOf = (text: string) => String(text || "").split(/(?<=[.!?])\s+|\n
 //    student visa" gave full-time). The opposite load is inferred only when the ruled-out load is itself the subject ("Part-time study is not
 //    available for international students").
 const INTL_NEAR = 80;  // fixed: width of the reading rule set by the Platform Admin (18 Nov 2026), characters between an international word and a study word; not an operational limit
-const INTL_WORD_ALL = new RegExp(INTL_WORDS.source, "gi"), STUDY_WORD_ALL = new RegExp(STUDY_WORDS.source, "gi");
+//  - v1.0.22 (same day, after the first live inspection of 62 readings): the international words that count for proximity are those that name the student ("international students",
+//    "international onshore", "overseas students", "student visa", "visa holders", "non-visa", "onshore") or label a line ("International: ...", or "International 1.5 years full-time" in a delivery table). A CRICOS code is printed on every page,
+//    "International Exchange", "Master of International Business" and "Full Time International students" (a page heading) are course names, so none of them makes a sentence one about international students.
+const INTL_NEAR_WORDS = /\binternational\s+(?:students?|applicants?|onshore|offshore|enrol?lments?|learners?|candidates?)\b|\binternational\s*[:\-–|]|\binternational\s+(?=\d)|\boverseas\s+students?\b|\bstudent\s+visas?\b|\bvisa\s+holders?\b|\bnon[\s-]?visa\b|\bonshore\b/gi;
+const STUDY_WORD_ALL = new RegExp(STUDY_WORDS.source, "gi");
+const INTL_LABEL_NEAR = 160;  // fixed: width of the reading rule, characters from a label ("International students:") to the study word it labels
 const INTL_LABEL = /^\s*(?:for\s+)?international(?:\s+(?:onshore|offshore|students?|student visa holders?))*\s*[:\-–|]/i;
 const NOT_FOR_INTL = /\b(?:not|no longer)\s+(?:be\s+)?(?:available|offered|open|accepted|permitted|possible|eligible)\s+(?:to|for)\s+(?:[\w-]+\s+){0,2}(?:international|overseas|non[\s-]?resident|student visa|visa)|\bunavailable\s+(?:to|for)\s+(?:[\w-]+\s+){0,2}(?:international|overseas|student visa)|\bclosed\s+to\s+(?:[\w-]+\s+){0,2}international/gi;
 const LOAD_LINK_BREAK = /[.;:]|\b(and|but|or|offered|delivered|taught|online|campus)\b/i;
 const LOAD_COPULA = /\b(is|are|be|will be)\b/i;
 const LOAD_SUBJECT_GAP = 40;  // fixed: width of the reading rule, characters between a study word and the "not available" that rules it out
-// the sentence has an international word and a study word within INTL_NEAR characters (or is a labelled "International ..." line holding one)
+// the sentence has an international word and a study word within INTL_NEAR characters (or is a labelled "International ..." line with one within INTL_LABEL_NEAR characters)
 export function internationalNear(sentence: string): boolean {
-  const s = String(sentence || ""), w = [...s.matchAll(INTL_WORD_ALL)].map((m) => [m.index || 0, (m.index || 0) + m[0].length]), l = [...s.matchAll(STUDY_WORD_ALL)].map((m) => [m.index || 0, (m.index || 0) + m[0].length]);
-  if (INTL_LABEL.test(s) && l.length) return true;
+  const s = String(sentence || ""), w = [...s.matchAll(INTL_NEAR_WORDS)].map((m) => [m.index || 0, (m.index || 0) + m[0].length]), l = [...s.matchAll(STUDY_WORD_ALL)].map((m) => [m.index || 0, (m.index || 0) + m[0].length]);
+  const lab = INTL_LABEL.exec(s);
+  if (lab && l.some(([c]) => c >= lab[0].length && c - lab[0].length <= INTL_LABEL_NEAR)) return true;
   return w.some(([a, b]) => l.some(([c, d]) => (c >= b ? c - b : a >= d ? a - d : 0) <= INTL_NEAR));
 }
 // the sentence says the course is not available to international students, and no study word is the subject of that "not available"
