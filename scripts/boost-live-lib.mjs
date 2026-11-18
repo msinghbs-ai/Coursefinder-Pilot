@@ -12,8 +12,10 @@ async function call(query, readOnly) {
 }
 export const read = (query) => call(query, true)
 export const lit = (s) => `'${String(s).replace(/'/g, "''")}'`
-// asks the worker for a mode and waits for its answer (pg_net keeps the response; the worker answers within its own time budget)
-export async function worker(bodySql, waitMs = 150000) {
+// asks the worker for a mode and waits for its answer (pg_net keeps the response; the worker answers within its own time budget).
+// First run, 18 Nov 2026: the worker answered a replay call in 67 s but pg_net stored the answer 155 s after the request (its queue was
+// busy), so the wait is well above the worker's own budget.
+export async function worker(bodySql, waitMs = 480000) {
   const [{ id }] = await call(`select pipeline.svc_pilot_submit_nonce('coverage-sweep', ${bodySql}) as id`, false)
   const until = Date.now() + waitMs
   while (Date.now() < until) {
