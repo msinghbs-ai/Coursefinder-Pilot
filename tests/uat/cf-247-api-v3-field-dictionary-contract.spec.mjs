@@ -1,4 +1,4 @@
-// Guards: REQ-76 API v3 field dictionary (Platform Admin 15 Nov 2026, combined build item 1): every Website API v3 and Zoho API v3 read action is described field by field in docs/api/v3/field-dictionary.json, and the newest sync migration (20261117140000, after 20261116110000) loads exactly that list
+// Guards: REQ-76 API v3 field dictionary (Platform Admin 15 Nov 2026, combined build item 1): every Website API v3 and Zoho API v3 read action is described field by field in docs/api/v3/field-dictionary.json, and the newest sync migration (20261118135707, after 20261116110000) loads exactly that list
 // Behaviour of the sync and drift functions is proven on isolated PostgreSQL by tests/fixtures/api-field-dictionary/run.sh (workflow api-field-dictionary-test).
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
@@ -7,7 +7,7 @@ import { migrationNames, migrationPath } from './support/migration-files.mjs'
 
 // the sync and drift functions live in 20261116110000; each later reviewed list is loaded by its own sync migration, the newest of which must embed the file
 const MIG = 'supabase/migrations/20261116110000_cf247_api_field_dictionary_sync.sql'
-const LIST = 'supabase/migrations/20261117140000_cf247_api_field_dictionary_campus_locality.sql'
+const LIST = 'supabase/migrations/20261118135707_cf247_api_field_dictionary_v3_gaps.sql'
 const sql = fs.readFileSync(MIG, 'utf8')
 const listSql = fs.readFileSync(LIST, 'utf8')
 const code = sql.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')

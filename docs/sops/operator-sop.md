@@ -1,7 +1,7 @@
-<!-- sop-export: id=operator-sop; version=2.24; reviewed-release=2.16.34; source-commit=0209e2106341+local; content-sha256=64a18657c122a6ed8144445b81e16c24ce7fd21bee9b11d7e9338cf32d84ad68 -->
+<!-- sop-export: id=operator-sop; version=2.25; reviewed-release=2.16.35; source-commit=dfefa296a50f+local; content-sha256=ebd45d14b9868591d2832e2b1fca24e3b137a788730710a3e9329af33a16f3bd -->
 # StudySearch – Operator SOP
 
-**Version:** 2.24 (reviewed for platform release v2.16.34)  
+**Version:** 2.25 (reviewed for platform release v2.16.35)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -116,6 +116,7 @@ How operators keep the data flowing and decide what automation cannot: the revie
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.25 | 18 Nov 2026 | v2.16.35 | Dashboard is drawn for your role: Curators see Waiting for you without failed jobs and automations; Continue where you left off resumes your last searches and review queues. Guides › Role guides has your role's guide. |
 | 2.24 | 18 Nov 2026 | v2.16.33 | Layer 4 › Inbox › Grid: one kind at a time as rows with saved views (three shared views and your own), column choice and CSV export; a row opens the Source Quote vs Extracted Value drawer with the evidence and the decision history, where the item is decided as before. |
 | 2.23 | 17 Nov 2026 | v2.16.16 | Providers, Courses, Locations and Scholarships: Export CSV › Export visible columns or Export all columns writes the whole filtered list to a file Excel opens. Sign-in: Forgot password? sends your own reset link. |
 | 2.22 | 14 Nov 2026 | v2.16.1 | When AI work stops: read the limits banner at the top of Models & services › AI and the reasons listed under the service's state; a running row whose last call failed says so. |

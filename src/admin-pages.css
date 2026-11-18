@@ -913,3 +913,23 @@
 .svc-details{border-top:1px solid var(--cf-border);padding-top:6px}
 .svc-details>summary{cursor:pointer;min-height:36px;display:flex;align-items:center;color:var(--cf-text)}
 .svc-details[open]>summary{margin-bottom:6px}
+/* v2.16.35 role-centric Dashboard: role line, Search the catalogue, Continue where you left off */
+.db-role{display:flex;align-items:center;justify-content:space-between;gap:var(--cf-space-3);flex-wrap:wrap}
+.db-role .sd-desc{margin:6px 0 0}
+.db-role-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:var(--cf-radius-pill);background:var(--cf-violet-50);color:var(--cf-violet-700);font-weight:700;font-size:var(--cf-fs-xs)}
+.db-search-row{display:flex;gap:var(--cf-space-2);flex-wrap:wrap;margin-top:var(--cf-space-2)}
+.db-search-row input{flex:1 1 260px;min-height:44px;border:1px solid var(--cf-slate-175);border-radius:var(--cf-radius-sm);padding:0 12px;font:inherit}
+.db-sr{position:absolute;left:-9999px}
+.db-starts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--cf-space-2);margin-top:var(--cf-space-3)}
+.db-start{all:unset;cursor:pointer;display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--cf-slate-175);border-radius:var(--cf-radius-md);min-height:44px;box-sizing:border-box}
+.db-start:hover,.db-start:focus-visible{border-color:var(--cf-violet-600)}
+.db-start span{display:grid;gap:2px;flex:1}.db-start small{color:var(--cf-text-2);font-size:var(--cf-fs-2xs)}
+.db-recent-list{list-style:none;margin:0;padding:0}
+.db-recent-list li{display:flex;align-items:center;gap:var(--cf-space-3);padding:10px 0;border-top:1px solid var(--cf-slate-150);flex-wrap:wrap}
+.db-recent-kind{min-width:96px;font-size:var(--cf-fs-3xs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--cf-text-2)}
+.db-recent-what{flex:1 1 240px;display:grid;gap:2px}.db-recent-what small{color:var(--cf-text-2)}
+.db-recent-when{color:var(--cf-text-2)}
+/* v2.16.35 Guides › Role guides */
+.rg-two{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:var(--cf-space-3)}
+.rg-pages{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px}
+.rg-pages li{display:grid;gap:2px}.rg-pages small{color:var(--cf-text-2)}

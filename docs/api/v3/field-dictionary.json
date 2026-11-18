@@ -639,7 +639,7 @@
    "api_surface": "website",
    "endpoint": "search",
    "field_path": "items[].provider.university_groups",
-   "data_type": "array<string>",
+   "data_type": "array<object>",
    "is_nullable": false,
    "description": "University groups the provider belongs to."
   },
@@ -18096,6 +18096,1467 @@
    "data_type": "string",
    "is_nullable": true,
    "description": "Attribution to show with the figures."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "course",
+   "field_path": "item.study_load",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Study load the provider states for international students (REQ-52): full_time, part_time or both. Null until it has been read from the provider or a register.",
+   "allowed_values": [
+    "full_time",
+    "part_time",
+    "both"
+   ],
+   "req_ids": [
+    "REQ-52"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "course",
+   "field_path": "item.empty_reason_code",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Why fields such as the campus or study mode are empty for this course (REQ-53). Null when nothing needs explaining.",
+   "allowed_values": [
+    "not_published_by_provider",
+    "not_listed_on_register",
+    "online_only_no_campus",
+    "pending_extraction",
+    "source_unavailable"
+   ],
+   "req_ids": [
+    "REQ-53"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "course",
+   "field_path": "item.campuses[].locality",
+   "data_type": "object",
+   "is_nullable": true,
+   "description": "The approved locality the campus postcode maps to (G-5, 17 Nov 2026): the primary match in an approved or published locality, newest boundary first; null until the postcode has one.",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "course",
+   "field_path": "item.campuses[].locality.locality_id",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Stable identifier of the locality (as in the destination action).",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "course",
+   "field_path": "item.campuses[].locality.name",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Name of the locality as the source publishes it.",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "course",
+   "field_path": "item.campuses[].locality.geography_type",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The official geography the locality belongs to, for example SUA.",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "course",
+   "field_path": "item.campuses[].locality.geography_code",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The source code of the locality in that geography.",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "course",
+   "field_path": "item.campuses[].locality.boundary_vintage",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The boundary edition the locality is drawn on, for example ASGS_2021_ED3.",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "course",
+   "field_path": "item.campuses[].locality.match_share",
+   "data_type": "number",
+   "is_nullable": true,
+   "description": "Share of the postcode inside the locality, from 0 to 1.",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "course",
+   "field_path": "item.provider.accreditations",
+   "data_type": "array<object>",
+   "is_nullable": false,
+   "description": "Business school accreditations held now (REQ-57): active, not expired. An empty list when none is held.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "course",
+   "field_path": "item.provider.accreditations[].body_code",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The accrediting body: AACSB, EQUIS or AMBA.",
+   "allowed_values": [
+    "AACSB",
+    "EQUIS",
+    "AMBA"
+   ],
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "course",
+   "field_path": "item.provider.accreditations[].accredited_unit_name",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The school or faculty accredited, as the body lists it; null when the whole provider is.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "course",
+   "field_path": "item.provider.accreditations[].accredited_since",
+   "data_type": "date",
+   "is_nullable": true,
+   "description": "When the accreditation was first granted, where the body states it.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "course",
+   "field_path": "item.provider.accreditations[].expires_at",
+   "data_type": "date",
+   "is_nullable": true,
+   "description": "When the accreditation ends, where the body states it; an expired one is not returned.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "course",
+   "field_path": "item.provider.accreditations[].source_url",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The body's page the accreditation was read from.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "course",
+   "field_path": "item.provider.accreditations[].verified_at",
+   "data_type": "timestamptz",
+   "is_nullable": true,
+   "description": "When the platform last checked the accreditation on that page.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "provider",
+   "field_path": "item.accreditations",
+   "data_type": "array<object>",
+   "is_nullable": false,
+   "description": "Business school accreditations held now (REQ-57): active, not expired. An empty list when none is held.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "provider",
+   "field_path": "item.accreditations[].body_code",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The accrediting body: AACSB, EQUIS or AMBA.",
+   "allowed_values": [
+    "AACSB",
+    "EQUIS",
+    "AMBA"
+   ],
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "provider",
+   "field_path": "item.accreditations[].accredited_unit_name",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The school or faculty accredited, as the body lists it; null when the whole provider is.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "provider",
+   "field_path": "item.accreditations[].accredited_since",
+   "data_type": "date",
+   "is_nullable": true,
+   "description": "When the accreditation was first granted, where the body states it.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "provider",
+   "field_path": "item.accreditations[].expires_at",
+   "data_type": "date",
+   "is_nullable": true,
+   "description": "When the accreditation ends, where the body states it; an expired one is not returned.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "provider",
+   "field_path": "item.accreditations[].source_url",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The body's page the accreditation was read from.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "provider",
+   "field_path": "item.accreditations[].verified_at",
+   "data_type": "timestamptz",
+   "is_nullable": true,
+   "description": "When the platform last checked the accreditation on that page.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "search",
+   "field_path": "items[].study_load",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Study load the provider states for international students (REQ-52): full_time, part_time or both. Null until it has been read from the provider or a register.",
+   "allowed_values": [
+    "full_time",
+    "part_time",
+    "both"
+   ],
+   "req_ids": [
+    "REQ-52"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "search",
+   "field_path": "items[].empty_reason_code",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Why fields such as the campus or study mode are empty for this course (REQ-53). Null when nothing needs explaining.",
+   "allowed_values": [
+    "not_published_by_provider",
+    "not_listed_on_register",
+    "online_only_no_campus",
+    "pending_extraction",
+    "source_unavailable"
+   ],
+   "req_ids": [
+    "REQ-53"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "search",
+   "field_path": "items[].campuses[].locality",
+   "data_type": "object",
+   "is_nullable": true,
+   "description": "The approved locality the campus postcode maps to (G-5, 17 Nov 2026): the primary match in an approved or published locality, newest boundary first; null until the postcode has one.",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "search",
+   "field_path": "items[].campuses[].locality.locality_id",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Stable identifier of the locality (as in the destination action).",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "search",
+   "field_path": "items[].campuses[].locality.name",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Name of the locality as the source publishes it.",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "search",
+   "field_path": "items[].campuses[].locality.geography_type",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The official geography the locality belongs to, for example SUA.",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "search",
+   "field_path": "items[].campuses[].locality.geography_code",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The source code of the locality in that geography.",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "search",
+   "field_path": "items[].campuses[].locality.boundary_vintage",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The boundary edition the locality is drawn on, for example ASGS_2021_ED3.",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "search",
+   "field_path": "items[].campuses[].locality.match_share",
+   "data_type": "number",
+   "is_nullable": true,
+   "description": "Share of the postcode inside the locality, from 0 to 1.",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "search",
+   "field_path": "items[].provider.accreditations",
+   "data_type": "array<object>",
+   "is_nullable": false,
+   "description": "Business school accreditations held now (REQ-57): active, not expired. An empty list when none is held.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "search",
+   "field_path": "items[].provider.accreditations[].body_code",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The accrediting body: AACSB, EQUIS or AMBA.",
+   "allowed_values": [
+    "AACSB",
+    "EQUIS",
+    "AMBA"
+   ],
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "search",
+   "field_path": "items[].provider.accreditations[].accredited_unit_name",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The school or faculty accredited, as the body lists it; null when the whole provider is.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "search",
+   "field_path": "items[].provider.accreditations[].accredited_since",
+   "data_type": "date",
+   "is_nullable": true,
+   "description": "When the accreditation was first granted, where the body states it.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "search",
+   "field_path": "items[].provider.accreditations[].expires_at",
+   "data_type": "date",
+   "is_nullable": true,
+   "description": "When the accreditation ends, where the body states it; an expired one is not returned.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "search",
+   "field_path": "items[].provider.accreditations[].source_url",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The body's page the accreditation was read from.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "search",
+   "field_path": "items[].provider.accreditations[].verified_at",
+   "data_type": "timestamptz",
+   "is_nullable": true,
+   "description": "When the platform last checked the accreditation on that page.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.study_load",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Study load the provider states for international students (REQ-52): full_time, part_time or both. Null until it has been read from the provider or a register.",
+   "allowed_values": [
+    "full_time",
+    "part_time",
+    "both"
+   ],
+   "req_ids": [
+    "REQ-52"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.empty_reason_code",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Why fields such as the campus or study mode are empty for this course (REQ-53). Null when nothing needs explaining.",
+   "allowed_values": [
+    "not_published_by_provider",
+    "not_listed_on_register",
+    "online_only_no_campus",
+    "pending_extraction",
+    "source_unavailable"
+   ],
+   "req_ids": [
+    "REQ-53"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.campuses[].locality",
+   "data_type": "object",
+   "is_nullable": true,
+   "description": "The approved locality the campus postcode maps to (G-5, 17 Nov 2026): the primary match in an approved or published locality, newest boundary first; null until the postcode has one.",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.campuses[].locality.locality_id",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Stable identifier of the locality (as in the destination action).",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.campuses[].locality.name",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Name of the locality as the source publishes it.",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.campuses[].locality.geography_type",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The official geography the locality belongs to, for example SUA.",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.campuses[].locality.geography_code",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The source code of the locality in that geography.",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.campuses[].locality.boundary_vintage",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The boundary edition the locality is drawn on, for example ASGS_2021_ED3.",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.campuses[].locality.match_share",
+   "data_type": "number",
+   "is_nullable": true,
+   "description": "Share of the postcode inside the locality, from 0 to 1.",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.provider.accreditations",
+   "data_type": "array<object>",
+   "is_nullable": false,
+   "description": "Business school accreditations held now (REQ-57): active, not expired. An empty list when none is held.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.provider.accreditations[].body_code",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The accrediting body: AACSB, EQUIS or AMBA.",
+   "allowed_values": [
+    "AACSB",
+    "EQUIS",
+    "AMBA"
+   ],
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.provider.accreditations[].accredited_unit_name",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The school or faculty accredited, as the body lists it; null when the whole provider is.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.provider.accreditations[].accredited_since",
+   "data_type": "date",
+   "is_nullable": true,
+   "description": "When the accreditation was first granted, where the body states it.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.provider.accreditations[].expires_at",
+   "data_type": "date",
+   "is_nullable": true,
+   "description": "When the accreditation ends, where the body states it; an expired one is not returned.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.provider.accreditations[].source_url",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The body's page the accreditation was read from.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.provider.accreditations[].verified_at",
+   "data_type": "timestamptz",
+   "is_nullable": true,
+   "description": "When the platform last checked the accreditation on that page.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "courses",
+   "field_path": "items[].study_load",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Study load the provider states for international students (REQ-52): full_time, part_time or both. Null until it has been read from the provider or a register.",
+   "allowed_values": [
+    "full_time",
+    "part_time",
+    "both"
+   ],
+   "req_ids": [
+    "REQ-52"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "courses",
+   "field_path": "items[].empty_reason_code",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Why fields such as the campus or study mode are empty for this course (REQ-53). Null when nothing needs explaining.",
+   "allowed_values": [
+    "not_published_by_provider",
+    "not_listed_on_register",
+    "online_only_no_campus",
+    "pending_extraction",
+    "source_unavailable"
+   ],
+   "req_ids": [
+    "REQ-53"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "courses",
+   "field_path": "items[].campuses[].locality",
+   "data_type": "object",
+   "is_nullable": true,
+   "description": "The approved locality the campus postcode maps to (G-5, 17 Nov 2026): the primary match in an approved or published locality, newest boundary first; null until the postcode has one.",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "courses",
+   "field_path": "items[].campuses[].locality.locality_id",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Stable identifier of the locality (as in the destination action).",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "courses",
+   "field_path": "items[].campuses[].locality.name",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Name of the locality as the source publishes it.",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "courses",
+   "field_path": "items[].campuses[].locality.geography_type",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The official geography the locality belongs to, for example SUA.",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "courses",
+   "field_path": "items[].campuses[].locality.geography_code",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The source code of the locality in that geography.",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "courses",
+   "field_path": "items[].campuses[].locality.boundary_vintage",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The boundary edition the locality is drawn on, for example ASGS_2021_ED3.",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "courses",
+   "field_path": "items[].campuses[].locality.match_share",
+   "data_type": "number",
+   "is_nullable": true,
+   "description": "Share of the postcode inside the locality, from 0 to 1.",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "courses",
+   "field_path": "items[].provider.accreditations",
+   "data_type": "array<object>",
+   "is_nullable": false,
+   "description": "Business school accreditations held now (REQ-57): active, not expired. An empty list when none is held.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "courses",
+   "field_path": "items[].provider.accreditations[].body_code",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The accrediting body: AACSB, EQUIS or AMBA.",
+   "allowed_values": [
+    "AACSB",
+    "EQUIS",
+    "AMBA"
+   ],
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "courses",
+   "field_path": "items[].provider.accreditations[].accredited_unit_name",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The school or faculty accredited, as the body lists it; null when the whole provider is.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "courses",
+   "field_path": "items[].provider.accreditations[].accredited_since",
+   "data_type": "date",
+   "is_nullable": true,
+   "description": "When the accreditation was first granted, where the body states it.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "courses",
+   "field_path": "items[].provider.accreditations[].expires_at",
+   "data_type": "date",
+   "is_nullable": true,
+   "description": "When the accreditation ends, where the body states it; an expired one is not returned.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "courses",
+   "field_path": "items[].provider.accreditations[].source_url",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The body's page the accreditation was read from.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "courses",
+   "field_path": "items[].provider.accreditations[].verified_at",
+   "data_type": "timestamptz",
+   "is_nullable": true,
+   "description": "When the platform last checked the accreditation on that page.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "provider",
+   "field_path": "item.accreditations",
+   "data_type": "array<object>",
+   "is_nullable": false,
+   "description": "Business school accreditations held now (REQ-57): active, not expired. An empty list when none is held.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "provider",
+   "field_path": "item.accreditations[].body_code",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The accrediting body: AACSB, EQUIS or AMBA.",
+   "allowed_values": [
+    "AACSB",
+    "EQUIS",
+    "AMBA"
+   ],
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "provider",
+   "field_path": "item.accreditations[].accredited_unit_name",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The school or faculty accredited, as the body lists it; null when the whole provider is.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "provider",
+   "field_path": "item.accreditations[].accredited_since",
+   "data_type": "date",
+   "is_nullable": true,
+   "description": "When the accreditation was first granted, where the body states it.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "provider",
+   "field_path": "item.accreditations[].expires_at",
+   "data_type": "date",
+   "is_nullable": true,
+   "description": "When the accreditation ends, where the body states it; an expired one is not returned.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "provider",
+   "field_path": "item.accreditations[].source_url",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The body's page the accreditation was read from.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "provider",
+   "field_path": "item.accreditations[].verified_at",
+   "data_type": "timestamptz",
+   "is_nullable": true,
+   "description": "When the platform last checked the accreditation on that page.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "search",
+   "field_path": "items[].study_load",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Study load the provider states for international students (REQ-52): full_time, part_time or both. Null until it has been read from the provider or a register.",
+   "allowed_values": [
+    "full_time",
+    "part_time",
+    "both"
+   ],
+   "req_ids": [
+    "REQ-52"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "search",
+   "field_path": "items[].empty_reason_code",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Why fields such as the campus or study mode are empty for this course (REQ-53). Null when nothing needs explaining.",
+   "allowed_values": [
+    "not_published_by_provider",
+    "not_listed_on_register",
+    "online_only_no_campus",
+    "pending_extraction",
+    "source_unavailable"
+   ],
+   "req_ids": [
+    "REQ-53"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "search",
+   "field_path": "items[].campuses[].locality",
+   "data_type": "object",
+   "is_nullable": true,
+   "description": "The approved locality the campus postcode maps to (G-5, 17 Nov 2026): the primary match in an approved or published locality, newest boundary first; null until the postcode has one.",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "search",
+   "field_path": "items[].campuses[].locality.locality_id",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Stable identifier of the locality (as in the destination action).",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "search",
+   "field_path": "items[].campuses[].locality.name",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Name of the locality as the source publishes it.",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "search",
+   "field_path": "items[].campuses[].locality.geography_type",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The official geography the locality belongs to, for example SUA.",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "search",
+   "field_path": "items[].campuses[].locality.geography_code",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The source code of the locality in that geography.",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "search",
+   "field_path": "items[].campuses[].locality.boundary_vintage",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The boundary edition the locality is drawn on, for example ASGS_2021_ED3.",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "search",
+   "field_path": "items[].campuses[].locality.match_share",
+   "data_type": "number",
+   "is_nullable": true,
+   "description": "Share of the postcode inside the locality, from 0 to 1.",
+   "req_ids": [
+    "REQ-67"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "search",
+   "field_path": "items[].provider.accreditations",
+   "data_type": "array<object>",
+   "is_nullable": false,
+   "description": "Business school accreditations held now (REQ-57): active, not expired. An empty list when none is held.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "search",
+   "field_path": "items[].provider.accreditations[].body_code",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The accrediting body: AACSB, EQUIS or AMBA.",
+   "allowed_values": [
+    "AACSB",
+    "EQUIS",
+    "AMBA"
+   ],
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "search",
+   "field_path": "items[].provider.accreditations[].accredited_unit_name",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The school or faculty accredited, as the body lists it; null when the whole provider is.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "search",
+   "field_path": "items[].provider.accreditations[].accredited_since",
+   "data_type": "date",
+   "is_nullable": true,
+   "description": "When the accreditation was first granted, where the body states it.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "search",
+   "field_path": "items[].provider.accreditations[].expires_at",
+   "data_type": "date",
+   "is_nullable": true,
+   "description": "When the accreditation ends, where the body states it; an expired one is not returned.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "search",
+   "field_path": "items[].provider.accreditations[].source_url",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The body's page the accreditation was read from.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "search",
+   "field_path": "items[].provider.accreditations[].verified_at",
+   "data_type": "timestamptz",
+   "is_nullable": true,
+   "description": "When the platform last checked the accreditation on that page.",
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "search",
+   "field_path": "items[].provider.university_groups[].code",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Group code.",
+   "allowed_values": [
+    "go8",
+    "atn",
+    "iru",
+    "run"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "search",
+   "field_path": "items[].provider.university_groups[].name",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Group name."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "course",
+   "field_path": "item.field_of_study_codes",
+   "data_type": "array<object>",
+   "is_nullable": false,
+   "description": "Field-of-study codes of the course from the national register (O28), best first: ASCED for Australia today. Empty when none is held; never inferred or crosswalked.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "course",
+   "field_path": "item.field_of_study_codes[].scheme",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The code scheme, for example ASCED.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "course",
+   "field_path": "item.field_of_study_codes[].level",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The level of the code in its scheme (for example broad, narrow or detailed).",
+   "req_ids": []
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "course",
+   "field_path": "item.field_of_study_codes[].code",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The code as the register publishes it.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "course",
+   "field_path": "item.field_of_study_codes[].name",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The name of the code in its scheme.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "course",
+   "field_path": "item.field_of_study_codes[].rank",
+   "data_type": "number",
+   "is_nullable": true,
+   "description": "Order of the codes, 1 first.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "course",
+   "field_path": "item.field_of_study_codes[].source_url",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The register page the code was read from.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "course",
+   "field_path": "item.field_of_study_codes[].evidence_date",
+   "data_type": "date",
+   "is_nullable": true,
+   "description": "When the code was read from the register.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.field_of_study_codes",
+   "data_type": "array<object>",
+   "is_nullable": false,
+   "description": "Field-of-study codes of the course from the national register (O28), best first: ASCED for Australia today. Empty when none is held; never inferred or crosswalked.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.field_of_study_codes[].scheme",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The code scheme, for example ASCED.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.field_of_study_codes[].level",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The level of the code in its scheme (for example broad, narrow or detailed).",
+   "req_ids": []
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.field_of_study_codes[].code",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The code as the register publishes it.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.field_of_study_codes[].name",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The name of the code in its scheme.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.field_of_study_codes[].rank",
+   "data_type": "number",
+   "is_nullable": true,
+   "description": "Order of the codes, 1 first.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.field_of_study_codes[].source_url",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The register page the code was read from.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.field_of_study_codes[].evidence_date",
+   "data_type": "date",
+   "is_nullable": true,
+   "description": "When the code was read from the register.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.recognition",
+   "data_type": "array<object>",
+   "is_nullable": false,
+   "description": "Official registrations of the course (O29). CRICOS for Australia; empty when none is held."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.recognition[].authority",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The body that keeps the register."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.recognition[].checked_on",
+   "data_type": "date",
+   "is_nullable": true,
+   "description": "Date StudySearch last checked the register."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.recognition[].code",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Code on the register."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.recognition[].evidence_date",
+   "data_type": "date",
+   "is_nullable": true,
+   "description": "Date of the register evidence."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.recognition[].scheme",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Register, for example CRICOS."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.recognition[].source_url",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The register page."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.recognition[].status",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Status on the register.",
+   "allowed_values": [
+    "registered"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "filters.country_code",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The country code the request filtered by.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "filters.section",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The section the request asked for: localities, study_rules or career_outcomes.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "filters.postcode",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The postcode the request filtered by.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "filters.locality_id",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The locality the request filtered by.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "filters.country_code",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The country code the request filtered by.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "filters.section",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The section the request asked for: localities, study_rules or career_outcomes.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "filters.postcode",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The postcode the request filtered by.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "filters.locality_id",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The locality the request filtered by.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "course",
+   "field_path": "contract_version",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The contract the database function answered with (for example website-search-v2), beside api_version.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "search",
+   "field_path": "contract_version",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The contract the database function answered with (for example website-search-v2), beside api_version.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "provider",
+   "field_path": "contract_version",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The contract the database function answered with (for example website-search-v2), beside api_version.",
+   "req_ids": []
   }
  ],
  "pending_fields": [

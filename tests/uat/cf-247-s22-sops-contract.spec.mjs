@@ -18,7 +18,7 @@ test('SOPs reviewed for this release (update src/guide/sops.js, raise the SOP ve
 
 test('Guides menu holds the Platform guide and both SOPs', () => {
   expect(SECTIONS.find((s) => s.label === 'Guides')?.pages).toEqual(['guide'])
-  expect(PAGES.guide.tabs.map((t) => t.key)).toEqual(['guide', 'admin-sop', 'operator-sop'])
+  expect(PAGES.guide.tabs.map((t) => t.key)).toEqual(['guide', 'role-guides', 'admin-sop', 'operator-sop']) // v2.16.35: Role guides (s625)
   expect(SOPS.map((s) => s.id)).toEqual(['admin-sop', 'operator-sop'])
 })
 

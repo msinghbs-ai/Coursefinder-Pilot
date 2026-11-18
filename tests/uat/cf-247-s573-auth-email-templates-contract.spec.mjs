@@ -65,9 +65,13 @@ test('Users & roles has two Platform Admin tabs and the screen offers the contro
   expect(nav).toContain("{ key: 'templates', label: 'Links & Email Templates', min: 6 },")
   expect(main).toContain("case'users':if(tab==='templates')return <AuthEmailTemplates rank={rank} onError={onError}/>")
   expect(screen).toContain("if(rank<6)return <EmptyInline text=\"Links & Email Templates opens for the Platform Admin.\"/>")
-  for (const k of ['data-aet-site-url', 'data-aet-guide-link', 'data-aet-kind={k}', 'data-aet-token={k}', 'data-aet-subject', 'data-aet-body', 'data-aet-preview', 'data-aet-reset', 'data-aet-test', 'data-aet-reason', 'data-aet-save']) expect(screen).toContain(k)
+  for (const k of ['data-aet-site-url', 'data-aet-guide-link', 'data-aet-kind={k}', 'data-aet-subject', 'data-aet-body', 'data-aet-preview', 'data-aet-reset', 'data-aet-test', 'data-aet-reason', 'data-aet-save']) expect(screen).toContain(k)
   expect(screen).toContain("export const TOKENS=['link','guide_link','user_email','user_name','role']")
   expect(screen).toContain('sandbox=""') // the preview frame runs no script
+  // v2.16.35: the body is edited as formatted text in a frame that runs no script; the variable chips and Edit HTML live in the editor
+  const rte = read('src/RichEmailEditor.jsx')
+  for (const k of ['data-aet-token={k}', 'sandbox="allow-same-origin"', "d.designMode='on'", 'data-rte-html', 'data-rte-link-form']) expect(rte).toContain(k)
+  expect(rte).not.toContain('allow-scripts')
   expect(screen).toContain("rpc('admin_auth_template_settings_save',{p_payload:form,p_reason:why})")
   expect(screen).toContain('reason.trim().length<4')
   for (const a of ["templatesStatus: () => invoke({ action: 'auth_templates_status' })", "templatesSync: () => invoke({ action: 'auth_templates_sync' })"]) expect(apiSrc).toContain(a)
@@ -157,7 +161,7 @@ test('email delivery: the screen has the provider toggle, sender, from email and
   expect(screen).toContain("setNewKey('');said.push(") // the typed key is cleared from the screen once saved
   // v2.16.27: the card saves and tests itself. Its buttons are never greyed for a missing field; the card says what is missing instead.
   const card = screen.slice(screen.indexOf('data-aet-delivery>'), screen.indexOf('data-aet-templates>'))
-  expect(card).toContain("<Button compact variant=\"primary\" disabled={busy!==''} onClick={saveDelivery} data-aet-delivery-save>{busy==='dsave'?'Saving…':'Save Email Provider Settings'}</Button>")
+  expect(card).toContain("<Button compact variant=\"primary\" disabled={busy!==''} onClick={saveDelivery} data-aet-delivery-save>{busy==='dsave'?'Saving…':'Save Provider Settings'}</Button>")
   expect(card).toContain("<Button compact disabled={busy!==''} onClick={sendDeliveryTest} data-aet-delivery-test>{busy==='dtest'?'Sending…':'Send Test Email'}</Button>")
   expect(card.indexOf('data-aet-delivery-reason')).toBeLessThan(card.indexOf('data-aet-delivery-save')); expect(card.indexOf('data-aet-delivery-save')).toBeLessThan(card.indexOf('data-aet-delivery-test'))
   expect(card).toContain('data-aet-delivery-result')
@@ -165,7 +169,7 @@ test('email delivery: the screen has the provider toggle, sender, from email and
   expect(screen).toContain('const r=await access.deliveryTest(kind)')
   expect(screen).toContain("setDNote({ok:false,text:`Test not sent. ${plainError(e).replace(/_/g,' ')}`})")
   expect(screen).toContain("if(rank<6)return <EmptyInline text=\"Links & Email Templates opens for the Platform Admin.\"/>") // the whole tab, card included
-  // Save & Sync is the templates' own save now
+  // Save Template (was Save & Sync) is the templates' own save
   expect(screen).toContain("disabled={busy!==''||!dirty||missingLink||bad.length>0||reason.trim().length<4} onClick={save} data-aet-save")
   expect(read('src/access-roles-api.js')).toContain("deliveryTest: (template) => invoke({ action: 'auth_template_test', template, via: 'resend' }),")
   // the edge function: the card's test goes through Resend with the saved settings before Resend is switched on, to the caller's own address, and answers with Resend's reference
