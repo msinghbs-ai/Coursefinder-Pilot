@@ -46,7 +46,7 @@ select v.source_type, (select id from au), v.url, v.label, 1, 'active',
        jsonb_strip_nulls(jsonb_build_object('layer', 'layer1', 'source_system', 'DESTINATION', 'dataset_class', v.dataset_class, 'destination_mode', v.mode,
          'destination_scope', v.scope, 'parser', v.parser, 'publisher', v.publisher, 'licence', v.licence, 'destination_edition', v.edition,
          'operational_surface', 'Destination data', 'schedule_day_sydney', v.sydney_day,
-         'decision', 'Platform Admin 18 Nov 2026 22:04 (S2-Build, s693): destination data sources are Layer 1 Register sources')))
+         'decision', 'Platform Admin 18 Nov 2026 22:04 (S2-Build, s693): destination data sources are Layer 1 Register sources'))
   from v
  where not exists (select 1 from pipeline.sources s where s.label = v.label and s.country_id = (select id from au) and s.metadata->>'source_system' = 'DESTINATION');
 
