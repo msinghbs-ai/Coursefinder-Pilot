@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import * as XLSX from "npm:xlsx@0.18.5";
 import { parseBomClimate } from "../_shared/cf247-bom-climate.js";
-import { anchorWindows, extractFact, htmlToText, linkWords, parseOccupationGrid, xlsxLinks } from "../_shared/cf247-page-facts.js";
+import { anchorWindows, extractFact, firecrawlScrapeBody, headerSample, htmlToText, linkWords, parseOccupationGrid, xlsxLinks } from "../_shared/cf247-page-facts.js";
 
 // CF-247 RM1B (Platform Admin 17 Nov 2026 13:12; approvals A-1 to A-4 of 07:29 and 07:35): ABS population loader for Australian
 // destination localities. Reads ABS Regional population 2024-25, Table 2 (estimated resident population by Significant Urban Area),
@@ -19,7 +19,11 @@ import { anchorWindows, extractFact, htmlToText, linkWords, parseOccupationGrid,
 // the value with a verbatim quote (or, on a miss, what the page says around the fact's anchor word); then finds the JSA OSCA occupation
 // workbook by its link text, stores it and returns the occupation rows its header names. public.svc_destination_page_facts_load_v1 writes
 // draft rules and figures with the evidence, the quote and the time read; editions whose terms are restricted are not read at all.
-const VERSION = "layer1-destination-geo-loader-v1.2.1";
+// v1.3.0 (Platform Admin 18 Nov 2026 17:55): a page whose read mode is rendered (destination.page_facts.read_mode; the Home Affairs pages,
+// whose content the browser builds) is read through Firecrawl /v1/scrape (JS rendering, onlyMainContent): the spend is asked of the database
+// first (svc_fc_spend, purpose destination_page_facts, the "other" daily share and the monthly plan limit), every call is logged
+// (svc_fc_call_log), and the rendered HTML is stored as the evidence. The JSA Table 1 headings are read over two rows.
+const VERSION = "layer1-destination-geo-loader-v1.3.0";
 const FUNCTION_NAME = "layer1-destination-geo-loader";
 const EDITION = {
   source_url: "https://www.abs.gov.au/statistics/people/population/regional-population/2024-25/32180DS0004_2001-25.xlsx",
@@ -136,6 +140,40 @@ async function climate(service: any, runId: string | null, trigger: string, star
   }
 }
 
+// RM1C/RM1H/RM1I: one rendered read through Firecrawl, spent and logged through the database like every other Firecrawl call
+async function renderedRead(service: any, pageUrl: string, runId: string | null) {
+  if (!await rpc(service, "svc_fc_spend", { p_units: 1, p_purpose: "destination_page_facts", p_provider_id: null, p_url: pageUrl })) {
+    throw new Error("Firecrawl spend refused (daily share, monthly plan limit or a cost breaker)");
+  }
+  const fc = await rpc(service, "svc_coverage_firecrawl", {});
+  if (!fc?.secret) throw new Error("no Firecrawl key");
+  const body = firecrawlScrapeBody(pageUrl);
+  const started = Date.now();
+  let http: number | null = null, d: any = null, err: string | null = null;
+  try {
+    const r = await fetch("https://api.firecrawl.dev/v1/scrape", {
+      method: "POST", headers: { Authorization: `Bearer ${fc.secret}`, "content-type": "application/json" }, body: JSON.stringify(body),
+      signal: AbortSignal.timeout(90000), // fixed: API time-out
+    });
+    http = r.status; d = await r.json().catch(() => null);
+  } catch (e) { err = e instanceof Error ? `${e.name}: ${e.message}` : String(e); }
+  const m = d?.data?.metadata || {};
+  const html = String(d?.data?.html || "");
+  const markdown = String(d?.data?.markdown || "");
+  const pageStatus = Number.isFinite(Number(m.statusCode)) ? Number(m.statusCode) : null;
+  const error = err || (d && d.success === false ? String(d.error || "success false") : null) || (http !== null && http >= 400 ? `HTTP ${http}` : null)
+    || (pageStatus !== null && pageStatus >= 400 ? `page status ${pageStatus}` : null);
+  try {
+    await rpc(service, "svc_fc_call_log", { p: { run_id: runId, use_case: "destination_page_facts", endpoint: "v1/scrape", url: pageUrl,
+      request: { formats: body.formats, onlyMainContent: body.onlyMainContent }, http, success: !error, error, scrape_id: m.scrapeId ?? null,
+      credits_used: m.creditsUsed ?? d?.creditsUsed ?? null, proxy_used: m.proxyUsed ?? null, page_status: pageStatus, duration_ms: Date.now() - started,
+      outcome: error ? "fc_error" : (html || markdown) ? "read" : "no_content", meta: { cacheState: m.cacheState ?? null } } });
+  } catch { /* logging never stops the read */ }
+  if (error) throw new Error(`Firecrawl: ${error}`);
+  if (!html && !markdown) throw new Error("Firecrawl returned no content");
+  return { html: html || markdown, credits: m.creditsUsed ?? d?.creditsUsed ?? null };
+}
+
 // RM1I / RM1C / RM1H / RM1D: official pages read in turn; a page or workbook that fails is reported and the others still load
 async function facts(service: any, runId: string | null, trigger: string, started: number) {
   try {
@@ -146,13 +184,16 @@ async function facts(service: any, runId: string | null, trigger: string, starte
     const pages: any[] = [];
     for (const [pageUrl, list] of byPage) {
       try {
-        const bytes = await download(pageUrl);
+        const rendered = list.some((f) => f.read_mode === "rendered");
+        const got = rendered ? await renderedRead(service, pageUrl, runId) : null;
+        const bytes = got ? new TextEncoder().encode(got.html) : await download(pageUrl);
         const hash = await sha256(bytes);
         const text = htmlToText(new TextDecoder("utf-8").decode(bytes));
         const host = new URL(pageUrl).host;
-        const path = `destination/page-facts/${host}/${hash}.html`;
+        const path = `destination/page-facts/${host}/${hash}${rendered ? ".rendered" : ""}.html`;
         const up = await service.storage.from("evidence").upload(path, bytes, { contentType: "text/html", upsert: true });
         pages.push({ page_url: pageUrl, sha256: hash, storage_path: up.error ? null : path, read_at: new Date().toISOString(), bytes: bytes.length, text_length: text.length,
+          read_via: rendered ? "firecrawl" : "direct", fc_credits: got?.credits ?? null,
           facts: list.map((f) => {
             const r = extractFact(text, f);
             return r.found ? { id: f.id, ...r } : { id: f.id, found: false, reason: r.reason, windows: anchorWindows(text, f.anchor) };
@@ -184,7 +225,7 @@ async function facts(service: any, runId: string | null, trigger: string, starte
         for (const name of wb.SheetNames) {
           const grid = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: true, defval: "" }) as unknown[][];
           const parsed = parseOccupationGrid(grid);
-          sheets.push({ name, rows: parsed.rows.length, header: parsed.header, first: parsed.header ? null : grid.slice(0, 6).map((r) => r.slice(0, 8)) });
+          sheets.push({ name, rows: parsed.rows.length, header: parsed.header, first: parsed.header ? null : headerSample(grid) });
           if (parsed.rows.length && (!best || parsed.rows.length > best.rows.length)) best = { name, ...parsed };
         }
         jsa = { page_url: cfg.jsa.page_url, file_url: link.href, link_text: link.text, sha256: hash, storage_path: up.error ? null : path,
