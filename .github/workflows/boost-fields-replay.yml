@@ -1,0 +1,45 @@
+# Boost multi-field qualification replay (CF-247 S663, S2 - BOOST; Platform Admin 18 Nov 2026 17:02 item 3, and 17 Nov 2026 22:05: runs go
+# through GitHub Actions and the Management API with no confirmation prompt). The gold set comes from the catalogue (courses that already
+# hold active intakes, an active provider-page annual fee or a description, and have a stored page). The worker's mode boost_fields_replay
+# asks the Boost fields route's one model about each stored page and returns the checked answers; nothing is staged, no candidate row is
+# written and nothing is admitted. The spend is the route's own (a few US cents for the default size) and is recorded by the route.
+# A run qualifies nothing: its figures inform a separate, recorded decision.
+name: Boost multi-field replay (no admission)
+on:
+  workflow_dispatch:
+    inputs:
+      per_stratum:
+        description: "Pages per field (4 to 120)"
+        required: true
+        default: "40"
+      label:
+        description: "Run label (fixes the sample, so a run can be repeated)"
+        required: true
+        default: "replay-1"
+concurrency:
+  group: boost-fields-replay
+  cancel-in-progress: false
+jobs:
+  replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      REF: ${{ vars.SUPABASE_PROJECT_REF }}
+      PER: ${{ inputs.per_stratum }}
+      LABEL: ${{ inputs.label }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Replay the gold set
+        run: node scripts/boost-fields-replay.mjs "$PER" "$LABEL"
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: boost-fields-replay
+          path: out/
+          if-no-files-found: ignore

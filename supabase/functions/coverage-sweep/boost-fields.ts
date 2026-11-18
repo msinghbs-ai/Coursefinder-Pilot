@@ -8,6 +8,10 @@ import { boostFlat } from "./boost.ts";
 export const BOOST_FIELDS_PROMPT_ID = "boost-fields";
 export const BOOST_FIELDS_PROMPT_VERSION = "boost-fields-v1";
 export const BOOST_FIELDS_SELECTOR = "boost-fields-windows-v1";
+// The page check has its own version: it can be hardened without a new prompt (the route's qualification row follows the prompt).
+// v2 (18 Nov 2026, S2 - BOOST, replay of the first 3,300 Qwen3 30B answers): see the notes above verifyBoostField.
+export const BOOST_FIELDS_CHECK_VERSION = "boost-fields-check-v2";
+export const BOOST_REPLAY_MAX_PAGES = 24, BOOST_REPLAY_QUOTE_CHARS = 400;  // fixed: diagnostic caps of one replay call (pages; characters of a quote returned)
 export const BOOST_FIELD_LANES = ["course_description", "delivery_mode", "intakes", "course_fees", "aer_entry"] as const;
 export type BoostFieldLane = typeof BOOST_FIELD_LANES[number];
 export const BOOST_DELIVERY_MODES = ["on_campus", "online", "blended", "on_campus_and_online"];
@@ -82,8 +86,55 @@ const MIN_QUOTE = 12;  // fixed: a quote shorter than this proves nothing
 const isText = (v: unknown): v is string => typeof v === "string" && v.trim().length > 0;
 const onPage = (q: string, pageFlat: string) => { const f = boostFlat(q); return f.length >= MIN_QUOTE && pageFlat.includes(f) };
 
-// The check of one field's answer against the whole stored page.
-export function verifyBoostField(lane: string, a: any, pageFlat: string): BoostFieldVerdict {
+// What the replay of the first Qwen3 30B answers taught (18 Nov 2026; 965 descriptions, 43 intakes and 1 fee had passed check v1):
+//  - Course description: a page title, a menu, a list of headings ("Level : Certificate IV Method : Mixed"), a call to action ("Apply Now"),
+//    a video caption or text with unconverted HTML entities was quoted as the overview. Such text is on the page, but it is not prose
+//    about the course.
+//  - Intakes: a month was accepted wherever it stood in the quote. Most accepted quotes were not intakes: a newsletter or post date
+//    ("February 21, 2023"), an event ("Workshop Tour ... July 23, 2026"), an application date ("Applications are open until Monday 16
+//    November 2026"), a term calendar, a testimonial, or the header row of a calendar (JAN FEB MAR ...). A month now counts only where
+//    the quote says a course starts then: next to "intake", "start", "commence" or "begin", and not next to a deadline word.
+//  - Fees: the currency was never checked against the page, the year was never checked at all, the amount matched inside a larger number
+//    and the period was taken on trust.
+const DESCRIPTION_BOILERPLATE = /\bskip to (main |the )?content\b|\bcookies?\b|\bprivacy (policy|statement)\b|\ball rights reserved\b|\bsubscribers?\b|\bnewsletter\b|\b(apply|enquire|enrol|register) now\b|\b(find out|read|learn) more\b|\btap to unmute\b|\bwatch on\b|\bshare to\b|\bsearch for courses\b|\bchevron_(left|right)\b|\bkeyboard_arrow_(down|up)\b/i;
+const HTML_ENTITY = /&(#\d{2,5}|#x[0-9a-f]{2,4}|[a-z]{2,8});/i;
+// most words start with a capital letter or a digit and the text has no sentence: a title, a menu or a list of headings
+export function looksLikeHeadings(text: string): boolean {
+  const words = String(text || "").trim().split(/\s+/).filter((w) => /[A-Za-z0-9]/.test(w));
+  if (words.length < 4) return true;
+  const caps = words.filter((w) => /^[^A-Za-z0-9]*[A-Z0-9]/.test(w)).length;
+  return caps / words.length >= 0.7;
+}
+const INTAKE_CUE = "(?:intakes?|commenc\\w*|start(?:s|ing|ed)?|begin(?:s|ning)?)";
+const DEADLINE_CUE = /\b(deadlines?|clos(e|es|ed|ing)|due|apply by|applications?|submissions?|census|orientation|newsletter)\b[^.;\n]{0,30}$/i;
+const DEADLINE_BETWEEN = /\b(deadlines?|clos(e|es|ed|ing)|due|apply by)\b/i;
+const MONTHS_IN_ONE_ANSWER = 9;  // fixed: more months than this is the header row of a calendar, not a list of intakes
+// true when the quote says the course starts in that month
+export function monthIsAnIntake(quote: string, month: string): boolean {
+  const name = String(month || "").trim().toLowerCase(); if (!MONTHS.includes(name)) return false;
+  const q = String(quote || ""), m = `${name}|${name.slice(0, 3)}`;
+  // "intake: February", "starts 1st December", "commences in late January"  |  "October 2026 intake", "Semester 2 (July) intakes"
+  const before = new RegExp(`\\b${INTAKE_CUE}\\b(?!\\s+year)[^.;\\n]{0,25}?\\b(${m})\\b`, "gi"), after = new RegExp(`\\b(${m})\\b[^.;\\n]{0,40}?\\bintakes?\\b`, "gi");
+  for (const hit of q.matchAll(before)) { const at = (hit.index || 0) + hit[0].length - hit[1].length; if (!DEADLINE_CUE.test(q.slice(Math.max(0, at - 45), at))) return true }
+  for (const hit of q.matchAll(after)) { const at = hit.index || 0; if (!DEADLINE_CUE.test(q.slice(Math.max(0, at - 45), at)) && !DEADLINE_BETWEEN.test(hit[0])) return true }
+  return false;
+}
+// Which currencies a text names. A bare "$" names none.
+const CURRENCY_MARKS: [string, RegExp][] = [
+  ["AUD", /\bAUD\b|\bAU?\$|\bAustralian dollars?\b/i], ["NZD", /\bNZD\b|\bNZ\s?\$|\bNew Zealand dollars?\b/i], ["CAD", /\bCAD\b|\bCA?\$|\bCDN\s?\$|\bCanadian dollars?\b/i],
+  ["USD", /\bUSD\b|\bUS\s?\$|\bUS dollars?\b/i], ["GBP", /\bGBP\b|£|\bpounds? sterling\b/i], ["EUR", /\bEUR\b|€|\beuros?\b/i], ["SGD", /\bSGD\b|\bS\$/i],
+];
+export const currenciesNamed = (text: string): string[] => CURRENCY_MARKS.filter(([, re]) => re.test(String(text || ""))).map(([c]) => c);
+const PERIOD_WORDS: Record<string, RegExp> = {
+  year: /\b(per|a|each|every|\/)\s?(year|annum)\b|\bannual(ly)?\b|\byearly\b|\bp\.?\s?a\b\.?|\b(20\d\d|first[\s-]year|year \d) (tuition |course |indicative )?fees?\b/i,
+  semester: /\bsemester\b/i, trimester: /\btrimester\b/i, credit_point: /\bcredit\b|\bpoints?\b|\bper (unit of credit|EFTSL)\b/i, unit: /\b(unit|subject|course|paper|module)s?\b/i,
+  total: /\btotal\b|\bfull (course|program|programme|degree|qualification)\b|\b(whole|entire|complete) (course|program|programme|degree)\b|\bcourse fees?\b|\bprogram(me)? fees?\b|\bfor \d+ (points|credits|credit points|units)\b/i,
+};
+const numbersIn = (text: string): number[] => [...String(text || "").matchAll(/\d[\d,]*(?:\.\d+)?/g)].map((m) => Number(m[0].replace(/,/g, ""))).filter((n) => Number.isFinite(n));
+
+// The check of one field's answer against the whole stored page. pageFlat is the page in canonical form; page is the page text itself (used
+// where the check needs words the canonical form loses: currency signs).
+export function verifyBoostField(lane: string, a: any, pageFlat: string, page = ""): BoostFieldVerdict {
   const quote = a && isText(a.quote) ? String(a.quote) : null;
   const empty = (x: unknown) => x === null || x === undefined || (Array.isArray(x) && x.length === 0) || x === "";
   const v = (status: BoostFieldVerdict["status"], value: unknown, problems: string[] = []): BoostFieldVerdict => ({ lane, status, value, quote, problems });
@@ -97,6 +148,9 @@ export function verifyBoostField(lane: string, a: any, pageFlat: string): BoostF
   if (lane === "course_description") {
     if (quote.length < 60) problems.push("too short to be the course's overview");  // fixed: shorter text is a heading, not an overview
     if (/\$\s?\d|\btuition\b|\bentry requirement|\bATAR\b|\bIELTS\b/i.test(quote)) problems.push("the quote is about fees or entry, not the course");
+    if (DESCRIPTION_BOILERPLATE.test(quote)) problems.push("the quote holds navigation or a call to action, not the course's overview");
+    if (HTML_ENTITY.test(quote)) problems.push("the quote holds unconverted HTML entities");
+    if (looksLikeHeadings(quote)) problems.push("the quote is a title or a list of headings, not prose about the course");
   } else if (lane === "delivery_mode") {
     const online = /\bonline\b|\bdistance\b|\bremote(ly)?\b/.test(q), campus = /campus|face[\s-]to[\s-]face|in[\s-]person|on[\s-]site/.test(q), mixed = /\bblended\b|\bhybrid\b|\bmix(ed|ture)? of\b/.test(q);
     if (!BOOST_DELIVERY_MODES.includes(String(value))) problems.push(`delivery mode ${JSON.stringify(value)} is not allowed`);
@@ -106,20 +160,35 @@ export function verifyBoostField(lane: string, a: any, pageFlat: string): BoostF
     else if (value === "on_campus_and_online" && !(online && campus)) problems.push("the quote does not name both on campus and online");
   } else if (lane === "intakes") {
     if (!Array.isArray(value)) problems.push("months is not a list");
-    else for (const m of value) {
-      const name = String(m || "").trim().toLowerCase(), i = MONTHS.indexOf(name);
-      if (i < 0) { problems.push(`${JSON.stringify(m)} is not a month`); continue }
-      if (!new RegExp(`\\b(${name}|${name.slice(0, 3)})\\b`, "i").test(quote)) problems.push(`${m} is not in the quote`);
+    else {
+      if (new Set(value.map((m) => String(m || "").trim().toLowerCase())).size > MONTHS_IN_ONE_ANSWER) problems.push("too many months to be a list of intakes (a calendar header)");
+      for (const m of value) {
+        const name = String(m || "").trim().toLowerCase(), i = MONTHS.indexOf(name);
+        if (i < 0) { problems.push(`${JSON.stringify(m)} is not a month`); continue }
+        if (!new RegExp(`\\b(${name}|${name.slice(0, 3)})\\b`, "i").test(quote)) problems.push(`${m} is not in the quote`);
+        else if (!monthIsAnIntake(quote, name)) problems.push(`the quote does not say the course starts in ${m} (a date, a deadline or a calendar is not an intake)`);
+      }
     }
   } else if (lane === "course_fees") {
     const amt = Number(a.amount);
     if (!Number.isFinite(amt) || amt <= 0) problems.push("amount is not a positive number");
+    else if (!numbersIn(quote).some((n) => Math.abs(n - amt) < 0.005)) problems.push("the amount is not in the quote");  // a whole number of the quote, never part of a larger one
+    const cur = String(a.currency || ""), period = String(a.period || "");
+    if (!/^[A-Z]{3}$/.test(cur)) problems.push("currency is not a three-letter code");
     else {
-      const digits = quote.replace(/[,\s]/g, ""), whole = String(Math.round(amt)), exact = String(amt);
-      if (!digits.includes(whole) && !digits.includes(exact)) problems.push("the amount is not in the quote");
+      // the currency is what the quote names; a quote with a bare "$" rests on the page, which must name that currency and no other
+      const inQuote = currenciesNamed(quote), onPageNamed = currenciesNamed(page);
+      if (inQuote.length) { if (!inQuote.includes(cur)) problems.push(`the quote names ${inQuote.join(", ")}, not ${cur}`) }
+      else if (!onPageNamed.includes(cur)) problems.push(`the page does not name the currency ${cur}`);
+      else if (onPageNamed.length > 1) problems.push(`the page names more than one currency (${onPageNamed.join(", ")}) and the quote names none`);
     }
-    if (!/^[A-Z]{3}$/.test(String(a.currency || ""))) problems.push("currency is not a three-letter code");
-    if (!["year", "total", "semester", "trimester", "credit_point", "unit"].includes(String(a.period || ""))) problems.push("period is not allowed");
+    if (!["year", "total", "semester", "trimester", "credit_point", "unit"].includes(period)) problems.push("period is not allowed");
+    else if (!PERIOD_WORDS[period].test(quote)) problems.push(`the quote does not say the fee is per ${period.replace("_", " ")}`);
+    if (a.year !== null && a.year !== undefined && a.year !== "") {
+      const y = Number(a.year);
+      if (!Number.isInteger(y) || y < 2000 || y > 2100) problems.push("year is not a four-digit year");
+      else if (!new RegExp(`(^|[^0-9])${y}([^0-9]|$)`).test(quote)) problems.push(`the fee year ${y} is not in the quote`);
+    }
     if (!/\bfees?\b|\btuition\b|\bcost\b|\$|\b(AUD|NZD|CAD|USD|GBP|EUR)\b/i.test(quote)) problems.push("the quote does not speak of a fee");
   } else if (lane === "aer_entry") {
     if (!/requirement|prerequisite|\bATAR\b|\bminimum\b|\bcompleted?\b|\bgpa\b|\bdegree\b|\bdiploma\b|\bsecondary\b|\bcertificate\b|\bequivalent\b|\bscore\b|\bgrade\b/i.test(quote)) problems.push("the quote does not state an entry requirement");

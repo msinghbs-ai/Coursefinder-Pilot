@@ -52,7 +52,7 @@ test('courses are claimed in matrix order, once per stored page, and the table a
 })
 
 test('the worker asks the route\'s one model through cascadeFetch, never holds its own key path, and writes to staging-boost/inbound', () => {
-  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.17"')  // v1.0.17 from s647
+  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.18"')  // v1.0.18 from s660
   // v1.0.11: the run waits for a dispatcher tick to finish (up to six looks, 5 s apart) instead of skipping
   expect(mode).toContain('let gate: any = null; for (let i = 0; i < 6; i++) { gate = await rpc("svc_boost_extract_gate", {}); if (gate?.ok || gate?.reason !== "a dispatcher tick is running") break; await new Promise((r) => setTimeout(r, 5000)) }')
   expect(mode).toContain('const route = await rpc("svc_boost_extract_route_v1", {});')

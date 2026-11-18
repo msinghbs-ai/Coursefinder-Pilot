@@ -89,6 +89,20 @@ const loadOf = (texts: string[], forInternational = false) => {
   return f && p ? "both" : f ? "full_time" : p ? "part_time" : null;
 };
 
+// v1.0.18 (18 Nov 2026, Platform Admin 17:02 item 1): what the reader's own rules find on a stored page, with no model call. Mode
+// boost_sentences returns it, so the sentences behind "the page states a study load for international students" can be read by a person
+// or a session before a cue is promoted into the prompt. Each sentence carries the load the page check would require for it.
+export const BOOST_INSPECT_MAX_PAGES = 60;       // fixed: diagnostic batch cap of one call
+const INSPECT_SENTENCES = 12, INSPECT_CHARS = 600; // fixed: diagnostic size caps (sentences a page, characters a sentence)
+export function boostSentenceInspection(page: string): { page_chars: number; study_word_hits: number; selector: string; international_sentences: { text: string; chars: number; load: string | null; offers: ReturnType<typeof offered> }[]; international_total: number; required_load: string | null } {
+  const text = String(page || ""), intl = internationalStudySentences(text);
+  return {
+    page_chars: text.length, study_word_hits: [...text.matchAll(STUDY_WORDS)].length, selector: studyLoadSections(text, BOOST_SECTION_DEFAULT).selector,
+    international_sentences: intl.slice(0, INSPECT_SENTENCES).map((x) => ({ text: x.slice(0, INSPECT_CHARS), chars: x.length, load: loadOf([x], true), offers: offered(x) })),
+    international_total: intl.length, required_load: intl.length ? loadOf(intl, true) : null,
+  };
+}
+
 const settingNumber = (ws: Record<string, unknown> | null | undefined, key: string, fallback: number) => {
   const n = Number((ws || {})[key]);
   return Number.isFinite(n) && n > 0 ? Math.floor(n) : fallback;
