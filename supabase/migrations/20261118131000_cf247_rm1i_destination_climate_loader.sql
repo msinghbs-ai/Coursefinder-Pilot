@@ -248,7 +248,7 @@ on conflict (jobname) do nothing;
 select cron.schedule('destination-climate-load', '30 18,19 * * *', 'select pipeline.svc_pilot_submit_nonce(''layer1-destination-geo-loader'', jsonb_build_object(''mode'', ''climate'', ''trigger'', ''schedule'')) where security.destination_climate_load_due_v1()');
 
 insert into pipeline.component_register(kind, name, layer, area, purpose, status, introduced_in)
-select v.kind, v.name, v.layer, 'Destination data', v.purpose, 'active', '20261118130000'
+select v.kind, v.name, v.layer, 'Destination data', v.purpose, 'active', '20261118131000'
   from (values
     ('job', 'destination-climate-load', 'L1 register', 'BOM climate averages for destination cities, monthly (RM1I)'),
     ('table', 'destination.climate_stations', 'Reference', 'The weather station and season months of each destination city (RM1I)'),
