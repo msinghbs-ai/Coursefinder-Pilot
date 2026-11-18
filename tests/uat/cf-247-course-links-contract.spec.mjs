@@ -86,20 +86,18 @@ test.describe('mocked browser', () => {
     await expect.poll(() => reads.some(b => b.p_operation === 'courses_page' && b.p_args?.applicant === 'domestic_only')).toBe(true)
   })
 
-  test('coverage: link refresh schedules and portals', async ({ page }) => {
+  test('coverage: link refresh schedules (the portal rows retired 18 Nov 2026)', async ({ page }) => {
     await mockAdmin(page)
     page.on('dialog', d => d.accept())
     await page.goto('/#coverage')
     const lr = page.locator('[data-link-refresh]')
     await expect(lr).toContainText('295 links re-confirmed')
-    await expect(lr.locator('[data-portal="nzqa"]')).toContainText('Regulator')
+    await expect(lr.locator('[data-portals]')).toHaveCount(0) // v2.16.42 (Platform Admin 18 Nov 2026 12:19): the portals that supply course links are retired from Coverage
     await lr.getByRole('button', { name: 'Add schedule' }).click()
     await lr.getByLabel('Country').selectOption('NZ')
     await lr.getByLabel('Every how many days').fill('14')
     await lr.getByRole('button', { name: 'Save' }).click()
     await expect.poll(() => page.l3calls.find(c => c.linkRefresh?.p_action === 'save_policy')?.linkRefresh?.p_args).toEqual({ country: 'NZ', link_type: 'official_course', every_days: '14' })
-    await lr.getByLabel('UAC course search (NSW, ACT) on').click()
-    await expect.poll(() => page.l3calls.find(c => c.linkRefresh?.p_action === 'portal')?.linkRefresh?.p_args).toEqual({ code: 'uac', active: true })
   })
 
   test('viewer: links shown, no editing', async ({ page }) => {

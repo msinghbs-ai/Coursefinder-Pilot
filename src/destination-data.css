@@ -22,3 +22,6 @@
 .dst .dst-bulk{display:grid;gap:6px;padding:10px 12px;margin:8px 0;border:1px solid var(--cf-border);border-radius:var(--cf-radius-md);background:var(--cf-slate-50)}
 .dst .dst-bulk-row{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:0}
 .dst .dst-bulk .sl-sub{margin:0}
+/* v2.16.42: climate icons beside a climate measure (src/lib/climate-icons.js) */
+.dst-climate{display:inline-flex;align-items:center;margin-right:6px;color:var(--cf-text-2);vertical-align:-2px}
+.dst-climate .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}

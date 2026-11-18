@@ -75,7 +75,7 @@ test('stalled fields: daily history, rules from settings, health check, actions,
   expect(s).toMatch(/-- Retires: /)
   expect(ui2).toContain("call('stalled',scope)")
   expect(ui2).toContain('data-stalled-fields')
-  expect(health).toContain("field_stalled:['#coverage?tab=attributes','Coverage › Attributes › Stalled fields']")
+  expect(health).toContain("field_stalled:['#layer-2-discovery?tab=enrich','Layer 2/3 › Enrich fields › Stalled fields']") // v2.16.42: Stalled fields left Coverage › Attributes
   expect(sops).toContain('10-minute field check, 1 of 4.')
   expect(sops).toContain("role: 'Pipeline Operator', do: '10-minute field check.")
   expect(guide).toContain('The 10-minute check (weekly)')

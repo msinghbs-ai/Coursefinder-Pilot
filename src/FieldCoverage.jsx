@@ -49,7 +49,7 @@ export default function FieldCoverage({rank=0,country='',provider=null,onError,p
     <GapQueue data={data} rank={rank} onSaved={setData} onReload={load} onError={onError}/>
   </div>
   return <div className="m-page-stack" data-field-coverage>
-    <StalledFields scope={scope} readOnly onChanged={load} onError={onError}/>
+    {/* v2.16.42 (Platform Admin 18 Nov 2026 12:19): the Stalled fields counters are retired here; Coverage › Courses › Coverage now links to act only where a field is below target. Enrich fields keeps the controls. */}
     <FieldMatrix data={data} rank={rank} busy={busy} onReload={load} onSaved={setData} onError={onError}/>
     <CrossCheck data={data} scope={scope} rank={rank} onDecided={load} onError={onError}/>
     <DeliveryWording onError={onError}/>
