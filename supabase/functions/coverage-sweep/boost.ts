@@ -9,8 +9,8 @@
 
 export const BOOST_STUDY_LOAD_PROMPT_ID = "boost-study-load";
 export const BOOST_STUDY_LOAD_PROMPT_VERSION = "boost-study-load-v5";  // v5 (18 Nov 2026, Platform Admin 14:29): a fee note (EFTSL, CSP, a fee calculated on a standard full-time load) is never the study load. v4: v2 (18 Nov 2026, Platform Admin decision 1): the study load for international students when the page states one; otherwise the course's general study load
-export const BOOST_SELECTOR = "study-load-windows-v4";  // v4 (18 Nov 2026 14:29): fee-note sentences are no longer sent. v3: v3 (18 Nov 2026): sentences about international students and visas are sent again: they are the preferred basis (decision 1)
-export const BOOST_SELECTOR_INTERNATIONAL = "study-load-international-v1";  // only the sentences that state a study load for international students
+export const BOOST_SELECTOR = "study-load-windows-v5";  // v5 (18 Nov 2026 22:00, s661): the international cue needs its words close together and never reads a course closed to international students as a load rule. v4 (18 Nov 2026 14:29): fee-note sentences are no longer sent. v3: v3 (18 Nov 2026): sentences about international students and visas are sent again: they are the preferred basis (decision 1)
+export const BOOST_SELECTOR_INTERNATIONAL = "study-load-international-v2";  // only the sentences that state a study load for international students (v2, s661: close together, never a closure). v1: any sentence holding the three signals
 export const BOOST_ANSWER_KEY = "reading.answer_tokens.boost_extract";
 export const BOOST_ANSWER_DEFAULT = 300;   // used only when the setting cannot be read
 export const BOOST_SECTION_KEY = "reading.boost_extract_section_chars";
@@ -61,8 +61,37 @@ export const FEE_NOTE = /\bEFTSL\b|\bequivalent full[\s-]?time student load\b|\b
 export const isFeeNote = (sentence: string) => FEE_NOTE.test(String(sentence || ""));
 const FULL = /full[\s-]?time/i, PART = /part[\s-]?time/i;
 const sentencesOf = (text: string) => String(text || "").split(/(?<=[.!?])\s+|\n+/).map((x) => x.trim()).filter(Boolean);
+//  - v1.0.20 (18 Nov 2026 22:00, Platform Admin S2-Courses directive, s661; from the 41 pages settled "Not stated" that the page check had matched, 35 of
+//    them false): the cue is no longer "the three signals anywhere in a block" (stored page text often has no punctuation, so a block runs to
+//    600 characters or more: an IELTS admission procedure, a navigation panel, a list of other courses). (1) An international word and a study
+//    word must lie within INTL_NEAR characters of each other, or the line is labelled ("International students: ... full-time"). (2) A sentence
+//    that only says the course is not available to international students is a closure, not a study load: it is never one, and a load named in
+//    it is never turned into the opposite load ("This program is offered part-time online and is not available to international students on a
+//    student visa" gave full-time). The opposite load is inferred only when the ruled-out load is itself the subject ("Part-time study is not
+//    available for international students").
+const INTL_NEAR = 80;  // fixed: width of the reading rule set by the Platform Admin (18 Nov 2026), characters between an international word and a study word; not an operational limit
+const INTL_WORD_ALL = new RegExp(INTL_WORDS.source, "gi"), STUDY_WORD_ALL = new RegExp(STUDY_WORDS.source, "gi");
+const INTL_LABEL = /^\s*(?:for\s+)?international(?:\s+(?:onshore|offshore|students?|student visa holders?))*\s*[:\-–|]/i;
+const NOT_FOR_INTL = /\b(?:not|no longer)\s+(?:be\s+)?(?:available|offered|open|accepted|permitted|possible|eligible)\s+(?:to|for)\s+(?:[\w-]+\s+){0,2}(?:international|overseas|non[\s-]?resident|student visa|visa)|\bunavailable\s+(?:to|for)\s+(?:[\w-]+\s+){0,2}(?:international|overseas|student visa)|\bclosed\s+to\s+(?:[\w-]+\s+){0,2}international/gi;
+const LOAD_LINK_BREAK = /[.;:]|\b(and|but|or|offered|delivered|taught|online|campus)\b/i;
+const LOAD_COPULA = /\b(is|are|be|will be)\b/i;
+const LOAD_SUBJECT_GAP = 40;  // fixed: width of the reading rule, characters between a study word and the "not available" that rules it out
+// the sentence has an international word and a study word within INTL_NEAR characters (or is a labelled "International ..." line holding one)
+export function internationalNear(sentence: string): boolean {
+  const s = String(sentence || ""), w = [...s.matchAll(INTL_WORD_ALL)].map((m) => [m.index || 0, (m.index || 0) + m[0].length]), l = [...s.matchAll(STUDY_WORD_ALL)].map((m) => [m.index || 0, (m.index || 0) + m[0].length]);
+  if (INTL_LABEL.test(s) && l.length) return true;
+  return w.some(([a, b]) => l.some(([c, d]) => (c >= b ? c - b : a >= d ? a - d : 0) <= INTL_NEAR));
+}
+// the sentence says the course is not available to international students, and no study word is the subject of that "not available"
+export function internationalClosure(sentence: string): boolean {
+  const s = String(sentence || ""), ms = [...s.matchAll(NOT_FOR_INTL)];
+  if (!ms.length) return false;
+  const loads = [...s.matchAll(STUDY_WORD_ALL)].map((m) => ({ at: m.index || 0, end: (m.index || 0) + m[0].length }));
+  // a study word is the subject only when a verb of being joins it to the "not available" ("Part-time study is not available ..."); a bare label before it ("Bachelor of Education Full-time Not available to international students") is a list of other courses
+  return ms.every((m) => !loads.some((h) => { const gap = s.slice(h.end, m.index || 0); return h.end <= (m.index || 0) && gap.length <= LOAD_SUBJECT_GAP && !LOAD_LINK_BREAK.test(gap) && LOAD_COPULA.test(gap) }));
+}
 // the sentences of the page that state a study load for international students
-export const internationalStudySentences = (page: string) => sentencesOf(page).filter((x) => INTL_WORDS.test(x) && (FULL.test(x) || PART.test(x)) && INTL_RULE.test(x) && !NOT_A_LOAD_RULE.test(x) && !DEFINITION_WORDS.test(x) && !isFeeNote(x));
+export const internationalStudySentences = (page: string) => sentencesOf(page).filter((x) => INTL_WORDS.test(x) && (FULL.test(x) || PART.test(x)) && internationalNear(x) && !internationalClosure(x) && INTL_RULE.test(x) && !NOT_A_LOAD_RULE.test(x) && !DEFINITION_WORDS.test(x) && !isFeeNote(x));
 // Which loads a sentence offers. A load named only to say it is not offered, or offered only to others ("part-time study (only available
 // for non-visa students)", "Part-time equivalent study options are not available for international students"), does not count. When a
 // sentence about international students only rules a load out, it states the other one.
@@ -76,7 +105,8 @@ function offered(sentence: string): { full: boolean; part: boolean; ruledOut: { 
   for (const n of sentence.matchAll(NEG_PHRASE)) {
     const nEnd = (n.index || 0) + n[0].length;
     if (hits.some((h) => h.at >= nEnd && h.at - nEnd <= 12)) continue;  // "not available part-time": it rules out the load that follows
-    const before = hits.filter((h) => h.end <= (n.index || 0) && !/[.;:]/.test(sentence.slice(h.end, n.index || 0)) && (n.index || 0) - h.end <= 70);
+    // s661: "offered part-time online and is not available to international students" does not rule part-time out (the program is closed); the load ruled out is the subject of the "not available"
+    const before = hits.filter((h) => h.end <= (n.index || 0) && !LOAD_LINK_BREAK.test(sentence.slice(h.end, n.index || 0)) && (n.index || 0) - h.end <= LOAD_SUBJECT_GAP);
     if (before.length) before[before.length - 1].neg = true;
   }
   for (const h of hits) { if (h.neg) out.ruledOut[h.w] = true; else out[h.w] = true }

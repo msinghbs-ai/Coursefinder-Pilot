@@ -102,7 +102,7 @@ test('the replay mode reads as the live mode reads and writes nothing', () => {
 test('the replay script builds its gold set from the catalogue, only reads tables, and never qualifies', () => {
   const S = fs.readFileSync('scripts/boost-fields-replay.mjs', 'utf8'), W = fs.readFileSync('.github/workflows/boost-fields-replay.yml', 'utf8')
   expect(S).toContain("i.status = 'active' and i.start_date is not null")
-  expect(S).toContain("f.fee_type = 'provider_current_tuition' and f.basis = 'annual' and f.status = 'active'")
+  expect(S).toContain("f.status = 'active'")  // the fee basis of the gold query is guarded by s665
   expect(S).toContain("e.evidence_type = 'provider_course_page_text'")
   expect(S).toContain("await worker(`jsonb_build_object('mode', 'boost_fields_replay', 'items', jsonb_build_array(")
   expect((S.match(/await worker\(/g) || []).length).toBe(1)
