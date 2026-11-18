@@ -28,7 +28,7 @@
 -- 1. ABS and BOM due now
 update pipeline.layer1_source_operations o
    set next_verification_at = now(), updated_at = now(),
-       change_reason = 'Due 19 Nov 2026 (20261119083200, s714): first run through the standard Layer 1 scheduler; editions loaded before registration'
+       change_reason = 'Due 19 Nov 2026 (20261119085100, s714): first run through the standard Layer 1 scheduler; editions loaded before registration'
   from pipeline.sources s
  where s.id = o.source_id and s.metadata->>'source_system' = 'DESTINATION'
    and s.label in ('ABS Regional Population', 'BOM Climate Statistics (IDCJCM0037)') and o.active and not o.paused and o.last_verified_at is null;
@@ -79,7 +79,7 @@ select 'layer1', 'source_pause', s.id::text, jsonb_build_object('label', s.label
 -- 4. LIN 19/198 due now (registered in 20261119083100; loader v1.5.0 deployed with it)
 update pipeline.layer1_source_operations o
    set next_verification_at = now(), updated_at = now(),
-       change_reason = 'Due 19 Nov 2026 (20261119083200, s714): first read through the standard Layer 1 scheduler'
+       change_reason = 'Due 19 Nov 2026 (20261119085100, s714): first read through the standard Layer 1 scheduler'
   from pipeline.sources s
  where s.id = o.source_id and s.label = 'LIN 19/198 Evidence of Financial Capacity (Subclass 500 and 590)' and o.last_verified_at is null;
 
