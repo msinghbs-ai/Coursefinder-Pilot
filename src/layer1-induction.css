@@ -35,3 +35,10 @@
 .l1i .l1i-link{justify-self:start;border:0;background:none;padding:0;color:var(--cf-indigo-600);font-weight:700;cursor:pointer}
 .l1i .l1i-scheme-register{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;border:1px solid var(--cf-border);border-radius:var(--cf-radius-md);padding:10px 12px}
 .l1i .l1i-scheme-register .wide{grid-column:1/-1}
+/* v2.16.37 What this source will create (src/Layer1BaselinePreview.jsx) */
+.l1i-baseline{grid-column:1/-1;border:1px solid var(--cf-slate-175);border-left-width:1px;border-radius:var(--cf-radius-md);padding:10px 14px;background:var(--cf-slate-50)}
+.l1i-baseline h4{margin:0 0 6px;font-size:var(--cf-fs-sm)}
+.l1i-baseline ul{margin:0 0 6px;padding-left:18px;display:grid;gap:2px;font-size:var(--cf-fs-xs)}
+.l1i-baseline p{margin:4px 0 0;font-size:var(--cf-fs-xs);color:var(--cf-slate-600)}
+.l1i-baseline code{margin-right:6px}
+.l1i-baseline-rule{color:var(--cf-slate-500)}

@@ -1,19 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.37'
-export const PACKAGE_VERSION='0.1.459'
+export const UI_VERSION='2.16.38'
+export const PACKAGE_VERSION='0.1.460'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'18 Nov 2026',
-  title:'Hotfix: Links & Email Templates opens again',
+  title:'Layer 1 wizard: what this source will create',
   changes:[
-    'A render guard now opens Users & roles › Links & Email Templates and the four-step Create user flow in every build, so this kind of error cannot ship again.'
+    'Layer 1 › Register › + Add source, step 1: once you choose the target record type, a panel says what the source will create for that country (courses, campuses, accreditations, grade scales or staged figures), the rule each follows, and which API v3 fields its mapping fills. It saves nothing.'
   ],
-  bugFixes:[
-    'Users & roles › Links & Email Templates no longer fails with "Workspace render failed" (ref ZDUFMC) once its settings load. Nothing else changes on the screen.'
-  ]
+  bugFixes:[]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

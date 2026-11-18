@@ -1,7 +1,7 @@
-<!-- sop-export: id=admin-sop; version=2.62; reviewed-release=2.16.37; source-commit=713ee5e06391+local; content-sha256=1d693393595d4ba57b3a6b4e015789fd41ff60f857a1fa4d43831215b9cd6cb1 -->
+<!-- sop-export: id=admin-sop; version=2.63; reviewed-release=2.16.38; source-commit=2d3d28f14503+local; content-sha256=79b9c55a88d869f754a57dfda14c2add911419e8729264144f841b6d555f51e1 -->
 # StudySearch – Platform Admin SOP
 
-**Version:** 2.62 (reviewed for platform release v2.16.37)  
+**Version:** 2.63 (reviewed for platform release v2.16.38)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -139,6 +139,7 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.63 | 18 Nov 2026 | v2.16.38 | Layer 1 › Register › + Add source, step 1: after you choose the target record type, What this source will create lists the baseline records the first apply run makes for the country, the rule each follows (only where none is held; staged for review where a person must approve) and the API v3 fields it fills. Check it before you activate. |
 | 2.62 | 18 Nov 2026 | v2.16.36 | Onboarding a new country: Layer 1 › Register › + Add source, step 1, + Register a scheme adds the country's registration scheme as planned (with a reason); no database change is needed. Subdivisions are loaded as data (public.admin_subdivisions_register_v1). |
 | 2.61 | 18 Nov 2026 | v2.16.35 | Dashboard › Waiting for your approval: start the day here (an edition ready to publish, Layer 1 drafts, the email route). Users & roles › Create user is a guided flow with the role's permissions shown. Links & Email Templates: the body is formatted text; Save Provider Settings, Send Test Email, Save Template. |
 | 2.60 | 18 Nov 2026 | v2.16.34 | Layer 1 › Register: Needs attention lists real failures only. Overdue next ingestion dates are moved on every hour by the dispatcher; four Canadian college code readers replaced by coverage-sweep are retired (kept, paused). The ten Ontario college readers that fail have no other course source: decide whether to repair or replace them. |
