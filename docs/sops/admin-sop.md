@@ -1,7 +1,7 @@
-<!-- sop-export: id=admin-sop; version=2.64; reviewed-release=2.16.39; source-commit=db503fa2617d+local; content-sha256=3000efb422a4389357a7dcfef80b859c8c19e2714dfd65b1e29a367c8f752dff -->
+<!-- sop-export: id=admin-sop; version=2.65; reviewed-release=2.16.40; source-commit=9c960d55e7ed+local; content-sha256=f248c076318ed17893bd8c1ed9009bd7f76c81092ea8aa67a9ce8ca94da00417 -->
 # StudySearch – Platform Admin SOP
 
-**Version:** 2.64 (reviewed for platform release v2.16.39)  
+**Version:** 2.65 (reviewed for platform release v2.16.40)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -139,6 +139,7 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.65 | 18 Nov 2026 | v2.16.40 | Layer 4 › Inbox › Grid › Grouped decisions: decide a whole group of entry requirement items held only for a shared stored page (per university and page), or of refused study loads with the same quote, with one choice and one reason and the typed confirmation. Open one item of each group in the drawer first; audit samples and identity or page problems stay one at a time. |
 | 2.64 | 18 Nov 2026 | v2.16.39 | Platform health › Health checks: read the four new checks (Dispatchers, Boost, Layer 4 backlog, Guardrails G1 and G3) each morning; a queue that reads Paused names the person's recorded reason and needs no action until that pause is lifted on Automations. Evidence › Audit trail lists dispatcher runs, Boost qualifications and Layer 4 decisions. Storage & retention › Staging tables shows what the nightly staging retention would remove before you switch it on. |
 | 2.63 | 18 Nov 2026 | v2.16.38 | Layer 1 › Register › + Add source, step 1: after you choose the target record type, What this source will create lists the baseline records the first apply run makes for the country, the rule each follows (only where none is held; staged for review where a person must approve) and the API v3 fields it fills. Check it before you activate. |
 | 2.62 | 18 Nov 2026 | v2.16.36 | Onboarding a new country: Layer 1 › Register › + Add source, step 1, + Register a scheme adds the country's registration scheme as planned (with a reason); no database change is needed. Subdivisions are loaded as data (public.admin_subdivisions_register_v1). |
