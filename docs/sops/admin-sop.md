@@ -1,7 +1,7 @@
-<!-- sop-export: id=admin-sop; version=2.60; reviewed-release=2.16.34; source-commit=0209e2106341+local; content-sha256=cceec7866460c398731b9510cdd7353f92e440dda5723bd395b6cb5f68554039 -->
+<!-- sop-export: id=admin-sop; version=2.61; reviewed-release=2.16.35; source-commit=dfefa296a50f+local; content-sha256=8822a734033ea8537ca6d22422d25a1fe75f4353f8bb5f33e5ed162a112ccb4f -->
 # StudySearch – Platform Admin SOP
 
-**Version:** 2.60 (reviewed for platform release v2.16.34)  
+**Version:** 2.61 (reviewed for platform release v2.16.35)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -139,6 +139,7 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.61 | 18 Nov 2026 | v2.16.35 | Dashboard › Waiting for your approval: start the day here (an edition ready to publish, Layer 1 drafts, the email route). Users & roles › Create user is a guided flow with the role's permissions shown. Links & Email Templates: the body is formatted text; Save Provider Settings, Send Test Email, Save Template. |
 | 2.60 | 18 Nov 2026 | v2.16.34 | Layer 1 › Register: Needs attention lists real failures only. Overdue next ingestion dates are moved on every hour by the dispatcher; four Canadian college code readers replaced by coverage-sweep are retired (kept, paused). The ten Ontario college readers that fail have no other course source: decide whether to repair or replace them. |
 | 2.59 | 18 Nov 2026 | v2.16.33 | Layer 4 › Inbox › Grid: the shared views (AER Audit Samples, Official URLs, Provider Blockers) are changed by a Platform Admin only (Update shared view, logged); a view only chooses what is shown and never changes the AER audit sample or the course-address rules. The CSV export holds up to Layer 4 grid: rows a CSV export holds (Settings › Pipeline settings). |
 | 2.58 | 18 Nov 2026 | v2.16.32 | Destination data › City metrics & costs: Bulk Approve Drafts approves every clean draft figure of an edition with one reason (Platform Admin), as on Localities & postcodes. |

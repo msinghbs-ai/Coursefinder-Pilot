@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.457 — 18 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.35** (Platform Admin 18 Nov 2026 10:31 and 10:33, S1-RM-Design lane, UI/UX modernisation). No migration. Role-centric Dashboard (role line, Search the catalogue for ranks 1-2, Waiting for you without operator rows for Curators, Waiting for your approval for Platform Admins) with Continue where you left off (`src/lib/recent-activity.js`, this browser only); Guides › Role guides from `src/guide/roleGuides.js` (pages from the menu), generated to `docs/role-guides/` by `scripts/export-role-guides.mjs`; guided Create user (`src/CreateUserWizard.jsx`); formatted email body editor in a script-free frame (`src/RichEmailEditor.jsx`), delivery route at the top of Links & Email Templates and buttons renamed by scope. Guard s625; s573 updated.
+
 ## 0.1.456 — 18 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.34** (Platform Admin 18 Nov 2026 10:51, Layer 1 Register issues on v2.16.32). Migration 20261118125000: `security.layer1_next_due_roll_v1` as live `rollup-scheduler` target `layer1-next-due-roll` (overdue next ingestion dates moved on by whole cadences; run once); four Canadian college code readers superseded by coverage-sweep retired (Aurora, College of the North Atlantic, Confederation, Loyalist; checked live), their dedicated edge functions marked retiring; QS 2026 and 2027 verification recorded from the applied publisher files. Layer 1 register headings no longer stick over the filter bar. Guards: `s624`.

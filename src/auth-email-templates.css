@@ -25,3 +25,22 @@
 .aet .aet-events li{display:flex;gap:12px;flex-wrap:wrap;font-size:var(--cf-fs-sm)}
 .aet .aet-banner{padding:12px 14px;border:1px solid var(--cf-border);border-left:4px solid var(--cf-warning);border-radius:var(--cf-radius-md);background:var(--cf-warning-soft);color:var(--cf-warning-ink);display:grid;gap:8px}
 .aet .aet-banner p{margin:0}
+/* v2.16.35 delivery route at the top of the tab; rich body editor (src/RichEmailEditor.jsx) */
+.aet-route{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px 16px;padding:12px 14px;border:1px solid var(--cf-slate-175);border-radius:var(--cf-radius-md);background:var(--cf-slate-50)}
+.aet-route.is-resend{background:var(--cf-green-75)}
+.aet-route>div{display:grid;gap:4px;align-content:start}
+.aet-route-label{font-size:var(--cf-fs-3xs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--cf-slate-500)}
+.aet-body-label{display:grid;gap:2px}.aet-body-label span{font-weight:600}.aet-body-label small{color:var(--cf-slate-500)}
+.rte{border:1px solid var(--cf-slate-175);border-radius:var(--cf-radius-md);overflow:hidden;background:var(--cf-white)}
+.rte-bar{display:flex;flex-wrap:wrap;align-items:center;gap:2px;padding:6px;border-bottom:1px solid var(--cf-slate-150);background:var(--cf-slate-50)}
+.rte-btn{display:inline-flex;align-items:center;gap:6px;min-width:34px;min-height:34px;justify-content:center;border:1px solid transparent;border-radius:var(--cf-radius-sm);background:transparent;color:var(--cf-slate-600);cursor:pointer;font:inherit;font-size:var(--cf-fs-xs);font-weight:600}
+.rte-btn:hover:not(:disabled),.rte-btn:focus-visible{border-color:var(--cf-slate-175);background:var(--cf-white)}
+.rte-btn:disabled{opacity:.4;cursor:default}
+.rte-btn.is-on{border-color:var(--cf-violet-600);color:var(--cf-violet-700)}
+.rte-html{padding:0 10px}
+.rte-sep{width:1px;height:20px;background:var(--cf-slate-175);margin:0 4px}
+.rte-grow{flex:1}
+.rte-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 8px;border-bottom:1px solid var(--cf-slate-150)}
+.rte-link{display:flex;flex-wrap:wrap;gap:8px;align-items:end;padding:8px;border-bottom:1px solid var(--cf-slate-150);background:var(--cf-violet-50)}
+.rte-link label{display:grid;gap:2px;font-size:var(--cf-fs-xs)}
+.rte-frame{display:block;width:100%;min-height:360px;border:0;background:var(--cf-white)}
