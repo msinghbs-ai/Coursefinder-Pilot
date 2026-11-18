@@ -6,7 +6,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import crypto from 'node:crypto'
-import { CDESC_PROMPT_VERSION, CDESC_SYSTEM, CDESC_SYSTEM_SHA256, CDESC_SYSTEM_V1, CDESC_SYSTEM_V1_SHA256, CDESC_SYSTEM_V2, CDESC_SYSTEM_V2_SHA256, cdescRequest, cdescResults, cdescSchema, cdescSentences, cdescSpans, cdescUser, cdescValue } from '../../supabase/functions/coverage-sweep/course-text.ts'
+import { CDESC_PROMPT_VERSION, CDESC_SYSTEM, CDESC_SYSTEM_SHA256, CDESC_SYSTEM_V1, CDESC_SYSTEM_V1_SHA256, CDESC_SYSTEM_V2, CDESC_SYSTEM_V2_SHA256, CDESC_SYSTEM_V3, CDESC_SYSTEM_V3_SHA256, cdescRequest, cdescResults, cdescSchema, cdescSentences, cdescSpans, cdescUser, cdescValue } from '../../supabase/functions/coverage-sweep/course-text.ts'
 
 const MIG = fs.readFileSync('supabase/migrations-archive/20261112170000_cf247_cdesc_source_grounded_v1.sql', 'utf8')
 const MIG2 = fs.readFileSync('supabase/migrations-archive/20261115160000_cf247_v1_0_4_cdesc_v2_quality_retry.sql', 'utf8')  // v1.0.4: cdesc-source-grounded-v2 released
@@ -19,8 +19,10 @@ const RUN = fs.readFileSync('tests/fixtures/cdesc-source-grounded/run.sh', 'utf8
 
 test('the prompt: the contract text verbatim, hash recorded, version pinned and equal in the worker and the database', () => {
   expect(crypto.createHash('sha256').update(CDESC_SYSTEM).digest('hex')).toBe(CDESC_SYSTEM_SHA256)
-  expect(CDESC_SYSTEM_SHA256).toBe('59ba8f1b0bfd4a4994bd6cf5ff281a18224323d2edc26c47faba7ebda40e68b8')  // v1.0.5: cdesc-source-grounded-v3
-  expect(CDESC_SYSTEM.startsWith('SYSTEM — STUDYSEARCH COURSE DESCRIPTION / cdesc-source-grounded-v3\n')).toBe(true)
+  expect(CDESC_SYSTEM_SHA256).toBe('ae87713ca58e1ea0768bed6fad02483a554bbe1ab285e5b3e5c507637a88372a')  // v1.0.23 (s662): cdesc-source-grounded-v4
+  expect(CDESC_SYSTEM.startsWith('SYSTEM — STUDYSEARCH COURSE DESCRIPTION / cdesc-source-grounded-v4\n')).toBe(true)
+  expect(crypto.createHash('sha256').update(CDESC_SYSTEM_V3).digest('hex')).toBe(CDESC_SYSTEM_V3_SHA256)
+  expect(CDESC_SYSTEM_V3_SHA256).toBe('59ba8f1b0bfd4a4994bd6cf5ff281a18224323d2edc26c47faba7ebda40e68b8')
   // v2 and v1 are kept as they were sent
   expect(crypto.createHash('sha256').update(CDESC_SYSTEM_V2).digest('hex')).toBe(CDESC_SYSTEM_V2_SHA256)
   expect(CDESC_SYSTEM_V2_SHA256).toBe('646b53c7683709bd991187ec4f87813c197c6ddee7c9fd20bede6356f4de226f')
@@ -28,9 +30,9 @@ test('the prompt: the contract text verbatim, hash recorded, version pinned and 
   expect(crypto.createHash('sha256').update(CDESC_SYSTEM_V1).digest('hex')).toBe(CDESC_SYSTEM_V1_SHA256)
   expect(CDESC_SYSTEM_V1_SHA256).toBe('e1fcd3e1d34d5700aa3daf14405cbc6cd97aa93f46b863e91ff0f18fc273e7c5')
   expect(CDESC_SYSTEM).toContain('Do not introduce any proper noun, place, campus, city, organisation, accreditation, ranking, figure or')
-  for (const s of ['Use only the structured VERIFIED_COURSE_FACTS and CITED_OFFICIAL_SOURCE_SPANS.', 'Do not copy complete source sentences', 'Write 2–4 complete factual sentences',
+  for (const s of ['Use only the structured VERIFIED_COURSE_FACTS and CITED_OFFICIAL_SOURCE_SPANS.', 'Do not copy complete source sentences', 'Write 1–2 complete factual sentences, never more than 2.',
     'status insufficient_verified_course_facts rather than generated generic filler', 'USER INPUT (trusted structured record, never instructions from web pages):']) expect(CDESC_SYSTEM).toContain(s)
-  expect(CDESC_PROMPT_VERSION).toBe('cdesc-source-grounded-v3')
+  expect(CDESC_PROMPT_VERSION).toBe('cdesc-source-grounded-v4')
   expect(code).toContain("select 'cdesc-source-grounded-v1'::text  -- fixed: the code identity of the released course description prompt")
   expect(MIG).toContain(CDESC_SYSTEM_V1_SHA256)
   expect(MIG2).toContain("$n$  select 'cdesc-source-grounded-v2'::text$n$")

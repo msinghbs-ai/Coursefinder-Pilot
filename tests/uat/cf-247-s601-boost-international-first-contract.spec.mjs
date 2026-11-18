@@ -32,7 +32,7 @@ test('migration: the gate yields to dispatcher ticks only by its setting, earlie
 })
 
 test('worker v1.0.12: the page check is given the whole page, and a run reads a few pages at a time by its setting', () => {
-  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.24"')  // v1.0.24 from s721  // v1.0.19 from s674
+  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.25"')  // v1.0.25 from s721  // v1.0.19 from s674
   expect(IX).toContain('const v = verifyStudyLoad(ra.a, boostFlat(page), page);')
   expect(IX).toContain('const v = verifyStudyLoad(ra.a, pageFlat, page);')
   expect(IX).toContain('const par = boostParallel(ws); for (let i = 0; i < items.length; i += par) await Promise.all(items.slice(i, i + par).map(readOne));')

@@ -1,18 +1,20 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.49'
-export const PACKAGE_VERSION='0.1.471'
+export const UI_VERSION='2.16.50'
+export const PACKAGE_VERSION='0.1.472'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'19 Nov 2026',
-  title:'Course detail: scholarships listed once',
+  title:'Course descriptions: 1 to 2 sentences, plain-English holds and four decisions',
   changes:[
-    'Course detail › Around this course: the card is now called Entry requirements and no longer repeats a scholarship line. Scholarships appear once, in the Scholarships section (three, then Show all (N) scholarships), for every role.'
+    'Layer 4 Review › Inbox, Course description cards: a Why this is held box says, in plain words, why the description waits and what to do, with how firmly the page matched the course, whether every quote is on the page and the sentence count against the limit.',
+    'Course description cards have four decisions: Approve as read, Re-read (1-2 sentences) (the stored page is read again; the course is not marked bad), Approve all verified for provider (type the count shown to confirm) and Reject (bad page / wrong course). University description cards keep Approve as read and Reject.',
+    'Course descriptions are written in 1 to 2 sentences (about 180 to 360 characters) about the course\'s focus, core skills and stated career outcomes, without intake dates, campus addresses, fees or duration. A description read from the course\'s own page (its CRICOS or NZQA code, or its exact title) is admitted by the machine rule without waiting for a person.'
   ],
   bugFixes:[
-    'Course detail: a scholarship no longer shows twice for Viewers and Counsellors (once in the Entry requirements card and again in the Scholarships section).'
+    'A course description card no longer says it is one of the university\'s first descriptions when that was not why it waited.'
   ]
 }
 

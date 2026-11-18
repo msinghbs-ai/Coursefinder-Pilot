@@ -9,6 +9,8 @@ import{hrefFor}from'./nav-map'
 import{Button,Empty,Loading}from'./ui-kit'
 import{fmtNumber}from'./lib/format.js'
 import{plainError}from'./lib/errors'
+import{CD_HOLD,cdHoldKey,cdChoices}from'./lib/cdesc-hold.js'
+export{cdChoices}
 
 export const cdQueue=async(action,args)=>{const{data,error}=await supabase.rpc('admin_course_description_queue',{p_action:action,p_args:args||{}});if(error)throw new Error(error.message);return data||{}}
 
@@ -124,3 +126,24 @@ export function CourseDescriptionsView(){
   </div>
 }
 
+
+// ---- s664 (CF-247 S1-Courses, Platform Admin 18 Nov 2026): "Why this is held & recommended action" on a Layer 4 course description card ----------
+// Every hold reason of the machine rule cdesc-machine-v2 in plain English, with what to do. The raw rule code is never shown; the facts behind it are
+// (how the page was matched and how firmly, whether every quote is on the page, the sentence count against the limit).
+const BASIS={cricos_code:'the course\'s own CRICOS code on the page',nzqa_code:'the course\'s own NZQA code on the page',exact_title:'the exact course title',degree_name:'the degree name only',title_level:'the title and level',field_award:'the field and award',adapter_title:'the adapter\'s title'}
+const FOUND={ai_match:'an AI match',cricos_code_on_page:'its CRICOS code on the page'}
+export function CdWhy({d}){
+  const m=d?.machine||null,b=d?.binding||null,lim=d?.limits||{},key=cdHoldKey(m?.reason_code,d),h=CD_HOLD[key]||CD_HOLD.other
+  const n=Array.isArray(d?.proposed?.sentences)?d.proposed.sentences.length:null,max=Number(lim.max_sentences)||2
+  const score=b&&b.score!=null?Number(b.score):null,ru=b&&b.runner_up!=null?Number(b.runner_up):null
+  const quoteOk=key!=='quote_mismatch'
+  return <div className="l4i-cd-why" role="note" data-l4-cd-why={key}>
+    <p><strong>Why this is held: {h.title}.</strong> {h.why}</p>
+    <ul className="l4i-plain">
+      <li data-l4-cd-why-match>Page match: {b?<>found by {FOUND[b.basis]||String(b.basis||'no recorded method').replace(/_/g,' ')}{score!=null?`, score ${score.toFixed(2)}`:''}{ru!=null?` against ${ru.toFixed(2)} for the next page`:''}; proved by {BASIS[b.identity_basis]||'no recorded proof'}.</>:'no bound page recorded.'}</li>
+      <li data-l4-cd-why-quotes>Quote check: {quoteOk?'every sentence is on the stored page in the words it quotes.':'at least one sentence is not supported by its quote.'}</li>
+      {n!=null&&<li data-l4-cd-why-count>Sentence count: {n} of at most {max}{n>max?' (over the limit)':''}.</li>}
+    </ul>
+    <p><strong>Recommended action:</strong> {h.action}</p>
+  </div>
+}
