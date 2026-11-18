@@ -18,7 +18,7 @@ const FEE3 = 'Commonwealth supported places are available for domestic students 
 
 test('the prompt and the versions name the fee-note rule', () => {
   expect(B.BOOST_STUDY_LOAD_PROMPT_VERSION).toBe('boost-study-load-v5')
-  expect(B.BOOST_SELECTOR).toBe('study-load-windows-v5')  // v5 from worker v1.0.20 (s661)
+  expect(B.BOOST_SELECTOR).toBe('study-load-windows-v6')  // v6 from s721  // v5 from worker v1.0.20 (s661)
   expect(B.BOOST_STUDY_LOAD_SYSTEM).toContain('A fee note never states the course\'s study load')
   expect(B.BOOST_STUDY_LOAD_SYSTEM).toContain('(1.0 EFTSL)')
   for (const x of [FEE1, FEE2, FEE3]) expect(B.isFeeNote(x), x).toBe(true)
@@ -50,7 +50,7 @@ test('a fee note is refused as a quote; a real statement next to it still passes
 
 test('the worker skips fee-note-only pages without a model call', () => {
   const IX = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.22"')  // v1.0.19 from s674
+  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.24"')  // v1.0.24 from s721  // v1.0.19 from s674
   expect(IX).toContain('if (!sec.hits || !sec.text) {  // v1.0.17: a page whose study words are all in fee notes sends nothing, as a page with none')
 })
 
