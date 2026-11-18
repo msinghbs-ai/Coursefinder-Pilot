@@ -54,7 +54,7 @@ test.describe('mocked browser', () => {
     await expect(share).toBeVisible()
   })
 
-  test('a Counsellor gets no switcher, a student-facing drawer and the read-gap note', async ({ page }) => {
+  test('a Counsellor gets no switcher, a student-facing drawer and the live figures (v2.16.47, s712)', async ({ page }) => {
     await mockAdmin(page, { rank: 2 })
     await routeCorrelated(page)
     await page.goto('/#courses?id=0b1fb6d4-c02f-47c7-98d0-9f0d57240fd5')
@@ -62,7 +62,19 @@ test.describe('mocked browser', () => {
     await expect(drawer.locator('[data-correlated="course"]')).toBeVisible()
     await expect(drawer).toHaveAttribute('data-view-audience', 'student')
     await expect(drawer.locator('[data-preview-as]')).toHaveCount(0)
-    await expect(drawer.locator('[data-cb-read-gap]').first()).toBeVisible()
+    await expect(drawer.locator('[data-cb-read-gap]')).toHaveCount(0)
+    await expect(drawer.locator('[data-cb-fact="summer"]').first()).toBeVisible()
+    await expect(drawer.locator('[data-cb-attribution]').first()).toBeVisible()
     await expect(drawer.locator('[data-vis="raw_quote"]').first()).toBeHidden()
+  })
+
+  test('a failed figure read shows one plain note, not an empty card (v2.16.47)', async ({ page }) => {
+    await mockAdmin(page, { rank: 2 })
+    await routeCorrelated(page)
+    await page.route('https://example.supabase.co/rest/v1/rpc/admin_destination_review', r => r.fulfill({ status: 403, json: { code: '42501', message: 'Curator role or above required' } }))
+    await page.goto('/#courses?id=0b1fb6d4-c02f-47c7-98d0-9f0d57240fd5')
+    const drawer = page.locator('aside.m-drawer')
+    await expect(drawer.locator('[data-correlated="course"]')).toBeVisible()
+    await expect(drawer.locator('[data-cb-card="careers"] [data-cb-read-gap]')).toBeVisible()
   })
 })

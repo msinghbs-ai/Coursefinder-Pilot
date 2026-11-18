@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.469 — 19 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.47** (Platform Admin 19 Nov 2026 05:21, item 4: "so the Around this course and Around this provider blades render live values for all roles"). Server read from Pilot #1329 (migration `20261119045000`, spec s712); no migration here. `src/CorrelatedBlade.jsx`: the destination review reads run for every StudySearch role (rank 1 and up); the read-gap note shows only when a read fails; accreditations from `provider_detail` (status shown to Editors and up as internal). Specs s694 and s696 follow.
+
 ## 0.1.468 — 19 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.46** (Platform Admin 18 Nov 2026 23:51). No migration (zero schema in S1-RM-Design). `src/CourseDescriptionOnDemand.jsx`: the Description pipeline in a fold, closed by default. `src/ContextualInsights.jsx`: Related insights & funding in a fold, closed by default; no Scholarships & funding card on a course. `src/lib/field-visibility.js`: `description_pipeline` (`[data-cdod-block]`) and `task_triggers` (`[data-scholarship-actions]`, `[data-job-button]`) are internal. Spec s698; `cf-247-f-cdesc-06-on-demand` (desktop and phone), `s697` and the deployed `a12-contextual-insights` open the new folds.
