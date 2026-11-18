@@ -27,11 +27,16 @@ export const FIELD_VISIBILITY = [
   { field: 'dataset_edition', label: 'Dataset edition', audience: 'internal', selector: '[data-vis="dataset_edition"]' },
   { field: 'identifiers', label: 'Record id and stable key', audience: 'internal', selector: '[data-identifiers]' },
   { field: 'fill_actions', label: 'Fill, extract and re-read actions', audience: 'internal', selector: '[data-fill-fields-card], [data-vis="fill_actions"]' },
+  { field: 'archive_actions', label: 'Course status with Archive course and Restore course', audience: 'internal', selector: '.re-manage, [data-vis="archive_actions"]' },
+  { field: 'read_with_ai', label: 'Read with AI trigger bar', audience: 'internal', selector: '[data-course-read-ai]' },
+  { field: 'entry_pipeline', label: 'Read / refresh entry requirements now and the entry pipeline (sources, AI candidates, reviewer packet, Layer 4, links)', audience: 'internal', selector: '[data-course-entry], [data-aer-read-now], [data-vis="entry_pipeline"]' },
+  { field: 'unapproved_entry', label: 'Entry requirement rows not yet approved', audience: 'internal', selector: '[data-vis="unapproved_entry"]' },
   { field: 'value', label: 'The value itself (fee, intake, figure, rank)', audience: 'student' },
   { field: 'source_link', label: 'Source page link', audience: 'student' },
   { field: 'attribution_text', label: 'Attribution the licence requires beside a figure', audience: 'student' },
   { field: 'reference_period', label: 'Period the figure covers', audience: 'student' },
   { field: 'climate_icon', label: 'Climate icon (long-term average)', audience: 'student' },
+  { field: 'approved_entry', label: 'Approved entry requirements (or one empty-state line)', audience: 'student' },
 ]
 
 export const PREVIEW_ROLES = [
@@ -66,3 +71,7 @@ export function studentHideCss(scope = '[data-view-audience="student"]') {
   return FIELD_VISIBILITY.filter(f => f.audience === 'internal' && f.selector)
     .map(f => f.selector.split(',').map(s => `${scope} ${s.trim()}`).join(',')).join(',') + '{display:none!important}'
 }
+// Student-only blocks (data-student-only) stay hidden everywhere except a drawer showing a student-facing view; the default
+// rule is global (src/field-visibility.css), this one is the drawer's
+export const STUDENT_ONLY_EMPTY_ENTRY = 'No approved entry requirements published for this course yet.'
+export const STUDENT_FACING_ENTRY = new Set(['active', 'approved', 'published'])

@@ -41,6 +41,7 @@ import{CourseEvidenceOverlay}from'./CourseAudit'
 import{ProviderRankings,RankingLinkPicker}from'./RankingLinks'
 import{CourseCorrelated,ProviderCorrelated,PreviewAs,VisibilityStyle}from'./CorrelatedBlade' // CF-247 S1-RM-Design 18 Nov 2026 21:23 (s694, s696)
 import{effectiveTier,audienceOf,canPreview}from'./lib/field-visibility.js'
+import{useShowAll}from'./ShowAllToggle' // s697
 import{ProviderEntryMatrix}from'./EntryRequirements'
 import ScholarshipRecord from'./ScholarshipRecord'
 import{useCourseDescriptionOnDemand,CourseDescriptionBlock,ProviderDescriptionFill}from'./CourseDescriptionOnDemand' // CF-247 F-CDESC.06: Fill / Recheck description
@@ -1032,16 +1033,17 @@ function CourseScholarships({data,navigate}){
  const codes=[...new Set(items.flatMap(x=>Array.isArray(x.nationalities)?x.nationalities:[]))].sort((a,b)=>{const x=NAT_NAME[a]||a,y=NAT_NAME[b]||b;return x<y?-1:x>y?1:0})
  const pub=x=>x.publication_status==='published'&&(x.lifecycle_status||'active')==='active'
  const natOk=x=>!nat||!(x.nationalities||[]).length||(x.nationalities||[]).includes(nat)
- const shown=items.filter(x=>natOk(x)&&pub(x)),nPub=items.filter(pub).length
+ const eligible=items.filter(x=>natOk(x)&&pub(x)),nPub=items.filter(pub).length
+ const{shown,toggle}=useShowAll(eligible,{id:'course-scholarships'}) // s697: first three, then Show all (N) scholarships
  return <section className="m-detail-section cs-panel" data-course-scholarships><h3 title="Only scholarships whose page names this course, or all of the university's courses">Scholarships</h3>
   {items.length>0&&<div className="cs-controls">{codes.length>0&&<label><small>Student nationality</small><select value={nat} onChange={e=>setNat(e.target.value)} aria-label="Student nationality"><option value="">Any nationality</option>{codes.map(c=><option key={c} value={c}>{NAT_NAME[c]||c}</option>)}</select></label>}<span className="cs-count">{fmtNumber(nPub)} scholarship{nPub===1?'':'s'}</span></div>}
-  {shown.length?<div className="cs-cards">{shown.map(x=>{const k=x.mapping_id||x.scholarship_id,c=x.calculation||{},est=c.fee_basis==='estimated_annual_from_registered_total',n=Array.isArray(x.nationalities)?x.nationalities:[],isOpen=open===k
+  {eligible.length?<div className="cs-cards">{shown.map(x=>{const k=x.mapping_id||x.scholarship_id,c=x.calculation||{},est=c.fee_basis==='estimated_annual_from_registered_total',n=Array.isArray(x.nationalities)?x.nationalities:[],isOpen=open===k
    return <article className="cs-card" key={k} data-cs-card>
     <div className="cs-top"><div className="cs-main"><strong>{x.name}</strong><span className="sch-chips"><StatusChip tone={SCH_AUD_TONE[x.audience]||'neutral'} label={SCH_AUD[x.audience]||'Not stated'}/><StatusChip tone="neutral" label={natShort(n)} title={n.length?n.map(c=>NAT_NAME[c]||c).join(', '):'Any nationality'}/></span></div>
      <div className="cs-value"><b>{x.value_label||'Value not stated'}</b>{c.scholarship_saving_amount!=null&&<small data-cs-saving>Saves about {fmtMoney(Number(c.scholarship_saving_amount),c.currency_code||'AUD')} a year{est?' (estimate from the registered CRICOS course cost)':c.fee_year?` (${c.fee_year} fee)`:''}</small>}</div></div>
     <div className="cs-foot"><span>{x.application_close_date?`Applications close ${fmtDate(x.application_close_date)}`:'No closing date stated'}</span><span className="cs-actions"><button type="button" className="m-secondary compact" aria-expanded={isOpen} onClick={()=>setOpen(isOpen?'':k)}>{isOpen?'Less':'More'}</button>{x.source_url&&<a className="m-secondary compact" href={x.source_url} target="_blank" rel="noreferrer">Provider page <ExternalLink size={11}/></a>}{x.evidence_id&&<EvidenceButton id={x.evidence_id} navigate={navigate}/>}</span></div>
     {isOpen&&<div className="cs-more"><div><small>Who it is for</small><span>{SCH_AUD[x.audience]||'Not stated on the page'}{n.length?` from ${n.map(c=>NAT_NAME[c]||c).join(', ')}`:''}</span></div><div><small>Value</small><span>{x.value_label||'Value not stated'}{c.net_fee_amount!=null?` · fee after the scholarship about ${fmtMoney(Number(c.net_fee_amount),c.currency_code||'AUD')} a year`:''}</span></div><div><small>Linked because</small><span>{humanise(x.mapping_basis||'governed mapping')}</span></div></div>}
-   </article>})}</div>:<EmptyInline text={nPub?`No scholarship for this course names ${NAT_NAME[nat]||nat} or is open to any nationality.`:courseScholarshipEmpty(data,items)}/>}
+   </article>})}{toggle}</div>:<EmptyInline text={nPub?`No scholarship for this course names ${NAT_NAME[nat]||nat} or is open to any nationality.`:courseScholarshipEmpty(data,items)}/>}
  </section>
 }
 

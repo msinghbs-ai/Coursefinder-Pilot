@@ -1,7 +1,7 @@
-<!-- sop-export: id=admin-sop; version=2.69; reviewed-release=2.16.44; source-commit=a4a0ae720073+local; content-sha256=ea24a7cac5e9439d91e71c9d2384c3e08736258586b9f1e5d1313c39956a4a54 -->
+<!-- sop-export: id=admin-sop; version=2.70; reviewed-release=2.16.45; source-commit=099711ee940c+local; content-sha256=531082170e4179f8d235db681317f023507af8ea09b74bdac82ef7f74886b1e0 -->
 # StudySearch – Platform Admin SOP
 
-**Version:** 2.69 (reviewed for platform release v2.16.44)  
+**Version:** 2.70 (reviewed for platform release v2.16.45)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -139,6 +139,7 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.70 | 18 Nov 2026 | v2.16.45 | Course detail: check a Counsellor or Viewer view with Preview as. Archive course, Read with AI and the Read / refresh entry requirements now panel are hidden there; only approved entry requirements show. Scholarship lists show three, then Show all (N) scholarships. |
 | 2.69 | 18 Nov 2026 | v2.16.44 | Course and Provider detail carry read-only correlated blocks (Around this course, Around this provider). Viewers and Counsellors see student-facing values only; use Preview as in the detail header to check what a Counsellor or Viewer sees. Destination data › City metrics & costs has Metric type pills. |
 | 2.68 | 18 Nov 2026 | v2.16.43 | Layer 4 › Inbox › Grid › Clusters: when the same refusal on the same words appears for many items of one university, settle the cluster here with one reason, then export it and ask for the rule to be written into the Boost worker or the reader (with a test), so it stops coming back. |
 | 2.67 | 18 Nov 2026 | v2.16.42 | Coverage & completeness › Courses: start from Readiness by country and Every field. A field marked Not labelled is newly recorded; ask for its label and domain. Guides › Platform guide › How the data connects is the model to give the website and Zoho developers when they ask how records join. |

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.467 — 18 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.45** (Platform Admin 18 Nov 2026 23:02). No migration (zero schema in S1-RM-Design). `src/correlated-blade.css`: the Preview as pills override the drawer header's 32px icon-button rule. `src/lib/field-visibility.js`: internal entries for Archive course (`.re-manage`), Read with AI (`[data-course-read-ai]`), the entry pipeline (`[data-course-entry]`, `[data-aer-read-now]`) and unapproved entry rows; `src/field-visibility.css` shows student-only blocks in a student view. `src/EntryRequirements.jsx`: approved rows or one empty-state line for Counsellors and Viewers. New `src/ShowAllToggle.jsx` on the course scholarships, the correlated card and the scholarship insight panel. Spec s697.
+
 ## 0.1.466 — 18 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.44** (Platform Admin 18 Nov 2026 21:23). No migration (zero schema in S1-RM-Design). New `src/lib/correlation-adapters.js` (CARD_SPEC column and field list; campus to locality, city profile, career outlook, visa snapshot and ranking snapshot joins), `src/CorrelatedBlade.jsx` (Course and Provider correlated sections, Preview as) over the existing reads `admin_provider_destination_read`, `admin_course_destination_read`, `admin_destination_review` (Curator and above), `admin_entry_requirements` and `admin_read` `provider_ranking_history`. New `src/lib/destination-metric-types.js` (Metric type pills on Destination data › City metrics & costs) and `src/lib/field-visibility.js` (role tiers, field audiences, the student-view CSS). Specs s694, s695 and s696.

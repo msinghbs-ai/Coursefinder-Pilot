@@ -13,8 +13,10 @@ import{fmtNumber,fmtMoney}from'./lib/format.js'
 import{supabase,api}from'./lib/supabase'
 import{CLIMATE_ICONS}from'./lib/climate-icons.js'
 import{campusLocalities,cityProfile,careerOutlook,visaSnapshot,rankingSnapshot,EMPTY_CAREERS}from'./lib/correlation-adapters.js'
-import{PREVIEW_ROLES,audienceOf,studentHideCss}from'./lib/field-visibility.js'
+import{PREVIEW_ROLES,audienceOf,studentHideCss,STUDENT_ONLY_EMPTY_ENTRY,STUDENT_FACING_ENTRY}from'./lib/field-visibility.js'
+import{useShowAll}from'./ShowAllToggle'
 import'./correlated-blade.css'
+import'./field-visibility.css'
 
 // the global destination lists are the same for every record: read once a session, per kind
 const LISTS=new Map()
@@ -59,11 +61,12 @@ export function CourseCorrelated({data,rank=0}){
   const co=useRead(()=>reviewList('career_outcome'),[curator],curator)
   const sr=useRead(()=>reviewList('study_rule'),[curator],curator)
   const er=useRead(()=>rpc('admin_entry_requirements',{p_action:'course',p_args:{course_id:courseId}}),[courseId],!!courseId)
+  const entry=(er.data?.rows||[]).filter(r=>!['rejected','inactive'].includes(String(r.status))),sch=Array.isArray(data?.course_scholarships?.items)?data.course_scholarships.items.filter(x=>(x.publication_status||'published')==='published'):[]
+  const{shown:schShown,toggle:schToggle}=useShowAll(sch,{id:'cb-scholarships'}) // s697: first three, then Show all (N) scholarships
   if(!courseId)return null
   const locs=campusLocalities(data.campuses,pd.data?.campuses),cc=cd.data?.country_code||null
   const careers=curator&&co.done?careerOutlook(data.field_code,co.data,{country:cc}):null
   const visa=visaSnapshot(cd.data?.study_rules,sr.data)
-  const entry=(er.data?.rows||[]).filter(r=>r.status!=='rejected'),sch=Array.isArray(data.course_scholarships?.items)?data.course_scholarships.items:[]
   return <section className="cb" data-correlated="course" aria-label="Around this course">
     <header className="cb-head"><strong>Around this course</strong><small>Read only. Joined from the campus city, the field of study and the destination's rules.</small></header>
     <div className="cb-grid">
@@ -89,11 +92,12 @@ export function CourseCorrelated({data,rank=0}){
       </Card>
       <Card id="entry" icon={GraduationCap} title="Entry requirements & scholarships">
         <div className="cb-two">
-          <div data-cb-entry><small className="cb-label">Academic entry</small>{!er.done?<small>Loading…</small>:!entry.length?<Empty id="entry">Nothing read from this course's page yet.</Empty>:
-            <ul className="cb-list">{entry.slice(0,3).map(r=><li key={r.id}><span>{kindLabel(r.kind)}</span><b>{r.min_entry_score!=null?`${r.min_entry_score} (${r.min_entry_score_basis})`:r.description}</b>
-              {r.quote&&<small className="cb-int" data-vis="raw_quote">“{r.quote}”</small>}{r.status==='proposed'&&<small className="cb-int" data-vis="layer4_queue_state">waiting in Layer 4</small>}</li>)}</ul>}</div>
+          <div data-cb-entry><small className="cb-label">Academic entry</small>{!er.done?<small>Loading…</small>:!entry.length?<Empty id="entry">{STUDENT_ONLY_EMPTY_ENTRY}</Empty>:
+            <><ul className="cb-list">{entry.slice(0,3).map(r=><li key={r.id} data-vis={STUDENT_FACING_ENTRY.has(String(r.status))?undefined:'unapproved_entry'}><span>{kindLabel(r.kind)}</span><b>{r.min_entry_score!=null?`${r.min_entry_score} (${r.min_entry_score_basis})`:r.description}</b>
+              {r.quote&&<small className="cb-int" data-vis="raw_quote">“{r.quote}”</small>}{r.status==='proposed'&&<small className="cb-int" data-vis="layer4_queue_state">waiting in Layer 4</small>}</li>)}</ul>
+              {!entry.some(r=>STUDENT_FACING_ENTRY.has(String(r.status)))&&<p className="cb-empty" data-student-only data-cb-empty="entry-approved">{STUDENT_ONLY_EMPTY_ENTRY}</p>}</>}</div>
           <div data-cb-scholarships><small className="cb-label">Scholarships</small>{!sch.length?<Empty id="scholarships">No published scholarship applies to this course.</Empty>:
-            <ul className="cb-list">{sch.slice(0,3).map((s,i)=><li key={s.id||i}><span>{s.name||s.title}</span><b>{s.value_text||s.amount_text||(s.amount!=null?fmtMoney(s.amount,s.currency||'AUD'):'')}</b></li>)}{sch.length>3&&<li><span>and {sch.length-3} more below</span></li>}</ul>}</div>
+            <><ul className="cb-list" data-cb-sch-list>{schShown.map((s,i)=><li key={s.id||s.mapping_id||i}><span>{s.name||s.title}</span><b>{s.value_label||s.value_text||s.amount_text||(s.amount!=null?fmtMoney(s.amount,s.currency||'AUD'):'')}</b></li>)}</ul>{schToggle}</>}</div>
         </div>
       </Card>
     </div>
