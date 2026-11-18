@@ -35,7 +35,7 @@ select c.id, 'study_rules', v.label, current_date, 'draft', v.url, v.owner, v.at
 insert into destination.page_facts(country_code, edition_label, page_url, kind, rule_category, title, applicant_scope, pattern, flags, unit, currency_code,
        min_value, max_value, anchor, status, read_mode, note)
 select v.cc, v.edition, v.url, v.kind, v.cat, v.title, 'student', v.pattern, 'i', v.unit, v.cur, v.mn, v.mx, v.anchor, 'active', v.mode,
-       'Seeded 19 Nov 2026 (20261119082000, s716): next-wave visa rules'
+       'Seeded 19 Nov 2026 (20261119083400, s716): next-wave visa rules'
   from (values
     ('NZ', 'Immigration New Zealand Student visa pages',
      'https://immigration.govt.nz/process-to-apply/applying-for-a-visa/providing-evidence-and-documents-to-support-your-visa-application/student-fund-requirements/',
@@ -53,7 +53,7 @@ select v.cc, v.edition, v.url, v.kind, v.cat, v.title, 'student', v.pattern, 'i'
 -- the three visa-rules sources: due within the hour, after the LIN 19/198 run (the standard Layer 1 scheduler runs hourly at :05)
 update pipeline.layer1_source_operations o
    set next_verification_at = now() + interval '55 minutes', updated_at = now(),  -- fixed: one scheduler hour apart from the LIN 19/198 run
-       change_reason = 'Due 19 Nov 2026 (20261119082000, s716): first run through the standard Layer 1 scheduler'
+       change_reason = 'Due 19 Nov 2026 (20261119083400, s716): first run through the standard Layer 1 scheduler'
   from pipeline.sources s
  where s.id = o.source_id and s.metadata->>'wave' = 'next-wave 19 Nov 2026'
    and s.label in ('Immigration New Zealand Student and Post-Study Work Visa rules', 'UKVI Student visa and Graduate route (GOV.UK)', 'USCIS and Department of State F-1 and OPT rules')
@@ -63,7 +63,7 @@ update pipeline.layer1_source_operations o
 do $chk$
 declare v_n int; v_drift jsonb;
 begin
-  select count(*) into v_n from destination.page_facts where note like 'Seeded 19 Nov 2026 (20261119082000, s716)%' and status = 'active';
+  select count(*) into v_n from destination.page_facts where note like 'Seeded 19 Nov 2026 (20261119083400, s716)%' and status = 'active';
   if v_n <> 4 then raise exception 'post-check: expected 4 next-wave facts, found %', v_n; end if;
   if exists (select 1 from destination.editions where edition_label = 'Immigration New Zealand Student visa pages' and terms_status = 'approved') then
     raise exception 'post-check: NZ terms must stay pending until confirmed';

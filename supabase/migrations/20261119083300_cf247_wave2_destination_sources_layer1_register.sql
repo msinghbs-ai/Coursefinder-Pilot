@@ -8,7 +8,7 @@
 -- What it changes (rows in the existing registry; no new table or function; G3 75/48):
 --   * Twenty sources, four per country, in pipeline.sources (source system DESTINATION) with their Layer 1 operations row
 --     (pipeline.layer1_source_operations): authority, authority domains, expected format, count kind, check and load cadence, licence.
---   * The five visa-rules sources use the existing page-facts reader. NZ, GB and US carry facts (20261119082000) and are made due there; CA
+--   * The five visa-rules sources use the existing page-facts reader. NZ, GB and US carry facts (20261119083400) and are made due there; CA
 --     (canada.ca: Crown copyright, reproduction terms not open) and IE (irishimmigration.ie: reuse terms not found) are paused until their terms
 --     are cleared and their facts are written.
 --   * The fifteen statistics sources (population, climate, careers) have no reader yet: they are registered paused with that reason, so the
@@ -97,8 +97,8 @@ ins as (
 insert into pipeline.layer1_source_operations(source_id, authority_name, authority_domains, expected_format, expected_count_kind, active, paused,
        verification_cadence_days, ingestion_cadence_days, variance_warn_percent, variance_block_percent, auto_ingest, next_verification_at, change_reason)
 select ins.id, v.publisher, v.domains, v.fmt, v.count_kind, true, not v.active_now, 30, v.load_days, 20, 60, v.active_now, null,  -- check monthly; variance warn 20%, block 60%
-       case when v.active_now then 'Registered 19 Nov 2026 (20261119081000, s715): visa-rules source; facts and first run in 20261119082000'
-            else 'Registered 19 Nov 2026 (20261119081000, s715), paused: ' || v.pause_reason end
+       case when v.active_now then 'Registered 19 Nov 2026 (20261119083300, s715): visa-rules source; facts and first run in 20261119083400'
+            else 'Registered 19 Nov 2026 (20261119083300, s715), paused: ' || v.pause_reason end
   from ins join v on v.label = ins.label;
 
 -- post-checks (rolled back with the dry run if any fails)
