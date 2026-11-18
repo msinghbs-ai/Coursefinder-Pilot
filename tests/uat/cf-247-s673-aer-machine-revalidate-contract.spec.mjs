@@ -1,10 +1,10 @@
 // Guards: S673 AER course machine admission re-validation (Platform Admin standing mandate 18 Nov 2026 19:28 AEDT, session S1-AER step 1): the 7-day validation is re-run under the live md5 of security.aer_machine_validate_v1; no switch, threshold (0.8 confidence, 8-character quote), hold or rule changes (Decision 276); a passing validation is recorded, never switches anything on by itself.
-// CF-247 S673. Migration 20261118234000_cf247_s673_aer_machine_revalidate.
+// CF-247 S673. Migration 20261118237000_cf247_s673_aer_machine_revalidate.
 // G2, G3 and housekeeping are guarded centrally by s32, s57 and s42.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261118234000_cf247_s673_aer_machine_revalidate.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations/20261118237000_cf247_s673_aer_machine_revalidate.sql', 'utf8')
 const code = (t) => t.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')
 
 test('the validation runs only under the live definition checked on 18 Nov and records one audit event', () => {

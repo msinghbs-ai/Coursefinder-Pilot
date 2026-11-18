@@ -30,7 +30,7 @@ begin
   values ('aer', 'machine_validate', 'aer.machine_mode', (v - 'history_disagreements') || jsonb_build_object('validation_id', vid,
           'secs', round(extract(epoch from clock_timestamp() - t)::numeric, 1),
           'authority', 'Platform Admin standing mandate 18 Nov 2026 19:28 AEDT (S1-AER step 1)',
-          'by', 'Integration Controller (migration 20261118234000)'));
+          'by', 'Integration Controller (migration 20261118237000)'));
   if coalesce((v->>'passed')::boolean, false) then
     raise notice 'S673: validation % passed; aer-machine-admission admits again while aer.machine_mode is 2', vid;
   else
