@@ -52,3 +52,29 @@ test('no new table or function; nothing dropped or deleted; consumer API checked
   expect(M).toMatch(/^-- Replaces: /m)
   expect(M).toMatch(/^-- Retires: /m)
 })
+
+// 19 Nov 2026 10:10 scheduled check (20261119104100): the instrument sets the defined term in italics, so its page text has a space inside
+// each bracket; the wave 2 open-licence owners publish through destination-open-licence-publish.
+const F = fs.readFileSync('supabase/migrations/20261119104100_cf247_lin_pattern_wave2_open_owners.sql', 'utf8')
+
+test('the corrected pattern reads the instrument as published (italic defined term), still not the partner amount', () => {
+  const html = '<p>(A) if the primary applicant intends to stay in Australia for a period of 12 months or more—AUD29,710 (<i>primary applicant annual living costs</i>); and</p><p>(B) for a spouse or de facto partner—AUD10,394 (<i>annual living costs</i>)</p>'
+  const pattern = 'AUD\\s?([0-9]{2},[0-9]{3})\\s*\\(\\s*primary applicant annual living costs\\s*\\)'
+  expect(F).toContain(`set pattern = '${pattern}',`)
+  const text = htmlToText(html)
+  const r = extractFact(text, { kind: 'amount', pattern, flags: 'i', anchor: 'primary applicant annual living costs' })
+  expect(r.found).toBe(true)
+  expect(String(r.raw ?? r.value)).toMatch(/29,?710/)
+  expect(extractFact('AUD29,710 ( primary applicant annual living costs )', { kind: 'amount', pattern, flags: 'i', anchor: 'primary applicant annual living costs' }).found).toBe(true)
+})
+
+test('LIN 19/198 is read again at the next Layer 1 tick; UKVI and USCIS are open-licence owners and Immigration New Zealand waits', () => {
+  expect(F).toContain("o.authority_domains @> array['legislation.gov.au'] and o.active and not o.paused;")
+  expect(F).toContain("unnest(array['UK Visas and Immigration (Home Office)', 'U.S. Citizenship and Immigration Services'])")
+  expect(F).toContain("raise exception 'Immigration New Zealand must wait for its terms'")
+  const code = F.split('\n').filter(l => !l.trimStart().startsWith('--')).join('\n')
+  expect(code).not.toMatch(/create table|create (or replace )?function (public|security|pipeline|destination)\./i)
+  expect(code).not.toMatch(/^\s*(delete from|drop |truncate )/im)
+  expect(F).toMatch(/^-- Replaces: /m)
+  expect(F).toMatch(/^-- Retires: /m)
+})
