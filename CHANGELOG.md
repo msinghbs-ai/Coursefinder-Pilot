@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.471 — 19 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.49** (Platform Admin 19 Nov 2026 06:39, after a live check of v2.16.47 at 375x812 as Viewer and Counsellor). No migration (zero schema in S1-RM-Design). `src/CorrelatedBlade.jsx`: the Course card `entry` is headed "Entry requirements" and its scholarship column is removed, so the Scholarships section is the only scholarship list; `src/lib/correlation-adapters.js` (CARD_SPEC `entry`) and `src/correlated-blade.css` follow. The Provider card is unchanged. Spec s699 (all four roles and phone width); `s694` and `s697` adjusted.
+
 ## 0.1.469 — 19 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.47** (Platform Admin 19 Nov 2026 05:21, item 4: "so the Around this course and Around this provider blades render live values for all roles"). Server read from Pilot #1329 (migration `20261119045000`, spec s712); no migration here. `src/CorrelatedBlade.jsx`: the destination review reads run for every StudySearch role (rank 1 and up); the read-gap note shows only when a read fails; accreditations from `provider_detail` (status shown to Editors and up as internal). Specs s694 and s696 follow.
