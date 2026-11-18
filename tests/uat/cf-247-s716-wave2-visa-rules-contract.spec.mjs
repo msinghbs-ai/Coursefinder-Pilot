@@ -1,10 +1,10 @@
 // Guards: next-wave visa rules (Platform Admin 19 Nov 2026 06:45 and 06:50): editions publish only with approved open terms (GB OGL v3.0, US public domain; NZ pending), monthly or month-based figures are kept as quoted text (never written as annual or years), and the first runs go through the standard Layer 1 scheduler an hour apart from the LIN 19/198 run.
-// CF-247 S716. supabase/migrations/20261119083300_cf247_wave2_destination_sources_layer1_register.sql (the s716 section).
+// CF-247 S716. supabase/migrations/20261119085200_cf247_wave2_destination_sources_layer1_register.sql (the s716 section).
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { extractFact, htmlToText } from '../../supabase/functions/_shared/cf247-page-facts.js'
 
-const M = fs.readFileSync('supabase/migrations/20261119083300_cf247_wave2_destination_sources_layer1_register.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations/20261119085200_cf247_wave2_destination_sources_layer1_register.sql', 'utf8')
 const code = M.split('\n').filter(l => !l.trimStart().startsWith('--')).join('\n')
 
 test('terms: GB and US approved, NZ pending until confirmed', () => {

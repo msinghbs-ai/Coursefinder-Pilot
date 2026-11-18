@@ -1,9 +1,9 @@
 // Guards: Layer 1 Register first for every country (Platform Admin 19 Nov 2026 06:45 and 06:50): the next-wave destination sources (NZ, CA, GB, IE, US; population, climate, visa rules, careers) are registered by country with authority, authority domains, format, check and load cadence and licence before any ingestion; sources with no reader or uncleared terms are paused with their reason.
-// CF-247 S715. supabase/migrations/20261119083300_cf247_wave2_destination_sources_layer1_register.sql.
+// CF-247 S715. supabase/migrations/20261119085200_cf247_wave2_destination_sources_layer1_register.sql.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261119083300_cf247_wave2_destination_sources_layer1_register.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations/20261119085200_cf247_wave2_destination_sources_layer1_register.sql', 'utf8')
 const code = M.split('\n').filter(l => !l.trimStart().startsWith('--')).join('\n')
 
 test('four sources per country, in the existing registry, by country', () => {
@@ -16,7 +16,7 @@ test('four sources per country, in the existing registry, by country', () => {
 
 test('only sources with a reader and open terms run; the rest are paused with their reason', () => {
   expect(code).toContain("true, not v.active_now, 30, v.load_days, 20, 60, v.active_now, null")
-  expect(code).toContain("'Registered 19 Nov 2026 (20261119083300, s715), paused: ' || v.pause_reason")
+  expect(code).toContain("'Registered 19 Nov 2026 (20261119085200, s715), paused: ' || v.pause_reason")
   expect(code).toContain("'Awaiting cleared reuse terms (canada.ca Crown copyright) before facts are written'")
 })
 
