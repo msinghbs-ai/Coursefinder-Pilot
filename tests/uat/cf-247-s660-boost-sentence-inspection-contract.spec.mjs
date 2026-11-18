@@ -22,7 +22,7 @@ test('the inspection returns each sentence for international students with the l
   const r = B.boostSentenceInspection(page)
   expect(r.page_chars).toBe(page.length)
   expect(r.study_word_hits).toBe(3)
-  expect(r.selector).toBe('study-load-international-v2')
+  expect(r.selector).toBe('study-load-international-v3')  // v3 from s721
   expect(r.international_total).toBe(1)
   expect(r.international_sentences[0].text).toBe(T3)
   expect(r.international_sentences[0].load).toBe('full_time')
@@ -59,7 +59,7 @@ test('the size of what one call returns is capped', () => {
 })
 
 test('the worker mode is read only: stored pages by path, no model, no web fetch, no database call, no file written', () => {
-  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.22"')  // v1.0.19 from s674
+  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.24"')  // v1.0.24 from s721  // v1.0.19 from s674
   expect(mode.length).toBeGreaterThan(200)
   expect(mode).toContain('.slice(0, BOOST_INSPECT_MAX_PAGES)')
   expect(mode).toContain('!p.includes("..")')

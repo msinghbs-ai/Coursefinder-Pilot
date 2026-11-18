@@ -25,11 +25,11 @@ test('boost.ts v1.0.13: a page with a statement for international students is as
   const visa = 'International student visa holders can only study full-time.'
   const page = `Bachelor of X.\nDuration: 3 years full-time or 6 years part-time.\n${visa}\nApply now.`
   const s = B.studyLoadSections(page, 6000)
-  expect(s).toMatchObject({ selector: 'study-load-international-v2', text: visa, hits: 3 })
-  expect(B.BOOST_SELECTOR_INTERNATIONAL).toBe('study-load-international-v2')  // v2 from worker v1.0.20 (s661)
+  expect(s).toMatchObject({ selector: 'study-load-international-v3', text: visa, hits: 3 })
+  expect(B.BOOST_SELECTOR_INTERNATIONAL).toBe('study-load-international-v3')  // v3 from s721  // v2 from worker v1.0.20 (s661)
   expect(B.studyLoadSections(page, 20).text.length).toBeLessThanOrEqual(20)
   // a page with no such statement is read as before
-  expect(B.studyLoadSections('Duration: 3 years full-time or 6 years part-time.', 6000).selector).toBe('study-load-windows-v5')  // v4 from worker v1.0.17 (s647); v5 from v1.0.20 (s661)
+  expect(B.studyLoadSections('Duration: 3 years full-time or 6 years part-time.', 6000).selector).toBe('study-load-windows-v6')  // v6 from s721  // v4 from worker v1.0.17 (s647); v5 from v1.0.20 (s661)
   expect(B.BOOST_STUDY_LOAD_PROMPT_VERSION).toBe('boost-study-load-v5')  // v4 from worker v1.0.14 (s614); v5 from v1.0.17 (s647)
   expect(B.BOOST_STUDY_LOAD_SYSTEM).toContain('When the text you are given is only sentences about international students, answer from those sentences.')
 })
