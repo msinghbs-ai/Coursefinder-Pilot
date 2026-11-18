@@ -1,18 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.36'
-export const PACKAGE_VERSION='0.1.458'
+export const UI_VERSION='2.16.37'
+export const PACKAGE_VERSION='0.1.459'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'18 Nov 2026',
-  title:'New countries: register a scheme from the Add source wizard',
+  title:'Hotfix: Links & Email Templates opens again',
   changes:[
-    'Layer 1 › Register › + Add source, step 1: a Platform Admin registers a country\'s registration scheme with + Register a scheme (code, kind, label, authority and a reason). It is added as planned; an existing scheme is never changed.',
-    'A country\'s subdivisions can be loaded as data the same way, so onboarding a new destination needs no database change.'
+    'A render guard now opens Users & roles › Links & Email Templates and the four-step Create user flow in every build, so this kind of error cannot ship again.'
   ],
-  bugFixes:[]
+  bugFixes:[
+    'Users & roles › Links & Email Templates no longer fails with "Workspace render failed" (ref ZDUFMC) once its settings load. Nothing else changes on the screen.'
+  ]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.
