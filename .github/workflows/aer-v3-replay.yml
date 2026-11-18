@@ -1,0 +1,45 @@
+# AER v2 offline model qualification replay (CF-247 S672, session S1-AER; Platform Admin standing mandate 18 Nov 2026 19:28 AEDT, step 3: "Run the offline replay
+# qualification via the on-demand open/close GitHub Actions route using the exact pinned OpenRouter model IDs ... keeping the strict qualification gate intact").
+# Answers only the round runs a migration has opened (migration 20261118236000 for round r4), through the Management API with no confirmation prompt:
+# on-demand window open, run switches on for the run only, worker mode aer_v3_eval, scoring, then switches back to 0 and the window closed whatever happened.
+# A run qualifies nothing: its figures are evidence for a separate, recorded decision of the Platform Admin.
+name: AER v3 replay (no admission)
+on:
+  workflow_dispatch:
+    inputs:
+      round:
+        description: "Round suffix of the opened proposals (aer-v2-course-v3-*-<round>)"
+        required: true
+        default: "r4"
+      max_minutes:
+        description: "Longest time to keep asking the worker (10 to 110)"
+        required: true
+        default: "100"
+      confirm_project:
+        description: "Type the Pilot project ref to confirm"
+        required: true
+concurrency:
+  group: aer-v3-replay
+  cancel-in-progress: false
+jobs:
+  replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      REF: ${{ vars.SUPABASE_PROJECT_REF }}
+      ROUND: ${{ inputs.round }}
+      MAXMIN: ${{ inputs.max_minutes }}
+      CONFIRM: ${{ inputs.confirm_project }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Refuse another project
+        run: |
+          if [ -z "$REF" ] || [ "$CONFIRM" != "$REF" ]; then echo "::error::Refused: the typed project ref does not match the Pilot"; exit 1; fi
+      - name: Replay the opened round
+        run: node scripts/aer-v3-replay.mjs "$ROUND" "$MAXMIN"
