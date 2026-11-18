@@ -1,0 +1,38 @@
+# Guards: S670 AER shared-page rule for hand-bound courses (Platform Admin 18 Nov 2026 17:52) and G4 database-backed tests: migration 20261118220000 runs against the shared-page function as live has it on an isolated PostgreSQL 16 (fixtures only, never a Supabase project).
+name: AER shared page hand-bound integration
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/20261118220000_cf247_aer_shared_page_hand_bound.sql'
+      - 'supabase/migrations/20261108030000_cf247_aer_shared_page_rejected_binding.sql'
+      - 'tests/fixtures/aer-hand-bound/**'
+      - 'tests/fixtures/aer-qut-shared/**'
+      - '.github/workflows/aer-hand-bound-test.yml'
+  workflow_dispatch:
+jobs:
+  isolated-postgres:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: fixture-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: fixture-only
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash tests/fixtures/aer-hand-bound/run.sh | tee aer-hand-bound-results.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: aer-hand-bound-database-evidence
+          path: aer-hand-bound-results.log
