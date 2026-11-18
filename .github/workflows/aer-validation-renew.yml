@@ -1,0 +1,40 @@
+# AER automatic admission validations: daily status and renewal (CF-247 S674, session S1-AER; Platform Admin standing rule 18 Nov 2026 20:53 AEDT: "automatic 7-day
+# validation renewal on unchanged thresholds (0.8 confidence, 8-character quote, 0 regressions) ... without pausing for manual sign-off").
+# Daily at 18:17 AEDT (07:17 UTC): renews the validation of rules aer-machine-v1 and aer-matrix-machine-v1 once the last pass is aer.validation_renew_after_days old,
+# only on the thresholds and validator the rule names; otherwise it reports and fails, and admission falls back to shadow when the old pass lapses.
+# By hand: mode status (read only; optional "since" time for the admissions count) or renew.
+name: AER validation renewal
+on:
+  schedule:
+    - cron: '17 7 * * *'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "status (read only) or renew"
+        required: true
+        default: "status"
+      since:
+        description: "Count admissions since this time (ISO, optional)"
+        required: false
+        default: ""
+concurrency:
+  group: aer-validation-renew
+  cancel-in-progress: false
+jobs:
+  renew:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      REF: ${{ vars.SUPABASE_PROJECT_REF }}
+      MODE: ${{ github.event_name == 'schedule' && 'renew' || inputs.mode }}
+      SINCE: ${{ inputs.since }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Status and renewal
+        run: node scripts/aer-validation-renew.mjs "$MODE" "$SINCE"

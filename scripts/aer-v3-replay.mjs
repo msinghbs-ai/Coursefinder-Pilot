@@ -20,7 +20,7 @@ const write = async (query) => {
   const t = await r.text(); if (!r.ok) throw Error(`database write failed (HTTP ${r.status}): ${t.slice(0, 600)}`); return JSON.parse(t)
 }
 const SW = ['reading.aer_v2_long_page_sections_on', 'ai_eval.offline_runs_on', 'ai_eval.aer_v3_runs_on']
-const CODE = `aer-v2-course-v3-%-${ROUND}`
+const CODE = `aer-v2-course-v3%-${ROUND}`  // v3 and v3.1 versions (s674)
 const switches = (to, why) => write(`with u as (update pipeline.platform_toolset_settings set value = '${to}'::jsonb, updated_at = now(), reason = ${lit(why)}
    where toolset_key = 'pipeline' and key in (${SW.map(lit).join(', ')}) and value is distinct from '${to}'::jsonb returning key)
   insert into pipeline.admin_control_events(area, action, target, detail, actor) select 'settings', 'workflow', u.key, jsonb_build_object('workflow', 'aer-v3-replay', 'round', ${lit(ROUND)}, 'after', ${to}, 'why', ${lit(why)}), null from u returning target`)
@@ -33,22 +33,36 @@ let od = null, failure = null
 try {
   const [{ r }] = await write(`select security.on_demand_open_v1('claude_session', ${lit(`S672 AER v3 replay ${ROUND} (Platform Admin standing mandate 18 Nov 2026 19:28 AEDT, step 3): 3 pinned models x 50 frozen cases`)},
       (select provider_ids from pipeline.on_demand_requests where id = 'ca8dee01-5203-4152-a04c-f39b11091421'),
-      jsonb_build_object('calls', 150, 'openrouter_usd', 0.25, 'firecrawl_credits', 0, 'detail', 'Qwen3 30B ~0.03, Mistral Small 3.2 ~0.05, MiMo v2.6 Flash ~0.07 (rounds 2 and 3); cap ai_eval.aer_v3_max_usd'),
+      jsonb_build_object('calls', 150, 'openrouter_usd', 0.40, 'firecrawl_credits', 0, 'detail', 'Qwen3 30B ~0.05, Mistral Small 3.2 ~0.08, MiMo v2.6 Flash ~0.12 (round 4 x about 1.6 for longer answers); cap ai_eval.aer_v3_max_usd'),
       null, array['openrouter']) as r`)
   od = r
   await summary(`### S672 AER v3 replay ${ROUND}\n\nOn-demand window \`${od.id}\` opened: estimate ${JSON.stringify(od.estimate)}; credit before ${JSON.stringify(od.credit_left_before ?? od.credit_left ?? null)}.`)
   await switches(1, `S672 AER v3 replay ${ROUND} (workflow aer-v3-replay): on for the run only; restored to 0 by the same workflow`)
   const until = Date.now() + MAX_MIN * 60000
+  const counts = async () => Object.fromEntries((await read(`select a.run_id, count(*) n from pipeline.ai_eval_answers a join pipeline.ai_eval_runs x on x.id = a.run_id
+     join pipeline.ai_improvement_proposals p on p.id = x.proposal_id where p.code like ${lit(CODE)} group by a.run_id`)).map((r) => [String(r.run_id), Number(r.n)]))
   let calls = 0
   while (Date.now() < until) {
     const left = (await runs()).filter((r) => r.state === 'queued' || r.state === 'answering')
     if (!left.length) break
-    const res = await worker(`jsonb_build_object('mode', 'aer_v3_eval')`, 300000)
-    calls++
-    console.log(`call ${calls}: run ${res.run ?? '-'} ${res.why ?? ''} ${JSON.stringify({ answered: res.answered ?? res.recorded, cost: res.cost_usd ?? res.cost }).slice(0, 300)}`)
-    if (!res.run && res.why) { failure = `worker: ${res.why}`; break }
-    if (!res.run) await new Promise((r) => setTimeout(r, 20000))  // nothing leasable this moment: wait before asking again
-    // the call is over: a lease it left on a part-answered round run is released, so the next call continues it
+    // s674 (worker v1.0.19): each call leases one run and answers it in a background task (up to 180 s a model call inside 360 s), replying 202 at once;
+    // one call per open run, in parallel, then wait until each leased run has recorded its answers (or the task's wall clock has surely ended)
+    const before = await counts()
+    const res = await Promise.all(left.map(() => worker(`jsonb_build_object('mode', 'aer_v3_eval')`, 300000).catch((e) => ({ error: String(e.message || e) }))))
+    calls += res.length
+    for (const r of res) console.log(`call: run ${r.run ?? '-'} ${r.why ?? ''} ${r.error ?? ''} ${JSON.stringify({ background: r.background, call_ms: r.call_ms, answered: r.recorded, cost: r.cost_usd }).slice(0, 300)}`)
+    const why = res.find((r) => !r.run && r.why)
+    if (why) { failure = `worker: ${why.why}`; break }
+    const leased = res.filter((r) => r.run).map((r) => String(r.run))
+    if (!leased.length && !res.some((r) => r.error)) { await new Promise((r) => setTimeout(r, 20000)); continue }  // nothing leasable this moment
+    // a call whose reply was lost may still be answering a run in the background: the wait below covers its wall clock before any lease is released
+    const t = Date.now()
+    while (Date.now() - t < 410000 && Date.now() < until) {  // fixed: longer than the 400 s wall clock of the background task
+      await new Promise((r) => setTimeout(r, 15000))
+      const now = await counts()
+      if (leased.length && !res.some((r) => r.error) && leased.every((id) => (now[id] || 0) !== (before[id] || 0))) break
+    }
+    // the calls are over: a lease they left on a part-answered round run is released, so the next calls continue it
     await write(`update pipeline.ai_eval_runs x set leased_until = now() from pipeline.ai_improvement_proposals p where p.id = x.proposal_id and p.code like ${lit(CODE)} and x.state = 'answering' and x.leased_until > now()`)
   }
   for (const r of (await runs()).filter((r) => r.state === 'recorded')) await write(`select security.ai_eval_score_v1(${Number(r.id)})`)

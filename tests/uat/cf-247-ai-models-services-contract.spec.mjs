@@ -327,7 +327,7 @@ test('phase 2 worker: models come from the readers; the cascade moves on only on
   // carries the route's cascade of the service it qualifies (mode lean_qualify: fee_reader or course_other_fields)
   expect((worker.match(/await cascadeFetch\(/g) || []).length).toBe(22)  // v1.0.18: boost_fields_replay (the qualification replay, one model, service boost_fields_extract; s663). v1.0.15: boost_fields (one model, service boost_fields_extract). v0.94.0: the 1b-3 qualification (mode lean_qualify); v1.0.7: induction_map (one model, service layer1_induction_map); v1.0.9: boost_extract (one model, service boost_extract); v1.0.11: boost_benchmark (each candidate asked directly, service boost_extract_benchmark)
   expect((worker.match(/await cascadeFetch\((ors\.)?fetch, \{ models: /g) || []).length).toBe(11)
-  expect((worker.match(/await cascadeFetch\(ors\.fetch, \{ models: null, deadline: t0 \+ BUDGET_MS - 25000, service: "entry_requirements_v2_shadow" \}/g) || []).length).toBe(1)
+  expect((worker.match(/await cascadeFetch\(ors\.fetch, \{ models: null, deadline: t0 \+ AER_V3_EVAL_BUDGET_MS - 25000, service: "entry_requirements_v2_shadow" \}/g) || []).length).toBe(1)
   // v0.97.0 (pre-AI admission gate, R5): the scholarship page call also names its queue item, so each attempt's cost is attributable in ai_invocations
   expect([...worker.matchAll(/await cascadeFetch\((?:ors\.)?fetch, \{ service: "([a-z_0-9]+)"(?:, source: "[a-z_]+", source_id: [a-z_.]+)? \}, /g)].map((m) => m[1]).sort())
     .toEqual(['adapter_builder', 'boost_extract', 'boost_extract_benchmark', 'boost_fields_extract', 'boost_fields_extract', 'entry_matrices', 'layer1_induction_map', 'ops_diagnosis', 'provider_description', 'scholarship_eligibility', 'scholarship_extraction'])
@@ -373,7 +373,8 @@ test('phase 2 worker: models come from the readers; the cascade moves on only on
   // the caller's time budget: with too little time left no later model is asked and the failure is returned as it came
   calls = []; const late = await cascadeFetch(scripted({ 'v/a': () => new Response('{}', { status: 503 }), 'v/b': () => ans('v/b', '{}') }), { models, deadline: Date.now() + 5000 }, 'u', init)
   expect(calls).toEqual(['v/a']); expect(late.status).toBe(503)
-  expect(worker.match(/deadline: t0 \+ BUDGET_MS - 25000, service[^}]*\}, "https:\/\/openrouter/g)).toHaveLength(10)  // v0.93.0: the benchmark call (mode aer_v3_eval) has the same deadline
+  expect(worker.match(/deadline: t0 \+ BUDGET_MS - 25000, service[^}]*\}, "https:\/\/openrouter/g)).toHaveLength(9)
+  expect(worker.match(/deadline: t0 \+ AER_V3_EVAL_BUDGET_MS - 25000, service[^}]*\}, "https:\/\/openrouter/g)).toHaveLength(1)  // s674: the benchmark call (mode aer_v3_eval) has its background task's deadline
   // no model handed out: the item is left alone (not recorded as an error)
   expect(worker).toContain('if (!(it as any).model) { tally.no_model = (tally.no_model || 0) + 1; return }')
   expect(worker).not.toContain('no model handed out by the route course_matching')
