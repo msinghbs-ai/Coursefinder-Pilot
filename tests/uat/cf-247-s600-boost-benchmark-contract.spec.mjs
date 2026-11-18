@@ -6,7 +6,7 @@ import fs from 'node:fs'
 const M = fs.readFileSync('supabase/migrations/20261118020000_cf247_boost_benchmark.sql', 'utf8')
 const code = M.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const IX = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-const mode = IX.slice(IX.indexOf('if (mode === "boost_benchmark") {'), IX.indexOf('// v0.17.16 (CF-247, 8 Oct 2026): Storage & retention.'))
+const mode = IX.slice(IX.indexOf('if (mode === "boost_benchmark") {'), IX.indexOf('// v1.0.16 (18 Nov 2026, CF-247 S2 - BOOST, Platform Admin 07:08 decision 3 and 10:10): Boost multi-field reading.'))  // the benchmark mode ends where the multi-field mode starts (s621)
 
 test('the benchmark has its own route with the three named allowed candidates; the extraction route stays pinned', () => {
   expect(code).toMatch(/values \('boost_extract_benchmark', 'Boost extraction benchmark \(study load\)', 'Boost', null, 'boost_benchmark', null, array\['qwen3-30b', 'mistral-small-3\.2', 'mimo-v2\.6-flash'\], 1, 2000,/)
@@ -43,7 +43,7 @@ test('results are closed, cost reaches the ledger, and nothing is dropped', () =
 })
 
 test('the worker asks each candidate directly, with the extraction request and check, and writes only benchmark rows', () => {
-  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.14"')
+  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.16"')
   expect(mode).toContain('const route = await rpc("svc_boost_benchmark_route_v1", {});')
   expect(mode).toContain('const candidates = new Set<string>((Array.isArray(route?.models) ? route.models : []).map((m: any) => String(m?.model_identifier || "")).filter(Boolean));')
   expect(mode).toContain('if (!candidates.has(model)) {')

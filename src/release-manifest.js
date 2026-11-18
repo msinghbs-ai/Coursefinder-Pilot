@@ -1,20 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.32'
-export const PACKAGE_VERSION='0.1.454'
+export const UI_VERSION='2.16.34'
+export const PACKAGE_VERSION='0.1.456'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'17 Nov 2026',
-  title:'Destination data: Bulk Approve Drafts for city figures',
+  date:'18 Nov 2026',
+  title:'Layer 1 › Register: current next dates, real failures only, headings stay in place',
   changes:[
-    'Destination data › City metrics & costs: new Bulk Approve Drafts button (Platform Admin). For each dataset edition with draft figures it shows how many are ready, and approves them all with one reason.',
-    'A draft figure without attribution text is left as draft and counted. Only draft figures change; a figure is returned by the API once its locality is approved too.',
-    'The action is recorded once in the control log, and each figure keeps who approved it, when and why.'
+    'A source\'s next ingestion date no longer stays in the past after a check found the file unchanged or failed; it moves on by whole cadences every hour.',
+    'Needs attention shows real failures only: four Canadian college code readers replaced by coverage-sweep are retired, and the QS 2026 and 2027 editions read as checked because they were applied from the publisher files.'
   ],
   bugFixes:[
-    'The ILEP draft\'s note no longer says its scheme is still to be registered (it was registered on 18 Nov).'
+    'Scrolling the Layer 1 register no longer slides table headings over the filter bar or + Add source.'
   ]
 }
 
