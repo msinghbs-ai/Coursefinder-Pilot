@@ -1,10 +1,10 @@
 // Guards: S748 AER course machine queue (Platform Admin 19 Nov 2026 06:49 AEDT item 1, session S2-BOOST-AER; delivers S1-AER finding S677 of 19 Nov 2026 03:15): in admit mode a declined or audit-sample result also records the item's last check in its shadow ledger row, so the job's 6-hour gap applies and the run reaches the items behind; nothing else in admission changes (Decision 276).
-// CF-247 S748. Migration 20261119052700_cf247_s748_aer_machine_queue_last_checked (rolled-back live dry run with a two-run probe).
+// CF-247 S748. Migration 20261119080500_cf247_s748_aer_machine_queue_last_checked (rolled-back live dry run with a two-run probe).
 // G2, G3 and housekeeping are guarded centrally by s32, s57 and s42.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261119052700_cf247_s748_aer_machine_queue_last_checked.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations/20261119080500_cf247_s748_aer_machine_queue_last_checked.sql', 'utf8')
 const code = (t) => t.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')
 const edit = M.split('do $ad$')[1].split('end $ad$;')[0]
 

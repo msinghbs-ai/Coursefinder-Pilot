@@ -49,8 +49,8 @@ end $ad$;
 insert into pipeline.admin_control_events(area, action, target, detail)
 select 'aer', 'machine_queue', 'security.aer_machine_admit_v1',
        jsonb_build_object('change', 'in admit mode a declined or audit-sample result also records the last check in the shadow ledger row, so the 6-hour gap applies and the queue moves',
-                          'finding', 'S1-AER S677 (19 Nov 2026 03:15)', 'authority', 'Platform Admin 19 Nov 2026 06:49 (S2-BOOST-AER item 1)', 'migration', '20261119052700')
- where not exists (select 1 from pipeline.admin_control_events e where e.area = 'aer' and e.action = 'machine_queue' and e.detail->>'migration' = '20261119052700');
+                          'finding', 'S1-AER S677 (19 Nov 2026 03:15)', 'authority', 'Platform Admin 19 Nov 2026 06:49 (S2-BOOST-AER item 1)', 'migration', '20261119080500')
+ where not exists (select 1 from pipeline.admin_control_events e where e.area = 'aer' and e.action = 'machine_queue' and e.detail->>'migration' = '20261119080500');
 
 do $p$
 begin
