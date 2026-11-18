@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Guards: REQ-76 API v3 field dictionary sync (Platform Admin 15 Nov 2026, combined build item 1) and G4 database-backed tests:
-# migration 20261116110000, then the newest reviewed list (20261117140000), on top of 20261115190000 runs on an isolated PostgreSQL 16 (fixtures only, never a Supabase project). It proves: the
+# migration 20261116110000, then the newest reviewed list (20261118133717), on top of 20261115190000 runs on an isolated PostgreSQL 16 (fixtures only, never a Supabase project). It proves: the
 # reviewed list loads every field; a second load changes nothing; only a changed field is written; a field dropped from the list is marked
 # deprecated and never deleted, and comes back un-deprecated; a bad list writes nothing; the drift check finds a missing path, a type change and a
 # null where the dictionary says not nullable, and is empty for a matching response.
@@ -12,7 +12,7 @@ case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"
 F=tests/fixtures/api-field-dictionary
 S=supabase/migrations/20261115190000_api_v3_additive_schema.sql; M0=supabase/migrations/20261116110000_cf247_api_field_dictionary_sync.sql
-M=supabase/migrations/20261117140000_cf247_api_field_dictionary_campus_locality.sql  # the newest reviewed list, on top of the functions of M0
+M=supabase/migrations/20261118133717_cf247_api_field_dictionary_course_study_load.sql  # the newest reviewed list, on top of the functions of M0
 N=$(node -e "console.log(JSON.parse(require('fs').readFileSync('docs/api/v3/field-dictionary.json','utf8')).fields.length)")
 # a fingerprint of the reviewed list: the loaded table must carry exactly the same values (the compact form decodes losslessly)
 FP=$(node -e "const c=require('crypto');const d=JSON.parse(require('fs').readFileSync('docs/api/v3/field-dictionary.json','utf8'));console.log(c.createHash('md5').update(d.fields.map(f=>[f.api_surface,f.endpoint,f.field_path,f.data_type,f.is_nullable,f.description,(f.allowed_values?JSON.stringify(f.allowed_values).replace(/,/g,', '):'null'),(f.req_ids||[]).slice().sort().join(',')].join('|')).sort().join('\\n')).digest('hex'))")
