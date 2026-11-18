@@ -20,6 +20,25 @@ const CADENCE={weekly:'Weekly',monthly:'Monthly',annual:'Annual'}
 const KIND={course_registration:'Course registration',provider_registration:'Provider registration',field_of_study:'Field of study',work_eligibility:'Work eligibility'}
 const EMPTY={country_code:'',scheme:'',scheme_kind:'',field_scheme:'',target_record_type:'',parser_spec:null,source_label:'',source_url:'',authority_name:'',dataset_class:'register',connector_type:'',expected_format:'',licence_name:'',licence_url:'',attribution_text:'',terms_status:'',cadence:'',notes:'',sample_file_name:'',edition_archiving:true,staging_keep_days:'',sample:null}
 
+// 29-destination readiness (Platform Admin 18 Nov 2026 11:28): a new country's registration scheme is data, not a database change. A Platform Admin
+// registers it here (public.admin_registration_scheme_register_v1: added as planned, an existing scheme is never changed, a reason is logged).
+export function SchemeRegister({country,rpc,onDone}){
+  const[open,setOpen]=useState(false),[v,setV]=useState({scheme:'',kind:'course_registration',label:'',authority:'',reason:''}),[busy,setBusy]=useState(false),[msg,setMsg]=useState(''),[err,setErr]=useState('')
+  const ok=/^[a-z][a-z0-9_]{1,39}$/.test(v.scheme)&&v.label.trim().length>=2&&v.authority.trim().length>=2&&v.reason.trim().length>=4
+  const save=async()=>{setBusy(true);setErr('');setMsg('');try{const{data,error}=await rpc('admin_registration_scheme_register_v1',{p_args:{...v,country_code:country}});if(error)throw error
+    setMsg(data?.created?`${v.scheme} registered for ${country} as planned.`:`${v.scheme} was already registered for ${country}; nothing changed.`);setV(x=>({...x,scheme:'',label:'',authority:''}));await onDone?.()}
+    catch(e){setErr(e?.message||String(e))}finally{setBusy(false)}}
+  if(!open)return <button type="button" className="l1i-link" onClick={()=>setOpen(true)} data-l1i-scheme-register-open>+ Register a scheme for {country}</button>
+  return <fieldset className="l1i-scheme-register wide" data-l1i-scheme-register><legend>Register a scheme for {country}</legend>
+    <label>Scheme code<input value={v.scheme} onChange={e=>setV(x=>({...x,scheme:e.target.value.toLowerCase()}))} maxLength={40} placeholder="for example de_hrk" data-l1i-scheme-code/></label>
+    <label>Kind<select value={v.kind} onChange={e=>setV(x=>({...x,kind:e.target.value}))} data-l1i-scheme-kind>{Object.entries(KIND).map(([k,l])=><option key={k} value={k}>{l}</option>)}</select></label>
+    <label>Label<input value={v.label} onChange={e=>setV(x=>({...x,label:e.target.value}))} maxLength={120} placeholder="for example HRK Higher Education Compass" data-l1i-scheme-label/></label>
+    <label>Authority<input value={v.authority} onChange={e=>setV(x=>({...x,authority:e.target.value}))} maxLength={160} placeholder="Who keeps the register" data-l1i-scheme-authority/></label>
+    <label className="wide">Reason (kept in the control log)<input value={v.reason} onChange={e=>setV(x=>({...x,reason:e.target.value}))} maxLength={300} data-l1i-scheme-reason/></label>
+    <div className="wide"><Button compact variant="primary" disabled={!ok||busy} onClick={save} data-l1i-scheme-save>{busy?'Registering…':'Register as planned'}</Button> <Button compact onClick={()=>setOpen(false)}>Close</Button></div>
+    {msg&&<p className="l1i-note" role="status">{msg}</p>}{err&&<p className="l1i-warn" role="alert">{err}</p>}
+  </fieldset>}
+
 export default function Layer1InductionWizard({rank=0,onDone,onCancel,client=null,invoke=null}){
   const rpc=client||((fn,args)=>supabase.rpc(fn,args))
   const call=invoke||((name,body)=>supabase.functions.invoke(name,{body}))
@@ -89,7 +108,8 @@ export default function Layer1InductionWizard({rank=0,onDone,onCancel,client=nul
       <label>Native field-of-study scheme<select value={f.field_scheme} onChange={set('field_scheme')} disabled={closed||!schemes.length} data-l1i-field-scheme><option value="">None or not known</option>{schemes.filter(s=>s.kind==='field_of_study').map(s=><option key={s.scheme} value={s.scheme}>{s.label||s.scheme}</option>)}</select></label>
       <label>Target record type<select value={f.target_record_type} onChange={e=>setF(x=>({...x,target_record_type:e.target.value,parser_spec:null}))} disabled={closed} data-l1i-record-type><option value="">Choose…</option>{(o.record_types||[]).map(t=><option key={t.key} value={t.key}>{t.label}</option>)}</select>
         <small>{(o.record_types||[]).find(t=>t.key===f.target_record_type)?.help||'What each row of this source becomes. The AI mapper builds the parser spec for this type.'}</small></label>
-      {f.country_code&&!schemes.length&&<p className="l1i-warn" data-l1i-no-scheme>No registration scheme is registered for {f.country_code} yet. A scheme is added to the reference list first (a database change), then this source can be set up.</p>}
+      {f.country_code&&!schemes.length&&<p className="l1i-warn" data-l1i-no-scheme>No registration scheme is registered for {f.country_code} yet. {rank>=6?'Register it below (it is added as planned), then choose it here.':'A Platform Admin registers it here first (it is added as planned); then this source can be set up.'}</p>}
+      {f.country_code&&!closed&&rank>=6&&<SchemeRegister country={f.country_code} rpc={rpc} onDone={async()=>{await open(id)}}/>}
     </div>,
     // 2
     <div className="l1i-grid" key="s2" data-l1i-step="source">

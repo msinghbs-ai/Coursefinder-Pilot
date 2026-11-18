@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.458 — 18 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.36** (Platform Admin 18 Nov 2026 11:28, 29-destination readiness). Migration 20261118141000: `public.admin_registration_scheme_register_v1` (Platform Admin, reason, planned, never changes an existing scheme) and `public.admin_subdivisions_register_v1` (ISO 3166-2 rows as data). The induction wizard's step 1 offers + Register a scheme. Guards: `s629`.
+
 ## 0.1.457 — 18 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.35** (Platform Admin 18 Nov 2026 10:31 and 10:33, S1-RM-Design lane, UI/UX modernisation). No migration. Role-centric Dashboard (role line, Search the catalogue for ranks 1-2, Waiting for you without operator rows for Curators, Waiting for your approval for Platform Admins) with Continue where you left off (`src/lib/recent-activity.js`, this browser only); Guides › Role guides from `src/guide/roleGuides.js` (pages from the menu), generated to `docs/role-guides/` by `scripts/export-role-guides.mjs`; guided Create user (`src/CreateUserWizard.jsx`); formatted email body editor in a script-free frame (`src/RichEmailEditor.jsx`), delivery route at the top of Links & Email Templates and buttons renamed by scope. Guard s625; s573 updated.
