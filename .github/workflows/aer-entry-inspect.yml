@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       rules:
-        description: "Machine check rules to export (comma-separated)"
+        description: "Kept for the record (every waiting first read is exported)"
         required: true
-        default: "gate_incomplete,all_rows_held"
+        default: "all"
 concurrency:
   group: aer-entry-inspect
   cancel-in-progress: false

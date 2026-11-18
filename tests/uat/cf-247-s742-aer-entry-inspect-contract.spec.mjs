@@ -17,6 +17,8 @@ test('the export reads through the read-only Management API call and asks only t
   expect(S).not.toMatch(/\b(insert|update|delete|truncate|alter|create)\s+(into|table|from|or)\b/i)
   expect(S).not.toMatch(/openrouter|firecrawl|on_demand_open/i)
   expect(S).toContain("fs.writeFileSync('out/aer-entry-pages.json'")
+  // the read-only role cannot run security functions: the list is read from the tables
+  expect(S).not.toMatch(/security\.[a-z_]+\(/)
 })
 
 test('the workflow is dispatch only, holds no write permission and keeps the result as an artifact', () => {
